@@ -1,5 +1,9 @@
 # Refonte des écrans de détail mobiles (sortie, groupe, voyage, étape, parcours)
 
+> **État (2026-11-10)** : lots 0 à 12 exécutés, sauf la recette (Patrol iOS et Android, captures, passe sur
+> appareil), ouverte sous ledger `MOB-135` — ce plan reste dans `docs/plans/` jusqu'à ce qu'elle soit faite.
+> Livré : `MOB-134`, `API-169` à `API-172`, `WEB-164` ; restes : `API-173`, `MOB-136`, et `WEB-165` hors périmètre.
+
 ## Contexte
 
 L'état des lieux du 2026-11-10 ([2026-11-10-etat-des-lieux-affichage/](2026-11-10-etat-des-lieux-affichage/SYNTHESE.md)) a montré que les cinq écrans de

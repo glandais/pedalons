@@ -594,21 +594,14 @@
   },
   "rides": {
     "title": "Sorties",
-    "upcoming": "Prochaines sorties",
     "noUpcoming": "Aucune sortie à venir",
     "participants": {
       "one": "{count} personne",
       "other": "{count} personnes"
     },
     "groups": "Groupes",
-    "join": "Participer",
     "leave": "Se désinscrire",
-    "joinSuccess": "Inscription confirmée!",
-    "leaveSuccess": "Désinscription confirmée",
-    "noGroupAvailable": "Aucun groupe disponible",
-    "selectGroup": "Choisir un groupe",
     "description": "Description",
-    "actionFailed": "Inscription au groupe {group} impossible.",
     "registered": "J'y vais",
     "registeredIn": "J'y vais · {group}",
     "finished": "Terminée",
@@ -644,8 +637,6 @@
       "groupFirstDeparture": "{group} · premier départ {time}",
       "noGroup": "Sortie sans groupe, inscription impossible"
     },
-    "startPlace": "Départ",
-    "endPlace": "Arrivée",
     "comments": "Commentaires",
     "noRouteTitle": "Aucun parcours disponible",
     "noRouteMessage": "Le tracé n'a pas encore été publié. Les lieux de départ et d'arrivée restent affichés ci-dessus.",
@@ -709,7 +700,6 @@
       "staleMessage": "La prévision n'a pas pu être rafraîchie depuis {time}.",
       "notYetAvailable": "Prévision disponible à partir du {date}.",
       "notYetAvailableNoDate": "La météo sera disponible sept jours avant le départ.",
-      "emptyTitle": "Pas de météo pour cette sortie",
       "emptyMessage": "Aucune prévision n'est à afficher pour cette sortie.",
       "summaryAvailableFrom": "Météo dès le {date}",
       "unavailableTitle": "Météo indisponible pour le moment.",
@@ -847,7 +837,6 @@
       "when": "Date et heure de départ",
       "date": "Date",
       "time": "Heure",
-      "zoneOf": "Heure de {zone}",
       "places": "Lieux",
       "startPlace": "Lieu de départ",
       "endPlace": "Lieu d'arrivée",
@@ -1055,17 +1044,11 @@
     },
     "stages": "Étapes",
     "mapColorBy": "Colorer le tracé selon",
-    "stages.empty": "Aucune étape définie pour ce voyage.",
     "join": "Rejoindre",
     "leave": "Se désinscrire",
-    "joinSuccess": "Inscription au voyage confirmée!",
-    "leaveSuccess": "Désinscription du voyage confirmée",
     "stage": {
       "notFound": "Étape introuvable",
       "backToTrip": "Retour au voyage",
-      "startPlace": "Lieu de départ",
-      "endPlace": "Lieu d'arrivée",
-      "viewRoute": "Voir le parcours",
       "numberOf": "Étape {index} sur {total}",
       "overview": "Aperçu",
       "notFoundMessage": "Cette étape n'existe pas ou a été supprimée du voyage.",
@@ -1089,8 +1072,7 @@
         "other": "{} jours"
       },
       "totalDistance": "Distance totale",
-      "totalElevation": "Dénivelé cumulé",
-      "stages": "Étapes"
+      "totalElevation": "Dénivelé cumulé"
     },
     "cancelledTitle": "Voyage annulé.",
     "cancelledMessage": "Ce voyage n'aura pas lieu. Aucune inscription n'est possible.",
@@ -1112,21 +1094,10 @@
   },
   "routes": {
     "title": "Parcours",
-    "empty": "Aucun parcours",
     "distance": "Distance",
-    "elevation": "D+",
-    "elevationDown": "D-",
-    "surface": "Type de surface",
     "description": "Description",
-    "createdBy": "Créé par {name}",
     "share": "Partager",
-    "mapPlaceholder": "Carte (à implémenter)",
-    "download": "Télécharger",
-    "downloadFit": "Télécharger FIT",
     "uploadSuccess": "Parcours envoyé avec succès!",
-    "uploadError": "Erreur lors de l'envoi: {error}",
-    "noDownload": "Aucun fichier disponible",
-    "route": "Parcours",
     "list": {
       "count": {
         "zero": "Aucun parcours",
@@ -1230,7 +1201,6 @@
     "notFoundMessage": "Ce parcours n'existe pas ou a été supprimé.",
     "backToRoutes": "Retour aux parcours",
     "loadErrorTitle": "Chargement impossible",
-    "cursorHint": "Réticule synchronisé dans les deux sens avec le marqueur sur la carte.",
     "downloading": "Téléchargement...",
     "waypoints": {
       "title": "Points du parcours",
@@ -1937,11 +1907,8 @@
   },
   "units": {
     "metric": "Métrique",
-    "metricExample": "km, m, km/h",
     "imperial": "Impérial",
-    "imperialExample": "mi, ft, mph",
     "elevationGain": "D+",
-    "elevationLoss": "D−",
     "elevationGainLong": "Dénivelé positif",
     "byte": "o",
     "kilobyte": "ko",
@@ -2002,9 +1969,7 @@
     "groupOrganizer": "Capitaine",
     "emptyTripMessage": "Aucune inscription à ce voyage pour le moment.",
     "loadMore": "Afficher plus",
-    "noun": "personnes",
-    "searchByName": "Rechercher par nom...",
-    "noMatchGeneric": "Personne ne correspond à votre recherche."
+    "noun": "personnes"
   },
   "status": {
     "draft": "Brouillon",

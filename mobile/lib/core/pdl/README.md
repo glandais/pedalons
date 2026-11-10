@@ -172,7 +172,7 @@ F-DE-6. La résolution (route interne, application externe, bandeau d'échec)
 vit dans `core/utils/link_launcher.dart`, et `core/widgets/markdown_content.dart`
 la branche. **Aucun écran ne doit instancier `PdlMarkdownBody` directement.**
 
-## Vague C — les 10 coquilles d'écran livrées
+## Vague C — les coquilles d'écran
 
 | # | Widget | Fichier |
 |---|---|---|
@@ -182,10 +182,12 @@ la branche. **Aucun écran ne doit instancier `PdlMarkdownBody` directement.**
 | C4 | `PdlActionBar` | `pdl_action_bar.dart` |
 | C5 | `PdlSheet` · `PdlSheetHandle` | `pdl_sheet.dart` |
 | C6 | `PdlFullSheet` | `pdl_full_sheet.dart` |
-| C7 | `PdlDetentSheet` | `pdl_detent_sheet.dart` |
 | C8 | `PdlScreenScaffold` | `pdl_screen_scaffold.dart` |
 | C9 | `PdlStageRail` · `PdlStageRailItem` | `pdl_stage_rail.dart` |
 | C10 | `PdlPrevNextNav` · `PdlPrevNextTarget` | `pdl_prev_next_nav.dart` |
+
+C7, la feuille à crans `PdlDetentSheet`, a été retirée le 10 novembre 2026 : la fiche
+parcours, son seul écran, est devenue une page qui défile (ledger `MOB-134`).
 
 `PdlBottomTabs` **remplace** la `NavigationBar` provisoire de
 `core/adaptive/adaptive_scaffold.dart` ; la bascule vers `NavigationRail`

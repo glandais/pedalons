@@ -492,7 +492,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
 
   /// La section Météo, dépliée : c'est le dernier bloc de la page. Le départ
   /// est celui du leg quand il le porte (le point de rendez-vous à l'heure du
-  /// groupe, API 13.4.0), sinon celui de la sortie — « de la sortie » quand le
+  /// groupe, API 13.5.0), sinon celui de la sortie — « de la sortie » quand le
   /// groupe part à une autre heure (ledger `BRAND-8`).
   Widget _weather(
     RideDto ride,

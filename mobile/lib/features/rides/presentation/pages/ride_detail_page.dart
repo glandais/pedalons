@@ -545,7 +545,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
 
   /// La section Météo, repliée : les commentaires la suivent. Le départ est
   /// celui du leg quand il le porte (le rendez-vous à l'heure du groupe, API
-  /// 13.4.0), sinon celui de la sortie. [group] : le groupe de la sortie
+  /// 13.5.0), sinon celui de la sortie. [group] : le groupe de la sortie
   /// solo, ou le mien à plusieurs groupes ([departureOnly] : ni vent ni
   /// frise).
   Widget _weatherSection(

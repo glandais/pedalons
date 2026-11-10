@@ -1854,56 +1854,6 @@ class _GalleryBodyState extends State<_GalleryBody> {
           ],
         ),
 
-        // ── C7 ────────────────────────────────────────────────────────────
-        _Block(
-          title: 'C7 · PdlDetentSheet',
-          padded: false,
-          children: <Widget>[
-            const _PaddedCaption('crans .18 / .5 / .92 · pied fixe'),
-            SizedBox(
-              height: 320,
-              child: Stack(
-                children: <Widget>[
-                  Positioned.fill(child: ColoredBox(color: c.surfaceAlt)),
-                  PdlDetentSheet(
-                    headerBuilder: (BuildContext context, double extent) =>
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: PdlSpacing.section,
-                            vertical: PdlSpacing.sectionTightV,
-                          ),
-                          child: Text(
-                            extent > 0.35 ? '12 parcours' : '12 parcours ›',
-                            style: t.sectionTitle,
-                          ),
-                        ),
-                    bodyBuilder:
-                        (
-                          BuildContext context,
-                          ScrollController controller,
-                          double footerInset,
-                        ) => ListView.builder(
-                          controller: controller,
-                          padding: EdgeInsets.only(bottom: footerInset),
-                          itemCount: 20,
-                          itemBuilder: (BuildContext context, int i) =>
-                              PdlSettingRow(
-                                title: 'Boucle n° ${i + 1}',
-                                onTap: () {},
-                              ),
-                        ),
-                    footer: PdlActionBar(
-                      children: <Widget>[
-                        PdlButton(label: 'Filtrer', onPressed: () {}),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
         // ── C9 ────────────────────────────────────────────────────────────
         _Block(
           title: 'C9 · PdlStageRail',

@@ -65,7 +65,6 @@ export 'pdl_wind_arrow.dart';
 export 'pdl_action_bar.dart';
 export 'pdl_app_bar.dart';
 export 'pdl_bottom_tabs.dart';
-export 'pdl_detent_sheet.dart';
 export 'pdl_full_sheet.dart';
 export 'pdl_pinned_toolbar.dart';
 export 'pdl_prev_next_nav.dart';

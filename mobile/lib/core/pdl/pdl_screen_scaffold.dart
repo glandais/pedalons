@@ -74,8 +74,8 @@ class PdlScreenScaffold extends StatelessWidget {
   /// Barre d'onglets ([PdlBottomTabs]), ou le rail des grands écrans.
   final Widget? bottomTabs;
 
-  /// Posé au-dessus de tout le corps, sous les barres : une feuille à crans,
-  /// un bouton flottant de carte.
+  /// Posé au-dessus de tout le corps, sous les barres : un bouton flottant de
+  /// carte, par exemple.
   final Widget? floating;
 
   final bool constrainWidth;

@@ -73,7 +73,6 @@ class RideRouteSection extends ConsumerStatefulWidget {
     this.colorByKey,
     this.windChipKey,
     this.profileColorByKey,
-    this.gpsKey,
     this.mapKey,
     this.actions = true,
     this.profileTitle,
@@ -112,9 +111,6 @@ class RideRouteSection extends ConsumerStatefulWidget {
   /// La clé de l'interrupteur propre au profil, quand la carte garde une
   /// couleur par couche.
   final Key? profileColorByKey;
-
-  /// La clé du bouton « GPS » ; `keys.rideGroup.gps` par défaut.
-  final Key? gpsKey;
 
   /// Posée sur la carte : l'ancre d'un défilement qui la remonte à l'écran
   /// (le réticule d'un point de la frise météo, ledger `MOB-134`).
@@ -309,7 +305,7 @@ class _RideRouteSectionState extends ConsumerState<RideRouteSection>
       children: <Widget>[
         if (target.offered(watchGpsServices()))
           GpsButton(
-            key: widget.gpsKey ?? keys.rideGroup.gps,
+            key: keys.rideGroup.gps,
             compact: true,
             loading: gpsExporting,
             onPressed: (BuildContext button) => openGpsSheet(target, button),

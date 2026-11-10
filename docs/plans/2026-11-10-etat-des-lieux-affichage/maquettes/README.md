@@ -28,9 +28,11 @@ Pour republier : `python3 gen_canvas.py` depuis ce dossier, puis envoyer `projec
 
 ## Ce qui reste ouvert
 
-- Les décisions de `KIT.md` §8 ne sont pas encore dans le code : ledger `MOB-134`, plan [2026-11-10-refonte-ecrans-detail-mobile.md](../../2026-11-10-refonte-ecrans-detail-mobile.md).
+- Les décisions de `KIT.md` §8 sont dans le code de l'app depuis le 10 novembre 2026 (ledger `MOB-134`, plan
+  [2026-11-10-refonte-ecrans-detail-mobile.md](../../2026-11-10-refonte-ecrans-detail-mobile.md)) ; elles n'ont pas encore été
+  comparées à l'écran (ledger `MOB-135`).
 - Revêtement du parcours d'exemple : quatre catégories sur la fiche parcours, deux sur la sortie et le groupe.
 - États non dessinés : inscrit sur la sortie solo et sur l'étape ; sortie annulée ; sortie à plusieurs groupes sur un même parcours (avec « Points du parcours ») ; encadré déplacé sur un autre groupe que le mien ; feuille « GPS » sur iOS ; écrans sans description.
 - Relecture critique non traitée : météo basse sur la sortie solo, deux « km/h » voisins (vitesse et vent) dans les
   cartes, libellés du dénivelé et du nom de groupe qui varient, pas d'export sur le voyage.
-- Les maquettes web n'ont reçu aucune de ces décisions (« Vitesse moyenne » remplace « Allure moyenne » aussi sur le web).
+- Les maquettes web n'ont reçu aucune de ces décisions, ni le site, hors « Vitesse moyenne » (ledger `WEB-164`) : ledger `WEB-165`.

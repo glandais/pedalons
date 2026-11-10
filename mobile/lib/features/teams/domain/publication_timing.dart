@@ -90,7 +90,7 @@ PublicationPhase ridePhase(RideDto ride, {DateTime? now}) => publicationPhase(
 );
 
 /// La phase d'**un groupe** : de son départ (`startAt`) à son arrivée
-/// estimée (`estimatedArrival`, contrat 13.4.0, ledger `API-172`). Sans
+/// estimée (`estimatedArrival`, contrat 13.5.0, ledger `API-172`). Sans
 /// arrivée estimée (ni vitesse ni parcours), départ + 3 h — ce que le serveur
 /// compte pour ce groupe dans `RideDto.endDateTime`. Le statut est celui de
 /// la sortie.

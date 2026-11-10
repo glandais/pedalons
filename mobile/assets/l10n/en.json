@@ -594,21 +594,14 @@
   },
   "rides": {
     "title": "Rides",
-    "upcoming": "Upcoming rides",
     "noUpcoming": "No upcoming rides",
     "participants": {
       "one": "{count} participant",
       "other": "{count} participants"
     },
     "groups": "Groups",
-    "join": "Join",
     "leave": "Leave",
-    "joinSuccess": "Registration confirmed!",
-    "leaveSuccess": "Unregistered successfully",
-    "noGroupAvailable": "No group available",
-    "selectGroup": "Select a group",
     "description": "Description",
-    "actionFailed": "Couldn't update your registration in {group}.",
     "registered": "Registered",
     "registeredIn": "Registered · {group}",
     "finished": "Finished",
@@ -644,8 +637,6 @@
       "groupFirstDeparture": "{group} · first start {time}",
       "noGroup": "No group on this ride, so no registration"
     },
-    "startPlace": "Start",
-    "endPlace": "Finish",
     "comments": "Comments",
     "noRouteTitle": "No route available",
     "noRouteMessage": "The track has not been published yet. Start and finish places are still shown above.",
@@ -709,7 +700,6 @@
       "staleMessage": "The forecast couldn't be refreshed since {time}.",
       "notYetAvailable": "Forecast available from {date}.",
       "notYetAvailableNoDate": "The forecast will be available seven days before the start.",
-      "emptyTitle": "No weather for this ride",
       "emptyMessage": "There is no forecast to show for this ride.",
       "summaryAvailableFrom": "Weather from {date}",
       "unavailableTitle": "Weather unavailable for now.",
@@ -847,7 +837,6 @@
       "when": "Start date and time",
       "date": "Date",
       "time": "Time",
-      "zoneOf": "{zone} time",
       "places": "Places",
       "startPlace": "Start place",
       "endPlace": "Finish place",
@@ -1055,17 +1044,11 @@
     },
     "stages": "Stages",
     "mapColorBy": "Colour the route by",
-    "stages.empty": "No stages defined for this trip.",
     "join": "Join",
     "leave": "Leave",
-    "joinSuccess": "Trip registration confirmed!",
-    "leaveSuccess": "Trip unregistered successfully",
     "stage": {
       "notFound": "Stage not found",
       "backToTrip": "Back to trip",
-      "startPlace": "Start place",
-      "endPlace": "End place",
-      "viewRoute": "View route",
       "numberOf": "Stage {index} of {total}",
       "overview": "Overview",
       "notFoundMessage": "This stage does not exist or was removed from the trip.",
@@ -1089,8 +1072,7 @@
         "other": "{} days"
       },
       "totalDistance": "Total distance",
-      "totalElevation": "Total elevation gain",
-      "stages": "Stages"
+      "totalElevation": "Total elevation gain"
     },
     "cancelledTitle": "Trip cancelled.",
     "cancelledMessage": "This trip will not take place. No registration is possible.",
@@ -1112,21 +1094,10 @@
   },
   "routes": {
     "title": "Routes",
-    "empty": "No routes",
     "distance": "Distance",
-    "elevation": "Elevation",
-    "elevationDown": "Descent",
-    "surface": "Surface type",
     "description": "Description",
-    "createdBy": "Created by {name}",
     "share": "Share",
-    "mapPlaceholder": "Map (to be implemented)",
-    "download": "Download",
-    "downloadFit": "Download FIT",
     "uploadSuccess": "Route uploaded successfully!",
-    "uploadError": "Upload error: {error}",
-    "noDownload": "No files available",
-    "route": "Route",
     "list": {
       "count": {
         "zero": "No routes",
@@ -1230,7 +1201,6 @@
     "notFoundMessage": "This route does not exist or has been deleted.",
     "backToRoutes": "Back to routes",
     "loadErrorTitle": "Could not load",
-    "cursorHint": "The crosshair is synced both ways with the marker on the map.",
     "downloading": "Downloading...",
     "waypoints": {
       "title": "Route points",
@@ -1937,11 +1907,8 @@
   },
   "units": {
     "metric": "Metric",
-    "metricExample": "km, m, km/h",
     "imperial": "Imperial",
-    "imperialExample": "mi, ft, mph",
     "elevationGain": "elev. +",
-    "elevationLoss": "elev. −",
     "elevationGainLong": "Elevation gain",
     "byte": "B",
     "kilobyte": "kB",
@@ -2002,9 +1969,7 @@
     "groupOrganizer": "Group organizer",
     "emptyTripMessage": "Nobody has joined this trip yet.",
     "loadMore": "Show more",
-    "noun": "participants",
-    "searchByName": "Search by name...",
-    "noMatchGeneric": "No participant matches your search."
+    "noun": "participants"
   },
   "status": {
     "draft": "Draft",

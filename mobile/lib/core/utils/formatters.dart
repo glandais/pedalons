@@ -107,12 +107,6 @@ class AppFormatters {
     UnitSystem units = UnitSystem.metric,
   ]) => '${formatElevation(meters, units)} ${'units.elevationGain'.tr()}';
 
-  /// Dénivelé négatif, suffixé « D− ».
-  static String formatElevationLoss(
-    num meters, [
-    UnitSystem units = UnitSystem.metric,
-  ]) => '${formatElevation(meters, units)} ${'units.elevationLoss'.tr()}';
-
   /// Altitude d'un point du profil : même rendu qu'un dénivelé.
   static String formatAltitude(
     num meters, [
@@ -282,15 +276,6 @@ class AppFormatters {
 
   static String surfaceName(String surface) =>
       tr('surfaces.${surface.toLowerCase()}');
-
-  static IconData surfaceIcon(String surface) {
-    return switch (surface.toUpperCase()) {
-      'ROAD' => Icons.add_road,
-      'GRAVEL' => Icons.terrain,
-      'MTB' => Icons.landscape,
-      _ => Icons.help_outline,
-    };
-  }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Dates et heures

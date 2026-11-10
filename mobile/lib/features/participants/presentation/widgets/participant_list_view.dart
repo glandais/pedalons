@@ -19,8 +19,7 @@ import '../../providers/participant_list_provider.dart';
 /// `API-12`) : champ de recherche, pages successives derrière « Afficher
 /// plus », états vide, filtré et d'erreur, marque du meneur.
 ///
-/// Le corps de `ParticipantsSheet`, et l'onglet Participants de la page d'un
-/// groupe (ledger `MOB-67`), qui l'embarque tel quel.
+/// Le corps de `ParticipantsSheet`.
 class ParticipantListView extends ConsumerStatefulWidget {
   const ParticipantListView({
     super.key,
@@ -29,9 +28,6 @@ class ParticipantListView extends ConsumerStatefulWidget {
     this.organizerId,
     this.emptyMessageKey = 'participants.emptyMessage',
     this.team,
-    this.alwaysSearchable = false,
-    this.searchHintKey,
-    this.noMatchMessageKey,
   });
 
   /// De qui lister les participants.
@@ -49,16 +45,6 @@ class ParticipantListView extends ConsumerStatefulWidget {
   /// L'équipe qui modère un membre signalé depuis cette liste. Sans elle, les
   /// lignes ne s'ouvrent pas.
   final TeamPublicationDto? team;
-
-  /// Montrer la recherche quel que soit le total ; sinon, au-delà de huit.
-  final bool alwaysSearchable;
-
-  /// Le texte d'invite de la recherche, par défaut `participants.search`.
-  final String? searchHintKey;
-
-  /// Le message de la recherche sans résultat, par défaut celui qui cite la
-  /// saisie (`participants.noMatchMessage`).
-  final String? noMatchMessageKey;
 
   @override
   ConsumerState<ParticipantListView> createState() =>
@@ -114,12 +100,12 @@ class _ParticipantListViewState extends ConsumerState<ParticipantListView> {
       children: <Widget>[
         // Au-delà de ce que le détail embarque, la liste ne tient plus d'un
         // coup d'œil : la recherche devient utile.
-        if (widget.alwaysSearchable || widget.count > 8)
+        if (widget.count > 8)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: PdlSearchField(
               value: _search,
-              hintText: (widget.searchHintKey ?? 'participants.search').tr(),
+              hintText: 'participants.search'.tr(),
               onChanged: (String? v) =>
                   setState(() => _search = (v ?? '').trim()),
               clearTooltip: 'common.clearSearch'.tr(),
@@ -154,11 +140,9 @@ class _ParticipantListViewState extends ConsumerState<ParticipantListView> {
           PdlEmptyState(
             variant: PdlEmptyVariant.filtered,
             title: 'participants.noMatchTitle'.tr(),
-            message: widget.noMatchMessageKey != null
-                ? widget.noMatchMessageKey!.tr()
-                : 'participants.noMatchMessage'.tr(
-                    namedArgs: <String, String>{'search': _search},
-                  ),
+            message: 'participants.noMatchMessage'.tr(
+              namedArgs: <String, String>{'search': _search},
+            ),
             actions: <Widget>[
               PdlButton(
                 label: 'common.clearSearch'.tr(),

@@ -211,8 +211,7 @@ void main() {
     ]) {
       expect(find.text(old), findsNothing);
     }
-    // Plus de feuille à crans posée sur la carte, plus de barre d'actions.
-    expect(find.byType(PdlDetentSheet), findsNothing);
+    // Plus de barre d'actions : une page qui défile.
     expect(find.byType(PdlActionBar), findsNothing);
     expect(find.byType(RouteSection), findsOneWidget);
 

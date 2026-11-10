@@ -180,7 +180,7 @@ WeatherLegDto fixtureLeg({
   departure: departure,
 );
 
-/// Le résumé d'un leg (`WeatherLegDto.summary`, API 13.4.0) : la ligne météo
+/// Le résumé d'un leg (`WeatherLegDto.summary`, API 13.5.0) : la ligne météo
 /// de la carte d'un groupe ou d'une étape.
 RideWeatherSummaryDto fixtureLegSummary({
   String status = 'OK',

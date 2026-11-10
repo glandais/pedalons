@@ -172,14 +172,10 @@ void main() {
       );
     });
 
-    test('D+ et D− portent leur suffixe traduit', () {
+    test('D+ porte son suffixe traduit', () {
       expect(
         withLocale('fr', fr, () => AppFormatters.formatElevationGain(1200)),
         '1${String.fromCharCode(narrowNbsp)}200${String.fromCharCode(nbsp)}m D+',
-      );
-      expect(
-        withLocale('fr', fr, () => AppFormatters.formatElevationLoss(1200)),
-        '1${String.fromCharCode(narrowNbsp)}200${String.fromCharCode(nbsp)}m D−',
       );
       expect(
         withLocale('en', en, () => AppFormatters.formatElevationGain(1200)),

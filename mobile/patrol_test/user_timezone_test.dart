@@ -15,10 +15,10 @@ import 'common.dart';
 /// « 08:00 » and that day in Paris, then « heure de Paris (… chez vous) » with the Auckland time —
 /// not the device's, which would read the same instant otherwise.
 ///
-/// Clock times are written by [AppFormatters.formatTime], whose shape depends on the phone's
-/// 12/24 h setting and on the app's language (« 8:00 AM » in English on a 12 h phone). The expected
-/// strings go through it too — it reads the same globals the running app set — rather than
-/// hard-coding « 08:00 ».
+/// Clock times are written by [AppFormatters.formatTime], whose shape depends on the app's
+/// language only (« 8:00 AM » in English, « 08:00 » in French — the phone's 12/24 h setting is no
+/// longer read, docs/LEDGER_*.md MOB-134). The expected strings go through it too — it reads the
+/// same globals the running app set — rather than hard-coding « 08:00 ».
 void main() {
   const String zone = 'Pacific/Auckland';
   const String teamZone = 'Europe/Paris';

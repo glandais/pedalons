@@ -23,10 +23,6 @@ import 'ride_weather_widgets.dart';
 /// compose en section Météo d'un écran de détail (ledger `MOB-134`) ; le bloc
 /// « départ » au point de rendez-vous vit dans `departure_weather_section.dart`.
 
-/// L'état « Météo indisponible » plein écran, avec « Réessayer ».
-Widget weatherUnavailableSliver(VoidCallback onRetry) =>
-    SliverToBoxAdapter(child: WeatherUnavailableState(onRetry: onRetry));
-
 /// « Météo indisponible » (statut `UNAVAILABLE`, ou échec de l'appel), avec
 /// « Réessayer ».
 class WeatherUnavailableState extends StatelessWidget {

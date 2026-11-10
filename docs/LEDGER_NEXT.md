@@ -65,30 +65,46 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       (contrat `13.4.0`), `RouteDto`, `RouteDetailDto`, `RideDto` et `RideGroupDto` disent, pour
       chacun des services de la personne en synchro automatique, si le parcours y est déjà (`state`,
       `syncedAt`) ; l'app ne le lit pas, et « Envoyer vers l'appareil » ne dit pas que Pédalons s'en
-      charge déjà. Lieux : `features/routes/presentation/widgets/route_download_actions.dart`,
-      `features/rides/presentation/widgets/ride_group_route_actions.dart`, et la carte d'étape
-      (`features/trips/presentation/widgets/stage_card.dart`, via `TripStageDto.route`). Même
+      charge déjà. Lieu : depuis `MOB-134`, un parcours ne s'envoie plus que par la feuille du bouton
+      « GPS », section « Vers un appareil » (`features/routes/presentation/gps_sheet.dart`, une ligne
+      par service), que le bouton ouvre partout — fiche parcours, étape, sortie, page groupe, carte de
+      son groupe, accueil, tableau de bord ; `TripStageDto.route` pour l'étape. Même
       vocabulaire d'état que l'interrupteur (`profile.gps.autoSync.*`). Pendant web : `WEB-163`.
 
-- [ ] `MOB-134` **Refonte des écrans de détail : sortie, groupe, voyage, étape, parcours (L, 13 lots)** — les cinq
-      écrans n'ont ni la même ossature ni les mêmes formats, et s'écartent du web (carte tardive sur la sortie et
-      l'étape, météo en onglet ou en page poussée, export en quatre présentations, heure du groupe en petit). Plan
-      [`2026-11-10-refonte-ecrans-detail-mobile.md`](plans/2026-11-10-refonte-ecrans-detail-mobile.md) ; règles dans
-      [`maquettes/KIT.md`](plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) §8, rendus dans `maquettes/png/`.
-      Dépend de `API-169` à `API-172`.
-- [ ] `MOB-135` **Refonte des écrans de détail : recette sur appareil de `MOB-134` (S)** — petit écran, texte à
-      130 %, mode sombre, impérial, anglais en 12 h, fuseau différent ; feuille GPS Android (enregistrer, envoyer) et
-      iOS (partager) ; « Connecter un compteur » vers `/profil/appareils`.
+- [ ] `MOB-135` **Refonte des écrans de détail : recette sur appareil de `MOB-134` (S)** — la refonte est livrée
+      (`MOB-134`) sans avoir été regardée : **aucune passe Patrol, ni iOS ni Android, depuis le lot 6**, et les
+      écrans voyage, parcours et étape (lots 9 à 11) n'ont **jamais été vus à l'écran** (la sortie à plusieurs
+      groupes l'a été une fois sur simulateur, au lot 8). Tests Patrol adaptés à la lecture, jamais lancés :
+      `ride_group_page_test`, `ride_leader_test`, `ride_participants_map_test`, `ride_past_cancelled_test`,
+      `ride_solo_group_test`, `report_members_test`, `trip_join_leave_test`, `user_timezone_test`, et les modules
+      `ride`, `trip`, `routes`, `detail_menus` ; les lancer d'abord (iOS puis Android). Puis sur appareil : petit
+      écran, texte à 130 %, mode sombre, impérial, anglais en 12 h, fuseau différent ; feuille GPS Android
+      (enregistrer, envoyer) et iOS (partager) ; « Connecter un compteur » vers `/profil/appareils` ;
+      `?tab=weather` depuis un lien profond à froid, qui défile jusqu'à la météo ; puces de groupe épinglées ; ce
+      que `MOB-68` et `MOB-52` laissaient à voir de la page groupe et de la météo. **Captures des stores à
+      refaire** (`mobile/screenshots/`, iPhone, iPad et Play, fr et en) : `01-home` (bouton « GPS » de la carte
+      « Ma prochaine sortie »), `01-trip` (iPad), `02-ride` (cartes de groupe), `03-weather` (la page groupe n'a
+      plus d'onglet Météo : `rideGroupWeather` la fait défiler jusqu'à sa section), `04-route` (page qui
+      défile) ; à revoir `05-dashboard` (bouton « GPS » de « Mes prochaines sorties »). Le mode captures compile
+      et pointe sur des écrans existants. Plan
+      [`2026-11-10-refonte-ecrans-detail-mobile.md`](plans/2026-11-10-refonte-ecrans-detail-mobile.md), lot 12.
+- [ ] `MOB-136` **Lieux de départ et d'arrivée : l'adresse n'est plus affichée (S)** — depuis `MOB-134`, les lieux
+      des écrans de détail sont des liens d'itinéraire (`PdlPlaceRow.link`, `ridePlaceLinks` dans
+      `features/rides/presentation/widgets/ride_departure_block.dart`, `stage_detail_page.dart`,
+      `trip_detail_page.dart`) qui ne montrent que le nom : `PlaceDetailDto.address`, que la sortie et l'étape
+      affichaient sous le nom (« Place de Jaude, 63000 Clermont-Ferrand »), ne sert plus qu'à ouvrir l'itinéraire
+      faute de coordonnées. Les maquettes ne l'ont pas tranché (leur lieu d'exemple porte la ville dans son nom).
+      Remettre l'adresse en `xs` sous le lien, ou ranger l'écart dans « Délibérément dehors » avec sa raison.
 - [ ] `MOB-130` **Contrôles de carte : recette sur appareil de `MOB-129` (S)** — rien ne se voit sans
       carte native (l'échelle et le crédit n'existent pas en test de widget), plan
       [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md). À vérifier, iPhone SE compris et texte à 130 % : l'échelle et le ⓘ au-dessus
       de la carte du bas (interrupteur + légende du vent) et de la carte flottante de l'onglet
       Parcours ; la colonne juste au-dessus du ⓘ, zone sûre basse comprise (indicateur d'accueil,
       barre de gestes Android) ; « Fermer » sous l'encoche, en portrait et en paysage, sans toucher la
-      pilule ; une vignette d'étape de 240 px en Météo (légende, échelle, crédit, « Agrandir » :
-      reste-t-il assez de carte ?) ; la fiche parcours aux trois crans de sa feuille (saut de
-      l'échelle et de Calques au franchissement, rien sous la barre du haut à 0,92) ; le crédit
-      déplié, qui s'étend vers le haut sur la colonne ; « Autour de moi » en échec, en paysage.
+      pilule ; le crédit déplié, qui s'étend vers le haut sur la colonne ; « Autour de moi » en
+      échec, en paysage. La vignette d'étape de la page Météo et la feuille à crans de la fiche
+      parcours n'existent plus depuis `MOB-134` : la carte de ces écrans est celle de `RouteSection`
+      (44 % de l'écran), à regarder avec `MOB-135`.
 
 
 
@@ -96,13 +112,12 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       teste sans carte native (`MOB-91` à `MOB-94`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md)) :
       pastilles et goutte sur un vrai parcours à plusieurs traces ; toucher d'une pastille et
       déplacement de la carte autour ; flèches justes sur une carte tournée à deux doigts ; pastille
-      en sombre et à 130 % de texte ; contraste du gris travers sur fond sombre ; onglet Météo : la
-      couche de toucher de la vignette (iOS et Android), le ⓘ des crédits et ses liens au travers,
-      défilement de la page sur la carte, curseur lisible sur le tracé coloré ; voyage : lisibilité
-      avec beaucoup d'étapes, toutes au trait « mis en avant » ; étape : légende au-dessus du
-      réticule de `RouteMap`, place de la puce, débordement des chiffres de l'en-tête de la fiche
-      parcours (`route_sheet_header.dart`, antérieur, vu en test). À trancher : faire remonter la
-      page vers la carte quand on touche un point bas dans la frise.
+      en sombre et à 130 % de texte ; contraste du gris travers sur fond sombre ; le ⓘ des crédits
+      et ses liens, défilement de la page sur la carte, curseur lisible sur le tracé coloré ; voyage :
+      lisibilité avec beaucoup d'étapes, toutes au trait « mis en avant » ; étape : légende au-dessus
+      du réticule, place de la puce. Depuis `MOB-134`, plus d'onglet Météo ni de vignette qui
+      s'ouvre au toucher, plus d'en-tête de fiche parcours (`route_sheet_header.dart` retiré), et
+      toucher un point de la frise fait remonter la page jusqu'à la carte (tranché).
 - [ ] `MOB-86` **Points de parcours : recette sur appareil** — à faire sur Android et iOS, rien ne
       se teste sans carte native : `icon-image: ['get','icon']` et l'`interpolate` de `icon-size`
       posés en `layout` (jusqu'ici les expressions n'étaient qu'en `paint`) ; types des `properties`
@@ -199,14 +214,10 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       seul jeton** à faire tomber à 0 (`PdlMotion.blurToolbar`, surface opaque), aucun écran à
       rouvrir.
 - [ ] `MOB-52` **Météo : recette sur appareil de ce que `MOB-68` ne couvre pas (S)** — la météo des
-      sorties de `MOB-51` a été refondue par `MOB-67` et `MOB-69` : l'écran « Météo du parcours »
-      n'existe plus (onglet Météo de la page du groupe) et la carte du détail est devenue
-      `RideDepartureWeatherCard` ; leur recette est celle de `MOB-68`. Reste la météo des étapes de
-      voyage (`MOB-57`), vérifiée par `flutter analyze` et les tests de widgets seulement, jamais
-      comparée à la maquette (canevas « Intégration météo ») : carte de l'écran 25 sans place
-      réservée au chargement, pull-to-refresh nouveau de l'écran 25 face au rail épinglé, clés
-      `keys.ride.weather*` réutilisées par `stage_weather_page.dart` et `stage_weather_card.dart` et
-      donc en double sur l'écran 24 ; clair et sombre, text scaling. À trancher avec le
+      sorties de `MOB-51` a été refondue par `MOB-67` et `MOB-69`, puis par `MOB-134` : une seule
+      section Météo (`WeatherSection`) sur la page groupe, la sortie solo ou sans groupe et l'étape ;
+      `stage_weather_page.dart` et `stage_weather_card.dart` sont retirés, et avec eux les clés
+      `keys.ride.weather*` en double. Leur recette est celle de `MOB-135`. À trancher avec le
       propriétaire : garder la ligne « Météo dès le … » (`NOT_YET_AVAILABLE`) sur les cartes du fil,
       qui ajoute une ligne à toutes les sorties à plus de 7 jours (`RideWeatherSummaryLine.shows`).
 
@@ -319,7 +330,12 @@ n'ont aucun appelant d'écran).
         **`profile.participations.count` reste** : `my_participations_page.dart` l'emploie.
 
 - [ ] `MOB-68` **Page d'un groupe de sortie (`MOB-67`) : recette sur appareil (S)** — les tests
-      Patrol et la suite `flutter test` complète sont verts (16 octobre 2026). Reste :
+      Patrol et la suite `flutter test` complète sont verts (16 octobre 2026). **Dépassé par
+      `MOB-134`** (10 novembre 2026) : la page n'a plus d'onglets ni de barre d'inscription, et la
+      ligne météo des cartes plus de pastille pluie bleue (« Pluie N % » en texte, l'alerte aux couleurs
+      d'avertissement, comme le bandeau) ; ce qui reste à
+      regarder (`?tab=weather` depuis un lien profond à froid, puces de groupe, cibles de 44 px)
+      l'est avec `MOB-135`, après quoi cette entrée se ferme. Reste, tel qu'écrit avant :
       - **Recette sur appareil**, clair et sombre, pour une sortie à plusieurs groupes et pour une
         sortie à un seul groupe (`MOB-69` : le lien du groupe renvoie au détail, `?tab=weather` y
         fait défiler jusqu'à la météo) : onglets et `?tab=weather` depuis un lien profond à froid
@@ -368,8 +384,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 - [ ] `WEB-161` **Contrôles de carte : recette à l'œil de `WEB-157` (S)** — scindé de `WEB-158`
       (les e2e sont passés le 10 novembre 2026), plan [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md).
       À l'œil, clair et sombre : l'ordre des deux colonnes ; la liste de la recherche par-dessus le zoom ;
-- [ ] `WEB-164` **« Vitesse moyenne » à la place d'« Allure moyenne », client régénéré (S)** — conséquence de
-      `MOB-134` : le libellé est partagé, et le contrat 13.5.0 ajoute des champs.
 - [ ] `WEB-165` **Aligner le web sur les décisions des cibles mobiles (M, à cadrer)** — heure de son groupe en gros,
       « Changer pour A », bouton « GPS » unique, tuiles dans le même ordre :
       [`maquettes/KIT.md`](plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) §8. Hors périmètre de `MOB-134`.
@@ -579,19 +593,12 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 
 ## API — Contrat d'API et backend
 
-- [ ] `API-169` **Météo par groupe : résumé et conditions de départ à l'heure du groupe (S, contrat 13.5.0)** — pour
-      `MOB-134`. `WeatherLegDto` n'a ni résumé (`legSummary` est réservé aux étapes) ni lever et coucher du soleil :
-      une carte de groupe ne peut pas afficher sa plage de températures, et « Météo au départ » reste à l'heure de la
-      sortie pour un groupe qui part plus tard. `service/weather/RideWeatherPlans.java`, `RideWeatherCalculator.java`.
-- [ ] `API-170` **Météo et inscription jugées par groupe, jusqu'à la fin (S)** — pour `MOB-134`. Dès que
-      `ride.dateTime` est passé, toute la météo passe en `OUT_OF_RANGE` (`RideWeatherService.java:109`) et `join`
-      répond `RIDE_PAST` (`RideService.java:575`), même pour un groupe qui n'est pas encore parti.
-- [ ] `API-171` **Changement de groupe en un appel (S, contrat 13.5.0)** — pour `MOB-134`. Changer de groupe est
-      aujourd'hui quitter puis rejoindre, deux appels : si le second échoue, la personne n'est plus inscrite nulle
-      part. `POST …/rides/{rideSlug}/groups/{groupId}/switch`, une transaction (`RideService.java`).
-- [ ] `API-172` **Arrivée et durée estimées par groupe et par étape (S, contrat 13.5.0)** — pour `MOB-134`. L'arrivée
-      n'existe que dans la réponse météo (`WeatherLegDto.arrivalTime`) : hors fenêtre de prévision, l'écran n'a ni
-      arrivée ni durée. `RideGroupDto` et `TripStageDto`, `PublicationEndCalculator.java`.
+- [ ] `API-173` **La ligne météo d'un voyage dans les listes s'arrête au départ de sa dernière étape (S)** — reste
+      de `API-170` : la page du voyage et celle de l'étape gardent leur météo jusqu'à la fin estimée de l'étape,
+      mais `TripWeatherLookup.forTrips` écarte encore un voyage dès que `TripListSummary.endDate` (le **départ** de
+      la dernière étape) est passé : pendant cette dernière étape, la carte du voyage dans le fil, l'agenda ou le
+      tableau de bord perd sa ligne météo alors que la page la montre. Juger sur la fin (`PublicationEndCalculator`,
+      comme `RideWeatherLookup`), sans requête de plus par voyage (`PublicationQueryCountTest`).
 - [ ] `API-161` **Météo de départ d'une étape et inscription refusée à un voyage terminé (S, contrat
       13.3.0)** — pour `WEB-155`. `TripStageWeatherDto.departure` (lu au premier point de prévision de
       l'étape, `TripWeatherService.departure`) donne à l'étape l'encadré « Jour » et la température au

@@ -68,10 +68,8 @@ import 'weather_map_layer.dart';
 /// couleur ; seul le mode « Météo » du parcours du groupe y reste (la puce
 /// sous la carte, l'interrupteur de la feuille des couches en plein écran).
 ///
-/// L'onglet Météo de la page d'un groupe la pose avec [forceWeatherMode] :
-/// le mode « Météo » d'office, sans toucher au choix fait dans l'Aperçu, un
-/// toucher qui ouvre le plein écran (pastilles comprises), et le réticule d'un point de la frise
-/// ([cursorDistance], ledger `MOB-93`).
+/// Le réticule d'un point de la frise météo touché ([cursorDistance], ledger
+/// `MOB-93`) se pose sur le parcours du groupe.
 class RideGroupsMap extends ConsumerWidget {
   const RideGroupsMap({
     super.key,
@@ -82,7 +80,6 @@ class RideGroupsMap extends ConsumerWidget {
     this.seedExtent,
     this.weatherLeg,
     this.weatherAttribution,
-    this.forceWeatherMode = false,
     this.cursorDistance,
   });
 
@@ -111,16 +108,9 @@ class RideGroupsMap extends ConsumerWidget {
   /// légende du mode « Météo », encastrée comme en plein écran.
   final WeatherAttributionDto? weatherAttribution;
 
-  /// Le mode « Météo » imposé (l'onglet Météo d'un groupe) : le tracé se
-  /// colore d'office dès que le leg a une prévision, sans lire ni écrire
-  /// [rideMapColorModeProvider] — celui-ci reste le choix de la personne dans
-  /// l'Aperçu. Pas d'interrupteur, et la carte encastrée ouvre le plein écran
-  /// au toucher.
-  final bool forceWeatherMode;
-
   /// Le réticule, en mètres le long du parcours du groupe, **distance chaînée
   /// des DTO météo** (traces bout à bout, saut nul : [pointsAtDistances]) —
-  /// le point de la frise touché dans l'onglet Météo. `null` : aucun.
+  /// le point de la frise météo touché. `null` : aucun.
   final double? cursorDistance;
 
   /// Vrai dans la page plein écran, que ce widget construit lui-même : la
@@ -204,8 +194,8 @@ class RideGroupsMap extends ConsumerWidget {
             showsWindOnMap(weatherLeg)
         ? weatherLeg
         : null;
-    // Ce qui colore le parcours du groupe : le choix fait sous la carte, ou
-    // la Météo imposée, ramené sur la pente quand il n'est pas proposé.
+    // Ce qui colore le parcours du groupe : le choix fait sous la carte,
+    // ramené sur la pente quand il n'est pas proposé.
     final List<RouteColorBy> modes = rideMapColorModes(
       ref,
       rideKey: rideKey,
@@ -214,9 +204,7 @@ class RideGroupsMap extends ConsumerWidget {
       weatherLeg: weatherLeg,
     );
     final RouteColorBy colorBy = resolveRouteColorBy(
-      forceWeatherMode
-          ? RouteColorBy.wind
-          : ref.watch(rideMapColorModeProvider(rideKey)),
+      ref.watch(rideMapColorModeProvider(rideKey)),
       modes,
     );
     final bool windMode = windLeg != null && colorBy == RouteColorBy.wind;
@@ -293,10 +281,8 @@ class RideGroupsMap extends ConsumerWidget {
               seedExtent: extent,
               weatherLeg: weatherLeg,
               weatherAttribution: weatherAttribution,
-              forceWeatherMode: forceWeatherMode,
               cursorDistance: cursorDistance,
             ),
-      tapOpensFullscreen: forceWeatherMode,
       labels: PdlMapHeroLabels(
         enterFullscreen: 'map.fullscreen'.tr(),
         exitFullscreen: 'map.exitFullscreen'.tr(),
@@ -313,7 +299,7 @@ class RideGroupsMap extends ConsumerWidget {
       // parcours) n'a que « Météo » à basculer : en plein écran, dans la
       // feuille, comme l'ombrage. Une carte colorée comme un parcours a
       // l'interrupteur dans la carte du bas (`bottomLayer`, ledger `MOB-105`).
-      switches: fullscreen && !likeRoute && windLeg != null && !forceWeatherMode
+      switches: fullscreen && !likeRoute && windLeg != null
           ? <PdlMapHeroSwitch>[
               weatherMapModeSwitch(
                 value: windMode,
@@ -354,10 +340,8 @@ class RideGroupsMap extends ConsumerWidget {
       // « Agrandir » montent au-dessus (ledger `docs/LEDGER_*.md MOB-129`).
       bottomLayer: routeMapBottomLayer(
         // En plein écran, le même interrupteur que sous la carte encastrée,
-        // sur le même état (ledger `MOB-105`). Pas dans l'onglet Météo, qui
-        // reste en Météo.
-        modeSwitch:
-            fullscreen && likeRoute && !forceWeatherMode && modes.length > 1
+        // sur le même état (ledger `MOB-105`).
+        modeSwitch: fullscreen && likeRoute && modes.length > 1
             ? RouteColorModeSwitch(
                 key: keys.routeDetail.fullscreenColorBy,
                 modes: modes,
@@ -368,9 +352,6 @@ class RideGroupsMap extends ConsumerWidget {
                         v,
               )
             : null,
-        // Sur la vignette qui s'ouvre au toucher, la carte du bas ne garde
-        // pas le doigt pour elle : il va au plein écran.
-        passTouches: forceWeatherMode && !fullscreen,
         legend: windMode
             ? RideWindMapLegend(
                 leg: windLeg,
@@ -431,10 +412,9 @@ class RideGroupsMap extends ConsumerWidget {
     // Les pastilles météo et la goutte, en mode « Météo », encastrée comme
     // en plein écran (ledger `MOB-107`, qui revient sur `MOB-92`). La
     // vignette ne se manipule pas : toucher une pastille y ouvre le plein
-    // écran, jamais sa feuille — celle-ci est pour le plein écran. Sur
-    // l'onglet Météo, la couche de `tapOpensFullscreen` prend de toute façon
-    // le doigt avant elles ; le réticule de la frise, une couche de la carte,
-    // passe sous les pastilles sans les déplacer.
+    // écran, jamais sa feuille — celle-ci est pour le plein écran. Le
+    // réticule de la frise, une couche de la carte, passe sous les pastilles
+    // sans les déplacer.
     final UnitSystem units = ref.watch(unitSystemProvider);
     final List<PdlMapMarker> weatherMarkers =
         windLeg != null && windRoute != null

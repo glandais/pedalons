@@ -19,7 +19,7 @@ import 'weather_leg_sections.dart';
 /// D'où viennent l'heure et les conditions de « Météo au départ de … ».
 enum WeatherDepartureOf {
   /// Celles du leg fourni, quand il en porte (`WeatherLegDto.departure` :
-  /// le point de rendez-vous à l'heure **du groupe**, API 13.4.0) ; sinon
+  /// le point de rendez-vous à l'heure **du groupe**, API 13.5.0) ; sinon
   /// celles de la sortie.
   leg,
 
