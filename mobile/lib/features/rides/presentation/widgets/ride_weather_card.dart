@@ -1,3 +1,10 @@
+/// Les cartes météo que l'étape de voyage emprunte encore
+/// (`stage_weather_card.dart`, jusqu'au lot 11 du ledger `MOB-134`). Les
+/// sorties, elles, passent toutes par `WeatherSection` : la carte « Météo au
+/// départ » d'une sortie à plusieurs groupes (`RideWeatherCard`) est partie
+/// avec le lot 8 (docs/LEDGER_*.md MOB-134).
+library;
+
 import 'package:easy_localization/easy_localization.dart';
 // `Visibility` est à la fois un widget Flutter et un enum du contrat.
 import 'package:flutter/material.dart' hide Visibility;
@@ -14,207 +21,11 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../../../keys.dart';
-import '../../providers/ride_detail_provider.dart';
-import '../../providers/ride_weather_provider.dart';
-import 'departure_weather_section.dart';
-import 'weather_leg_sections.dart';
 import 'ride_weather_widgets.dart';
 
-/// La carte météo du détail d'une sortie **à plusieurs groupes** : « Météo
-/// au départ », seulement.
-///
-/// Les conditions au point de rendez-vous à l'heure de la sortie — ressenti,
-/// vent et rafales, pluie, lever et coucher du soleil —, puis le crédit et
-/// l'heure de la prévision. Ni lien, ni groupe, ni alerte de groupe : la météo
-/// d'un groupe le long de son parcours vit dans la section Météo de sa page,
-/// et sa ligne courte sur sa carte (ledger `MOB-67`).
-///
-/// La sortie solo et la sortie sans groupe passent par `WeatherSection`
-/// (docs/LEDGER_*.md MOB-134, lot 7) ; cette carte reste à la sortie à
-/// plusieurs groupes jusqu'à son lot (8), et ce fichier porte encore les
-/// cartes que l'étape de voyage emprunte (`stage_weather_card.dart`, lot 11).
-///
-/// Rien n'est rendu pour une sortie terminée ou annulée — sans même appeler
-/// l'API —, ni pour un statut que l'app ne connaît pas. `NO_LOCATION` n'est
-/// dit qu'aux organisateurs : un membre n'y peut rien.
-class RideWeatherCard extends ConsumerWidget {
-  const RideWeatherCard({super.key, required this.rideKey, required this.ride});
-
-  final RideKey rideKey;
-  final RideDto ride;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (ride.isPast || ride.isCancelled) return const SizedBox.shrink();
-
-    final AsyncValue<RideWeatherDto> weather = ref.watch(
-      rideWeatherProvider(rideKey),
-    );
-    final bool canSeeNoLocation = watchCanSeeWeatherNoLocation(
-      ref,
-      ride.team.slug,
-    );
-
-    Widget padded(Widget child) => Padding(
-      padding: const EdgeInsets.fromLTRB(
-        PdlSpacing.section,
-        0,
-        PdlSpacing.section,
-        PdlSpacing.section,
-      ),
-      child: child,
-    );
-
-    void retry() => ref.invalidate(rideWeatherProvider(rideKey));
-
-    return weather.when(
-      loading: () => _loading(padded),
-      // Un échec réseau se lit comme `UNAVAILABLE` : un enrichissement ne
-      // casse pas l'écran, et « Réessayer » suffit.
-      error: (Object _, StackTrace _) =>
-          padded(WeatherUnavailableCard(onRetry: retry)),
-      data: (RideWeatherDto dto) {
-        switch (rideWeatherViewOf(
-          dto.status,
-          canSeeNoLocation: canSeeNoLocation,
-        )) {
-          case RideWeatherView.hidden:
-            return const SizedBox.shrink();
-          case RideWeatherView.noLocation:
-            return padded(
-              PdlBanner(
-                key: keys.ride.weatherNoLocation,
-                tone: PdlBannerTone.info,
-                icon: PdlIcons.weatherUnknown,
-                message: 'rides.weather.noLocation'.tr(),
-              ),
-            );
-          case RideWeatherView.unavailable:
-            return padded(WeatherUnavailableCard(onRetry: retry));
-          case RideWeatherView.notYetAvailable:
-            return padded(
-              WeatherNotYetAvailableCard(availableFrom: dto.availableFrom),
-            );
-          case RideWeatherView.forecast:
-          case RideWeatherView.stale:
-            return padded(
-              RideDepartureWeatherCard(
-                weather: dto,
-                timezone: ride.timezone,
-                departureAt: ride.dateTime,
-              ),
-            );
-        }
-      },
-    );
-  }
-
-  /// Pendant le chargement, on ne réserve que la place d'un bloc qu'on sait
-  /// devoir afficher. Le détail porte déjà la ligne de résumé
-  /// (`RideDto.weather`, la même que les listes), présente seulement pour
-  /// `OK`, `STALE` et `NOT_YET_AVAILABLE` :
-  /// - `OK`/`STALE` : la carte prévision suivra, son squelette tient sa place ;
-  /// - `NOT_YET_AVAILABLE` : la carte est déjà connue, on la rend telle quelle ;
-  /// - pas de résumé (brouillon, `NO_LOCATION`, rien en cache, statut
-  ///   inconnu) : rien, comme le web. Le bloc qui apparaît ensuite (bandeau
-  ///   aux organisateurs, « indisponible ») ne fait sauter l'écran qu'une fois,
-  ///   et le cas le plus courant — un membre, sans lieu — pas du tout.
-  Widget _loading(Widget Function(Widget) padded) {
-    final RideWeatherSummaryDto? summary = ride.weather;
-    if (summary == null) return const SizedBox.shrink();
-    return switch (WeatherStatus.fromJson(summary.status)) {
-      WeatherStatus.ok || WeatherStatus.stale => padded(
-        const PdlSkeleton(height: 96, borderRadius: PdlRadii.cardAll),
-      ),
-      WeatherStatus.notYetAvailable => padded(
-        WeatherNotYetAvailableCard(availableFrom: summary.availableFrom),
-      ),
-      _ => const SizedBox.shrink(),
-    };
-  }
-}
-
-/// « Météo au départ » d'une sortie, en carte : les conditions au point de
-/// rendez-vous ([DepartureConditionsBlock]), la marque « Prévision ancienne »,
-/// le crédit et l'heure de la prévision.
-class RideDepartureWeatherCard extends ConsumerWidget {
-  const RideDepartureWeatherCard({
-    super.key,
-    required this.weather,
-    required this.timezone,
-    this.departureAt,
-  });
-
-  final RideWeatherDto weather;
-
-  /// Le fuseau de la sortie : lever, coucher du soleil et alerte s'y lisent.
-  final String? timezone;
-
-  /// Le départ que la prévision décrit (`RideDto.dateTime`) : le titre le
-  /// dit, « Météo au départ de 09:00 » (ledger `MOB-115`).
-  final String? departureAt;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final PdlColors c = context.pdl;
-    final PdlTypography t = context.pdlText;
-    final UnitSystem units = ref.watch(unitSystemProvider);
-    final WeatherConditionsDto? now = weather.departure.conditions;
-    final bool stale =
-        WeatherStatus.fromJson(weather.status) == WeatherStatus.stale;
-    final DateTime? fetchedAt = weather.fetchedAt == null
-        ? null
-        : DateTime.tryParse(weather.fetchedAt!);
-
-    return PdlCard(
-      key: keys.ride.weatherCard,
-      flat: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  departureWeatherTitle(departureAt, timezone),
-                  style: t.xs,
-                ),
-              ),
-              if (stale)
-                PdlBadge(
-                  label: 'rides.weather.stale'.tr(),
-                  tone: PdlFamily.yellow.soft(c),
-                  icon: PdlIcons.warning,
-                ),
-            ],
-          ),
-          const SizedBox(height: PdlSpacing.badgeGap),
-          if (now != null)
-            DepartureConditionsBlock(
-              conditions: now,
-              units: units,
-              sunrise: weather.departure.sunrise,
-              sunset: weather.departure.sunset,
-              timezone: timezone,
-            )
-          else
-            Text('rides.weather.unavailableTitle'.tr(), style: t.sub),
-          const SizedBox(height: PdlSpacing.cardTight),
-          WeatherAttributionBlock(
-            key: keys.ride.weatherAttribution,
-            attribution: weather.attribution,
-            fetchedAt: fetchedAt,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// La carte « prévision » : le départ, le vent le long du parcours de [leg]
-/// et son alerte pluie, le lien vers l'écran et le crédit. Partagée par la
-/// sortie (départ au point de rendez-vous) et l'étape de voyage (départ = le
-/// premier point de passage de son leg).
+/// et son alerte pluie, le lien vers l'écran et le crédit — celle de l'étape
+/// de voyage (départ = le premier point de passage de son leg).
 class WeatherForecastCard extends ConsumerWidget {
   const WeatherForecastCard({
     super.key,

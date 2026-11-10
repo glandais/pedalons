@@ -47,8 +47,12 @@ void main() {
         ledId,
       ]);
 
+      // « Changer pour » on the other card: one call, no banner (ledger `MOB-134`, lot 8). The
+      // card left behind then offers to switch back.
       await modules.ride.switchTo(freeId);
-      expect(modules.ride.offersJoin(ledId), isTrue);
+      await modules.ride.showGroup(ledId);
+      expect(modules.ride.offersSwitch(ledId), isTrue);
+      expect(modules.ride.offersJoin(ledId), isFalse);
       expect(await backend.registeredGroupIds(member, teamSlug, rideSlug), [
         freeId,
       ]);

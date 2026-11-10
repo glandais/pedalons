@@ -148,7 +148,7 @@ class RideGroupParticipantsSection extends ConsumerWidget {
               ),
           ],
           if (canLeave)
-            _LeaveLink(
+            RideGroupLeaveLink(
               pending: pending,
               onPressed: () => ref
                   .read(rideRegistrationProvider(rideKey).notifier)
@@ -162,11 +162,20 @@ class RideGroupParticipantsSection extends ConsumerWidget {
 
 /// « Quitter le groupe » : un lien discret en couleur de danger, sur 44 px
 /// de haut — pas un bouton à contour, qui pèserait autant que « Rejoindre ».
-class _LeaveLink extends StatelessWidget {
-  const _LeaveLink({required this.pending, required this.onPressed});
+/// Au pied de « Personnes inscrites » (page d'un groupe, sortie solo) et de
+/// la carte de son groupe (sortie à plusieurs groupes, docs/LEDGER_*.md
+/// MOB-134, lot 8). [linkKey] : `keys.rideGroup.leaveButton` par défaut.
+class RideGroupLeaveLink extends StatelessWidget {
+  const RideGroupLeaveLink({
+    super.key,
+    required this.pending,
+    required this.onPressed,
+    this.linkKey,
+  });
 
   final bool pending;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final Key? linkKey;
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +187,7 @@ class _LeaveLink extends StatelessWidget {
         button: true,
         enabled: !pending,
         child: InkWell(
-          key: keys.rideGroup.leaveButton,
+          key: linkKey ?? keys.rideGroup.leaveButton,
           onTap: pending ? null : onPressed,
           borderRadius: PdlRadii.mdAll,
           child: ConstrainedBox(

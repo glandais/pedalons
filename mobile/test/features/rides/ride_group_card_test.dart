@@ -39,9 +39,16 @@ void main() {
   setUpAll(() async {
     await loadTestTranslations();
     joinLabel = 'rides.groupJoin'.tr();
-    leaveLabel = 'rides.groupLeave'.tr();
+    leaveLabel = 'rides.groupLeaveLong'.tr();
     fullLabel = 'rides.groupFull'.tr();
     joiningLabel = 'rides.joining'.tr();
+  });
+
+  int switched = 0;
+  int left = 0;
+  setUp(() {
+    switched = 0;
+    left = 0;
   });
 
   Future<void> pump(
@@ -73,7 +80,8 @@ void main() {
                 trackColor: multiTrackColor(g.sortOrder),
                 units: UnitSystem.metric,
                 onJoin: () {},
-                onLeave: () {},
+                onSwitch: () => switched++,
+                onLeave: () => left++,
               ),
             ),
           ),
@@ -456,7 +464,8 @@ void main() {
       expect(find.text(joinLabel), findsNothing);
     });
 
-    testWidgets('« Quitter » côtoie le badge « J\'y vais » — $mode', (
+    testWidgets('inscrite ici : le badge « J\'y vais » à côté du nom, aucun '
+        'bouton en tête, « Quitter le groupe » en pied de carte — $mode', (
       WidgetTester tester,
     ) async {
       await pump(
@@ -465,9 +474,49 @@ void main() {
         action: RideGroupAction.leave,
         brightness: brightness,
       );
-      expect(find.text(leaveLabel), findsOneWidget);
       // Le badge de la charte est en capitales.
-      expect(find.text('rides.registered'.tr().toUpperCase()), findsOneWidget);
+      final Finder badge = find.byKey(keys.ride.groupGoingBadge('g1'));
+      expect(
+        find.descendant(
+          of: badge,
+          matching: find.text('rides.registered'.tr().toUpperCase()),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(PdlButton), findsNothing);
+      final Finder link = find.byKey(keys.ride.groupLeaveButton('g1'));
+      expect(
+        find.descendant(of: link, matching: find.text(leaveLabel)),
+        findsOneWidget,
+      );
+      // Tout en bas : sous les visages et le compte.
+      expect(
+        tester.getTopLeft(link).dy,
+        greaterThan(tester.getTopLeft(find.textContaining('3/16')).dy),
+      );
+      await tester.tap(link);
+      expect(left, 1);
+    });
+
+    testWidgets('inscrite ailleurs : « Changer pour {groupe} », plein, un seul '
+        'geste — $mode', (WidgetTester tester) async {
+      await pump(
+        tester,
+        g: fixtureGroup(id: 'g2', name: 'A'),
+        action: RideGroupAction.switchTo,
+        brightness: brightness,
+      );
+      final Finder button = find.byKey(keys.ride.groupSwitchButton('g2'));
+      expect(button, findsOneWidget);
+      expect(
+        find.descendant(of: button, matching: find.text('Changer pour A')),
+        findsOneWidget,
+      );
+      expect(tester.widget<PdlButton>(button).variant, PdlButtonVariant.fill);
+      expect(find.text(joinLabel), findsNothing);
+      expect(find.byKey(keys.ride.groupLeaveButton('g2')), findsNothing);
+      await tester.tap(button);
+      expect(switched, 1);
     });
 
     testWidgets('« Complet » n\'est pas actionnable — $mode', (

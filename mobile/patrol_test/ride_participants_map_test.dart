@@ -7,9 +7,10 @@ import 'common.dart';
 ///
 /// Two groups, each on a route of its own. The groups map is a MapLibre platform view whose
 /// tracks Patrol cannot read: what it checks is the selection the map shares with the cards —
-/// the pill naming the selected group follows a tap on another group's card. « Voir la liste »
-/// then gathers the riders of **every** group, and nobody else. Last, the group's exports, in the
-/// GPS sheet its « GPS » button opens: « Fichier GPX » (and « Fichier FIT » when the route has
+/// the pill naming the selected group follows a tap on another group's card. « Voir les N
+/// personnes inscrites », under the cards, then gathers the riders of **every** group, and nobody
+/// else. Last, the group's exports, in the GPS sheet its « GPS » button opens — on one's own
+/// group's card only (ledger `MOB-134`, lot 8), so the reader joins the group first: « Fichier GPX » (and « Fichier FIT » when the route has
 /// one) from the route's assets, no « Vers un appareil » but « Connecter un compteur » without a
 /// connected GPS service — which the e2e stack cannot connect — and sharing the GPX hands the
 /// downloaded file to the system share sheet, found in the native UI tree (it presents a
@@ -76,6 +77,10 @@ void main() {
       // The exports of a group, in its GPS sheet, follow its route's assets; with no GPS
       // service connected — the e2e stack cannot connect one — there is no « Vers un
       // appareil », and « Connecter un compteur » stands in its place.
+      // « GPS » is on one's own card only: none before joining.
+      await modules.ride.showGroup(groupB);
+      expect(modules.ride.offersGps(groupB), isFalse);
+      await modules.ride.join(groupB);
       await modules.ride.waitUntilGpsIsOffered(groupB);
       await modules.ride.openGpsSheet(groupB);
       final eastDetail = await backend.get(

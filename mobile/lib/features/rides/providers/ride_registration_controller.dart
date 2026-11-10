@@ -1,4 +1,3 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show KeepAliveLink;
@@ -17,8 +16,12 @@ import 'ride_detail_provider.dart';
 /// résolu par [resolveApiError] — donc l'explication du serveur quand il y en a
 /// une, et le motif hors-ligne quand c'est le cas — et propose « Réessayer ».
 enum RegistrationFailureReason {
-  /// L'utilisateur est déjà inscrit **ailleurs** dans cette sortie. Le seul cas
-  /// où le bandeau porte une action inline : « Quitter {groupe actuel} ».
+  /// Le serveur répond que l'utilisateur est déjà inscrit **ailleurs** dans
+  /// cette sortie, sans que l'app l'ait su : l'inscription a été faite sur un
+  /// autre appareil. Le filet d'une course entre deux appareils — le détail
+  /// redemandé, les cartes offrent alors « Changer pour {groupe} » (ledger
+  /// `MOB-134`, lot 8). L'app ne pose plus ce motif d'elle-même : rejoindre
+  /// depuis un autre groupe passe par [RideRegistrationController.switchGroup].
   alreadyRegistered,
 
   /// Le groupe visé a atteint sa capacité. État **terminal** : il n'y a pas de
@@ -45,8 +48,7 @@ class RegistrationFailure {
     required this.groupId,
     required this.groupName,
     required this.message,
-    this.blockingGroupId,
-    this.blockingGroupName,
+    this.leaving = false,
   });
 
   final RegistrationFailureReason reason;
@@ -61,16 +63,9 @@ class RegistrationFailure {
   /// Le message résolu, rendu en corps de bandeau.
   final String message;
 
-  /// Le groupe qui bloque, quand [reason] vaut
-  /// [RegistrationFailureReason.alreadyRegistered] : la cible de l'action
-  /// inline « Quitter {groupe} ».
-  final String? blockingGroupId;
-  final String? blockingGroupName;
-
-  /// L'action inline n'est offerte que si l'on sait quoi quitter.
-  bool get canSwitch =>
-      reason == RegistrationFailureReason.alreadyRegistered &&
-      blockingGroupId != null;
+  /// L'échec est celui d'une désinscription : « Réessayer » quitte à
+  /// nouveau, au lieu de rejoindre.
+  final bool leaving;
 }
 
 /// L'état de l'inscription à une sortie.
@@ -139,9 +134,8 @@ final rideRegistrationProvider = StateNotifierProvider.autoDispose
 
 /// La séquence d'inscription du §2.1 du plan, en un seul endroit :
 ///
-/// 1. si un **autre** groupe porte `registered == true`, on n'appelle pas —
-///    l'API répondrait 400, et le bandeau d'exclusivité dit la même chose sans
-///    aller-retour ni clignotement du bouton ;
+/// 1. si un **autre** groupe porte `registered == true`, rejoindre est un
+///    changement de groupe ([switchGroup]) : `joinGroup` répondrait 400 ;
 /// 2. mutation optimiste locale ;
 /// 3. `joinGroup` / `leaveGroup` / `switchGroup` — **un seul appel**, jamais une boucle sur
 ///    tous les groupes ;
@@ -178,22 +172,13 @@ class RideRegistrationController extends StateNotifier<RideRegistrationState> {
     final RideGroupDto? target = _groupById(ride, groupId);
     if (target == null) return;
 
-    // (1) L'exclusivité se vérifie **avant** l'appel. `registeredGroupId` la
-    // rend lisible sans parcourir `participants[]`.
-    final RideGroupDto? blocking = ride.joinedGroup;
-    if (blocking != null && blocking.id != groupId) {
-      state = state.copyWith(
-        failure: RegistrationFailure(
-          reason: RegistrationFailureReason.alreadyRegistered,
-          groupId: target.id,
-          groupName: target.name,
-          message: 'errors.api.ALREADY_REGISTERED'.tr(),
-          blockingGroupId: blocking.id,
-          blockingGroupName: blocking.name,
-        ),
-      );
-      return;
-    }
+    // (1) L'exclusivité se lit **avant** l'appel, sur `registeredGroupId`,
+    // sans parcourir `participants[]` : inscrit ailleurs, rejoindre est un
+    // changement de groupe, l'appel atomique (ledger `API-171`). Le bandeau
+    // d'exclusivité et son « Quitter {groupe} » ont disparu avec « Changer
+    // pour » sur les cartes (docs/LEDGER_*.md MOB-134, lot 8).
+    final RideGroupDto? current = ride.joinedGroup;
+    if (current != null && current.id != groupId) return switchGroup(groupId);
 
     // (2) Bascule optimiste.
     state = state.copyWith(
@@ -264,14 +249,15 @@ class RideRegistrationController extends StateNotifier<RideRegistrationState> {
         group: target,
         error: error,
         stackTrace: stackTrace,
+        leaving: true,
       );
     } finally {
       alive.close();
     }
   }
 
-  /// Passer dans [groupId] depuis le groupe où l'on est inscrit — l'action
-  /// inline du bandeau d'exclusivité, et demain « Changer pour {groupe} ».
+  /// Passer dans [groupId] depuis le groupe où l'on est inscrit — « Changer
+  /// pour {groupe} » des cartes de groupe et de la page d'un groupe.
   ///
   /// **Un seul appel**, l'endpoint atomique `…/groups/{groupId}/switch`
   /// (ledger `API-171`) : l'ancien « quitter puis rejoindre » laissait, sur
@@ -323,9 +309,9 @@ class RideRegistrationController extends StateNotifier<RideRegistrationState> {
     required RideGroupDto group,
     required Object error,
     required StackTrace stackTrace,
+    bool leaving = false,
   }) {
     final ApiError resolved = resolveApiError(error, stackTrace);
-    final RideGroupDto? blocking = previous.joinedGroup;
     state = RideRegistrationState(
       ride: AsyncValue<RideDto>.data(previous),
       failure: RegistrationFailure(
@@ -338,8 +324,7 @@ class RideRegistrationController extends StateNotifier<RideRegistrationState> {
         groupId: group.id,
         groupName: group.name,
         message: resolved.message,
-        blockingGroupId: blocking?.id,
-        blockingGroupName: blocking?.name,
+        leaving: leaving,
       ),
     );
     // L'état affiché ne reflète peut-être plus le serveur — un groupe devenu

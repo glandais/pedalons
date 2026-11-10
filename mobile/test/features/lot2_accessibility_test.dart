@@ -11,6 +11,7 @@ import 'package:pedalons/core/units/unit_system.dart';
 import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/rides/domain/ride_group_action.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dart';
+import 'package:pedalons/keys.dart';
 
 import '../support/localization.dart';
 import 'rides/ride_fixtures.dart';
@@ -88,15 +89,19 @@ void main() {
   });
 
   group('cibles tactiles et débordement', () {
-    /// La carte de groupe est le composant le plus dense du lot : quatre
-    /// statistiques, des avatars, un bouton et le bouton « GPS ».
-    /// Si quelque chose déborde à ×2,0, c'est ici.
+    /// La carte de groupe est le composant le plus dense du lot : trois
+    /// statistiques, des avatars, un bouton et — sur la sienne — le bouton
+    /// « GPS » et « Quitter le groupe » (ledger `MOB-134`, lot 8).
+    /// Si quelque chose déborde à ×2,0, c'est ici. [action] : « Rejoindre »,
+    /// « Changer pour » au nom long, ou la carte de son groupe.
     Future<void> pumpGroupCard(
       WidgetTester tester, {
       required double scale,
       required Brightness brightness,
       required UnitSystem units,
+      RideGroupAction action = RideGroupAction.join,
     }) async {
+      final bool mine = action == RideGroupAction.leave;
       await tester.pumpWidget(
         MediaQuery(
           data: MediaQueryData(textScaler: TextScaler.linear(scale)),
@@ -106,6 +111,10 @@ void main() {
               body: SingleChildScrollView(
                 child: RideGroupCard(
                   group: fixtureGroup(
+                    name: action == RideGroupAction.switchTo
+                        ? 'Les Rapides du dimanche matin'
+                        : 'Chill Route Long',
+                    registered: mine,
                     leader: const PublicUserDto(
                       id: 'u9',
                       displayName: 'Antoine Yvon',
@@ -114,13 +123,15 @@ void main() {
                   rideDateTime: '2026-10-11T06:00:00Z',
                   timezone: 'Europe/Paris',
                   showDeparture: false,
-                  action: RideGroupAction.join,
+                  action: action,
                   trackColor: multiTrackColor(0),
                   units: units,
                   selected: true,
                   onJoin: () {},
+                  onSwitch: () {},
+                  onLeave: () {},
                   onShowParticipants: () {},
-                  onOpenGps: (_) {},
+                  onOpenGps: mine ? (_) {} : null,
                 ),
               ),
             ),
@@ -141,18 +152,26 @@ void main() {
         testWidgets('rien ne déborde à ×1,0 et ×2,0 — $mode, $system', (
           WidgetTester tester,
         ) async {
-          for (final double scale in <double>[1.0, 1.3, 2.0]) {
-            await pumpGroupCard(
-              tester,
-              scale: scale,
-              brightness: brightness,
-              units: units,
-            );
-            expect(
-              tester.takeException(),
-              isNull,
-              reason: 'débordement à ×$scale en $mode / $system',
-            );
+          for (final RideGroupAction action in <RideGroupAction>[
+            RideGroupAction.join,
+            RideGroupAction.switchTo,
+            RideGroupAction.leave,
+          ]) {
+            for (final double scale in <double>[1.0, 1.3, 2.0]) {
+              await pumpGroupCard(
+                tester,
+                scale: scale,
+                brightness: brightness,
+                units: units,
+                action: action,
+              );
+              expect(
+                tester.takeException(),
+                isNull,
+                reason:
+                    'débordement à ×$scale en $mode / $system (${action.name})',
+              );
+            }
           }
         });
       }
@@ -175,6 +194,28 @@ void main() {
           greaterThanOrEqualTo(PdlMetrics.tapTarget),
           reason:
               'un ${(element.widget as PdlButton).label} de ${size.height} px',
+        );
+      }
+    });
+
+    testWidgets('sur la carte de son groupe, « GPS » et « Quitter le groupe » '
+        'gardent 44 px', (WidgetTester tester) async {
+      await pumpGroupCard(
+        tester,
+        scale: 1,
+        brightness: Brightness.light,
+        units: UnitSystem.metric,
+        action: RideGroupAction.leave,
+      );
+
+      for (final Key key in <Key>[
+        keys.ride.groupGps('g1'),
+        keys.ride.groupLeaveButton('g1'),
+      ]) {
+        expect(
+          tester.getSize(find.byKey(key)).height,
+          greaterThanOrEqualTo(PdlMetrics.tapTarget),
+          reason: '$key',
         );
       }
     });

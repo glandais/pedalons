@@ -105,8 +105,27 @@ void main() {
     expect(find.text('DEMAIN'), findsNothing);
   });
 
+  Future<void> pumpFirst(WidgetTester tester, RideDto ride, RideGroupDto g) =>
+      tester.pumpWidget(
+        MaterialApp(
+          theme: PedalonsTheme.build(Brightness.light),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: RideDepartureBlock(
+                ride: ride,
+                group: g,
+                firstDeparture: true,
+                now: now,
+              ),
+            ),
+          ),
+        ),
+      );
+
   testWidgets(
-    'inscrite dans un groupe à heure propre : l’heure de la sortie, puis la sienne',
+    'plusieurs groupes, inscrite dans un groupe à heure propre : '
+    'son heure en gros, puis « Groupe B · premier départ » (MOB-134, lot 8)',
     (WidgetTester tester) async {
       final RideGroupDto b = fixtureGroup(
         id: 'b',
@@ -114,7 +133,7 @@ void main() {
         registered: true,
         startAt: '2036-04-12T07:30:00Z',
       );
-      await pump(
+      await pumpFirst(
         tester,
         fixtureRide(
           dateTime: tomorrow,
@@ -122,38 +141,98 @@ void main() {
           registered: true,
           registeredGroupId: 'b',
         ),
+        b,
       );
 
-      expect(find.text('Départ 09:00'), findsOneWidget);
-      final Text mine = tester.widget<Text>(
-        find.text('Votre groupe : B · 09:30'),
+      expect(find.text('Départ 09:30'), findsOneWidget);
+      expect(find.text('Départ 09:00'), findsNothing);
+      final Finder line = find.text(
+        'Groupe B · premier départ 09:00',
+        findRichText: true,
       );
-      expect(mine.style?.fontWeight, FontWeight.w600);
+      expect(line, findsOneWidget);
+      // Le nom du groupe en 600, la suite atténuée.
+      final TextSpan root =
+          tester
+                  .widget<Text>(find.byType(Text).at(_richIndex(tester)))
+                  .textSpan!
+              as TextSpan;
+      final List<TextSpan> spans = root.children!.cast<TextSpan>();
+      expect(spans.first.text, 'Groupe B');
+      expect(spans.first.style?.fontWeight, FontWeight.w600);
+      expect(spans.last.text, ' · premier départ 09:00');
+      expect(spans.last.style?.fontWeight, isNot(FontWeight.w600));
     },
   );
 
-  testWidgets(
-    'inscrite dans un groupe qui part avec la sortie : rien de plus',
-    (WidgetTester tester) async {
-      final RideGroupDto a = fixtureGroup(
-        id: 'a',
-        name: 'A',
+  testWidgets('plusieurs groupes, un groupe qui part avec la sortie : pas de '
+      'seconde ligne', (WidgetTester tester) async {
+    final RideGroupDto a = fixtureGroup(
+      id: 'a',
+      name: 'A',
+      registered: true,
+      startAt: tomorrow,
+    );
+    await pumpFirst(
+      tester,
+      fixtureRide(
+        dateTime: tomorrow,
+        groups: <RideGroupDto>[a],
         registered: true,
-        startAt: tomorrow,
-      );
-      await pump(
-        tester,
-        fixtureRide(
-          dateTime: tomorrow,
-          groups: <RideGroupDto>[a],
-          registered: true,
-          registeredGroupId: 'a',
-        ),
-      );
+        registeredGroupId: 'a',
+      ),
+      a,
+    );
 
-      expect(find.textContaining('Votre groupe'), findsNothing);
-    },
-  );
+    expect(find.text('Départ 09:00'), findsOneWidget);
+    expect(
+      find.textContaining('premier départ', findRichText: true),
+      findsNothing,
+    );
+  });
+
+  testWidgets('un nom de groupe qui dit déjà « Groupe » ne le répète pas', (
+    WidgetTester tester,
+  ) async {
+    final RideGroupDto b = fixtureGroup(
+      id: 'b',
+      name: 'Groupe 2',
+      registered: true,
+      startAt: '2036-04-12T07:30:00Z',
+    );
+    await pumpFirst(tester, fixtureRide(dateTime: tomorrow), b);
+
+    expect(
+      find.text('Groupe 2 · premier départ 09:00', findRichText: true),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('la sortie seule, même inscrite : l’heure de la sortie, rien de '
+      'plus', (WidgetTester tester) async {
+    final RideGroupDto b = fixtureGroup(
+      id: 'b',
+      name: 'B',
+      registered: true,
+      startAt: '2036-04-12T07:30:00Z',
+    );
+    await pump(
+      tester,
+      fixtureRide(
+        dateTime: tomorrow,
+        groups: <RideGroupDto>[b],
+        registered: true,
+        registeredGroupId: 'b',
+      ),
+    );
+
+    expect(find.text('Départ 09:00'), findsOneWidget);
+    expect(find.textContaining('Votre groupe'), findsNothing);
+    expect(
+      find.textContaining('premier départ', findRichText: true),
+      findsNothing,
+    );
+  });
 
   testWidgets('page d’un groupe : son heure et sa relation à la sortie', (
     WidgetTester tester,
@@ -239,4 +318,10 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+}
+
+/// L'index du seul `Text.rich` du bloc : la ligne du groupe.
+int _richIndex(WidgetTester tester) {
+  final List<Text> texts = tester.widgetList<Text>(find.byType(Text)).toList();
+  return texts.indexWhere((Text t) => t.textSpan != null);
 }

@@ -16,8 +16,9 @@ import 'ride_fixtures.dart';
 ///
 /// * la bascule est **optimiste** — le bouton change avant la réponse ;
 /// * un échec **rétablit** l'état d'avant, il ne laisse pas un état inventé ;
-/// * l'exclusivité est détectée **sans appel**, parce que l'API répondrait 400
-///   et qu'un aller-retour pour se faire dire non est un aller-retour de trop ;
+/// * l'exclusivité est lue **avant l'appel** : inscrit ailleurs, rejoindre est
+///   un changement de groupe atomique, jamais un `joinGroup` que l'API
+///   refuserait (docs/LEDGER_*.md MOB-134, lot 8) ;
 /// * la désinscription est **un** appel, jamais une boucle sur les groupes ;
 /// * chaque motif d'échec porte le **nom du groupe** fautif.
 class _FakeRideRepository implements RideRepository {
@@ -190,21 +191,51 @@ void main() {
     expect(after.ride.value!.registeredGroupId, isNull);
   });
 
-  test('l\'exclusivité est détectée sans aucun appel réseau', () async {
+  test('inscrit ailleurs, rejoindre change de groupe en un seul appel, sans '
+      'bandeau', () async {
     final (ProviderContainer container, _FakeRideRepository repo) = await boot(
       twoGroups(registeredIn: 'g1'),
     );
 
+    repo.serve(twoGroups(registeredIn: 'g2'));
     await container.read(rideRegistrationProvider(key).notifier).join('g2');
 
     expect(repo.joined, isEmpty, reason: 'l\'API répondrait 400');
+    expect(repo.switched, <String>['g2']);
+    expect(repo.left, isEmpty);
+    expect(container.read(rideRegistrationProvider(key)).failure, isNull);
+  });
+
+  test('un ALREADY_REGISTERED du serveur (inscription faite sur un autre '
+      'appareil) pose le bandeau, filet de la course', () async {
+    final (ProviderContainer container, _FakeRideRepository repo) = await boot(
+      twoGroups(),
+    );
+    repo.joinError = _apiError('ALREADY_REGISTERED');
+
+    await container.read(rideRegistrationProvider(key).notifier).join('g2');
+
     final RegistrationFailure failure = container
         .read(rideRegistrationProvider(key))
         .failure!;
     expect(failure.reason, RegistrationFailureReason.alreadyRegistered);
     expect(failure.groupName, 'G1');
-    expect(failure.blockingGroupName, 'Chill Route Long');
-    expect(failure.canSwitch, isTrue);
+    expect(failure.leaving, isFalse);
+  });
+
+  test('un échec de désinscription se reprend en quittant', () async {
+    final (ProviderContainer container, _FakeRideRepository repo) = await boot(
+      twoGroups(registeredIn: 'g1'),
+    );
+    repo.leaveError = _apiError('SOMETHING');
+
+    await container.read(rideRegistrationProvider(key).notifier).leave('g1');
+
+    final RegistrationFailure failure = container
+        .read(rideRegistrationProvider(key))
+        .failure!;
+    expect(failure.reason, RegistrationFailureReason.generic);
+    expect(failure.leaving, isTrue);
   });
 
   test('un 403 devient le motif « réservé aux membres »', () async {
@@ -230,30 +261,6 @@ void main() {
 
     expect(repo.left, <String>['g1']);
     expect(repo.joined, isEmpty);
-  });
-
-  test('l\'action inline change de groupe en un seul appel', () async {
-    final (ProviderContainer container, _FakeRideRepository repo) = await boot(
-      twoGroups(registeredIn: 'g1'),
-    );
-    final RideRegistrationController controller = container.read(
-      rideRegistrationProvider(key).notifier,
-    );
-
-    // Le premier essai pose le bandeau d'exclusivité, sans appel.
-    await controller.join('g2');
-    final RegistrationFailure failure = container
-        .read(rideRegistrationProvider(key))
-        .failure!;
-
-    repo.serve(twoGroups(registeredIn: 'g2'));
-    await controller.switchGroup(failure.groupId);
-
-    // L'endpoint atomique (API-171), jamais « quitter puis rejoindre ».
-    expect(repo.switched, <String>['g2']);
-    expect(repo.left, isEmpty);
-    expect(repo.joined, isEmpty);
-    expect(container.read(rideRegistrationProvider(key)).failure, isNull);
   });
 
   test('changer de groupe bascule les deux groupes avant la réponse', () async {
@@ -333,9 +340,10 @@ void main() {
   );
 
   test('le bandeau se ferme et ne revient pas tout seul', () async {
-    final (ProviderContainer container, _) = await boot(
-      twoGroups(registeredIn: 'g1'),
+    final (ProviderContainer container, _FakeRideRepository repo) = await boot(
+      twoGroups(),
     );
+    repo.joinError = _apiError('GROUP_FULL', status: 409);
     final RideRegistrationController controller = container.read(
       rideRegistrationProvider(key).notifier,
     );

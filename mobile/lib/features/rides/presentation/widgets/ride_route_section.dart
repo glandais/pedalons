@@ -44,14 +44,19 @@ import 'weather_map_layer.dart';
 ///
 /// Elle remplace la carte, le profil et les actions de l'ancien onglet Aperçu
 /// d'un groupe, et la carte et le profil du détail d'une sortie solo ou sans
-/// groupe (lot 7) — celui d'une sortie à plusieurs groupes au lot 8 :
+/// groupe (lot 7) et d'une sortie à plusieurs groupes (lot 8) :
 ///
 /// * **page d'un groupe** — [group] le groupe, [groupOnly] vrai : son seul
 ///   parcours, coloré comme un parcours ;
 /// * **sortie solo** — [group] son groupe, [groupOnly] faux : la carte de la
 ///   sortie (une couche, ou deux si le groupe roule un autre parcours) ;
 /// * **sortie sans groupe** — [group] nul, [groupOnly] faux : le parcours de
-///   la sortie.
+///   la sortie ;
+/// * **plusieurs groupes** — [group] le groupe sélectionné, [groupOnly] faux,
+///   [actions] faux : toutes les couches, la pilule du groupe affiché, Pente |
+///   Revêtement, « Profil du groupe sélectionné » ([profileTitle]) ; ni
+///   « GPS » ni « Détails » (le « GPS » est sur la carte de son groupe), ni
+///   légende — le groupe affiché se choisit par sa carte de groupe (KIT §8).
 ///
 /// Rien n'est rendu sans parcours à montrer ([shows]). Aucune requête de
 /// plus : la géométrie vient du lot de la carte, la météo de l'appelant.
@@ -70,6 +75,8 @@ class RideRouteSection extends ConsumerStatefulWidget {
     this.profileColorByKey,
     this.gpsKey,
     this.mapKey,
+    this.actions = true,
+    this.profileTitle,
   });
 
   final RideKey rideKey;
@@ -112,6 +119,12 @@ class RideRouteSection extends ConsumerStatefulWidget {
   /// Posée sur la carte : l'ancre d'un défilement qui la remonte à l'écran
   /// (le réticule d'un point de la frise météo, ledger `MOB-134`).
   final Key? mapKey;
+
+  /// « GPS » et « Détails » sous le profil.
+  final bool actions;
+
+  /// L'en-tête du profil ; « Profil » par défaut.
+  final String? profileTitle;
 
   /// Le parcours que la section montre : celui de [group] quand la carte ne
   /// montre que lui, sinon celui sélectionné sur la carte de la sortie.
@@ -248,6 +261,7 @@ class _RideRouteSectionState extends ConsumerState<RideRouteSection>
                     ? widget.weatherLeg
                     : null,
                 detailLayout: true,
+                detailTitle: widget.profileTitle,
               ),
             ),
             Padding(
@@ -257,8 +271,10 @@ class _RideRouteSectionState extends ConsumerState<RideRouteSection>
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   ...gpsExportBanners(gapBefore: true),
-                  const SizedBox(height: PdlSpacing.chipGap),
-                  _actions(ride, group, routeSlug),
+                  if (widget.actions) ...<Widget>[
+                    const SizedBox(height: PdlSpacing.chipGap),
+                    _actions(ride, group, routeSlug),
+                  ],
                   ..._waypoints(ride, routeSlug),
                 ],
               ),

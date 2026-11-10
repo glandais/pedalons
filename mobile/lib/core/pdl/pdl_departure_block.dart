@@ -15,8 +15,9 @@ import 'pdl_badge.dart';
 /// un `PdlDayBox`) ; au centre « Départ 09:00 » en 22/700 et la pastille
 /// « Demain » / « Aujourd'hui » ([relativeLabel], seulement ces deux cas),
 /// puis les [details] en 14 atténué (« Arrivée estimée 12:10 »),
-/// la mention de fuseau ([zoneMention]) et, en 600, la ligne du groupe de la
-/// personne ([groupLine]).
+/// la mention de fuseau ([zoneMention]) et la ligne du groupe de la personne :
+/// [groupLine] en 600 couleur de texte, suivi de [groupLineDetail] en 14
+/// atténué (« **Groupe B** · premier départ 09:00 »).
 ///
 /// Trois emplacements facultatifs, pour les écrans de détail refondus
 /// (ledger `MOB-134`) : [trailing] à droite de l'en-tête (« Rejoindre », le
@@ -39,6 +40,7 @@ class PdlDepartureBlock extends StatelessWidget {
     this.details = const <String>[],
     this.zoneMention,
     this.groupLine,
+    this.groupLineDetail,
     this.semanticLabel,
     this.trailing,
     this.places = const <Widget>[],
@@ -59,8 +61,12 @@ class PdlDepartureBlock extends StatelessWidget {
   /// La `ZoneMentionLine` de l'heure affichée, quand le lecteur est ailleurs.
   final Widget? zoneMention;
 
-  /// « Votre groupe : B · 09:30 ».
+  /// « Groupe B », en 600 couleur de texte.
   final String? groupLine;
+
+  /// La suite de [groupLine] sur la même ligne, en 14 atténué :
+  /// « · premier départ 09:00 ».
+  final String? groupLineDetail;
 
   final String? semanticLabel;
 
@@ -120,7 +126,17 @@ class PdlDepartureBlock extends StatelessWidget {
               ],
               if (groupLine != null) ...<Widget>[
                 const SizedBox(height: PdlSpacing.chipGap),
-                Text(groupLine!, style: t.bodyStrong),
+                if (groupLineDetail == null)
+                  Text(groupLine!, style: t.bodyStrong)
+                else
+                  Text.rich(
+                    TextSpan(
+                      children: <InlineSpan>[
+                        TextSpan(text: groupLine, style: t.bodyStrong),
+                        TextSpan(text: groupLineDetail, style: t.sub),
+                      ],
+                    ),
+                  ),
               ],
             ],
           ),

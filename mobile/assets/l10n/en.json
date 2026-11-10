@@ -613,7 +613,6 @@
     "registeredIn": "Registered · {group}",
     "finished": "Finished",
     "groupJoin": "Join",
-    "groupLeave": "Leave",
     "groupFull": "Full",
     "joining": "Joining...",
     "leaving": "Leaving...",
@@ -632,7 +631,6 @@
       "one": "{} group",
       "other": "{} groups"
     },
-    "groupsRoute": "Group routes",
     "mainRoute": "Main route",
     "selectedGroupProfile": "Selected group profile",
     "routeSection": {
@@ -642,17 +640,13 @@
     },
     "departureBlock": {
       "departs": "Leaves at {time}",
-      "yourGroup": "Your group: {group} · {time}",
       "yourGroupTitle": "Your group: {group}",
-      "groupFirstDeparture": "Group {group} · first start {time}",
+      "groupFirstDeparture": "{group} · first start {time}",
       "noGroup": "No group on this ride, so no registration"
     },
-    "viewParticipants": "View list",
     "startPlace": "Start",
     "endPlace": "Finish",
     "comments": "Comments",
-    "noGroupTitle": "No group",
-    "noGroupMessage": "No group is defined for this ride.",
     "noRouteTitle": "No route available",
     "noRouteMessage": "The track has not been published yet. Start and finish places are still shown above.",
     "cancelledTitle": "Ride cancelled.",
@@ -661,8 +655,7 @@
       "exclusive": "Cannot join {group}.",
       "full": "{group} is full.",
       "notMember": "Team members only.",
-      "generic": "Cannot join {group}.",
-      "leaveAndJoin": "Leave {group}"
+      "generic": "Cannot join {group}."
     },
     "cancelledMessage": "This ride will not take place. No registration is possible.",
     "weather": {
@@ -716,7 +709,6 @@
       "precipitation": "{amount} of precipitation",
       "stale": "Old forecast",
       "staleMessage": "The forecast couldn't be refreshed since {time}.",
-      "updatedAt": "Forecast from {time}",
       "notYetAvailable": "Forecast available from {date}.",
       "notYetAvailableNoDate": "The forecast will be available seven days before the start.",
       "emptyTitle": "No weather for this ride",

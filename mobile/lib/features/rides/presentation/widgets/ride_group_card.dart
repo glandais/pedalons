@@ -9,21 +9,39 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/publication_stats_line.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 import '../../domain/ride_group_action.dart';
 import '../../../routes/presentation/widgets/gps_button.dart';
+import 'ride_group_participants_section.dart' show RideGroupLeaveLink;
 import 'ride_group_weather_line.dart';
 import '../../../../keys.dart';
 
-/// La carte d'un groupe de sortie — **le choix de groupe lui-même**.
+/// La carte d'un groupe de sortie — **le choix de groupe lui-même** (ledger
+/// `MOB-134`, lot 8, KIT §8, maquettes `sortie-groupes-meme-heure-mobile-cible`,
+/// `sortie-groupes-heures-differentes-mobile-cible`).
 ///
-/// Elle remplace l'`AlertDialog` aveugle de la v1, qui demandait de choisir un
-/// groupe en n'en montrant que le nom et l'heure. Ici l'action vit sur la carte
-/// qui porte l'information : horaire, allure, distance, dénivelé, places
-/// restantes et visages déjà inscrits.
+/// De haut en bas :
 ///
-/// Elle ne décide de rien : [action] est calculée par [rideGroupAction] et
-/// [pending] par le contrôleur d'inscription (S12-3). La carte rend.
+/// 1. l'en-tête : la barre de couleur du tracé, le nom, le badge « J'y vais »
+///    sur la sienne ; à droite le contrôle d'inscription ([action]) —
+///    « Rejoindre », « Changer pour A », « Complet » désactivé — et le
+///    chevron vers la page du groupe. **Plus de « Quitter » en haut** ;
+/// 2. « Départ 09:30 » en bandeau, quand les groupes ne partent pas tous à
+///    la même heure ([showDeparture]) ;
+/// 3. la ligne de chiffres ([PublicationStatsLine]) : distance · D+ · vitesse ;
+/// 4. la ligne météo du groupe ([RideGroupWeatherLine]) ;
+/// 5. le capitaine, s'il y en a un (jamais de repli sur `createdBy`) ;
+/// 6. les visages, « 11/12 personnes », « Voir tout », la barre de places ;
+/// 7. le bouton « GPS » ([onOpenGps]) — l'appelant ne le donne qu'à la carte
+///    de son groupe ;
+/// 8. « Quitter le groupe », lien discret, quand [action] vaut
+///    [RideGroupAction.leave] — inscrite ici, que le groupe soit parti ou non.
+///
+/// Elle ne décide de rien : [action] est calculée par
+/// `rideRegistrationControlAction` (chaque groupe jugé sur **son** départ,
+/// ledger `API-170`) et [pending] par le contrôleur d'inscription. Aucune
+/// confirmation, ni pour rejoindre, ni pour changer, ni pour quitter.
 class RideGroupCard extends StatelessWidget {
   const RideGroupCard({
     super.key,
@@ -40,6 +58,7 @@ class RideGroupCard extends StatelessWidget {
     this.weatherLeg,
     this.onTap,
     this.onJoin,
+    this.onSwitch,
     this.onLeave,
     this.onShowParticipants,
     this.onOpenGps,
@@ -59,6 +78,11 @@ class RideGroupCard extends StatelessWidget {
   /// Le fuseau de la sortie, où se lit l'heure du groupe.
   final String timezone;
 
+  /// Ce que la carte offre : [RideGroupAction.join] « Rejoindre »,
+  /// [RideGroupAction.switchTo] « Changer pour A »,
+  /// [RideGroupAction.full] « Complet » désactivé,
+  /// [RideGroupAction.leave] le lien « Quitter le groupe » en pied de carte,
+  /// [RideGroupAction.none] rien.
   final RideGroupAction action;
 
   /// Couleur du parcours du groupe sur la carte de la sortie
@@ -68,10 +92,11 @@ class RideGroupCard extends StatelessWidget {
 
   final UnitSystem units;
 
-  /// Groupe pointé par la sélection croisée (carte, légende, profil).
+  /// Groupe dont le parcours est celui de la carte et du profil.
   final bool selected;
 
-  /// Un appel d'inscription ou de désinscription est en vol **sur ce groupe**.
+  /// Un appel d'inscription, de changement ou de désinscription est en vol
+  /// **sur ce groupe**.
   final bool pending;
 
   /// Identifiant de l'utilisateur courant, pour teinter son avatar en primaire
@@ -85,6 +110,9 @@ class RideGroupCard extends StatelessWidget {
   /// Ouvre la page du groupe (ledger `MOB-67`) — toute la carte y mène.
   final VoidCallback? onTap;
   final VoidCallback? onJoin;
+
+  /// « Changer pour A » : `RideRegistrationController.switchGroup`.
+  final VoidCallback? onSwitch;
   final VoidCallback? onLeave;
   final VoidCallback? onShowParticipants;
 
@@ -109,9 +137,14 @@ class RideGroupCard extends StatelessWidget {
           _titleRow(context, c, t),
           ?_departure(c, t),
           const SizedBox(height: PdlSpacing.cardTight),
-          _statsRow(),
+          PublicationStatsLine(
+            distanceMeters: group.distance,
+            elevationGainMeters: group.elevationGain,
+            speedKmh: group.averageSpeed,
+            units: units,
+          ),
           if (RideGroupWeatherLine.shows(weatherLeg)) ...<Widget>[
-            const SizedBox(height: PdlSpacing.cardTight),
+            const SizedBox(height: PdlSpacing.badgeGap),
             RideGroupWeatherLine(
               key: keys.ride.groupWeatherLine(group.id),
               leg: weatherLeg,
@@ -126,7 +159,7 @@ class RideGroupCard extends StatelessWidget {
           const SizedBox(height: PdlSpacing.cardTight),
           _participantsRow(context, c, t),
           if (onOpenGps != null) ...<Widget>[
-            const SizedBox(height: PdlSpacing.chipGap),
+            const SizedBox(height: PdlSpacing.cardTight),
             GpsButton(
               key: keys.ride.groupGps(group.id),
               compact: true,
@@ -134,37 +167,53 @@ class RideGroupCard extends StatelessWidget {
               onPressed: onOpenGps,
             ),
           ],
+          if (action == RideGroupAction.leave) ...<Widget>[
+            const SizedBox(height: PdlSpacing.badgeGap),
+            RideGroupLeaveLink(
+              linkKey: keys.ride.groupLeaveButton(group.id),
+              pending: pending,
+              onPressed: onLeave,
+            ),
+          ],
         ],
       ),
     );
   }
 
-  // ───────────────────────────────────────────────────────────── ligne 1
+  // ───────────────────────────────────────────────────────────── en-tête
   Widget _titleRow(BuildContext context, PdlColors c, PdlTypography t) {
+    final Widget? button = _button;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         PdlColorTrack(color: trackColor),
         const SizedBox(width: PdlSpacing.chipGap),
         Expanded(
-          child: Text(
-            group.name,
-            style: t.cardTitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          child: Row(
+            children: <Widget>[
+              Flexible(
+                child: Text(
+                  group.name,
+                  style: t.cardTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (group.registered) ...<Widget>[
+                const SizedBox(width: PdlSpacing.chipGap),
+                PdlBadge(
+                  key: keys.ride.groupGoingBadge(group.id),
+                  label: 'rides.registered'.tr(),
+                  tone: PdlDerivedTones.registered(c),
+                ),
+              ],
+            ],
           ),
         ),
-        if (group.registered) ...<Widget>[
-          const SizedBox(width: PdlSpacing.badgeGap),
-          PdlBadge(
-            label: 'rides.registered'.tr(),
-            tone: PdlDerivedTones.registered(c),
-            icon: PdlIcons.check,
-          ),
-        ],
-        if (_button != null) ...<Widget>[
+        if (button != null) ...<Widget>[
           const SizedBox(width: PdlSpacing.chipGap),
-          _button!,
+          // « Changer pour Les Rapides » s'abrège plutôt que d'écraser le nom.
+          Flexible(child: button),
         ],
         // La carte ouvre la page du groupe : le chevron le dit.
         if (onTap != null) ...<Widget>[
@@ -176,17 +225,10 @@ class RideGroupCard extends StatelessWidget {
   }
 
   /// **Une seule action pleine et colorée** par carte : c'est ce bouton.
+  /// Inscrite ici, rien : le badge « J'y vais » le dit, et « Quitter le
+  /// groupe » est au pied de la carte.
   Widget? get _button => switch (action) {
-    RideGroupAction.none => null,
-    RideGroupAction.leave => PdlButton(
-      key: keys.ride.groupLeaveButton(group.id),
-      label: 'rides.groupLeave'.tr(),
-      loadingLabel: 'rides.leaving'.tr(),
-      variant: PdlButtonVariant.outline,
-      size: PdlButtonSize.sm,
-      loading: pending,
-      onPressed: onLeave,
-    ),
+    RideGroupAction.none || RideGroupAction.leave => null,
     RideGroupAction.full => PdlButton(
       key: keys.ride.groupFullButton(group.id),
       label: 'rides.groupFull'.tr(),
@@ -194,15 +236,23 @@ class RideGroupCard extends StatelessWidget {
       variant: PdlButtonVariant.outline,
       enabled: false,
     ),
-    // « Changer pour » n'est pas encore rendu (plan MOB-134, lot 8) : il
-    // garde le « Rejoindre » d'avant, qui pose le bandeau d'exclusivité.
-    RideGroupAction.join || RideGroupAction.switchTo => PdlButton(
+    RideGroupAction.join => PdlButton(
       key: keys.ride.groupJoinButton(group.id),
       label: 'rides.groupJoin'.tr(),
       loadingLabel: 'rides.joining'.tr(),
       size: PdlButtonSize.sm,
       loading: pending,
       onPressed: onJoin,
+    ),
+    RideGroupAction.switchTo => PdlButton(
+      key: keys.ride.groupSwitchButton(group.id),
+      label: 'rides.groupSwitchTo'.tr(
+        namedArgs: <String, String>{'group': group.name},
+      ),
+      loadingLabel: 'rides.joining'.tr(),
+      size: PdlButtonSize.sm,
+      loading: pending,
+      onPressed: onSwitch,
     ),
   };
 
@@ -258,38 +308,6 @@ class RideGroupCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  // ───────────────────────────────────────────────────────────── ligne 2
-  /// Vitesse · **distance** · **D+**. L'heure propre du groupe est sa ligne
-  /// de départ ([_departure]).
-  ///
-  /// `distance` et `elevationGain` sont portés par `RideGroupDto` depuis la
-  /// 1.3.0 : cette ligne ne coûte plus un `getRoute` par groupe.
-  Widget _statsRow() {
-    final List<PdlStat> stats = <PdlStat>[
-      if (group.averageSpeed != null)
-        PdlStat(
-          value: AppFormatters.formatSpeed(group.averageSpeed!, units),
-          icon: PdlIcons.speed,
-        ),
-      if (group.distance != null)
-        PdlStat(
-          value: AppFormatters.formatDistance(group.distance!, units),
-          icon: PdlIcons.distance,
-        ),
-      if (group.elevationGain != null)
-        PdlStat(
-          value: AppFormatters.formatElevation(group.elevationGain!, units),
-          icon: PdlIcons.elevationUp,
-          trend: PdlStatTrend.up,
-        ),
-    ];
-    // `nowrap` = gouttière serrée, avec le repli assuré par `PdlStatRow` : dès
-    // que les quatre valeurs ne tiennent plus, la rangée passe en deux lignes
-    // plutôt que de rogner le dénivelé, systématiquement le dernier et donc le
-    // sacrifié.
-    return PdlStatRow(stats: stats, nowrap: true);
   }
 
   /// Meneur du groupe — rendu **seulement** si l'API en désigne un.

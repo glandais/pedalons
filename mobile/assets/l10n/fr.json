@@ -613,7 +613,6 @@
     "registeredIn": "J'y vais · {group}",
     "finished": "Terminée",
     "groupJoin": "Rejoindre",
-    "groupLeave": "Quitter",
     "groupFull": "Complet",
     "joining": "Adhésion...",
     "leaving": "Désinscription...",
@@ -632,7 +631,6 @@
       "one": "{} groupe",
       "other": "{} groupes"
     },
-    "groupsRoute": "Parcours des groupes",
     "mainRoute": "Parcours principal",
     "selectedGroupProfile": "Profil du groupe sélectionné",
     "routeSection": {
@@ -642,17 +640,13 @@
     },
     "departureBlock": {
       "departs": "Départ {time}",
-      "yourGroup": "Votre groupe : {group} · {time}",
       "yourGroupTitle": "Votre groupe : {group}",
-      "groupFirstDeparture": "Groupe {group} · premier départ {time}",
+      "groupFirstDeparture": "{group} · premier départ {time}",
       "noGroup": "Sortie sans groupe, inscription impossible"
     },
-    "viewParticipants": "Voir la liste",
     "startPlace": "Départ",
     "endPlace": "Arrivée",
     "comments": "Commentaires",
-    "noGroupTitle": "Aucun groupe",
-    "noGroupMessage": "Aucun groupe n'est défini pour cette sortie.",
     "noRouteTitle": "Aucun parcours disponible",
     "noRouteMessage": "Le tracé n'a pas encore été publié. Les lieux de départ et d'arrivée restent affichés ci-dessus.",
     "cancelledTitle": "Sortie annulée.",
@@ -661,8 +655,7 @@
       "exclusive": "Inscription impossible à {group}.",
       "full": "{group} est complet.",
       "notMember": "Réservé aux membres de l'équipe.",
-      "generic": "Inscription impossible à {group}.",
-      "leaveAndJoin": "Quitter {group}"
+      "generic": "Inscription impossible à {group}."
     },
     "cancelledMessage": "Cette sortie n'aura pas lieu. Aucune inscription n'est possible.",
     "weather": {
@@ -716,7 +709,6 @@
       "precipitation": "{amount} de précipitations",
       "stale": "Prévision ancienne",
       "staleMessage": "La prévision n'a pas pu être rafraîchie depuis {time}.",
-      "updatedAt": "Prévision de {time}",
       "notYetAvailable": "Prévision disponible à partir du {date}.",
       "notYetAvailableNoDate": "La météo sera disponible sept jours avant le départ.",
       "emptyTitle": "Pas de météo pour cette sortie",

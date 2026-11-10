@@ -41,6 +41,7 @@ class RideElevationSection extends ConsumerStatefulWidget {
     this.profileColorByKey,
     this.windLeg,
     this.detailLayout = false,
+    this.detailTitle,
   });
 
   final String teamSlug;
@@ -81,6 +82,11 @@ class RideElevationSection extends ConsumerStatefulWidget {
   /// tuiles portent), le revêtement et sa source derrière ⓘ, et **pas** les
   /// points du parcours — l'appelant les pose, repliés, sous ses actions.
   final bool detailLayout;
+
+  /// L'en-tête du profil en [detailLayout] ; « Profil » par défaut. Une sortie
+  /// à plusieurs groupes dit « Profil du groupe sélectionné » (maquettes
+  /// `sortie-groupes-*-mobile-cible`, docs/LEDGER_*.md MOB-134, lot 8).
+  final String? detailTitle;
 
   @override
   ConsumerState<RideElevationSection> createState() =>
@@ -154,15 +160,30 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
       rideRouteElevationProvider(routeRef),
     );
 
+    Widget ownSwitch() => RouteColorModeSwitch(
+      key: widget.profileColorByKey,
+      modes: ownModes,
+      value: colorBy,
+      semanticLabel: 'routes.surfaceDetail.profileColorBy'.tr(),
+      onChanged: (RouteColorBy v) => setState(() => _ownColorBy = v),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        // En [detailLayout], l'interrupteur propre au profil vient en tête,
+        // juste sous la carte, puis l'en-tête du profil (maquettes
+        // `sortie-groupes-*-mobile-cible`).
+        if (widget.detailLayout && ownModes.length > 1) ...<Widget>[
+          ownSwitch(),
+          const SizedBox(height: PdlSpacing.section),
+        ],
         if (widget.detailLayout)
           Row(
             children: <Widget>[
               Flexible(
                 child: Text(
-                  'rides.routeSection.profile'.tr(),
+                  widget.detailTitle ?? 'rides.routeSection.profile'.tr(),
                   style: t.bodyStrong,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -197,15 +218,9 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
               if (_summary(units) != null) Text(_summary(units)!, style: t.xs),
             ],
           ),
-        if (ownModes.length > 1) ...<Widget>[
+        if (!widget.detailLayout && ownModes.length > 1) ...<Widget>[
           const SizedBox(height: PdlSpacing.chipGap),
-          RouteColorModeSwitch(
-            key: widget.profileColorByKey,
-            modes: ownModes,
-            value: colorBy,
-            semanticLabel: 'routes.surfaceDetail.profileColorBy'.tr(),
-            onChanged: (RouteColorBy v) => setState(() => _ownColorBy = v),
-          ),
+          ownSwitch(),
           const SizedBox(height: PdlSpacing.chipGap),
         ] else
           const SizedBox(height: 6),

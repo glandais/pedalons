@@ -9,20 +9,21 @@ import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../../keys.dart';
 import '../../domain/group_start.dart';
-import '../../providers/ride_detail_provider.dart';
+import '../../domain/group_title.dart';
 
 /// Le bloc de départ d'une sortie ou d'un de ses groupes (BRANDING §7.8,
 /// ledgers `BRAND-8`, `MOB-113`), juste sous l'identité.
 ///
-/// * **Sortie** ([group] nul) — le détail d'une sortie à plusieurs groupes ou
-///   sans groupe donne l'heure **de la sortie** (décision `BRAND-8`), « sam.
-///   12 avr. », et dessous « Votre groupe : B · 09:30 » quand la personne est
-///   inscrite dans un groupe qui part à son heure propre.
-/// * **Groupe** — la page d'un groupe, et le détail d'une sortie solo
-///   (SYNTHESE §6.1 : une seule heure sur l'écran, celle du groupe), donnent
-///   l'heure **du groupe** et son arrivée estimée ([arrival],
-///   `rideGroupArrivalLine`) quand il y en a une : `endDateTime` est la fin
-///   de la sortie entière, pas celle du groupe.
+/// * **Sortie** ([group] nul) — une sortie sans groupe, ou une sortie à
+///   plusieurs groupes quand la personne n'est inscrite nulle part : l'heure
+///   **de la sortie**, son premier départ.
+/// * **Groupe** — la page d'un groupe, le détail d'une sortie solo
+///   (SYNTHESE §6.1 : une seule heure sur l'écran, celle du groupe) et celui
+///   d'une sortie à plusieurs groupes quand la personne est inscrite (ledger
+///   `MOB-134`, lot 8, KIT §8) : l'heure **du groupe** et son arrivée estimée
+///   ([arrival], `rideGroupArrivalLine`) quand il y en a une. Avec
+///   [firstDeparture], et seulement quand le groupe ne part pas avec la
+///   sortie, la ligne « **Groupe B** · premier départ 09:00 » suit.
 ///
 /// La mention de fuseau porte sur l'heure affichée.
 class RideDepartureBlock extends StatelessWidget {
@@ -34,6 +35,7 @@ class RideDepartureBlock extends StatelessWidget {
     this.trailing,
     this.places = const <Widget>[],
     this.footnote,
+    this.firstDeparture = false,
     this.now,
   });
 
@@ -55,6 +57,11 @@ class RideDepartureBlock extends StatelessWidget {
   /// Une note atténuée au pied du bloc : « Sortie sans groupe, inscription
   /// impossible » (KIT §8, maquette `sortie-sans-groupe-mobile-cible`).
   final String? footnote;
+
+  /// Sous l'heure de [group], « Groupe B · premier départ 09:00 » quand il
+  /// part à une autre heure que la sortie (`RideDto.dateTime`, son premier
+  /// départ) — le détail d'une sortie à plusieurs groupes.
+  final bool firstDeparture;
 
   /// Un instant, pour les tests ; maintenant sinon.
   final DateTime? now;
@@ -86,21 +93,27 @@ class RideDepartureBlock extends StatelessWidget {
     // La boîte du jour dit déjà la date, l'année comprise hors de l'année en
     // cours (BRANDING §7.8) : la ligne atténuée ne la répète pas. Le lecteur
     // d'écran, lui, la lit, la boîte étant muette.
-    final List<String> details;
+    final List<String> details = <String>[?arrival];
     String? groupLine;
-    if (group == null) {
-      details = const <String>[];
-      final RideGroupDto? mine = ride.joinedGroup;
-      if (mine != null && groupLeavesAtOwnTime(mine.startAt, ride.dateTime)) {
-        groupLine = 'rides.departureBlock.yourGroup'.tr(
-          namedArgs: <String, String>{
-            'group': mine.name,
-            'time': formatGroupStart(mine.startAt, zone),
-          },
-        );
+    String? groupLineDetail;
+    if (group != null &&
+        firstDeparture &&
+        groupLeavesAtOwnTime(group.startAt, ride.dateTime)) {
+      final String title = groupTitle(group.name, 'rides.groupPage.title'.tr());
+      final String line = 'rides.departureBlock.groupFirstDeparture'.tr(
+        namedArgs: <String, String>{
+          'group': title,
+          'time': formatGroupStart(ride.dateTime, zone),
+        },
+      );
+      // Le nom du groupe en 600, la suite atténuée (maquette
+      // `sortie-groupes-heures-differentes-mobile-cible`).
+      if (line.startsWith(title)) {
+        groupLine = title;
+        groupLineDetail = line.substring(title.length);
+      } else {
+        groupLine = line;
       }
-    } else {
-      details = <String>[?arrival];
     }
 
     final String? mention = AppFormatters.formatZoneMention(instant, zone);
@@ -110,7 +123,7 @@ class RideDepartureBlock extends StatelessWidget {
       date,
       ...details,
       ?mention,
-      ?groupLine,
+      if (groupLine != null) '$groupLine${groupLineDetail ?? ''}',
     ].join(', ');
 
     return PdlDepartureBlock(
@@ -122,6 +135,7 @@ class RideDepartureBlock extends StatelessWidget {
           ? null
           : ZoneMentionLine(instant: instant, zone: zone),
       groupLine: groupLine,
+      groupLineDetail: groupLineDetail,
       semanticLabel: semanticLabel,
       trailing: trailing,
       places: places,

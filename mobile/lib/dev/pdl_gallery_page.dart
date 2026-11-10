@@ -829,7 +829,7 @@ class _GalleryBodyState extends State<_GalleryBody> {
           ],
         ),
         _Block(
-          title: 'PdlDepartureBlock — trailing · places · footnote',
+          title: 'PdlDepartureBlock — trailing · places · footnote · groupLine',
           children: <Widget>[
             PdlDepartureBlock(
               dayBox: const PdlDayBox(
@@ -875,6 +875,24 @@ class _GalleryBodyState extends State<_GalleryBody> {
                 ),
               ],
               footnote: 'Sortie sans groupe, inscription impossible',
+            ),
+            const SizedBox(height: 12),
+            PdlDepartureBlock(
+              dayBox: const PdlDayBox(
+                weekday: 'sam.',
+                day: '14',
+                month: 'nov.',
+              ),
+              headline: 'Départ 09:30',
+              groupLine: 'Groupe B',
+              groupLineDetail: ' · premier départ 09:00',
+              places: <Widget>[
+                PdlPlaceRow.link(
+                  kind: PdlPlaceKind.start,
+                  name: 'Place de la Mairie, Huelgoat',
+                  onTap: () {},
+                ),
+              ],
             ),
           ],
         ),

@@ -69,8 +69,9 @@ bool rideGroupCanLeave(RideDto ride, RideGroupDto group, {DateTime? now}) =>
     RideGroupAction.leave;
 
 /// Le contrôle d'inscription à droite de l'heure de départ (ledger
-/// `MOB-134`) — la page d'un groupe et le détail d'une sortie solo (lot 7),
-/// les cartes de groupe ensuite (lot 8) :
+/// `MOB-134`) — la page d'un groupe et le détail d'une sortie solo (lot 7).
+/// Les cartes de groupe d'une sortie à plusieurs groupes (lot 8) lisent la
+/// même action ([actionOf]) et la rendent à leur échelle (`RideGroupCard`) :
 ///
 /// * « Rejoindre » — bouton plein ;
 /// * inscrit ici — badge « J'y vais » ;

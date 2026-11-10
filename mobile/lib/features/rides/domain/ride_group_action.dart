@@ -9,11 +9,12 @@ import '../providers/ride_detail_provider.dart';
 /// lecture et tronqué au-delà de cinq entrées — c'était la cause de
 /// « Participer » proposé à un inscrit, puis du 409 qui suivait.
 ///
-/// Combinées au drapeau `pending` de [RideGroupCard] (chargement sur `join`
-/// et `leave` seulement), elles donnent les états visuels du bouton : rien,
-/// « Rejoindre », « Rejoindre » en chargement, « Quitter », « Quitter » en
-/// chargement, « Complet » désactivé — et, quand l'UI le branchera (plan
-/// `MOB-134`, lot 8), « Changer pour {groupe} ».
+/// Combinées au drapeau `pending` de `RideGroupCard`, elles donnent les états
+/// visuels d'une carte : rien, « Rejoindre » (en chargement ou non),
+/// « Changer pour {groupe} », « Complet » désactivé, et — inscrite ici — le
+/// badge « J'y vais » et le lien « Quitter le groupe » en pied de carte
+/// (docs/LEDGER_*.md MOB-134, lot 8). Les écrans les lisent au travers de
+/// `rideRegistrationControlAction`, qui juge chaque groupe sur son départ.
 enum RideGroupAction {
   /// Aucune action : sortie passée ou annulée, ou utilisateur non membre.
   none,
@@ -25,13 +26,10 @@ enum RideGroupAction {
   /// groupe de la sortie, et celui-ci est ouvert — ni complet, ni parti, jugé
   /// sur **son** départ (`startAt`, ledger `API-170`). Un seul appel,
   /// `RideRegistrationController.switchGroup` (ledger `API-171`).
-  ///
-  /// Pas encore rendu tel quel : les cartes d'aujourd'hui le montrent comme
-  /// [join], qui pose le bandeau d'exclusivité.
   switchTo,
 
-  /// `PdlButton(outline, sm)` « Quitter » — l'utilisateur est dans **ce**
-  /// groupe.
+  /// L'utilisateur est dans **ce** groupe : badge « J'y vais », et le lien
+  /// « Quitter le groupe ».
   leave,
 
   /// `PdlButton(sm)` désactivé « Complet ».

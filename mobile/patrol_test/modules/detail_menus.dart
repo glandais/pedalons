@@ -35,7 +35,8 @@ final class DetailMenus extends Module {
     await (await scrolledTo(keys.team.memberRow(userId))).tap();
   }
 
-  /// The ride's « Voir la liste » → the participants sheet → [userId]'s row, which opens its menu.
+  /// The ride's « Voir les N personnes inscrites » (under its group cards) → the participants
+  /// sheet → [userId]'s row, which opens its menu.
   Future<void> openParticipantMenu(String userId) async {
     await (await scrolledTo(keys.ride.participantsButton)).tap();
     await $(keys.participants.person(userId)).tap();

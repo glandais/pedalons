@@ -8,17 +8,17 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
+import '../../../../core/widgets/detail_section.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
-import '../../domain/ride_group_action.dart';
 import '../../domain/ride_route_layers.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../providers/ride_registration_controller.dart';
-import '../../providers/ride_weather_provider.dart';
 import 'registration_failure_banner.dart';
 import 'ride_group_route_actions.dart';
+import 'ride_registration_control.dart';
 import '../../../routes/presentation/gps_export_runner.dart';
 import 'ride_group_card.dart';
 import '../../../../keys.dart';
@@ -31,31 +31,36 @@ import '../../domain/group_start.dart';
 /// perd la carte et le profil qui les surplombent.
 const int _kCollapsedGroupCount = 4;
 
-/// La section « Groupes » de l'écran 12 — compteur, bandeau d'échec, cartes.
+/// La section « Groupes » d'une sortie à plusieurs groupes (ledger
+/// `MOB-134`, lot 8, KIT §8, maquettes `sortie-groupes-meme-heure-mobile-cible`,
+/// `sortie-groupes-heures-differentes-mobile-cible`) : le titre et son compte
+/// (« 3 groupes »), le bandeau d'échec, **ma** carte en tête, « Autres
+/// groupes », les autres cartes, « Voir les N autres groupes », puis « Voir
+/// les 31 personnes inscrites » ([onShowRideParticipants]).
 ///
-/// C'est ici que se joue l'inscription : le choix de groupe **est** la liste de
-/// cartes, il n'y a plus ni `AlertDialog`, ni bouton d'action global en bas
-/// d'écran qui ne dirait pas dans quel groupe il inscrit.
+/// C'est ici que se joue l'inscription : chaque carte porte son contrôle,
+/// jugé sur le départ de **son** groupe (`rideRegistrationControlAction`,
+/// ledger `API-170`) — un groupe plus tardif reste joignable quand le premier
+/// est parti. Inscrite ailleurs, une carte ouverte offre « Changer pour A »,
+/// un seul appel (`switchGroup`, ledger `API-171`) ; la sienne, « Quitter le
+/// groupe » en pied de carte et le bouton « GPS ». Aucune confirmation.
 class RideGroupsSection extends ConsumerStatefulWidget {
   const RideGroupsSection({
     super.key,
     required this.rideKey,
     required this.ride,
-    required this.isMember,
     required this.selectedRouteSlug,
     required this.onSelect,
+    this.weather,
     this.onOpenGroup,
     this.onShowParticipants,
+    this.onShowRideParticipants,
     this.onViewTeam,
+    this.now,
   });
 
   final RideKey rideKey;
   final RideDto ride;
-
-  /// `null` quand l'appartenance n'est pas encore connue : on laisse alors
-  /// l'API trancher au premier appel plutôt que de masquer les boutons à un
-  /// membre.
-  final bool? isMember;
 
   /// Le parcours sélectionné de l'écran : toutes les cartes des groupes qui le
   /// roulent s'allument, pas seulement celle du groupe courant. `null`, ou un
@@ -63,12 +68,25 @@ class RideGroupsSection extends ConsumerStatefulWidget {
   final String? selectedRouteSlug;
   final ValueChanged<String> onSelect;
 
+  /// La prévision de la sortie, lue par l'écran (`null` : pas demandée, ou
+  /// pas encore là) : le leg de chaque groupe donne sa ligne météo.
+  final RideWeatherDto? weather;
+
   /// Ouvre la page du groupe (ledger `MOB-67`) : toute la carte y mène. Sans
   /// lui, un appui ne fait que sélectionner le groupe.
   final ValueChanged<RideGroupDto>? onOpenGroup;
 
+  /// Les visages d'une carte : la feuille des personnes de ce groupe.
   final ValueChanged<RideGroupDto>? onShowParticipants;
+
+  /// « Voir les 31 personnes inscrites », sous les cartes : la feuille des
+  /// personnes de toute la sortie. `null` : pas de lien (qui ne voit pas les
+  /// noms n'a que les comptes).
+  final VoidCallback? onShowRideParticipants;
   final VoidCallback? onViewTeam;
+
+  /// Un instant, pour les tests ; maintenant sinon.
+  final DateTime? now;
 
   @override
   ConsumerState<RideGroupsSection> createState() => _RideGroupsSectionState();
@@ -90,15 +108,6 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
       ...ride.groups.where((RideGroupDto g) => g != registered),
     ];
 
-    if (groups.isEmpty) {
-      return PdlEmptyState(
-        variant: PdlEmptyVariant.empty,
-        icon: PdlIcons.people,
-        title: 'rides.noGroupTitle'.tr(),
-        message: 'rides.noGroupMessage'.tr(),
-      );
-    }
-
     final RideRegistrationState registration = ref.watch(
       rideRegistrationProvider(widget.rideKey),
     );
@@ -116,70 +125,78 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
           .select((RideRouteGeometriesState s) => s.geometries),
     );
     final List<GpsServiceConnectionDto> services = watchGpsServices();
-
-    // La météo de chaque groupe, pour sa ligne non cliquable — partagée avec
-    // la carte météo du détail, sans appel de plus. Une sortie terminée ou
-    // annulée ne la demande même pas.
-    final RideWeatherDto? weather = ride.isPast || ride.isCancelled
-        ? null
-        : ref.watch(rideWeatherProvider(widget.rideKey)).value;
-
-    // Tant qu'on ne sait pas, on propose : un 403 `FORBIDDEN` répondra, et son
-    // bandeau est plus juste qu'un bouton absent sans explication.
-    final bool isMember = widget.isMember ?? true;
+    final RideWeatherDto? weather = widget.weather;
+    final bool showDeparture = someGroupLeavesAtOwnTime(
+      ride.groups.map((RideGroupDto g) => g.startAt),
+      ride.dateTime,
+    );
 
     final List<RideGroupDto> shown = _expanded
         ? groups
         : groups.take(_kCollapsedGroupCount).toList();
     final int hidden = groups.length - shown.length;
+    final int people = ride.participantCount;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        PdlSectionHeader(
-          title: 'rides.groups'.tr(),
-          count: 'rides.groupCount'.plural(groups.length),
-          padding: const EdgeInsets.only(bottom: 10),
-        ),
-        if (registration.failure != null) ...<Widget>[
-          registrationFailureBanner(
-            registration.failure!,
-            controller,
-            onViewTeam: widget.onViewTeam,
-          ),
-          const SizedBox(height: 10),
-        ],
-        ...gpsExportBanners(),
-        for (final RideGroupDto group in shown) ...<Widget>[
-          if (registered != null && shown.indexOf(group) == 1) ...<Widget>[
-            const SizedBox(height: PdlSpacing.feedGap),
-            Text('rides.otherGroupsLabel'.tr(), style: context.pdlText.count),
+    return DetailSection(
+      key: keys.ride.groupsSection,
+      title: 'rides.groups'.tr(),
+      count: 'rides.groupCount'.plural(groups.length),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (registration.failure != null) ...<Widget>[
+            registrationFailureBanner(
+              registration.failure!,
+              controller,
+              onViewTeam: widget.onViewTeam,
+            ),
             const SizedBox(height: PdlSpacing.feedGap),
           ],
-          _groupCard(
-            group: group,
-            ride: ride,
-            route: routes[group.routeSlug ?? ride.routeSlug],
-            services: services,
-            isMember: isMember,
-            registration: registration,
-            controller: controller,
-            currentUserId: currentUserId,
-            units: units,
-            weatherLeg: weather == null
-                ? null
-                : weatherLegOfGroup(weather.legs, group.id),
-          ),
-          const SizedBox(height: PdlSpacing.feedGap),
+          ...gpsExportBanners(),
+          for (final (int i, RideGroupDto group) in shown.indexed) ...<Widget>[
+            if (registered != null && i == 1) ...<Widget>[
+              const SizedBox(height: PdlSpacing.feedGap),
+              Text('rides.otherGroupsLabel'.tr(), style: context.pdlText.count),
+              const SizedBox(height: PdlSpacing.feedGap),
+            ],
+            _groupCard(
+              group: group,
+              ride: ride,
+              route: routes[group.routeSlug ?? ride.routeSlug],
+              services: services,
+              registration: registration,
+              controller: controller,
+              currentUserId: currentUserId,
+              units: units,
+              showDeparture: showDeparture,
+              weatherLeg: weather == null
+                  ? null
+                  : weatherLegOfGroup(weather.legs, group.id),
+            ),
+            const SizedBox(height: PdlSpacing.feedGap),
+          ],
+          if (hidden > 0)
+            PdlButton(
+              label: 'rides.otherGroups'.plural(hidden),
+              variant: PdlButtonVariant.outline,
+              fullWidth: true,
+              onPressed: () => setState(() => _expanded = true),
+            ),
+          if (widget.onShowRideParticipants != null && people > 0)
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: PdlButton(
+                key: keys.ride.participantsButton,
+                label: 'rides.groupPage.viewParticipantsCount'.plural(people),
+                variant: PdlButtonVariant.text,
+                size: PdlButtonSize.sm,
+                icon: PdlIcons.chevronRight,
+                onPressed: widget.onShowRideParticipants,
+              ),
+            ),
         ],
-        if (hidden > 0)
-          PdlButton(
-            label: 'rides.otherGroups'.plural(hidden),
-            variant: PdlButtonVariant.outline,
-            fullWidth: true,
-            onPressed: () => setState(() => _expanded = true),
-          ),
-      ],
+      ),
     );
   }
 
@@ -188,31 +205,39 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
     required RideDto ride,
     required RouteDetailDto? route,
     required List<GpsServiceConnectionDto> services,
-    required bool isMember,
     required RideRegistrationState registration,
     required RideRegistrationController controller,
     required String? currentUserId,
     required UnitSystem units,
+    required bool showDeparture,
     required WeatherLegDto? weatherLeg,
   }) {
     final String? routeSlug = group.routeSlug ?? ride.routeSlug;
-    final GpsExportTarget gps = gpsTargetOfGroup(
-      subtitle: gpsSubtitleOfGroup(group, units),
-      teamSlug: ride.team.slug,
-      routeSlug: routeSlug,
-      route: route,
-    );
+    // « GPS » sur la carte de son groupe seulement (KIT §8) : les autres
+    // parcours se prennent sur la page de leur groupe.
+    final GpsExportTarget? gps = group.registered
+        ? gpsTargetOfGroup(
+            subtitle: gpsSubtitleOfGroup(group, units),
+            teamSlug: ride.team.slug,
+            routeSlug: routeSlug,
+            route: route,
+          )
+        : null;
 
     return RideGroupCard(
       key: keys.ride.group(group.id),
       group: group,
       rideDateTime: ride.dateTime,
       timezone: ride.timezone,
-      showDeparture: someGroupLeavesAtOwnTime(
-        ride.groups.map((RideGroupDto g) => g.startAt),
-        ride.dateTime,
+      showDeparture: showDeparture,
+      // Chaque groupe jugé sur son départ, et l'appartenance inconnue ne
+      // propose rien — les règles du contrôle de la page d'un groupe.
+      action: RideRegistrationControl.actionOf(
+        ref,
+        ride,
+        group,
+        now: widget.now,
       ),
-      action: rideGroupAction(ride: ride, group: group, isMember: isMember),
       // La couleur de son parcours : les groupes qui le partagent portent la
       // même, celle de leur trace commune.
       trackColor: multiTrackColor(groupTrackColorIndex(ride, group)),
@@ -225,11 +250,12 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
           ? () => widget.onSelect(group.id)
           : () => widget.onOpenGroup!(group),
       onJoin: () => controller.join(group.id),
+      onSwitch: () => controller.switchGroup(group.id),
       onLeave: () => controller.leave(group.id),
       onShowParticipants: widget.onShowParticipants == null
           ? null
           : () => widget.onShowParticipants!(group),
-      onOpenGps: gps.offered(services)
+      onOpenGps: gps != null && gps.offered(services)
           ? (BuildContext button) => openGpsSheet(gps, button, tag: group.id)
           : null,
       gpsLoading: gpsExportingFor(group.id),

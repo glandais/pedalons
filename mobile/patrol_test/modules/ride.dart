@@ -13,6 +13,12 @@ import 'module.dart';
 /// (`keys.rideGroup.*`). The group helpers below take the same `groupId` either way and pick the
 /// keys of the shape the page has, so a test of joining doesn't care how many groups the ride
 /// has. The group page helpers ([openGroup], [selectGroup]) need two groups or more.
+///
+/// A ride of several groups (ledger `MOB-134`, lot 8) puts the registration on each group card:
+/// « Rejoindre » when registered nowhere, « Changer pour A » on the other open cards when
+/// registered elsewhere — one call, no banner on the way —, « Complet » disabled; on one's own
+/// card the « J'y vais » badge next to the name, the « GPS » button, and « Quitter le groupe » as a
+/// discreet link at the foot of the card (never beside the chevron).
 final class Ride extends Module {
   Ride(super.$);
 
@@ -33,10 +39,10 @@ final class Ride extends Module {
   Key _leaveKey(String groupId) =>
       _solo ? keys.rideGroup.leaveButton : keys.ride.groupLeaveButton(groupId);
 
-  /// What tells a registration took: the « J'y vais » badge of a single-group ride's departure
-  /// block, the « Quitter » of a group card.
+  /// What tells a registration took: the « J'y vais » badge — of a single-group ride's departure
+  /// block, or next to the group card's name.
   Key _registeredKey(String groupId) =>
-      _solo ? keys.rideGroup.goingBadge : keys.ride.groupLeaveButton(groupId);
+      _solo ? keys.rideGroup.goingBadge : keys.ride.groupGoingBadge(groupId);
 
   Key _fullKey(String groupId) =>
       _solo ? keys.rideGroup.fullBadge : keys.ride.groupFullButton(groupId);
@@ -106,38 +112,38 @@ final class Ride extends Module {
       shows(_groupKey(groupId), text);
 
   /// « Rejoindre » on the group's card — or in the departure block of a single-group ride — then
-  /// waits for « Quitter » on the card, or for the block's « J'y vais » badge.
+  /// waits for the « J'y vais » badge, on the card or in the block.
   Future<void> join(String groupId) async {
     final Key registered = _registeredKey(groupId);
     await (await scrolledTo(_joinKey(groupId))).tap();
-    await $(registered).waitUntilVisible();
+    await $(find.byKey(registered, skipOffstage: false)).waitUntilExists();
   }
 
-  /// « Quitter » on the group's card — or « Quitter le groupe » at the foot of a single-group
-  /// ride's « Personnes inscrites » — then waits for « Rejoindre », which a single-group ride
-  /// shows back in its departure block, at the top of the page.
+  /// « Quitter le groupe » — at the foot of the group's card, or of a single-group ride's
+  /// « Personnes inscrites » — then waits for « Rejoindre »: at the top of the card, or back in a
+  /// single-group ride's departure block, at the top of the page. Either may be off screen.
   Future<void> leave(String groupId) async {
-    final bool solo = _solo;
     final Key join = _joinKey(groupId);
     await (await scrolledTo(_leaveKey(groupId))).tap();
-    if (solo) {
-      await $(find.byKey(join, skipOffstage: false)).waitUntilExists();
-    } else {
-      await $(join).waitUntilVisible();
-    }
+    await $(find.byKey(join, skipOffstage: false)).waitUntilExists();
   }
 
-  /// Taps « Rejoindre » on [groupId] while registered elsewhere, then takes the banner's way out:
-  /// leave the other group and join this one.
+  /// « Changer pour {group} » on the card of [groupId] while registered in another group of the
+  /// ride — one call (ledger `API-171`), no confirmation, no banner — then waits for the card's
+  /// « J'y vais » badge.
   Future<void> switchTo(String groupId) async {
-    await (await scrolledTo(keys.ride.groupJoinButton(groupId))).tap();
-    await (await scrolledTo(keys.ride.switchGroupButton)).tap();
-    await $(keys.ride.groupLeaveButton(groupId)).waitUntilVisible();
+    await (await scrolledTo(keys.ride.groupSwitchButton(groupId))).tap();
+    await $(find.byKey(keys.ride.groupGoingBadge(groupId), skipOffstage: false))
+        .waitUntilExists();
   }
 
   bool offersJoin(String groupId) => _offers(_joinKey(groupId));
 
   bool offersLeave(String groupId) => _offers(_leaveKey(groupId));
+
+  /// Whether the card of [groupId] offers « Changer pour {group} » (several groups only).
+  bool offersSwitch(String groupId) =>
+      !_solo && isShown(keys.ride.groupSwitchButton(groupId));
 
   /// Whether a single-group ride's departure block says « J'y vais ».
   bool get saysGoing => _inTree(keys.rideGroup.goingBadge);
@@ -147,8 +153,8 @@ final class Ride extends Module {
     await (await scrolledTo(_joinKey(groupId))).tap();
   }
 
-  /// Waits until [groupId] is shown as joined — its « Quitter », or « J'y vais » on a
-  /// single-group ride.
+  /// Waits until [groupId] is shown as joined — the « J'y vais » badge of its card, or of a
+  /// single-group ride's departure block.
   Future<void> waitUntilRegisteredIn(
     String groupId, {
     Duration timeout = const Duration(seconds: 15),
@@ -199,18 +205,19 @@ final class Ride extends Module {
     }
   }
 
-  /// Whether the card of [groupId] offers any action at all: « Rejoindre », « Quitter » or
-  /// « Complet » — and, on a single-group ride, the « J'y vais » badge.
+  /// Whether the card of [groupId] offers any action at all: « Rejoindre », « Changer pour »,
+  /// « Quitter le groupe » or « Complet » — and, on a single-group ride, the « J'y vais » badge.
   bool offersAnyAction(String groupId) =>
       offersJoin(groupId) ||
+      offersSwitch(groupId) ||
       offersLeave(groupId) ||
       offersFull(groupId) ||
       (_solo && saysGoing);
 
   // ── Participants ────────────────────────────────────────────────────────
 
-  /// « Voir la liste » of the meta block (a ride of several groups): the sheet of the whole
-  /// ride's participants.
+  /// « Voir les N personnes inscrites » under the group cards (a ride of several groups): the
+  /// sheet of the whole ride's participants.
   Future<void> openParticipants() async {
     await (await scrolledTo(keys.ride.participantsButton)).tap();
     await $(keys.participants.count).waitUntilVisible();
@@ -235,9 +242,14 @@ final class Ride extends Module {
 
   // ── Exports ─────────────────────────────────────────────────────────────
 
-  /// The « GPS » button of [groupId]: on its card, or in a single-group ride's « Parcours ».
+  /// The « GPS » button of [groupId]: on its card — one's own group's only —, or in a
+  /// single-group ride's « Parcours ».
   Key _gpsKey(String groupId) =>
       _solo ? keys.rideGroup.gps : keys.ride.groupGps(groupId);
+
+  /// Whether the « GPS » button of [groupId] is built — on a ride of several groups, only one's
+  /// own group's card has one.
+  bool offersGps(String groupId) => _inTree(_gpsKey(groupId));
 
   /// Scrolls to the card of [groupId] (or a single-group ride's « Parcours ») and waits for its
   /// « GPS » button: it shows once the group's route — loaded with the map's batch — is there
