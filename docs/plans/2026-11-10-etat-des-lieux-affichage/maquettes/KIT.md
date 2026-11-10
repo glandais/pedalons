@@ -219,7 +219,8 @@ suivie, si besoin, de 5 lignes maximum sur ce que tu n'as pas pu reproduire fid�
 - Étape : app bar « Étape 2 sur 3 » + nom du voyage (comme groupe + sortie) ; ni lien vers le voyage ni badges dans le corps (ils sont sur le voyage).
 - Voyage : pas de légende des étapes sous la carte ; la couleur est sur chaque carte d'étape.
 - Sortie à plusieurs groupes : pas de légende A/B/C sous la carte ; le groupe affiché se choisit par sa carte de groupe.
-- « Points du parcours » : seulement quand l'écran montre un seul parcours ; absent des sorties à plusieurs parcours.
+- Sortie à plusieurs groupes : l'encadré marque le groupe **sélectionné** (celui du profil et du tracé mis en avant), pas « mon » groupe. À l'ouverture c'est ma carte ; toucher une autre carte déplace l'encadré. « Mon » groupe se reconnaît au badge « J'y vais ».
+- « Points du parcours » : seulement quand l'écran montre un seul parcours ; absent des sorties à plusieurs parcours. Une sortie dont tous les groupes roulent le même parcours l'affiche donc (les deux maquettes à plusieurs groupes ont trois parcours : elles ne le montrent pas).
 - Carte d'étape (voyage) : pas de vignette de carte ; lignes de chiffres et de météo à 14 px gris.
 - Ligne de chiffres d'une carte (groupe ou étape) : distance · dénivelé « D+ » · vitesse, 14 px gris, icônes 14 px.
 - Ligne météo d'une carte (groupe ou étape) : plage de températures · vent (flèche) · « Pluie N % », 14 px gris ; pas de badges Face/Dos dans la carte.
@@ -233,5 +234,6 @@ suivie, si besoin, de 5 lignes maximum sur ce que tu n'as pas pu reproduire fid�
 - Cartes de groupe : GPX / FIT / Envoyer vers un appareil seulement sur la carte de son groupe.
 - Sortie sans groupe : phrase « Sortie sans groupe, inscription impossible » dans le bloc de départ ; ni bouton ni personnes inscrites.
 - Inscription dans une sortie à groupes : « Rejoindre » si je ne suis nulle part, « Changer pour A » sur les autres cartes si je suis déjà inscrit ; sur ma carte, badge « J'y vais » en haut et lien « Quitter le groupe » en bas (jamais à côté du chevron).
+- Sortie annulée : le badge « J'y vais » reste sur ma carte, le lien « Quitter le groupe » disparaît (état non dessiné).
 - Page groupe, inscrit : coche sur la pastille de mon groupe, badge « J'y vais » à la place de « Rejoindre », « Quitter le groupe » en bas de « Personnes inscrites » (maquette `groupe-inscrit-mobile-cible`).
 - Export du parcours : un seul bouton « GPS » (contour, icône appareil) partout, à la place de GPX / FIT / Envoyer vers un appareil. Il ouvre la feuille GPS (`feuille-gps.dc.html`) : « Vers un appareil » (une ligne par service connecté), « Fichier GPX », « Fichier FIT, pour compteur » (Android : enregistrer / envoyer vers une autre app ; iOS : une ligne « Partager »). Sans service connecté : entrée « Connecter un compteur » en bas (`feuille-gps-sans-appareil.dc.html`).
