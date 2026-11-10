@@ -656,4 +656,97 @@ void main() {
     expect(cursor.lon, 5.1);
     expect(cursor.lat, closeTo(45 + 15 * 0.009, 1e-9));
   });
+
+  // ── La carte du bas (ledger `MOB-129`) ─────────────────────────────────
+  /// La carte de surface qui porte [of].
+  Finder cardOf(Finder of) =>
+      find.ancestor(of: of, matching: find.byType(PdlMapFloatingCard));
+
+  /// La place publiée par le hero à la carte qu'il encadre.
+  double insetOf(WidgetTester tester) => PdlMapBottomInset.of(
+    tester.element(find.byType(RideGroupsMapProbe).last),
+  );
+
+  testWidgets('plein écran : l\'interrupteur et la légende dans une seule '
+      'carte, que le hero mesure', (WidgetTester tester) async {
+    await pump(tester, leg: fixtureLeg(), attribution: openMeteo);
+    await tester.tap(find.byIcon(PdlIcons.fullscreen));
+    await tester.pumpAndSettle();
+
+    final Finder full = find.byWidgetPredicate(
+      (Widget w) => w is RideGroupsMap && w.fullscreen,
+    );
+    final Finder toggle = find.byKey(keys.routeDetail.fullscreenColorBy);
+    final Finder legend = find.descendant(
+      of: full,
+      matching: find.byKey(keys.rideGroup.windMapLegend),
+    );
+    expect(cardOf(toggle), findsOneWidget);
+    expect(cardOf(legend), findsOneWidget);
+    // Une seule surface : la même carte, et la légende n'en a pas à elle.
+    expect(
+      identical(tester.widget(cardOf(toggle)), tester.widget(cardOf(legend))),
+      isTrue,
+    );
+    expect(
+      find.descendant(of: legend, matching: find.byType(PdlBlurSurface)),
+      findsNothing,
+    );
+    // Le crédit Open-Meteo reste en clair, dans la carte.
+    expect(
+      find.descendant(
+        of: cardOf(toggle),
+        matching: find.byKey(keys.rideGroup.windMapCredit),
+      ),
+      findsOneWidget,
+    );
+
+    // L'interrupteur prend toute la largeur de la carte, marges comprises.
+    final Rect card = tester.getRect(cardOf(toggle));
+    expect(tester.getSize(toggle).width, card.width - 2 * PdlSpacing.chipGap);
+    // L'inset publié est la hauteur de la carte, plus la marge du hero : la
+    // ligne du bas (échelle, crédit ⓘ) se pose au-dessus.
+    expect(insetOf(tester), card.height + PdlSpacing.sectionTightV);
+  });
+
+  testWidgets('vignette : la légende seule, à sa largeur, sous « Agrandir »', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, leg: fixtureLeg());
+    // La mesure est remontée après l'image : une de plus pour la publier.
+    await tester.pump();
+
+    final Finder legend = find.byKey(keys.rideGroup.windMapLegend);
+    final Rect card = tester.getRect(cardOf(legend));
+    final Rect hero = tester.getRect(find.byType(PdlMapHero));
+    expect(find.byKey(keys.routeDetail.fullscreenColorBy), findsNothing);
+    // À gauche, à la largeur de son contenu : elle laisse voir la carte.
+    expect(card.left, hero.left + PdlSpacing.sectionTightV);
+    expect(card.width, lessThan(hero.width - 2 * PdlSpacing.sectionTightV));
+    expect(insetOf(tester), card.height + PdlSpacing.sectionTightV);
+    // « Agrandir » au-dessus d'elle, plus jamais dessous.
+    expect(
+      tester.getRect(find.byIcon(PdlIcons.fullscreen)).bottom,
+      lessThan(card.top),
+    );
+  });
+
+  testWidgets('onglet Météo : toute la carte du bas laisse passer le toucher '
+      'vers le plein écran', (WidgetTester tester) async {
+    await pump(tester, leg: fixtureLeg(), forceWeatherMode: true);
+    await tester.pump();
+
+    // Dans la marge de la carte, hors du texte de la légende : sa surface
+    // (une `BoxDecoration`) prendrait le doigt sans l'`IgnorePointer`.
+    final Rect card = tester.getRect(
+      cardOf(find.byKey(keys.rideGroup.windMapLegend)),
+    );
+    await tester.tapAt(card.centerLeft + const Offset(3, 0));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byWidgetPredicate((Widget w) => w is RideGroupsMap && w.fullscreen),
+      findsOneWidget,
+    );
+  });
 }

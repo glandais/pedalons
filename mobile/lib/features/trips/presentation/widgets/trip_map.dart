@@ -147,9 +147,10 @@ class TripMap extends ConsumerWidget {
             onStyleSelected: (String id) =>
                 ref.read(mapStyleIdProvider.notifier).select(id),
             // En plein écran, le même interrupteur que sous la carte
-            // encastrée, sur le même état, en bas à gauche (ledger `MOB-105`).
-            foreground: routeMapBottomLayer(
-              fullscreen: fullscreen,
+            // encastrée, sur le même état (ledger `MOB-105`), dans la carte du
+            // bas avec la légende : le hero la mesure et pose l'échelle et le
+            // crédit au-dessus (ledger `docs/LEDGER_*.md MOB-129`).
+            bottomLayer: routeMapBottomLayer(
               modeSwitch: fullscreen && windLegs.isNotEmpty
                   ? _colorBySwitch(
                       ref,
@@ -293,8 +294,8 @@ class TripMap extends ConsumerWidget {
     );
   }
 
-  /// L'interrupteur Étapes | Météo, sous la carte encastrée ou sur le plein
-  /// écran ([overMap]). « Étapes » éteint la Météo sans toucher un
+  /// L'interrupteur Étapes | Météo, sous la carte encastrée ou dans la carte
+  /// du bas du plein écran ([overMap]). « Étapes » éteint la Météo sans toucher un
   /// Revêtement choisi sur une étape ([setTripMapWindMode]).
   Widget _colorBySwitch(
     WidgetRef ref, {

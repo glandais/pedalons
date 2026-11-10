@@ -187,10 +187,19 @@ class _RoutesMapViewState extends ConsumerState<RoutesMapView>
           ref.read(mapStyleIdProvider.notifier).select(id),
       pill: _pill(),
       floatingCard: _floatingCard(),
+      // « Autour de moi », sous la rangée du haut — « Fermer » (44 px, en haut
+      // à gauche du plein écran) et la pilule, centrée et haute de 44 px au
+      // plus — : rien ne s'y chevauche. Pleine largeur : la colonne de
+      // boutons est en bas à droite (ledger `docs/LEDGER_*.md MOB-129`). La
+      // zone sûre haute est celle de la page (sous la barre d'outils encastrée,
+      // `SafeArea` de la page plein écran).
       foreground: Positioned(
         left: PdlSpacing.sectionTightV,
-        top: PdlSpacing.sectionTightV + PdlMetrics.tapTarget + 8,
-        right: PdlSpacing.sectionTightV + PdlMetrics.tapTarget + 8,
+        top:
+            PdlSpacing.sectionTightV +
+            PdlMetrics.tapTarget +
+            PdlSpacing.chipGap,
+        right: PdlSpacing.sectionTightV,
         child: RoutesNearMeControls(
           filters: widget.filters,
           onChanged: widget.onChanged,

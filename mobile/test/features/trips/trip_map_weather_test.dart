@@ -401,6 +401,17 @@ void main() {
           .overMap,
       isTrue,
     );
+    // Avec la légende, dans une seule carte du bas (ledger `MOB-129`).
+    Finder cardOf(Finder of) =>
+        find.ancestor(of: of, matching: find.byType(PdlMapFloatingCard));
+    expect(cardOf(find.byKey(full)), findsOneWidget);
+    expect(
+      identical(
+        tester.widget(cardOf(find.byKey(full))),
+        tester.widget(cardOf(find.byKey(keys.trip.windMapLegend))),
+      ),
+      isTrue,
+    );
     expect(
       tester.widget<PdlMapHero>(find.byType(PdlMapHero).last).switches,
       isEmpty,

@@ -318,7 +318,7 @@ class RideGroupsMap extends ConsumerWidget {
       // Une carte à deux couches (sortie solo dont le groupe roule un autre
       // parcours) n'a que « Météo » à basculer : en plein écran, dans la
       // feuille, comme l'ombrage. Une carte colorée comme un parcours a
-      // l'interrupteur en bas de la carte (`foreground`, ledger `MOB-105`).
+      // l'interrupteur dans la carte du bas (`bottomLayer`, ledger `MOB-105`).
       switches: fullscreen && !likeRoute && windLeg != null && !forceWeatherMode
           ? <PdlMapHeroSwitch>[
               weatherMapModeSwitch(
@@ -353,12 +353,12 @@ class RideGroupsMap extends ConsumerWidget {
                   : <String>{...c.state, slug};
             }
           : null,
-      // L'interrupteur du plein écran et la légende vivent dans la coquille,
-      // pas dans les `overlays` de la carte : ceux-ci n'apparaissent qu'une
-      // fois la vue native prête, et ni l'un ni l'autre n'en a besoin. À
-      // gauche : le crédit ⓘ tient le coin droit.
-      foreground: routeMapBottomLayer(
-        fullscreen: fullscreen,
+      // L'interrupteur du plein écran et la légende, dans une seule carte
+      // posée en bas par la coquille, pas dans les `overlays` de la carte :
+      // ceux-ci n'apparaissent qu'une fois la vue native prête, et ni l'un ni
+      // l'autre n'en a besoin. Le hero la mesure : l'échelle, le crédit ⓘ et
+      // « Agrandir » montent au-dessus (ledger `docs/LEDGER_*.md MOB-129`).
+      bottomLayer: routeMapBottomLayer(
         // En plein écran, le même interrupteur que sous la carte encastrée,
         // sur le même état (ledger `MOB-105`). Pas dans l'onglet Météo, qui
         // reste en Météo.
@@ -374,8 +374,8 @@ class RideGroupsMap extends ConsumerWidget {
                         v,
               )
             : null,
-        // Sur la vignette qui s'ouvre au toucher, la légende ne garde pas le
-        // doigt pour elle : il va au plein écran.
+        // Sur la vignette qui s'ouvre au toucher, la carte du bas ne garde
+        // pas le doigt pour elle : il va au plein écran.
         passTouches: forceWeatherMode && !fullscreen,
         legend: windMode
             ? RideWindMapLegend(

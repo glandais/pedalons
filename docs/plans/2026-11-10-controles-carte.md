@@ -203,6 +203,18 @@ pas en test de widget.
 - Invariants à garder : `MOB-93` (ⓘ touchable à travers la couche de toucher), `MOB-107` (pastilles
   du voyage en plein écran seulement), `MOB-105` (interrupteur unique, même état).
 
+**Arbitrages pris à l'exécution (10 novembre 2026), font foi sur la liste ci-dessus :**
+
+| Sujet | Décision |
+|---|---|
+| Largeur de l'interrupteur dans la carte du bas | **Pleine largeur** de la carte (maquette) ; le plafond 120 px × segments ne vaut plus que sous la carte encastrée |
+| `overMap` | Gardé, sens nouveau : « dans la carte du bas » = pleine largeur, sans ombre ni filet à lui (la carte les porte) |
+| Surface de `RideWindMapLegend` | **Retirée** plutôt qu'une variante : tous ses appelants passent par `routeMapBottomLayer` |
+| Légende seule (vignette, onglet Météo) | Même carte, mais **à la largeur de son contenu**, à gauche ; contenu complet (parts, notes, crédit) — sur 240 px, carte ≈ 70–115 px, « Agrandir » au-dessus |
+| `passTouches` | L'`IgnorePointer` enveloppe toute la carte du bas, marges comprises |
+| « Autour de moi » | Réserve droite retirée ; sous la rangée « Fermer » / pilule (top 64), sans chevauchement |
+| Fiche parcours, cran 0,92 | `bottomInset` plafonné au cran médian (sinon échelle, ⓘ et Calques montaient sous la barre du haut) ; suit le cran franchi, pas le glissé continu (reconstruirait la carte à chaque image) |
+
 ## Lot 7 — Docs, charte, clôture
 
 - `docs/BRANDING.md` : nouvelle sous-section « Contrôles de carte » (zones, ordre, tailles 36/44,

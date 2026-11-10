@@ -288,6 +288,9 @@ void main() {
     container.read(tripMapColorModeProvider(key).notifier).state =
         RouteColorBy.wind;
     await tester.pump();
+    // La légende est apparue : sa carte est mesurée après l'image, et
+    // « Agrandir » monte au-dessus à la suivante.
+    await tester.pump();
 
     await tester.tap(find.byIcon(PdlIcons.fullscreen));
     await tester.pumpAndSettle();
@@ -322,6 +325,9 @@ void main() {
     final (_, ProviderContainer container) = await pump(tester);
     container.read(tripMapColorModeProvider(key).notifier).state =
         RouteColorBy.wind;
+    await tester.pump();
+    // La légende est apparue : sa carte est mesurée après l'image, et
+    // « Agrandir » monte au-dessus à la suivante.
     await tester.pump();
 
     await tester.tap(find.byIcon(PdlIcons.fullscreen));

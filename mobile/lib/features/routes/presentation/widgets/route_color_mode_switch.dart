@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/pdl/pdl.dart';
-import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../keys.dart';
 import '../../domain/track_surfaces.dart';
@@ -24,7 +23,8 @@ class MapColorModeOption<T> {
 /// L'interrupteur segmenté qui choisit ce que colore une carte — le dessin
 /// commun de [RouteColorModeSwitch] (Pente | Revêtement | Météo) et de celui
 /// de la carte d'ensemble d'un voyage (Étapes | Météo) : sous la carte
-/// encastrée, ou posé sur le plein écran ([overMap], [routeMapBottomLayer]).
+/// encastrée, ou dans la carte du bas du plein écran ([overMap],
+/// [routeMapBottomLayer]).
 ///
 /// Avec moins de deux [options], il n'y a rien à choisir : rien ne se rend.
 class MapColorModeSwitch<T> extends StatelessWidget {
@@ -44,12 +44,16 @@ class MapColorModeSwitch<T> extends StatelessWidget {
   /// Ce que l'interrupteur colore, pour les lecteurs d'écran, déjà traduit.
   final String semanticLabel;
 
-  /// Vrai quand il est posé sur une carte (le plein écran) : une ombre et un
-  /// filet le détachent de la tuile.
+  /// Vrai quand il est posé sur la carte, dans la carte du bas
+  /// ([routeMapBottomLayer]) : il en prend **toute la largeur**, et c'est
+  /// elle qui porte la surface, le filet et l'ombre — une seule surface pour
+  /// l'interrupteur et la légende (ledger `docs/LEDGER_*.md MOB-129`). Faux
+  /// sous la carte encastrée : à gauche, borné à [_segmentWidth] par segment.
   final bool overMap;
 
-  /// La largeur d'un segment : `PdlSegmented` exige une largeur bornée, et
-  /// trois segments étirés sur toute une tablette se liraient mal.
+  /// La largeur d'un segment sous la carte : trois segments étirés sur toute
+  /// une tablette se liraient mal. Dans la carte du bas, la largeur est celle
+  /// de la carte, que le hero borne déjà à ses marges.
   static const double _segmentWidth = 120;
 
   @override
@@ -73,25 +77,17 @@ class MapColorModeSwitch<T> extends StatelessWidget {
     return Semantics(
       label: semanticLabel,
       container: true,
-      child: Align(
-        alignment: AlignmentDirectional.centerStart,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: _segmentWidth * options.length),
-          child: SizedBox(
-            width: double.infinity,
-            child: overMap
-                ? DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: PdlRadii.mdAll,
-                      border: Border.all(color: context.pdl.borderSubtle),
-                      boxShadow: PdlShadows.sheet,
-                    ),
-                    child: segmented,
-                  )
-                : segmented,
-          ),
-        ),
-      ),
+      child: overMap
+          ? segmented
+          : Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: _segmentWidth * options.length,
+                ),
+                child: SizedBox(width: double.infinity, child: segmented),
+              ),
+            ),
     );
   }
 }
@@ -100,8 +96,8 @@ class MapColorModeSwitch<T> extends StatelessWidget {
 /// parcours (ledger `MOB-105`) : il colore la carte encastrée, son plein écran
 /// et le profil — le pendant mobile des `ColorModeControls` du site. La carte
 /// encastrée ne se manipule pas : il se pose sous elle ; en plein écran, le
-/// même interrupteur, sur le même état, se pose sur la carte, en bas
-/// ([routeMapBottomLayer], [overMap]).
+/// même interrupteur, sur le même état, se pose dans la carte du bas, au-dessus
+/// de la légende ([routeMapBottomLayer], [overMap]).
 ///
 /// [modes] vient de `routeColorModes`, [value] de `resolveRouteColorBy`. Avec
 /// un seul mode proposé — la pente —, il n'y a rien à choisir : rien ne se
@@ -124,8 +120,8 @@ class RouteColorModeSwitch extends StatelessWidget {
   /// `null` : « le profil et le tracé ».
   final String? semanticLabel;
 
-  /// Vrai quand il est posé sur une carte (le plein écran) : une ombre et un
-  /// filet le détachent de la tuile.
+  /// Vrai dans la carte du bas du plein écran : voir
+  /// [MapColorModeSwitch.overMap].
   final bool overMap;
 
   @override
@@ -151,42 +147,51 @@ class RouteColorModeSwitch extends StatelessWidget {
   };
 }
 
-/// Ce qui se pose en bas d'une carte de parcours, dans le `foreground` de
-/// `PdlMapHero` : l'interrupteur de mode en plein écran ([modeSwitch], ledger
-/// `MOB-105`), et sous lui la légende du vent ([legend]). Dans la coquille et
-/// non dans les `overlays` de la carte, qui n'apparaissent qu'une fois la vue
-/// native prête : ni l'un ni l'autre n'en a besoin. À gauche : le coin droit
-/// reste au crédit ⓘ des tuiles. `null` quand il n'y a rien à poser.
+/// La carte du bas d'une carte de parcours, à passer à
+/// `PdlMapHero.bottomLayer` (ledger `docs/LEDGER_*.md MOB-129`) : **une seule
+/// surface** ([PdlMapFloatingCard]) qui porte l'interrupteur de mode du plein
+/// écran ([modeSwitch], ledger `MOB-105`, construit avec `overMap: true`) sur
+/// toute sa largeur, puis dessous la légende du vent ([legend],
+/// `RideWindMapLegend`, qui n'a pas de surface à elle). `null` quand il n'y a
+/// rien à poser.
 ///
-/// [passTouches] : sur une vignette qui s'ouvre au toucher, la légende ne
-/// garde pas le doigt pour elle.
+/// Le hero la pose à ses marges, au-dessus de la zone sûre en plein écran, et
+/// la **mesure** : l'échelle, le crédit ⓘ et la colonne de boutons montent
+/// au-dessus d'elle — c'est ce qui les empêche de se recouvrir. Elle ne pose
+/// donc ni position ni zone sûre, et ne réserve rien à droite.
+///
+/// Avec l'interrupteur, la carte prend toute la largeur ; la légende seule (la
+/// vignette, l'onglet Météo) se contente de la sienne, à gauche, pour laisser
+/// voir le plus de carte possible.
+///
+/// [passTouches] : sur une vignette qui s'ouvre au toucher, la carte du bas ne
+/// garde pas le doigt pour elle — il traverse jusqu'à la couche du hero qui
+/// ouvre le plein écran.
 Widget? routeMapBottomLayer({
-  required bool fullscreen,
   Widget? modeSwitch,
   Widget? legend,
   bool passTouches = false,
 }) {
   if (modeSwitch == null && legend == null) return null;
-  return Positioned(
-    left: PdlSpacing.sectionTightV,
-    right: PdlMetrics.tapTarget + PdlSpacing.sectionTightV,
-    bottom: PdlSpacing.sectionTightV,
-    child: SafeArea(
-      top: false,
-      left: fullscreen,
-      right: false,
-      bottom: fullscreen,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          ?modeSwitch,
-          if (modeSwitch != null && legend != null)
-            const SizedBox(height: PdlSpacing.chipGap),
-          if (legend != null)
-            IgnorePointer(ignoring: passTouches, child: legend),
-        ],
-      ),
+  final Widget card = PdlMapFloatingCard(
+    padding: const EdgeInsets.all(PdlSpacing.chipGap),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: modeSwitch == null
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ?modeSwitch,
+        if (modeSwitch != null && legend != null)
+          const SizedBox(height: PdlSpacing.chipGap),
+        ?legend,
+      ],
     ),
+  );
+  return IgnorePointer(
+    ignoring: passTouches,
+    child: modeSwitch == null
+        ? Align(alignment: AlignmentDirectional.centerStart, child: card)
+        : card,
   );
 }

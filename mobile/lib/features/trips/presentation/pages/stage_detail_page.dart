@@ -246,7 +246,8 @@ class _StageDetailContent extends ConsumerWidget {
   /// * le mode partagé avec la carte d'ensemble ([tripMapColorModeProvider],
   ///   ledger `MOB-105`), relu ici pour que le plein écran le suive ;
   /// * en plein écran, le même interrupteur Pente | Revêtement | Météo que
-  ///   sous la carte encastrée, posé en bas de la carte ;
+  ///   sous la carte encastrée, dans la carte du bas avec la légende
+  ///   (`routeMapBottomLayer`) ;
   /// * en mode « Météo », le vent de l'étape comme dans l'Aperçu d'un groupe
   ///   (ledger `MOB-94`) : tracé coloré, légende et crédit, pastilles et
   ///   goutte à l'heure de la zone de l'étape, encastrée comme en plein écran
@@ -297,8 +298,7 @@ class _StageDetailContent extends ConsumerWidget {
             )
           : (BuildContext context, String _) =>
                 PdlMapHero.openFullscreen(context),
-      foreground: routeMapBottomLayer(
-        fullscreen: fullscreen,
+      bottomLayer: routeMapBottomLayer(
         modeSwitch: fullscreen && modes.length > 1
             ? RouteColorModeSwitch(
                 key: keys.routeDetail.fullscreenColorBy,

@@ -21,9 +21,9 @@ import 'waypoint_sheet.dart';
 /// Ce qu'un écran pose **en plus** sur la carte d'un parcours, sans que
 /// celle-ci sache ce que c'est — le détail d'une étape (ledgers `MOB-94`,
 /// `MOB-105`) : le mode qu'il tient, des couleurs de tracé prioritaires sur
-/// la pente et le revêtement (le vent), des marqueurs, une légende et, en
-/// plein écran, l'interrupteur de mode, un interrupteur de la feuille des
-/// couches.
+/// la pente et le revêtement (le vent), des marqueurs, la carte du bas
+/// (légende et, en plein écran, l'interrupteur de mode), un interrupteur de
+/// la feuille des couches.
 @immutable
 class RouteMapLayer {
   const RouteMapLayer({
@@ -31,7 +31,7 @@ class RouteMapLayer {
     this.segmentColors,
     this.markers = const <PdlMapMarker>[],
     this.onMarkerTapped,
-    this.foreground,
+    this.bottomLayer,
     this.switches = const <PdlMapHeroSwitch>[],
   });
 
@@ -52,8 +52,10 @@ class RouteMapLayer {
   /// Le toucher d'un marqueur, avec le contexte de la carte qui l'a rendu.
   final void Function(BuildContext context, String id)? onMarkerTapped;
 
-  /// Posé au-dessus de la carte, dans la coquille (une légende).
-  final Widget? foreground;
+  /// La carte du bas (`routeMapBottomLayer`), passée à
+  /// `PdlMapHero.bottomLayer` : le hero la pose et la mesure, l'échelle et le
+  /// crédit ⓘ se posent au-dessus (ledger `docs/LEDGER_*.md MOB-129`).
+  final Widget? bottomLayer;
 
   /// Les interrupteurs de la feuille des couches, sous l'ombrage.
   final List<PdlMapHeroSwitch> switches;
@@ -267,7 +269,7 @@ class _RouteMapState extends ConsumerState<RouteMap> {
             )
           : null,
       switches: layer?.switches ?? const <PdlMapHeroSwitch>[],
-      foreground: layer?.foreground,
+      bottomLayer: layer?.bottomLayer,
       styles: servedMapStyleOptions(ref, brightness),
       hillshadeEnabled: servedHillshadeEnabled(ref),
       onHillshadeChanged: (bool on) =>

@@ -27,6 +27,13 @@ import 'ride_weather_widgets.dart';
 /// `MOB-92`), en clair : la carte encastrée ne se manipule pas, et un lien de
 /// 44 px n'a pas sa place dans une légende posée sur la carte. L'onglet Météo
 /// le rend en lien.
+///
+/// **Elle n'a pas de surface à elle** : elle vit dans la carte du bas
+/// (`routeMapBottomLayer`), sous l'interrupteur de mode du plein écran, et
+/// c'est cette carte qui la détache de la tuile — une surface unique, que le
+/// hero mesure pour poser l'échelle et le crédit au-dessus (ledger
+/// `docs/LEDGER_*.md MOB-129`). Posée seule sur une tuile, elle écrirait à
+/// même la carte : ne la rendez pas hors de `routeMapBottomLayer`.
 class RideWindMapLegend extends StatelessWidget {
   /// La légende d'un leg : un groupe, une sortie solo, une étape.
   RideWindMapLegend({
@@ -129,59 +136,47 @@ class RideWindMapLegend extends StatelessWidget {
         if (credit != null) weatherAttributionLabel(credit),
       ].join('. '),
       child: ExcludeSemantics(
-        child: PdlBlurSurface(
-          sigma: PdlMotion.blurOverlayButton,
-          color: c.overlaySolid,
-          borderRadius: PdlRadii.mdAll,
-          border: Border.all(color: c.borderSubtle),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: PdlSpacing.chipGap,
-              vertical: PdlSpacing.badgeGap,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Wrap(
+              spacing: PdlSpacing.chipGap,
+              runSpacing: PdlSpacing.badgeGap,
               children: <Widget>[
-                Wrap(
-                  spacing: PdlSpacing.chipGap,
-                  runSpacing: PdlSpacing.badgeGap,
-                  children: <Widget>[
-                    for (final (RelativeWind wind, double meters) in entries)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          PdlColorTrack(
-                            color: wind.stroke,
-                            shape: PdlColorTrackShape.legend,
-                          ),
-                          const SizedBox(width: PdlSpacing.badgeGap),
-                          Text(
-                            'rides.weather.exposure.${wind.name}'.tr(
-                              namedArgs: <String, String>{
-                                'distance': AppFormatters.formatDistance(
-                                  meters,
-                                  units,
-                                ),
-                              },
-                            ),
-                            style: t.xs.copyWith(color: c.text),
-                          ),
-                        ],
+                for (final (RelativeWind wind, double meters) in entries)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      PdlColorTrack(
+                        color: wind.stroke,
+                        shape: PdlColorTrackShape.legend,
                       ),
-                  ],
-                ),
-                for (final String note in notes)
-                  Text(note, style: t.xs.copyWith(color: c.textDimmed)),
-                if (credit != null)
-                  Text(
-                    weatherAttributionLabel(credit),
-                    key: keys.rideGroup.windMapCredit,
-                    style: t.xs.copyWith(color: c.textDimmed),
+                      const SizedBox(width: PdlSpacing.badgeGap),
+                      Text(
+                        'rides.weather.exposure.${wind.name}'.tr(
+                          namedArgs: <String, String>{
+                            'distance': AppFormatters.formatDistance(
+                              meters,
+                              units,
+                            ),
+                          },
+                        ),
+                        style: t.xs.copyWith(color: c.text),
+                      ),
+                    ],
                   ),
               ],
             ),
-          ),
+            for (final String note in notes)
+              Text(note, style: t.xs.copyWith(color: c.textDimmed)),
+            if (credit != null)
+              Text(
+                weatherAttributionLabel(credit),
+                key: keys.rideGroup.windMapCredit,
+                style: t.xs.copyWith(color: c.textDimmed),
+              ),
+          ],
         ),
       ),
     );

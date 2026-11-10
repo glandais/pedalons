@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -179,8 +181,16 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                 MediaQuery.sizeOf(context).height * _detent,
               ),
               // La feuille couvre le bas de la carte : échelle, crédit ⓘ et
-              // Calques se posent au-dessus (ledger `docs/LEDGER_*.md MOB-129`).
-              bottomInset: MediaQuery.sizeOf(context).height * _detent,
+              // Calques se posent au-dessus (ledger `docs/LEDGER_*.md MOB-129`)
+              // — aux crans bas et médian seulement. Au cran haut, il ne reste
+              // que 8 % de carte : les y poser les enverrait sous la barre du
+              // haut, voire hors de l'écran ; ils restent au cran médian, sous
+              // la feuille, qui les cache. Comme le cadrage, l'inset suit le
+              // cran franchi, pas le doigt : le suivre en continu
+              // reconstruirait la carte à chaque image du glissé.
+              bottomInset:
+                  MediaQuery.sizeOf(context).height *
+                  math.min(_detent, _kDetents[1]),
             ),
           ),
           _overlay(route),
