@@ -2,13 +2,14 @@ import 'api/rides_home_trips_seed.dart';
 import 'common.dart';
 
 /// A ride with a single group (ledger `MOB-69`): its detail is the group's page. No group card and
-/// no group page — « Rejoindre » and « Quitter » are in the detail's action bar, and a link to the
-/// group's page (shared before, or from the web) lands on the ride.
+/// no group page — « Rejoindre » is in the departure block, which then says « J'y vais »,
+/// « Quitter le groupe » at the foot of « Personnes inscrites » (ledger `MOB-134`, lot 7) — and a
+/// link to the group's page (shared before, or from the web) lands on the ride.
 ///
 /// Web counterpart: ledger `WEB-79`.
 void main() {
   testApp(
-    'A single-group ride joins and leaves from its action bar, and a group link opens the ride',
+    'A single-group ride joins from its departure block and leaves from « Personnes inscrites », and a group link opens the ride',
     ($, modules, apiClients) async {
       final backend = apiClients.backend;
       final owner = await backend.newUser('Solo owner');
@@ -26,6 +27,7 @@ void main() {
       expect(await modules.ride.isSoloGroupRide(), isTrue);
 
       await modules.ride.join(groupId);
+      expect(modules.ride.saysGoing, isTrue);
       expect(await backend.registeredGroupIds(member, teamSlug, rideSlug), [
         groupId,
       ]);

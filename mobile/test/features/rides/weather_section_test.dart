@@ -367,11 +367,40 @@ void main() {
   });
 
   group('états', () {
-    testWidgets('hidden : rien', (WidgetTester tester) async {
+    testWidgets('hidden : le titre reste, avec une ligne d\'explication', (
+      WidgetTester tester,
+    ) async {
       await pump(tester, section(view: RideWeatherView.hidden));
 
-      expect(find.byKey(keys.ride.weatherSection), findsNothing);
+      // La section ne disparaît plus (décision du 2026-11-10, MOB-134).
+      expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
+      expect(find.text('Météo'), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherEmpty), findsOneWidget);
+      expect(
+        find.text('Aucune prévision n\'est à afficher pour cette sortie.'),
+        findsOneWidget,
+      );
+      // Ni départ, ni frise, ni pied de prévision.
+      expect(find.byKey(keys.rideGroup.departureWeatherTitle), findsNothing);
+      expect(find.byKey(keys.ride.weatherAlongRoute), findsNothing);
+      expect(find.byKey(keys.ride.weatherForecastOf), findsNothing);
+      // `shows` dit encore qu'il n'y a rien d'autre que cette ligne.
       expect(WeatherSection.shows(RideWeatherView.hidden), isFalse);
+    });
+
+    testWidgets('hidden : la ligne de l\'écran quand il en donne une', (
+      WidgetTester tester,
+    ) async {
+      await pump(
+        tester,
+        const WeatherSection(
+          view: RideWeatherView.hidden,
+          timezone: 'Europe/Paris',
+          emptyMessage: 'Rien pour cette étape.',
+        ),
+      );
+
+      expect(find.text('Rien pour cette étape.'), findsOneWidget);
     });
 
     testWidgets('STALE : le bandeau « Prévision ancienne »', (

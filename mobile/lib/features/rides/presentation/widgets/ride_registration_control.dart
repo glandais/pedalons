@@ -20,8 +20,13 @@ import '../../providers/ride_registration_controller.dart';
 ///
 /// * le groupe se juge sur **son** départ ([rideGroupPhase], ledger
 ///   `API-170`), pas sur celui de la sortie (`RideDto.finished`) : un groupe
-///   parti — en cours ou terminé — n'offre plus rien, même à qui y est
-///   inscrit ; un groupe plus tardif reste ouvert quand le premier est parti ;
+///   parti — en cours ou terminé — n'offre plus ni « Rejoindre » ni
+///   « Changer pour » ; un groupe plus tardif reste ouvert quand le premier
+///   est parti. **La personne inscrite garde « J'y vais »**, et donc
+///   « Quitter le groupe » ([rideGroupCanLeave]) : le serveur l'autorise
+///   après le départ, pour corriger qui est vraiment venu (décision du
+///   2026-11-10, docs/LEDGER_*.md MOB-134). Une sortie annulée n'offre rien,
+///   pas même cela ;
 /// * l'appartenance **inconnue** ([isMember] `null`, « Mes équipes » pas encore
 ///   là ou en échec) ne propose rien, pas même « Rejoindre » : rien tant
 ///   qu'on ne sait pas. Une inscription dans ce groupe, elle, se sait sans
@@ -37,10 +42,11 @@ RideGroupAction rideRegistrationControlAction({
   DateTime? now,
 }) {
   if (ride.isCancelled) return RideGroupAction.none;
+  // Inscrit ici : « J'y vais », parti ou non.
+  if (group.registered) return RideGroupAction.leave;
   if (rideGroupPhase(ride, group, now: now).hasStarted) {
     return RideGroupAction.none;
   }
-  if (group.registered) return RideGroupAction.leave;
   if (isMember != true) return RideGroupAction.none;
   // Le départ de la sortie ne compte plus : celui du groupe vient d'être lu.
   return rideGroupAction(
@@ -51,8 +57,8 @@ RideGroupAction rideRegistrationControlAction({
   );
 }
 
-/// Peut-on quitter [group] ? Inscrit, sortie maintenue, groupe pas encore
-/// parti — le lien « Quitter le groupe » de « Personnes inscrites ».
+/// Peut-on quitter [group] ? Inscrit et sortie maintenue, que le groupe soit
+/// parti ou non — le lien « Quitter le groupe » de « Personnes inscrites ».
 bool rideGroupCanLeave(RideDto ride, RideGroupDto group, {DateTime? now}) =>
     rideRegistrationControlAction(
       ride: ride,
@@ -63,15 +69,16 @@ bool rideGroupCanLeave(RideDto ride, RideGroupDto group, {DateTime? now}) =>
     RideGroupAction.leave;
 
 /// Le contrôle d'inscription à droite de l'heure de départ (ledger
-/// `MOB-134`) — la page d'un groupe aujourd'hui, la sortie solo et les cartes
-/// de groupe ensuite (lots 7 et 8) :
+/// `MOB-134`) — la page d'un groupe et le détail d'une sortie solo (lot 7),
+/// les cartes de groupe ensuite (lot 8) :
 ///
 /// * « Rejoindre » — bouton plein ;
 /// * inscrit ici — badge « J'y vais » ;
 /// * complet — « Complet » désactivé ;
 /// * inscrit dans un autre groupe, celui-ci ouvert — « Changer pour A », un
 ///   seul appel (`RideRegistrationController.switchGroup`, ledger `API-171`) ;
-/// * parti, annulé, non-membre, appartenance inconnue — rien.
+/// * parti (sans y être inscrit), annulé, non-membre, appartenance inconnue —
+///   rien.
 ///
 /// **Aucune confirmation**, ni pour rejoindre ni pour changer (plan
 /// `MOB-134`). Un échec garde le bandeau de l'écran

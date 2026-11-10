@@ -28,8 +28,9 @@ import 'ride_registration_control.dart';
 ///    jamais de repli sur le créateur de la sortie ;
 /// 4. la grappe d'avatars, **sans** la personne capitaine, déjà nommée ;
 /// 5. « Voir toutes les personnes inscrites », qui ouvre [ParticipantsSheet] ;
-/// 6. inscrit dans ce groupe, et le groupe pas encore parti : le lien discret
-///    « Quitter le groupe », sans confirmation.
+/// 6. inscrit dans ce groupe, la sortie maintenue : le lien discret
+///    « Quitter le groupe », sans confirmation — même une fois le groupe
+///    parti, pour corriger qui est vraiment venu ([rideGroupCanLeave]).
 ///
 /// **Aucun nom pour un non-membre** ([canSeeMemberNamesProvider]) : le compte,
 /// la barre et les places seulement — ni capitaine, ni visages, ni liste.

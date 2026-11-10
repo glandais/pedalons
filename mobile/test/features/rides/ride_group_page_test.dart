@@ -830,9 +830,8 @@ void main() {
       expect(find.byKey(keys.rideGroup.goingBadge), findsOneWidget);
     });
 
-    testWidgets('un groupe parti : plus d\'inscription, la météo reste', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('un groupe parti, inscrit : « J\'y vais » et « Quitter le '
+        'groupe » restent, la météo aussi', (WidgetTester tester) async {
       await open(
         tester,
         weather(),
@@ -847,13 +846,41 @@ void main() {
         ),
       );
 
-      expect(find.byKey(keys.rideGroup.goingBadge), findsNothing);
+      // Se désinscrire après le départ corrige qui est vraiment venu : le
+      // serveur l'autorise (décision du 2026-11-10, MOB-134).
+      expect(inBlock(find.byKey(keys.rideGroup.goingBadge)), findsOneWidget);
+      expect(
+        inParticipants(find.byKey(keys.rideGroup.leaveButton)),
+        findsOneWidget,
+      );
       expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
-      expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
       // En cours (départ + 3 h, sans arrivée estimée) : l'API sert encore la
       // météo (API-170).
       expect(repository.weatherCalls, 1);
       expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
+    });
+
+    testWidgets('un groupe parti, pas inscrit : ni « Rejoindre » ni « Changer '
+        'pour »', (WidgetTester tester) async {
+      await open(
+        tester,
+        weather(),
+        groupId: 'g2',
+        now: DateTime.utc(2026, 10, 11, 7),
+        ride: fixtureRide(
+          registered: true,
+          registeredGroupId: 'g1',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', registered: true),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+      expect(find.byKey(keys.rideGroup.switchButton), findsNothing);
+      expect(find.byKey(keys.rideGroup.goingBadge), findsNothing);
+      expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
     });
 
     testWidgets('API-170 : la sortie partie, un groupe plus tardif reste '
@@ -1266,12 +1293,22 @@ void main() {
       'NO_LOCATION',
       'SOMETHING_NEW',
     ]) {
-      testWidgets('$status : pas de section, la page finit sur les personnes '
-          'inscrites', (WidgetTester tester) async {
+      testWidgets('$status : le titre « Météo » reste, avec une ligne '
+          'd\'explication', (WidgetTester tester) async {
         await open(tester, fixtureWeather(status: status));
 
-        expect(find.byKey(keys.ride.weatherSection), findsNothing);
+        expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(keys.rideGroup.weatherSection),
+            matching: find.text(
+              'Aucune prévision n\'est à afficher pour cette sortie.',
+            ),
+          ),
+          findsOneWidget,
+        );
         expect(find.byKey(keys.ride.weatherNoLocation), findsNothing);
+        expect(find.byKey(keys.rideGroup.departureWeatherTitle), findsNothing);
         expect(find.byKey(keys.rideGroup.participantsSection), findsOneWidget);
         expect(tester.takeException(), isNull);
       });
@@ -1501,6 +1538,86 @@ void main() {
       // Le réticule ne touche pas au choix de la personne sous la carte.
       expect(container.read(rideMapColorModeProvider(key)), RouteColorBy.grade);
     });
+
+    testWidgets('toucher un point de la frise remonte la page jusqu\'à la '
+        'carte, sous les pastilles ; le retoucher ne défile pas', (
+      WidgetTester tester,
+    ) async {
+      // Une page de téléphone : la frise est loin sous la carte.
+      await open(
+        tester,
+        weather(),
+        ride: routed,
+        overrides: mapOverrides(),
+        height: 800,
+      );
+      final Finder point = find.byKey(
+        keys.ride.weatherCheckpoint(1),
+        skipOffstage: false,
+      );
+      await tester.ensureVisible(point);
+      await tester.pump();
+      final Finder map = find.byType(RideGroupsMap, skipOffstage: false);
+      expect(tester.getTopLeft(map).dy, lessThan(0));
+
+      await tester.tap(point);
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(probe(tester).cursor, isNotNull);
+      final double chipsBottom = tester
+          .getBottomLeft(find.byKey(keys.rideGroup.groupChip('g1')))
+          .dy;
+      final double top = tester.getTopLeft(map).dy;
+      expect(top, greaterThanOrEqualTo(chipsBottom - 1));
+      expect(top, lessThan(800));
+
+      await tester.ensureVisible(point);
+      await tester.pump();
+      final ScrollPosition position = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position;
+      final double offset = position.pixels;
+      await tester.tap(point);
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(tester.widget<RideGroupsMap>(map).cursorDistance, isNull);
+      expect(position.pixels, offset);
+    });
+
+    testWidgets(
+      '« Réduire les animations » : la page saute jusqu\'à la carte',
+      (WidgetTester tester) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue =
+            const FakeAccessibilityFeatures(disableAnimations: true);
+        addTearDown(
+          tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+        );
+        await open(
+          tester,
+          weather(),
+          ride: routed,
+          overrides: mapOverrides(),
+          height: 800,
+        );
+        final Finder point = find.byKey(
+          keys.ride.weatherCheckpoint(1),
+          skipOffstage: false,
+        );
+        await tester.ensureVisible(point);
+        await tester.pump();
+
+        await tester.tap(point);
+        await tester.pump();
+        await tester.pump();
+        final double top = tester
+            .getTopLeft(find.byType(RideGroupsMap, skipOffstage: false))
+            .dy;
+        expect(top, greaterThanOrEqualTo(0));
+        expect(top, lessThan(800));
+      },
+    );
 
     testWidgets('changer de groupe ôte le réticule', (
       WidgetTester tester,

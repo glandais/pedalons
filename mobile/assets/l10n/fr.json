@@ -622,7 +622,6 @@
       "one": "{count}/{max} personne",
       "other": "{count}/{max} personnes"
     },
-    "viewRoute": "Voir le parcours",
     "otherGroupsLabel": "Autres groupes",
     "otherGroups": {
       "one": "Voir l'autre groupe",
@@ -730,9 +729,9 @@
       "legUnavailable": "Les prévisions le long du parcours ne sont pas encore disponibles.",
       "sunrise": "Lever du soleil {time}",
       "sunset": "Coucher du soleil {time}",
-      "legTimes": "Départ {start} · arrivée estimée {arrival}",
       "legSpeed": "Passages estimés à {speed}",
       "legSpeedDefault": "Passages estimés à {speed}, vitesse par défaut : le groupe n'en indique pas",
+      "legSpeedDefaultRide": "Passages estimés à {speed}, vitesse par défaut",
       "rainAlert": "Pluie probable ({probability}) vers {time}.",
       "rainAlertAt": "Pluie probable ({probability}) vers {time}, à {distance}.",
       "rainAlertShort": "Pluie {probability} vers {time}",
@@ -772,23 +771,12 @@
       "title": "Groupe {name}",
       "share": "Partager le groupe",
       "groups": "Groupes de la sortie",
-      "participantsCount": {
-        "one": "{count}/{max} personne",
-        "other": "{count}/{max} personnes"
-      },
-      "participantsCountNoMax": {
-        "one": "{count} personne",
-        "other": "{count} personnes"
-      },
       "placesLeft": {
         "zero": "Plus aucune place",
         "one": "{} place restante",
         "other": "{} places restantes"
       },
-      "registeredElsewhere": "Votre inscription est dans le groupe {group}.",
-      "viewMyGroup": "Voir mon groupe",
       "stats": {
-        "departure": "Départ",
         "pace": "Vitesse moyenne",
         "arrival": "Arrivée estimée {time}",
         "distance": "Distance",
@@ -798,7 +786,6 @@
       "leader": "Capitaine",
       "participantsTitle": "Personnes inscrites",
       "viewAllParticipants": "Voir toutes les personnes inscrites",
-      "routeTitle": "Parcours du groupe",
       "notFoundTitle": "Ce groupe n'existe plus",
       "notFoundMessage": "Il a peut-être été retiré de la sortie.",
       "backToRide": "Retour à la sortie",

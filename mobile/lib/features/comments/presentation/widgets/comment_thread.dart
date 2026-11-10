@@ -29,6 +29,7 @@ class CommentThread extends ConsumerStatefulWidget {
     super.key,
     required this.target,
     this.canComment = true,
+    this.countAtEnd = false,
   });
 
   final CommentTarget target;
@@ -36,6 +37,10 @@ class CommentThread extends ConsumerStatefulWidget {
   /// Les commentaires sont réservés aux membres : un non-membre lit le fil
   /// mais ne voit pas le composeur.
   final bool canComment;
+
+  /// Le compte à droite du titre, en 12 gris (« 2 commentaires ») : le
+  /// gabarit `DetailSection` des écrans de détail refaits (ledger `MOB-134`).
+  final bool countAtEnd;
 
   @override
   ConsumerState<CommentThread> createState() => _CommentThreadState();
@@ -96,6 +101,7 @@ class _CommentThreadState extends ConsumerState<CommentThread> {
           count: state.total == null
               ? null
               : 'comments.count'.plural(state.total!),
+          countAtEnd: widget.countAtEnd,
           padding: const EdgeInsets.only(bottom: 10),
         ),
         if (widget.canComment) ...<Widget>[

@@ -114,58 +114,6 @@ class WeatherLegNotice extends StatelessWidget {
   }
 }
 
-/// Le corps d'un leg sous son en-tête : alerte pluie, exposition, frise —
-/// ou un seul bandeau quand il n'y a rien à dérouler. Les heures se lisent
-/// dans le fuseau [timezone] de la sortie ou de l'étape (docs/LEDGER_*.md
-/// API-60).
-///
-/// Avec [onCheckpointTap], chaque point de la frise se touche (la carte d'un
-/// groupe y place son réticule, ledger `MOB-93`) ; le point d'`index`
-/// [selectedCheckpoint] se marque comme choisi.
-///
-/// Ne sert plus qu'à la carte météo d'une sortie solo
-/// (`RideDepartureWeatherCard`), que le lot 7 du ledger `MOB-134` retire :
-/// les écrans passent par `WeatherSection`, qui compose les mêmes briques.
-List<Widget> weatherLegBody(
-  WeatherLegDto leg,
-  Widget Function(Widget) padded,
-  String? timezone, {
-  ValueChanged<WeatherCheckpointDto>? onCheckpointTap,
-  int? selectedCheckpoint,
-}) {
-  if (WeatherLegNotice.shows(leg)) {
-    return <Widget>[padded(WeatherLegNotice(leg: leg))];
-  }
-  return <Widget>[
-    if (leg.rainAlert != null)
-      padded(WeatherRainAlertBanner(alert: leg.rainAlert!, timezone: timezone)),
-    if (leg.segments.isNotEmpty)
-      padded(
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            PdlSectionHeader(title: 'rides.weather.exposureTitle'.tr()),
-            WeatherExposureCard(leg: leg),
-          ],
-        ),
-      ),
-    padded(
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          PdlSectionHeader(title: 'rides.weather.alongRouteTitle'.tr()),
-          WeatherTimeline(
-            leg: leg,
-            timezone: timezone,
-            onTap: onCheckpointTap,
-            selected: selectedCheckpoint,
-          ),
-        ],
-      ),
-    ),
-  ];
-}
-
 /// « Passages estimés à 28 km/h », ou la phrase de la vitesse par défaut
 /// ([speedDefaultKey] : le groupe, ou l'étape, n'en indique pas).
 String weatherLegSpeedLine(
@@ -188,67 +136,6 @@ String weatherLegPointsLine(WeatherLegDto leg, String? timezone) =>
         'arrival': formatWeatherTime(leg.arrivalTime, timezone),
       },
     );
-
-/// L'en-tête d'un leg : son nom (le groupe, l'étape), sa longueur, ses
-/// horaires, la vitesse des passages et le vent dominant.
-class WeatherLegHeader extends ConsumerWidget {
-  const WeatherLegHeader({
-    super.key,
-    required this.leg,
-    required this.title,
-    required this.timezone,
-    this.speedDefaultKey = 'rides.weather.legSpeedDefault',
-  });
-
-  final WeatherLegDto leg;
-
-  /// Le fuseau de la sortie ou de l'étape, où se lisent départ et arrivée.
-  final String? timezone;
-
-  /// Le nom du groupe ou de l'étape ; à défaut, « Météo du parcours ».
-  final String? title;
-
-  /// La phrase qui dit la vitesse par défaut : c'est le groupe, ou l'étape,
-  /// qui n'en indique pas.
-  final String speedDefaultKey;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final PdlTypography t = context.pdlText;
-    final UnitSystem units = ref.watch(unitSystemProvider);
-    final WindDto? prevailing = leg.prevailingWind;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        PdlSectionHeader(
-          title: title ?? 'rides.weather.routeTitle'.tr(),
-          count: leg.distance > 0
-              ? AppFormatters.formatDistance(leg.distance, units)
-              : null,
-        ),
-        Text(
-          'rides.weather.legTimes'.tr(
-            namedArgs: <String, String>{
-              'start': formatWeatherTime(leg.startTime, timezone),
-              'arrival': formatWeatherTime(leg.arrivalTime, timezone),
-            },
-          ),
-          style: t.body,
-        ),
-        const SizedBox(height: 2),
-        Text(
-          weatherLegSpeedLine(leg, units, speedDefaultKey: speedDefaultKey),
-          style: t.xs,
-        ),
-        if (prevailing != null) ...<Widget>[
-          const SizedBox(height: 2),
-          WeatherPrevailingWindLine(wind: prevailing, units: units),
-        ],
-      ],
-    );
-  }
-}
 
 /// L'alerte pluie d'un leg, en bandeau : « Pluie probable (70 %) vers 20:05,
 /// à 15,0 km. »
@@ -709,9 +596,9 @@ Future<void> showWeatherSource(
 );
 
 /// Le crédit que la licence des prévisions demande (CC BY 4.0), et l'heure
-/// de la prévision la plus ancienne lue — la carte météo d'une sortie solo
-/// (`RideDepartureWeatherCard`, retirée au lot 7 du ledger `MOB-134`) ; les
-/// sections Météo passent par [WeatherForecastFooter].
+/// de la prévision la plus ancienne lue — la carte météo d'une sortie à
+/// plusieurs groupes (`RideDepartureWeatherCard`, jusqu'au lot 8 du ledger
+/// `MOB-134`) ; les sections Météo passent par [WeatherForecastFooter].
 class WeatherAttributionBlock extends StatelessWidget {
   const WeatherAttributionBlock({
     super.key,

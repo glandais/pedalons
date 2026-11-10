@@ -43,8 +43,8 @@ import 'weather_map_layer.dart';
 ///    quand la carte ne montre qu'un parcours (KIT §8).
 ///
 /// Elle remplace la carte, le profil et les actions de l'ancien onglet Aperçu
-/// d'un groupe, et est faite pour remplacer `_mapAndProfile` du détail d'une
-/// sortie (lots 7 et 8) :
+/// d'un groupe, et la carte et le profil du détail d'une sortie solo ou sans
+/// groupe (lot 7) — celui d'une sortie à plusieurs groupes au lot 8 :
 ///
 /// * **page d'un groupe** — [group] le groupe, [groupOnly] vrai : son seul
 ///   parcours, coloré comme un parcours ;
@@ -69,6 +69,7 @@ class RideRouteSection extends ConsumerStatefulWidget {
     this.windChipKey,
     this.profileColorByKey,
     this.gpsKey,
+    this.mapKey,
   });
 
   final RideKey rideKey;
@@ -107,6 +108,10 @@ class RideRouteSection extends ConsumerStatefulWidget {
 
   /// La clé du bouton « GPS » ; `keys.rideGroup.gps` par défaut.
   final Key? gpsKey;
+
+  /// Posée sur la carte : l'ancre d'un défilement qui la remonte à l'écran
+  /// (le réticule d'un point de la frise météo, ledger `MOB-134`).
+  final Key? mapKey;
 
   /// Le parcours que la section montre : celui de [group] quand la carte ne
   /// montre que lui, sinon celui sélectionné sur la carte de la sortie.
@@ -181,13 +186,16 @@ class _RideRouteSectionState extends ConsumerState<RideRouteSection>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          RideGroupsMap(
-            rideKey: rideKey,
-            ride: ride,
-            onlyGroup: onlyGroup,
-            weatherLeg: widget.weatherLeg,
-            weatherAttribution: widget.weatherAttribution,
-            cursorDistance: widget.cursorDistance,
+          KeyedSubtree(
+            key: widget.mapKey,
+            child: RideGroupsMap(
+              rideKey: rideKey,
+              ride: ride,
+              onlyGroup: onlyGroup,
+              weatherLeg: widget.weatherLeg,
+              weatherAttribution: widget.weatherAttribution,
+              cursorDistance: widget.cursorDistance,
+            ),
           ),
           if (likeRoute && modes.length > 1)
             Padding(

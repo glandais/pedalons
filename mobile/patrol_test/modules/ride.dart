@@ -1,24 +1,31 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:patrol/patrol.dart';
 
 import 'module.dart';
 
 /// The ride page: its groups, their leaders, and joining one.
 ///
 /// A ride with a single group has no group card and no group page (ledger `MOB-69`): its detail
-/// *is* the group's page — a group section ([keys.ride.soloGroupSection]) and the group page's
-/// action bar (`keys.rideGroup.*`). The group helpers below take the same `groupId` either way and
-/// pick the keys of the shape the page has, so a test of joining doesn't care how many groups the
-/// ride has. The group page helpers ([openGroup], [selectGroup]) need two groups or more.
+/// *is* the group's page, laid out like it (ledger `MOB-134`, lot 7) — the registration control
+/// in the departure block (« Rejoindre », the « J'y vais » badge, « Complet »), « Quitter le
+/// groupe » at the foot of « Personnes inscrites » ([keys.ride.participantsSection]), the GPS
+/// button in « Parcours » ([keys.ride.routeSection]); the controls carry the group page's keys
+/// (`keys.rideGroup.*`). The group helpers below take the same `groupId` either way and pick the
+/// keys of the shape the page has, so a test of joining doesn't care how many groups the ride
+/// has. The group page helpers ([openGroup], [selectGroup]) need two groups or more.
 final class Ride extends Module {
   Ride(super.$);
 
-  /// Whether the ride on screen is a single-group one: the action bar's places line is there
-  /// while no group page is open on top.
+  /// Whether a widget of [key] is built, on screen or scrolled out of it: a single-group ride's
+  /// controls sit at both ends of a long page, so one of them is always off screen.
+  bool _inTree(Key key) =>
+      find.byKey(key, skipOffstage: false).evaluate().isNotEmpty;
+
+  /// Whether the ride on screen is a single-group one: its « Personnes inscrites » section is
+  /// built — a ride of several groups has cards instead, one with no group has neither — while
+  /// no group page is open on top.
   bool get _solo =>
-      $(keys.rideGroup.participantsCount).exists &&
-      !$(keys.rideGroup.page).exists;
+      _inTree(keys.ride.participantsSection) && !$(keys.rideGroup.page).exists;
 
   Key _joinKey(String groupId) =>
       _solo ? keys.rideGroup.joinButton : keys.ride.groupJoinButton(groupId);
@@ -26,14 +33,24 @@ final class Ride extends Module {
   Key _leaveKey(String groupId) =>
       _solo ? keys.rideGroup.leaveButton : keys.ride.groupLeaveButton(groupId);
 
+  /// What tells a registration took: the « J'y vais » badge of a single-group ride's departure
+  /// block, the « Quitter » of a group card.
+  Key _registeredKey(String groupId) =>
+      _solo ? keys.rideGroup.goingBadge : keys.ride.groupLeaveButton(groupId);
+
   Key _fullKey(String groupId) =>
       _solo ? keys.rideGroup.fullBadge : keys.ride.groupFullButton(groupId);
 
-  /// The block of the group: its card, or the single group's section.
+  /// The block of the group: its card, or the single group's « Personnes inscrites ».
   Key _groupKey(String groupId) =>
-      _solo ? keys.ride.soloGroupSection : keys.ride.group(groupId);
+      _solo ? keys.ride.participantsSection : keys.ride.group(groupId);
 
-  /// Whether the page is a single-group ride's: its group section instead of group cards.
+  /// Whether a control of [key] is offered: on screen for a group card, anywhere on the page for a
+  /// single-group ride.
+  bool _offers(Key key) => _solo ? _inTree(key) : isShown(key);
+
+  /// Whether the page is a single-group ride's: its « Personnes inscrites » instead of group
+  /// cards.
   Future<bool> isSoloGroupRide() async {
     await $(keys.ride.title).waitUntilVisible();
     return _solo;
@@ -73,38 +90,42 @@ final class Ride extends Module {
   /// The leader line of the group, or null when the card has none.
   Future<bool> showsLeader(String groupId, String name) async {
     final Key leader = _leaderKey(groupId);
-    await scrolledTo(_groupKey(groupId));
+    await showGroup(groupId);
     return shows(leader, name);
   }
 
   Future<bool> hasLeaderLine(String groupId) async {
     final Key leader = _leaderKey(groupId);
-    await scrolledTo(_groupKey(groupId));
+    await showGroup(groupId);
     return isShown(leader);
   }
 
-  /// Whether [text] appears anywhere on the group's card (or the single group's section).
+  /// Whether [text] appears anywhere on the group's card (or the single group's « Personnes
+  /// inscrites »).
   bool groupShows(String groupId, String text) =>
       shows(_groupKey(groupId), text);
 
-  /// « Rejoindre » on the group's card — or in the action bar of a single-group ride, which is
-  /// always in view — then waits for « Quitter ».
+  /// « Rejoindre » on the group's card — or in the departure block of a single-group ride — then
+  /// waits for « Quitter » on the card, or for the block's « J'y vais » badge.
   Future<void> join(String groupId) async {
-    final Key leave = _leaveKey(groupId);
-    await (await _actionButton(_joinKey(groupId))).tap();
-    await $(leave).waitUntilVisible();
+    final Key registered = _registeredKey(groupId);
+    await (await scrolledTo(_joinKey(groupId))).tap();
+    await $(registered).waitUntilVisible();
   }
 
-  /// « Quitter » on the group's card or in the action bar, then waits for « Rejoindre ».
+  /// « Quitter » on the group's card — or « Quitter le groupe » at the foot of a single-group
+  /// ride's « Personnes inscrites » — then waits for « Rejoindre », which a single-group ride
+  /// shows back in its departure block, at the top of the page.
   Future<void> leave(String groupId) async {
+    final bool solo = _solo;
     final Key join = _joinKey(groupId);
-    await (await _actionButton(_leaveKey(groupId))).tap();
-    await $(join).waitUntilVisible();
+    await (await scrolledTo(_leaveKey(groupId))).tap();
+    if (solo) {
+      await $(find.byKey(join, skipOffstage: false)).waitUntilExists();
+    } else {
+      await $(join).waitUntilVisible();
+    }
   }
-
-  /// The button of [key]: the action bar's is pinned and needs no scrolling, a card's does.
-  Future<PatrolFinder> _actionButton(Key key) async =>
-      _solo ? $(key) : await scrolledTo(key);
 
   /// Taps « Rejoindre » on [groupId] while registered elsewhere, then takes the banner's way out:
   /// leave the other group and join this one.
@@ -114,29 +135,36 @@ final class Ride extends Module {
     await $(keys.ride.groupLeaveButton(groupId)).waitUntilVisible();
   }
 
-  bool offersJoin(String groupId) => isShown(_joinKey(groupId));
+  bool offersJoin(String groupId) => _offers(_joinKey(groupId));
 
-  bool offersLeave(String groupId) => isShown(_leaveKey(groupId));
+  bool offersLeave(String groupId) => _offers(_leaveKey(groupId));
+
+  /// Whether a single-group ride's departure block says « J'y vais ».
+  bool get saysGoing => _inTree(keys.rideGroup.goingBadge);
 
   /// Taps « Rejoindre » on [groupId] and waits for nothing: the answer may be a refusal.
   Future<void> tapJoin(String groupId) async {
-    await (await _actionButton(_joinKey(groupId))).tap();
+    await (await scrolledTo(_joinKey(groupId))).tap();
   }
 
-  /// Waits until [groupId] is shown as joined — its « Quitter » is there.
+  /// Waits until [groupId] is shown as joined — its « Quitter », or « J'y vais » on a
+  /// single-group ride.
   Future<void> waitUntilRegisteredIn(
     String groupId, {
     Duration timeout = const Duration(seconds: 15),
   }) async {
-    await $(_leaveKey(groupId)).waitUntilExists(timeout: timeout);
+    await $(find.byKey(_registeredKey(groupId), skipOffstage: false))
+        .waitUntilExists(timeout: timeout);
   }
 
-  /// Waits until the card of [groupId] (or the action bar) shows the disabled « Complet ».
+  /// Waits until the card of [groupId] (or a single-group ride's departure block) shows the
+  /// disabled « Complet ».
   Future<void> waitUntilFull(String groupId) async {
-    await $(_fullKey(groupId)).waitUntilExists();
+    await $(find.byKey(_fullKey(groupId), skipOffstage: false))
+        .waitUntilExists();
   }
 
-  bool offersFull(String groupId) => isShown(_fullKey(groupId));
+  bool offersFull(String groupId) => _offers(_fullKey(groupId));
 
   /// Waits for the registration failure banner, and tells whether it names [groupName].
   Future<bool> waitUntilFailureNames(String groupName) async {
@@ -158,20 +186,31 @@ final class Ride extends Module {
     await $(keys.ride.cancelledBanner).waitUntilVisible();
   }
 
-  /// Scrolls the card of [groupId] (or the single group's section) into view, for the checks
-  /// made on it afterwards.
+  /// Scrolls the card of [groupId] (or the single group's « Personnes inscrites ») into view, for
+  /// the checks made on it afterwards.
+  ///
+  /// A card is tapped through its centre, and scrolled to until it is hit-testable there; a
+  /// section is only brought into view — its middle may be empty.
   Future<void> showGroup(String groupId) async {
-    await scrolledTo(_groupKey(groupId));
+    if (_solo) {
+      await scrolledIntoView(_groupKey(groupId));
+    } else {
+      await scrolledTo(_groupKey(groupId));
+    }
   }
 
   /// Whether the card of [groupId] offers any action at all: « Rejoindre », « Quitter » or
-  /// « Complet ».
+  /// « Complet » — and, on a single-group ride, the « J'y vais » badge.
   bool offersAnyAction(String groupId) =>
-      offersJoin(groupId) || offersLeave(groupId) || offersFull(groupId);
+      offersJoin(groupId) ||
+      offersLeave(groupId) ||
+      offersFull(groupId) ||
+      (_solo && saysGoing);
 
   // ── Participants ────────────────────────────────────────────────────────
 
-  /// « Voir la liste » of the meta block: the sheet of the whole ride's participants.
+  /// « Voir la liste » of the meta block (a ride of several groups): the sheet of the whole
+  /// ride's participants.
   Future<void> openParticipants() async {
     await (await scrolledTo(keys.ride.participantsButton)).tap();
     await $(keys.participants.count).waitUntilVisible();
@@ -196,14 +235,20 @@ final class Ride extends Module {
 
   // ── Exports ─────────────────────────────────────────────────────────────
 
-  /// The « GPS » button of [groupId]: on its card, or in the single group's section.
+  /// The « GPS » button of [groupId]: on its card, or in a single-group ride's « Parcours ».
   Key _gpsKey(String groupId) =>
       _solo ? keys.rideGroup.gps : keys.ride.groupGps(groupId);
 
-  /// Scrolls to the card of [groupId] and waits for its « GPS » button: it shows once the
-  /// group's route — loaded with the map's batch — is there with a file to export.
+  /// Scrolls to the card of [groupId] (or a single-group ride's « Parcours ») and waits for its
+  /// « GPS » button: it shows once the group's route — loaded with the map's batch — is there
+  /// with a file to export.
   Future<void> waitUntilGpsIsOffered(String groupId) async {
-    await scrolledTo(_groupKey(groupId));
+    final bool solo = _solo;
+    if (solo) {
+      await scrolledIntoView(keys.ride.routeSection);
+    } else {
+      await scrolledTo(_groupKey(groupId));
+    }
     await $(_gpsKey(groupId)).waitUntilExists();
   }
 
@@ -263,9 +308,9 @@ final class Ride extends Module {
   }
 
   /// Scrolls the group's page down to its Météo section, its last block, and waits until the
-  /// forecast has loaded: the section then shows its timeline or one of its states — or nothing at
-  /// all (`OUT_OF_RANGE`, a member's `NO_LOCATION`), the page then ending on « Personnes
-  /// inscrites ».
+  /// forecast has loaded: the section then shows its timeline or one of its states — for
+  /// `OUT_OF_RANGE` or a member's `NO_LOCATION`, its title and a line saying there is nothing to
+  /// show (ledger `MOB-134`).
   Future<void> waitUntilGroupWeatherIsShown() async {
     final deadline = DateTime.now().add(const Duration(seconds: 20));
     await scrolledIntoView(keys.rideGroup.weatherSection);

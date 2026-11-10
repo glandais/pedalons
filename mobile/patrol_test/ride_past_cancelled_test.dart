@@ -6,9 +6,11 @@ import 'common.dart';
 /// offers no « Rejoindre » in any group », and `flow-rides.e2e.ts` › « an organizer cancels a
 /// published ride: it says « Annulé » and takes no more registrations ».
 ///
-/// « Passée » is judged by the app on the device's clock (`RideTiming.isPast`), the API keeping
-/// the ride `PUBLISHED`. A cancelled ride offers nothing, **not even « Quitter »** to a rider
-/// still registered in it (`rideGroupAction`).
+/// « Terminée » is judged by the app on the device's clock — once the ride is back
+/// (`ridePhase`, ledger `MOB-134`) —, the API keeping the ride `PUBLISHED`. A cancelled ride
+/// offers nothing, **not even « Quitter »** — nor « J'y vais » — to a rider still registered in
+/// it (`rideGroupAction`, `rideRegistrationControlAction`). The cancelled ride here has a single
+/// group: its detail is the group's page, « Personnes inscrites » in place of a card.
 void main() {
   testApp(
     'A past ride says « Terminée » and offers no group action; a cancelled one shows its banner and not even « Quitter »',

@@ -8,8 +8,12 @@ class RideDetailKeys {
   /// Le bandeau « Sortie annulée » sous l'identité.
   final cancelledBanner = const _RideDetailKey('cancelledBanner');
 
-  /// Le badge « Terminée » d'une sortie passée.
+  /// Le badge « Terminée » d'une sortie arrivée (`ridePhase` terminée).
   final finishedBadge = const _RideDetailKey('finishedBadge');
+
+  /// Le badge « En cours » d'une sortie partie et pas encore arrivée
+  /// (`ridePhase`, SYNTHESE §6.2, ledger `MOB-134`).
+  final underWayBadge = const _RideDetailKey('underWayBadge');
 
   /// Le bloc de départ sous l'identité (ledger `MOB-113`).
   final departureBlock = const _RideDetailKey('departureBlock');
@@ -52,27 +56,34 @@ class RideDetailKeys {
   /// Le bouton du bandeau d'exclusivité : quitter l'autre groupe, puis entrer.
   final switchGroupButton = const _RideDetailKey('switchGroupButton');
 
-  /// La carte météo compacte du détail — et la cible du défilement « météo »
-  /// (lien `#meteo`, ou `?tab=weather` d'une page de groupe quittée pour le
-  /// détail, ledger `MOB-69`).
+  /// La carte météo compacte du détail d'une sortie à plusieurs groupes
+  /// (jusqu'au lot 8 du ledger `MOB-134`), et celle d'une étape de voyage.
   final weatherCard = const _RideDetailKey('weatherCard');
+
+  /// Les sections du détail d'une sortie solo ou sans groupe, dans l'ordre
+  /// des maquettes `sortie-solo-mobile-cible` et
+  /// `sortie-sans-groupe-mobile-cible` (ledger `MOB-134`) : bloc de départ
+  /// ([departureBlock]), tuiles, « Parcours », « Description », « Personnes
+  /// inscrites » (solo), « Météo », « Commentaires ».
+  final statTiles = const _RideDetailKey('statTiles');
+  final routeSection = const _RideDetailKey('routeSection');
+  final descriptionSection = const _RideDetailKey('descriptionSection');
+  final participantsSection = const _RideDetailKey('participantsSection');
+
+  /// Le bloc « Météo » de ces détails, attente comprise — la cible du
+  /// défilement « météo » (`?tab=weather` d'une page de groupe quittée pour
+  /// le détail, ledger `MOB-69`). `weatherSection` est son titre.
+  final weatherBlock = const _RideDetailKey('weatherBlock');
+
+  /// L'attente du bloc « Météo », tant que la prévision se charge.
+  final weatherLoading = const _RideDetailKey('weatherLoading');
+
+  final commentsSection = const _RideDetailKey('commentsSection');
 
   /// Les lieux de départ et d'arrivée du bloc de départ, en liens
   /// d'itinéraire (`ridePlaceLinks`, ledger `MOB-134`).
   final startPlaceLink = const _RideDetailKey('startPlaceLink');
   final endPlaceLink = const _RideDetailKey('endPlaceLink');
-
-  /// La section du groupe d'une sortie solo, à la place des cartes de groupe
-  /// (ledger `MOB-69`). Sa présence dit que le détail **est** la page du
-  /// groupe : l'inscription passe par la barre d'action (`keys.rideGroup.*`).
-  final soloGroupSection = const _RideDetailKey('soloGroupSection');
-
-  /// L'en-tête « Groupe X » de cette section, avec la couleur du tracé.
-  final soloGroupHeader = const _RideDetailKey('soloGroupHeader');
-
-  /// Les visages inscrits de cette section, qui ouvrent la feuille des
-  /// participants du groupe.
-  final soloGroupParticipants = const _RideDetailKey('soloGroupParticipants');
 
   /// « Voir la météo du parcours » de la carte météo d'une étape de voyage
   /// (`WeatherForecastCard`) — la carte d'une sortie n'en a plus (ledger
@@ -91,8 +102,9 @@ class RideDetailKeys {
   /// Le mot aux organisateurs : il manque un lieu ou un parcours.
   final weatherNoLocation = const _RideDetailKey('weatherNoLocation');
 
-  /// L'état neutre de l'écran météo d'une étape quand il n'y a rien à montrer
-  /// (`OUT_OF_RANGE`, `NO_LOCATION` pour un membre, statut inconnu).
+  /// Rien à montrer (`OUT_OF_RANGE`, `NO_LOCATION` pour un membre, statut
+  /// inconnu) : la ligne sous le titre de la section Météo (`WeatherSection`,
+  /// ledger `MOB-134`), ou l'état neutre de l'écran météo d'une étape.
   final weatherEmpty = const _RideDetailKey('weatherEmpty');
 
   /// Le crédit des prévisions (CC BY 4.0) : celui de la carte météo compacte,
@@ -193,30 +205,20 @@ class RideGroupPageKeys {
 
   /// Le contrôle d'inscription du bloc de départ (`RideRegistrationControl`) :
   /// « Rejoindre », le badge « J'y vais », « Complet » désactivé, « Changer
-  /// pour A ». Partagé avec la barre d'action d'une sortie solo
-  /// (`RideGroupActionBar`) pour « Rejoindre », « Quitter » et « Complet ».
+  /// pour A ». Le même sur le détail d'une sortie solo (ledger `MOB-134`).
   final joinButton = const _RideGroupKey('joinButton');
   final goingBadge = const _RideGroupKey('goingBadge');
   final switchButton = const _RideGroupKey('switchButton');
 
-  /// « Quitter le groupe », au pied de « Personnes inscrites » sur la page
-  /// d'un groupe ; « Quitter » de la barre d'action d'une sortie solo.
+  /// « Quitter le groupe », au pied de « Personnes inscrites » — page d'un
+  /// groupe, détail d'une sortie solo.
   final leaveButton = const _RideGroupKey('leaveButton');
 
-  /// « Complet » : bouton désactivé sur la page d'un groupe, badge dans la
-  /// barre d'action d'une sortie solo.
+  /// « Complet », bouton désactivé du contrôle d'inscription.
   final fullBadge = const _RideGroupKey('fullBadge');
 
-  /// « Votre inscription est dans le groupe X. » — barre d'action d'une
-  /// sortie solo seulement (retirée au lot 7 du ledger `MOB-134`).
-  final registeredElsewhere = const _RideGroupKey('registeredElsewhere');
-
-  /// Le lien vers le groupe où l'on est inscrit, même barre.
-  final viewMyGroup = const _RideGroupKey('viewMyGroup');
-
-  /// Les places : « 3/16 personnes » de la barre d'action d'une sortie
-  /// solo ; la barre de places et « 13 places restantes » de la page d'un
-  /// groupe.
+  /// Les places : la barre de places et « 13 places restantes » de
+  /// « Personnes inscrites ».
   final participantsCount = const _RideGroupKey('participantsCount');
 
   /// Le capitaine désigné — absent quand `leader` est nul.
@@ -269,8 +271,8 @@ class _RideRouteKey extends ValueKey<String> {
 }
 
 /// La section « Parcours » d'une sortie (`RideRouteSection`, ledger
-/// `MOB-134`) : la page d'un groupe aujourd'hui, la sortie solo et sans
-/// groupe ensuite.
+/// `MOB-134`) : la page d'un groupe, la sortie solo et la sortie sans
+/// groupe.
 class RideRouteSectionKeys {
   /// Le bouton ⓘ de « Profil » et sa feuille (la source des altitudes).
   final profileSource = const _RideRouteKey('profileSource');

@@ -12,13 +12,12 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
-import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/scroll_reveal.dart';
 import '../../../../core/utils/share_link.dart';
 import '../../../../core/widgets/detail_stat_tiles.dart';
 import '../../../../keys.dart';
 import '../../../participants/providers/participant_list_provider.dart';
 import '../../../teams/domain/publication_timing.dart';
-import '../../domain/group_start.dart';
 import '../../domain/group_title.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
@@ -107,6 +106,10 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
   final GlobalKey _weatherAnchor = GlobalKey();
   final GlobalKey _toolbarKey = GlobalKey();
 
+  /// La carte de « Parcours », que le toucher d'un point de la frise remonte
+  /// à l'écran pour qu'on y voie le réticule.
+  final GlobalKey _mapAnchor = GlobalKey();
+
   /// Le défilement vers la météo reste à faire (`?tab=weather`).
   late bool _weatherScrollPending = widget.scrollToWeather;
 
@@ -148,11 +151,25 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     _shareSelection();
   }
 
+  /// Pose le réticule d'un point de la frise et remonte jusqu'à la carte,
+  /// où il se voit ; le même point retouché l'ôte, sans défiler (décision du
+  /// 2026-11-10, docs/LEDGER_*.md MOB-134).
   void _toggleCursor(WeatherCheckpointDto checkpoint) {
+    final bool off = _cursor?.index == checkpoint.indexField;
     setState(() {
-      _cursor = _cursor?.index == checkpoint.indexField
+      _cursor = off
           ? null
           : (index: checkpoint.indexField, distance: checkpoint.distance);
+    });
+    if (off) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      revealInScroll(
+        context,
+        _scroll,
+        _mapAnchor,
+        topInset: _toolbarKey.currentContext?.size?.height ?? 0,
+      );
     });
   }
 
@@ -389,7 +406,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
               key: keys.rideGroup.departureBlock,
               ride: ride,
               group: group,
-              arrival: _arrival(ride, group, leg),
+              arrival: rideGroupArrivalLine(ride, group, leg),
               trailing:
                   RideRegistrationControl.shows(
                     ref,
@@ -432,6 +449,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
                 weatherLeg: leg,
                 weatherAttribution: weather?.attribution,
                 cursorDistance: cursorEnabled ? _cursor?.distance : null,
+                mapKey: _mapAnchor,
               ),
             ),
           ),
@@ -467,49 +485,10 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     );
   }
 
-  /// « Arrivée estimée 12:18 » : l'arrivée du groupe (`estimatedArrival`,
-  /// ledger `API-172`), à défaut celle de son leg météo ; rien sinon.
-  String? _arrival(RideDto ride, RideGroupDto group, WeatherLegDto? leg) {
-    final String? at = group.estimatedArrival;
-    if (at != null) {
-      return 'rides.groupPage.stats.arrival'.tr(
-        namedArgs: <String, String>{
-          'time': formatGroupStart(at, ride.timezone),
-        },
-      );
-    }
-    return groupLegArrival(leg, ride.timezone);
-  }
-
   /// Distance | Dénivelé positif, puis Durée estimée | Vitesse moyenne
   /// (KIT §8) ; une tuile sans donnée disparaît.
-  List<DetailStatTile> _tiles(RideGroupDto group) {
-    final UnitSystem units = ref.watch(unitSystemProvider);
-    return <DetailStatTile>[
-      if (group.distance != null)
-        DetailStatTile(
-          label: 'rides.groupPage.stats.distance'.tr(),
-          value: AppFormatters.formatDistance(group.distance!, units),
-        ),
-      if (group.elevationGain != null)
-        DetailStatTile(
-          label: 'rides.groupPage.stats.elevation'.tr(),
-          value: AppFormatters.formatElevation(group.elevationGain!, units),
-        ),
-      if (group.estimatedDurationMinutes != null)
-        DetailStatTile(
-          label: 'rides.groupPage.stats.estimatedDuration'.tr(),
-          value: AppFormatters.formatDurationMinutes(
-            group.estimatedDurationMinutes!,
-          ),
-        ),
-      if (group.averageSpeed != null)
-        DetailStatTile(
-          label: 'rides.groupPage.stats.pace'.tr(),
-          value: AppFormatters.formatSpeed(group.averageSpeed!, units),
-        ),
-    ];
-  }
+  List<DetailStatTile> _tiles(RideGroupDto group) =>
+      rideGroupStatTiles(group, ref.watch(unitSystemProvider));
 
   /// La section Météo, dépliée : c'est le dernier bloc de la page. Le départ
   /// est celui du leg quand il le porte (le point de rendez-vous à l'heure du
@@ -544,8 +523,8 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
         onRetry: retry,
       ),
       data: (RideWeatherDto dto) => WeatherSection(
-        // `OUT_OF_RANGE`, `NO_LOCATION` pour un membre, statut inconnu : la
-        // section ne rend rien, et la page s'arrête aux personnes inscrites.
+        // `OUT_OF_RANGE`, `NO_LOCATION` pour un membre, statut inconnu : le
+        // titre et une ligne d'explication.
         view: rideWeatherViewOf(
           dto.status,
           canSeeNoLocation: watchCanSeeWeatherNoLocation(ref, key.teamSlug),

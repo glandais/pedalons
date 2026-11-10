@@ -622,7 +622,6 @@
       "one": "{count}/{max} participant",
       "other": "{count}/{max} participants"
     },
-    "viewRoute": "View route",
     "otherGroupsLabel": "Other groups",
     "otherGroups": {
       "one": "View the other group",
@@ -730,9 +729,9 @@
       "legUnavailable": "The forecast along the route is not available yet.",
       "sunrise": "Sunrise {time}",
       "sunset": "Sunset {time}",
-      "legTimes": "Start {start} · estimated arrival {arrival}",
       "legSpeed": "Passages estimated at {speed}",
       "legSpeedDefault": "Passages estimated at {speed}, the default speed: the group sets none",
+      "legSpeedDefaultRide": "Passages estimated at {speed}, the default speed",
       "rainAlert": "Rain likely ({probability}) around {time}.",
       "rainAlertAt": "Rain likely ({probability}) around {time}, at {distance}.",
       "rainAlertShort": "Rain {probability} around {time}",
@@ -772,23 +771,12 @@
       "title": "Group {name}",
       "share": "Share the group",
       "groups": "Ride groups",
-      "participantsCount": {
-        "one": "{count}/{max} participant",
-        "other": "{count}/{max} participants"
-      },
-      "participantsCountNoMax": {
-        "one": "{count} participant",
-        "other": "{count} participants"
-      },
       "placesLeft": {
         "zero": "No places left",
         "one": "{} place left",
         "other": "{} places left"
       },
-      "registeredElsewhere": "You are registered in the {group} group.",
-      "viewMyGroup": "View my group",
       "stats": {
-        "departure": "Start",
         "pace": "Average speed",
         "arrival": "Estimated arrival {time}",
         "distance": "Distance",
@@ -798,7 +786,6 @@
       "leader": "Leader",
       "participantsTitle": "Participants",
       "viewAllParticipants": "View all participants",
-      "routeTitle": "Group route",
       "notFoundTitle": "This group no longer exists",
       "notFoundMessage": "It may have been removed from the ride.",
       "backToRide": "Back to the ride",

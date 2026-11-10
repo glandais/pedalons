@@ -14,12 +14,15 @@ import '../../providers/ride_detail_provider.dart';
 /// Le bloc de départ d'une sortie ou d'un de ses groupes (BRANDING §7.8,
 /// ledgers `BRAND-8`, `MOB-113`), juste sous l'identité.
 ///
-/// * **Sortie** ([group] nul) — le détail d'une sortie donne l'heure **de la
-///   sortie** (décision `BRAND-8`), « sam. 12 avr. », et dessous « Votre groupe : B · 09:30 » quand la personne
-///   est inscrite dans un groupe qui part à son heure propre.
-/// * **Groupe** — la page d'un groupe donne l'heure **du groupe** et
-///   l'arrivée estimée de son leg météo ([arrival]) quand il y en a une :
-///   `endDateTime` est la fin de la sortie entière, pas celle du groupe.
+/// * **Sortie** ([group] nul) — le détail d'une sortie à plusieurs groupes ou
+///   sans groupe donne l'heure **de la sortie** (décision `BRAND-8`), « sam.
+///   12 avr. », et dessous « Votre groupe : B · 09:30 » quand la personne est
+///   inscrite dans un groupe qui part à son heure propre.
+/// * **Groupe** — la page d'un groupe, et le détail d'une sortie solo
+///   (SYNTHESE §6.1 : une seule heure sur l'écran, celle du groupe), donnent
+///   l'heure **du groupe** et son arrivée estimée ([arrival],
+///   `rideGroupArrivalLine`) quand il y en a une : `endDateTime` est la fin
+///   de la sortie entière, pas celle du groupe.
 ///
 /// La mention de fuseau porte sur l'heure affichée.
 class RideDepartureBlock extends StatelessWidget {
@@ -30,6 +33,7 @@ class RideDepartureBlock extends StatelessWidget {
     this.arrival,
     this.trailing,
     this.places = const <Widget>[],
+    this.footnote,
     this.now,
   });
 
@@ -47,6 +51,10 @@ class RideDepartureBlock extends StatelessWidget {
 
   /// Les lieux de départ et d'arrivée, sous l'heure ([ridePlaceLinks]).
   final List<Widget> places;
+
+  /// Une note atténuée au pied du bloc : « Sortie sans groupe, inscription
+  /// impossible » (KIT §8, maquette `sortie-sans-groupe-mobile-cible`).
+  final String? footnote;
 
   /// Un instant, pour les tests ; maintenant sinon.
   final DateTime? now;
@@ -117,6 +125,7 @@ class RideDepartureBlock extends StatelessWidget {
       semanticLabel: semanticLabel,
       trailing: trailing,
       places: places,
+      footnote: footnote,
     );
   }
 }

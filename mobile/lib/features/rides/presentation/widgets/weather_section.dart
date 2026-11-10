@@ -53,8 +53,11 @@ enum WeatherDepartureOf {
 /// Les autres statuts de [view] : `unavailable` rend « Météo indisponible »
 /// et « Réessayer » ([onRetry]), `notYetAvailable` la date d'ouverture
 /// ([availableFrom]), `noLocation` le mot aux organisateurs
-/// ([noLocationMessage]) ; `hidden` ne rend **rien** — l'écran qui voudrait
-/// un état neutre le pose lui-même ([shows]).
+/// ([noLocationMessage]). `hidden` (`OUT_OF_RANGE`, `NO_LOCATION` pour qui
+/// n'organise pas, statut inconnu) garde le titre « Météo » et une ligne
+/// d'explication ([emptyMessage]) : la section ne disparaît plus (décision
+/// du 2026-11-10, docs/LEDGER_*.md MOB-134). [shows] dit encore si la
+/// section a autre chose que cette ligne à montrer.
 ///
 /// Une `Column` au rythme de [DetailSection] (marges latérales comprises) ;
 /// [WeatherSection.sliver] la pose dans un `CustomScrollView`. Aucune
@@ -76,6 +79,7 @@ class WeatherSection extends ConsumerWidget {
     this.departureOnly = false,
     this.speedDefaultKey = 'rides.weather.legSpeedDefault',
     this.noLocationMessage,
+    this.emptyMessage,
     this.onRetry,
     this.onCheckpointTap,
     this.selectedCheckpoint,
@@ -98,6 +102,7 @@ class WeatherSection extends ConsumerWidget {
     bool departureOnly = false,
     String speedDefaultKey = 'rides.weather.legSpeedDefault',
     String? noLocationMessage,
+    String? emptyMessage,
     VoidCallback? onRetry,
     ValueChanged<WeatherCheckpointDto>? onCheckpointTap,
     int? selectedCheckpoint,
@@ -118,6 +123,7 @@ class WeatherSection extends ConsumerWidget {
       departureOnly: departureOnly,
       speedDefaultKey: speedDefaultKey,
       noLocationMessage: noLocationMessage,
+      emptyMessage: emptyMessage,
       onRetry: onRetry,
       onCheckpointTap: onCheckpointTap,
       selectedCheckpoint: selectedCheckpoint,
@@ -173,6 +179,10 @@ class WeatherSection extends ConsumerWidget {
   /// défaut.
   final String? noLocationMessage;
 
+  /// La ligne de `hidden` ; celle d'une sortie par défaut
+  /// (`rides.weather.emptyMessage`).
+  final String? emptyMessage;
+
   /// « Réessayer » de `unavailable`.
   final VoidCallback? onRetry;
 
@@ -183,14 +193,21 @@ class WeatherSection extends ConsumerWidget {
   /// L'`index` du point dont le réticule est sur la carte.
   final int? selectedCheckpoint;
 
-  /// La section rend-elle quelque chose pour [view] ?
+  /// La section a-t-elle, pour [view], autre chose à montrer que la ligne
+  /// « Aucune prévision… » de `hidden` ?
   static bool shows(RideWeatherView view) => view != RideWeatherView.hidden;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!shows(view)) return const SizedBox.shrink();
+    final PdlTypography t = context.pdlText;
     final List<Widget> body = switch (view) {
-      RideWeatherView.hidden => const <Widget>[],
+      RideWeatherView.hidden => <Widget>[
+        Text(
+          emptyMessage ?? 'rides.weather.emptyMessage'.tr(),
+          key: keys.ride.weatherEmpty,
+          style: t.sub,
+        ),
+      ],
       RideWeatherView.unavailable => <Widget>[
         WeatherUnavailableState(onRetry: onRetry ?? () {}),
       ],

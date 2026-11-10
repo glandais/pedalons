@@ -10,7 +10,6 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
-import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
@@ -20,9 +19,10 @@ import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/features/participants/data/participant_repository.dart';
 import 'package:pedalons/features/participants/domain/participant_query.dart';
 import 'package:pedalons/features/participants/presentation/widgets/participants_sheet.dart';
+import 'package:pedalons/features/comments/data/comment_repository.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dart';
-import 'package:pedalons/features/rides/presentation/widgets/ride_group_stats.dart';
-import 'package:pedalons/features/rides/presentation/widgets/ride_solo_group_section.dart';
+import 'package:pedalons/features/rides/presentation/widgets/ride_groups_map.dart';
+import 'package:pedalons/features/rides/providers/ride_scroll_target_provider.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
 import 'package:pedalons/features/routes/domain/track_surfaces.dart';
@@ -141,6 +141,31 @@ class _StubRoutes implements RouteRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Le fil de commentaires : vide, sans appel réseau.
+class _StubComments implements CommentRepository {
+  @override
+  Future<CommentListResponse> list(
+    CommentTarget target, {
+    int page = 0,
+    int size = 20,
+    String? parentId,
+    SortDirection? sort,
+  }) async => CommentListResponse(
+    items: const <CommentDto>[],
+    total: 0,
+    itemTotal: 0,
+    page: page,
+    size: size,
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// « Maintenant » des tests : avant le départ des groupes du jeu d'essai
+/// (`fixtureGroup`, le 11 octobre 2026 à 06:00 UTC).
+final DateTime _now = DateTime.utc(2026, 10, 1);
+
 class _StubTeamRepository implements TeamRepository {
   _StubTeamRepository({required this.member, this.role});
 
@@ -209,6 +234,7 @@ void main() {
     _StubRideRepository? repository,
     String? role,
     List<RouteDetailDto> routes = const <RouteDetailDto>[],
+    DateTime? now,
   }) {
     return ProviderScope(
       // Pas de nouvel essai : une erreur se lit tout de suite, comme avec la
@@ -225,10 +251,15 @@ void main() {
         participantRepositoryProvider.overrideWithValue(_StubParticipants()),
         // Les tracés d'une sortie qui a un parcours : aucun appel réseau.
         routeRepositoryProvider.overrideWithValue(_StubRoutes(routes)),
+        commentRepositoryProvider.overrideWithValue(_StubComments()),
       ],
       child: MaterialApp(
         theme: PedalonsTheme.build(brightness ?? Brightness.light),
-        home: RideDetailPage(teamSlug: ride.team.slug, rideSlug: ride.slug),
+        home: RideDetailPage(
+          teamSlug: ride.team.slug,
+          rideSlug: ride.slug,
+          now: now ?? _now,
+        ),
       ),
     );
   }
@@ -241,7 +272,16 @@ void main() {
     _StubRideRepository? repository,
     String? role,
     List<RouteDetailDto> routes = const <RouteDetailDto>[],
+    DateTime? now,
+    double? height,
   }) async {
+    // Une page assez haute pour que ce qui est sous le pli soit construit :
+    // un `CustomScrollView` ne livre pas aux `find` ce qu'il n'affiche pas.
+    if (height != null) {
+      tester.view.physicalSize = Size(402 * 3, height * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+    }
     await tester.pumpWidget(
       app(
         ride,
@@ -250,6 +290,7 @@ void main() {
         repository: repository,
         role: role,
         routes: routes,
+        now: now,
       ),
     );
     // Trois paliers asynchrones s'enchaînent : le chargement des traductions,
@@ -402,21 +443,78 @@ void main() {
     },
   );
 
-  testWidgets('une sortie sans groupe le dit, plutôt que de ne rien rendre', (
-    WidgetTester tester,
-  ) async {
-    await open(tester, fixtureRide(groups: <RideGroupDto>[]));
-    await scrollToGroups(tester);
+  /// Le bloc de départ, et ce qu'il contient.
+  Finder inBlock(Finder matching) => find.descendant(
+    of: find.byKey(keys.ride.departureBlock),
+    matching: matching,
+  );
 
-    expect(find.text('Aucun groupe'), findsOneWidget);
+  /// « Personnes inscrites » d'une sortie solo, et ce qu'elle contient.
+  Finder inParticipants(Finder matching) => find.descendant(
+    of: find.byKey(keys.ride.participantsSection),
+    matching: matching,
+  );
+
+  /// Une sortie solo dont le départ — celui de la sortie et de son groupe —
+  /// est passé depuis longtemps.
+  RideDto pastSolo({bool registered = false}) => fixtureRide(
+    dateTime: '2020-07-29T19:30:00Z',
+    registered: registered,
+    registeredGroupId: registered ? 'g1' : null,
+    groups: <RideGroupDto>[
+      fixtureGroup(
+        registered: registered,
+        startAt: '2020-07-29T19:30:00Z',
+        routeSlug: 'court',
+      ),
+    ],
+  );
+
+  // ─────────────────────────────── sortie sans groupe (MOB-134, lot 7)
+
+  testWidgets('une sortie sans groupe le dit dans son bloc de départ, sans '
+      'bouton ni section Groupes', (WidgetTester tester) async {
+    await open(tester, fixtureRide(groups: <RideGroupDto>[]), height: 4000);
+
+    expect(
+      inBlock(find.text('Sortie sans groupe, inscription impossible')),
+      findsOneWidget,
+    );
+    expect(find.text('Aucun groupe'), findsNothing);
     expect(find.byType(RideGroupCard), findsNothing);
+    expect(find.text('Groupes'), findsNothing);
+    expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+    expect(find.byType(PdlActionBar), findsNothing);
   });
 
   testWidgets('une sortie sans groupe ne dit pas « Personnes inscrites »', (
     WidgetTester tester,
   ) async {
-    await open(tester, fixtureRide(groups: <RideGroupDto>[]));
+    await open(tester, fixtureRide(groups: <RideGroupDto>[]), height: 4000);
     expect(find.text('Personnes inscrites'), findsNothing);
+    expect(find.byKey(keys.ride.participantsSection), findsNothing);
+  });
+
+  testWidgets('une sortie sans groupe : Distance | Dénivelé positif, sur une '
+      'ligne', (WidgetTester tester) async {
+    await open(
+      tester,
+      fixtureRide(groups: <RideGroupDto>[])
+          .copyWith(distance: 92400, elevationGain: 1240),
+      height: 4000,
+    );
+
+    final Finder tiles = find.byKey(keys.ride.statTiles);
+    expect(tiles, findsOneWidget);
+    for (final String label in <String>['Distance', 'Dénivelé positif']) {
+      expect(
+        find.descendant(of: tiles, matching: find.text(label)),
+        findsOneWidget,
+      );
+    }
+    for (final String label in <String>['Durée estimée', 'Vitesse moyenne']) {
+      expect(find.text(label), findsNothing);
+    }
   });
 
   for (final Brightness brightness in Brightness.values) {
@@ -441,9 +539,172 @@ void main() {
 
       await scrollToGroups(tester);
       expect(tester.takeException(), isNull);
-      expect(find.byKey(keys.ride.soloGroupSection), findsOneWidget);
+      expect(find.byKey(keys.ride.participantsSection), findsOneWidget);
+    });
+
+    testWidgets('une sortie sans groupe se rend sans débordement — $mode', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        fixtureRide(groups: <RideGroupDto>[]),
+        brightness: brightness,
+        height: 4000,
+      );
+      expect(tester.takeException(), isNull);
     });
   }
+
+  // ─────────────────────────────── l'ordre des maquettes (MOB-134, lot 7)
+
+  group('l\'ordre des maquettes', () {
+    setUp(() => RideGroupsMap.debugSkipNativeMap = true);
+    tearDown(() => RideGroupsMap.debugSkipNativeMap = false);
+
+    const MediaDto described = MediaDto(
+      markdown: 'Boucle vallonnée par le Roc\'h Trévezel.',
+      assets: AssetsDto(images: <AssetDto>[], attachments: <AssetDto>[]),
+    );
+
+    void expectOrder(WidgetTester tester, List<Key> order) {
+      final List<double> tops = <double>[
+        for (final Key k in order) tester.getTopLeft(find.byKey(k)).dy,
+      ];
+      for (int i = 1; i < tops.length; i++) {
+        expect(
+          tops[i],
+          greaterThan(tops[i - 1]),
+          reason: '${order[i]} doit suivre ${order[i - 1]}',
+        );
+      }
+    }
+
+    testWidgets('sortie-solo-mobile-cible', (WidgetTester tester) async {
+      final RideDto ride = fixtureRide(
+        groups: <RideGroupDto>[fixtureGroup(routeSlug: 'court')],
+      ).copyWith(media: described, commentCount: 2);
+      await open(
+        tester,
+        ride,
+        height: 6000,
+        repository: _StubRideRepository(
+          ride,
+          weather: fixtureWeather(
+            status: 'OK',
+            departure: fixtureConditions(),
+            fetchedAt: '2099-07-29T17:00:00Z',
+            legs: <WeatherLegDto>[fixtureLeg()],
+          ),
+        ),
+      );
+
+      expectOrder(tester, <Key>[
+        keys.ride.title,
+        keys.ride.departureBlock,
+        keys.ride.statTiles,
+        keys.ride.routeSection,
+        keys.ride.descriptionSection,
+        keys.ride.participantsSection,
+        keys.ride.weatherBlock,
+        keys.ride.commentsSection,
+      ]);
+      // L'inscription est dans le bloc de départ ; ni barre d'action, ni
+      // carte météo au-dessus de la carte, ni section du groupe.
+      expect(inBlock(find.byKey(keys.rideGroup.joinButton)), findsOneWidget);
+      expect(find.byType(PdlActionBar), findsNothing);
+      expect(find.byKey(keys.ride.weatherCard), findsNothing);
+      expect(find.byType(RideGroupCard), findsNothing);
+      // « Météo le long du parcours » replié : des commentaires suivent.
+      expect(find.byKey(keys.ride.weatherAlongRoute), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sortie-sans-groupe-mobile-cible', (WidgetTester tester) async {
+      final RideDto ride = fixtureRide(groups: <RideGroupDto>[]).copyWith(
+        routeSlug: 'court',
+        distance: 92400,
+        elevationGain: 1240,
+        media: described,
+        commentCount: 2,
+      );
+      await open(
+        tester,
+        ride,
+        height: 6000,
+        repository: _StubRideRepository(
+          ride,
+          weather: fixtureWeather(
+            status: 'OK',
+            departure: fixtureConditions(),
+            fetchedAt: '2099-07-29T17:00:00Z',
+            legs: <WeatherLegDto>[
+              fixtureLeg(groupId: null, speedIsDefault: true),
+            ],
+          ),
+        ),
+      );
+
+      expectOrder(tester, <Key>[
+        keys.ride.title,
+        keys.ride.departureBlock,
+        keys.ride.statTiles,
+        keys.ride.routeSection,
+        keys.ride.descriptionSection,
+        keys.ride.weatherBlock,
+        keys.ride.commentsSection,
+      ]);
+      expect(find.byKey(keys.ride.participantsSection), findsNothing);
+      expect(find.text('Groupes'), findsNothing);
+      // La vitesse par défaut n'est le fait d'aucun groupe.
+      expect(find.textContaining(', vitesse par défaut'), findsOneWidget);
+      expect(find.textContaining('le groupe n\'en indique pas'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sans parcours : pas de section Parcours', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, fixtureRide(groups: <RideGroupDto>[]), height: 4000);
+      expect(find.byKey(keys.ride.routeSection), findsNothing);
+      expect(find.text('Parcours'), findsNothing);
+    });
+  });
+
+  // ──────────────────────────────────────── badges de phase (SYNTHESE §6.2)
+
+  group('badges de phase', () {
+    RideDto leaving() => fixtureRide(
+      dateTime: '2026-10-11T06:00:00Z',
+      groups: <RideGroupDto>[fixtureGroup(startAt: '2026-10-11T06:00:00Z')],
+    );
+
+    testWidgets('« En cours » entre le départ et l\'arrivée', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, leaving(), now: DateTime.utc(2026, 10, 11, 7));
+
+      expect(find.byKey(keys.ride.underWayBadge), findsOneWidget);
+      expect(find.text('EN COURS'), findsOneWidget);
+      expect(find.byKey(keys.ride.finishedBadge), findsNothing);
+    });
+
+    testWidgets('« Terminée » une fois arrivée, plus « En cours »', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, leaving(), now: DateTime.utc(2026, 10, 11, 10));
+
+      expect(find.byKey(keys.ride.finishedBadge), findsOneWidget);
+      expect(find.byKey(keys.ride.underWayBadge), findsNothing);
+    });
+
+    testWidgets('à venir : ni l\'un ni l\'autre', (WidgetTester tester) async {
+      await open(tester, leaving());
+
+      expect(find.byKey(keys.ride.finishedBadge), findsNothing);
+      expect(find.byKey(keys.ride.underWayBadge), findsNothing);
+    });
+  });
 
   group('météo', () {
     RideWeatherDto ok({String status = 'OK'}) => fixtureWeather(
@@ -458,9 +719,8 @@ void main() {
       ],
     );
 
-    testWidgets('la carte dit la météo au départ, et elle seule', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('plusieurs groupes : la carte dit la météo au départ, et elle '
+        'seule', (WidgetTester tester) async {
       final RideDto ride = twoGroups();
       await open(
         tester,
@@ -470,7 +730,7 @@ void main() {
 
       expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
       expect(find.textContaining('Météo au départ de '), findsOneWidget);
-      expect(find.text('14\u00a0°C'), findsWidgets);
+      expect(find.text('14 °C'), findsWidgets);
       expect(find.text('Partiellement nuageux'), findsWidgets);
       expect(find.textContaining('Ressenti'), findsOneWidget);
       // Ni le vent le long du parcours ni l'alerte pluie d'un groupe : ils
@@ -480,61 +740,61 @@ void main() {
       expect(find.byKey(keys.ride.weatherOpenButton), findsNothing);
       expect(find.text('Voir la météo du parcours'), findsNothing);
       expect(find.text('Prévision ancienne'), findsNothing);
+      expect(find.byKey(keys.ride.weatherSection), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('une sortie sans groupe garde son vent et sa pluie', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('une sortie sans groupe : la section Météo garde son vent et '
+        'sa pluie', (WidgetTester tester) async {
       final RideDto ride = fixtureRide(groups: const <RideGroupDto>[]);
       final RideWeatherDto weather = fixtureWeather(
         status: 'OK',
         departure: fixtureConditions(),
-        legs: <WeatherLegDto>[
-          fixtureLeg(
-            groupId: null,
-            rainAlert: const WeatherRainAlertDto(
-              probability: 70,
-              time: '2099-07-29T20:05:00Z',
-              condition: 'RAIN',
-              distance: 15000,
-            ),
-          ),
-        ],
+        legs: <WeatherLegDto>[fixtureLeg(groupId: null, rainAlert: _rain70)],
       );
       await open(
         tester,
         ride,
+        height: 4000,
         repository: _StubRideRepository(ride, weather: weather),
       );
 
-      expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
-      expect(find.byType(PdlSegmentBar), findsOneWidget);
-      expect(find.textContaining('Pluie probable (70\u00a0%)'), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherCard), findsNothing);
+      expect(find.byKey(keys.ride.weatherExposure), findsOneWidget);
+      expect(
+        find.textContaining('Pluie probable (70 %)', findRichText: true),
+        findsWidgets,
+      );
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('une sortie à un groupe déroule le leg de son groupe', (
-      WidgetTester tester,
-    ) async {
-      tester.view.physicalSize = const Size(402 * 3, 4000 * 3);
-      tester.view.devicePixelRatio = 3;
-      addTearDown(tester.view.reset);
+    testWidgets('une sortie à un groupe déroule le leg de son groupe, frise '
+        'repliée', (WidgetTester tester) async {
       final RideDto ride = fixtureRide();
       await open(
         tester,
         ride,
+        height: 4000,
         repository: _StubRideRepository(ride, weather: ok()),
       );
 
-      expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
-      // Un seul « Météo au départ » : le leg se déroule dessous, pas dans un
-      // second bloc.
+      expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherCard), findsNothing);
+      // Un seul « Météo au départ ».
       expect(find.textContaining('Météo au départ de '), findsOneWidget);
-      expect(find.text('Météo du parcours'), findsOneWidget);
-      expect(find.textContaining('Pluie probable (70\u00a0%)'), findsOneWidget);
+      expect(
+        find.textContaining('Pluie probable (70 %)', findRichText: true),
+        findsWidgets,
+      );
       expect(find.text('Exposition au vent'), findsOneWidget);
-      expect(find.byType(PdlSegmentBar), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherExposure), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsNothing);
+
+      await tester.tap(find.byKey(keys.ride.weatherAlongRoute));
+      for (int i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
       expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsOneWidget);
       expect(find.byKey(keys.ride.weatherCheckpoint(2)), findsOneWidget);
       // Ni carte de groupe, ni sa ligne météo courte.
@@ -549,6 +809,7 @@ void main() {
       await open(
         tester,
         ride,
+        height: 4000,
         repository: _StubRideRepository(
           ride,
           weather: fixtureWeather(
@@ -559,9 +820,9 @@ void main() {
         ),
       );
 
-      expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
-      expect(find.byType(PdlSegmentBar), findsNothing);
-      expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsNothing);
+      expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherExposure), findsNothing);
+      expect(find.byKey(keys.ride.weatherAlongRoute), findsNothing);
     });
 
     testWidgets('la carte d\'un groupe porte sa ligne météo', (
@@ -579,16 +840,15 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(keys.ride.groupWeatherLine('g1')),
-          matching: find.textContaining('Pluie 70 % vers'),
+          matching: find.textContaining('Pluie 70\u00a0% vers'),
         ),
         findsOneWidget,
       );
     });
 
-    testWidgets('la carte compacte crédite Open-Meteo (CC BY 4.0)', (
-      WidgetTester tester,
-    ) async {
-      final RideDto ride = fixtureRide();
+    testWidgets('plusieurs groupes : la carte compacte crédite Open-Meteo '
+        '(CC BY 4.0)', (WidgetTester tester) async {
+      final RideDto ride = twoGroups();
       await open(
         tester,
         ride,
@@ -599,23 +859,41 @@ void main() {
       expect(find.text('Prévisions : Open-Meteo.com'), findsOneWidget);
     });
 
+    testWidgets('une sortie solo : la prévision et sa source au pied de la '
+        'section', (WidgetTester tester) async {
+      final RideDto ride = fixtureRide();
+      await open(
+        tester,
+        ride,
+        height: 4000,
+        repository: _StubRideRepository(ride, weather: ok()),
+      );
+
+      expect(find.byKey(keys.ride.weatherForecastOf), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherSourceButton), findsOneWidget);
+    });
+
     group('pendant le chargement', () {
       final Finder weatherSkeleton = find.byWidgetPredicate(
         (Widget w) => w is PdlSkeleton && w.height == 96,
       );
 
-      Future<void> openLoading(WidgetTester tester, RideDto ride) => open(
+      Future<void> openLoading(
+        WidgetTester tester,
+        RideDto ride, {
+        double? height,
+      }) => open(
         tester,
         ride,
+        height: height,
         repository: _StubRideRepository(ride)..weatherNeverCompletes = true,
       );
 
-      testWidgets('un squelette quand le résumé annonce une prévision', (
-        WidgetTester tester,
-      ) async {
+      testWidgets('plusieurs groupes : un squelette quand le résumé annonce '
+          'une prévision', (WidgetTester tester) async {
         await openLoading(
           tester,
-          fixtureRide().copyWith(
+          twoGroups().copyWith(
             weather: const RideWeatherSummaryDto(status: 'OK', temperature: 14),
           ),
         );
@@ -623,12 +901,11 @@ void main() {
         expect(weatherSkeleton, findsOneWidget);
       });
 
-      testWidgets('NOT_YET_AVAILABLE : la carte, tout de suite', (
-        WidgetTester tester,
-      ) async {
+      testWidgets('plusieurs groupes, NOT_YET_AVAILABLE : la carte, tout de '
+          'suite', (WidgetTester tester) async {
         await openLoading(
           tester,
-          fixtureRide().copyWith(
+          twoGroups().copyWith(
             weather: const RideWeatherSummaryDto(
               status: 'NOT_YET_AVAILABLE',
               availableFrom: '2099-07-22T19:30:00Z',
@@ -640,18 +917,29 @@ void main() {
         expect(find.byKey(keys.ride.weatherNotYetAvailable), findsOneWidget);
       });
 
-      testWidgets('sans résumé, rien : le bloc sera peut-être masqué', (
+      testWidgets('plusieurs groupes, sans résumé : rien', (
         WidgetTester tester,
       ) async {
-        await openLoading(tester, fixtureRide());
+        await openLoading(tester, twoGroups());
 
         expect(weatherSkeleton, findsNothing);
         expect(find.byKey(keys.ride.weatherCard), findsNothing);
       });
+
+      testWidgets('une sortie solo : l\'attente de la section', (
+        WidgetTester tester,
+      ) async {
+        await openLoading(tester, fixtureRide(), height: 4000);
+
+        expect(find.byKey(keys.ride.weatherLoading), findsOneWidget);
+        expect(find.byKey(keys.ride.weatherSection), findsNothing);
+      });
     });
 
-    testWidgets('STALE se montre, et se signale', (WidgetTester tester) async {
-      final RideDto ride = fixtureRide();
+    testWidgets('plusieurs groupes : STALE se montre, et se signale', (
+      WidgetTester tester,
+    ) async {
+      final RideDto ride = twoGroups();
       await open(
         tester,
         ride,
@@ -660,6 +948,24 @@ void main() {
 
       expect(find.byKey(keys.ride.weatherCard), findsOneWidget);
       expect(find.text('PRÉVISION ANCIENNE'), findsOneWidget);
+    });
+
+    testWidgets('une sortie solo : STALE se signale par un bandeau', (
+      WidgetTester tester,
+    ) async {
+      final RideDto ride = fixtureRide();
+      await open(
+        tester,
+        ride,
+        height: 4000,
+        repository: _StubRideRepository(ride, weather: ok(status: 'STALE')),
+      );
+
+      expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
+      expect(
+        find.textContaining('Prévision ancienne', findRichText: true),
+        findsWidgets,
+      );
     });
 
     testWidgets('toucher la carte d\'un groupe ouvre sa page', (
@@ -735,13 +1041,11 @@ void main() {
         ride,
         weather: fixtureWeather(status: 'UNAVAILABLE'),
       );
-      await open(tester, ride, repository: repository);
+      await open(tester, ride, repository: repository, height: 4000);
 
+      expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
       expect(find.byKey(keys.ride.weatherUnavailable), findsOneWidget);
       final int before = repository.weatherCalls;
-      // Le bloc de départ (ledger `MOB-113`) pousse la carte météo plus bas.
-      await tester.ensureVisible(find.byKey(keys.ride.weatherRetryButton));
-      await tester.pump();
       await tester.tap(find.byKey(keys.ride.weatherRetryButton));
       await tester.pump();
       await tester.pump();
@@ -754,7 +1058,7 @@ void main() {
       final RideDto ride = fixtureRide();
       final _StubRideRepository repository = _StubRideRepository(ride)
         ..weatherError = Exception('réseau');
-      await open(tester, ride, repository: repository);
+      await open(tester, ride, repository: repository, height: 4000);
 
       expect(find.byKey(keys.ride.weatherUnavailable), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -767,6 +1071,7 @@ void main() {
       await open(
         tester,
         ride,
+        height: 4000,
         repository: _StubRideRepository(
           ride,
           weather: fixtureWeather(
@@ -778,8 +1083,11 @@ void main() {
 
       expect(find.byKey(keys.ride.weatherNotYetAvailable), findsOneWidget);
       expect(
-        find.textContaining('Prévision disponible à partir du'),
-        findsOneWidget,
+        find.textContaining(
+          'Prévision disponible à partir du',
+          findRichText: true,
+        ),
+        findsWidgets,
       );
     });
 
@@ -790,6 +1098,7 @@ void main() {
       await open(
         tester,
         ride,
+        height: 4000,
         repository: _StubRideRepository(
           ride,
           weather: fixtureWeather(status: 'NOT_YET_AVAILABLE'),
@@ -798,19 +1107,22 @@ void main() {
 
       expect(find.byKey(keys.ride.weatherNotYetAvailable), findsOneWidget);
       expect(
-        find.text('La météo sera disponible sept jours avant le départ.'),
-        findsOneWidget,
+        find.textContaining(
+          'La météo sera disponible sept jours avant le départ.',
+          findRichText: true,
+        ),
+        findsWidgets,
       );
     });
 
-    testWidgets('NO_LOCATION : rien pour un membre', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('NO_LOCATION pour un membre : le titre et une ligne, pas le '
+        'mot aux organisateurs', (WidgetTester tester) async {
       final RideDto ride = fixtureRide();
       await open(
         tester,
         ride,
         role: 'MEMBER',
+        height: 4000,
         repository: _StubRideRepository(
           ride,
           weather: fixtureWeather(status: 'NO_LOCATION'),
@@ -818,6 +1130,8 @@ void main() {
       );
 
       expect(find.byKey(keys.ride.weatherNoLocation), findsNothing);
+      expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherEmpty), findsOneWidget);
     });
 
     testWidgets('NO_LOCATION : un mot pour l\'organisateur', (
@@ -828,6 +1142,7 @@ void main() {
         tester,
         ride,
         role: 'ORGANIZER',
+        height: 4000,
         repository: _StubRideRepository(
           ride,
           weather: fixtureWeather(status: 'NO_LOCATION'),
@@ -837,34 +1152,68 @@ void main() {
       expect(find.byKey(keys.ride.weatherNoLocation), findsOneWidget);
     });
 
-    testWidgets('un statut inconnu ne rend rien', (WidgetTester tester) async {
-      final RideDto ride = fixtureRide();
-      await open(
-        tester,
-        ride,
-        repository: _StubRideRepository(
+    for (final String status in <String>['OUT_OF_RANGE', 'SOMETHING_NEW']) {
+      testWidgets('$status : le titre « Météo » et une ligne d\'explication', (
+        WidgetTester tester,
+      ) async {
+        final RideDto ride = fixtureRide();
+        await open(
+          tester,
           ride,
-          weather: fixtureWeather(status: 'SOMETHING_NEW'),
-        ),
-      );
+          height: 4000,
+          repository: _StubRideRepository(
+            ride,
+            weather: fixtureWeather(status: status),
+          ),
+        );
 
-      expect(find.byKey(keys.ride.weatherCard), findsNothing);
-      expect(find.byKey(keys.ride.weatherUnavailable), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
+        expect(
+          find.text('Aucune prévision n\'est à afficher pour cette sortie.'),
+          findsOneWidget,
+        );
+        expect(find.byKey(keys.ride.weatherUnavailable), findsNothing);
+        expect(find.byKey(keys.ride.weatherCard), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    }
 
     testWidgets('une sortie terminée ne demande même pas la météo', (
       WidgetTester tester,
     ) async {
-      final RideDto ride = fixtureRide(dateTime: '2020-01-01T08:00:00Z');
+      final RideDto ride = pastSolo();
       final _StubRideRepository repository = _StubRideRepository(
         ride,
         weather: ok(),
       );
-      await open(tester, ride, repository: repository);
+      await open(tester, ride, repository: repository, height: 4000);
 
-      expect(find.byKey(keys.ride.weatherCard), findsNothing);
+      expect(find.byKey(keys.ride.weatherBlock), findsNothing);
+      expect(find.byKey(keys.ride.weatherSection), findsNothing);
       expect(repository.weatherCalls, 0);
+    });
+
+    testWidgets('une sortie en cours garde sa météo', (
+      WidgetTester tester,
+    ) async {
+      final RideDto ride = fixtureRide(
+        dateTime: '2026-10-11T06:00:00Z',
+        groups: <RideGroupDto>[fixtureGroup(startAt: '2026-10-11T06:00:00Z')],
+      );
+      final _StubRideRepository repository = _StubRideRepository(
+        ride,
+        weather: ok(),
+      );
+      await open(
+        tester,
+        ride,
+        repository: repository,
+        height: 4000,
+        now: DateTime.utc(2026, 10, 11, 7),
+      );
+
+      expect(repository.weatherCalls, 1);
+      expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
     });
 
     testWidgets('le pull-to-refresh reprend aussi la météo', (
@@ -905,7 +1254,7 @@ void main() {
     });
   });
 
-  // ─────────────────────────────────────────── sortie solo (ledger MOB-69)
+  // ─────────────────────────────────── sortie solo (ledgers MOB-69, MOB-134)
 
   group('sortie à un seul groupe', () {
     RideWeatherDto ok() => fixtureWeather(
@@ -915,104 +1264,82 @@ void main() {
       legs: <WeatherLegDto>[fixtureLeg()],
     );
 
-    testWidgets('la section du groupe remplace les cartes, sans lien', (
-      WidgetTester tester,
-    ) async {
-      final RideDto ride = fixtureRide();
-      final GoRouter router = GoRouter(
-        routes: <RouteBase>[
-          GoRoute(
-            path: '/',
-            builder: (BuildContext _, GoRouterState _) =>
-                RideDetailPage(teamSlug: ride.team.slug, rideSlug: ride.slug),
-          ),
-          for (final String path in PathVariants.rideGroup(
-            ':teamSlug',
-            ':rideSlug',
-            ':groupId',
-          ).values)
-            GoRoute(
-              path: path,
-              builder: (BuildContext _, GoRouterState state) => RideGroupPage(
-                teamSlug: state.pathParameters['teamSlug']!,
-                rideSlug: state.pathParameters['rideSlug']!,
-                groupId: state.pathParameters['groupId']!,
-              ),
-            ),
-        ],
-      );
-      addTearDown(router.dispose);
-      await tester.pumpWidget(
-        ProviderScope(
-          retry: (int _, Object _) => null,
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            rideRepositoryProvider.overrideWithValue(
-              _StubRideRepository(ride, weather: ok()),
-            ),
-            teamRepositoryProvider.overrideWithValue(
-              _StubTeamRepository(member: true),
-            ),
-            participantRepositoryProvider.overrideWithValue(
-              _StubParticipants(),
-            ),
-          ],
-          child: MaterialApp.router(
-            theme: PedalonsTheme.build(Brightness.light),
-            routerConfig: router,
-          ),
-        ),
-      );
-      for (int i = 0; i < 4; i++) {
-        await tester.pump(const Duration(milliseconds: 10));
-      }
-      await scrollToGroups(tester);
+    testWidgets('ni carte de groupe ni barre d\'action : le détail est la '
+        'page du groupe', (WidgetTester tester) async {
+      await open(tester, fixtureRide(), height: 4000);
 
-      expect(find.byType(RideSoloGroupSection), findsOneWidget);
-      expect(find.byKey(keys.ride.soloGroupHeader), findsOneWidget);
-      expect(find.text('Groupe Chill Route Long'), findsOneWidget);
       expect(find.byType(RideGroupCard), findsNothing);
       expect(find.text('Groupes'), findsNothing);
+      expect(find.byType(PdlActionBar), findsNothing);
+      expect(find.byKey(keys.ride.participantsSection), findsOneWidget);
+      // « Voir toutes les personnes inscrites » est dans la section.
       expect(
-        find.descendant(
-          of: find.byType(RideSoloGroupSection),
-          matching: find.byIcon(PdlIcons.chevronRight),
-        ),
-        findsNothing, // ni lien d'en-tête, ni second « Voir la liste »
+        inParticipants(find.byKey(keys.rideGroup.viewAllParticipants)),
+        findsOneWidget,
       );
-      // Un seul « voir les participants » : celui du bloc méta, au-dessus.
-      expect(find.byKey(keys.rideGroup.viewAllParticipants), findsNothing);
-
-      await tester.tap(find.byKey(keys.ride.soloGroupHeader));
-      for (int i = 0; i < 4; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-      expect(find.byType(RideGroupPage), findsNothing);
-      expect(tester.takeException(), isNull);
+      // Plus de « Voir la liste » de l'ancien bloc méta.
+      expect(find.byKey(keys.ride.participantsButton), findsNothing);
     });
 
-    testWidgets('« Rejoindre » est dans la barre d\'action, avec les places', (
+    testWidgets('une seule heure à l\'écran : celle du groupe', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        fixtureRide(
+          dateTime: '2026-10-11T05:30:00Z',
+          groups: <RideGroupDto>[fixtureGroup(startAt: '2026-10-11T06:00:00Z')],
+        ),
+      );
+
+      // 06:00 UTC, à Paris en octobre : 08:00.
+      expect(inBlock(find.text('Départ 08:00')), findsOneWidget);
+      expect(find.text('Départ 07:30'), findsNothing);
+      expect(inBlock(find.textContaining('Votre groupe')), findsNothing);
+    });
+
+    testWidgets('les tuiles du groupe, et son arrivée estimée dans le bloc', (
       WidgetTester tester,
     ) async {
       final RideDto ride = fixtureRide();
+      await open(
+        tester,
+        ride,
+        repository: _StubRideRepository(ride, weather: ok()),
+      );
+
+      final Finder tiles = find.byKey(keys.ride.statTiles);
+      for (final String label in <String>[
+        'Distance',
+        'Dénivelé positif',
+        'Vitesse moyenne',
+      ]) {
+        expect(
+          find.descendant(of: tiles, matching: find.text(label)),
+          findsOneWidget,
+        );
+      }
+      expect(inBlock(find.textContaining('Arrivée estimée')), findsOneWidget);
+    });
+
+    testWidgets('« Rejoindre » dans le bloc de départ, sans confirmation ; '
+        'les places dans « Personnes inscrites »', (WidgetTester tester) async {
+      final RideDto ride = fixtureRide();
       final _StubRideRepository repository = _StubRideRepository(ride);
-      await open(tester, ride, repository: repository);
+      await open(tester, ride, repository: repository, height: 4000);
 
-      expect(find.byKey(keys.rideGroup.participantsCount), findsOneWidget);
-      expect(find.text('3/16 personnes'), findsOneWidget);
-      expect(find.text('13 places restantes'), findsOneWidget);
-      expect(find.byKey(keys.rideGroup.viewMyGroup), findsNothing);
+      expect(inParticipants(find.text('3/16')), findsOneWidget);
+      expect(inParticipants(find.text('13 places restantes')), findsOneWidget);
 
-      await tester.tap(find.byKey(keys.rideGroup.joinButton));
+      await tester.tap(inBlock(find.byKey(keys.rideGroup.joinButton)));
       await tester.pump();
       await tester.pump();
 
       expect(repository.joined, <String>['g1']);
     });
 
-    testWidgets('un refus de « Rejoindre » fait défiler jusqu\'à son bandeau', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('un refus de « Rejoindre » pose son bandeau au-dessus du bloc '
+        'de départ, à l\'écran', (WidgetTester tester) async {
       final RideDto ride = fixtureRide();
       final _StubRideRepository repository = _StubRideRepository(ride)
         ..joinError = DioException(
@@ -1025,8 +1352,6 @@ void main() {
           ),
         );
       await open(tester, ride, repository: repository);
-      // La section du groupe est sous le pli : le bandeau n'y est pas bâti.
-      expect(find.byKey(keys.ride.soloGroupSection), findsNothing);
 
       await tester.tap(find.byKey(keys.rideGroup.joinButton));
       for (int i = 0; i < 10; i++) {
@@ -1040,28 +1365,73 @@ void main() {
           tester.view.physicalSize / tester.view.devicePixelRatio;
       expect(shown.top, greaterThanOrEqualTo(0));
       expect(shown.bottom, lessThanOrEqualTo(screen.height));
+      expect(
+        shown.top,
+        lessThan(tester.getTopLeft(find.byKey(keys.ride.departureBlock)).dy),
+      );
     });
 
-    testWidgets('inscrit : « Quitter » dans la barre', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('inscrit : « J\'y vais » dans le bloc, « Quitter le groupe » '
+        'au pied de « Personnes inscrites »', (WidgetTester tester) async {
       final RideDto ride = fixtureRide(
         registered: true,
         registeredGroupId: 'g1',
         groups: <RideGroupDto>[fixtureGroup(registered: true)],
       );
       final _StubRideRepository repository = _StubRideRepository(ride);
-      await open(tester, ride, repository: repository);
+      await open(tester, ride, repository: repository, height: 4000);
 
       expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
-      await tester.tap(find.byKey(keys.rideGroup.leaveButton));
+      expect(inBlock(find.byKey(keys.rideGroup.goingBadge)), findsOneWidget);
+      final Finder leave = inParticipants(
+        find.byKey(keys.rideGroup.leaveButton),
+      );
+      expect(leave, findsOneWidget);
+      await tester.tap(leave);
       await tester.pump();
       await tester.pump();
 
       expect(repository.left, <String>['g1']);
     });
 
-    testWidgets('un groupe complet : le badge, aucun bouton', (
+    testWidgets('le groupe parti, inscrit : « J\'y vais » et « Quitter le '
+        'groupe » restent', (WidgetTester tester) async {
+      await open(
+        tester,
+        fixtureRide(
+          dateTime: '2026-10-11T06:00:00Z',
+          registered: true,
+          registeredGroupId: 'g1',
+          groups: <RideGroupDto>[
+            fixtureGroup(registered: true, startAt: '2026-10-11T06:00:00Z'),
+          ],
+        ),
+        now: DateTime.utc(2026, 10, 11, 7),
+        height: 4000,
+      );
+
+      expect(find.byKey(keys.rideGroup.goingBadge), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.leaveButton), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+    });
+
+    testWidgets('le groupe parti, pas inscrit : plus de « Rejoindre »', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        fixtureRide(
+          dateTime: '2026-10-11T06:00:00Z',
+          groups: <RideGroupDto>[fixtureGroup(startAt: '2026-10-11T06:00:00Z')],
+        ),
+        now: DateTime.utc(2026, 10, 11, 7),
+      );
+
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+      expect(find.byKey(keys.rideGroup.goingBadge), findsNothing);
+    });
+
+    testWidgets('un groupe complet : « Complet », aucun bouton', (
       WidgetTester tester,
     ) async {
       await open(
@@ -1080,11 +1450,7 @@ void main() {
     for (final (String label, RideDto ride, bool member)
         in <(String, RideDto, bool)>[
           ('un non-membre', fixtureRide(), false),
-          (
-            'une sortie passée',
-            fixtureRide(dateTime: '2020-01-01T08:00:00Z'),
-            true,
-          ),
+          ('une sortie passée', pastSolo(), true),
           (
             'une sortie annulée',
             fixtureRide(
@@ -1099,52 +1465,27 @@ void main() {
       testWidgets('$label : aucun bouton d\'inscription', (
         WidgetTester tester,
       ) async {
-        await open(tester, ride, member: member);
+        await open(tester, ride, member: member, height: 4000);
 
         expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
         expect(find.byKey(keys.rideGroup.leaveButton), findsNothing);
+        expect(find.byKey(keys.rideGroup.goingBadge), findsNothing);
         expect(find.text('Rejoindre'), findsNothing);
-        expect(find.text('Quitter'), findsNothing);
         expect(tester.takeException(), isNull);
       });
     }
 
-    testWidgets('les chiffres du groupe, et son arrivée estimée', (
+    testWidgets('capitaine nul : rien, jamais de repli', (
       WidgetTester tester,
     ) async {
-      final RideDto ride = fixtureRide();
-      await open(
-        tester,
-        ride,
-        repository: _StubRideRepository(ride, weather: ok()),
-      );
-      await scrollToGroups(tester);
+      await open(tester, fixtureRide(), height: 4000);
 
-      // Dans les chiffres du groupe : la frise météo dit aussi « Départ ».
-      expect(
-        find.descendant(
-          of: find.byType(RideGroupStats),
-          matching: find.text('Départ'),
-        ),
-        findsOneWidget,
-      );
-      expect(find.text('Vitesse moyenne'), findsOneWidget);
-      expect(find.text('Dénivelé positif'), findsOneWidget);
-      expect(find.textContaining('Arrivée estimée'), findsOneWidget);
-    });
-
-    testWidgets('meneur nul : rien, jamais de repli', (
-      WidgetTester tester,
-    ) async {
-      await open(tester, fixtureRide());
-      await scrollToGroups(tester);
-
-      expect(find.byKey(keys.ride.soloGroupSection), findsOneWidget);
+      expect(find.byKey(keys.ride.participantsSection), findsOneWidget);
       expect(find.byKey(keys.rideGroup.leader), findsNothing);
       expect(find.text('CAPITAINE'), findsNothing);
     });
 
-    testWidgets('un meneur désigné : son nom et le badge', (
+    testWidgets('une personne capitaine : son nom et le badge', (
       WidgetTester tester,
     ) async {
       await open(
@@ -1156,10 +1497,10 @@ void main() {
             ),
           ],
         ),
+        height: 4000,
       );
-      await scrollToGroups(tester);
 
-      expect(find.byKey(keys.rideGroup.leader), findsOneWidget);
+      expect(inParticipants(find.byKey(keys.rideGroup.leader)), findsOneWidget);
       expect(find.text('Léa'), findsOneWidget);
       expect(find.text('CAPITAINE'), findsOneWidget);
     });
@@ -1167,17 +1508,141 @@ void main() {
     testWidgets('les visages du groupe ouvrent la feuille du groupe', (
       WidgetTester tester,
     ) async {
-      await open(tester, fixtureRide());
-      await scrollToGroups(tester);
+      await open(tester, fixtureRide(), height: 4000);
 
-      await tester.ensureVisible(find.byKey(keys.ride.soloGroupParticipants));
-      await tester.tap(find.byKey(keys.ride.soloGroupParticipants));
+      await tester.tap(find.byKey(keys.rideGroup.participantsAvatars));
       for (int i = 0; i < 6; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
       expect(find.byType(ParticipantsSheet), findsOneWidget);
       expect(find.text('Membre 0'), findsWidgets);
+    });
+
+    testWidgets('un non-membre ne reçoit que le nombre : ni capitaine, ni '
+        'visages, ni liste', (WidgetTester tester) async {
+      await open(
+        tester,
+        fixtureRide(
+          groups: <RideGroupDto>[
+            fixtureGroup(
+              leader: const PublicUserDto(id: 'l1', displayName: 'Léa'),
+            ),
+          ],
+        ),
+        member: false,
+        height: 4000,
+      );
+
+      expect(inParticipants(find.text('3/16')), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.leader), findsNothing);
+      expect(find.byKey(keys.rideGroup.participantsAvatars), findsNothing);
+      expect(find.byKey(keys.rideGroup.viewAllParticipants), findsNothing);
+      expect(find.text('Léa'), findsNothing);
+    });
+  });
+
+  // ───────────────────────────── défilements (MOB-69, MOB-134 retouche 1)
+
+  group('défilements', () {
+    RideWeatherDto served() => fixtureWeather(
+      status: 'OK',
+      departure: fixtureConditions(),
+      fetchedAt: '2099-07-29T17:00:00Z',
+      legs: <WeatherLegDto>[fixtureLeg()],
+    );
+
+    ProviderContainer containerOf(WidgetTester tester) =>
+        ProviderScope.containerOf(tester.element(find.byType(RideDetailPage)));
+
+    const RideKey key = RideKey(teamSlug: 'n-peloton', rideSlug: 'np-665');
+
+    testWidgets('?tab=weather d\'une sortie solo : le détail défile jusqu\'à '
+        'sa section Météo', (WidgetTester tester) async {
+      final RideDto ride = fixtureRide(
+        groups: <RideGroupDto>[fixtureGroup(routeSlug: 'court')],
+      );
+      await open(
+        tester,
+        ride,
+        repository: _StubRideRepository(ride, weather: served()),
+      );
+      expect(find.byKey(keys.ride.weatherBlock), findsNothing);
+
+      containerOf(tester)
+              .read(rideScrollToWeatherProvider(key).notifier)
+              .state =
+          true;
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      final Finder weather = find.byKey(keys.ride.weatherBlock);
+      expect(weather, findsOneWidget);
+      final Size screen =
+          tester.view.physicalSize / tester.view.devicePixelRatio;
+      expect(tester.getTopLeft(weather).dy, lessThan(screen.height));
+      expect(
+        containerOf(tester).read(rideScrollToWeatherProvider(key)),
+        isFalse,
+      );
+    });
+
+    testWidgets('toucher un point de la frise remonte jusqu\'à la carte ; le '
+        'retoucher ôte le réticule sans défiler', (WidgetTester tester) async {
+      final RideDto ride = fixtureRide(
+        groups: <RideGroupDto>[fixtureGroup(routeSlug: 'court')],
+      );
+      await open(
+        tester,
+        ride,
+        repository: _StubRideRepository(ride, weather: served()),
+      );
+
+      final Finder along = find.byKey(
+        keys.ride.weatherAlongRoute,
+        skipOffstage: false,
+      );
+      await tester.ensureVisible(along);
+      await tester.pump();
+      await tester.tap(along);
+      for (int i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      final Finder point = find.byKey(
+        keys.ride.weatherCheckpoint(1),
+        skipOffstage: false,
+      );
+      await tester.ensureVisible(point);
+      await tester.pump();
+      final Finder map = find.byType(RideGroupsMap, skipOffstage: false);
+      // La frise à l'écran, la carte est loin au-dessus.
+      expect(tester.getTopLeft(map).dy, lessThan(0));
+
+      await tester.tap(point);
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(map, findsOneWidget);
+      expect(tester.widget<RideGroupsMap>(map).cursorDistance, isNotNull);
+      final Size screen =
+          tester.view.physicalSize / tester.view.devicePixelRatio;
+      final double top = tester.getTopLeft(map).dy;
+      expect(top, greaterThanOrEqualTo(0));
+      expect(top, lessThan(screen.height));
+
+      await tester.ensureVisible(point);
+      await tester.pump();
+      final ScrollPosition position = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position;
+      final double offset = position.pixels;
+      await tester.tap(point);
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(position.pixels, offset);
+      expect(find.byKey(keys.ride.weatherCheckpoint(1)), findsOneWidget);
     });
   });
 
@@ -1309,10 +1774,7 @@ void main() {
       WidgetTester tester,
     ) async {
       tall(tester);
-      final RideDto past = fixtureRide(
-        dateTime: '2020-07-29T19:30:00Z',
-        groups: <RideGroupDto>[fixtureGroup(routeSlug: 'court')],
-      );
+      final RideDto past = pastSolo();
       final _StubRideRepository repository = _StubRideRepository(
         past,
         weather: served(),
@@ -1657,7 +2119,7 @@ void main() {
       expect(find.byKey(keys.gpsSheet.connectDevice), findsOneWidget);
     });
 
-    testWidgets('une sortie solo porte « GPS » dans la section de son groupe', (
+    testWidgets('une sortie solo porte « GPS » dans sa section Parcours', (
       WidgetTester tester,
     ) async {
       tall(tester);
@@ -1673,7 +2135,7 @@ void main() {
       );
 
       final Finder gps = find.descendant(
-        of: find.byKey(keys.ride.soloGroupSection),
+        of: find.byKey(keys.ride.routeSection),
         matching: find.byKey(keys.rideGroup.gps),
       );
       expect(gps, findsOneWidget);
