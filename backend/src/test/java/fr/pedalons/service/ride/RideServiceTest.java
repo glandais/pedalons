@@ -1390,7 +1390,7 @@ class RideServiceTest extends AbstractBaseTest {
     dataService.createParticipation(a, member);
 
     userService.setUserForTest(member);
-    RideService.SwitchResult result = rideService.switchGroup(team.getSlug(), "switch", b.getId());
+    RideSwitchAnswer result = rideService.switchGroup(team.getSlug(), "switch", b.getId());
 
     assertTrue(result.created());
     assertEquals(member.getId(), TsidUtils.toLong(result.participation().userId()));
@@ -1411,8 +1411,7 @@ class RideServiceTest extends AbstractBaseTest {
     var participation = dataService.createParticipation(a, member);
 
     userService.setUserForTest(member);
-    RideService.SwitchResult result =
-        rideService.switchGroup(team.getSlug(), "switch-same", a.getId());
+    RideSwitchAnswer result = rideService.switchGroup(team.getSlug(), "switch-same", a.getId());
 
     assertFalse(result.created());
     assertEquals(participation.getId(), TsidUtils.toLong(result.participation().id()));

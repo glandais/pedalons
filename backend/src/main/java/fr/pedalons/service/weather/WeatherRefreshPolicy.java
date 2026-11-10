@@ -43,10 +43,19 @@ public final class WeatherRefreshPolicy {
     return Duration.ofHours(1);
   }
 
-  /** Whether a forecast fetched at {@code fetchedAt}, read for {@code passage}, is overdue. */
+  /**
+   * Whether a forecast fetched at {@code fetchedAt}, read for {@code passage}, is overdue.
+   *
+   * <p>A passage already behind us is judged at the passage itself: the worker no longer refreshes
+   * a cell needed only in the past, so what was fetched shortly before the passage is the best
+   * there will be, and is not flagged — or the stretch a group under way has ridden would turn
+   * {@code STALE} two hours later (docs/LEDGER_*.md API-163). Was it already overdue when the group
+   * rode by, it still is.
+   */
   public static boolean isStale(Instant fetchedAt, Instant passage, Instant now) {
-    Duration age = Duration.between(fetchedAt, now);
-    return age.compareTo(ttl(passage, now).multipliedBy(STALE_AFTER_INTERVALS)) > 0;
+    Instant at = passage.isBefore(now) ? passage : now;
+    Duration age = Duration.between(fetchedAt, at);
+    return age.compareTo(ttl(passage, at).multipliedBy(STALE_AFTER_INTERVALS)) > 0;
   }
 
   /** When a rate-limited request may be tried again: the next full hour. */

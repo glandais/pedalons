@@ -603,7 +603,7 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
    */
   @Transactional
   @CheckAccess(entityType = EntityType.RIDE, action = ActionType.JOIN)
-  public SwitchResult switchGroup(String teamSlug, String rideSlug, Long groupId) {
+  public RideSwitchAnswer switchGroup(String teamSlug, String rideSlug, Long groupId) {
     Team team = teamService.getTeam(teamSlug);
     Ride ride = findBySlug(team, rideSlug);
     // As joinGroup: concurrent joins and switches of this ride queue here, before any group is
@@ -622,22 +622,15 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
             .findByUserAndRide(pedalonsContext.getUserId(), ride.getId())
             .orElseThrow(() -> new BusinessException(NOT_REGISTERED));
     if (current.getRideGroup().getId().equals(target.getId())) {
-      return new SwitchResult(RideParticipationDto.from(current), false);
+      return new RideSwitchAnswer(RideParticipationDto.from(current), false);
     }
     checkJoinable(target);
 
     RideGroup origin = current.getRideGroup();
     origin.getParticipations().remove(current);
     participationRepository.delete(current);
-    return new SwitchResult(RideParticipationDto.from(register(target, team)), true);
+    return new RideSwitchAnswer(RideParticipationDto.from(register(target, team)), true);
   }
-
-  /**
-   * The answer of {@link #switchGroup}.
-   *
-   * @param created false when the caller was already in that group: nothing was written
-   */
-  public record SwitchResult(RideParticipationDto participation, boolean created) {}
 
   /**
    * What a group must be for the caller to join it, once the ride is locked: not gone — the

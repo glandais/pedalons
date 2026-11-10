@@ -71,4 +71,14 @@ class WeatherRefreshPolicyTest {
         Instant.parse("2026-10-05T14:00:00Z"),
         WeatherRefreshPolicy.retryAfterRateLimit(Instant.parse("2026-10-05T13:00:00Z")));
   }
+
+  /** docs/LEDGER_*.md API-163: a stretch already ridden is judged when it was ridden. */
+  @Test
+  void isStale_ofAPassageBehindUs_shouldBeJudgedAtThePassage() {
+    Instant ridden = NOW.minus(Duration.ofHours(3));
+    // Fetched 40 min before the group rode by, four hours ago now: not overdue.
+    assertFalse(WeatherRefreshPolicy.isStale(ridden.minus(Duration.ofMinutes(40)), ridden, NOW));
+    // Already three hours old when it rode by: overdue then, still overdue.
+    assertTrue(WeatherRefreshPolicy.isStale(ridden.minus(Duration.ofHours(3)), ridden, NOW));
+  }
 }

@@ -492,7 +492,7 @@ public class RideResource {
       @Parameter(description = "Ride URL slug") @PathParam("rideSlug") String rideSlug,
       @Parameter(description = "Group to move to (TSID)") @PathParam("groupId") String groupId) {
 
-    RideService.SwitchResult result =
+    RideSwitchAnswer result =
         rideService.switchGroup(teamSlug, rideSlug, TsidUtils.toLong(groupId));
 
     return Response.status(result.created() ? Response.Status.CREATED : Response.Status.OK)

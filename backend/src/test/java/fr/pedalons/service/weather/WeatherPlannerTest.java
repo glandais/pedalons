@@ -503,4 +503,44 @@ class WeatherPlannerTest extends AbstractResourceTest {
 
     assertTrue(plannedAround(49.0), "the cells of the new geometry");
   }
+
+  /**
+   * docs/LEDGER_*.md API-163: a cell a group under way has already passed, but a later group will
+   * pass, is needed at the later passage — not at {@code now}, which the worker never fetches. A
+   * cell only behind us still counts as {@code now}.
+   */
+  @Test
+  void demand_shouldKeepTheNearestPassageStillAhead() {
+    Instant now = Instant.parse("2026-10-05T12:00:00Z");
+    RouteSamples.Sample start = new RouteSamples.Sample(0, 0, 45.0, 5.0, 300.0, 0, 0, 0);
+    RouteSamples.Sample finish = new RouteSamples.Sample(1, 111_000, 46.0, 5.0, 300.0, 0, 0, 0);
+    CellKey shared = start.cell();
+    CellKey pastOnly = finish.cell();
+    RideWeatherCalculator.LegInput gone =
+        new RideWeatherCalculator.LegInput(
+            1L,
+            now.minus(Duration.ofHours(6)),
+            RideWeatherCalculator.speed(25f),
+            new RouteSamples(List.of(start, finish), 111_000));
+    // Later, on its own short route that only crosses the shared cell.
+    RideWeatherCalculator.LegInput later =
+        new RideWeatherCalculator.LegInput(
+            2L,
+            now.plus(Duration.ofHours(2)),
+            RideWeatherCalculator.speed(25f),
+            new RouteSamples(List.of(start), 0));
+    RideWeatherPlans.RidePlan plan =
+        new RideWeatherPlans.RidePlan(
+            9L,
+            now.minus(Duration.ofHours(6)),
+            new RideWeatherPlans.Departure(44.0, 5.0),
+            List.of(gone, later));
+
+    var demand = WeatherPlanner.demand(List.of(plan), now);
+
+    assertEquals(now.plus(Duration.ofHours(2)), demand.get(shared));
+    assertEquals(now, demand.get(pastOnly));
+    // The meeting point is read at the later group's start too (API-162).
+    assertEquals(now.plus(Duration.ofHours(2)), demand.get(CellKey.of(44.0, 5.0)));
+  }
 }

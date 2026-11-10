@@ -17,8 +17,10 @@ import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.jboss.logging.Logger;
 
 /**
@@ -170,8 +172,12 @@ public class WeatherPlanner {
   }
 
   /**
-   * Cell → nearest passage. A passage already behind us (a group timed before the ride's own
-   * departure) counts as {@code now}: its cells want the shortest interval.
+   * Cell → nearest passage <b>still ahead</b>. A passage already behind us — a group timed before
+   * the ride's own departure, the stretch a group under way has ridden — counts only when the cell
+   * has none ahead, and then as {@code now}: the worker fetches only cells needed ahead ({@code
+   * WeatherCellRepository#findDueIdsSkipLocked}), so such a cell keeps what it holds. Taking the
+   * minimum of every passage instead let the past one win, and a ride under way lost the forecast
+   * of the groups still to come over the same cells (docs/LEDGER_*.md API-163).
    */
   static Map<CellKey, Instant> demand(List<RidePlan> plans, Instant now) {
     return demand(plans, List.of(), now);
@@ -179,35 +185,52 @@ public class WeatherPlanner {
 
   /** The same, with the legs of trip stages on top of the rides. */
   static Map<CellKey, Instant> demand(List<RidePlan> plans, List<StagePlan> stages, Instant now) {
-    Map<CellKey, Instant> demand = new HashMap<>();
+    Map<CellKey, Instant> ahead = new HashMap<>();
+    Set<CellKey> behind = new HashSet<>();
     for (RidePlan plan : plans) {
       if (plan.departure() != null) {
-        need(demand, plan.departure().cell(), plan.departureTime(), now);
+        CellKey cell = plan.departure().cell();
+        // The meeting point is read at the ride's time and at each group's start (API-162).
+        need(ahead, behind, cell, plan.departureTime(), now);
+        for (LegInput leg : plan.legs()) {
+          need(ahead, behind, cell, leg.start(), now);
+        }
       }
       for (LegInput leg : plan.legs()) {
-        need(demand, leg, now);
+        need(ahead, behind, leg, now);
       }
     }
     for (StagePlan stage : stages) {
-      need(demand, stage.leg(), now);
+      need(ahead, behind, stage.leg(), now);
     }
-    return demand;
+    for (CellKey cell : behind) {
+      ahead.putIfAbsent(cell, now);
+    }
+    return ahead;
   }
 
-  private static void need(Map<CellKey, Instant> demand, LegInput leg, Instant now) {
+  private static void need(
+      Map<CellKey, Instant> ahead, Set<CellKey> behind, LegInput leg, Instant now) {
     if (leg.samples() == null) {
       return;
     }
     for (RouteSamples.Sample sample : leg.samples().samples()) {
       Instant passage =
           RideWeatherCalculator.passage(leg.start(), sample.distance(), leg.speed().kmh());
-      need(demand, sample.cell(), passage, now);
+      need(ahead, behind, sample.cell(), passage, now);
     }
   }
 
   private static void need(
-      Map<CellKey, Instant> demand, CellKey cell, Instant passage, Instant now) {
-    Instant need = passage.isBefore(now) ? now : passage;
-    demand.merge(cell, need, (a, b) -> a.isBefore(b) ? a : b);
+      Map<CellKey, Instant> ahead,
+      Set<CellKey> behind,
+      CellKey cell,
+      Instant passage,
+      Instant now) {
+    if (passage.isBefore(now)) {
+      behind.add(cell);
+      return;
+    }
+    ahead.merge(cell, passage, (a, b) -> a.isBefore(b) ? a : b);
   }
 }
