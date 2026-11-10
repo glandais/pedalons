@@ -12,13 +12,11 @@ import '../../../../../core/theme/pdl_colors.dart';
 import '../../../../../core/theme/pdl_icons.dart';
 import '../../../../../core/theme/pdl_tokens.dart';
 import '../../../../../core/theme/pdl_typography.dart';
-import '../../../../../core/utils/api_error_handler.dart';
 import '../../../../../core/utils/formatters.dart';
 import '../../../../../keys.dart';
-import '../../../../auth/domain/auth_state.dart';
-import '../../../../auth/providers/auth_provider.dart';
 import '../../../../rides/providers/participation_changes.dart';
-import '../../../../routes/presentation/route_export.dart';
+import '../../../../routes/presentation/gps_export_runner.dart';
+import '../../../../routes/presentation/widgets/gps_button.dart';
 import 'dashboard_section.dart';
 import '../../../../../core/widgets/day_box.dart';
 import '../../../../../core/widgets/zone_mention_line.dart';
@@ -87,11 +85,8 @@ class _MyUpcomingRow extends ConsumerStatefulWidget {
   ConsumerState<_MyUpcomingRow> createState() => _MyUpcomingRowState();
 }
 
-class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
-  bool _sending = false;
-  bool _sent = false;
-  Object? _sendError;
-
+class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow>
+    with GpsExportRunner<_MyUpcomingRow> {
   @override
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
@@ -135,12 +130,10 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
       ),
     };
 
-    final List<GpsServiceConnectionDto> services = ref.watch(
-      authProvider.select(
-        (AuthState s) => s.user?.connectedServices ?? const [],
-      ),
-    );
-    final bool canSend = routeSlug != null && services.isNotEmpty;
+    // La ligne ne porte pas les fichiers du parcours : la feuille n'offre ici
+    // que l'envoi vers un appareil, et le bouton n'apparaît qu'avec un
+    // service connecté, comme avant elle.
+    final bool canSend = routeSlug != null && watchGpsServices().isNotEmpty;
 
     return PdlCard(
       onTap: () => context.push(path),
@@ -219,38 +212,23 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
               ),
               if (canSend) ...<Widget>[
                 const SizedBox(width: PdlSpacing.chipGap),
-                IconButton.outlined(
-                  tooltip: 'routes.sendToDevice'.tr(),
-                  constraints: const BoxConstraints(
-                    minWidth: PdlMetrics.tapTarget,
-                    minHeight: PdlMetrics.tapTarget,
+                GpsButton(
+                  key: keys.teamDashboard.myUpcomingGps(p.slug),
+                  compact: true,
+                  loading: gpsExporting,
+                  onPressed: (BuildContext button) => openGpsSheet(
+                    GpsExportTarget(
+                      subtitle: p.name,
+                      teamSlug: p.team.slug,
+                      routeSlug: routeSlug,
+                    ),
+                    button,
                   ),
-                  icon: Icon(PdlIcons.device, color: c.primary),
-                  onPressed: _sending
-                      ? null
-                      : () => _send(p.team.slug, routeSlug, services),
                 ),
               ],
             ],
           ),
-          if (_sendError != null) ...<Widget>[
-            const SizedBox(height: PdlSpacing.chipGap),
-            PdlBanner(
-              tone: PdlBannerTone.danger,
-              message: getErrorMessage(_sendError!),
-              onDismiss: () => setState(() => _sendError = null),
-              dismissSemanticLabel: 'common.close'.tr(),
-            ),
-          ],
-          if (_sent) ...<Widget>[
-            const SizedBox(height: PdlSpacing.chipGap),
-            PdlBanner(
-              tone: PdlBannerTone.info,
-              message: 'routes.uploadSuccess'.tr(),
-              onDismiss: () => setState(() => _sent = false),
-              dismissSemanticLabel: 'common.close'.tr(),
-            ),
-          ],
+          ...gpsExportBanners(gap: PdlSpacing.chipGap, gapBefore: true),
         ],
       ),
     );
@@ -349,36 +327,6 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow> {
           icon: PdlIcons.distance,
         ),
     ];
-  }
-
-  Future<void> _send(
-    String teamSlug,
-    String routeSlug,
-    List<GpsServiceConnectionDto> services,
-  ) async {
-    final GpsServiceConnectionDto? picked = await pickGpsService(
-      context,
-      services,
-    );
-    if (picked == null || !mounted) return;
-    setState(() {
-      _sending = true;
-      _sendError = null;
-      _sent = false;
-    });
-    try {
-      await uploadRouteToService(
-        ref,
-        picked,
-        teamSlug: teamSlug,
-        routeSlug: routeSlug,
-      );
-      if (mounted) setState(() => _sent = true);
-    } catch (error) {
-      if (mounted) setState(() => _sendError = error);
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
   }
 }
 

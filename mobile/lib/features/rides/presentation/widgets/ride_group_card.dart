@@ -11,6 +11,7 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 import '../../domain/ride_group_action.dart';
+import '../../../routes/presentation/widgets/gps_button.dart';
 import 'ride_group_weather_line.dart';
 import '../../../../keys.dart';
 
@@ -41,9 +42,8 @@ class RideGroupCard extends StatelessWidget {
     this.onJoin,
     this.onLeave,
     this.onShowParticipants,
-    this.onExportGpx,
-    this.onExportFit,
-    this.onSendToDevice,
+    this.onOpenGps,
+    this.gpsLoading = false,
   });
 
   final RideGroupDto group;
@@ -87,9 +87,13 @@ class RideGroupCard extends StatelessWidget {
   final VoidCallback? onJoin;
   final VoidCallback? onLeave;
   final VoidCallback? onShowParticipants;
-  final VoidCallback? onExportGpx;
-  final VoidCallback? onExportFit;
-  final VoidCallback? onSendToDevice;
+
+  /// Ouvre la feuille GPS du parcours du groupe, avec le contexte du bouton
+  /// (ancre du partage sur iPad). `null` : pas de bouton « GPS ».
+  final ValueChanged<BuildContext>? onOpenGps;
+
+  /// Un export lancé depuis cette carte est en cours.
+  final bool gpsLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -121,9 +125,14 @@ class RideGroupCard extends StatelessWidget {
           ],
           const SizedBox(height: PdlSpacing.cardTight),
           _participantsRow(context, c, t),
-          if (_hasTextActions) ...<Widget>[
-            const SizedBox(height: 4),
-            _textActions(),
+          if (onOpenGps != null) ...<Widget>[
+            const SizedBox(height: PdlSpacing.chipGap),
+            GpsButton(
+              key: keys.ride.groupGps(group.id),
+              compact: true,
+              loading: gpsLoading,
+              onPressed: onOpenGps,
+            ),
           ],
         ],
       ),
@@ -400,47 +409,4 @@ class RideGroupCard extends StatelessWidget {
             'max': '$max',
           },
         );
-
-  // ───────────────────────────────────────────────────────────── ligne 4
-  bool get _hasTextActions =>
-      onExportGpx != null || onExportFit != null || onSendToDevice != null;
-
-  // Une seule ligne : GPX et FIT gardent leur taille, l'envoi vers un appareil
-  // prend le reste et s'abrège plutôt que de passer à la ligne.
-  Widget _textActions() {
-    return Row(
-      spacing: PdlSpacing.badgeGap,
-      children: <Widget>[
-        if (onExportGpx != null)
-          PdlButton(
-            key: keys.ride.groupExportGpx(group.id),
-            label: 'routes.exportGpx'.tr(),
-            icon: PdlIcons.gpx,
-            variant: PdlButtonVariant.text,
-            size: PdlButtonSize.sm,
-            onPressed: onExportGpx,
-          ),
-        if (onExportFit != null)
-          PdlButton(
-            key: keys.ride.groupExportFit(group.id),
-            label: 'routes.exportFit'.tr(),
-            icon: PdlIcons.gpx,
-            variant: PdlButtonVariant.text,
-            size: PdlButtonSize.sm,
-            onPressed: onExportFit,
-          ),
-        if (onSendToDevice != null)
-          Flexible(
-            child: PdlButton(
-              key: keys.ride.groupSendToDevice(group.id),
-              label: 'routes.sendToDevice'.tr(),
-              icon: PdlIcons.device,
-              variant: PdlButtonVariant.text,
-              size: PdlButtonSize.sm,
-              onPressed: onSendToDevice,
-            ),
-          ),
-      ],
-    );
-  }
 }

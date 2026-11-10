@@ -89,7 +89,7 @@ void main() {
 
   group('cibles tactiles et débordement', () {
     /// La carte de groupe est le composant le plus dense du lot : quatre
-    /// statistiques, des avatars, un bouton et jusqu'à quatre actions texte.
+    /// statistiques, des avatars, un bouton et le bouton « GPS ».
     /// Si quelque chose déborde à ×2,0, c'est ici.
     Future<void> pumpGroupCard(
       WidgetTester tester, {
@@ -120,9 +120,7 @@ void main() {
                   selected: true,
                   onJoin: () {},
                   onShowParticipants: () {},
-                  onExportGpx: () {},
-                  onExportFit: () {},
-                  onSendToDevice: () {},
+                  onOpenGps: (_) {},
                 ),
               ),
             ),

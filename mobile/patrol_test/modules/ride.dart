@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:patrol/patrol.dart';
@@ -198,31 +196,41 @@ final class Ride extends Module {
 
   // ── Exports ─────────────────────────────────────────────────────────────
 
-  /// Scrolls to the card of [groupId] and waits for its « GPX »: the exports show once the
-  /// group's route — loaded with the map's batch — is there.
-  Future<void> waitUntilGpxExportIsOffered(String groupId) async {
-    final Key gpx = _exportGpxKey(groupId);
+  /// The « GPS » button of [groupId]: on its card, or in the single group's section.
+  Key _gpsKey(String groupId) =>
+      _solo ? keys.rideGroup.gps : keys.ride.groupGps(groupId);
+
+  /// Scrolls to the card of [groupId] and waits for its « GPS » button: it shows once the
+  /// group's route — loaded with the map's batch — is there with a file to export.
+  Future<void> waitUntilGpsIsOffered(String groupId) async {
     await scrolledTo(_groupKey(groupId));
-    await $(gpx).waitUntilExists();
+    await $(_gpsKey(groupId)).waitUntilExists();
   }
 
-  Key _exportGpxKey(String groupId) =>
-      _solo ? keys.rideGroup.exportGpx : keys.ride.groupExportGpx(groupId);
+  /// Taps « GPS » on the card of [groupId] and waits for the GPS sheet — every export of the
+  /// group's route lives there.
+  Future<void> openGpsSheet(String groupId) async {
+    await (await scrolledTo(_gpsKey(groupId))).tap();
+    await $(keys.gpsSheet.sheet).waitUntilVisible();
+  }
 
-  bool offersFitExport(String groupId) => isShown(
-    _solo ? keys.rideGroup.exportFit : keys.ride.groupExportFit(groupId),
-  );
+  /// In the open GPS sheet: whether the FIT section is there (its share row is, on both
+  /// platforms — « Envoyer vers une autre app » on Android, « Partager » on iOS).
+  bool get gpsSheetOffersFit => isShown(keys.gpsSheet.fitShare);
 
-  bool offersSendToDevice(String groupId) => isShown(
-    _solo ? keys.rideGroup.sendToDevice : keys.ride.groupSendToDevice(groupId),
-  );
+  /// In the open GPS sheet: whether « Vers un appareil » is there — only with a connected
+  /// GPS service.
+  bool get gpsSheetOffersSendToDevice => isShown(keys.gpsSheet.toDevice);
 
-  /// Taps « GPX » on the card of [groupId]: the app downloads the file, then hands it to the
-  /// system share sheet. On Android a sheet first asks where the file goes — saved on the phone
-  /// or sent to another app; this takes the share, iOS goes there directly.
-  Future<void> exportGpx(String groupId) async {
-    await (await scrolledTo(_exportGpxKey(groupId))).tap();
-    if (Platform.isAndroid) await $(keys.assetDestination.share).tap();
+  /// In the open GPS sheet: whether « Connecter un compteur » is there — only with no
+  /// connected GPS service.
+  bool get gpsSheetOffersConnectDevice => isShown(keys.gpsSheet.connectDevice);
+
+  /// In the open GPS sheet, hands the GPX to the system share sheet: « Envoyer vers une autre
+  /// app » on Android, « Partager » on iOS — the same key. The sheet closes, then the app
+  /// downloads the file.
+  Future<void> shareGpxFromGpsSheet() async {
+    await $(keys.gpsSheet.gpxShare).tap();
   }
 
   // ── Groups map ──────────────────────────────────────────────────────────

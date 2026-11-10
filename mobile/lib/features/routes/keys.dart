@@ -73,6 +73,9 @@ class RouteDetailKeys {
   final surfaceBar = const _RouteDetailKey('surfaceBar');
   final surfaceAttribution = const _RouteDetailKey('surfaceAttribution');
 
+  /// Le bouton « GPS » de la fiche (et de la feuille de parcours d'une étape).
+  final gps = const _RouteDetailKey('gps');
+
   /// Une carte de « Utilisée dans », par le slug de la sortie ou du voyage.
   ValueKey<String> usage(String slug) => _RouteDetailKey('usage_$slug');
 }
@@ -155,4 +158,42 @@ class RouteWaypointsKeys {
 
   /// Une ligne de la liste, par la clé du point.
   ValueKey<String> row(String key) => _RouteWaypointsKey('row_$key');
+}
+
+class _GpsSheetKey extends ValueKey<String> {
+  const _GpsSheetKey(String value) : super('gpsSheet_$value');
+}
+
+/// La feuille « GPS » (`showGpsSheet`), le seul chemin par lequel un parcours
+/// sort de l'app, et les bandeaux de son issue (`GpsExportRunner`). Les
+/// boutons « GPS » qui l'ouvrent portent la clé de leur écran
+/// (`keys.ride.groupGps`, `keys.rideGroup.gps`, `keys.routeDetail.gps`…).
+class GpsSheetKeys {
+  final sheet = const _GpsSheetKey('sheet');
+
+  /// Ce qui part : « Groupe B · 78,0 km », le nom du parcours.
+  final subtitle = const _GpsSheetKey('subtitle');
+
+  /// Le libellé de la section « Vers un appareil » — absente sans service.
+  final toDevice = const _GpsSheetKey('toDevice');
+
+  /// La ligne d'un service connecté, par son `serviceType` (`GARMIN`…).
+  ValueKey<String> service(String serviceType) =>
+      _GpsSheetKey('service_$serviceType');
+
+  /// « Enregistrer sur le téléphone » du GPX (Android seulement).
+  final gpxSave = const _GpsSheetKey('gpxSave');
+
+  /// « Envoyer vers une autre app » du GPX sur Android, « Partager » sur iOS.
+  final gpxShare = const _GpsSheetKey('gpxShare');
+
+  final fitSave = const _GpsSheetKey('fitSave');
+  final fitShare = const _GpsSheetKey('fitShare');
+
+  /// « Connecter un compteur », quand aucun service n'est connecté.
+  final connectDevice = const _GpsSheetKey('connectDevice');
+
+  /// Les bandeaux de l'issue de l'export, sur l'écran appelant.
+  final successBanner = const _GpsSheetKey('successBanner');
+  final errorBanner = const _GpsSheetKey('errorBanner');
 }

@@ -19,6 +19,7 @@ import '../../providers/ride_registration_controller.dart';
 import '../../providers/ride_weather_provider.dart';
 import 'registration_failure_banner.dart';
 import 'ride_group_route_actions.dart';
+import '../../../routes/presentation/gps_export_runner.dart';
 import 'ride_group_card.dart';
 import '../../../../keys.dart';
 import '../../domain/group_start.dart';
@@ -74,7 +75,7 @@ class RideGroupsSection extends ConsumerStatefulWidget {
 }
 
 class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
-    with RouteExportRunner<RideGroupsSection> {
+    with GpsExportRunner<RideGroupsSection> {
   bool _expanded = false;
 
   @override
@@ -114,11 +115,7 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
       rideRouteGeometriesProvider(widget.rideKey)
           .select((RideRouteGeometriesState s) => s.geometries),
     );
-    final List<GpsServiceConnectionDto> services = ref.watch(
-      authProvider.select(
-        (AuthState s) => s.user?.connectedServices ?? const [],
-      ),
-    );
+    final List<GpsServiceConnectionDto> services = watchGpsServices();
 
     // La météo de chaque groupe, pour sa ligne non cliquable — partagée avec
     // la carte météo du détail, sans appel de plus. Une sortie terminée ou
@@ -152,7 +149,7 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
           ),
           const SizedBox(height: 10),
         ],
-        ...exportBanners(),
+        ...gpsExportBanners(),
         for (final RideGroupDto group in shown) ...<Widget>[
           if (registered != null && shown.indexOf(group) == 1) ...<Widget>[
             const SizedBox(height: PdlSpacing.feedGap),
@@ -199,8 +196,12 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
     required WeatherLegDto? weatherLeg,
   }) {
     final String? routeSlug = group.routeSlug ?? ride.routeSlug;
-    final AssetDto? gpx = route?.media.assets.gpx;
-    final AssetDto? fit = route?.media.assets.fit;
+    final GpsExportTarget gps = gpsTargetOfGroup(
+      subtitle: gpsSubtitleOfGroup(group, units),
+      teamSlug: ride.team.slug,
+      routeSlug: routeSlug,
+      route: route,
+    );
 
     return RideGroupCard(
       key: keys.ride.group(group.id),
@@ -228,11 +229,10 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
       onShowParticipants: widget.onShowParticipants == null
           ? null
           : () => widget.onShowParticipants!(group),
-      onExportGpx: gpx == null ? null : () => downloadRouteAsset(gpx),
-      onExportFit: fit == null ? null : () => downloadRouteAsset(fit),
-      onSendToDevice: routeSlug == null || services.isEmpty
-          ? null
-          : () => sendRouteToDevice(ride.team.slug, routeSlug, services),
+      onOpenGps: gps.offered(services)
+          ? (BuildContext button) => openGpsSheet(gps, button, tag: group.id)
+          : null,
+      gpsLoading: gpsExportingFor(group.id),
     );
   }
 }

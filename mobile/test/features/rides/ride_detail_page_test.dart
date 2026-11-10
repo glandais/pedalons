@@ -12,6 +12,7 @@ import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
 import 'package:pedalons/features/rides/domain/ride_group_tab.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_detail_page.dart';
@@ -1595,5 +1596,96 @@ void main() {
         );
       },
     );
+  });
+
+  group('le bouton « GPS » (MOB-132, lot 4)', () {
+    void tall(WidgetTester tester) {
+      tester.view.physicalSize = const Size(402 * 3, 4000 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+    }
+
+    RouteDetailDto withGpx(String slug) =>
+        fixtureRouteDetail(slug: slug).copyWith(
+          media: const MediaDto(
+            markdown: '',
+            assets: AssetsDto(
+              images: <AssetDto>[],
+              attachments: <AssetDto>[],
+              gpx: AssetDto(
+                id: 'a-gpx',
+                fileName: 'court.gpx',
+                contentType: 'application/gpx+xml',
+                url: '/api/download/public/court.gpx',
+              ),
+            ),
+          ),
+        );
+
+    Future<void> openSheet(WidgetTester tester, Key gps) async {
+      await tester.ensureVisible(find.byKey(gps));
+      await tester.pump();
+      await tester.tap(find.byKey(gps));
+      for (int i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+    }
+
+    testWidgets('la carte d\'un groupe porte « GPS », qui ouvre la feuille '
+        'nommant le groupe', (WidgetTester tester) async {
+      tall(tester);
+      final RideDto two = fixtureRide(
+        dateTime: '2099-07-29T19:30:00Z',
+        groups: <RideGroupDto>[
+          fixtureGroup(id: 'g1', routeSlug: 'court'),
+          fixtureGroup(id: 'g2', name: 'Cool', routeSlug: 'sans-trace'),
+        ],
+      );
+      await open(
+        tester,
+        two,
+        repository: _StubRideRepository(two),
+        routes: <RouteDetailDto>[withGpx('court')],
+      );
+
+      expect(find.byKey(keys.ride.groupGps('g1')), findsOneWidget);
+      // Ni fichier ni service : pas de bouton.
+      expect(find.byKey(keys.ride.groupGps('g2')), findsNothing);
+
+      await openSheet(tester, keys.ride.groupGps('g1'));
+      expect(find.byKey(keys.gpsSheet.sheet), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(keys.gpsSheet.subtitle)).data,
+        'Groupe Chill Route Long · '
+        '${AppFormatters.formatDistance(two.groups.first.distance!)}',
+      );
+      expect(find.byKey(keys.gpsSheet.gpxShare), findsOneWidget);
+      expect(find.byKey(keys.gpsSheet.connectDevice), findsOneWidget);
+    });
+
+    testWidgets('une sortie solo porte « GPS » dans la section de son groupe', (
+      WidgetTester tester,
+    ) async {
+      tall(tester);
+      final RideDto solo = fixtureRide(
+        dateTime: '2099-07-29T19:30:00Z',
+        groups: <RideGroupDto>[fixtureGroup(routeSlug: 'court')],
+      );
+      await open(
+        tester,
+        solo,
+        repository: _StubRideRepository(solo),
+        routes: <RouteDetailDto>[withGpx('court')],
+      );
+
+      final Finder gps = find.descendant(
+        of: find.byKey(keys.ride.soloGroupSection),
+        matching: find.byKey(keys.rideGroup.gps),
+      );
+      expect(gps, findsOneWidget);
+      await openSheet(tester, keys.rideGroup.gps);
+      expect(find.byKey(keys.gpsSheet.sheet), findsOneWidget);
+      expect(find.byKey(keys.gpsSheet.gpxShare), findsOneWidget);
+    });
   });
 }

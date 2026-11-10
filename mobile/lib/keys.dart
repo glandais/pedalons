@@ -60,6 +60,7 @@ class Keys {
   final routeWaypoints = RouteWaypointsKeys();
   final routeEditor = RouteEditorKeys();
   final routeManage = RouteManageKeys();
+  final gpsSheet = GpsSheetKeys();
   final feed = FeedKeys();
   final adsList = AdsListKeys();
   final tags = TagKeys();

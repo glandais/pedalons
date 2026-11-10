@@ -22,8 +22,8 @@ class HomeKeys {
   /// La carte compacte qui remplace le bloc quand rien n'est à venir.
   final noNextRideCard = const _HomeKey('noNextRide');
 
-  /// « Envoyer vers le compteur » sur la carte « Ma prochaine sortie ».
-  final nextRideSendToDevice = const _HomeKey('nextRideSendToDevice');
+  /// Le bouton « GPS » de la carte « Ma prochaine sortie ».
+  final nextRideGps = const _HomeKey('nextRideGps');
 
   /// Le bloc « Cette semaine ».
   final weekSection = const _HomeKey('weekSection');

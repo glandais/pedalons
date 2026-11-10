@@ -22,6 +22,7 @@ import '../../providers/ride_group_selection_provider.dart';
 import 'ride_elevation_section.dart';
 import 'ride_group_leader_row.dart';
 import 'ride_group_route_actions.dart';
+import '../../../routes/presentation/gps_export_runner.dart';
 import 'ride_group_stats.dart';
 import 'ride_group_weather_line.dart';
 import 'ride_groups_map.dart';
@@ -63,7 +64,7 @@ class RideGroupOverviewTab extends ConsumerStatefulWidget {
 }
 
 class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
-    with RouteExportRunner<RideGroupOverviewTab> {
+    with GpsExportRunner<RideGroupOverviewTab> {
   @override
   Widget build(BuildContext context) {
     final RideDto ride = widget.ride;
@@ -150,7 +151,7 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              ...exportBanners(),
+              ...gpsExportBanners(),
               // Le départ est dans le bloc en tête de page (ledger `MOB-113`).
               RideGroupStats(
                 ride: ride,
@@ -174,9 +175,12 @@ class _RideGroupOverviewTabState extends ConsumerState<RideGroupOverviewTab>
                   rideKey: widget.rideKey,
                   teamSlug: ride.team.slug,
                   routeSlug: routeSlug,
-                  onDownload: downloadRouteAsset,
-                  onSendToDevice: (List<GpsServiceConnectionDto> services) =>
-                      sendRouteToDevice(ride.team.slug, routeSlug, services),
+                  subtitle: gpsSubtitleOfGroup(
+                    group,
+                    ref.watch(unitSystemProvider),
+                  ),
+                  gpsLoading: gpsExporting,
+                  onOpenGps: openGpsSheet,
                 ),
               ],
             ],

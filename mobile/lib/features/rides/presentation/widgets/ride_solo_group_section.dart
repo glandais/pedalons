@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../core/pdl/pdl.dart';
+import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../keys.dart';
@@ -15,6 +16,7 @@ import '../../providers/ride_registration_controller.dart';
 import 'registration_failure_banner.dart';
 import 'ride_group_leader_row.dart';
 import 'ride_group_route_actions.dart';
+import '../../../routes/presentation/gps_export_runner.dart';
 import 'ride_group_stats.dart';
 import '../../domain/group_title.dart';
 import '../../domain/ride_route_layers.dart';
@@ -56,7 +58,7 @@ class RideSoloGroupSection extends ConsumerStatefulWidget {
 }
 
 class _RideSoloGroupSectionState extends ConsumerState<RideSoloGroupSection>
-    with RouteExportRunner<RideSoloGroupSection> {
+    with GpsExportRunner<RideSoloGroupSection> {
   /// Le bandeau d'échec, que l'on fait défiler dans la vue : « Rejoindre »
   /// est dans la barre d'action, collée en bas, et cette section peut être
   /// loin sous le pli — sans ce défilement, un refus ne se verrait pas.
@@ -108,7 +110,7 @@ class _RideSoloGroupSectionState extends ConsumerState<RideSoloGroupSection>
           ),
           const SizedBox(height: 10),
         ],
-        ...exportBanners(),
+        ...gpsExportBanners(),
         RideGroupStats(ride: ride, group: group, leg: widget.leg),
         if (RideGroupLeaderRow.shows(group)) ...<Widget>[
           const SizedBox(height: PdlSpacing.section),
@@ -124,9 +126,9 @@ class _RideSoloGroupSectionState extends ConsumerState<RideSoloGroupSection>
             rideKey: widget.rideKey,
             teamSlug: ride.team.slug,
             routeSlug: routeSlug,
-            onDownload: downloadRouteAsset,
-            onSendToDevice: (List<GpsServiceConnectionDto> services) =>
-                sendRouteToDevice(ride.team.slug, routeSlug, services),
+            subtitle: gpsSubtitleOfGroup(group, ref.watch(unitSystemProvider)),
+            gpsLoading: gpsExporting,
+            onOpenGps: openGpsSheet,
           ),
         ],
       ],

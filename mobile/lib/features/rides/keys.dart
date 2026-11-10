@@ -127,17 +127,9 @@ class RideDetailKeys {
   ValueKey<String> groupLeaveButton(String groupId) =>
       _RideDetailKey('groupLeave_$groupId');
 
-  /// « Télécharger le GPX » de la carte d'un groupe.
-  ValueKey<String> groupExportGpx(String groupId) =>
-      _RideDetailKey('groupExportGpx_$groupId');
-
-  /// « Télécharger le FIT » de la carte d'un groupe.
-  ValueKey<String> groupExportFit(String groupId) =>
-      _RideDetailKey('groupExportFit_$groupId');
-
-  /// « Envoyer vers un appareil » de la carte d'un groupe.
-  ValueKey<String> groupSendToDevice(String groupId) =>
-      _RideDetailKey('groupSendToDevice_$groupId');
+  /// Le bouton « GPS » de la carte d'un groupe, qui ouvre la feuille GPS.
+  ValueKey<String> groupGps(String groupId) =>
+      _RideDetailKey('groupGps_$groupId');
 
   /// Le « Complet » désactivé d'un groupe plein.
   ValueKey<String> groupFullButton(String groupId) =>
@@ -217,9 +209,8 @@ class RideGroupPageKeys {
   /// « Voir toutes les personnes inscrites » de l'aperçu.
   final viewAllParticipants = const _RideGroupKey('viewAllParticipants');
 
-  final exportGpx = const _RideGroupKey('exportGpx');
-  final exportFit = const _RideGroupKey('exportFit');
-  final sendToDevice = const _RideGroupKey('sendToDevice');
+  /// Le bouton « GPS » du parcours du groupe (page d'un groupe, sortie solo).
+  final gps = const _RideGroupKey('gps');
 
   /// L'état neutre de l'onglet Météo quand il n'y a rien à montrer
   /// (`OUT_OF_RANGE`, `NO_LOCATION` pour un membre, statut inconnu).

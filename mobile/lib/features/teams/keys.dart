@@ -127,6 +127,10 @@ class TeamDashboardKeys {
   /// (ledger `BRAND-8`).
   ValueKey<String> myUpcomingDeparture(String slug) =>
       _TeamDashboardKey('myUpcomingDeparture_$slug');
+
+  /// Le bouton « GPS » d'une ligne de « Vos prochaines sorties ».
+  ValueKey<String> myUpcomingGps(String slug) =>
+      _TeamDashboardKey('myUpcomingGps_$slug');
 }
 
 class _TeamAgendaKey extends ValueKey<String> {

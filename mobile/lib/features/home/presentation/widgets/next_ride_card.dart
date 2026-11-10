@@ -13,12 +13,11 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../core/utils/api_error_handler.dart';
-import '../../../auth/domain/auth_state.dart';
-import '../../../auth/providers/auth_provider.dart';
 import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
 import '../../../rides/providers/ride_detail_provider.dart';
-import '../../../routes/presentation/route_export.dart';
+import '../../../routes/presentation/gps_export_runner.dart';
+import '../../../routes/presentation/widgets/gps_button.dart';
+import '../../../rides/domain/group_title.dart';
 import '../../providers/next_ride_leave_controller.dart';
 import '../../../teams/presentation/widgets/publication_card.dart';
 import '../../providers/next_ride_provider.dart';
@@ -406,11 +405,8 @@ class _NextRideActions extends ConsumerStatefulWidget {
   ConsumerState<_NextRideActions> createState() => _NextRideActionsState();
 }
 
-class _NextRideActionsState extends ConsumerState<_NextRideActions> {
-  bool _sending = false;
-  Object? _sendError;
-  bool _sent = false;
-
+class _NextRideActionsState extends ConsumerState<_NextRideActions>
+    with GpsExportRunner<_NextRideActions> {
   @override
   Widget build(BuildContext context) {
     final RideDto ride = widget.ride;
@@ -418,11 +414,10 @@ class _NextRideActionsState extends ConsumerState<_NextRideActions> {
     // Le parcours du groupe, sinon celui de la sortie : le même repli que les
     // cartes de groupe du détail.
     final String? routeSlug = joined?.routeSlug ?? ride.routeSlug;
-    final List<GpsServiceConnectionDto> services = ref.watch(
-      authProvider.select(
-        (AuthState s) => s.user?.connectedServices ?? const [],
-      ),
-    );
+    final List<GpsServiceConnectionDto> services = watchGpsServices();
+    // Le résumé ne porte pas les fichiers du parcours : la feuille n'offre
+    // ici que l'envoi vers un appareil, et le bouton n'apparaît qu'avec un
+    // service connecté, comme avant elle.
     final bool canSend =
         routeSlug != null && services.isNotEmpty && !ride.isPast;
 
@@ -459,71 +454,27 @@ class _NextRideActionsState extends ConsumerState<_NextRideActions> {
             ],
             if (canSend) ...<Widget>[
               const SizedBox(width: PdlSpacing.chipGap),
-              IconButton.outlined(
-                key: keys.home.nextRideSendToDevice,
-                tooltip: 'routes.sendToDevice'.tr(),
-                constraints: const BoxConstraints(
-                  minWidth: PdlMetrics.tapTarget,
-                  minHeight: PdlMetrics.tapTarget,
+              GpsButton(
+                key: keys.home.nextRideGps,
+                loading: gpsExporting,
+                onPressed: (BuildContext button) => openGpsSheet(
+                  GpsExportTarget(
+                    subtitle: joined == null
+                        ? ride.name
+                        : '${groupTitle(joined.name, 'rides.groupPage.title'.tr())}'
+                              ' · ${ride.name}',
+                    teamSlug: ride.team.slug,
+                    routeSlug: routeSlug,
+                  ),
+                  button,
                 ),
-                icon: Icon(PdlIcons.device, color: context.pdl.primary),
-                onPressed: _sending
-                    ? null
-                    : () => _send(ride.team.slug, routeSlug, services),
               ),
             ],
           ],
         ),
-        if (_sendError != null) ...<Widget>[
-          const SizedBox(height: PdlSpacing.chipGap),
-          PdlBanner(
-            tone: PdlBannerTone.danger,
-            message: getErrorMessage(_sendError!),
-            onDismiss: () => setState(() => _sendError = null),
-            dismissSemanticLabel: 'common.close'.tr(),
-          ),
-        ],
-        if (_sent) ...<Widget>[
-          const SizedBox(height: PdlSpacing.chipGap),
-          PdlBanner(
-            tone: PdlBannerTone.info,
-            message: 'routes.uploadSuccess'.tr(),
-            onDismiss: () => setState(() => _sent = false),
-            dismissSemanticLabel: 'common.close'.tr(),
-          ),
-        ],
+        ...gpsExportBanners(gap: PdlSpacing.chipGap, gapBefore: true),
       ],
     );
-  }
-
-  Future<void> _send(
-    String teamSlug,
-    String routeSlug,
-    List<GpsServiceConnectionDto> services,
-  ) async {
-    final GpsServiceConnectionDto? picked = await pickGpsService(
-      context,
-      services,
-    );
-    if (picked == null || !mounted) return;
-    setState(() {
-      _sending = true;
-      _sendError = null;
-      _sent = false;
-    });
-    try {
-      await uploadRouteToService(
-        ref,
-        picked,
-        teamSlug: teamSlug,
-        routeSlug: routeSlug,
-      );
-      if (mounted) setState(() => _sent = true);
-    } catch (error) {
-      if (mounted) setState(() => _sendError = error);
-    } finally {
-      if (mounted) setState(() => _sending = false);
-    }
   }
 }
 

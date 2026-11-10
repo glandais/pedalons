@@ -8,14 +8,15 @@ import 'common.dart';
 /// Two groups, each on a route of its own. The groups map is a MapLibre platform view whose
 /// tracks Patrol cannot read: what it checks is the selection the map shares with the cards —
 /// the pill naming the selected group follows a tap on another group's card. « Voir la liste »
-/// then gathers the riders of **every** group, and nobody else. Last, the group's exports: « GPX »
-/// (and « FIT » when the route has one) from the route's assets, no « Envoyer vers un appareil »
-/// without a connected GPS service — which the e2e stack cannot connect — and « GPX » hands the
+/// then gathers the riders of **every** group, and nobody else. Last, the group's exports, in the
+/// GPS sheet its « GPS » button opens: « Fichier GPX » (and « Fichier FIT » when the route has
+/// one) from the route's assets, no « Vers un appareil » but « Connecter un compteur » without a
+/// connected GPS service — which the e2e stack cannot connect — and sharing the GPX hands the
 /// downloaded file to the system share sheet, found in the native UI tree (it presents a
 /// GPX file).
 void main() {
   testApp(
-    'The groups map follows the selected group, the participants sheet names every group’s riders, and « GPX » opens the share sheet',
+    'The groups map follows the selected group, the participants sheet names every group’s riders, and the GPS sheet shares the GPX',
     ($, modules, apiClients) async {
       final backend = apiClients.backend;
       final owner = await backend.newUser('Extras owner');
@@ -72,18 +73,21 @@ void main() {
       await modules.ride.selectGroup(groupB);
       await modules.ride.waitUntilMapSelects(nameB);
 
-      // The exports of a group follow its route's assets; with no GPS service connected — the
-      // e2e stack cannot connect one — there is no « Envoyer vers un appareil ».
-      await modules.ride.waitUntilGpxExportIsOffered(groupB);
+      // The exports of a group, in its GPS sheet, follow its route's assets; with no GPS
+      // service connected — the e2e stack cannot connect one — there is no « Vers un
+      // appareil », and « Connecter un compteur » stands in its place.
+      await modules.ride.waitUntilGpsIsOffered(groupB);
+      await modules.ride.openGpsSheet(groupB);
       final eastDetail = await backend.get(
         reader,
         '/api/teams/$teamSlug/routes/${eastRoute['slug']}',
       );
       final assets = (eastDetail['media'] as Json)['assets'] as Json;
-      expect(modules.ride.offersFitExport(groupB), assets['fit'] != null);
-      expect(modules.ride.offersSendToDevice(groupB), isFalse);
+      expect(modules.ride.gpsSheetOffersFit, assets['fit'] != null);
+      expect(modules.ride.gpsSheetOffersSendToDevice, isFalse);
+      expect(modules.ride.gpsSheetOffersConnectDevice, isTrue);
 
-      await modules.ride.exportGpx(groupB);
+      await modules.ride.shareGpxFromGpsSheet();
       expect(await modules.shareSheet.waitUntilSharesGpxFile(), isTrue);
     },
   );
