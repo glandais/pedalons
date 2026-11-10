@@ -67,4 +67,21 @@ describe('RouteTrackMap', () => {
     expect(screen.queryByTestId('km-markers')).toBeNull()
     expect(screen.getByTestId('overlay')).toBeTruthy()
   })
+
+  // docs/LEDGER_*.md WEB-157: the bottom line rises above an overlay laid over the map
+  it('lifts both bottom corners by the inset it is given, on the map wrapper', () => {
+    const { container } = show({ bottomInset: 'clamp(110px, 38%, 200px)' })
+    const wrapper = container.querySelector<HTMLElement>('[style*="--map-inset"]')
+    expect(wrapper?.style.getPropertyValue('--map-inset-bottom-left')).toBe(
+      'clamp(110px, 38%, 200px)'
+    )
+    expect(wrapper?.style.getPropertyValue('--map-inset-bottom-right')).toBe(
+      'clamp(110px, 38%, 200px)'
+    )
+  })
+
+  it('sets no inset without one', () => {
+    const { container } = show()
+    expect(container.querySelector('[style*="--map-inset"]')).toBeNull()
+  })
 })

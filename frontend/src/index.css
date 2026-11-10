@@ -176,6 +176,67 @@
   order: 100;
 }
 
+/* The bottom line (scale bar bottom-left, attribution bottom-right — and on a finger the whole
+   control column, which lives bottom-right) sits above whatever covers the bottom of the map,
+   instead of under it. The page that lays an overlay over the map sets these two variables on the
+   map's wrapper, to the overlay's height (`RouteMapView`, `RoutesMapView`). The corners are
+   positioned against `.maplibregl-map`, which fills that wrapper, so a percentage or a `clamp()`
+   resolves against the same height as the overlay's own. docs/LEDGER_*.md WEB-157. */
+.maplibregl-ctrl-bottom-left {
+  bottom: var(--map-inset-bottom-left, 0px);
+}
+
+.maplibregl-ctrl-bottom-right {
+  bottom: var(--map-inset-bottom-right, 0px);
+}
+
+/* A fullscreen map leaves its wrapper's overlays behind (MapLibre fullscreens the map's own
+   container): nothing covers its bottom any more. Two rules, not one list: a browser that does not
+   know `:fullscreen` would drop the whole list, the iPhone's pseudo-fullscreen with it. */
+.maplibregl-map:fullscreen {
+  --map-inset-bottom-left: 0px;
+  --map-inset-bottom-right: 0px;
+}
+
+.maplibregl-map.maplibregl-pseudo-fullscreen {
+  --map-inset-bottom-left: 0px;
+  --map-inset-bottom-right: 0px;
+}
+
+/* `RoutesMapView`'s elevation overlay, bottom-left, and the insets it owes — one rule, so its size
+   and the bottom line's lift cannot drift apart. Set on the map's wrapper only while the overlay
+   is rendered (there is a profile to draw). The breakpoints are Mantine's `sm` (48em) and `md`
+   (62em). Below `sm` the overlay leaves the map's right 40 px uncovered: enough for the
+   attribution's ⓘ on a fine pointer, not for a finger's 44 px column (54 px with its margin), nor
+   for the attribution once expanded leftwards — so both corners rise there. From `sm` the overlay
+   is half the map or less and the right corner stays down. */
+.routes-map--profile {
+  --routes-map-profile-width: calc(100% - 40px);
+  --routes-map-profile-height: 120px;
+  --map-inset-bottom-left: var(--routes-map-profile-height);
+  --map-inset-bottom-right: var(--routes-map-profile-height);
+}
+
+@media (min-width: 48em) {
+  .routes-map--profile {
+    --routes-map-profile-width: 50%;
+    --routes-map-profile-height: 140px;
+    --map-inset-bottom-right: 0px;
+  }
+}
+
+@media (min-width: 62em) {
+  .routes-map--profile {
+    --routes-map-profile-width: 40%;
+    --routes-map-profile-height: 150px;
+  }
+}
+
+.routes-map-profile {
+  height: var(--routes-map-profile-height);
+  width: var(--routes-map-profile-width);
+}
+
 /* The place search box of the free-navigation maps (`MapSearchControl`, @stadiamaps/maplibre-search-box).
    The package ships light-only colours (#fefefe results, #dfdfdf hover, black links, a browser-default
    input). Restated against maplibre-theme's variables so the box follows the map's `.dark` scheme

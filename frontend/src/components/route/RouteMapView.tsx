@@ -26,6 +26,13 @@ export type MappableRoute = Pick<RouteDetailDto, 'tracks' | 'waypoints' | 'dista
 // profile needs room at the bottom so the whole track stays visible; below it, nothing to clear.
 const OVERLAY_FIT_PADDING = { top: 50, bottom: 220, left: 50, right: 50 }
 const BELOW_FIT_PADDING = 50
+/**
+ * Height of the profile laid over the map: proportional to the (viewport-bounded) map so it never
+ * dominates a short map, while staying readable on tall ones. Also the map's bottom inset, which
+ * lifts the scale bar and the attribution above it (docs/LEDGER_*.md WEB-157) — one expression,
+ * resolved against the same box by both.
+ */
+const OVERLAY_PROFILE_HEIGHT = 'clamp(110px, 38%, 200px)'
 /** Height of the profile strip under the map, the fullscreen view's. */
 const BELOW_PROFILE_HEIGHT = 160
 
@@ -163,6 +170,7 @@ export function RouteMapView({
           kmMarkers={kmMarkers}
           waypointSelection={selection}
           onWaypointSelect={setSelection}
+          bottomInset={overlay ? OVERLAY_PROFILE_HEIGHT : undefined}
           // Fullscreen action, in the camera column under the zoom buttons
           controls={
             fullscreenPath && (
@@ -183,9 +191,7 @@ export function RouteMapView({
               bottom={0}
               left={0}
               right={0}
-              // Proportional to the (viewport-bounded) map so it never dominates a short map,
-              // while staying readable on tall ones.
-              h="clamp(110px, 38%, 200px)"
+              h={OVERLAY_PROFILE_HEIGHT}
               style={{
                 zIndex: 1000,
                 pointerEvents: 'auto',

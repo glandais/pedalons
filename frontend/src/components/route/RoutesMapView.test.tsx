@@ -327,4 +327,22 @@ describe('RoutesMapView', () => {
       expect(credit?.attribution).toContain('Open-Meteo.com')
     })
   })
+
+  // docs/LEDGER_*.md WEB-157: the class that sizes the profile and lifts the bottom line
+  describe('bottom inset under the profile (WEB-157)', () => {
+    const wrapper = (container: HTMLElement) => container.querySelector('.map-stack')!
+
+    it('is set on the map wrapper while the profile is drawn', () => {
+      const { container } = show()
+      expect(wrapper(container).classList.contains('routes-map--profile')).toBe(true)
+      expect(container.querySelector('.routes-map-profile')).not.toBeNull()
+    })
+
+    it('goes with the profile, once every trace is unticked', () => {
+      const { container } = show()
+      act(() => ITEMS.forEach((item) => state.toggleTrace!(item.id)))
+      expect(container.querySelector('.routes-map-profile')).toBeNull()
+      expect(wrapper(container).classList.contains('routes-map--profile')).toBe(false)
+    })
+  })
 })

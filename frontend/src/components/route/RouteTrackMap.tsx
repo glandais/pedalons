@@ -67,6 +67,12 @@ interface RouteTrackMapProps {
   kmMarkers?: boolean
   /** Overlays (the elevation chart) absolutely positioned on top of the map. */
   children?: React.ReactNode
+  /**
+   * The height an overlay covers at the bottom of the map (any CSS length — a percentage is of the
+   * map's height): the scale bar and the attribution — on a finger the whole control column —
+   * sit above it rather than under it (index.css, docs/LEDGER_*.md WEB-157).
+   */
+  bottomInset?: string
 }
 
 /**
@@ -90,6 +96,7 @@ export function RouteTrackMap({
   overlays,
   kmMarkers = true,
   children,
+  bottomInset,
 }: RouteTrackMapProps) {
   const colorScheme = useResolvedColorScheme()
   const { darkBasemap } = useMapStyle()
@@ -210,7 +217,11 @@ export function RouteTrackMap({
       w="100%"
       h="100%"
       className={colorScheme === 'dark' ? 'dark' : undefined}
-      style={{ zIndex: 0 }}
+      style={{
+        zIndex: 0,
+        '--map-inset-bottom-left': bottomInset,
+        '--map-inset-bottom-right': bottomInset,
+      }}
     >
       <PedalonsMap
         ref={mapRef}

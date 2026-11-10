@@ -626,7 +626,15 @@ export function RoutesMapView({
         pos="relative"
         w="100%"
         h={mapHeight}
-        className={colorScheme === 'dark' ? 'map-stack dark' : 'map-stack'}
+        // `routes-map--profile` sizes the elevation overlay and lifts the map's bottom line above
+        // it (index.css): only while the overlay is there
+        className={[
+          'map-stack',
+          colorScheme === 'dark' && 'dark',
+          chartData && 'routes-map--profile',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         style={{ zIndex: 0 }}
       >
         <PedalonsMap
@@ -750,17 +758,16 @@ export function RoutesMapView({
           )}
         </PedalonsMap>
 
-        {/* Elevation chart overlay, bottom-left: on a phone its narrower width leaves the
-            bottom-right corner uncovered — the control column and the attribution's ⓘ there.
-            It still covers the scale bar (bottom-left) until docs/LEDGER_*.md WEB-157 lifts the
-            bottom line above it. */}
+        {/* Elevation chart overlay, bottom-left. Its width and height per breakpoint live in
+            index.css (`routes-map--profile`), with the insets that lift the map's bottom line —
+            the scale bar always, the bottom-right corner below `sm` only — above it.
+            docs/LEDGER_*.md WEB-157. */}
         {chartData && (
           <Paper
+            className="routes-map-profile"
             pos="absolute"
             bottom={0}
             left={0}
-            w={{ base: 'calc(100% - 40px)', sm: '50%', md: '40%' }}
-            h={{ base: 120, sm: 140, md: 150 }}
             shadow="lg"
             style={{ zIndex: 1000, pointerEvents: 'auto', backgroundColor: chartColors.background }}
           >
