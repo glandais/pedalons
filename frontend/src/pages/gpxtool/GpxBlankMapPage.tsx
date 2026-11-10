@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FullscreenControl } from 'react-map-gl/maplibre'
 import { LocateControl } from '@/components/map/LocateControl'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { ActionIcon, Box, Skeleton } from '@mantine/core'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
+import { MapFullscreenControl } from '@/components/map/MapFullscreenControl'
 import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
 import { MapSearchControl } from '@/components/map/MapSearchControl'
 import { PedalonsMap } from '@/components/map/PedalonsMap'
@@ -52,7 +52,7 @@ export function GpxBlankMapPage() {
         ) : (
           <PedalonsMap initialViewState={initialViewState}>
             <MapSearchControl />
-            <FullscreenControl position="top-left" />
+            <MapFullscreenControl />
             <LocateControl trackUserLocation />
           </PedalonsMap>
         )}

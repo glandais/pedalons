@@ -10,13 +10,16 @@ import { MapScale } from './MapScale'
 import { MapImages } from './MapImages'
 import { MapStyleSwitcher, type MapStyleSwitcherProps } from './MapStyleSwitcher'
 import { MapPanelContext, useMapPanelState } from './mapPanelState'
+import { useMapZones } from './mapZones'
 import { useMapStyle } from '@/hooks/useMapStyle'
 
 /**
- * Every map control in this app lives in ONE column, top-left, in one visual language: the zoom
- * buttons, then the basemap switcher, then whatever the page adds through `MapControlGroup`.
- * There is deliberately no per-map position prop — a control that moves between pages is a control
- * the visitor has to look for.
+ * Every map control in this app belongs to one of two zones, in one visual language
+ * (`mapZones.ts`, docs/LEDGER_*.md WEB-157): the camera column (search, zoom, « Me localiser »,
+ * fullscreen) top-left, the display column (basemap panel, « Masquer le tracé ») top-right — both
+ * bottom-right, under the thumb, on a touch screen. The order within a column is fixed by
+ * index.css, not by the mounting order. There is deliberately no per-map position prop — a control
+ * that moves between pages is a control the visitor has to look for.
  */
 type PedalonsMapProps = Omit<MapProps, 'mapLib' | 'mapStyle' | 'style'> &
   /** The traces the basemap panel lets the visitor show or hide, on a map that holds several. */
@@ -25,7 +28,7 @@ type PedalonsMapProps = Omit<MapProps, 'mapLib' | 'mapStyle' | 'style'> &
 export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
   ({ children, traces, onTraceToggle, ...props }, ref) => {
     const { t } = useTranslation()
-    // One open panel at a time across the control column (basemap, profile, help…). A page that
+    // One open panel at a time across the control columns (basemap, profile, help…). A page that
     // has panels outside the map as well provides the state higher up: the map then shares it.
     const ownPanelState = useMapPanelState()
     const panelState = useContext(MapPanelContext) ?? ownPanelState
@@ -74,7 +77,7 @@ export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
           attributionControl={false}
           {...props}
         >
-          <NavigationControl position="top-left" />
+          <CameraNavigationControl />
           <RotationMarker />
           <MapAttribution />
           <MapScale />
@@ -102,11 +105,17 @@ export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
 )
 PedalonsMap.displayName = 'PedalonsMap'
 
+/** Zoom buttons and compass, at the head of the camera column (after the search, if any). */
+function CameraNavigationControl() {
+  const { camera } = useMapZones()
+  return <NavigationControl position={camera} />
+}
+
 /**
  * Marks the map container `pdl-map-rotated` while the bearing is off north. On a touch screen
  * index.css hides the zoom buttons (pinch does it) and shows the compass only under that class:
  * six buttons did not fit above the elevation overlay of a phone-sized map. CSS rather than
- * unmounting `NavigationControl`, which would re-add it at the bottom of the control column.
+ * unmounting `NavigationControl`, which would rebuild the control on every rotation.
  */
 function RotationMarker() {
   const { current: mapRef } = useMap()

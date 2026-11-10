@@ -163,10 +163,10 @@ export function RouteMapView({
           kmMarkers={kmMarkers}
           waypointSelection={selection}
           onWaypointSelect={setSelection}
-          // Fullscreen action, in the control column with the zoom and basemap buttons
+          // Fullscreen action, in the camera column under the zoom buttons
           controls={
             fullscreenPath && (
-              <MapControlGroup>
+              <MapControlGroup zone="camera" slot="fullscreen">
                 <MapControlButton
                   label={t('map.fullscreen.open')}
                   icon={<IconArrowsMaximize size={20} />}

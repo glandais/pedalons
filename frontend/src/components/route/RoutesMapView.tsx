@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import type { LngLatBoundsLike } from 'maplibre-gl'
-import { Source, Layer, MapRef, MapMouseEvent, FullscreenControl } from 'react-map-gl/maplibre'
+import { Source, Layer, MapRef, MapMouseEvent } from 'react-map-gl/maplibre'
 import { Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -38,6 +38,7 @@ import {
 import { crosshairPlugin, type ChartWithCrosshair } from './chartCrosshair'
 import { PedalonsMap } from '../map/PedalonsMap'
 import { HideTrackControl } from '../map/HideTrackControl'
+import { MapFullscreenControl } from '../map/MapFullscreenControl'
 import { routeArrowLayout } from '../map/routeArrowLayout'
 import { useHideTrackKey } from '@/hooks/useHideTrackKey'
 import { useUnits } from '../../hooks/useUnits'
@@ -51,7 +52,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 /**
  * The chart overlay is 150px at the bottom; the extra bottom padding keeps the traces clear of it.
  * At the bottom rather than the top: on a phone it spans the map's width, and at the top it covered
- * the whole control column (zoom, basemaps, fullscreen).
+ * the control columns (zoom, basemaps, fullscreen) of a fine pointer.
  */
 const ROUTES_FIT_PADDING = { top: 50, bottom: 170, left: 50, right: 50 } as const
 
@@ -648,7 +649,7 @@ export function RoutesMapView({
 
           {/* Room to tell a dozen overlaid traces apart. Fullscreens the map container only, so the
               elevation overlay — a sibling of the map, not a child — stays out of it. */}
-          <FullscreenControl position="top-left" />
+          <MapFullscreenControl />
 
           {tracksHidden ? null : (
             <>
@@ -749,8 +750,10 @@ export function RoutesMapView({
           )}
         </PedalonsMap>
 
-        {/* Elevation chart overlay, bottom-left: the control column is top-left, and the narrow
-            width on a phone leaves the attribution's ⓘ (bottom-right) uncovered. */}
+        {/* Elevation chart overlay, bottom-left: on a phone its narrower width leaves the
+            bottom-right corner uncovered — the control column and the attribution's ⓘ there.
+            It still covers the scale bar (bottom-left) until docs/LEDGER_*.md WEB-157 lifts the
+            bottom line above it. */}
         {chartData && (
           <Paper
             pos="absolute"

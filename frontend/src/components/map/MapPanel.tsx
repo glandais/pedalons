@@ -5,6 +5,7 @@ import { ActionIcon, Box, Drawer, Group, Popover, Text } from '@mantine/core'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { MapControlButton, MapControlGroup } from './MapControl'
 import { markPanelDismissed, useMapPanel } from './mapPanelState'
+import { useMapZones, type MapControlSlot, type MapZone } from './mapZones'
 import { useFullscreenElement } from './useFullscreenElement'
 
 /** Above the elevation profile overlaid on compact maps (zIndex 1000 in RouteMapView). */
@@ -25,14 +26,18 @@ interface MapPanelProps {
    * button in a toolbar outside the map. The panel is then always the bottom sheet.
    */
   trigger?: 'map' | 'bar'
+  /** With `trigger="map"`: the button's column and place in it (see {@link MapControlGroup}). */
+  zone: MapZone
+  slot: MapControlSlot
   /** Receives a function closing the panel, for content that picks a value and is done. */
   children: React.ReactNode | ((close: () => void) => React.ReactNode)
 }
 
 /**
- * A button of the control column that opens a panel anchored to it. One panel at a time per map
- * (see {@link useMapPanel}); closes on outside click and Escape. On a coarse pointer the panel is a
- * bottom sheet, within thumb reach, as the button sits at the top of the map.
+ * A button of a control column that opens a panel anchored to it. One panel at a time per map
+ * (see {@link useMapPanel}); closes on outside click and Escape. On a fine pointer the panel is a
+ * popover opening beside the button, towards the map (to the left of a right-hand column); on a
+ * coarse pointer it is a bottom sheet, the same for every button wherever its column stands.
  */
 export function MapPanel({
   id,
@@ -41,11 +46,14 @@ export function MapPanel({
   title,
   width = 200,
   trigger = 'map',
+  zone,
+  slot,
   children,
 }: MapPanelProps) {
   const { t } = useTranslation()
   const { opened, toggle, close, setOpened } = useMapPanel(id)
   const isCoarsePointer = useMediaMatch('(pointer: coarse)')
+  const zones = useMapZones()
   // In browser fullscreen, a portal into <body> is never on screen: render into the map instead.
   // Mantine's Portal reads its target only when it mounts, hence the key remounting it on a switch
   // while the panel is open.
@@ -110,7 +118,7 @@ export function MapPanel({
             {icon}
           </ActionIcon>
         ) : (
-          <MapControlGroup>
+          <MapControlGroup zone={zone} slot={slot}>
             <MapControlButton label={label} icon={icon} onClick={toggle} active={opened} />
           </MapControlGroup>
         )}
@@ -132,7 +140,7 @@ export function MapPanel({
   }
 
   return (
-    <MapControlGroup>
+    <MapControlGroup zone={zone} slot={slot}>
       <Popover
         opened={opened}
         onChange={(value) => {
@@ -141,7 +149,7 @@ export function MapPanel({
           setOpened(value)
         }}
         zIndex={PANEL_Z_INDEX}
-        position="right-start"
+        position={zones.side[zone] === 'left' ? 'left-start' : 'right-start'}
         offset={8}
         shadow="lg"
         radius="md"

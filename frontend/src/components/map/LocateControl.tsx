@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { useControl } from 'react-map-gl/maplibre'
-import type { ControlPosition } from 'react-map-gl/maplibre'
 import { GeolocateControl } from 'maplibre-gl'
 import type { GeolocateControlOptions, GeolocatePositionEvent } from 'maplibre-gl'
+import { useMapZones } from './mapZones'
 
 const ACTIVE_CLASS = 'maplibregl-ctrl-geolocate-active'
 
@@ -46,19 +46,18 @@ class ToggleGeolocateControl extends GeolocateControl {
 }
 
 interface LocateControlProps {
-  position?: ControlPosition
   /** Follow the visitor as they move, instead of locating them once. */
   trackUserLocation?: boolean
   /** Each position found — not called when the toggle switches the position off. */
   onGeolocate?: (event: GeolocatePositionEvent) => void
 }
 
-/** The « Me localiser » button of the maps, as a toggle — see {@link ToggleGeolocateControl}. */
-export function LocateControl({
-  position = 'top-left',
-  trackUserLocation = false,
-  onGeolocate,
-}: LocateControlProps) {
+/**
+ * The « Me localiser » button of the maps, as a toggle — see {@link ToggleGeolocateControl}. In the
+ * camera column, under the zoom buttons (`mapZones.ts`).
+ */
+export function LocateControl({ trackUserLocation = false, onGeolocate }: LocateControlProps) {
+  const { camera } = useMapZones()
   // The control reads its options once, when constructed: the callback goes through a ref.
   const onGeolocateRef = useRef(onGeolocate)
   useEffect(() => {
@@ -74,7 +73,7 @@ export function LocateControl({
       control.on('geolocate', (e) => onGeolocateRef.current?.(e))
       return control
     },
-    { position }
+    { position: camera }
   )
   return null
 }

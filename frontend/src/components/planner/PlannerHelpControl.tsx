@@ -75,6 +75,8 @@ export function PlannerHelpControl({ trigger }: PlannerHelpControlProps) {
   return (
     <MapPanel
       id="help"
+      zone="camera"
+      slot="help"
       label={t('planner.help.label')}
       title={t('planner.help.title')}
       icon={<IconHelp size={20} />}

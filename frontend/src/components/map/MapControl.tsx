@@ -1,11 +1,11 @@
-import { forwardRef } from 'react'
+import { createContext, forwardRef, useContext } from 'react'
 import { createPortal } from 'react-dom'
 import { useControl } from 'react-map-gl/maplibre'
-import type { ControlPosition } from 'react-map-gl/maplibre'
 import type { IControl } from 'maplibre-gl'
 import { Tooltip } from '@mantine/core'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useFullscreenElement } from './useFullscreenElement'
+import { useMapZones, type MapControlSide, type MapControlSlot, type MapZone } from './mapZones'
 
 /**
  * A MapLibre control whose element React renders into. Lets a button join the native control
@@ -15,8 +15,11 @@ import { useFullscreenElement } from './useFullscreenElement'
 class PortalControl implements IControl {
   private readonly container = document.createElement('div')
 
+  constructor(private readonly slot: MapControlSlot) {}
+
   onAdd() {
-    this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group'
+    // `pdl-ctrl-<slot>`: index.css gives the box its `order` in the corner from it.
+    this.container.className = `maplibregl-ctrl maplibregl-ctrl-group pdl-ctrl-${this.slot}`
     return this.container
   }
 
@@ -29,19 +32,30 @@ class PortalControl implements IControl {
   }
 }
 
+/** The side the tooltips of a group open towards, given by its {@link MapControlGroup}. */
+const MapControlSideContext = createContext<MapControlSide>('right')
+
 interface MapControlGroupProps {
   children: React.ReactNode
   /**
-   * Corner of the map. Every control in this app sits top-left, under the zoom buttons — don't
-   * scatter them per page.
+   * The family the control belongs to, which decides its corner (`mapZones.ts`). There is
+   * deliberately no corner prop: a control that moves between pages is one the visitor has to
+   * look for. docs/LEDGER_*.md WEB-157.
    */
-  position?: ControlPosition
+  zone: MapZone
+  /** Its place within the corner, fixed by index.css whatever the mounting order. */
+  slot: MapControlSlot
 }
 
-/** One rounded box in the control column, holding one or more {@link MapControlButton}. */
-export function MapControlGroup({ children, position = 'top-left' }: MapControlGroupProps) {
-  const control = useControl(() => new PortalControl(), { position })
-  return createPortal(children, control.getElement())
+/** One rounded box in a control column, holding one or more {@link MapControlButton}. */
+export function MapControlGroup({ children, zone, slot }: MapControlGroupProps) {
+  const zones = useMapZones()
+  const control = useControl(() => new PortalControl(slot), { position: zones[zone] })
+  return (
+    <MapControlSideContext.Provider value={zones.side[zone]}>
+      {createPortal(children, control.getElement())}
+    </MapControlSideContext.Provider>
+  )
 }
 
 interface MapControlButtonProps extends Omit<
@@ -54,15 +68,16 @@ interface MapControlButtonProps extends Omit<
   onClick?: () => void
   /** Renders a link instead of a button (fullscreen, back…), styled identically. */
   to?: string
-  /** Toggled on: rendered in the accent colour, like MapLibre's own stateful controls. */
+  /** Toggled on: a soft accent background and an accent icon (index.css, `.active`). */
   active?: boolean
   disabled?: boolean
 }
 
 /**
  * A single control button. Sizing, borders and hover states come from maplibre-theme's
- * `.maplibregl-ctrl-group button` rules (and their anchor mirror in index.css), so these look
- * exactly like the zoom buttons above them on every map.
+ * `.maplibregl-ctrl-group button` rules (resized, and mirrored for links, in index.css), so these
+ * look exactly like the zoom buttons on every map. The tooltip opens away from the column's edge,
+ * towards the map.
  */
 export const MapControlButton = forwardRef<
   HTMLButtonElement & HTMLAnchorElement,
@@ -72,8 +87,9 @@ export const MapControlButton = forwardRef<
   ref
 ) {
   const fullscreenElement = useFullscreenElement()
+  const side = useContext(MapControlSideContext)
   return (
-    <Tooltip label={label} position="right" withArrow portalProps={{ target: fullscreenElement }}>
+    <Tooltip label={label} position={side} withArrow portalProps={{ target: fullscreenElement }}>
       {to ? (
         <PrefetchLink
           ref={ref as React.Ref<HTMLAnchorElement>}

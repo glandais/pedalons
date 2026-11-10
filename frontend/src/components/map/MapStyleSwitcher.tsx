@@ -51,6 +51,8 @@ export function MapStyleSwitcher({
   return (
     <MapPanel
       id="style"
+      zone="display"
+      slot="style"
       label={t('map.styles.switch')}
       title={t('map.styles.title')}
       icon={<IconMap size={20} />}

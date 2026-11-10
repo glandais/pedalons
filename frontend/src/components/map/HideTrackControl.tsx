@@ -16,7 +16,7 @@ export function HideTrackControl({ hidden, onToggle }: HideTrackControlProps) {
   const label = hidden ? t('map.hideTrack.show') : t('map.hideTrack.hide')
 
   return (
-    <MapControlGroup>
+    <MapControlGroup zone="display" slot="hide-track">
       <MapControlButton
         label={label}
         icon={hidden ? <IconRouteOff size={20} /> : <IconRoute size={20} />}

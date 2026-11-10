@@ -9,12 +9,12 @@ interface UndoRedoControlProps {
   onRedo: () => void
 }
 
-/** Planner history, in the map's control column alongside the zoom and basemap buttons. */
+/** Planner history, in the map's camera column, after the zoom and fullscreen buttons. */
 export function UndoRedoControl({ canUndo, canRedo, onUndo, onRedo }: UndoRedoControlProps) {
   const { t } = useTranslation()
 
   return (
-    <MapControlGroup>
+    <MapControlGroup zone="camera" slot="undo-redo">
       <MapControlButton
         label={t('planner.undo')}
         icon={<IconArrowBackUp size={20} />}

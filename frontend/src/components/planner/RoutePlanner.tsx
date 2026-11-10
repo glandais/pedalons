@@ -1723,7 +1723,7 @@ export function RoutePlanner({
                 <HideTrackControl hidden={trackHidden} onToggle={toggleTrackHidden} />
 
                 {onImport && (
-                  <MapControlGroup>
+                  <MapControlGroup zone="camera" slot="import">
                     <MapControlButton
                       label={t('planner.import')}
                       icon={<IconFileImport size={20} />}
@@ -1746,7 +1746,7 @@ export function RoutePlanner({
             )}
 
             {onExpand && (
-              <MapControlGroup>
+              <MapControlGroup zone="camera" slot="fullscreen">
                 <MapControlButton
                   label={t('planner.expand')}
                   icon={<IconMaximize size={20} />}

@@ -9,7 +9,7 @@ interface DirectModeControlProps {
 }
 
 /**
- * The "Straight line" toggle, in the map's control column (mouse). Its name is constant: the
+ * The "Straight line" toggle, in the map's camera column (mouse). Its name is constant: the
  * pressed state says whether it is on; the modifier key, held at the moment of a gesture, is not
  * reflected here.
  */
@@ -17,7 +17,7 @@ export function DirectModeControl({ directMode, onToggle }: DirectModeControlPro
   const { t } = useTranslation()
 
   return (
-    <MapControlGroup>
+    <MapControlGroup zone="camera" slot="direct">
       <MapControlButton
         label={t('planner.direct.toggle.mouse', { shortcut: directShortcut(t) })}
         icon={<IconLineDashed size={20} />}

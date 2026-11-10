@@ -26,11 +26,10 @@ export const STADIA_MAPS_ORIGIN = 'https://api-eu.stadiamaps.com'
  * Address lookups in *forms* (`GeocoderAutocomplete`) are a different thing: they go through our
  * backend proxy so the visitor's IP never reaches the provider. The privacy policy describes both.
  *
- * Position: top-right, the one exception to `PedalonsMap`'s "everything top-left, one column"
- * rule. The control is a 280px text field with a results list dropping from it; in the left
- * column it would sit under the basemap switcher and its results would cover the page's own
- * buttons (undo/redo, routing profile…). A search field is not a button: visitors look for it
- * where every map application puts it, in a corner of its own.
+ * Position: top-left, at the head of the camera family (it moves the view). On a fine pointer it
+ * tops the camera column, its results list floating over the buttons under it (index.css); on a
+ * finger it spans the top of the map while the buttons gather bottom-right (`mapZones.ts`).
+ * docs/LEDGER_*.md WEB-157.
  */
 export function MapSearchControl({ onResultSelected }: MapSearchControlProps) {
   const { i18n } = useTranslation()
@@ -83,7 +82,8 @@ function SearchControl({ onResultSelected }: MapSearchControlProps) {
           })
         },
       }),
-    { position: 'top-right' }
+    // Whatever the pointer: on a finger the top-left corner is the search's alone.
+    { position: 'top-left' }
   )
   return null
 }

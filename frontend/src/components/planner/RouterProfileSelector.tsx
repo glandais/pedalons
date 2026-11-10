@@ -65,6 +65,8 @@ export function RouterProfileSelector({
   return (
     <MapPanel
       id="profile"
+      zone="camera"
+      slot="profile"
       label={
         custom
           ? `${t('planner.profile.label')} (${t('planner.tuning.custom')})`
