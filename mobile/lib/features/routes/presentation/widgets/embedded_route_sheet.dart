@@ -1,5 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,10 +7,14 @@ import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
+import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
+import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
+import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/units/unit_system.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/push_location.dart';
 import '../../../../keys.dart';
 import '../../domain/route_color_mode.dart';
 import '../../domain/track_slope_colors.dart';
@@ -23,7 +27,6 @@ import 'route_color_mode_switch.dart';
 import 'route_cursor_controller.dart';
 import 'route_download_actions.dart';
 import 'route_map.dart';
-import 'route_sheet_header.dart';
 import 'route_surface_section.dart';
 import 'route_waypoints_section.dart';
 import 'waypoint_selection.dart';
@@ -174,9 +177,7 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        // L'en-tête déployé : c'est le même widget que la feuille de
-        // l'écran 13, figé au cran haut.
-        RouteSheetHeader(route: route, extent: 1),
+        _EmbeddedRouteHeader(route: route, units: units),
         if (route.hasGeometry) ...<Widget>[
           ClipRRect(
             borderRadius: PdlRadii.mdAll,
@@ -363,5 +364,97 @@ class _EmbeddedRouteSheetState extends ConsumerState<EmbeddedRouteSheet> {
             onRetry: () => ref.invalidate(routeDetailProvider(widget.routeKey)),
           ),
         );
+  }
+}
+
+/// L'en-tête de la fiche embarquée : l'équipe, le titre, le revêtement et la
+/// visibilité, Distance · D+ · D−. Repris de l'ancien en-tête de feuille de
+/// l'écran 13 (`RouteSheetHeader`, retiré au lot 10 de `MOB-134` : la fiche
+/// parcours défile désormais) ; il part avec cette fiche au lot 11.
+class _EmbeddedRouteHeader extends StatelessWidget {
+  const _EmbeddedRouteHeader({required this.route, required this.units});
+
+  final RouteDetailDto route;
+  final UnitSystem units;
+
+  @override
+  Widget build(BuildContext context) {
+    final PdlColors c = context.pdl;
+    final PdlTypography t = context.pdlText;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          PdlTeamLine(
+            label: route.team.name,
+            imageUrl: route.team.logoUrl,
+            onTap: () => pushLocation(context, Paths.team(route.team.slug)),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  route.name,
+                  style: t.screenTitle.copyWith(fontSize: 20),
+                ),
+              ),
+              const SizedBox(width: PdlSpacing.chipGap),
+              PdlBadgeStack(
+                badges: <Widget>[
+                  PdlBadge(
+                    label: AppFormatters.surfaceName(route.surfaceType),
+                    tone: SurfaceType.fromJson(route.surfaceType).tone(c),
+                  ),
+                  PdlBadge(
+                    label: 'visibility.${route.visibility.toLowerCase()}'.tr(),
+                    tone: Visibility.fromJson(route.visibility).tone(c),
+                    icon: switch (route.visibility) {
+                      'PUBLIC' => PdlIcons.visibilityPublic,
+                      'PUBLIC_UNLISTED' => PdlIcons.visibilityUnlisted,
+                      _ => PdlIcons.visibilityTeam,
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              PdlStat(
+                value: AppFormatters.formatDistance(route.distance, units),
+                icon: PdlIcons.distance,
+                label: 'routes.distance'.tr(),
+                big: true,
+              ),
+              PdlStat(
+                value: AppFormatters.formatElevation(
+                  route.elevationGain,
+                  units,
+                ),
+                icon: PdlIcons.elevationUp,
+                label: 'units.elevationGainLong'.tr(),
+                big: true,
+                trend: PdlStatTrend.up,
+              ),
+              // Le serveur rend `elevationLoss` négatif : sa valeur absolue
+              // derrière notre propre « − ».
+              PdlStat(
+                value:
+                    '−${AppFormatters.formatElevation(route.elevationLoss.abs(), units)}',
+                icon: PdlIcons.elevationDown,
+                label: 'units.elevationLossLong'.tr(),
+                big: true,
+                trend: PdlStatTrend.down,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

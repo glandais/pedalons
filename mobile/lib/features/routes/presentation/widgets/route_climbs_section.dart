@@ -19,9 +19,18 @@ import '../../../../core/utils/formatters.dart';
 /// dérivé de l'index. Le serveur ne devine rien d'autre : inventer un toponyme
 /// à partir de la position serait une donnée fausse.
 class RouteClimbsSection extends ConsumerWidget {
-  const RouteClimbsSection({super.key, required this.climbs, this.onTapClimb});
+  const RouteClimbsSection({
+    super.key,
+    required this.climbs,
+    this.onTapClimb,
+    this.showHeader = true,
+  });
 
   final List<ClimbDto> climbs;
+
+  /// Le titre « Cols et montées (N) » ; faux quand l'écran le pose déjà
+  /// (`DetailSection` de la fiche parcours, compte à droite).
+  final bool showHeader;
 
   /// Pointe la montée sur la carte et le profil.
   final ValueChanged<ClimbDto>? onTapClimb;
@@ -36,10 +45,11 @@ class RouteClimbsSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        PdlSectionHeader(
-          title: 'routes.climbs'.plural(climbs.length),
-          padding: const EdgeInsets.only(bottom: 4),
-        ),
+        if (showHeader)
+          PdlSectionHeader(
+            title: 'routes.climbs'.plural(climbs.length),
+            padding: const EdgeInsets.only(bottom: 4),
+          ),
         for (int i = 0; i < climbs.length; i++)
           PdlClimbRow(
             // Les badges de catégorie sont la **seule** série rendue en aplat

@@ -14,6 +14,7 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../providers/route_detail_provider.dart';
+import '../../../../core/widgets/detail_section.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../teams/domain/publication_timing.dart';
 
@@ -24,6 +25,9 @@ import '../../../teams/domain/publication_timing.dart';
 /// groupes … » / « via l'étape … » vient de `viaChildNames`, qui dit *comment*
 /// le parcours est employé : directement, ou à travers les groupes d'une sortie
 /// ou une étape de voyage.
+///
+/// Une section de la fiche (`DetailSection`, ledger `MOB-134`) : son titre et
+/// son espace au-dessus ne sont posés que s'il y a un usage à montrer.
 class RouteUsagesSection extends ConsumerWidget {
   const RouteUsagesSection({super.key, required this.routeKey});
 
@@ -40,18 +44,18 @@ class RouteUsagesSection extends ConsumerWidget {
     final List<RouteUsageDto>? data = usages.value;
     if (data == null || data.isEmpty) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        PdlSectionHeader(
-          title: 'routes.usedIn'.tr(),
-          padding: const EdgeInsets.only(bottom: 10),
-        ),
-        for (final RouteUsageDto usage in data) ...<Widget>[
-          _UsageCard(usage: usage),
-          const SizedBox(height: PdlSpacing.feedGap),
+    return DetailSection(
+      title: 'routes.usedIn'.tr(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (int i = 0; i < data.length; i++) ...<Widget>[
+            if (i > 0) const SizedBox(height: PdlSpacing.feedGap),
+            _UsageCard(usage: data[i]),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

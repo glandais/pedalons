@@ -46,13 +46,43 @@ class RouteDetailKeys {
   /// Le profil altimétrique, tiré du tracé.
   final elevationProfile = const _RouteDetailKey('elevationProfile');
 
-  /// Le `⋯` de l'overlay : signaler le parcours.
+  /// Le `⋯` de la barre du haut : le menu d'organisateur, ou signaler le
+  /// parcours.
   final moreButton = const _RouteDetailKey('moreButton');
 
-  /// Le partage de l'overlay (organisateur : la maquette l'y place).
+  /// Le partage de la barre du haut.
   final shareButton = const _RouteDetailKey('shareButton');
 
+  /// Le titre du parcours, dans l'identité en tête de la fiche.
   final title = const _RouteDetailKey('title');
+
+  // Les sections de la fiche, dans l'ordre de la maquette
+  // `parcours-mobile-cible` (ledger `MOB-134`, lot 10).
+  final statTiles = const _RouteDetailKey('statTiles');
+
+  /// La section « Parcours » (`RouteSection`) : carte, interrupteur, profil,
+  /// revêtement, « GPS ».
+  final routeSection = const _RouteDetailKey('routeSection');
+  final descriptionSection = const _RouteDetailKey('descriptionSection');
+  final waypointsSection = const _RouteDetailKey('waypointsSection');
+  final climbsSection = const _RouteDetailKey('climbsSection');
+  final usagesSection = const _RouteDetailKey('usagesSection');
+  final informationSection = const _RouteDetailKey('informationSection');
+  final commentsSection = const _RouteDetailKey('commentsSection');
+
+  /// La carte de `RouteSection`.
+  final map = const _RouteDetailKey('map');
+
+  /// Le bouton ⓘ de « Profil » et sa feuille (la source des altitudes).
+  final profileSource = const _RouteDetailKey('profileSource');
+  final profileSourceSheet = const _RouteDetailKey('profileSourceSheet');
+
+  /// Le bouton ⓘ de la légende du revêtement (OpenStreetMap).
+  final surfaceSource = const _RouteDetailKey('surfaceSource');
+
+  /// « Détails » de `RouteSection`, qui pousse la fiche du parcours (une
+  /// étape, lot 11).
+  final details = const _RouteDetailKey('details');
 
   /// Le revêtement le long du parcours (ledger `MOB-81`) : la section, la
   /// bascule Pente / Revêtement de la fiche, la ligne « en cours », la barre de répartition
@@ -73,7 +103,8 @@ class RouteDetailKeys {
   final surfaceBar = const _RouteDetailKey('surfaceBar');
   final surfaceAttribution = const _RouteDetailKey('surfaceAttribution');
 
-  /// Le bouton « GPS » de la fiche (et de la feuille de parcours d'une étape).
+  /// Le bouton « GPS » de `RouteSection` (et de la feuille de parcours d'une
+  /// étape).
   final gps = const _RouteDetailKey('gps');
 
   /// Une carte de « Utilisée dans », par le slug de la sortie ou du voyage.

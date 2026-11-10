@@ -1,61 +1,59 @@
-import 'dart:math' as math;
-
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/pdl/pdl.dart';
-import '../../../../keys.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
+import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
-import '../../../../core/units/unit_system.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/push_location.dart';
 import '../../../../core/utils/share_link.dart';
+import '../../../../core/widgets/detail_section.dart';
+import '../../../../core/widgets/detail_stat_tiles.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
+import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../../../comments/data/comment_repository.dart';
+import '../../../comments/presentation/widgets/comment_thread.dart';
+import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../tags/presentation/content_tags.dart';
-import '../../providers/route_detail_provider.dart';
+import '../../../teams/providers/team_providers.dart';
 import '../../domain/elevation_refresh.dart';
-import '../../domain/route_color_mode.dart';
-import '../../domain/track_slope_colors.dart';
 import '../../domain/track_surfaces.dart';
+import '../../providers/route_detail_provider.dart';
 import '../../providers/route_editor_providers.dart';
-import '../../providers/route_elevation_provider.dart';
 import '../widgets/route_climbs_section.dart';
-import '../widgets/route_color_mode_switch.dart';
 import '../widgets/route_cursor_controller.dart';
-import '../widgets/route_download_actions.dart';
 import '../widgets/route_manage_menu.dart';
-import '../widgets/route_map.dart';
-import '../widgets/route_sheet_header.dart';
-import '../widgets/route_surface_section.dart';
+import '../widgets/route_section.dart';
+import '../widgets/route_usages_section.dart';
 import '../widgets/route_waypoints_section.dart';
 import '../widgets/waypoint_selection.dart';
-import '../widgets/waypoint_sheet.dart';
-import '../widgets/route_usages_section.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
 
-/// L'écran 13 — fiche parcours.
+/// L'écran 13 — la fiche parcours, **une page qui défile** (ledger `MOB-134`,
+/// lot 10, maquette `parcours-mobile-cible`, KIT §8) : plus de carte plein
+/// écran sous une feuille à crans, l'ossature commune des écrans de détail.
 ///
-/// **Restructuré, pas réécrit** : le motif `Stack` = carte plein écran +
-/// feuille glissante est le meilleur socle de l'application, et il est
-/// conservé. Ce qui change :
+/// Dans l'ordre : l'identité (équipe, titre, badges, tags), les tuiles
+/// Distance | Dénivelé positif, la section Parcours ([RouteSection] : carte,
+/// Pente | Revêtement, profil, revêtement, « GPS »), « Description », « Points
+/// du parcours », « Cols et montées », « Utilisée dans », « Informations »
+/// (« Créé le 3 novembre 2026 »), « Commentaires ».
 ///
-/// * les crans passent de `0.15 / 0.1 / 0.7` à `[0.18, 0.5, 0.92]` — l'ancien
-///   plafond de 0,7 laissait 800 px de vide sous le contenu ;
-/// * la pastille de titre passe de 80 % à opaque (F-DE-2) ;
-/// * le tracé est colorisé par pente et porte un réticule synchronisé ;
-/// * s'ajoutent les cols, les usages, les informations et la barre d'actions.
+/// Hors maquette et gardés : le crayon et le menu d'organisateur, le
+/// signalement, le bandeau d'un parcours supprimé, la relecture tant que le
+/// profil ou le revêtement se calculent, le tirer-pour-rafraîchir.
 class RouteDetailPage extends ConsumerStatefulWidget {
   const RouteDetailPage({
     super.key,
@@ -70,42 +68,26 @@ class RouteDetailPage extends ConsumerStatefulWidget {
   ConsumerState<RouteDetailPage> createState() => _RouteDetailPageState();
 }
 
-/// Les crans de la feuille, partagés entre elle et le cadrage de la carte.
-const List<double> _kDetents = <double>[0.18, 0.5, 0.92];
-const int _kInitialDetent = 1;
-
 class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
+  /// Le réticule, partagé par la carte, le profil et les montées : toucher
+  /// une montée l'y amène.
   RouteCursorController? _cursor;
   String? _cursorForSlug;
 
-  /// Le cran courant de la feuille. Il pilote la marge basse du cadrage : sans
-  /// elle, le tracé est cadré sur toute la hauteur de la carte, dont la feuille
-  /// couvre la moitié. Alimenté par `onDetentChanged`, donc **au franchissement
-  /// de cran** et jamais en continu : la caméra ne bouge pas sous le doigt.
-  double _detent = _kDetents[_kInitialDetent];
-
-  /// Ce que la pente / le revêtement colorent (`MOB-81`) ; retombe sur la pente
-  /// si le revêtement disparaît au rechargement. La fiche n'a pas de météo :
-  /// son interrupteur (`RouteColorModeSwitch`, ledger `MOB-105`) n'offre que
-  /// Pente | Revêtement.
-  RouteColorBy _colorBy = RouteColorBy.grade;
-
-  final TrackSurfaceBarColors _barColors = TrackSurfaceBarColors();
-
   /// Le point de parcours choisi, partagé par la carte, le profil et la liste
-  /// (ledger `MOB-84`). Un notifieur du `State`, comme le réticule.
+  /// (ledger `MOB-84`).
   final WaypointSelectionController _selection = WaypointSelectionController();
 
-  /// La feuille à crans : la liste des points la ramène au cran médian avant de
-  /// recentrer la carte, sinon le point passerait sous elle.
-  final DraggableScrollableController _sheet = DraggableScrollableController();
+  /// La carte de la section Parcours : la liste des points la remonte à
+  /// l'écran avant d'y centrer un point.
+  final GlobalKey _mapAnchor = GlobalKey();
 
   RouteKey get _key =>
       RouteKey(teamSlug: widget.teamSlug, routeSlug: widget.routeSlug);
 
   /// Redemande le parcours tant que son profil est l'altitude rapide
-  /// (`elevationState` `PENDING`, ledger `MOB-76`) : la fiche passe d'elle-même
-  /// au profil HD quand le serveur l'a recalculé.
+  /// (`elevationState` `PENDING`, ledger `MOB-76`) ou que son revêtement se
+  /// calcule : la fiche passe d'elle-même au profil HD.
   late final ElevationRefreshPoller _elevationPoller = ElevationRefreshPoller(
     refresh: () => ref.invalidate(routeDetailProvider(_key)),
   );
@@ -131,7 +113,6 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     _elevationPoller.dispose();
     _cursor?.dispose();
     _selection.dispose();
-    _sheet.dispose();
     super.dispose();
   }
 
@@ -160,514 +141,366 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
   // ── Écran chargé ────────────────────────────────────────────────────────
   Widget _content(RouteDetailDto route) {
     final RouteCursorController cursor = _cursorFor(route);
-    final RouteColorBy colorBy = resolveRouteColorBy(_colorBy, _modes(route));
+    final UnitSystem units = ref.watch(unitSystemProvider);
+    final bool? isMember = ref.watch(teamMembershipProvider(route.team.slug));
+    final List<ClimbDto> climbs = route.allClimbs;
+    final bool hasDescription =
+        route.media.markdown.trim().isNotEmpty ||
+        route.media.assets.attachments.isNotEmpty;
 
-    return Scaffold(
-      body: Stack(
-        children: <Widget>[
-          // La carte occupe tout le fond : elle se manipule librement.
-          // `PdlMapHero` accorde la barre système au thème.
-          Positioned.fill(
-            child: RouteMap(
-              route: route,
-              cursor: cursor,
-              onMapTapped: cursor.moveTo,
-              colorBy: colorBy,
-              selection: _selection,
-              fitPadding: EdgeInsets.fromLTRB(
-                50,
-                50,
-                50,
-                MediaQuery.sizeOf(context).height * _detent,
-              ),
-              // La feuille couvre le bas de la carte : échelle, crédit ⓘ et
-              // Calques se posent au-dessus (ledger `docs/LEDGER_*.md MOB-129`)
-              // — aux crans bas et médian seulement. Au cran haut, il ne reste
-              // que 8 % de carte : les y poser les enverrait sous la barre du
-              // haut, voire hors de l'écran ; ils restent au cran médian, sous
-              // la feuille, qui les cache. Comme le cadrage, l'inset suit le
-              // cran franchi, pas le doigt : le suivre en continu
-              // reconstruirait la carte à chaque image du glissé.
-              bottomInset:
-                  MediaQuery.sizeOf(context).height *
-                  math.min(_detent, _kDetents[1]),
-            ),
-          ),
-          _overlay(route),
-          PdlDetentSheet(
-            detents: _kDetents,
-            controller: _sheet,
-            initialDetentIndex: _kInitialDetent,
-            onDetentChanged: (double detent) {
-              if (detent != _detent) setState(() => _detent = detent);
-            },
-            headerBuilder: (BuildContext context, double extent) =>
-                RouteSheetHeader(route: route, extent: extent),
-            footer: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  16,
-                  10,
-                  16,
-                  PdlSpacing.chipGap,
-                ),
-                child: RouteDownloadActions(route: route),
-              ),
-            ),
-            bodyBuilder: (
-              BuildContext context,
-              ScrollController controller,
-              double footerInset,
-            ) => _sheetBody(route, cursor, controller, footerInset, colorBy),
-          ),
-        ],
+    return PdlScreenScaffold(
+      onRefresh: () async {
+        ref.invalidate(routeUsagesProvider(_key));
+        try {
+          ref.invalidate(routeDetailProvider(_key));
+          await ref.read(routeDetailProvider(_key).future);
+        } catch (_) {}
+      },
+      appBar: PdlAppBar(
+        // Pas de titre : le corps le porte, juste dessous (comme la sortie et
+        // le voyage).
+        onBack: () => context.pop(),
+        backSemanticLabel: 'common.back'.tr(),
+        actions: _actions(route),
       ),
+      slivers: <Widget>[
+        SliverToBoxAdapter(child: _identity(route)),
+        if (route.deleted)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                PdlSpacing.section,
+                0,
+                PdlSpacing.section,
+                PdlSpacing.section,
+              ),
+              child: PdlBanner(
+                key: keys.routeManage.deletedBanner,
+                tone: PdlBannerTone.warn,
+                icon: PdlIcons.delete,
+                message: 'routes.manage.deletedBanner'.tr(),
+              ),
+            ),
+          ),
+        // Distance | Dénivelé positif, sur une seule ligne : un parcours n'a
+        // ni durée ni vitesse (KIT §8).
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
+          sliver: SliverToBoxAdapter(
+            child: DetailStatTiles(
+              key: keys.routeDetail.statTiles,
+              tiles: <DetailStatTile>[
+                DetailStatTile(
+                  label: 'routes.distance'.tr(),
+                  value: AppFormatters.formatDistance(route.distance, units),
+                ),
+                DetailStatTile(
+                  label: 'units.elevationGainLong'.tr(),
+                  value: AppFormatters.formatElevation(
+                    route.elevationGain,
+                    units,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: RouteSection(
+            key: keys.routeDetail.routeSection,
+            routeKey: _key,
+            selection: _selection,
+            cursor: cursor,
+            mapKey: _mapAnchor,
+          ),
+        ),
+        if (hasDescription)
+          SliverToBoxAdapter(
+            child: KeyedSubtree(
+              key: keys.routeDetail.descriptionSection,
+              child: _description(route),
+            ),
+          ),
+        if (route.hasGeometry && route.waypoints.isNotEmpty)
+          SliverToBoxAdapter(
+            child: DetailSection(
+              key: keys.routeDetail.waypointsSection,
+              title: 'routes.waypoints.title'.tr(),
+              count: 'routes.waypoints.count'.plural(route.waypoints.length),
+              // Dépliés : c'est la page du parcours.
+              child: RouteWaypointsSection(
+                waypoints: route.waypoints,
+                selection: _selection,
+                showHeader: false,
+                onSelect: (String key, WaypointDto _) => _focusFromList(key),
+              ),
+            ),
+          ),
+        if (climbs.isNotEmpty)
+          SliverToBoxAdapter(
+            child: DetailSection(
+              key: keys.routeDetail.climbsSection,
+              title: 'routes.climbsTitle'.tr(),
+              count: 'routes.climbCount'.plural(climbs.length),
+              child: RouteClimbsSection(
+                climbs: climbs,
+                showHeader: false,
+                // Taper une montée y amène le réticule : le lien entre la
+                // liste, le profil et la carte est toujours une distance.
+                onTapClimb: (ClimbDto c) =>
+                    cursor.moveTo(c.startDistance.toDouble()),
+              ),
+            ),
+          ),
+        SliverToBoxAdapter(
+          child: KeyedSubtree(
+            key: keys.routeDetail.usagesSection,
+            child: RouteUsagesSection(routeKey: _key),
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: KeyedSubtree(
+            key: keys.routeDetail.informationSection,
+            child: _information(route),
+          ),
+        ),
+        // `commentCount` absent : la personne ne peut pas lire les
+        // commentaires de ce parcours — le fil n'est pas monté du tout.
+        if (route.commentCount != null)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              PdlSpacing.section,
+              PdlSpacing.detailSectionGap,
+              PdlSpacing.section,
+              0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: KeyedSubtree(
+                key: keys.routeDetail.commentsSection,
+                child: CommentThread(
+                  target: CommentTarget(
+                    entity: CommentEntity.route,
+                    teamSlug: route.team.slug,
+                    slug: route.slug,
+                  ),
+                  canComment: isMember ?? false,
+                  countAtEnd: true,
+                ),
+              ),
+            ),
+          ),
+        const SliverToBoxAdapter(child: SizedBox(height: PdlSpacing.section)),
+      ],
     );
   }
 
-  /// L'overlay haut : retour et pastille de titre, **tous deux opaques**.
-  ///
-  /// F-DE-2 : `surface.withValues(alpha: 0.8)` laissait passer la tuile, et le
-  /// nom devenait illisible sur du satellite ou une zone urbaine dense.
-  /// `PdlMapButton` et `PdlMapPill` portent `overlaySolid` — 95 % — plus un
-  /// flou.
-  Widget _overlay(RouteDetailDto route) {
+  /// Le partage, pour tout le monde ; un organisateur a en plus le crayon et
+  /// le `⋯` qui porte tous ses gestes (ledger `MOB-79`) ; sinon le `⋯` de la
+  /// modération — mais son propre parcours ne se signale pas : le menu serait
+  /// vide.
+  List<Widget> _actions(RouteDetailDto route) {
     final String? currentUserId = ref.watch(
       authProvider.select((AuthState s) => s.user?.id),
     );
     final bool canManage =
         ref.watch(canManageRoutesProvider(route.team.slug)) ?? false;
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: Row(
-            children: <Widget>[
-              PdlMapButton(
-                icon: PdlIcons.back,
-                semanticLabel: 'common.back'.tr(),
-                onPressed: () => context.pop(),
-              ),
-              const SizedBox(width: PdlSpacing.chipGap),
-              Expanded(
-                child: PdlMapPill(
-                  key: keys.routeDetail.title,
-                  label: route.name,
-                ),
-              ),
-              // Un organisateur : partager, modifier (le crayon), puis le `⋯` qui
-              // porte tous ses gestes (ledger `MOB-79`). Le pied de la fiche
-              // garde son propre partage.
-              if (canManage) ...<Widget>[
-                const SizedBox(width: PdlSpacing.chipGap),
-                // `Builder` : la feuille de partage s'ancre au bouton (iPad).
-                Builder(
-                  builder: (BuildContext buttonContext) => PdlMapButton(
-                    key: keys.routeDetail.shareButton,
-                    icon: PdlIcons.share,
-                    semanticLabel: 'routes.share'.tr(),
-                    onPressed: () => shareAppLink(
-                      buttonContext,
-                      title: route.name,
-                      path: Paths.route(route.team.slug, route.slug),
-                    ),
-                  ),
-                ),
-              ],
-              if (canManage && !route.deleted) ...<Widget>[
-                const SizedBox(width: PdlSpacing.chipGap),
-                PdlMapButton(
-                  key: keys.routeManage.editButton,
-                  icon: PdlIcons.edit,
-                  semanticLabel: 'routes.manage.edit'.tr(),
-                  onPressed: () => context.push(
-                    Paths.routeEdit(route.team.slug, route.slug),
-                  ),
-                ),
-              ],
-              if (canManage) ...<Widget>[
-                const SizedBox(width: PdlSpacing.chipGap),
-                PdlMapButton(
-                  key: keys.routeDetail.moreButton,
-                  icon: PdlIcons.more,
-                  semanticLabel: 'routes.manage.menuTitle'.tr(),
-                  onPressed: () => showRouteManageMenu(
-                    context,
-                    ref,
-                    route,
-                    canReport:
-                        currentUserId != null &&
-                        currentUserId != route.createdBy?.id,
-                  ),
-                ),
-              ]
-              // Sinon, la modération — mais son propre parcours ne se signale
-              // pas : le menu serait vide.
-              else if (currentUserId != null &&
-                  currentUserId != route.createdBy?.id) ...<Widget>[
-                const SizedBox(width: PdlSpacing.chipGap),
-                PdlMapButton(
-                  key: keys.routeDetail.moreButton,
-                  icon: PdlIcons.more,
-                  semanticLabel: 'moderation.more'.tr(),
-                  onPressed: () => showDetailModerationMenu(
-                    context,
-                    subject: ModerationSubject(
-                      teamSlug: route.team.slug,
-                      type: ReportTargetType.route,
-                      id: route.id,
-                      teamName: route.team.name,
-                    ),
-                  ),
-                ),
-              ],
-            ],
+    final bool canReport =
+        currentUserId != null && currentUserId != route.createdBy?.id;
+
+    return <Widget>[
+      // `Builder` : la feuille de partage s'ancre au bouton (iPad).
+      Builder(
+        builder: (BuildContext buttonContext) => PdlAppBarAction(
+          key: keys.routeDetail.shareButton,
+          icon: PdlIcons.share,
+          semanticLabel: 'routes.share'.tr(),
+          onPressed: () => shareAppLink(
+            buttonContext,
+            title: route.name,
+            path: Paths.route(route.team.slug, route.slug),
           ),
         ),
+      ),
+      if (canManage && !route.deleted)
+        PdlAppBarAction(
+          key: keys.routeManage.editButton,
+          icon: PdlIcons.edit,
+          semanticLabel: 'routes.manage.edit'.tr(),
+          onPressed: () =>
+              context.push(Paths.routeEdit(route.team.slug, route.slug)),
+        ),
+      if (canManage)
+        PdlAppBarAction(
+          key: keys.routeDetail.moreButton,
+          icon: PdlIcons.more,
+          semanticLabel: 'routes.manage.menuTitle'.tr(),
+          onPressed: () =>
+              showRouteManageMenu(context, ref, route, canReport: canReport),
+        )
+      else if (canReport)
+        PdlAppBarAction(
+          key: keys.routeDetail.moreButton,
+          icon: PdlIcons.more,
+          semanticLabel: 'moderation.more'.tr(),
+          onPressed: () => showDetailModerationMenu(
+            context,
+            subject: ModerationSubject(
+              teamSlug: route.team.slug,
+              type: ReportTargetType.route,
+              id: route.id,
+              teamName: route.team.name,
+            ),
+          ),
+        ),
+    ];
+  }
+
+  // ── Identité ────────────────────────────────────────────────────────────
+  /// La ligne d'équipe, le titre, le revêtement et la visibilité, les tags.
+  Widget _identity(RouteDetailDto route) {
+    final PdlColors c = context.pdl;
+    final PdlTypography t = context.pdlText;
+
+    return Padding(
+      padding: const EdgeInsets.all(PdlSpacing.section),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          PdlTeamLine(
+            label: route.team.name,
+            imageUrl: route.team.logoUrl,
+            onTap: () => pushLocation(context, Paths.team(route.team.slug)),
+          ),
+          const SizedBox(height: 2),
+          Text(route.name, key: keys.routeDetail.title, style: t.screenTitle),
+          const SizedBox(height: PdlSpacing.chipGap),
+          Wrap(
+            spacing: PdlSpacing.badgeGap,
+            runSpacing: PdlSpacing.badgeGap,
+            children: <Widget>[
+              PdlBadge(
+                label: AppFormatters.surfaceName(route.surfaceType),
+                tone: SurfaceType.fromJson(route.surfaceType).tone(c),
+              ),
+              PdlBadge(
+                label: 'visibility.${route.visibility.toLowerCase()}'.tr(),
+                tone: Visibility.fromJson(route.visibility).tone(c),
+                icon: _visibilityIcon(route.visibility),
+              ),
+            ],
+          ),
+          if (route.tags.isNotEmpty) ...<Widget>[
+            const SizedBox(height: PdlSpacing.chipGap),
+            ContentTagRow(tags: route.tags),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _sheetBody(
-    RouteDetailDto route,
-    RouteCursorController cursor,
-    ScrollController controller,
-    double footerInset,
-    RouteColorBy colorBy,
-  ) {
-    final List<ClimbDto> climbs = route.allClimbs;
+  IconData _visibilityIcon(String visibility) => switch (visibility) {
+    'PUBLIC' => PdlIcons.visibilityPublic,
+    'PUBLIC_UNLISTED' => PdlIcons.visibilityUnlisted,
+    _ => PdlIcons.visibilityTeam,
+  };
 
-    return ListView(
-      controller: controller,
-      padding: EdgeInsets.only(bottom: footerInset),
-      children: <Widget>[
-        if (route.deleted)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              PdlSpacing.section,
-              0,
-              PdlSpacing.section,
-              PdlSpacing.section,
-            ),
-            child: PdlBanner(
-              key: keys.routeManage.deletedBanner,
-              tone: PdlBannerTone.warn,
-              icon: PdlIcons.delete,
-              message: 'routes.manage.deletedBanner'.tr(),
-            ),
-          ),
-        // Les tags en tête du corps et non dans l'en-tête de la feuille : à
-        // son cran bas, l'en-tête ne garde que le nom et un badge (ledger
-        // `MOB-39`).
-        if (route.tags.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: ContentTagRow(tags: route.tags),
-          ),
-        // L'interrupteur de la carte, en tête de la feuille qui la borde : il
-        // colore le tracé et le profil juste dessous.
-        if (route.hasGeometry && _modes(route).length > 1)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: RouteColorModeSwitch(
-              key: keys.routeDetail.surfaceColorBy,
-              modes: _modes(route),
-              value: colorBy,
-              onChanged: (RouteColorBy v) => setState(() => _colorBy = v),
-            ),
-          ),
-        if (route.hasGeometry)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: _profile(route, cursor, colorBy),
-          )
-        else
-          PdlEmptyState(
-            variant: PdlEmptyVariant.empty,
-            icon: PdlIcons.route,
-            title: 'routes.noTrackTitle'.tr(),
-            message: 'routes.noTrackMessage'.tr(),
-          ),
-        // Le gabarit de 16 px n'est posé que si la section rend quelque chose :
-        // la plupart des parcours n'ont pas (encore) de revêtement.
-        if (route.hasGeometry &&
-            (hasTrackSurfaces(route.tracks) ||
-                trackSurfacesPending(route.tracks)))
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: RouteSurfaceSection(tracks: route.tracks),
-          ),
-        if (route.hasGeometry && route.waypoints.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: RouteWaypointsSection(
-              waypoints: route.waypoints,
-              selection: _selection,
-              onSelect: (String key, WaypointDto _) => _focusFromList(key),
-            ),
-          ),
-        if (climbs.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: RouteClimbsSection(
-              climbs: climbs,
-              // Taper une montée y amène le réticule : le lien entre la liste,
-              // le profil et la carte est toujours une distance cumulée.
-              onTapClimb: (ClimbDto c) =>
-                  cursor.moveTo(c.startDistance.toDouble()),
-            ),
-          ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: RouteUsagesSection(routeKey: _key),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: _information(route),
-        ),
-        if (route.media.markdown.trim().isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                PdlSectionHeader(title: 'routes.description'.tr()),
-                MarkdownContent(
-                  data: route.media.markdown,
-                  images: route.media.assets.images,
-                ),
-              ],
-            ),
-          ),
-        // Section à part, et non un appendice de la description : un parcours
-        // peut porter un road book sans une ligne de texte.
-        if (route.media.assets.attachments.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: MediaAttachments(
-              attachments: route.media.assets.attachments,
-              spacingBefore: 0,
-            ),
-          ),
-      ],
-    );
-  }
-
-  /// Toucher une ligne de la liste : la carte se centre sur le point. Si la
-  /// feuille est au-dessus du cran médian, elle descend d'abord, et le
-  /// recadrage qu'entraîne le changement de marge passe **avant** le
-  /// recentrage.
+  /// Toucher une ligne de la liste : la carte revient à l'écran, puis se
+  /// centre sur le point — sans quoi le recentrage aurait lieu hors de vue.
   Future<void> _focusFromList(String key) async {
-    if (_detent > _kDetents[1] + 0.01 && _sheet.isAttached) {
-      await _sheet.animateTo(
-        _kDetents[1],
+    final BuildContext? map = _mapAnchor.currentContext;
+    if (map != null) {
+      await Scrollable.ensureVisible(
+        map,
         duration: PdlMotion.stateChange,
         curve: PdlMotion.stateChangeCurve,
       );
-      await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
     }
     _selection.select(key, move: PdlWaypointMove.center);
   }
 
-  void _openFromProfile(RouteDetailDto route, String key) {
-    final WaypointDto? w = waypointByKey(route.waypoints, key);
-    if (w == null) return;
-    if (w.distance != null) _cursor?.moveTo(w.distance);
-    openWaypoint(
-      context,
-      w,
-      _selection,
-      key,
-      units: ref.read(unitSystemProvider),
-      move: PdlWaypointMove.ifHidden,
+  // ── Description ─────────────────────────────────────────────────────────
+  /// « Description » : le texte puis les pièces jointes — un parcours peut
+  /// porter un road book sans une ligne de texte.
+  Widget _description(RouteDetailDto route) {
+    return DetailSection(
+      title: 'routes.description'.tr(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (route.media.markdown.trim().isNotEmpty)
+            MarkdownContent(
+              data: route.media.markdown,
+              images: route.media.assets.images,
+            ),
+          MediaAttachments(attachments: route.media.assets.attachments),
+        ],
+      ),
     );
   }
 
-  /// Pente | Revêtement : la fiche parcours n'a pas de météo.
-  static List<RouteColorBy> _modes(RouteDetailDto route) =>
-      routeColorModes(surfaces: hasTrackSurfaces(route.tracks), wind: false);
-
-  Widget _profile(
-    RouteDetailDto route,
-    RouteCursorController cursor,
-    RouteColorBy colorBy,
-  ) {
-    final UnitSystem units = ref.watch(unitSystemProvider);
-    final List<TrackSurface?>? bars = colorBy == RouteColorBy.surface
-        ? ref.watch(routeSurfaceBarsProvider(_key)).value
-        : null;
-    // La pente des montées, barre par barre, comme la carte (ledger
-    // `MOB-105`).
-    final ClimbBars? climbs = bars == null
-        ? ref.watch(routeClimbBarsProvider(_key)).value
-        : null;
-
-    return ref
-        .watch(routeElevationSamplesProvider(_key))
-        .when(
-          // Pas d'altitude exploitable : rien, plutôt qu'un profil plat qui
-          // se ferait passer pour un terrain.
-          data: (ElevationSamples? samples) => samples == null
-              ? const SizedBox.shrink()
-              : _withRefiningNote(
-                  route,
-                  _withMarkers(
-                    route,
-                    (
-                      List<PdlProfileMarker> markers,
-                      String? selectedKey,
-                      ValueChanged<String>? onMarker,
-                    ) => PdlElevationProfile(
-                      credit: 'routes.elevationCredit'.tr(),
-                      key: keys.routeDetail.elevationProfile,
-                      markers: markers,
-                      selectedMarkerKey: selectedKey,
-                      onMarkerTapped: onMarker,
-                      samples: samples,
-                      height: PdlMetrics.elevationLarge,
-                      // Le **seul** état partagé avec la carte, et il ne passe pas
-                      // par Riverpod : le réticule bouge à chaque frame de
-                      // glissement.
-                      barColors: bars == null
-                          ? climbs?.colors
-                          : _barColors.of(bars, context.pdl),
-                      cursorDistance: cursor.distance,
-                      axisLabel: (double meters, {required bool isLast}) =>
-                          isLast
-                          ? AppFormatters.formatDistance(meters, units)
-                          : AppFormatters.formatNumber(
-                              units.longDistance(meters),
-                              fractionDigits: 1,
-                            ),
-                      tipLabel: (ElevationReading r) => <String>[
-                        AppFormatters.formatDistance(r.distance, units),
-                        AppFormatters.formatAltitude(r.elevation, units),
-                        if (bars != null)
-                          ?trackSurfaceTip(samples, bars, r.distance)
-                        else
-                          ?climbGradeTipLabel(samples, climbs, r),
-                      ].join(' · '),
-                    ),
-                  ),
-                ),
-          loading: () => PdlElevationProfile.loading(
-            label: 'routes.profileLoading'.tr(),
-            height: PdlMetrics.elevationLarge,
-          ),
-          error: (Object error, StackTrace stack) => PdlElevationProfile.failed(
-            label: 'routes.profileUnavailable'.tr(),
-            actionLabel: 'common.retry'.tr(),
-            height: PdlMetrics.elevationLarge,
-            onRetry: () => ref.invalidate(routeDetailProvider(_key)),
-          ),
-        );
-  }
-
-  /// Le profil avec ses repères, qui suivent la sélection sans reconstruire la
-  /// page.
-  Widget _withMarkers(
-    RouteDetailDto route,
-    Widget Function(List<PdlProfileMarker>, String?, ValueChanged<String>?)
-    builder,
-  ) {
-    final List<PdlProfileMarker> markers = profileMarkersOf(route.waypoints);
-    if (markers.isEmpty) return builder(markers, null, null);
-    return ValueListenableBuilder<WaypointSelection?>(
-      valueListenable: _selection,
-      builder: (BuildContext context, WaypointSelection? selected, _) =>
-          builder(
-            markers,
-            selected?.key,
-            (String key) => _openFromProfile(route, key),
-          ),
-    );
-  }
-
-  /// Le profil, précédé de « Profil d'altitude provisoire » tant que c'est
-  /// l'altitude rapide (`PENDING`) : comme au site, la mention se tait en
-  /// `FAST` (le recalcul a été abandonné) et en `HD`.
-  Widget _withRefiningNote(RouteDetailDto route, Widget profile) {
-    if (!isElevationPending(route.elevationState)) return profile;
-    return Column(
-      key: keys.routeDetail.elevationRefining,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          'routes.elevationRefining'.tr(),
-          style: context.pdlText.xs.copyWith(color: context.pdl.textDimmed),
-        ),
-        const SizedBox(height: PdlSpacing.badgeGap),
-        profile,
-      ],
-    );
-  }
-
+  // ── Informations ────────────────────────────────────────────────────────
+  /// « Par », « Créé le 3 novembre 2026 » (date longue sans jour de la
+  /// semaine, dans le fuseau d'affichage : un horodatage), « Équipe
+  /// propriétaire ».
   Widget _information(RouteDetailDto route) {
     final PdlColors c = context.pdl;
     final DateTime? createdAt = AppFormatters.tryParseDisplayTime(
       route.createdAt,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        PdlSectionHeader(
-          title: 'routes.information'.tr(),
-          padding: const EdgeInsets.only(bottom: 4),
-        ),
-        // `createdBy` **existe au contrat et n'était pas lu** : cette section
-        // l'active.
-        // Null pour qui n'est pas membre de l'équipe : on n'affiche rien.
-        if (route.createdBy != null)
+    return DetailSection(
+      title: 'routes.information'.tr(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          // Null pour qui n'est pas membre de l'équipe : on n'affiche rien
+          // (ledger `API-144`).
+          if (route.createdBy != null)
+            PdlInfoLine(
+              label: 'routes.author'.tr(),
+              value: route.createdBy!.displayName,
+            ),
+          if (createdAt != null)
+            PdlInfoLine(
+              label: 'routes.createdOn'.tr(),
+              value: AppFormatters.formatLongDateWithoutWeekday(createdAt),
+            ),
           PdlInfoLine(
-            label: 'routes.author'.tr(),
-            value: route.createdBy!.displayName,
-          ),
-        if (createdAt != null)
-          PdlInfoLine(
-            label: 'routes.createdOn'.tr(),
-            value: AppFormatters.formatLongDate(createdAt),
-          ),
-        PdlInfoLine(
-          label: 'routes.ownerTeam'.tr(),
-          showDivider: false,
-          valueWidget: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              PdlAvatar(
-                name: route.team.name,
-                imageUrl: route.team.logoUrl,
-                size: 20,
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  route.team.name,
-                  style: context.pdlText.body.copyWith(color: c.text),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+            label: 'routes.ownerTeam'.tr(),
+            showDivider: false,
+            valueWidget: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                PdlAvatar(
+                  name: route.team.name,
+                  imageUrl: route.team.logoUrl,
+                  size: 20,
                 ),
-              ),
-            ],
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    route.team.name,
+                    style: context.pdlText.body.copyWith(color: c.text),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   // ── Chargement et erreurs ───────────────────────────────────────────────
-  /// Chargement **progressif** : la feuille apparaît d'abord, le profil ensuite
-  /// (§4.3 du brief). Ici la fiche entière attend le détail, mais le squelette
-  /// en annonce la forme plutôt que de faire tourner un rond.
+  /// Le squelette annonce la forme de la page plutôt que de faire tourner un
+  /// rond : identité, tuiles, carte, profil.
   Widget _loading() {
-    return Scaffold(
+    return PdlScreenScaffold(
       appBar: PdlAppBar(
         onBack: () => context.pop(),
         backSemanticLabel: 'common.back'.tr(),
@@ -675,11 +508,15 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
       body: ListView(
         padding: const EdgeInsets.all(PdlSpacing.section),
         children: const <Widget>[
+          PdlSkeleton(height: 12, width: 120),
+          SizedBox(height: PdlSpacing.chipGap),
           PdlSkeleton(height: 20, width: 220),
           SizedBox(height: 14),
-          PdlSkeleton(height: 48),
+          PdlSkeleton(height: 64),
           SizedBox(height: 14),
-          PdlSkeleton(height: PdlMetrics.elevationLarge),
+          PdlSkeleton(height: PdlMetrics.detailMapMin),
+          SizedBox(height: 14),
+          PdlSkeleton(height: PdlMetrics.detailElevation),
         ],
       ),
     );
@@ -689,7 +526,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     final ApiError resolved = resolveApiError(error, stack);
     final bool notFound = resolved.code == 'NOT_FOUND';
 
-    return Scaffold(
+    return PdlScreenScaffold(
       appBar: PdlAppBar(
         onBack: () => context.pop(),
         backSemanticLabel: 'common.back'.tr(),

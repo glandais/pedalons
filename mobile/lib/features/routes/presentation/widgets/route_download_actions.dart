@@ -14,9 +14,9 @@ import 'gps_button.dart';
 /// La rangée d'actions d'un parcours : le bouton « GPS » (feuille GPS : vers
 /// un appareil, GPX, FIT) et le partage du lien.
 ///
-/// Partagée par la barre d'actions collante de l'écran 13 et par
-/// [EmbeddedRouteSheet] : les mêmes actions doivent se comporter de la même
-/// façon des deux côtés.
+/// Ne sert plus qu'à [EmbeddedRouteSheet] (l'étape, jusqu'au lot 11 de
+/// `MOB-134`) : la fiche parcours pose son « GPS » dans `RouteSection` et
+/// son partage dans la barre du haut.
 ///
 /// L'issue d'un export est un **bandeau** ([GpsExportRunner]), pas un
 /// snackbar — un `SnackBar` posé en bas d'écran passait sous la barre
