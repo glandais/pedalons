@@ -121,6 +121,9 @@ final class Trip extends Module {
   /// back there first — which may already refresh it, harmlessly.
   Future<void> pullToRefresh() async {
     final title = find.byKey(keys.trip.title);
+    // The page scrolls (lot 9): the helpers before this one may have left it at the departure
+    // block, below the title.
+    await scrolledUpTo(keys.trip.title);
     await $(keys.trip.title).waitUntilVisible();
     await $.tester.drag(title, const Offset(0, 600));
     await $.pump(const Duration(milliseconds: 800));

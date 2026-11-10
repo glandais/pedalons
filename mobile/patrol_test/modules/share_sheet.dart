@@ -32,15 +32,24 @@ final class ShareSheet extends Module {
     final deadline = DateTime.now().add(timeout);
     while (true) {
       final roots = await _nativeRoots();
-      if (roots.any((view) => view.isShareSheet)) {
-        return roots.any((view) => view.contains(text));
-      }
+      final up = roots.any((view) => view.isShareSheet);
+      // The sheet comes up before its file caption: iOS fills « GPX • 17 ko » in a moment later.
+      if (up && roots.any((view) => view.contains(text))) return true;
       if (DateTime.now().isAfter(deadline)) {
         final dump = StringBuffer();
         for (final view in roots) {
           view.dump(0, dump);
         }
-        throw TestFailure('no share sheet after $timeout; native tree:\n$dump');
+        if (!up) {
+          throw TestFailure(
+            'no share sheet after $timeout; native tree:\n$dump',
+          );
+        }
+        // ignore: avoid_print
+        print(
+          'share sheet without « $text » after $timeout; native tree:\n$dump',
+        );
+        return false;
       }
       await Future<void>.delayed(const Duration(milliseconds: 500));
     }
