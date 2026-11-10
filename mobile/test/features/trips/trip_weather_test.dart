@@ -261,9 +261,11 @@ void main() {
 
         expect(find.byType(StageWeatherPage), findsOneWidget);
         expect(find.text('Météo du parcours'), findsOneWidget);
-        // L'en-tête porte le nom de l'étape ; pas de sélecteur de groupe.
-        expect(find.text('J1'), findsWidgets);
+        // La section Météo, dépliée : rien ne la suit sur cette page.
+        expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
+        expect(find.text('Météo le long du parcours'), findsOneWidget);
         expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsOneWidget);
+        expect(find.byKey(keys.ride.weatherSourceButton), findsOneWidget);
         // Sans carte, la ligne ne se touche pas : ni bouton ni état
         // « sélectionné / non sélectionné » annoncé.
         expect(

@@ -90,15 +90,41 @@ class RideDetailKeys {
   /// (`OUT_OF_RANGE`, `NO_LOCATION` pour un membre, statut inconnu).
   final weatherEmpty = const _RideDetailKey('weatherEmpty');
 
-  /// Le crédit des prévisions (CC BY 4.0) de la carte météo compacte.
+  /// Le crédit des prévisions (CC BY 4.0) : celui de la carte météo compacte,
+  /// et le lien de la feuille « Source des prévisions météo ».
   final weatherAttribution = const _RideDetailKey('weatherAttribution');
+
+  /// La section Météo d'un écran de détail (`WeatherSection`, ledger
+  /// `MOB-132`) — son titre « Météo ».
+  final weatherSection = const _RideDetailKey('weatherSection');
+
+  /// La carte « Exposition au vent » de la section Météo.
+  final weatherExposure = const _RideDetailKey('weatherExposure');
+
+  /// « Météo le long du parcours » : le bloc replié (`PdlDisclosure`, à
+  /// toucher pour déplier) ou, déplié d'office, son sous-titre.
+  final weatherAlongRoute = const _RideDetailKey('weatherAlongRoute');
+
+  /// « Prévision du mar. 10 nov. · 08:30 », au bas de la section Météo.
+  final weatherForecastOf = const _RideDetailKey('weatherForecastOf');
+
+  /// Le bouton ⓘ du bas de la section Météo : la source des prévisions.
+  final weatherSourceButton = const _RideDetailKey('weatherSourceButton');
+
+  /// La feuille qu'il ouvre.
+  final weatherSourceSheet = const _RideDetailKey('weatherSourceSheet');
 
   /// « Prévisions pas encore disponibles le long du parcours » : étape sans
   /// prévision (`UNAVAILABLE`, `NOT_YET_AVAILABLE`, statut inconnu) ou sans point.
   final weatherLegUnavailable = const _RideDetailKey('weatherLegUnavailable');
 
-  /// La ligne de résumé météo d'une carte de sortie.
+  /// La ligne de résumé météo d'une carte (sortie, voyage, étape, groupe).
   final weatherSummary = const _RideDetailKey('weatherSummary');
+
+  /// L'alerte « Pluie 60 % vers 11:00 » de la ligne de résumé météo.
+  final weatherSummaryRainAlert = const _RideDetailKey(
+    'weatherSummaryRainAlert',
+  );
 
   /// La marque « Prévision ancienne » (`STALE`) de la ligne de résumé météo.
   final weatherSummaryStale = const _RideDetailKey('weatherSummaryStale');

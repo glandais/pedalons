@@ -121,6 +121,8 @@ WeatherLegDto fixtureLeg({
   bool speedIsDefault = false,
   WeatherRainAlertDto? rainAlert,
   String relativeWind = 'HEAD',
+  RideWeatherSummaryDto? summary,
+  DepartureWeatherDto? departure,
 }) => WeatherLegDto(
   status: status,
   groupId: groupId,
@@ -173,6 +175,25 @@ WeatherLegDto fixtureLeg({
   ],
   windExposure: const WindExposureDto(head: 15000, cross: 0, tail: 15000),
   prevailingWind: const WindDto(speed: 17, direction: 300, compass: 'NW'),
+  rainAlert: rainAlert,
+  summary: summary,
+  departure: departure,
+);
+
+/// Le résumé d'un leg (`WeatherLegDto.summary`, API 13.4.0) : la ligne météo
+/// de la carte d'un groupe ou d'une étape.
+RideWeatherSummaryDto fixtureLegSummary({
+  String status = 'OK',
+  WeatherRainAlertDto? rainAlert,
+}) => RideWeatherSummaryDto(
+  status: status,
+  condition: 'PARTLY_CLOUDY',
+  daylight: true,
+  temperature: 14.4,
+  temperatureMin: 10.2,
+  temperatureMax: 13.4,
+  maxPrecipitationProbability: 20,
+  wind: const WindDto(speed: 18, direction: 315, compass: 'NW'),
   rainAlert: rainAlert,
 );
 

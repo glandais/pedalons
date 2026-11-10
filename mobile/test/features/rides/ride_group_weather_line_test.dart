@@ -4,6 +4,7 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dart';
 import 'package:pedalons/features/rides/domain/ride_group_action.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_weather_line.dart';
@@ -12,9 +13,9 @@ import 'package:pedalons/keys.dart';
 import '../../support/localization.dart';
 import 'ride_fixtures.dart';
 
-/// La ligne météo, non cliquable, de la carte d'un groupe (ledger `MOB-67`) :
-/// température et ciel au départ du groupe, pluie, Face et Dos — et rien sans
-/// prévision de son leg.
+/// La ligne météo, non cliquable, de la carte d'un groupe (ledgers `MOB-67`,
+/// `MOB-132`) : la ligne des cartes, lue sur le résumé du leg — plage, vent
+/// fléché, pluie ou alerte — et rien sans résumé à montrer.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadTestTranslations);
@@ -56,45 +57,51 @@ void main() {
     matching: matching,
   );
 
-  testWidgets('avec pluie : température, ciel, pluie, Face et Dos', (
+  testWidgets('la ligne des cartes : plage, vent fléché, pluie', (
     WidgetTester tester,
   ) async {
-    await pumpCard(tester, fixtureLeg(rainAlert: rain));
+    await pumpCard(tester, fixtureLeg(summary: fixtureLegSummary()));
 
     expect(find.byKey(keys.ride.groupWeatherLine('g1')), findsOneWidget);
-    expect(inLine(find.text('14 °C')), findsOneWidget);
-    expect(inLine(find.text('Partiellement nuageux')), findsOneWidget);
-    // L'heure de l'alerte, dans le fuseau de la sortie.
-    expect(inLine(find.textContaining('PLUIE 40')), findsOneWidget);
-    expect(inLine(find.textContaining(' VERS ')), findsOneWidget);
-    expect(inLine(find.textContaining('FACE 15')), findsOneWidget);
-    expect(inLine(find.textContaining('DOS 15')), findsOneWidget);
+    expect(inLine(find.text('10–13 °C')), findsOneWidget);
+    // La flèche porte la direction ; le texte ne dit que la vitesse.
+    expect(inLine(find.byType(PdlWindArrow)), findsOneWidget);
+    expect(inLine(find.text(AppFormatters.formatSpeed(18))), findsOneWidget);
+    expect(inLine(find.textContaining('NO')), findsNothing);
+    expect(inLine(find.text('Pluie 20 %')), findsOneWidget);
+    // Ni ciel en toutes lettres, ni badges Face / Dos (KIT §8).
+    expect(inLine(find.text('Partiellement nuageux')), findsNothing);
+    expect(inLine(find.byType(PdlBadge)), findsNothing);
     // Une ligne qui ne mène nulle part : aucun geste à elle.
     expect(inLine(find.byType(InkWell)), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('sans pluie : pas de puce pluie', (WidgetTester tester) async {
-    await pumpCard(tester, fixtureLeg());
-
-    expect(find.byKey(keys.ride.groupWeatherLine('g1')), findsOneWidget);
-    expect(inLine(find.textContaining('PLUIE')), findsNothing);
-    expect(inLine(find.textContaining('FACE')), findsOneWidget);
-  });
-
-  testWidgets('sans vent de face ni de dos : ni Face ni Dos', (
+  testWidgets('avec alerte : « Pluie 40 % vers … » à la place de la pluie', (
     WidgetTester tester,
   ) async {
     await pumpCard(
       tester,
-      fixtureLeg().copyWith(
-        windExposure: const WindExposureDto(head: 0, cross: 30000, tail: 0),
+      fixtureLeg(
+        rainAlert: rain,
+        summary: fixtureLegSummary(rainAlert: rain),
       ),
     );
 
-    expect(inLine(find.textContaining('FACE')), findsNothing);
-    expect(inLine(find.textContaining('DOS')), findsNothing);
-    expect(inLine(find.textContaining('TRAVERS')), findsNothing);
+    // L'heure de l'alerte se lit dans le fuseau de la sortie (testé par
+    // `ride_weather_summary_line_test`).
+    expect(
+      inLine(find.byKey(keys.ride.weatherSummaryRainAlert)),
+      findsOneWidget,
+    );
+    expect(inLine(find.textContaining('Pluie 40 % vers ')), findsOneWidget);
+    expect(inLine(find.text('Pluie 20 %')), findsNothing);
+  });
+
+  testWidgets('un leg sans résumé : rien', (WidgetTester tester) async {
+    await pumpCard(tester, fixtureLeg());
+
+    expect(find.byKey(keys.ride.groupWeatherLine('g1')), findsNothing);
   });
 
   testWidgets('sans météo : rien', (WidgetTester tester) async {
@@ -104,39 +111,38 @@ void main() {
     expect(find.byType(RideGroupWeatherLine), findsNothing);
   });
 
-  for (final String status in <String>[
-    'NOT_YET_AVAILABLE',
-    'UNAVAILABLE',
-    'NO_LOCATION',
-  ]) {
-    testWidgets('leg $status : rien', (WidgetTester tester) async {
-      await pumpCard(tester, fixtureLeg(status: status));
+  for (final String status in <String>['UNAVAILABLE', 'NO_LOCATION']) {
+    testWidgets('résumé $status : rien', (WidgetTester tester) async {
+      await pumpCard(
+        tester,
+        fixtureLeg(
+          status: status,
+          summary: fixtureLegSummary(status: status),
+        ),
+      );
 
       expect(find.byKey(keys.ride.groupWeatherLine('g1')), findsNothing);
     });
   }
 
-  test('shows : un leg prévu, avec des conditions au départ', () {
-    expect(RideGroupWeatherLine.shows(fixtureLeg()), isTrue);
-    expect(RideGroupWeatherLine.shows(fixtureLeg(status: 'STALE')), isTrue);
-    expect(RideGroupWeatherLine.shows(null), isFalse);
+  test('shows : un leg dont le résumé a quelque chose à montrer', () {
+    expect(
+      RideGroupWeatherLine.shows(fixtureLeg(summary: fixtureLegSummary())),
+      isTrue,
+    );
     expect(
       RideGroupWeatherLine.shows(
-        fixtureLeg().copyWith(checkpoints: const <WeatherCheckpointDto>[]),
+        fixtureLeg(summary: fixtureLegSummary(status: 'STALE')),
+      ),
+      isTrue,
+    );
+    expect(RideGroupWeatherLine.shows(null), isFalse);
+    expect(RideGroupWeatherLine.shows(fixtureLeg()), isFalse);
+    expect(
+      RideGroupWeatherLine.shows(
+        fixtureLeg(summary: fixtureLegSummary(status: 'UNAVAILABLE')),
       ),
       isFalse,
     );
-  });
-
-  testWidgets('les couleurs ne disent rien seules : chaque puce a un libellé', (
-    WidgetTester tester,
-  ) async {
-    await pumpCard(tester, fixtureLeg(rainAlert: rain));
-
-    for (final PdlBadge badge in tester.widgetList<PdlBadge>(
-      inLine(find.byType(PdlBadge)),
-    )) {
-      expect(badge.label, isNotEmpty);
-    }
   });
 }

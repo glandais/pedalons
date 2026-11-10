@@ -17,16 +17,25 @@ import '../../../../keys.dart';
 import '../../domain/ride_weather_display.dart';
 import 'ride_weather_widgets.dart';
 
-/// Les sections d'un écran « Météo du parcours » qui ne lisent qu'un
-/// `WeatherLegDto` : partagées par l'écran d'une sortie (un leg par groupe)
-/// et celui d'une étape de voyage (un leg par étape). Côté sortie, elles
-/// forment l'onglet Météo de la page d'un groupe (`ride_group_weather_tab.dart`),
-/// dont le bloc « départ » au point de rendez-vous vit dans
-/// `departure_weather_section.dart` (ledger `MOB-67`).
+/// Les briques de la météo d'un leg — un groupe de sortie, une étape de
+/// voyage : bandeaux, exposition au vent, frise des passages, bas de section
+/// (« Prévision du … » et ⓘ). `WeatherSection` (`weather_section.dart`) les
+/// compose en section Météo d'un écran de détail (ledger `MOB-132`) ; le bloc
+/// « départ » au point de rendez-vous vit dans `departure_weather_section.dart`.
 
 /// L'état « Météo indisponible » plein écran, avec « Réessayer ».
-Widget weatherUnavailableSliver(VoidCallback onRetry) => SliverToBoxAdapter(
-  child: PdlEmptyState(
+Widget weatherUnavailableSliver(VoidCallback onRetry) =>
+    SliverToBoxAdapter(child: WeatherUnavailableState(onRetry: onRetry));
+
+/// « Météo indisponible » (statut `UNAVAILABLE`, ou échec de l'appel), avec
+/// « Réessayer ».
+class WeatherUnavailableState extends StatelessWidget {
+  const WeatherUnavailableState({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => PdlEmptyState(
     key: keys.ride.weatherUnavailable,
     variant: PdlEmptyVariant.error,
     icon: PdlIcons.weatherUnknown,
@@ -40,8 +49,8 @@ Widget weatherUnavailableSliver(VoidCallback onRetry) => SliverToBoxAdapter(
         onPressed: onRetry,
       ),
     ],
-  ),
-);
+  );
+}
 
 /// « Prévision ancienne », avec l'heure de la dernière prévision lue.
 class WeatherStaleBanner extends StatelessWidget {
@@ -64,14 +73,59 @@ class WeatherStaleBanner extends StatelessWidget {
   );
 }
 
+/// Le leg a-t-il une frise à dérouler ? Comme le web (`LegWeather`) : une
+/// étape prévue (`OK`/`STALE`) avec des points. `UNAVAILABLE`,
+/// `NOT_YET_AVAILABLE` (le groupe part au-delà de l'horizon) ou un statut
+/// inconnu de cette build : un seul bandeau ([WeatherLegNotice]), plutôt
+/// qu'une frise de points sans prévision.
+bool weatherLegHasForecast(WeatherLegDto leg) {
+  final WeatherStatus status = WeatherStatus.fromJson(leg.status);
+  return (status == WeatherStatus.ok || status == WeatherStatus.stale) &&
+      leg.checkpoints.isNotEmpty;
+}
+
+/// Le bandeau d'un leg sans frise : « pas de parcours » (`NO_LOCATION`) ou
+/// « pas encore de prévision le long du parcours ». Rien quand le leg en a
+/// une ([weatherLegHasForecast]).
+class WeatherLegNotice extends StatelessWidget {
+  const WeatherLegNotice({super.key, required this.leg});
+
+  final WeatherLegDto leg;
+
+  /// Le leg se résume-t-il à ce bandeau ?
+  static bool shows(WeatherLegDto leg) => !weatherLegHasForecast(leg);
+
+  @override
+  Widget build(BuildContext context) {
+    if (WeatherStatus.fromJson(leg.status) == WeatherStatus.noLocation) {
+      return PdlBanner(
+        tone: PdlBannerTone.info,
+        icon: PdlIcons.route,
+        message: 'rides.weather.legNoRoute'.tr(),
+      );
+    }
+    if (weatherLegHasForecast(leg)) return const SizedBox.shrink();
+    return PdlBanner(
+      key: keys.ride.weatherLegUnavailable,
+      tone: PdlBannerTone.info,
+      icon: PdlIcons.weatherUnknown,
+      message: 'rides.weather.legUnavailable'.tr(),
+    );
+  }
+}
+
 /// Le corps d'un leg sous son en-tête : alerte pluie, exposition, frise —
 /// ou un seul bandeau quand il n'y a rien à dérouler. Les heures se lisent
 /// dans le fuseau [timezone] de la sortie ou de l'étape (docs/LEDGER_*.md
 /// API-60).
 ///
-/// Avec [onCheckpointTap], chaque point de la frise se touche (l'onglet Météo
-/// d'un groupe y place le réticule de sa carte, ledger `MOB-93`) ; le point
-/// d'`index` [selectedCheckpoint] se marque comme choisi.
+/// Avec [onCheckpointTap], chaque point de la frise se touche (la carte d'un
+/// groupe y place son réticule, ledger `MOB-93`) ; le point d'`index`
+/// [selectedCheckpoint] se marque comme choisi.
+///
+/// Ne sert plus qu'à la carte météo d'une sortie solo
+/// (`RideDepartureWeatherCard`), que le lot 7 du ledger `MOB-132` retire :
+/// les écrans passent par `WeatherSection`, qui compose les mêmes briques.
 List<Widget> weatherLegBody(
   WeatherLegDto leg,
   Widget Function(Widget) padded,
@@ -79,51 +133,61 @@ List<Widget> weatherLegBody(
   ValueChanged<WeatherCheckpointDto>? onCheckpointTap,
   int? selectedCheckpoint,
 }) {
-  final WeatherStatus legStatus = WeatherStatus.fromJson(leg.status);
-  if (legStatus == WeatherStatus.noLocation) {
-    return <Widget>[
-      padded(
-        PdlBanner(
-          tone: PdlBannerTone.info,
-          icon: PdlIcons.route,
-          message: 'rides.weather.legNoRoute'.tr(),
-        ),
-      ),
-    ];
-  }
-  // Comme le web (`LegWeather`) : la frise ne se déroule que pour une étape
-  // prévue (`OK`/`STALE`) avec des points. `UNAVAILABLE`, `NOT_YET_AVAILABLE`
-  // (le groupe part au-delà de l'horizon) ou un statut inconnu de cette build :
-  // un seul bandeau, plutôt qu'une frise de points sans prévision.
-  final bool forecast =
-      legStatus == WeatherStatus.ok || legStatus == WeatherStatus.stale;
-  if (!forecast || leg.checkpoints.isEmpty) {
-    return <Widget>[
-      padded(
-        PdlBanner(
-          key: keys.ride.weatherLegUnavailable,
-          tone: PdlBannerTone.info,
-          icon: PdlIcons.weatherUnknown,
-          message: 'rides.weather.legUnavailable'.tr(),
-        ),
-      ),
-    ];
+  if (WeatherLegNotice.shows(leg)) {
+    return <Widget>[padded(WeatherLegNotice(leg: leg))];
   }
   return <Widget>[
     if (leg.rainAlert != null)
-      padded(_RainAlertBanner(alert: leg.rainAlert!, timezone: timezone)),
-    if (leg.segments.isNotEmpty) padded(_WindSection(leg: leg)),
-    if (leg.checkpoints.isNotEmpty)
+      padded(WeatherRainAlertBanner(alert: leg.rainAlert!, timezone: timezone)),
+    if (leg.segments.isNotEmpty)
       padded(
-        _Timeline(
-          leg: leg,
-          timezone: timezone,
-          onTap: onCheckpointTap,
-          selected: selectedCheckpoint,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            PdlSectionHeader(title: 'rides.weather.exposureTitle'.tr()),
+            WeatherExposureCard(leg: leg),
+          ],
         ),
       ),
+    padded(
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          PdlSectionHeader(title: 'rides.weather.alongRouteTitle'.tr()),
+          WeatherTimeline(
+            leg: leg,
+            timezone: timezone,
+            onTap: onCheckpointTap,
+            selected: selectedCheckpoint,
+          ),
+        ],
+      ),
+    ),
   ];
 }
+
+/// « Passages estimés à 28 km/h », ou la phrase de la vitesse par défaut
+/// ([speedDefaultKey] : le groupe, ou l'étape, n'en indique pas).
+String weatherLegSpeedLine(
+  WeatherLegDto leg,
+  UnitSystem units, {
+  String speedDefaultKey = 'rides.weather.legSpeedDefault',
+}) => (leg.speedIsDefault ? speedDefaultKey : 'rides.weather.legSpeed').tr(
+  namedArgs: <String, String>{
+    'speed': AppFormatters.formatSpeed(leg.averageSpeed, units),
+  },
+);
+
+/// « 6 points · de 09:00 à 12:18 » : le nombre de passages de la frise et
+/// ses heures de départ et d'arrivée, dans le fuseau [timezone] de l'entité.
+String weatherLegPointsLine(WeatherLegDto leg, String? timezone) =>
+    'rides.weather.alongRoutePoints'.plural(
+      leg.checkpoints.length,
+      namedArgs: <String, String>{
+        'start': formatWeatherTime(leg.startTime, timezone),
+        'arrival': formatWeatherTime(leg.arrivalTime, timezone),
+      },
+    );
 
 /// L'en-tête d'un leg : son nom (le groupe, l'étape), sa longueur, ses
 /// horaires, la vitesse des passages et le vent dominant.
@@ -152,7 +216,6 @@ class WeatherLegHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final PdlTypography t = context.pdlText;
     final UnitSystem units = ref.watch(unitSystemProvider);
-    final String speed = AppFormatters.formatSpeed(leg.averageSpeed, units);
     final WindDto? prevailing = leg.prevailingWind;
 
     return Column(
@@ -175,49 +238,26 @@ class WeatherLegHeader extends ConsumerWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          (leg.speedIsDefault ? speedDefaultKey : 'rides.weather.legSpeed').tr(
-            namedArgs: <String, String>{'speed': speed},
-          ),
+          weatherLegSpeedLine(leg, units, speedDefaultKey: speedDefaultKey),
           style: t.xs,
         ),
         if (prevailing != null) ...<Widget>[
           const SizedBox(height: 2),
-          // La flèche, nord en haut, porte le point cardinal ; le lecteur
-          // d'écran l'entend dans le libellé complet.
-          Semantics(
-            label: 'rides.weather.prevailingWind'.tr(
-              namedArgs: <String, String>{
-                'wind': formatWind(prevailing, units),
-              },
-            ),
-            child: ExcludeSemantics(
-              child: Row(
-                children: <Widget>[
-                  Text('rides.weather.prevailingWindLabel'.tr(), style: t.xs),
-                  const SizedBox(width: 2),
-                  PdlWindArrow(
-                    angle: windArrowAngle(prevailing.direction),
-                    size: 14,
-                  ),
-                  const SizedBox(width: 2),
-                  Flexible(
-                    child: Text(
-                      formatWind(prevailing, units, compass: false),
-                      style: t.xs,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          WeatherPrevailingWindLine(wind: prevailing, units: units),
         ],
       ],
     );
   }
 }
 
-class _RainAlertBanner extends ConsumerWidget {
-  const _RainAlertBanner({required this.alert, required this.timezone});
+/// L'alerte pluie d'un leg, en bandeau : « Pluie probable (70 %) vers 20:05,
+/// à 15,0 km. »
+class WeatherRainAlertBanner extends ConsumerWidget {
+  const WeatherRainAlertBanner({
+    super.key,
+    required this.alert,
+    required this.timezone,
+  });
 
   final WeatherRainAlertDto alert;
   final String? timezone;
@@ -233,39 +273,47 @@ class _RainAlertBanner extends ConsumerWidget {
   }
 }
 
-class _WindSection extends ConsumerWidget {
-  const _WindSection({required this.leg});
+/// La carte « Exposition au vent » (KIT §8) : la barre face / travers / dos,
+/// sa légende à pastilles au dixième, puis « Vent dominant : → 18 km/h ».
+/// Le titre est à l'appelant.
+class WeatherExposureCard extends ConsumerWidget {
+  const WeatherExposureCard({super.key, required this.leg});
 
   final WeatherLegDto leg;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final PdlTypography t = context.pdlText;
     final UnitSystem units = ref.watch(unitSystemProvider);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        PdlSectionHeader(title: 'rides.weather.exposureTitle'.tr()),
-        PdlCard(
-          flat: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Text('rides.weather.segmentsTitle'.tr(), style: t.xs),
-              const SizedBox(height: PdlSpacing.badgeGap),
-              WeatherWindSegments(leg: leg, units: units),
-            ],
-          ),
-        ),
-      ],
+    final WindDto? prevailing = leg.prevailingWind;
+    return PdlCard(
+      key: keys.ride.weatherExposure,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          WeatherWindSegments(leg: leg, units: units),
+          if (prevailing != null) ...<Widget>[
+            const SizedBox(height: PdlSpacing.chipGap),
+            WeatherPrevailingWindLine(wind: prevailing, units: units),
+          ],
+        ],
+      ),
     );
   }
 }
 
 // ───────────────────────────────────────────────────── frise des passages
 
-class _Timeline extends StatelessWidget {
-  const _Timeline({
+/// La frise des passages d'un leg : l'heure et le km à gauche, un rail, puis
+/// la météo du point. Seuls « Départ » et « Arrivée » portent un libellé ;
+/// un point intermédiaire commence par sa météo (KIT §8). Le titre est à
+/// l'appelant.
+///
+/// Avec [onTap], chaque point se touche (la carte d'un groupe y place son
+/// réticule, ledger `MOB-93`) ; le point d'`index` [selected] se marque
+/// comme choisi.
+class WeatherTimeline extends StatelessWidget {
+  const WeatherTimeline({
+    super.key,
     required this.leg,
     required this.timezone,
     this.onTap,
@@ -283,7 +331,6 @@ class _Timeline extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        PdlSectionHeader(title: 'rides.weather.timelineTitle'.tr()),
         for (int i = 0; i < points.length; i++)
           _CheckpointRow(
             key: keys.ride.weatherCheckpoint(points[i].indexField),
@@ -332,7 +379,7 @@ class _CheckpointRow extends ConsumerWidget {
 
     final String time = formatWeatherTime(p.time, timezone);
     final String distance = AppFormatters.formatDistance(p.distance, units);
-    final String kind = _kindLabel(p.kind);
+    final String? kind = _kindLabel(p.kind);
     final String? temperature = w == null
         ? null
         : AppFormatters.formatTemperature(w.temperature, units);
@@ -356,6 +403,8 @@ class _CheckpointRow extends ConsumerWidget {
             },
           );
     final String? relativeLabel = relative?.labelKey.tr();
+    // Le lecteur d'écran garde le point cardinal ; à l'écran, la flèche le
+    // porte (KIT §8).
     final String? wind = w == null
         ? null
         : formatWind(w.wind, units, gusts: true);
@@ -376,7 +425,6 @@ class _CheckpointRow extends ConsumerWidget {
       condition: condition,
       rain: rain,
       amount: amount,
-      wind: wind,
       units: units,
       dot: dot,
       endpoint: endpoint,
@@ -391,7 +439,7 @@ class _CheckpointRow extends ConsumerWidget {
       onTap: onTap,
       onTapHint: onTap == null ? null : 'rides.weather.mapShowPoint'.tr(),
       label: <String>[
-        kind,
+        ?kind,
         time,
         distance,
         ?temperature,
@@ -431,12 +479,11 @@ class _CheckpointRow extends ConsumerWidget {
     RelativeWind? relative, {
     required String time,
     required String distance,
-    required String kind,
+    required String? kind,
     required String? temperature,
     required String? condition,
     required String? rain,
     required String? amount,
-    required String? wind,
     required UnitSystem units,
     required Color dot,
     required bool endpoint,
@@ -452,7 +499,7 @@ class _CheckpointRow extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(time, style: t.bodyStrong),
+                  Text(time, style: t.statValue),
                   Text(distance, style: t.xs),
                 ],
               ),
@@ -486,8 +533,10 @@ class _CheckpointRow extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(kind, style: t.xs),
-                  const SizedBox(height: 2),
+                  if (kind != null) ...<Widget>[
+                    Text(kind, style: t.statValue),
+                    const SizedBox(height: 2),
+                  ],
                   if (w == null)
                     Text('rides.weather.checkpointNoWeather'.tr(), style: t.sub)
                   else ...<Widget>[
@@ -496,49 +545,58 @@ class _CheckpointRow extends ConsumerWidget {
                         WeatherConditionIcon(
                           condition: w.condition,
                           daylight: w.daylight,
+                          size: 16,
                         ),
                         const SizedBox(width: PdlSpacing.badgeGap),
-                        Text(temperature!, style: t.statValue),
-                        const SizedBox(width: PdlSpacing.chipGap),
                         Expanded(
                           child: Text(
-                            condition!,
-                            style: t.sub,
+                            '${temperature!} ${condition!}',
+                            style: t.body,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: PdlSpacing.badgeGap),
+                    const SizedBox(height: 2),
                     Wrap(
-                      spacing: PdlSpacing.chipGap,
+                      spacing: PdlSpacing.badgeGap,
                       runSpacing: PdlSpacing.badgeGap,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: <Widget>[
                         if (relative != null) ...<Widget>[
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              if (p.relativeWindAngle != null) ...<Widget>[
-                                PdlWindArrow(
-                                  angle: p.relativeWindAngle!,
-                                  color: relativeWindColor(c, relative),
-                                ),
-                                const SizedBox(width: 2),
-                              ],
-                              PdlBadge(
-                                label: relative.shortLabelKey.tr(),
-                                tone: relative.tone(c),
-                              ),
-                            ],
+                          if (p.relativeWindAngle != null)
+                            PdlWindArrow(
+                              angle: p.relativeWindAngle!,
+                              color: relativeWindColor(c, relative),
+                              size: 14,
+                            ),
+                          PdlBadge(
+                            label: relative.shortLabelKey.tr(),
+                            tone: relative.tone(c),
                           ),
                         ],
-                        WeatherWindLine(wind: w.wind, units: units),
-                        if (rain != null) Text(rain, style: t.xs),
-                        if (amount != null) Text(amount, style: t.xs),
+                        // La flèche du vent relatif dit déjà d'où il vient ;
+                        // sans elle, celle du vent absolu, nord en haut.
+                        if (relative != null && p.relativeWindAngle != null)
+                          Text(
+                            formatWind(
+                              w.wind,
+                              units,
+                              gusts: true,
+                              compass: false,
+                            ),
+                            style: t.xs,
+                          )
+                        else
+                          WeatherWindLine(wind: w.wind, units: units),
                       ],
                     ),
+                    if (rain != null) ...<Widget>[
+                      const SizedBox(height: 2),
+                      Text(rain, style: t.xs),
+                    ],
+                    if (amount != null) Text(amount, style: t.xs),
                   ],
                 ],
               ),
@@ -549,19 +607,111 @@ class _CheckpointRow extends ConsumerWidget {
     );
   }
 
-  String _kindLabel(String kind) =>
-      switch (WeatherCheckpointKind.fromJson(kind)) {
-        WeatherCheckpointKind.start => 'rides.weather.checkpointKind.start',
-        WeatherCheckpointKind.finish => 'rides.weather.checkpointKind.finish',
-        WeatherCheckpointKind.enRoute || WeatherCheckpointKind.$unknown =>
-          'rides.weather.checkpointKind.enRoute',
-      }.tr();
+  /// « Départ » et « Arrivée » ; un point intermédiaire n'a pas de libellé
+  /// (KIT §8 : plus de « En route »).
+  String? _kindLabel(String kind) => switch (WeatherCheckpointKind.fromJson(
+    kind,
+  )) {
+    WeatherCheckpointKind.start => 'rides.weather.checkpointKind.start'.tr(),
+    WeatherCheckpointKind.finish => 'rides.weather.checkpointKind.finish'.tr(),
+    WeatherCheckpointKind.enRoute || WeatherCheckpointKind.$unknown => null,
+  };
 }
 
-// ─────────────────────────────────────────────────────────── attribution
+// ─────────────────────────────────────────────── prévision et attribution
+
+/// Le bas d'une section Météo : « Prévision du mar. 10 nov. · 08:30 »
+/// (horodatage, dans le fuseau du lecteur, [AppFormatters.formatTimestamp])
+/// et un bouton ⓘ qui ouvre la source des prévisions — le crédit que la
+/// licence demande (CC BY 4.0), derrière un bouton comme celui du profil
+/// (KIT §8, ledger `MOB-132`).
+class WeatherForecastFooter extends StatelessWidget {
+  const WeatherForecastFooter({
+    super.key,
+    required this.attribution,
+    required this.fetchedAt,
+  });
+
+  /// Le crédit ; `null` : pas de bouton ⓘ.
+  final WeatherAttributionDto? attribution;
+  final DateTime? fetchedAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final PdlColors c = context.pdl;
+    final WeatherAttributionDto? attribution = this.attribution;
+    final PdlTypography t = context.pdlText;
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: fetchedAt == null
+              ? const SizedBox.shrink()
+              : Text(
+                  'rides.weather.forecastOf'.tr(
+                    namedArgs: <String, String>{
+                      'time': AppFormatters.formatTimestamp(fetchedAt!),
+                    },
+                  ),
+                  key: keys.ride.weatherForecastOf,
+                  style: t.xs,
+                ),
+        ),
+        // Le visuel de 18 px, centré dans la cible de 44.
+        if (attribution != null)
+          Semantics(
+            button: true,
+            label: 'rides.weather.sourceTitle'.tr(),
+            child: ExcludeSemantics(
+              child: InkResponse(
+                key: keys.ride.weatherSourceButton,
+                onTap: () => showWeatherSource(context, attribution),
+                radius: PdlMetrics.tapTarget / 2,
+                child: SizedBox.square(
+                  dimension: PdlMetrics.tapTarget,
+                  child: Icon(PdlIcons.info, size: 18, color: c.textDimmed),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// La feuille « Source des prévisions météo » : le crédit, en lien vers le
+/// fournisseur.
+Future<void> showWeatherSource(
+  BuildContext context,
+  WeatherAttributionDto attribution,
+) => PdlSheet.show<void>(
+  context: context,
+  builder: (BuildContext sheetContext) => PdlSheet(
+    key: keys.ride.weatherSourceSheet,
+    title: 'rides.weather.sourceTitle'.tr(),
+    footer: const SafeArea(top: false, child: SizedBox(height: 8)),
+    children: <Widget>[
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: PdlButton(
+            key: keys.ride.weatherAttribution,
+            label: weatherAttributionLabel(attribution),
+            variant: PdlButtonVariant.text,
+            size: PdlButtonSize.sm,
+            icon: PdlIcons.openExternal,
+            onPressed: () => openLink(sheetContext, attribution.url),
+          ),
+        ),
+      ),
+    ],
+  ),
+);
 
 /// Le crédit que la licence des prévisions demande (CC BY 4.0), et l'heure
-/// de la prévision la plus ancienne lue.
+/// de la prévision la plus ancienne lue — la carte météo d'une sortie solo
+/// (`RideDepartureWeatherCard`, retirée au lot 7 du ledger `MOB-132`) ; les
+/// sections Météo passent par [WeatherForecastFooter].
 class WeatherAttributionBlock extends StatelessWidget {
   const WeatherAttributionBlock({
     super.key,

@@ -1,76 +1,14 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
-import '../../../../core/pdl/pdl.dart';
-import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../keys.dart';
 import '../../domain/ride_weather_display.dart';
 import 'ride_weather_widgets.dart';
-
-/// « Météo au départ » : les conditions au point de rendez-vous, à l'heure de
-/// la sortie — ressenti, pluie, vent et rafales, lever et coucher du soleil.
-///
-/// L'onglet Météo de la page d'un groupe s'ouvre sur lui ; la carte du détail
-/// de la sortie en rend le bloc [DepartureConditionsBlock] (ledger `MOB-67`).
-class DepartureWeatherSection extends ConsumerWidget {
-  const DepartureWeatherSection({
-    super.key,
-    required this.departure,
-    required this.timezone,
-    this.departureAt,
-    this.ofRide = false,
-  });
-
-  final DepartureWeatherDto departure;
-
-  /// Le départ que la prévision décrit — celui de la sortie (`RideDto.dateTime`) :
-  /// le serveur la calcule à cette heure-là, pas à celle d'un groupe.
-  final String? departureAt;
-
-  /// Vrai sur la page d'un groupe qui part à son heure propre : le titre dit
-  /// alors « Météo au départ de la sortie, 21:30 », pour ne pas se confondre
-  /// avec l'heure du groupe que porte le bloc de départ (ledger `BRAND-8`).
-  final bool ofRide;
-
-  /// Le fuseau de la sortie : lever et coucher du soleil s'y lisent.
-  final String? timezone;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final PdlTypography t = context.pdlText;
-    final UnitSystem units = ref.watch(unitSystemProvider);
-    final WeatherConditionsDto? now = departure.conditions;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        PdlSectionHeader(
-          key: keys.rideGroup.departureWeatherTitle,
-          title: departureWeatherTitle(departureAt, timezone, ofRide: ofRide),
-        ),
-        PdlCard(
-          flat: true,
-          child: now == null
-              ? Text('rides.weather.unavailableTitle'.tr(), style: t.sub)
-              : DepartureConditionsBlock(
-                  conditions: now,
-                  units: units,
-                  sunrise: departure.sunrise,
-                  sunset: departure.sunset,
-                  timezone: timezone,
-                ),
-        ),
-      ],
-    );
-  }
-}
 
 /// « Météo au départ de 09:00 » — l'heure du départ [departureAt] (un instant
 /// du contrat) lue dans le fuseau [timezone] de la sortie, sans mention : la
@@ -190,7 +128,7 @@ class DepartureConditionsBlock extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(temperature, style: t.statBigValue),
+                      Text(temperature, style: t.departureTime),
                       Text(condition, style: t.sub),
                     ],
                   ),
@@ -203,8 +141,12 @@ class DepartureConditionsBlock extends StatelessWidget {
               runSpacing: PdlSpacing.badgeGap,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: <Widget>[
-                for (final String f in facts) Text(f, style: t.xs),
-                WeatherWindLine(wind: conditions.wind, units: units),
+                for (final String f in facts) Text(f, style: t.sub),
+                WeatherWindLine(
+                  wind: conditions.wind,
+                  units: units,
+                  style: t.sub,
+                ),
               ],
             ),
             if (rise != null || set != null) ...<Widget>[
@@ -226,6 +168,7 @@ class DepartureConditionsBlock extends StatelessWidget {
   }
 }
 
+/// Lever et coucher du soleil, en 14 gris comme les conditions (KIT §8).
 class _IconText extends StatelessWidget {
   const _IconText({required this.icon, required this.text});
 
@@ -238,7 +181,7 @@ class _IconText extends StatelessWidget {
     children: <Widget>[
       Icon(icon, size: 14, color: context.pdl.textDimmed),
       const SizedBox(width: 2),
-      Flexible(child: Text(text, style: context.pdlText.xs)),
+      Flexible(child: Text(text, style: context.pdlText.sub)),
     ],
   );
 }

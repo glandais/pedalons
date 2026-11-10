@@ -737,9 +737,7 @@
         "cross": "Cross {distance}",
         "tail": "Tail {distance}"
       },
-      "segmentsTitle": "The wind along the route",
       "segmentsSemantics": "Wind along the route: {summary}",
-      "timelineTitle": "Checkpoints",
       "checkpointKind": {
         "start": "Start",
         "enRoute": "En route",
@@ -758,7 +756,12 @@
       "mapRainTitle": "Rain likely",
       "mapShowPoint": "Show on the map",
       "alongRouteTitle": "Weather along the route",
-      "forecastOf": "Forecast from {time}"
+      "forecastOf": "Forecast from {time}",
+      "alongRoutePoints": {
+        "one": "{} point · from {start} to {arrival}",
+        "other": "{} points · from {start} to {arrival}"
+      },
+      "sourceTitle": "Weather forecast source"
     },
     "groupPage": {
       "title": "Group {name}",

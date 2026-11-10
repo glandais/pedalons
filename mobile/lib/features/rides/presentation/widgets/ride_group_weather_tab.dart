@@ -7,25 +7,23 @@ import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../keys.dart';
-import '../../domain/group_start.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_weather_provider.dart';
-import 'departure_weather_section.dart';
 import 'ride_groups_map.dart';
 import 'ride_weather_widgets.dart';
 import 'weather_leg_sections.dart';
+import 'weather_section.dart';
 
 /// L'onglet Météo de la page d'un groupe — ce que montrait l'écran « Météo du
 /// parcours », pour **ce** groupe (ledger `MOB-67`).
 ///
-/// De haut en bas : la marque « Prévision ancienne », la météo au départ (au
-/// point de rendez-vous, à l'heure de la sortie), puis le leg du groupe —
-/// horaires et vitesse, alerte pluie, exposition, vent le long du parcours,
-/// frise des points de passage — et l'attribution. Tout ce qui suit le départ
-/// vit dans `weather_leg_sections.dart`, partagé avec l'écran météo d'une
-/// étape de voyage.
+/// Sous la carte : la section Météo ([WeatherSection], ledger `MOB-132`),
+/// dépliée puisque rien ne la suit — « Météo au départ de … », exposition au
+/// vent, « Météo le long du parcours », « Prévision du … » et ⓘ. La même
+/// section sert l'écran météo d'une étape de voyage, et servira la page du
+/// groupe quand l'onglet disparaîtra (lot 6).
 ///
 /// En tête, quand le leg a une prévision ([showsWindOnMap]) et le groupe un
 /// parcours : la carte du groupe, **toujours en mode « Météo »** (ledger
@@ -132,74 +130,34 @@ class _RideGroupWeatherTabState extends ConsumerState<RideGroupWeatherTab> {
     RideWeatherDto dto, {
     required bool canSeeNoLocation,
   }) {
-    Widget padded(Widget child) => SliverPadding(
-      padding: const EdgeInsets.fromLTRB(
-        PdlSpacing.section,
-        PdlSpacing.section,
-        PdlSpacing.section,
-        0,
-      ),
-      sliver: SliverToBoxAdapter(child: child),
+    final RideWeatherView view = rideWeatherViewOf(
+      dto.status,
+      canSeeNoLocation: canSeeNoLocation,
     );
+    // Sortie terminée ou annulée (`OUT_OF_RANGE`), `NO_LOCATION` pour un
+    // membre, statut d'une build plus récente : un état neutre, jamais un
+    // onglet blanc — la section, elle, ne rend rien.
+    if (!WeatherSection.shows(view)) return <Widget>[_empty()];
 
-    switch (rideWeatherViewOf(dto.status, canSeeNoLocation: canSeeNoLocation)) {
-      case RideWeatherView.hidden:
-        // Sortie terminée ou annulée (`OUT_OF_RANGE`), `NO_LOCATION` pour un
-        // membre, statut d'une build plus récente : un état neutre, jamais un
-        // onglet blanc.
-        return <Widget>[_empty()];
-      case RideWeatherView.unavailable:
-        return <Widget>[
-          weatherUnavailableSliver(
-            () => ref.invalidate(rideWeatherProvider(rideKey)),
-          ),
-        ];
-      case RideWeatherView.noLocation:
-        return <Widget>[
-          padded(
-            PdlBanner(
-              key: keys.ride.weatherNoLocation,
-              tone: PdlBannerTone.info,
-              icon: PdlIcons.weatherUnknown,
-              message: 'rides.weather.noLocation'.tr(),
-            ),
-          ),
-        ];
-      case RideWeatherView.notYetAvailable:
-        final DateTime? from = dto.availableFrom == null
-            ? null
-            : DateTime.tryParse(dto.availableFrom!);
-        return <Widget>[
-          padded(
-            PdlBanner(
-              key: keys.ride.weatherNotYetAvailable,
-              tone: PdlBannerTone.info,
-              icon: PdlIcons.date,
-              message: notYetAvailableMessage(from),
-            ),
-          ),
-        ];
-      case RideWeatherView.forecast:
-      case RideWeatherView.stale:
-        break;
-    }
-
-    final bool stale =
-        WeatherStatus.fromJson(dto.status) == WeatherStatus.stale;
     final WeatherLegDto? leg = weatherLegOfGroup(dto.legs, groupId);
     RideGroupDto? group;
     for (final RideGroupDto g in ride.groups) {
       if (g.id == groupId) group = g;
     }
-    final String? groupName = group?.name;
     // La carte : une prévision sur le leg et un parcours à dessiner.
+    final bool forecast =
+        view == RideWeatherView.forecast || view == RideWeatherView.stale;
     final bool showsMap =
+        forecast &&
         group != null &&
         (group.routeSlug ?? ride.routeSlug) != null &&
         showsWindOnMap(leg);
     final DateTime? fetchedAt = dto.fetchedAt == null
         ? null
         : DateTime.tryParse(dto.fetchedAt!);
+    final DateTime? availableFrom = dto.availableFrom == null
+        ? null
+        : DateTime.tryParse(dto.availableFrom!);
 
     return <Widget>[
       if (showsMap)
@@ -218,41 +176,25 @@ class _RideGroupWeatherTabState extends ConsumerState<RideGroupWeatherTab> {
             ),
           ),
         ),
-      if (stale) padded(WeatherStaleBanner(fetchedAt: fetchedAt)),
-      padded(
-        // La prévision du point de rendez-vous est calculée à l'heure de la
-        // **sortie** (`RideWeatherService`, `plan.departureTime()`), pas à
-        // celle du groupe : le titre garde donc cette heure, et dit « de la
-        // sortie » quand le groupe part à une autre — le bloc de départ de
-        // l'Aperçu porte l'heure du groupe (ledger `BRAND-8`). Les conditions
-        // à l'heure du groupe sont le leg, juste dessous.
-        DepartureWeatherSection(
-          departure: dto.departure,
-          timezone: ride.timezone,
-          departureAt: ride.dateTime,
-          ofRide:
-              group != null &&
-              groupLeavesAtOwnTime(group.startAt, ride.dateTime),
-        ),
+      // Dépliée : rien ne suit la section dans l'onglet. Le départ est celui
+      // du leg quand il le porte (le point de rendez-vous à l'heure du
+      // groupe, API 13.4.0), sinon celui de la sortie — « de la sortie »
+      // quand le groupe part à une autre heure (ledger `BRAND-8`).
+      WeatherSection.sliver(
+        view: view,
+        timezone: ride.timezone,
+        departure: dto.departure,
+        departureAt: ride.dateTime,
+        groupStartAt: group?.startAt,
+        leg: leg,
+        attribution: dto.attribution,
+        fetchedAt: fetchedAt,
+        availableFrom: availableFrom,
+        onRetry: () => ref.invalidate(rideWeatherProvider(rideKey)),
+        onCheckpointTap: showsMap ? _toggleCursor : null,
+        selectedCheckpoint: showsMap ? _cursor?.index : null,
       ),
-      if (leg != null) ...<Widget>[
-        padded(
-          WeatherLegHeader(leg: leg, title: groupName, timezone: ride.timezone),
-        ),
-        ...weatherLegBody(
-          leg,
-          padded,
-          ride.timezone,
-          onCheckpointTap: showsMap ? _toggleCursor : null,
-          selectedCheckpoint: showsMap ? _cursor?.index : null,
-        ),
-      ],
-      padded(
-        WeatherAttributionBlock(
-          attribution: dto.attribution,
-          fetchedAt: fetchedAt,
-        ),
-      ),
+      const SliverToBoxAdapter(child: SizedBox(height: PdlSpacing.section)),
     ];
   }
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../api/generated/export.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
+import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
@@ -13,29 +14,41 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../keys.dart';
 import '../../domain/ride_weather_display.dart';
 
-/// La ligne météo d'une carte de sortie (fil, fil d'équipe, « Ma prochaine
-/// sortie ») : `RideDto.weather` / `PublicationDtoRide.weather` — et d'une
-/// carte de voyage, celle de sa prochaine étape (`PublicationDtoTrip.weather`,
-/// ledger `API-82`).
+/// La ligne météo d'une carte (KIT §8, ledger `MOB-132`) : « ☁ 10–13 °C ·
+/// → 18 km/h · Pluie 20 % », 14 px gris, icônes 14 px. **Un seul widget** pour
+/// toutes les cartes qui portent un `RideWeatherSummaryDto` : carte de sortie
+/// (fil, fil d'équipe, « Ma prochaine sortie » : `RideDto.weather` /
+/// `PublicationDtoRide.weather`), de voyage (sa prochaine étape,
+/// `PublicationDtoTrip.weather`, ledger `API-82`), d'étape
+/// (`TripStageWeatherDto.summary`) et de groupe (`WeatherLegDto.summary`, par
+/// `RideGroupWeatherLine`).
 ///
 /// Le serveur ne la remplit que pour `OK`, `STALE` et `NOT_YET_AVAILABLE`, au
 /// point de départ, sur la fenêtre départ → dernière arrivée estimée. On
 /// rend : l'icône de la condition au départ, la plage **min → max**, le vent
-/// au départ, puis la pluie — l'alerte quand il y en a une, sinon la plus
-/// forte probabilité, et pour `STALE` la marque « Prévision ancienne » (comme
-/// le web). Pour `NOT_YET_AVAILABLE`, la date d'ouverture de la prévision.
-/// Rien pour un statut inconnu, une sortie terminée ou annulée.
+/// au départ — sa flèche porte la direction, le texte ne dit que la vitesse —,
+/// puis la pluie : l'alerte « Pluie 60 % vers 11:00 » en ton d'alerte quand il
+/// y en a une, sinon la plus forte probabilité. Ni ciel en toutes lettres ni
+/// badge Face / Dos. Pour `STALE`, la marque « Prévision ancienne » (comme le
+/// web) ; pour `NOT_YET_AVAILABLE`, la date d'ouverture de la prévision. Rien
+/// pour un statut inconnu, une sortie terminée ou annulée.
 ///
 /// Aucune requête : la ligne de liste porte tout (0 ou 1 requête par page
 /// côté serveur, plan météo §1).
-class RideWeatherSummaryLine extends ConsumerWidget {
+class RideWeatherSummaryLine extends StatelessWidget {
   const RideWeatherSummaryLine({
     super.key,
     required this.summary,
     required this.timezone,
     this.finished = false,
     this.cancelled = false,
+    this.units,
   });
+
+  /// Les unités du lecteur ; `null` : lues de `unitSystemProvider`. Une carte
+  /// qui les reçoit déjà (celle d'un groupe) les passe, et se rend alors sans
+  /// `ProviderScope`.
+  final UnitSystem? units;
 
   final RideWeatherSummaryDto? summary;
 
@@ -67,14 +80,26 @@ class RideWeatherSummaryLine extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final RideWeatherSummaryDto? s = summary;
     if (s == null || !shows(s, finished: finished, cancelled: cancelled)) {
       return const SizedBox.shrink();
     }
+    final UnitSystem? given = units;
+    if (given != null) return _line(context, s, given);
+    return Consumer(
+      builder: (BuildContext context, WidgetRef ref, Widget? _) =>
+          _line(context, s, ref.watch(unitSystemProvider)),
+    );
+  }
+
+  Widget _line(
+    BuildContext context,
+    RideWeatherSummaryDto s,
+    UnitSystem units,
+  ) {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
-    final UnitSystem units = ref.watch(unitSystemProvider);
 
     if (WeatherStatus.fromJson(s.status) == WeatherStatus.notYetAvailable) {
       final String text = 'rides.weather.summaryAvailableFrom'.tr(
@@ -107,13 +132,11 @@ class RideWeatherSummaryLine extends ConsumerWidget {
               ? null
               : AppFormatters.formatTemperature(s.temperature!, units));
     final WindDto? wind = s.wind;
+    // Le lecteur d'écran entend le point cardinal ; à l'écran, la flèche le
+    // porte et le texte ne dit que la vitesse (KIT §8).
     final String? windText = wind == null
         ? null
         : formatWind(wind, units, gusts: false);
-    // À l'écran, la flèche porte le point cardinal.
-    final String? windShown = wind == null
-        ? null
-        : formatWind(wind, units, gusts: false, compass: false);
     final WeatherRainAlertDto? alert = s.rainAlert;
     final String? rain = alert != null
         ? 'rides.weather.rainAlertShort'.tr(
@@ -131,6 +154,10 @@ class RideWeatherSummaryLine extends ConsumerWidget {
                     ),
                   },
                 ));
+    // L'alerte en ton d'alerte : l'icône dans la teinte d'avertissement, le
+    // texte dans la teinte lisible de la même famille (celle du badge
+    // « Travers »), qui tient le contraste sur la surface d'une carte.
+    final Color alertText = PdlFamily.yellow.soft(c).onSoft;
 
     return Semantics(
       key: keys.ride.weatherSummary,
@@ -152,29 +179,41 @@ class RideWeatherSummaryLine extends ConsumerWidget {
             _Part(
               icon: weatherConditionOf(s.condition)
                   .icon(daylight: s.daylight ?? true),
-              iconColor: c.text,
               text: temperature ?? condition,
             ),
-            if (wind != null && windShown != null)
+            if (wind != null)
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  PdlWindArrow(angle: windArrowAngle(wind.direction), size: 14),
-                  const SizedBox(width: 2),
-                  Flexible(child: Text(windShown, style: t.statValue)),
+                  PdlWindArrow(
+                    angle: windArrowAngle(wind.direction),
+                    size: _iconSize,
+                    color: c.textDimmed,
+                  ),
+                  const SizedBox(width: _iconGap),
+                  Flexible(
+                    child: Text(
+                      AppFormatters.formatSpeed(wind.speed, units),
+                      style: t.sub,
+                    ),
+                  ),
                 ],
               ),
-            if (rain != null)
+            if (alert != null && rain != null)
               _Part(
-                icon: PdlIcons.precipitation,
-                iconColor: alert != null ? c.warning : null,
+                key: keys.ride.weatherSummaryRainAlert,
+                icon: PdlIcons.warning,
+                iconColor: c.warning,
                 text: rain,
-              ),
+                textColor: alertText,
+              )
+            else if (rain != null)
+              Text(rain, style: t.sub),
             if (stale)
               Icon(
                 PdlIcons.weatherStale,
                 key: keys.ride.weatherSummaryStale,
-                size: 14,
+                size: _iconSize,
                 color: c.textDimmed,
               ),
           ],
@@ -184,20 +223,39 @@ class RideWeatherSummaryLine extends ConsumerWidget {
   }
 }
 
+/// Les icônes de la ligne, 14 px comme celles de la ligne de chiffres.
+const double _iconSize = 14;
+const double _iconGap = 3;
+
 class _Part extends StatelessWidget {
-  const _Part({required this.icon, required this.text, this.iconColor});
+  const _Part({
+    super.key,
+    required this.icon,
+    required this.text,
+    this.iconColor,
+    this.textColor,
+  });
 
   final IconData icon;
   final String text;
   final Color? iconColor;
+  final Color? textColor;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: <Widget>[
-      Icon(icon, size: 16, color: iconColor ?? context.pdl.textDimmed),
-      const SizedBox(width: PdlSpacing.badgeGap),
-      Flexible(child: Text(text, style: context.pdlText.statValue)),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final TextStyle style = context.pdlText.sub;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(icon, size: _iconSize, color: iconColor ?? context.pdl.textDimmed),
+        const SizedBox(width: _iconGap),
+        Flexible(
+          child: Text(
+            text,
+            style: textColor == null ? style : style.copyWith(color: textColor),
+          ),
+        ),
+      ],
+    );
+  }
 }

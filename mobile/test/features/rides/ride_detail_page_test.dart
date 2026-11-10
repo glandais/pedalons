@@ -453,12 +453,8 @@ void main() {
       fetchedAt: '2099-07-29T17:00:00Z',
       legs: <WeatherLegDto>[
         fixtureLeg(
-          rainAlert: const WeatherRainAlertDto(
-            probability: 70,
-            time: '2099-07-29T20:05:00Z',
-            condition: 'RAIN',
-            distance: 15000,
-          ),
+          rainAlert: _rain70,
+          summary: fixtureLegSummary(rainAlert: _rain70),
         ),
       ],
     );
@@ -584,7 +580,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(keys.ride.groupWeatherLine('g1')),
-          matching: find.textContaining('PLUIE 70'),
+          matching: find.textContaining('Pluie 70 % vers'),
         ),
         findsOneWidget,
       );
@@ -1689,3 +1685,10 @@ void main() {
     });
   });
 }
+
+const WeatherRainAlertDto _rain70 = WeatherRainAlertDto(
+  probability: 70,
+  time: '2099-07-29T20:05:00Z',
+  condition: 'RAIN',
+  distance: 15000,
+);

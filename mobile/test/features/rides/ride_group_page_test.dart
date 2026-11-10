@@ -171,17 +171,14 @@ void main() {
             <WeatherLegDto>[
               fixtureLeg(
                 groupId: 'g1',
-                rainAlert: const WeatherRainAlertDto(
-                  probability: 70,
-                  time: '2099-07-29T20:05:00Z',
-                  condition: 'RAIN',
-                  distance: 15000,
-                ),
+                rainAlert: _rain70,
+                summary: fixtureLegSummary(rainAlert: _rain70),
               ),
               fixtureLeg(
                 groupId: 'g2',
                 speedIsDefault: true,
                 relativeWind: 'CROSS',
+                summary: fixtureLegSummary(),
               ),
             ],
       );
@@ -249,24 +246,68 @@ void main() {
   // ─────────────────────────────────────────────────────────── onglet Météo
 
   group('onglet Météo', () {
-    testWidgets('le départ, l\'en-tête du leg, l\'alerte, l\'exposition et la '
-        'frise', (WidgetTester tester) async {
+    testWidgets('la section Météo, dépliée : départ, alerte, exposition, '
+        'frise, prévision', (WidgetTester tester) async {
       await open(tester, weather());
 
-      expect(find.text('Groupe Rapide'), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
       expect(find.textContaining('Météo au départ de '), findsOneWidget);
       expect(find.text('14 °C'), findsWidgets);
       expect(find.textContaining('Pluie probable (70 %)'), findsOneWidget);
       expect(find.text('Exposition au vent'), findsOneWidget);
       expect(find.byType(PdlSegmentBar), findsOneWidget);
+      // Rien ne suit la section dans l'onglet : la frise est dépliée, sous
+      // son sous-titre, sans bloc repliable.
+      expect(find.text('Météo le long du parcours'), findsOneWidget);
+      expect(find.byType(PdlDisclosure), findsNothing);
       expect(find.byKey(keys.ride.weatherCheckpoint(0)), findsOneWidget);
       expect(find.byKey(keys.ride.weatherCheckpoint(1)), findsOneWidget);
       expect(find.byKey(keys.ride.weatherCheckpoint(2)), findsOneWidget);
       expect(find.text('Prévision pas encore disponible ici'), findsOneWidget);
       expect(find.text('FACE'), findsOneWidget);
       expect(find.text('DOS'), findsOneWidget);
-      expect(find.text('Prévisions : Open-Meteo.com'), findsOneWidget);
+      // Le crédit est derrière ⓘ, plus en lien sous la section.
+      expect(find.byKey(keys.ride.weatherForecastOf), findsOneWidget);
+      expect(find.byKey(keys.ride.weatherSourceButton), findsOneWidget);
+      expect(find.text('Prévisions : Open-Meteo.com'), findsNothing);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('un leg qui porte son départ : l\'heure et les conditions du '
+        'groupe', (WidgetTester tester) async {
+      AppFormatters.setDisplayTimezone('Europe/Paris');
+      addTearDown(() => AppFormatters.setDisplayTimezone(null));
+      await open(
+        tester,
+        weather(
+          legs: <WeatherLegDto>[
+            fixtureLeg(
+              groupId: 'g1',
+              departure: DepartureWeatherDto(
+                status: 'OK',
+                conditions: fixtureConditions(temperature: 9),
+              ),
+            ).copyWith(startTime: '2036-07-29T20:00:00Z'),
+          ],
+        ),
+        ride: fixtureRide(
+          dateTime: '2036-07-29T19:30:00Z',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', startAt: '2036-07-29T20:00:00Z'),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byKey(keys.rideGroup.departureWeatherTitle),
+          matching: find.text('Météo au départ de 22:00'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('de la sortie'), findsNothing);
+      expect(find.text('9 °C'), findsOneWidget);
     });
 
     testWidgets('BRAND-8 : un groupe à heure propre — le titre du départ dit '
@@ -1425,3 +1466,10 @@ void main() {
     });
   });
 }
+
+const WeatherRainAlertDto _rain70 = WeatherRainAlertDto(
+  probability: 70,
+  time: '2099-07-29T20:05:00Z',
+  condition: 'RAIN',
+  distance: 15000,
+);

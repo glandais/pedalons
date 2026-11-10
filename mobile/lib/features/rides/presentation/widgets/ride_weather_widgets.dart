@@ -29,15 +29,6 @@ bool watchCanSeeWeatherNoLocation(WidgetRef ref, String teamSlug) {
   return canSeeWeatherNoLocation(teamRole: role, platformAdmin: platformAdmin);
 }
 
-/// L'angle de la flèche de chaque vent relatif dans une légende : le vent
-/// pousse (0), vient de côté (90) ou de face (180).
-double relativeWindLegendAngle(RelativeWind wind) => switch (wind) {
-  RelativeWind.tail => 0,
-  RelativeWind.cross => 90,
-  RelativeWind.head => 180,
-  RelativeWind.$unknown => 90,
-};
-
 /// La teinte d'un vent relatif, `neutral` pour un vent inconnu.
 Color relativeWindColor(PdlColors c, RelativeWind? wind) =>
     wind == null ? c.neutral : wind.tone(c).fill;
@@ -107,8 +98,9 @@ class WeatherWindSegments extends StatelessWidget {
   }
 }
 
-/// « Face 12,3 km · Travers 30,1 km · Dos 24,0 km », chaque entrée précédée
-/// de sa flèche teintée. Une entrée nulle est omise.
+/// « Face 12,3 km · Travers 30,1 km · Dos 24,0 km », au dixième, chaque
+/// entrée précédée d'une pastille de la couleur de son tronçon dans la barre
+/// (KIT §8, ledger `MOB-132`). Une entrée nulle est omise.
 class WeatherExposureLegend extends StatelessWidget {
   const WeatherExposureLegend({
     super.key,
@@ -118,6 +110,9 @@ class WeatherExposureLegend extends StatelessWidget {
 
   final WindExposureDto exposure;
   final UnitSystem units;
+
+  /// La pastille de la légende (8 px dans les maquettes).
+  static const double _legendDot = 8;
 
   @override
   Widget build(BuildContext context) {
@@ -138,12 +133,15 @@ class WeatherExposureLegend extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                PdlWindArrow(
-                  angle: relativeWindLegendAngle(wind),
-                  color: relativeWindColor(c, wind),
-                  size: 14,
+                Container(
+                  width: _legendDot,
+                  height: _legendDot,
+                  decoration: BoxDecoration(
+                    color: relativeWindColor(c, wind),
+                    shape: BoxShape.circle,
+                  ),
                 ),
-                const SizedBox(width: 2),
+                const SizedBox(width: PdlSpacing.badgeGap),
                 Flexible(
                   child: Text(
                     'rides.weather.exposure.${wind.name}'.tr(
@@ -185,11 +183,15 @@ class WeatherWindLine extends StatelessWidget {
     required this.wind,
     required this.units,
     this.gusts = true,
+    this.style,
   });
 
   final WindDto wind;
   final UnitSystem units;
   final bool gusts;
+
+  /// Le style du texte ; `xs` par défaut.
+  final TextStyle? style;
 
   @override
   Widget build(BuildContext context) {
@@ -202,10 +204,49 @@ class WeatherWindLine extends StatelessWidget {
         Flexible(
           child: Text(
             formatWind(wind, units, gusts: gusts, compass: false),
-            style: t.xs,
+            style: style ?? t.xs,
           ),
         ),
       ],
+    );
+  }
+}
+
+/// « Vent dominant : → 17 km/h » — la flèche, nord en haut, porte le point
+/// cardinal ; le lecteur d'écran l'entend dans le libellé complet.
+class WeatherPrevailingWindLine extends StatelessWidget {
+  const WeatherPrevailingWindLine({
+    super.key,
+    required this.wind,
+    required this.units,
+  });
+
+  final WindDto wind;
+  final UnitSystem units;
+
+  @override
+  Widget build(BuildContext context) {
+    final PdlTypography t = context.pdlText;
+    return Semantics(
+      label: 'rides.weather.prevailingWind'.tr(
+        namedArgs: <String, String>{'wind': formatWind(wind, units)},
+      ),
+      child: ExcludeSemantics(
+        child: Row(
+          children: <Widget>[
+            Text('rides.weather.prevailingWindLabel'.tr(), style: t.xs),
+            const SizedBox(width: PdlSpacing.badgeGap),
+            PdlWindArrow(angle: windArrowAngle(wind.direction), size: 14),
+            const SizedBox(width: 2),
+            Flexible(
+              child: Text(
+                AppFormatters.formatSpeed(wind.speed, units),
+                style: t.xs,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

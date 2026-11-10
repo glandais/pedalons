@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
@@ -57,8 +58,24 @@ void main() {
 
     expect(find.byKey(keys.ride.weatherSummary), findsOneWidget);
     expect(find.text('12–18 °C'), findsOneWidget);
-    expect(find.text('Vent 18 km/h'), findsOneWidget);
+    // La flèche porte la direction : ni « Vent » ni point cardinal (KIT §8).
+    expect(find.byType(PdlWindArrow), findsOneWidget);
+    expect(find.text(AppFormatters.formatSpeed(18)), findsOneWidget);
+    expect(find.textContaining('Vent'), findsNothing);
     expect(find.text('Pluie 20 %'), findsOneWidget);
+    // Ni ciel en toutes lettres ni alerte.
+    expect(find.text('Ciel dégagé'), findsNothing);
+    expect(find.byKey(keys.ride.weatherSummaryRainAlert), findsNothing);
+  });
+
+  testWidgets('14 px gris : le corps atténué', (WidgetTester tester) async {
+    await pump(tester, ok);
+
+    final Text range = tester.widget<Text>(find.text('12–18 °C'));
+    final Text rain = tester.widget<Text>(find.text('Pluie 20 %'));
+    expect(range.style?.fontSize, 14);
+    expect(rain.style?.fontSize, 14);
+    expect(rain.style?.color, range.style?.color);
   });
 
   testWidgets('l\'alerte pluie l\'emporte sur la probabilité maximale', (
@@ -76,6 +93,7 @@ void main() {
     );
 
     expect(find.textContaining('Pluie 60 % vers'), findsOneWidget);
+    expect(find.byKey(keys.ride.weatherSummaryRainAlert), findsOneWidget);
     expect(find.text('Pluie 20 %'), findsNothing);
   });
 
@@ -201,7 +219,7 @@ void main() {
         const RideWeatherSummaryLine(summary: ok, timezone: null),
       );
 
-      expect(find.text('Vent 18\u00a0km/h'), findsOneWidget);
+      expect(find.text(AppFormatters.formatSpeed(18)), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

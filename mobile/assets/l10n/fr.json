@@ -737,9 +737,7 @@
         "cross": "Travers {distance}",
         "tail": "Dos {distance}"
       },
-      "segmentsTitle": "Le vent le long du parcours",
       "segmentsSemantics": "Vent le long du parcours : {summary}",
-      "timelineTitle": "Points de passage",
       "checkpointKind": {
         "start": "Départ",
         "enRoute": "En route",
@@ -758,7 +756,12 @@
       "mapRainTitle": "Pluie probable",
       "mapShowPoint": "Montrer sur la carte",
       "alongRouteTitle": "Météo le long du parcours",
-      "forecastOf": "Prévision du {time}"
+      "forecastOf": "Prévision du {time}",
+      "alongRoutePoints": {
+        "one": "{} point · de {start} à {arrival}",
+        "other": "{} points · de {start} à {arrival}"
+      },
+      "sourceTitle": "Source des prévisions météo"
     },
     "groupPage": {
       "title": "Groupe {name}",

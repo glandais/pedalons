@@ -10,6 +10,7 @@ import '../../../../keys.dart';
 import '../../../rides/domain/ride_weather_display.dart';
 import '../../../rides/presentation/widgets/ride_weather_widgets.dart';
 import '../../../rides/presentation/widgets/weather_leg_sections.dart';
+import '../../../rides/presentation/widgets/weather_section.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../providers/trip_weather_provider.dart';
 
@@ -18,9 +19,9 @@ import '../../providers/trip_weather_provider.dart';
 ///
 /// Comme celui d'une sortie, poussé par `Navigator.push` et absent de
 /// `contracts/routes.yaml` : il prolonge l'écran de l'étape, sans URL à lui.
-/// Il en reprend les sections (`weather_leg_sections.dart`) pour le seul leg
-/// de l'étape : ni sélecteur de groupe, ni bloc « départ » — le premier point
-/// de la frise est le départ.
+/// Il pose la section Météo (`WeatherSection`, ledger `MOB-132`) du seul leg
+/// de l'étape, dépliée : rien ne la suit. Le lot 11 la déplace dans la page
+/// de l'étape et retire celle-ci.
 class StageWeatherPage extends ConsumerWidget {
   const StageWeatherPage({
     super.key,
@@ -107,16 +108,6 @@ class StageWeatherPage extends ConsumerWidget {
     required bool canSeeNoLocation,
     required VoidCallback onRetry,
   }) {
-    Widget padded(Widget child) => SliverPadding(
-      padding: const EdgeInsets.fromLTRB(
-        PdlSpacing.section,
-        PdlSpacing.section,
-        PdlSpacing.section,
-        0,
-      ),
-      sliver: SliverToBoxAdapter(child: child),
-    );
-
     // On n'arrive ici que depuis une prévision ; un pull-to-refresh peut
     // pourtant rendre l'étape partie, le voyage annulé, un statut inconnu :
     // un état neutre, jamais un écran blanc.
@@ -137,66 +128,35 @@ class StageWeatherPage extends ConsumerWidget {
         : null;
     if (stageWeather == null) return empty;
     final WeatherLegDto leg = stageWeather.leg;
+    final RideWeatherView view = rideWeatherViewOf(
+      leg.status,
+      canSeeNoLocation: canSeeNoLocation,
+    );
+    if (!WeatherSection.shows(view)) return empty;
 
-    switch (rideWeatherViewOf(leg.status, canSeeNoLocation: canSeeNoLocation)) {
-      case RideWeatherView.hidden:
-        return empty;
-      case RideWeatherView.unavailable:
-        return <Widget>[weatherUnavailableSliver(onRetry)];
-      case RideWeatherView.noLocation:
-        return <Widget>[
-          padded(
-            PdlBanner(
-              key: keys.ride.weatherNoLocation,
-              tone: PdlBannerTone.info,
-              icon: PdlIcons.weatherUnknown,
-              message: 'trips.weather.noLocation'.tr(),
-            ),
-          ),
-        ];
-      case RideWeatherView.notYetAvailable:
-        final String? raw =
-            leg.availableFrom ?? stageWeather.summary?.availableFrom;
-        return <Widget>[
-          padded(
-            PdlBanner(
-              key: keys.ride.weatherNotYetAvailable,
-              tone: PdlBannerTone.info,
-              icon: PdlIcons.date,
-              message: notYetAvailableMessage(
-                raw == null ? null : DateTime.tryParse(raw),
-              ),
-            ),
-          ),
-        ];
-      case RideWeatherView.forecast:
-      case RideWeatherView.stale:
-        break;
-    }
-
-    final bool stale =
-        WeatherStatus.fromJson(leg.status) == WeatherStatus.stale;
     final String? rawFetchedAt = leg.fetchedAt ?? dto.fetchedAt;
-    final DateTime? fetchedAt = rawFetchedAt == null
-        ? null
-        : DateTime.tryParse(rawFetchedAt);
+    final String? rawAvailableFrom =
+        leg.availableFrom ?? stageWeather.summary?.availableFrom;
 
+    // Dépliée : rien ne suit la section sur cette page. Le départ est celui
+    // de l'étape (`TripStageWeatherDto.departure`), à l'heure de son leg.
     return <Widget>[
-      if (stale) padded(WeatherStaleBanner(fetchedAt: fetchedAt)),
-      padded(
-        WeatherLegHeader(
-          leg: leg,
-          title: stageName,
-          timezone: timezone,
-          speedDefaultKey: 'trips.weather.legSpeedDefault',
-        ),
-      ),
-      ...weatherLegBody(leg, padded, timezone),
-      padded(
-        WeatherAttributionBlock(
-          attribution: dto.attribution,
-          fetchedAt: fetchedAt,
-        ),
+      WeatherSection.sliver(
+        view: view,
+        timezone: timezone,
+        departure: stageWeather.departure,
+        departureAt: leg.startTime,
+        leg: leg,
+        attribution: dto.attribution,
+        fetchedAt: rawFetchedAt == null
+            ? null
+            : DateTime.tryParse(rawFetchedAt),
+        availableFrom: rawAvailableFrom == null
+            ? null
+            : DateTime.tryParse(rawAvailableFrom),
+        speedDefaultKey: 'trips.weather.legSpeedDefault',
+        noLocationMessage: 'trips.weather.noLocation'.tr(),
+        onRetry: onRetry,
       ),
     ];
   }
