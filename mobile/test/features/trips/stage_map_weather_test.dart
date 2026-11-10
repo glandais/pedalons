@@ -278,7 +278,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(keys.rideGroup.weatherMapSheet), findsNothing);
     expect(find.byType(PdlSheet), findsNothing);
-    expect(find.byIcon(PdlIcons.fullscreenExit), findsOneWidget);
+    expect(find.byIcon(PdlIcons.close), findsOneWidget);
     expect(map(tester).kmMarkers, isEmpty);
   });
 
@@ -352,7 +352,7 @@ void main() {
     expect(find.byKey(keys.rideGroup.windMapLegend), findsNothing);
 
     // Retour : la carte encastrée et son interrupteur ont suivi.
-    await tester.tap(find.byIcon(PdlIcons.fullscreenExit));
+    await tester.tap(find.byIcon(PdlIcons.close));
     await tester.pumpAndSettle();
     expect(find.byKey(keys.routeDetail.fullscreenColorBy), findsNothing);
     expect(

@@ -126,7 +126,6 @@ abstract final class PdlIcons {
   static const IconData list = Icons.view_list_outlined;
   static const IconData layers = Icons.layers_outlined;
   static const IconData fullscreen = Icons.fullscreen;
-  static const IconData fullscreenExit = Icons.fullscreen_exit;
   static const IconData locate = Icons.my_location;
   static const IconData nearMe = Icons.near_me_outlined;
   static const IconData place = Icons.location_on_outlined;

@@ -8,6 +8,7 @@ import '../../theme/pdl_icons.dart';
 import '../../theme/pdl_tokens.dart';
 import '../../theme/pdl_typography.dart';
 import '../pdl_blur_surface.dart';
+import 'pdl_map_bottom_inset.dart';
 import 'pdl_map_hero.dart';
 
 /// Ce qu'un écran doit fournir pour qu'une carte crédite ses fournisseurs.
@@ -50,7 +51,7 @@ class PdlMapAttribution extends StatefulWidget {
     super.key,
     required this.credit,
     this.alignment = Alignment.bottomRight,
-    this.padding = const EdgeInsets.all(PdlSpacing.chipGap),
+    this.padding = const EdgeInsets.all(PdlMapBottomInset.rowPadding),
   });
 
   final PdlMapCredit credit;
@@ -79,48 +80,57 @@ class _PdlMapAttributionState extends State<PdlMapAttribution> {
     ];
     if (credits.isEmpty) return const SizedBox.shrink();
 
-    return SafeArea(
-      child: Padding(
-        padding: widget.padding,
-        child: Align(
-          alignment: widget.alignment,
-          // Au-dessus de la couche de toucher d'une vignette qui ouvre le
-          // plein écran : le ⓘ reste à portée, comme sur toute carte.
-          child: PdlMapTapPassThrough(
-            child: PdlBlurSurface(
-              sigma: PdlMotion.blurOverlayButton,
-              color: c.overlaySolid,
-              borderRadius: PdlRadii.smAll,
-              border: Border.all(color: c.borderSubtle),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  if (_expanded)
-                    Flexible(
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                          left: 10,
-                          top: 6,
-                          bottom: 6,
-                        ),
-                        child: _CreditText(credits: credits),
+    // Au-dessus de ce que le hero pose en bas de la carte (ledger
+    // `docs/LEDGER_*.md MOB-129`) : la même enveloppe que l'échelle.
+    return PdlMapBottomInset.safeArea(
+      context,
+      padding: widget.padding,
+      child: Align(
+        alignment: widget.alignment,
+        // Au-dessus de la couche de toucher d'une vignette qui ouvre le
+        // plein écran : le ⓘ reste à portée, comme sur toute carte.
+        child: PdlMapTapPassThrough(
+          child: PdlBlurSurface(
+            sigma: PdlMotion.blurOverlayButton,
+            color: c.overlaySolid,
+            borderRadius: PdlRadii.smAll,
+            border: Border.all(color: c.borderSubtle),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                if (_expanded)
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 10,
+                        top: 6,
+                        bottom: 6,
                       ),
+                      child: _CreditText(credits: credits),
                     ),
-                  Semantics(
-                    button: true,
-                    label: widget.credit.toggleLabel,
-                    child: InkWell(
-                      onTap: () => setState(() => _expanded = !_expanded),
-                      borderRadius: PdlRadii.smAll,
-                      child: Padding(
-                        padding: const EdgeInsets.all(6),
-                        child: Icon(PdlIcons.info, size: 16, color: c.text),
+                  ),
+                Semantics(
+                  button: true,
+                  label: widget.credit.toggleLabel,
+                  child: InkWell(
+                    onTap: () => setState(() => _expanded = !_expanded),
+                    borderRadius: PdlRadii.smAll,
+                    // Aux mesures que la colonne de boutons du hero enjambe :
+                    // `PdlMapBottomInset.creditExtent` en dérive.
+                    child: Padding(
+                      padding: const EdgeInsets.all(
+                        PdlMapBottomInset.creditTogglePadding,
+                      ),
+                      child: Icon(
+                        PdlIcons.info,
+                        size: PdlMapBottomInset.creditIconSize,
+                        color: c.text,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

@@ -280,6 +280,15 @@ class RideGroupsMap extends ConsumerWidget {
 
     final Widget hero = PdlMapHero(
       isFullscreen: fullscreen,
+      // Encastrée, une vignette : « Agrandir » seul, les couches se règlent
+      // en plein écran (ledger `docs/LEDGER_*.md MOB-129`).
+      vignette: !fullscreen,
+      // La pilule du parcours sélectionné, dans la coquille et non dans les
+      // `overlays` de la carte : en plein écran, le hero l'écarte de
+      // « Fermer », en haut à gauche.
+      pill: multi && selectedLayer != null
+          ? _pill(selectedLayer, mainRouteLabel)
+          : null,
       fullscreenBuilder: fullscreen
           ? null
           : (BuildContext context) => RideGroupsMap(
@@ -381,12 +390,10 @@ class RideGroupsMap extends ConsumerWidget {
         styleUrl,
         servedMapCredit(style.value),
         tracks,
-        multi ? selectedLayer : null,
         selectedSlug,
         fitBox,
         ref,
         geometries,
-        mainRouteLabel,
         windMode ? windLeg : null,
         weatherSlug == null || hidden.contains(weatherSlug)
             ? null
@@ -404,12 +411,10 @@ class RideGroupsMap extends ConsumerWidget {
     String styleUrl,
     PdlMapCredit credit,
     List<PdlMapTrack> tracks,
-    RideRouteLayer? pillLayer,
     String? selectedSlug,
     PdlMapBox? fitBox,
     WidgetRef ref,
     Map<String, RouteDetailDto> geometries,
-    String mainRouteLabel,
     WeatherLegDto? windLeg,
     RouteDetailDto? windRoute,
     PdlMapPoint? cursor,
@@ -506,21 +511,6 @@ class RideGroupsMap extends ConsumerWidget {
               : (String? slug) {
                   if (slug != null) selectRideRoute(ref, rideKey, ride, slug);
                 },
-          overlays: <Widget>[
-            if (pillLayer != null)
-              Positioned(
-                left: 12,
-                top: 12,
-                // En plein écran la carte remonte sous l'heure et la batterie :
-                // la pilule doit céder l'encoche. Encastrée dans une liste, elle
-                // est déjà loin du haut de l'écran, et un `SafeArea` y ajouterait
-                // une gouttière de 59 px sortie de nulle part — `MediaQuery.padding`
-                // ne se remet pas à zéro pour un widget au milieu de la page.
-                child: fullscreen
-                    ? SafeArea(child: _pill(pillLayer, mainRouteLabel))
-                    : _pill(pillLayer, mainRouteLabel),
-              ),
-          ],
         ),
       ),
     );

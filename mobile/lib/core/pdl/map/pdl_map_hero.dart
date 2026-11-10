@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +12,7 @@ import '../pdl_section_header.dart';
 import '../pdl_setting_row.dart';
 import '../pdl_switch.dart';
 import '../pdl_sheet.dart';
+import 'pdl_map_bottom_inset.dart';
 import 'pdl_map_buttons.dart';
 
 /// Un fond de carte proposé au sélecteur.
@@ -118,7 +121,8 @@ class PdlMapHeroLabels {
 /// 2. **aucun voile** sur la tuile : celui du haut assombrissait chaque carte,
 ///    encastrée comme plein écran, pour une barre système qui se lit très bien
 ///    sans lui, et celui du bas n'avait plus d'appelant ;
-/// 3. plein écran et sélecteur de fond, tous deux à 44 px.
+/// 3. plein écran (« Agrandir », « Fermer ») et sélecteur de fond, tous à
+///    44 px.
 ///
 /// ## Le plein écran est **une page de l'appelant**, pas une copie du hero
 ///
@@ -138,7 +142,24 @@ class PdlMapHeroLabels {
 /// La page, elle, est visible : ses providers sont vivants, et choisir un fond
 /// y change la carte tout de suite. Elle rend aussi [pill], [floatingCard] et
 /// [foreground], que la copie laissait silencieusement au bord de la route.
-class PdlMapHero extends StatelessWidget {
+///
+/// ## Les zones de la carte (ledger `docs/LEDGER_*.md MOB-129`)
+///
+/// L'ordre est fixe, d'une carte à l'autre :
+///
+/// * **en haut à gauche**, en plein écran seulement : « Fermer »
+///   (`PdlIcons.close`, libellé [PdlMapHeroLabels.exitFullscreen]) ;
+/// * **en haut au centre** : [pill], qui s'écarte en plein écran de la largeur
+///   de « Fermer », des deux côtés pour rester centrée ;
+/// * **en bas à droite** : la colonne de boutons — « Agrandir » hors plein
+///   écran, Calques (sauf sur une [vignette]), puis [extraButtons] —, posée
+///   au-dessus du crédit ⓘ ;
+/// * **en bas** : [bottomLayer] et [floatingCard], dont la hauteur est
+///   **mesurée**. La place qu'ils prennent — ou [bottomInset], s'il est plus
+///   grand — est publiée par [PdlMapBottomInset] autour de [mapBuilder] :
+///   l'échelle et le crédit, que la carte rend sous toutes les couches du
+///   hero, se posent au-dessus, et la colonne au-dessus du crédit.
+class PdlMapHero extends StatefulWidget {
   const PdlMapHero({
     super.key,
     required this.mapBuilder,
@@ -158,6 +179,9 @@ class PdlMapHero extends StatelessWidget {
     this.extraButtons = const <Widget>[],
     this.pill,
     this.floatingCard,
+    this.bottomLayer,
+    this.bottomInset = 0,
+    this.vignette = false,
     this.foreground,
     this.isFullscreen = false,
   }) : assert(
@@ -166,7 +190,8 @@ class PdlMapHero extends StatelessWidget {
          'relire ni son fond ni ses tracés, puisque Riverpod met en pause '
          "l'écran qu'elle recouvre. Passez fullscreenBuilder, ou "
          'showFullscreenButton: false.',
-       );
+       ),
+       assert(bottomInset >= 0, 'bottomInset se compte depuis le bas : ≥ 0.');
 
   /// Construit la carte elle-même — typiquement un `PdlMap`.
   final WidgetBuilder mapBuilder;
@@ -198,6 +223,8 @@ class PdlMapHero extends StatelessWidget {
   /// voulue. L'écran reste la source de vérité et filtre ses `PdlMapTrack`.
   final void Function(String id, bool visible)? onTrackVisibilityChanged;
 
+  /// Hors plein écran : « Agrandir », dans la colonne. En plein écran :
+  /// « Fermer », en haut à gauche.
   final bool showFullscreenButton;
 
   /// Construit le **contenu de la page plein écran**, typiquement l'écran
@@ -222,34 +249,42 @@ class PdlMapHero extends StatelessWidget {
   /// La clé de cette couche, pour les tests.
   static const Key tapTargetKey = ValueKey<String>('pdlMapHeroTapTarget');
 
-  /// Boutons ajoutés sous les deux boutons standards — « autour de moi »,
-  /// recentrage.
+  /// Boutons ajoutés sous les boutons standards — « autour de moi »,
+  /// recentrage. Rendus aussi sur une [vignette] : c'est l'écran qui les pose.
   final List<Widget> extraButtons;
 
   /// Pilule posée en haut au centre — « Rechercher dans cette zone ».
   final Widget? pill;
 
-  /// Carte flottante posée en bas, à la sélection.
+  /// Carte flottante posée en bas, à la sélection : à 12 px des bords, au-dessus
+  /// de la zone sûre en plein écran. Sa hauteur est mesurée, et la ligne du bas
+  /// se pose au-dessus ([PdlMapBottomInset]).
   final Widget? floatingCard;
 
-  /// Contenu libre posé au-dessus de tout (barre superposée, titre).
+  /// Le calque du bas de la carte — l'interrupteur de mode, la légende du
+  /// vent. Posé comme [floatingCard] (12 px des bords, zone sûre en plein
+  /// écran, pleine largeur : son contenu choisit son alignement) et mesuré de
+  /// même. Il ne remonte **pas** avec [bottomInset].
+  final Widget? bottomLayer;
+
+  /// Ce qui occupe le bas de la carte **hors du hero**, compté depuis son bord
+  /// bas : la feuille à crans de la fiche parcours. Combiné aux mesures de
+  /// [bottomLayer] et [floatingCard] par le **plus grand**, pas la somme : tous
+  /// se comptent depuis le même bord, et ce qui passe sous une feuille est
+  /// caché par elle. `0` : rien.
+  final double bottomInset;
+
+  /// Vrai pour une vignette encastrée, qui ne se manipule pas : la colonne n'y
+  /// garde qu'« Agrandir » (et les [extraButtons]) — fond, ombrage, tracés et
+  /// Météo se règlent en plein écran. Sans effet en plein écran.
+  final bool vignette;
+
+  /// Contenu libre posé au-dessus de tout (barre superposée, titre) — sauf
+  /// « Fermer », qui reste toujours touchable.
   final Widget? foreground;
 
-  /// Vrai dans la page plein écran : le bouton bascule alors en sortie.
+  /// Vrai dans la page plein écran : « Agrandir » y devient « Fermer ».
   final bool isFullscreen;
-
-  /// Vrai quand l'ombrage du relief est proposable : une source servie, un
-  /// intitulé et de quoi prévenir l'écran.
-  bool get _hasHillshade =>
-      hillshadeEnabled != null &&
-      onHillshadeChanged != null &&
-      labels.hillshade != null;
-
-  /// Vrai quand la feuille porte une section de tracés à cocher.
-  bool get _hasTrackToggles =>
-      trackToggles.length > 1 &&
-      onTrackVisibilityChanged != null &&
-      labels.tracks != null;
 
   /// Vrai si le contexte est celui de la carte **plein écran**.
   ///
@@ -275,11 +310,71 @@ class PdlMapHero extends StatelessWidget {
       ?.call();
 
   @override
+  State<PdlMapHero> createState() => _PdlMapHeroState();
+}
+
+class _PdlMapHeroState extends State<PdlMapHero> {
+  /// Les hauteurs relevées de [PdlMapHero.bottomLayer] et
+  /// [PdlMapHero.floatingCard], zone sûre comprise ; `0` tant qu'elles ne le
+  /// sont pas.
+  double _bottomLayerHeight = 0;
+  double _floatingCardHeight = 0;
+
+  /// La marge entre les bords de la carte et ce que le hero y pose.
+  static const double _edge = PdlSpacing.sectionTightV;
+
+  /// Ce qui sépare la colonne du crédit ⓘ qu'elle surplombe, et la pilule de
+  /// « Fermer ».
+  static const double _gap = PdlSpacing.chipGap;
+
+  @override
+  void didUpdateWidget(PdlMapHero oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Un occupant retiré ne prend plus de place ; revenu, il sera remesuré.
+    if (widget.bottomLayer == null) _bottomLayerHeight = 0;
+    if (widget.floatingCard == null) _floatingCardHeight = 0;
+  }
+
+  /// Vrai quand l'ombrage du relief est proposable : une source servie, un
+  /// intitulé et de quoi prévenir l'écran.
+  bool get _hasHillshade =>
+      widget.hillshadeEnabled != null &&
+      widget.onHillshadeChanged != null &&
+      widget.labels.hillshade != null;
+
+  /// Vrai quand la feuille porte une section de tracés à cocher.
+  bool get _hasTrackToggles =>
+      widget.trackToggles.length > 1 &&
+      widget.onTrackVisibilityChanged != null &&
+      widget.labels.tracks != null;
+
+  /// Vrai quand la feuille des couches a quelque chose à régler.
+  bool get _hasLayers =>
+      (widget.styles.isNotEmpty && widget.onStyleSelected != null) ||
+      _hasHillshade ||
+      widget.switches.isNotEmpty ||
+      _hasTrackToggles;
+
+  /// La place qu'occupe le bas de la carte, depuis son bord bas : le plus
+  /// haut des occupants mesurés (hauteur + marge), ou l'occupant externe.
+  double get _bottomInset {
+    double occupied(Widget? occupant, double height) =>
+        occupant == null || height == 0 ? 0 : height + _edge;
+    return math.max(
+      widget.bottomInset,
+      math.max(
+        occupied(widget.bottomLayer, _bottomLayerHeight),
+        occupied(widget.floatingCard, _floatingCardHeight),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final Widget stack = _buildStack(context);
-    final Widget sized = height == null
+    final Widget sized = widget.height == null
         ? stack
-        : SizedBox(height: height, child: stack);
+        : SizedBox(height: widget.height, child: stack);
 
     // Sans voile, la barre système se lit sur la tuile elle-même : le fond
     // suit le thème (seul `Plan` a une variante nocturne), les icônes aussi.
@@ -292,26 +387,43 @@ class PdlMapHero extends StatelessWidget {
   }
 
   Widget _buildStack(BuildContext context) {
+    final PdlMapHero w = widget;
+    final bool fullscreen = w.isFullscreen;
+    final bool showClose = w.showFullscreenButton && fullscreen;
+    final double inset = _bottomInset;
+
     final List<Widget> buttons = <Widget>[
-      if (showFullscreenButton)
+      if (w.showFullscreenButton && !fullscreen)
         PdlMapButton(
-          icon: isFullscreen ? PdlIcons.fullscreenExit : PdlIcons.fullscreen,
-          semanticLabel: isFullscreen
-              ? labels.exitFullscreen
-              : labels.enterFullscreen,
+          icon: PdlIcons.fullscreen,
+          semanticLabel: w.labels.enterFullscreen,
           onPressed: () => _toggleFullscreen(context),
         ),
-      if ((styles.isNotEmpty && onStyleSelected != null) ||
-          _hasHillshade ||
-          switches.isNotEmpty ||
-          _hasTrackToggles)
+      // Une vignette ne se règle pas : Calques attend le plein écran.
+      if (_hasLayers && (fullscreen || !w.vignette))
         PdlMapButton(
           icon: PdlIcons.layers,
-          semanticLabel: labels.chooseBackground,
+          semanticLabel: w.labels.chooseBackground,
           onPressed: () => _openStyleSheet(context),
         ),
-      ...extraButtons,
+      ...w.extraButtons,
     ];
+
+    // La colonne surplombe le crédit ⓘ, qui se pose lui-même au plus haut de
+    // la zone sûre et de l'inset (`PdlMapBottomInset.safeArea`). La place du
+    // crédit est réservée même quand il n'est pas rendu : il n'apparaît qu'au
+    // chargement du style, et la colonne ne doit pas sauter à ce moment-là.
+    final double columnBottom =
+        math.max(MediaQuery.paddingOf(context).bottom, inset) +
+        PdlMapBottomInset.rowPadding +
+        PdlMapBottomInset.creditExtent +
+        _gap;
+
+    // En plein écran, la pilule laisse la largeur de « Fermer » — des deux
+    // côtés, pour rester centrée.
+    final double pillSide = showClose
+        ? _edge + PdlMetrics.tapTarget + _gap
+        : PdlSpacing.sectionTightH;
 
     // L'hôte est posé même sans couche de toucher : la forme de l'arbre ne
     // dépend pas de [tapOpensFullscreen], et basculer celui-ci ne recrée pas
@@ -320,64 +432,128 @@ class PdlMapHero extends StatelessWidget {
       builder: (_TapPassThroughs regions) => Stack(
         fit: StackFit.expand,
         children: <Widget>[
+          // La carte d'abord, toujours enveloppée de la même façon : un
+          // enveloppement conditionnel recréerait la vue native.
           _PdlMapHeroScope(
-            isFullscreen: isFullscreen,
-            openFullscreen: !isFullscreen && fullscreenBuilder != null
+            isFullscreen: fullscreen,
+            openFullscreen: !fullscreen && w.fullscreenBuilder != null
                 ? () => _toggleFullscreen(context)
                 : null,
-            child: Builder(builder: mapBuilder),
+            child: PdlMapBottomInset(
+              value: inset,
+              child: Builder(builder: w.mapBuilder),
+            ),
           ),
-          if (tapOpensFullscreen && !isFullscreen && fullscreenBuilder != null)
+          if (w.tapOpensFullscreen &&
+              !fullscreen &&
+              w.fullscreenBuilder != null)
             Positioned.fill(
               child: _PassThroughHitTest(
                 regions: regions,
                 child: GestureDetector(
-                  key: tapTargetKey,
+                  key: PdlMapHero.tapTargetKey,
                   behavior: HitTestBehavior.opaque,
                   excludeFromSemantics: true,
                   onTap: () => _toggleFullscreen(context),
                 ),
               ),
             ),
-          if (pill != null)
+          if (w.pill != null)
             Positioned(
-              left: PdlSpacing.sectionTightH,
-              right: PdlSpacing.sectionTightH,
-              top: PdlSpacing.sectionTightV,
-              child: Align(child: pill),
+              left: pillSide,
+              right: pillSide,
+              top: _edge,
+              child: Align(child: w.pill),
             ),
           if (buttons.isNotEmpty)
             Positioned(
-              right: PdlSpacing.sectionTightV,
-              top: 0,
-              bottom: 0,
-              child: Center(child: PdlMapButtonColumn(children: buttons)),
+              right: _edge,
+              bottom: columnBottom,
+              child: PdlMapButtonColumn(children: buttons),
             ),
-          if (floatingCard != null)
+          if (w.floatingCard != null)
+            _bottomOccupant(
+              fullscreen: fullscreen,
+              onHeight: (double h) => _setHeight(h, card: true),
+              child: w.floatingCard!,
+            ),
+          if (w.bottomLayer != null)
+            _bottomOccupant(
+              fullscreen: fullscreen,
+              onHeight: (double h) => _setHeight(h, card: false),
+              child: w.bottomLayer!,
+            ),
+          ?w.foreground,
+          // En dernier : la sortie du plein écran reste touchable quoi que
+          // l'écran pose au-dessus de la carte.
+          if (showClose)
             Positioned(
-              left: PdlSpacing.sectionTightV,
-              right: PdlSpacing.sectionTightV,
-              bottom: PdlSpacing.sectionTightV,
-              child: floatingCard!,
+              left: _edge,
+              top: _edge,
+              child: SafeArea(
+                right: false,
+                bottom: false,
+                child: PdlMapButton(
+                  icon: PdlIcons.close,
+                  semanticLabel: w.labels.exitFullscreen,
+                  onPressed: () => _toggleFullscreen(context),
+                ),
+              ),
             ),
-          ?foreground,
         ],
       ),
     );
   }
 
+  /// Un occupant du bas : à [_edge] des bords, au-dessus de la zone sûre en
+  /// plein écran (la page plein écran la laisse au hero), et mesuré — zone
+  /// sûre comprise, puisque l'inset se compte depuis le bord de la carte.
+  Widget _bottomOccupant({
+    required bool fullscreen,
+    required ValueChanged<double> onHeight,
+    required Widget child,
+  }) => Positioned(
+    left: _edge,
+    right: _edge,
+    bottom: _edge,
+    child: _MeasureHeight(
+      onHeight: onHeight,
+      child: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        bottom: fullscreen,
+        child: child,
+      ),
+    ),
+  );
+
+  void _setHeight(double height, {required bool card}) {
+    if (!mounted) return;
+    final double current = card ? _floatingCardHeight : _bottomLayerHeight;
+    if (current == height) return;
+    setState(() {
+      if (card) {
+        _floatingCardHeight = height;
+      } else {
+        _bottomLayerHeight = height;
+      }
+    });
+  }
+
   void _toggleFullscreen(BuildContext context) {
-    if (isFullscreen) {
+    if (widget.isFullscreen) {
       Navigator.of(context).maybePop();
       return;
     }
-    final WidgetBuilder? builder = fullscreenBuilder;
+    final WidgetBuilder? builder = widget.fullscreenBuilder;
     if (builder == null) return;
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         fullscreenDialog: true,
         // La barre système reste hors de la carte : sans voile, elle se lirait
-        // mal sur une tuile.
+        // mal sur une tuile. Le bas, lui, reste au hero, qui pose ses
+        // occupants au-dessus de la zone sûre.
         builder: (BuildContext context) => Scaffold(
           body: SafeArea(bottom: false, child: Builder(builder: builder)),
         ),
@@ -386,20 +562,21 @@ class PdlMapHero extends StatelessWidget {
   }
 
   Future<void> _openStyleSheet(BuildContext context) async {
+    final PdlMapHero w = widget;
     final PdlColors c = context.pdl;
     // Par `PdlSheet` et non par `showModalBottomSheet` : c'est la règle du
     // C5, et elle vaut aussi pour la bibliothèque elle-même.
     final String? picked = await PdlSheet.show<String>(
       context: context,
       builder: (BuildContext sheetContext) => PdlSheet(
-        title: labels.backgroundSheetTitle,
+        title: w.labels.backgroundSheetTitle,
         children: <Widget>[
           // **Dans l'ordre servi** : le serveur classe ses fonds, le client
           // ne re-trie pas.
           for (final (int i, PdlMapStyleOption style)
-              in styles.indexed) ...<Widget>[
+              in w.styles.indexed) ...<Widget>[
             if (style.groupLabel != null &&
-                (i == 0 || style.groupLabel != styles[i - 1].groupLabel))
+                (i == 0 || style.groupLabel != w.styles[i - 1].groupLabel))
               Padding(
                 padding: const EdgeInsets.only(top: PdlSpacing.sectionTightV),
                 child: PdlSectionHeader(title: style.groupLabel!),
@@ -407,7 +584,7 @@ class PdlMapHero extends StatelessWidget {
             PdlSettingRow(
               title: style.label,
               onTap: () => Navigator.of(sheetContext).pop(style.id),
-              trailing: style.id == selectedStyleId
+              trailing: style.id == w.selectedStyleId
                   ? Icon(PdlIcons.check, size: 20, color: c.primary)
                   : const SizedBox.shrink(),
             ),
@@ -417,11 +594,11 @@ class PdlMapHero extends StatelessWidget {
           // feuille — on veut pouvoir juger de l'ombrage puis changer de fond.
           if (_hasHillshade)
             _SwitchRow(
-              label: labels.hillshade!,
-              initialValue: hillshadeEnabled!,
-              onChanged: onHillshadeChanged!,
+              label: w.labels.hillshade!,
+              initialValue: w.hillshadeEnabled!,
+              onChanged: w.onHillshadeChanged!,
             ),
-          for (final PdlMapHeroSwitch option in switches)
+          for (final PdlMapHeroSwitch option in w.switches)
             _SwitchRow(
               key: ValueKey<String>('pdlMapHeroSwitch_${option.id}'),
               label: option.label,
@@ -433,20 +610,57 @@ class PdlMapHero extends StatelessWidget {
           if (_hasTrackToggles) ...<Widget>[
             Padding(
               padding: const EdgeInsets.only(top: PdlSpacing.sectionTightV),
-              child: PdlSectionHeader(title: labels.tracks!),
+              child: PdlSectionHeader(title: w.labels.tracks!),
             ),
-            for (final PdlMapTrackToggle track in trackToggles)
+            for (final PdlMapTrackToggle track in w.trackToggles)
               _TrackToggleRow(
                 key: ValueKey<String>('pdlMapTrackToggle_${track.id}'),
                 track: track,
                 onChanged: (bool visible) =>
-                    onTrackVisibilityChanged!(track.id, visible),
+                    w.onTrackVisibilityChanged!(track.id, visible),
               ),
           ],
         ],
       ),
     );
-    if (picked != null) onStyleSelected?.call(picked);
+    if (picked != null) w.onStyleSelected?.call(picked);
+  }
+}
+
+/// Relève la hauteur de son enfant et la remonte **après** l'image : la mise
+/// en page ne dépend jamais de la valeur qu'elle produit, donc pas de boucle.
+/// Rien n'est remonté tant que la hauteur ne change pas.
+class _MeasureHeight extends SingleChildRenderObjectWidget {
+  const _MeasureHeight({required this.onHeight, super.child});
+
+  final ValueChanged<double> onHeight;
+
+  @override
+  _RenderMeasureHeight createRenderObject(BuildContext context) =>
+      _RenderMeasureHeight(onHeight);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderMeasureHeight renderObject,
+  ) => renderObject.onHeight = onHeight;
+}
+
+class _RenderMeasureHeight extends RenderProxyBox {
+  _RenderMeasureHeight(this.onHeight);
+
+  ValueChanged<double> onHeight;
+  double? _reported;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final double height = size.height;
+    if (height == _reported) return;
+    _reported = height;
+    WidgetsBinding.instance.addPostFrameCallback((Duration _) {
+      if (attached) onHeight(height);
+    });
   }
 }
 

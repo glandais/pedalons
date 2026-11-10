@@ -120,6 +120,9 @@ class TripMap extends ConsumerWidget {
         : PdlMapHero(
             height: fullscreen ? null : _kTripMapHeight,
             isFullscreen: fullscreen,
+            // Encastrée, une vignette : « Agrandir » seul, les couches se
+            // règlent en plein écran (ledger `docs/LEDGER_*.md MOB-129`).
+            vignette: !fullscreen,
             fullscreenBuilder: fullscreen
                 ? null
                 : (BuildContext context) => TripMap(

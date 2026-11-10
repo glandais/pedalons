@@ -178,6 +178,9 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                 50,
                 MediaQuery.sizeOf(context).height * _detent,
               ),
+              // La feuille couvre le bas de la carte : échelle, crédit ⓘ et
+              // Calques se posent au-dessus (ledger `docs/LEDGER_*.md MOB-129`).
+              bottomInset: MediaQuery.sizeOf(context).height * _detent,
             ),
           ),
           _overlay(route),

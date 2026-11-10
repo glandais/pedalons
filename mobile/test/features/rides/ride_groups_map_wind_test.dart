@@ -311,7 +311,7 @@ void main() {
     expect(map(tester).tracks.single.segmentColors, everyElement(slopeNeutral));
 
     // Retour : la carte encastrée aussi.
-    await tester.tap(find.byIcon(PdlIcons.fullscreenExit));
+    await tester.tap(find.byIcon(PdlIcons.close));
     await tester.pumpAndSettle();
     expect(find.byKey(keys.routeDetail.fullscreenColorBy), findsNothing);
     expect(track(tester).segmentColors, everyElement(slopeNeutral));

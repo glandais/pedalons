@@ -5,6 +5,7 @@ import 'package:maplibre/maplibre.dart';
 import '../../theme/pdl_colors.dart';
 import '../../theme/pdl_tokens.dart';
 import '../../theme/pdl_typography.dart';
+import 'pdl_map_bottom_inset.dart';
 
 /// Une longueur que la barre d'échelle peut représenter : sa valeur au sol,
 /// en mètres, et son libellé déjà formaté (« 500 m », « 2 mi »).
@@ -71,7 +72,7 @@ class PdlMapScaleBar extends StatelessWidget {
     super.key,
     required this.scale,
     this.alignment = Alignment.bottomLeft,
-    this.padding = const EdgeInsets.all(PdlSpacing.chipGap),
+    this.padding = const EdgeInsets.all(PdlMapBottomInset.rowPadding),
     this.maxWidth = 100,
   });
 
@@ -97,29 +98,30 @@ class PdlMapScaleBar extends StatelessWidget {
 
     final PdlColors c = context.pdl;
     final BorderSide line = BorderSide(color: c.text, width: 1.5);
-    return SafeArea(
-      child: Padding(
-        padding: padding,
-        child: Align(
-          alignment: alignment,
-          // Une indication, pas une commande : les gestes passent à la carte.
-          child: IgnorePointer(
-            child: Container(
-              width: step.meters / metersPerPixel,
-              padding: const EdgeInsets.symmetric(
-                horizontal: PdlSpacing.badgeGap,
-              ),
-              decoration: BoxDecoration(
-                color: c.overlaySolid,
-                border: Border(left: line, right: line, bottom: line),
-              ),
-              child: Text(
-                step.label,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.visible,
-                style: context.pdlText.xs.copyWith(color: c.text),
-              ),
+    // Au-dessus de ce que le hero pose en bas de la carte (ledger
+    // `docs/LEDGER_*.md MOB-129`) : la même enveloppe que le crédit.
+    return PdlMapBottomInset.safeArea(
+      context,
+      padding: padding,
+      child: Align(
+        alignment: alignment,
+        // Une indication, pas une commande : les gestes passent à la carte.
+        child: IgnorePointer(
+          child: Container(
+            width: step.meters / metersPerPixel,
+            padding: const EdgeInsets.symmetric(
+              horizontal: PdlSpacing.badgeGap,
+            ),
+            decoration: BoxDecoration(
+              color: c.overlaySolid,
+              border: Border(left: line, right: line, bottom: line),
+            ),
+            child: Text(
+              step.label,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.visible,
+              style: context.pdlText.xs.copyWith(color: c.text),
             ),
           ),
         ),

@@ -163,7 +163,7 @@ void main() {
     embedded.onMarkerTapped!('weather.checkpoint.0');
     await tester.pumpAndSettle();
     expect(find.byKey(keys.rideGroup.weatherMapSheet), findsNothing);
-    expect(find.byIcon(PdlIcons.fullscreenExit), findsOneWidget);
+    expect(find.byIcon(PdlIcons.close), findsOneWidget);
   });
 
   testWidgets('deux parcours, mode « Météo » : les pastilles du parcours du '

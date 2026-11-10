@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/core/pdl/map/pdl_map_buttons.dart';
+import 'package:pedalons/core/pdl/map/pdl_map_hero.dart';
 import 'package:pedalons/core/pdl/map/pdl_waypoint_mark.dart';
 import 'package:pedalons/core/pdl/pdl_waypoint_row.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
@@ -113,6 +114,36 @@ void main() {
     for (final Element e in find.byType(PdlMapButton).evaluate()) {
       expect(tester.getSize(find.byWidget(e.widget)).height, 44);
     }
+  });
+
+  testWidgets('« Fermer » du plein écran fait 44 × 44 (ledger `MOB-129`)', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: PedalonsTheme.build(Brightness.light),
+        home: Scaffold(
+          body: PdlMapHero(
+            isFullscreen: true,
+            labels: const PdlMapHeroLabels(
+              enterFullscreen: 'Plein écran',
+              exitFullscreen: 'Quitter le plein écran',
+              chooseBackground: 'Choisir le fond',
+              backgroundSheetTitle: 'Fond de carte',
+            ),
+            mapBuilder: (BuildContext context) => const SizedBox.expand(),
+          ),
+        ),
+      ),
+    );
+    final Size size = tester.getSize(
+      find.ancestor(
+        of: find.byIcon(PdlIcons.close),
+        matching: find.byType(PdlMapButton),
+      ),
+    );
+    expect(size.width, greaterThanOrEqualTo(44));
+    expect(size.height, greaterThanOrEqualTo(44));
   });
 
   testWidgets('PdlMapFloatingCard rend son contenu', (

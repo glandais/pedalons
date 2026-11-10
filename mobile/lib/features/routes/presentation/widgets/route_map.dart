@@ -88,6 +88,7 @@ class RouteMap extends ConsumerStatefulWidget {
     this.colorBy = RouteColorBy.grade,
     this.selection,
     this.layer,
+    this.bottomInset = 0,
   });
 
   final RouteDetailDto route;
@@ -128,6 +129,13 @@ class RouteMap extends ConsumerStatefulWidget {
   /// Ce que l'écran pose en plus sur la carte ([RouteMapLayer]), transmis au
   /// plein écran. `null` : rien.
   final RouteMapLayerBuilder? layer;
+
+  /// Ce qui couvre le bas de la carte hors d'elle — la feuille de la fiche
+  /// parcours —, compté depuis son bord bas : l'échelle, le crédit ⓘ et
+  /// Calques se posent au-dessus (`PdlMapHero.bottomInset`, ledger
+  /// `docs/LEDGER_*.md MOB-129`). Pas transmis au plein écran, qui n'a pas de
+  /// feuille.
+  final double bottomInset;
 
   /// Vrai dans un test de widget : MapLibre n'y a pas de vue native, et la
   /// carte y est remplacée par [RouteMapProbe], qui garde le `PdlMap`
@@ -242,6 +250,11 @@ class _RouteMapState extends ConsumerState<RouteMap> {
       ),
       showFullscreenButton: widget.allowFullscreen || widget.fullscreen,
       isFullscreen: widget.fullscreen,
+      // La vignette d'une page qui défile ne garde qu'« Agrandir » : le fond
+      // et l'ombrage se règlent en plein écran (ledger
+      // `docs/LEDGER_*.md MOB-129`).
+      vignette: widget.allowFullscreen && !widget.fullscreen,
+      bottomInset: widget.bottomInset,
       fullscreenBuilder: widget.allowFullscreen && !widget.fullscreen
           ? (BuildContext context) => RouteMap(
               route: route,
