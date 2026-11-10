@@ -1523,6 +1523,7 @@
   "planner.surface.summary.offNetwork": ", off the network {{offNetwork}}%",
   "planner.surface.unknown": "Unknown",
   "planner.surface.unpaved": "Unpaved",
+  "planner.toolbar": "Drawing tools",
   "planner.tuning.custom": "Setting differs from the profile's",
   "planner.tuning.help": "These settings steer how the route is chosen between your points, one segment at a time. They only make a difference where there are real alternatives (a valley or a climb, a main road or a quiet lane). On short segments, or where your points force the way, the line stays the same. Avoiding climbs can make the ride longer.",
   "planner.tuning.hills.0": "Avoid",

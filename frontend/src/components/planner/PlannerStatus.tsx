@@ -13,17 +13,20 @@ interface PlannerStatusProps {
   /** Distance and ascent (metres) of the computed route; shown once it has two points. */
   stats?: { distance: number; ascend: number }
   /**
-   * `bar` (default): one line that never wraps, the bar holding it keeps one height. `chip`: the
-   * floating pill, which takes no layout space, so a long error wraps on its own line (3 lines at
-   * most) and is read in full: the pill is not interactive, a tooltip would never open.
+   * `bar` (default): one line that never wraps, the toolbar holding it (`PlannerToolbar`, on a
+   * mouse) keeps one height; the figures come first, then the point count, the calculation and
+   * the error. `chip`: the floating pill of the touch editor, which takes no layout space, so a
+   * long error wraps on its own line (3 lines at most) and is read in full: the pill is not
+   * interactive, a tooltip would never open.
    */
   variant?: 'bar' | 'chip'
 }
 
 /**
- * What the planner has to say about the trace: point count, a calculation in progress, a routing
- * error, then distance and ascent. One line that never wraps (a long error is truncated, its full
- * text in a tooltip), so the bar holding it keeps one height whatever it shows.
+ * What the planner has to say about the trace: distance and ascent, point count, a calculation in
+ * progress, a routing error (in the chip: the count first, the figures last). In the bar, one line
+ * that never wraps (a long error is truncated, its full text in a tooltip), so the toolbar holding
+ * it keeps one height whatever it shows.
  */
 export function PlannerStatus({
   pointCount,
@@ -36,14 +39,26 @@ export function PlannerStatus({
   const { distance, elevation } = useUnits()
   const wraps = variant === 'chip'
 
+  const figures = stats && (
+    <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
+      <Text size="sm" fw={500}>
+        {distance(stats.distance)}
+      </Text>
+      <Text size="sm" c="green">
+        +{elevation(stats.ascend)}
+      </Text>
+    </Group>
+  )
+
   return (
     // overflow hidden: whatever does not fit is clipped inside the group, it never pushes the
-    // button next to it (the clear button) out of the bar.
+    // toolbar's buttons next to it out of the map.
     <Group
       gap="md"
       wrap={wraps ? 'wrap' : 'nowrap'}
       style={{ flex: 1, minWidth: 0, overflow: 'hidden', rowGap: wraps ? 4 : undefined }}
     >
+      {!wraps && figures}
       {pointCount > 0 && (
         <Text size="sm" c="dimmed" style={{ flexShrink: 0 }}>
           {t('planner.pointCount', { count: pointCount })}
@@ -82,23 +97,15 @@ export function PlannerStatus({
             </Text>
           </Tooltip>
         ))}
-      {stats && (
-        <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
-          <Text size="sm" fw={500}>
-            {distance(stats.distance)}
-          </Text>
-          <Text size="sm" c="green">
-            +{elevation(stats.ascend)}
-          </Text>
-        </Group>
-      )}
+      {wraps && figures}
     </Group>
   )
 }
 
 /**
- * {@link PlannerStatus} as a floating pill over the map, for the fullscreen editor where the inline
- * bar is not shown. It never takes layout space, so the map is not resized when it appears.
+ * {@link PlannerStatus} as a floating pill, above the bottom bar of the touch editor (on a mouse
+ * the toolbar at the bottom of the map holds the status, docs/LEDGER_*.md WEB-157). It never takes
+ * layout space, so the map is not resized when it appears.
  */
 export function PlannerStatusChip(props: PlannerStatusProps) {
   const colorScheme = useResolvedColorScheme()

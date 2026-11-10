@@ -120,6 +120,15 @@ d'un contrôle est sûr.
 - Tests : `PlannerToolbar.test.tsx` ; `RoutePlannerField.test.tsx:277` (Import depuis la carte) à
   adapter.
 
+**Arbitrages pris à l'exécution (10 novembre 2026), font foi sur la liste ci-dessus :**
+
+| Sujet | Décision |
+|---|---|
+| Barre de statut en ligne (48 px au-dessus de la carte, B10 du plan éditeur) | **Supprimée** : le résumé est dans la barre d'outils, et le garder aux deux endroits doublait « N points » et « X km » (les e2e les cherchent en mode strict). Ce que B10 garantissait tient toujours : la carte ne change pas de hauteur au premier point |
+| « Effacer » en disposition intégrée | Dans la barre d'outils (il vivait dans la barre supprimée), désactivé sans point au lieu de masqué. En plein écran, l'en-tête du dialogue garde le sien |
+| Ligne du bas du planificateur | **Toujours** remontée de 54 px (`.planner-map--toolbar`) : la largeur de la barre et celle du crédit varient, aucun seuil ne garantit qu'ils ne se touchent pas. La mini-carte monte d'autant |
+| Slots d'ordre | Réduits à `fullscreen`, `style`, `hide-track` ; `UndoRedoControl` et `DirectModeControl` supprimés |
+
 ### Lot 4 — Planificateur au doigt : barre du bas sur deux lignes
 
 - `PlannerBottomBar.tsx` : ligne 1 = **bouton pleine largeur de 48 px** « 42,6 km · 640 m D+ ·

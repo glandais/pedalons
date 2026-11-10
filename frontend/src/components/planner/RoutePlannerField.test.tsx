@@ -274,7 +274,7 @@ describe('RoutePlannerField', () => {
 
     beforeEach(() => setCoarse(false))
 
-    it('gives the map a button that opens the file picker', () => {
+    it('gives the map (its toolbar, on a mouse) a button that opens the file picker', () => {
       renderField()
       const input = screen.getByTestId('planner-import-input') as HTMLInputElement
       const click = vi.spyOn(input, 'click')

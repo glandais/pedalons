@@ -6,13 +6,16 @@ import { useMediaMatch } from '@/hooks/useResponsive'
 import { isApplePlatform } from '@/lib/platform'
 import { directShortcut } from '@/lib/plannerErrors'
 
-/** The planner's gestures, in the map's control column; the list follows the primary pointer. */
 interface PlannerHelpControlProps {
-  /** `'bar'`: a button of the touch toolbar instead of the map's control column. */
-  trigger?: 'map' | 'bar'
+  /**
+   * `'toolbar'` (default): a button of the toolbar at the bottom of the map, on a mouse
+   * (`PlannerToolbar`); `'bar'`: a button of the touch bottom bar (`PlannerBottomBar`).
+   */
+  trigger?: 'toolbar' | 'bar'
 }
 
-export function PlannerHelpControl({ trigger }: PlannerHelpControlProps) {
+/** The planner's gestures, in a panel; the list follows the primary pointer. */
+export function PlannerHelpControl({ trigger = 'toolbar' }: PlannerHelpControlProps) {
   const { t } = useTranslation()
   const isCoarsePointer = useMediaMatch('(pointer: coarse)')
   const pointer = isCoarsePointer ? 'touch' : 'mouse'
@@ -75,8 +78,6 @@ export function PlannerHelpControl({ trigger }: PlannerHelpControlProps) {
   return (
     <MapPanel
       id="help"
-      zone="camera"
-      slot="help"
       label={t('planner.help.label')}
       title={t('planner.help.title')}
       icon={<IconHelp size={20} />}

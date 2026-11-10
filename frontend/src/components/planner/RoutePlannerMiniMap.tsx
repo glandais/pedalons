@@ -48,11 +48,15 @@ export function RoutePlannerMiniMap({ center, routeGeoJson }: RoutePlannerMiniMa
   return (
     <Box
       pos="absolute"
-      bottom={48}
       right={16}
       w={200}
       h={200}
       style={{
+        // Above the attribution, bottom-right: 48 px clears its ⓘ (or its line of credits), and the
+        // bottom line itself is lifted by the planner's toolbar when there is one
+        // (`--map-inset-bottom-right`, `.planner-map--toolbar` in index.css, docs/LEDGER_*.md
+        // WEB-157), so the inset rises by as much and never covers the toolbar or the credit.
+        bottom: 'calc(48px + var(--map-inset-bottom-right, 0px))',
         zIndex: 5,
         borderRadius: 'var(--mantine-radius-md)',
         overflow: 'hidden',

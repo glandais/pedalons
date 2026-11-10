@@ -124,7 +124,7 @@ test('a user draws a route from two points on the map, sees it routed and traced
   expect(segmentLength).toBeGreaterThan(1_000)
   await expect(surface.getByText("Calcul de l'itinéraire...", { exact: true })).toHaveCount(0)
 
-  // The segment is traced on the map, measured in the toolbar (the preview, on a finger), and the
+  // The segment is traced on the map, measured in its toolbar (the preview, on a finger), and the
   // editor holds its points (« Tracé de n points » counts the routed track's points, not the two
   // clicks — 98735ab1).
   await expect.poll(() => traceMapPixels(page, canvas), { timeout: 10_000 }).toBeGreaterThan(100)
@@ -418,7 +418,7 @@ test.describe('the planner gestures, with a simulated router', () => {
     await drawThreePoints(planner)
 
     // Grab the trace halfway between the first two points, read where they are drawn now: the map
-    // can have moved since the clicks (the toolbar above it changes height with the first point).
+    // can have moved since the clicks.
     const centre = async (n: number) => {
       const b = await marker(n).boundingBox()
       if (!b) throw new Error(`marker ${n} has no box`)
@@ -478,7 +478,8 @@ test.describe('the planner gestures, with a simulated router', () => {
     })
 
     await clickMap(-100, 90)
-    // Under the map on a mouse, in the chip above the bottom bar on a finger.
+    // In the toolbar at the bottom of the map on a mouse, in the chip above the bottom bar on a
+    // finger.
     await expect(
       surface.getByText(
         "Le service d'itinéraires a atteint son quota mensuel. Réessayez plus tard."
@@ -574,7 +575,7 @@ test.describe('the planner gestures, with a simulated router', () => {
     await expect(points(2)).toBeVisible()
     await p.keyboard.press('Control+Shift+z')
     await expect(points(3)).toBeVisible()
-    // The same, from the map's buttons.
+    // The same, from the buttons (the map's toolbar on a mouse, the bottom bar on a finger).
     // « Annuler (Ctrl+Z) » on a mouse, where the form below has a plain « Annuler » of its own; on a
     // finger the bottom bar's button has no shortcut in its name.
     const shortcut = (label: string, keys: string) => (isMobile ? label : `${label} (${keys})`)
@@ -617,7 +618,7 @@ test.describe('the planner gestures, with a simulated router', () => {
   })
 })
 
-/** The « Ligne droite » toggle: the bar's button on a finger, the map's control on a mouse. */
+/** The « Ligne droite » toggle: the bottom bar's button on a finger, the map's toolbar on a mouse. */
 const directToggle = (page: Page, isMobile: boolean) =>
   isMobile
     ? page.getByRole('dialog').getByRole('button', { name: 'Ligne droite', exact: true })
@@ -1477,7 +1478,7 @@ test.describe('deleting an anchor of a loaded track', () => {
 test.describe('elevation profile while editing (B1)', () => {
   test.setTimeout(90_000)
 
-  /** The planner's D+, as the status shows it (the chip on a finger, the bar on a mouse). */
+  /** The planner's D+, as the status shows it (the chip on a finger, the map's toolbar on a mouse). */
   const ascendOf = (page: Page, text: string) => page.getByText(text, { exact: true }).first()
   const strip = (page: Page) => page.getByTestId('planner-elevation-strip').first()
 

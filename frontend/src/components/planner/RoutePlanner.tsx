@@ -11,25 +11,13 @@ import {
   MapLayerTouchEvent,
 } from 'react-map-gl/maplibre'
 import {
-  IconFileImport,
   IconFlagFilled,
   IconMapPinPlus,
   IconMaximize,
   IconPlayerPlayFilled,
   IconTrash,
 } from '@tabler/icons-react'
-import {
-  ActionIcon,
-  Box,
-  Button,
-  Group,
-  Loader,
-  Menu,
-  Skeleton,
-  Stack,
-  Text,
-  useMantineTheme,
-} from '@mantine/core'
+import { Box, Button, Loader, Menu, Skeleton, Stack, Text, useMantineTheme } from '@mantine/core'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { PedalonsMap } from '../map/PedalonsMap'
 import { MapControlButton, MapControlGroup } from '../map/MapControl'
@@ -43,12 +31,8 @@ import { HoverMarker, KmMarkersLayer } from '../map/MapMarkers'
 import { routeArrowLayout } from '../map/routeArrowLayout'
 import type { ExpressionSpecification } from 'maplibre-gl'
 import { surfaceColors } from '@/lib/plannerSurface'
-import { DirectModeControl } from './DirectModeControl'
-import { UndoRedoControl } from './UndoRedoControl'
-import { RouterProfileSelector } from './RouterProfileSelector'
-import { PlannerHelpControl } from './PlannerHelpControl'
+import { PlannerToolbar } from './PlannerToolbar'
 import { RoutePlannerMiniMap } from './RoutePlannerMiniMap'
-import { PlannerStatus, PlannerStatusChip } from './PlannerStatus'
 import { calculateBounds } from '../map/mapUtils'
 import { useHideTrackKey } from '../../hooks/useHideTrackKey'
 import { useEdgeAutoPan } from '../../hooks/useEdgeAutoPan'
@@ -79,6 +63,11 @@ import { isApplePlatform } from '@/lib/platform'
 import { panelJustDismissed } from '@/components/map/mapPanelState'
 
 const DEFAULT_ZOOM = 12
+/**
+ * Gap between the toolbar and the map's edges: MapLibre's 10 px control margin. With the toolbar's
+ * 44 px it makes the 54 px of `.planner-map--toolbar` (index.css): change them together.
+ */
+const PLANNER_TOOLBAR_OFFSET_PX = 10
 /** The route line when it is not coloured by surface. */
 const ROUTE_COLOR = '#4F46E5'
 
@@ -86,8 +75,9 @@ interface RoutePlannerProps {
   /** The planner's state, owned by the parent so it outlives this view being moved or hidden. */
   planner: RoutePlannerState
   /**
-   * `inline`: in the form, with its status bar above the map. `fullscreen`: the map fills the
-   * editor's dialog, the status lives in a chip (here on a mouse, in the parent on a finger).
+   * `inline`: in the form. `fullscreen`: the map fills the editor's dialog. On a mouse both lay
+   * the same toolbar at the bottom of the map (`PlannerToolbar`, with the status of the trace); on
+   * a finger the tools and the status are the parent's, outside the map.
    */
   layout: 'inline' | 'fullscreen'
   /**
@@ -99,7 +89,7 @@ interface RoutePlannerProps {
   onExpand?: () => void
   /** Bumped by the owner after an import: the map frames the whole route. */
   fitRequest?: number
-  /** Given where the map holds the tool: adds the « Import a GPX file » button to the control column. */
+  /** Given where the map holds the tool: adds the « Import a GPX file » button to the toolbar. */
   onImport?: () => void
   initialTrack?: number[][] // [lng, lat, ele, dist][] from existing route
   teamLocation?: [number, number] // [lng, lat] from team geometry
@@ -1507,6 +1497,8 @@ export function RoutePlanner({
 
   // A finger in the fullscreen editor: its tools are in the dialog's bottom bar, not on the map.
   const touchFullscreen = layout === 'fullscreen' && isCoarsePointer
+  // Anywhere else (a mouse, inline or fullscreen): in the toolbar at the bottom of the map.
+  const withToolbar = !touchFullscreen
 
   const routeStats = {
     distance: route.dist,
@@ -1600,42 +1592,8 @@ export function RoutePlanner({
 
   return (
     <Stack gap={0} h="100%">
-      {/* Compact toolbar: a fixed height (the tallest content, the clear button), so the map below
-          is not resized when the first point makes the bar grow. Fullscreen has none: the dialog's
-          toolbar and a status chip say the same. */}
-      {layout === 'inline' && (
-        <Group
-          h={48}
-          justify="space-between"
-          align="center"
-          wrap="nowrap"
-          gap="sm"
-          px="sm"
-          bg="var(--mantine-color-body)"
-          style={{ flexShrink: 0, borderBottom: '1px solid var(--mantine-color-default-border)' }}
-        >
-          <PlannerStatus
-            pointCount={controlPoints.length}
-            isLoading={isLoading}
-            error={error}
-            stats={route.points.length >= 2 ? routeStats : undefined}
-          />
-          {controlPoints.length > 0 && (
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              onClick={clearRoute}
-              title={t('planner.clear')}
-              aria-label={t('planner.clear')}
-              style={{ flexShrink: 0 }}
-            >
-              <IconTrash size={14} />
-            </ActionIcon>
-          )}
-        </Group>
-      )}
-
-      {/* Map */}
+      {/* Map. With the toolbar, the bottom line (scale bar, attribution) is lifted above it, on any
+          width: see `.planner-map--toolbar` in index.css. */}
       <Box
         ref={mapContainerRef}
         onPointerDownCapture={(e: React.PointerEvent) => {
@@ -1674,7 +1632,11 @@ export function RoutePlanner({
           }
         }}
         pos="relative"
-        className={colorScheme === 'dark' ? 'dark' : undefined}
+        className={
+          [colorScheme === 'dark' && 'dark', withToolbar && 'planner-map--toolbar']
+            .filter(Boolean)
+            .join(' ') || undefined
+        }
         style={{ flex: 1, minHeight: 0 }}
       >
         {!initialViewState ? (
@@ -1712,37 +1674,11 @@ export function RoutePlanner({
               onGeolocate={(e) => proposeStart({ lng: e.coords.longitude, lat: e.coords.latitude })}
             />
 
-            {/* On a finger, fullscreen, undo / redo / profile / help live in the dialog's bottom
-                bar (44 px targets): the column keeps the zoom and the basemap only. */}
+            {/* The drawing tools are in the toolbar below (mouse) or the dialog's bottom bar
+                (finger): the columns keep the camera and the display. No « Masquer le tracé » on a
+                finger (L2-5 of plan 2026-10-17-editeur-parcours-web). */}
             {!touchFullscreen && (
-              <>
-                <UndoRedoControl canUndo={canUndo} canRedo={canRedo} onUndo={undo} onRedo={redo} />
-
-                <DirectModeControl directMode={directMode} onToggle={setDirectMode} />
-
-                <HideTrackControl hidden={trackHidden} onToggle={toggleTrackHidden} />
-
-                {onImport && (
-                  <MapControlGroup zone="camera" slot="import">
-                    <MapControlButton
-                      label={t('planner.import')}
-                      icon={<IconFileImport size={20} />}
-                      onClick={onImport}
-                      disabled={isLoading}
-                    />
-                  </MapControlGroup>
-                )}
-
-                <PlannerHelpControl />
-
-                <RouterProfileSelector
-                  currentProfile={routerProfile}
-                  onProfileChange={setRouterProfile}
-                  tuning={routerTuning}
-                  onTuningChange={setRouterTuning}
-                  onTuningReset={resetRouterTuning}
-                />
-              </>
+              <HideTrackControl hidden={trackHidden} onToggle={toggleTrackHidden} />
             )}
 
             {onExpand && (
@@ -2153,27 +2089,20 @@ export function RoutePlanner({
           <RoutePlannerMiniMap center={cursorPosition} routeGeoJson={routeGeoJson} />
         )}
 
-        {/* Bottom centre: the status chip (fullscreen, mouse) and the first-use instructions. */}
-        {(controlPoints.length === 0 || (layout === 'fullscreen' && !isCoarsePointer)) && (
+        {/* Bottom centre: the first-use instructions, above the toolbar (mouse). The column lets
+            the gestures through around them; only the toolbar takes the pointer. */}
+        {(controlPoints.length === 0 || withToolbar) && (
           <Stack
             pos="absolute"
-            bottom={16}
-            left={16}
-            right={16}
+            bottom={withToolbar ? PLANNER_TOOLBAR_OFFSET_PX : 16}
+            left={withToolbar ? PLANNER_TOOLBAR_OFFSET_PX : 16}
+            right={withToolbar ? PLANNER_TOOLBAR_OFFSET_PX : 16}
             gap="xs"
             align="center"
-            style={{ pointerEvents: 'none' }}
+            // Over the map's corners (z-index 2) with the toolbar; on a finger the column of the
+            // bottom-right corner stays above the instructions, as before.
+            style={{ pointerEvents: 'none', zIndex: withToolbar ? 3 : undefined }}
           >
-            {layout === 'fullscreen' &&
-              !isCoarsePointer &&
-              (controlPoints.length > 0 || isLoading || error) && (
-                <PlannerStatusChip
-                  pointCount={controlPoints.length}
-                  isLoading={isLoading}
-                  error={error}
-                  stats={route.points.length >= 2 ? routeStats : undefined}
-                />
-              )}
             {controlPoints.length === 0 && (
               <Box
                 px="md"
@@ -2188,6 +2117,27 @@ export function RoutePlanner({
                   {isCoarsePointer ? t('planner.instructions.touch') : t('planner.instructions')}
                 </Text>
               </Box>
+            )}
+            {withToolbar && (
+              <PlannerToolbar
+                pointCount={controlPoints.length}
+                isLoading={isLoading}
+                error={error}
+                stats={route.points.length >= 2 ? routeStats : undefined}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                onUndo={undo}
+                onRedo={redo}
+                directMode={directMode}
+                onDirectModeChange={setDirectMode}
+                routerProfile={routerProfile}
+                onProfileChange={setRouterProfile}
+                routerTuning={routerTuning}
+                onTuningChange={setRouterTuning}
+                onTuningReset={resetRouterTuning}
+                onImport={onImport}
+                onClear={layout === 'inline' ? clearRoute : undefined}
+              />
             )}
           </Stack>
         )}

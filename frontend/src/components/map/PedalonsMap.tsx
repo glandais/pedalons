@@ -28,8 +28,9 @@ type PedalonsMapProps = Omit<MapProps, 'mapLib' | 'mapStyle' | 'style'> &
 export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
   ({ children, traces, onTraceToggle, ...props }, ref) => {
     const { t } = useTranslation()
-    // One open panel at a time across the control columns (basemap, profile, help…). A page that
-    // has panels outside the map as well provides the state higher up: the map then shares it.
+    // One open panel at a time across the control columns (basemap…). A page that has panels
+    // outside the map as well (the planner's toolbar and bottom bar: profile, help) provides the
+    // state higher up: the map then shares it.
     const ownPanelState = useMapPanelState()
     const panelState = useContext(MapPanelContext) ?? ownPanelState
     const {

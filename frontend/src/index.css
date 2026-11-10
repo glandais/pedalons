@@ -82,8 +82,8 @@
 /* Each corner of the map is a column whose order is fixed here, whatever the mounting order
    (`mapZones.ts`, docs/LEDGER_*.md WEB-157). MapLibre appends to a top corner and *prepends* to a
    bottom one, and several controls are rebuilt while the map lives — `MapAttribution` on every
-   basemap change, `MapSearchControl` on a language change, the planner's buttons when its layout
-   changes — so the DOM order means nothing. maplibre-theme floats the controls with 10 px margins:
+   basemap change, `MapSearchControl` on a language change, the planner's « Agrandir » when its
+   layout changes — so the DOM order means nothing. maplibre-theme floats the controls with 10 px margins:
    a flex item ignores the float and keeps the margins, and the corners stay `pointer-events: none`
    around their controls. Left corners align their controls on the left edge, right ones on the
    right. */
@@ -106,8 +106,7 @@
 }
 
 /* One sequence for every corner, top to bottom. Camera: search, zoom and compass, « Me localiser »,
-   fullscreen (MapLibre's button, a page's link or the planner's « Agrandir »), then the planner's
-   own buttons in the camera column. Display: basemap panel, « Masquer le tracé ». On a finger both
+   fullscreen (MapLibre's button, a page's link or the planner's « Agrandir »). Display: basemap panel, « Masquer le tracé ». On a finger both
    families share the bottom-right column, camera first. Then the bottom line: the scale bar, the
    attribution — last, so under the column on a finger. A control this list does not know comes
    after the ones it does, before the bottom line. */
@@ -138,26 +137,6 @@
 .maplibregl-ctrl-group:has(> .maplibregl-ctrl-shrink),
 .maplibregl-ctrl.pdl-ctrl-fullscreen {
   order: 40;
-}
-
-.maplibregl-ctrl.pdl-ctrl-undo-redo {
-  order: 51;
-}
-
-.maplibregl-ctrl.pdl-ctrl-direct {
-  order: 52;
-}
-
-.maplibregl-ctrl.pdl-ctrl-import {
-  order: 53;
-}
-
-.maplibregl-ctrl.pdl-ctrl-help {
-  order: 54;
-}
-
-.maplibregl-ctrl.pdl-ctrl-profile {
-  order: 55;
 }
 
 .maplibregl-ctrl.pdl-ctrl-style {
@@ -201,6 +180,75 @@
 .maplibregl-map.maplibregl-pseudo-fullscreen {
   --map-inset-bottom-left: 0px;
   --map-inset-bottom-right: 0px;
+}
+
+/* The planner's toolbar on a mouse (`PlannerToolbar`, bottom centre: 10 px from the edge, 44 px
+   high — `PLANNER_TOOLBAR_OFFSET_PX` in RoutePlanner.tsx). The bottom line rises above it on
+   every width, not only where they would meet: the toolbar's width follows its summary (a long
+   routing error, the units) and the attribution's follows the basemap and MapLibre's own
+   collapsing, so no breakpoint could promise they never touch; 54 px is the price of a rule that
+   cannot fail. The precision mini-map rises by the same variable (`RoutePlannerMiniMap`).
+   docs/LEDGER_*.md WEB-157. */
+.planner-map--toolbar {
+  --map-inset-bottom-left: 54px;
+  --map-inset-bottom-right: 54px;
+}
+
+/* The toolbar itself: the surface, shadow and radius of a map control box, and buttons that look
+   like the control columns' ones (36 px, hover, toggled-on state), all from maplibre-theme's
+   variables, so it follows the `.dark` scheme set on the map's wrapper. The column holding it lets
+   the pointer through (`pointer-events: none`); the toolbar takes it back. */
+.map-toolbar {
+  align-items: center;
+  background: var(--ml-c-bg-1);
+  border-radius: 12px;
+  box-shadow: var(--ml-shadow-ctrl);
+  box-sizing: border-box;
+  color: var(--ml-c-icon-1);
+  display: flex;
+  gap: 2px;
+  height: 44px;
+  max-width: 100%;
+  padding: 4px;
+  pointer-events: auto;
+}
+
+.map-toolbar-button {
+  align-items: center;
+  border-radius: 8px;
+  color: var(--ml-c-icon-1);
+  display: flex;
+  flex-shrink: 0;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.map-toolbar-button:not(:disabled):hover {
+  background-color: var(--ml-c-bg-2);
+}
+
+.map-toolbar-button:not(:disabled):active {
+  background-color: var(--ml-c-bg-3);
+}
+
+.map-toolbar-button:disabled {
+  cursor: not-allowed;
+  opacity: var(--ml-o-disabled);
+}
+
+.map-toolbar-button:focus-visible {
+  box-shadow: var(--ml-outline);
+  outline: none;
+}
+
+.map-toolbar-button[aria-pressed='true']:not(:disabled) {
+  background-color: color-mix(in oklab, var(--ml-c-active) 18%, var(--ml-c-bg-1));
+  color: var(--ml-c-active);
+}
+
+.map-toolbar-button[aria-pressed='true']:not(:disabled):hover {
+  background-color: color-mix(in oklab, var(--ml-c-active) 28%, var(--ml-c-bg-1));
 }
 
 /* `RoutesMapView`'s elevation overlay, bottom-left, and the insets it owes — one rule, so its size

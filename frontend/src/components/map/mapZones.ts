@@ -20,8 +20,7 @@ export type MapZone = 'camera' | 'display'
  * Where a control stands within its corner. index.css gives each slot an `order`; the native
  * controls without a class of ours (zoom, geolocate, fullscreen) are matched by their buttons.
  */
-export type MapControlSlot =
-  'fullscreen' | 'undo-redo' | 'direct' | 'import' | 'help' | 'profile' | 'style' | 'hide-track'
+export type MapControlSlot = 'fullscreen' | 'style' | 'hide-track'
 
 /** The side a tooltip or a panel opens towards: away from the edge its column stands on. */
 export type MapControlSide = 'left' | 'right'

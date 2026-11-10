@@ -27,8 +27,11 @@ interface RouterProfileSelectorProps {
   tuning?: RouterTuning
   onTuningChange?: (key: TuningKey, value: number) => void
   onTuningReset?: () => void
-  /** `'bar'`: a button of the touch toolbar instead of the map's control column. */
-  trigger?: 'map' | 'bar'
+  /**
+   * `'toolbar'` (default): a button of the toolbar at the bottom of the map, on a mouse
+   * (`PlannerToolbar`); `'bar'`: a button of the touch bottom bar (`PlannerBottomBar`).
+   */
+  trigger?: 'toolbar' | 'bar'
 }
 
 const PROFILE_ICONS: Record<RouterProfile, React.ComponentType<{ size?: number }>> = {
@@ -55,7 +58,7 @@ export function RouterProfileSelector({
   tuning = {},
   onTuningChange,
   onTuningReset,
-  trigger,
+  trigger = 'toolbar',
 }: RouterProfileSelectorProps) {
   const { t } = useTranslation()
   const showTuning = isTunable(currentProfile) && onTuningChange !== undefined
@@ -65,8 +68,6 @@ export function RouterProfileSelector({
   return (
     <MapPanel
       id="profile"
-      zone="camera"
-      slot="profile"
       label={
         custom
           ? `${t('planner.profile.label')} (${t('planner.tuning.custom')})`
