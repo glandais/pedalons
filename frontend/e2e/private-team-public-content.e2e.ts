@@ -158,7 +158,11 @@ test.describe('the platform admin switch', () => {
       await page.goto(`/equipes/${team.slug}/admin/parametres`)
       const nameInput = main(page).getByRole('textbox', { name: "Nom de l'équipe" })
       await hydrated(nameInput)
-      const form = main(page).locator('form').filter({ has: nameInput })
+      const form = main(page)
+        .locator('form')
+        .filter({
+          has: page.getByRole('textbox', { name: "Nom de l'équipe" }),
+        })
       const allowed = form.getByRole('switch', { name: 'Autoriser le contenu public par lien' })
       await expect(allowed).toBeEnabled()
       await expect(allowed).not.toBeChecked()
@@ -205,7 +209,11 @@ test.describe('the platform admin switch', () => {
     await page.goto(`/equipes/${team.slug}/admin/parametres`)
     const nameInput = main(page).getByRole('textbox', { name: "Nom de l'équipe" })
     await hydrated(nameInput)
-    const form = main(page).locator('form').filter({ has: nameInput })
+    const form = main(page)
+      .locator('form')
+      .filter({
+        has: page.getByRole('textbox', { name: "Nom de l'équipe" }),
+      })
     const visibility = form.getByRole('combobox', { name: "Visibilité de l'équipe" })
     await visibility.click()
     await page.getByRole('option', { name: 'Équipe uniquement', exact: true }).click()
