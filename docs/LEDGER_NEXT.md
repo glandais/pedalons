@@ -1561,14 +1561,18 @@ et le préfixe `BILL` lui-même (Q12) se tranche avant le premier commit de code
       paiement : deux paliers sur `Team` (`tier` FREE | UNLOCKED, posé par l'admin plateforme seul),
       une équipe gratuite plafonnée à **25 membres** (invitations en cours comprises : `joinTeam`,
       ajout, invitation, acceptation, verrou sur la ligne d'équipe, `409 TEAM_MEMBER_LIMIT_REACHED`)
-      et à **10 parcours tracés au planificateur par mois civil** (`team_planner_usages`, un parcours
-      compte une fois par mois, `403 ROUTE_PLANNER_QUOTA_REACHED`, plus un plafond quotidien de
-      calculs `/api/router` par équipe, aujourd'hui sans aucune borne). En contrepartie une nouvelle
-      équipe naît ouverte (`joinable`, `addMemberAllowed`, `enableRoutePlanner` à `true` dans
-      `TeamService.createTeam`) ; toutes les équipes existantes et importées de biketeam sont
-      débloquées d'office. Tout le reste (envoi GPS, webhook, import GPX) reste gratuit. Plan :
+      et à **20 enregistrements par mois civil d'un tracé dessiné au planificateur** (chaque création
+      et chaque modification comptent, supprimer ne rend rien) ; un **quota personnel de 10 par
+      mois** dans les outils GPX (`/api/gpx-previews`) pour tout utilisateur qui n'est membre
+      d'aucune équipe débloquée du domaine, contre le contournement par la promotion d'un aperçu
+      (journal `planner_saves`, `403 PLANNER_QUOTA_REACHED` avec `scope` TEAM | PERSONAL, plus un
+      plafond quotidien de calculs `/api/router` par utilisateur, aujourd'hui sans aucune borne). En
+      contrepartie une nouvelle équipe naît ouverte (`joinable`, `addMemberAllowed`,
+      `enableRoutePlanner` à `true` dans `TeamService.createTeam`) ; toutes les équipes existantes et
+      importées de biketeam sont débloquées d'office. Tout le reste (envoi GPS, webhook, import GPX)
+      reste gratuit. Plan :
       [`plans/2026-11-11-limites-offre-gratuite.md`](plans/2026-11-11-limites-offre-gratuite.md),
-      trois lots (paliers sans refus, plafond de membres, quota du planificateur). Tranche Q3 et Q7
+      trois lots (paliers sans refus, plafond de membres, quotas du planificateur). Tranche Q3 et Q7
       du plan de monétisation.
 
 ---
