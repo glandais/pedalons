@@ -41,11 +41,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -586,6 +588,112 @@ public class AssetService {
     }
     replaceStoredFile(existing.get(0), fileId, stored, fileName, newContent);
     owner.getAssets().removeAll(existing.subList(1, existing.size()));
+  }
+
+  /**
+   * A copy of the media of {@code source} for a new content of {@code team} (docs/LEDGER_*.md
+   * API-178): every logo, image and attachment is stored again under a new file id, as an asset of
+   * its own attached to nothing yet, and the {@code id="…"} of the markdown's asset directives are
+   * rewritten to the copies. The answer is the {@link MediaDto} that {@link #updateAssets} attaches
+   * to the new content: an asset belongs to one content only ({@link #findAvailableAsset}), and a
+   * shared one would lose its file the day either content is deleted ({@code AssetRemoveListener}).
+   *
+   * <p>Only the images the markdown cites are copied, the ones {@link #updateAssets} keeps. Every
+   * file copied is deleted again unless the current transaction commits, hence {@code MANDATORY}:
+   * without one there would be nothing to wait for.
+   */
+  @Transactional(Transactional.TxType.MANDATORY)
+  public MediaDto copyMedia(TeamEntity source, Team team) {
+    String markdown = source.getMarkdown();
+    Set<String> referenced = extractAssetIdsFromMarkdown(markdown);
+    List<Asset> originals = source.getAssets().stream().sorted(EDITOR_ORDER).toList();
+    Map<String, String> renamed = new HashMap<>();
+    AssetDto logo = null;
+    List<AssetDto> images = new ArrayList<>();
+    List<AssetDto> attachments = new ArrayList<>();
+    for (Asset original : originals) {
+      AssetType type = original.getType();
+      String originalId = TsidUtils.toString(original.getId());
+      if (type == AssetType.LOGO && logo == null) {
+        logo = map(copyAsset(original, team, renamed));
+      } else if (type == AssetType.IMAGE && referenced.contains(originalId)) {
+        images.add(map(copyAsset(original, team, renamed)));
+      } else if (type == AssetType.ATTACHMENT) {
+        attachments.add(map(copyAsset(original, team, renamed)));
+      }
+    }
+    return new MediaDto(
+        rewriteAssetIds(markdown, renamed),
+        AssetsDto.builder().logo(logo).images(images).attachments(attachments).build());
+  }
+
+  /** Stores the file of {@code original} again, under a new file id, and persists its row. */
+  private Asset copyAsset(Asset original, Team team, Map<String, String> renamed) {
+    long fileId = TSID.Factory.getTsid().toLong();
+    String key = getAssetKey(team, fileId);
+    // Before the upload: a copy stored by a transaction that rolls back must not stay in S3.
+    deleteUnlessCommitted(key);
+    File tempFile;
+    try {
+      tempFile = createTempFile(fileId);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    try {
+      try (InputStream in = getAssetContent(original)) {
+        Files.copy(in, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+      }
+      Map<String, String> metadata =
+          Map.of(
+              "file-id", TsidUtils.toString(fileId),
+              "team-id", TsidUtils.toString(team.getId()),
+              "file-name", original.getFileName());
+      long size;
+      try (InputStream fis = new FileInputStream(tempFile)) {
+        size =
+            storageService.store(key, fis, original.getContentType(), tempFile.length(), metadata);
+      }
+      Asset copy =
+          new Asset(
+              pedalonsContext.getUser(),
+              team,
+              original.getType(),
+              fileId,
+              original.getFileName(),
+              original.getContentType());
+      copy.setFileSize(size);
+      copy.setWidth(original.getWidth());
+      copy.setHeight(original.getHeight());
+      copy.setSortOrder(original.getSortOrder());
+      assetRepository.persist(copy);
+      renamed.put(TsidUtils.toString(original.getId()), TsidUtils.toString(copy.getId()));
+      return copy;
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    } finally {
+      deleteTempFile(tempFile);
+    }
+  }
+
+  /** The markdown with the ids of its asset directives replaced by {@code renamed}'s. */
+  static String rewriteAssetIds(String markdown, Map<String, String> renamed) {
+    if (markdown.isEmpty() || renamed.isEmpty()) {
+      return markdown;
+    }
+    Matcher directive = ASSET_DIRECTIVE_PATTERN.matcher(markdown);
+    StringBuilder out = new StringBuilder(markdown.length());
+    while (directive.find()) {
+      Matcher id = ASSET_ID_ATTRIBUTE.matcher(directive.group(1));
+      StringBuilder attributes = new StringBuilder();
+      while (id.find()) {
+        String replacement = renamed.getOrDefault(id.group(1), id.group(1));
+        id.appendReplacement(attributes, Matcher.quoteReplacement("id=\"" + replacement + "\""));
+      }
+      id.appendTail(attributes);
+      directive.appendReplacement(out, Matcher.quoteReplacement("::asset{" + attributes + "}"));
+    }
+    directive.appendTail(out);
+    return out.toString();
   }
 
   /** Removes the assets of the given types from {@code owner}; orphan removal deletes the files. */

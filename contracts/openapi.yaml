@@ -5978,6 +5978,18 @@ components:
             \ detail (RouteDetailDto) does."
           type: object
           $ref: "#/components/schemas/ContentPermissionsDto"
+    RouteDuplicateRequest:
+      description: Route duplication request
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: Name of the copy
+          pattern: \S
+          minLength: 3
+          maxLength: 200
     RouteGpsSyncStatusDto:
       type: object
       description: Where the route stands at one of the caller's automatically synced
@@ -18529,6 +18541,71 @@ paths:
       security:
       - SecurityScheme:
         - user
+  /api/teams/{teamSlug}/routes/{routeSlug}/duplicate:
+    post:
+      summary: Duplicate route
+      description: "Creates a copy of the route in the same team under the given name,\
+        \ with every other attribute of the source: visibility, surface type, tags,\
+        \ description, planner state, waypoints, surfaces, and a copy of its logo,\
+        \ images and attachments (new asset ids, the description's asset directives\
+        \ rewritten). Comments, rides and statistics are not copied. Requires organizer\
+        \ permissions on the source."
+      operationId: duplicateRoute
+      tags:
+      - Routes
+      parameters:
+      - description: Route slug
+        name: routeSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      - description: Team URL slug
+        name: teamSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RouteDuplicateRequest"
+        required: true
+      responses:
+        "201":
+          description: Route duplicated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RouteDto"
+        "400":
+          description: Invalid name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User is not authorized to duplicate this route
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Team or route not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - SecurityScheme:
+        - user
   /api/teams/{teamSlug}/routes/{routeSlug}/planner-state:
     get:
       summary: Get the planner state of a route
@@ -18578,6 +18655,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - SecurityScheme:
+        - user
+  /api/teams/{teamSlug}/routes/{routeSlug}/preview:
+    post:
+      summary: Create an analysed GPX file from a route
+      description: "Creates a GPX preview owned by the caller from a route they can\
+        \ read: same title, track, planner state and waypoints. Nothing is created\
+        \ in the team and the route is left unchanged. Any signed-in account that\
+        \ can read the route may call it."
+      operationId: createPreviewFromRoute
+      tags:
+      - Routes
+      parameters:
+      - description: Route slug
+        name: routeSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      - description: Team URL slug
+        name: teamSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "201":
+          description: Preview created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GpxPreviewDto"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Team or route not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not Allowed
       security:
       - SecurityScheme:
         - user
@@ -20895,7 +21019,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 14.0.0
+  version: 14.1.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

@@ -4,11 +4,14 @@ import fr.pedalons.api.gpx.GpxUploads;
 import fr.pedalons.dto.common.CountResponse;
 import fr.pedalons.dto.common.request.SlugChangeRequest;
 import fr.pedalons.dto.error.ErrorResponse;
+import fr.pedalons.dto.gpx.response.GpxPreviewDto;
+import fr.pedalons.dto.routes.request.RouteDuplicateRequest;
 import fr.pedalons.dto.routes.request.RouteFilterParams;
 import fr.pedalons.dto.routes.request.RouteListParams;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.dto.routes.response.*;
 import fr.pedalons.infrastructure.jaxrs.PedalonsMediaType;
+import fr.pedalons.service.route.RouteCopyService;
 import fr.pedalons.service.route.RouteService;
 import fr.pedalons.service.security.annotation.TileTokenAuth;
 import jakarta.annotation.security.PermitAll;
@@ -56,6 +59,8 @@ public class RouteResource {
   static final String PRIVATE_NO_STORE = "private, no-store";
 
   @Inject RouteService routeService;
+
+  @Inject RouteCopyService routeCopyService;
 
   /**
    * List routes for a team with filtering and sorting.
@@ -532,6 +537,79 @@ public class RouteResource {
       @Parameter(description = "Route slug") @PathParam("routeSlug") String routeSlug) {
     RouteDetailDto dto = routeService.undeleteRoute(teamSlug, routeSlug);
     return Response.ok(dto).build();
+  }
+
+  @POST
+  @Path("/{routeSlug}/duplicate")
+  @Operation(
+      operationId = "duplicateRoute",
+      summary = "Duplicate route",
+      description =
+          "Creates a copy of the route in the same team under the given name, with every other"
+              + " attribute of the source: visibility, surface type, tags, description, planner"
+              + " state, waypoints, surfaces, and a copy of its logo, images and attachments (new"
+              + " asset ids, the description's asset directives rewritten). Comments, rides and"
+              + " statistics are not copied. Requires organizer permissions on the source.")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "201",
+        description = "Route duplicated successfully",
+        content = @Content(schema = @Schema(implementation = RouteDto.class))),
+    @APIResponse(
+        responseCode = "400",
+        description = "Invalid name",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "401",
+        description = "Unauthorized",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "403",
+        description = "User is not authorized to duplicate this route",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "404",
+        description = "Team or route not found",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @RolesAllowed("user")
+  public Response duplicateRoute(
+      @Parameter(description = "Team URL slug") @PathParam("teamSlug") String teamSlug,
+      @Parameter(description = "Route slug") @PathParam("routeSlug") String routeSlug,
+      @Valid @NotNull RouteDuplicateRequest request) {
+    RouteDto route = routeCopyService.duplicate(teamSlug, routeSlug, request.name());
+    return Response.status(Response.Status.CREATED).entity(route).build();
+  }
+
+  @POST
+  @Path("/{routeSlug}/preview")
+  @Operation(
+      operationId = "createPreviewFromRoute",
+      summary = "Create an analysed GPX file from a route",
+      description =
+          "Creates a GPX preview owned by the caller from a route they can read: same title,"
+              + " track, planner state and waypoints. Nothing is created in the team and the route"
+              + " is left unchanged. Any signed-in account that can read the route may call it.")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "201",
+        description = "Preview created successfully",
+        content = @Content(schema = @Schema(implementation = GpxPreviewDto.class))),
+    @APIResponse(
+        responseCode = "401",
+        description = "Unauthorized",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "404",
+        description = "Team or route not found",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @RolesAllowed("user")
+  public Response createPreviewFromRoute(
+      @Parameter(description = "Team URL slug") @PathParam("teamSlug") String teamSlug,
+      @Parameter(description = "Route slug") @PathParam("routeSlug") String routeSlug) {
+    GpxPreviewDto preview = routeCopyService.createPreview(teamSlug, routeSlug);
+    return Response.status(Response.Status.CREATED).entity(preview).build();
   }
 
   @PATCH

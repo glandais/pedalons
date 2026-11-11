@@ -9,6 +9,7 @@ import 'package:retrofit/retrofit.dart';
 import 'package:retrofit/error_logger.dart';
 
 import '../models/count_response.dart';
+import '../models/gpx_preview_dto.dart';
 import '../models/hilliness.dart';
 import '../models/list_view_mode.dart';
 import '../models/min_role.dart';
@@ -17,6 +18,7 @@ import '../models/planner_state_response.dart';
 import '../models/route_bounds_response.dart';
 import '../models/route_detail_dto.dart';
 import '../models/route_dto.dart';
+import '../models/route_duplicate_request.dart';
 import '../models/route_list_response.dart';
 import '../models/route_request.dart';
 import '../models/route_sort_by.dart';
@@ -546,6 +548,22 @@ abstract class RoutesClient {
     @Path('teamSlug') required String teamSlug,
   });
 
+  /// Duplicate route.
+  ///
+  /// Creates a copy of the route in the same team under the given name, with every other attribute of the source: visibility, surface type, tags, description, planner state, waypoints, surfaces, and a copy of its logo, images and attachments (new asset ids, the description's asset directives rewritten). Comments, rides and statistics are not copied. Requires organizer permissions on the source.
+  ///
+  /// [routeSlug] - Route slug.
+  ///
+  /// [teamSlug] - Team URL slug.
+  ///
+  /// [body] - Name not received - field will be skipped.
+  @POST('/api/teams/{teamSlug}/routes/{routeSlug}/duplicate')
+  Future<RouteDto> duplicateRoute({
+    @Path('routeSlug') required String routeSlug,
+    @Path('teamSlug') required String teamSlug,
+    @Body() required RouteDuplicateRequest body,
+  });
+
   /// Get the planner state of a route.
   ///
   /// The control points, routed pieces and imported ranges the route was last saved with, for its edit page. Reserved to those who may edit the route. 'state' is absent when there is none to read back (never saved with one, track replaced since by a path that does not carry it, several tracks): the editor then opens the saved track as an import.
@@ -555,6 +573,19 @@ abstract class RoutesClient {
   /// [teamSlug] - Team URL slug.
   @GET('/api/teams/{teamSlug}/routes/{routeSlug}/planner-state')
   Future<PlannerStateResponse> getRoutePlannerState({
+    @Path('routeSlug') required String routeSlug,
+    @Path('teamSlug') required String teamSlug,
+  });
+
+  /// Create an analysed GPX file from a route.
+  ///
+  /// Creates a GPX preview owned by the caller from a route they can read: same title, track, planner state and waypoints. Nothing is created in the team and the route is left unchanged. Any signed-in account that can read the route may call it.
+  ///
+  /// [routeSlug] - Route slug.
+  ///
+  /// [teamSlug] - Team URL slug.
+  @POST('/api/teams/{teamSlug}/routes/{routeSlug}/preview')
+  Future<GpxPreviewDto> createPreviewFromRoute({
     @Path('routeSlug') required String routeSlug,
     @Path('teamSlug') required String teamSlug,
   });

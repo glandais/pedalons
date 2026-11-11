@@ -790,17 +790,26 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   public PlannerStateResponse getPlannerState(String teamSlug, String slug) {
     Team team = teamService.getTeam(teamSlug);
     Route route = findBySlug(team, slug);
+    return new PlannerStateResponse(readPlannerState(route));
+  }
+
+  /**
+   * The planner state of {@code route} when it still describes its track, else null — what {@link
+   * #getPlannerState} answers, without its access check: for a caller that already checked its own
+   * (a copy of the route, docs/LEDGER_*.md API-178, API-179). Two queries.
+   */
+  public @Nullable PlannerState readPlannerState(Route route) {
     List<@Nullable PlannerStateDocument> documents =
         gpxTrackRepository.findPlannerStates(route.getId());
     if (documents.size() != 1 || documents.getFirst() == null) {
-      return new PlannerStateResponse(null);
+      return null;
     }
     PlannerStateDocument document = documents.getFirst();
     Long current = assetRepository.findCurrentFileId(route.getId(), AssetType.ROUTE_ORIGINAL_GPX);
     if (current == null || current != document.trackRevision()) {
-      return new PlannerStateResponse(null);
+      return null;
     }
-    return new PlannerStateResponse(document.state());
+    return document.state();
   }
 
   @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.UPDATE)

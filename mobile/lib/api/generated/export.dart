@@ -259,6 +259,7 @@ export 'models/ride_weather_summary_dto.dart';
 export 'models/route_bounds_response.dart';
 export 'models/route_detail_dto.dart';
 export 'models/route_dto.dart';
+export 'models/route_duplicate_request.dart';
 export 'models/route_gps_sync_status_dto.dart';
 export 'models/route_list_response.dart';
 export 'models/route_request.dart';

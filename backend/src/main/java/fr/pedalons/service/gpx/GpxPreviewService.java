@@ -238,6 +238,22 @@ public class GpxPreviewService {
       @Nullable PlannerState state,
       WaypointPlan plan,
       PreviewDepartureEdit edit) {
+    return create(gpx, fallbackName, drawn, state, plan, edit, true);
+  }
+
+  /**
+   * As {@link #create(GpxDocument, String, boolean, PlannerState, WaypointPlan,
+   * PreviewDepartureEdit)}; {@code documentNameFirst} false names the preview {@code fallbackName}
+   * whatever the file says — a copy of a route keeps the route's title (docs/LEDGER_*.md API-179).
+   */
+  private GpxPreview create(
+      GpxDocument gpx,
+      String fallbackName,
+      boolean drawn,
+      @Nullable PlannerState state,
+      WaypointPlan plan,
+      PreviewDepartureEdit edit,
+      boolean documentNameFirst) {
     User creator = pedalonsContext.getUser();
     Domain domain = pedalonsContext.getDomain();
     UUID publicId = UUID.randomUUID();
@@ -268,7 +284,7 @@ public class GpxPreviewService {
       throw e;
     }
 
-    String name = documentName(gpx, fallbackName);
+    String name = documentNameFirst ? documentName(gpx, fallbackName) : fallbackName;
     GpxPreview preview =
         new GpxPreview(
             publicId,
@@ -965,6 +981,32 @@ public class GpxPreviewService {
         LOG.warnf(e, "Failed to delete temp GPX %s", gpxPath);
       }
     }
+  }
+
+  /**
+   * A preview made from a team's route, for a caller who may read the route but not edit it
+   * (docs/LEDGER_*.md API-179): the route's original GPX, its title, its planner state and its
+   * waypoints. The preview is the caller's, like any other: only they edit it and read its planner
+   * state. The route is left as it is.
+   *
+   * <p>The planner state is kept only when the domain's planner is open, as for {@link
+   * #createPreviewFromPoints}: its edit page could not use it otherwise. The caller owns {@code
+   * gpxPath}.
+   */
+  @Logged
+  public GpxPreviewDto createFromRoute(
+      Path gpxPath, String name, @Nullable PlannerState state, List<WaypointDraft> waypoints) {
+    PlannerState kept =
+        state != null && pedalonsContext.getDomain().isEnableGpxPlanner() ? state : null;
+    return toDtoJustSaved(
+        create(
+            gpxProcessingService.parseGpx(gpxPath),
+            name,
+            kept != null && kept.drawn(),
+            kept,
+            new WaypointPlan(waypoints, false),
+            PreviewDepartureEdit.KEEP,
+            false));
   }
 
   /** Only the creator may delete a preview; anyone with the link may read it. */

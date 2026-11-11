@@ -661,6 +661,38 @@ class _RoutesClient implements RoutesClient {
   }
 
   @override
+  Future<RouteDto> duplicateRoute({
+    required String routeSlug,
+    required String teamSlug,
+    required RouteDuplicateRequest body,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = <String, dynamic>{};
+    _data.addAll(body.toJson());
+    final _options = _setStreamType<RouteDto>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/teams/${teamSlug}/routes/${routeSlug}/duplicate',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late RouteDto _value;
+    try {
+      _value = RouteDto.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<PlannerStateResponse> getRoutePlannerState({
     required String routeSlug,
     required String teamSlug,
@@ -683,6 +715,36 @@ class _RoutesClient implements RoutesClient {
     late PlannerStateResponse _value;
     try {
       _value = PlannerStateResponse.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
+  Future<GpxPreviewDto> createPreviewFromRoute({
+    required String routeSlug,
+    required String teamSlug,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<GpxPreviewDto>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/teams/${teamSlug}/routes/${routeSlug}/preview',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late GpxPreviewDto _value;
+    try {
+      _value = GpxPreviewDto.fromJson(_result.data!);
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options, response: _result);
       rethrow;

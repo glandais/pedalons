@@ -24,12 +24,14 @@ import type {
   GetAllRoutesBoundsParams,
   GetRoutesBoundsParams,
   GetRoutesBulkParams,
+  GpxPreviewDto,
   ListAllRoutesParams,
   ListRoutesParams,
   PlannerStateResponse,
   RouteBoundsResponse,
   RouteDetailDto,
   RouteDto,
+  RouteDuplicateRequest,
   RouteListResponse,
   RouteUsagesResponse,
   RoutesBulkResponse,
@@ -1878,6 +1880,98 @@ export const useDeleteRoute = <TError = ErrorType<ErrorResponse>, TContext = unk
   return useMutation(getDeleteRouteMutationOptions(options), queryClient)
 }
 /**
+ * Creates a copy of the route in the same team under the given name, with every other attribute of the source: visibility, surface type, tags, description, planner state, waypoints, surfaces, and a copy of its logo, images and attachments (new asset ids, the description's asset directives rewritten). Comments, rides and statistics are not copied. Requires organizer permissions on the source.
+ * @summary Duplicate route
+ */
+export const duplicateRoute = (
+  teamSlug: string,
+  routeSlug: string,
+  routeDuplicateRequest: BodyType<RouteDuplicateRequest>,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<RouteDto>(
+    {
+      url: `/api/teams/${teamSlug}/routes/${routeSlug}/duplicate`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: routeDuplicateRequest,
+      signal,
+    },
+    options
+  )
+}
+
+export const getDuplicateRouteMutationKey = () => ['duplicateRoute'] as const
+
+export const getDuplicateRouteMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof duplicateRoute>>,
+    TError,
+    DuplicateRouteMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof axiosMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof duplicateRoute>>,
+  TError,
+  DuplicateRouteMutationVariables,
+  TContext
+> => {
+  const mutationKey = getDuplicateRouteMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof duplicateRoute>>,
+    DuplicateRouteMutationVariables
+  > = (props) => {
+    const { teamSlug, routeSlug, data } = props ?? {}
+
+    return duplicateRoute(teamSlug, routeSlug, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type DuplicateRouteMutationResult = NonNullable<Awaited<ReturnType<typeof duplicateRoute>>>
+export type DuplicateRouteMutationBody = BodyType<RouteDuplicateRequest>
+export type DuplicateRouteMutationError = ErrorType<ErrorResponse>
+export type DuplicateRouteMutationVariables = {
+  teamSlug: string
+  routeSlug: string
+  data: BodyType<RouteDuplicateRequest>
+}
+
+/**
+ * @summary Duplicate route
+ */
+export const useDuplicateRoute = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof duplicateRoute>>,
+      TError,
+      DuplicateRouteMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseMutationResult<
+  Awaited<ReturnType<typeof duplicateRoute>>,
+  TError,
+  DuplicateRouteMutationVariables,
+  TContext
+> => {
+  return useMutation(getDuplicateRouteMutationOptions(options), queryClient)
+}
+/**
  * The control points, routed pieces and imported ranges the route was last saved with, for its edit page. Reserved to those who may edit the route. 'state' is absent when there is none to read back (never saved with one, track replaced since by a path that does not carry it, several tracks): the editor then opens the saved track as an import.
  * @summary Get the planner state of a route
  */
@@ -2042,6 +2136,92 @@ export const prefetchGetRoutePlannerStateQuery = async <
   return queryClient
 }
 
+/**
+ * Creates a GPX preview owned by the caller from a route they can read: same title, track, planner state and waypoints. Nothing is created in the team and the route is left unchanged. Any signed-in account that can read the route may call it.
+ * @summary Create an analysed GPX file from a route
+ */
+export const createPreviewFromRoute = (
+  teamSlug: string,
+  routeSlug: string,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<GpxPreviewDto>(
+    { url: `/api/teams/${teamSlug}/routes/${routeSlug}/preview`, method: 'POST', signal },
+    options
+  )
+}
+
+export const getCreatePreviewFromRouteMutationKey = () => ['createPreviewFromRoute'] as const
+
+export const getCreatePreviewFromRouteMutationOptions = <
+  TError = ErrorType<ErrorResponse | void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createPreviewFromRoute>>,
+    TError,
+    CreatePreviewFromRouteMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof axiosMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createPreviewFromRoute>>,
+  TError,
+  CreatePreviewFromRouteMutationVariables,
+  TContext
+> => {
+  const mutationKey = getCreatePreviewFromRouteMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createPreviewFromRoute>>,
+    CreatePreviewFromRouteMutationVariables
+  > = (props) => {
+    const { teamSlug, routeSlug } = props ?? {}
+
+    return createPreviewFromRoute(teamSlug, routeSlug, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type CreatePreviewFromRouteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createPreviewFromRoute>>
+>
+
+export type CreatePreviewFromRouteMutationError = ErrorType<ErrorResponse | void>
+export type CreatePreviewFromRouteMutationVariables = { teamSlug: string; routeSlug: string }
+
+/**
+ * @summary Create an analysed GPX file from a route
+ */
+export const useCreatePreviewFromRoute = <
+  TError = ErrorType<ErrorResponse | void>,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof createPreviewFromRoute>>,
+      TError,
+      CreatePreviewFromRouteMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseMutationResult<
+  Awaited<ReturnType<typeof createPreviewFromRoute>>,
+  TError,
+  CreatePreviewFromRouteMutationVariables,
+  TContext
+> => {
+  return useMutation(getCreatePreviewFromRouteMutationOptions(options), queryClient)
+}
 /**
  * Change route URL slug. Requires organizer permissions.
  * @summary Change route slug
