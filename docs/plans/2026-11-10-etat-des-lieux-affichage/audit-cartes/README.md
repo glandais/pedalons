@@ -118,5 +118,6 @@ ce n'est pas un écart entre supports, c'est une incohérence commune.
 
 ## Suite
 
-Rien n'est décidé ni corrigé ici. L'alignement du site est suivi par le ledger `WEB-165` ; les défauts propres à l'app
-n'ont pas encore d'entrée.
+Rien n'est décidé ni corrigé ici. La marche à suivre proposée est dans [METHODE.md](METHODE.md) : tri en trois tas,
+galeries de cartes, maquettes avant / cible, lots par règle. L'alignement du site est suivi par le ledger `WEB-165` ;
+les défauts propres à l'app n'ont pas encore d'entrée.
