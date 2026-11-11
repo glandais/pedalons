@@ -513,7 +513,7 @@ export function ride(options: RideOptions = {}, overrides: Partial<RideDto> = {}
     commentCount: 2,
     tags: [],
     weather: offset >= 0 ? weatherSummary(rainAlert, offset) : undefined,
-    permissions: { ...MEMBER_PERMISSIONS, canRegister: offset >= 0 && !mine },
+    permissions: { ...MEMBER_PERMISSIONS, canRegister: offset >= 0 },
     ...overrides,
   }
 }
