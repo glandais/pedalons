@@ -4,6 +4,7 @@ import type {
   CommentDto,
   CommentListResponse,
   CommentRequest,
+  GpxPreviewDto,
   PlaceListResponse,
   RouteListResponse,
   RoutesBulkResponse,
@@ -761,6 +762,69 @@ test.describe('what a route shows to whom', () => {
     } finally {
       await organizerContext.close()
     }
+  })
+
+  test('an organizer duplicates a route under the name typed, and lands on the copy’s edit page (WEB-168)', async ({
+    page,
+    context,
+  }) => {
+    const { owner, team, route, name } = await publicTeamWithRoute('dupliquer')
+    const organizer = await newUser(unique('Organisateur'))
+    await addMember(owner, team.slug, organizer, 'ORGANIZER')
+
+    await signIn(context, organizer)
+    const main = await openSettled(page, team.slug, route.slug, name)
+    // An organizer edits the route itself: no copy to edit.
+    await expect(main.getByRole('button', { name: 'Modifier une copie' })).toHaveCount(0)
+    await main.getByRole('button', { name: 'Dupliquer', exact: true }).click()
+
+    const dialog = page.getByRole('dialog', { name: 'Dupliquer le parcours' })
+    const field = dialog.getByRole('textbox', { name: 'Nom du parcours' })
+    await expect(field).toHaveValue(`Copie de ${name}`)
+    const copyName = unique('Copie dupliquée')
+    await field.fill(copyName)
+    await dialog.getByRole('button', { name: 'Dupliquer', exact: true }).click()
+
+    await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/parcours/[^/]+/modifier$`))
+    const copySlug = new URL(page.url()).pathname.split('/').at(-2)!
+    expect(copySlug).not.toBe(route.slug)
+    const copy = await getRoute(owner, team.slug, copySlug)
+    expect(copy.name).toBe(copyName)
+    expect(copy.distance).toBe(route.distance)
+    // The original is untouched.
+    expect((await getRoute(owner, team.slug, route.slug)).name).toBe(name)
+  })
+
+  test('a member edits a copy of a route as a GPX preview of its own, nothing created in the team (WEB-169)', async ({
+    page,
+    context,
+  }) => {
+    const { owner, team, route, name } = await publicTeamWithRoute('copie')
+    const member = await newUser(unique('Membre'))
+    await addMember(owner, team.slug, member)
+
+    await signIn(context, member)
+    const main = await openSettled(page, team.slug, route.slug, name)
+    await expect(main.getByRole('button', { name: 'Dupliquer', exact: true })).toHaveCount(0)
+    await main.getByRole('button', { name: 'Modifier une copie' }).click()
+
+    await expect(page).toHaveURL(/\/outils-gpx\/[^/]+\/modifier$/)
+    const previewId = new URL(page.url()).pathname.split('/').at(-2)!
+    const preview = await apiGet<GpxPreviewDto>(member, `/api/gpx-previews/${previewId}`)
+    expect(preview.name).toBe(name)
+    // The team still holds the one route.
+    const { routes } = await listRoutes(owner, team.slug)
+    expect(routes.map((r) => r.slug)).toEqual([route.slug])
+  })
+
+  test('an anonymous visitor is offered neither Dupliquer nor « Modifier une copie »', async ({
+    page,
+  }) => {
+    const { team, route, name } = await publicTeamWithRoute('copie-anonyme')
+    const main = await openSettled(page, team.slug, route.slug, name)
+    await expect(main.getByRole('link', { name: 'Télécharger GPX' })).toBeVisible()
+    await expect(main.getByRole('button', { name: 'Dupliquer', exact: true })).toHaveCount(0)
+    await expect(main.getByRole('button', { name: 'Modifier une copie' })).toHaveCount(0)
   })
 
   test('« Utilisée dans » lists only the rides and trips the visitor may read', async ({

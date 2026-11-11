@@ -151,3 +151,33 @@ describe('RouteDetailView — a stage’s Météo mode (WEB-118)', () => {
     expect(screen.queryByTestId('wind-map-legend')).toBeNull()
   })
 })
+
+describe('RouteDetailView — the page’s extra actions (WEB-169)', () => {
+  afterEach(cleanup)
+
+  const withGpx = {
+    ...ROUTE,
+    media: { markdown: '', assets: { gpx: { url: '/aller.gpx' } } },
+  } as unknown as RouteDetailDto
+
+  it('renders them in the downloads’ row, after the downloads', () => {
+    show({ route: withGpx, extraActions: <button type="button">Modifier une copie</button> })
+    const download = screen.getByRole('link', { name: 'Télécharger GPX' })
+    const extra = screen.getByRole('button', { name: 'Modifier une copie' })
+    expect(download.parentElement).toBe(extra.parentElement)
+    expect(!!(download.compareDocumentPosition(extra) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(
+      true
+    )
+  })
+
+  it('renders them even without a download to offer', () => {
+    show({ extraActions: <button type="button">Modifier une copie</button> })
+    expect(screen.getByRole('button', { name: 'Modifier une copie' })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: 'Télécharger GPX' })).toBeNull()
+  })
+
+  it('renders no row when there is neither', () => {
+    show({ route: withGpx, showDownload: false })
+    expect(screen.queryByRole('link', { name: 'Télécharger GPX' })).toBeNull()
+  })
+})

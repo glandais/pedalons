@@ -7,11 +7,19 @@ import i18next from 'i18next'
 import { paths } from '../../config/paths'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { Box, Button, Group, Stack, Title } from '@mantine/core'
-import { useDeleteRoute, useUndeleteRoute } from '@/api/endpoints/routes/routes'
+import { IconCopy } from '@tabler/icons-react'
+import {
+  useCreatePreviewFromRoute,
+  useDeleteRoute,
+  useDuplicateRoute,
+  useUndeleteRoute,
+} from '@/api/endpoints/routes/routes'
+import { getListMyPreviewsQueryKey } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
 import { useRouteDetailData } from './routeDetailData'
 import { RouteDetailView } from '../../components/route/RouteDetailView'
 import { RouteUsages } from '../../components/route/RouteUsages'
+import { DuplicateRouteModal } from '../../components/route/DuplicateRouteModal'
 import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '../../components/common/DetailPageSkeleton'
@@ -24,6 +32,7 @@ import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 import { ReportTargetType } from '@/api/dto'
 import { useAuthStore, selectUser } from '@/store/authStore'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
+import { useAuth } from '@/hooks/useAuth'
 
 export function RouteDetailPage() {
   const { teamSlug, routeSlug } = useParams<{ teamSlug: string; routeSlug: string }>()
@@ -31,6 +40,7 @@ export function RouteDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const currentUserId = useAuthStore(selectUser)?.id
+  const { isAuthenticated } = useAuth()
 
   const { route: routeQuery } = useRouteDetailData(teamSlug, routeSlug)
   const { data: route, isLoading: routeLoading, error, refetch } = routeQuery
@@ -39,8 +49,11 @@ export function RouteDetailPage() {
   const team = route?.team
   const deleteRouteMutation = useDeleteRoute()
   const undeleteRouteMutation = useUndeleteRoute()
+  const duplicateRouteMutation = useDuplicateRoute()
+  const createPreviewMutation = useCreatePreviewFromRoute()
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showDuplicate, setShowDuplicate] = useState(false)
 
   useCanonicalPath(team && route ? paths.route(team.slug, route.slug) : undefined)
 
@@ -82,6 +95,46 @@ export function RouteDetailPage() {
         }
       )
     }
+  }
+
+  // An organizer's copy, in the same team: only the name is sent, the API copies the rest and the
+  // copy opens in its edit page (docs/LEDGER_*.md WEB-168).
+  const handleDuplicate = (name: string) => {
+    if (!routeSlug || !teamSlug) return
+    duplicateRouteMutation.mutate(
+      { teamSlug, routeSlug, data: { name } },
+      {
+        onSuccess: (copy) => {
+          invalidateRouteQueries(queryClient, teamSlug)
+          notifications.show({
+            message: i18next.t('routes.notifications.duplicated'),
+            color: 'green',
+          })
+          setShowDuplicate(false)
+          navigate(paths.routeEdit(teamSlug, copy.slug))
+        },
+      }
+    )
+  }
+
+  // A reader who may not edit the route edits a GPX preview of it instead: nothing is created in
+  // the team, the preview is the caller's own (docs/LEDGER_*.md WEB-169).
+  const handleEditCopy = () => {
+    if (!routeSlug || !teamSlug) return
+    createPreviewMutation.mutate(
+      { teamSlug, routeSlug },
+      {
+        onSuccess: (preview) => {
+          // Refresh "my files": the key prefix matches every paginated variant.
+          queryClient.invalidateQueries({ queryKey: getListMyPreviewsQueryKey() })
+          notifications.show({
+            message: i18next.t('routes.notifications.copyCreated'),
+            color: 'green',
+          })
+          navigate(paths.gpxToolsEdit(preview.id))
+        },
+      }
+    )
   }
 
   if (routeLoading || error || !route || !team) {
@@ -134,6 +187,15 @@ export function RouteDetailPage() {
                     {t('actions.edit')}
                   </Button>
                 )}
+                {canEdit && !route.deleted && (
+                  <Button
+                    variant="default"
+                    leftSection={<IconCopy size={16} />}
+                    onClick={() => setShowDuplicate(true)}
+                  >
+                    {t('actions.duplicate')}
+                  </Button>
+                )}
                 {canDelete && route.deleted && (
                   <Button
                     variant="outline"
@@ -180,12 +242,37 @@ export function RouteDetailPage() {
         isLoading={deleteRouteMutation.isPending}
       />
 
+      {showDuplicate && (
+        <DuplicateRouteModal
+          sourceName={route.name}
+          loading={duplicateRouteMutation.isPending}
+          onSubmit={handleDuplicate}
+          onClose={() => setShowDuplicate(false)}
+        />
+      )}
+
       {/* Route Details */}
       <Box>
         <RouteDetailView
           route={route}
           teamSlug={teamSlug}
           fullscreenPath={(colorBy) => withMapColor(paths.routeMap(team.slug, route.slug), colorBy)}
+          extraActions={
+            isAuthenticated &&
+            !canEdit &&
+            !route.deleted &&
+            route.media.assets.gpx && (
+              <Button
+                variant="default"
+                size="sm"
+                leftSection={<IconCopy size={16} />}
+                onClick={handleEditCopy}
+                loading={createPreviewMutation.isPending}
+              >
+                {t('routes.detail.editCopy')}
+              </Button>
+            )
+          }
         />
       </Box>
 

@@ -51,6 +51,11 @@ interface RouteDetailViewProps {
   timezone?: string
   /** What the page sets just above the climbs: a stage's forecast, under its map (WEB-143). */
   beforeClimbs?: React.ReactNode
+  /**
+   * Buttons the page adds after the downloads, in the same row: the route sheet's « Modifier une
+   * copie » (ledger WEB-169).
+   */
+  extraActions?: React.ReactNode
 }
 
 /**
@@ -67,6 +72,7 @@ export function RouteDetailView({
   windAttribution,
   timezone,
   beforeClimbs,
+  extraActions,
 }: RouteDetailViewProps) {
   const { t } = useTranslation()
   const { distance, elevation, formatDistance, config } = useUnits()
@@ -79,6 +85,8 @@ export function RouteDetailView({
   })
   const { connectedServices, uploadRoute, isUploading } = useGpsConnections()
   const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
+
+  const hasDownloads = showDownload && !!(route.media.assets.gpx || route.media.assets.fit)
 
   const handleSendToDevice = (serviceType: GpsServiceType) => {
     if (teamSlug && route.slug) {
@@ -117,9 +125,9 @@ export function RouteDetailView({
       />
 
       {/* Download Buttons - inline without wrapper */}
-      {showDownload && (route.media.assets.gpx || route.media.assets.fit) && (
+      {(hasDownloads || extraActions) && (
         <Group gap="sm" wrap="wrap">
-          {route.media.assets.gpx && (
+          {hasDownloads && route.media.assets.gpx && (
             <Button
               variant="default"
               size="sm"
@@ -130,7 +138,7 @@ export function RouteDetailView({
               {t('routes.detail.download.gpx')}
             </Button>
           )}
-          {route.media.assets.fit && (
+          {hasDownloads && route.media.assets.fit && (
             <Button
               variant="default"
               size="sm"
@@ -142,7 +150,7 @@ export function RouteDetailView({
             </Button>
           )}
           {/* Send to Device - only show if authenticated with connected services */}
-          {isAuthenticated && teamSlug && connectedServices.length > 0 && (
+          {hasDownloads && isAuthenticated && teamSlug && connectedServices.length > 0 && (
             <Menu shadow="md" width={200}>
               <Menu.Target>
                 <Button
@@ -168,6 +176,7 @@ export function RouteDetailView({
               </Menu.Dropdown>
             </Menu>
           )}
+          {extraActions}
         </Group>
       )}
 
