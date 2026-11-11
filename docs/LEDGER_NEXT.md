@@ -71,6 +71,12 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       son groupe, accueil, tableau de bord ; `TripStageDto.route` pour l'étape. Même
       vocabulaire d'état que l'interrupteur (`profile.gps.autoSync.*`). Pendant web : `WEB-163`.
 
+- [ ] `MOB-139` **Homogénéité des cartes, côté app (M, par lots)** — l'audit du 11 novembre 2026
+      ([`audit-cartes/`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/README.md)) relève une douzaine de défauts de l'app sur ses cartes et lignes de liste (brouillon
+      et voyage annulé sans badge dans le fil, « 1 membres », « Adhésion... » pour un groupe de sortie, dates longues qui
+      cassent l'anglais, `_TeamCard` hors charte, épingle d'une annonce…) et dix règles encore à décider sur maquette.
+      Défauts, règles et décisions : [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) ; marche à suivre : [`METHODE.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/METHODE.md) ; règles
+      décidées : `KIT.md` §9. Pendant du site : `WEB-167`.
 - [ ] `MOB-135` **Refonte des écrans de détail : recette sur appareil de `MOB-134` (S)** — la refonte est livrée
       (`MOB-134`) sans avoir été regardée : **aucune passe Patrol, ni iOS ni Android, depuis le lot 6**, et les
       écrans voyage, parcours et étape (lots 9 à 11) n'ont **jamais été vus à l'écran** (la sortie à plusieurs
@@ -390,6 +396,10 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 - [ ] `WEB-161` **Contrôles de carte : recette à l'œil de `WEB-157` (S)** — scindé de `WEB-158`
       (les e2e sont passés le 10 novembre 2026), plan [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md).
       À l'œil, clair et sombre : l'ordre des deux colonnes ; la liste de la recherche par-dessus le zoom ;
+- [ ] `WEB-167` **Homogénéité des cartes, côté site (M, par lots)** — pendant de `MOB-139` : une douzaine de défauts du
+      site (nombres sans la langue, « Quitter » sur une sortie annulée, aucun changement de groupe, plage de voyage écrite
+      de deux façons, épingle d'une annonce…) et les règles décidées le 11 novembre 2026 (`KIT.md` §9). Détail dans
+      [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md). Recouvre la partie « cartes » de `WEB-165`, qui garde les pages de détail.
 - [ ] `WEB-165` **Aligner le web sur les décisions des cibles mobiles (M, à cadrer)** — heure de son groupe en gros,
       « Changer pour A », bouton « GPS » unique, tuiles dans le même ordre :
       [`maquettes/KIT.md`](plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) §8. Hors périmètre de `MOB-134`.
@@ -614,6 +624,12 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 
 ## API — Contrat d'API et backend
 
+- [ ] `API-178` **Distance d'affichage d'une sortie, calculée par l'API (S à M)** — une même sortie montre aujourd'hui
+      jusqu'à trois distances selon la carte (groupe, parcours de la sortie, premier groupe), dans l'app comme sur le site.
+      Décidé le 11 novembre 2026 (`KIT.md` §9, règle R3 de [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md)) : les DTO de liste (sortie, participation,
+      événement de calendrier) portent une distance et un dénivelé d'affichage pour la personne qui lit — ceux de son groupe
+      si elle est inscrite, sinon ceux du parcours commun, sinon rien. Les cartes cessent de les recalculer (`MOB-139`,
+      `WEB-167`).
 - [ ] `API-173` **La ligne météo d'un voyage dans les listes s'arrête au départ de sa dernière étape (S)** — reste
       de `API-170` : la page du voyage et celle de l'étape gardent leur météo jusqu'à la fin estimée de l'étape,
       mais `TripWeatherLookup.forTrips` écarte encore un voyage dès que `TripListSummary.endDate` (le **départ** de
