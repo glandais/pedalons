@@ -237,3 +237,24 @@ suivie, si besoin, de 5 lignes maximum sur ce que tu n'as pas pu reproduire fid�
 - Sortie annulée : le badge « J'y vais » reste sur ma carte, le lien « Quitter le groupe » disparaît (état non dessiné).
 - Page groupe, inscrit : coche sur la pastille de mon groupe, badge « J'y vais » à la place de « Rejoindre », « Quitter le groupe » en bas de « Personnes inscrites » (maquette `groupe-inscrit-mobile-cible`).
 - Export du parcours : un seul bouton « GPS » (contour, icône appareil) partout, à la place de GPX / FIT / Envoyer vers un appareil. Il ouvre la feuille GPS (`feuille-gps.dc.html`) : « Vers un appareil » (une ligne par service connecté), « Fichier GPX », « Fichier FIT, pour compteur » (Android : enregistrer / envoyer vers une autre app ; iOS : une ligne « Partager »). Sans service connecté : entrée « Connecter un compteur » en bas (`feuille-gps-sans-appareil.dc.html`).
+
+## 9. Règles des cartes, app et site (décisions du 2026-11-11)
+
+Issues de l'[audit des cartes](../audit-cartes/README.md) et de son [tri](../audit-cartes/tri.md). Elles valent pour les cartes
+et lignes de liste des **deux** supports. Les règles encore ouvertes (badges d'état, météo, compteurs, personnes inscrites,
+inscription, export, image d'en-tête, lieu et groupe, champs propres, actions) se décident sur maquette et s'ajouteront ici.
+
+- Le site suit le §8 pour ce que nomme le ledger `WEB-165` : heure de son groupe, « Changer pour A », pas de « Quitter » sur une
+  sortie annulée, bouton « GPS », chiffres dans l'ordre distance · D+ · vitesse.
+- **Confirmation** : quitter ou changer de groupe ne se confirme jamais ; supprimer se confirme toujours.
+- **Date d'une publication ou d'une annonce** : courte avec l'heure, « dim. 8 nov. · 18:30 » ; l'année seulement hors de l'année
+  en cours.
+- **Date relative** : « il y a 2 heures », sans « environ » ; au-delà de 7 jours, la date (« 3 novembre 2026 »).
+- **Carte de voyage** : « Départ 09:00 » puis la plage « ven. 20 → dim. 22 nov. ».
+- **Ancienneté d'un membre** : « Membre depuis mars 2024 ».
+- **Distance d'une sortie sur une carte de liste** : une seule, donnée par l'API pour la personne qui lit — celle de son groupe si
+  elle est inscrite, sinon celle du parcours commun, sinon rien. Aucune carte ne la recalcule.
+- **Annonce** : « Secteur {lieu} », sans icône d'épingle.
+- **Vocabulaire** : visibilité « Équipe uniquement » ; notification d'inscription « {nom} a rejoint votre sortie » ; notification
+  de modification, le titre dit ce qui change (« Une sortie change de date ») ; webhook, un seul badge « Actif » / « Échec » /
+  « Désactivé », dernier envoi « Réussi », format « JSON ».

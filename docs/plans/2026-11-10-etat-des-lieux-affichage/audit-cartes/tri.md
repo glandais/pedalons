@@ -22,6 +22,29 @@ ni de l'autre. Classé en écart voulu (V6).
 
 ---
 
+## Décisions prises le 11 novembre 2026
+
+Tranchées avec le propriétaire, une par une. Les règles sont écrites dans [`KIT.md` §9](../maquettes/KIT.md).
+
+| Sujet | Décision |
+|---|---|
+| Lecture de `WEB-165` | Le site suit `KIT.md` §8 : D14 (« Changer pour »), D15 (« Quitter » sur une sortie annulée) et D16 (ordre des chiffres) sont bien des défauts. |
+| D11, épingle d'une annonce | Icône retirée, « Secteur {lieu} » seul. Vaut aussi pour le site (`AdCard.tsx`, `IconMapPin`) : D11 passe dans « Les deux ». |
+| **R8** Confirmation | Quitter ou changer de groupe : jamais. Supprimer : toujours. Le site retire la confirmation de « Ma prochaine sortie » ; l'app confirme la suppression d'un commentaire. |
+| **R9** Date d'une publication, d'une annonce | Courte avec l'heure : « dim. 8 nov. · 18:30 », l'année hors année en cours. L'app s'aligne. |
+| **R9** Date relative | Celle de l'app : « il y a 2 heures », sans « environ », date absolue au-delà de 7 jours. Le site s'aligne. |
+| **R9** Carte de voyage | « Départ 09:00 » puis la plage de dates. Le site ajoute l'heure. |
+| **R9** Ancienneté d'un membre | « Membre depuis mars 2024 ». Le site s'aligne. |
+| **R14** Visibilité | « Équipe uniquement ». L'app s'aligne. |
+| **R14** Notification d'inscription | « {nom} a rejoint votre sortie ». L'app s'aligne. |
+| **R14** Notification de modification | Le titre dit ce qui change (« Une sortie change de date »). Le site s'aligne. |
+| **R14** Webhook | Un seul badge (« Actif », « Échec », « Désactivé ») ; « Réussi » ; « JSON ». L'app s'aligne. |
+| **R3** Distance d'une sortie | Calculée par l'API pour la personne qui lit : celle de son groupe si elle est inscrite, sinon celle du parcours commun, sinon rien. Entrée `API-…` à créer. |
+
+Restent à décider, sur maquette : R1, R2, R4, R5, R6, R7, R10, R11, R12, R13.
+
+---
+
 ## 1. Défauts
 
 Un seul côté a raison. Corrigés sans maquette, au lot 0.
