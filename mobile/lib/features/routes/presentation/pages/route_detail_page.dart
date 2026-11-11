@@ -46,7 +46,7 @@ import '../widgets/waypoint_selection.dart';
 /// Dans l'ordre : l'identité (équipe, titre, badges, tags), les tuiles
 /// Distance | Dénivelé positif, la section Parcours ([RouteSection] : carte,
 /// Pente | Revêtement, profil, revêtement, « GPS »), « Description », « Points
-/// du parcours », « Cols et montées », « Utilisée dans », « Informations »
+/// du parcours », « Cols et montées », « Utilisé dans », « Informations »
 /// (« Créé le 3 novembre 2026 »), « Commentaires ».
 ///
 /// Hors maquette et gardés : le crayon et le menu d'organisateur, le

@@ -62,6 +62,7 @@ void main() {
     String endDateTime = '2036-07-29T21:40:00Z',
     bool finished = false,
     int groupCount = 2,
+    String status = 'PUBLISHED',
   }) => PublicationDtoRide(
     permissions: kNoPermissions,
     timezone: 'Europe/Paris',
@@ -74,7 +75,7 @@ void main() {
     media: media,
     dateTime: dateTime,
     endDateTime: endDateTime,
-    status: 'PUBLISHED',
+    status: status,
     visibility: 'TEAM',
     participantCount: 10,
     groupCount: groupCount,
@@ -144,12 +145,42 @@ void main() {
     await tester.pump();
   }
 
+  /// Les libellés des badges de la carte, dans l'ordre.
+  List<String> badgeLabels(WidgetTester tester) => tester
+      .widgetList<PdlBadge>(find.byType(PdlBadge))
+      .map((PdlBadge b) => b.label)
+      .toList();
+
   Finder onImage(Type type) => find.descendant(
     of: find.byType(PdlCardMedia),
     matching: find.byType(type),
   );
 
   group('carte de sortie du fil', () {
+    // Ledger `MOB-139`, D1 : un brouillon se badge, comme une publication.
+    testWidgets('une sortie en brouillon porte « Brouillon »', (
+      WidgetTester tester,
+    ) async {
+      await pump(tester, PublicationCard(publication: ride(status: 'DRAFT')));
+      expect(badgeLabels(tester), <String>['Sortie', 'Brouillon']);
+
+      await pump(tester, PublicationCard(publication: ride()));
+      expect(badgeLabels(tester), isNot(contains('Brouillon')));
+    });
+
+    // Ledger `MOB-139`, D10 : le compteur de groupes n'a pas l'icône des
+    // personnes.
+    testWidgets('le compteur de groupes a sa propre icône', (
+      WidgetTester tester,
+    ) async {
+      await pump(tester, PublicationCard(publication: ride()));
+      final PdlStat groups = tester
+          .widgetList<PdlStat>(find.byType(PdlStat))
+          .firstWhere((PdlStat s) => s.value == '2 groupes');
+      expect(groups.icon, PdlIcons.rideGroup);
+      expect(groups.icon, isNot(PdlIcons.people));
+    });
+
     testWidgets('une sortie sans groupe n’a pas de compteur de personnes', (
       WidgetTester tester,
     ) async {
@@ -266,6 +297,28 @@ void main() {
   });
 
   group('carte de voyage du fil', () {
+    // Ledger `MOB-139`, D1 et D2 : « Annulé » et « Brouillon », comme la
+    // sortie.
+    testWidgets(
+      'un voyage annulé porte « Annulé », un brouillon « Brouillon »',
+      (WidgetTester tester) async {
+        await pump(
+          tester,
+          PublicationCard(publication: trip.copyWith(status: 'CANCELLED')),
+        );
+        expect(badgeLabels(tester), <String>['Voyage', 'Annulé']);
+
+        await pump(
+          tester,
+          PublicationCard(publication: trip.copyWith(status: 'DRAFT')),
+        );
+        expect(badgeLabels(tester), <String>['Voyage', 'Brouillon']);
+
+        await pump(tester, const PublicationCard(publication: trip));
+        expect(badgeLabels(tester), <String>['Voyage']);
+      },
+    );
+
     testWidgets('boîte du jour turquoise posée, « Départ 09:00 » et la plage '
         'du voyage', (WidgetTester tester) async {
       await pump(tester, const PublicationCard(publication: trip));

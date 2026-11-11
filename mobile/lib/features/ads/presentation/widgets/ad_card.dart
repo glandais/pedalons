@@ -128,11 +128,16 @@ class AdCard extends StatelessWidget {
                         value: AppFormatters.formatLongDate(at),
                         icon: PdlIcons.date,
                       ),
+                    // Un secteur, jamais une épingle : la position est
+                    // floutée à ~1 km (ledger `MOB-139`, D11 ; KIT §9).
                     if (ad.locationDescription != null &&
                         ad.locationDescription!.isNotEmpty)
                       PdlStat(
-                        value: ad.locationDescription!,
-                        icon: PdlIcons.place,
+                        value: 'ads.sector'.tr(
+                          namedArgs: <String, String>{
+                            'place': ad.locationDescription!,
+                          },
+                        ),
                       ),
                   ],
                 ),

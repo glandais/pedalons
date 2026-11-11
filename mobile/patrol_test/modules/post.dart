@@ -89,9 +89,13 @@ final class Post extends Module {
 
   // ── The `⋯` menu ────────────────────────────────────────────────────────
 
-  /// From the open `⋯` menu of one's own comment: « Supprimer » — no confirmation.
+  /// From the open `⋯` menu of a comment: « Supprimer », then its confirmation (KIT §9, ledger
+  /// `MOB-139`: deleting always asks).
   Future<void> deleteFromOpenMenu() async {
     await $(keys.moderation.deleteAction).tap();
     await waitUntilGone(keys.moderation.deleteAction);
+    await $(keys.profile.confirmDestructiveButton).waitUntilVisible();
+    await $(keys.profile.confirmDestructiveButton).tap();
+    await waitUntilGone(keys.profile.confirmDestructiveButton);
   }
 }

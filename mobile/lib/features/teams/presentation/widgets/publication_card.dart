@@ -389,6 +389,10 @@ class _RideBody extends ConsumerWidget {
             label: 'status.cancelled'.tr(),
             tone: Status.cancelled.tone(c),
           )
+        // Un brouillon se badge comme celui d'une publication (ledger
+        // `MOB-139`, D1) : sans lui, rien ne le distingue d'une sortie publiée.
+        else if (ride.status == 'DRAFT')
+          PdlBadge(label: 'status.draft'.tr(), tone: Status.draft.tone(c))
         else if (underWay)
           PdlBadge(
             key: keys.feed.underWayBadge(ride.slug),
@@ -442,7 +446,7 @@ class _RideBody extends ConsumerWidget {
         if (ride.groupCount > 0)
           PdlStat(
             value: 'rides.groupCount'.plural(ride.groupCount),
-            icon: PdlIcons.terrain,
+            icon: PdlIcons.rideGroup,
           ),
         if (ride.commentCount != null && ride.commentCount! > 0)
           PdlStat(
@@ -581,7 +585,17 @@ class _TripBody extends ConsumerWidget {
           label: 'publicationType.trip'.tr(),
           tone: PublicationType.trip.tone(c),
         ),
-        if (underWay)
+        // Les mêmes états que la sortie, Terminée mise à part (un voyage passé
+        // ne porte rien) : Annulé, Brouillon, En cours (ledger `MOB-139`, D1
+        // et D2).
+        if (trip.status == 'CANCELLED')
+          PdlBadge(
+            label: 'status.cancelled'.tr(),
+            tone: Status.cancelled.tone(c),
+          )
+        else if (trip.status == 'DRAFT')
+          PdlBadge(label: 'status.draft'.tr(), tone: Status.draft.tone(c))
+        else if (underWay)
           PdlBadge(
             key: keys.feed.underWayBadge(trip.slug),
             label: 'teams.agenda.underWay'.tr(),

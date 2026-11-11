@@ -6,13 +6,14 @@ import 'package:go_router/go_router.dart';
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/pdl/pdl.dart';
+import '../../../../core/theme/enum_colors.dart';
+import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
+import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
-import '../../../../core/widgets/authenticated_image.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../core/utils/safe_string.dart';
 import '../../providers/team_providers.dart';
 import '../widgets/pending_invitations_card.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
@@ -208,90 +209,63 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
   }
 }
 
-class _TeamCard extends ConsumerWidget {
+/// Une équipe de l'onglet Équipes : logo, nom, nombre de membres et rôle.
+///
+/// Les jetons et composants Pdl de « Mes équipes » (`HomeTeamRow`), le logo
+/// lu dans `team.logoUrl` comme les autres cartes d'équipe (ledger `MOB-139`,
+/// D9). Le contenu reste celui d'avant : il relève d'une règle encore ouverte.
+class _TeamCard extends StatelessWidget {
   final TeamDetailDto team;
 
   const _TeamCard({required this.team});
 
-  String? get _logoUrl => team.about.assets.logo?.url;
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return AnimatedCard(
+  Widget build(BuildContext context) {
+    final PdlColors c = context.pdl;
+    final PdlTypography t = context.pdlText;
+    final String? role = team.role;
+
+    return PdlCard(
       key: keys.teams.teamCard(team.slug),
       onTap: () => pushLocation(context, Paths.team(team.slug)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Team logo/avatar with Hero animation
-            Hero(
-              tag: 'team-logo-${team.slug}',
-              child: AuthenticatedCircleAvatar(
-                imageUrl: _logoUrl,
-                fallbackText: team.name.safeFirstUpper(),
-                radius: 28,
-                fontSize: 20,
-              ),
-            ),
-            const SizedBox(width: 16),
-            // Team info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    team.name,
-                    style: Theme.of(context).textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.people,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.outline,
+      child: Row(
+        children: <Widget>[
+          PdlAvatar(name: team.name, imageUrl: team.logoUrl, size: 56),
+          const SizedBox(width: PdlSpacing.card),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  team.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.cardTitle.copyWith(color: c.text),
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: PdlSpacing.cardTight,
+                  runSpacing: PdlSpacing.badgeGap,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    // Accordé : « 1 membre » (ledger `MOB-139`, D3).
+                    PdlStat(
+                      value: 'teams.membersList.count'.plural(team.memberCount),
+                      icon: PdlIcons.people,
+                    ),
+                    if (role != null)
+                      PdlBadge(
+                        label: AppFormatters.roleName(role),
+                        tone: TeamRole.fromJson(role).tone(c),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'teams.members'.tr(
-                          namedArgs: {'count': team.memberCount.toString()},
-                        ),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      if (team.role != null) ...[
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primaryContainer,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            AppFormatters.roleName(team.role!),
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
-            const Icon(Icons.chevron_right),
-          ],
-        ),
+          ),
+          Icon(PdlIcons.chevronRight, size: 18, color: c.textDimmed),
+        ],
       ),
     );
   }

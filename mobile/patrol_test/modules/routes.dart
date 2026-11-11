@@ -4,7 +4,7 @@ import 'package:pedalons/core/adaptive/navigation_destination.dart';
 import 'module.dart';
 
 /// The route library (the Explorer tab, and a team's Parcours section): search, filters, the
-/// list/map toggle — and a route's page, its trace and « Utilisée dans ».
+/// list/map toggle — and a route's page, its trace and « Utilisé dans ».
 final class Routes extends Module {
   Routes(super.$);
 
@@ -105,7 +105,7 @@ final class Routes extends Module {
         .waitUntilExists(timeout: const Duration(seconds: 20));
   }
 
-  /// Waits for the « Utilisée dans » card of the ride or trip [slug]. The page scrolls (ledger
+  /// Waits for the « Utilisé dans » card of the ride or trip [slug]. The page scrolls (ledger
   /// `MOB-134`, lot 10) and the section sits far below the map: the list is brought down to
   /// « Informations », right under it, so that the cards are built.
   Future<void> waitUntilUsageIsShown(String slug) async {

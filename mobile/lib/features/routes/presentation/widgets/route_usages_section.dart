@@ -18,7 +18,7 @@ import '../../../../core/widgets/detail_section.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../teams/domain/publication_timing.dart';
 
-/// « Utilisée dans » — les sorties, publications et voyages qui emploient ce
+/// « Utilisé dans » — les sorties, publications et voyages qui emploient ce
 /// parcours.
 ///
 /// `GET …/usages` **existait et n'était pas appelé**. La mention « via les
@@ -147,12 +147,14 @@ class _UsageCard extends StatelessWidget {
     );
   }
 
-  /// « via les groupes : A, B » pour une sortie, « via l'étape J3 » pour un
-  /// voyage. Le type décide de la formulation, pas le nombre d'entrées.
+  /// « via les groupes : A, B » pour une sortie ; pour un voyage, « via
+  /// l'étape J3 » ou « via les étapes : J1, J3 », selon le nombre d'étapes
+  /// (ledger `MOB-139`, D25).
   String _via() {
     final String names = usage.viaChildNames.join(', ');
     return switch (usage.type) {
-      'TRIP' => 'routes.viaStage'.tr(
+      'TRIP' => 'routes.viaStage'.plural(
+        usage.viaChildNames.length,
         namedArgs: <String, String>{'names': names},
       ),
       _ => 'routes.viaGroups'.tr(namedArgs: <String, String>{'names': names}),

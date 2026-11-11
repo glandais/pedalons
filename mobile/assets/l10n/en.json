@@ -186,7 +186,7 @@
   },
   "roles": {
     "owner": "Owner",
-    "admin": "Admin",
+    "admin": "Administrator",
     "member": "Member",
     "organizer": "Organiser"
   },
@@ -271,7 +271,6 @@
     "empty": "No teams",
     "joinPrompt": "Join a team to get started",
     "discover": "Discover teams",
-    "members": "{count} members",
     "about": "About",
     "tabs": {
       "dashboard": "Dashboard",
@@ -447,8 +446,7 @@
       },
       "latestAds": {
         "title": "Ads",
-        "empty": "No ad for now.",
-        "sector": "Area {place}"
+        "empty": "No ad for now."
       },
       "templates": {
         "title": "Create from a template",
@@ -495,16 +493,16 @@
             "SLACK": "Slack",
             "DISCORD": "Discord",
             "MATTERMOST": "Mattermost",
-            "GENERIC": "Generic"
+            "GENERIC": "JSON"
           },
           "enabled": "Active",
-          "disabled": "Inactive",
+          "disabled": "Disabled",
           "lastAttempt": "Last delivery on {date}",
           "never": "No delivery yet",
           "status": {
             "PENDING": "Pending",
             "SENDING": "Sending...",
-            "SENT": "Sent",
+            "SENT": "Delivered",
             "SKIPPED": "Skipped",
             "FAILED": "Failed"
           }
@@ -608,7 +606,7 @@
     "finished": "Finished",
     "groupJoin": "Join",
     "groupFull": "Full",
-    "joining": "Joining...",
+    "joining": "Joining…",
     "leaving": "Leaving...",
     "leaderIs": "Leader: {name}",
     "participantsOf": {
@@ -1037,7 +1035,8 @@
         "one": "{} hour",
         "other": "{} hours"
       }
-    }
+    },
+    "sector": "Area {place}"
   },
   "trips": {
     "title": "Trips",
@@ -1080,7 +1079,7 @@
     "cancelledTitle": "Trip cancelled.",
     "cancelledMessage": "This trip will not take place. No registration is possible.",
     "notMemberBanner": "Join this team to take part in trips.",
-    "joining": "Joining...",
+    "joining": "Joining…",
     "leaving": "Leaving...",
     "participationFailedTitle": "Could not update your participation",
     "partialTrack": "Partial track: {shown} of {total} stages are shown.",
@@ -1194,7 +1193,10 @@
     "gradeMax": "max.",
     "usedIn": "Used in",
     "viaGroups": "via groups: {names}",
-    "viaStage": "via stage {names}",
+    "viaStage": {
+      "one": "via stage {names}",
+      "other": "via stages: {names}"
+    },
     "information": "Information",
     "author": "Author",
     "createdOn": "Created on",
@@ -1641,11 +1643,11 @@
       "RIDE_CANCELLED": "A ride was cancelled",
       "TRIP_PUBLISHED": "{actor} published a trip",
       "TRIP_CANCELLED": "A trip was cancelled",
-      "POST_PUBLISHED": "{actor} published a post",
+      "POST_PUBLISHED": "New post from {actor}",
       "COMMENT_REPLY": "{actor} replied to your comment",
       "RIDE_REMINDER": "Reminder: your ride starts tomorrow",
       "RIDE_GROUP_REMOVED": "Your group was removed from a ride",
-      "RIDE_JOINED": "{actor} joined a ride",
+      "RIDE_JOINED": "{actor} joined your ride",
       "COMMENT_ON_MY_PUBLICATION": "{actor} commented on your publication",
       "TEAM_INVITATION": "{actor} invited you to join {team}",
       "RIDE_UPDATED": "A ride was changed",
@@ -1656,7 +1658,7 @@
       "RIDE_CANCELLED": "Ride cancelled",
       "TRIP_PUBLISHED": "Trip published",
       "TRIP_CANCELLED": "Trip cancelled",
-      "POST_PUBLISHED": "Post published",
+      "POST_PUBLISHED": "New post",
       "COMMENT_REPLY": "Comment reply",
       "RIDE_REMINDER": "Reminder the day before a ride",
       "RIDE_UPDATED": "Ride changed",
@@ -1695,7 +1697,7 @@
     },
     "push": {
       "title": "Notifications on this device",
-      "hint": "Hear about a published or cancelled ride without opening the app.",
+      "hint": "Get an alert when a ride is published or cancelled, without opening the app.",
       "enable": "Turn on",
       "deniedHint": "Notifications are blocked for Pédalons. You can turn them back on in your phone's settings."
     },
@@ -1830,7 +1832,7 @@
       "GPX_FAILURE": "Failed to process the GPX file",
       "GPX_NOT_FOUND": "GPX file not found",
       "GROUP_FULL": "This group is full",
-      "INCOMPATIBLE_VISIBILITY": "Incompatible visibilities: a “Team” route cannot be used by a ride or a trip visible outside the team",
+      "INCOMPATIBLE_VISIBILITY": "Incompatible visibilities: a “Team only” route cannot be used by a ride or a trip visible outside the team",
       "RIDE_PAST": "This ride is over: registration is closed",
       "INTERNAL_ERROR": "Internal server error",
       "INVALID_CREDENTIALS": "Invalid email address or password",
@@ -1963,7 +1965,11 @@
       "one": "View the reply",
       "other": "View the {} replies"
     },
-    "progress": "{loaded} comments out of {total}"
+    "progress": "{loaded} comments out of {total}",
+    "confirmDelete": {
+      "title": "Delete the comment?",
+      "message": "Do you really want to delete this comment? This cannot be undone."
+    }
   },
   "participants": {
     "title": "Participants",
@@ -1986,10 +1992,10 @@
   "visibility": {
     "public": "Public",
     "public_unlisted": "Unlisted",
-    "team": "Team",
+    "team": "Team only",
     "privateTeamHint": "Private team: as “Public” or “Unlisted”, this content can be read by anyone with the link, but it shows up in no list and no search engine.",
     "currentNotAllowed": "This visibility is no longer allowed in this team: choose another one to save.",
-    "noneAllowed": "No visibility can be saved for now: this route is used by rides or trips visible outside the team, and the team now only publishes as “Team”. Turn those rides and trips back to “Team” first.",
+    "noneAllowed": "No visibility can be saved for now: this route is used by rides or trips visible outside the team, and the team now only publishes as “Team only”. Turn those rides and trips back to “Team only” first.",
     "align": {
       "title": "Open the routes too?",
       "messageRide": "This ride will be visible outside the team, but some of its routes are reserved for the team. To save it, they change visibility:",
@@ -2004,7 +2010,7 @@
     },
     "routeInUse": {
       "title": "This route stays visible outside the team",
-      "message": "It is used by rides or trips visible outside the team: it cannot become “Team” while those rides and trips stay so. Turn them back to “Team” first, or keep another visibility for this route.",
+      "message": "It is used by rides or trips visible outside the team: it cannot become “Team only” while those rides and trips stay so. Turn them back to “Team only” first, or keep another visibility for this route.",
       "ride": "Ride",
       "trip": "Trip",
       "usage": "{kind} “{name}” ({visibility})"
@@ -2074,7 +2080,7 @@
     "reported": "Thank you. This content is now hidden from you.",
     "memberReported": "Thank you. Your report has been sent.",
     "blockTitle": "Block {name}?",
-    "blockMessage": "You will no longer see their comments, posts and ads, nor notifications about their comments. {name} won't be told.",
+    "blockMessage": "You will no longer see their comments, posts and ads, nor notifications about their comments. {name} won't get any alert.",
     "blockConfirm": "Block",
     "blocked": "You blocked {name}.",
     "unblock": "Unblock",

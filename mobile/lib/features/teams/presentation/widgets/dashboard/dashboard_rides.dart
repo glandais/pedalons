@@ -501,7 +501,7 @@ class DashboardRideCard extends ConsumerWidget {
                 ),
               PdlStat(
                 value: 'rides.groupCount'.plural(ride.groupCount),
-                icon: PdlIcons.people,
+                icon: PdlIcons.rideGroup,
               ),
               if (ride.commentCount != null && ride.commentCount! > 0)
                 PdlStat(

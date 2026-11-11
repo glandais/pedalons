@@ -173,6 +173,10 @@ class WeekAgendaRow extends StatelessWidget {
     final String meta = <String>[
       if (!event.allDay) AppFormatters.formatTime(start),
       event.teamName,
+      // L'heure est celle du groupe rejoint (BRANDING §7.8) : la ligne le
+      // nomme, comme le site (ledger `MOB-139`, D8).
+      if (event.groupName != null && event.groupName!.isNotEmpty)
+        event.groupName!,
     ].join(' · ');
 
     return PdlCard(

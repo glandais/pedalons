@@ -27,7 +27,9 @@ CalendarEventDto _event(
   bool finished = false,
   String status = 'PUBLISHED',
   String? tripSlug,
+  String? groupName,
 }) => CalendarEventDto(
+  groupName: groupName,
   timezone: 'Europe/Paris',
   id: 'e-$slug',
   title: 'Titre $slug',
@@ -139,6 +141,23 @@ void main() {
         expect(find.text('J\'Y VAIS'), findsOneWidget);
       },
     );
+
+    // Ledger `MOB-139`, D8 : l'heure est celle du groupe, la ligne le nomme.
+    testWidgets('la ligne nomme le groupe rejoint après l\'équipe', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        const WeekAgendaSection(),
+        events: <CalendarEventDto>[
+          _event('mardi-soir', registered: true, groupName: 'Groupe A'),
+          _event('jeudi', start: '2099-07-30T17:30:00Z'),
+        ],
+      );
+
+      expect(find.text('18:30 · VC Craponne · Groupe A'), findsOneWidget);
+      expect(find.text('18:30 · VC Craponne'), findsOneWidget);
+    });
 
     testWidgets('ne répète pas la sortie que « Ma prochaine sortie » montre', (
       WidgetTester tester,

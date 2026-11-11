@@ -8,7 +8,7 @@ import 'package:pedalons/features/routes/providers/route_detail_provider.dart';
 
 import '../../support/localization.dart';
 
-/// S13 — « Utilisée dans » : un voyage rend sa plage de dates (`endDate`,
+/// S13 — « Utilisé dans » : un voyage rend sa plage de dates (`endDate`,
 /// docs/LEDGER_*.md API-9), une sortie sa date et son heure.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +44,7 @@ void main() {
     required String type,
     required String slug,
     String? endDate,
+    List<String> via = const <String>[],
   }) => RouteUsageDto(
     timezone: 'Europe/Paris',
     type: type,
@@ -54,7 +55,7 @@ void main() {
     endDate: endDate,
     teamSlug: 'n-peloton',
     referencedDirectly: true,
-    viaChildNames: const <String>[],
+    viaChildNames: via,
   );
 
   testWidgets('un voyage rend sa plage de dates, au format unique (BRAND-8)', (
@@ -80,5 +81,20 @@ void main() {
 
     expect(find.textContaining('→'), findsNothing);
     expect(find.textContaining('1 août'), findsNWidgets(2));
+  });
+
+  // Ledger `MOB-139`, D25 : le pluriel suit le nombre d'étapes ; le titre
+  // s'accorde à « parcours » (libelles 4.7).
+  testWidgets('« via l’étape » pour une, « via les étapes : » pour plusieurs', (
+    WidgetTester tester,
+  ) async {
+    await pump(tester, <RouteUsageDto>[
+      usage(type: 'TRIP', slug: 'alpes', via: const <String>['J1']),
+      usage(type: 'TRIP', slug: 'pyrenees', via: const <String>['J1', 'J3']),
+    ]);
+
+    expect(find.text('Utilisé dans'), findsOneWidget);
+    expect(find.text('via l\'étape J1'), findsOneWidget);
+    expect(find.text('via les étapes : J1, J3'), findsOneWidget);
   });
 }

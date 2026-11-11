@@ -4,7 +4,7 @@ import 'api/routes_seed.dart';
 import 'common.dart';
 
 /// Web counterparts: `flow-routes.e2e.ts` › the platform-wide list (members-only routes stay out of
-/// it, the search narrows it, the list/map toggle) and › « Utilisée dans » lists only the rides and
+/// it, the search narrows it, the list/map toggle) and › « Utilisé dans » lists only the rides and
 /// trips the visitor may read.
 ///
 /// The app has no anonymous visitor: the outsider here is a signed-in rider of no team. The map's
@@ -12,7 +12,7 @@ import 'common.dart';
 /// the elevation profile — drawn from the stored track alone — and the map view by its presence.
 void main() {
   testApp(
-    'The Explorer tab keeps members-only routes to members, filters and toggles the map; « Utilisée dans » lists only what the viewer may read',
+    'The Explorer tab keeps members-only routes to members, filters and toggles the map; « Utilisé dans » lists only what the viewer may read',
     ($, modules, apiClients) async {
       final backend = apiClients.backend;
       final owner = await backend.newUser('Routes owner');
@@ -105,7 +105,7 @@ void main() {
       await modules.routes.waitUntilListed(openSlug);
       expect(modules.routes.showsMap, isFalse);
 
-      // Its page: the trace, and the public ride alone in « Utilisée dans ».
+      // Its page: the trace, and the public ride alone in « Utilisé dans ».
       await modules.routes.openRoute(openSlug);
       expect(modules.routes.routeTitleShows('$tag ouvert'), isTrue);
       await modules.routes.waitUntilTraceIsShown();
@@ -132,7 +132,7 @@ void main() {
       await modules.routes.waitUntilFilteredEmpty();
       expect(modules.routes.isListed(reservedSlug), isFalse);
 
-      // « Utilisée dans » for a member: the members-only ride and the trip as well.
+      // « Utilisé dans » for a member: the members-only ride and the trip as well.
       await openLink($, Paths.route(teamSlug, openSlug));
       await modules.routes.waitUntilRouteIsShown();
       await modules.routes.waitUntilUsageIsShown(publicRideSlug);

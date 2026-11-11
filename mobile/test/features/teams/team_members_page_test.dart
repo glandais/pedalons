@@ -135,7 +135,7 @@ void main() {
     final _StubTeamRepository repository = _StubTeamRepository(total: 3);
     await openMembers(tester, repository: repository);
 
-    await tester.tap(find.text('Admin'));
+    await tester.tap(find.text('Administrateur'));
     for (int i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 10));
     }
@@ -153,7 +153,7 @@ void main() {
       rolesShown: false,
     );
 
-    expect(find.text('Admin'), findsNothing);
+    expect(find.text('Administrateur'), findsNothing);
     expect(find.text('Membre 0'), findsOneWidget);
   });
 

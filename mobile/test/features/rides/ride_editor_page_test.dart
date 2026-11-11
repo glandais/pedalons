@@ -320,7 +320,7 @@ void main() {
   });
 
   /// Décision D5 (docs/LEDGER_*.md MOB-137) : le refus liste les parcours
-  /// « Équipe » ; la feuille dit ce qu'ils deviennent, puis la même requête
+  /// « Équipe uniquement » ; la feuille dit ce qu'ils deviennent, puis la même requête
   /// repart avec `alignVisibility`.
   group('alignement des parcours', () {
     DioException refusal() => DioException(
@@ -369,7 +369,10 @@ void main() {
       // La feuille nomme le parcours et sa visibilité à venir ; pas le
       // message générique en plus.
       expect(find.byKey(keys.visibility.alignSheet), findsOneWidget);
-      expect(find.text('Col du Coq : Équipe → Non répertorié'), findsOneWidget);
+      expect(
+        find.text('Col du Coq : Équipe uniquement → Non répertorié'),
+        findsOneWidget,
+      );
       expect(find.byKey(keys.rideEditor.errorBanner), findsNothing);
       expect(rides.updated.single.alignVisibility, isNull);
 

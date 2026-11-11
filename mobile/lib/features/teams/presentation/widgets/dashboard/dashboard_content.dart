@@ -285,7 +285,7 @@ class DashboardLatestAds extends StatelessWidget {
                             ),
                             if (sector != null && sector.isNotEmpty)
                               Text(
-                                'teams.dashboard.latestAds.sector'.tr(
+                                'ads.sector'.tr(
                                   namedArgs: <String, String>{'place': sector},
                                 ),
                                 style: t.xs,

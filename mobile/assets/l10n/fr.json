@@ -186,7 +186,7 @@
   },
   "roles": {
     "owner": "Propriétaire",
-    "admin": "Admin",
+    "admin": "Administrateur",
     "member": "Membre",
     "organizer": "Organisateur"
   },
@@ -271,7 +271,6 @@
     "empty": "Aucune équipe",
     "joinPrompt": "Rejoignez une équipe pour commencer",
     "discover": "Découvrir des équipes",
-    "members": "{count} membres",
     "about": "À propos",
     "tabs": {
       "dashboard": "Tableau de bord",
@@ -447,8 +446,7 @@
       },
       "latestAds": {
         "title": "Annonces",
-        "empty": "Aucune annonce pour le moment.",
-        "sector": "Secteur {place}"
+        "empty": "Aucune annonce pour le moment."
       },
       "templates": {
         "title": "Créer depuis un modèle",
@@ -495,16 +493,16 @@
             "SLACK": "Slack",
             "DISCORD": "Discord",
             "MATTERMOST": "Mattermost",
-            "GENERIC": "générique"
+            "GENERIC": "JSON"
           },
           "enabled": "Actif",
-          "disabled": "Inactif",
+          "disabled": "Désactivé",
           "lastAttempt": "Dernier envoi le {date}",
           "never": "Aucun envoi pour le moment",
           "status": {
             "PENDING": "En attente",
             "SENDING": "Envoi...",
-            "SENT": "Envoyé",
+            "SENT": "Réussi",
             "SKIPPED": "Ignoré",
             "FAILED": "Échec"
           }
@@ -608,7 +606,7 @@
     "finished": "Terminée",
     "groupJoin": "Rejoindre",
     "groupFull": "Complet",
-    "joining": "Adhésion...",
+    "joining": "Inscription…",
     "leaving": "Désinscription...",
     "leaderIs": "Capitaine : {name}",
     "participantsOf": {
@@ -1037,7 +1035,8 @@
         "one": "{} heure",
         "other": "{} heures"
       }
-    }
+    },
+    "sector": "Secteur {place}"
   },
   "trips": {
     "title": "Voyages",
@@ -1080,7 +1079,7 @@
     "cancelledTitle": "Voyage annulé.",
     "cancelledMessage": "Ce voyage n'aura pas lieu. Aucune inscription n'est possible.",
     "notMemberBanner": "Rejoignez cette équipe pour participer aux voyages.",
-    "joining": "Inscription...",
+    "joining": "Inscription…",
     "leaving": "Désinscription...",
     "participationFailedTitle": "Participation impossible",
     "partialTrack": "Tracé partiel : {shown} étapes sur {total} sont affichées.",
@@ -1192,9 +1191,12 @@
     },
     "gradeAverage": "moy.",
     "gradeMax": "max.",
-    "usedIn": "Utilisée dans",
+    "usedIn": "Utilisé dans",
     "viaGroups": "via les groupes : {names}",
-    "viaStage": "via l'étape {names}",
+    "viaStage": {
+      "one": "via l'étape {names}",
+      "other": "via les étapes : {names}"
+    },
     "information": "Informations",
     "author": "Par",
     "createdOn": "Créé le",
@@ -1641,11 +1643,11 @@
       "RIDE_CANCELLED": "Une sortie est annulée",
       "TRIP_PUBLISHED": "{actor} a publié un voyage",
       "TRIP_CANCELLED": "Un voyage est annulé",
-      "POST_PUBLISHED": "{actor} a publié un article",
+      "POST_PUBLISHED": "Nouvelle publication de {actor}",
       "COMMENT_REPLY": "{actor} a répondu à votre commentaire",
       "RIDE_REMINDER": "Rappel : votre sortie part demain",
       "RIDE_GROUP_REMOVED": "Votre groupe a été retiré d'une sortie",
-      "RIDE_JOINED": "{actor} a rejoint une sortie",
+      "RIDE_JOINED": "{actor} a rejoint votre sortie",
       "COMMENT_ON_MY_PUBLICATION": "{actor} a commenté votre publication",
       "TEAM_INVITATION": "{actor} vous invite à rejoindre {team}",
       "RIDE_UPDATED": "Une sortie a été modifiée",
@@ -1656,7 +1658,7 @@
       "RIDE_CANCELLED": "Sortie annulée",
       "TRIP_PUBLISHED": "Voyage publié",
       "TRIP_CANCELLED": "Voyage annulé",
-      "POST_PUBLISHED": "Article publié",
+      "POST_PUBLISHED": "Nouvelle publication",
       "COMMENT_REPLY": "Réponse à un commentaire",
       "RIDE_REMINDER": "Rappel la veille d'une sortie",
       "RIDE_UPDATED": "Sortie modifiée",
@@ -1677,7 +1679,7 @@
       "digest": "Résumé quotidien par e-mail",
       "digestHint": "Un seul e-mail par jour, à 7 h, pour ce qui peut attendre. Les annulations, modifications et rappels partent toujours tout de suite.",
       "teamsTitle": "Annonces des équipes",
-      "teamsHint": "Coupez une équipe pour ne plus recevoir ses sorties, voyages et articles publiés, boîte de réception comprise. Ce qui vous concerne personnellement vous parvient toujours.",
+      "teamsHint": "Coupez une équipe pour ne plus recevoir ses sorties, voyages et publications, boîte de réception comprise. Ce qui vous concerne personnellement vous parvient toujours.",
       "teamSwitch": "Annonces de {team}",
       "intro": "Vous les recevez toujours dans l'application. Choisissez ici ce qui vous interrompt : touchez E-mail ou Push sur chaque ligne.",
       "introInAppOnly": "Vous recevez toutes vos notifications dans l'application.",
@@ -1695,7 +1697,7 @@
     },
     "push": {
       "title": "Notifications sur cet appareil",
-      "hint": "Soyez prévenu d'une sortie publiée ou annulée sans ouvrir l'application.",
+      "hint": "Recevez une alerte quand une sortie est publiée ou annulée, sans ouvrir l'application.",
       "enable": "Activer",
       "deniedHint": "Les notifications sont bloquées pour Pédalons. Vous pouvez les réactiver dans les réglages de votre téléphone."
     },
@@ -1830,7 +1832,7 @@
       "GPX_FAILURE": "Erreur lors du traitement du fichier GPX",
       "GPX_NOT_FOUND": "Fichier GPX introuvable",
       "GROUP_FULL": "Ce groupe est complet",
-      "INCOMPATIBLE_VISIBILITY": "Visibilités incompatibles : un parcours « Équipe » ne peut pas servir à une sortie ou un voyage visible hors de l'équipe",
+      "INCOMPATIBLE_VISIBILITY": "Visibilités incompatibles : un parcours « Équipe uniquement » ne peut pas servir à une sortie ou un voyage visible hors de l'équipe",
       "RIDE_PAST": "Cette sortie est passée : on ne peut plus s'y inscrire",
       "INTERNAL_ERROR": "Erreur interne du serveur",
       "INVALID_CREDENTIALS": "Adresse e-mail ou mot de passe incorrect",
@@ -1963,7 +1965,11 @@
       "one": "Voir la réponse",
       "other": "Voir les {} réponses"
     },
-    "progress": "{loaded} commentaires sur {total}"
+    "progress": "{loaded} commentaires sur {total}",
+    "confirmDelete": {
+      "title": "Supprimer le commentaire ?",
+      "message": "Voulez-vous vraiment supprimer ce commentaire ? Cette action est irréversible."
+    }
   },
   "participants": {
     "title": "Personnes inscrites",
@@ -1986,10 +1992,10 @@
   "visibility": {
     "public": "Public",
     "public_unlisted": "Non répertorié",
-    "team": "Équipe",
+    "team": "Équipe uniquement",
     "privateTeamHint": "Équipe privée : en « Public » ou « Non répertorié », ce contenu est lisible par toute personne qui a le lien, mais n'apparaît dans aucune liste ni aucun moteur de recherche.",
     "currentNotAllowed": "Cette visibilité n'est plus possible dans cette équipe : choisissez-en une autre pour enregistrer.",
-    "noneAllowed": "Aucune visibilité ne peut être enregistrée pour l'instant : ce parcours sert à des sorties ou des voyages visibles hors de l'équipe, et l'équipe ne publie plus qu'en « Équipe ». Repassez d'abord ces sorties et ces voyages en « Équipe ».",
+    "noneAllowed": "Aucune visibilité ne peut être enregistrée pour l'instant : ce parcours sert à des sorties ou des voyages visibles hors de l'équipe, et l'équipe ne publie plus qu'en « Équipe uniquement ». Repassez d'abord ces sorties et ces voyages en « Équipe uniquement ».",
     "align": {
       "title": "Ouvrir aussi les parcours ?",
       "messageRide": "Cette sortie sera visible hors de l'équipe, mais certains de ses parcours sont réservés à l'équipe. Pour l'enregistrer, ils changent de visibilité :",
@@ -2004,7 +2010,7 @@
     },
     "routeInUse": {
       "title": "Ce parcours reste visible hors de l'équipe",
-      "message": "Il sert à des sorties ou des voyages visibles hors de l'équipe : il ne peut pas passer en « Équipe » tant que ces sorties et ces voyages le restent. Repassez-les d'abord en « Équipe », ou gardez une autre visibilité à ce parcours.",
+      "message": "Il sert à des sorties ou des voyages visibles hors de l'équipe : il ne peut pas passer en « Équipe uniquement » tant que ces sorties et ces voyages le restent. Repassez-les d'abord en « Équipe uniquement », ou gardez une autre visibilité à ce parcours.",
       "ride": "Sortie",
       "trip": "Voyage",
       "usage": "{kind} « {name} » ({visibility})"
@@ -2074,7 +2080,7 @@
     "reported": "Merci. Ce contenu est masqué pour vous.",
     "memberReported": "Merci. Votre signalement a été transmis.",
     "blockTitle": "Bloquer {name} ?",
-    "blockMessage": "Vous ne verrez plus ses commentaires, publications et annonces, ni les notifications de ses commentaires. {name} n'en sera pas prévenu.",
+    "blockMessage": "Vous ne verrez plus ses commentaires, publications et annonces, ni les notifications de ses commentaires. {name} ne recevra aucune alerte.",
     "blockConfirm": "Bloquer",
     "blocked": "Vous avez bloqué {name}.",
     "unblock": "Débloquer",

@@ -14,6 +14,7 @@ import '../../../../core/widgets/markdown_content.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
+import '../../../profile/presentation/widgets/confirm_sheet.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../data/comment_repository.dart';
 import '../../providers/comment_thread_provider.dart';
@@ -424,7 +425,16 @@ class _CommentThreadState extends ConsumerState<CommentThread> {
     );
   }
 
+  /// Supprimer se confirme toujours (KIT §9, règle R8 ; ledger `MOB-139`) —
+  /// la même feuille que pour un modèle de sortie ou un appareil délié.
   Future<void> _remove(CommentDto comment) async {
+    final bool confirmed = await confirmDestructive(
+      context,
+      title: 'comments.confirmDelete.title'.tr(),
+      message: 'comments.confirmDelete.message'.tr(),
+      confirmLabel: 'common.delete'.tr(),
+    );
+    if (!confirmed || !mounted) return;
     try {
       await _notifier.remove(comment);
     } catch (error) {

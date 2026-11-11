@@ -73,7 +73,7 @@ void main() {
         value: Visibility.team,
       );
 
-      expect(find.text('Équipe'), findsOneWidget);
+      expect(find.text('Équipe uniquement'), findsOneWidget);
       expect(find.text('Non répertorié'), findsOneWidget);
       expect(find.text('Public'), findsOneWidget);
       expect(find.byKey(keys.visibility.privateTeamHint), findsNothing);

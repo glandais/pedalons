@@ -82,7 +82,11 @@ abstract final class PdlIcons {
   static const IconData distance = Icons.straighten;
   static const IconData elevationUp = Icons.trending_up;
   static const IconData elevationDown = Icons.trending_down;
-  static const IconData terrain = Icons.terrain;
+
+  /// Les groupes d'une sortie — une seule icône dans toute l'app, jamais
+  /// celle des personnes ([people]) : « 3 groupes » n'est pas un effectif
+  /// (ledger `MOB-139`, D10).
+  static const IconData rideGroup = Icons.terrain;
   static const IconData climb = Icons.landscape;
   static const IconData speed = Icons.speed;
   static const IconData surfaceRoad = Icons.add_road;

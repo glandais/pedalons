@@ -384,25 +384,24 @@ class _Webhook extends StatelessWidget {
           ),
         ),
         const SizedBox(width: PdlSpacing.chipGap),
-        PdlBadgeStack(
-          badges: <Widget>[
-            PdlBadge(
-              label: webhook.enabled
-                  ? 'teams.dashboard.admin.webhook.enabled'.tr()
-                  : 'teams.dashboard.admin.webhook.disabled'.tr(),
-              tone: webhook.enabled
-                  ? PdlFamily.green.soft(c)
-                  : PdlFamily.gray.soft(c),
-            ),
-            if (webhook.lastStatus != null)
-              PdlBadge(
-                label:
-                    'teams.dashboard.admin.webhook.status.${webhook.lastStatus}'
-                        .tr(),
-                tone: failed ? PdlFamily.red.soft(c) : PdlFamily.gray.soft(c),
-              ),
-          ],
-        ),
+        // Un seul badge, comme le site (KIT §9, ledger `MOB-139`) :
+        // « Désactivé », sinon « Échec » si le dernier envoi a échoué, sinon
+        // « Actif ».
+        if (!webhook.enabled)
+          PdlBadge(
+            label: 'teams.dashboard.admin.webhook.disabled'.tr(),
+            tone: PdlFamily.gray.soft(c),
+          )
+        else if (failed)
+          PdlBadge(
+            label: 'teams.dashboard.admin.webhook.status.FAILED'.tr(),
+            tone: PdlFamily.red.soft(c),
+          )
+        else
+          PdlBadge(
+            label: 'teams.dashboard.admin.webhook.enabled'.tr(),
+            tone: PdlFamily.green.soft(c),
+          ),
       ],
     );
   }

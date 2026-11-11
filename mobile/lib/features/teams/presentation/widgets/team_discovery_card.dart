@@ -116,10 +116,9 @@ class TeamDiscoveryCard extends StatelessWidget {
                   children: <Widget>[
                     Expanded(
                       child: PdlStat(
-                        value: 'teams.members'.tr(
-                          namedArgs: <String, String>{
-                            'count': '${team.memberCount}',
-                          },
+                        // Accordé : « 1 membre » (ledger `MOB-139`, D3).
+                        value: 'teams.membersList.count'.plural(
+                          team.memberCount,
                         ),
                         icon: PdlIcons.people,
                       ),

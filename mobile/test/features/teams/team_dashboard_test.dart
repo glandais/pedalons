@@ -7,6 +7,7 @@ import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/config/paths.generated.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/auth/data/auth_repository.dart';
@@ -146,6 +147,27 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Place de la Croix-Rousse'), findsWidgets);
+    });
+
+    // Ledger `MOB-139`, D10 : le compteur de groupes n'a pas l'icône des
+    // personnes, mais celle des groupes, comme dans le fil.
+    testWidgets('le compteur de groupes porte l\'icône des groupes', (
+      WidgetTester tester,
+    ) async {
+      await renderBody(tester, _dashboard(role: 'MEMBER'));
+
+      final Iterable<PdlStat> groups = tester
+          .widgetList<PdlStat>(find.byType(PdlStat))
+          .where(
+            (PdlStat s) =>
+                RegExp(r'groupes?$').hasMatch(s.value) ||
+                s.value == 'Aucun groupe',
+          );
+      expect(groups, isNotEmpty);
+      expect(
+        groups.map((PdlStat s) => s.icon),
+        everyElement(PdlIcons.rideGroup),
+      );
     });
 
     testWidgets('chaque groupe dit son remplissage, et « Complet » à plein', (
@@ -345,6 +367,64 @@ void main() {
       expect(find.text('ACTIF'), findsOneWidget);
       expect(find.text('Inviter'), findsOneWidget);
       expect(find.text('Gérer les membres'), findsOneWidget);
+    });
+
+    // KIT §9, ledger `MOB-139` : un seul badge, « Désactivé », « Échec » ou
+    // « Actif » ; le format générique se nomme « JSON ».
+    testWidgets('le webhook porte un seul badge d\'état', (
+      WidgetTester tester,
+    ) async {
+      Future<List<String>> badgesFor(TeamWebhookDto webhook) async {
+        final TeamDashboardDto d = _dashboard(role: 'ADMIN');
+        await renderBody(
+          tester,
+          d.copyWith(admin: d.admin!.copyWith(webhook: webhook)),
+        );
+        return tester
+            .widgetList<PdlBadge>(find.byType(PdlBadge))
+            .map((PdlBadge b) => b.label)
+            .where(
+              (String l) =>
+                  <String>['Actif', 'Désactivé', 'Échec', 'Réussi'].contains(l),
+            )
+            .toList();
+      }
+
+      expect(
+        await badgesFor(
+          const TeamWebhookDto(
+            configured: true,
+            enabled: true,
+            kind: 'GENERIC',
+            lastStatus: 'SENT',
+            lastAttemptAt: '2026-10-02T10:00:00Z',
+          ),
+        ),
+        <String>['Actif'],
+      );
+      expect(find.text('Webhook JSON'), findsOneWidget);
+      expect(
+        await badgesFor(
+          const TeamWebhookDto(
+            configured: true,
+            enabled: true,
+            kind: 'DISCORD',
+            lastStatus: 'FAILED',
+          ),
+        ),
+        <String>['Échec'],
+      );
+      expect(
+        await badgesFor(
+          const TeamWebhookDto(
+            configured: true,
+            enabled: false,
+            kind: 'DISCORD',
+            lastStatus: 'FAILED',
+          ),
+        ),
+        <String>['Désactivé'],
+      );
     });
 
     testWidgets('sans ajout de membres permis, pas de bouton « Inviter »', (

@@ -144,6 +144,22 @@ void main() {
     );
   });
 
+  // Ledger `MOB-139`, D3 : « 1 membre », jamais « 1 membres ».
+  testWidgets('le compte de membres s\'accorde', (WidgetTester tester) async {
+    await openDiscover(
+      tester,
+      repository: _StubTeamRepository(
+        teams: <TeamDetailDto>[
+          fixtureTeam(slug: 'solo', name: 'Solo', memberCount: 1),
+          fixtureTeam(slug: 'club', name: 'Club', memberCount: 40),
+        ],
+      ),
+    );
+
+    expect(find.text('1 membre'), findsOneWidget);
+    expect(find.text('40 membres'), findsOneWidget);
+  });
+
   testWidgets('la chip « Ouvertes à l\'adhésion » part bien au serveur', (
     WidgetTester tester,
   ) async {

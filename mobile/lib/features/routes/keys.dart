@@ -107,7 +107,7 @@ class RouteDetailKeys {
   /// étape).
   final gps = const _RouteDetailKey('gps');
 
-  /// Une carte de « Utilisée dans », par le slug de la sortie ou du voyage.
+  /// Une carte de « Utilisé dans », par le slug de la sortie ou du voyage.
   ValueKey<String> usage(String slug) => _RouteDetailKey('usage_$slug');
 }
 
