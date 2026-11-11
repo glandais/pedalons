@@ -137,6 +137,19 @@
       "rules": {
         "i18next/no-literal-string": "off"
       }
+    },
+    {
+      "files": [
+        "src/dev/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "i18next/no-literal-string": "off",
+        "react/only-export-components": "off"
+      },
+      "plugins": [
+        "typescript",
+        "react"
+      ]
     }
   ]
 }

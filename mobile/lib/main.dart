@@ -16,6 +16,7 @@ import 'core/logging/app_log.dart';
 import 'core/logging/client_context.dart';
 import 'core/logging/error_reporter.dart';
 import 'core/utils/link_launcher.dart';
+import 'dev/dev_routes.dart';
 import 'core/utils/provider_retry.dart';
 import 'core/preferences/user_preferences_provider.dart';
 import 'features/auth/providers/auth_provider.dart';
@@ -101,6 +102,8 @@ Future<Widget> createApp({bool installErrorHandlers = true}) async {
     initialPath = path + query;
   }
   initialPath ??= screenshotInitialPath();
+  // Une galerie de debug ouverte au lancement : `--dart-define=DEV_ROUTE=…`.
+  if (kDebugMode) initialPath ??= devInitialPath();
 
   return EasyLocalization(
     supportedLocales: const [Locale('en'), Locale('fr')],

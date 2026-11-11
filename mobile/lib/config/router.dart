@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../api/generated/export.dart';
+import '../dev/dev_routes.dart';
 import '../features/apps/presentation/pages/apps_page.dart';
 import '../features/auth/presentation/pages/forgot_password_page.dart';
 import '../features/auth/presentation/pages/login_page.dart';
@@ -443,6 +445,9 @@ final Set<String> _authAdjacentPaths = <String>{
 final Set<String> _loginPaths = PathVariants.login().values.toSet();
 
 bool isAuthAdjacent(String location) {
+  // Les galeries de debug s'ouvrent sans session ; la branche disparaît d'une
+  // version livrée (`kDebugMode` est une constante).
+  if (kDebugMode && isDevLocation(location)) return true;
   for (final p in _authAdjacentPaths) {
     if (location == p ||
         location.startsWith('$p?') ||
@@ -1192,6 +1197,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         PathVariants.terms(),
         (ctx, st) => const LegalPage(type: LegalPageType.terms),
       ),
+
+      // Galeries des composants et des cartes : debug seulement (lib/dev).
+      if (kDebugMode) ...devRoutes(),
     ],
     // The only screen that used to carry hard-coded French. It is also a
     // screen a user reaches by accident, so it says what happened, quotes the

@@ -14,4 +14,9 @@ export default defineConfig({
     functions: ['t', '*.t', 'tRegister'],
     removeUnusedKeys: false,
   },
+  lint: {
+    // The card gallery (docs/LEDGER_*.md WEB-167), a development tool: its captions are not
+    // user-facing copy and stay untranslated.
+    ignore: ['src/dev/**'],
+  },
 })
