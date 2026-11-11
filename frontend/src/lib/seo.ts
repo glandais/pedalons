@@ -57,10 +57,12 @@ export interface RouteMeta {
    */
   canonical?: string
   /**
-   * Keep the page out of search indexes (`<meta name="robots" content="noindex">`): set for
-   * content or a team that is not `PUBLIC` — `PUBLIC_UNLISTED` is shareable by link, not indexed
+   * Keep the page out of search indexes (`<meta name="robots" content="noindex">`): set for an
+   * entity the backend says is not indexable (`permissions.indexable`, docs/LEDGER_*.md WEB-166),
+   * for a team that is not `PUBLIC` — `PUBLIC_UNLISTED` is shareable by link, not indexed
    * (docs/LEDGER_*.md WEB-4) — and for every route that is not indexable as such (members-only,
-   * transactional, `RouteConfig.noindex`). Absent: `index, follow`. A `noindex` page carries no
+   * transactional, `RouteConfig.noindex`). Absent: `index, follow`, unless the team says otherwise
+   * (`withIndexing`); `false` from an entity's builder is final. A `noindex` page carries no
    * canonical link: pointing engines at a URL they are told not to index contradicts.
    */
   noindex?: boolean

@@ -25,6 +25,12 @@ import { rideStatusRequest } from '@/pages/ride/rideFormData'
 import { invalidateTripWeather } from '@/pages/trip/tripDetailData'
 import { tripStatusRequest } from '@/pages/trip/tripFormData'
 import { KIND_LABELS, type PublicationKind } from './publicationKind'
+import {
+  useRestoreRefusal,
+  useVisibilityAlignment,
+} from '@/components/visibility/useVisibilityAlignment'
+import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
+import type { IncompatibleRouteDto } from '@/api/dto'
 
 /** The publication whose status the organiser manages, with its kind. */
 export type ManagedPublication = { kind: 'ride'; dto: RideDto } | { kind: 'trip'; dto: TripDto }
@@ -77,6 +83,12 @@ export function usePublicationStatusActions(
   const update = isRide ? updateRide : updateTrip
   const remove = isRide ? deleteRide : deleteTrip
   const undelete = isRide ? undeleteRide : undeleteTrip
+  // Publishing goes through the full update, which checks the routes again: a route that went
+  // « Équipe » under an older version (plan A1) is raised after confirmation (decision D5). A
+  // restore carries no body to align with: its routes are listed, to be opened first.
+  const alignedKind = isRide ? 'ride' : 'trip'
+  const alignment = useVisibilityAlignment(alignedKind, update.isPending)
+  const restoreRefusal = useRestoreRefusal(teamSlug, alignedKind)
 
   const invalidate = () => {
     if (isRide) {
@@ -94,18 +106,32 @@ export function usePublicationStatusActions(
     notifications.show({ message, color: 'green' })
   }
 
-  const changeStatus = (status: Status, message: string) => {
-    const onSuccess = done(message)
+  const changeStatus = (status: Status, message: string, aligned?: IncompatibleRouteDto[]) => {
+    const onSuccess = () => {
+      aligned?.forEach((route) => invalidateRouteQueries(queryClient, teamSlug, route.slug))
+      done(message)()
+    }
+    const onError = (error: unknown) =>
+      alignment.offer(error, (routes) => changeStatus(status, message, routes))
+    const alignVisibility = aligned ? true : undefined
     if (!publication) return
     if (publication.kind === 'ride') {
       updateRide.mutate(
-        { teamSlug, rideSlug: slug, data: rideStatusRequest(publication.dto, status) },
-        { onSuccess }
+        {
+          teamSlug,
+          rideSlug: slug,
+          data: { ...rideStatusRequest(publication.dto, status), alignVisibility },
+        },
+        { onSuccess, onError }
       )
     } else {
       updateTrip.mutate(
-        { teamSlug, tripSlug: slug, data: tripStatusRequest(publication.dto, status) },
-        { onSuccess }
+        {
+          teamSlug,
+          tripSlug: slug,
+          data: { ...tripStatusRequest(publication.dto, status), alignVisibility },
+        },
+        { onSuccess, onError }
       )
     }
     setOpen(null)
@@ -125,8 +151,9 @@ export function usePublicationStatusActions(
 
   const restore = () => {
     const onSuccess = done(t(labels.restored))
-    if (isRide) undeleteRide.mutate({ teamSlug, rideSlug: slug }, { onSuccess })
-    else undeleteTrip.mutate({ teamSlug, tripSlug: slug }, { onSuccess })
+    const onError = (error: unknown) => restoreRefusal.offer(error, () => {})
+    if (isRide) undeleteRide.mutate({ teamSlug, rideSlug: slug }, { onSuccess, onError })
+    else undeleteTrip.mutate({ teamSlug, tripSlug: slug }, { onSuccess, onError })
   }
 
   const close = () => setOpen(null)
@@ -172,6 +199,8 @@ export function usePublicationStatusActions(
         variant="danger"
         isLoading={remove.isPending}
       />
+      {alignment.dialog}
+      {restoreRefusal.dialog}
     </>
   )
 

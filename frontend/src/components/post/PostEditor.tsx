@@ -1,3 +1,6 @@
+import { VisibilitySelector } from '@/components/visibility/VisibilitySelector'
+import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
+import { Visibility } from '@/api/dto'
 import { useEffect, useMemo } from 'react'
 import { useForm } from '@mantine/form'
 import { zodFormValidator } from '@/lib/formUtils'
@@ -15,6 +18,11 @@ import { wallTimeToInstant } from '@/utils/wallTime'
 
 interface PostEditorProps {
   team: TeamDetailDto
+  /**
+   * The visibilities this content may take, from the entity being edited
+   * (`permissions.allowedVisibilities`); the team's list for its kind when absent (creation).
+   */
+  allowedVisibilities?: Visibility[]
   teamSlug: string
   initialValues: PostRequest
   onSubmit: (data: PostRequest) => void | Promise<void>
@@ -34,6 +42,7 @@ interface PostEditorProps {
 
 export function PostEditor({
   team,
+  allowedVisibilities,
   teamSlug,
   initialValues,
   onSubmit,
@@ -131,15 +140,14 @@ export function PostEditor({
           disabled={isPending}
         />
 
-        {team.visibility !== 'TEAM' && (
-          <Radio.Group label={t('visibility.label')} {...form.getInputProps('visibility')}>
-            <Stack gap="xs" mt="xs">
-              <Radio value="TEAM" label={t('visibility.team')} />
-              <Radio value="PUBLIC_UNLISTED" label={t('visibility.public_unlisted')} />
-              <Radio value="PUBLIC" label={t('visibility.public')} />
-            </Stack>
-          </Radio.Group>
-        )}
+        <VisibilitySelector
+          allowed={allowedVisibilities ?? allowedVisibilitiesFor(team, 'post')}
+          value={form.values.visibility}
+          onChange={(v) => form.setFieldValue('visibility', v)}
+          error={form.errors.visibility}
+          teamPrivate={team.visibility === Visibility.TEAM}
+          disabled={isPending}
+        />
 
         <Checkbox
           label={t('posts.form.signedAsTeam.label', { team: team.name })}

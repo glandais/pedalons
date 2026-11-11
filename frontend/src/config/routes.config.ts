@@ -905,6 +905,9 @@ export const routesConfig: RoutesConfig = [
     breadcrumb: { type: 'static', i18nKey: tRegister('map.fullscreen.title') },
     prefetch: (queryClient, params) =>
       prefetchStageMap(queryClient, params.teamSlug!, params.tripSlug!, params.stageSlug!),
+    // The trip's `permissions.indexable` decides: a private team's trip, read by link, leaves no
+    // team in the cache for withIndexing to fall back on (docs/LEDGER_*.md WEB-166).
+    meta: stageMeta,
   },
 
   // === Post Routes ===

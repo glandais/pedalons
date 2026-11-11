@@ -9,6 +9,8 @@ import { TeamPageForm } from '../../components/team/TeamPageForm'
 import { useEditTeamPageFormData } from './teamPageFormData'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
+import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
+import { Visibility } from '@/api/dto'
 
 export function EditTeamPagePage() {
   const { teamSlug, pageSlug } = useParams<{ teamSlug: string; pageSlug: string }>()
@@ -29,13 +31,18 @@ export function EditTeamPagePage() {
     return <Navigate to={paths.teams()} replace />
   }
 
-  const isAdmin = teamAccess(team, isPlatformAdmin).isAdmin
-  if (!isAdmin) {
-    return <Navigate to={paths.team(team.slug)} replace />
+  if (!page) {
+    // Not a page the reader may open: an administrator is sent back to the list, anyone else to
+    // the team, as before.
+    const isAdmin = teamAccess(team, isPlatformAdmin).isAdmin
+    return (
+      <Navigate to={isAdmin ? paths.teamAdminPages(team.slug) : paths.team(team.slug)} replace />
+    )
   }
 
-  if (!page) {
-    return <Navigate to={paths.teamAdminPages(team.slug)} replace />
+  // Whether the page may be edited is the backend's answer (docs/LEDGER_*.md WEB-166, D7).
+  if (!page.permissions.canEdit) {
+    return <Navigate to={paths.team(team.slug)} replace />
   }
 
   return (
@@ -51,6 +58,8 @@ export function EditTeamPagePage() {
               pageSlug={page.slug}
               initialValues={page}
               isCreate={false}
+              allowedVisibilities={allowedVisibilitiesFor(team, 'teamPage', page.permissions)}
+              teamPrivate={team.visibility === Visibility.TEAM}
               onSuccess={() => {
                 // Navigation is handled by the hook
               }}

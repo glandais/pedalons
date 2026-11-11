@@ -1,7 +1,6 @@
-import { readsMemberContent } from '@/config/prefetchHelpers'
 import { useMemo } from 'react'
 import type { QueryClient } from '@tanstack/react-query'
-import { useGetTeam, prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
+import { prefetchEntityTeam, useEntityTeam } from '@/lib/entityTeam'
 import {
   useGetRide,
   prefetchGetRideQuery,
@@ -97,10 +96,12 @@ export function invalidateRideWeather(
  * `useAuthStore.getState()` (the server can't use the hook), so no shared hook can hold it.
  */
 export function useRideDetailData(teamSlug?: string, rideSlug?: string) {
-  const team = useGetTeam(teamSlug!, { query: { enabled: !!teamSlug } })
   const ride = useGetRide(teamSlug!, rideSlug!, {
     query: { enabled: !!teamSlug && !!rideSlug },
   })
+  // Only when the ride says the team answers the reader (docs/LEDGER_*.md WEB-166): the page itself
+  // renders from the ride's embedded summary; the team is the breadcrumb's and the nav's.
+  const team = useEntityTeam(teamSlug, ride.data?.team)
 
   // Independent of the ride: same slugs, so it starts with it (and is prefetched in phase 1).
   // Fetched even for a ride that turns out finished or cancelled — the server answers
@@ -142,7 +143,9 @@ export function useRideDetailData(teamSlug?: string, rideSlug?: string) {
  *
  * It covers more than the hook does, on purpose: comments and GPS services are fetched by children
  * the page mounts (`CommentSection`, the export menu), not by the page itself — both conditional,
- * comments on membership, services on being signed in, exactly as those children are. A solo
+ * comments on the ride's `permissions.canComment`, services on being signed in, exactly as those
+ * children are. The team waits for the ride too: it is read only when the ride's summary says the
+ * team answers the reader (`prefetchEntityTeam`). A solo
  * ride's page lists its group's participants inline (ledger WEB-79): their first page — or the one
  * `?q=`/`?p=` asks for — is one request, under the key `groupParticipantsParams` builds for the
  * list, and it waits for phase 2 because the group is only known once the ride is read.
@@ -154,7 +157,6 @@ export async function prefetchRideDetail(
   url: URL
 ): Promise<void> {
   await Promise.all([
-    prefetchGetTeamQuery(queryClient, teamSlug),
     prefetchGetRideQuery(queryClient, teamSlug, rideSlug),
     prefetchGetRideWeatherQuery(queryClient, teamSlug, rideSlug, { request: WEATHER_REQUEST }),
   ])
@@ -166,18 +168,22 @@ export async function prefetchRideDetail(
     alias: groupParticipantFiltersAlias,
   })
   await Promise.all([
+    // Behind the ride, never beside it: a private team's public ride is read by link with the team
+    // closed (docs/LEDGER_*.md WEB-166).
+    prefetchEntityTeam(queryClient, teamSlug, ride?.team),
     prefetchMemberComments(
       queryClient,
       teamSlug,
       rideSlug,
       listRideComments,
-      getListRideCommentsQueryKey
+      getListRideCommentsQueryKey,
+      ride?.permissions.canComment
     ),
     prefetchRoutesBulkChunked(queryClient, teamSlug, rideRouteSlugs(ride)),
     useAuthStore.getState().isAuthenticated
       ? prefetchGetAvailableServicesQuery(queryClient)
       : Promise.resolve(queryClient),
-    (ride?.groups?.length ?? 0) > 0 && readsMemberContent(queryClient, teamSlug)
+    (ride?.groups?.length ?? 0) > 0 && ride?.permissions.canSeeParticipants
       ? prefetchGetRideParticipantsQuery(
           queryClient,
           teamSlug,
@@ -203,12 +209,14 @@ export async function prefetchRideMap(
   rideSlug: string
 ): Promise<void> {
   await Promise.all([
-    prefetchGetTeamQuery(queryClient, teamSlug),
     prefetchGetRideQuery(queryClient, teamSlug, rideSlug),
     prefetchGetRideWeatherQuery(queryClient, teamSlug, rideSlug, { request: WEATHER_REQUEST }),
   ])
   const ride = queryClient.getQueryData<RideDto>(getGetRideQueryKey(teamSlug, rideSlug))
-  await prefetchRoutesBulkChunked(queryClient, teamSlug, rideRouteSlugs(ride))
+  await Promise.all([
+    prefetchEntityTeam(queryClient, teamSlug, ride?.team),
+    prefetchRoutesBulkChunked(queryClient, teamSlug, rideRouteSlugs(ride)),
+  ])
 }
 
 /**

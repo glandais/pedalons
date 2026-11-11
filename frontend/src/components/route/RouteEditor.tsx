@@ -1,3 +1,6 @@
+import { VisibilitySelector } from '@/components/visibility/VisibilitySelector'
+import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
+import { Visibility } from '@/api/dto'
 import { useState, useCallback, useRef } from 'react'
 import { useForm } from '@mantine/form'
 import { zodFormValidator } from '@/lib/formUtils'
@@ -5,7 +8,6 @@ import { useTranslation } from 'react-i18next'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import {
   TextInput,
-  Radio,
   Stack,
   Group,
   Button,
@@ -42,9 +44,15 @@ const routeSchema = CreateRouteBody.shape.route.unwrap()
 
 interface RouteEditorProps {
   team: TeamDetailDto
+  /**
+   * The visibilities this content may take, from the entity being edited
+   * (`permissions.allowedVisibilities`); the team's list for its kind when absent (creation).
+   */
+  allowedVisibilities?: Visibility[]
   teamSlug: string
   initialValues: RouteRequest
-  onSubmit: (data: RouteRequest, gpxFile?: File) => void | Promise<void>
+  /** Resolves to `false` when the save was refused without throwing (a dialog took it over). */
+  onSubmit: (data: RouteRequest, gpxFile?: File) => void | boolean | Promise<void | boolean>
   onCancel: () => void
   isPending: boolean
   error?: Error | null
@@ -72,6 +80,7 @@ interface RouteEditorProps {
 
 export function RouteEditor({
   team,
+  allowedVisibilities,
   teamSlug,
   initialValues,
   onSubmit,
@@ -192,7 +201,7 @@ export function RouteEditor({
         ? plannerPayload(plannerRef.current?.snapshot(), isCreateMode)
         : undefined
 
-    await onSubmit(
+    const saved = await onSubmit(
       {
         ...values,
         points: track?.points,
@@ -203,8 +212,8 @@ export function RouteEditor({
       // The file chosen in the GPX tab, or the one imported in the planner and left untouched
       sourceMode === 'gpx' ? gpxFile || undefined : track?.file
     )
-    // Only once the save went through: a failed save did not drop anything
-    if (track?.tooLarge) {
+    // Only once the save went through: a failed or refused save did not drop anything
+    if (saved !== false && track?.tooLarge) {
       notifications.show({ message: t('planner.state.tooLarge'), color: 'yellow' })
     }
   }
@@ -412,15 +421,14 @@ export function RouteEditor({
           disabled={isPending}
         />
 
-        {team.visibility !== 'TEAM' && (
-          <Radio.Group label={t('visibility.label')} {...form.getInputProps('visibility')}>
-            <Stack gap="xs" mt="xs">
-              <Radio value="TEAM" label={t('visibility.team')} />
-              <Radio value="PUBLIC_UNLISTED" label={t('visibility.public_unlisted')} />
-              <Radio value="PUBLIC" label={t('visibility.public')} />
-            </Stack>
-          </Radio.Group>
-        )}
+        <VisibilitySelector
+          allowed={allowedVisibilities ?? allowedVisibilitiesFor(team, 'route')}
+          value={form.values.visibility}
+          onChange={(v) => form.setFieldValue('visibility', v)}
+          error={form.errors.visibility}
+          teamPrivate={team.visibility === Visibility.TEAM}
+          disabled={isPending}
+        />
 
         {/* Submit Buttons */}
         <Group justify="flex-end" pt="md">

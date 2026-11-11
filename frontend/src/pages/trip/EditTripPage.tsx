@@ -1,3 +1,6 @@
+import { useVisibilityAlignment } from '@/components/visibility/useVisibilityAlignment'
+import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
+import type { IncompatibleRouteDto } from '@/api/dto'
 import { useParams, Navigate, useNavigate } from 'react-router-dom'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useTranslation } from 'react-i18next'
@@ -17,12 +20,10 @@ import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { TripEditor } from '../../components/trip/TripEditor'
 import { TripRequest } from '@/api/dto'
 import { useEditTripFormData, tripToRequest, tripStageTimezones } from './tripFormData'
-import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
-import { teamAccess } from '@/lib/teamAccess'
+import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
 
 export function EditTripPage() {
   const { t } = useTranslation()
-  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, tripSlug } = useParams<{ teamSlug: string; tripSlug: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -32,6 +33,7 @@ export function EditTripPage() {
 
   const updateMutation = useUpdateTrip()
   const changeSlugMutation = useChangeTripSlug()
+  const alignment = useVisibilityAlignment('trip', updateMutation.isPending)
 
   useCanonicalPath(team && trip ? paths.tripEdit(team.slug, trip.slug) : undefined)
 
@@ -43,21 +45,25 @@ export function EditTripPage() {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
-  const canEdit = teamAccess(team, isPlatformAdmin).isOrganizer
+  // The backend's answer for this trip (docs/LEDGER_*.md WEB-166, decision D7).
+  const canEdit = trip.permissions.canEdit
 
   if (!canEdit) {
     return <Navigate to={paths.trip(teamSlug!, tripSlug!)} replace />
   }
 
-  const handleSubmit = (data: TripRequest) => {
+  const save = (data: TripRequest, aligned?: IncompatibleRouteDto[]) => {
     updateMutation.mutate(
       {
         teamSlug: teamSlug!,
         tripSlug: tripSlug!,
-        data,
+        data: { ...data, alignVisibility: aligned ? true : undefined },
       },
       {
+        // A trip opened outside the team on « Équipe » routes: confirm, then raise them (D5).
+        onError: (error) => alignment.offer(error, (routes) => save(data, routes)),
         onSuccess: () => {
+          aligned?.forEach((route) => invalidateRouteQueries(queryClient, teamSlug!, route.slug))
           queryClient.invalidateQueries({ queryKey: getGetTripQueryKey(teamSlug!, tripSlug!) })
           void invalidateTripWeather(queryClient, teamSlug!, tripSlug!)
           invalidateTeamPublications(queryClient, teamSlug!)
@@ -67,6 +73,8 @@ export function EditTripPage() {
       }
     )
   }
+
+  const handleSubmit = (data: TripRequest) => save(data)
 
   const handleSlugChange = async (newSlug: string) => {
     await changeSlugMutation.mutateAsync(
@@ -93,6 +101,7 @@ export function EditTripPage() {
 
       <TripEditor
         team={team}
+        allowedVisibilities={allowedVisibilitiesFor(team, 'trip', trip.permissions)}
         teamSlug={teamSlug!}
         initialValues={initialValues}
         timezone={trip.timezone}
@@ -105,6 +114,7 @@ export function EditTripPage() {
         onSlugChange={handleSlugChange}
         canEditSlug={canEdit}
       />
+      {alignment.dialog}
     </Container>
   )
 }

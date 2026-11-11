@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { useGetTeam, prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
+import { prefetchEntityTeam, useEntityTeam } from '@/lib/entityTeam'
 import {
   useGetTrip,
   prefetchGetTripQuery,
@@ -51,10 +51,11 @@ export function stageRouteSlug(
  * `useAuthStore.getState()` (the server can't use the hook), so no shared hook can hold it.
  */
 export function useStageDetailData(teamSlug?: string, tripSlug?: string, stageSlug?: string) {
-  const team = useGetTeam(teamSlug!, { query: { enabled: !!teamSlug } })
   const trip = useGetTrip(teamSlug!, tripSlug!, {
     query: { enabled: !!teamSlug && !!tripSlug },
   })
+  // Behind the trip, only when it says the team answers the reader (docs/LEDGER_*.md WEB-166).
+  const team = useEntityTeam(teamSlug, trip.data?.team)
 
   const routeSlug = stageRouteSlug(trip.data, stageSlug)
 
@@ -90,13 +91,15 @@ export async function prefetchStageDetail(
   stageSlug: string
 ): Promise<void> {
   await Promise.all([
-    prefetchGetTeamQuery(queryClient, teamSlug),
     prefetchGetTripQuery(queryClient, teamSlug, tripSlug),
     prefetchGetTripWeatherQuery(queryClient, teamSlug, tripSlug, { request: TRIP_WEATHER_REQUEST }),
   ])
   const trip = queryClient.getQueryData<TripDto>(getGetTripQueryKey(teamSlug, tripSlug))
   const routeSlug = stageRouteSlug(trip, stageSlug)
+  const stage = trip?.stages?.find((s) => s.slug === stageSlug)
   await Promise.all([
+    // Only when the trip says the team answers the reader (docs/LEDGER_*.md WEB-166).
+    prefetchEntityTeam(queryClient, teamSlug, trip?.team),
     routeSlug
       ? prefetchGetRouteQuery(queryClient, teamSlug, routeSlug)
       : Promise.resolve(queryClient),
@@ -108,7 +111,8 @@ export async function prefetchStageDetail(
       teamSlug,
       stageSlug,
       listTripStageComments,
-      getListTripStageCommentsQueryKey
+      getListTripStageCommentsQueryKey,
+      stage?.permissions.canComment
     ),
   ])
 }

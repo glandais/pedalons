@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { useGetTeam, prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
-import { useGetPost, prefetchGetPostQuery } from '@/api/endpoints/posts/posts'
+import { useGetPost, prefetchGetPostQuery, getGetPostQueryKey } from '@/api/endpoints/posts/posts'
+import { prefetchEntityTeam, useEntityTeam } from '@/lib/entityTeam'
+import type { PostDto } from '@/api/dto'
 import {
   listPostComments,
   getListPostCommentsQueryKey,
@@ -26,14 +27,15 @@ import { prefetchMemberComments } from '@/config/prefetchHelpers'
  * using `.data` / `.isLoading` / `.error` / `.refetch` directly.
  *
  * Comments deliberately stay out: they're fetched by `CommentSection`, a child the page mounts
- * only when `isMember`, not by the page itself. That's covered by {@link prefetchPostDetail}
+ * only when `permissions.canComment`, not by the page itself. That's covered by {@link prefetchPostDetail}
  * instead, so the asymmetry is on purpose rather than a gap.
  */
 export function usePostDetailData(teamSlug?: string, postSlug?: string) {
-  const team = useGetTeam(teamSlug!, { query: { enabled: !!teamSlug } })
   const post = useGetPost(teamSlug!, postSlug!, {
     query: { enabled: !!teamSlug && !!postSlug },
   })
+  // Behind the post, only when it says the team answers the reader (docs/LEDGER_*.md WEB-166).
+  const team = useEntityTeam(teamSlug, post.data?.team)
 
   return { team, post }
 }
@@ -47,15 +49,17 @@ export async function prefetchPostDetail(
   teamSlug: string,
   postSlug: string
 ): Promise<void> {
+  await prefetchGetPostQuery(queryClient, teamSlug, postSlug)
+  const post = queryClient.getQueryData<PostDto>(getGetPostQueryKey(teamSlug, postSlug))
   await Promise.all([
-    prefetchGetTeamQuery(queryClient, teamSlug),
-    prefetchGetPostQuery(queryClient, teamSlug, postSlug),
+    prefetchEntityTeam(queryClient, teamSlug, post?.team),
+    prefetchMemberComments(
+      queryClient,
+      teamSlug,
+      postSlug,
+      listPostComments,
+      getListPostCommentsQueryKey,
+      post?.permissions.canComment
+    ),
   ])
-  await prefetchMemberComments(
-    queryClient,
-    teamSlug,
-    postSlug,
-    listPostComments,
-    getListPostCommentsQueryKey
-  )
 }

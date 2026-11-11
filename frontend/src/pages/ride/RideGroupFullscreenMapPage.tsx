@@ -38,7 +38,6 @@ export function RideGroupFullscreenMapPage() {
   const { search } = useLocation()
 
   const {
-    team: { data: team, isLoading: isLoadingTeam },
     ride: { data: ride, isLoading: isLoadingRide },
     weather,
     routes,
@@ -47,6 +46,8 @@ export function RideGroupFullscreenMapPage() {
     leg,
   } = useRideGroupData(teamSlug, rideSlug, groupId)
 
+  // The ride's embedded team: never `GET team`, closed to a link reader (docs/LEDGER_*.md WEB-166).
+  const team = ride?.team
   const leaveTo = ride && teamSlug ? rideGroupMapLeavesTo(ride, teamSlug, search) : undefined
   const leave = !!leaveTo
   const routeSlug = group ? (group.routeSlug ?? ride?.routeSlug) : undefined
@@ -66,7 +67,7 @@ export function RideGroupFullscreenMapPage() {
     }
   }, [title, appName])
 
-  if (isLoadingTeam || isLoadingRide || (routeSlug && routes.isLoading)) {
+  if (isLoadingRide || (routeSlug && routes.isLoading)) {
     return <LoadingPage message={t('loading')} />
   }
 

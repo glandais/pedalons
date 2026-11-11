@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { useGetTeam, prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
+import { prefetchEntityTeam, useEntityTeam } from '@/lib/entityTeam'
 import {
   useGetTrip,
   prefetchGetTripQuery,
@@ -29,10 +29,11 @@ import type { TripDto } from '@/api/dto'
  * keeps using `.data` / `.isLoading` directly.
  */
 export function useStageMapData(teamSlug?: string, tripSlug?: string, stageSlug?: string) {
-  const team = useGetTeam(teamSlug!, { query: { enabled: !!teamSlug } })
   const trip = useGetTrip(teamSlug!, tripSlug!, {
     query: { enabled: !!teamSlug && !!tripSlug },
   })
+  // Behind the trip, only when it says the team answers the reader (docs/LEDGER_*.md WEB-166).
+  const team = useEntityTeam(teamSlug, trip.data?.team)
 
   const routeSlug = stageRouteSlug(trip.data, stageSlug)
 
@@ -64,14 +65,14 @@ export async function prefetchStageMap(
   stageSlug: string
 ): Promise<void> {
   await Promise.all([
-    prefetchGetTeamQuery(queryClient, teamSlug),
     prefetchGetTripQuery(queryClient, teamSlug, tripSlug),
     // Read from the server's cache only, never the provider: safe to prefetch.
     prefetchGetTripWeatherQuery(queryClient, teamSlug, tripSlug, { request: TRIP_WEATHER_REQUEST }),
   ])
   const trip = queryClient.getQueryData<TripDto>(getGetTripQueryKey(teamSlug, tripSlug))
   const routeSlug = stageRouteSlug(trip, stageSlug)
-  if (routeSlug) {
-    await prefetchGetRouteQuery(queryClient, teamSlug, routeSlug)
-  }
+  await Promise.all([
+    prefetchEntityTeam(queryClient, teamSlug, trip?.team),
+    routeSlug ? prefetchGetRouteQuery(queryClient, teamSlug, routeSlug) : Promise.resolve(),
+  ])
 }

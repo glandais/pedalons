@@ -13,13 +13,12 @@ import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { RouteEditor } from '@/components/route/RouteEditor'
 import { suggestSurfaceType } from '@/lib/trackSurface'
 import { useEditRouteFormData } from './routeFormData'
-import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
-import { teamAccess } from '@/lib/teamAccess'
+import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
+import { useRouteUsagesRefusal } from '@/components/visibility/useVisibilityAlignment'
 
 export function EditRoutePage() {
   const { teamSlug, routeSlug } = useParams<{ teamSlug: string; routeSlug: string }>()
   const { t } = useTranslation()
-  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -32,6 +31,8 @@ export function EditRoutePage() {
   const { data: route, isLoading } = routeQuery
   const updateRouteMutation = useUpdateRoute()
   const changeSlugMutation = useChangeRouteSlug()
+  // A route used by a ride or a trip seen outside the team cannot go « Équipe » (decision D6).
+  const usagesRefusal = useRouteUsagesRefusal(teamSlug!)
 
   useCanonicalPath(team && route ? paths.routeEdit(team.slug, route.slug) : undefined)
 
@@ -45,12 +46,6 @@ export function EditRoutePage() {
 
   if (!team.enableRoutes) {
     return <Navigate to={paths.team(teamSlug!)} replace />
-  }
-
-  const canEdit = teamAccess(team, isPlatformAdmin).isOrganizer
-
-  if (!canEdit) {
-    return <Navigate to={paths.routes(teamSlug!)} replace />
   }
 
   // The planner takes its initial state once, on mounting: the editor waits for the saved state
@@ -77,6 +72,13 @@ export function EditRoutePage() {
     return <Navigate to={paths.routes(teamSlug!)} replace />
   }
 
+  // The backend's answer for this route (docs/LEDGER_*.md WEB-166, decision D7).
+  const canEdit = route.permissions.canEdit
+
+  if (!canEdit) {
+    return <Navigate to={paths.routes(teamSlug!)} replace />
+  }
+
   // Prepare initial values from fetched route data
   const initialValues = {
     name: route.name,
@@ -91,22 +93,32 @@ export function EditRoutePage() {
   const initialTrack = isSingleTrack ? route.tracks[0].line.coordinates : undefined
 
   const handleSubmit = async (data: RouteRequest, gpxFile?: File) => {
-    await updateRouteMutation.mutateAsync(
-      {
-        teamSlug: teamSlug!,
-        routeSlug: routeSlug!,
-        data: {
-          route: data,
-          gpxFile,
+    try {
+      await updateRouteMutation.mutateAsync(
+        {
+          teamSlug: teamSlug!,
+          routeSlug: routeSlug!,
+          data: {
+            route: data,
+            gpxFile,
+          },
         },
-      },
-      {
-        onSuccess: () => {
-          invalidateRouteQueries(queryClient, teamSlug!, routeSlug!)
-          notifications.show({ message: i18next.t('routes.notifications.updated'), color: 'green' })
-        },
-      }
-    )
+        {
+          onSuccess: () => {
+            invalidateRouteQueries(queryClient, teamSlug!, routeSlug!)
+            notifications.show({
+              message: i18next.t('routes.notifications.updated'),
+              color: 'green',
+            })
+          },
+        }
+      )
+    } catch (error) {
+      // Its dialog lists the rides and trips in the way; anything else goes on as before.
+      // Not saved: RouteEditor must not report what a save would have dropped.
+      if (usagesRefusal.offer(error, () => {})) return false
+      throw error
+    }
     navigate(paths.route(teamSlug!, routeSlug!))
   }
 
@@ -137,6 +149,7 @@ export function EditRoutePage() {
 
       <RouteEditor
         team={team}
+        allowedVisibilities={allowedVisibilitiesFor(team, 'route', route.permissions)}
         teamSlug={teamSlug!}
         initialValues={initialValues}
         initialTrack={initialTrack}
@@ -154,6 +167,7 @@ export function EditRoutePage() {
         onSlugChange={handleSlugChange}
         canEditSlug={canEdit}
       />
+      {usagesRefusal.dialog}
     </Stack>
   )
 }

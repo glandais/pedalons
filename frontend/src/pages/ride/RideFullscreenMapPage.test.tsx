@@ -65,6 +65,7 @@ const group = (id: string, name: string, routeSlug?: string): RideGroupDto =>
 const ride = (overrides: Partial<RideDto> = {}): RideDto =>
   ({
     slug: 'sortie',
+    team: { slug: 'np', name: 'N Peloton', visibility: 'PUBLIC', accessible: true },
     name: 'Sortie du samedi',
     status: Status.PUBLISHED,
     finished: false,

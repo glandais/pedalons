@@ -126,6 +126,7 @@ function ride(overrides: Partial<RideDto> = {}): RideDto {
     full: false,
     commentCount: 2,
     tags: [],
+    permissions: { canEdit: false, canDelete: false, indexable: false },
     ...overrides,
   } as RideDto
 }
@@ -218,7 +219,10 @@ function dashboard(role: TeamRole, overrides: Partial<TeamDashboardDto> = {}): T
     }),
     role,
     myUpcoming: page([ride({ id: 'r0', registered: true }), trip()]),
-    upcomingRides: page([ride()]),
+    // The backend's answer for each row (docs/LEDGER_*.md WEB-166): an organizer edits the ride.
+    upcomingRides: page([
+      ride({ permissions: { canEdit: isOrganizer, canDelete: isOrganizer, indexable: false } }),
+    ]),
     latestPosts: page([post()]),
     newRoutes: { routes: [], total: 0, page: 0, size: 3 },
     latestAds: { ads: [ad(650), ad(undefined)], total: 2, page: 0, size: 3 },

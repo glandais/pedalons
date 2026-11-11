@@ -11,6 +11,7 @@ import { Visibility } from '@/api/dto'
 import { useCreateTeamPageFormData } from './teamPageFormData'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
+import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
 
 export function CreateTeamPagePage() {
   const { t } = useTranslation()
@@ -35,7 +36,16 @@ export function CreateTeamPagePage() {
     return <Navigate to={paths.team(team.slug)} replace />
   }
 
-  const initialValues = { title: '', visibility: Visibility.TEAM, media: defaultMedia() }
+  // « Équipe » whatever the team, as before: a page is the team's own text, opened on purpose. Only
+  // changed to the first value offered when the team no longer accepts TEAM (it always does).
+  const allowed = allowedVisibilitiesFor(team, 'teamPage')
+  const initialValues = {
+    title: '',
+    visibility: allowed.includes(Visibility.TEAM)
+      ? Visibility.TEAM
+      : (allowed[0] ?? Visibility.TEAM),
+    media: defaultMedia(),
+  }
 
   return (
     <TeamAdminLayout team={team} currentTab="pages">
@@ -48,6 +58,8 @@ export function CreateTeamPagePage() {
             <TeamPageForm
               teamSlug={team.slug}
               isCreate={true}
+              allowedVisibilities={allowed}
+              teamPrivate={team.visibility === Visibility.TEAM}
               initialValues={initialValues}
               onSuccess={() => {
                 // Navigation is handled by the hook

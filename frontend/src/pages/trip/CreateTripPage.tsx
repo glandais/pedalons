@@ -1,3 +1,6 @@
+import { useVisibilityAlignment } from '@/components/visibility/useVisibilityAlignment'
+import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
+import type { IncompatibleRouteDto } from '@/api/dto'
 import { useParams, Navigate, useNavigate } from 'react-router-dom'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useTranslation } from 'react-i18next'
@@ -27,6 +30,8 @@ export function CreateTripPage() {
   const { data: team, isLoading: isLoadingTeam } = teamQuery
 
   const createMutation = useCreateTrip()
+  // A public trip on « Équipe » routes: confirm, then replay raising them (decision D5).
+  const alignment = useVisibilityAlignment('trip', createMutation.isPending)
 
   useCanonicalPath(team ? paths.tripNew(team.slug) : undefined)
 
@@ -57,7 +62,7 @@ export function CreateTripPage() {
     name: '',
     media: defaultMedia(),
     dateTime: tripStartDate,
-    visibility: team.visibility,
+    visibility: team.defaultContentVisibility,
     status: Status.DRAFT,
     publishAt: undefined,
     routeSlug: undefined,
@@ -73,14 +78,16 @@ export function CreateTripPage() {
     ],
   }
 
-  const handleSubmit = (data: TripRequest) => {
+  const save = (data: TripRequest, aligned?: IncompatibleRouteDto[]) => {
     createMutation.mutate(
       {
         teamSlug: teamSlug!,
-        data,
+        data: { ...data, alignVisibility: aligned ? true : undefined },
       },
       {
+        onError: (error) => alignment.offer(error, (routes) => save(data, routes)),
         onSuccess: (trip) => {
+          aligned?.forEach((route) => invalidateRouteQueries(queryClient, teamSlug!, route.slug))
           invalidateTeamPublications(queryClient, teamSlug!)
           notifications.show({ message: i18next.t('trips.notifications.created'), color: 'green' })
           navigate(paths.trip(teamSlug!, trip.slug))
@@ -88,6 +95,8 @@ export function CreateTripPage() {
       }
     )
   }
+
+  const handleSubmit = (data: TripRequest) => save(data)
 
   return (
     <Container size="sm" py="xl">
@@ -105,6 +114,7 @@ export function CreateTripPage() {
         isPending={createMutation.isPending}
         submitButtonText={t('trips.create.button')}
       />
+      {alignment.dialog}
     </Container>
   )
 }

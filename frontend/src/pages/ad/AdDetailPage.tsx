@@ -58,7 +58,6 @@ import { useAdDetailData } from './adDetailData'
 import { AD_TYPE_COLORS, STATUS_COLORS } from '@/lib/badgeColors.generated'
 import { TagList } from '@/components/tag'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
-import { teamAccess } from '@/lib/teamAccess'
 
 export function AdDetailPage() {
   const { t } = useTranslation()
@@ -126,13 +125,12 @@ export function AdDetailPage() {
     )
   }
 
-  const isAdmin = teamAccess(team, isPlatformAdmin).isAdmin
   // The relay is open to anyone who may read the ad, i.e. a team member — except its author,
   // who has no one to write to. `AD_CONTACT_SELF` therefore never needs a rendering.
   const canContactAuthor = !!team?.role && ad.createdById !== user?.id
-  // The author or a team admin, as AdAccessChecker enforces — an organizer who did not write the
-  // ad may not edit it either.
-  const canEdit = isAdmin || (!!user && ad.createdById === user.id)
+  // The author or a team admin, as AdAccessChecker decides — the backend's answer for this ad
+  // (docs/LEDGER_*.md WEB-166, decision D7).
+  const canEdit = ad.permissions.canEdit
 
   const formattedDate = <FormattedDateTime date={ad.createdAt} />
 
@@ -212,7 +210,7 @@ export function AdDetailPage() {
   return (
     <Container size="md" py="xl">
       {/* Way back to the team: this page is not mounted inside TeamLayout */}
-      {team && <TeamContextBanner team={team} />}
+      <TeamContextBanner team={ad.team} />
 
       {/* The pictures, straight from `images[]` so a trimmed `media` changes nothing here.
           Renders nothing at all when the ad has none. */}
@@ -281,10 +279,14 @@ export function AdDetailPage() {
                         {t('actions.restore')}
                       </Menu.Item>
                     )}
-                    <Menu.Divider />
-                    <Menu.Item onClick={() => setShowDeleteConfirm(true)} color="danger">
-                      {t('actions.delete')}
-                    </Menu.Item>
+                    {ad.permissions.canDelete && (
+                      <>
+                        <Menu.Divider />
+                        <Menu.Item onClick={() => setShowDeleteConfirm(true)} color="danger">
+                          {t('actions.delete')}
+                        </Menu.Item>
+                      </>
+                    )}
                   </Menu.Dropdown>
                 </Menu>
               </Button.Group>

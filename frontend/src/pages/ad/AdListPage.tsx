@@ -38,7 +38,6 @@ import { paths } from '@/config/paths'
 import { AdType } from '../../api/dto'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
-import { teamAccess } from '@/lib/teamAccess'
 
 export function AdListPage() {
   const { t } = useTranslation()
@@ -245,16 +244,7 @@ export function AdListPage() {
             style={{ opacity: isFetching ? 0.5 : 1 }}
           >
             {adsList.map((ad) => (
-              <AdCard
-                key={ad.id}
-                ad={ad}
-                actions={
-                  <AdCardActions
-                    ad={ad}
-                    isTeamAdmin={teamAccess(teamData, isPlatformAdmin).isAdmin}
-                  />
-                }
-              />
+              <AdCard key={ad.id} ad={ad} actions={<AdCardActions ad={ad} />} />
             ))}
           </SimpleGrid>
 

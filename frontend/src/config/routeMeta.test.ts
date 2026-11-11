@@ -33,6 +33,13 @@ function context(teamVisibility: Visibility, rideVisibility?: Visibility): Route
       name: 'Sortie du dimanche',
       visibility: rideVisibility,
       participantCount: 0,
+      team: { slug: 'np', name: 'N Peloton', visibility: teamVisibility, accessible: true },
+      // What the backend answers for these visibilities (the sitemap's rule): both PUBLIC.
+      permissions: {
+        canEdit: false,
+        canDelete: false,
+        indexable: teamVisibility === 'PUBLIC' && rideVisibility === 'PUBLIC',
+      },
     } as unknown as RideDto)
   }
   return {
@@ -85,6 +92,59 @@ describe('robots directive (WEB-4)', () => {
   it('indexes a page outside any team', () => {
     const ctx = { ...context('PUBLIC_UNLISTED'), params: {} }
     expect(robotsTags(ctx, undefined)).toEqual(['<meta name="robots" content="index, follow" />'])
+  })
+})
+
+/**
+ * An entity's page follows the backend's `permissions.indexable` and nothing else
+ * (docs/LEDGER_*.md WEB-166): the client no longer re-derives it from the visibilities, nor from the
+ * team in the cache — which a private team's public content, read by link, does not have.
+ */
+describe('robots directive of an entity page (WEB-166)', () => {
+  function withRide(ctx: RouteMetaContext, patch: Partial<RideDto>): RouteMetaContext {
+    const key = getGetRideQueryKey('np', 'sortie')
+    const ride = ctx.queryClient.getQueryData<RideDto>(key)!
+    ctx.queryClient.setQueryData(key, { ...ride, ...patch })
+    return ctx
+  }
+
+  it('does not index a page the backend says is not indexable, whatever the visibilities', () => {
+    // A draft, or a ride hidden by moderation: both PUBLIC, still not in the sitemap.
+    const ctx = withRide(context('PUBLIC', 'PUBLIC'), {
+      permissions: { canEdit: false, canDelete: false, indexable: false },
+    })
+    expect(robotsTags(ctx, rideMeta(ctx))).toEqual(['<meta name="robots" content="noindex" />'])
+  })
+
+  it("keeps a private team's public ride, read by link, out of the index (decision D1)", () => {
+    const queryClient = new QueryClient()
+    // No team in the cache: its loaders never asked for it, `accessible` is false.
+    queryClient.setQueryData(getGetRideQueryKey('np', 'sortie'), {
+      slug: 'sortie',
+      name: 'Sortie du dimanche',
+      visibility: 'PUBLIC',
+      participantCount: 0,
+      team: { slug: 'np', name: 'N Peloton', visibility: 'TEAM', accessible: false },
+      permissions: { canEdit: false, canDelete: false, indexable: false },
+    } as unknown as RideDto)
+    const ctx = { ...context('PUBLIC'), queryClient }
+    expect(rideMeta(ctx)?.noindex).toBe(true)
+    expect(robotsTags(ctx, rideMeta(ctx))).toEqual(['<meta name="robots" content="noindex" />'])
+  })
+
+  it('indexes what the backend calls indexable without looking at the team in the cache', () => {
+    // A stale team in the cache must not overrule the entity's own answer.
+    const ctx = context('PUBLIC_UNLISTED', 'PUBLIC')
+    withRide(ctx, { permissions: { canEdit: false, canDelete: false, indexable: true } })
+    expect(robotsTags(ctx, rideMeta(ctx))).toEqual([
+      '<meta name="robots" content="index, follow" />',
+    ])
+  })
+
+  it('still lets a route that is not indexable as such veto the page', () => {
+    const ctx = context('PUBLIC', 'PUBLIC')
+    const head = buildMetaTags(withIndexing(rideMeta(ctx), ctx, { auth: 'authenticated' }), ctx)
+    expect(head).toContain('<meta name="robots" content="noindex" />')
   })
 })
 
@@ -299,5 +359,20 @@ describe('routes kept out of the index', () => {
     'apps',
   ])('%s stays indexable', (id) => {
     expect(routeIndexable(route(id))).toBe(true)
+  })
+
+  // An entity's page leans on its own `permissions.indexable`: without a meta(), withIndexing
+  // falls back on the team in the cache, which a private team's content read by link does not
+  // have — the page would come out indexable (decision D1, docs/LEDGER_*.md WEB-166).
+  it('gives every indexable route of an entity a meta() of its own', () => {
+    const withoutMeta = [...routeById.values()]
+      .filter((config) => routeIndexable(config) && !config.meta)
+      .filter((config) =>
+        Object.values(config.paths).some((path) =>
+          (String(path).match(/:\w+/g) ?? []).some((param) => param !== ':teamSlug')
+        )
+      )
+      .map((config) => config.id)
+    expect(withoutMeta).toEqual([])
   })
 })

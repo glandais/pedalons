@@ -67,6 +67,7 @@ function ride(overrides: Partial<RideDto> = {}): RideDto {
     deleted: false,
     registered: true,
     full: false,
+    permissions: { canEdit: false, canDelete: false, indexable: false },
     tags: [],
     ...overrides,
   } as RideDto
@@ -90,7 +91,6 @@ describe('UpcomingRideCard: a group leaving at its own time says when', () => {
   it('gives every group its time as soon as they do not all leave together', () => {
     renderIn(
       <UpcomingRideCard
-        canManage={false}
         ride={ride({
           registered: false,
           groupSummaries: [
@@ -107,7 +107,6 @@ describe('UpcomingRideCard: a group leaving at its own time says when', () => {
   it('gives no time when every group leaves with the ride', () => {
     renderIn(
       <UpcomingRideCard
-        canManage={false}
         ride={ride({
           registered: false,
           groupSummaries: [
@@ -124,7 +123,6 @@ describe('UpcomingRideCard: a group leaving at its own time says when', () => {
   it('leads with the reader’s group, marks it, and times every group', () => {
     renderIn(
       <UpcomingRideCard
-        canManage={false}
         ride={ride({
           registeredGroupId: 'g2',
           registeredGroup: joined(LATER),

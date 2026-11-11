@@ -5,7 +5,7 @@ import { IconUsersGroup } from '@tabler/icons-react'
 import { Container, Stack, Title, Box, Skeleton, Divider } from '@mantine/core'
 import { rideRouteSlugs, useRideDetailData } from './rideDetailData'
 import { groupAction, groupsRegisteredFirst, groupWindLeg } from './rideGroupData'
-import { ReportTargetType, Status } from '@/api/dto'
+import { ReportTargetType } from '@/api/dto'
 import { useAuth } from '../../hooks/useAuth'
 import { EmptyState } from '../../components/common/EmptyState'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
@@ -38,8 +38,6 @@ import { RouteMapPanel } from '@/components/route/RouteMapPanel'
 import { GroupStats } from '@/components/ride/group/GroupStats'
 import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
-import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
-import { teamAccess } from '@/lib/teamAccess'
 import { AccessAlerts } from '@/components/publication/AccessAlerts'
 import { InstructionsBlock } from '@/components/publication/InstructionsBlock'
 import { FactsStrip } from '@/components/publication/FactsStrip'
@@ -60,7 +58,6 @@ const WEATHER_ANCHOR_SETTLE_MS = 4000
 
 export function RideDetailPage() {
   const { t } = useTranslation()
-  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, rideSlug } = useParams<{ teamSlug: string; rideSlug: string }>()
   const { isAuthenticated } = useAuth()
   // The hovered route, and the one chosen by a click on its trace — map item ids, one per distinct
@@ -75,8 +72,9 @@ export function RideDetailPage() {
     setHighlightedItemId(null)
   }
 
+  // No `GET team` here: the ride embeds its team's summary, and the reader of a private team's
+  // public ride by link does not get the team (docs/LEDGER_*.md WEB-166).
   const {
-    team: { data: team, isLoading: isLoadingTeam },
     ride: { data: ride, isLoading: isLoadingRide, error, refetch },
     weather,
     routesBySlug: groupRoutesBySlug,
@@ -110,6 +108,7 @@ export function RideDetailPage() {
   }
   const isGroupLit = (groupId: string) => !!litItemId && itemIdByGroupId.get(groupId) === litItemId
 
+  const team = ride?.team
   useCanonicalPath(team && ride ? paths.ride(team.slug, ride.slug) : undefined)
 
   // `#meteo`: a solo ride's former group link (WEB-79), or a shared one.
@@ -117,11 +116,11 @@ export function RideDetailPage() {
     settleMs: WEATHER_ANCHOR_SETTLE_MS,
   })
 
-  if (isLoadingTeam || isLoadingRide || error || !ride || !team) {
+  if (isLoadingRide || error || !ride || !team) {
     return (
       <Container size="xl" py="xl">
         <QueryStateBoundary
-          isLoading={isLoadingTeam || isLoadingRide}
+          isLoading={isLoadingRide}
           isError={!!error}
           error={error}
           isNotFound={!ride || !team}
@@ -140,17 +139,20 @@ export function RideDetailPage() {
     )
   }
 
-  // Registering and the join banner follow the real membership; editing and the comment thread
-  // (moderation), the rights a platform admin holds in every team (docs/LEDGER_*.md API-137).
-  const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
-  const canReadComments = isMember || isPlatformAdmin
-  // A ride that has already happened is not joinable — `canJoinRide` used to ignore the date
-  // entirely, so last year's rides kept a live "Join" button.
-  // Said by the server (docs/LEDGER_*.md API-16), not derived from the clock of whoever renders.
-  const isPast = ride.finished
+  // What the reader may do, as the backend computes it (docs/LEDGER_*.md WEB-166, decision D7):
+  // never re-derived from the team's visibility or the reader's role.
+  const { permissions } = ride
+  const canEdit = permissions.canEdit
+  const canReadComments = !!permissions.canComment
+  const canSeeParticipants = !!permissions.canSeeParticipants
+  // `canRegister` is exact on a detail: published, the reader a member, not every group gone. A
+  // member already registered moves group from their card instead of joining.
   // `ride.full` is deliberately left out: each card already withholds its Join button when its own
   // group is full, and gating the whole zone on it hid every « Complet » badge once all groups filled.
-  const canJoinRide = isMember && ride.status === Status.PUBLISHED && !ride.registered && !isPast
+  const canJoinRide = !!permissions.canRegister && !ride.registered
+  // Who belongs (the join banner, the group action): the reader who may see the participants — a
+  // member, or a platform admin moderating.
+  const isMember = canSeeParticipants
   // The member's own group heads the list, set apart from the others.
   const isRegisteredInGroup = !!ride.groups?.some((g) => g.id === ride.registeredGroupId)
 
@@ -219,7 +221,7 @@ export function RideDetailPage() {
                   teamSlug={teamSlug!}
                   ride={ride}
                   group={solo}
-                  action={groupAction(ride, solo, isMember)}
+                  action={groupAction(ride, solo)}
                   membership={membership}
                   routesBySlug={groupRoutesBySlug}
                   // On its single-route map (graded, not a coloured trace) the bar would match nothing.
@@ -236,7 +238,7 @@ export function RideDetailPage() {
                   ride={ride}
                   group={solo}
                   titleId="ride-participants-title"
-                  canSeeParticipants={canReadComments}
+                  canSeeParticipants={canSeeParticipants}
                 />
               </Stack>
             ) : (
@@ -273,7 +275,7 @@ export function RideDetailPage() {
                                   : undefined
                               }
                               canJoin={canJoinRide}
-                              canSeeParticipants={canReadComments}
+                              canSeeParticipants={canSeeParticipants}
                               onJoin={() => handleJoinGroup(group.id)}
                               onLeave={() => handleLeaveGroup(group.id)}
                               onHover={hoverGroup}
@@ -302,7 +304,7 @@ export function RideDetailPage() {
                       teamSlug={teamSlug!}
                       ride={ride}
                       titleId="ride-participants-title"
-                      canSeeParticipants={canReadComments}
+                      canSeeParticipants={canSeeParticipants}
                     />
                   </Box>
                 )}
@@ -408,6 +410,7 @@ export function RideDetailPage() {
           teamSlug={teamSlug!}
           isAuthenticated={isAuthenticated}
           isMember={isMember}
+          teamAccessible={team.accessible}
         />
       </Box>
 

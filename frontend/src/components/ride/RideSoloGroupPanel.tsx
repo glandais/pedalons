@@ -13,7 +13,7 @@ interface RideSoloGroupPanelProps {
   ride: RideDto
   /** The ride's one group (`soloGroup`). */
   group: RideGroupDto
-  /** `groupAction(ride, group, isMember)`: « Rejoindre », « Quitter » or nothing. */
+  /** `groupAction(ride, group)`: « Rejoindre », « Quitter » or nothing. */
   action: GroupAction
   membership: {
     join: (groupId: string) => void

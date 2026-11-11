@@ -44,12 +44,24 @@ export const buildMetaTags = _buildMetaTags
 const appNameOf = (ctx: RouteMetaContext): string => ctx.config?.appName || 'Pédalons'
 
 /**
- * Only `PUBLIC` is indexable. `PUBLIC_UNLISTED` is readable by anyone holding the link but must
- * stay out of search engines; `TEAM` only renders for a member's session, never for a crawler, and
- * is not indexable either. docs/LEDGER_*.md WEB-4.
+ * The team's own pages (its home, its about page, and every team-scoped page without a meta() of
+ * its own): only a `PUBLIC` team is indexable. `PUBLIC_UNLISTED` is readable by anyone holding the
+ * link but must stay out of search engines; `TEAM` only renders for a member's session, never for a
+ * crawler. docs/LEDGER_*.md WEB-4. No computed field covers the team itself.
+ *
+ * An entity's page does not use it: it reads the backend's `permissions.indexable` (the sitemap's
+ * rule — entity and team `PUBLIC`, published), see {@link entityNoindex} (docs/LEDGER_*.md WEB-166).
  */
 const notIndexable = (visibility: Visibility | undefined): boolean =>
   visibility !== undefined && visibility !== 'PUBLIC'
+
+/**
+ * `noindex` for an entity's page: whenever the backend says it is not indexable — which covers an
+ * entity not `PUBLIC`, a team not `PUBLIC` (a private team's public content by link included,
+ * decision D1), a draft, a moderated entity. Never re-derived from the visibilities.
+ */
+const entityNoindex = (entity: { permissions: { indexable: boolean } }): boolean =>
+  !entity.permissions.indexable
 
 /**
  * Whether a route may be indexed at all, before its content is looked at: only a public page that
@@ -63,9 +75,13 @@ export function routeIndexable(route: Pick<RouteConfig, 'auth' | 'noindex'>): bo
 /**
  * The robots decision for the whole request, applied by entry-server on top of the route's own
  * `meta()`: a page is `noindex` when its content says so, when its route is not indexable
- * ({@link routeIndexable}), **or** when it belongs to a team that is not `PUBLIC` — every
- * team-scoped page (lists, calendar, members…, most of which have no `meta()`) has the team in the
- * per-request cache, since entry-server reads it for the 404/301 decision. Never throws.
+ * ({@link routeIndexable}), **or**, for a page whose `meta()` did not decide (none, or no
+ * `noindex` given), when it belongs to a team that is not `PUBLIC` — every team-scoped page (lists,
+ * calendar, members…, most of which have no `meta()`) has the team in the per-request cache.
+ *
+ * An entity's `meta()` always decides, from the backend's `permissions.indexable`
+ * (docs/LEDGER_*.md WEB-166): `noindex: false` is final, and the team in the cache — absent anyway
+ * for a private team's content read by link — is not looked at again. Never throws.
  */
 export function withIndexing(
   meta: RouteMeta | undefined,
@@ -77,7 +93,10 @@ export function withIndexing(
     ? ctx.queryClient.getQueryData<TeamDetailDto>(getGetTeamQueryKey(teamSlug))
     : undefined
   if (meta?.noindex) return meta
-  if (!notIndexable(team?.visibility) && (!route || routeIndexable(route))) return meta
+  const routeAllows = !route || routeIndexable(route)
+  // Decided by the page's content (an entity's `permissions.indexable`): only the route may veto.
+  if (meta?.noindex === false) return routeAllows ? meta : { ...meta, noindex: true }
+  if (!notIndexable(team?.visibility) && routeAllows) return meta
   return { ...meta, noindex: true }
 }
 
@@ -252,8 +271,9 @@ export const teamPageMeta: RouteMetaFn = (ctx) => {
     image:
       imgFromAssets(ctx.origin, page.media?.assets, page.title) ??
       imgFromAsset(ctx.origin, team?.about?.assets?.logo, teamName) ??
+      imgFromTemplate(ctx.origin, page.team?.logoUrl, teamName) ??
       defaultImage(ctx.origin, appNameOf(ctx)),
-    noindex: notIndexable(page.visibility),
+    noindex: entityNoindex(page),
   }
 }
 
@@ -275,9 +295,10 @@ export const postMeta: RouteMetaFn = (ctx) => {
     image:
       imgFromAssets(ctx.origin, post.media?.assets, alt) ??
       imgFromAsset(ctx.origin, team?.about?.assets?.logo, alt) ??
+      imgFromTemplate(ctx.origin, post.team?.logoUrl, alt) ??
       defaultImage(ctx.origin, appNameOf(ctx)),
     article: { publishedTime: publishedTime(post.publishAt, post.createdAt) },
-    noindex: notIndexable(post.visibility),
+    noindex: entityNoindex(post),
   }
 }
 
@@ -317,9 +338,10 @@ export const rideMeta: RouteMetaFn = (ctx) => {
       imgFromTemplate(ctx.origin, ride.thumbnailLightUrl, alt) ??
       imgFromAssets(ctx.origin, ride.media?.assets, alt) ??
       imgFromAsset(ctx.origin, team?.about?.assets?.logo, alt) ??
+      imgFromTemplate(ctx.origin, ride.team?.logoUrl, alt) ??
       defaultImage(ctx.origin, appNameOf(ctx)),
     article: { publishedTime: publishedTime(ride.publishAt, ride.createdAt) },
-    noindex: notIndexable(ride.visibility),
+    noindex: entityNoindex(ride),
   }
 }
 
@@ -369,9 +391,10 @@ export const rideGroupMeta: RouteMetaFn = (ctx) => {
       imgFromTemplate(ctx.origin, ride.thumbnailLightUrl, alt) ??
       imgFromAssets(ctx.origin, ride.media?.assets, alt) ??
       imgFromAsset(ctx.origin, team?.about?.assets?.logo, alt) ??
+      imgFromTemplate(ctx.origin, ride.team?.logoUrl, alt) ??
       defaultImage(ctx.origin, appNameOf(ctx)),
     article: { publishedTime: publishedTime(ride.publishAt, ride.createdAt) },
-    noindex: notIndexable(ride.visibility),
+    noindex: entityNoindex(ride),
   }
 }
 
@@ -405,12 +428,13 @@ export const tripMeta: RouteMetaFn = (ctx) => {
       imgFromTemplate(ctx.origin, trip.thumbnailLightUrl, alt) ??
       imgFromAssets(ctx.origin, trip.media?.assets, alt) ??
       imgFromAsset(ctx.origin, team?.about?.assets?.logo, alt) ??
+      imgFromTemplate(ctx.origin, trip.team?.logoUrl, alt) ??
       defaultImage(ctx.origin, appNameOf(ctx)),
     article: {
       publishedTime: publishedTime(trip.publishAt, trip.createdAt),
       section: ctx.t('seo.trip.section'),
     },
-    noindex: notIndexable(trip.visibility),
+    noindex: entityNoindex(trip),
   }
 }
 
@@ -434,7 +458,7 @@ export const stageMeta: RouteMetaFn = (ctx) => {
         imgFromTemplate(ctx.origin, trip.thumbnailLightUrl, trip.name) ??
         imgFromAssets(ctx.origin, trip.media?.assets, trip.name) ??
         defaultImage(ctx.origin, appNameOf(ctx)),
-      noindex: notIndexable(trip.visibility),
+      noindex: entityNoindex(trip),
     }
   }
 
@@ -460,6 +484,7 @@ export const stageMeta: RouteMetaFn = (ctx) => {
       imgFromTemplate(ctx.origin, trip.thumbnailLightUrl, alt) ??
       imgFromAssets(ctx.origin, trip.media?.assets, alt) ??
       imgFromAsset(ctx.origin, team?.about?.assets?.logo, alt) ??
+      imgFromTemplate(ctx.origin, trip.team?.logoUrl, alt) ??
       defaultImage(ctx.origin, appNameOf(ctx)),
     article: {
       publishedTime: publishedTime(trip.publishAt, trip.createdAt),
@@ -467,7 +492,7 @@ export const stageMeta: RouteMetaFn = (ctx) => {
       author: teamName,
     },
     // A stage has no visibility of its own: it is its trip's.
-    noindex: notIndexable(trip.visibility),
+    noindex: entityNoindex(trip),
   }
 }
 
@@ -495,8 +520,9 @@ export const routeMeta: RouteMetaFn = (ctx) => {
     image:
       imgFromAsset(ctx.origin, route.media?.assets?.thumbnailLight, alt) ??
       imgFromAsset(ctx.origin, team?.about?.assets?.logo, route.name) ??
+      imgFromTemplate(ctx.origin, route.team?.logoUrl, route.name) ??
       defaultImage(ctx.origin, appNameOf(ctx)),
-    noindex: notIndexable(route.visibility),
+    noindex: entityNoindex(route),
   }
 }
 

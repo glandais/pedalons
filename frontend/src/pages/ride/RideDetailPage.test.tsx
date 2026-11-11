@@ -74,7 +74,9 @@ vi.mock('@/components/route/RouteMapView', () => ({
     return <div data-testid="route-map" />
   },
 }))
-vi.mock('@/components/comment', () => ({ CommentSection: () => null }))
+vi.mock('@/components/comment', () => ({
+  CommentSection: () => <div data-testid="comment-section" />,
+}))
 vi.mock('@/components/moderation/ContentActionsMenu', () => ({ ContentActionsMenu: () => null }))
 vi.mock('@/components/team/TeamContextBanner', () => ({ TeamContextBanner: () => null }))
 vi.mock('@/components/common/MediaDisplay', () => ({
@@ -99,6 +101,15 @@ const group = (overrides: Partial<RideGroupDto> = {}): RideGroupDto =>
     ...overrides,
   }) as RideGroupDto
 
+const MEMBER_RIGHTS = {
+  canEdit: false,
+  canDelete: false,
+  canRegister: true,
+  canComment: true,
+  canSeeParticipants: true,
+  indexable: true,
+}
+
 const ride = (overrides: Partial<RideDto> = {}): RideDto =>
   ({
     id: 'r1',
@@ -112,9 +123,11 @@ const ride = (overrides: Partial<RideDto> = {}): RideDto =>
     routeSlug: 'boucle',
     participantCount: 11,
     media: { markdown: '', assets: { images: [], attachments: [] } },
-    team: { slug: 'np', name: 'N Peloton' },
+    team: { slug: 'np', name: 'N Peloton', visibility: 'PUBLIC', accessible: true },
     tags: [],
     createdBy: { id: 'u9', displayName: 'Créatrice de la sortie' },
+    // What the backend answers a member (docs/LEDGER_*.md WEB-166): the page reads nothing else.
+    permissions: MEMBER_RIGHTS,
     groups: [group()],
     ...overrides,
   }) as unknown as RideDto
@@ -436,5 +449,63 @@ describe('RideDetailPage — the departure block', () => {
     renderPage()
     expect(within(block()).getByText('Parking de la gare')).toBeTruthy()
     expect(screen.getAllByText('Parking de la gare')).toHaveLength(1)
+  })
+})
+
+/**
+ * A private team's public ride, opened by link by someone outside the team (docs/LEDGER_*.md
+ * WEB-166): the ride's embedded summary says `accessible: false`. The page renders the ride from
+ * it, never offers what the backend refuses, and never leads into the closed team.
+ */
+describe('RideDetailPage — a private team’s public ride, read by link (WEB-166)', () => {
+  const outsider = {
+    canEdit: false,
+    canDelete: false,
+    canRegister: false,
+    canComment: false,
+    canSeeParticipants: false,
+    indexable: false,
+  }
+  beforeEach(() => {
+    // No team at all: its query is never enabled for a closed team.
+    state.team = undefined
+    state.ride = ride({
+      team: { id: 't1', slug: 'np', name: 'N Peloton', visibility: 'TEAM', accessible: false },
+      permissions: outsider,
+    } as Partial<RideDto>)
+    state.weather = { ...okWeather, legs: [weatherLeg('g1')] }
+  })
+  afterEach(cleanup)
+
+  it('renders the ride instead of « not found » without the team', () => {
+    renderPage()
+    expect(screen.getByRole('heading', { level: 2, name: 'Sortie du samedi' })).toBeTruthy()
+    expect(screen.queryByText('Sortie non trouvée')).toBeNull()
+  })
+
+  it('offers no registration, no comments and no participants — the backend refuses them', () => {
+    renderPage()
+    expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
+    expect(screen.queryByTestId('comment-section')).toBeNull()
+    expect(screen.queryByTestId('participant-list')).toBeNull()
+  })
+
+  it('says why, without a link to the team it cannot open', () => {
+    renderPage()
+    expect(screen.getByText('Rejoignez cette équipe pour participer aux sorties.')).toBeTruthy()
+    expect(screen.queryByRole('link', { name: "Voir l'équipe" })).toBeNull()
+    const teamLinks = screen
+      .queryAllByRole('link')
+      .filter((a) => (a.getAttribute('href') ?? '').replace(/\/$/, '') === paths.team('np'))
+    expect(teamLinks).toHaveLength(0)
+  })
+
+  it('shows a member the same ride with what the backend lets them do', () => {
+    state.ride = ride({
+      team: { id: 't1', slug: 'np', name: 'N Peloton', visibility: 'TEAM', accessible: true },
+    } as Partial<RideDto>)
+    renderPage()
+    expect(screen.getByRole('button', { name: 'Rejoindre' })).toBeTruthy()
+    expect(screen.getByTestId('comment-section')).toBeTruthy()
   })
 })

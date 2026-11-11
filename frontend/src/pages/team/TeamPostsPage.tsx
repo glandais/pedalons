@@ -120,9 +120,7 @@ export function TeamPostsPage() {
                   publication={publication}
                   showTeam={false}
                   priority={index === 0}
-                  actions={
-                    <PublicationCardActions publication={publication} canManage={canCreate} />
-                  }
+                  actions={<PublicationCardActions publication={publication} />}
                 />
               ))}
             </SimpleGrid>

@@ -1,7 +1,8 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { useGetTeam, prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
+import { prefetchEntityTeam, useEntityTeam } from '@/lib/entityTeam'
 import {
   useGetRoute,
+  getGetRouteQueryKey,
   prefetchGetRouteQuery,
   prefetchGetRouteUsagesQuery,
 } from '@/api/endpoints/routes/routes'
@@ -13,6 +14,7 @@ import { prefetchGetAvailableServicesQuery } from '@/api/endpoints/gps-services/
 import { prefetchMemberComments } from '@/config/prefetchHelpers'
 import { useElevationRefetchInterval } from '@/hooks/useElevationRefetchInterval'
 import { useAuthStore } from '@/store/authStore'
+import type { RouteDetailDto } from '@/api/dto'
 
 /**
  * The one description of what the route detail screen reads, consumed two ways: `RouteDetailPage`
@@ -31,12 +33,14 @@ import { useAuthStore } from '@/store/authStore'
  * and `RouteFullscreenMapPage` (which needs nothing else).
  */
 export function useRouteTeamAndRoute(teamSlug?: string, routeSlug?: string) {
-  const team = useGetTeam(teamSlug!, { query: { enabled: !!teamSlug } })
   const refetchInterval = useElevationRefetchInterval()
   const route = useGetRoute(teamSlug!, routeSlug!, {
     // Re-read while the HD elevation is still being computed (WEB-102).
     query: { enabled: !!teamSlug && !!routeSlug, refetchInterval },
   })
+  // Behind the route, and only when it says the team answers the reader (docs/LEDGER_*.md
+  // WEB-166): the pages render from its embedded summary.
+  const team = useEntityTeam(teamSlug, route.data?.team)
   return { team, route }
 }
 
@@ -48,7 +52,7 @@ export function useRouteTeamAndRoute(teamSlug?: string, routeSlug?: string) {
  * itself, the same way comments and GPS export options are owned by the children that mount them.
  * All three are still covered by {@link prefetchRouteDetail}, on purpose — see its docblock.
  *
- * Auth also stays out: the page reads it via `team.role` (`isMember`), not `useAuth()`, but the
+ * Auth also stays out: the page reads the route's `permissions`, not `useAuth()`, but the
  * prefetch's GPS-services gate still goes through `useAuthStore.getState()`, matching the split
  * documented in docs/SSR-data-loading.md.
  */
@@ -67,9 +71,9 @@ export function useRouteMapData(teamSlug?: string, routeSlug?: string) {
  * It covers more than the hook does, on purpose: usages (`RouteUsages`), comments
  * (`CommentSection`) and GPS export options are fetched by children the page mounts, not by the
  * page itself — comments gated on membership, GPS services on being signed in, exactly as those
- * children gate themselves. Comments run after the first wave for the same reason as
- * `rideDetailData.ts`'s: `prefetchMemberComments` needs to know membership, which
- * `prefetchGetTeamQuery` above just landed in the cache.
+ * children gate themselves. Comments and the team run after the first wave for the same reason as
+ * `rideDetailData.ts`'s: both are decided by the route just read (`permissions.canComment`,
+ * `team.accessible`).
  */
 export async function prefetchRouteDetail(
   queryClient: QueryClient,
@@ -77,20 +81,24 @@ export async function prefetchRouteDetail(
   routeSlug: string
 ): Promise<void> {
   await Promise.all([
-    prefetchGetTeamQuery(queryClient, teamSlug),
     prefetchGetRouteQuery(queryClient, teamSlug, routeSlug),
     prefetchGetRouteUsagesQuery(queryClient, teamSlug, routeSlug),
     useAuthStore.getState().isAuthenticated
       ? prefetchGetAvailableServicesQuery(queryClient)
       : Promise.resolve(queryClient),
   ])
-  await prefetchMemberComments(
-    queryClient,
-    teamSlug,
-    routeSlug,
-    listRouteComments,
-    getListRouteCommentsQueryKey
-  )
+  const route = queryClient.getQueryData<RouteDetailDto>(getGetRouteQueryKey(teamSlug, routeSlug))
+  await Promise.all([
+    prefetchEntityTeam(queryClient, teamSlug, route?.team),
+    prefetchMemberComments(
+      queryClient,
+      teamSlug,
+      routeSlug,
+      listRouteComments,
+      getListRouteCommentsQueryKey,
+      route?.permissions.canComment
+    ),
+  ])
 }
 
 /** Server-side counterpart of {@link useRouteMapData} — team + route, no more. */
@@ -99,8 +107,7 @@ export async function prefetchRouteMap(
   teamSlug: string,
   routeSlug: string
 ): Promise<void> {
-  await Promise.all([
-    prefetchGetTeamQuery(queryClient, teamSlug),
-    prefetchGetRouteQuery(queryClient, teamSlug, routeSlug),
-  ])
+  await prefetchGetRouteQuery(queryClient, teamSlug, routeSlug)
+  const route = queryClient.getQueryData<RouteDetailDto>(getGetRouteQueryKey(teamSlug, routeSlug))
+  await prefetchEntityTeam(queryClient, teamSlug, route?.team)
 }

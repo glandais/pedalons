@@ -50,6 +50,9 @@ const TEAM = {
   visibility: 'TEAM',
   enableRoutePlanner: true,
   geometry: null,
+  // A private team without public content: « Équipe » only, so no visibility field (WEB-166).
+  allowedContentVisibilities: { route: ['TEAM'] },
+  defaultContentVisibility: 'TEAM',
 } as unknown as TeamDetailDto
 
 function renderEditor(props: Partial<React.ComponentProps<typeof RouteEditor>> = {}) {

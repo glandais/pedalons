@@ -1,3 +1,6 @@
+import { VisibilitySelector } from '@/components/visibility/VisibilitySelector'
+import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
+import { Visibility } from '@/api/dto'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useForm } from '@mantine/form'
 import { zodFormValidator } from '@/lib/formUtils'
@@ -46,6 +49,11 @@ type Target = { type: 'group'; index: number } | { type: 'ride' }
 
 interface RideEditorProps {
   team: TeamDetailDto
+  /**
+   * The visibilities this content may take, from the entity being edited
+   * (`permissions.allowedVisibilities`); the team's list for its kind when absent (creation).
+   */
+  allowedVisibilities?: Visibility[]
   teamSlug: string
   initialValues: RideRequest
   onSubmit: (data: RideRequest) => void | Promise<void>
@@ -72,6 +80,7 @@ interface RideEditorProps {
 
 export function RideEditor({
   team,
+  allowedVisibilities,
   teamSlug,
   initialValues,
   onSubmit,
@@ -338,15 +347,14 @@ export function RideEditor({
           disabled={isPending}
         />
 
-        {team.visibility !== 'TEAM' && (
-          <Radio.Group label={t('visibility.label')} {...form.getInputProps('visibility')}>
-            <Stack gap="xs" mt="xs">
-              <Radio value="TEAM" label={t('visibility.team')} />
-              <Radio value="PUBLIC_UNLISTED" label={t('visibility.public_unlisted')} />
-              <Radio value="PUBLIC" label={t('visibility.public')} />
-            </Stack>
-          </Radio.Group>
-        )}
+        <VisibilitySelector
+          allowed={allowedVisibilities ?? allowedVisibilitiesFor(team, 'ride')}
+          value={form.values.visibility}
+          onChange={(v) => form.setFieldValue('visibility', v)}
+          error={form.errors.visibility}
+          teamPrivate={team.visibility === Visibility.TEAM}
+          disabled={isPending}
+        />
 
         <Radio.Group label={t('form.status')} {...form.getInputProps('status')}>
           <Stack gap="xs" mt="xs">

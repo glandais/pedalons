@@ -33,7 +33,6 @@ export function TeamDashboard({ dashboard, team: teamOverride }: TeamDashboardPr
   const slug = team.slug
   const organizer = dashboard.organizer ?? undefined
   const admin = dashboard.admin ?? undefined
-  const isOrganizer = !!organizer
 
   const { myUpcoming, upcomingRides, latestPosts, newRoutes, latestAds } = dashboard
   const upcoming = ridesOf(upcomingRides?.publications)
@@ -75,7 +74,7 @@ export function TeamDashboard({ dashboard, team: teamOverride }: TeamDashboardPr
                 }}
               >
                 {upcoming.map((ride) => (
-                  <UpcomingRideCard key={ride.id} ride={ride} canManage={isOrganizer} />
+                  <UpcomingRideCard key={ride.id} ride={ride} />
                 ))}
               </Box>
             </DashboardSection>

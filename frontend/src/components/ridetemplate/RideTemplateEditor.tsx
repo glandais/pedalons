@@ -1,3 +1,6 @@
+import { VisibilitySelector } from '@/components/visibility/VisibilitySelector'
+import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
+import { Visibility } from '@/api/dto'
 import { useTranslation } from 'react-i18next'
 import { useForm } from '@mantine/form'
 import { zodFormValidator } from '@/lib/formUtils'
@@ -25,6 +28,11 @@ import { TagPicker } from '@/components/tag'
 
 interface RideTemplateEditorProps {
   team: TeamDetailDto
+  /**
+   * The visibilities this content may take, from the entity being edited
+   * (`permissions.allowedVisibilities`); the team's list for its kind when absent (creation).
+   */
+  allowedVisibilities?: Visibility[]
   teamSlug: string
   initialValues: RideTemplateRequest
   onSubmit: (data: RideTemplateRequest) => void | Promise<void>
@@ -35,6 +43,7 @@ interface RideTemplateEditorProps {
 
 export function RideTemplateEditor({
   team,
+  allowedVisibilities,
   teamSlug,
   initialValues,
   onSubmit,
@@ -124,15 +133,14 @@ export function RideTemplateEditor({
           disabled={isPending}
         />
 
-        {team.visibility !== 'TEAM' && (
-          <Radio.Group label={t('visibility.label')} {...form.getInputProps('visibility')}>
-            <Stack gap="xs" mt="xs">
-              <Radio value="TEAM" label={t('visibility.team')} />
-              <Radio value="PUBLIC_UNLISTED" label={t('visibility.public_unlisted')} />
-              <Radio value="PUBLIC" label={t('visibility.public')} />
-            </Stack>
-          </Radio.Group>
-        )}
+        <VisibilitySelector
+          allowed={allowedVisibilities ?? allowedVisibilitiesFor(team, 'rideTemplate')}
+          value={form.values.visibility}
+          onChange={(v) => form.setFieldValue('visibility', v)}
+          error={form.errors.visibility}
+          teamPrivate={team.visibility === Visibility.TEAM}
+          disabled={isPending}
+        />
 
         <Radio.Group label={t('form.status')} {...form.getInputProps('status')}>
           <Stack gap="xs" mt="xs">

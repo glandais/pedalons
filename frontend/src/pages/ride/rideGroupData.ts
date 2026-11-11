@@ -1,6 +1,5 @@
-import { readsMemberContent } from '@/config/prefetchHelpers'
 import type { QueryClient } from '@tanstack/react-query'
-import { prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
+import { prefetchEntityTeam } from '@/lib/entityTeam'
 import {
   prefetchGetRideQuery,
   getGetRideQueryKey,
@@ -56,7 +55,7 @@ export function useRideGroupData(teamSlug?: string, rideSlug?: string, groupId?:
 
 /**
  * Server-side counterpart of {@link useRideGroupData}, in two phases like the ride's: the routes
- * bulk needs the ride's groups. The participants only need the URL, so they ride in the first.
+ * bulk needs the ride's groups, the team and the participants the ride's computed rights.
  * No comments: they stay on the ride's page.
  */
 export async function prefetchRideGroup(
@@ -71,15 +70,16 @@ export async function prefetchRideGroup(
     alias: groupParticipantFiltersAlias,
   })
   await Promise.all([
-    prefetchGetTeamQuery(queryClient, teamSlug),
     prefetchGetRideQuery(queryClient, teamSlug, rideSlug),
     prefetchGetRideWeatherQuery(queryClient, teamSlug, rideSlug, { request: WEATHER_REQUEST }),
   ])
 
   const ride = queryClient.getQueryData<RideDto>(getGetRideQueryKey(teamSlug, rideSlug))
   await Promise.all([
+    // Only when the ride says the team answers the reader (docs/LEDGER_*.md WEB-166).
+    prefetchEntityTeam(queryClient, teamSlug, ride?.team),
     prefetchRoutesBulkChunked(queryClient, teamSlug, rideRouteSlugs(ride)),
-    readsMemberContent(queryClient, teamSlug)
+    ride?.permissions.canSeeParticipants
       ? prefetchGetRideParticipantsQuery(
           queryClient,
           teamSlug,
@@ -183,11 +183,13 @@ export function rideGroupMapDataRedirect(
  */
 export type GroupAction = 'join' | 'leave' | 'registeredElsewhere' | 'none'
 
-export function groupAction(ride: RideDto, group: RideGroupDto, isMember: boolean): GroupAction {
+export function groupAction(ride: RideDto, group: RideGroupDto): GroupAction {
   if (group.registered) return 'leave'
   if (ride.registeredGroupId && ride.registeredGroupId !== group.id) return 'registeredElsewhere'
   if (group.full) return 'none'
-  const canJoin = isMember && ride.status === Status.PUBLISHED && !ride.registered && !ride.finished
+  // The backend's answer (docs/LEDGER_*.md WEB-166): a member, the ride published, not every group
+  // gone — exact on a detail, which is where this is called.
+  const canJoin = !!ride.permissions.canRegister && !ride.registered
   return canJoin ? 'join' : 'none'
 }
 

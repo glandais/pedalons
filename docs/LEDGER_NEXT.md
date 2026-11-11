@@ -551,6 +551,11 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       pages de détail sur `permissions` et le résumé d'équipe embarqué, `noindex` sur
       `permissions.indexable`, confirmations (alignement des parcours, passage en privé),
       interrupteur `publicContentAllowed`. Dépend d'`API-176`. Plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/2026-11-11-visibilite-contenu-equipe-privee.md) §5.
+      **Code écrit le 11 novembre 2026** (`pnpm check` et Vitest verts, 1880 tests) : sélecteur
+      partagé `components/visibility/`, pages de détail sur le résumé d'équipe embarqué
+      (`lib/entityTeam.ts`), statut SSR (`config/ssrTeamStatus.ts`), `noindex` sur
+      `permissions.indexable`. Reste à faire tourner les specs e2e écrites
+      (`private-team-public-content.e2e.ts`, `flow-rides.e2e.ts`) avant de ranger l'entrée.
 
 ### Heure de départ : audit du 7 novembre 2026
 

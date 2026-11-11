@@ -1,3 +1,6 @@
+import { VisibilitySelector } from '@/components/visibility/VisibilitySelector'
+import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
+import { Visibility } from '@/api/dto'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { useForm } from '@mantine/form'
@@ -47,6 +50,11 @@ import { addDaysToWallTime, instantToWallTime, wallTimeToInstant } from '@/utils
 
 interface TripEditorProps {
   team: TeamDetailDto
+  /**
+   * The visibilities this content may take, from the entity being edited
+   * (`permissions.allowedVisibilities`); the team's list for its kind when absent (creation).
+   */
+  allowedVisibilities?: Visibility[]
   teamSlug: string
   initialValues: TripRequest
   onSubmit: (data: TripRequest) => void | Promise<void>
@@ -70,6 +78,7 @@ type Target = { type: 'stage'; index: number } | { type: 'trip' }
 
 export function TripEditor({
   team,
+  allowedVisibilities,
   teamSlug,
   initialValues,
   onSubmit,
@@ -411,15 +420,14 @@ export function TripEditor({
                 disabled={isPending}
               />
 
-              {team.visibility !== 'TEAM' && (
-                <Radio.Group label={t('visibility.label')} {...form.getInputProps('visibility')}>
-                  <Stack gap="xs" mt="xs">
-                    <Radio value="TEAM" label={t('visibility.team')} />
-                    <Radio value="PUBLIC_UNLISTED" label={t('visibility.public_unlisted')} />
-                    <Radio value="PUBLIC" label={t('visibility.public')} />
-                  </Stack>
-                </Radio.Group>
-              )}
+              <VisibilitySelector
+                allowed={allowedVisibilities ?? allowedVisibilitiesFor(team, 'trip')}
+                value={form.values.visibility}
+                onChange={(v) => form.setFieldValue('visibility', v)}
+                error={form.errors.visibility}
+                teamPrivate={team.visibility === Visibility.TEAM}
+                disabled={isPending}
+              />
 
               <Radio.Group label={t('form.status')} {...form.getInputProps('status')}>
                 <Stack gap="xs" mt="xs">

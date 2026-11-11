@@ -15,12 +15,10 @@ import { PostEditor } from '../../components/post/PostEditor'
 import { paths } from '@/config/paths'
 import type { PostRequest } from '@/api/dto'
 import { useEditPostFormData, postToRequest } from './postFormData'
-import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
-import { teamAccess } from '@/lib/teamAccess'
+import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
 
 export function EditPostPage() {
   const { t } = useTranslation()
-  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, postSlug } = useParams<{ teamSlug: string; postSlug: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -46,7 +44,8 @@ export function EditPostPage() {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
-  const canEdit = teamAccess(team, isPlatformAdmin).isOrganizer
+  // The backend's answer for this post (docs/LEDGER_*.md WEB-166, decision D7).
+  const canEdit = post.permissions.canEdit
 
   if (!canEdit) {
     return <Navigate to={paths.post(teamSlug!, postSlug!)} replace />
@@ -94,6 +93,7 @@ export function EditPostPage() {
 
       <PostEditor
         team={team}
+        allowedVisibilities={allowedVisibilitiesFor(team, 'post', post.permissions)}
         teamSlug={teamSlug!}
         initialValues={initialValues}
         timezone={post.timezone}

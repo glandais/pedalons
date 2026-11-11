@@ -22,7 +22,6 @@ import { getGetMeQueryKey } from './api/endpoints/users/users'
 import { prefetchCountMyUnreadNotificationsQuery } from './api/endpoints/notifications/notifications'
 import { getGetTeamQueryKey } from './api/endpoints/teams/teams'
 import type { TeamDetailDto } from './api/dto'
-import { ApiClientError } from './lib/apiError'
 import { getPinnedTeamSlug } from './config/appConfig'
 import { toRouter, toBrowser } from './config/pinnedHistory'
 import type { Locale } from './config/paths'
@@ -34,6 +33,7 @@ import {
   type RouteMetaFn,
 } from './lib/seo'
 import { withIndexing } from './config/routeMeta'
+import { readEntity, teamPageStatus } from './config/ssrTeamStatus'
 import { getRouteById } from './config/routeUtils'
 import type { RouteParams } from './config/routes.types'
 import { mapThemePreference } from './lib/theme'
@@ -216,26 +216,24 @@ export async function render(
       const leafMatch = context.matches[context.matches.length - 1]
       let statusCode = leafMatch?.route.path === '*' ? 404 : context.statusCode || 200
 
-      // Team-scoped pages: the team the loaders just fetched decides what a crawler must see. The
-      // page itself only redirects after hydration (<Navigate>, useCanonicalPath), which a client
-      // without JavaScript never runs.
+      // Team-scoped pages: what the loaders just read decides what a crawler must see
+      // (`teamPageStatus`). The page itself only redirects after hydration (<Navigate>,
+      // useCanonicalPath), which a client without JavaScript never runs.
       const teamSlug = leafMatch?.params.teamSlug
       if (teamSlug && !pinned) {
         const teamKey = getGetTeamQueryKey(teamSlug)
-        const teamError = queryClient.getQueryState(teamKey)?.error
-        const team = queryClient.getQueryData<TeamDetailDto>(teamKey)
-        if (
-          teamError instanceof ApiClientError &&
-          [401, 403, 404].includes(teamError.status) &&
-          session
-        ) {
-          // A private team is not revealed to be private: same answer as a team that never existed.
-          // Not when the session is unknown: the team may well be the member's, which the client
-          // will find out once its own refresh is through (docs/LEDGER_*.md WEB-39).
+        const teamStatus = teamPageStatus({
+          teamSlug,
+          team: queryClient.getQueryData<TeamDetailDto>(teamKey),
+          teamError: queryClient.getQueryState(teamKey)?.error,
+          entity: readEntity(queryClient, (leafMatch?.params ?? {}) as RouteParams),
+          sessionKnown: !!session,
+        })
+        if (teamStatus.kind === 'notFound') {
           statusCode = 404
-        } else if (team && team.slug !== teamSlug) {
+        } else if (teamStatus.kind === 'moved') {
           // Reached through a former slug: the API resolved it, the address moves for good.
-          return { redirect: replaceTeamSlug(url, teamSlug, team.slug), statusCode: 301 }
+          return { redirect: replaceTeamSlug(url, teamSlug, teamStatus.slug), statusCode: 301 }
         }
       }
 

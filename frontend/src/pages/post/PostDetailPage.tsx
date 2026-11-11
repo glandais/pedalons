@@ -45,12 +45,9 @@ import { paths } from '@/config/paths'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { STATUS_COLORS } from '@/lib/badgeColors.generated'
 import { TagList } from '@/components/tag'
-import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
-import { teamAccess } from '@/lib/teamAccess'
 
 export function PostDetailPage() {
   const { t } = useTranslation()
-  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, postSlug } = useParams<{ teamSlug: string; postSlug: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -59,9 +56,10 @@ export function PostDetailPage() {
   const [showUncancelConfirm, setShowUncancelConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  const { team: teamQuery, post: postQuery } = usePostDetailData(teamSlug, postSlug)
-  const { data: team, isLoading: isLoadingTeam } = teamQuery
+  const { post: postQuery } = usePostDetailData(teamSlug, postSlug)
   const { data: post, isLoading: isLoadingPost, error, refetch } = postQuery
+  // The post's embedded team: no `GET team`, closed to a reader by link (docs/LEDGER_*.md WEB-166).
+  const team = post?.team
 
   const updateMutation = useUpdatePost()
   const deleteMutation = useDeletePost()
@@ -69,11 +67,11 @@ export function PostDetailPage() {
 
   useCanonicalPath(team && post ? paths.post(team.slug, post.slug) : undefined)
 
-  if (isLoadingTeam || isLoadingPost || error || !post || !team) {
+  if (isLoadingPost || error || !post || !team) {
     return (
       <Container size="lg" py="xl">
         <QueryStateBoundary
-          isLoading={isLoadingTeam || isLoadingPost}
+          isLoading={isLoadingPost}
           isError={!!error}
           error={error}
           isNotFound={!post || !team}
@@ -92,10 +90,9 @@ export function PostDetailPage() {
     )
   }
 
-  // Registering and the join banner follow the real membership; editing and the comment thread
-  // (moderation), the rights a platform admin holds in every team (docs/LEDGER_*.md API-137).
-  const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
-  const canReadComments = isMember || isPlatformAdmin
+  // The backend's answers for this post (docs/LEDGER_*.md WEB-166, decision D7).
+  const canEdit = post.permissions.canEdit
+  const canReadComments = !!post.permissions.canComment
 
   // A post's date is entered, a rendezvous in its (the team's) zone (docs/LEDGER_*.md API-60).
   const formattedDate = <Rendezvous date={post.dateTime} zone={post.timezone} variant="detail" />
@@ -255,10 +252,14 @@ export function PostDetailPage() {
                           {t('actions.restore')}
                         </Menu.Item>
                       )}
-                      <Menu.Divider />
-                      <Menu.Item onClick={() => setShowDeleteConfirm(true)} color="danger">
-                        {t('actions.delete')}
-                      </Menu.Item>
+                      {post.permissions.canDelete && (
+                        <>
+                          <Menu.Divider />
+                          <Menu.Item onClick={() => setShowDeleteConfirm(true)} color="danger">
+                            {t('actions.delete')}
+                          </Menu.Item>
+                        </>
+                      )}
                     </Menu.Dropdown>
                   </Menu>
                 </Button.Group>
@@ -269,7 +270,7 @@ export function PostDetailPage() {
                 teamName={post.team.name}
                 targetType={ReportTargetType.POST}
                 targetId={post.id}
-                onReported={() => navigate(paths.team(post.team.slug))}
+                onReported={() => navigate(team.accessible ? paths.team(team.slug) : paths.home())}
               />
             </Group>
           </Group>

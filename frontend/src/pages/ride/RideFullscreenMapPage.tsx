@@ -28,7 +28,6 @@ export function RideFullscreenMapPage() {
   const appName = useAppName()
 
   const {
-    team: { data: team, isLoading: isLoadingTeam },
     ride: { data: ride, isLoading: isLoadingRide },
     weather,
     routes,
@@ -37,6 +36,8 @@ export function RideFullscreenMapPage() {
     soloLeg,
   } = useRideDetailData(teamSlug, rideSlug)
 
+  // The ride's embedded team: never `GET team`, closed to a link reader (docs/LEDGER_*.md WEB-166).
+  const team = ride?.team
   const routeSlug = solo ? (solo.routeSlug ?? ride?.routeSlug) : undefined
   const route = routeSlug ? routesBySlug.get(routeSlug) : undefined
 
@@ -49,7 +50,7 @@ export function RideFullscreenMapPage() {
     }
   }, [title, appName])
 
-  if (isLoadingTeam || isLoadingRide || (routeSlug && routes.isLoading)) {
+  if (isLoadingRide || (routeSlug && routes.isLoading)) {
     return <LoadingPage message={t('loading')} />
   }
 

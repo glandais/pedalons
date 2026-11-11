@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { useGetTeam, prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
+import { prefetchEntityTeam, useEntityTeam } from '@/lib/entityTeam'
 import {
   useGetTrip,
   prefetchGetTripQuery,
@@ -13,11 +13,7 @@ import {
   listTripComments,
   getListTripCommentsQueryKey,
 } from '@/api/endpoints/trip-comments/trip-comments'
-import {
-  prefetchMemberComments,
-  prefetchRoutesBulkChunked,
-  readsMemberContent,
-} from '@/config/prefetchHelpers'
+import { prefetchMemberComments, prefetchRoutesBulkChunked } from '@/config/prefetchHelpers'
 import { readUrlFilters } from '@/hooks/useUrlFilters'
 import {
   groupParticipantFiltersAlias,
@@ -88,10 +84,11 @@ export function invalidateTripWeather(
  * `useAuthStore.getState()` (the server can't use the hook), so no shared hook can hold it.
  */
 export function useTripDetailData(teamSlug?: string, tripSlug?: string) {
-  const team = useGetTeam(teamSlug!, { query: { enabled: !!teamSlug } })
   const trip = useGetTrip(teamSlug!, tripSlug!, {
     query: { enabled: !!teamSlug && !!tripSlug },
   })
+  // Behind the trip, only when it says the team answers the reader (docs/LEDGER_*.md WEB-166).
+  const team = useEntityTeam(teamSlug, trip.data?.team)
   // Each stage card's weather line (docs/LEDGER_*.md API-76).
   const weather = useGetTripWeather(teamSlug!, tripSlug!, {
     query: { enabled: !!teamSlug && !!tripSlug },
@@ -107,8 +104,8 @@ export function useTripDetailData(teamSlug?: string, tripSlug?: string) {
  *
  * It covers more than the hook does, on purpose: comments are fetched by `CommentSection`, and the
  * map's routes by `RoutesMapView` — both children `TripDetailPage` mounts, not the page itself.
- * Comments are additionally conditional on membership (`prefetchMemberComments` reads the team's
- * `role` off the cache), and so are the participants `ParticipantsSection` lists, at the search and
+ * Comments are additionally conditional on the trip's `permissions.canComment`, and the
+ * participants on its `canSeeParticipants`, as are the participants `ParticipantsSection` lists, at the search and
  * page the URL asks for (`?q=`/`?p=`) — the ride page's rule (docs/LEDGER_*.md WEB-155).
  */
 export async function prefetchTripDetail(
@@ -118,7 +115,6 @@ export async function prefetchTripDetail(
   url: URL
 ): Promise<void> {
   await Promise.all([
-    prefetchGetTeamQuery(queryClient, teamSlug),
     prefetchGetTripQuery(queryClient, teamSlug, tripSlug),
     // Read from the server's cache only, never the provider: safe to prefetch.
     prefetchGetTripWeatherQuery(queryClient, teamSlug, tripSlug, { request: TRIP_WEATHER_REQUEST }),
@@ -130,12 +126,15 @@ export async function prefetchTripDetail(
     alias: groupParticipantFiltersAlias,
   })
   await Promise.all([
+    // Only when the trip says the team answers the reader (docs/LEDGER_*.md WEB-166).
+    prefetchEntityTeam(queryClient, teamSlug, trip?.team),
     prefetchMemberComments(
       queryClient,
       teamSlug,
       tripSlug,
       listTripComments,
-      getListTripCommentsQueryKey
+      getListTripCommentsQueryKey,
+      trip?.permissions.canComment
     ),
     prefetchRoutesBulkChunked(queryClient, teamSlug, tripRouteSlugs(trip)),
     // The stage cards' route actions (« Envoyer vers… ») read the services for a signed-in reader,
@@ -143,7 +142,7 @@ export async function prefetchTripDetail(
     useAuthStore.getState().isAuthenticated
       ? prefetchGetAvailableServicesQuery(queryClient)
       : Promise.resolve(queryClient),
-    (trip?.participantCount ?? 0) > 0 && readsMemberContent(queryClient, teamSlug)
+    (trip?.participantCount ?? 0) > 0 && trip?.permissions.canSeeParticipants
       ? prefetchGetTripParticipantsQuery(
           queryClient,
           teamSlug,

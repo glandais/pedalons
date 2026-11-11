@@ -1,3 +1,6 @@
+import { useVisibilityAlignment } from '@/components/visibility/useVisibilityAlignment'
+import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
+import type { IncompatibleRouteDto } from '@/api/dto'
 import { useState } from 'react'
 import { useParams, Navigate, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
@@ -32,6 +35,8 @@ export function CreateRidePage() {
   const { data: team, isLoading: isLoadingTeam } = teamQuery
 
   const createMutation = useCreateRide()
+  // A public ride on « Équipe » routes: confirm, then replay raising them (decision D5).
+  const alignment = useVisibilityAlignment('ride', createMutation.isPending)
 
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [editorKey, setEditorKey] = useState(0)
@@ -102,7 +107,7 @@ export function CreateRidePage() {
         name: '',
         media: defaultMedia(),
         dateTime: getNextSunday(),
-        visibility: team.visibility,
+        visibility: team.defaultContentVisibility,
         status: Status.DRAFT,
         publishAt: undefined,
         routeSlug: undefined,
@@ -118,13 +123,15 @@ export function CreateRidePage() {
         ],
       }
 
+  const handleSubmit = (data: RideRequest) => save(data)
+
   const handleTemplateSelect = (template: RideTemplateDto) => {
     setTemplateValues(templateForNewRide(template))
     setEditorKey((prev) => prev + 1)
     setShowTemplateModal(false)
   }
 
-  const handleSubmit = (data: RideRequest) => {
+  const save = (data: RideRequest, aligned?: IncompatibleRouteDto[]) => {
     const filteredGroups = data.groups.filter((g) => g.name.trim())
     createMutation.mutate(
       {
@@ -134,11 +141,14 @@ export function CreateRidePage() {
           groups: filteredGroups,
           // Raises the template's number, if it has one, for the next ride (ledger API-108).
           templateId: templateValues?.id,
+          alignVisibility: aligned ? true : undefined,
         },
       },
       {
+        onError: (error) => alignment.offer(error, (routes) => save(data, routes)),
         onSuccess: (ride) => {
           invalidateTeamPublications(queryClient, teamSlug!)
+          aligned?.forEach((route) => invalidateRouteQueries(queryClient, teamSlug!, route.slug))
           notifications.show({ message: i18next.t('rides.notifications.created'), color: 'green' })
           navigate(paths.ride(teamSlug!, ride.slug))
         },
@@ -179,6 +189,7 @@ export function CreateRidePage() {
         onSelect={handleTemplateSelect}
         teamSlug={teamSlug!}
       />
+      {alignment.dialog}
     </Container>
   )
 }

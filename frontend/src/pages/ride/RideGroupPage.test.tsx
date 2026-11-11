@@ -135,6 +135,27 @@ const group = (overrides: Partial<RideGroupDto> = {}): RideGroupDto =>
 /** The other group: the page is a ride's with several groups (WEB-79: a solo ride has none). */
 const cool = () => group({ id: 'g2', name: 'Cool', countParticipants: 4 })
 
+/**
+ * What the backend answers a member (docs/LEDGER_*.md WEB-166): registering only on a published ride
+ * not yet over — the page reads this, never the team's role.
+ */
+const memberRights = (r: Partial<RideDto>) => ({
+  canEdit: false,
+  canDelete: false,
+  canRegister: (r.status ?? Status.PUBLISHED) === Status.PUBLISHED && !r.finished,
+  canComment: true,
+  canSeeParticipants: true,
+  indexable: true,
+})
+const OUTSIDER = {
+  canEdit: false,
+  canDelete: false,
+  canRegister: false,
+  canComment: false,
+  canSeeParticipants: false,
+  indexable: true,
+}
+
 const ride = (overrides: Partial<RideDto> = {}): RideDto =>
   ({
     id: 'r1',
@@ -147,6 +168,8 @@ const ride = (overrides: Partial<RideDto> = {}): RideDto =>
     timezone: 'UTC',
     routeSlug: 'boucle',
     groups: [group(), cool()],
+    team: { slug: 'np', name: 'N Peloton', visibility: 'PUBLIC', accessible: true },
+    permissions: memberRights(overrides),
     ...overrides,
   }) as RideDto
 
@@ -306,6 +329,7 @@ describe('RideGroupPage (WEB-77)', () => {
   it('invites a signed-out visitor to sign in, with no join', () => {
     state.isAuthenticated = false
     state.team = { ...member, role: undefined }
+    state.ride = ride({ permissions: OUTSIDER })
     renderPage()
     expect(screen.getByText(/Connectez-vous pour rejoindre ce groupe/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()

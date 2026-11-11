@@ -52,6 +52,7 @@ interface TeamFormProps {
     joinable?: boolean
     addMemberAllowed?: boolean
     enableRoutePlanner?: boolean
+    publicContentAllowed?: boolean
   }
   onSuccess: (team: TeamDetailDto) => void
   create: boolean
@@ -79,6 +80,11 @@ export function TeamForm({
   const [addMemberAllowed, setAddMemberAllowed] = useState(initialValues.addMemberAllowed ?? false)
   const [enableRoutePlanner, setEnableRoutePlanner] = useState(
     initialValues.enableRoutePlanner ?? false
+  )
+  // Whether this private team may publish content by link (docs/LEDGER_*.md WEB-166, decision D2):
+  // read from TeamDetailDto, sent with the other platform attributes.
+  const [publicContentAllowed, setPublicContentAllowed] = useState(
+    initialValues.publicContentAllowed ?? false
   )
 
   const createMutation = useCreateTeam()
@@ -120,8 +126,22 @@ export function TeamForm({
     { query: { enabled: zoneChanged, retry: false } }
   )
 
+  // Going private turns every ride, route, post, trip, template and page of the team to « Équipe »
+  // (decision D3, plan A3): said before it happens, never in silence.
+  const goesPrivate = (values: TeamRequest) =>
+    !create && initialValues.visibility !== Visibility.TEAM && values.visibility === Visibility.TEAM
+  const [pendingPrivate, setPendingPrivate] = useState<TeamRequest | null>(null)
+
   const handleSubmit = (values: TeamRequest) => {
     if (geocoding) return
+    if (goesPrivate(values)) {
+      setPendingPrivate(values)
+      return
+    }
+    afterPrivateConfirmed(values)
+  }
+
+  const afterPrivateConfirmed = (values: TeamRequest) => {
     if (zoneChanged) {
       // A preview that failed is cached in error under the same key: ask again rather than reopen
       // on the same error with Confirm disabled.
@@ -161,11 +181,20 @@ export function TeamForm({
             }
             queryClient.invalidateQueries({ queryKey: getListTeamsQueryKey() })
             queryClient.setQueryData(getGetTeamQueryKey(team.slug), team)
+            // Every piece of its content went « Équipe » with it (decision D3): nothing cached of
+            // the team's rides, routes, posts or trips still holds.
+            if (goesPrivate(values)) void queryClient.invalidateQueries()
             if (isPlatformAdmin && teamId) {
               adminAttrsMutation.mutate(
                 {
                   teamId,
-                  data: { visibilityEditable, joinable, addMemberAllowed, enableRoutePlanner },
+                  data: {
+                    visibilityEditable,
+                    joinable,
+                    addMemberAllowed,
+                    enableRoutePlanner,
+                    publicContentAllowed,
+                  },
                 },
                 {
                   onSuccess: () => {
@@ -379,6 +408,14 @@ export function TeamForm({
                 disabled={!isPlatformAdmin || !teamId}
                 onChange={(e) => setEnableRoutePlanner(e.currentTarget.checked)}
               />
+              <Switch
+                label={t('teams.settings.platformAdmin.publicContentAllowed')}
+                description={t('teams.settings.platformAdmin.publicContentAllowedHint')}
+                checked={publicContentAllowed}
+                disabled={!isPlatformAdmin || !teamId}
+                onChange={(e) => setPublicContentAllowed(e.currentTarget.checked)}
+                data-testid="team-public-content-allowed"
+              />
             </Stack>
           </>
         )}
@@ -400,6 +437,21 @@ export function TeamForm({
           </Button>
         </Group>
       </Stack>
+
+      <ConfirmDialog
+        isOpen={!!pendingPrivate}
+        onClose={() => setPendingPrivate(null)}
+        onConfirm={() => {
+          const values = pendingPrivate
+          setPendingPrivate(null)
+          if (values) afterPrivateConfirmed(values)
+        }}
+        title={t('teams.settings.goPrivate.title')}
+        message={t('teams.settings.goPrivate.message')}
+        confirmText={t('teams.settings.goPrivate.confirm')}
+        variant="warning"
+        isLoading={mutation.isPending}
+      />
 
       <ConfirmDialog
         isOpen={!!pendingValues}

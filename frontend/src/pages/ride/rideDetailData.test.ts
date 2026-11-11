@@ -38,7 +38,12 @@ import {
 } from './rideDetailData'
 
 const g = (id: string) => ({ id, name: id }) as RideGroupDto
-const ride = (groups: RideGroupDto[]) => ({ slug: 'sortie', groups }) as unknown as RideDto
+/** The backend's answers for a member, and for a reader outside the team (docs/LEDGER_*.md WEB-166). */
+const MEMBER = { canEdit: false, canDelete: false, canComment: true, canSeeParticipants: true }
+const OUTSIDER = { canEdit: false, canDelete: false, canComment: false, canSeeParticipants: false }
+const OPEN_TEAM = { slug: 'np', name: 'N Peloton', visibility: 'PUBLIC', accessible: true }
+const ride = (groups: RideGroupDto[], permissions: object = OUTSIDER, team: object = OPEN_TEAM) =>
+  ({ slug: 'sortie', groups, permissions, team }) as unknown as RideDto
 
 describe('a solo ride (WEB-79)', () => {
   it('is a ride with exactly one group', () => {
@@ -82,7 +87,7 @@ describe('prefetchRideDetail', () => {
   })
 
   it("prefetches a solo ride's participants under the list's key, filters from the URL", async () => {
-    requests.responses['/api/teams/np/rides/sortie'] = ride([g('g1')])
+    requests.responses['/api/teams/np/rides/sortie'] = ride([g('g1')], MEMBER)
     requests.responses['/api/teams/np'] = { slug: 'np', role: 'MEMBER' }
     const queryClient = new QueryClient()
     await prefetchRideDetail(
@@ -112,8 +117,39 @@ describe('prefetchRideDetail', () => {
     expect(requests.urls.filter((u) => u.endsWith('/participants'))).toHaveLength(0)
   })
 
+  it("never asks for a team the ride says is closed — a private team's public ride (WEB-166)", async () => {
+    requests.responses['/api/teams/np/rides/sortie'] = ride([g('g1')], OUTSIDER, {
+      ...OPEN_TEAM,
+      visibility: 'TEAM',
+      accessible: false,
+    })
+    const queryClient = new QueryClient()
+    await prefetchRideDetail(
+      queryClient,
+      'np',
+      'sortie',
+      new URL('https://pedalons.fr/equipes/np/sorties/sortie')
+    )
+    expect(queryClient.getQueryState(getGetRideQueryKey('np', 'sortie'))?.status).toBe('success')
+    expect(requests.urls).not.toContain('/api/teams/np')
+    expect(queryClient.getQueryState(getGetTeamQueryKey('np'))).toBeUndefined()
+    expect(requests.urls.some((u) => u.endsWith('/comments'))).toBe(false)
+  })
+
+  it('reads the team behind the ride when the ride says it answers', async () => {
+    requests.responses['/api/teams/np/rides/sortie'] = ride([g('g1')], MEMBER)
+    const queryClient = new QueryClient()
+    await prefetchRideDetail(
+      queryClient,
+      'np',
+      'sortie',
+      new URL('https://pedalons.fr/equipes/np/sorties/sortie')
+    )
+    expect(queryClient.getQueryState(getGetTeamQueryKey('np'))?.status).toBe('success')
+  })
+
   it("prefetches the whole ride's participants for a ride with several groups", async () => {
-    requests.responses['/api/teams/np/rides/sortie'] = ride([g('g1'), g('g2')])
+    requests.responses['/api/teams/np/rides/sortie'] = ride([g('g1'), g('g2')], MEMBER)
     requests.responses['/api/teams/np'] = { slug: 'np', role: 'MEMBER' }
     const queryClient = new QueryClient()
     await prefetchRideDetail(
@@ -134,11 +170,13 @@ describe('prefetchRideMap (WEB-118)', () => {
     requests.responses = {}
   })
 
-  it("reads the ride page's keys — team, ride, weather, then the routes — and nothing else", async () => {
+  it("reads the ride page's keys — ride, weather, then the team and the routes — and nothing else", async () => {
     requests.responses['/api/teams/np/rides/sortie'] = {
       slug: 'sortie',
       routeSlug: 'boucle',
       groups: [{ id: 'g1', routeSlug: 'col' }],
+      team: OPEN_TEAM,
+      permissions: MEMBER,
     }
     const queryClient = new QueryClient()
     await prefetchRideMap(queryClient, 'np', 'sortie')

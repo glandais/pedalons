@@ -74,6 +74,16 @@ const trip = (overrides: Partial<TripDto> = {}): TripDto =>
     id: 't1',
     slug: 'voyage',
     name: 'Voyage',
+    team: { slug: 'np', name: 'N Peloton', visibility: 'PUBLIC', accessible: true },
+    // The backend's answers for a signed-out reader (docs/LEDGER_*.md WEB-166).
+    permissions: {
+      canEdit: false,
+      canDelete: false,
+      canRegister: false,
+      canComment: false,
+      canSeeParticipants: false,
+      indexable: true,
+    },
     status: Status.PUBLISHED,
     finished: false,
     timezone: 'Europe/Paris',
@@ -86,6 +96,7 @@ const trip = (overrides: Partial<TripDto> = {}): TripDto =>
         dateTime: '2026-10-26T07:00:00Z',
         timezone: 'Europe/Lisbon',
         media: { markdown: 'Col au départ', assets: { attachments: [] } },
+        permissions: { canEdit: false, canDelete: false, canComment: false, indexable: true },
         route: { slug: 'aller', name: 'Aller', distance: 72_000, elevationGain: 1_650 },
       },
       {
@@ -95,6 +106,7 @@ const trip = (overrides: Partial<TripDto> = {}): TripDto =>
         dateTime: '2026-10-27T07:00:00Z',
         timezone: 'Europe/Lisbon',
         media: { markdown: '', assets: { attachments: [] } },
+        permissions: { canEdit: false, canDelete: false, canComment: false, indexable: true },
       },
     ],
     ...overrides,

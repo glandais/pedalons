@@ -18,9 +18,10 @@ export function RouteFullscreenMapPage() {
   const { t } = useTranslation()
   const appName = useAppName()
 
-  const { team: teamQuery, route: routeQuery } = useRouteMapData(teamSlug, routeSlug)
-  const { data: team } = teamQuery
+  const { route: routeQuery } = useRouteMapData(teamSlug, routeSlug)
   const { data: route, isLoading } = routeQuery
+  // The route's embedded team: never `GET team`, closed to a link reader (docs/LEDGER_*.md WEB-166).
+  const team = route?.team
 
   useCanonicalPath(team && route ? paths.routeMap(team.slug, route.slug) : undefined)
 

@@ -64,6 +64,7 @@ const stage = (id: string) => ({
   dateTime: '2026-10-26T07:00:00Z',
   timezone: 'Europe/Lisbon',
   media: { markdown: '', assets: { attachments: [] } },
+  permissions: { canEdit: false, canDelete: false, canComment: true, indexable: true },
   route: { slug: `r${id}`, distance: 60_000, elevationGain: 800, media: { assets: {} } },
 })
 
@@ -78,7 +79,16 @@ const trip = (stageIds: string[]): TripDto =>
     timezone: 'Europe/Paris',
     media: { markdown: '', assets: { attachments: [] } },
     tags: [],
-    team: { slug: 'np', name: 'N Peloton' },
+    team: { slug: 'np', name: 'N Peloton', visibility: 'PUBLIC', accessible: true },
+    // The backend's answers for a member (docs/LEDGER_*.md WEB-166).
+    permissions: {
+      canEdit: false,
+      canDelete: false,
+      canRegister: true,
+      canComment: true,
+      canSeeParticipants: true,
+      indexable: true,
+    },
     participantCount: 0,
     stageCount: stageIds.length,
     registered: false,

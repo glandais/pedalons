@@ -3,7 +3,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import { CardActionsMenu } from './common'
 import { paths } from '@/config/paths'
-import { useAuthStore, selectUser } from '@/store/authStore'
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
 import { getListPublicationsQueryKey } from '@/api/endpoints/publications/publications'
 import {
@@ -40,12 +39,11 @@ import type { AdDto, PublicationDto, RideDto, RouteDto, TripDto } from '@/api/dt
  */
 
 interface PublicationCardActionsProps {
+  /** Its `permissions` decide what is offered: edit and publish, delete (docs/LEDGER_*.md WEB-166). */
   publication: PublicationDto
-  /** Team ADMIN or ORGANIZER — the backend's rule for editing, publishing and deleting. */
-  canManage: boolean
 }
 
-export function PublicationCardActions({ publication, canManage }: PublicationCardActionsProps) {
+export function PublicationCardActions({ publication }: PublicationCardActionsProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const teamSlug = publication.team.slug
@@ -140,12 +138,14 @@ export function PublicationCardActions({ publication, canManage }: PublicationCa
       break
   }
 
+  // The backend's answers for this row (docs/LEDGER_*.md WEB-166, decision D7).
+  const { canEdit, canDelete } = publication.permissions
   return (
     <CardActionsMenu
       title={publication.name}
-      editPath={canManage ? editPath : undefined}
-      onPublish={canManage && publication.status === 'DRAFT' ? onPublish : undefined}
-      onDelete={canManage ? onDelete : undefined}
+      editPath={canEdit ? editPath : undefined}
+      onPublish={canEdit && publication.status === 'DRAFT' ? onPublish : undefined}
+      onDelete={canDelete ? onDelete : undefined}
       deleteMessage={deleteMessage}
       icsUrl={icsUrl}
     />
@@ -158,28 +158,31 @@ function upcoming(publication: RideDto | TripDto): boolean {
 }
 
 interface RouteCardActionsProps {
+  /** Its `permissions` decide what is offered (docs/LEDGER_*.md WEB-166). */
   route: RouteDto
-  /** Team ADMIN or ORGANIZER. */
-  canManage: boolean
 }
 
 /** A route has no status: edit and delete only. */
-export function RouteCardActions({ route, canManage }: RouteCardActionsProps) {
+export function RouteCardActions({ route }: RouteCardActionsProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  if (!canManage || route.deleted) {
+  const { canEdit, canDelete } = route.permissions
+  if ((!canEdit && !canDelete) || route.deleted) {
     return null
   }
   const teamSlug = route.team.slug
   return (
     <CardActionsMenu
       title={route.name}
-      editPath={paths.routeEdit(teamSlug, route.slug)}
-      onDelete={() =>
-        deleteRoute(teamSlug, route.slug).then(() => {
-          invalidateRouteQueries(queryClient, teamSlug, route.slug)
-          notifications.show({ message: t('routes.notifications.deleted'), color: 'green' })
-        })
+      editPath={canEdit ? paths.routeEdit(teamSlug, route.slug) : undefined}
+      onDelete={
+        canDelete
+          ? () =>
+              deleteRoute(teamSlug, route.slug).then(() => {
+                invalidateRouteQueries(queryClient, teamSlug, route.slug)
+                notifications.show({ message: t('routes.notifications.deleted'), color: 'green' })
+              })
+          : undefined
       }
       deleteMessage={t('routes.detail.deleteConfirm.message')}
     />
@@ -187,18 +190,19 @@ export function RouteCardActions({ route, canManage }: RouteCardActionsProps) {
 }
 
 interface AdCardActionsProps {
+  /** Its `permissions` decide what is offered (docs/LEDGER_*.md WEB-166). */
   ad: AdDto
-  /** Team ADMIN. An ad is also managed by its author, which this component checks itself. */
-  isTeamAdmin: boolean
 }
 
-/** An ad is managed by the team admin or its author — an organizer alone is not enough. */
-export function AdCardActions({ ad, isTeamAdmin }: AdCardActionsProps) {
+/**
+ * An ad is managed by the team admin or its author — an organizer alone is not enough: the
+ * backend's `permissions` say it, as `AdAccessChecker` decides.
+ */
+export function AdCardActions({ ad }: AdCardActionsProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const userId = useAuthStore(selectUser)?.id
-  const canManage = isTeamAdmin || (!!userId && ad.createdById === userId)
-  if (!canManage || ad.deleted) {
+  const { canEdit, canDelete } = ad.permissions
+  if ((!canEdit && !canDelete) || ad.deleted) {
     return null
   }
   const teamSlug = ad.team.slug
@@ -209,9 +213,9 @@ export function AdCardActions({ ad, isTeamAdmin }: AdCardActionsProps) {
   return (
     <CardActionsMenu
       title={ad.name}
-      editPath={paths.adEdit(teamSlug, ad.slug)}
+      editPath={canEdit ? paths.adEdit(teamSlug, ad.slug) : undefined}
       onPublish={
-        ad.status === 'DRAFT'
+        canEdit && ad.status === 'DRAFT'
           ? () =>
               changeAdStatus(teamSlug, ad.slug, { status: 'PUBLISHED' }).then(() => {
                 refresh()
@@ -219,11 +223,14 @@ export function AdCardActions({ ad, isTeamAdmin }: AdCardActionsProps) {
               })
           : undefined
       }
-      onDelete={() =>
-        deleteAd(teamSlug, ad.slug).then(() => {
-          refresh()
-          notifications.show({ message: t('ads.notifications.deleted'), color: 'green' })
-        })
+      onDelete={
+        canDelete
+          ? () =>
+              deleteAd(teamSlug, ad.slug).then(() => {
+                refresh()
+                notifications.show({ message: t('ads.notifications.deleted'), color: 'green' })
+              })
+          : undefined
       }
       deleteMessage={t('ads.detail.confirmations.delete')}
     />

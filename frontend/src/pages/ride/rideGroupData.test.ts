@@ -76,11 +76,13 @@ describe('prefetchRideGroupMap (WEB-117)', () => {
     requests.responses = {}
   })
 
-  it("reads the group page's keys — team, ride, weather, then the routes — and nothing else", async () => {
+  it("reads the group page's keys — ride, weather, then the team and the routes — and nothing else", async () => {
     requests.responses['/api/teams/np/rides/sortie'] = {
       slug: 'sortie',
       routeSlug: 'boucle',
       groups: [{ id: 'g1', routeSlug: 'col' }, { id: 'g2' }],
+      team: { slug: 'np', accessible: true },
+      permissions: { canSeeParticipants: true },
     }
     const queryClient = new QueryClient()
     await prefetchRideGroupMap(queryClient, 'np', 'sortie')
@@ -101,11 +103,13 @@ describe('prefetchRideGroup: participants are members-only (API-144)', () => {
     requests.urls = []
     requests.responses = {}
   })
-  const run = (team: unknown) => {
-    requests.responses['/api/teams/np'] = team
+  // The ride's computed rights decide (docs/LEDGER_*.md WEB-166), not the team's role.
+  const run = (canSeeParticipants: boolean) => {
     requests.responses['/api/teams/np/rides/sortie'] = {
       slug: 'sortie',
       groups: [g('g1'), g('g2')],
+      team: { slug: 'np', accessible: canSeeParticipants },
+      permissions: { canSeeParticipants },
     }
     return prefetchRideGroup(
       new QueryClient(),
@@ -117,12 +121,12 @@ describe('prefetchRideGroup: participants are members-only (API-144)', () => {
   }
 
   it('reads them for a member', async () => {
-    await run({ slug: 'np', role: 'MEMBER' })
+    await run(true)
     expect(requests.urls.filter((u) => u.endsWith('/participants'))).toHaveLength(1)
   })
 
   it('makes no /participants request for a non-member', async () => {
-    await run({ slug: 'np' })
+    await run(false)
     expect(requests.urls.some((u) => u.endsWith('/participants'))).toBe(false)
   })
 })

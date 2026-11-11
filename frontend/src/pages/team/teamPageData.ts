@@ -1,5 +1,10 @@
-import { useGetTeam, prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
-import { useGetPage, prefetchGetPageQuery } from '@/api/endpoints/team-pages/team-pages'
+import {
+  useGetPage,
+  prefetchGetPageQuery,
+  getGetPageQueryKey,
+} from '@/api/endpoints/team-pages/team-pages'
+import { prefetchEntityTeam, useEntityTeam } from '@/lib/entityTeam'
+import type { TeamPageDto } from '@/api/dto'
 import type { QueryClient } from '@tanstack/react-query'
 
 /**
@@ -18,22 +23,23 @@ import type { QueryClient } from '@tanstack/react-query'
 
 /** Every query `TeamPageDetailPage` itself owns, returned as the raw query results. */
 export function useTeamPageData(teamSlug?: string, pageSlug?: string) {
-  const team = useGetTeam(teamSlug!, { query: { enabled: !!teamSlug } })
   const page = useGetPage(teamSlug!, pageSlug!, {
     query: { enabled: !!teamSlug && !!pageSlug },
   })
+  // Behind the page, only when it says the team answers the reader (docs/LEDGER_*.md WEB-166): a
+  // private team's public page is read by link, its team stays closed.
+  const team = useEntityTeam(teamSlug, page.data?.team)
 
   return { team, page }
 }
 
-/** Server-side counterpart of {@link useTeamPageData}. */
+/** Server-side counterpart of {@link useTeamPageData}: the page, then its team when it allows. */
 export async function prefetchTeamPage(
   queryClient: QueryClient,
   teamSlug: string,
   pageSlug: string
 ): Promise<void> {
-  await Promise.all([
-    prefetchGetTeamQuery(queryClient, teamSlug),
-    prefetchGetPageQuery(queryClient, teamSlug, pageSlug),
-  ])
+  await prefetchGetPageQuery(queryClient, teamSlug, pageSlug)
+  const page = queryClient.getQueryData<TeamPageDto>(getGetPageQueryKey(teamSlug, pageSlug))
+  await prefetchEntityTeam(queryClient, teamSlug, page?.team)
 }

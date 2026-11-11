@@ -127,7 +127,7 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
           name: preview.name,
           media: defaultMedia(),
           surfaceType: SurfaceType.ROAD,
-          visibility: team.visibility,
+          visibility: team.defaultContentVisibility,
         },
         // The global toast would blame the site for a refusal that comes from the team.
         { skipErrorToast: true }

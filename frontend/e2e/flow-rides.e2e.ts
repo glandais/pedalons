@@ -1107,7 +1107,7 @@ test.describe('a route from the ride editor', () => {
     expect(stored.distance).toBeLessThan(5_400)
   })
 
-  test('a public ride on a members-only route is refused with a translated message, the form kept and nothing created', async ({
+  test('a public ride on a members-only route asks to open the route, then raises it to unlisted in the same save', async ({
     page,
   }) => {
     const owner = await roleSession('admin')
@@ -1130,7 +1130,7 @@ test.describe('a route from the ride editor', () => {
     await hydrated(title)
     await title.fill(rideName)
     await main(page).getByRole('textbox', { name: 'Nom du groupe' }).fill(group)
-    // A public team's ride is born public: its editor offers the choice.
+    // A public team's ride is born public (`defaultContentVisibility`): its editor offers the choice.
     await expect(main(page).getByRole('radio', { name: 'Public', exact: true })).toBeChecked()
     await main(page).getByRole('button', { name: 'Sélectionner un parcours' }).first().click()
     const picker = page.getByRole('dialog', { name: 'Sélectionner un parcours pour la sortie' })
@@ -1146,38 +1146,79 @@ test.describe('a route from the ride editor', () => {
     await main(page).getByRole('button', { name: 'Créer la sortie' }).click()
     const response = await refused
     expect(response.status()).toBe(400)
-    // The code that replaced PUBLIC_RIDE_PRIVATE_ROUTE (docs/LEDGER_*.md API-176); the alignment
-    // dialog that answers it is WEB-166.
+    // The code that replaced PUBLIC_RIDE_PRIVATE_ROUTE (docs/LEDGER_*.md API-176), answered by the
+    // alignment dialog (WEB-166, decision D5) — not by the generic toast.
     expect(((await response.json()) as { code?: string }).code).toBe('INCOMPATIBLE_VISIBILITY')
-
-    await expect(
-      toasts(page).filter({
-        hasText:
-          "Visibilités incompatibles : un parcours « Équipe » ne peut pas servir à une sortie ou un voyage visible hors de l'équipe",
-      })
-    ).toBeVisible()
+    const dialog = page.getByRole('dialog', { name: 'Ouvrir aussi les parcours ?' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toContainText(`${routeName} : Équipe uniquement → Non répertorié`)
+    expect(await shown()).not.toContainEqual(expect.stringContaining('Visibilités incompatibles'))
     expect(await shown()).not.toContainEqual(expect.stringContaining('INCOMPATIBLE_VISIBILITY'))
-    // Still on the editor, with everything typed.
+
+    // Cancelling keeps the form as typed, and creates nothing.
+    await dialog.getByRole('button', { name: 'Annuler' }).click()
+    await expect(dialog).toBeHidden()
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/sorties/nouvelle$`))
     await expect(title).toHaveValue(rideName)
     await expect(main(page).getByRole('textbox', { name: 'Nom du groupe' })).toHaveValue(group)
     await expect(main(page).getByText(routeName)).toBeVisible()
     await expect(main(page).getByRole('radio', { name: 'Public', exact: true })).toBeChecked()
-    // Nothing was created.
     const count = await apiGet<CountResponse>(
       organizer,
       `/api/teams/${team.slug}/publications/count`
     )
     expect(count.total).toBe(0)
+    expect((await getRoute(organizer, team.slug, route.slug)).visibility).toBe('TEAM')
 
-    // Choosing « Équipe uniquement » is the way out: the same ride is created.
-    await main(page).getByRole('radio', { name: 'Équipe uniquement' }).check()
+    // Confirming replays the creation with alignVisibility: the ride is public, the route unlisted
+    // — never public without a decision of its own.
+    const aligned = page.waitForRequest(
+      (r) =>
+        r.method() === 'POST' &&
+        new URL(r.url()).pathname === `/api/teams/${team.slug}/rides` &&
+        (r.postDataJSON() as { alignVisibility?: boolean }).alignVisibility === true
+    )
     await main(page).getByRole('button', { name: 'Créer la sortie' }).click()
+    await dialog.getByRole('button', { name: 'Ouvrir les parcours et enregistrer' }).click()
+    await aligned
     await expect(main(page).getByRole('heading', { name: rideName, level: 2 })).toBeVisible()
     const rideSlug = new URL(page.url()).pathname.split('/').pop()!
     const saved = await readRide(organizer, team.slug, rideSlug)
-    expect(saved.visibility).toBe('TEAM')
+    expect(saved.visibility).toBe('PUBLIC')
     expect(saved.routeSlug).toBe(route.slug)
+    expect((await getRoute(organizer, team.slug, route.slug)).visibility).toBe('PUBLIC_UNLISTED')
+  })
+
+  test('a route used by a public ride offers no members-only visibility in its editor', async ({
+    page,
+  }) => {
+    const owner = await roleSession('admin')
+    const team = await newTeam(owner, unique('Flow parcours utilisé'), { visibility: 'PUBLIC' })
+    const organizer = await newUser(unique('Organisatrice'))
+    await addMember(owner, team.slug, organizer, 'ORGANIZER')
+    const route = await newRoute(
+      organizer,
+      team.slug,
+      unique('Parcours partagé'),
+      windingTrack(40),
+      {
+        visibility: 'PUBLIC_UNLISTED',
+      }
+    )
+    // The public ride that holds the route out of « Équipe » (plan §4.4).
+    await newRide(organizer, team.slug, unique('Sortie publique'), {
+      visibility: 'PUBLIC',
+      routeSlug: route.slug,
+    })
+
+    await signIn(page.context(), organizer)
+    await page.goto(`/equipes/${team.slug}/parcours/${route.slug}/modifier`)
+    // Its own list leaves TEAM out (`permissions.allowedVisibilities`, plan §4.4).
+    const unlisted = main(page).getByRole('radio', { name: 'Non répertorié' })
+    await hydrated(unlisted)
+    await expect(unlisted).toBeChecked()
+    await expect(main(page).getByRole('radio', { name: 'Équipe uniquement' })).toHaveCount(0)
+    await expect(main(page).getByRole('radio', { name: 'Public', exact: true })).toBeVisible()
   })
 })
 

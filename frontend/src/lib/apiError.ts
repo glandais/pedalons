@@ -1,5 +1,6 @@
 import Axios from 'axios'
-import type { ErrorCode, ErrorResponse } from '@/api/dto'
+import { ErrorCode } from '@/api/dto'
+import type { ErrorResponse } from '@/api/dto'
 
 export class ApiClientError extends Error {
   constructor(
@@ -43,3 +44,13 @@ export function apiErrorStatus(error: unknown): number | undefined {
   if (Axios.isAxiosError(error)) return error.response?.status
   return undefined
 }
+
+/**
+ * The codes whose refusal the screen that made the call renders itself — a dialog that lists what
+ * is in the way — so the mutator's generic toast stays quiet for them (`axiosMutator`). Every call
+ * that can receive one must handle it: the ride and trip editors and their status actions, the
+ * restore of a ride or a trip, the route editor (docs/LEDGER_*.md WEB-166).
+ */
+export const CALLER_RENDERED_ERROR_CODES: ReadonlySet<ErrorCode> = new Set([
+  ErrorCode.INCOMPATIBLE_VISIBILITY,
+])

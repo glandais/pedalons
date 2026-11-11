@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { paths } from '../../config/paths'
 import { Box, Button, Container, Stack, Title, Text } from '@mantine/core'
 import { useTripDetailData } from './tripDetailData'
-import { ReportTargetType, Status } from '@/api/dto'
+import { ReportTargetType } from '@/api/dto'
 import { useAuth } from '../../hooks/useAuth'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '../../components/common/DetailPageSkeleton'
@@ -21,8 +21,6 @@ import { TripOverviewMap } from '@/components/trip/TripOverviewMap'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { RouteWeatherSection } from '@/components/weather/RouteWeatherSection'
 import { tripOffersWind } from '@/lib/tripWeatherOnMap'
-import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
-import { teamAccess } from '@/lib/teamAccess'
 import { useTripMembership } from '@/hooks/useTripMembership'
 import { AccessAlerts } from '@/components/publication/AccessAlerts'
 import { InstructionsBlock } from '@/components/publication/InstructionsBlock'
@@ -36,7 +34,6 @@ export function TripDetailPage() {
   const { t, i18n } = useTranslation()
   // The fallback zone of the span for a trip whose zone this browser lacks (API-60).
   const { timezone: readerZone } = useEffectiveTimezone()
-  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, tripSlug } = useParams<{ teamSlug: string; tripSlug: string }>()
   const { isAuthenticated, user } = useAuth()
   // The hovered stage, and the one chosen by a click on its trace — lit on the map and on its card
@@ -57,8 +54,11 @@ export function TripDetailPage() {
     trip: tripQuery,
     weather: weatherQuery,
   } = useTripDetailData(teamSlug, tripSlug)
-  const { data: team, isLoading: isLoadingTeam } = teamQuery
   const { data: trip, isLoading: isLoadingTrip, error, refetch } = tripQuery
+  // The team itself only when the trip says it answers the reader (docs/LEDGER_*.md WEB-166): it
+  // decides the features redirect; everything shown comes from the trip's embedded summary.
+  const { data: fullTeam, isLoading: isLoadingTeam } = teamQuery
+  const team = trip?.team
 
   const statusActions = usePublicationStatusActions(
     teamSlug!,
@@ -83,15 +83,11 @@ export function TripDetailPage() {
     }))
   }, [trip])
 
-  if (!isLoadingTeam && !team) {
-    return <Navigate to={paths.teams()} replace />
-  }
-
-  if (team && (!team.enableTrips || !team.enableRoutes)) {
+  if (fullTeam && (!fullTeam.enableTrips || !fullTeam.enableRoutes)) {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
-  if (isLoadingTeam || isLoadingTrip || error || !trip) {
+  if (isLoadingTeam || isLoadingTrip || error || !trip || !team) {
     return (
       <Container size="xl" py="xl">
         <QueryStateBoundary
@@ -114,10 +110,11 @@ export function TripDetailPage() {
     )
   }
 
-  // Registering and the join banner follow the real membership; editing and the comment thread
-  // (moderation), the rights a platform admin holds in every team (docs/LEDGER_*.md API-137).
-  const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
-  const canReadComments = isMember || isPlatformAdmin
+  // The backend's answers for this trip (docs/LEDGER_*.md WEB-166, decision D7).
+  const { permissions } = trip
+  const canEdit = permissions.canEdit
+  const canReadComments = !!permissions.canComment
+  const isMember = !!permissions.canSeeParticipants
   // Told by the server: `participants` is only a preview of the first few (ledger API-12).
   const hasJoined = !!user && trip.registered
   // Not once it is over: the server refuses it (TRIP_FINISHED, docs/LEDGER_*.md API-161), as a ride
@@ -129,12 +126,13 @@ export function TripDetailPage() {
     stageCount <= 1 && weatherQuery.data?.stages.length === 1
       ? weatherQuery.data.stages[0]
       : undefined
-  const canJoinTrip = isMember && trip.status === Status.PUBLISHED && !hasJoined && !trip.finished
+  // `canRegister` is exact on a detail: a member, the trip published and not finished.
+  const canJoinTrip = !!permissions.canRegister && !hasJoined
 
   return (
     <Container size="xl" py="xl">
       {/* Way back to the team: this page is not mounted inside TeamLayout */}
-      {team && <TeamContextBanner team={team} />}
+      <TeamContextBanner team={team} />
 
       <PublicationHeader
         kind="trip"
@@ -210,7 +208,7 @@ export function TripDetailPage() {
               source={{ kind: 'trip', teamSlug: teamSlug!, tripSlug: trip.slug }}
               count={trip.participantCount}
               titleId="trip-participants-title"
-              canSeeParticipants={canReadComments}
+              canSeeParticipants={!!permissions.canSeeParticipants}
             />
           )}
         </Stack>
@@ -266,11 +264,12 @@ export function TripDetailPage() {
           teamSlug={teamSlug!}
           isAuthenticated={isAuthenticated}
           isMember={isMember}
+          teamAccessible={team.accessible}
         />
       </Box>
 
       {/* Comments Section - only visible to team members */}
-      {canReadComments && team && (
+      {canReadComments && (
         <Box mt="lg">
           <CommentSection
             teamSlug={teamSlug!}

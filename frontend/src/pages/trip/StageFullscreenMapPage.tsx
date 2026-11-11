@@ -29,7 +29,6 @@ export function StageFullscreenMapPage() {
   const appName = useAppName()
 
   const {
-    team: { data: team },
     trip: { data: trip, isLoading: isLoadingTrip },
     route: { data: route, isLoading: isLoadingRoute },
     routeSlug,
@@ -37,6 +36,8 @@ export function StageFullscreenMapPage() {
   } = useStageMapData(teamSlug, tripSlug, stageSlug)
 
   const stage = trip?.stages?.find((s) => s.slug === stageSlug)
+  // The trip's embedded team: never `GET team`, closed to a link reader (docs/LEDGER_*.md WEB-166).
+  const team = trip?.team
 
   useCanonicalPath(
     team && trip && stageSlug ? paths.stageMap(team.slug, trip.slug, stageSlug) : undefined

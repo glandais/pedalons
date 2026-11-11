@@ -1,3 +1,6 @@
+import { useVisibilityAlignment } from '@/components/visibility/useVisibilityAlignment'
+import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
+import type { IncompatibleRouteDto } from '@/api/dto'
 import { useParams, Navigate, useNavigate } from 'react-router-dom'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useTranslation } from 'react-i18next'
@@ -17,12 +20,10 @@ import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { RideEditor } from '../../components/ride/RideEditor'
 import { paths } from '@/config/paths'
 import { RideRequest } from '@/api/dto'
-import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
-import { teamAccess } from '@/lib/teamAccess'
+import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
 
 export function EditRidePage() {
   const { t } = useTranslation()
-  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, rideSlug } = useParams<{ teamSlug: string; rideSlug: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -32,6 +33,7 @@ export function EditRidePage() {
 
   const updateMutation = useUpdateRide()
   const changeSlugMutation = useChangeRideSlug()
+  const alignment = useVisibilityAlignment('ride', updateMutation.isPending)
 
   useCanonicalPath(team && ride ? paths.rideEdit(team.slug, ride.slug) : undefined)
 
@@ -47,13 +49,14 @@ export function EditRidePage() {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
-  const canEdit = teamAccess(team, isPlatformAdmin).isOrganizer
+  // The backend's answer for this ride (docs/LEDGER_*.md WEB-166, decision D7).
+  const canEdit = ride.permissions.canEdit
 
   if (!canEdit) {
     return <Navigate to={paths.ride(teamSlug!, rideSlug!)} replace />
   }
 
-  const handleSubmit = (data: RideRequest) => {
+  const save = (data: RideRequest, aligned?: IncompatibleRouteDto[]) => {
     const filteredGroups = data.groups.filter((g) => g.name.trim())
 
     updateMutation.mutate(
@@ -63,10 +66,14 @@ export function EditRidePage() {
         data: {
           ...data,
           groups: filteredGroups,
+          alignVisibility: aligned ? true : undefined,
         },
       },
       {
+        // A ride opened outside the team on « Équipe » routes: confirm, then raise them (D5).
+        onError: (error) => alignment.offer(error, (routes) => save(data, routes)),
         onSuccess: () => {
+          aligned?.forEach((route) => invalidateRouteQueries(queryClient, teamSlug!, route.slug))
           queryClient.invalidateQueries({ queryKey: getGetRideQueryKey(teamSlug!, rideSlug!) })
           invalidateTeamPublications(queryClient, teamSlug!)
           // Time, groups, speeds or route may have moved: the passages read other hours.
@@ -77,6 +84,8 @@ export function EditRidePage() {
       }
     )
   }
+
+  const handleSubmit = (data: RideRequest) => save(data)
 
   const handleSlugChange = async (newSlug: string) => {
     await changeSlugMutation.mutateAsync(
@@ -109,6 +118,7 @@ export function EditRidePage() {
 
       <RideEditor
         team={team}
+        allowedVisibilities={allowedVisibilitiesFor(team, 'ride', ride.permissions)}
         teamSlug={teamSlug!}
         initialValues={initialValues}
         timezone={ride.timezone}
@@ -124,6 +134,7 @@ export function EditRidePage() {
         onSlugChange={handleSlugChange}
         canEditSlug={canEdit}
       />
+      {alignment.dialog}
     </Container>
   )
 }

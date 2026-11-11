@@ -22,21 +22,21 @@ import { ContentActionsMenu } from '../../components/moderation/ContentActionsMe
 import { ShareButton } from '../../components/common/ShareButton'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 import { ReportTargetType } from '@/api/dto'
-import { useAuthStore, selectUser, selectIsPlatformAdmin } from '@/store/authStore'
+import { useAuthStore, selectUser } from '@/store/authStore'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
-import { teamAccess } from '@/lib/teamAccess'
 
 export function RouteDetailPage() {
   const { teamSlug, routeSlug } = useParams<{ teamSlug: string; routeSlug: string }>()
   const { t } = useTranslation()
-  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const currentUserId = useAuthStore(selectUser)?.id
 
-  const { team: teamQuery, route: routeQuery } = useRouteDetailData(teamSlug, routeSlug)
-  const { data: team, isLoading: teamLoading } = teamQuery
+  const { route: routeQuery } = useRouteDetailData(teamSlug, routeSlug)
   const { data: route, isLoading: routeLoading, error, refetch } = routeQuery
+  // The route's embedded team: the page never waits for `GET team`, which a reader of a private
+  // team's public route by link does not get (docs/LEDGER_*.md WEB-166).
+  const team = route?.team
   const deleteRouteMutation = useDeleteRoute()
   const undeleteRouteMutation = useUndeleteRoute()
 
@@ -44,10 +44,10 @@ export function RouteDetailPage() {
 
   useCanonicalPath(team && route ? paths.route(team.slug, route.slug) : undefined)
 
-  // Editing and the comment thread (moderation) are the rights a platform admin holds in every
-  // team (docs/LEDGER_*.md API-137).
-  const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
-  const canReadComments = isMember || isPlatformAdmin
+  // The backend's answers for this route (docs/LEDGER_*.md WEB-166, decision D7).
+  const canEdit = !!route?.permissions.canEdit
+  const canDelete = !!route?.permissions.canDelete
+  const canReadComments = !!route?.permissions.canComment
 
   const handleDelete = async () => {
     if (routeSlug && teamSlug) {
@@ -84,11 +84,11 @@ export function RouteDetailPage() {
     }
   }
 
-  if (routeLoading || teamLoading || error || !route || !team) {
+  if (routeLoading || error || !route || !team) {
     return (
       <Box maw={1280} mx="auto" px="md" py="xl">
         <QueryStateBoundary
-          isLoading={routeLoading || teamLoading}
+          isLoading={routeLoading}
           isError={!!error}
           error={error}
           isNotFound={!route || !team}
@@ -123,16 +123,18 @@ export function RouteDetailPage() {
             <MediaDisplay media={route.media} />
           </Stack>
           <Group mt={{ base: 'md', sm: 0 }} gap="sm">
-            {canEdit && (
+            {(canEdit || canDelete) && (
               <>
-                <Button
-                  variant="default"
-                  component="a"
-                  href={paths.routeEdit(teamSlug!, routeSlug!)}
-                >
-                  {t('actions.edit')}
-                </Button>
-                {route.deleted && (
+                {canEdit && (
+                  <Button
+                    variant="default"
+                    component="a"
+                    href={paths.routeEdit(teamSlug!, routeSlug!)}
+                  >
+                    {t('actions.edit')}
+                  </Button>
+                )}
+                {canDelete && route.deleted && (
                   <Button
                     variant="outline"
                     color="green"
@@ -143,7 +145,7 @@ export function RouteDetailPage() {
                   </Button>
                 )}
                 {/* A deleted route can only be restored */}
-                {!route.deleted && (
+                {canDelete && !route.deleted && (
                   <Button
                     variant="outline"
                     color="danger"
@@ -161,7 +163,7 @@ export function RouteDetailPage() {
               targetType={ReportTargetType.ROUTE}
               targetId={route.id}
               isOwn={route.createdBy?.id === currentUserId}
-              onReported={() => navigate(paths.routes(team.slug))}
+              onReported={() => navigate(team.accessible ? paths.routes(team.slug) : paths.home())}
             />
           </Group>
         </Group>

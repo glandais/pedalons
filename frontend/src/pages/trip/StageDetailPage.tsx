@@ -26,8 +26,6 @@ import { RouteWeatherSection } from '@/components/weather/RouteWeatherSection'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { stageWindLeg, tripOffersWind } from '@/lib/tripWeatherOnMap'
-import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
-import { teamAccess } from '@/lib/teamAccess'
 
 /**
  * One stage of a trip, on the page every child of a publication shares with a ride's groups
@@ -41,7 +39,6 @@ import { teamAccess } from '@/lib/teamAccess'
  */
 export function StageDetailPage() {
   const { t } = useTranslation()
-  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, tripSlug, stageSlug } = useParams<{
     teamSlug: string
     tripSlug: string
@@ -50,7 +47,7 @@ export function StageDetailPage() {
   const { isAuthenticated } = useAuth()
 
   const {
-    team: { data: team, isLoading: isLoadingTeam },
+    team: { data: fullTeam, isLoading: isLoadingTeam },
     trip: { data: trip, isLoading: isLoadingTrip, error, refetch },
     route: { data: route, isLoading: isLoadingRoute },
     routeSlug,
@@ -59,6 +56,9 @@ export function StageDetailPage() {
 
   // Found in the trip already in cache, before the early returns: the weather focus is a hook.
   const stage = trip?.stages?.find((s) => s.slug === stageSlug)
+  // The trip's embedded team: the page renders from it; the team itself, read only when the trip
+  // says it answers the reader, decides the features redirect (docs/LEDGER_*.md WEB-166).
+  const team = trip?.team
   const stageWeather = stage ? weather.data?.stages.find((w) => w.stageId === stage.id) : undefined
   const leg = stageWeather?.leg
   const weatherFocus = useWeatherFocus(stage?.id, leg)
@@ -71,11 +71,7 @@ export function StageDetailPage() {
 
   const isLoading = isLoadingTeam || isLoadingTrip || !!(routeSlug && isLoadingRoute)
 
-  if (!isLoading && !team) {
-    return <Navigate to={paths.teams()} replace />
-  }
-
-  if (team && (!team.enableTrips || !team.enableRoutes)) {
+  if (fullTeam && (!fullTeam.enableTrips || !fullTeam.enableRoutes)) {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
 
@@ -121,10 +117,11 @@ export function StageDetailPage() {
     )
   }
 
-  // Registering and the join banner follow the real membership; editing and the comment thread
-  // (moderation), the rights a platform admin holds in every team (docs/LEDGER_*.md API-137).
-  const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
-  const canReadComments = isMember || isPlatformAdmin
+  // The backend's answers (docs/LEDGER_*.md WEB-166, decision D7): the stage's own block — editing
+  // it is editing its trip, its thread is its own — and the trip's for who belongs.
+  const canEdit = stage.permissions.canEdit
+  const canReadComments = !!stage.permissions.canComment
+  const isMember = !!trip.permissions.canSeeParticipants
   const stages = trip.stages ?? []
   const stageIndex = stages.findIndex((s) => s.id === stage.id)
   // The stage's Météo mode on its map, and on its fullscreen map (WEB-118)
@@ -182,6 +179,7 @@ export function StageDetailPage() {
           teamSlug={team.slug}
           isAuthenticated={isAuthenticated}
           isMember={isMember}
+          teamAccessible={team.accessible}
         />
       }
       side={

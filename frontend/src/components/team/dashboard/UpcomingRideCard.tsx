@@ -18,9 +18,8 @@ import { someGroupLeavesAtOwnTime, startFor } from '@/utils/groupStart'
 import { publicationEditPath, publicationPath, rideHasNoRoute } from './dashboardHelpers'
 
 interface UpcomingRideCardProps {
+  /** « Modifier » when its `permissions.canEdit` says so (docs/LEDGER_*.md WEB-166). */
   ride: RideDto
-  /** Team ADMIN or ORGANIZER: adds « Modifier ». */
-  canManage: boolean
 }
 
 /**
@@ -28,7 +27,7 @@ interface UpcomingRideCardProps {
  * group — `RideDto.distance`), then one line per group with its fill. Registration happens on the
  * ride page, where the groups can be compared: « S'inscrire » leads there.
  */
-export function UpcomingRideCard({ ride, canManage }: UpcomingRideCardProps) {
+export function UpcomingRideCard({ ride }: UpcomingRideCardProps) {
   const { t } = useTranslation()
   const { distance, elevation } = useUnits()
   const ridePath = publicationPath(ride)
@@ -112,7 +111,7 @@ export function UpcomingRideCard({ ride, canManage }: UpcomingRideCardProps) {
           >
             {ride.registered ? t('home.nextRide.view') : t('teams.dashboard.ride.register')}
           </Button>
-          {canManage && (
+          {ride.permissions.canEdit && (
             <Button
               component={PrefetchLink}
               to={publicationEditPath(ride)}

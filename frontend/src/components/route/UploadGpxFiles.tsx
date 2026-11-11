@@ -43,7 +43,7 @@ export function UploadGpxFiles({ team, disabled }: UploadGpxFilesProps) {
         await createRoute(teamSlug, {
           route: {
             name,
-            visibility: team.visibility,
+            visibility: team.defaultContentVisibility,
             surfaceType: SurfaceType.ROAD,
             media: defaultMedia(),
           },

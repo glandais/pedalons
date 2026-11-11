@@ -54,7 +54,7 @@ export function CreatePostPage() {
     media: defaultMedia(),
     // Now, as the clock reads in the team's zone — a post's zone (docs/LEDGER_*.md API-60).
     dateTime: instantToWallTime(new Date(), team.timezone),
-    visibility: team.visibility,
+    visibility: team.defaultContentVisibility,
     status: Status.DRAFT,
     publishAt: undefined,
     // The team decides how a post starts out signed; the author may change it (docs/LEDGER_*.md API-6)

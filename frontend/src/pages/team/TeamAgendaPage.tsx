@@ -249,9 +249,7 @@ export function TeamAgendaPage() {
                   <AgendaRow
                     key={publication.id}
                     publication={publication}
-                    actions={
-                      <PublicationCardActions publication={publication} canManage={canCreate} />
-                    }
+                    actions={<PublicationCardActions publication={publication} />}
                   />
                 ))}
               </Stack>
@@ -262,9 +260,7 @@ export function TeamAgendaPage() {
                     key={publication.id}
                     publication={publication}
                     showTeam={false}
-                    actions={
-                      <PublicationCardActions publication={publication} canManage={canCreate} />
-                    }
+                    actions={<PublicationCardActions publication={publication} />}
                   />
                 ))}
               </SimpleGrid>

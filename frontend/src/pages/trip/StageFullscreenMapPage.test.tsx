@@ -52,6 +52,7 @@ const trip = (overrides: Partial<TripDto> = {}): TripDto =>
   ({
     id: 't1',
     slug: 'voyage',
+    team: { slug: 'np', name: 'N Peloton', visibility: 'PUBLIC', accessible: true },
     status: Status.PUBLISHED,
     finished: false,
     timezone: 'Europe/Paris',

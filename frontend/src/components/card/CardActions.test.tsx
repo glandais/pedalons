@@ -29,6 +29,10 @@ vi.mock('@/store/authStore', () => ({
 import { AdCardActions, PublicationCardActions } from './CardActions'
 import { getGetRideWeatherQueryKey } from '@/api/endpoints/rides/rides'
 
+/** What the backend answers an organiser, and a plain member (docs/LEDGER_*.md WEB-166). */
+const MANAGE = { canEdit: true, canDelete: true, indexable: true }
+const READ_ONLY = { canEdit: false, canDelete: false, indexable: true }
+
 function ride(overrides: Partial<RideDto> = {}): PublicationDto {
   return {
     type: 'RIDE',
@@ -39,6 +43,7 @@ function ride(overrides: Partial<RideDto> = {}): PublicationDto {
     status: 'PUBLISHED',
     finished: false,
     deleted: false,
+    permissions: MANAGE,
     ...overrides,
   } as unknown as PublicationDto
 }
@@ -69,7 +74,7 @@ describe('PublicationCardActions', () => {
 
   it('publishes a draft through the status endpoint, never the full update', async () => {
     // A list row has no groups: sending it back through the update would delete them.
-    renderInApp(<PublicationCardActions publication={ride({ status: 'DRAFT' })} canManage />)
+    renderInApp(<PublicationCardActions publication={ride({ status: 'DRAFT' })} />)
     await openMenu()
     fireEvent.click(screen.getByRole('menuitem', { name: 'actions.publish', hidden: true }))
     await waitFor(() => expect(changeRideStatus).toHaveBeenCalledTimes(1))
@@ -81,10 +86,7 @@ describe('PublicationCardActions', () => {
     // A draft's cached OUT_OF_RANGE would otherwise hide the weather block once published.
     const client = new QueryClient()
     const invalidate = vi.spyOn(client, 'invalidateQueries')
-    renderInApp(
-      <PublicationCardActions publication={ride({ status: 'DRAFT' })} canManage />,
-      client
-    )
+    renderInApp(<PublicationCardActions publication={ride({ status: 'DRAFT' })} />, client)
     await openMenu()
     fireEvent.click(screen.getByRole('menuitem', { name: 'actions.publish', hidden: true }))
     await waitFor(() =>
@@ -95,7 +97,7 @@ describe('PublicationCardActions', () => {
   })
 
   it('gives a member the calendar file of an upcoming ride, and nothing to manage', async () => {
-    renderInApp(<PublicationCardActions publication={ride()} canManage={false} />)
+    renderInApp(<PublicationCardActions publication={ride({ permissions: READ_ONLY })} />)
     await openMenu()
     const calendar = screen.getByRole('menuitem', {
       name: 'cards.actions.addToCalendar',
@@ -107,12 +109,14 @@ describe('PublicationCardActions', () => {
   })
 
   it('offers no calendar file for a finished ride, hence no menu at all for a member', () => {
-    renderInApp(<PublicationCardActions publication={ride({ finished: true })} canManage={false} />)
+    renderInApp(
+      <PublicationCardActions publication={ride({ finished: true, permissions: READ_ONLY })} />
+    )
     expect(screen.queryByRole('button', { name: /^cards\.actions\.menu:/ })).toBeNull()
   })
 
   it('offers « Publier » on a draft only', async () => {
-    renderInApp(<PublicationCardActions publication={ride()} canManage />)
+    renderInApp(<PublicationCardActions publication={ride()} />)
     await openMenu()
     expect(screen.queryByRole('menuitem', { name: 'actions.publish', hidden: true })).toBeNull()
     expect(screen.getByRole('menuitem', { name: 'actions.edit', hidden: true })).toHaveAttribute(
@@ -122,7 +126,7 @@ describe('PublicationCardActions', () => {
   })
 
   it('asks before deleting', async () => {
-    renderInApp(<PublicationCardActions publication={ride()} canManage />)
+    renderInApp(<PublicationCardActions publication={ride()} />)
     await openMenu()
     fireEvent.click(screen.getByRole('menuitem', { name: 'actions.delete', hidden: true }))
     expect(await screen.findByText('rides.detail.confirmations.delete')).toBeInTheDocument()
@@ -140,10 +144,13 @@ describe('AdCardActions', () => {
     createdById: 'u1',
     deleted: false,
   } as unknown as AdDto
+  // The backend's answers: the author or a team admin manages it, an organizer alone does not.
+  const authorView = { ...ad, permissions: MANAGE } as AdDto
+  const otherMemberView = { ...ad, permissions: READ_ONLY } as AdDto
 
   it('lets the author manage their ad', async () => {
     currentUserId = 'u1'
-    renderInApp(<AdCardActions ad={ad} isTeamAdmin={false} />)
+    renderInApp(<AdCardActions ad={authorView} />)
     await openMenu()
     expect(
       screen.getByRole('menuitem', { name: 'actions.delete', hidden: true })
@@ -152,7 +159,7 @@ describe('AdCardActions', () => {
 
   it('gives another member — an organizer included — no menu', () => {
     currentUserId = 'u2'
-    renderInApp(<AdCardActions ad={ad} isTeamAdmin={false} />)
+    renderInApp(<AdCardActions ad={otherMemberView} />)
     expect(screen.queryByRole('button', { name: /^cards\.actions\.menu:/ })).toBeNull()
   })
 })

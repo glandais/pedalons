@@ -96,7 +96,7 @@ export function RouteListPage() {
 
         <RouteListContent
           density={density}
-          cardActions={(route) => <RouteCardActions route={route} canManage={canCreateRoute} />}
+          cardActions={(route) => <RouteCardActions route={route} />}
           deadEnd={
             <RouteDeadEnd
               filters={filters}

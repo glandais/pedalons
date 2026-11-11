@@ -31,8 +31,6 @@ import { useRideGroupMembership } from '@/hooks/useRideGroupMembership'
 import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
 import { leavesGroupPage } from './rideDetailData'
 import { groupAction, groupWindLeg, useRideGroupData } from './rideGroupData'
-import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
-import { teamAccess } from '@/lib/teamAccess'
 
 /**
  * One group of a ride, on a page of its own (ledger WEB-77): who leads it, when it leaves and at
@@ -50,7 +48,6 @@ import { teamAccess } from '@/lib/teamAccess'
  */
 export function RideGroupPage() {
   const { t } = useTranslation()
-  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, rideSlug, groupId } = useParams<{
     teamSlug: string
     rideSlug: string
@@ -61,7 +58,6 @@ export function RideGroupPage() {
   const navigate = useNavigate()
 
   const {
-    team: { data: team, isLoading: isLoadingTeam },
     ride: { data: ride, isLoading: isLoadingRide, error, refetch },
     weather,
     routesBySlug,
@@ -75,6 +71,9 @@ export function RideGroupPage() {
   // Not through `useCanonicalPath`, which checks once: a ride read with two groups then refetched
   // with one would otherwise leave this page on its skeleton for good. The ride's page fixes a stale
   // team slug itself.
+  // The ride's embedded team: no `GET team` for a page a private team's public ride opens by link
+  // (docs/LEDGER_*.md WEB-166).
+  const team = ride?.team
   const leave = ride ? leavesGroupPage(ride) : false
   const leaveTo = ride && leave ? paths.ride(teamSlug!, ride.slug) : undefined
   useEffect(() => {
@@ -88,11 +87,11 @@ export function RideGroupPage() {
   // ride is read, after the browser gave up looking for it.
   useScrollToAnchor(CHILD_WEATHER_ANCHOR, !!group && !leave && !weather.isLoading)
 
-  if (isLoadingTeam || isLoadingRide || error || !ride || !team || leave) {
+  if (isLoadingRide || error || !ride || !team || leave) {
     return (
       <Container size="xl" py="xl">
         <QueryStateBoundary
-          isLoading={isLoadingTeam || isLoadingRide || leave}
+          isLoading={isLoadingRide || leave}
           isError={!!error}
           error={error}
           isNotFound={!ride || !team}
@@ -129,10 +128,10 @@ export function RideGroupPage() {
     )
   }
 
-  // Registering follows the real membership; editing, a platform admin's right too
-  // (docs/LEDGER_*.md API-137).
-  const { isMember, isOrganizer: canEdit } = teamAccess(team, isPlatformAdmin)
-  const action = groupAction(ride, group, isMember)
+  // The backend's answers for this ride (docs/LEDGER_*.md WEB-166, decision D7).
+  const canEdit = ride.permissions.canEdit
+  const isMember = !!ride.permissions.canSeeParticipants
+  const action = groupAction(ride, group)
   const groups = ride.groups ?? []
   const otherGroup =
     action === 'registeredElsewhere'
@@ -243,10 +242,15 @@ export function RideGroupPage() {
           {isAuthenticated && !isMember && (
             <Alert color="yellow" variant="light">
               <Text size="sm">
-                {t('rides.detail.nonMember.message')}{' '}
-                <Anchor component={PrefetchLink} to={paths.team(team.slug)} fw={500}>
-                  {t('rides.detail.nonMember.viewTeam')}
-                </Anchor>
+                {t('rides.detail.nonMember.message')}
+                {team.accessible && (
+                  <>
+                    {' '}
+                    <Anchor component={PrefetchLink} to={paths.team(team.slug)} fw={500}>
+                      {t('rides.detail.nonMember.viewTeam')}
+                    </Anchor>
+                  </>
+                )}
               </Text>
             </Alert>
           )}
@@ -269,7 +273,7 @@ export function RideGroupPage() {
             teamSlug={team.slug}
             ride={ride}
             group={group}
-            canSeeParticipants={isMember || isPlatformAdmin}
+            canSeeParticipants={isMember}
           />
 
           {/* What to do with the route, beside the map rather than under it: the map column fills

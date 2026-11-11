@@ -1,6 +1,6 @@
 # Contenu public d'une équipe privée, et droits calculés par le backend
 
-Écrit le 11 novembre 2026. **État : lot 1 fait le 11 novembre 2026 (drapeau, `V87`, règle unique d'écriture, lecture par lien, contrat `13.6.0`) ; lot 2 fait le même jour (droits calculés, contrat `13.7.0`) ; lot 3 fait le même jour (invariant de compatibilité, contrat `13.8.0`) ; lots 4 et 5 à faire.** Ledger `API-176` (backend et
+Écrit le 11 novembre 2026. **État : lot 1 fait le 11 novembre 2026 (drapeau, `V87`, règle unique d'écriture, lecture par lien, contrat `13.6.0`) ; lot 2 fait le même jour (droits calculés, contrat `13.7.0`) ; lot 3 fait le même jour (invariant de compatibilité, contrat `13.8.0`) ; lot 4 écrit le même jour (site web, e2e à lancer) ; lot 5 à faire.** Ledger `API-176` (backend et
 contrat), `WEB-166` (site), `MOB-137` (application), `SEC-51` (constat relevé, hors périmètre).
 Branche prévue : `feat/visibilite-equipe-privee`, un commit par lot. Numéros vérifiés libres le
 11 novembre 2026 : `API-176`, `API-177`, `WEB-166`, `MOB-137`, `SEC-51`, migration `V87`, contrat `13.5.0`

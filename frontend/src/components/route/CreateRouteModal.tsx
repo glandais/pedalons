@@ -30,7 +30,7 @@ export function CreateRouteModal({ isOpen, onClose, onRouteCreated, team }: Crea
     name: '',
     media: defaultMedia(),
     surfaceType: SurfaceTypeEnum.ROAD as SurfaceType,
-    visibility: team.visibility,
+    visibility: team.defaultContentVisibility,
   }
 
   const handleSubmit = async (data: RouteRequest, gpxFile?: File) => {

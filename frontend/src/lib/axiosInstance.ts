@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/authStore'
 import { notifications } from '@mantine/notifications'
 import i18next from 'i18next'
 import type { ErrorResponse } from '../api/dto'
-import { ApiClientError, parseRetryAfter } from './apiError'
+import { ApiClientError, CALLER_RENDERED_ERROR_CODES, parseRetryAfter } from './apiError'
 import { refreshesOn401 } from './authRefresh'
 import { getSSRAuth, getSSRHeaders } from './ssrContext'
 import { logEntry, pathOnly } from './feedback/clientLog'
@@ -219,7 +219,16 @@ export const axiosMutator = <T>(
           // does. A toast on top of it only repeats it, once per query the page makes.
           const isMissingRead =
             (config.method ?? 'get').toLowerCase() === 'get' && axiosError.response?.status === 404
-          if (!isServer && !isMissingRead && !options?.skipErrorToast && !config.skipErrorToast) {
+          // A refusal its screen explains in a dialog of its own (the routes in the way of a
+          // visibility, docs/LEDGER_*.md WEB-166): the toast would only say half of it, beside it.
+          const renderedByCaller = CALLER_RENDERED_ERROR_CODES.has(errorData.code)
+          if (
+            !isServer &&
+            !isMissingRead &&
+            !renderedByCaller &&
+            !options?.skipErrorToast &&
+            !config.skipErrorToast
+          ) {
             notifications.show({
               message: i18next.t(`errors.api.${errorData.code}`, { ...errorData.errorDetails }),
               color: 'red',

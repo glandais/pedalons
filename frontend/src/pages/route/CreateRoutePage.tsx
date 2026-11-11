@@ -78,7 +78,7 @@ export function CreateRoutePage() {
     name: '',
     media: defaultMedia(),
     surfaceType: SurfaceType.ROAD,
-    visibility: team.visibility,
+    visibility: team.defaultContentVisibility,
   }
 
   return (

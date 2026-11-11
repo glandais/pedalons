@@ -2,8 +2,7 @@ import { useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { findMatchingRoute, buildBreadcrumbChain, buildRoutePath } from '../config/routeUtils'
-import { useGetTeam } from '../api/endpoints/teams/teams'
-import { onlyIfNotFailed, useBreadcrumbData } from './useBreadcrumbData'
+import { useBreadcrumbData } from './useBreadcrumbData'
 import { useHomeNavItems, useTeamNavItems } from './useNavItems'
 import type { BreadcrumbItemType, BreadcrumbSubItemType } from '../components/common/Breadcrumb'
 import { BreadcrumbLabel } from '@/config/routes.types'
@@ -30,8 +29,8 @@ export function useBreadcrumb(): UseBreadcrumbResult {
 
   // Shared nav-item groups feed the per-level dropdowns, so they mirror the actual tab bar
   // (auth/feature/membership gated, including dynamic pages) instead of a static list.
-  const teamSlug = matchResult?.params.teamSlug
-  const { data: team } = useGetTeam(teamSlug!, { query: { enabled: onlyIfNotFailed(!!teamSlug) } })
+  // The team the breadcrumb data read — not for a team the page's entity says is closed.
+  const team = entityData.teamDetail
   const homeNavItems = useHomeNavItems()
   const teamNavItems = useTeamNavItems(team)
 
@@ -65,8 +64,10 @@ export function useBreadcrumb(): UseBreadcrumbResult {
       // Resolve label
       const label = resolveLabel(breadcrumb)
 
-      // Build path (undefined for last item = current page)
-      const path = isLast ? undefined : buildRoutePath(routeConfig, params)
+      // Build path (undefined for last item = current page). A closed team's own crumbs (the team,
+      // its agenda…) are named but lead nowhere: they would only answer 404 (docs/LEDGER_*.md WEB-166).
+      const leadsIntoClosedTeam = entityData.teamClosed && isTeamPage(routeConfig.paths)
+      const path = isLast || leadsIntoClosedTeam ? undefined : buildRoutePath(routeConfig, params)
 
       // Dropdown items mirror the actual tab bar for this level, sourced from the shared nav groups.
       const navItems =
@@ -86,4 +87,15 @@ export function useBreadcrumb(): UseBreadcrumbResult {
   const showBackLink = matchResult?.route.showBackLink ?? false
 
   return { items, showBackLink }
+}
+
+/**
+ * A page of the team itself (`/equipes/:teamSlug`, its agenda, its routes…): under the team and
+ * naming nothing else, so it reads the team — unlike an entity's page (`…/sorties/:rideSlug`),
+ * which a reader of a closed team may still open by link.
+ */
+export function isTeamPage(paths: Record<string, string>): boolean {
+  return Object.values(paths).some(
+    (path) => path.includes(':teamSlug') && (path.match(/:/g) ?? []).length === 1
+  )
 }

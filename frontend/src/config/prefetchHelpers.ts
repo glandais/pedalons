@@ -36,9 +36,10 @@ export function readsMemberContent(queryClient: QueryClient, teamSlug: string): 
 }
 
 /**
- * Comments are member-only on rides/trips/posts/routes (each detail page's own `isMember`, from
- * the team's `role`) — resolved from the team query prefetched just before calling this, same
- * shape `useComments` builds. Skipped entirely for a non-member, matching what the page renders.
+ * Comments are member-only on rides/trips/posts/routes — the entity's own `permissions.canComment`,
+ * computed by the backend (docs/LEDGER_*.md WEB-166), the same field each detail page reads to mount
+ * its `CommentSection`, and the same shape `useComments` builds. Skipped entirely when false or when
+ * the entity was not read, matching what the page renders.
  */
 export async function prefetchMemberComments(
   queryClient: QueryClient,
@@ -49,9 +50,10 @@ export async function prefetchMemberComments(
     entitySlug: string,
     params: { page: number; size: number; sort: SortDirection }
   ) => Promise<unknown>,
-  getQueryKey: (teamSlug: string, entitySlug: string) => readonly unknown[]
+  getQueryKey: (teamSlug: string, entitySlug: string) => readonly unknown[],
+  canComment: boolean | undefined
 ) {
-  if (!readsMemberContent(queryClient, teamSlug)) return
+  if (!canComment) return
 
   await queryClient.prefetchInfiniteQuery({
     queryKey: [...getQueryKey(teamSlug, entitySlug), COMMENT_LIST_OPTIONS],

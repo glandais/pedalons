@@ -46,7 +46,7 @@ export function CreateRideTemplatePage() {
   const initialValues = {
     name: '',
     markdown: '',
-    visibility: team.visibility,
+    visibility: team.defaultContentVisibility,
     status: Status.PUBLISHED,
     groups: [
       {
