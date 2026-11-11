@@ -48,7 +48,7 @@ l'autre ; **moyen** = même sens, forme différente et visible ; **faible** = d�
 
 | Écart | App | Site | Détail |
 |---|---|---|---|
-| « Annulé » sur « Ma prochaine sortie » | Badge « Annulé » | Rien | données 2.1 |
+| « Annulé » sur « Ma prochaine sortie » — **sans effet**, voir la note | Badge « Annulé » | Rien | données 2.1 |
 | Sortie ou voyage en brouillon, dans le fil | Aucun badge | « Brouillon » | actions E3 |
 | Voyage annulé, dans le fil | Aucun badge | « Annulé » | actions E4 |
 | Compteurs d'un voyage | Étapes, distance, D+ ; aucun nombre de personnes | Personnes, étapes, commentaires ; pas de distance | données 1.4, 1.5 |
@@ -57,6 +57,10 @@ l'autre ; **moyen** = même sens, forme différente et visible ; **faible** = d�
 | Lieux de départ et d'arrivée d'une étape | Absents | Affichés | données 4.8 |
 | Modèle de sortie | Statut, prochain numéro | Description, visibilité, groupes, tags | données 9.3 |
 | Jauge de places dans le fil | Absente (voulu) | Présente | actions P4 |
+
+Note du tri (11 novembre 2026) : l'écart « Annulé » sur « Ma prochaine sortie » existe dans le code mais ne se voit
+jamais. Les deux supports ne demandent que les sorties publiées (`next_ride_provider.dart`, `nextRideParams.ts`,
+`status: PUBLISHED`) : une sortie annulée n'arrive pas dans cette carte. Le badge de l'app est du code mort.
 
 ### La même sortie, quatre cartes, des chiffres différents — sur les deux supports
 
@@ -118,6 +122,7 @@ ce n'est pas un écart entre supports, c'est une incohérence commune.
 
 ## Suite
 
-Rien n'est décidé ni corrigé ici. La marche à suivre proposée est dans [METHODE.md](METHODE.md) : tri en trois tas,
+Rien n'est décidé ni corrigé ici. Le tri des écarts est dans [tri.md](tri.md) : 26 défauts, 14 règles à décider, 7 écarts voulus. La marche à suivre
+proposée est dans [METHODE.md](METHODE.md) : tri en trois tas,
 galeries de cartes, maquettes avant / cible, lots par règle. L'alignement du site est suivi par le ledger `WEB-165` ;
 les défauts propres à l'app n'ont pas encore d'entrée.

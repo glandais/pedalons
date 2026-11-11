@@ -104,8 +104,8 @@ Un lot n'est terminé que si les captures ont été regardées. Ce qui n'a pas �
 
 - **La comparaison se fait à l'œil**, pas au pixel. Les maquettes sont du HTML qui imite l'app et le site : fidèles
   sur le contenu, l'ordre et les libellés, moins sur les espacements.
-- **L'audit est une lecture du code.** Ce qu'il a seulement déduit (« 1 membres », la jauge du site réduite à zéro
-  pixel) se vérifie à l'étape 2, avant toute correction.
+- **L'audit est une lecture du code.** Ce qu'il a seulement déduit (« 1 membres » ; la jauge du site réduite à zéro
+  pixel, relevée en dessinant la planche du fil et absente des quatre audits) se vérifie à l'étape 2, avant toute correction.
 - **Les galeries ont un coût d'entrée**, surtout côté site où rien n'existe. Elles servent ensuite à chaque lot, et
   aux captures des stores.
 - **Clair seulement** dans les maquettes ; le mode sombre de l'app se vérifie sur la galerie.
@@ -117,4 +117,5 @@ Un lot n'est terminé que si les captures ont été regardées. Ce qui n'a pas �
 3. Lot 0, les défauts — peut avancer en parallèle de l'étape 2.
 4. Planches cibles et décisions, règle par règle.
 5. Lots par règle, chacun vérifié contre sa cible.
-6. À la fin : ce dossier est archivé avec le plan, les règles restent dans `KIT.md` et `BRANDING.md`.
+6. À la fin : les règles restent dans `KIT.md` et `BRANDING.md`. **Ce dossier et le plan ne sont pas archivés** : la même
+   méthode servira ensuite aux listes et à leurs filtres (décision du 11 novembre 2026).
