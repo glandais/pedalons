@@ -12,6 +12,7 @@ TeamDetailDto _team({String visibility = 'PUBLIC'}) => TeamDetailDto(
   allowedContentVisibilities: contentVisibilitiesFor(visibility),
   defaultContentVisibility: visibility,
   publicContentAllowed: false,
+  tier: 'FREE',
   timezone: 'Europe/Paris',
   id: 't1',
   slug: 'n-peloton',

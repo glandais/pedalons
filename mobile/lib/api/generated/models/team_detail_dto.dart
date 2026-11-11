@@ -11,6 +11,7 @@ import 'member_count_by_role_dto.dart';
 import 'team_detail_dto_geometry.dart';
 import 'team_page_summary_dto.dart';
 import 'team_role.dart';
+import 'team_tier.dart';
 import 'visibility.dart';
 
 part 'team_detail_dto.freezed.dart';
@@ -20,8 +21,8 @@ part 'team_detail_dto.g.dart';
 @Freezed()
 abstract class TeamDetailDto with _$TeamDetailDto {
   const factory TeamDetailDto({
-    /// Team ID (TSID)
-    required String id,
+    /// Whether any domain user can join this team
+    required bool joinable,
 
     /// Team name
     required String name,
@@ -31,6 +32,15 @@ abstract class TeamDetailDto with _$TeamDetailDto {
 
     /// About page content
     required MediaDto about,
+
+    /// The team's plan, set by a platform admin only. FREE caps the members and the route planner saves, UNLOCKED lifts both caps.
+    required String tier,
+
+    /// Rides enabled
+    required bool enableRides,
+
+    /// Whether a platform admin allowed this private team to publish content as public or unlisted, readable by link only and kept out of every listing and of the sitemap. Meaningless for a team that is not private. For the platform administration screen: editors read allowedContentVisibilities.
+    required bool publicContentAllowed,
 
     /// Whether the team is public
     required String visibility,
@@ -44,8 +54,8 @@ abstract class TeamDetailDto with _$TeamDetailDto {
     /// Posts enabled
     required bool enablePosts,
 
-    /// Rides enabled
-    required bool enableRides,
+    /// Team ID (TSID)
+    required String id,
 
     /// Routes enabled
     required bool enableRoutes,
@@ -59,8 +69,8 @@ abstract class TeamDetailDto with _$TeamDetailDto {
     /// Whether visibility is editable by team admins
     required bool visibilityEditable,
 
-    /// Whether any domain user can join this team
-    required bool joinable,
+    /// Routes of this team the caller may open, under the same visibility rules as the route listing.
+    required int routeCount,
 
     /// Whether team admins can add members
     required bool addMemberAllowed,
@@ -74,8 +84,8 @@ abstract class TeamDetailDto with _$TeamDetailDto {
     /// Rides of this team dated in the future that the caller may open. Follows the same visibility rules as the ride listing, so it never announces more than the caller can actually see.
     required int upcomingRideCount,
 
-    /// Routes of this team the caller may open, under the same visibility rules as the route listing.
-    required int routeCount,
+    /// The visibility a creation form starts from: the team's own, so TEAM for a private team, publicContentAllowed or not. Not for ads, which are always TEAM.
+    required String defaultContentVisibility,
 
     /// Trips of this team starting in the future that the caller may open, under the same visibility rules as the trip listing. 0 when trips are disabled.
     required int upcomingTripCount,
@@ -83,38 +93,35 @@ abstract class TeamDetailDto with _$TeamDetailDto {
     /// Published posts of this team dated within the last 7 days (and not in the future) that the caller may open, under the same visibility rules as the post listing. Feeds the activity line of a member's team card. 0 when posts are disabled.
     required int recentPostCount,
 
+    /// The visibilities the team accepts for each type of content: what a creation form offers. The same for every caller who may read the team — the server still decides who may write. A private team holds TEAM only, unless a platform admin set publicContentAllowed.
+    required ContentVisibilitiesDto allowedContentVisibilities,
+
     /// Team creation timestamp
     required String createdAt,
 
     /// The team's IANA zone: the one its rides, trips and posts fall back on when no place locates them. Administrators change it through TeamRequest.timezone.
     required String timezone,
 
-    /// The visibilities the team accepts for each type of content: what a creation form offers. The same for every caller who may read the team — the server still decides who may write. A private team holds TEAM only, unless a platform admin set publicContentAllowed.
-    required ContentVisibilitiesDto allowedContentVisibilities,
-
-    /// The visibility a creation form starts from: the team's own, so TEAM for a private team, publicContentAllowed or not. Not for ads, which are always TEAM.
-    required String defaultContentVisibility,
-
-    /// Whether a platform admin allowed this private team to publish content as public or unlisted, readable by link only and kept out of every listing and of the sitemap. Meaningless for a team that is not private. For the platform administration screen: editors read allowedContentVisibilities.
-    required bool publicContentAllowed,
-
-    /// Plain-text opening of the about page, flattened and cut on a word boundary at about 200 characters. Null when the about page holds no text. Lets a team card render its two lines without parsing the markdown client-side.
-    String? excerpt,
+    /// Team location coordinates [longitude, latitude]
+    TeamDetailDtoGeometry? geometry,
 
     /// URL template of the team's logo, when it has one. Same picture as about.assets.logo, hoisted so a card does not have to walk the asset inventory to find it. Opaque URL: may carry a query string; substitute {size} only.
     String? logoUrl,
 
-    /// Additional team pages
-    List<TeamPageSummaryDto>? pages,
-
     /// Members per role. Only for the team's administrators (platform admins included): null for everyone else, and in the team listings.
     MemberCountByRoleDto? memberCountByRole,
 
+    /// The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.
+    int? memberLimit,
+
+    /// Additional team pages
+    List<TeamPageSummaryDto>? pages,
+
+    /// Plain-text opening of the about page, flattened and cut on a word boundary at about 200 characters. Null when the about page holds no text. Lets a team card render its two lines without parsing the markdown client-side.
+    String? excerpt,
+
     /// Current user's role (null if not a member). The real membership, platform admins included: their extra rights come from the platform role of /api/me, not from this field.
     String? role,
-
-    /// Team location coordinates [longitude, latitude]
-    TeamDetailDtoGeometry? geometry,
   }) = _TeamDetailDto;
 
   factory TeamDetailDto.fromJson(Map<String, Object?> json) =>

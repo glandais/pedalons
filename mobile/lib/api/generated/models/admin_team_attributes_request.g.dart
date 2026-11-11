@@ -14,6 +14,8 @@ _AdminTeamAttributesRequest _$AdminTeamAttributesRequestFromJson(
   addMemberAllowed: json['addMemberAllowed'] as bool,
   enableRoutePlanner: json['enableRoutePlanner'] as bool,
   publicContentAllowed: json['publicContentAllowed'] as bool?,
+  tier: json['tier'] as String?,
+  tierNote: json['tierNote'] as String?,
 );
 
 Map<String, dynamic> _$AdminTeamAttributesRequestToJson(
@@ -24,4 +26,6 @@ Map<String, dynamic> _$AdminTeamAttributesRequestToJson(
   'addMemberAllowed': instance.addMemberAllowed,
   'enableRoutePlanner': instance.enableRoutePlanner,
   'publicContentAllowed': instance.publicContentAllowed,
+  'tier': instance.tier,
+  'tierNote': instance.tierNote,
 };

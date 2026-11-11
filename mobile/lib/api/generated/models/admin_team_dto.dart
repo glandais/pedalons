@@ -5,6 +5,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'instant.dart';
+import 'team_tier.dart';
 import 'visibility.dart';
 
 part 'admin_team_dto.freezed.dart';
@@ -47,6 +48,9 @@ abstract class AdminTeamDto with _$AdminTeamDto {
     /// Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing
     required bool publicContentAllowed,
 
+    /// The team's plan: FREE caps the members and the route planner saves, UNLOCKED lifts both caps
+    required String tier,
+
     /// Is team soft-deleted
     required bool deleted,
 
@@ -55,6 +59,9 @@ abstract class AdminTeamDto with _$AdminTeamDto {
 
     /// Team creation timestamp
     required String createdAt,
+
+    /// Why the team has its plan, for the platform admin only
+    String? tierNote,
   }) = _AdminTeamDto;
 
   factory AdminTeamDto.fromJson(Map<String, Object?> json) =>

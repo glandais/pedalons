@@ -1,4 +1,5 @@
 import type { Instant } from './instant.ts'
+import type { TeamTier } from './teamTier.ts'
 import type { Visibility } from './visibility.ts'
 
 /**
@@ -27,6 +28,10 @@ export interface AdminTeamDto {
   enableRoutePlanner: boolean
   /** Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing */
   publicContentAllowed: boolean
+  /** The team's plan: FREE caps the members and the route planner saves, UNLOCKED lifts both caps */
+  tier: TeamTier
+  /** Why the team has its plan, for the platform admin only */
+  tierNote?: string
   /** Is team soft-deleted */
   deleted: boolean
   /** Number of members */

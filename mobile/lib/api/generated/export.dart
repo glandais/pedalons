@@ -305,6 +305,7 @@ export 'models/team_publication_dto.dart';
 export 'models/team_request.dart';
 export 'models/team_role.dart';
 export 'models/team_sort_by.dart';
+export 'models/team_tier.dart';
 export 'models/team_timezone_change_item_dto.dart';
 export 'models/team_timezone_change_preview_dto.dart';
 export 'models/team_timezone_dto.dart';

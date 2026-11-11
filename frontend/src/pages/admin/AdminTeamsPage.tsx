@@ -94,6 +94,7 @@ export function AdminTeamsPage() {
                     <Table.Th>{t('admin.teams.domain')}</Table.Th>
                     <Table.Th>{t('admin.teams.slug')}</Table.Th>
                     <Table.Th ta="center">{t('admin.teams.visibility')}</Table.Th>
+                    <Table.Th ta="center">{t('admin.teams.tier')}</Table.Th>
                     <Table.Th ta="center">{t('admin.teams.members')}</Table.Th>
                     <Table.Th ta="center">{t('admin.teams.status')}</Table.Th>
                     <Table.Th ta="center">{t('admin.teams.actions')}</Table.Th>
@@ -121,6 +122,11 @@ export function AdminTeamsPage() {
                             `visibility.${team.visibility.toLowerCase() as Lowercase<Visibility>}`
                           )}
                         </Badge>
+                      </Table.Td>
+                      <Table.Td ta="center">
+                        <Tooltip label={team.tierNote} disabled={!team.tierNote}>
+                          <Badge variant="light">{t(`teams.tier.${team.tier}`)}</Badge>
+                        </Tooltip>
                       </Table.Td>
                       <Table.Td ta="center">{team.memberCount}</Table.Td>
                       <Table.Td ta="center">

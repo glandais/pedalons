@@ -667,6 +667,20 @@ components:
             \ it is (off for a new team)."
           examples:
           - false
+        tier:
+          description: "The team's plan: FREE caps the members and the route planner\
+            \ saves, UNLOCKED lifts both caps. Omitted: left as it is (FREE for a\
+            \ new team)."
+          type: string
+          examples:
+          - UNLOCKED
+          $ref: "#/components/schemas/TeamTier"
+        tierNote:
+          type: string
+          maxLength: 500
+          description: "Why the team has its plan, for the platform admin only («\
+            \ club pilote », « offert par … »). Omitted: left as it is; blank clears\
+            \ it."
     AdminTeamDto:
       description: Admin team view with domain info
       type: object
@@ -682,6 +696,7 @@ components:
       - addMemberAllowed
       - enableRoutePlanner
       - publicContentAllowed
+      - tier
       - deleted
       - memberCount
       - createdAt
@@ -723,6 +738,14 @@ components:
           type: boolean
           description: "Whether a private team may publish content as public or unlisted,\
             \ readable by link only and kept out of every listing"
+        tier:
+          description: "The team's plan: FREE caps the members and the route planner\
+            \ saves, UNLOCKED lifts both caps"
+          type: string
+          $ref: "#/components/schemas/TeamTier"
+        tierNote:
+          type: string
+          description: "Why the team has its plan, for the platform admin only"
         deleted:
           type: boolean
           description: Is team soft-deleted
@@ -6736,6 +6759,7 @@ components:
       - allowedContentVisibilities
       - defaultContentVisibility
       - publicContentAllowed
+      - tier
       properties:
         id:
           type: string
@@ -6906,6 +6930,18 @@ components:
             \ content as public or unlisted, readable by link only and kept out of\
             \ every listing and of the sitemap. Meaningless for a team that is not\
             \ private. For the platform administration screen: editors read allowedContentVisibilities."
+        tier:
+          description: "The team's plan, set by a platform admin only. FREE caps the\
+            \ members and the route planner saves, UNLOCKED lifts both caps."
+          type: string
+          $ref: "#/components/schemas/TeamTier"
+        memberLimit:
+          type: integer
+          format: int32
+          description: "The most members the team may hold, pending invitations included;\
+            \ null when unlimited. Compare with memberCount."
+          examples:
+          - 25
     TeamInvitationDto:
       description: A pending or settled invitation to join a team
       type: object
@@ -7251,6 +7287,11 @@ components:
       enum:
       - NAME
       - MEMBER_COUNT
+    TeamTier:
+      type: string
+      enum:
+      - FREE
+      - UNLOCKED
     TeamTimezoneChangeItemDto:
       description: An upcoming place-less event that keeps its wall time in the new
         zone

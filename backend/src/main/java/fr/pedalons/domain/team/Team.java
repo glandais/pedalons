@@ -4,6 +4,7 @@ import fr.pedalons.domain.common.BaseEntity;
 import fr.pedalons.domain.common.NotNullableDbValue;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.user.User;
+import fr.pedalons.enums.TeamTier;
 import fr.pedalons.enums.Visibility;
 import jakarta.persistence.*;
 import java.util.ArrayList;
@@ -172,6 +173,20 @@ public class Team extends BaseEntity {
    */
   @Column(name = "public_content_allowed", nullable = false)
   private boolean publicContentAllowed = false;
+
+  /**
+   * The team's plan, platform-admin only (docs/LEDGER_*.md BILL-10). A new team is born {@code
+   * FREE}; every team that existed before V89, and every team imported from biketeam, is {@code
+   * UNLOCKED}. Only {@code PlanLimits} turns it into numbers.
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "tier", nullable = false, length = 20)
+  private TeamTier tier = TeamTier.FREE;
+
+  /** Why the platform admin set the tier (« club pilote », « offert par … »), for them only. */
+  @Column(name = "tier_note", length = 500)
+  @Nullable
+  private String tierNote;
 
   @Column(name = "deleted", nullable = false)
   private boolean deleted = false;

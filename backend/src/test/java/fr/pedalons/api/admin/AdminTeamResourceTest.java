@@ -2,11 +2,15 @@ package fr.pedalons.api.admin;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.admin.AdminTeamAttributesRequest;
+import fr.pedalons.enums.TeamTier;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +37,7 @@ class AdminTeamResourceTest extends AbstractResourceTest {
   void updateTeamAttributes_asAdmin_shouldSucceed() {
     String teamId = TsidUtils.toString(team1.getId());
     AdminTeamAttributesRequest request =
-        new AdminTeamAttributesRequest(true, true, true, true, true);
+        new AdminTeamAttributesRequest(true, true, true, true, true, null, null);
 
     given()
         .auth()
@@ -55,7 +59,7 @@ class AdminTeamResourceTest extends AbstractResourceTest {
   void updateTeamAttributes_asNonAdmin_shouldReturn403() {
     String teamId = TsidUtils.toString(team1.getId());
     AdminTeamAttributesRequest request =
-        new AdminTeamAttributesRequest(true, true, true, true, true);
+        new AdminTeamAttributesRequest(true, true, true, true, true, null, null);
 
     given()
         .auth()
@@ -73,7 +77,7 @@ class AdminTeamResourceTest extends AbstractResourceTest {
     // TSID for Long value 1 — valid format but never matches a real team
     String nonExistentId = TsidUtils.toString(1L);
     AdminTeamAttributesRequest request =
-        new AdminTeamAttributesRequest(false, false, false, false, false);
+        new AdminTeamAttributesRequest(false, false, false, false, false, null, null);
 
     given()
         .auth()
@@ -96,7 +100,7 @@ class AdminTeamResourceTest extends AbstractResourceTest {
         .auth()
         .oauth2(platformAdminToken())
         .contentType("application/json")
-        .body(new AdminTeamAttributesRequest(true, true, true, true, true))
+        .body(new AdminTeamAttributesRequest(true, true, true, true, true, null, null))
         .when()
         .patch("/api/admin/teams/" + teamId + "/attributes")
         .then()
@@ -154,6 +158,152 @@ class AdminTeamResourceTest extends AbstractResourceTest {
         .body("publicContentAllowed", equalTo(true));
   }
 
+  // ==================== Tier (docs/LEDGER_*.md BILL-10) ====================
+
+  @Test
+  void tier_isFreeWithoutNoteByDefault() {
+    given()
+        .auth()
+        .oauth2(platformAdminToken())
+        .when()
+        .get("/api/admin/teams/" + TsidUtils.toString(team1.getId()))
+        .then()
+        .statusCode(200)
+        .body("tier", equalTo("FREE"))
+        .body("tierNote", nullValue());
+  }
+
+  @Test
+  void updateTeamAttributes_setsTierAndNote_andTheyPersist() {
+    String teamId = TsidUtils.toString(team1.getId());
+
+    given()
+        .auth()
+        .oauth2(platformAdminToken())
+        .contentType("application/json")
+        .body(
+            new AdminTeamAttributesRequest(
+                false, false, false, false, null, TeamTier.UNLOCKED, "  club pilote  "))
+        .when()
+        .patch("/api/admin/teams/" + teamId + "/attributes")
+        .then()
+        .statusCode(200)
+        .body("tier", equalTo("UNLOCKED"))
+        .body("tierNote", equalTo("club pilote"));
+
+    given()
+        .auth()
+        .oauth2(platformAdminToken())
+        .when()
+        .get("/api/admin/teams/" + teamId)
+        .then()
+        .statusCode(200)
+        .body("tier", equalTo("UNLOCKED"))
+        .body("tierNote", equalTo("club pilote"));
+
+    // Every reader of the team sees the plan; the note stays with the platform admin.
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/teams/" + team1.getSlug())
+        .then()
+        .statusCode(200)
+        .body("tier", equalTo("UNLOCKED"))
+        .body("memberLimit", nullValue())
+        .body("$", not(hasKey("tierNote")));
+  }
+
+  /** A client unaware of the plan omits it: saving the flags must never downgrade the team. */
+  @Test
+  void updateTeamAttributes_withoutTier_keepsTierAndNote() {
+    dataService.setTeamTier(team1, TeamTier.UNLOCKED);
+    String teamId = TsidUtils.toString(team1.getId());
+    given()
+        .auth()
+        .oauth2(platformAdminToken())
+        .contentType("application/json")
+        .body(new AdminTeamAttributesRequest(false, false, false, false, null, null, "offert"))
+        .when()
+        .patch("/api/admin/teams/" + teamId + "/attributes")
+        .then()
+        .statusCode(200);
+
+    given()
+        .auth()
+        .oauth2(platformAdminToken())
+        .contentType("application/json")
+        .body(
+            "{\"visibilityEditable\":false,\"joinable\":true,\"addMemberAllowed\":false,"
+                + "\"enableRoutePlanner\":false}")
+        .when()
+        .patch("/api/admin/teams/" + teamId + "/attributes")
+        .then()
+        .statusCode(200)
+        .body("joinable", equalTo(true))
+        .body("tier", equalTo("UNLOCKED"))
+        .body("tierNote", equalTo("offert"));
+  }
+
+  /** Back to FREE: the cap is shown again, nothing else changes (no refusal yet, lot 1). */
+  @Test
+  void updateTeamAttributes_backToFree_clearsNoteWhenBlank_andShowsTheMemberLimit() {
+    dataService.setTeamTier(team1, TeamTier.UNLOCKED);
+    String teamId = TsidUtils.toString(team1.getId());
+
+    given()
+        .auth()
+        .oauth2(platformAdminToken())
+        .contentType("application/json")
+        .body(new AdminTeamAttributesRequest(false, true, true, true, null, TeamTier.FREE, " "))
+        .when()
+        .patch("/api/admin/teams/" + teamId + "/attributes")
+        .then()
+        .statusCode(200)
+        .body("tier", equalTo("FREE"))
+        .body("tierNote", nullValue());
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/teams/" + team1.getSlug())
+        .then()
+        .statusCode(200)
+        .body("tier", equalTo("FREE"))
+        .body("memberLimit", equalTo(25));
+  }
+
+  @Test
+  void updateTeamAttributes_withTooLongTierNote_shouldReturn400() {
+    given()
+        .auth()
+        .oauth2(platformAdminToken())
+        .contentType("application/json")
+        .body(
+            new AdminTeamAttributesRequest(
+                false, false, false, false, null, TeamTier.UNLOCKED, "x".repeat(501)))
+        .when()
+        .patch("/api/admin/teams/" + TsidUtils.toString(team1.getId()) + "/attributes")
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
+  void updateTeamAttributes_withUnknownTier_shouldReturn400() {
+    given()
+        .auth()
+        .oauth2(platformAdminToken())
+        .contentType("application/json")
+        .body(
+            "{\"visibilityEditable\":false,\"joinable\":false,\"addMemberAllowed\":false,"
+                + "\"enableRoutePlanner\":false,\"tier\":\"GOLD\"}")
+        .when()
+        .patch("/api/admin/teams/" + TsidUtils.toString(team1.getId()) + "/attributes")
+        .then()
+        .statusCode(400);
+  }
+
   /**
    * The planner flag is platform-admin territory: it must not ride in on the team's own update
    * payload, which a team admin controls.
@@ -189,7 +339,7 @@ class AdminTeamResourceTest extends AbstractResourceTest {
   void updateTeamAttributes_unauthenticated_shouldReturn401() {
     String teamId = TsidUtils.toString(team1.getId());
     AdminTeamAttributesRequest request =
-        new AdminTeamAttributesRequest(true, true, true, true, true);
+        new AdminTeamAttributesRequest(true, true, true, true, true, null, null);
 
     given()
         .contentType("application/json")

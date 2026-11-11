@@ -21,6 +21,7 @@ import {
   Title,
   Badge,
   Loader,
+  Textarea,
 } from '@mantine/core'
 import {
   useCreateTeam,
@@ -29,9 +30,14 @@ import {
   getGetTeamQueryKey,
   usePreviewTeamTimezoneChange,
 } from '@/api/endpoints/teams/teams'
-import { useAdminUpdateTeamAttributes } from '@/api/endpoints/admin-teams/admin-teams'
+import {
+  getAdminGetTeamQueryKey,
+  getAdminListTeamsQueryKey,
+  useAdminGetTeam,
+  useAdminUpdateTeamAttributes,
+} from '@/api/endpoints/admin-teams/admin-teams'
 import { SlugEditor } from '../common/SlugEditor'
-import { Visibility, TeamDetailDto, TeamRequest, GeoJsonPoint } from '@/api/dto'
+import { Visibility, TeamDetailDto, TeamRequest, GeoJsonPoint, TeamTier } from '@/api/dto'
 import { MediaEditor } from '../common/MediaEditor'
 import { GeocoderAutocomplete } from '../common/GeocoderAutocomplete'
 import { paths } from '@/config/paths'
@@ -53,6 +59,7 @@ interface TeamFormProps {
     addMemberAllowed?: boolean
     enableRoutePlanner?: boolean
     publicContentAllowed?: boolean
+    tier?: TeamTier
   }
   onSuccess: (team: TeamDetailDto) => void
   create: boolean
@@ -86,6 +93,15 @@ export function TeamForm({
   const [publicContentAllowed, setPublicContentAllowed] = useState(
     initialValues.publicContentAllowed ?? false
   )
+  // The team's plan (docs/LEDGER_*.md BILL-10): read from TeamDetailDto like the flags. Its note is
+  // for the platform admin only and comes from the admin endpoint; left untouched it is not sent,
+  // so the PATCH keeps it (an omitted tierNote is left as it is, a blank one clears it).
+  const [tier, setTier] = useState<TeamTier>(initialValues.tier ?? TeamTier.FREE)
+  const adminTeam = useAdminGetTeam(teamId ?? '', {
+    query: { enabled: isPlatformAdmin && !!teamId && !create },
+  })
+  const [editedTierNote, setEditedTierNote] = useState<string | null>(null)
+  const tierNote = editedTierNote ?? adminTeam.data?.tierNote ?? ''
 
   const createMutation = useCreateTeam()
   const updateMutation = useUpdateTeam()
@@ -194,11 +210,16 @@ export function TeamForm({
                     addMemberAllowed,
                     enableRoutePlanner,
                     publicContentAllowed,
+                    tier,
+                    ...(editedTierNote !== null && { tierNote: editedTierNote }),
                   },
                 },
                 {
                   onSuccess: () => {
                     queryClient.invalidateQueries({ queryKey: getGetTeamQueryKey(team.slug) })
+                    // The tier and its note show in the admin list and the admin record.
+                    queryClient.invalidateQueries({ queryKey: getAdminGetTeamQueryKey(teamId) })
+                    queryClient.invalidateQueries({ queryKey: getAdminListTeamsQueryKey() })
                     invalidateTeamDashboard(queryClient, team.slug)
                     notifications.show({
                       message: i18next.t('teams.notifications.updated'),
@@ -383,6 +404,31 @@ export function TeamForm({
                 </Group>
               )}
 
+              <Select
+                label={t('teams.settings.platformAdmin.tier')}
+                description={t('teams.settings.platformAdmin.tierHint')}
+                data={[
+                  { value: TeamTier.FREE, label: t('teams.tier.FREE') },
+                  { value: TeamTier.UNLOCKED, label: t('teams.tier.UNLOCKED') },
+                ]}
+                value={tier}
+                allowDeselect={false}
+                disabled={!isPlatformAdmin || !teamId}
+                onChange={(value) => value && setTier(value as TeamTier)}
+                data-testid="team-tier"
+              />
+              {isPlatformAdmin && teamId && (
+                <Textarea
+                  label={t('teams.settings.platformAdmin.tierNote')}
+                  description={t('teams.settings.platformAdmin.tierNoteHint')}
+                  value={tierNote}
+                  maxLength={500}
+                  autosize
+                  minRows={1}
+                  onChange={(e) => setEditedTierNote(e.currentTarget.value)}
+                  data-testid="team-tier-note"
+                />
+              )}
               <Switch
                 label={t('teams.settings.platformAdmin.visibilityEditable')}
                 checked={visibilityEditable}

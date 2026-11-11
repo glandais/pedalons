@@ -10,6 +10,7 @@ import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.common.request.SlugChangeRequest;
 import fr.pedalons.dto.teams.request.TeamRequest;
 import fr.pedalons.enums.TeamRole;
+import fr.pedalons.enums.TeamTier;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.service.migration.live.BiketeamTestData;
 import fr.pedalons.service.security.PedalonsQueryContext;
@@ -264,6 +265,76 @@ class TeamResourceTest extends AbstractResourceTest {
         .body("name", equalTo("API Test Team"))
         .body("slug", startsWith("api-test-team"))
         .body("visibility", equalTo("TEAM"));
+  }
+
+  /**
+   * A new team opens on its own, on the free plan: its caps protect the platform rather than a door
+   * the platform admin has to open. Visibility stays a moderation decision (docs/LEDGER_*.md
+   * BILL-10).
+   */
+  @Test
+  void createTeam_isBornOpenOnTheFreePlan() {
+    TeamRequest teamRequest =
+        new TeamRequest(
+            "Open Team",
+            MediaDto.builder().build(),
+            Visibility.TEAM,
+            true,
+            true,
+            true,
+            true,
+            true,
+            false,
+            null,
+            null,
+            null);
+    String slug =
+        given()
+            .auth()
+            .oauth2(getAccessToken(USER5))
+            .contentType("application/json")
+            .body(teamRequest)
+            .when()
+            .post("/api/teams")
+            .then()
+            .statusCode(201)
+            .body("joinable", equalTo(true))
+            .body("addMemberAllowed", equalTo(true))
+            .body("enableRoutePlanner", equalTo(true))
+            .body("visibilityEditable", equalTo(false))
+            .body("tier", equalTo("FREE"))
+            .body("memberLimit", equalTo(25))
+            .extract()
+            .path("slug");
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER5))
+        .when()
+        .get("/api/teams/" + slug)
+        .then()
+        .statusCode(200)
+        .body("joinable", equalTo(true))
+        .body("addMemberAllowed", equalTo(true))
+        .body("enableRoutePlanner", equalTo(true))
+        .body("tier", equalTo("FREE"))
+        .body("memberLimit", equalTo(25));
+  }
+
+  /** An unlocked team has no member cap: null, not a number (docs/LEDGER_*.md BILL-10). */
+  @Test
+  void getTeam_unlocked_hasNoMemberLimit() {
+    dataService.setTeamTier(team1, TeamTier.UNLOCKED);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/teams/" + team1.getSlug())
+        .then()
+        .statusCode(200)
+        .body("tier", equalTo("UNLOCKED"))
+        .body("memberLimit", nullValue());
   }
 
   @Test

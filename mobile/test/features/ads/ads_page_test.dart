@@ -53,6 +53,7 @@ const TeamDetailDto _team = TeamDetailDto(
   allowedContentVisibilities: kAllContentVisibilities,
   defaultContentVisibility: 'PUBLIC',
   publicContentAllowed: false,
+  tier: 'FREE',
   timezone: 'Europe/Paris',
   id: 't1',
   slug: 'n-peloton',

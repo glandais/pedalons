@@ -15,6 +15,7 @@ import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.BiketeamMigrationStatus;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.TeamRole;
+import fr.pedalons.enums.TeamTier;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.enums.WindDirection;
 import fr.pedalons.repository.migration.BiketeamMigrationJobRepository;
@@ -361,13 +362,18 @@ public class BiketeamTestData {
       boolean enableRoutePlanner,
       boolean addMemberAllowed,
       boolean visibilityEditable,
-      boolean joinable) {}
+      boolean joinable,
+      TeamTier tier) {}
 
   @Transactional
   public TeamFlags flagsOf(long teamId) {
     Team t = em.find(Team.class, teamId);
     return new TeamFlags(
-        t.isEnableRoutePlanner(), t.isAddMemberAllowed(), t.isVisibilityEditable(), t.isJoinable());
+        t.isEnableRoutePlanner(),
+        t.isAddMemberAllowed(),
+        t.isVisibilityEditable(),
+        t.isJoinable(),
+        t.getTier());
   }
 
   @Transactional

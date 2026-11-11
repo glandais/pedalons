@@ -195,6 +195,7 @@ class _StubTeamRepository implements TeamRepository {
             allowedContentVisibilities: kAllContentVisibilities,
             defaultContentVisibility: 'PUBLIC',
             publicContentAllowed: false,
+            tier: 'FREE',
             timezone: 'Europe/Paris',
             role: role,
             id: 't1',

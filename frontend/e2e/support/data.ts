@@ -147,8 +147,9 @@ export function teamRequest(name: string, overrides: Partial<TeamRequest> = {}):
 
 export interface NewTeamOptions extends Partial<TeamRequest> {
   /**
-   * Lets the team's own admins add members and send invitations. Born false, and an admin-only
-   * attribute: the seeded platform admin sets it.
+   * Whether the team's own admins may add members and send invitations. Born true since BILL-10 (a
+   * new team opens on its own, within the free plan's caps); an admin-only attribute, so the seeded
+   * platform admin sets it when given — `false` closes the team.
    */
   addMemberAllowed?: boolean
 }
@@ -172,7 +173,10 @@ export async function newTeam(
       `/api/teams/${team.slug}`,
       request
     )
-  if (addMemberAllowed) await setTeamAttributes(team, { addMemberAllowed })
+  if (addMemberAllowed !== undefined && addMemberAllowed !== team.addMemberAllowed) {
+    await setTeamAttributes(team, { addMemberAllowed })
+    team = { ...team, addMemberAllowed }
+  }
   return team
 }
 
@@ -201,10 +205,10 @@ export async function setTeamAttributes(
 /**
  * Adds `member` to the team, as `by`.
  *
- * A team is born with addMemberAllowed=false, and then only the platform admin may add a member
- * directly — its own admins get TEAM_ADD_MEMBER_NOT_ALLOWED. So pass `roleSession('admin')` as
- * `by`, or create the team with `newTeam(…, { addMemberAllowed: true })`. The platform admin does
- * not become a member by adding one.
+ * A team is born with addMemberAllowed=true (docs/LEDGER_*.md BILL-10), so its own admins may add
+ * a member directly; once the platform admin closes it (`newTeam(…, { addMemberAllowed: false })`)
+ * they get TEAM_ADD_MEMBER_NOT_ALLOWED and only the platform admin may, as `roleSession('admin')`.
+ * The platform admin does not become a member by adding one.
  */
 export async function addMember(
   by: AuthResponse,

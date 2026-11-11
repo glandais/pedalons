@@ -39,6 +39,7 @@ import fr.pedalons.repository.team.TeamStatsRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.common.SlugService;
+import fr.pedalons.service.limits.PlanLimits;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.annotation.CheckAccess;
 import fr.pedalons.service.team.request.MinRole;
@@ -83,6 +84,8 @@ public class TeamService {
   @Inject EventTimezoneResolver eventTimezoneResolver;
 
   @Inject TeamTimezoneChange teamTimezoneChange;
+
+  @Inject PlanLimits planLimits;
 
   /**
    * Resolves a team by slug.
@@ -156,9 +159,12 @@ public class TeamService {
       throw new BusinessException(INVALID_VISIBILITY);
     }
     Team team = new Team(domain, creator, request.name(), slug, Visibility.TEAM);
+    // Born open, FREE (docs/LEDGER_*.md BILL-10): the plan's caps protect the platform, not a
+    // closed door the platform admin has to open. Visibility stays a moderation decision.
     team.setVisibilityEditable(false);
-    team.setJoinable(false);
-    team.setAddMemberAllowed(false);
+    team.setJoinable(true);
+    team.setAddMemberAllowed(true);
+    team.setEnableRoutePlanner(true);
     applyFeatureFlags(team, request);
     team.setGeometry(request.geometry());
     String timezone = request.timezone();
@@ -175,7 +181,8 @@ public class TeamService {
     UserTeam membership = new UserTeam(creator, creator, team, TeamRole.ADMIN);
     userTeamRepository.persist(membership);
 
-    return TeamDetailDto.from(new TeamAndRole(team, TeamRole.ADMIN, 1L), assetService, false);
+    return TeamDetailDto.from(
+        new TeamAndRole(team, TeamRole.ADMIN, 1L), assetService, false, planLimits.forTeam(team));
   }
 
   @Transactional
@@ -230,7 +237,8 @@ public class TeamService {
                     teamAndRole,
                     assetService,
                     false,
-                    stats.getOrDefault(teamAndRole.team().getId(), TeamStats.EMPTY)))
+                    stats.getOrDefault(teamAndRole.team().getId(), TeamStats.EMPTY),
+                    planLimits.forTeam(teamAndRole.team())))
             .toList();
     return new TeamListResponse(dtos, teams.total(), page, size);
   }
@@ -250,7 +258,13 @@ public class TeamService {
         admin
             ? MemberCountByRoleDto.from(teamStatsRepository.countMembersByRole(team.getId()))
             : null;
-    return TeamDetailDto.from(teamAndRole, assetService, platformAdmin, stats, memberCountByRole);
+    return TeamDetailDto.from(
+        teamAndRole,
+        assetService,
+        platformAdmin,
+        stats,
+        memberCountByRole,
+        planLimits.forTeam(team));
   }
 
   /**

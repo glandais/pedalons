@@ -97,7 +97,11 @@ class TeamMembershipResourceTest extends AbstractResourceTest {
   @Test
   void joinTeam_whenNotJoinable_shouldReturn403() {
     String slug = createTeamViaApi(USER4);
-    // joinable is false by default
+    // A new team is born joinable (docs/LEDGER_*.md BILL-10): a public team the platform admin
+    // closed.
+    Team team = dataService.findTeamBySlug(domain, slug);
+    dataService.setTeamVisibility(team, Visibility.PUBLIC);
+    dataService.setTeamJoinable(team, false);
 
     given()
         .auth()
@@ -300,7 +304,8 @@ class TeamMembershipResourceTest extends AbstractResourceTest {
   @Test
   void addMember_whenNotAllowed_shouldReturn400() {
     String slug = createTeamViaApi(USER4);
-    // addMemberAllowed is false by default
+    // A new team is born open (docs/LEDGER_*.md BILL-10): the platform admin closed this one.
+    dataService.setTeamAddMemberAllowed(dataService.findTeamBySlug(domain, slug), false);
 
     given()
         .auth()

@@ -23,6 +23,7 @@ import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.migration.internal.BiketeamJobStatusDto;
 import fr.pedalons.enums.BiketeamMigrationStatus;
 import fr.pedalons.enums.TeamRole;
+import fr.pedalons.enums.TeamTier;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.enums.WindDirection;
 import fr.pedalons.service.migration.BiketeamMigrationService;
@@ -201,9 +202,11 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertEquals(user4.getId(), team.createdById());
     assertEquals(TeamRole.ADMIN, biketeamData.roleOf(user4, team.id()));
     assertEquals(0, biketeamData.countCreatedByOtherThan(team.id(), user4.getId()));
-    // Settings a migrated team starts with; joinable because the fixture team is PUBLIC.
+    // Settings a migrated team starts with; joinable because the fixture team is PUBLIC, and
+    // unlocked like every team that predates the free plan (docs/LEDGER_*.md BILL-10).
     assertEquals(
-        new BiketeamTestData.TeamFlags(true, true, true, true), biketeamData.flagsOf(team.id()));
+        new BiketeamTestData.TeamFlags(true, true, true, true, TeamTier.UNLOCKED),
+        biketeamData.flagsOf(team.id()));
 
     // No people: no user, no comment, no participation.
     assertEquals(usersBefore, biketeamData.countUsers());

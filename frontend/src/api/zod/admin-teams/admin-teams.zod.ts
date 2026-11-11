@@ -38,6 +38,15 @@ export const AdminListTeamsResponse = zod
               .describe(
                 'Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing'
               ),
+            tier: zod
+              .enum(['FREE', 'UNLOCKED'])
+              .describe(
+                "The team's plan: FREE caps the members and the route planner saves, UNLOCKED lifts both caps"
+              ),
+            tierNote: zod
+              .string()
+              .optional()
+              .describe('Why the team has its plan, for the platform admin only'),
             deleted: zod.boolean().describe('Is team soft-deleted'),
             memberCount: zod.int().describe('Number of members'),
             createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),
@@ -78,6 +87,15 @@ export const AdminGetTeamResponse = zod
       .describe(
         'Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing'
       ),
+    tier: zod
+      .enum(['FREE', 'UNLOCKED'])
+      .describe(
+        "The team's plan: FREE caps the members and the route planner saves, UNLOCKED lifts both caps"
+      ),
+    tierNote: zod
+      .string()
+      .optional()
+      .describe('Why the team has its plan, for the platform admin only'),
     deleted: zod.boolean().describe('Is team soft-deleted'),
     memberCount: zod.int().describe('Number of members'),
     createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),
@@ -92,6 +110,8 @@ export const AdminUpdateTeamAttributesParams = zod.object({
   teamId: zod.string().describe('Team ID'),
 })
 
+export const adminUpdateTeamAttributesBodyTierNoteMax = 500
+
 export const AdminUpdateTeamAttributesBody = zod
   .object({
     visibilityEditable: zod.boolean().describe('Whether team admins can change visibility'),
@@ -105,6 +125,19 @@ export const AdminUpdateTeamAttributesBody = zod
       .optional()
       .describe(
         'Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing. Omitted: left as it is (off for a new team).'
+      ),
+    tier: zod
+      .enum(['FREE', 'UNLOCKED'])
+      .optional()
+      .describe(
+        "The team's plan: FREE caps the members and the route planner saves, UNLOCKED lifts both caps. Omitted: left as it is (FREE for a new team)."
+      ),
+    tierNote: zod
+      .string()
+      .max(adminUpdateTeamAttributesBodyTierNoteMax)
+      .optional()
+      .describe(
+        'Why the team has its plan, for the platform admin only (« club pilote », « offert par … »). Omitted: left as it is; blank clears it.'
       ),
   })
   .describe('Platform admin request to update team governance attributes')
@@ -128,6 +161,15 @@ export const AdminUpdateTeamAttributesResponse = zod
       .describe(
         'Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing'
       ),
+    tier: zod
+      .enum(['FREE', 'UNLOCKED'])
+      .describe(
+        "The team's plan: FREE caps the members and the route planner saves, UNLOCKED lifts both caps"
+      ),
+    tierNote: zod
+      .string()
+      .optional()
+      .describe('Why the team has its plan, for the platform admin only'),
     deleted: zod.boolean().describe('Is team soft-deleted'),
     memberCount: zod.int().describe('Number of members'),
     createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),
@@ -161,6 +203,15 @@ export const AdminToggleTeamDeletedResponse = zod
       .describe(
         'Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing'
       ),
+    tier: zod
+      .enum(['FREE', 'UNLOCKED'])
+      .describe(
+        "The team's plan: FREE caps the members and the route planner saves, UNLOCKED lifts both caps"
+      ),
+    tierNote: zod
+      .string()
+      .optional()
+      .describe('Why the team has its plan, for the platform admin only'),
     deleted: zod.boolean().describe('Is team soft-deleted'),
     memberCount: zod.int().describe('Number of members'),
     createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),

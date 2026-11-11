@@ -32,6 +32,7 @@ TeamDetailDto fixtureTeam({
   allowedContentVisibilities: contentVisibilitiesFor(visibility),
   defaultContentVisibility: visibility,
   publicContentAllowed: false,
+  tier: 'FREE',
   timezone: 'Europe/Paris',
   id: 'team-$slug',
   slug: slug,

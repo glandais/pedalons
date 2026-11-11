@@ -3,7 +3,9 @@ import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/re
 import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Visibility } from '@/api/dto'
+import { Visibility, TeamTier } from '@/api/dto'
+import type { TeamDetailDto, UserDto } from '@/api/dto'
+import { useAuthStore } from '@/store/authStore'
 
 vi.mock('react-i18next', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react-i18next')>()),
@@ -19,6 +21,8 @@ const state = vi.hoisted(() => ({
   },
   refetch: vi.fn(),
   mutate: vi.fn(),
+  adminMutate: vi.fn(),
+  adminTeam: undefined as { tierNote?: string } | undefined,
 }))
 
 vi.mock('@/api/endpoints/teams/teams', () => ({
@@ -29,7 +33,14 @@ vi.mock('@/api/endpoints/teams/teams', () => ({
   usePreviewTeamTimezoneChange: () => ({ ...state.preview, refetch: state.refetch }),
 }))
 vi.mock('@/api/endpoints/admin-teams/admin-teams', () => ({
-  useAdminUpdateTeamAttributes: () => ({ mutate: vi.fn(), isPending: false }),
+  useAdminUpdateTeamAttributes: () => ({ mutate: state.adminMutate, isPending: false }),
+  useAdminGetTeam: () => ({ data: state.adminTeam }),
+  getAdminGetTeamQueryKey: (teamId: string) => ['admin-team', teamId],
+  getAdminListTeamsQueryKey: () => ['admin-teams'],
+}))
+vi.mock('@/lib/teamDashboardCache', () => ({
+  invalidateTeamDashboard: vi.fn(),
+  invalidateTeamEventTimes: vi.fn(),
 }))
 vi.mock('../common/SlugEditor', () => ({ SlugEditor: () => null }))
 vi.mock('../common/MediaEditor', () => ({ MediaEditor: () => null }))
@@ -61,7 +72,7 @@ vi.mock('../common/TimezoneSelect', () => ({
 
 import { TeamForm } from './TeamForm'
 
-function renderForm() {
+function renderForm(tier?: TeamTier) {
   return render(
     <MantineProvider>
       <QueryClientProvider client={new QueryClient()}>
@@ -83,6 +94,7 @@ function renderForm() {
               enableMemberDirectory: false,
               postsAsTeamByDefault: true,
               timezone: 'Europe/Paris',
+              tier,
             }}
           />
         </MemoryRouter>
@@ -95,9 +107,36 @@ beforeEach(() => {
   state.preview = { data: undefined, isError: true, isFetching: false }
   state.refetch.mockReset()
   state.mutate.mockReset()
+  state.adminMutate.mockReset()
+  state.adminTeam = undefined
 })
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  useAuthStore.setState({ isAuthenticated: false, user: null, accessToken: null })
+})
+
+function signInPlatformAdmin() {
+  useAuthStore.setState({
+    isInitialized: true,
+    isAuthenticated: true,
+    accessToken: 'at',
+    user: {
+      id: 'u1',
+      displayName: 'Root',
+      email: 'root@example.com',
+      platformRole: 'PLATFORM_ADMIN',
+    } as UserDto,
+  })
+}
+
+// Saves the team, then runs the team update's success so the platform attributes go out.
+function saveAndSendAttributes() {
+  state.mutate.mockImplementation((_vars, opts?: { onSuccess?: (team: TeamDetailDto) => void }) =>
+    opts?.onSuccess?.({ slug: 'velo-club' } as TeamDetailDto)
+  )
+  fireEvent.click(screen.getByText('actions.save'))
+}
 
 describe('TeamForm — change of zone', () => {
   it('asks the preview again when it failed, instead of reopening on the cached error', async () => {
@@ -134,5 +173,43 @@ describe('TeamForm — place being resolved (docs/LEDGER_*.md API-129)', () => {
 
     fireEvent.click(screen.getByText('geocode-end'))
     expect(save()?.disabled).toBe(false)
+  })
+})
+
+describe('TeamForm — plan (docs/LEDGER_*.md BILL-10)', () => {
+  it('sends the tier, and leaves the note out when it was not touched', () => {
+    signInPlatformAdmin()
+    state.adminTeam = { tierNote: 'club pilote' }
+    renderForm(TeamTier.UNLOCKED)
+
+    const note = screen.getByTestId('team-tier-note') as HTMLTextAreaElement
+    expect(note.value).toBe('club pilote')
+    saveAndSendAttributes()
+
+    expect(state.adminMutate).toHaveBeenCalledTimes(1)
+    const data = state.adminMutate.mock.calls[0][0].data
+    expect(data.tier).toBe(TeamTier.UNLOCKED)
+    expect('tierNote' in data).toBe(false)
+  })
+
+  it('sends the note once edited, blank included so the backend clears it', () => {
+    signInPlatformAdmin()
+    state.adminTeam = { tierNote: 'club pilote' }
+    renderForm(TeamTier.FREE)
+
+    fireEvent.change(screen.getByTestId('team-tier-note'), { target: { value: '' } })
+    saveAndSendAttributes()
+
+    const data = state.adminMutate.mock.calls[0][0].data
+    expect(data.tier).toBe(TeamTier.FREE)
+    expect(data.tierNote).toBe('')
+  })
+
+  it('shows no note to a team admin, and sends no attributes', () => {
+    renderForm(TeamTier.FREE)
+
+    expect(screen.queryByTestId('team-tier-note')).toBeNull()
+    saveAndSendAttributes()
+    expect(state.adminMutate).not.toHaveBeenCalled()
   })
 })

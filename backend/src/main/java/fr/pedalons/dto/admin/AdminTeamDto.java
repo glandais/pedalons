@@ -3,9 +3,11 @@ package fr.pedalons.dto.admin;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.dto.validation.ValidateSchema;
+import fr.pedalons.enums.TeamTier;
 import fr.pedalons.enums.Visibility;
 import java.time.Instant;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 
 @Schema(description = "Admin team view with domain info")
 @ValidateSchema
@@ -32,6 +34,14 @@ public record AdminTeamDto(
                     + " link only and kept out of every listing",
             required = true)
         boolean publicContentAllowed,
+    @Schema(
+            description =
+                "The team's plan: FREE caps the members and the route planner saves, UNLOCKED"
+                    + " lifts both caps",
+            required = true)
+        TeamTier tier,
+    @Nullable @Schema(description = "Why the team has its plan, for the platform admin only")
+        String tierNote,
     @Schema(description = "Is team soft-deleted", required = true) boolean deleted,
     @Schema(description = "Number of members", required = true) long memberCount,
     @Schema(description = "Team creation timestamp", required = true) Instant createdAt) {
@@ -49,6 +59,8 @@ public record AdminTeamDto(
         team.isAddMemberAllowed(),
         team.isEnableRoutePlanner(),
         team.isPublicContentAllowed(),
+        team.getTier(),
+        team.getTierNote(),
         team.isDeleted(),
         memberCount,
         team.getCreatedAt());

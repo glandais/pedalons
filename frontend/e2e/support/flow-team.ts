@@ -30,8 +30,9 @@ export const pageOf = (who: AuthResponse, slug: string, pageSlug: string) =>
  */
 export async function publicTeam(owner: AuthResponse, name: string, joinable: boolean) {
   const team = await newTeam(owner, name, { visibility: 'PUBLIC' })
-  if (joinable) await setTeamAttributes(team, { joinable })
-  return team
+  // Born joinable since BILL-10: set either way, so `false` is a team the platform admin closed.
+  if (joinable !== team.joinable) await setTeamAttributes(team, { joinable })
+  return { ...team, joinable }
 }
 
 /** POST /api/teams/{slug}/members/join as `who`: the HTTP status, whatever it is. */

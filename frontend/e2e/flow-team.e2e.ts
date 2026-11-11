@@ -34,8 +34,8 @@ import { entityCard, hydrated, pageAs, pageHydrated, watchToasts } from './suppo
  * gives it; a member leaves it, and its owner deletes it. Each step is checked on the page and read back through the API.
  *
  * Every test builds its own owner (never a platform admin: its rights short-circuit the checks under
- * test) and its own team. A member is added by the platform admin through the API: a team is born
- * with addMemberAllowed=false, and then its own admins cannot add anyone directly.
+ * test) and its own team. A member is added by the platform admin through the API, which works
+ * whatever the team's addMemberAllowed (born true since docs/LEDGER_*.md BILL-10).
  */
 
 const main = (page: Page) => page.getByRole('main')
@@ -303,8 +303,9 @@ test.describe('members', () => {
   }) => {
     const owner = await newUser('Flow team closed owner')
     const candidate = await newUser('Flow team candidate')
-    const team = await newTeam(owner, unique('Ajout fermé'))
-    expect(team.addMemberAllowed, 'precondition: a team is born closed').toBe(false)
+    // A new team is born open (BILL-10): this one the platform admin closed.
+    const team = await newTeam(owner, unique('Ajout fermé'), { addMemberAllowed: false })
+    expect(team.addMemberAllowed, 'precondition: a closed team').toBe(false)
 
     // The API refuses the owner a direct add…
     const request: AddMemberRequest = { userId: candidate.user.id, role: 'MEMBER' }
@@ -602,7 +603,7 @@ test.describe('joining a team', () => {
     const owner = await newUser('Flow team closed join owner')
     const visitor = await newUser('Flow team closed join visitor')
     const team = await publicTeam(owner, unique('Adhésion fermée'), false)
-    expect(team, 'precondition: a public team, born closed to join requests').toMatchObject({
+    expect(team, 'precondition: a public team closed to join requests').toMatchObject({
       visibility: 'PUBLIC',
       joinable: false,
     })

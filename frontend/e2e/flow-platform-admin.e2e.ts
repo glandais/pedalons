@@ -258,7 +258,8 @@ test.describe('team governance', () => {
   }) => {
     test.setTimeout(90_000)
     const owner = await newUser('Platform governance owner')
-    const team = await newTeam(owner, unique('Gouvernance'))
+    // A new team is born with addMemberAllowed (BILL-10): closed here, to watch the switch open it.
+    const team = await newTeam(owner, unique('Gouvernance'), { addMemberAllowed: false })
     expect(team).toMatchObject({ visibilityEditable: false, addMemberAllowed: false })
 
     const { context: ownerContext, page: ownerPage } = await pageAs(browser, owner)
@@ -305,7 +306,8 @@ test.describe('team governance', () => {
       expect(await adminTeam(team)).toMatchObject({
         visibilityEditable: true,
         addMemberAllowed: true,
-        joinable: false,
+        // Born joinable (BILL-10), and left so by the save.
+        joinable: true,
         visibility: 'TEAM',
       })
       // The settings page reads them back.

@@ -85,6 +85,7 @@ TeamDetailDto _team({String? role}) => TeamDetailDto(
   allowedContentVisibilities: kAllContentVisibilities,
   defaultContentVisibility: 'PUBLIC',
   publicContentAllowed: false,
+  tier: 'FREE',
   timezone: 'Europe/Paris',
   role: role,
   id: 't1',

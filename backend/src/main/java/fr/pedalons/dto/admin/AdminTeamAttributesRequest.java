@@ -1,6 +1,8 @@
 package fr.pedalons.dto.admin;
 
 import fr.pedalons.dto.validation.ValidateSchema;
+import fr.pedalons.enums.TeamTier;
+import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 
@@ -36,4 +38,21 @@ public record AdminTeamAttributesRequest(
                     + " link only and kept out of every listing. Omitted: left as it is (off for a"
                     + " new team).",
             examples = "false")
-        Boolean publicContentAllowed) {}
+        Boolean publicContentAllowed,
+    // Optional for the same reason: a client unaware of the plan never downgrades a team
+    // (docs/LEDGER_*.md BILL-10).
+    @Nullable
+        @Schema(
+            description =
+                "The team's plan: FREE caps the members and the route planner saves, UNLOCKED"
+                    + " lifts both caps. Omitted: left as it is (FREE for a new team).",
+            examples = "UNLOCKED")
+        TeamTier tier,
+    @Nullable
+        @Size(max = 500)
+        @Schema(
+            description =
+                "Why the team has its plan, for the platform admin only (« club pilote »,"
+                    + " « offert par … »). Omitted: left as it is; blank clears it.",
+            maxLength = 500)
+        String tierNote) {}

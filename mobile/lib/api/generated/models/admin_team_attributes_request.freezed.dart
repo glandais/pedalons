@@ -21,7 +21,9 @@ mixin _$AdminTeamAttributesRequest {
  bool get joinable;/// Whether team admins can add members
  bool get addMemberAllowed;/// Whether the interactive route planner is open to this team
  bool get enableRoutePlanner;/// Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing. Omitted: left as it is (off for a new team).
- bool? get publicContentAllowed;
+ bool? get publicContentAllowed;/// The team's plan: FREE caps the members and the route planner saves, UNLOCKED lifts both caps. Omitted: left as it is (FREE for a new team).
+ String? get tier;/// Why the team has its plan, for the platform admin only (« club pilote », « offert par … »). Omitted: left as it is; blank clears it.
+ String? get tierNote;
 /// Create a copy of AdminTeamAttributesRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -35,20 +37,20 @@ $AdminTeamAttributesRequestCopyWith<AdminTeamAttributesRequest> get copyWith => 
 @override
 bool operator ==(Object other) {
   final _this = this as AdminTeamAttributesRequest;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AdminTeamAttributesRequest&&(identical(other.visibilityEditable, _this.visibilityEditable) || other.visibilityEditable == _this.visibilityEditable)&&(identical(other.joinable, _this.joinable) || other.joinable == _this.joinable)&&(identical(other.addMemberAllowed, _this.addMemberAllowed) || other.addMemberAllowed == _this.addMemberAllowed)&&(identical(other.enableRoutePlanner, _this.enableRoutePlanner) || other.enableRoutePlanner == _this.enableRoutePlanner)&&(identical(other.publicContentAllowed, _this.publicContentAllowed) || other.publicContentAllowed == _this.publicContentAllowed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AdminTeamAttributesRequest&&(identical(other.visibilityEditable, _this.visibilityEditable) || other.visibilityEditable == _this.visibilityEditable)&&(identical(other.joinable, _this.joinable) || other.joinable == _this.joinable)&&(identical(other.addMemberAllowed, _this.addMemberAllowed) || other.addMemberAllowed == _this.addMemberAllowed)&&(identical(other.enableRoutePlanner, _this.enableRoutePlanner) || other.enableRoutePlanner == _this.enableRoutePlanner)&&(identical(other.publicContentAllowed, _this.publicContentAllowed) || other.publicContentAllowed == _this.publicContentAllowed)&&(identical(other.tier, _this.tier) || other.tier == _this.tier)&&(identical(other.tierNote, _this.tierNote) || other.tierNote == _this.tierNote));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as AdminTeamAttributesRequest;
-  return Object.hash(runtimeType,_this.visibilityEditable,_this.joinable,_this.addMemberAllowed,_this.enableRoutePlanner,_this.publicContentAllowed);
+  return Object.hash(runtimeType,_this.visibilityEditable,_this.joinable,_this.addMemberAllowed,_this.enableRoutePlanner,_this.publicContentAllowed,_this.tier,_this.tierNote);
 }
 
 @override
 String toString() {
   final _this = this as AdminTeamAttributesRequest;
-  return 'AdminTeamAttributesRequest(visibilityEditable: ${_this.visibilityEditable}, joinable: ${_this.joinable}, addMemberAllowed: ${_this.addMemberAllowed}, enableRoutePlanner: ${_this.enableRoutePlanner}, publicContentAllowed: ${_this.publicContentAllowed})';
+  return 'AdminTeamAttributesRequest(visibilityEditable: ${_this.visibilityEditable}, joinable: ${_this.joinable}, addMemberAllowed: ${_this.addMemberAllowed}, enableRoutePlanner: ${_this.enableRoutePlanner}, publicContentAllowed: ${_this.publicContentAllowed}, tier: ${_this.tier}, tierNote: ${_this.tierNote})';
 }
 
 
@@ -59,7 +61,7 @@ abstract mixin class $AdminTeamAttributesRequestCopyWith<$Res>  {
   factory $AdminTeamAttributesRequestCopyWith(AdminTeamAttributesRequest value, $Res Function(AdminTeamAttributesRequest) _then) = _$AdminTeamAttributesRequestCopyWithImpl;
 @useResult
 $Res call({
- bool visibilityEditable, bool joinable, bool addMemberAllowed, bool enableRoutePlanner, bool? publicContentAllowed
+ bool visibilityEditable, bool joinable, bool addMemberAllowed, bool enableRoutePlanner, bool? publicContentAllowed, String? tier, String? tierNote
 });
 
 
@@ -76,14 +78,16 @@ class _$AdminTeamAttributesRequestCopyWithImpl<$Res>
 
 /// Create a copy of AdminTeamAttributesRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? visibilityEditable = null,Object? joinable = null,Object? addMemberAllowed = null,Object? enableRoutePlanner = null,Object? publicContentAllowed = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? visibilityEditable = null,Object? joinable = null,Object? addMemberAllowed = null,Object? enableRoutePlanner = null,Object? publicContentAllowed = freezed,Object? tier = freezed,Object? tierNote = freezed,}) {
   return _then(AdminTeamAttributesRequest(
 visibilityEditable: null == visibilityEditable ? _self.visibilityEditable : visibilityEditable // ignore: cast_nullable_to_non_nullable
 as bool,joinable: null == joinable ? _self.joinable : joinable // ignore: cast_nullable_to_non_nullable
 as bool,addMemberAllowed: null == addMemberAllowed ? _self.addMemberAllowed : addMemberAllowed // ignore: cast_nullable_to_non_nullable
 as bool,enableRoutePlanner: null == enableRoutePlanner ? _self.enableRoutePlanner : enableRoutePlanner // ignore: cast_nullable_to_non_nullable
 as bool,publicContentAllowed: freezed == publicContentAllowed ? _self.publicContentAllowed : publicContentAllowed // ignore: cast_nullable_to_non_nullable
-as bool?,
+as bool?,tier: freezed == tier ? _self.tier : tier // ignore: cast_nullable_to_non_nullable
+as String?,tierNote: freezed == tierNote ? _self.tierNote : tierNote // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -168,10 +172,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool visibilityEditable,  bool joinable,  bool addMemberAllowed,  bool enableRoutePlanner,  bool? publicContentAllowed)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool visibilityEditable,  bool joinable,  bool addMemberAllowed,  bool enableRoutePlanner,  bool? publicContentAllowed,  String? tier,  String? tierNote)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AdminTeamAttributesRequest() when $default != null:
-return $default(_that.visibilityEditable,_that.joinable,_that.addMemberAllowed,_that.enableRoutePlanner,_that.publicContentAllowed);case _:
+return $default(_that.visibilityEditable,_that.joinable,_that.addMemberAllowed,_that.enableRoutePlanner,_that.publicContentAllowed,_that.tier,_that.tierNote);case _:
   return orElse();
 
 }
@@ -189,10 +193,10 @@ return $default(_that.visibilityEditable,_that.joinable,_that.addMemberAllowed,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool visibilityEditable,  bool joinable,  bool addMemberAllowed,  bool enableRoutePlanner,  bool? publicContentAllowed)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool visibilityEditable,  bool joinable,  bool addMemberAllowed,  bool enableRoutePlanner,  bool? publicContentAllowed,  String? tier,  String? tierNote)  $default,) {final _that = this;
 switch (_that) {
 case _AdminTeamAttributesRequest():
-return $default(_that.visibilityEditable,_that.joinable,_that.addMemberAllowed,_that.enableRoutePlanner,_that.publicContentAllowed);case _:
+return $default(_that.visibilityEditable,_that.joinable,_that.addMemberAllowed,_that.enableRoutePlanner,_that.publicContentAllowed,_that.tier,_that.tierNote);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +213,10 @@ return $default(_that.visibilityEditable,_that.joinable,_that.addMemberAllowed,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool visibilityEditable,  bool joinable,  bool addMemberAllowed,  bool enableRoutePlanner,  bool? publicContentAllowed)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool visibilityEditable,  bool joinable,  bool addMemberAllowed,  bool enableRoutePlanner,  bool? publicContentAllowed,  String? tier,  String? tierNote)?  $default,) {final _that = this;
 switch (_that) {
 case _AdminTeamAttributesRequest() when $default != null:
-return $default(_that.visibilityEditable,_that.joinable,_that.addMemberAllowed,_that.enableRoutePlanner,_that.publicContentAllowed);case _:
+return $default(_that.visibilityEditable,_that.joinable,_that.addMemberAllowed,_that.enableRoutePlanner,_that.publicContentAllowed,_that.tier,_that.tierNote);case _:
   return null;
 
 }
@@ -224,7 +228,7 @@ return $default(_that.visibilityEditable,_that.joinable,_that.addMemberAllowed,_
 @JsonSerializable()
 
 class _AdminTeamAttributesRequest implements AdminTeamAttributesRequest {
-  const _AdminTeamAttributesRequest({required this.visibilityEditable, required this.joinable, required this.addMemberAllowed, required this.enableRoutePlanner, this.publicContentAllowed});
+  const _AdminTeamAttributesRequest({required this.visibilityEditable, required this.joinable, required this.addMemberAllowed, required this.enableRoutePlanner, this.publicContentAllowed, this.tier, this.tierNote});
   factory _AdminTeamAttributesRequest.fromJson(Map<String, dynamic> json) => _$AdminTeamAttributesRequestFromJson(json);
 
 /// Whether team admins can change visibility
@@ -237,6 +241,10 @@ class _AdminTeamAttributesRequest implements AdminTeamAttributesRequest {
 @override final  bool enableRoutePlanner;
 /// Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing. Omitted: left as it is (off for a new team).
 @override final  bool? publicContentAllowed;
+/// The team's plan: FREE caps the members and the route planner saves, UNLOCKED lifts both caps. Omitted: left as it is (FREE for a new team).
+@override final  String? tier;
+/// Why the team has its plan, for the platform admin only (« club pilote », « offert par … »). Omitted: left as it is; blank clears it.
+@override final  String? tierNote;
 
 /// Create a copy of AdminTeamAttributesRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -251,18 +259,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AdminTeamAttributesRequest&&(identical(other.visibilityEditable, visibilityEditable) || other.visibilityEditable == visibilityEditable)&&(identical(other.joinable, joinable) || other.joinable == joinable)&&(identical(other.addMemberAllowed, addMemberAllowed) || other.addMemberAllowed == addMemberAllowed)&&(identical(other.enableRoutePlanner, enableRoutePlanner) || other.enableRoutePlanner == enableRoutePlanner)&&(identical(other.publicContentAllowed, publicContentAllowed) || other.publicContentAllowed == publicContentAllowed));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AdminTeamAttributesRequest&&(identical(other.visibilityEditable, visibilityEditable) || other.visibilityEditable == visibilityEditable)&&(identical(other.joinable, joinable) || other.joinable == joinable)&&(identical(other.addMemberAllowed, addMemberAllowed) || other.addMemberAllowed == addMemberAllowed)&&(identical(other.enableRoutePlanner, enableRoutePlanner) || other.enableRoutePlanner == enableRoutePlanner)&&(identical(other.publicContentAllowed, publicContentAllowed) || other.publicContentAllowed == publicContentAllowed)&&(identical(other.tier, tier) || other.tier == tier)&&(identical(other.tierNote, tierNote) || other.tierNote == tierNote));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,visibilityEditable,joinable,addMemberAllowed,enableRoutePlanner,publicContentAllowed);
+    return Object.hash(runtimeType,visibilityEditable,joinable,addMemberAllowed,enableRoutePlanner,publicContentAllowed,tier,tierNote);
 }
 
 @override
 String toString() {
-    return 'AdminTeamAttributesRequest(visibilityEditable: $visibilityEditable, joinable: $joinable, addMemberAllowed: $addMemberAllowed, enableRoutePlanner: $enableRoutePlanner, publicContentAllowed: $publicContentAllowed)';
+    return 'AdminTeamAttributesRequest(visibilityEditable: $visibilityEditable, joinable: $joinable, addMemberAllowed: $addMemberAllowed, enableRoutePlanner: $enableRoutePlanner, publicContentAllowed: $publicContentAllowed, tier: $tier, tierNote: $tierNote)';
 }
 
 
@@ -273,7 +281,7 @@ abstract mixin class _$AdminTeamAttributesRequestCopyWith<$Res> implements $Admi
   factory _$AdminTeamAttributesRequestCopyWith(_AdminTeamAttributesRequest value, $Res Function(_AdminTeamAttributesRequest) _then) = __$AdminTeamAttributesRequestCopyWithImpl;
 @override @useResult
 $Res call({
- bool visibilityEditable, bool joinable, bool addMemberAllowed, bool enableRoutePlanner, bool? publicContentAllowed
+ bool visibilityEditable, bool joinable, bool addMemberAllowed, bool enableRoutePlanner, bool? publicContentAllowed, String? tier, String? tierNote
 });
 
 
@@ -290,14 +298,16 @@ class __$AdminTeamAttributesRequestCopyWithImpl<$Res>
 
 /// Create a copy of AdminTeamAttributesRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? visibilityEditable = null,Object? joinable = null,Object? addMemberAllowed = null,Object? enableRoutePlanner = null,Object? publicContentAllowed = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? visibilityEditable = null,Object? joinable = null,Object? addMemberAllowed = null,Object? enableRoutePlanner = null,Object? publicContentAllowed = freezed,Object? tier = freezed,Object? tierNote = freezed,}) {
   return _then(_AdminTeamAttributesRequest(
 visibilityEditable: null == visibilityEditable ? _self.visibilityEditable : visibilityEditable // ignore: cast_nullable_to_non_nullable
 as bool,joinable: null == joinable ? _self.joinable : joinable // ignore: cast_nullable_to_non_nullable
 as bool,addMemberAllowed: null == addMemberAllowed ? _self.addMemberAllowed : addMemberAllowed // ignore: cast_nullable_to_non_nullable
 as bool,enableRoutePlanner: null == enableRoutePlanner ? _self.enableRoutePlanner : enableRoutePlanner // ignore: cast_nullable_to_non_nullable
 as bool,publicContentAllowed: freezed == publicContentAllowed ? _self.publicContentAllowed : publicContentAllowed // ignore: cast_nullable_to_non_nullable
-as bool?,
+as bool?,tier: freezed == tier ? _self.tier : tier // ignore: cast_nullable_to_non_nullable
+as String?,tierNote: freezed == tierNote ? _self.tierNote : tierNote // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

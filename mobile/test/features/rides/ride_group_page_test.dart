@@ -122,6 +122,7 @@ class _Teams implements TeamRepository {
               allowedContentVisibilities: kAllContentVisibilities,
               defaultContentVisibility: 'PUBLIC',
               publicContentAllowed: false,
+              tier: 'FREE',
               timezone: 'Europe/Paris',
               id: 't1',
               slug: 'n-peloton',

@@ -11,9 +11,11 @@ import fr.pedalons.dto.pages.response.TeamPageSummaryDto;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.TeamRole;
+import fr.pedalons.enums.TeamTier;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.common.ContentVisibilityRules;
+import fr.pedalons.service.limits.TeamLimits;
 import fr.pedalons.service.team.response.TeamAndRole;
 import fr.pedalons.service.team.response.TeamStats;
 import java.time.Instant;
@@ -155,10 +157,23 @@ public record TeamDetailDto(
                     + " the sitemap. Meaningless for a team that is not private. For the platform"
                     + " administration screen: editors read allowedContentVisibilities.",
             required = true)
-        boolean publicContentAllowed) {
+        boolean publicContentAllowed,
+    @Schema(
+            description =
+                "The team's plan, set by a platform admin only. FREE caps the members and the"
+                    + " route planner saves, UNLOCKED lifts both caps.",
+            required = true)
+        TeamTier tier,
+    @Nullable
+        @Schema(
+            description =
+                "The most members the team may hold, pending invitations included; null when"
+                    + " unlimited. Compare with memberCount.",
+            examples = "25")
+        Integer memberLimit) {
   public static TeamDetailDto from(
-      TeamAndRole teamAndRole, AssetService assetService, boolean seeAllPages) {
-    return from(teamAndRole, assetService, seeAllPages, TeamStats.EMPTY);
+      TeamAndRole teamAndRole, AssetService assetService, boolean seeAllPages, TeamLimits limits) {
+    return from(teamAndRole, assetService, seeAllPages, TeamStats.EMPTY, limits);
   }
 
   /**
@@ -166,8 +181,12 @@ public record TeamDetailDto(
    *     — never fetched here, or a directory of thirty teams would run sixty queries
    */
   public static TeamDetailDto from(
-      TeamAndRole teamAndRole, AssetService assetService, boolean seeAllPages, TeamStats stats) {
-    return from(teamAndRole, assetService, seeAllPages, stats, null);
+      TeamAndRole teamAndRole,
+      AssetService assetService,
+      boolean seeAllPages,
+      TeamStats stats,
+      TeamLimits limits) {
+    return from(teamAndRole, assetService, seeAllPages, stats, null, limits);
   }
 
   /**
@@ -176,13 +195,16 @@ public record TeamDetailDto(
    *     caller's real one (docs/LEDGER_*.md API-137)
    * @param memberCountByRole the split of the members per role, loaded only for an administrator;
    *     null leaves it out
+   * @param limits the caps of the team's plan, from {@code PlanLimits.forTeam} — computed from the
+   *     team alone, no query
    */
   public static TeamDetailDto from(
       TeamAndRole teamAndRole,
       AssetService assetService,
       boolean seeAllPages,
       TeamStats stats,
-      @Nullable MemberCountByRoleDto memberCountByRole) {
+      @Nullable MemberCountByRoleDto memberCountByRole,
+      TeamLimits limits) {
     Team team = teamAndRole.team();
     List<TeamPageSummaryDto> pages =
         team.getAdditionalPages().stream()
@@ -229,7 +251,9 @@ public record TeamDetailDto(
         // against (docs/LEDGER_*.md API-176).
         ContentVisibilitiesDto.of(team),
         ContentVisibilityRules.defaultVisibility(team),
-        team.isPublicContentAllowed());
+        team.isPublicContentAllowed(),
+        team.getTier(),
+        limits.memberLimit());
   }
 
   /**

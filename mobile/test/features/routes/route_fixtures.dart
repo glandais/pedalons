@@ -17,6 +17,7 @@ TeamDetailDto fixtureRouteTeam({
   allowedContentVisibilities: contentVisibilitiesFor(visibility),
   defaultContentVisibility: visibility,
   publicContentAllowed: false,
+  tier: 'FREE',
   timezone: 'Europe/Paris',
   role: role,
   id: 't1',

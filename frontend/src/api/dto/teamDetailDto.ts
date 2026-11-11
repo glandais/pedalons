@@ -5,6 +5,7 @@ import type { MemberCountByRoleDto } from './memberCountByRoleDto.ts'
 import type { TeamDetailDtoGeometry } from './teamDetailDtoGeometry.ts'
 import type { TeamPageSummaryDto } from './teamPageSummaryDto.ts'
 import type { TeamRole } from './teamRole.ts'
+import type { TeamTier } from './teamTier.ts'
 import type { Visibility } from './visibility.ts'
 
 /**
@@ -75,4 +76,8 @@ export interface TeamDetailDto {
   defaultContentVisibility: Visibility
   /** Whether a platform admin allowed this private team to publish content as public or unlisted, readable by link only and kept out of every listing and of the sitemap. Meaningless for a team that is not private. For the platform administration screen: editors read allowedContentVisibilities. */
   publicContentAllowed: boolean
+  /** The team's plan, set by a platform admin only. FREE caps the members and the route planner saves, UNLOCKED lifts both caps. */
+  tier: TeamTier
+  /** The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount. */
+  memberLimit?: number
 }

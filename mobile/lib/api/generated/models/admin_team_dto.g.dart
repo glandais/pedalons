@@ -19,9 +19,11 @@ _AdminTeamDto _$AdminTeamDtoFromJson(Map<String, dynamic> json) =>
       addMemberAllowed: json['addMemberAllowed'] as bool,
       enableRoutePlanner: json['enableRoutePlanner'] as bool,
       publicContentAllowed: json['publicContentAllowed'] as bool,
+      tier: json['tier'] as String,
       deleted: json['deleted'] as bool,
       memberCount: (json['memberCount'] as num).toInt(),
       createdAt: json['createdAt'] as String,
+      tierNote: json['tierNote'] as String?,
     );
 
 Map<String, dynamic> _$AdminTeamDtoToJson(_AdminTeamDto instance) =>
@@ -37,7 +39,9 @@ Map<String, dynamic> _$AdminTeamDtoToJson(_AdminTeamDto instance) =>
       'addMemberAllowed': instance.addMemberAllowed,
       'enableRoutePlanner': instance.enableRoutePlanner,
       'publicContentAllowed': instance.publicContentAllowed,
+      'tier': instance.tier,
       'deleted': instance.deleted,
       'memberCount': instance.memberCount,
       'createdAt': instance.createdAt,
+      'tierNote': instance.tierNote,
     };

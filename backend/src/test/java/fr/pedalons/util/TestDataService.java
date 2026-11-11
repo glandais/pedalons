@@ -289,6 +289,11 @@ public class TestDataService {
   }
 
   @Transactional
+  public void setTeamTier(Team team, TeamTier tier) {
+    teamRepository.findById(team.getId()).setTier(tier);
+  }
+
+  @Transactional
   public void setPostsAsTeamByDefault(Team team, boolean value) {
     teamRepository.findById(team.getId()).setPostsAsTeamByDefault(value);
   }

@@ -73,6 +73,13 @@ public class AdminTeamService {
     if (request.publicContentAllowed() != null) {
       team.setPublicContentAllowed(request.publicContentAllowed());
     }
+    if (request.tier() != null) {
+      team.setTier(request.tier());
+    }
+    String tierNote = request.tierNote();
+    if (tierNote != null) {
+      team.setTierNote(tierNote.isBlank() ? null : tierNote.strip());
+    }
     teamRepository.persist(team);
     long memberCount = userTeamRepository.count("team.id = ?1", team.getId());
     return AdminTeamDto.from(team, memberCount);

@@ -43,6 +43,7 @@ import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.TeamRole;
+import fr.pedalons.enums.TeamTier;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.enums.WindDirection;
 import fr.pedalons.repository.migration.BiketeamMigrationMapRepository;
@@ -409,6 +410,9 @@ public class BiketeamMigrationService {
     // Biketeam gates /join behind authorizePublicAccess, so a private team can't be self-joined.
     team.setJoinable(visibility != Visibility.TEAM);
     team.setAddMemberAllowed(true);
+    // Imported clubs are unlocked, as every team that existed before the plan (docs/LEDGER_*.md
+    // BILL-10).
+    team.setTier(TeamTier.UNLOCKED);
     // Biketeam's own zone (team_configuration.timezone), at creation only: a replay leaves a zone
     // changed in Pédalons alone. The about page was built by the constructor, with the default.
     team.setTimezone(zone.getId());

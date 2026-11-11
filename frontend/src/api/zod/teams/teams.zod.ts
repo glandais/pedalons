@@ -443,6 +443,17 @@ export const ListTeamsResponse = zod
               .describe(
                 'Whether a platform admin allowed this private team to publish content as public or unlisted, readable by link only and kept out of every listing and of the sitemap. Meaningless for a team that is not private. For the platform administration screen: editors read allowedContentVisibilities.'
               ),
+            tier: zod
+              .enum(['FREE', 'UNLOCKED'])
+              .describe(
+                "The team's plan, set by a platform admin only. FREE caps the members and the route planner saves, UNLOCKED lifts both caps."
+              ),
+            memberLimit: zod
+              .int()
+              .optional()
+              .describe(
+                'The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.'
+              ),
           })
           .describe('Detailed team information')
       )
@@ -1177,6 +1188,17 @@ export const CreateTeamResponse = zod
       .describe(
         'Whether a platform admin allowed this private team to publish content as public or unlisted, readable by link only and kept out of every listing and of the sitemap. Meaningless for a team that is not private. For the platform administration screen: editors read allowedContentVisibilities.'
       ),
+    tier: zod
+      .enum(['FREE', 'UNLOCKED'])
+      .describe(
+        "The team's plan, set by a platform admin only. FREE caps the members and the route planner saves, UNLOCKED lifts both caps."
+      ),
+    memberLimit: zod
+      .int()
+      .optional()
+      .describe(
+        'The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.'
+      ),
   })
   .describe('Detailed team information')
 
@@ -1908,6 +1930,17 @@ export const UpdateTeamResponse = zod
       .describe(
         'Whether a platform admin allowed this private team to publish content as public or unlisted, readable by link only and kept out of every listing and of the sitemap. Meaningless for a team that is not private. For the platform administration screen: editors read allowedContentVisibilities.'
       ),
+    tier: zod
+      .enum(['FREE', 'UNLOCKED'])
+      .describe(
+        "The team's plan, set by a platform admin only. FREE caps the members and the route planner saves, UNLOCKED lifts both caps."
+      ),
+    memberLimit: zod
+      .int()
+      .optional()
+      .describe(
+        'The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.'
+      ),
   })
   .describe('Detailed team information')
 
@@ -2322,6 +2355,17 @@ export const GetTeamResponse = zod
       .boolean()
       .describe(
         'Whether a platform admin allowed this private team to publish content as public or unlisted, readable by link only and kept out of every listing and of the sitemap. Meaningless for a team that is not private. For the platform administration screen: editors read allowedContentVisibilities.'
+      ),
+    tier: zod
+      .enum(['FREE', 'UNLOCKED'])
+      .describe(
+        "The team's plan, set by a platform admin only. FREE caps the members and the route planner saves, UNLOCKED lifts both caps."
+      ),
+    memberLimit: zod
+      .int()
+      .optional()
+      .describe(
+        'The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.'
       ),
   })
   .describe('Detailed team information')
@@ -2816,6 +2860,17 @@ export const GetTeamDashboardResponse = zod
           .boolean()
           .describe(
             'Whether a platform admin allowed this private team to publish content as public or unlisted, readable by link only and kept out of every listing and of the sitemap. Meaningless for a team that is not private. For the platform administration screen: editors read allowedContentVisibilities.'
+          ),
+        tier: zod
+          .enum(['FREE', 'UNLOCKED'])
+          .describe(
+            "The team's plan, set by a platform admin only. FREE caps the members and the route planner saves, UNLOCKED lifts both caps."
+          ),
+        memberLimit: zod
+          .int()
+          .optional()
+          .describe(
+            'The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.'
           ),
       })
       .describe(
@@ -21938,6 +21993,17 @@ export const ChangeTeamSlugResponse = zod
       .boolean()
       .describe(
         'Whether a platform admin allowed this private team to publish content as public or unlisted, readable by link only and kept out of every listing and of the sitemap. Meaningless for a team that is not private. For the platform administration screen: editors read allowedContentVisibilities.'
+      ),
+    tier: zod
+      .enum(['FREE', 'UNLOCKED'])
+      .describe(
+        "The team's plan, set by a platform admin only. FREE caps the members and the route planner saves, UNLOCKED lifts both caps."
+      ),
+    memberLimit: zod
+      .int()
+      .optional()
+      .describe(
+        'The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.'
       ),
   })
   .describe('Detailed team information')
