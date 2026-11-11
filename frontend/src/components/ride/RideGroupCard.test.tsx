@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -18,6 +18,7 @@ vi.mock('./RideGroupRouteActions', () => ({
   RideGroupRouteActions: () => <div data-testid="route-actions" />,
 }))
 
+import type { ComponentProps } from 'react'
 import { RideGroupCard } from './RideGroupCard'
 import { groupLeavesAtOwnTime } from '@/utils/groupStart'
 
@@ -39,7 +40,8 @@ function renderCard(
   trackColor?: string,
   canSeeParticipants = true,
   overrides: Partial<RideGroupDto> = {},
-  showStartTime = groupLeavesAtOwnTime(overrides.startAt ?? group.startAt, RIDE_START)
+  showStartTime = groupLeavesAtOwnTime(overrides.startAt ?? group.startAt, RIDE_START),
+  cardProps: Partial<ComponentProps<typeof RideGroupCard>> = {}
 ) {
   return render(
     <MantineProvider>
@@ -58,6 +60,7 @@ function renderCard(
             trackColor={trackColor}
             canJoin
             canSeeParticipants={canSeeParticipants}
+            {...cardProps}
           />
         </MemoryRouter>
       </QueryClientProvider>
@@ -115,6 +118,51 @@ describe('RideGroupCard (WEB-77)', () => {
   it('shows no colour bar for a group with no trace on the map', () => {
     renderCard(undefined)
     expect(screen.queryByTestId('group-track-color')).toBeNull()
+  })
+
+  // KIT §8 and §9, ledger WEB-165 (docs/LEDGER_*.md WEB-167).
+  describe('registration controls', () => {
+    const at = (
+      overrides: Partial<RideGroupDto>,
+      props: Partial<ComponentProps<typeof RideGroupCard>>
+    ) => renderCard(undefined, undefined, true, overrides, false, props)
+
+    it('offers « Changer pour {groupe} » at the foot, full width, to a reader registered elsewhere', () => {
+      const onSwitch = vi.fn()
+      at({}, { canJoin: false, canSwitch: true, onSwitch })
+      const button = screen.getByRole('button', { name: 'Changer pour Rapide' })
+      expect(button.getAttribute('data-block')).toBe('true')
+      expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
+      // At the foot, after the group's facts — not in the corner beside its name.
+      const facts = screen.getByText(/personnes/)
+      expect(facts.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      fireEvent.click(button)
+      expect(onSwitch).toHaveBeenCalledTimes(1)
+    })
+
+    it('offers no switch when the page does not allow it (full, cancelled, closed)', () => {
+      at({}, { canJoin: false, canSwitch: false })
+      expect(screen.queryByRole('button', { name: /Changer pour/ })).toBeNull()
+    })
+
+    it('keeps « J\u2019y vais » but drops « Quitter » on a cancelled ride', () => {
+      at({ registered: true }, { canLeave: false })
+      expect(screen.queryByRole('button', { name: 'Quitter' })).toBeNull()
+      expect(screen.getByText("J'y vais")).toBeTruthy()
+      cleanup()
+      at({ registered: true }, {})
+      expect(screen.getByRole('button', { name: 'Quitter' })).toBeTruthy()
+    })
+
+    it('gives its figures in the order distance · climb · speed', () => {
+      at({ distance: 92_400, elevationGain: 1240, averageSpeed: 27 }, {})
+      const row = screen.getByText(/92/).closest('div')!.parentElement!
+      const texts = Array.from(row.querySelectorAll('p')).map((p) => p.textContent ?? '')
+      const index = (pattern: RegExp) => texts.findIndex((text) => pattern.test(text))
+      expect(index(/km$/)).toBeGreaterThanOrEqual(0)
+      expect(index(/km$/)).toBeLessThan(index(/^1.?240/))
+      expect(index(/^1.?240/)).toBeLessThan(index(/km\/h/))
+    })
   })
 
   describe("the group's own departure (BRAND-8)", () => {

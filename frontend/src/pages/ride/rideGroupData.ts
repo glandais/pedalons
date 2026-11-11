@@ -177,20 +177,38 @@ export function rideGroupMapDataRedirect(
 
 /**
  * What a rider can do on this group, from what the server enforces at join (`RideService.joinGroup`):
- * one group per ride, a second join is refused (409 `ALREADY_REGISTERED`) and nobody is moved — so
- * a reader registered in another group is told so, never offered « Rejoindre ». « Quitter » stays
- * on a past ride, as on the ride's cards; a full group offers nothing but its badge.
+ * one group per ride, a second join is refused (409 `ALREADY_REGISTERED`) — moving goes through the
+ * `switch` endpoint, offered on the ride's group cards ({@link canSwitchTo}) — so a reader registered
+ * in another group is told so, never offered « Rejoindre ». « Quitter » stays on a past ride, as on
+ * the ride's cards, but not on a cancelled one (KIT §8 and §9, ledger WEB-165): the ride no longer
+ * takes place, the « J'y vais » badge alone stays. A full group offers nothing but its badge.
  */
 export type GroupAction = 'join' | 'leave' | 'registeredElsewhere' | 'none'
 
 export function groupAction(ride: RideDto, group: RideGroupDto): GroupAction {
-  if (group.registered) return 'leave'
+  if (group.registered) return ride.status === Status.CANCELLED ? 'none' : 'leave'
   if (ride.registeredGroupId && ride.registeredGroupId !== group.id) return 'registeredElsewhere'
   if (group.full) return 'none'
   // The backend's answer (docs/LEDGER_*.md WEB-166): a member, the ride published, not every group
   // gone — exact on a detail, which is where this is called.
   const canJoin = !!ride.permissions.canRegister && !ride.registered
   return canJoin ? 'join' : 'none'
+}
+
+/**
+ * Whether a group card offers « Changer pour {groupe} » (KIT §8, ledger WEB-165): the reader is
+ * registered in another group of the ride, this one is not full, the ride is not cancelled and the
+ * server still takes registrations (`canRegister`, false once every group has left). One call to the
+ * `switch` endpoint (ledger API-171), never a leave then a join: a group filling up between the two
+ * would leave the reader in none.
+ */
+export function canSwitchTo(ride: RideDto, group: RideGroupDto): boolean {
+  return (
+    groupAction(ride, group) === 'registeredElsewhere' &&
+    !group.full &&
+    ride.status !== Status.CANCELLED &&
+    !!ride.permissions.canRegister
+  )
 }
 
 /** The ride's groups, the one the member is registered in first; the others keep their order. */

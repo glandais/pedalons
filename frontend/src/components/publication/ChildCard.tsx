@@ -23,12 +23,17 @@ interface ChildCardProps {
   corner?: ReactNode
   /** Under the name: a group's own time and leader, a stage's places. */
   children?: ReactNode
-  /** The facts row: pace, distance, climb, then whatever the card adds (a group's people). */
+  /** The facts row: distance, climb, speed, then whatever the card adds (a group's people). */
   meta?: ReactNode
   /** The weather line. */
   weather?: ReactNode
   /** The route's files and devices, lifted above the link. */
   routeActions?: ReactNode
+  /**
+   * The card's last row, full width and lifted above the link: a group's « Changer pour {groupe} »,
+   * at the foot so that the group's name is never cut short beside the card's own.
+   */
+  footer?: ReactNode
   /** Why the last action on this card failed. */
   error?: string
   /** Lit by a hover, here or on the map. */
@@ -41,7 +46,7 @@ interface ChildCardProps {
 /**
  * One card for a ride's group and a trip's stage (docs/LEDGER_*.md WEB-155, design « ChildCard »):
  * the marker, the name linking to the child's page over the whole card, the corner, the specific
- * rows, the facts, the weather line and the route's actions, in that order on both. Nothing of the
+ * rows, the facts, the weather line, the route's actions and the footer, in that order on both. Nothing of the
  * child's description: that is its page's.
  */
 export function ChildCard({
@@ -54,6 +59,7 @@ export function ChildCard({
   meta,
   weather,
   routeActions,
+  footer,
   error,
   highlighted = false,
   emphasized = false,
@@ -117,6 +123,12 @@ export function ChildCard({
         </Box>
       )}
 
+      {footer && (
+        <Box mt="sm" className={classes.aboveLink}>
+          {footer}
+        </Box>
+      )}
+
       {error && (
         <Alert color="red" variant="light" mt="sm" icon={<IconAlertTriangle size={16} />}>
           {error}
@@ -131,7 +143,10 @@ export function AboveLink({ children }: { children: ReactNode }) {
   return <Box className={classes.aboveLink}>{children}</Box>
 }
 
-/** The facts every child card shows first, in the same order: pace, distance, climb. */
+/**
+ * The facts every child card shows first, in the same order as the app's: distance, climb, speed
+ * (docs/plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md §8, ledger WEB-165).
+ */
 export function ChildFacts({
   averageSpeed,
   distance,
@@ -144,14 +159,6 @@ export function ChildFacts({
   const { speed, distance: formatDistance, elevation } = useUnits()
   return (
     <>
-      {averageSpeed !== undefined && averageSpeed > 0 && (
-        <Group gap={4} wrap="nowrap">
-          <IconBolt size={16} aria-hidden />
-          <Text size="sm" c="dimmed">
-            {speed(averageSpeed)}
-          </Text>
-        </Group>
-      )}
       {distance !== undefined && (
         <Group gap={4} wrap="nowrap">
           <IconArrowsMaximize size={16} aria-hidden />
@@ -165,6 +172,14 @@ export function ChildFacts({
           <IconArrowUp size={16} aria-hidden />
           <Text size="sm" c="dimmed">
             {elevation(elevationGain)}
+          </Text>
+        </Group>
+      )}
+      {averageSpeed !== undefined && averageSpeed > 0 && (
+        <Group gap={4} wrap="nowrap">
+          <IconBolt size={16} aria-hidden />
+          <Text size="sm" c="dimmed">
+            {speed(averageSpeed)}
           </Text>
         </Group>
       )}

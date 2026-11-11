@@ -86,7 +86,7 @@ test('a published post reaches a member in the team’s name, and opening it rea
 
   await signIn(context, member)
   const main = page.getByRole('main')
-  const entryText = `${team.name} a publié un article`
+  const entryText = `Nouvelle publication de ${team.name}`
 
   if (isMobile) {
     await test.step('mobile: the drawer leads to the inbox, where the entry is unread', async () => {
@@ -146,7 +146,7 @@ test('the inbox filters unread entries from its URL, and "mark all read" empties
   const main = page.getByRole('main')
   const unreadOnly = main.getByRole('switch', { name: 'Non lues uniquement' })
   const markAllRead = main.getByRole('button', { name: 'Tout marquer lu' })
-  const entries = main.getByRole('link').filter({ hasText: `${team.name} a publié un article` })
+  const entries = main.getByRole('link').filter({ hasText: `Nouvelle publication de ${team.name}` })
 
   await test.step('an empty inbox says so, without the filtered wording', async () => {
     await openInbox(page, isMobile)
@@ -288,7 +288,7 @@ test('muting a team in the profile silences its announcements, but not a reply',
         .filter({ hasText: `${author.user.displayName} a répondu à votre commentaire` })
     ).toContainText(thread.name)
     await expect(main.getByRole('link').filter({ hasText: announced.name })).toContainText(
-      `${heard.name} a publié un article`
+      `Nouvelle publication de ${heard.name}`
     )
     await expect(main.getByRole('link').filter({ hasText: silenced.name })).toHaveCount(0)
   })

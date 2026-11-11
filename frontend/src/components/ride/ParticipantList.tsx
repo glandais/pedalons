@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { keepPreviousData } from '@tanstack/react-query'
-import { IconUsers, IconChevronRight, IconShieldCheck } from '@tabler/icons-react'
+import { IconUsers, IconShieldCheck } from '@tabler/icons-react'
 import { Stack, Group, Text, Box, ThemeIcon, Center, Loader } from '@mantine/core'
 import { useGetRideParticipants } from '@/api/endpoints/rides/rides'
 import { useGetTripParticipants } from '@/api/endpoints/trips/trips'
@@ -158,14 +158,7 @@ export function ParticipantList({
                         </Text>
                       )}
                     </Box>
-
-                    {/* Subtle hover indicator */}
-                    <Box style={{ flexShrink: 0, opacity: 0.5 }}>
-                      <IconChevronRight
-                        size={16}
-                        color="var(--mantine-primary-color-light-color)"
-                      />
-                    </Box>
+                    {/* No chevron: the row opens nothing (docs/LEDGER_*.md WEB-167). */}
                   </Group>
                 </Box>
               )

@@ -81,6 +81,8 @@ export function WeekAgenda({ nowIso, events, isLoading, isError, nextRide }: Wee
         e.entitySlug === nextRide.slug
       )
   )
+  // Rows past the limit are named, never dropped silently: the calendar holds them (as the app).
+  const hidden = rows.length - MAX_ROWS
 
   return (
     <Paper withBorder radius="md" p="md" component="section" aria-labelledby="home-week-title">
@@ -203,6 +205,17 @@ export function WeekAgenda({ nowIso, events, isLoading, isError, nextRide }: Wee
               </Group>
             </UnstyledButton>
           ))}
+          {hidden > 0 && (
+            <Anchor
+              component={PrefetchLink}
+              to={paths.calendar()}
+              size="sm"
+              p={6}
+              data-testid="week-more"
+            >
+              {t('home.week.more', { count: hidden })}
+            </Anchor>
+          )}
         </Stack>
       )}
     </Paper>

@@ -327,7 +327,7 @@ test.describe('a past ride', () => {
 })
 
 test.describe('changing group', () => {
-  test('registered in one group: no « Rejoindre » on the others, the API refuses a second group, and leaving frees the member to join another', async ({
+  test('registered in one group: « Changer pour » on the others, one switch call moves the member, the API refuses a second group, and leaving frees the member to join another', async ({
     page,
   }) => {
     const { team, organizer, member } = await ridingTeam('switch')
@@ -361,24 +361,22 @@ test.describe('changing group', () => {
     expect((refused as ApiError).status).toBe(409)
     expect((refused as ApiError).code).toBe('ALREADY_REGISTERED')
 
-    // Leave A: B becomes joinable, and joining it moves the member there.
-    const leave = firstCard.getByRole('button', { name: 'Quitter' })
-    await hydrated(leave)
-    await leave.click()
-    await expect(firstCard.getByText("J'y vais", { exact: true })).toHaveCount(0)
-    await expect(firstCard.getByText('0/10 personnes')).toBeVisible()
-    const join = secondCard.getByRole('button', { name: 'Rejoindre' })
-    await expect(join).toBeEnabled()
-    // The card says « J'y vais » optimistically, before the server has answered: the API read below
-    // waits for that answer, or it can go out while the join is still in flight.
-    const joined = page.waitForResponse(
+    // « Changer pour B » (KIT §8, ledger API-171): one call to the switch endpoint, no dialog. The
+    // card says « J'y vais » optimistically: the API read below waits for the server's answer.
+    const switchTo = secondCard.getByRole('button', { name: `Changer pour ${second}` })
+    await hydrated(switchTo)
+    const switched = page.waitForResponse(
       (r) =>
-        r.request().method() === 'POST' && r.url().endsWith(`/groups/${groupId(ride, second)}/join`)
+        r.request().method() === 'POST' &&
+        r.url().endsWith(`/groups/${groupId(ride, second)}/switch`)
     )
-    await join.click()
-    expect((await joined).ok(), 'the server accepted the join').toBe(true)
+    await switchTo.click()
+    expect((await switched).ok(), 'the server accepted the switch').toBe(true)
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(secondCard.getByText("J'y vais", { exact: true })).toBeVisible()
     await expect(secondCard.getByText('1/10 personnes')).toBeVisible()
+    await expect(firstCard.getByText('0/10 personnes')).toBeVisible()
+    await expect(firstCard.getByRole('button', { name: `Changer pour ${first}` })).toBeVisible()
     await expect(firstCard.getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
 
     const after = await readRide(member, team.slug, ride.slug)
@@ -394,6 +392,14 @@ test.describe('changing group', () => {
     await openRide(page, team.slug, ride)
     await expect(secondCard.getByText("J'y vais", { exact: true })).toBeVisible()
     await expect(firstCard.getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
+
+    // Leave B: A becomes joinable again, with « Rejoindre ».
+    const leave = secondCard.getByRole('button', { name: 'Quitter' })
+    await hydrated(leave)
+    await leave.click()
+    await expect(secondCard.getByText("J'y vais", { exact: true })).toHaveCount(0)
+    await expect(firstCard.getByRole('button', { name: 'Rejoindre' })).toBeEnabled()
+    await expect(firstCard.getByRole('button', { name: /Changer pour/ })).toHaveCount(0)
   })
 })
 
@@ -501,12 +507,11 @@ test.describe('leaving a ride, seen from the home page and the calendar', () => 
     await expect(feedCard(page, ride.name)).toContainText("J'y vais")
 
     // --- Leave from the home card.
+    // No confirmation: leaving is undone by joining again (KIT §9, docs/LEDGER_*.md WEB-167).
     const leave = nextRideCard(page).getByRole('button', { name: 'Se désinscrire' })
     await hydrated(leave)
     await leave.click()
-    const confirm = page.getByRole('dialog', { name: 'Se désinscrire de la sortie ?' })
-    await expect(confirm).toContainText(ride.name)
-    await confirm.getByRole('button', { name: 'Se désinscrire' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(
       toasts(page).filter({ hasText: 'Désinscription de la sortie confirmée' })
     ).toBeVisible()

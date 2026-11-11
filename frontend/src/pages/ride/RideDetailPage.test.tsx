@@ -21,6 +21,7 @@ const state = vi.hoisted(() => ({
   ride: undefined as unknown,
   weather: undefined as unknown,
   join: (() => {}) as (groupId: string) => void,
+  switchTo: (() => {}) as (groupId: string) => void,
   map: {} as Record<string, unknown>,
 }))
 
@@ -51,6 +52,7 @@ vi.mock('@/hooks/useRideGroupMembership', () => ({
   useRideGroupMembership: () => ({
     join: (groupId: string) => state.join(groupId),
     leave: () => {},
+    switchTo: (groupId: string) => state.switchTo(groupId),
     isPending: false,
     error: null,
   }),
@@ -507,5 +509,52 @@ describe('RideDetailPage — a private team’s public ride, read by link (WEB-1
     renderPage()
     expect(screen.getByRole('button', { name: 'Rejoindre' })).toBeTruthy()
     expect(screen.getByTestId('comment-section')).toBeTruthy()
+  })
+})
+
+// KIT §8 and §9, ledger WEB-165 (docs/LEDGER_*.md WEB-167): one call, no confirmation.
+describe('RideDetailPage — « Changer pour » on the other groups', () => {
+  const two = (overrides: Partial<RideGroupDto> = {}) => [
+    group(),
+    group({ id: 'g2', name: 'Cool', registered: true, ...overrides }),
+  ]
+
+  beforeEach(() => {
+    state.team = member
+    state.weather = okWeather
+    state.switchTo = vi.fn()
+  })
+  afterEach(cleanup)
+
+  it('moves the reader in one call, without a dialog', () => {
+    state.ride = ride({ groups: two(), registered: true, registeredGroupId: 'g2' })
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Changer pour Rapide' }))
+    expect(state.switchTo).toHaveBeenCalledWith('g1')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
+  })
+
+  it('offers neither « Changer pour » nor « Quitter » on a cancelled ride', () => {
+    state.ride = ride({
+      groups: two(),
+      registered: true,
+      registeredGroupId: 'g2',
+      status: Status.CANCELLED,
+    })
+    renderPage()
+    expect(screen.queryByRole('button', { name: /Changer pour/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Quitter' })).toBeNull()
+  })
+
+  it('offers no switch to a full group', () => {
+    state.ride = ride({
+      groups: [group({ full: true }), group({ id: 'g2', name: 'Cool', registered: true })],
+      registered: true,
+      registeredGroupId: 'g2',
+    })
+    renderPage()
+    expect(screen.queryByRole('button', { name: /Changer pour/ })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Quitter' })).toBeTruthy()
   })
 })

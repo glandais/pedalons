@@ -35,20 +35,26 @@ export function NotificationItem({ notification, onOpen, compact = false }: Noti
   const Icon = notificationIcon(notification.type)
   const color = notificationColor(notification.type)
 
-  // The subject's own name carries the "what", so the sentence only has to say the "why".
-  const title = t(
-    `notifications.type.${notification.type satisfies NotificationType}`,
+  // The subject's own name carries the "what", so the sentence only has to say the "why" — and,
+  // for a ride that changed, what changed (as the app, docs/LEDGER_*.md WEB-167): « une sortie a été
+  // modifiée » would make the reader open it to learn whether to get up earlier or go elsewhere.
+  const params = {
     // `actorName` is absent for a scheduled publication: the fallback keeps the sentence whole
     // rather than rendering "undefined".
-    {
-      actor: notification.actorName ?? notification.teamName,
-      team: notification.teamName,
-    }
-  )
+    actor: notification.actorName ?? notification.teamName,
+    team: notification.teamName,
+  }
+  const variant =
+    notification.type === NotificationType.RIDE_UPDATED
+      ? rideUpdatedVariant(notification.changes)
+      : undefined
+  const title = variant
+    ? t(`notifications.rideUpdated.${variant}`)
+    : t(`notifications.type.${notification.type satisfies NotificationType}`, params)
 
-  // What moved, for RIDE_UPDATED: the snapshot says which fields changed, and `subjectDateTime` is
-  // already the new date. A reminder carries no change but reads better with its start time. The
-  // dated clause goes last, so the zone mention that closes the line sits right after its date.
+  // The new date, for RIDE_UPDATED (`subjectDateTime` is already the new one); the new meeting
+  // point needs no line, the title says it. A reminder carries no change but reads better with its
+  // start time. The zone mention closes the line, right after its date.
   const date = notification.subjectDateTime
     ? // The departure's one format, « Demain · 09:00 » included (docs/BRANDING.md §8.3, WEB-138).
       rendezvous.formatDeparture(notification.subjectDateTime)
@@ -56,12 +62,9 @@ export function NotificationItem({ notification, onOpen, compact = false }: Noti
   const clauses =
     notification.type === NotificationType.RIDE_REMINDER && notification.subjectDateTime
       ? [t('notifications.item.startsAt', { date })]
-      : [
-          ...notification.changes.filter((change) => change !== NotificationChange.DATE_TIME),
-          ...notification.changes.filter((change) => change === NotificationChange.DATE_TIME),
-        ].map((change) =>
-          t(`notifications.change.${change satisfies NotificationChange}`, { date })
-        )
+      : notification.subjectDateTime && notification.changes.includes(NotificationChange.DATE_TIME)
+        ? [t('notifications.change.DATE_TIME', { date })]
+        : []
   const dated =
     notification.type === NotificationType.RIDE_REMINDER ||
     notification.changes.includes(NotificationChange.DATE_TIME)
@@ -131,4 +134,20 @@ export function NotificationItem({ notification, onOpen, compact = false }: Noti
       </Group>
     </UnstyledButton>
   )
+}
+
+/**
+ * The title's variant for a ride that changed, from `changes`; `undefined` for an empty list, or one
+ * made of changes this version does not know, which falls back to the generic sentence
+ * (`notifications.type.RIDE_UPDATED`) rather than saying nothing.
+ */
+function rideUpdatedVariant(
+  changes: NotificationDto['changes']
+): 'both' | 'dateTime' | 'startPlace' | undefined {
+  const date = changes.includes(NotificationChange.DATE_TIME)
+  const place = changes.includes(NotificationChange.START_PLACE)
+  if (date && place) return 'both'
+  if (date) return 'dateTime'
+  if (place) return 'startPlace'
+  return undefined
 }

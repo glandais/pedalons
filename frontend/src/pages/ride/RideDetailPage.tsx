@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { IconUsersGroup } from '@tabler/icons-react'
 import { Container, Stack, Title, Box, Skeleton, Divider } from '@mantine/core'
 import { rideRouteSlugs, useRideDetailData } from './rideDetailData'
-import { groupAction, groupsRegisteredFirst, groupWindLeg } from './rideGroupData'
+import { canSwitchTo, groupAction, groupsRegisteredFirst, groupWindLeg } from './rideGroupData'
 import { ReportTargetType } from '@/api/dto'
 import { useAuth } from '../../hooks/useAuth'
 import { EmptyState } from '../../components/common/EmptyState'
@@ -146,7 +146,7 @@ export function RideDetailPage() {
   const canReadComments = !!permissions.canComment
   const canSeeParticipants = !!permissions.canSeeParticipants
   // `canRegister` is exact on a detail: published, the reader a member, not every group gone. A
-  // member already registered moves group from their card instead of joining.
+  // member already registered moves group from the other cards instead (« Changer pour », API-171).
   // `ride.full` is deliberately left out: each card already withholds its Join button when its own
   // group is full, and gating the whole zone on it hid every « Complet » badge once all groups filled.
   const canJoinRide = !!permissions.canRegister && !ride.registered
@@ -275,9 +275,12 @@ export function RideDetailPage() {
                                   : undefined
                               }
                               canJoin={canJoinRide}
+                              canLeave={groupAction(ride, group) === 'leave'}
+                              canSwitch={canSwitchTo(ride, group)}
                               canSeeParticipants={canSeeParticipants}
                               onJoin={() => handleJoinGroup(group.id)}
                               onLeave={() => handleLeaveGroup(group.id)}
+                              onSwitch={() => membership.switchTo(group.id)}
                               onHover={hoverGroup}
                               isHighlighted={isGroupLit(group.id)}
                               isLoading={membership.isPending}

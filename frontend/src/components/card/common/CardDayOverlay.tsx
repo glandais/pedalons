@@ -9,6 +9,11 @@ interface CardDayOverlayProps {
   /** The entity's zone: the box and the pill judge the day in it (docs/LEDGER_*.md API-60). */
   zone: string | null | undefined
   tone?: DayBoxTone
+  /**
+   * Whether the « Aujourd'hui » / « Demain » pill may show: not on a ride or trip already started or
+   * cancelled (docs/LEDGER_*.md MOB-115, as the app). The day box stays. Defaults to true.
+   */
+  showRelative?: boolean
   /** More on the top right, after the pill (« J'y vais » on « Ma prochaine sortie »). */
   extra?: ReactNode
   /** The card's `⋯` menu sits in the top right corner (`Card.actions`): the pill moves left of it. */
@@ -25,11 +30,12 @@ export function CardDayOverlay({
   date,
   zone,
   tone = 'primary',
+  showRelative = true,
   extra,
   clearActions = false,
 }: CardDayOverlayProps) {
   const rendezvous = useRendezvousFormat(zone)
-  const relative = rendezvous.formatRelativeDay(date)
+  const relative = showRelative ? rendezvous.formatRelativeDay(date) : null
   return (
     <>
       <Box pos="absolute" top={16} left={16}>

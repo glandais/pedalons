@@ -24,6 +24,8 @@ vi.mock('@/store/authStore', () => ({
 }))
 
 import {
+  canSwitchTo,
+  groupAction,
   groupWindLeg,
   prefetchRideGroup,
   prefetchRideGroupMap,
@@ -147,5 +149,43 @@ describe('groupWindLeg (WEB-115, WEB-117)', () => {
     expect(groupWindLeg(ride(), undefined)).toBeUndefined()
     expect(groupWindLeg(ride({ finished: true }), weatherLeg('g1'))).toBeUndefined()
     expect(groupWindLeg(ride({ status: Status.CANCELLED }), weatherLeg('g1'))).toBeUndefined()
+  })
+})
+
+// KIT §8 and §9, ledger WEB-165 (docs/LEDGER_*.md WEB-167).
+describe('groupAction and canSwitchTo', () => {
+  const group = (id: string, overrides: Partial<RideGroupDto> = {}) =>
+    ({ id, name: id, registered: false, full: false, ...overrides }) as RideGroupDto
+  const ride = (overrides: Partial<RideDto> = {}) =>
+    ({
+      status: Status.PUBLISHED,
+      registered: true,
+      registeredGroupId: 'g1',
+      permissions: { canRegister: true },
+      ...overrides,
+    }) as unknown as RideDto
+
+  it('offers « Changer pour » on an open group to a reader registered in another', () => {
+    expect(groupAction(ride(), group('g2'))).toBe('registeredElsewhere')
+    expect(canSwitchTo(ride(), group('g2'))).toBe(true)
+  })
+
+  it('offers no switch to a full group, a cancelled ride, closed registrations or one’s own group', () => {
+    expect(canSwitchTo(ride(), group('g2', { full: true }))).toBe(false)
+    expect(canSwitchTo(ride({ status: Status.CANCELLED }), group('g2'))).toBe(false)
+    expect(
+      canSwitchTo(ride({ permissions: { canRegister: false } } as Partial<RideDto>), group('g2'))
+    ).toBe(false)
+    expect(canSwitchTo(ride(), group('g1', { registered: true }))).toBe(false)
+    expect(
+      canSwitchTo(ride({ registered: false, registeredGroupId: undefined }), group('g2'))
+    ).toBe(false)
+  })
+
+  it('drops « Quitter » on a cancelled ride, keeps it on a published one', () => {
+    expect(groupAction(ride(), group('g1', { registered: true }))).toBe('leave')
+    expect(groupAction(ride({ status: Status.CANCELLED }), group('g1', { registered: true }))).toBe(
+      'none'
+    )
   })
 })

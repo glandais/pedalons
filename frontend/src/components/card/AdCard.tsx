@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconCalendar, IconMapPin, IconCurrencyEuro } from '@tabler/icons-react'
-import { Group, Box, Stack } from '@mantine/core'
+import { IconCalendar, IconCurrencyEuro } from '@tabler/icons-react'
+import { Group, Box, Stack, Text } from '@mantine/core'
 import { Card, CardContent, CardTitle, CardDescription, CardImage } from './common'
 import { TypeBadge, StatusBadge, VisibilityBadge, Stat, StatGroup, CardSkeleton } from './common'
 import { EntityLogo } from '../common/EntityLogo'
@@ -77,8 +77,11 @@ export function AdCard({ ad, actions }: AdCardProps) {
           <Stat icon={<IconCalendar size={16} />}>
             <FormattedDateTime date={ad.createdAt} />
           </Stat>
+          {/* A sector, never a pin: the position is blurred to ~1 km (KIT §9), as the dashboard. */}
           {ad.locationDescription && (
-            <Stat icon={<IconMapPin size={16} />}>{ad.locationDescription}</Stat>
+            <Text size="sm" c="dimmed">
+              {t('ads.sector', { place: ad.locationDescription })}
+            </Text>
           )}
         </StatGroup>
 

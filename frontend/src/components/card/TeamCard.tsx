@@ -31,7 +31,7 @@ export function TeamCard({ team, showRole = false }: TeamCardProps) {
           </Box>
         </Group>
 
-        <CardDescription markdown={true} media={team.about} />
+        <CardDescription excerpt={team.excerpt} markdown={true} media={team.about} />
 
         <Group justify="space-between" mt="md">
           <Stat icon={membersIcon}>{t('memberCount', { count: team.memberCount })}</Stat>

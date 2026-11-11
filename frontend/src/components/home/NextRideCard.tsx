@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
@@ -19,9 +18,9 @@ import {
 } from '@mantine/core'
 import { IconCheck, IconDeviceWatch, IconMapPin, IconUsers } from '@tabler/icons-react'
 import type { GpsServiceType, RideDto } from '@/api/dto'
+import { Status } from '@/api/dto'
 import { useLeaveGroup } from '@/api/endpoints/rides/rides'
 import { CardDayOverlay, CardImage, CardTeamLink, Stat } from '../card/common'
-import { ConfirmDialog } from '../common/ConfirmDialog'
 import { DepartureLine } from '../common/DepartureLine'
 import { paths } from '@/config/paths'
 import { invalidateRegistration } from '@/lib/registration'
@@ -56,7 +55,6 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
   const queryClient = useQueryClient()
   const leaveMutation = useLeaveGroup()
   const { connectedServices, uploadRoute, isUploading } = useGpsConnections()
-  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
 
   const group = registeredGroupOf(ride)
   // The departure that concerns the reader is their group's (docs/LEDGER_*.md WEB-136): the day
@@ -75,6 +73,7 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
     group?.thumbnailUrl ??
     ride.thumbnailUrl
 
+  // Leaving is not confirmed: it is undone by joining again, only a deletion is (KIT §9, as the app).
   const handleLeave = () => {
     if (!ride.registeredGroupId) return
     leaveMutation.mutate(
@@ -83,7 +82,6 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
         onSuccess: () => {
           invalidateRegistration(queryClient, ride.team.slug)
           notifications.show({ message: t('rides.notifications.left'), color: 'green' })
-          setShowLeaveConfirm(false)
         },
       }
     )
@@ -126,6 +124,8 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
           <CardDayOverlay
             date={start}
             zone={ride.timezone}
+            // No « Aujourd'hui » on a ride already started or cancelled (MOB-115, as the feed).
+            showRelative={!ride.finished && ride.status !== Status.CANCELLED}
             extra={
               <Badge color="primary" variant="filled" leftSection={<IconCheck size={12} />}>
                 {t('publications.registered')}
@@ -221,24 +221,18 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
               </Menu>
             )}
             {ride.registeredGroupId && (
-              <Button variant="subtle" color="gray" onClick={() => setShowLeaveConfirm(true)}>
+              <Button
+                variant="subtle"
+                color="gray"
+                onClick={handleLeave}
+                loading={leaveMutation.isPending}
+              >
                 {t('home.nextRide.leave')}
               </Button>
             )}
           </Group>
         </Stack>
       </Flex>
-
-      <ConfirmDialog
-        isOpen={showLeaveConfirm}
-        onClose={() => setShowLeaveConfirm(false)}
-        onConfirm={handleLeave}
-        title={t('home.nextRide.leaveConfirm.title')}
-        message={t('home.nextRide.leaveConfirm.message', { name: ride.name })}
-        confirmText={t('home.nextRide.leave')}
-        variant="warning"
-        isLoading={leaveMutation.isPending}
-      />
     </Paper>
   )
 }

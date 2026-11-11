@@ -53,10 +53,12 @@ export function RouteUsages({ teamSlug, routeSlug }: RouteUsagesProps) {
     if (usage.viaChildNames.length === 0) {
       return null
     }
+    // Singular for one stage or group, plural beyond (docs/LEDGER_*.md WEB-167).
     const names = usage.viaChildNames.join(', ')
+    const count = usage.viaChildNames.length
     return usage.type === 'TRIP'
-      ? t('routes.usages.viaTrip', { names })
-      : t('routes.usages.viaRide', { names })
+      ? t('routes.usages.viaTrip', { names, count })
+      : t('routes.usages.viaRide', { names, count })
   }
 
   return (

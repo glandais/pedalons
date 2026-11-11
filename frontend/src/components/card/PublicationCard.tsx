@@ -31,6 +31,7 @@ import { RideWeatherSummaryLine } from '../weather/RideWeatherSummaryLine'
 import { InProgressBadge } from '../agenda/InProgressBadge'
 import { isDated, isUnderWay, spanStart } from '@/utils/publicationTiming'
 import type { PublicationDto, RideDto, TripDto } from '@/api/dto'
+import { Status } from '@/api/dto'
 
 interface PublicationCardProps {
   publication: PublicationDto
@@ -198,6 +199,7 @@ export function PublicationCard({
             date={spanStart(publication)}
             zone={publication.timezone}
             tone={publication.type === 'TRIP' ? 'teal' : 'primary'}
+            showRelative={!publication.finished && publication.status !== Status.CANCELLED}
             clearActions={!!actions}
           />
         )}

@@ -827,7 +827,7 @@ test.describe('what a route shows to whom', () => {
     await expect(main.getByRole('button', { name: 'Modifier une copie' })).toHaveCount(0)
   })
 
-  test('« Utilisée dans » lists only the rides and trips the visitor may read', async ({
+  test('« Utilisé dans » lists only the rides and trips the visitor may read', async ({
     page,
     browser,
   }) => {
@@ -856,7 +856,7 @@ test.describe('what a route shows to whom', () => {
     // Anonymous: the public ride alone.
     expect((await usages(undefined)).usages.map((u) => u.slug)).toEqual([publicRide.slug])
     const main = await openSettled(page, team.slug, route.slug, name)
-    const section = main.getByRole('heading', { level: 2, name: 'Utilisée dans' })
+    const section = main.getByRole('heading', { level: 2, name: 'Utilisé dans' })
     await expect(section).toBeVisible()
     const publicCard = routeCard(main, publicRide.name)
     await expect(publicCard).toBeVisible()
@@ -864,7 +864,7 @@ test.describe('what a route shows to whom', () => {
       'href',
       `/equipes/${team.slug}/sorties/${publicRide.slug}`
     )
-    await expect(publicCard).toContainText('via les groupes : Groupe A')
+    await expect(publicCard).toContainText('via le groupe : Groupe A')
     await expect(routeCard(main, membersRide.name)).toHaveCount(0)
     await expect(routeCard(main, trip.name)).toHaveCount(0)
     await expect(routeCard(main, unrelated.name)).toHaveCount(0)
@@ -878,14 +878,14 @@ test.describe('what a route shows to whom', () => {
       await stubBasemap(memberPage)
       const memberMain = await openSettled(memberPage, team.slug, route.slug, name)
       await expect(
-        memberMain.getByRole('heading', { level: 2, name: 'Utilisée dans' })
+        memberMain.getByRole('heading', { level: 2, name: 'Utilisé dans' })
       ).toBeVisible()
       await expect(routeCard(memberMain, publicRide.name)).toBeVisible()
       await expect(routeCard(memberMain, membersRide.name)).toContainText(
-        'via les groupes : Groupe route'
+        'via le groupe : Groupe route'
       )
       const tripCard = routeCard(memberMain, trip.name)
-      await expect(tripCard).toContainText(`via les étapes : ${stageName}`)
+      await expect(tripCard).toContainText(`via l'étape : ${stageName}`)
       await expect(tripCard).toHaveAttribute('href', `/equipes/${team.slug}/voyages/${trip.slug}`)
       await expect(routeCard(memberMain, unrelated.name)).toHaveCount(0)
     } finally {
@@ -893,16 +893,14 @@ test.describe('what a route shows to whom', () => {
     }
   })
 
-  test('a route no visitor-readable publication uses has no « Utilisée dans »', async ({
-    page,
-  }) => {
+  test('a route no visitor-readable publication uses has no « Utilisé dans »', async ({ page }) => {
     const { owner, team, route, name } = await publicTeamWithRoute('usages cachés')
     await newRide(owner, team.slug, unique('Sortie du club'), {
       groups: [{ name: 'Groupe A', routeSlug: route.slug }],
     })
     const main = await openSettled(page, team.slug, route.slug, name)
     await expect(main.getByText('Distance', { exact: true })).toBeVisible()
-    await expect(main.getByRole('heading', { name: 'Utilisée dans' })).toHaveCount(0)
+    await expect(main.getByRole('heading', { name: 'Utilisé dans' })).toHaveCount(0)
   })
 })
 

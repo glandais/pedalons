@@ -41,6 +41,16 @@ interface RideGroupCardProps {
   showStartTime: boolean
   canJoin?: boolean
   /**
+   * Whether the reader registered here may leave: not on a cancelled ride, where the « J'y vais »
+   * badge alone stays (KIT §8, ledger WEB-165). Defaults to true.
+   */
+  canLeave?: boolean
+  /**
+   * « Changer pour {groupe} » at the foot of the card: the reader is registered in another group and
+   * may move to this one (`canSwitchTo`). One call, no confirmation (ledger API-171, KIT §9).
+   */
+  canSwitch?: boolean
+  /**
    * Whether the reader may see who takes part (a member of the team, or a platform admin — the
    * comments' rule, docs/LEDGER_*.md API-144). Otherwise the card shows the count only and
    * offers no list: the participants endpoint refuses them. Defaults to true.
@@ -48,10 +58,11 @@ interface RideGroupCardProps {
   canSeeParticipants?: boolean
   onJoin?: () => void
   onLeave?: () => void
+  onSwitch?: () => void
   isLoading?: boolean
   onHover?: (groupId: string | null) => void
   isHighlighted?: boolean
-  /** Why the last join/leave on THIS group failed. Persists until the next attempt. */
+  /** Why the last join/leave/switch on THIS group failed. Persists until the next attempt. */
   error?: string
 }
 
@@ -67,9 +78,12 @@ export function RideGroupCard({
   weatherLeg,
   showStartTime,
   canJoin,
+  canLeave = true,
+  canSwitch = false,
   canSeeParticipants = true,
   onJoin,
   onLeave,
+  onSwitch,
   isLoading,
   onHover,
   isHighlighted = false,
@@ -95,9 +109,11 @@ export function RideGroupCard({
     : t('rides.detail.groups.participantsNoMax', { count: group.countParticipants })
 
   const corner = isJoined ? (
-    <Button variant="outline" size="xs" onClick={onLeave} disabled={isLoading}>
-      {t('rides.detail.groups.leave')}
-    </Button>
+    canLeave && (
+      <Button variant="outline" size="xs" onClick={onLeave} disabled={isLoading}>
+        {t('rides.detail.groups.leave')}
+      </Button>
+    )
   ) : canJoin && !isFull ? (
     <Button size="xs" onClick={onJoin} disabled={isLoading}>
       {t('rides.detail.groups.join')}
@@ -107,6 +123,12 @@ export function RideGroupCard({
       {t('rides.detail.groups.full')}
     </Badge>
   ) : null
+  // Full width at the foot, never beside the name: there it cut the group's name short (KIT §8).
+  const footer = !isJoined && canSwitch && (
+    <Button fullWidth onClick={onSwitch} disabled={isLoading}>
+      {t('rides.detail.groups.switchTo', { group: group.name })}
+    </Button>
+  )
 
   return (
     <ChildCard
@@ -183,6 +205,7 @@ export function RideGroupCard({
         </>
       }
       weather={<GroupWeatherLine leg={weatherLeg} timezone={rideTimezone} />}
+      footer={footer}
       routeActions={
         effectiveRouteSlug && (
           <RideGroupRouteActions

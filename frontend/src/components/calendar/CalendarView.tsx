@@ -22,6 +22,7 @@ import { ZoneMentionIcon } from '@/components/common/Rendezvous'
 import { hourAlignedNow } from '@/utils/nowIso'
 import { getVisibleRange } from '@/components/calendar/calendarRange'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
+import { StatusBadge } from '@/components/card/common'
 import type { CalendarEventDto, CalendarEventType } from '@/api/dto'
 
 dayjs.extend(utc)
@@ -331,7 +332,9 @@ export function CalendarView({
   /**
    * The phone's month view lists the selected day's events, and ignores `renderEventBody`: its
    * own body is the title and "HH:mm – HH:mm" (or a hard-coded English "All day"), with neither the
-   * team nor the registration — and no hover to show the tooltip. Its body is replaced here.
+   * team nor the registration — and no hover to show the tooltip. Its body is replaced here, and
+   * carries what the tooltip would: a status other than published (« Annulé », « Brouillon ») as
+   * the agenda's rows do.
    */
   const renderMobileEvent = useCallback<RenderEvent>(
     (event, props) => {
@@ -352,9 +355,16 @@ export function CalendarView({
             }}
           />
           <Stack gap={2}>
-            <Text size="sm" fw={600}>
-              {dto.title}
-            </Text>
+            <Group gap={6} wrap="nowrap">
+              <Text size="sm" fw={600}>
+                {dto.title}
+              </Text>
+              {dto.status !== 'PUBLISHED' ? (
+                <StatusBadge status={dto.status}>
+                  {t(`status.${dto.status satisfies 'DRAFT' | 'PUBLISHED' | 'CANCELLED'}`)}
+                </StatusBadge>
+              ) : null}
+            </Group>
             <Text size="xs" c="dimmed">
               {buildSummary(dto)}
             </Text>
@@ -373,7 +383,7 @@ export function CalendarView({
       )
       return renderEvent(event, { ...props, children: body })
     },
-    [buildMention, buildRegistration, buildSummary, renderEvent]
+    [buildMention, buildRegistration, buildSummary, renderEvent, t]
   )
 
   const handleEventClick = useCallback(

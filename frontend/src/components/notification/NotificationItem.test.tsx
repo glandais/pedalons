@@ -110,7 +110,7 @@ describe('NotificationItem', () => {
     )
   })
 
-  it('puts the dated change last, so the mention follows its date', () => {
+  it('gives the new date of a ride that changed, its mention right after', () => {
     expect(
       details(
         notification({
@@ -120,12 +120,10 @@ describe('NotificationItem', () => {
           changes: [NotificationChange.DATE_TIME, NotificationChange.START_PLACE],
         })
       )
-    ).toBe(
-      `${fr['notifications.change.START_PLACE']} · Nouvelle date : dim. 11 oct. · 06:00 · heure de Tokyo (sam. 23:00 chez vous)`
-    )
+    ).toBe('Nouvelle date : dim. 11 oct. · 06:00 · heure de Tokyo (sam. 23:00 chez vous)')
   })
 
-  it('adds no mention to a change that carries no date', () => {
+  it('adds no line for a new meeting point: the title says it', () => {
     expect(
       details(
         notification({
@@ -135,6 +133,41 @@ describe('NotificationItem', () => {
           changes: [NotificationChange.START_PLACE],
         })
       )
-    ).toBe(fr['notifications.change.START_PLACE'])
+    ).toBeNull()
+  })
+
+  // R14 of the cards' audit, as the app (docs/LEDGER_*.md WEB-167): the title says what changed.
+  describe('the title of a ride that changed', () => {
+    const titleOf = (changes: NotificationChange[]) => {
+      render(
+        <MantineProvider>
+          <QueryClientProvider client={new QueryClient()}>
+            <MemoryRouter>
+              <NotificationItem
+                notification={notification({
+                  type: NotificationType.RIDE_UPDATED,
+                  subjectDateTime: '2026-10-10T21:00:00Z',
+                  changes,
+                })}
+                onOpen={() => {}}
+              />
+            </MemoryRouter>
+          </QueryClientProvider>
+        </MantineProvider>
+      )
+      return screen.getAllByRole('paragraph')[0]?.textContent
+    }
+
+    it.each([
+      [[NotificationChange.DATE_TIME], 'Une sortie change de date'],
+      [[NotificationChange.START_PLACE], 'Une sortie change de point de départ'],
+      [
+        [NotificationChange.START_PLACE, NotificationChange.DATE_TIME],
+        'Une sortie change de date et de point de départ',
+      ],
+      [[], 'Une sortie a été modifiée'],
+    ])('%j → « %s »', (changes, title) => {
+      expect(titleOf(changes)).toBe(title)
+    })
   })
 })

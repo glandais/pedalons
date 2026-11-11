@@ -119,6 +119,31 @@ describe('PublicationCard: the departure is primary', () => {
     expect(screen.queryByTestId('day-pill')).toBeNull()
   })
 
+  // MOB-115, as the app (docs/LEDGER_*.md WEB-167): the day box stays, the pill goes.
+  it('carries no pill on a cancelled or started ride, nor on a cancelled trip', () => {
+    renderCard(ride({ status: 'CANCELLED' }))
+    expect(screen.getByTestId('day-box')).toBeTruthy()
+    expect(screen.queryByTestId('day-pill')).toBeNull()
+    cleanup()
+    renderCard(
+      ride({
+        dateTime: '2026-04-10T07:00:00Z',
+        endDateTime: '2026-04-10T12:00:00Z',
+        finished: true,
+      })
+    )
+    expect(screen.queryByTestId('day-pill')).toBeNull()
+    cleanup()
+    renderCard(
+      trip({
+        dateTime: '2026-04-11T06:00:00Z',
+        endDateTime: '2026-04-12T15:00:00Z',
+        status: 'CANCELLED',
+      })
+    )
+    expect(screen.queryByTestId('day-pill')).toBeNull()
+  })
+
   it('gives the departure line under the title, in 700', () => {
     renderCard(ride())
     const line = screen.getByTestId('departure-line')

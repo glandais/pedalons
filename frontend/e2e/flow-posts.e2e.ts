@@ -543,7 +543,7 @@ test.describe('scheduled publication', () => {
         await reader.page.goto('/notifications')
         await expect(
           reader.page.getByRole('main').getByRole('link').filter({ hasText: title })
-        ).toContainText(`${team.name} a publié un article`)
+        ).toContainText(`Nouvelle publication de ${team.name}`)
       } finally {
         await reader.context.close()
       }
