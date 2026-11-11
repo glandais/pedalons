@@ -33,6 +33,11 @@ export const AdminListTeamsResponse = zod
             enableRoutePlanner: zod
               .boolean()
               .describe('Whether the interactive route planner is open to this team'),
+            publicContentAllowed: zod
+              .boolean()
+              .describe(
+                'Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing'
+              ),
             deleted: zod.boolean().describe('Is team soft-deleted'),
             memberCount: zod.int().describe('Number of members'),
             createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),
@@ -68,6 +73,11 @@ export const AdminGetTeamResponse = zod
     enableRoutePlanner: zod
       .boolean()
       .describe('Whether the interactive route planner is open to this team'),
+    publicContentAllowed: zod
+      .boolean()
+      .describe(
+        'Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing'
+      ),
     deleted: zod.boolean().describe('Is team soft-deleted'),
     memberCount: zod.int().describe('Number of members'),
     createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),
@@ -90,6 +100,12 @@ export const AdminUpdateTeamAttributesBody = zod
     enableRoutePlanner: zod
       .boolean()
       .describe('Whether the interactive route planner is open to this team'),
+    publicContentAllowed: zod
+      .boolean()
+      .optional()
+      .describe(
+        'Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing. Omitted: left as it is (off for a new team).'
+      ),
   })
   .describe('Platform admin request to update team governance attributes')
 
@@ -107,6 +123,11 @@ export const AdminUpdateTeamAttributesResponse = zod
     enableRoutePlanner: zod
       .boolean()
       .describe('Whether the interactive route planner is open to this team'),
+    publicContentAllowed: zod
+      .boolean()
+      .describe(
+        'Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing'
+      ),
     deleted: zod.boolean().describe('Is team soft-deleted'),
     memberCount: zod.int().describe('Number of members'),
     createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),
@@ -135,6 +156,11 @@ export const AdminToggleTeamDeletedResponse = zod
     enableRoutePlanner: zod
       .boolean()
       .describe('Whether the interactive route planner is open to this team'),
+    publicContentAllowed: zod
+      .boolean()
+      .describe(
+        'Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing'
+      ),
     deleted: zod.boolean().describe('Is team soft-deleted'),
     memberCount: zod.int().describe('Number of members'),
     createdAt: zod.iso.datetime({ offset: true }).describe('Team creation timestamp'),

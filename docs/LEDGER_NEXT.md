@@ -714,6 +714,12 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       parcours non Équipe » dans les deux sens (`INCOMPATIBLE_VISIBILITY`, `alignVisibility`).
       Décisions du 11 novembre 2026 et audit des règles en place : plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/2026-11-11-visibilite-contenu-equipe-privee.md).
       Suites : `WEB-166`, `MOB-137`.
+      **Lot 1 fait le 11 novembre 2026** (contrat `13.6.0`, `V87`) : drapeau, règle
+      `ContentVisibilityRules`, lecture du détail par lien ; `V87` remet aussi en « Équipe » le
+      contenu des équipes privées, et les images d'un contenu public d'équipe privée sortent en
+      `noindex`. Couvert par `PrivateTeamPublicContentResourceTest`, `ContentVisibilityRulesTest`,
+      `AssetImageUrlTest`, `AdminTeamResourceTest`. Aucune équipe n'a le drapeau : rien ne change
+      tant que le site (`WEB-166`) n'est pas livré. Restent les lots 2 et 3.
 
 ### Heure de départ : audit du 7 novembre 2026
 

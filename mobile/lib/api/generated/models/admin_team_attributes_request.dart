@@ -22,6 +22,9 @@ abstract class AdminTeamAttributesRequest with _$AdminTeamAttributesRequest {
 
     /// Whether the interactive route planner is open to this team
     required bool enableRoutePlanner,
+
+    /// Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing. Omitted: left as it is (off for a new team).
+    bool? publicContentAllowed,
   }) = _AdminTeamAttributesRequest;
 
   factory AdminTeamAttributesRequest.fromJson(Map<String, Object?> json) =>

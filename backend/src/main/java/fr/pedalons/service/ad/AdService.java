@@ -236,7 +236,6 @@ public class AdService extends TeamEntityService<Ad, AdRepository, AdDto> {
     Team team = teamService.getTeam(teamSlug);
     Ad ad = findBySlug(team, adSlug);
 
-    // Validate visibility: private teams can only have team-only ads
     verifyAd(team, request);
 
     // Read before setProperties overwrites it: a non-author was served the blurred point, and
@@ -409,6 +408,9 @@ public class AdService extends TeamEntityService<Ad, AdRepository, AdDto> {
   }
 
   private void setProperties(AdRequest request, Ad ad) {
+    // An ad is members-only in every team, private or not, publicContentAllowed or not: the
+    // request carries no visibility, and ContentVisibilityRules accepts TEAM alone for an ad
+    // (docs/LEDGER_*.md API-176).
     ad.setVisibility(Visibility.TEAM);
     ad.setName(request.name());
     ad.setStatus(request.status());

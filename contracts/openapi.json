@@ -645,13 +645,18 @@
             "type" : "boolean",
             "description" : "Whether the interactive route planner is open to this team",
             "examples" : [ false ]
+          },
+          "publicContentAllowed" : {
+            "type" : "boolean",
+            "description" : "Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing. Omitted: left as it is (off for a new team).",
+            "examples" : [ false ]
           }
         }
       },
       "AdminTeamDto" : {
         "description" : "Admin team view with domain info",
         "type" : "object",
-        "required" : [ "id", "name", "slug", "domainId", "domainName", "visibility", "visibilityEditable", "joinable", "addMemberAllowed", "enableRoutePlanner", "deleted", "memberCount", "createdAt" ],
+        "required" : [ "id", "name", "slug", "domainId", "domainName", "visibility", "visibilityEditable", "joinable", "addMemberAllowed", "enableRoutePlanner", "publicContentAllowed", "deleted", "memberCount", "createdAt" ],
         "properties" : {
           "id" : {
             "type" : "string",
@@ -694,6 +699,10 @@
           "enableRoutePlanner" : {
             "type" : "boolean",
             "description" : "Whether the interactive route planner is open to this team"
+          },
+          "publicContentAllowed" : {
+            "type" : "boolean",
+            "description" : "Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing"
           },
           "deleted" : {
             "type" : "boolean",
@@ -25080,7 +25089,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "13.5.0",
+    "version" : "13.6.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

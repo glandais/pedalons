@@ -44,6 +44,9 @@ abstract class AdminTeamDto with _$AdminTeamDto {
     /// Whether the interactive route planner is open to this team
     required bool enableRoutePlanner,
 
+    /// Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing
+    required bool publicContentAllowed,
+
     /// Is team soft-deleted
     required bool deleted,
 

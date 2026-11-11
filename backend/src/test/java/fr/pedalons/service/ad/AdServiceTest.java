@@ -32,6 +32,7 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
+import java.util.List;
 import org.geolatte.geom.G2D;
 import org.geolatte.geom.Point;
 import org.jspecify.annotations.Nullable;
@@ -283,6 +284,30 @@ class AdServiceTest extends AbstractBaseTest {
       assertEquals("New Ad", result.name());
       assertEquals(AdType.SALE, result.adType());
       assertEquals(new BigDecimal("100.00"), result.price());
+    }
+
+    /**
+     * An ad is members-only whatever its team: public, or private with publicContentAllowed
+     * (docs/LEDGER_*.md API-176).
+     */
+    @Test
+    void shouldAlwaysBeTeamOnly_evenInAPrivateTeamWithPublicContentAllowed() {
+      Team privateTeam =
+          dataService.createTeam(admin, "Private Team", "private-team", Visibility.TEAM);
+      dataService.addUserToTeam(member, privateTeam, TeamRole.MEMBER);
+      dataService.setTeamPublicContentAllowed(privateTeam, true);
+      dataService.setTeamPublicContentAllowed(team, true);
+
+      for (Team t : List.of(team, privateTeam)) {
+        userService.setUserForTest(member);
+        AdDto created = adService.createAd(t.getSlug(), locatedRequest(null));
+        assertEquals(Visibility.TEAM, created.visibility());
+        AdDto updated = adService.updateAd(t.getSlug(), created.slug(), locatedRequest(null));
+        assertEquals(Visibility.TEAM, updated.visibility());
+        // Nothing readable by link either: an anonymous visitor is refused the detail.
+        userService.setUserForTest(null);
+        assertThrows(PedalonsException.class, () -> adService.getDto(t.getSlug(), created.slug()));
+      }
     }
 
     @Test

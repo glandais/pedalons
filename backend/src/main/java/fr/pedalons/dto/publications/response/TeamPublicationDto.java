@@ -44,6 +44,6 @@ public record TeamPublicationDto(
       return null;
     }
     return AssetService.buildImageUrl(
-        team.getSlug(), Visibility.valueOf(aboutVisibility), assetId, fileId);
+        team.getSlug(), team.getVisibility(), Visibility.valueOf(aboutVisibility), assetId, fileId);
   }
 }

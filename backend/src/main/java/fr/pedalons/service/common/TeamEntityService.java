@@ -9,7 +9,6 @@ import fr.pedalons.domain.team.Team;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.common.request.WithVisibility;
 import fr.pedalons.dto.error.ErrorCode;
-import fr.pedalons.enums.Visibility;
 import fr.pedalons.infrastructure.exception.*;
 import fr.pedalons.repository.common.TeamEntityRepository;
 import fr.pedalons.repository.moderation.ContentReportRepository;
@@ -39,6 +38,8 @@ public abstract class TeamEntityService<
 
   @Inject protected ContentReportRepository contentReportRepository;
 
+  @Inject protected ContentVisibilityRules contentVisibilityRules;
+
   protected abstract R getRepository();
 
   protected abstract D toDto(T entity);
@@ -52,11 +53,13 @@ public abstract class TeamEntityService<
     assetService.updateAssets(teamEntity, mediaDto);
   }
 
+  /**
+   * Refuses a visibility the team does not accept for this kind of entity — the single rule of
+   * {@link ContentVisibilityRules} (docs/LEDGER_*.md API-176).
+   */
   protected void validateVisibility(Team team, WithVisibility request) {
-    // Validate visibility: private teams can only have team-only items
-    if (team.getVisibility() == Visibility.TEAM && request.visibility() != Visibility.TEAM) {
-      throw new BusinessException(ErrorCode.INVALID_VISIBILITY);
-    }
+    contentVisibilityRules.requireAllowed(
+        team, getRepository().getAllEntityType(), request.visibility());
   }
 
   protected T findBySlug(Team team, String entitySlug) {

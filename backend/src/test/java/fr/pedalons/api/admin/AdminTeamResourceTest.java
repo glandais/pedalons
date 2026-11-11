@@ -32,7 +32,8 @@ class AdminTeamResourceTest extends AbstractResourceTest {
   @Test
   void updateTeamAttributes_asAdmin_shouldSucceed() {
     String teamId = TsidUtils.toString(team1.getId());
-    AdminTeamAttributesRequest request = new AdminTeamAttributesRequest(true, true, true, true);
+    AdminTeamAttributesRequest request =
+        new AdminTeamAttributesRequest(true, true, true, true, true);
 
     given()
         .auth()
@@ -46,13 +47,15 @@ class AdminTeamResourceTest extends AbstractResourceTest {
         .body("visibilityEditable", equalTo(true))
         .body("joinable", equalTo(true))
         .body("addMemberAllowed", equalTo(true))
-        .body("enableRoutePlanner", equalTo(true));
+        .body("enableRoutePlanner", equalTo(true))
+        .body("publicContentAllowed", equalTo(true));
   }
 
   @Test
   void updateTeamAttributes_asNonAdmin_shouldReturn403() {
     String teamId = TsidUtils.toString(team1.getId());
-    AdminTeamAttributesRequest request = new AdminTeamAttributesRequest(true, true, true, true);
+    AdminTeamAttributesRequest request =
+        new AdminTeamAttributesRequest(true, true, true, true, true);
 
     given()
         .auth()
@@ -69,7 +72,8 @@ class AdminTeamResourceTest extends AbstractResourceTest {
   void updateTeamAttributes_withUnknownId_shouldReturn404() {
     // TSID for Long value 1 — valid format but never matches a real team
     String nonExistentId = TsidUtils.toString(1L);
-    AdminTeamAttributesRequest request = new AdminTeamAttributesRequest(false, false, false, false);
+    AdminTeamAttributesRequest request =
+        new AdminTeamAttributesRequest(false, false, false, false, false);
 
     given()
         .auth()
@@ -92,7 +96,7 @@ class AdminTeamResourceTest extends AbstractResourceTest {
         .auth()
         .oauth2(platformAdminToken())
         .contentType("application/json")
-        .body(new AdminTeamAttributesRequest(true, true, true, true))
+        .body(new AdminTeamAttributesRequest(true, true, true, true, true))
         .when()
         .patch("/api/admin/teams/" + teamId + "/attributes")
         .then()
@@ -109,7 +113,45 @@ class AdminTeamResourceTest extends AbstractResourceTest {
         .body("visibilityEditable", equalTo(true))
         .body("joinable", equalTo(true))
         .body("addMemberAllowed", equalTo(true))
-        .body("enableRoutePlanner", equalTo(true));
+        .body("enableRoutePlanner", equalTo(true))
+        .body("publicContentAllowed", equalTo(true));
+  }
+
+  /** Off for every team until the platform admin turns it on (docs/LEDGER_*.md API-176). */
+  @Test
+  void publicContentAllowed_isOffByDefault() {
+    given()
+        .auth()
+        .oauth2(platformAdminToken())
+        .when()
+        .get("/api/admin/teams/" + TsidUtils.toString(team1.getId()))
+        .then()
+        .statusCode(200)
+        .body("publicContentAllowed", equalTo(false));
+  }
+
+  /**
+   * A client unaware of the flag omits it: the save of the other attributes must leave it as it is,
+   * never withdraw it (docs/LEDGER_*.md API-176).
+   */
+  @Test
+  void updateTeamAttributes_withoutPublicContentAllowed_keepsIt() {
+    dataService.setTeamPublicContentAllowed(team1, true);
+    String teamId = TsidUtils.toString(team1.getId());
+
+    given()
+        .auth()
+        .oauth2(platformAdminToken())
+        .contentType("application/json")
+        .body(
+            "{\"visibilityEditable\":false,\"joinable\":false,\"addMemberAllowed\":false,"
+                + "\"enableRoutePlanner\":false}")
+        .when()
+        .patch("/api/admin/teams/" + teamId + "/attributes")
+        .then()
+        .statusCode(200)
+        .body("joinable", equalTo(false))
+        .body("publicContentAllowed", equalTo(true));
   }
 
   /**
@@ -146,7 +188,8 @@ class AdminTeamResourceTest extends AbstractResourceTest {
   @Test
   void updateTeamAttributes_unauthenticated_shouldReturn401() {
     String teamId = TsidUtils.toString(team1.getId());
-    AdminTeamAttributesRequest request = new AdminTeamAttributesRequest(true, true, true, true);
+    AdminTeamAttributesRequest request =
+        new AdminTeamAttributesRequest(true, true, true, true, true);
 
     given()
         .contentType("application/json")

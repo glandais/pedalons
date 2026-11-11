@@ -26,6 +26,7 @@ public class AssetRepository implements PanacheRepository<Asset> {
       Long assetId,
       Long fileId,
       String teamSlug,
+      Visibility teamVisibility,
       Visibility visibility) {}
 
   /**
@@ -161,7 +162,7 @@ public class AssetRepository implements PanacheRepository<Asset> {
     List<Object[]> rows =
         getEntityManager()
             .createQuery(
-                "select a.teamEntity.id, a.type, a.id, a.fileId, a.team.slug,"
+                "select a.teamEntity.id, a.type, a.id, a.fileId, a.team.slug, a.team.visibility,"
                     + " a.teamEntity.visibility from Asset a where a.teamEntity.id in (:ids) and"
                     + " a.type in (:types) and a.team.domain.id = :domainId",
                 Object[].class)
@@ -178,7 +179,8 @@ public class AssetRepository implements PanacheRepository<Asset> {
               (Long) row[2],
               (Long) row[3],
               (String) row[4],
-              (Visibility) row[5]));
+              (Visibility) row[5],
+              (Visibility) row[6]));
     }
     return thumbnails;
   }

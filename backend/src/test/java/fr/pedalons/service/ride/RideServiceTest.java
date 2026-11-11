@@ -224,6 +224,34 @@ class RideServiceTest extends AbstractBaseTest {
     assertTrue(exception.getMessage().contains("INVALID_VISIBILITY"));
   }
 
+  /** A private team the platform admin allowed may publish by link (docs/LEDGER_*.md API-176). */
+  @Test
+  void createRide_shouldSucceedForPublicRideInPrivateTeamWithPublicContentAllowed() {
+    Team privateTeam =
+        dataService.createTeam(user2, "Private Team", "private-team", Visibility.TEAM);
+    dataService.addUserToTeam(organizer, privateTeam, TeamRole.ORGANIZER);
+    dataService.setTeamPublicContentAllowed(privateTeam, true);
+
+    userService.setUserForTest(organizer);
+    for (Visibility visibility : List.of(Visibility.PUBLIC, Visibility.PUBLIC_UNLISTED)) {
+      RideRequest request =
+          new RideRequest(
+              "Ride " + visibility,
+              MediaDto.builder().build(),
+              wall(Instant.now().plusSeconds(24 * 3600)),
+              Status.DRAFT,
+              visibility,
+              null,
+              null,
+              null,
+              null,
+              List.of(),
+              null);
+      RideDto result = rideService.createRide(privateTeam.getSlug(), request);
+      assertEquals(visibility, result.getVisibility());
+    }
+  }
+
   @Test
   void createRide_shouldSucceedForTeamRideInTeamVisibilityTeam() {
     Team privateTeam =

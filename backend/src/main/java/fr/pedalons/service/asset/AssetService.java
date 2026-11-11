@@ -412,14 +412,15 @@ public class AssetService {
   }
 
   public String getImageUrl(Asset asset) {
-    String teamSlug = asset.getTeam().getSlug();
+    Team team = asset.getTeam();
     Visibility visibility;
     if (asset.getTeamEntity() == null) {
       visibility = Visibility.TEAM;
     } else {
       visibility = asset.getTeamEntity().getVisibility();
     }
-    return buildImageUrl(teamSlug, visibility, asset.getId(), asset.getFileId());
+    return buildImageUrl(
+        team.getSlug(), team.getVisibility(), visibility, asset.getId(), asset.getFileId());
   }
 
   /**
@@ -464,11 +465,25 @@ public class AssetService {
    * owning entity's visibility, which is fine for one asset and a per-row cost for a page of them.
    * Bulk callers project those two scalars in their own query and land here, so the URL shape stays
    * defined in exactly one place. See {@code ThumbnailLookup}.
+   *
+   * <p>The prefix only decides whether the image is indexable ({@code ApiNoIndexFilter} spares
+   * {@code /api/download/public/images/}); access is checked on the owning entity whatever the
+   * prefix. The {@code PUBLIC} content of a private team is readable by link only, never indexed
+   * (docs/LEDGER_*.md API-176, decision D1), so its images get the unlisted prefix, which keeps the
+   * {@code noindex} header while link previews still fetch them.
    */
   public static String buildImageUrl(
-      String teamSlug, Visibility visibility, Long assetId, Long fileId) {
+      String teamSlug,
+      Visibility teamVisibility,
+      Visibility visibility,
+      Long assetId,
+      Long fileId) {
+    Visibility urlVisibility =
+        visibility == Visibility.PUBLIC && teamVisibility == Visibility.TEAM
+            ? Visibility.PUBLIC_UNLISTED
+            : visibility;
     return "/api/download/"
-        + visibility.name().toLowerCase()
+        + urlVisibility.name().toLowerCase()
         + "/images/"
         + teamSlug
         + "/"

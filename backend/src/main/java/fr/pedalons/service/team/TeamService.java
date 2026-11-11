@@ -384,12 +384,16 @@ public class TeamService {
   }
 
   /**
-   * A team going private takes its content with it. A private team only accepts team-only content
-   * (see {@code validateVisibility}): left public, a ride would stay listed and indexed as public
-   * content of a team nobody can open, and could no longer be saved as it is — every edit would be
-   * refused until someone changed its visibility by hand. Deleted content too, so that restoring it
-   * does not bring it back public. The reverse move changes nothing: making content public is a
-   * decision per item.
+   * A team going private takes its content with it: everything becomes team-only, deleted content
+   * too, so that restoring it does not bring it back public. Going private is a decision to close
+   * the team, and leaving its content readable by link would silently undo it (docs/LEDGER_*.md
+   * API-176, decision D3).
+   *
+   * <p>Unchanged by {@code Team.publicContentAllowed}: without the flag, a private team only accepts
+   * team-only content ({@link fr.pedalons.service.common.ContentVisibilityRules}), so content left
+   * public could no longer be saved as it is — every edit would be refused until someone changed
+   * its visibility by hand. With it, the team may reopen its content item by item, by link only.
+   * The reverse move changes nothing either way: making content public is a decision per item.
    */
   private void makeContentTeamOnly(Team team) {
     for (String entity : List.of("TeamEntity", "RideTemplate")) {

@@ -1,13 +1,11 @@
 package fr.pedalons.service.ridetemplate;
 
 import fr.pedalons.common.TsidUtils;
-import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.domain.ridetemplate.RideTemplate;
 import fr.pedalons.domain.ridetemplate.RideTemplateGroup;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.common.PedalonsPage;
-import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.ridetemplates.request.RideTemplateGroupRequest;
 import fr.pedalons.dto.ridetemplates.request.RideTemplateRequest;
 import fr.pedalons.dto.ridetemplates.response.RideTemplateDto;
@@ -19,6 +17,7 @@ import fr.pedalons.enums.Visibility;
 import fr.pedalons.infrastructure.exception.NotFoundException;
 import fr.pedalons.repository.ridetemplate.RideTemplateGroupRepository;
 import fr.pedalons.repository.ridetemplate.RideTemplateRepository;
+import fr.pedalons.service.common.ContentVisibilityRules;
 import fr.pedalons.service.common.SlugService;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.annotation.CheckAccess;
@@ -51,6 +50,9 @@ public class RideTemplateService {
 
   @Inject TagLookup tagLookup;
 
+  /** The visibility rule shared with every other content type (docs/LEDGER_*.md API-176). */
+  @Inject ContentVisibilityRules contentVisibilityRules;
+
   @CheckAccess(entityType = EntityType.RIDE_TEMPLATE, action = ActionType.LIST)
   public RideTemplateListResponse listTemplates(
       String teamSlug, @Nullable String search, int page, int size) {
@@ -80,11 +82,8 @@ public class RideTemplateService {
   public RideTemplateDto createTemplate(String teamSlug, RideTemplateRequest request) {
     Team team = teamService.getTeam(teamSlug);
     User creator = pedalonsContext.getUser();
-    // Validate visibility: private teams can only have team-only templates
     Visibility visibility = request.visibility();
-    if (team.getVisibility() == Visibility.TEAM && visibility != Visibility.TEAM) {
-      throw new BusinessException(ErrorCode.INVALID_VISIBILITY);
-    }
+    contentVisibilityRules.requireAllowed(team, EntityType.RIDE_TEMPLATE, visibility);
 
     // Generate slug from name, ensure unique within team. RideTemplate is a plain BaseEntity, not
     // a TeamEntity, so it has no TeamEntityType and can never be a SlugService.RESERVED_SLUGS key
@@ -133,10 +132,7 @@ public class RideTemplateService {
             .findByTeamAndSlug(team.getId(), templateSlug)
             .orElseThrow(() -> new NotFoundException(EntityType.RIDE_TEMPLATE, templateSlug));
 
-    // Validate visibility: private teams can only have team-only templates
-    if (team.getVisibility() == Visibility.TEAM && request.visibility() != Visibility.TEAM) {
-      throw new BusinessException(ErrorCode.INVALID_VISIBILITY);
-    }
+    contentVisibilityRules.requireAllowed(team, EntityType.RIDE_TEMPLATE, request.visibility());
 
     template.setName(request.name());
     template.setMarkdown(request.markdown());

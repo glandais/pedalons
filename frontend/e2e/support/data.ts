@@ -192,6 +192,7 @@ export async function setTeamAttributes(
     joinable: current.joinable,
     addMemberAllowed: current.addMemberAllowed,
     enableRoutePlanner: current.enableRoutePlanner,
+    publicContentAllowed: current.publicContentAllowed,
     ...changes,
   }
   await apiPatch(admin, `/api/admin/teams/${team.id}/attributes`, attributes)

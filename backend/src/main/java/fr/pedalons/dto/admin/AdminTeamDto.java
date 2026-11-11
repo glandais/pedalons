@@ -26,6 +26,12 @@ public record AdminTeamDto(
             description = "Whether the interactive route planner is open to this team",
             required = true)
         boolean enableRoutePlanner,
+    @Schema(
+            description =
+                "Whether a private team may publish content as public or unlisted, readable by"
+                    + " link only and kept out of every listing",
+            required = true)
+        boolean publicContentAllowed,
     @Schema(description = "Is team soft-deleted", required = true) boolean deleted,
     @Schema(description = "Number of members", required = true) long memberCount,
     @Schema(description = "Team creation timestamp", required = true) Instant createdAt) {
@@ -42,6 +48,7 @@ public record AdminTeamDto(
         team.isJoinable(),
         team.isAddMemberAllowed(),
         team.isEnableRoutePlanner(),
+        team.isPublicContentAllowed(),
         team.isDeleted(),
         memberCount,
         team.getCreatedAt());

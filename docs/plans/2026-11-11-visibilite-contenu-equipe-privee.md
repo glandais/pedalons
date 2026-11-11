@@ -1,6 +1,6 @@
 # Contenu public d'une équipe privée, et droits calculés par le backend
 
-Écrit le 11 novembre 2026. **État : plan arrêté, rien de codé.** Ledger `API-176` (backend et
+Écrit le 11 novembre 2026. **État : lot 1 fait le 11 novembre 2026 (drapeau, `V87`, règle unique d'écriture, lecture par lien, contrat `13.6.0`) ; lots 2 à 5 à faire.** Ledger `API-176` (backend et
 contrat), `WEB-166` (site), `MOB-137` (application), `SEC-51` (constat relevé, hors périmètre).
 Branche prévue : `feat/visibilite-equipe-privee`, un commit par lot. Numéros vérifiés libres le
 11 novembre 2026 : `API-176`, `WEB-166`, `MOB-137`, `SEC-51`, migration `V87`, contrat `13.5.0`
@@ -127,6 +127,15 @@ propriétaire.
 
 Ce que le lien révèle, par construction : le nom et le slug de l'équipe privée, portés par le DTO
 de l'entité. Pas son logo : il appartient à la page « À propos », qui reste « Équipe ».
+
+Deux ajouts du lot 1, issus de sa relecture, à ne pas défaire :
+
+- **`V87` remet en « Équipe » tout le contenu des équipes privées** (modèles compris).
+  `makeContentTeamOnly` n'existe que depuis le 28 septembre 2026 : une équipe passée en privé avant
+  pouvait encore porter du contenu non « Équipe », que seule la clause retirée cachait.
+- **Les images d'une entité « Public » d'une équipe privée sortent sous le préfixe
+  `public_unlisted`** (`AssetService.buildImageUrl`), qui porte `noindex` : le préfixe `public` est
+  laissé indexable par `ApiNoIndexFilter`, ce qui contredirait D1.
 
 `makeContentTeamOnly` ne change pas (D3). Avec le drapeau, une équipe passée en privé peut ensuite
 rouvrir entité par entité.

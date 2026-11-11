@@ -252,6 +252,42 @@ class RideTemplateServiceTest extends AbstractBaseTest {
           () -> templateService.createTemplate(privateTeam.getSlug(), request));
     }
 
+    /** The flag opens the common rule to templates too (docs/LEDGER_*.md API-176). */
+    @Test
+    void shouldCreatePublicTemplateOnPrivateTeamWithPublicContentAllowed() {
+      dataService.setTeamPublicContentAllowed(privateTeam, true);
+      queryContext.setUserForTest(organizer);
+
+      for (Visibility visibility : List.of(Visibility.PUBLIC, Visibility.PUBLIC_UNLISTED)) {
+        RideTemplateRequest request =
+            new RideTemplateRequest(
+                "Template " + visibility, "markdown", visibility, Status.PUBLISHED, List.of());
+        RideTemplateDto result = templateService.createTemplate(privateTeam.getSlug(), request);
+        assertEquals(visibility, result.visibility());
+      }
+    }
+
+    @Test
+    void shouldThrowInvalidVisibilityOnUpdateOfPrivateTeamTemplateWithoutTheFlag() {
+      dataService.createRideTemplate(privateTeam, admin, "Private Template", "private-template");
+      RideTemplateRequest request =
+          new RideTemplateRequest(
+              "Private Template",
+              "markdown",
+              Visibility.PUBLIC_UNLISTED,
+              Status.PUBLISHED,
+              List.of());
+
+      queryContext.setUserForTest(organizer);
+      PedalonsException exception =
+          assertThrows(
+              PedalonsException.class,
+              () ->
+                  templateService.updateTemplate(
+                      privateTeam.getSlug(), "private-template", request));
+      assertTrue(exception.getMessage().contains("INVALID_VISIBILITY"));
+    }
+
     @Test
     void shouldAllowTeamVisibilityOnPrivateTeam() {
       RideTemplateRequest request =

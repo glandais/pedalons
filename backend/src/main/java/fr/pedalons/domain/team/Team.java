@@ -162,6 +162,17 @@ public class Team extends BaseEntity {
   @Column(name = "enable_route_planner", nullable = false)
   private boolean enableRoutePlanner = false;
 
+  /**
+   * Whether a private ({@code TEAM}) team may publish an entity as {@code PUBLIC} or {@code
+   * PUBLIC_UNLISTED}, readable by link only: such content stays out of every listing and of the
+   * sitemap. Off by default and platform-admin only — a team is born private and unvetted, and this
+   * is the guard against public content from strangers. Meaningless for a team that is not private,
+   * which already chooses its visibilities. See {@code ContentVisibilityRules},
+   * docs/LEDGER_*.md API-176.
+   */
+  @Column(name = "public_content_allowed", nullable = false)
+  private boolean publicContentAllowed = false;
+
   @Column(name = "deleted", nullable = false)
   private boolean deleted = false;
 

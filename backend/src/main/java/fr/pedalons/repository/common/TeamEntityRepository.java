@@ -383,9 +383,16 @@ public interface TeamEntityRepository<T extends TeamEntity, Q extends TeamEntity
       } else {
         publicEntity.add(new SimpleClause("te.team.visibility = 'PUBLIC'", Map.of()));
       }
+      // A private team's content never enters a list, whatever its own visibility: a private team
+      // may publish an entity readable by link only (docs/LEDGER_*.md API-176), and both clauses
+      // above keep it out.
       publicEntity.add(new SimpleClause("te.visibility = 'PUBLIC'", Map.of()));
     } else {
-      publicEntity.add(new SimpleClause("te.team.visibility <> 'TEAM'", Map.of()));
+      // A detail is read by link: the entity's own visibility decides, whatever its team's. A
+      // private team only holds non-TEAM content when the platform admin allowed it
+      // (Team.publicContentAllowed, docs/LEDGER_*.md API-176) — or held it before the flag was
+      // withdrawn, which leaves it readable. Ads stay out for anonymous callers (TYPE(te) <> Ad
+      // in getPedalonsQuery) and are always TEAM anyway.
       publicEntity.add(new SimpleClause("te.visibility <> 'TEAM'", Map.of()));
     }
     publicEntity.add(new SimpleClause("te.status IN ('PUBLISHED', 'CANCELLED')", Map.of()));

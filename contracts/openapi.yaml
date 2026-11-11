@@ -653,6 +653,13 @@ components:
           description: Whether the interactive route planner is open to this team
           examples:
           - false
+        publicContentAllowed:
+          type: boolean
+          description: "Whether a private team may publish content as public or unlisted,\
+            \ readable by link only and kept out of every listing. Omitted: left as\
+            \ it is (off for a new team)."
+          examples:
+          - false
     AdminTeamDto:
       description: Admin team view with domain info
       type: object
@@ -667,6 +674,7 @@ components:
       - joinable
       - addMemberAllowed
       - enableRoutePlanner
+      - publicContentAllowed
       - deleted
       - memberCount
       - createdAt
@@ -704,6 +712,10 @@ components:
         enableRoutePlanner:
           type: boolean
           description: Whether the interactive route planner is open to this team
+        publicContentAllowed:
+          type: boolean
+          description: "Whether a private team may publish content as public or unlisted,\
+            \ readable by link only and kept out of every listing"
         deleted:
           type: boolean
           description: Is team soft-deleted
@@ -20592,7 +20604,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 13.5.0
+  version: 13.6.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

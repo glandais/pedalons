@@ -680,6 +680,26 @@ class TeamServiceTest extends AbstractBaseTest {
     assertEquals(Visibility.PUBLIC, dataService.getRide(otherRide.getId()).getVisibility());
   }
 
+  /**
+   * The flag lets a private team reopen its content item by item; it does not keep it open when the
+   * team goes private (docs/LEDGER_*.md API-176, decision D3).
+   */
+  @Test
+  void updateTeam_goingPrivate_makesItsContentTeamOnly_evenWithPublicContentAllowed() {
+    Team team = dataService.createTeam(user1, "Going Private", "going-private", Visibility.PUBLIC);
+    dataService.setTeamVisibilityEditable(team, true);
+    dataService.setTeamPublicContentAllowed(team, true);
+    Instant when = Instant.now().plus(1, ChronoUnit.DAYS);
+    Ride ride = dataService.createRide(team, user1, "Ride", "ride", when, Visibility.PUBLIC);
+    Post post = dataService.createPost(team, user1, "Unlisted", when, Visibility.PUBLIC_UNLISTED);
+
+    queryContext.setUserForTest(user1);
+    teamService.updateTeam(team.getSlug(), requestWithVisibility("Going Private", Visibility.TEAM));
+
+    assertEquals(Visibility.TEAM, dataService.getRide(ride.getId()).getVisibility());
+    assertEquals(Visibility.TEAM, dataService.getPost(post.getId()).getVisibility());
+  }
+
   @Test
   void updateTeam_goingPublic_leavesItsContentAsItIs() {
     Team team = dataService.createTeam(user1, "Going Public", "going-public", Visibility.TEAM);

@@ -25,6 +25,8 @@ export interface AdminTeamDto {
   addMemberAllowed: boolean
   /** Whether the interactive route planner is open to this team */
   enableRoutePlanner: boolean
+  /** Whether a private team may publish content as public or unlisted, readable by link only and kept out of every listing */
+  publicContentAllowed: boolean
   /** Is team soft-deleted */
   deleted: boolean
   /** Number of members */

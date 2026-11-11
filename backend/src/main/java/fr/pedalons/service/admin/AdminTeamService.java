@@ -70,6 +70,9 @@ public class AdminTeamService {
     team.setJoinable(request.joinable());
     team.setAddMemberAllowed(request.addMemberAllowed());
     team.setEnableRoutePlanner(request.enableRoutePlanner());
+    if (request.publicContentAllowed() != null) {
+      team.setPublicContentAllowed(request.publicContentAllowed());
+    }
     teamRepository.persist(team);
     long memberCount = userTeamRepository.count("team.id = ?1", team.getId());
     return AdminTeamDto.from(team, memberCount);

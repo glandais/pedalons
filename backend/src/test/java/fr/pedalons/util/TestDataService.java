@@ -281,6 +281,13 @@ public class TestDataService {
     managed.setVisibilityEditable(editable);
   }
 
+  /** The platform admin's flag of docs/LEDGER_*.md API-176. */
+  @Transactional
+  public void setTeamPublicContentAllowed(Team team, boolean allowed) {
+    Team managed = teamRepository.findById(team.getId());
+    managed.setPublicContentAllowed(allowed);
+  }
+
   @Transactional
   public void setPostsAsTeamByDefault(Team team, boolean value) {
     teamRepository.findById(team.getId()).setPostsAsTeamByDefault(value);
