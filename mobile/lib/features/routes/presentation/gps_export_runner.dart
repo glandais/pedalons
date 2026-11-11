@@ -1,12 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../api/generated/export.dart';
 import '../../../config/paths.dart';
 import '../../../core/pdl/pdl.dart';
 import '../../../core/utils/api_error_handler.dart';
+import '../../../core/utils/push_location.dart';
 import '../../../core/utils/share_file.dart';
 import '../../../core/utils/share_link.dart';
 import '../../../keys.dart';
@@ -130,7 +130,10 @@ mixin GpsExportRunner<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     final RouteExportOperations ops = ref.read(routeExportOperationsProvider);
     switch (choice) {
       case GpsConnectDevice():
-        await context.push(Paths.profileDevices());
+        // Pas `context.push` : les fiches (sortie, parcours, étape…) sont
+        // plein écran, et y pousser une page de l'onglet Profil laissait un
+        // écran vide (docs/LEDGER_*.md MOB-138, même cause que MOB-46).
+        pushLocation(context, Paths.profileDevices());
       case GpsDeliverFile(
         :final AssetDto asset,
         :final AssetDestination destination,

@@ -4,7 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/config/locale_context.dart';
+import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/share_file.dart';
@@ -357,6 +360,91 @@ void main() {
 
       expect(choice, isA<GpsConnectDevice>());
       expect(find.byKey(keys.gpsSheet.sheet), findsNothing);
+    });
+
+    // docs/LEDGER_*.md MOB-138 : la fiche est plein écran (navigateur
+    // racine), « Appareils » une page de l'onglet Profil. Un `push` ordinaire
+    // y laissait un écran vide.
+    testWidgets('« Connecter un compteur » depuis une fiche plein écran ouvre '
+        'les appareils, dans l’onglet Profil', (WidgetTester tester) async {
+      setCurrentLocale('fr');
+      tester.view.physicalSize = const Size(1000, 3000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final GlobalKey<NavigatorState> rootKey = GlobalKey<NavigatorState>();
+      Page<void> tab(String label) =>
+          NoTransitionPage<void>(child: Text(label));
+      final GoRouter router = GoRouter(
+        navigatorKey: rootKey,
+        initialLocation: Paths.home(),
+        routes: <RouteBase>[
+          StatefulShellRoute.indexedStack(
+            builder: (_, _, StatefulNavigationShell shell) =>
+                Scaffold(body: shell),
+            branches: <StatefulShellBranch>[
+              StatefulShellBranch(
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: Paths.home(),
+                    pageBuilder: (_, _) => tab('accueil'),
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'fiche',
+                        parentNavigatorKey: rootKey,
+                        builder: (_, _) =>
+                            Scaffold(body: _RouteGps(route: route())),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              StatefulShellBranch(
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: Paths.profile(),
+                    pageBuilder: (_, _) => tab('profil'),
+                  ),
+                  GoRoute(
+                    path: Paths.profileDevices(),
+                    pageBuilder: (_, _) => tab('appareils'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            unitSystemProvider.overrideWithValue(UnitSystem.metric),
+            authProvider.overrideWith(
+              (ref) =>
+                  _StubAuthNotifier(ref, const <GpsServiceConnectionDto>[]),
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: PedalonsTheme.build(Brightness.light),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await settle(tester);
+      unawaited(router.push('${Paths.home()}fiche'));
+      await settle(tester);
+
+      await openFromRoute(tester);
+      await tester.tap(find.byKey(keys.gpsSheet.connectDevice));
+      await settle(tester);
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('appareils').hitTestable(), findsOneWidget);
+
+      router.pop();
+      await settle(tester);
+      expect(find.text('profil').hitTestable(), findsOneWidget);
     });
 
     test('le bouton n’a rien à proposer sans fichier ni envoi possible', () {
