@@ -1575,7 +1575,7 @@
             "items" : {
               "$ref" : "#/components/schemas/Visibility"
             },
-            "description" : "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+            "description" : "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
           },
           "indexable" : {
             "type" : "boolean",
@@ -2272,7 +2272,7 @@
       },
       "ErrorCode" : {
         "type" : "string",
-        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "TRIP_FINISHED", "INVALID_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "PLANNER_STATE_INVALID", "PLANNER_IMPORT_TOO_LARGE", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "GEOCODING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_RESET_BLOCKED", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
+        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "TRIP_FINISHED", "INVALID_VISIBILITY", "INCOMPATIBLE_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "PLANNER_STATE_INVALID", "PLANNER_IMPORT_TOO_LARGE", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "GEOCODING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_RESET_BLOCKED", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
       },
       "ErrorDetails" : {
         "oneOf" : [ {
@@ -2281,6 +2281,8 @@
           "$ref" : "#/components/schemas/NotFoundDetails"
         }, {
           "$ref" : "#/components/schemas/AssetNotAvailableDetails"
+        }, {
+          "$ref" : "#/components/schemas/IncompatibleVisibilityDetails"
         } ],
         "description" : "Error details",
         "discriminator" : {
@@ -2288,7 +2290,8 @@
           "mapping" : {
             "VALIDATION" : "#/components/schemas/ErrorValidationDetails",
             "NOT_FOUND" : "#/components/schemas/NotFoundDetails",
-            "ASSET_NOT_AVAILABLE" : "#/components/schemas/AssetNotAvailableDetails"
+            "ASSET_NOT_AVAILABLE" : "#/components/schemas/AssetNotAvailableDetails",
+            "INCOMPATIBLE_VISIBILITY" : "#/components/schemas/IncompatibleVisibilityDetails"
           }
         },
         "type" : "object",
@@ -2989,6 +2992,81 @@
       "Hilliness" : {
         "type" : "string",
         "enum" : [ "FLAT", "HILLY", "MOUNTAINOUS" ]
+      },
+      "IncompatibleRouteDto" : {
+        "type" : "object",
+        "description" : "A route whose visibility does not fit the ride or trip being saved",
+        "required" : [ "slug", "name", "visibility", "proposedVisibility" ],
+        "properties" : {
+          "slug" : {
+            "type" : "string",
+            "description" : "Route URL slug"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "Route name"
+          },
+          "visibility" : {
+            "description" : "The route's visibility today (TEAM)",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Visibility"
+          },
+          "proposedVisibility" : {
+            "description" : "The visibility the route takes when the same request is replayed with alignVisibility = true: always PUBLIC_UNLISTED, even under a PUBLIC ride or trip — a route never becomes PUBLIC without an explicit decision.",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Visibility"
+          }
+        }
+      },
+      "IncompatibleRouteUsageDto" : {
+        "type" : "object",
+        "description" : "A ride or trip visible outside the team that uses the route",
+        "required" : [ "type", "slug", "name", "visibility" ],
+        "properties" : {
+          "type" : {
+            "description" : "RIDE or TRIP",
+            "type" : "string",
+            "$ref" : "#/components/schemas/PublicationType"
+          },
+          "slug" : {
+            "type" : "string",
+            "description" : "Ride or trip URL slug, in the route's team"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "Ride or trip name"
+          },
+          "visibility" : {
+            "description" : "Its visibility: PUBLIC or PUBLIC_UNLISTED",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Visibility"
+          }
+        }
+      },
+      "IncompatibleVisibilityDetails" : {
+        "type" : "object",
+        "required" : [ "type", "routes", "usages" ],
+        "properties" : {
+          "type" : {
+            "description" : "Type",
+            "type" : "string",
+            "$ref" : "#/components/schemas/ErrorCode"
+          },
+          "routes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncompatibleRouteDto"
+            },
+            "description" : "Saving a ride or a trip (creation, update, restore): its TEAM routes — its own, its groups' or its stages'. Replaying the creation or the update with alignVisibility = true raises each to its proposedVisibility in the same transaction. Empty when a route was saved."
+          },
+          "usages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IncompatibleRouteUsageDto"
+            },
+            "description" : "Saving a route as TEAM: the rides and trips visible outside the team that use it — directly, through a group or through a stage — drafts included, deleted ones left out. There is no alignment in this direction: change them first. Empty when a ride or a trip was saved."
+          }
+        }
       },
       "Instant" : {
         "type" : "string",
@@ -5223,6 +5301,10 @@
           "templateId" : {
             "type" : "string",
             "description" : "ID (TSID) of the team's template the ride is created from. On a creation, raises the template's nextNumber by one when it has one; ignored on an update, and when the template no longer exists."
+          },
+          "alignVisibility" : {
+            "type" : "boolean",
+            "description" : "When the ride is not TEAM and uses TEAM routes (its own, its groups'), the save is refused with INCOMPATIBLE_VISIBILITY, listing them. Replayed with true, it raises those routes to PUBLIC_UNLISTED in the same transaction, then saves. Omitted or false: refused as before."
           }
         }
       },
@@ -7631,6 +7713,10 @@
               "type" : "string"
             },
             "description" : "IDs (TSID) of the team's TRIP tags the trip carries, replacing the whole set — at most 10, each a tag of this team and of kind TRIP, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update."
+          },
+          "alignVisibility" : {
+            "type" : "boolean",
+            "description" : "When the trip is not TEAM and uses TEAM routes (its own, its stages'), the save is refused with INCOMPATIBLE_VISIBILITY, listing them. Replayed with true, it raises those routes to PUBLIC_UNLISTED in the same transaction, then saves. Omitted or false: refused as before."
           }
         }
       },
@@ -20635,6 +20721,16 @@
               }
             }
           },
+          "400" : {
+            "description" : "INCOMPATIBLE_VISIBILITY: the ride is not TEAM and one of its routes went TEAM while it was deleted; errorDetails.routes lists them",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401" : {
             "description" : "Unauthorized",
             "content" : {
@@ -23967,6 +24063,16 @@
               }
             }
           },
+          "400" : {
+            "description" : "INCOMPATIBLE_VISIBILITY: the trip is not TEAM and one of its routes went TEAM while it was deleted; errorDetails.routes lists them",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401" : {
             "description" : "Unauthorized",
             "content" : {
@@ -25235,7 +25341,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "13.7.0",
+    "version" : "13.8.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

@@ -47,5 +47,33 @@ public record TripRequest(
                     + " most 10, each a tag of this team and of kind TRIP, else 400 (TAG_INVALID,"
                     + " TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a"
                     + " creation, left as they are on an update.")
-        List<String> tagIds)
-    implements WithVisibility {}
+        List<String> tagIds,
+    @Nullable
+        @Schema(
+            description =
+                "When the trip is not TEAM and uses TEAM routes (its own, its stages'), the save is"
+                    + " refused with INCOMPATIBLE_VISIBILITY, listing them. Replayed with true, it"
+                    + " raises those routes to PUBLIC_UNLISTED in the same transaction, then saves."
+                    + " Omitted or false: refused as before.")
+        Boolean alignVisibility)
+    implements WithVisibility {
+
+  /** Without the alignment: the shape this record had before docs/LEDGER_*.md API-176, lot 3. */
+  public TripRequest(
+      String name,
+      MediaDto media,
+      EventDateTime dateTime,
+      Status status,
+      Visibility visibility,
+      @Nullable String routeSlug,
+      @Nullable EventDateTime publishAt,
+      List<StageRequest> stages,
+      @Nullable List<String> tagIds) {
+    this(name, media, dateTime, status, visibility, routeSlug, publishAt, stages, tagIds, null);
+  }
+
+  /** Whether the TEAM routes of the trip are to be raised rather than refused (API-176). */
+  public boolean alignsVisibility() {
+    return Boolean.TRUE.equals(alignVisibility);
+  }
+}

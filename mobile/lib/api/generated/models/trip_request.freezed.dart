@@ -25,7 +25,8 @@ mixin _$TripRequest {
  List<StageRequest> get stages;/// Overall route slug for the trip
  String? get routeSlug;/// Publication time (for scheduled publishing), a wall time in the trip's zone like dateTime.
  String? get publishAt;/// IDs (TSID) of the team's TRIP tags the trip carries, replacing the whole set — at most 10, each a tag of this team and of kind TRIP, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update.
- List<String>? get tagIds;
+ List<String>? get tagIds;/// When the trip is not TEAM and uses TEAM routes (its own, its stages'), the save is refused with INCOMPATIBLE_VISIBILITY, listing them. Replayed with true, it raises those routes to PUBLIC_UNLISTED in the same transaction, then saves. Omitted or false: refused as before.
+ bool? get alignVisibility;
 /// Create a copy of TripRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -39,20 +40,20 @@ $TripRequestCopyWith<TripRequest> get copyWith => _$TripRequestCopyWithImpl<Trip
 @override
 bool operator ==(Object other) {
   final _this = this as TripRequest;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TripRequest&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.media, _this.media) || other.media == _this.media)&&(identical(other.dateTime, _this.dateTime) || other.dateTime == _this.dateTime)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&const DeepCollectionEquality().equals(other.stages, _this.stages)&&(identical(other.routeSlug, _this.routeSlug) || other.routeSlug == _this.routeSlug)&&(identical(other.publishAt, _this.publishAt) || other.publishAt == _this.publishAt)&&const DeepCollectionEquality().equals(other.tagIds, _this.tagIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TripRequest&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.media, _this.media) || other.media == _this.media)&&(identical(other.dateTime, _this.dateTime) || other.dateTime == _this.dateTime)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&const DeepCollectionEquality().equals(other.stages, _this.stages)&&(identical(other.routeSlug, _this.routeSlug) || other.routeSlug == _this.routeSlug)&&(identical(other.publishAt, _this.publishAt) || other.publishAt == _this.publishAt)&&const DeepCollectionEquality().equals(other.tagIds, _this.tagIds)&&(identical(other.alignVisibility, _this.alignVisibility) || other.alignVisibility == _this.alignVisibility));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as TripRequest;
-  return Object.hash(runtimeType,_this.name,_this.media,_this.dateTime,_this.status,_this.visibility,const DeepCollectionEquality().hash(_this.stages),_this.routeSlug,_this.publishAt,const DeepCollectionEquality().hash(_this.tagIds));
+  return Object.hash(runtimeType,_this.name,_this.media,_this.dateTime,_this.status,_this.visibility,const DeepCollectionEquality().hash(_this.stages),_this.routeSlug,_this.publishAt,const DeepCollectionEquality().hash(_this.tagIds),_this.alignVisibility);
 }
 
 @override
 String toString() {
   final _this = this as TripRequest;
-  return 'TripRequest(name: ${_this.name}, media: ${_this.media}, dateTime: ${_this.dateTime}, status: ${_this.status}, visibility: ${_this.visibility}, stages: ${_this.stages}, routeSlug: ${_this.routeSlug}, publishAt: ${_this.publishAt}, tagIds: ${_this.tagIds})';
+  return 'TripRequest(name: ${_this.name}, media: ${_this.media}, dateTime: ${_this.dateTime}, status: ${_this.status}, visibility: ${_this.visibility}, stages: ${_this.stages}, routeSlug: ${_this.routeSlug}, publishAt: ${_this.publishAt}, tagIds: ${_this.tagIds}, alignVisibility: ${_this.alignVisibility})';
 }
 
 
@@ -63,7 +64,7 @@ abstract mixin class $TripRequestCopyWith<$Res>  {
   factory $TripRequestCopyWith(TripRequest value, $Res Function(TripRequest) _then) = _$TripRequestCopyWithImpl;
 @useResult
 $Res call({
- String name, MediaDto media, String dateTime, String status, String visibility, List<StageRequest> stages, String? routeSlug, String? publishAt, List<String>? tagIds
+ String name, MediaDto media, String dateTime, String status, String visibility, List<StageRequest> stages, String? routeSlug, String? publishAt, List<String>? tagIds, bool? alignVisibility
 });
 
 
@@ -80,7 +81,7 @@ class _$TripRequestCopyWithImpl<$Res>
 
 /// Create a copy of TripRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? media = null,Object? dateTime = null,Object? status = null,Object? visibility = null,Object? stages = null,Object? routeSlug = freezed,Object? publishAt = freezed,Object? tagIds = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? media = null,Object? dateTime = null,Object? status = null,Object? visibility = null,Object? stages = null,Object? routeSlug = freezed,Object? publishAt = freezed,Object? tagIds = freezed,Object? alignVisibility = freezed,}) {
   return _then(TripRequest(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,media: null == media ? _self.media : media // ignore: cast_nullable_to_non_nullable
@@ -91,7 +92,8 @@ as String,stages: null == stages ? _self.stages : stages // ignore: cast_nullabl
 as List<StageRequest>,routeSlug: freezed == routeSlug ? _self.routeSlug : routeSlug // ignore: cast_nullable_to_non_nullable
 as String?,publishAt: freezed == publishAt ? _self.publishAt : publishAt // ignore: cast_nullable_to_non_nullable
 as String?,tagIds: freezed == tagIds ? _self.tagIds : tagIds // ignore: cast_nullable_to_non_nullable
-as List<String>?,
+as List<String>?,alignVisibility: freezed == alignVisibility ? _self.alignVisibility : alignVisibility // ignore: cast_nullable_to_non_nullable
+as bool?,
   ));
 }
 /// Create a copy of TripRequest
@@ -185,10 +187,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  MediaDto media,  String dateTime,  String status,  String visibility,  List<StageRequest> stages,  String? routeSlug,  String? publishAt,  List<String>? tagIds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  MediaDto media,  String dateTime,  String status,  String visibility,  List<StageRequest> stages,  String? routeSlug,  String? publishAt,  List<String>? tagIds,  bool? alignVisibility)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TripRequest() when $default != null:
-return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibility,_that.stages,_that.routeSlug,_that.publishAt,_that.tagIds);case _:
+return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibility,_that.stages,_that.routeSlug,_that.publishAt,_that.tagIds,_that.alignVisibility);case _:
   return orElse();
 
 }
@@ -206,10 +208,10 @@ return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibil
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  MediaDto media,  String dateTime,  String status,  String visibility,  List<StageRequest> stages,  String? routeSlug,  String? publishAt,  List<String>? tagIds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  MediaDto media,  String dateTime,  String status,  String visibility,  List<StageRequest> stages,  String? routeSlug,  String? publishAt,  List<String>? tagIds,  bool? alignVisibility)  $default,) {final _that = this;
 switch (_that) {
 case _TripRequest():
-return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibility,_that.stages,_that.routeSlug,_that.publishAt,_that.tagIds);case _:
+return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibility,_that.stages,_that.routeSlug,_that.publishAt,_that.tagIds,_that.alignVisibility);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -226,10 +228,10 @@ return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibil
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  MediaDto media,  String dateTime,  String status,  String visibility,  List<StageRequest> stages,  String? routeSlug,  String? publishAt,  List<String>? tagIds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  MediaDto media,  String dateTime,  String status,  String visibility,  List<StageRequest> stages,  String? routeSlug,  String? publishAt,  List<String>? tagIds,  bool? alignVisibility)?  $default,) {final _that = this;
 switch (_that) {
 case _TripRequest() when $default != null:
-return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibility,_that.stages,_that.routeSlug,_that.publishAt,_that.tagIds);case _:
+return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibility,_that.stages,_that.routeSlug,_that.publishAt,_that.tagIds,_that.alignVisibility);case _:
   return null;
 
 }
@@ -241,7 +243,7 @@ return $default(_that.name,_that.media,_that.dateTime,_that.status,_that.visibil
 @JsonSerializable()
 
 class _TripRequest implements TripRequest {
-  const _TripRequest({required this.name, required this.media, required this.dateTime, required this.status, required this.visibility, required  List<StageRequest> stages, this.routeSlug, this.publishAt,  List<String>? tagIds}): _stages = stages,_tagIds = tagIds;
+  const _TripRequest({required this.name, required this.media, required this.dateTime, required this.status, required this.visibility, required  List<StageRequest> stages, this.routeSlug, this.publishAt,  List<String>? tagIds, this.alignVisibility}): _stages = stages,_tagIds = tagIds;
   factory _TripRequest.fromJson(Map<String, dynamic> json) => _$TripRequestFromJson(json);
 
 /// Trip name
@@ -278,6 +280,8 @@ class _TripRequest implements TripRequest {
   return EqualUnmodifiableListView(value);
 }
 
+/// When the trip is not TEAM and uses TEAM routes (its own, its stages'), the save is refused with INCOMPATIBLE_VISIBILITY, listing them. Replayed with true, it raises those routes to PUBLIC_UNLISTED in the same transaction, then saves. Omitted or false: refused as before.
+@override final  bool? alignVisibility;
 
 /// Create a copy of TripRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -292,18 +296,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TripRequest&&(identical(other.name, name) || other.name == name)&&(identical(other.media, media) || other.media == media)&&(identical(other.dateTime, dateTime) || other.dateTime == dateTime)&&(identical(other.status, status) || other.status == status)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&const DeepCollectionEquality().equals(other.stages, _stages)&&(identical(other.routeSlug, routeSlug) || other.routeSlug == routeSlug)&&(identical(other.publishAt, publishAt) || other.publishAt == publishAt)&&const DeepCollectionEquality().equals(other.tagIds, _tagIds));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TripRequest&&(identical(other.name, name) || other.name == name)&&(identical(other.media, media) || other.media == media)&&(identical(other.dateTime, dateTime) || other.dateTime == dateTime)&&(identical(other.status, status) || other.status == status)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&const DeepCollectionEquality().equals(other.stages, _stages)&&(identical(other.routeSlug, routeSlug) || other.routeSlug == routeSlug)&&(identical(other.publishAt, publishAt) || other.publishAt == publishAt)&&const DeepCollectionEquality().equals(other.tagIds, _tagIds)&&(identical(other.alignVisibility, alignVisibility) || other.alignVisibility == alignVisibility));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,name,media,dateTime,status,visibility,const DeepCollectionEquality().hash(_stages),routeSlug,publishAt,const DeepCollectionEquality().hash(_tagIds));
+    return Object.hash(runtimeType,name,media,dateTime,status,visibility,const DeepCollectionEquality().hash(_stages),routeSlug,publishAt,const DeepCollectionEquality().hash(_tagIds),alignVisibility);
 }
 
 @override
 String toString() {
-    return 'TripRequest(name: $name, media: $media, dateTime: $dateTime, status: $status, visibility: $visibility, stages: $stages, routeSlug: $routeSlug, publishAt: $publishAt, tagIds: $tagIds)';
+    return 'TripRequest(name: $name, media: $media, dateTime: $dateTime, status: $status, visibility: $visibility, stages: $stages, routeSlug: $routeSlug, publishAt: $publishAt, tagIds: $tagIds, alignVisibility: $alignVisibility)';
 }
 
 
@@ -314,7 +318,7 @@ abstract mixin class _$TripRequestCopyWith<$Res> implements $TripRequestCopyWith
   factory _$TripRequestCopyWith(_TripRequest value, $Res Function(_TripRequest) _then) = __$TripRequestCopyWithImpl;
 @override @useResult
 $Res call({
- String name, MediaDto media, String dateTime, String status, String visibility, List<StageRequest> stages, String? routeSlug, String? publishAt, List<String>? tagIds
+ String name, MediaDto media, String dateTime, String status, String visibility, List<StageRequest> stages, String? routeSlug, String? publishAt, List<String>? tagIds, bool? alignVisibility
 });
 
 
@@ -331,7 +335,7 @@ class __$TripRequestCopyWithImpl<$Res>
 
 /// Create a copy of TripRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? media = null,Object? dateTime = null,Object? status = null,Object? visibility = null,Object? stages = null,Object? routeSlug = freezed,Object? publishAt = freezed,Object? tagIds = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? media = null,Object? dateTime = null,Object? status = null,Object? visibility = null,Object? stages = null,Object? routeSlug = freezed,Object? publishAt = freezed,Object? tagIds = freezed,Object? alignVisibility = freezed,}) {
   return _then(_TripRequest(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,media: null == media ? _self.media : media // ignore: cast_nullable_to_non_nullable
@@ -342,7 +346,8 @@ as String,stages: null == stages ? _self._stages : stages // ignore: cast_nullab
 as List<StageRequest>,routeSlug: freezed == routeSlug ? _self.routeSlug : routeSlug // ignore: cast_nullable_to_non_nullable
 as String?,publishAt: freezed == publishAt ? _self.publishAt : publishAt // ignore: cast_nullable_to_non_nullable
 as String?,tagIds: freezed == tagIds ? _self._tagIds : tagIds // ignore: cast_nullable_to_non_nullable
-as List<String>?,
+as List<String>?,alignVisibility: freezed == alignVisibility ? _self.alignVisibility : alignVisibility // ignore: cast_nullable_to_non_nullable
+as bool?,
   ));
 }
 

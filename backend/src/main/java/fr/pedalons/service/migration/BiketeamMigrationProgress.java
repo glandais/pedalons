@@ -70,6 +70,13 @@ public interface BiketeamMigrationProgress {
      */
     public static final String TAGS_TRUNCATED = "TAGS_TRUNCATED";
 
+    /**
+     * A route the team's visibility would lower to {@code TEAM} while a ride or a trip of Pédalons
+     * that is not {@code TEAM} uses it: it keeps its visibility, as {@code RouteService.updateRoute}
+     * would refuse the change (docs/LEDGER_*.md API-176, decision D6).
+     */
+    public static final String ROUTE_VISIBILITY_KEPT = "ROUTE_VISIBILITY_KEPT";
+
     private Codes() {}
   }
 

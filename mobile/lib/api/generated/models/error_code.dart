@@ -48,6 +48,8 @@ enum ErrorCode {
   tripFinished('TRIP_FINISHED'),
   @JsonValue('INVALID_VISIBILITY')
   invalidVisibility('INVALID_VISIBILITY'),
+  @JsonValue('INCOMPATIBLE_VISIBILITY')
+  incompatibleVisibility('INCOMPATIBLE_VISIBILITY'),
   @JsonValue('PUBLIC_TRIP_PRIVATE_ROUTE')
   publicTripPrivateRoute('PUBLIC_TRIP_PRIVATE_ROUTE'),
   @JsonValue('GPX_FAILURE')

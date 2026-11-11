@@ -28,6 +28,10 @@ ErrorDetails _$ErrorDetailsFromJson(
           return ErrorDetailsAssetNotAvailable.fromJson(
             json
           );
+                case 'INCOMPATIBLE_VISIBILITY':
+          return ErrorDetailsIncompatibleVisibility.fromJson(
+            json
+          );
         
           default:
             throw CheckedFromJsonException(
@@ -86,13 +90,14 @@ extension ErrorDetailsPatterns on ErrorDetails {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ErrorDetailsValidation value)?  validation,TResult Function( ErrorDetailsNotFound value)?  notFound,TResult Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ErrorDetailsValidation value)?  validation,TResult Function( ErrorDetailsNotFound value)?  notFound,TResult Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
 return validation(_that);case ErrorDetailsNotFound() when notFound != null:
 return notFound(_that);case ErrorDetailsAssetNotAvailable() when assetNotAvailable != null:
-return assetNotAvailable(_that);case _:
+return assetNotAvailable(_that);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
+return incompatibleVisibility(_that);case _:
   return orElse();
 
 }
@@ -110,13 +115,14 @@ return assetNotAvailable(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ErrorDetailsValidation value)  validation,required TResult Function( ErrorDetailsNotFound value)  notFound,required TResult Function( ErrorDetailsAssetNotAvailable value)  assetNotAvailable,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ErrorDetailsValidation value)  validation,required TResult Function( ErrorDetailsNotFound value)  notFound,required TResult Function( ErrorDetailsAssetNotAvailable value)  assetNotAvailable,required TResult Function( ErrorDetailsIncompatibleVisibility value)  incompatibleVisibility,}){
 final _that = this;
 switch (_that) {
 case ErrorDetailsValidation():
 return validation(_that);case ErrorDetailsNotFound():
 return notFound(_that);case ErrorDetailsAssetNotAvailable():
-return assetNotAvailable(_that);}
+return assetNotAvailable(_that);case ErrorDetailsIncompatibleVisibility():
+return incompatibleVisibility(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -130,13 +136,14 @@ return assetNotAvailable(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ErrorDetailsValidation value)?  validation,TResult? Function( ErrorDetailsNotFound value)?  notFound,TResult? Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ErrorDetailsValidation value)?  validation,TResult? Function( ErrorDetailsNotFound value)?  notFound,TResult? Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult? Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,}){
 final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
 return validation(_that);case ErrorDetailsNotFound() when notFound != null:
 return notFound(_that);case ErrorDetailsAssetNotAvailable() when assetNotAvailable != null:
-return assetNotAvailable(_that);case _:
+return assetNotAvailable(_that);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
+return incompatibleVisibility(_that);case _:
   return null;
 
 }
@@ -153,12 +160,13 @@ return assetNotAvailable(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( List<FieldError> fieldErrors)?  validation,TResult Function( String entityType,  String searchedBy,  String id)?  notFound,TResult Function( String assetId)?  assetNotAvailable,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( List<FieldError> fieldErrors)?  validation,TResult Function( String entityType,  String searchedBy,  String id)?  notFound,TResult Function( String assetId)?  assetNotAvailable,TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
 return validation(_that.fieldErrors);case ErrorDetailsNotFound() when notFound != null:
 return notFound(_that.entityType,_that.searchedBy,_that.id);case ErrorDetailsAssetNotAvailable() when assetNotAvailable != null:
-return assetNotAvailable(_that.assetId);case _:
+return assetNotAvailable(_that.assetId);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
+return incompatibleVisibility(_that.routes,_that.usages);case _:
   return orElse();
 
 }
@@ -176,12 +184,13 @@ return assetNotAvailable(_that.assetId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( List<FieldError> fieldErrors)  validation,required TResult Function( String entityType,  String searchedBy,  String id)  notFound,required TResult Function( String assetId)  assetNotAvailable,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( List<FieldError> fieldErrors)  validation,required TResult Function( String entityType,  String searchedBy,  String id)  notFound,required TResult Function( String assetId)  assetNotAvailable,required TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)  incompatibleVisibility,}) {final _that = this;
 switch (_that) {
 case ErrorDetailsValidation():
 return validation(_that.fieldErrors);case ErrorDetailsNotFound():
 return notFound(_that.entityType,_that.searchedBy,_that.id);case ErrorDetailsAssetNotAvailable():
-return assetNotAvailable(_that.assetId);}
+return assetNotAvailable(_that.assetId);case ErrorDetailsIncompatibleVisibility():
+return incompatibleVisibility(_that.routes,_that.usages);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -195,12 +204,13 @@ return assetNotAvailable(_that.assetId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( List<FieldError> fieldErrors)?  validation,TResult? Function( String entityType,  String searchedBy,  String id)?  notFound,TResult? Function( String assetId)?  assetNotAvailable,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( List<FieldError> fieldErrors)?  validation,TResult? Function( String entityType,  String searchedBy,  String id)?  notFound,TResult? Function( String assetId)?  assetNotAvailable,TResult? Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,}) {final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
 return validation(_that.fieldErrors);case ErrorDetailsNotFound() when notFound != null:
 return notFound(_that.entityType,_that.searchedBy,_that.id);case ErrorDetailsAssetNotAvailable() when assetNotAvailable != null:
-return assetNotAvailable(_that.assetId);case _:
+return assetNotAvailable(_that.assetId);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
+return incompatibleVisibility(_that.routes,_that.usages);case _:
   return null;
 
 }
@@ -443,6 +453,99 @@ class _$ErrorDetailsAssetNotAvailableCopyWithImpl<$Res>
   return _then(ErrorDetailsAssetNotAvailable(
 assetId: null == assetId ? _self.assetId : assetId // ignore: cast_nullable_to_non_nullable
 as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class ErrorDetailsIncompatibleVisibility implements ErrorDetails {
+  const ErrorDetailsIncompatibleVisibility({required  List<IncompatibleRouteDto> routes, required  List<IncompatibleRouteUsageDto> usages,  String? $type}): _routes = routes,_usages = usages,$type = $type ?? 'INCOMPATIBLE_VISIBILITY';
+  factory ErrorDetailsIncompatibleVisibility.fromJson(Map<String, dynamic> json) => _$ErrorDetailsIncompatibleVisibilityFromJson(json);
+
+/// Saving a ride or a trip (creation, update, restore): its TEAM routes — its own, its groups' or its stages'. Replaying the creation or the update with alignVisibility = true raises each to its proposedVisibility in the same transaction. Empty when a route was saved.
+ final  List<IncompatibleRouteDto> _routes;
+/// Saving a ride or a trip (creation, update, restore): its TEAM routes — its own, its groups' or its stages'. Replaying the creation or the update with alignVisibility = true raises each to its proposedVisibility in the same transaction. Empty when a route was saved.
+ List<IncompatibleRouteDto> get routes {
+  if (_routes is EqualUnmodifiableListView) return _routes;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_routes);
+}
+
+/// Saving a route as TEAM: the rides and trips visible outside the team that use it — directly, through a group or through a stage — drafts included, deleted ones left out. There is no alignment in this direction: change them first. Empty when a ride or a trip was saved.
+ final  List<IncompatibleRouteUsageDto> _usages;
+/// Saving a route as TEAM: the rides and trips visible outside the team that use it — directly, through a group or through a stage — drafts included, deleted ones left out. There is no alignment in this direction: change them first. Empty when a ride or a trip was saved.
+ List<IncompatibleRouteUsageDto> get usages {
+  if (_usages is EqualUnmodifiableListView) return _usages;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_usages);
+}
+
+
+@JsonKey(name: 'type')
+final String $type;
+
+
+/// Create a copy of ErrorDetails
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ErrorDetailsIncompatibleVisibilityCopyWith<ErrorDetailsIncompatibleVisibility> get copyWith => _$ErrorDetailsIncompatibleVisibilityCopyWithImpl<ErrorDetailsIncompatibleVisibility>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ErrorDetailsIncompatibleVisibilityToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ErrorDetailsIncompatibleVisibility&&const DeepCollectionEquality().equals(other.routes, _routes)&&const DeepCollectionEquality().equals(other.usages, _usages));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_routes),const DeepCollectionEquality().hash(_usages));
+}
+
+@override
+String toString() {
+    return 'ErrorDetails.incompatibleVisibility(routes: $routes, usages: $usages)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ErrorDetailsIncompatibleVisibilityCopyWith<$Res> implements $ErrorDetailsCopyWith<$Res> {
+  factory $ErrorDetailsIncompatibleVisibilityCopyWith(ErrorDetailsIncompatibleVisibility value, $Res Function(ErrorDetailsIncompatibleVisibility) _then) = _$ErrorDetailsIncompatibleVisibilityCopyWithImpl;
+@useResult
+$Res call({
+ List<IncompatibleRouteDto> routes, List<IncompatibleRouteUsageDto> usages
+});
+
+
+
+
+}
+/// @nodoc
+class _$ErrorDetailsIncompatibleVisibilityCopyWithImpl<$Res>
+    implements $ErrorDetailsIncompatibleVisibilityCopyWith<$Res> {
+  _$ErrorDetailsIncompatibleVisibilityCopyWithImpl(this._self, this._then);
+
+  final ErrorDetailsIncompatibleVisibility _self;
+  final $Res Function(ErrorDetailsIncompatibleVisibility) _then;
+
+/// Create a copy of ErrorDetails
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? routes = null,Object? usages = null,}) {
+  return _then(ErrorDetailsIncompatibleVisibility(
+routes: null == routes ? _self._routes : routes // ignore: cast_nullable_to_non_nullable
+as List<IncompatibleRouteDto>,usages: null == usages ? _self._usages : usages // ignore: cast_nullable_to_non_nullable
+as List<IncompatibleRouteUsageDto>,
   ));
 }
 

@@ -37,4 +37,6 @@ export interface RideRequest {
   tagIds?: string[]
   /** ID (TSID) of the team's template the ride is created from. On a creation, raises the template's nextNumber by one when it has one; ignored on an update, and when the template no longer exists. */
   templateId?: string
+  /** When the ride is not TEAM and uses TEAM routes (its own, its groups'), the save is refused with INCOMPATIBLE_VISIBILITY, listing them. Replayed with true, it raises those routes to PUBLIC_UNLISTED in the same transaction, then saves. Omitted or false: refused as before. */
+  alignVisibility?: boolean
 }

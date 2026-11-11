@@ -613,6 +613,12 @@ export const CreateTripBody = zod
       .describe(
         "IDs (TSID) of the team's TRIP tags the trip carries, replacing the whole set — at most 10, each a tag of this team and of kind TRIP, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update."
       ),
+    alignVisibility: zod
+      .boolean()
+      .optional()
+      .describe(
+        "When the trip is not TEAM and uses TEAM routes (its own, its stages'), the save is refused with INCOMPATIBLE_VISIBILITY, listing them. Replayed with true, it raises those routes to PUBLIC_UNLISTED in the same transaction, then saves. Omitted or false: refused as before."
+      ),
   })
   .describe('Trip request')
 
@@ -1391,7 +1397,7 @@ export const CreateTripResponse = zod
                       .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
                       .optional()
                       .describe(
-                        "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                        "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
                       ),
                     indexable: zod
                       .boolean()
@@ -1776,7 +1782,7 @@ export const CreateTripResponse = zod
                   .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
                   .optional()
                   .describe(
-                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
                   ),
                 indexable: zod
                   .boolean()
@@ -1991,7 +1997,7 @@ export const CreateTripResponse = zod
           .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
           .optional()
           .describe(
-            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
           ),
         indexable: zod
           .boolean()
@@ -2618,6 +2624,12 @@ export const UpdateTripBody = zod
       .optional()
       .describe(
         "IDs (TSID) of the team's TRIP tags the trip carries, replacing the whole set — at most 10, each a tag of this team and of kind TRIP, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update."
+      ),
+    alignVisibility: zod
+      .boolean()
+      .optional()
+      .describe(
+        "When the trip is not TEAM and uses TEAM routes (its own, its stages'), the save is refused with INCOMPATIBLE_VISIBILITY, listing them. Replayed with true, it raises those routes to PUBLIC_UNLISTED in the same transaction, then saves. Omitted or false: refused as before."
       ),
   })
   .describe('Trip request')
@@ -3397,7 +3409,7 @@ export const UpdateTripResponse = zod
                       .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
                       .optional()
                       .describe(
-                        "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                        "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
                       ),
                     indexable: zod
                       .boolean()
@@ -3782,7 +3794,7 @@ export const UpdateTripResponse = zod
                   .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
                   .optional()
                   .describe(
-                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
                   ),
                 indexable: zod
                   .boolean()
@@ -3997,7 +4009,7 @@ export const UpdateTripResponse = zod
           .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
           .optional()
           .describe(
-            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
           ),
         indexable: zod
           .boolean()
@@ -4795,7 +4807,7 @@ export const GetTripResponse = zod
                       .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
                       .optional()
                       .describe(
-                        "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                        "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
                       ),
                     indexable: zod
                       .boolean()
@@ -5180,7 +5192,7 @@ export const GetTripResponse = zod
                   .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
                   .optional()
                   .describe(
-                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
                   ),
                 indexable: zod
                   .boolean()
@@ -5395,7 +5407,7 @@ export const GetTripResponse = zod
           .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
           .optional()
           .describe(
-            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
           ),
         indexable: zod
           .boolean()
@@ -6298,7 +6310,7 @@ export const ChangeTripSlugResponse = zod
                       .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
                       .optional()
                       .describe(
-                        "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                        "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
                       ),
                     indexable: zod
                       .boolean()
@@ -6683,7 +6695,7 @@ export const ChangeTripSlugResponse = zod
                   .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
                   .optional()
                   .describe(
-                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
                   ),
                 indexable: zod
                   .boolean()
@@ -6898,7 +6910,7 @@ export const ChangeTripSlugResponse = zod
           .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
           .optional()
           .describe(
-            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
           ),
         indexable: zod
           .boolean()
@@ -7702,7 +7714,7 @@ export const ChangeTripStatusResponse = zod
                       .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
                       .optional()
                       .describe(
-                        "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                        "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
                       ),
                     indexable: zod
                       .boolean()
@@ -8087,7 +8099,7 @@ export const ChangeTripStatusResponse = zod
                   .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
                   .optional()
                   .describe(
-                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
                   ),
                 indexable: zod
                   .boolean()
@@ -8302,7 +8314,7 @@ export const ChangeTripStatusResponse = zod
           .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
           .optional()
           .describe(
-            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
           ),
         indexable: zod
           .boolean()
@@ -9100,7 +9112,7 @@ export const UndeleteTripResponse = zod
                       .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
                       .optional()
                       .describe(
-                        "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                        "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
                       ),
                     indexable: zod
                       .boolean()
@@ -9485,7 +9497,7 @@ export const UndeleteTripResponse = zod
                   .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
                   .optional()
                   .describe(
-                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
                   ),
                 indexable: zod
                   .boolean()
@@ -9700,7 +9712,7 @@ export const UndeleteTripResponse = zod
           .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
           .optional()
           .describe(
-            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. For a route used by a ride or a trip that is not TEAM (drafts included, deleted ones not), TEAM is left out: saving it as TEAM is refused with INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team accepts nothing but TEAM any more: the route cannot be saved until those usages go TEAM. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
           ),
         indexable: zod
           .boolean()

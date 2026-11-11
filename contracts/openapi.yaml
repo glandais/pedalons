@@ -1586,10 +1586,14 @@ components:
             $ref: "#/components/schemas/Visibility"
           description: "The visibilities this entity may be saved with, in the order\
             \ of the Visibility enum; an editor hides its selector when there is only\
-            \ one. Present on a detail only: absent on list rows, on embedded summaries,\
-            \ on the types without a visibility of their own (trip stages) and on\
-            \ the team's about page, whose visibility no endpoint sets. Clients that\
-            \ create read TeamDetailDto.allowedContentVisibilities instead."
+            \ one. For a route used by a ride or a trip that is not TEAM (drafts included,\
+            \ deleted ones not), TEAM is left out: saving it as TEAM is refused with\
+            \ INCOMPATIBLE_VISIBILITY. That can leave the list empty, when the team\
+            \ accepts nothing but TEAM any more: the route cannot be saved until those\
+            \ usages go TEAM. Present on a detail only: absent on list rows, on embedded\
+            \ summaries, on the types without a visibility of their own (trip stages)\
+            \ and on the team's about page, whose visibility no endpoint sets. Clients\
+            \ that create read TeamDetailDto.allowedContentVisibilities instead."
         indexable:
           type: boolean
           description: "Whether search engines may index the entity's page: the rule\
@@ -2281,6 +2285,7 @@ components:
       - RIDE_PAST
       - TRIP_FINISHED
       - INVALID_VISIBILITY
+      - INCOMPATIBLE_VISIBILITY
       - PUBLIC_TRIP_PRIVATE_ROUTE
       - GPX_FAILURE
       - FILE_REQUIRED
@@ -2383,6 +2388,7 @@ components:
       - $ref: "#/components/schemas/ErrorValidationDetails"
       - $ref: "#/components/schemas/NotFoundDetails"
       - $ref: "#/components/schemas/AssetNotAvailableDetails"
+      - $ref: "#/components/schemas/IncompatibleVisibilityDetails"
       description: Error details
       discriminator:
         propertyName: type
@@ -2390,6 +2396,7 @@ components:
           VALIDATION: "#/components/schemas/ErrorValidationDetails"
           NOT_FOUND: "#/components/schemas/NotFoundDetails"
           ASSET_NOT_AVAILABLE: "#/components/schemas/AssetNotAvailableDetails"
+          INCOMPATIBLE_VISIBILITY: "#/components/schemas/IncompatibleVisibilityDetails"
       type: object
       properties:
         type:
@@ -3086,6 +3093,81 @@ components:
       - FLAT
       - HILLY
       - MOUNTAINOUS
+    IncompatibleRouteDto:
+      type: object
+      description: A route whose visibility does not fit the ride or trip being saved
+      required:
+      - slug
+      - name
+      - visibility
+      - proposedVisibility
+      properties:
+        slug:
+          type: string
+          description: Route URL slug
+        name:
+          type: string
+          description: Route name
+        visibility:
+          description: The route's visibility today (TEAM)
+          type: string
+          $ref: "#/components/schemas/Visibility"
+        proposedVisibility:
+          description: "The visibility the route takes when the same request is replayed\
+            \ with alignVisibility = true: always PUBLIC_UNLISTED, even under a PUBLIC\
+            \ ride or trip — a route never becomes PUBLIC without an explicit decision."
+          type: string
+          $ref: "#/components/schemas/Visibility"
+    IncompatibleRouteUsageDto:
+      type: object
+      description: A ride or trip visible outside the team that uses the route
+      required:
+      - type
+      - slug
+      - name
+      - visibility
+      properties:
+        type:
+          description: RIDE or TRIP
+          type: string
+          $ref: "#/components/schemas/PublicationType"
+        slug:
+          type: string
+          description: "Ride or trip URL slug, in the route's team"
+        name:
+          type: string
+          description: Ride or trip name
+        visibility:
+          description: "Its visibility: PUBLIC or PUBLIC_UNLISTED"
+          type: string
+          $ref: "#/components/schemas/Visibility"
+    IncompatibleVisibilityDetails:
+      type: object
+      required:
+      - type
+      - routes
+      - usages
+      properties:
+        type:
+          description: Type
+          type: string
+          $ref: "#/components/schemas/ErrorCode"
+        routes:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncompatibleRouteDto"
+          description: "Saving a ride or a trip (creation, update, restore): its TEAM\
+            \ routes — its own, its groups' or its stages'. Replaying the creation\
+            \ or the update with alignVisibility = true raises each to its proposedVisibility\
+            \ in the same transaction. Empty when a route was saved."
+        usages:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncompatibleRouteUsageDto"
+          description: "Saving a route as TEAM: the rides and trips visible outside\
+            \ the team that use it — directly, through a group or through a stage\
+            \ — drafts included, deleted ones left out. There is no alignment in this\
+            \ direction: change them first. Empty when a ride or a trip was saved."
     Instant:
       type: string
       format: date-time
@@ -5330,6 +5412,12 @@ components:
           description: "ID (TSID) of the team's template the ride is created from.\
             \ On a creation, raises the template's nextNumber by one when it has one;\
             \ ignored on an update, and when the template no longer exists."
+        alignVisibility:
+          type: boolean
+          description: "When the ride is not TEAM and uses TEAM routes (its own, its\
+            \ groups'), the save is refused with INCOMPATIBLE_VISIBILITY, listing\
+            \ them. Replayed with true, it raises those routes to PUBLIC_UNLISTED\
+            \ in the same transaction, then saves. Omitted or false: refused as before."
     RideTemplateDto:
       type: object
       description: Ride template response
@@ -7826,6 +7914,12 @@ components:
             \ the whole set — at most 10, each a tag of this team and of kind TRIP,\
             \ else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all.\
             \ Omitted: none on a creation, left as they are on an update."
+        alignVisibility:
+          type: boolean
+          description: "When the trip is not TEAM and uses TEAM routes (its own, its\
+            \ stages'), the save is refused with INCOMPATIBLE_VISIBILITY, listing\
+            \ them. Replayed with true, it raises those routes to PUBLIC_UNLISTED\
+            \ in the same transaction, then saves. Omitted or false: refused as before."
     TripStageDto:
       type: object
       description: Trip stage information
@@ -17453,6 +17547,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RideDto"
+        "400":
+          description: "INCOMPATIBLE_VISIBILITY: the ride is not TEAM and one of its\
+            \ routes went TEAM while it was deleted; errorDetails.routes lists them"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Unauthorized
           content:
@@ -19869,6 +19970,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TripDto"
+        "400":
+          description: "INCOMPATIBLE_VISIBILITY: the trip is not TEAM and one of its\
+            \ routes went TEAM while it was deleted; errorDetails.routes lists them"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Unauthorized
           content:
@@ -20788,7 +20896,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 13.7.0
+  version: 13.8.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

@@ -44,6 +44,7 @@ import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.common.MemberNamesVisibility;
 import fr.pedalons.service.common.ParticipantPreviewLookup;
 import fr.pedalons.service.common.ParticipationLookup;
+import fr.pedalons.service.common.RouteVisibilityCompatibility;
 import fr.pedalons.service.common.TeamEntityService;
 import fr.pedalons.service.gps.sync.GpsSyncLookup;
 import fr.pedalons.service.notification.NotificationPublisher;
@@ -62,6 +63,7 @@ import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -107,6 +109,8 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
   @Inject ObjectMapper objectMapper;
 
   @Inject PublicationEndCalculator publicationEndCalculator;
+
+  @Inject RouteVisibilityCompatibility routeVisibilityCompatibility;
 
   @Override
   protected TripRepository getRepository() {
@@ -240,10 +244,11 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
     // Generate slug from name, ensure unique within team
     String slug = slugService.generateSlug(request.name(), team.getId(), tripRepository);
 
-    Route route = getRoute(teamSlug, request.routeSlug(), visibility);
+    Map<String, Route> routes = routesOf(teamSlug, team, request);
+    Route route = routeOf(routes, request.routeSlug());
     // Every stage's zone before the trip's: the trip takes its first stage's, and a stage the
     // previous one's (docs/LEDGER_*.md API-60).
-    List<StageParts> parts = stageParts(teamSlug, team, visibility, request.stages(), route);
+    List<StageParts> parts = stageParts(routes, team, request.stages(), route);
     ZoneId zone = tripZone(team, parts, route);
 
     Trip trip =
@@ -316,9 +321,8 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
 
   /** The parts of every stage of the request, in its order (docs/LEDGER_*.md API-60). */
   private List<StageParts> stageParts(
-      String teamSlug,
+      Map<String, Route> routesBySlug,
       Team team,
-      Visibility visibility,
       List<StageRequest> stages,
       @Nullable Route tripRoute) {
     List<Route> routes = new ArrayList<>();
@@ -326,7 +330,7 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
     List<Place> ends = new ArrayList<>();
     List<EventTimezoneResolver.StagePoints> points = new ArrayList<>();
     for (StageRequest stageRequest : stages) {
-      Route stageRoute = getRoute(teamSlug, stageRequest.routeSlug(), visibility);
+      Route stageRoute = routeOf(routesBySlug, stageRequest.routeSlug());
       Place startPlace = getPlace(stageRequest.startPlaceId(), team);
       routes.add(stageRoute);
       starts.add(startPlace);
@@ -370,16 +374,40 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
     stage.setStatus(trip.getStatus());
   }
 
-  private @Nullable Route getRoute(
-      String teamSlug, @Nullable String routeSlug, Visibility visibility) {
-    Route route = null;
-    if (routeSlug != null) {
-      route = routeService.get(teamSlug, routeSlug);
-      if (visibility != Visibility.TEAM && route.getVisibility() == Visibility.TEAM) {
-        throw new BusinessException(ErrorCode.PUBLIC_TRIP_PRIVATE_ROUTE);
+  /**
+   * Every route the request names — the trip's and its stages' — looked up once each, before
+   * anything is written, then made to fit the trip's visibility, which its stages inherit: refused
+   * with the list of the {@code TEAM} ones under a trip that is not {@code TEAM}, or raised with
+   * {@code alignVisibility} (docs/LEDGER_*.md API-176, decision D5). Routes are looked up in {@code
+   * team} only, so an alignment never reaches another team's.
+   */
+  private Map<String, Route> routesOf(String teamSlug, Team team, TripRequest request) {
+    Map<String, Route> routes = new LinkedHashMap<>();
+    List<@Nullable String> slugs = new ArrayList<>();
+    slugs.add(request.routeSlug());
+    request.stages().forEach(stage -> slugs.add(stage.routeSlug()));
+    for (String slug : slugs) {
+      if (slug != null && !routes.containsKey(slug)) {
+        routes.put(slug, routeService.get(teamSlug, slug));
       }
     }
-    return route;
+    routeVisibilityCompatibility.fitRoutes(
+        team, request.visibility(), routes.values(), request.alignsVisibility());
+    return routes;
+  }
+
+  private static @Nullable Route routeOf(Map<String, Route> routes, @Nullable String routeSlug) {
+    return routeSlug == null ? null : routes.get(routeSlug);
+  }
+
+  /** The routes a trip uses: its own and its live stages'. */
+  private static List<@Nullable Route> routesOf(Trip trip) {
+    List<@Nullable Route> routes = new ArrayList<>();
+    routes.add(trip.getRoute());
+    trip.getStages().stream()
+        .filter(stage -> !stage.isDeleted())
+        .forEach(stage -> routes.add(stage.getRoute()));
+    return routes;
   }
 
   private @Nullable Place getPlace(@Nullable String placeId, Team team) {
@@ -403,15 +431,16 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
 
     // Validate visibility: private teams can only have team-only trips
     validateVisibility(team, request);
+    // Every route looked up, and fitted to the visibility, before anything changes (API-176).
+    Map<String, Route> routes = routesOf(teamSlug, team, request);
     trip.setVisibility(request.visibility());
 
     trip.setName(request.name());
     trip.setStatus(request.status());
-    Route route = getRoute(teamSlug, request.routeSlug(), trip.getVisibility());
+    Route route = routeOf(routes, request.routeSlug());
     trip.setRoute(route);
     // Every stage's zone before the trip's dates (docs/LEDGER_*.md API-60).
-    List<StageParts> parts =
-        stageParts(teamSlug, team, trip.getVisibility(), request.stages(), route);
+    List<StageParts> parts = stageParts(routes, team, request.stages(), route);
     ZoneId zone = tripZone(team, parts, route);
     trip.setTimezone(zone.getId());
     trip.setDateTime(request.dateTime().toInstant(zone));
@@ -504,6 +533,9 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
     Team team = teamService.getTeam(teamSlug);
     Trip trip = findBySlugIncludeDeleted(team, tripSlug);
     requireNotRemovedByModeration(trip);
+    // As RideService.undeleteRide: a route may have gone TEAM while the trip was deleted. Refused
+    // then, with the list; no request body to carry alignVisibility (docs/LEDGER_*.md API-176).
+    routeVisibilityCompatibility.fitRoutes(team, trip.getVisibility(), routesOf(trip), false);
     trip.setDeleted(false);
     tripRepository.persist(trip);
     return toDto(trip);

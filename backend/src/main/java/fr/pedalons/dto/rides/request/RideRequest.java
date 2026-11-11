@@ -56,8 +56,51 @@ public record RideRequest(
                 "ID (TSID) of the team's template the ride is created from. On a creation, raises"
                     + " the template's nextNumber by one when it has one; ignored on an update, and"
                     + " when the template no longer exists.")
-        String templateId)
+        String templateId,
+    @Nullable
+        @Schema(
+            description =
+                "When the ride is not TEAM and uses TEAM routes (its own, its groups'), the save is"
+                    + " refused with INCOMPATIBLE_VISIBILITY, listing them. Replayed with true, it"
+                    + " raises those routes to PUBLIC_UNLISTED in the same transaction, then saves."
+                    + " Omitted or false: refused as before.")
+        Boolean alignVisibility)
     implements WithVisibility {
+
+  /** Without the alignment: the shape this record had before docs/LEDGER_*.md API-176, lot 3. */
+  public RideRequest(
+      String name,
+      MediaDto media,
+      EventDateTime dateTime,
+      Status status,
+      Visibility visibility,
+      @Nullable String routeSlug,
+      @Nullable String startPlaceId,
+      @Nullable String endPlaceId,
+      @Nullable EventDateTime publishAt,
+      List<GroupRequest> groups,
+      @Nullable List<String> tagIds,
+      @Nullable String templateId) {
+    this(
+        name,
+        media,
+        dateTime,
+        status,
+        visibility,
+        routeSlug,
+        startPlaceId,
+        endPlaceId,
+        publishAt,
+        groups,
+        tagIds,
+        templateId,
+        null);
+  }
+
+  /** Whether the TEAM routes of the ride are to be raised rather than refused (API-176). */
+  public boolean alignsVisibility() {
+    return Boolean.TRUE.equals(alignVisibility);
+  }
 
   /** Without a template: the shape this record had before API-108. */
   public RideRequest(
@@ -84,6 +127,7 @@ public record RideRequest(
         publishAt,
         groups,
         tagIds,
+        null,
         null);
   }
 }

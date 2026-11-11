@@ -16,6 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
   @JsonSubTypes.Type(value = ErrorValidationDetails.class, name = "VALIDATION"),
   @JsonSubTypes.Type(value = NotFoundDetails.class, name = "NOT_FOUND"),
   @JsonSubTypes.Type(value = AssetNotAvailableDetails.class, name = "ASSET_NOT_AVAILABLE"),
+  @JsonSubTypes.Type(value = IncompatibleVisibilityDetails.class, name = "INCOMPATIBLE_VISIBILITY"),
 })
 @Schema(
     description = "Error details",
@@ -24,8 +25,16 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
       @DiscriminatorMapping(value = "VALIDATION", schema = ErrorValidationDetails.class),
       @DiscriminatorMapping(value = "NOT_FOUND", schema = NotFoundDetails.class),
       @DiscriminatorMapping(value = "ASSET_NOT_AVAILABLE", schema = AssetNotAvailableDetails.class),
+      @DiscriminatorMapping(
+          value = "INCOMPATIBLE_VISIBILITY",
+          schema = IncompatibleVisibilityDetails.class),
     },
-    oneOf = {ErrorValidationDetails.class, NotFoundDetails.class, AssetNotAvailableDetails.class})
+    oneOf = {
+      ErrorValidationDetails.class,
+      NotFoundDetails.class,
+      AssetNotAvailableDetails.class,
+      IncompatibleVisibilityDetails.class
+    })
 @ValidateSchema
 public interface ErrorDetails {
 

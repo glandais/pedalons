@@ -58,6 +58,7 @@ import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.repository.trip.TripRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.asset.response.AssetWithFile;
+import fr.pedalons.service.common.RouteVisibilityCompatibility;
 import fr.pedalons.service.common.SlugService;
 import fr.pedalons.service.migration.BiketeamMigrationProgress.Codes;
 import fr.pedalons.service.migration.BiketeamMigrationProgress.Counter;
@@ -95,6 +96,7 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.transaction.Transactional;
 import java.io.IOException;
 import java.io.InputStream;
@@ -110,6 +112,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -210,11 +213,15 @@ public class BiketeamMigrationService {
   @Inject AssetService assetService;
   @Inject TagService tagService;
   @Inject PublicationEndCalculator publicationEndCalculator;
+  @Inject RouteVisibilityCompatibility routeVisibilityCompatibility;
 
   /**
    * Everything one team's run carries, so the per-kind methods below need no ten-argument lists.
    *
    * @param liveTeamId the biketeam team id to tag mapping rows with
+   * @param heldBackRoutes the routes {@link #migrateOneMap} could not lower to {@code TEAM} yet,
+   *     route id to biketeam id, settled once the rides and trips have run ({@link
+   *     #settleHeldBackRoutes})
    */
   record Run(
       Team team,
@@ -222,7 +229,18 @@ public class BiketeamMigrationService {
       BiketeamSource source,
       ZoneId zone,
       String liveTeamId,
-      BiketeamMigrationProgress progress) {
+      BiketeamMigrationProgress progress,
+      Map<Long, String> heldBackRoutes) {
+
+    Run(
+        Team team,
+        User actor,
+        BiketeamSource source,
+        ZoneId zone,
+        String liveTeamId,
+        BiketeamMigrationProgress progress) {
+      this(team, actor, source, zone, liveTeamId, progress, new LinkedHashMap<>());
+    }
 
     String sourceTeam() {
       return source.team().id();
@@ -292,6 +310,7 @@ public class BiketeamMigrationService {
     migratePublications(r);
     migrateRides(r, routeIds, placeIds);
     migrateTrips(r, routeIds);
+    settleHeldBackRoutes(r);
   }
 
   // ─── Domain / team / admin ────────────────────────────────────────────────
@@ -837,18 +856,27 @@ public class BiketeamMigrationService {
     if (gpxFile == null) {
       r.progress().warning("ROUTE", bt.id(), Codes.GPX_MISSING, "No GPX file in the export");
     }
-    // Biketeam dropped its per-map visibility flag, so a route is exactly as visible as its team.
-    RouteRequest req =
-        new RouteRequest(
-            bt.name(),
-            emptyMedia(),
-            mapSurface(bt.type()),
-            contentVisibility(team.getVisibility()),
-            null);
     Route route = null;
     if (mapped != null) {
       route = owned(routeRepository.findByIdOptional(mapped).orElse(null), team);
     }
+    // Biketeam dropped its per-map visibility flag, so a route is exactly as visible as its team —
+    // unless a ride or a trip that is not TEAM uses it in Pédalons: a route under such a container
+    // is never lowered to TEAM (docs/LEDGER_*.md API-176, decision D6), and
+    // RouteService.updateRoute
+    // would refuse it. Routes run before rides and trips, so the containers this very run is about
+    // to make TEAM along with the team still hold it here: the route keeps its visibility for now,
+    // and settleHeldBackRoutes lowers it once they have run, unless one that stays visible outside
+    // the team (a native Pédalons ride, a failed item) still uses it.
+    Visibility visibility = contentVisibility(team.getVisibility());
+    if (route != null
+        && visibility == Visibility.TEAM
+        && !routeVisibilityCompatibility.routesInNonTeamUse(List.of(route.getId())).isEmpty()) {
+      visibility = route.getVisibility();
+      r.heldBackRoutes().put(route.getId(), bt.id());
+    }
+    RouteRequest req =
+        new RouteRequest(bt.name(), emptyMedia(), mapSurface(bt.type()), visibility, null);
     String stored = mapRepo.findFingerprint(T_ROUTE, bt.id());
     if (route != null && fingerprint != null && fingerprint.equals(stored)) {
       // Same bytes as the run that built this route, so its geometry, FIT and thumbnails still
@@ -888,6 +916,57 @@ public class BiketeamMigrationService {
     ids.put(bt.id(), route.getId());
     backdate("team_entities", route.getId(), at(r.zone(), bt.postedAt(), null));
     return Outcome.MIGRATED;
+  }
+
+  /**
+   * The routes {@link #migrateOneMap} held back from {@code TEAM}, once the rides and trips of the
+   * run have followed the team: lowered to {@code TEAM} when no ride or trip that is not {@code
+   * TEAM} uses them any more, otherwise kept as they are with a {@link
+   * Codes#ROUTE_VISIBILITY_KEPT} warning (docs/LEDGER_*.md API-176, decision D6). Each in its own
+   * transaction, under the row lock {@code RouteService.updateRoute} and {@code
+   * RouteVisibilityCompatibility.fitRoutes} take, so a ride raised meanwhile is seen.
+   */
+  private void settleHeldBackRoutes(Run r) {
+    r.heldBackRoutes()
+        .forEach((routeId, biketeamId) -> {
+          try {
+            Visibility kept =
+                QuarkusTransaction.requiringNew().call(() -> settleHeldBackRoute(r, routeId));
+            if (kept != null) {
+              r.progress()
+                  .warning(
+                      "ROUTE",
+                      biketeamId,
+                      Codes.ROUTE_VISIBILITY_KEPT,
+                      "Used by a ride or a trip visible outside the team: kept " + kept);
+            }
+          } catch (Exception e) {
+            // The route itself was migrated and counted: it only keeps the visibility it had.
+            LOG.warnf(e, "Failed to settle the visibility of route biketeam.id=%s", biketeamId);
+            r.progress()
+                .warning(
+                    "ROUTE",
+                    biketeamId,
+                    Codes.ROUTE_VISIBILITY_KEPT,
+                    "Could not be lowered to TEAM: kept as it was (" + e.getMessage() + ")");
+          }
+        });
+  }
+
+  /** The visibility a held-back route keeps, or null once it is lowered to {@code TEAM} (or gone). */
+  private @Nullable Visibility settleHeldBackRoute(Run r, Long routeId) {
+    Route route =
+        owned(
+            routeRepository.findByIdOptional(routeId, LockModeType.PESSIMISTIC_WRITE).orElse(null),
+            r.team());
+    if (route == null || route.getVisibility() == Visibility.TEAM) {
+      return null;
+    }
+    if (!routeVisibilityCompatibility.routesInNonTeamUse(List.of(routeId)).isEmpty()) {
+      return route.getVisibility();
+    }
+    route.setVisibility(Visibility.TEAM);
+    return null;
   }
 
   // ─── Ride templates ───────────────────────────────────────────────────────

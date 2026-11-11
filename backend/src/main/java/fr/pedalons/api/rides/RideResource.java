@@ -274,6 +274,12 @@ public class RideResource {
         description = "Ride restored successfully",
         content = @Content(schema = @Schema(implementation = RideDto.class))),
     @APIResponse(
+        responseCode = "400",
+        description =
+            "INCOMPATIBLE_VISIBILITY: the ride is not TEAM and one of its routes went TEAM"
+                + " while it was deleted; errorDetails.routes lists them",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
         responseCode = "401",
         description = "Unauthorized",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),

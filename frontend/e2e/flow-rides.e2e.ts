@@ -1146,12 +1146,17 @@ test.describe('a route from the ride editor', () => {
     await main(page).getByRole('button', { name: 'Créer la sortie' }).click()
     const response = await refused
     expect(response.status()).toBe(400)
-    expect(((await response.json()) as { code?: string }).code).toBe('PUBLIC_RIDE_PRIVATE_ROUTE')
+    // The code that replaced PUBLIC_RIDE_PRIVATE_ROUTE (docs/LEDGER_*.md API-176); the alignment
+    // dialog that answers it is WEB-166.
+    expect(((await response.json()) as { code?: string }).code).toBe('INCOMPATIBLE_VISIBILITY')
 
     await expect(
-      toasts(page).filter({ hasText: 'Une sortie publique ne peut pas utiliser un parcours privé' })
+      toasts(page).filter({
+        hasText:
+          "Visibilités incompatibles : un parcours « Équipe » ne peut pas servir à une sortie ou un voyage visible hors de l'équipe",
+      })
     ).toBeVisible()
-    expect(await shown()).not.toContainEqual(expect.stringContaining('PUBLIC_RIDE_PRIVATE_ROUTE'))
+    expect(await shown()).not.toContainEqual(expect.stringContaining('INCOMPATIBLE_VISIBILITY'))
     // Still on the editor, with everything typed.
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/sorties/nouvelle$`))
     await expect(title).toHaveValue(rideName)

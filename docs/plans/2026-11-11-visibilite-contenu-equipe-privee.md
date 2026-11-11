@@ -1,6 +1,6 @@
 # Contenu public d'une équipe privée, et droits calculés par le backend
 
-Écrit le 11 novembre 2026. **État : lot 1 fait le 11 novembre 2026 (drapeau, `V87`, règle unique d'écriture, lecture par lien, contrat `13.6.0`) ; lot 2 fait le même jour (droits calculés, contrat `13.7.0`) ; lots 3 à 5 à faire.** Ledger `API-176` (backend et
+Écrit le 11 novembre 2026. **État : lot 1 fait le 11 novembre 2026 (drapeau, `V87`, règle unique d'écriture, lecture par lien, contrat `13.6.0`) ; lot 2 fait le même jour (droits calculés, contrat `13.7.0`) ; lot 3 fait le même jour (invariant de compatibilité, contrat `13.8.0`) ; lots 4 et 5 à faire.** Ledger `API-176` (backend et
 contrat), `WEB-166` (site), `MOB-137` (application), `SEC-51` (constat relevé, hors périmètre).
 Branche prévue : `feat/visibilite-equipe-privee`, un commit par lot. Numéros vérifiés libres le
 11 novembre 2026 : `API-176`, `API-177`, `WEB-166`, `MOB-137`, `SEC-51`, migration `V87`, contrat `13.5.0`
@@ -171,6 +171,32 @@ le vérifie dans les deux sens, à la place des deux `getRoute` de `RideService`
 À trancher en codant : le brouillon. Un conteneur en brouillon non `TEAM` compte comme un usage
 (il sera publié tel quel) ; un conteneur supprimé ne compte pas, et sa restauration repasse par la
 même vérification.
+
+Tranché au lot 3 (11 novembre 2026) :
+
+- le composant est `service/common/RouteVisibilityCompatibility` ; le refus est un 400 dont
+  `errorDetails` (`IncompatibleVisibilityDetails`) porte `routes` (montée d'un conteneur) ou
+  `usages` (baisse d'un parcours), l'autre liste vide ;
+- la baisse est refusée dès que la visibilité demandée est `TEAM`, même pour un parcours déjà
+  `TEAM` laissé sous une sortie publique par une version antérieure (A1) : c'est ce que dit son
+  `allowedVisibilities` ;
+- la restauration (`undelete`) d'une sortie ou d'un voyage refuse sans alignement possible (pas de
+  corps de requête) : on monte d'abord les parcours, ce que rien n'interdit ;
+- `allowedVisibilities` d'un parcours peut être vide : équipe privée dont le drapeau a été retiré,
+  parcours utilisé publiquement. Rien ne peut alors l'enregistrer tant que ses usages ne sont pas
+  repassés en « Équipe ».
+- les deux sens ne s'entrelacent pas : l'enregistrement d'une sortie ou d'un voyage non `TEAM`
+  verrouille ses parcours (`SELECT … FOR UPDATE`, dans l'ordre des id) et relit leur visibilité
+  validée, sous le verrou que `updateRoute` prend déjà ;
+- un parcours supprimé n'est jamais monté par l'alignement : la requête est refusée comme sans
+  `alignVisibility` ;
+- `allowedVisibilities` d'un parcours ne retire `TEAM` que pour qui peut le modifier : un lecteur
+  reçoit la liste de l'équipe, sans quoi il apprendrait qu'un brouillon ou une sortie masquée
+  l'utilise ;
+- le rejeu d'une migration biketeam dans une équipe privée laisse sa visibilité à un parcours
+  qu'un conteneur non `TEAM` de Pédalons utilise encore une fois les sorties et voyages du rejeu
+  passés `TEAM` avec l'équipe — tranché après eux, les parcours passant en premier (avertissement
+  `ROUTE_VISIBILITY_KEPT`).
 
 ### 4.5 Les droits calculés (lot 2)
 

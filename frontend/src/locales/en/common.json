@@ -625,6 +625,7 @@
   "errors.api.GPX_NOT_FOUND": "GPX file not found",
   "errors.api.GPX_TOO_LONG": "The track is too long: 4,000 km at most",
   "errors.api.GROUP_FULL": "This group is full",
+  "errors.api.INCOMPATIBLE_VISIBILITY": "Incompatible visibilities: a members-only route cannot be used by a ride or trip visible outside the team",
   "errors.api.INTERNAL_ERROR": "Internal server error",
   "errors.api.INVALID_CREDENTIALS": "Invalid email or password",
   "errors.api.INVALID_FORMAT": "The file format is invalid",

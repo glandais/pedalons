@@ -125,6 +125,11 @@ Neither is `TAGS_TRUNCATED`: a route's free-form biketeam tags become `ROUTE` ta
 (found by label case-insensitively, else created gray with the first spelling met; ledger `MIG-14`),
 and the warning names a label cut to 32 characters or tags dropped beyond 10 on the route or 100 in
 the team — the route keeps the first ones. `defaultSearchTags` is not migrated.
+Nor is `ROUTE_VISIBILITY_KEPT`: on a replay into a private team, a route that a ride or a trip of
+Pédalons visible outside the team still uses once the replay's own rides and trips have followed
+the team keeps its visibility instead of going back to « Équipe » (ledger `API-176`). The routes
+run first, so they are settled after the trips: a route only the migrated content used goes
+« Équipe » like the rest.
 
 ## Both applications on a workstation
 

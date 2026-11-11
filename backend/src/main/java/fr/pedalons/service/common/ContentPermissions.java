@@ -24,6 +24,7 @@ import fr.pedalons.service.team.TeamAccessChecker;
 import fr.pedalons.service.trip.TripAccessChecker;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -70,24 +71,43 @@ public final class ContentPermissions {
    */
   private final boolean detail;
 
-  private ContentPermissions(CallerRoles caller, boolean detail) {
+  /**
+   * The routes of the details at hand that a ride or a trip that is not {@code TEAM} uses, as
+   * {@link RouteVisibilityCompatibility#routesInNonTeamUse} found them: their {@code
+   * allowedVisibilities} leave {@code TEAM} out (docs/LEDGER_*.md API-176, plan §4.4). Empty unless
+   * a route detail asked for it.
+   */
+  private final Set<Long> routesInNonTeamUse;
+
+  private ContentPermissions(CallerRoles caller, boolean detail, Set<Long> routesInNonTeamUse) {
     this.caller = caller;
     this.detail = detail;
+    this.routesInNonTeamUse = routesInNonTeamUse;
   }
 
   /** For a detail, an editor's starting point: the block carries {@code allowedVisibilities}. */
   public static ContentPermissions forDetail(CallerRoles caller) {
-    return new ContentPermissions(caller, true);
+    return new ContentPermissions(caller, true, Set.of());
   }
 
   /** For list rows and embedded summaries: no {@code allowedVisibilities}. */
   public static ContentPermissions forList(CallerRoles caller) {
-    return new ContentPermissions(caller, false);
+    return new ContentPermissions(caller, false, Set.of());
+  }
+
+  /**
+   * The same detail block, knowing which routes are used by a ride or a trip that is not {@code
+   * TEAM} — {@link RouteVisibilityCompatibility#routesInNonTeamUse} over the route details at hand,
+   * once for all of them. Without it, a route detail would offer {@code TEAM} where the save
+   * refuses it.
+   */
+  public ContentPermissions withRoutesInNonTeamUse(Set<Long> routeIds) {
+    return new ContentPermissions(caller, detail, Set.copyOf(routeIds));
   }
 
   /** The same caller, for the summaries a detail embeds (a stage's route, say). */
   public ContentPermissions embedded() {
-    return detail ? new ContentPermissions(caller, false) : this;
+    return detail ? new ContentPermissions(caller, false, Set.of()) : this;
   }
 
   public CallerRoles caller() {
@@ -139,8 +159,16 @@ public final class ContentPermissions {
       }
       case Route route -> {
         boolean write = admin || RouteAccessChecker.canWrite(team, role);
+        // The public usages only for an editor: they may be drafts or hidden rides a reader cannot
+        // see, whose presence a missing TEAM would give away (docs/LEDGER_*.md API-176).
         yield new ContentPermissionsDto(
-            write, write, null, members, null, visibilities(route), indexable);
+            write,
+            write,
+            null,
+            members,
+            null,
+            write ? visibilities(route) : teamVisibilities(route),
+            indexable);
       }
       case Post post -> {
         boolean write = admin || PostAccessChecker.canWrite(team, role);
@@ -165,12 +193,29 @@ public final class ContentPermissions {
   }
 
   /**
-   * The team's list for this type (lot 3 will take {@code TEAM} away from a route used publicly,
-   * docs/LEDGER_*.md API-176 §4.4). A detail only: a list row has no editor behind it.
+   * The team's list for this type, less {@code TEAM} for a route used by a ride or a trip that is
+   * not {@code TEAM} ({@link RouteVisibilityCompatibility#allowedForRoute}, docs/LEDGER_*.md
+   * API-176 §4.4). A detail only: a list row has no editor behind it.
    */
-  private @Nullable List<Visibility> visibilities(TeamEntity entity) {
+  private @Nullable List<Visibility> teamVisibilities(TeamEntity entity) {
     return detail
         ? ContentVisibilityRules.accepted(entity.getTeam(), entity.getEntityType())
         : null;
+  }
+
+  private @Nullable List<Visibility> visibilities(TeamEntity entity) {
+    if (!detail) {
+      return null;
+    }
+    List<Visibility> accepted =
+        ContentVisibilityRules.accepted(entity.getTeam(), entity.getEntityType());
+    if (!(entity instanceof Route)) {
+      return accepted;
+    }
+    // Set.of/Set.copyOf throw on contains(null): a route not persisted yet has no id, and nothing
+    // uses it.
+    Long id = entity.getId();
+    return RouteVisibilityCompatibility.allowedForRoute(
+        accepted, id != null && routesInNonTeamUse.contains(id));
   }
 }

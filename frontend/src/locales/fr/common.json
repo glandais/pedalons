@@ -635,6 +635,7 @@
   "errors.api.GPX_NOT_FOUND": "Fichier GPX introuvable",
   "errors.api.GPX_TOO_LONG": "Le tracé est trop long : 4 000 km au plus",
   "errors.api.GROUP_FULL": "Ce groupe est complet",
+  "errors.api.INCOMPATIBLE_VISIBILITY": "Visibilités incompatibles : un parcours « Équipe » ne peut pas servir à une sortie ou un voyage visible hors de l'équipe",
   "errors.api.INTERNAL_ERROR": "Erreur interne du serveur",
   "errors.api.INVALID_CREDENTIALS": "Adresse e-mail ou mot de passe incorrect",
   "errors.api.INVALID_FORMAT": "Le format du fichier est invalide",

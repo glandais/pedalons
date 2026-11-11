@@ -673,6 +673,45 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     content.forEach(v -> assertEquals(Visibility.TEAM, v));
   }
 
+  /**
+   * The one route a replay of a team gone TEAM does not lower: a ride made on Pédalons, published by
+   * link (the platform's publicContentAllowed), still uses it, and a route is never lowered under a
+   * container visible outside the team (docs/LEDGER_*.md API-176, decision D6). The migrated
+   * content, its ride on that route included, still follows the team.
+   */
+  @Test
+  void replay_ofATeamGoneTeam_keepsTheVisibilityOfARouteANativeUnlistedRideUses_withAWarning()
+      throws IOException {
+    migrate(USER4, true, false);
+    long teamId = biketeamData.team(domain, TEAM).id();
+    List<Long> routes = biketeamData.liveIds(Route.class, teamId);
+    assertEquals(1, routes.size());
+    long routeId = routes.get(0);
+    assertEquals(Visibility.PUBLIC, biketeamData.visibilityOf(routeId));
+    biketeamData.setSettings(teamId, Visibility.TEAM, false);
+    dataService.setTeamPublicContentAllowed(dataService.findTeamBySlug(domain, TEAM), true);
+    long nativeRide =
+        biketeamData.createNativeRideOn(teamId, routeId, user4, Visibility.PUBLIC_UNLISTED);
+
+    BiketeamJobStatusDto replay = migrate(USER4, false, false);
+
+    assertEquals("SUCCEEDED", replay.status(), () -> "error: " + replay.error());
+    assertEquals(0, replay.counts().routes().failed(), () -> "warnings: " + replay.warnings());
+    assertEquals(Visibility.PUBLIC, biketeamData.visibilityOf(routeId));
+    assertEquals(Visibility.PUBLIC_UNLISTED, biketeamData.visibilityOf(nativeRide));
+    assertTrue(
+        replay.warnings().stream()
+            .anyMatch(w ->
+                w.entityType().equals("ROUTE")
+                    && w.biketeamId().equals("map-1")
+                    && w.code().equals("ROUTE_VISIBILITY_KEPT")),
+        () -> "warnings: " + replay.warnings());
+    List<Long> migratedRides =
+        biketeamData.liveIds(Ride.class, teamId).stream().filter(id -> id != nativeRide).toList();
+    assertFalse(migratedRides.isEmpty());
+    migratedRides.forEach(id -> assertEquals(Visibility.TEAM, biketeamData.visibilityOf(id)));
+  }
+
   @Test
   void replayByAPlatformAdmin_doesNotMakeThemAMember() throws IOException {
     migrate(USER4, true, false);

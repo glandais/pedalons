@@ -53,6 +53,7 @@ import fr.pedalons.service.comment.CommentCountLookup;
 import fr.pedalons.service.common.CallerRoles;
 import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.common.MemberNamesVisibility;
+import fr.pedalons.service.common.RouteVisibilityCompatibility;
 import fr.pedalons.service.common.TeamEntityService;
 import fr.pedalons.service.elevation.ElevationRefreshService;
 import fr.pedalons.service.gps.sync.GpsSyncLookup;
@@ -141,6 +142,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
   @Inject PublicationEndCalculator publicationEndCalculator;
 
+  @Inject RouteVisibilityCompatibility routeVisibilityCompatibility;
+
   @Override
   protected RouteRepository getRepository() {
     return routeRepository;
@@ -161,7 +164,23 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         // Where it stands at the caller's synced services (docs/LEDGER_*.md API-120): at most two
         // queries, none for a visitor.
         gpsSyncLookup.forRoutes(List.of(entity.getId())),
-        ContentPermissions.forDetail(caller));
+        detailPermissions(caller, entity.getTeam(), List.of(entity.getId())));
+  }
+
+  /**
+   * A detail block for these routes: {@code allowedVisibilities} without {@code TEAM} for those a
+   * ride or a trip that is not {@code TEAM} uses — four queries for the whole batch, the same answer
+   * {@link #updateRoute} refuses with (docs/LEDGER_*.md API-176).
+   */
+  private ContentPermissions detailPermissions(CallerRoles caller, Team team, List<Long> routeIds) {
+    ContentPermissions permissions = ContentPermissions.forDetail(caller);
+    // Only an editor's list leaves TEAM out (ContentPermissions.of): no query for anyone else.
+    boolean editor =
+        caller.platformAdmin() || RouteAccessChecker.canWrite(team, caller.roleIn(team.getId()));
+    return editor
+        ? permissions.withRoutesInNonTeamUse(
+            routeVisibilityCompatibility.routesInNonTeamUse(routeIds))
+        : permissions;
   }
 
   @Override
@@ -241,9 +260,10 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     // Once for the batch: every route belongs to this team (docs/LEDGER_*.md API-144).
     CallerRoles caller = memberNamesVisibility.callerRoles(team.getId());
     boolean withCreator = caller.seesMembers(team.getId());
-    // Each row is a detail the caller asked for by slug: allowedVisibilities included, at no cost
-    // (docs/LEDGER_*.md API-176).
-    ContentPermissions permissions = ContentPermissions.forDetail(caller);
+    // Each row is a detail the caller asked for by slug: allowedVisibilities included, the public
+    // usages of the whole batch read at once (docs/LEDGER_*.md API-176).
+    ContentPermissions permissions =
+        detailPermissions(caller, team, routes.stream().map(Route::getId).toList());
     Map<String, RouteDetailDto> bySlug = new LinkedHashMap<>();
     for (Route route : routes) {
       bySlug.put(
@@ -612,6 +632,9 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     Float previousDistance = route.getDistance();
 
     validateVisibility(team, request);
+    // Not TEAM while a ride or a trip visible outside the team uses it: refused with the list of
+    // those usages, never closed with it (docs/LEDGER_*.md API-176, decision D6).
+    routeVisibilityCompatibility.requireNoNonTeamUse(route, request.visibility());
     rejectPointsWithState(request);
     // A file wins over a planner state, which is then ignored, not even validated.
     PlannerState requestedState = gpxPath == null ? request.plannerState() : null;
@@ -694,7 +717,10 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         commentCountLookup.forEntity(route),
         tagsOf(route),
         RouteGpsSyncStatuses.NONE,
-        detailPermissions(route));
+        detailPermissions(
+            callerRolesLookup.callerRoles(route.getTeam().getId()),
+            route.getTeam(),
+            List.of(route.getId())));
   }
 
   /**

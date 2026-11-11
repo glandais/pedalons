@@ -725,7 +725,18 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       de l'équipe, champs requis ; les `*AccessChecker` et le bloc lisent la même règle
       (`ContentPermissionsConsistencyTest`). Avec lui : `joinTrip` refuse un voyage non publié
       pour tout le monde, le logo d'une équipe privée est public quand elle a le drapeau, et le préfixe d'image indexable est réservé à une entité « Public » d'une équipe
-      « Public ». Reste le lot 3.
+      « Public ».
+      **Lot 3 fait le 11 novembre 2026** (contrat `13.8.0`) : un seul
+      composant, `RouteVisibilityCompatibility`, tient l'invariant dans les deux sens, à la place
+      des deux `getRoute` de `RideService` et `TripService`. Une sortie ou un voyage non « Équipe »
+      (création, modification, restauration) qui porte un parcours « Équipe » est refusé
+      (`INCOMPATIBLE_VISIBILITY`, `errorDetails.routes`) ; rejouée avec `alignVisibility`, la
+      requête monte ces parcours en « Non répertorié ». Un parcours ne repasse pas en « Équipe »
+      tant qu'une sortie ou un voyage non « Équipe » non supprimé l'utilise, brouillon compris
+      (`errorDetails.usages`, pas d'alignement) ; son `allowedVisibilities` de détail le dit.
+      `PUBLIC_RIDE_PRIVATE_ROUTE` et `PUBLIC_TRIP_PRIVATE_ROUTE` ne sont plus émis. Couvert par
+      `RouteVisibilityCompatibilityTest`, `IncompatibleVisibilityResourceTest`. Restent les lots
+      4 et 5 (`WEB-166`, `MOB-137`).
 
 - [ ] `API-177` **Le rôle de l'appelant dans l'équipe, lu une fois par requête (S)** — sur un
       détail, `PedalonsQueryContext.getContext` lit le rôle pour `@CheckAccess`

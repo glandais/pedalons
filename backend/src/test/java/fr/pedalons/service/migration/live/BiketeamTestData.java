@@ -7,11 +7,13 @@ import fr.pedalons.domain.migration.BiketeamMigrationMap;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.ride.RideGroup;
+import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.BiketeamMigrationStatus;
+import fr.pedalons.enums.Status;
 import fr.pedalons.enums.TeamRole;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.enums.WindDirection;
@@ -440,6 +442,29 @@ public class BiketeamTestData {
         .map(RideGroup::getRoute)
         .map(route -> new GroupRoute(route.getId(), route.isDeleted()))
         .orElse(null);
+  }
+
+  /** A published ride made on Pédalons, not from biketeam, using {@code routeId}; its id. */
+  @Transactional
+  public long createNativeRideOn(long teamId, long routeId, User author, Visibility visibility) {
+    Ride ride =
+        new Ride(
+            author,
+            em.find(Team.class, teamId),
+            Instant.now().plusSeconds(7 * 24 * 3600),
+            "Native Ride",
+            "native-ride",
+            visibility);
+    ride.setStatus(Status.PUBLISHED);
+    ride.setRoute(em.getReference(Route.class, routeId));
+    em.persist(ride);
+    return ride.getId();
+  }
+
+  /** The visibility of a route, ride, trip, post… as stored. */
+  @Transactional
+  public Visibility visibilityOf(long entityId) {
+    return em.find(TeamEntity.class, entityId).getVisibility();
   }
 
   /** Whether the TEAM mapping row of {@code biketeamTeamId} points at {@code teamId}. */

@@ -33,6 +33,13 @@ public enum ErrorCode {
   /** Joining a trip whose last stage has left (docs/LEDGER_*.md API-161). */
   TRIP_FINISHED,
   INVALID_VISIBILITY,
+  /**
+   * A ride or a trip visible outside its team would use a {@code TEAM} route, or a route would go
+   * {@code TEAM} under such a container — HTTP 400, with {@link IncompatibleVisibilityDetails}
+   * listing the routes or the usages at fault (docs/LEDGER_*.md API-176).
+   */
+  INCOMPATIBLE_VISIBILITY,
+  /** No longer emitted: replaced by {@link #INCOMPATIBLE_VISIBILITY} (docs/LEDGER_*.md API-176). */
   PUBLIC_TRIP_PRIVATE_ROUTE,
   GPX_FAILURE,
   FILE_REQUIRED,
@@ -69,6 +76,7 @@ public enum ErrorCode {
   INVALID_TIMEZONE,
   RENTAL_PERIOD_MISSING,
   STATUS_INVALID,
+  /** No longer emitted: replaced by {@link #INCOMPATIBLE_VISIBILITY} (docs/LEDGER_*.md API-176). */
   PUBLIC_RIDE_PRIVATE_ROUTE,
   // Auth errors
   INVALID_CREDENTIALS,

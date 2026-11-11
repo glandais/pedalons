@@ -21,6 +21,7 @@ _RideRequest _$RideRequestFromJson(Map<String, dynamic> json) => _RideRequest(
   publishAt: json['publishAt'] as String?,
   tagIds: (json['tagIds'] as List<dynamic>?)?.map((e) => e as String).toList(),
   templateId: json['templateId'] as String?,
+  alignVisibility: json['alignVisibility'] as bool?,
 );
 
 Map<String, dynamic> _$RideRequestToJson(_RideRequest instance) =>
@@ -37,4 +38,5 @@ Map<String, dynamic> _$RideRequestToJson(_RideRequest instance) =>
       'publishAt': instance.publishAt,
       'tagIds': instance.tagIds,
       'templateId': instance.templateId,
+      'alignVisibility': instance.alignVisibility,
     };

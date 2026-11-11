@@ -520,6 +520,21 @@ public class TestDataService {
     tripStageRepository.getEntityManager().merge(stage);
   }
 
+  /**
+   * Sets a route's visibility on the managed instance, bypassing RouteService: the state an older
+   * release could leave, or the one a test needs before the write under test.
+   */
+  @Transactional
+  public void setRouteVisibility(Route route, Visibility visibility) {
+    routeRepository.findById(route.getId()).setVisibility(visibility);
+  }
+
+  /** A route's visibility as stored, read in a transaction of its own. */
+  @Transactional
+  public Visibility routeVisibility(Route route) {
+    return routeRepository.findById(route.getId()).getVisibility();
+  }
+
   @Transactional
   public Route createRoute(Team team, User createdBy, String name) {
     return createRoute(team, createdBy, name, Visibility.PUBLIC);

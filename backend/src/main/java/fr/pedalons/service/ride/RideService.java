@@ -30,7 +30,6 @@ import fr.pedalons.dto.weather.response.WeatherAttributionDto;
 import fr.pedalons.enums.ActionType;
 import fr.pedalons.enums.EntityType;
 import fr.pedalons.enums.Status;
-import fr.pedalons.enums.Visibility;
 import fr.pedalons.enums.WeatherStatus;
 import fr.pedalons.infrastructure.exception.NotFoundException;
 import fr.pedalons.infrastructure.openmeteo.OpenMeteoGateway;
@@ -48,6 +47,7 @@ import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.common.MemberNamesVisibility;
 import fr.pedalons.service.common.ParticipantPreviewLookup;
 import fr.pedalons.service.common.ParticipationLookup;
+import fr.pedalons.service.common.RouteVisibilityCompatibility;
 import fr.pedalons.service.common.TeamEntityService;
 import fr.pedalons.service.gps.sync.GpsSyncLookup;
 import fr.pedalons.service.notification.NotificationPublisher;
@@ -123,6 +123,8 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
   @Inject PublicationEndCalculator publicationEndCalculator;
 
   @Inject EventTimezoneResolver eventTimezoneResolver;
+
+  @Inject RouteVisibilityCompatibility routeVisibilityCompatibility;
 
   /** How long a ride edit waits before notifying — the window in which further edits fold in. */
   @ConfigProperty(name = "pedalons.notifications.update-delay-seconds", defaultValue = "300")
@@ -244,7 +246,8 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
     // Generate slug from name, ensure unique within team
     String slug = slugService.generateSlug(request.name(), team.getId(), rideRepository);
 
-    Route route = getRoute(teamSlug, request.routeSlug(), request.visibility());
+    Map<String, Route> routes = routesOf(teamSlug, team, request);
+    Route route = routeOf(routes, request.routeSlug());
     Place startPlace = getPlace(request.startPlaceId(), team);
     Place endPlace = getPlace(request.endPlaceId(), team);
 
@@ -275,7 +278,7 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
 
     int sortOrder = 0;
     for (GroupRequest groupRequest : request.groups()) {
-      createRideGroup(teamSlug, creator, ride, groupRequest, sortOrder, zone);
+      createRideGroup(routes, creator, ride, groupRequest, sortOrder, zone);
       sortOrder++;
     }
     // After the groups: the end is the latest of them (docs/LEDGER_*.md API-85).
@@ -296,20 +299,20 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
   }
 
   private void createRideGroup(
-      String teamSlug,
+      Map<String, Route> routes,
       User user,
       Ride ride,
       GroupRequest groupRequest,
       int sortOrder,
       ZoneId zone) {
     RideGroup group = new RideGroup(user, ride, groupRequest.name());
-    setProperties(teamSlug, ride, group, groupRequest, sortOrder, user, zone, 0);
+    setProperties(routes, ride, group, groupRequest, sortOrder, user, zone, 0);
     ride.addGroup(group);
     rideGroupRepository.persist(group);
   }
 
   private void setProperties(
-      String teamSlug,
+      Map<String, Route> routes,
       Ride ride,
       RideGroup group,
       GroupRequest groupRequest,
@@ -322,7 +325,7 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
     // The ride's date and zone are final by now: its groups leave on its local date, in its zone —
     // shifted by the day offset an existing group already had (docs/LEDGER_*.md API-101).
     EventTimezoneResolver.setStart(group, ride.getDateTime(), groupRequest.time(), zone, dayOffset);
-    Route groupRoute = getRoute(teamSlug, groupRequest.routeSlug(), ride.getVisibility());
+    Route groupRoute = routeOf(routes, groupRequest.routeSlug());
     group.setAverageSpeed(groupRequest.averageSpeed());
     group.setMaxParticipants(groupRequest.maxParticipants());
     group.setSortOrder(sortOrder);
@@ -360,16 +363,38 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
         .orElseThrow(() -> new BusinessException(ErrorCode.RIDE_GROUP_LEADER_NOT_MEMBER));
   }
 
-  private @Nullable Route getRoute(
-      String teamSlug, @Nullable String routeSlug, Visibility visibility) {
-    Route route = null;
-    if (routeSlug != null) {
-      route = routeService.get(teamSlug, routeSlug);
-      if (visibility != Visibility.TEAM && route.getVisibility() == Visibility.TEAM) {
-        throw new BusinessException(ErrorCode.PUBLIC_RIDE_PRIVATE_ROUTE);
+  /**
+   * Every route the request names — the ride's and its groups' — looked up once each, before
+   * anything is written, then made to fit the ride's visibility: refused with the list of the
+   * {@code TEAM} ones under a ride that is not {@code TEAM}, or raised with {@code
+   * alignVisibility} (docs/LEDGER_*.md API-176, decision D5). Routes are looked up in {@code
+   * team} only, so an alignment never reaches another team's.
+   */
+  private Map<String, Route> routesOf(String teamSlug, Team team, RideRequest request) {
+    Map<String, Route> routes = new LinkedHashMap<>();
+    List<@Nullable String> slugs = new ArrayList<>();
+    slugs.add(request.routeSlug());
+    request.groups().forEach(group -> slugs.add(group.routeSlug()));
+    for (String slug : slugs) {
+      if (slug != null && !routes.containsKey(slug)) {
+        routes.put(slug, routeService.get(teamSlug, slug));
       }
     }
-    return route;
+    routeVisibilityCompatibility.fitRoutes(
+        team, request.visibility(), routes.values(), request.alignsVisibility());
+    return routes;
+  }
+
+  private static @Nullable Route routeOf(Map<String, Route> routes, @Nullable String routeSlug) {
+    return routeSlug == null ? null : routes.get(routeSlug);
+  }
+
+  /** The routes a ride uses: its own and its groups'. */
+  private static List<@Nullable Route> routesOf(Ride ride) {
+    List<@Nullable Route> routes = new ArrayList<>();
+    routes.add(ride.getRoute());
+    ride.getGroups().forEach(group -> routes.add(group.getRoute()));
+    return routes;
   }
 
   private @Nullable Place getPlace(@Nullable String placeId, Team team) {
@@ -398,11 +423,13 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
     List<List<Long>> previousThumbnailInput = ThumbnailService.rideInput(ride);
 
     validateVisibility(team, request);
+    // Every route looked up, and fitted to the visibility, before anything changes (API-176).
+    Map<String, Route> routes = routesOf(teamSlug, team, request);
     ride.setVisibility(request.visibility());
 
     ride.setName(request.name());
     ride.setStatus(request.status());
-    Route route = getRoute(teamSlug, request.routeSlug(), request.visibility());
+    Route route = routeOf(routes, request.routeSlug());
     ride.setRoute(route);
     Place startPlace = getPlace(request.startPlaceId(), team);
     Place endPlace = getPlace(request.endPlaceId(), team);
@@ -431,7 +458,7 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
     for (GroupRequest groupRequest : request.groups()) {
       Long groupId = TsidUtils.toLongNullable(groupRequest.id());
       if (groupId == null) {
-        createRideGroup(teamSlug, user, ride, groupRequest, sortOrder, zone);
+        createRideGroup(routes, user, ride, groupRequest, sortOrder, zone);
       } else {
         RideGroup existingRideGroup = orphanedGroups.remove(groupId);
         if (existingRideGroup == null) {
@@ -442,7 +469,7 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
             EventTimezoneResolver.dayOffset(
                 previousDateTime, existingRideGroup.getStartAt(), previousZone);
         setProperties(
-            teamSlug, ride, existingRideGroup, groupRequest, sortOrder, user, zone, dayOffset);
+            routes, ride, existingRideGroup, groupRequest, sortOrder, user, zone, dayOffset);
       }
       sortOrder++;
     }
@@ -555,6 +582,11 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
     Team team = teamService.getTeam(teamSlug);
     Ride ride = findBySlugIncludeDeleted(team, rideSlug);
     requireNotRemovedByModeration(ride);
+    // A deleted ride does not hold its routes back (RouteVisibilityCompatibility): one may have
+    // gone
+    // TEAM since. Refused then, with the list — no request body to carry alignVisibility, so the
+    // routes are raised first (docs/LEDGER_*.md API-176).
+    routeVisibilityCompatibility.fitRoutes(team, ride.getVisibility(), routesOf(ride), false);
     ride.setDeleted(false);
     rideRepository.persist(ride);
     return toDto(ride);

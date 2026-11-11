@@ -74,11 +74,15 @@ class ContentPermissionsResourceTest extends AbstractResourceTest {
       // With a group still to leave: the detail's canRegister also says what the join would.
       dataService.createRideGroup(
           user1, dataService.createRide(team, user1, "Ride", "ride", soon, visibility), "Group");
-      Route route = dataService.createRoute(team, user1, "Route", visibility);
+      dataService.createRoute(team, user1, "Route", visibility);
+      // A route of its own for the stage: the trip's usage takes TEAM out of its editor's list
+      // (docs/LEDGER_*.md API-176, plan §4.4), and "route" keeps the team's whole list.
+      Route stageRoute = dataService.createRoute(team, user1, "Stage route", visibility);
       dataService.createPost(team, user2, "Post", Instant.now(), visibility);
       Trip trip = dataService.createTrip(team, user1, "Trip", soon, visibility);
       // With a route: the stage embeds its summary, which must carry no visibilities.
-      dataService.setTripStageRoute(dataService.createTripStage(user1, trip, "Stage", 0), route);
+      dataService.setTripStageRoute(
+          dataService.createTripStage(user1, trip, "Stage", 0), stageRoute);
       dataService.createAdditionalPage(team, user1, "Page", 0, visibility);
       dataService.createAd(team, user3, "Ad", AdType.SALE);
     }
@@ -187,6 +191,38 @@ class ContentPermissionsResourceTest extends AbstractResourceTest {
             assertEquals(embeddedRoute, stageRoute, "stage route / " + where);
           }
         }
+      }
+    }
+  }
+
+  /**
+   * The stage's route is used by a {@code PUBLIC} trip outside the closed team: its editors are
+   * offered no {@code TEAM}, which the save would refuse (docs/LEDGER_*.md API-176, plan §4.4).
+   * Anyone else gets the team's list, unchanged: the usage may be a draft or a hidden trip they
+   * cannot see, which a missing {@code TEAM} would give away.
+   */
+  @Test
+  void aRouteUsedPublicly_leavesTeamOut_forItsEditorsOnly() {
+    for (Team team : teams()) {
+      for (String caller : CALLERS) {
+        String where = caller + " / " + team.getSlug();
+        ValidatableResponse response =
+            as(caller).when().get("/api/teams/" + team.getSlug() + "/routes/stage-route").then();
+        if (!readable("route", caller, team, closedTeam)) {
+          response.statusCode(anyOf(equalTo(401), equalTo(403), equalTo(404)));
+          continue;
+        }
+        response.statusCode(200);
+        List<String> teamList =
+            team.getVisibility() == Visibility.TEAM && team != team2 ? TEAM_ONLY : ALL;
+        List<String> expected =
+            organizes(caller) && team != closedTeam
+                ? List.of("PUBLIC_UNLISTED", "PUBLIC")
+                : teamList;
+        assertEquals(
+            expected,
+            response.extract().jsonPath().getList("permissions.allowedVisibilities"),
+            where);
       }
     }
   }

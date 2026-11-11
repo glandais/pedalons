@@ -12,6 +12,9 @@ import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.common.asset.MediaDto;
+import fr.pedalons.dto.error.ErrorCode;
+import fr.pedalons.dto.error.IncompatibleRouteDto;
+import fr.pedalons.dto.error.IncompatibleVisibilityDetails;
 import fr.pedalons.dto.rides.request.GroupRequest;
 import fr.pedalons.dto.rides.request.RideRequest;
 import fr.pedalons.dto.rides.response.*;
@@ -373,7 +376,19 @@ class RideServiceTest extends AbstractBaseTest {
         assertThrows(
             PedalonsException.class, () -> rideService.createRide(team.getSlug(), request));
 
-    assertTrue(exception.getMessage().contains("PUBLIC_RIDE_PRIVATE_ROUTE"));
+    // The code that replaced PUBLIC_RIDE_PRIVATE_ROUTE (docs/LEDGER_*.md API-176), naming the
+    // route.
+    assertEquals(ErrorCode.INCOMPATIBLE_VISIBILITY, exception.getErrorCode());
+    var details = (IncompatibleVisibilityDetails) exception.getErrorDetails();
+    assertEquals(
+        List.of(
+            new IncompatibleRouteDto(
+                privateRoute.getSlug(),
+                privateRoute.getName(),
+                Visibility.TEAM,
+                Visibility.PUBLIC_UNLISTED)),
+        details.getRoutes());
+    assertEquals(Visibility.TEAM, dataService.routeVisibility(privateRoute));
   }
 
   @Test
@@ -1086,7 +1101,19 @@ class RideServiceTest extends AbstractBaseTest {
             PedalonsException.class,
             () -> rideService.updateRide(team.getSlug(), "test-ride", request));
 
-    assertTrue(exception.getMessage().contains("PUBLIC_RIDE_PRIVATE_ROUTE"));
+    // The code that replaced PUBLIC_RIDE_PRIVATE_ROUTE (docs/LEDGER_*.md API-176), naming the
+    // route.
+    assertEquals(ErrorCode.INCOMPATIBLE_VISIBILITY, exception.getErrorCode());
+    var details = (IncompatibleVisibilityDetails) exception.getErrorDetails();
+    assertEquals(
+        List.of(
+            new IncompatibleRouteDto(
+                privateRoute.getSlug(),
+                privateRoute.getName(),
+                Visibility.TEAM,
+                Visibility.PUBLIC_UNLISTED)),
+        details.getRoutes());
+    assertEquals(Visibility.TEAM, dataService.routeVisibility(privateRoute));
   }
 
   @Test

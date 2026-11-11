@@ -50,3 +50,23 @@ ErrorDetailsAssetNotAvailable _$ErrorDetailsAssetNotAvailableFromJson(
 Map<String, dynamic> _$ErrorDetailsAssetNotAvailableToJson(
   ErrorDetailsAssetNotAvailable instance,
 ) => <String, dynamic>{'assetId': instance.assetId, 'type': instance.$type};
+
+ErrorDetailsIncompatibleVisibility _$ErrorDetailsIncompatibleVisibilityFromJson(
+  Map<String, dynamic> json,
+) => ErrorDetailsIncompatibleVisibility(
+  routes: (json['routes'] as List<dynamic>)
+      .map((e) => IncompatibleRouteDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  usages: (json['usages'] as List<dynamic>)
+      .map((e) => IncompatibleRouteUsageDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$ErrorDetailsIncompatibleVisibilityToJson(
+  ErrorDetailsIncompatibleVisibility instance,
+) => <String, dynamic>{
+  'routes': instance.routes.map((e) => e.toJson()).toList(),
+  'usages': instance.usages.map((e) => e.toJson()).toList(),
+  'type': instance.$type,
+};
