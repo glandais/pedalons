@@ -7,17 +7,26 @@
 
 # Live migration
 
-A biketeam team admin opens *Migrer vers Pédalons* in their team's biketeam admin, chooses a **trial**
-(`dryRun`, ticked by default) or the real thing, and optionally a **reset**. Biketeam sends the browser
+A biketeam team admin opens *Migrer vers Pédalons* in their team's biketeam admin and starts a
+migration — there is no option to choose: since 11 November 2026 there is neither a trial
+(`dryRun`) nor a `reset`, every migration is **incremental** (ledger `MIG-16`). Biketeam sends the browser
 to `/migration-biketeam?request=<signed token>` here; the admin signs in (or signs up) on Pédalons,
 reads what will be imported and confirms. Pédalons mints a single-use grant and sends the browser
 back to biketeam, which redeems it over HTTPS (`POST /api/internal/biketeam-migration/jobs`) and
 polls the job. The worker fetches the team's snapshot and files from biketeam's export API
-(`/internal/pedalons/…`), maps them with the rules below, and hands biketeam a URL table. A
-successful non-trial run, once the admin clicks *Basculer vers Pédalons*, makes biketeam redirect
+(`/internal/pedalons/…`), maps them with the rules below, and hands biketeam a URL table with
+every job that succeeds.
+
+A migration copies the team to Pédalons, or updates the copy, and can be run as often as wanted. It
+changes nothing on biketeam: the team stays editable there and nothing redirects. **The switch-over
+is a separate step, taken on biketeam only** — Pédalons has no part in it. When the team's admin
+decides, one button, *Basculer vers Pédalons*, makes biketeam store the URL table of the last
+successful migration and redirect
 every URL of the team here — with a 302 by default, a 301 once `PEDALONS_REDIRECT_STATUS=301` is set
 on biketeam after the switches have settled (ledger `MIG-2`) — and turn the team read-only; nothing is deleted on
-either side.
+either side. There is no freeze before that click: what changes on biketeam after the last
+successful migration does not reach Pédalons, so run one more migration right before switching if
+it matters.
 
 What comes over: the team (name, visibility, `joinable`), its about page (presentation + contact
 details), its FAQ page, its logo (not the placeholder), places, routes with their GPX and
@@ -36,19 +45,23 @@ run of `_`, `.`, `-` becomes one `-`, so `mollet_qui_pique` lands at `mollet-qui
 that collapse to the same slug meet a `BIKETEAM_SLUG_CONFLICT`). The biketeam id stays the mapping
 key.
 
-| Situation at the slug | Trial / real run | With `reset` |
-|---|---|---|
-| free | team created | same |
-| a team migrated earlier from this biketeam team | updated in place (replay) — only by its Pédalons ADMIN or a PLATFORM_ADMIN | trashed (`deleted`, slug renamed `<slug>-reset-<jobId>`) then created anew — refused while a domain alias is pinned on it |
-| that team, already in the trash | trashed team set aside, created anew | same |
-| any other team (a native Pédalons team) | **refused** (`BIKETEAM_SLUG_CONFLICT`), never touched | same |
-| this biketeam team was migrated into another domain of this database | **refused** (`BIKETEAM_MIGRATED_IN_OTHER_DOMAIN`) | same |
+| Situation at the slug | What the migration does |
+|---|---|
+| free | team created |
+| a team migrated earlier from this biketeam team | updated in place — only by its Pédalons ADMIN or a PLATFORM_ADMIN; wherever it was renamed to, and whether or not a domain alias is pinned on it |
+| that team, already in the trash | trashed team set aside (it stays in the trash, slug renamed `<slug>-reset-<jobId>`), created anew |
+| any other team (a native Pédalons team) | **refused** (`BIKETEAM_SLUG_CONFLICT`), never touched |
+| this biketeam team was migrated into another domain of this database | **refused** (`BIKETEAM_MIGRATED_IN_OTHER_DOMAIN`) |
 
-A **trial** is a real migration — the team really exists afterwards, visible according to its
-biketeam visibility — that biketeam simply does not switch over to. Replays are idempotent (see
-[Replaying](#replaying)), so the real run after a trial re-creates nothing: it resynchronises what
+**Every migration is a real one**: the team really exists afterwards, visible according to its
+biketeam visibility, whether or not biketeam is ever switched over to it. Runs are idempotent (see
+[Replaying](#replaying)), so a later one re-creates nothing: it resynchronises what
 changed on biketeam meanwhile, and skips the whole GPX pipeline — without even downloading — for
 every route whose file has the same `size:md5` fingerprint.
+
+No migration trashes a live team any more, and `DELETE /teams/{slug}` refuses a migrated team
+(ledger `MIG-5`): a copy made to have a look stays on Pédalons (ledger `MIG-18`). The `-reset-`
+suffix of a set-aside team is a leftover name: teams the former `reset` option trashed carry it too.
 
 ## Turning it on
 
@@ -72,8 +85,14 @@ Order, on a new deployment:
    export) a migration in flight for that team. Both URLs must be `https://`.
 3. The backend log says
    `Biketeam live migration enabled (export …, public site …)`.
-4. A trial of a small team (`gaby`) against **staging**, then against production, then the real run
-   (production rollout tracked as ledger `MIG-1`).
+4. A migration of a small team (`gaby`) against **staging**, then against production, then its
+   switch-over on biketeam (production rollout tracked as ledger `MIG-1`).
+
+Rolling out the end of `dryRun` and `reset` (ledger `MIG-16`): **Pédalons first, biketeam second**.
+The new Pédalons ignores both claims of the request token and both fields of the trigger, so a
+biketeam not yet updated keeps working — its `reset: true` or `dryRun: false` is an incremental
+migration like any other. The other order fails: a Pédalons not yet updated refuses a token without
+those claims (`BIKETEAM_REQUEST_INVALID`).
 
 `pedalons.biketeam.grant-ttl` (10 min), `.max-attempts` (3), `.stuck-after` (20 min),
 `.export-snapshot-timeout` (5 min for the snapshot's headers — biketeam may hash a big team's files
@@ -89,9 +108,11 @@ Everything is in `biketeam_migrations` — one row per confirmed request, first 
 status on its admin page; the backend logs one line per transition.
 
 ```sql
-select id, biketeam_team_id, dry_run, reset, status, attempts, progress, error_code, error_message,
+select id, biketeam_team_id, status, attempts, progress, error_code, error_message,
        queued_at, started_at, finished_at
 from biketeam_migrations order by created_at desc limit 20;
+
+-- (dry_run and reset are still columns, no longer written nor read: ledger MIG-17)
 
 -- counts and warnings of the latest job of a team
 select result -> 'counts', result -> 'warnings'
@@ -108,7 +129,6 @@ network or 5xx failure of the export is retried after 2, then 4 minutes; a job s
 | `BIKETEAM_SLUG_CONFLICT` | A native Pédalons team holds the slug: rename it on Pédalons, then retry from biketeam. |
 | `BIKETEAM_MIGRATED_IN_OTHER_DOMAIN` | This biketeam team already lives in another domain of this database. |
 | `BIKETEAM_NOT_TEAM_ADMIN` | The confirming account does not administer the existing team (any more). |
-| `BIKETEAM_RESET_BLOCKED` | A domain alias is pinned on the team a reset would trash. |
 | `EXPORT_REFUSED` | Biketeam answered 4xx — wrong `PEDALONS_BIKETEAM_EXPORT_SECRET`, or no migration in flight on its side. |
 | `EXPORT_UNAVAILABLE` | Biketeam unreachable or 5xx after every attempt — check `PEDALONS_BIKETEAM_EXPORT_URL` and that biketeam answers on it. |
 | `EXPORT_INVALID` | Unreadable snapshot, unexpected `schemaVersion`, or the snapshot of another team. |
@@ -117,7 +137,7 @@ network or 5xx failure of the export is retried after 2, then 4 minutes; a job s
 
 A job that `SUCCEEDED` may still count per-element failures (`counts.*.failed`, with a warning each:
 `GPX_MISSING`, `GPX_EMPTY`, `GPX_FAILURE`, `FILE_DOWNLOAD_FAILED`, `IMAGE_FAILED`, `ITEM_FAILED`;
-see [Known failures](#known-failures)). Read them after the trial; whether to go on is a human call.
+see [Known failures](#known-failures)). Read them after each migration; whether to switch over is a human call.
 One warning is not a failure: `TRIP_STAGES_OUTSIDE_DATES` flags a trip whose stages fall outside its
 biketeam start/end dates — migrated as is, but Pédalons ends a trip with its last stage, so its
 biketeam end date is lost. Fix the dates on either side.

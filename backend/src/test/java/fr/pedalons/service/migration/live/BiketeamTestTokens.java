@@ -43,12 +43,32 @@ public final class BiketeamTestTokens {
   }
 
   /** A fresh, valid request for {@code teamId}, expiring in 15 minutes. */
-  public static Request request(String teamId, boolean dryRun, boolean reset) {
-    return request(UUID.randomUUID().toString(), teamId, dryRun, reset, Instant.now());
+  public static Request request(String teamId) {
+    return request(UUID.randomUUID().toString(), teamId, Instant.now());
   }
 
-  public static Request request(
-      String requestId, String teamId, boolean dryRun, boolean reset, Instant issuedAt) {
+  public static Request request(String requestId, String teamId, Instant issuedAt) {
+    return request(requestId, teamId, issuedAt, "");
+  }
+
+  /**
+   * A request as a biketeam not yet updated signs it: with the {@code dryRun} and {@code reset}
+   * claims Pédalons no longer reads.
+   */
+  public static Request legacyRequest(String teamId, boolean dryRun, boolean reset) {
+    return request(
+        UUID.randomUUID().toString(),
+        teamId,
+        Instant.now(),
+        "\"dryRun\":" + dryRun + ",\"reset\":" + reset + ",");
+  }
+
+  /**
+   * @param legacyClaims JSON members written between {@code requestedBy} and {@code returnUrl},
+   *     where the former contract had its options; empty for a request of the current contract
+   */
+  private static Request request(
+      String requestId, String teamId, Instant issuedAt, String legacyClaims) {
     long iat = issuedAt.getEpochSecond();
     String returnUrl = PUBLIC_URL + "/" + teamId + "/admin/pedalons/callback";
     String payload =
@@ -63,22 +83,14 @@ public final class BiketeamTestTokens {
             + teamId
             + "\",\"teamName\":\"Team "
             + teamId
-            + "\",\"requestedBy\":\"Jane D.\",\"dryRun\":"
-            + dryRun
-            + ",\"reset\":"
-            + reset
-            + ",\"returnUrl\":\""
+            + "\",\"requestedBy\":\"Jane D.\","
+            + legacyClaims
+            + "\"returnUrl\":\""
             + returnUrl
             + "\",\"summary\":{\"places\":1,\"routes\":2,\"rides\":3,\"rideTemplates\":0,"
             + "\"trips\":1,\"tripStages\":2,\"publications\":4,\"faqPage\":true,\"logo\":false}}";
-    return new Request(requestId, teamId, dryRun, reset, returnUrl, sign(payload));
+    return new Request(requestId, teamId, returnUrl, sign(payload));
   }
 
-  public record Request(
-      String requestId,
-      String teamId,
-      boolean dryRun,
-      boolean reset,
-      String returnUrl,
-      String token) {}
+  public record Request(String requestId, String teamId, String returnUrl, String token) {}
 }

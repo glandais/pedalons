@@ -54,7 +54,7 @@ class BiketeamMigrationDisabledTest {
     config.requestKey = Optional.empty();
     BiketeamMigrationGrantService service = new BiketeamMigrationGrantService();
     service.config = config;
-    String token = BiketeamTestTokens.request("n-peloton", true, false).token();
+    String token = BiketeamTestTokens.request("n-peloton").token();
     assertThrows(NotFoundException.class, () -> service.preview(token));
     assertThrows(NotFoundException.class, () -> service.confirm(token));
   }

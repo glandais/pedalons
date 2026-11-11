@@ -2,6 +2,8 @@ package fr.pedalons.api.migration;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,7 +63,7 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
 
   @Test
   void preview_isPublic_andAsksToSignIn() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
 
     preview(req.token(), null)
         .statusCode(200)
@@ -69,8 +71,8 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
         .body("teamId", equalTo("n-peloton"))
         .body("teamName", equalTo("Team n-peloton"))
         .body("requestedBy", equalTo("Jane D."))
-        .body("dryRun", equalTo(true))
-        .body("reset", equalTo(false))
+        .body("$", not(hasKey("dryRun")))
+        .body("$", not(hasKey("reset")))
         .body("summary.routes", equalTo(2))
         .body("summary.faqPage", equalTo(true))
         .body("targetDomainName", equalTo(domain.getName()))
@@ -87,7 +89,7 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
 
   @Test
   void preview_signedIn_isConfirmable() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
 
     preview(req.token(), USER4)
         .statusCode(200)
@@ -99,14 +101,10 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
   void preview_expiredOrForged_isRefused() {
     BiketeamTestTokens.Request old =
         BiketeamTestTokens.request(
-            UUID.randomUUID().toString(),
-            "n-peloton",
-            true,
-            false,
-            Instant.now().minusSeconds(3600));
+            UUID.randomUUID().toString(), "n-peloton", Instant.now().minusSeconds(3600));
     preview(old.token(), null).statusCode(400).body("code", equalTo("BIKETEAM_REQUEST_EXPIRED"));
 
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
     String forged = req.token().substring(0, req.token().length() - 2) + "AA";
     preview(forged, null).statusCode(400).body("code", equalTo("BIKETEAM_REQUEST_INVALID"));
   }
@@ -114,7 +112,7 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
   @Test
   void preview_slugOfANativeTeam_isAConflict() {
     // team-1 is a native Pédalons team of the standard fixture.
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request(team1Slug, true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request(team1Slug);
 
     preview(req.token(), USER4)
         .statusCode(200)
@@ -130,7 +128,7 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
     Team migrated =
         dataService.createTeam(domain, user1, "Migrated", "migrated", Visibility.PUBLIC);
     biketeamData.mapTeam("migrated", migrated);
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("migrated", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("migrated");
 
     preview(req.token(), USER3)
         .statusCode(200)
@@ -149,7 +147,7 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
         dataService.createTeam(domain, user1, "Old Migrated", "trashed-one", Visibility.PUBLIC);
     biketeamData.mapTeam("trashed-one", migrated);
     biketeamData.trashTeam(migrated.getId());
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("trashed-one", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("trashed-one");
 
     preview(req.token(), USER4)
         .statusCode(200)
@@ -166,7 +164,7 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
         dataService.createTeam(
             domain, user1, "Native Trashed", "native-trashed", Visibility.PUBLIC);
     biketeamData.trashTeam(nativeTeam.getId());
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("native-trashed", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("native-trashed");
 
     preview(req.token(), USER4)
         .statusCode(200)
@@ -181,7 +179,7 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
     Team elsewhere =
         dataService.createTeam(other, owner, "Elsewhere", "elsewhere", Visibility.PUBLIC);
     biketeamData.mapTeam("elsewhere", elsewhere);
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("elsewhere", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("elsewhere");
 
     preview(req.token(), USER4)
         .statusCode(200)
@@ -195,7 +193,7 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
   @Test
   void preview_whileAJobRuns_saysSo() {
     biketeamData.createActiveJob(domain, user5, "busy-team");
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("busy-team", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("busy-team");
 
     preview(req.token(), USER4).statusCode(200).body("blockReason", equalTo("MIGRATION_RUNNING"));
     confirm(req.token(), USER4).statusCode(409).body("code", equalTo("BIKETEAM_MIGRATION_RUNNING"));
@@ -205,13 +203,13 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
 
   @Test
   void confirm_withoutSession_is401() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
     confirm(req.token(), null).statusCode(401);
   }
 
   @Test
   void confirm_mintsAGrant_boundToTheUserAndTheDomain() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", false, true);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
 
     String redirectUrl =
         confirm(req.token(), USER4)
@@ -231,8 +229,6 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
     assertEquals(domain.getId(), job.getDomain().getId());
     assertEquals(domain.getBaseUrl(), job.getBaseUrl());
     assertEquals("n-peloton", job.getBiketeamTeamId());
-    assertEquals(false, job.isDryRun());
-    assertEquals(true, job.isReset());
 
     // Once confirmed by user4, nobody else can take the request over.
     preview(req.token(), USER5)
@@ -245,7 +241,7 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
 
   @Test
   void reconfirm_bySameUser_replacesTheGrant() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
 
     String first = confirm(req.token(), USER4).statusCode(200).extract().path("redirectUrl");
     String second = confirm(req.token(), USER4).statusCode(200).extract().path("redirectUrl");
@@ -256,29 +252,30 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
         TokenUtils.hashToken(secondGrant), biketeamData.findJob(req.requestId()).getGrantHash());
   }
 
+  /**
+   * A domain alias pinned on the migrated team blocks nothing: no migration trashes a live team any
+   * more. A request still carrying {@code reset: true} — a biketeam not yet updated — is the same
+   * incremental migration.
+   */
   @Test
-  void confirm_resetOfATeamAnAliasIsPinnedOn_isRefused() {
+  void confirm_intoATeamAnAliasIsPinnedOn_isAccepted_evenWithALegacyResetClaim() {
     Team migrated = dataService.createTeam(domain, user4, "Pinned", "pinned", Visibility.PUBLIC);
     biketeamData.mapTeam("pinned", migrated);
     dataService.createDomainAlias(
         "pinned.example", domain, migrated, "Pinned site", "https://pinned.example");
 
-    BiketeamTestTokens.Request reset = BiketeamTestTokens.request("pinned", true, true);
-    // Said by the preview, before the confirmation is refused: not "confirmable" then a 409.
-    preview(reset.token(), USER4)
-        .statusCode(200)
-        .body("targetState", equalTo("EXISTING_MIGRATED"))
-        .body("confirmable", equalTo(false))
-        .body("blockReason", equalTo("RESET_BLOCKED"));
-    confirm(reset.token(), USER4).statusCode(409).body("code", equalTo("BIKETEAM_RESET_BLOCKED"));
-
-    // Without reset, replaying into it is fine.
-    BiketeamTestTokens.Request replay = BiketeamTestTokens.request("pinned", true, false);
-    preview(replay.token(), USER4)
-        .statusCode(200)
-        .body("confirmable", equalTo(true))
-        .body("blockReason", nullValue());
-    confirm(replay.token(), USER4).statusCode(200);
+    for (BiketeamTestTokens.Request req :
+        new BiketeamTestTokens.Request[] {
+          BiketeamTestTokens.request("pinned"),
+          BiketeamTestTokens.legacyRequest("pinned", false, true)
+        }) {
+      preview(req.token(), USER4)
+          .statusCode(200)
+          .body("targetState", equalTo("EXISTING_MIGRATED"))
+          .body("confirmable", equalTo(true))
+          .body("blockReason", nullValue());
+      confirm(req.token(), USER4).statusCode(200);
+    }
   }
 
   @Test
@@ -286,7 +283,7 @@ class BiketeamMigrationResourceTest extends AbstractResourceTest {
     Team migrated = dataService.createTeam(domain, user1, "Members", "members", Visibility.PUBLIC);
     dataService.addUserToTeam(user2, migrated, TeamRole.ORGANIZER);
     biketeamData.mapTeam("members", migrated);
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("members", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("members");
 
     confirm(req.token(), USER2).statusCode(403).body("code", equalTo("BIKETEAM_NOT_TEAM_ADMIN"));
   }

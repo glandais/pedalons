@@ -32,18 +32,19 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 /**
- * Bug found by the formal model of the live-migration worker (TLA+ spec of the job lifecycle:
- * {@code ensureLiveTargetTeam} and {@code setTargetTeam} as two separate atomic steps, with a crash
- * / transient failure / {@code JobLost} allowed between them).
+ * The retry of a job that set a trashed team aside, after losing the write of its target — the
+ * interleaving the formal model of the live-migration worker found a bug in (TLA+ spec of the job
+ * lifecycle: {@code ensureLiveTargetTeam} and {@code setTargetTeam} as two separate atomic steps,
+ * with a crash / transient failure / {@code JobLost} allowed between them).
  *
- * <p>A reset job whose attempt commits {@code ensureLiveTargetTeam} (T1 trashed as {@code
- * <slug>-reset-<jobTsid>}, T2 created at the biketeam slug, TEAM mapping → T2) but then fails in
- * {@code BiketeamMigrationJobService.setTargetTeam} (its own {@code requiringNew} transaction)
- * leaves {@code target_team_id} NULL. The next attempt no longer recognises T2 as the reset's own
- * result: {@code prepareTarget} decides to set T2 aside too, renaming it to the very same {@code
- * <slug>-reset-<jobTsid>} T1 already holds → {@code uk_teams_domain_slug} (which covers trashed
- * teams) on every attempt → the job ends FAILED INTERNAL_ERROR. When the migrated team had been
- * renamed on Pédalons, the slugs differ and the retry instead throws away T2 and creates a T3.
+ * <p>The bug was the reset's (docs/LEDGER_*.md MIG-15): its retry reset the team its first attempt
+ * had just created. The reset is gone (MIG-16), and with it the guard; what is left of the
+ * scenario is the setting aside of a migrated team found in the Pédalons trash. An attempt commits
+ * {@code ensureLiveTargetTeam} (T1 renamed {@code <slug>-reset-<jobTsid>} in the trash, T2 created
+ * at the biketeam slug, TEAM mapping → T2, the confirming account ADMIN of T2) and then fails in
+ * {@code BiketeamMigrationJobService.setTargetTeam} (its own {@code requiringNew} transaction),
+ * leaving {@code target_team_id} NULL. The next attempt must find T2 through its mapping row —
+ * EXISTING_MIGRATED — and carry on in it: nothing set aside twice, no third team.
  *
  * <p>The interleaving is driven deterministically: a spy on the job service makes the first {@code
  * setTargetTeam} call throw (as a DB blip or a lost job would), then behaves normally.
@@ -52,7 +53,7 @@ import org.mockito.Mockito;
  * #migrateTeamLive / #ensureLiveTargetTeam, BiketeamMigrationJobService#setTargetTeam.
  */
 @QuarkusTest
-class BiketeamResetRetryAfterLostTargetRaceTest extends AbstractResourceTest {
+class BiketeamSetAsideRetryAfterLostTargetRaceTest extends AbstractResourceTest {
 
   static final String TEAM = "live-team";
   static final String SECRET_HEADER = "X-Biketeam-Migration-Secret";
@@ -72,7 +73,7 @@ class BiketeamResetRetryAfterLostTargetRaceTest extends AbstractResourceTest {
   private static Path resource(String name) {
     try {
       return Path.of(
-          BiketeamResetRetryAfterLostTargetRaceTest.class.getResource("/" + name).toURI());
+          BiketeamSetAsideRetryAfterLostTargetRaceTest.class.getResource("/" + name).toURI());
     } catch (URISyntaxException e) {
       throw new IllegalStateException(e);
     }
@@ -97,8 +98,8 @@ class BiketeamResetRetryAfterLostTargetRaceTest extends AbstractResourceTest {
     }
   }
 
-  private String confirmAndTrigger(String user, String teamId, boolean dryRun, boolean reset) {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request(teamId, dryRun, reset);
+  private String confirmAndTrigger(String user, String teamId) {
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request(teamId);
     String redirectUrl =
         given()
             .auth()
@@ -115,13 +116,7 @@ class BiketeamResetRetryAfterLostTargetRaceTest extends AbstractResourceTest {
     return given()
         .header(SECRET_HEADER, BiketeamTestTokens.TRIGGER_SECRET)
         .contentType(ContentType.JSON)
-        .body(
-            Map.of(
-                "requestId", req.requestId(),
-                "grant", grant,
-                "teamId", teamId,
-                "dryRun", dryRun,
-                "reset", reset))
+        .body(Map.of("requestId", req.requestId(), "grant", grant, "teamId", teamId))
         .when()
         .post("/api/internal/biketeam-migration/jobs")
         .then()
@@ -163,37 +158,36 @@ class BiketeamResetRetryAfterLostTargetRaceTest extends AbstractResourceTest {
     return created.id();
   }
 
-  // ─── the bug ──────────────────────────────────────────────────────────────
+  // ─── the scenario ─────────────────────────────────────────────────────────
 
-  @Test
-  void resetRetriedAfterLosingItsTarget_resumesTheTeamItCreated_insteadOfFailingOnTheSetAsideSlug()
-      throws IOException {
-    BiketeamJobStatusDto initial = runWorker(confirmAndTrigger(USER4, TEAM, true, false));
+  /**
+   * @param renamedTo the slug the migrated team was given on Pédalons before it was trashed, or
+   *     null when it kept the biketeam one
+   */
+  private void retryResumesTheTeamTheFirstAttemptCreated(String renamedTo) throws IOException {
+    BiketeamJobStatusDto initial = runWorker(confirmAndTrigger(USER4, TEAM));
     assertEquals("SUCCEEDED", initial.status(), () -> "error: " + initial.error());
     long firstId = biketeamData.team(domain, TEAM).id();
+    String trashedSlug = TEAM;
+    if (renamedTo != null) {
+      biketeamData.renameTeam(firstId, renamedTo);
+      trashedSlug = renamedTo;
+    }
+    biketeamData.trashTeam(firstId);
 
-    String jobId = confirmAndTrigger(USER4, TEAM, true, true);
+    String jobId = confirmAndTrigger(USER4, TEAM);
     long createdByAttempt1 = runFirstAttemptLosingTheTarget(jobId, firstId);
     BiketeamTestData.TeamView old = biketeamData.teamById(firstId);
     assertTrue(old.deleted());
-    assertEquals(TEAM + "-reset-" + jobId, old.slug());
+    assertEquals(trashedSlug + "-reset-" + jobId, old.slug());
 
-    // Attempt 2: on the current code it renames T2 to TEAM-reset-<jobId> too and violates
-    // uk_teams_domain_slug — on this attempt and on every following one.
     biketeamData.dueNow(TsidUtils.toLong(jobId));
     BiketeamJobStatusDto second = runWorker(jobId);
     if (!"SUCCEEDED".equals(second.status())) {
-      // Let the job exhaust its attempts so the failure shows its final state.
-      biketeamData.dueNow(TsidUtils.toLong(jobId));
-      BiketeamJobStatusDto third = runWorker(jobId);
       BiketeamMigrationJob job = biketeamData.findJobById(TsidUtils.toLong(jobId));
       throw new AssertionError(
-          "The retry of the reset did not resume the team it created: attempt 2 "
+          "The retry did not resume the team its first attempt created: "
               + second.status()
-              + " ("
-              + (second.lastAttemptError() == null ? null : second.lastAttemptError().message())
-              + "), attempt 3 "
-              + third.status()
               + " — "
               + job.getErrorCode()
               + ": "
@@ -203,31 +197,22 @@ class BiketeamResetRetryAfterLostTargetRaceTest extends AbstractResourceTest {
     BiketeamTestData.TeamView live = biketeamData.team(domain, TEAM);
     assertNotNull(live);
     assertFalse(live.deleted());
-    assertEquals(createdByAttempt1, live.id(), "the reset is not replayed on its own result");
-    assertEquals(TEAM + "-reset-" + jobId, biketeamData.teamById(firstId).slug());
+    assertEquals(createdByAttempt1, live.id(), "the team of the first attempt, not a third one");
+    assertEquals(trashedSlug + "-reset-" + jobId, biketeamData.teamById(firstId).slug());
     assertTrue(biketeamData.teamMappedTo(TEAM, createdByAttempt1));
+    assertNotNull(second.targetTeam());
+    assertEquals(TEAM, second.targetTeam().slug());
   }
 
   @Test
-  void resetOfARenamedTeamRetriedAfterLosingItsTarget_doesNotThrowAwayTheTeamItCreated()
+  void aJobThatSetATrashedTeamAside_retriedAfterLosingItsTarget_resumesTheTeamItCreated()
       throws IOException {
-    BiketeamJobStatusDto initial = runWorker(confirmAndTrigger(USER4, TEAM, true, false));
-    assertEquals("SUCCEEDED", initial.status(), () -> "error: " + initial.error());
-    long firstId = biketeamData.team(domain, TEAM).id();
-    biketeamData.renameTeam(firstId, "renamed-team");
+    retryResumesTheTeamTheFirstAttemptCreated(null);
+  }
 
-    String jobId = confirmAndTrigger(USER4, TEAM, true, true);
-    long createdByAttempt1 = runFirstAttemptLosingTheTarget(jobId, firstId);
-    assertEquals("renamed-team-reset-" + jobId, biketeamData.teamById(firstId).slug());
-
-    biketeamData.dueNow(TsidUtils.toLong(jobId));
-    BiketeamJobStatusDto second = runWorker(jobId);
-    assertEquals("SUCCEEDED", second.status(), () -> "error: " + second.error());
-
-    // Today: T2 is trashed as live-team-reset-<jobId> and a T3 takes the slug.
-    BiketeamTestData.TeamView t2 = biketeamData.teamById(createdByAttempt1);
-    assertFalse(t2.deleted(), "the team the reset created is not reset again by its own retry");
-    assertEquals(TEAM, t2.slug());
-    assertEquals(createdByAttempt1, biketeamData.team(domain, TEAM).id());
+  @Test
+  void aJobThatSetARenamedTrashedTeamAside_retriedAfterLosingItsTarget_resumesTheTeamItCreated()
+      throws IOException {
+    retryResumesTheTeamTheFirstAttemptCreated("renamed-team");
   }
 }

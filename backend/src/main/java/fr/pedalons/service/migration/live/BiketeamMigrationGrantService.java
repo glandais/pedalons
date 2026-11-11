@@ -61,8 +61,7 @@ public class BiketeamMigrationGrantService {
     ensureEnabled();
     BiketeamRequestToken token = verifier.verify(requestToken);
     Domain domain = domainResolver.getDomain();
-    BiketeamTargetResolver.Target target =
-        targetResolver.evaluate(domain.getId(), token.teamId(), token.reset());
+    BiketeamTargetResolver.Target target = targetResolver.evaluate(domain.getId(), token.teamId());
     User user = pedalonsContext.getUserNullable();
     BiketeamMigrationBlockReason blockReason = blockReason(token, target, domain, user);
     return new BiketeamMigrationPreviewDto(
@@ -70,8 +69,6 @@ public class BiketeamMigrationGrantService {
         token.teamId(),
         token.teamName(),
         token.requestedBy(),
-        token.dryRun(),
-        token.reset(),
         token.expiresAt(),
         token.summary(),
         domain.getName(),
@@ -110,15 +107,9 @@ public class BiketeamMigrationGrantService {
     if (user == null) {
       return BiketeamMigrationBlockReason.LOGIN_REQUIRED;
     }
-    if (target.state() == BiketeamMigrationTargetState.EXISTING_MIGRATED) {
-      Long teamId = requireTeamId(target);
-      if (!targetResolver.mayAdminister(user, teamId)) {
-        return BiketeamMigrationBlockReason.NOT_TEAM_ADMIN;
-      }
-      // What confirm() refuses with BIKETEAM_RESET_BLOCKED: the preview says so up front.
-      if (token.reset() && targetResolver.isResetBlocked(teamId)) {
-        return BiketeamMigrationBlockReason.RESET_BLOCKED;
-      }
+    if (target.state() == BiketeamMigrationTargetState.EXISTING_MIGRATED
+        && !targetResolver.mayAdminister(user, requireTeamId(target))) {
+      return BiketeamMigrationBlockReason.NOT_TEAM_ADMIN;
     }
     return null;
   }
@@ -153,8 +144,7 @@ public class BiketeamMigrationGrantService {
     BiketeamRequestToken token = verifier.verify(requestToken);
     Domain domain = domainResolver.getDomain();
     User user = pedalonsContext.getUser();
-    BiketeamTargetResolver.Target target =
-        targetResolver.evaluate(domain.getId(), token.teamId(), token.reset());
+    BiketeamTargetResolver.Target target = targetResolver.evaluate(domain.getId(), token.teamId());
 
     if (target.state() == BiketeamMigrationTargetState.SLUG_CONFLICT) {
       throw new ConflictException(ErrorCode.BIKETEAM_SLUG_CONFLICT);
@@ -169,14 +159,9 @@ public class BiketeamMigrationGrantService {
     if (jobRepository.findActiveByBiketeamTeamId(token.teamId()).isPresent()) {
       throw new ConflictException(ErrorCode.BIKETEAM_MIGRATION_RUNNING);
     }
-    if (target.state() == BiketeamMigrationTargetState.EXISTING_MIGRATED) {
-      Long teamId = requireTeamId(target);
-      if (!targetResolver.mayAdminister(user, teamId)) {
-        throw new ForbiddenException(ErrorCode.BIKETEAM_NOT_TEAM_ADMIN);
-      }
-      if (token.reset() && targetResolver.isResetBlocked(teamId)) {
-        throw new ConflictException(ErrorCode.BIKETEAM_RESET_BLOCKED);
-      }
+    if (target.state() == BiketeamMigrationTargetState.EXISTING_MIGRATED
+        && !targetResolver.mayAdminister(user, requireTeamId(target))) {
+      throw new ForbiddenException(ErrorCode.BIKETEAM_NOT_TEAM_ADMIN);
     }
 
     String grant = GRANT_PREFIX + TokenUtils.generateSecureToken();
@@ -195,8 +180,6 @@ public class BiketeamMigrationGrantService {
               token.teamId(),
               truncate(token.teamName(), 250),
               token.requestId(),
-              token.dryRun(),
-              token.reset(),
               token.returnUrl(),
               domain.getBaseUrl(),
               grantHash,
@@ -210,8 +193,8 @@ public class BiketeamMigrationGrantService {
       }
     }
     LOG.infof(
-        "Biketeam migration of '%s' confirmed on %s (request %s, dryRun=%s, reset=%s)",
-        token.teamId(), domain.getDomain(), token.requestId(), token.dryRun(), token.reset());
+        "Biketeam migration of '%s' confirmed on %s (request %s)",
+        token.teamId(), domain.getDomain(), token.requestId());
     String redirectUrl = token.returnUrl() + "?request=" + token.requestId() + "&grant=" + grant;
     return new BiketeamMigrationConfirmDto(redirectUrl, expiresAt);
   }

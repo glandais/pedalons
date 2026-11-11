@@ -44,8 +44,6 @@ function previewDto(overrides: Partial<BiketeamMigrationPreviewDto> = {}) {
     teamId: 'n-peloton',
     teamName: "N'Peloton",
     requestedBy: 'Jane D.',
-    dryRun: true,
-    reset: false,
     expiresAt: '2026-09-22T11:15:00Z',
     summary: {
       places: 1,
@@ -129,7 +127,8 @@ describe('BiketeamMigrationPage', () => {
     expect(sessionStorage.getItem(REQUEST_STORAGE_KEY)).toBe(TOKEN)
     expect(screen.getByText('biketeamMigration.notImported.members')).toBeInTheDocument()
     expect(screen.getByText('biketeamMigration.notImported.comments')).toBeInTheDocument()
-    expect(screen.getByText('biketeamMigration.mode.dryRun')).toBeInTheDocument()
+    expect(screen.getByText('biketeamMigration.copy.title')).toBeInTheDocument()
+    expect(screen.getByText('biketeamMigration.copy.body')).toBeInTheDocument()
     expect(screen.queryByText('biketeamMigration.confirm')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByText('biketeamMigration.signIn'))
@@ -174,16 +173,13 @@ describe('BiketeamMigrationPage', () => {
 
   it('confirms, forgets the request and goes back to biketeam with the grant', async () => {
     signIn()
-    previewBiketeamMigration.mockResolvedValue(
-      previewDto({ confirmable: true, blockReason: null, dryRun: false })
-    )
+    previewBiketeamMigration.mockResolvedValue(previewDto({ confirmable: true, blockReason: null }))
     const redirectUrl =
       'https://biketeam.example/n-peloton/admin/pedalons/callback?request=6f1c2a3e-0000-4000-8000-000000000001&grant=bmg_x'
     confirmBiketeamMigration.mockResolvedValue({ redirectUrl, expiresAt: '2026-09-22T10:25:00Z' })
     renderAt(`/migration-biketeam?request=${TOKEN}`)
 
-    expect(await screen.findByText('biketeamMigration.mode.final')).toBeInTheDocument()
-    fireEvent.click(screen.getByText('biketeamMigration.confirm'))
+    fireEvent.click(await screen.findByText('biketeamMigration.confirm'))
 
     await waitFor(() => expect(leaveForBiketeam).toHaveBeenCalledWith(redirectUrl))
     expect(confirmBiketeamMigration).toHaveBeenCalledWith({ requestToken: TOKEN })
@@ -217,30 +213,10 @@ describe('BiketeamMigrationPage', () => {
     expect(screen.getByText('biketeamMigration.backToBiketeam')).toBeInTheDocument()
   })
 
-  it('says up front that a reset is blocked by a pinned domain, with no confirm button', async () => {
+  it('says that a team from a previous migration is updated', async () => {
     signIn()
     previewBiketeamMigration.mockResolvedValue(
       previewDto({
-        reset: true,
-        targetState: 'EXISTING_MIGRATED',
-        existingTeamName: "N'Peloton",
-        confirmable: false,
-        blockReason: 'RESET_BLOCKED',
-      })
-    )
-    renderAt(`/migration-biketeam?request=${TOKEN}`)
-
-    expect(await screen.findByText('biketeamMigration.block.RESET_BLOCKED')).toBeInTheDocument()
-    expect(screen.queryByText('biketeamMigration.confirm')).not.toBeInTheDocument()
-    expect(screen.getByText('biketeamMigration.backToBiketeam')).toBeInTheDocument()
-    expect(confirmBiketeamMigration).not.toHaveBeenCalled()
-  })
-
-  it('warns about the reset, naming the team it deletes', async () => {
-    signIn()
-    previewBiketeamMigration.mockResolvedValue(
-      previewDto({
-        reset: true,
         targetState: 'EXISTING_MIGRATED',
         existingTeamName: "N'Peloton",
         confirmable: true,
@@ -249,7 +225,9 @@ describe('BiketeamMigrationPage', () => {
     )
     renderAt(`/migration-biketeam?request=${TOKEN}`)
 
-    expect(await screen.findByText('biketeamMigration.reset.existing')).toBeInTheDocument()
+    expect(await screen.findByText('biketeamMigration.existing.update')).toBeInTheDocument()
+    expect(screen.queryByText('biketeamMigration.trashed.setAside')).not.toBeInTheDocument()
+    expect(screen.getByText('biketeamMigration.confirm')).toBeInTheDocument()
   })
 
   it('says that a deleted team from a previous migration is set aside, not updated', async () => {
@@ -266,23 +244,6 @@ describe('BiketeamMigrationPage', () => {
 
     expect(await screen.findByText('biketeamMigration.trashed.setAside')).toBeInTheDocument()
     expect(screen.queryByText('biketeamMigration.existing.update')).not.toBeInTheDocument()
-  })
-
-  it('does not call a reset pointless when it sets a deleted team aside', async () => {
-    signIn()
-    previewBiketeamMigration.mockResolvedValue(
-      previewDto({
-        reset: true,
-        targetState: 'NEW',
-        trashedTeamSetAside: "N'Peloton",
-        confirmable: true,
-        blockReason: null,
-      })
-    )
-    renderAt(`/migration-biketeam?request=${TOKEN}`)
-
-    expect(await screen.findByText('biketeamMigration.trashed.setAside')).toBeInTheDocument()
-    expect(screen.queryByText('biketeamMigration.reset.none')).not.toBeInTheDocument()
   })
 
   it('mentions no deleted team when there is none', async () => {

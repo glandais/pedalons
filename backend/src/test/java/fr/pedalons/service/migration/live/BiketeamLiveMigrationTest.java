@@ -124,8 +124,17 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   }
 
   /** Confirms as {@code user} and triggers, as biketeam would; returns the job id. */
-  private String confirmAndTrigger(String user, String teamId, boolean dryRun, boolean reset) {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request(teamId, dryRun, reset);
+  private String confirmAndTrigger(String user, String teamId) {
+    return confirmAndTrigger(user, BiketeamTestTokens.request(teamId), Map.of());
+  }
+
+  /**
+   * @param legacyFields what a biketeam not yet updated adds to its trigger ({@code dryRun}, {@code
+   *     reset}); empty for the current contract
+   */
+  private String confirmAndTrigger(
+      String user, BiketeamTestTokens.Request req, Map<String, Object> legacyFields) {
+    String teamId = req.teamId();
     String redirectUrl =
         given()
             .auth()
@@ -139,17 +148,15 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
             .extract()
             .path("redirectUrl");
     String grant = redirectUrl.substring(redirectUrl.indexOf("&grant=") + "&grant=".length());
+    Map<String, Object> triggerBody = new java.util.HashMap<>(legacyFields);
+    triggerBody.put("requestId", req.requestId());
+    triggerBody.put("grant", grant);
+    triggerBody.put("teamId", teamId);
     io.restassured.response.ExtractableResponse<?> triggered =
         given()
             .header(SECRET_HEADER, BiketeamTestTokens.TRIGGER_SECRET)
             .contentType(ContentType.JSON)
-            .body(
-                Map.of(
-                    "requestId", req.requestId(),
-                    "grant", grant,
-                    "teamId", teamId,
-                    "dryRun", dryRun,
-                    "reset", reset))
+            .body(triggerBody)
             .when()
             .post("/api/internal/biketeam-migration/jobs")
             .then()
@@ -170,9 +177,8 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     return jobService.status(jobId);
   }
 
-  private BiketeamJobStatusDto migrate(String user, boolean dryRun, boolean reset)
-      throws IOException {
-    return runWorker(confirmAndTrigger(user, TEAM, dryRun, reset));
+  private BiketeamJobStatusDto migrate(String user) throws IOException {
+    return runWorker(confirmAndTrigger(user, TEAM));
   }
 
   // ─── the first run ────────────────────────────────────────────────────────
@@ -182,7 +188,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
       throws IOException {
     long usersBefore = biketeamData.countUsers();
 
-    BiketeamJobStatusDto status = migrate(USER4, true, false);
+    BiketeamJobStatusDto status = migrate(USER4);
 
     assertEquals("SUCCEEDED", status.status(), () -> "error: " + status.error());
     assertEquals("DONE", status.progress().phase());
@@ -237,7 +243,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   void migratedRoutes_leaveTheirSurfaceToTheirHdCatchUp() throws IOException {
     surfaceService.setEnabledForTest(true);
     try {
-      migrate(USER4, true, false);
+      migrate(USER4);
 
       long requests =
           io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
@@ -254,7 +260,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
 
   @Test
   void rideGroups_keepBiketeamsOrder_withNoLeader_andDatesReadInTheTeamZone() throws IOException {
-    migrate(USER4, true, false);
+    migrate(USER4);
     long teamId = biketeamData.team(domain, TEAM).id();
 
     BiketeamTestData.RideView ride = biketeamData.ride(teamId, "Sortie du 12");
@@ -282,7 +288,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   /** Biketeam's increment is the number the template's next ride takes (API-108). */
   @Test
   void rideTemplate_keepsBiketeamsIncrement_asItsNextNumber() throws IOException {
-    migrate(USER4, true, false);
+    migrate(USER4);
     long teamId = biketeamData.team(domain, TEAM).id();
 
     assertEquals(Integer.valueOf(7), biketeamData.templateNextNumber(teamId, "Sortie du samedi"));
@@ -291,7 +297,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   /** The import goes through the same creation as the API: every end is stored (API-85). */
   @Test
   void importedRidesAndTrips_haveTheirEndStored() throws IOException {
-    migrate(USER4, true, false);
+    migrate(USER4);
     long teamId = biketeamData.team(domain, TEAM).id();
 
     BiketeamTestData.EndView ride = biketeamData.rideEnd(teamId, "Sortie du 12");
@@ -307,7 +313,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
 
   @Test
   void urlMap_pointsAtTheFrenchRoutes_ofTheDomainBaseUrl() throws IOException {
-    BiketeamJobStatusDto status = migrate(USER4, true, false);
+    BiketeamJobStatusDto status = migrate(USER4);
 
     Map<String, Map<String, String>> urls = status.urlMap();
     assertNotNull(urls);
@@ -327,17 +333,17 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertEquals(base, status.targetTeam().url());
   }
 
-  // ─── replay, reset, conflicts ─────────────────────────────────────────────
+  // ─── replay, conflicts ─────────────────────────────────────────────
 
   @Test
   void replay_duplicatesNothing_andDownloadsNoUnchangedFile() throws IOException {
-    migrate(USER4, true, false);
+    migrate(USER4);
     long teamId = biketeamData.team(domain, TEAM).id();
     String tripMarkdown = biketeamData.tripMarkdown(teamId, "Tour 2025");
     assertTrue(downloads.stream().anyMatch(p -> p.contains("/files/gpx/map-1")));
     downloads.clear();
 
-    BiketeamJobStatusDto replay = migrate(USER4, false, false);
+    BiketeamJobStatusDto replay = migrate(USER4);
 
     assertEquals("SUCCEEDED", replay.status(), () -> "error: " + replay.error());
     assertEquals(teamId, biketeamData.team(domain, TEAM).id(), "same team");
@@ -357,7 +363,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
 
   @Test
   void replay_rebuildsInPlace_aRouteAnEarlierGpxPipelineBuilt() throws IOException {
-    migrate(USER4, true, false);
+    migrate(USER4);
     long teamId = biketeamData.team(domain, TEAM).id();
     String current = biketeamData.routeFingerprint("map-1");
     assertNotNull(current);
@@ -372,7 +378,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     biketeamData.setRouteFingerprint("map-1", current.substring(0, current.indexOf('@')));
     downloads.clear();
 
-    BiketeamJobStatusDto replay = migrate(USER4, false, false);
+    BiketeamJobStatusDto replay = migrate(USER4);
 
     assertEquals("SUCCEEDED", replay.status(), () -> "error: " + replay.error());
     assertTrue(
@@ -390,16 +396,48 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertEquals(current, biketeamData.routeFingerprint("map-1"));
 
     downloads.clear();
-    migrate(USER4, false, false);
+    migrate(USER4);
     assertEquals(List.of(), downloads, "rebuilt once, then up to date again");
   }
 
+  /**
+   * A biketeam not yet updated still signs and sends {@code reset: true} and {@code dryRun: false}:
+   * neither is read. The migrated team is updated in place, never trashed and recreated.
+   */
   @Test
-  void reset_trashesTheMigratedTeam_freesItsSlug_andRecreatesIt() throws IOException {
-    migrate(USER4, true, false);
-    long firstId = biketeamData.team(domain, TEAM).id();
+  void aLegacyResetRequest_isAnIncrementalMigration_andTrashesNothing() throws IOException {
+    migrate(USER4);
+    long teamId = biketeamData.team(domain, TEAM).id();
+    downloads.clear();
 
-    String jobId = confirmAndTrigger(USER4, TEAM, true, true);
+    BiketeamJobStatusDto status =
+        runWorker(
+            confirmAndTrigger(
+                USER4,
+                BiketeamTestTokens.legacyRequest(TEAM, false, true),
+                Map.of("dryRun", false, "reset", true)));
+
+    assertEquals("SUCCEEDED", status.status(), () -> "error: " + status.error());
+    BiketeamTestData.TeamView team = biketeamData.team(domain, TEAM);
+    assertEquals(teamId, team.id(), "same team, at the same slug");
+    assertFalse(team.deleted());
+    assertEquals(1, biketeamData.countTeamsCreatedBy(user4), "no second team");
+    assertEquals(1, biketeamData.countLive(Route.class, teamId));
+    assertEquals(List.of(), downloads, "nothing is rebuilt");
+    assertNotNull(status.urlMap(), "the URL table comes with every SUCCEEDED job");
+  }
+
+  /**
+   * The one case where a team of ours is set aside: the migrated team is in the Pédalons trash. It
+   * stays there, renamed, and a new team takes the slug.
+   */
+  @Test
+  void aMigratedTeamInTheTrash_isSetAside_andTheTeamIsCreatedAnew() throws IOException {
+    migrate(USER4);
+    long firstId = biketeamData.team(domain, TEAM).id();
+    biketeamData.trashTeam(firstId);
+
+    String jobId = confirmAndTrigger(USER4, TEAM);
     BiketeamJobStatusDto status = runWorker(jobId);
 
     assertEquals("SUCCEEDED", status.status(), () -> "error: " + status.error());
@@ -409,6 +447,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     BiketeamTestData.TeamView fresh = biketeamData.team(domain, TEAM);
     assertNotEquals(firstId, fresh.id());
     assertFalse(fresh.deleted());
+    assertTrue(biketeamData.teamMappedTo(TEAM, fresh.id()));
     assertEquals(1, biketeamData.countLive(Route.class, fresh.id()));
     assertTrue(
         downloads.stream().filter(p -> p.contains("/files/gpx/map-1")).count() >= 2,
@@ -417,7 +456,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
 
   @Test
   void aNativeTeamTakingTheSlugMeanwhile_failsTheJob_andIsLeftIntact() throws IOException {
-    String jobId = confirmAndTrigger(USER4, TEAM, true, false);
+    String jobId = confirmAndTrigger(USER4, TEAM);
     // Between the confirmation and the run, someone creates a Pédalons team at that slug.
     Team nativeTeam = dataService.createTeam(domain, user5, "Native", TEAM, Visibility.PUBLIC);
 
@@ -438,12 +477,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   // ─── a migrated team renamed on Pédalons ──────────────────────────────────
 
   private io.restassured.response.ValidatableResponse preview(String user, String teamId) {
-    return preview(user, teamId, false);
-  }
-
-  private io.restassured.response.ValidatableResponse preview(
-      String user, String teamId, boolean reset) {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request(teamId, false, reset);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request(teamId);
     return given()
         .auth()
         .oauth2(getAccessToken(user))
@@ -456,7 +490,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
 
   @Test
   void aMigratedTeamRenamedOnPedalons_isStillThatTeam_andIsReplayedInPlace() throws IOException {
-    migrate(USER4, true, false);
+    migrate(USER4);
     long teamId = biketeamData.team(domain, TEAM).id();
     biketeamData.renameTeam(teamId, "renamed-team");
 
@@ -466,7 +500,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
         .body("targetTeamSlug", equalTo("renamed-team"))
         .body("confirmable", equalTo(true));
 
-    BiketeamJobStatusDto replay = migrate(USER4, false, false);
+    BiketeamJobStatusDto replay = migrate(USER4);
 
     assertEquals("SUCCEEDED", replay.status(), () -> "error: " + replay.error());
     assertNull(biketeamData.team(domain, TEAM), "no second team at the biketeam id");
@@ -480,8 +514,8 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   }
 
   @Test
-  void aMigratedTeamRenamedOnPedalons_cannotBeReplayedNorResetByANonAdmin() throws IOException {
-    migrate(USER4, true, false);
+  void aMigratedTeamRenamedOnPedalons_cannotBeMigratedIntoByANonAdmin() throws IOException {
+    migrate(USER4);
     long teamId = biketeamData.team(domain, TEAM).id();
     biketeamData.renameTeam(teamId, "renamed-team");
 
@@ -489,12 +523,12 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
         .statusCode(200)
         .body("targetState", equalTo("EXISTING_MIGRATED"))
         .body("blockReason", equalTo("NOT_TEAM_ADMIN"));
-    BiketeamTestTokens.Request reset = BiketeamTestTokens.request(TEAM, false, true);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request(TEAM);
     given()
         .auth()
         .oauth2(getAccessToken(USER5))
         .contentType(ContentType.JSON)
-        .body(Map.of("requestToken", reset.token()))
+        .body(Map.of("requestToken", req.token()))
         .when()
         .post("/api/biketeam-migration/confirm")
         .then()
@@ -504,85 +538,29 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertNull(biketeamData.team(domain, TEAM));
   }
 
+  /**
+   * A native team took the biketeam slug after the migrated team was renamed: the migration still
+   * lands on the migrated team, where it is, and the native team is none of its business.
+   */
   @Test
-  void resetOfARenamedMigratedTeam_setsItAside_andRecreatesAtTheBiketeamSlug() throws IOException {
-    migrate(USER4, true, false);
-    long firstId = biketeamData.team(domain, TEAM).id();
-    biketeamData.renameTeam(firstId, "renamed-team");
-
-    String jobId = confirmAndTrigger(USER4, TEAM, true, true);
-    BiketeamJobStatusDto status = runWorker(jobId);
-
-    assertEquals("SUCCEEDED", status.status(), () -> "error: " + status.error());
-    BiketeamTestData.TeamView old = biketeamData.teamById(firstId);
-    assertTrue(old.deleted());
-    assertEquals("renamed-team-reset-" + jobId, old.slug());
-    BiketeamTestData.TeamView fresh = biketeamData.team(domain, TEAM);
-    assertNotNull(fresh);
-    assertNotEquals(firstId, fresh.id());
-    assertEquals(1, biketeamData.countLive(Route.class, fresh.id()));
-  }
-
-  // ─── reset of a renamed team whose slug a native team took ────────────────
-
-  @Test
-  void resetOfARenamedMigratedTeam_whenANativeTeamHoldsTheBiketeamSlug_isBlocked_andTrashesNothing()
+  void aRenamedMigratedTeam_whoseBiketeamSlugANativeTeamTook_isStillMigratedInPlace()
       throws IOException {
     snapshotTeamId = "club_x";
-    runWorker(confirmAndTrigger(USER4, "club_x", true, false));
+    runWorker(confirmAndTrigger(USER4, "club_x"));
     long migratedId = biketeamData.team(domain, "club-x").id();
     biketeamData.renameTeam(migratedId, "club-x-lyon");
     Team nativeTeam = dataService.createTeam(domain, user5, "Native", "club-x", Visibility.PUBLIC);
 
-    // Blocked from the preview on: the reset would recreate the team at club-x.
-    preview(USER4, "club_x", true)
-        .statusCode(200)
-        .body("targetState", equalTo("SLUG_CONFLICT"))
-        .body("targetTeamSlug", equalTo("club-x"))
-        .body("blockReason", equalTo("SLUG_CONFLICT"))
-        .body("confirmable", equalTo(false));
-    BiketeamTestTokens.Request reset = BiketeamTestTokens.request("club_x", true, true);
-    given()
-        .auth()
-        .oauth2(getAccessToken(USER4))
-        .contentType(ContentType.JSON)
-        .body(Map.of("requestToken", reset.token()))
-        .when()
-        .post("/api/biketeam-migration/confirm")
-        .then()
-        .statusCode(409)
-        .body("code", equalTo("BIKETEAM_SLUG_CONFLICT"));
-    // A replay without reset stays possible: it reuses club-x-lyon.
-    preview(USER4, "club_x", false)
+    preview(USER4, "club_x")
         .statusCode(200)
         .body("targetState", equalTo("EXISTING_MIGRATED"))
+        .body("targetTeamSlug", equalTo("club-x-lyon"))
         .body("confirmable", equalTo(true));
+    BiketeamJobStatusDto status = runWorker(confirmAndTrigger(USER4, "club_x"));
 
+    assertEquals("SUCCEEDED", status.status(), () -> "error: " + status.error());
     BiketeamTestData.TeamView migrated = biketeamData.teamById(migratedId);
-    assertFalse(migrated.deleted(), "nothing in the trash");
-    assertEquals("club-x-lyon", migrated.slug());
-    assertTrue(biketeamData.teamMappedTo("club_x", migratedId), "mapping kept");
-    assertFalse(biketeamData.teamById(nativeTeam.getId()).deleted());
-  }
-
-  @Test
-  void
-      resetOfARenamedMigratedTeam_whenANativeTeamTakesTheSlugAfterTheConfirmation_failsTheJob_andTrashesNothing()
-          throws IOException {
-    snapshotTeamId = "club_x";
-    runWorker(confirmAndTrigger(USER4, "club_x", true, false));
-    long migratedId = biketeamData.team(domain, "club-x").id();
-    biketeamData.renameTeam(migratedId, "club-x-lyon");
-    String jobId = confirmAndTrigger(USER4, "club_x", true, true);
-    // Between the confirmation and the run.
-    Team nativeTeam = dataService.createTeam(domain, user5, "Native", "club-x", Visibility.PUBLIC);
-
-    BiketeamJobStatusDto status = runWorker(jobId);
-
-    assertEquals("FAILED", status.status());
-    assertEquals("BIKETEAM_SLUG_CONFLICT", status.error().code());
-    BiketeamTestData.TeamView migrated = biketeamData.teamById(migratedId);
-    assertFalse(migrated.deleted(), "the only copy is not left in the trash");
+    assertFalse(migrated.deleted());
     assertEquals("club-x-lyon", migrated.slug());
     assertTrue(biketeamData.teamMappedTo("club_x", migratedId), "mapping kept");
     assertEquals(1, biketeamData.countLive(Route.class, migratedId));
@@ -595,20 +573,16 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   // ─── the trigger answers the slug the job lands on ────────────────────────
 
   @Test
-  void trigger_answersTheTargetSlug_normalised_orThatOfTheRenamedTeam_orTheBiketeamOneOnReset()
-      throws IOException {
+  void trigger_answersTheTargetSlug_normalised_orThatOfTheRenamedTeam() throws IOException {
     snapshotTeamId = "club_x";
-    runWorker(confirmAndTrigger(USER4, "club_x", true, false));
+    runWorker(confirmAndTrigger(USER4, "club_x"));
     assertEquals("club-x", lastTriggerSlug, "normalised, not the biketeam id");
     long migratedId = biketeamData.team(domain, "club-x").id();
     biketeamData.renameTeam(migratedId, "club-x-lyon");
 
-    BiketeamJobStatusDto replay = runWorker(confirmAndTrigger(USER4, "club_x", false, false));
+    BiketeamJobStatusDto replay = runWorker(confirmAndTrigger(USER4, "club_x"));
     assertEquals("club-x-lyon", lastTriggerSlug, "the migrated team, where it was renamed to");
     assertEquals("club-x-lyon", replay.targetTeam().slug());
-
-    runWorker(confirmAndTrigger(USER4, "club_x", false, true));
-    assertEquals("club-x", lastTriggerSlug, "a reset recreates the team at the biketeam slug");
   }
 
   // ─── content trashed on Pédalons ──────────────────────────────────────────
@@ -616,7 +590,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   @Test
   void contentTrashedOnPedalons_isRecreatedByAReplay_andNoGroupPointsAtATrashedRoute()
       throws IOException {
-    migrate(USER4, true, false);
+    migrate(USER4);
     long teamId = biketeamData.team(domain, TEAM).id();
     List<Long> trashedRoutes = biketeamData.trashAll(Route.class, teamId);
     List<Long> trashedPosts = biketeamData.trashAll(Post.class, teamId);
@@ -625,7 +599,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     assertEquals(1, trashedPosts.size());
     assertEquals(1, trashedRides.size());
 
-    BiketeamJobStatusDto replay = migrate(USER4, false, false);
+    BiketeamJobStatusDto replay = migrate(USER4);
 
     assertEquals("SUCCEEDED", replay.status(), () -> "error: " + replay.error());
     assertEquals(0, replay.counts().routes().failed(), () -> "warnings: " + replay.warnings());
@@ -647,7 +621,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
         replay.urlMap().get("ROUTE").get("map-1").startsWith(domain.getBaseUrl() + "/equipes/"));
 
     // And the replay after that reuses them: nothing more is created.
-    BiketeamJobStatusDto again = migrate(USER4, false, false);
+    BiketeamJobStatusDto again = migrate(USER4);
     assertEquals("SUCCEEDED", again.status(), () -> "error: " + again.error());
     assertEquals(routes, biketeamData.liveIds(Route.class, teamId));
   }
@@ -657,13 +631,13 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   @Test
   void replay_keepsThePedalonsVisibilityAndJoinability_andContentFollowsTheTeam()
       throws IOException {
-    migrate(USER4, true, false);
+    migrate(USER4);
     long teamId = biketeamData.team(domain, TEAM).id();
     // Biketeam says PUBLIC; the team's admin has since made it members-only on Pédalons.
     assertEquals(Visibility.PUBLIC, biketeamData.settingsOf(teamId).visibility());
     biketeamData.setSettings(teamId, Visibility.TEAM, false);
 
-    BiketeamJobStatusDto replay = migrate(USER4, false, false);
+    BiketeamJobStatusDto replay = migrate(USER4);
 
     assertEquals("SUCCEEDED", replay.status(), () -> "error: " + replay.error());
     assertEquals(
@@ -682,7 +656,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   @Test
   void replay_ofATeamGoneTeam_keepsTheVisibilityOfARouteANativeUnlistedRideUses_withAWarning()
       throws IOException {
-    migrate(USER4, true, false);
+    migrate(USER4);
     long teamId = biketeamData.team(domain, TEAM).id();
     List<Long> routes = biketeamData.liveIds(Route.class, teamId);
     assertEquals(1, routes.size());
@@ -693,7 +667,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     long nativeRide =
         biketeamData.createNativeRideOn(teamId, routeId, user4, Visibility.PUBLIC_UNLISTED);
 
-    BiketeamJobStatusDto replay = migrate(USER4, false, false);
+    BiketeamJobStatusDto replay = migrate(USER4);
 
     assertEquals("SUCCEEDED", replay.status(), () -> "error: " + replay.error());
     assertEquals(0, replay.counts().routes().failed(), () -> "warnings: " + replay.warnings());
@@ -714,11 +688,11 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
 
   @Test
   void replayByAPlatformAdmin_doesNotMakeThemAMember() throws IOException {
-    migrate(USER4, true, false);
+    migrate(USER4);
     long teamId = biketeamData.team(domain, TEAM).id();
     User admin = dataService.createPlatformAdminUser("godmode@example.com", "God Mode");
 
-    BiketeamJobStatusDto replay = migrate("godmode", false, false);
+    BiketeamJobStatusDto replay = migrate("godmode");
 
     assertEquals("SUCCEEDED", replay.status(), () -> "error: " + replay.error());
     assertNull(biketeamData.roleOf(admin, teamId), "no membership for a platform admin");
@@ -735,7 +709,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
         .statusCode(200)
         .body("targetState", equalTo("NEW"))
         .body("targetTeamSlug", equalTo("live-team-x"));
-    BiketeamJobStatusDto status = runWorker(confirmAndTrigger(USER4, snapshotTeamId, true, false));
+    BiketeamJobStatusDto status = runWorker(confirmAndTrigger(USER4, snapshotTeamId));
 
     assertEquals("SUCCEEDED", status.status(), () -> "error: " + status.error());
     BiketeamTestData.TeamView team = biketeamData.team(domain, "live-team-x");
@@ -751,7 +725,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
         status.urlMap().get("TEAM").get(snapshotTeamId));
 
     // Replayed: found through the mapping, not duplicated.
-    BiketeamJobStatusDto replay = runWorker(confirmAndTrigger(USER4, snapshotTeamId, false, false));
+    BiketeamJobStatusDto replay = runWorker(confirmAndTrigger(USER4, snapshotTeamId));
     assertEquals("SUCCEEDED", replay.status(), () -> "error: " + replay.error());
     assertEquals(1, biketeamData.countTeamsCreatedBy(user4));
   }
@@ -765,7 +739,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
         .body("targetState", equalTo("SLUG_CONFLICT"))
         .body("targetTeamSlug", equalTo("club-x"))
         .body("blockReason", equalTo("SLUG_CONFLICT"));
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("club_x", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("club_x");
     given()
         .auth()
         .oauth2(getAccessToken(USER4))
@@ -792,7 +766,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
           }
           exportFiles(path, target);
         };
-    String jobId = confirmAndTrigger(USER4, TEAM, true, false);
+    String jobId = confirmAndTrigger(USER4, TEAM);
 
     BiketeamJobStatusDto status = runWorker(jobId);
 
@@ -839,7 +813,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
           exportFiles(path, target);
         };
 
-    BiketeamJobStatusDto status = migrate(USER4, true, false);
+    BiketeamJobStatusDto status = migrate(USER4);
 
     assertEquals("SUCCEEDED", status.status(), () -> "error: " + status.error());
     assertTrue(
@@ -860,7 +834,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
           return json.replace(stage2, "{ \"id\": \"stage-2\", \"date\": \"2025-07-05\"");
         };
 
-    BiketeamJobStatusDto status = migrate(USER4, true, false);
+    BiketeamJobStatusDto status = migrate(USER4);
 
     assertEquals("SUCCEEDED", status.status(), () -> "error: " + status.error());
     assertEquals(2, status.counts().tripStages().migrated());
@@ -877,7 +851,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
 
   @Test
   void tripsWithinTheirDates_warnNothing() throws IOException {
-    BiketeamJobStatusDto status = migrate(USER4, true, false);
+    BiketeamJobStatusDto status = migrate(USER4);
 
     assertTrue(
         status.warnings().stream().noneMatch(w -> w.code().equals("TRIP_STAGES_OUTSIDE_DATES")),
@@ -901,7 +875,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   void routeTags_becomeGrayRouteTags_mergedByCase_withTheFirstSpellingKept() throws IOException {
     routeTagsInSnapshot("[\" Littoral \", \"gravel\", \"LITTORAL\", \"  \", \"Gravel\"]");
 
-    BiketeamJobStatusDto status = migrate(USER4, true, false);
+    BiketeamJobStatusDto status = migrate(USER4);
 
     assertEquals("SUCCEEDED", status.status(), () -> "error: " + status.error());
     long teamId = biketeamData.team(domain, TEAM).id();
@@ -919,13 +893,13 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
 
   @Test
   void routeTags_replay_duplicatesNothing_andReplacesTheRoutesSet() throws IOException {
-    migrate(USER4, true, false);
+    migrate(USER4);
     long teamId = biketeamData.team(domain, TEAM).id();
     assertEquals(List.of("littoral"), biketeamData.routeTagLabels(teamId, "Boucle du littoral"));
 
     // Another spelling of the same tag, and a new one.
     routeTagsInSnapshot("[\"LITTORAL\", \"Côte Est\"]");
-    migrate(USER4, false, false);
+    migrate(USER4);
 
     assertEquals(
         List.of(
@@ -937,7 +911,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
 
     // Gone on biketeam: off the route, still in the team's vocabulary.
     routeTagsInSnapshot("[\"Côte Est\"]");
-    migrate(USER4, false, false);
+    migrate(USER4);
 
     assertEquals(List.of("Côte Est"), biketeamData.routeTagLabels(teamId, "Boucle du littoral"));
     assertEquals(2, biketeamData.routeTags(teamId).size());
@@ -957,7 +931,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     }
     routeTagsInSnapshot(objectMapper.writeValueAsString(labels));
 
-    BiketeamJobStatusDto status = migrate(USER4, true, false);
+    BiketeamJobStatusDto status = migrate(USER4);
 
     assertEquals("SUCCEEDED", status.status(), () -> "error: " + status.error());
     assertEquals(1, status.counts().routes().migrated());
@@ -989,7 +963,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
   @Test
   void routeTags_whenTheTeamHas100RouteTags_aNewLabelIsDropped_anExistingOneStillApplies()
       throws IOException {
-    migrate(USER4, true, false);
+    migrate(USER4);
     BiketeamTestData.TeamView view = biketeamData.team(domain, TEAM);
     Team team = dataService.findTeamBySlug(domain, view.slug());
     for (int i = 1; i < fr.pedalons.service.tag.TagService.MAX_TAGS_PER_TEAM_AND_TYPE; i++) {
@@ -997,7 +971,7 @@ class BiketeamLiveMigrationTest extends AbstractResourceTest {
     }
 
     routeTagsInSnapshot("[\"Nouveau\", \"Littoral\", \"existant 7\"]");
-    BiketeamJobStatusDto status = migrate(USER4, false, false);
+    BiketeamJobStatusDto status = migrate(USER4);
 
     assertEquals("SUCCEEDED", status.status(), () -> "error: " + status.error());
     assertEquals(

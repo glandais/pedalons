@@ -1349,16 +1349,21 @@ faites :
 
 ## MIG — Migration biketeam
 
-Configurée en production des deux côtés ; des essais (`dryRun`) y ont réussi sur `gaby` et
-`n-peloton` du 11 au 15 octobre 2026, sans bascule. Reste le passage réel
+Configurée en production des deux côtés ; des migrations sans bascule (alors des « essais »,
+`dryRun`) y ont réussi sur `gaby` et `n-peloton` du 11 au 15 octobre 2026. Depuis le 11 novembre
+2026 il n'y a plus ni essai ni `reset` : toute migration est incrémentale, et la bascule est un
+bouton à part côté biketeam (`MIG-16`). Reste le passage réel
 ([plan](plans/2026-09-22-biketeam-live-migration.md) §10). Source :
 [`MIGRATE_BIKETEAM.md`](MIGRATE_BIKETEAM.md).
 
 ### Mise en production
 
 - [ ] `MIG-1` **Passage réel** : les secrets sont posés des deux côtés et les essais sont faits
-      (part livrée sous le même identifiant) ; reste la bascule de chaque équipe (`dryRun` décoché ;
-      aucun job réel en production au 16 octobre 2026). Pour chaque équipe qui a un domaine personnalisé chez biketeam, vérifier que
+      (part livrée sous le même identifiant) ; reste la bascule de chaque équipe : une dernière
+      migration, puis le bouton « Basculer vers Pédalons » de son admin sur biketeam, qui enregistre
+      la table d'URL de la dernière migration réussie et redirige (`MIG-16` ; aucune bascule en
+      production au 16 octobre 2026). **Avant** : déployer le retrait de `dryRun`/`reset`, Pédalons
+      d'abord, biketeam ensuite (plan §10, point 5). Pour chaque équipe qui a un domaine personnalisé chez biketeam, vérifier que
       la redirection fonctionne : elle se règle au proxy, au cas par cas (plan §13, décision 11).
 - [ ] `MIG-2` **Redirections 302 → 301** : une fois les bascules stabilisées, poser
       `PEDALONS_REDIRECT_STATUS=301` côté biketeam. Pas avant : un 301 est mis en cache par les
@@ -1384,14 +1389,36 @@ Configurée en production des deux côtés ; des essais (`dryRun`) y ont réussi
 ### Autour de la migration
 
 - [ ] `MIG-9` **Purge physique des équipes à la corbeille** (reset de migration biketeam) — chantier
-      séparé. Un `reset` de la migration en direct met l'équipe Pédalons à la corbeille et libère
-      son slug (`TeamService.deleteTeam`), rien de plus : lignes `team_entities`, assets et fichiers
-      S3 restent. Chaque reset en laisse un exemplaire de plus. **Quand** : si le volume le
+      séparé. Un `reset` de la migration en direct mettait l'équipe Pédalons à la corbeille et
+      libérait son slug, rien de plus : lignes `team_entities`, assets et fichiers
+      S3 restent. Chaque reset en laissait un exemplaire de plus ; l'option est supprimée depuis le
+      11 novembre 2026 (`MIG-16`), il ne s'en crée donc plus, mais ceux qui existent restent. **Quand** : si le volume le
       justifie, ou avec une politique de rétention générale de la corbeille. Décision du 2026-09-22
       ([plan](plans/2026-09-22-biketeam-live-migration.md) §13, décision 10). Le cas s'est produit
       en production : au 16 octobre 2026, trois équipes y sont à la corbeille, dont la copie de
       `n-peloton` laissée par le reset du 15 octobre, avec 3 328 lignes `team_entities` en tout, sans
       compter les assets S3.
+- [ ] `MIG-17` **Supprimer les colonnes `dry_run` et `reset` de `biketeam_migrations`** — plus rien
+      ne les lit ni ne les écrit depuis `MIG-16` (l'entité `BiketeamMigrationJob` ne les porte
+      plus) ; `V88__biketeam_migration_options_default.sql` leur a seulement donné un défaut, parce
+      que la version précédente, qui partage la base pendant un déploiement *rolling* et y revient
+      en cas de retour arrière, les écrit encore. À faire dans une version **ultérieure** à celle de
+      `MIG-16`, une fois celle-ci en production sans retour arrière possible : une migration Flyway
+      `alter table biketeam_migrations drop column dry_run, drop column reset`, et la requête de
+      [`MIGRATE_BIKETEAM.md`](MIGRATE_BIKETEAM.md) qui les mentionne. Taille : XS. Sans objet si
+      `MIG-8` retire la table avant.
+- [ ] `MIG-18` **Une équipe migrée ne peut plus être retirée de Pédalons** — dégradation née de
+      `MIG-16` : `TeamService.delete` refuse toute équipe issue de biketeam (`MIGRATED_TEAM`,
+      `MIG-5`), admins de plateforme compris, et le reset, seule voie qui la mettait à la corbeille
+      (sans passer par `TeamService`), n'existe plus. Une copie faite « pour voir » — avec la
+      visibilité de l'équipe biketeam, donc possiblement listée dans la découverte — reste tant
+      qu'on n'intervient pas en base ; `MIG-5` justifiait le refus par les redirections de biketeam,
+      or une équipe migrée mais **non basculée** n'en reçoit aucune, et Pédalons ne sait pas si
+      biketeam a basculé. À décider par le propriétaire : laisser ainsi (visibilité `TEAM` à la
+      main en attendant), autoriser la suppression à un admin de plateforme, ou faire dire à
+      biketeam qu'une équipe est basculée. La mise de côté d'une équipe migrée déjà à la corbeille
+      (`BiketeamLiveMigrationWorker.setAside`) reste en place pour ce jour-là et pour les équipes
+      qui y sont déjà.
 
 ---
 

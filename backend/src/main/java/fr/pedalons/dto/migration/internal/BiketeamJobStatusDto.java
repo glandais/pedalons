@@ -24,8 +24,6 @@ public record BiketeamJobStatusDto(
     String jobId,
     String requestId,
     String teamId,
-    boolean dryRun,
-    boolean reset,
     String status,
     int attempt,
     @Nullable Instant queuedAt,

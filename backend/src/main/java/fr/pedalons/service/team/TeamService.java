@@ -438,9 +438,9 @@ public class TeamService {
    * refuse any team but the pinned one on a pinned alias host.
    *
    * <p><b>Refused for a team migrated from biketeam</b>, whoever asks, platform admins included:
-   * biketeam redirects the team's old addresses here and would send them to a 404. The way out is
-   * cancelling the switch-over on biketeam, whose reset trashes the team itself — it does not come
-   * through here (docs/LEDGER_*.md MIG-5).
+   * biketeam redirects the team's old addresses here and would send them to a 404. Nothing in the
+   * product trashes such a team any more: the migration's reset, which did it without coming through
+   * here, is gone (docs/LEDGER_*.md MIG-5, MIG-16, MIG-18).
    *
    * @throws BusinessException {@code MIGRATED_TEAM} for a migrated team
    */

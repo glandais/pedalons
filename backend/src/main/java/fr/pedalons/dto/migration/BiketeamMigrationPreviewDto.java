@@ -25,14 +25,6 @@ public record BiketeamMigrationPreviewDto(
     @Schema(description = "Biketeam team name", required = true) String teamName,
     @Schema(description = "The biketeam admin who asked, for display", required = true)
         String requestedBy,
-    @Schema(
-            description = "Trial run: the team is really created, but biketeam will not redirect",
-            required = true)
-        boolean dryRun,
-    @Schema(
-            description = "Trash the team previously migrated from this biketeam team first",
-            required = true)
-        boolean reset,
     @Schema(description = "When the signed request expires", required = true) Instant expiresAt,
     @Schema(description = "What biketeam will send", required = true)
         BiketeamMigrationSummaryDto summary,

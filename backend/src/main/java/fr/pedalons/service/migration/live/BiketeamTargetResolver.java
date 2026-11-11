@@ -5,7 +5,6 @@ import fr.pedalons.domain.team.UserTeam;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.BiketeamMigrationTargetState;
 import fr.pedalons.repository.migration.BiketeamMigrationMapRepository;
-import fr.pedalons.repository.platform.DomainAliasRepository;
 import fr.pedalons.repository.team.TeamRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.service.common.SlugService;
@@ -50,7 +49,6 @@ public class BiketeamTargetResolver {
   @Inject BiketeamMigrationMapRepository mapRepo;
   @Inject TeamRepository teamRepository;
   @Inject UserTeamRepository userTeamRepository;
-  @Inject DomainAliasRepository domainAliasRepository;
 
   /**
    * The slug a biketeam team is created at. Biketeam ids ({@code ^[a-z0-9][a-z0-9_.-]{0,254}$})
@@ -68,48 +66,7 @@ public class BiketeamTargetResolver {
     return slug;
   }
 
-  /** Same as {@link #evaluate(Long, String, boolean)} for a request that does not reset. */
   public Target evaluate(Long domainId, String biketeamTeamId) {
-    return evaluate(domainId, biketeamTeamId, false);
-  }
-
-  /**
-   * @param reset whether the request resets the team: an EXISTING_MIGRATED team is then set aside
-   *     and recreated at {@link #targetSlug}, which must therefore be free of any other team — the
-   *     migrated team renamed on Pédalons ({@code club-x-lyon}) and a native team since created at
-   *     {@code club-x} is a SLUG_CONFLICT, found before anything is trashed
-   */
-  public Target evaluate(Long domainId, String biketeamTeamId, boolean reset) {
-    Target target = evaluateWithoutReset(domainId, biketeamTeamId);
-    if (reset
-        && target.state() == BiketeamMigrationTargetState.EXISTING_MIGRATED
-        && target.teamId() != null) {
-      Optional<Team> holder = slugHeldByAnotherTeam(domainId, biketeamTeamId, target.teamId());
-      if (holder.isPresent()) {
-        return new Target(
-            BiketeamMigrationTargetState.SLUG_CONFLICT,
-            holder.get().getId(),
-            holder.get().getName(),
-            false,
-            targetSlug(biketeamTeamId));
-      }
-    }
-    return target;
-  }
-
-  /**
-   * The team, trash included ({@code uk_teams_domain_slug} spans trashed teams), holding the slug
-   * {@code biketeamTeamId} is created at, when it is not {@code migratedTeamId} — the one a reset
-   * sets aside, whose slug is renamed to free it.
-   */
-  public Optional<Team> slugHeldByAnotherTeam(
-      Long domainId, String biketeamTeamId, Long migratedTeamId) {
-    return teamRepository
-        .findBySlugAndDomainIncludingDeleted(domainId, targetSlug(biketeamTeamId))
-        .filter(t -> !t.getId().equals(migratedTeamId));
-  }
-
-  private Target evaluateWithoutReset(Long domainId, String biketeamTeamId) {
     String slug = targetSlug(biketeamTeamId);
     Long mapped = mapRepo.findTriblyId(BiketeamMigrationService.T_TEAM, biketeamTeamId);
     Team mappedTeam = mapped == null ? null : teamRepository.findByIdOptional(mapped).orElse(null);
@@ -144,8 +101,9 @@ public class BiketeamTargetResolver {
   }
 
   /**
-   * Whether {@code user} may replay or reset the team: its ADMIN, or a PLATFORM_ADMIN. A migrated
-   * team has had a life on Pédalons since the trial, and belongs to whoever administers it here.
+   * Whether {@code user} may migrate into the team again: its ADMIN, or a PLATFORM_ADMIN. A
+   * migrated team has had a life on Pédalons since its first migration, and belongs to whoever
+   * administers it here.
    */
   public boolean mayAdminister(User user, Long teamId) {
     if (user.isPlatformAdmin()) {
@@ -155,10 +113,5 @@ public class BiketeamTargetResolver {
         .findByUserAndTeam(user.getId(), teamId)
         .map(UserTeam::isAdmin)
         .orElse(false);
-  }
-
-  /** A reset trashes the team: refused while a domain alias is pinned on it, or its site falls. */
-  public boolean isResetBlocked(Long teamId) {
-    return domainAliasRepository.existsByPinnedTeam(teamId);
   }
 }

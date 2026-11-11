@@ -236,8 +236,6 @@ enum ErrorCode {
   biketeamNotTeamAdmin('BIKETEAM_NOT_TEAM_ADMIN'),
   @JsonValue('BIKETEAM_MIGRATION_RUNNING')
   biketeamMigrationRunning('BIKETEAM_MIGRATION_RUNNING'),
-  @JsonValue('BIKETEAM_RESET_BLOCKED')
-  biketeamResetBlocked('BIKETEAM_RESET_BLOCKED'),
   @JsonValue('BIKETEAM_GRANT_INVALID')
   biketeamGrantInvalid('BIKETEAM_GRANT_INVALID'),
   @JsonValue('BIKETEAM_GRANT_EXPIRED')

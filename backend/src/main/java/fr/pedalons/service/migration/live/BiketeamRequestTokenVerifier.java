@@ -39,6 +39,10 @@ import org.jboss.logging.Logger;
  * </ol>
  *
  * Every other failure is {@code BIKETEAM_REQUEST_INVALID}, without saying which check it failed.
+ *
+ * <p>A claim the contract does not name is ignored, whatever its type — among them {@code dryRun}
+ * and {@code reset}, which a biketeam not yet updated still sends: every migration is incremental
+ * (docs/LEDGER_*.md MIG-16).
  */
 @ApplicationScoped
 public class BiketeamRequestTokenVerifier {
@@ -116,8 +120,6 @@ public class BiketeamRequestTokenVerifier {
     String teamId = text(payload, "teamId");
     String teamName = text(payload, "teamName");
     String requestedBy = text(payload, "requestedBy");
-    boolean dryRun = bool(payload, "dryRun");
-    boolean reset = bool(payload, "reset");
     String returnUrl = text(payload, "returnUrl");
     BiketeamMigrationSummaryDto summary = summary(payload.get("summary"));
     if (!TEAM_ID.matcher(teamId).matches()) {
@@ -148,8 +150,6 @@ public class BiketeamRequestTokenVerifier {
         teamId,
         teamName,
         requestedBy,
-        dryRun,
-        reset,
         returnUrl,
         summary);
   }

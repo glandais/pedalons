@@ -23,8 +23,6 @@ export type BiketeamMigrationBlockReason =
   | 'MIGRATION_RUNNING'
   | 'LOGIN_REQUIRED'
   | 'NOT_TEAM_ADMIN'
-  /** A reset is asked and a custom domain (alias) is pinned on the existing team. */
-  | 'RESET_BLOCKED'
 
 /** What the biketeam team holds, as signed by biketeam (deleted items excluded). */
 export interface BiketeamMigrationSummaryDto {
@@ -41,7 +39,10 @@ export interface BiketeamMigrationSummaryDto {
   logo: boolean
 }
 
-/** A biketeam migration request, as the confirmation page shows it. */
+/**
+ * A biketeam migration request, as the confirmation page shows it. It carries no option: every
+ * migration copies the team to Pédalons, or updates the copy, and changes nothing on biketeam.
+ */
 export interface BiketeamMigrationPreviewDto {
   requestId: string
   /** Biketeam team id — the mapping key, not necessarily the slug. */
@@ -49,10 +50,6 @@ export interface BiketeamMigrationPreviewDto {
   teamName: string
   /** The biketeam admin who asked, for display. */
   requestedBy: string
-  /** Trial run: the team is really created, but biketeam will not redirect. */
-  dryRun: boolean
-  /** Trash the team previously migrated from this biketeam team first. */
-  reset: boolean
   /** When the signed request expires (ISO-8601 instant). */
   expiresAt: string
   summary: BiketeamMigrationSummaryDto

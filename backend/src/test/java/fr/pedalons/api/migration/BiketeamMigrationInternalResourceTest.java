@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -61,8 +62,6 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
     body.put("requestId", req.requestId());
     body.put("grant", grant);
     body.put("teamId", req.teamId());
-    body.put("dryRun", req.dryRun());
-    body.put("reset", req.reset());
     return body;
   }
 
@@ -97,7 +96,7 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
 
   @Test
   void trigger_queuesTheJob_andAReplayAnswersTheSameJob() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
     String grant = confirmAndGetGrant(req);
 
     String jobId =
@@ -121,7 +120,8 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
         .body("jobId", equalTo(jobId))
         .body("requestId", equalTo(req.requestId()))
         .body("teamId", equalTo("n-peloton"))
-        .body("dryRun", equalTo(true))
+        .body("$", not(hasKey("dryRun")))
+        .body("$", not(hasKey("reset")))
         .body("status", equalTo("QUEUED"))
         .body("progress.phase", equalTo("QUEUED"))
         .body("counts.routes.total", equalTo(0))
@@ -136,12 +136,12 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
 
   @Test
   void trigger_withAFieldThatDiffers_isRefused() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
     String grant = confirmAndGetGrant(req);
 
-    Map<String, Object> notATrial = body(req, grant);
-    notATrial.put("dryRun", false);
-    trigger(notATrial).statusCode(403).body("code", equalTo("BIKETEAM_GRANT_INVALID"));
+    Map<String, Object> otherRequest = body(req, grant);
+    otherRequest.put("requestId", BiketeamTestTokens.request("n-peloton").requestId());
+    trigger(otherRequest).statusCode(403).body("code", equalTo("BIKETEAM_GRANT_INVALID"));
 
     Map<String, Object> otherTeam = body(req, grant);
     otherTeam.put("teamId", "someone-else");
@@ -156,7 +156,7 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
 
   @Test
   void trigger_withAReplacedGrant_isRefused() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
     String first = confirmAndGetGrant(req);
     String second = confirmAndGetGrant(req);
 
@@ -166,7 +166,7 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
 
   @Test
   void trigger_withAnExpiredGrant_expiresTheRow() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
     String grant = confirmAndGetGrant(req);
     biketeamData.expireGrant(req.requestId());
 
@@ -207,7 +207,7 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
 
   @Test
   void aLapsedGrant_beforeTheSweep_canBeReconfirmed() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
     String grant = confirmAndGetGrant(req);
     biketeamData.expireGrant(req.requestId());
     assertEquals(
@@ -218,7 +218,7 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
 
   @Test
   void aLapsedGrant_afterTheSweep_canBeReconfirmed() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
     String grant = confirmAndGetGrant(req);
     biketeamData.expireGrant(req.requestId());
     jobService.expireGrants();
@@ -230,7 +230,7 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
 
   @Test
   void aLapsedGrant_afterALateTrigger_canBeReconfirmed() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
     String grant = confirmAndGetGrant(req);
     biketeamData.expireGrant(req.requestId());
     trigger(body(req, grant)).statusCode(400).body("code", equalTo("BIKETEAM_GRANT_EXPIRED"));
@@ -240,7 +240,7 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
 
   @Test
   void aLapsedGrant_staysAnotherUsersRequest() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
     confirmAndGetGrant(req);
     biketeamData.expireGrant(req.requestId());
     jobService.expireGrants();
@@ -252,7 +252,7 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
 
   @Test
   void aRedeemedRequest_isUsedForGood() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
     trigger(body(req, confirmAndGetGrant(req))).statusCode(202);
 
     preview(req, getAccessToken(USER4))
@@ -272,8 +272,8 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
 
   @Test
   void trigger_whileAnotherJobOfTheTeamIsActive_is409WithThatJob() {
-    BiketeamTestTokens.Request a = BiketeamTestTokens.request("n-peloton", true, false);
-    BiketeamTestTokens.Request b = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request a = BiketeamTestTokens.request("n-peloton");
+    BiketeamTestTokens.Request b = BiketeamTestTokens.request("n-peloton");
     String grantA = confirmAndGetGrant(a);
     String grantB = confirmAndGetGrant(b);
 
@@ -286,10 +286,45 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
 
   @Test
   void trigger_withAMissingField_is400() {
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
-    Map<String, Object> incomplete = body(req, "bmg_x");
-    incomplete.remove("reset");
-    trigger(incomplete).statusCode(400).body("code", equalTo("VALIDATION"));
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
+    for (String field : new String[] {"requestId", "grant", "teamId"}) {
+      Map<String, Object> incomplete = body(req, "bmg_x");
+      incomplete.remove(field);
+      trigger(incomplete).statusCode(400).body("code", equalTo("VALIDATION"));
+    }
+  }
+
+  /**
+   * A biketeam not yet updated (Pédalons is deployed first) signs {@code dryRun} and {@code reset}
+   * into its request and sends them with its trigger: neither is read, whatever its value or type,
+   * and the job is the same incremental migration as any other.
+   */
+  @Test
+  void aBiketeamNotYetUpdated_stillSendingDryRunAndReset_isAccepted_andBothAreIgnored() {
+    BiketeamTestTokens.Request req = BiketeamTestTokens.legacyRequest("n-peloton", false, true);
+    preview(req, getAccessToken(USER4))
+        .statusCode(200)
+        .body("confirmable", equalTo(true))
+        .body("$", not(hasKey("dryRun")))
+        .body("$", not(hasKey("reset")));
+    String grant = confirmAndGetGrant(req);
+
+    Map<String, Object> legacy = body(req, grant);
+    legacy.put("dryRun", false);
+    legacy.put("reset", true);
+    String jobId =
+        trigger(legacy)
+            .statusCode(202)
+            .body("status", equalTo("QUEUED"))
+            .body("targetTeamSlug", equalTo("n-peloton"))
+            .extract()
+            .path("jobId");
+
+    // The replay of a lost response, with other values and another type: still the same job.
+    Map<String, Object> replay = body(req, grant);
+    replay.put("dryRun", "yes");
+    replay.put("reset", 0);
+    trigger(replay).statusCode(200).body("jobId", equalTo(jobId));
   }
 
   @Test
@@ -306,7 +341,7 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
           .body("code", equalTo("BIKETEAM_JOB_NOT_FOUND"));
     }
 
-    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton", true, false);
+    BiketeamTestTokens.Request req = BiketeamTestTokens.request("n-peloton");
     confirmAndGetGrant(req);
     String grantedRowId = TsidUtils.toString(biketeamData.findJob(req.requestId()).getId());
     given()

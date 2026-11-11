@@ -23,7 +23,12 @@ import org.jspecify.annotations.Nullable;
  * as {@link fr.pedalons.domain.user.UserExport}.
  *
  * <p>Standalone entity (no {@code BaseEntity}): it belongs to a domain and a user, never to a team —
- * the target team may not exist yet, and a reset trashes the one it pointed at.
+ * the target team may not exist yet.
+ *
+ * <p>The table still has two columns this entity no longer maps, {@code dry_run} and {@code reset}:
+ * every migration is incremental, and the options they stored are gone. They keep a default (V88)
+ * for as long as a release that wrote them may still be rolled back to; dropping them is
+ * docs/LEDGER_*.md MIG-17.
  *
  * <p>{@code baseUrl} is {@code domains.base_url} snapshotted at confirmation: the worker runs with
  * no HTTP request, and the URL table it builds for biketeam must use the parent domain, never an
@@ -63,12 +68,6 @@ public class BiketeamMigrationJob {
   /** Biketeam's {@code pedalons_migration.id}, the {@code jti} of the signed request. */
   @Column(name = "request_id", nullable = false, unique = true, length = 64)
   private String requestId;
-
-  @Column(name = "dry_run", nullable = false)
-  private boolean dryRun;
-
-  @Column(name = "reset", nullable = false)
-  private boolean reset;
 
   @Column(name = "return_url", nullable = false, length = 1000)
   private String returnUrl;
@@ -141,8 +140,6 @@ public class BiketeamMigrationJob {
       String biketeamTeamId,
       String biketeamTeamName,
       String requestId,
-      boolean dryRun,
-      boolean reset,
       String returnUrl,
       String baseUrl,
       String grantHash,
@@ -152,8 +149,6 @@ public class BiketeamMigrationJob {
     this.biketeamTeamId = biketeamTeamId;
     this.biketeamTeamName = biketeamTeamName;
     this.requestId = requestId;
-    this.dryRun = dryRun;
-    this.reset = reset;
     this.returnUrl = returnUrl;
     this.baseUrl = baseUrl;
     this.grantHash = grantHash;

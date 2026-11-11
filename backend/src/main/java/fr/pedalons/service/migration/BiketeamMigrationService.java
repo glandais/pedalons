@@ -252,7 +252,7 @@ public class BiketeamMigrationService {
   /**
    * Migrates one biketeam team into {@code domain}, as {@code actor}: creates the target team with
    * {@code actor} as its ADMIN, or reuses the migrated one as it is, then maps its content. The target must already have been
-   * resolved — conflicts, reset — by the caller (docs/plans/2026-09-22-biketeam-live-migration.md
+   * resolved — conflicts, a trashed team to set aside — by the caller (docs/plans/2026-09-22-biketeam-live-migration.md
    * §7.3), which passes the team it resolved as {@code expectedTeamId}. That resolution committed in
    * a transaction of its own, so it is checked again here, in the transaction that writes the
    * target: see {@link #ensureLiveTargetTeam}.
@@ -1582,7 +1582,8 @@ public class BiketeamMigrationService {
   // ─── Mapping keys ─────────────────────────────────────────────────────────
   //
   // The one place that knows how a biketeam row is keyed in biketeam_migration_map. The worker's
-  // reset forgets rows by these keys, and the URL table reads them: neither rebuilds a key itself.
+  // setting aside forgets rows by these keys, and the URL table reads them: neither rebuilds a key
+  // itself.
 
   /** {@code biketeam_id} of the {@link #T_TEAM_PAGE} row of a team's FAQ page. */
   public static String faqPageKey(String biketeamTeamId) {
@@ -1605,7 +1606,7 @@ public class BiketeamMigrationService {
 
   /**
    * Every mapping key {@code source} can have produced — the team, its pages, logo and content, and
-   * the images, legacy keys included. What a reset forgets, besides the rows tagged with the team.
+   * the images, legacy keys included. What setting a trashed team aside forgets, besides the rows tagged with the team.
    */
   public static List<BiketeamMigrationMap.Key> mappingKeys(BiketeamSource source) {
     String teamId = source.team().id();

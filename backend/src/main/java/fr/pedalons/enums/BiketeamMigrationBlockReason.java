@@ -14,10 +14,5 @@ public enum BiketeamMigrationBlockReason {
   /** Sign in (or create an account) first. */
   LOGIN_REQUIRED,
   /** The team exists on Pédalons and the signed-in account does not administer it. */
-  NOT_TEAM_ADMIN,
-  /**
-   * A reset is asked and a domain alias is pinned on the existing team: trashing it would take the
-   * aliased site down.
-   */
-  RESET_BLOCKED
+  NOT_TEAM_ADMIN
 }

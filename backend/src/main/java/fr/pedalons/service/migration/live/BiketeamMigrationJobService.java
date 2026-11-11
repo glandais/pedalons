@@ -85,7 +85,8 @@ public class BiketeamMigrationJobService {
   // ------------------------------------------------------------------ M2M
 
   /**
-   * Redeems a grant: the row goes GRANTED → QUEUED. Every field of the request must equal the row's.
+   * Redeems a grant: the row goes GRANTED → QUEUED. The request's {@code requestId} and {@code
+   * teamId} must equal the row's.
    * Replaying a trigger whose grant this very job already consumed — biketeam lost the response —
    * answers the same job again.
    *
@@ -120,9 +121,7 @@ public class BiketeamMigrationJobService {
     BiketeamMigrationJob job = jobRepository.findByGrantHash(grantHash).orElse(null);
     if (job == null
         || !job.getRequestId().equals(request.requestId())
-        || !job.getBiketeamTeamId().equals(request.teamId())
-        || job.isDryRun() != Boolean.TRUE.equals(request.dryRun())
-        || job.isReset() != Boolean.TRUE.equals(request.reset())) {
+        || !job.getBiketeamTeamId().equals(request.teamId())) {
       return new TriggerDecision(TriggerOutcome.INVALID);
     }
     Instant now = Instant.now();
@@ -148,11 +147,8 @@ public class BiketeamMigrationJobService {
         // Flushed here so that uk_biketeam_migrations_active answers inside this call.
         jobRepository.flush();
         LOG.infof(
-            "Biketeam migration job %s queued for team '%s' (dryRun=%s, reset=%s)",
-            TsidUtils.toString(job.getId()),
-            job.getBiketeamTeamId(),
-            job.isDryRun(),
-            job.isReset());
+            "Biketeam migration job %s queued for team '%s'",
+            TsidUtils.toString(job.getId()), job.getBiketeamTeamId());
         return new TriggerDecision(TriggerOutcome.CREATED, job, targetTeamSlug(job));
       }
       default -> {
@@ -171,8 +167,8 @@ public class BiketeamMigrationJobService {
 
   /**
    * The slug the job lands on — not the biketeam id, which may not even be a Pédalons slug
-   * ({@code club_x}): the team the job already wrote to; else the migrated team a replay reuses,
-   * wherever it was renamed to; else — new team, or reset — the normalised {@link
+   * ({@code club_x}): the team the job already wrote to; else the migrated team it updates,
+   * wherever it was renamed to; else — a new team — the normalised {@link
    * BiketeamTargetResolver#targetSlug}. As of now: the job re-evaluates when it runs.
    */
   private String targetTeamSlug(BiketeamMigrationJob job) {
@@ -183,8 +179,8 @@ public class BiketeamMigrationJobService {
       }
     }
     BiketeamTargetResolver.Target target =
-        targetResolver.evaluate(job.getDomain().getId(), job.getBiketeamTeamId(), job.isReset());
-    if (target.state() == BiketeamMigrationTargetState.EXISTING_MIGRATED && !job.isReset()) {
+        targetResolver.evaluate(job.getDomain().getId(), job.getBiketeamTeamId());
+    if (target.state() == BiketeamMigrationTargetState.EXISTING_MIGRATED) {
       return target.slug();
     }
     return BiketeamTargetResolver.targetSlug(job.getBiketeamTeamId());
@@ -247,8 +243,6 @@ public class BiketeamMigrationJobService {
         TsidUtils.toString(job.getId()),
         job.getRequestId(),
         job.getBiketeamTeamId(),
-        job.isDryRun(),
-        job.isReset(),
         job.getStatus().name(),
         job.getAttempts(),
         job.getQueuedAt(),
@@ -308,11 +302,8 @@ public class BiketeamMigrationJobService {
               job.getUser().getId(),
               job.getBiketeamTeamId(),
               job.getRequestId(),
-              job.isDryRun(),
-              job.isReset(),
               job.getBaseUrl(),
-              job.getAttempts(),
-              job.getTargetTeamId());
+              job.getAttempts());
         });
   }
 

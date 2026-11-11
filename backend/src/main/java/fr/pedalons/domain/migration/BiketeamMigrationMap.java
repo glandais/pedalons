@@ -52,7 +52,8 @@ public class BiketeamMigrationMap {
   private @Nullable String sourceFingerprint;
 
   /**
-   * The biketeam team this row came from, so a reset can forget exactly that team. Null on the rows
+   * The biketeam team this row came from, so that setting a trashed team aside can forget exactly
+   * that team. Null on the rows
    * the legacy import wrote; the live migration fills it on every upsert.
    */
   @Column(name = "biketeam_team_id", length = 255)

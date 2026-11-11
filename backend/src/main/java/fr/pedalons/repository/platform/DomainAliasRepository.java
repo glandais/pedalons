@@ -32,11 +32,6 @@ public class DomainAliasRepository implements BaseRepository<DomainAlias> {
         domainId);
   }
 
-  /** Whether any alias, active or not, is pinned on the team: trashing the team would break it. */
-  public boolean existsByPinnedTeam(Long teamId) {
-    return count("pinnedTeam.id = ?1 and deleted = false", teamId) > 0;
-  }
-
   /** The active alias pinned on a team, if any — the site that team's members know. */
   public Optional<DomainAlias> findActiveByPinnedTeam(Long teamId) {
     return find(

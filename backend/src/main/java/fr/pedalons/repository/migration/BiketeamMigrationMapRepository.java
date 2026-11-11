@@ -82,8 +82,8 @@ public class BiketeamMigrationMapRepository
   }
 
   /**
-   * Same, recording which biketeam team the row belongs to — what the live migration writes, so a
-   * reset can find every row of that team. A null {@code biketeamTeamId} leaves the stored one
+   * Same, recording which biketeam team the row belongs to — what the live migration writes, so
+   * that setting a trashed team aside can find every row of that team. A null {@code biketeamTeamId} leaves the stored one
    * alone, which is what the former dump import did.
    */
   public BiketeamMigrationMap upsert(
@@ -114,7 +114,7 @@ public class BiketeamMigrationMapRepository
   }
 
   /**
-   * Forgets a biketeam team before a reset: every row the live migration tagged with it, plus the
+   * Forgets a biketeam team whose trashed Pédalons team is set aside: every row the live migration tagged with it, plus the
    * rows keyed by {@code keys} — the legacy import wrote no {@code biketeam_team_id}, so its rows can
    * only be found through the ids of the snapshot.
    *

@@ -11,6 +11,9 @@ import java.time.Instant;
  * <p>It is not a credential: on its own it only buys the preview. Confirming needs a Pédalons
  * session, and what biketeam redeems is the grant minted then.
  *
+ * <p>It carries no option: every migration is incremental. The {@code dryRun} and {@code reset}
+ * claims a biketeam not yet updated still sends are not read (docs/LEDGER_*.md MIG-16).
+ *
  * @param requestId the {@code jti}, biketeam's {@code pedalons_migration.id}
  * @param teamId biketeam team id, lower case — also the target team slug
  */
@@ -21,8 +24,6 @@ public record BiketeamRequestToken(
     String teamId,
     String teamName,
     String requestedBy,
-    boolean dryRun,
-    boolean reset,
     String returnUrl,
     BiketeamMigrationSummaryDto summary) {
 

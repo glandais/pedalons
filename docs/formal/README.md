@@ -50,6 +50,11 @@ copie aux constantes figées, TLC exigeant que le module porte le nom du fichier
 | `pure` | `AdGrid.lean` | le flou d'une annonce et la sonde de proximité ne fuient rien de plus que la cellule ; Java et SQL tombent dans la même cellule | prouvé, et 0 écart sur 773 575 points | — |
 | `pure` | `GroupTime.lean` | un groupe garde son départ quand on réenregistre une sortie passée après un changement de fuseau | violé (±24 h), variante corrigée tient | `API-101` |
 
+**Note sur `BiketeamJob`** : le modèle porte encore le drapeau `Reset` et sa propriété « un reset
+survit à un crash » ; le reset de la migration a été supprimé le 11 novembre 2026 (`MIG-16`), si bien
+que seules les configurations sans reset (`NoReset`) décrivent encore le code — le modèle n'a pas été
+modifié.
+
 **Note sur `CoalesceRace`** : dans le modèle, rendre la clé à la réservation (`FIX=1`) puis y ajouter
 le verrou de la ligne en attente (`FIX=2`) laisse encore l'invariant violé ; seule `FIX=3` tient. Le
 correctif livré sous `NOTIF-10` ressemble à `FIX=2`, mais il réinsère quand la clé a été rendue, et la

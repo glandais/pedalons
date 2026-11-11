@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import {
   Alert,
   Anchor,
-  Badge,
   Button,
   Center,
   Divider,
@@ -24,7 +23,6 @@ import {
   IconCalendar,
   IconCheck,
   IconFileText,
-  IconFlask,
   IconInfoCircle,
   IconLogin,
   IconMapPin,
@@ -56,6 +54,10 @@ import {
 
 /**
  * Where biketeam sends a team admin who asked to move their team to Pédalons.
+ *
+ * A migration has no mode: it copies the team to Pédalons, or updates the copy, as often as it is
+ * run, and changes nothing on biketeam. Switching the team's addresses over is a separate step,
+ * taken on biketeam afterwards, in which this page has no part.
  *
  * The signed request travels in `?request=`. It is not a credential: the preview is public, so a
  * signed-out visitor is told what is being moved before being asked to sign in, and only the
@@ -244,27 +246,16 @@ export function BiketeamMigrationPage() {
             <ExpiresAt date={preview.expiresAt} />
           </Stack>
 
-          <ModeNotice dryRun={preview.dryRun} site={site} />
+          <Alert
+            color="blue"
+            icon={<IconInfoCircle size={18} />}
+            title={t('biketeamMigration.copy.title')}
+          >
+            {t('biketeamMigration.copy.body', { site })}
+          </Alert>
 
-          {preview.reset && (
-            <Alert
-              color="orange"
-              icon={<IconAlertTriangle size={18} />}
-              title={t('biketeamMigration.reset.title')}
-            >
-              {preview.targetState === 'EXISTING_MIGRATED' && preview.existingTeamName
-                ? t('biketeamMigration.reset.existing', { team: preview.existingTeamName })
-                : preview.trashedTeamSetAside
-                  ? t('biketeamMigration.trashed.setAside', {
-                      team: preview.trashedTeamSetAside,
-                      site,
-                    })
-                  : t('biketeamMigration.reset.none', { site })}
-            </Alert>
-          )}
-
-          {!preview.reset && preview.trashedTeamSetAside && (
-            <Alert color="blue" icon={<IconInfoCircle size={18} />}>
+          {preview.trashedTeamSetAside && (
+            <Alert color="orange" icon={<IconAlertTriangle size={18} />}>
               {t('biketeamMigration.trashed.setAside', {
                 team: preview.trashedTeamSetAside,
                 site,
@@ -272,13 +263,11 @@ export function BiketeamMigrationPage() {
             </Alert>
           )}
 
-          {!preview.reset &&
-            preview.targetState === 'EXISTING_MIGRATED' &&
-            preview.existingTeamName && (
-              <Alert color="blue" icon={<IconInfoCircle size={18} />}>
-                {t('biketeamMigration.existing.update', { team: preview.existingTeamName, site })}
-              </Alert>
-            )}
+          {preview.targetState === 'EXISTING_MIGRATED' && preview.existingTeamName && (
+            <Alert color="blue" icon={<IconInfoCircle size={18} />}>
+              {t('biketeamMigration.existing.update', { team: preview.existingTeamName, site })}
+            </Alert>
+          )}
 
           <Section title={t('biketeamMigration.target.title')}>
             <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="xs">
@@ -344,7 +333,6 @@ export function BiketeamMigrationPage() {
                     | 'REQUEST_ALREADY_USED'
                     | 'MIGRATION_RUNNING'
                     | 'NOT_TEAM_ADMIN'
-                    | 'RESET_BLOCKED'
                 }`,
                 blockParams
               )}
@@ -389,30 +377,6 @@ function ExpiresAt({ date }: { date: string }) {
     <Text size="sm" c="dimmed" suppressHydrationWarning>
       {t('biketeamMigration.expiresAt', { date: formatDateTime(date) })}
     </Text>
-  )
-}
-
-function ModeNotice({ dryRun, site }: { dryRun: boolean; site: string }) {
-  const { t } = useTranslation()
-  return (
-    <Alert
-      color={dryRun ? 'blue' : 'orange'}
-      icon={dryRun ? <IconFlask size={18} /> : <IconAlertTriangle size={18} />}
-      title={
-        <Group gap="xs">
-          <Text fw={600} size="sm">
-            {t('biketeamMigration.mode.title')}
-          </Text>
-          <Badge color={dryRun ? 'blue' : 'orange'} variant="light">
-            {dryRun ? t('biketeamMigration.mode.dryRun') : t('biketeamMigration.mode.final')}
-          </Badge>
-        </Group>
-      }
-    >
-      {dryRun
-        ? t('biketeamMigration.mode.dryRunBody', { site })
-        : t('biketeamMigration.mode.finalBody', { site })}
-    </Alert>
   )
 }
 

@@ -123,8 +123,8 @@ public class BiketeamLiveMigrationWorker {
     }
     LiveJobContext ctx = jobService.loadContext(claimed.get());
     LOG.infof(
-        "Biketeam migration job %s: team '%s', attempt %d (dryRun=%s, reset=%s)",
-        ctx.jobTsid(), ctx.biketeamTeamId(), ctx.attempt(), ctx.dryRun(), ctx.reset());
+        "Biketeam migration job %s: team '%s', attempt %d",
+        ctx.jobTsid(), ctx.biketeamTeamId(), ctx.attempt());
     run(ctx, sources);
     return true;
   }
@@ -233,8 +233,8 @@ public class BiketeamLiveMigrationWorker {
     if (prepared.refusal() != null) {
       throw prepared.refusal();
     }
-    // The target is recorded as soon as it exists, not once the content is mapped: a later attempt
-    // of this job must recognise the team it created, and not reset it again (prepareTarget).
+    // The target is recorded as soon as it exists, not once the content is mapped: the status
+    // biketeam polls names the team while its content is still being copied.
     // The team to set aside is only trashed in the transaction that creates its successor, after
     // the slug was found free there: a conflict leaves it untouched, mapping included.
     Long setAsideId = prepared.setAsideTeamId();
@@ -259,8 +259,8 @@ public class BiketeamLiveMigrationWorker {
    *
    * @param refusal the failure to end the job with, or null to proceed
    * @param expectedTeamId the migrated team to reuse, whatever its slug, or null to create one
-   * @param setAsideTeamId the team of ours to set aside — trashed or reset — in the transaction that
-   *     creates the new one, or null
+   * @param setAsideTeamId the trashed team of ours to set aside in the transaction that creates the
+   *     new one, or null
    */
   private record Prepared(
       @Nullable BiketeamJobFailure refusal,
@@ -278,18 +278,17 @@ public class BiketeamLiveMigrationWorker {
   /**
    * §7.3 of the plan, re-evaluated here because the state may have changed since the confirmation.
    * The team is found through the {@code TEAM} mapping row first ({@link BiketeamTargetResolver}),
-   * so a migrated team renamed on Pédalons is still replayed — or reset — rather than duplicated.
-   * Decides to set aside — trash and rename — the previous team when it came from this biketeam
-   * team and is either already trashed or asked to be reset; the setting aside itself happens in
-   * the transaction that creates the new team ({@code migrateTeamLive}), so nothing is trashed when
-   * the slug turns out to be taken. Never touches a native team.
+   * so a migrated team renamed on Pédalons is still updated rather than duplicated. Decides to set
+   * aside — rename, and forget the mapping of — the previous team when it came from this biketeam
+   * team and is in the Pédalons trash; the setting aside itself happens in the transaction that
+   * creates the new team ({@code migrateTeamLive}), so nothing is renamed when the slug turns out
+   * to be taken. Never touches a native team, and never trashes a live one: every migration is
+   * incremental (docs/LEDGER_*.md MIG-16).
    *
-   * <p>The reset applies once per job: when the migrated team is the one an earlier
-   * attempt of this same job created ({@code ctx.targetTeamId()}), it is the reset's result, and a
-   * retry resumes it instead of throwing it away — and the GPX pipeline with it. So it is when a
-   * team already carries this job's set-aside slug ({@link #setAsideByThisJob}): {@code
-   * target_team_id} is written in a transaction of its own, after the one that created the team,
-   * and may never have been.
+   * <p>A later attempt of the same job needs nothing more to resume: the team an earlier attempt
+   * created committed with its {@code TEAM} mapping row and the confirming account as its ADMIN, so
+   * it is found EXISTING_MIGRATED and updated — even when that attempt died before {@code
+   * target_team_id} was written, in a transaction of its own.
    *
    * <p>Nothing is written here; {@code migrateTeamLive} checks the decision again in the
    * transaction that writes the target.
@@ -323,35 +322,6 @@ public class BiketeamLiveMigrationWorker {
                   "BIKETEAM_NOT_TEAM_ADMIN",
                   "The confirming account does not administer team '" + target.teamName() + "'"));
         }
-        if (ctx.reset() && !teamId.equals(ctx.targetTeamId()) && !setAsideByThisJob(ctx)) {
-          if (targetResolver.isResetBlocked(teamId)) {
-            return Prepared.refuse(
-                new BiketeamJobFailure(
-                    "BIKETEAM_RESET_BLOCKED",
-                    "A domain alias is pinned on team '" + target.teamName() + "'"));
-          }
-          // A reset recreates the team at the biketeam slug, which the migrated team may have
-          // left when renamed on Pédalons — and a native team may have taken since.
-          Optional<Team> holder =
-              targetResolver.slugHeldByAnotherTeam(ctx.domainId(), ctx.biketeamTeamId(), teamId);
-          if (holder.isPresent()) {
-            return Prepared.refuse(
-                new BiketeamJobFailure(
-                    "BIKETEAM_SLUG_CONFLICT",
-                    "Slug '"
-                        + BiketeamTargetResolver.targetSlug(ctx.biketeamTeamId())
-                        + "' is taken by team '"
-                        + holder.get().getName()
-                        + "'"));
-          }
-          return Prepared.create(teamId);
-        }
-        if (ctx.reset()) {
-          LOG.infof(
-              "Biketeam migration job %s: team %d comes from an earlier attempt, reset not"
-                  + " replayed",
-              ctx.jobTsid(), teamId);
-        }
         return new Prepared(null, teamId, null);
       }
     }
@@ -359,22 +329,8 @@ public class BiketeamLiveMigrationWorker {
   }
 
   /**
-   * Whether an earlier attempt of this job already set a team aside: {@link #setAsideSlug} ends with
-   * the job's id, and the setting aside only commits with the creation of its successor and of its
-   * {@code TEAM} mapping row. The migrated team is then that successor, even when the attempt died
-   * before recording it as {@code target_team_id} (a crash, a DB blip, a lost job between the two
-   * transactions): resetting it again would rename it to the slug the first team already holds —
-   * {@code uk_teams_domain_slug} on every attempt — or, for a team renamed on Pédalons, throw the
-   * new one away (docs/LEDGER_*.md MIG-15).
-   */
-  private boolean setAsideByThisJob(LiveJobContext ctx) {
-    return teamRepository.existsTrashedBySlugSuffixAndDomain(
-        ctx.domainId(), setAsideSuffix(ctx.jobTsid()));
-  }
-
-  /**
-   * Trashes the team the way {@code TeamService.deleteTeam} does, renames its slug to free it, and
-   * forgets its mapping rows — those tagged with the biketeam team, plus, for the rows the legacy
+   * Keeps the team in the trash ({@code deleted}, as {@code TeamService.deleteTeam} left it),
+   * renames its slug to free it, and forgets its mapping rows — those tagged with the biketeam team, plus, for the rows the legacy
    * import wrote untagged, every key of the snapshot. Nothing is physically deleted. Runs inside
    * the transaction that creates the new team, which rolls it back on a slug conflict.
    */
@@ -392,7 +348,8 @@ public class BiketeamLiveMigrationWorker {
 
   /**
    * {@code <slug>-reset-<jobTsid>}, a valid Pédalons slug of at most {@link
-   * SlugService#MAX_SLUG_LENGTH}: the suffix is kept whole and the old slug gives way.
+   * SlugService#MAX_SLUG_LENGTH}: the suffix is kept whole and the old slug gives way. The suffix
+   * keeps the name it had when a reset option also set teams aside: rows carry it.
    */
   static String setAsideSlug(String slug, String jobTsid) {
     String suffix = setAsideSuffix(jobTsid);

@@ -186,8 +186,6 @@ public enum ErrorCode {
   BIKETEAM_NOT_TEAM_ADMIN,
   /** A migration of this biketeam team is queued or running. */
   BIKETEAM_MIGRATION_RUNNING,
-  /** A reset would trash a team a domain alias is pinned on. */
-  BIKETEAM_RESET_BLOCKED,
   /** M2M only: unknown grant, or one that does not match the request it is presented with. */
   BIKETEAM_GRANT_INVALID,
   /** M2M only: the grant lapsed before biketeam redeemed it. */

@@ -2379,7 +2379,6 @@ components:
       - BIKETEAM_MIGRATED_IN_OTHER_DOMAIN
       - BIKETEAM_NOT_TEAM_ADMIN
       - BIKETEAM_MIGRATION_RUNNING
-      - BIKETEAM_RESET_BLOCKED
       - BIKETEAM_GRANT_INVALID
       - BIKETEAM_GRANT_EXPIRED
       - BIKETEAM_JOB_NOT_FOUND
@@ -20896,7 +20895,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 13.8.0
+  version: 14.0.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

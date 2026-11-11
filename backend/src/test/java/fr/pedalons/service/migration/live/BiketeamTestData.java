@@ -59,8 +59,6 @@ public class BiketeamTestData {
             biketeamTeamId,
             "Team " + biketeamTeamId,
             requestId,
-            true,
-            false,
             BiketeamTestTokens.PUBLIC_URL + "/" + biketeamTeamId + "/admin/pedalons/callback",
             domain.getBaseUrl(),
             TokenUtils.hashToken("bmg_" + requestId),
