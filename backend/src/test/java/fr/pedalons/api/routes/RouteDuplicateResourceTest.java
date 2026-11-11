@@ -54,7 +54,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * docs/LEDGER_*.md API-178: {@code POST /routes/{slug}/duplicate} — a copy of a route in its own
+ * docs/LEDGER_*.md API-179: {@code POST /routes/{slug}/duplicate} — a copy of a route in its own
  * team, under a new name, with every other attribute and a physical copy of its media.
  */
 @QuarkusTest
@@ -253,6 +253,25 @@ class RouteDuplicateResourceTest extends AbstractResourceTest {
 
     duplicate(USER2, slug, "   ").statusCode(400);
     duplicate(USER2, slug, "").statusCode(400);
+  }
+
+  /**
+   * A team admin still reads a deleted route, but no copy of it may bring it back online — neither
+   * one the team deleted nor one a moderator removed, which {@code undeleteRoute} refuses.
+   */
+  @Test
+  void aDeletedRoute_isNotDuplicated_404_evenByAnAdmin() {
+    String slug = createDrawn("Boucle", Visibility.PUBLIC);
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .delete("/api/teams/" + team1Slug + "/routes/" + slug)
+        .then()
+        .statusCode(204);
+
+    duplicate(USER1, slug, "Copie de Boucle").statusCode(404);
+    duplicate(USER2, slug, "Copie de Boucle").statusCode(404);
   }
 
   // ==================== what is copied ====================

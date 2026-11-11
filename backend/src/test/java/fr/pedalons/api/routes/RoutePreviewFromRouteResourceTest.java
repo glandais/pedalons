@@ -22,7 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * docs/LEDGER_*.md API-179: {@code POST /routes/{slug}/preview} — a GPX preview of the caller's
+ * docs/LEDGER_*.md API-180: {@code POST /routes/{slug}/preview} — a GPX preview of the caller's
  * made from a route they may read, with its title, planner state and waypoints.
  */
 @QuarkusTest
@@ -109,6 +109,21 @@ class RoutePreviewFromRouteResourceTest extends AbstractResourceTest {
     String slug = createDrawn("Boucle", Visibility.TEAM);
 
     preview(USER3, slug).statusCode(201).body("name", equalTo("Boucle"));
+  }
+
+  @Test
+  void aDeletedRoute_givesNoPreview_404_evenToAnAdmin() {
+    String slug = createDrawn("Boucle", Visibility.PUBLIC);
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .delete("/api/teams/" + team1Slug + "/routes/" + slug)
+        .then()
+        .statusCode(204);
+
+    preview(USER1, slug).statusCode(404);
+    preview(USER4, slug).statusCode(404);
   }
 
   @Test

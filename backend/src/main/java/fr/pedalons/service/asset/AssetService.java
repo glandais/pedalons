@@ -592,7 +592,7 @@ public class AssetService {
 
   /**
    * A copy of the media of {@code source} for a new content of {@code team} (docs/LEDGER_*.md
-   * API-178): every logo, image and attachment is stored again under a new file id, as an asset of
+   * API-179): every logo, image and attachment is stored again under a new file id, as an asset of
    * its own attached to nothing yet, and the {@code id="…"} of the markdown's asset directives are
    * rewritten to the copies. The answer is the {@link MediaDto} that {@link #updateAssets} attaches
    * to the new content: an asset belongs to one content only ({@link #findAvailableAsset}), and a

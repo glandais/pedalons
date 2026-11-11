@@ -796,7 +796,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   /**
    * The planner state of {@code route} when it still describes its track, else null — what {@link
    * #getPlannerState} answers, without its access check: for a caller that already checked its own
-   * (a copy of the route, docs/LEDGER_*.md API-178, API-179). Two queries.
+   * (a copy of the route, docs/LEDGER_*.md API-179, API-180). Two queries.
    */
   public @Nullable PlannerState readPlannerState(Route route) {
     List<@Nullable PlannerStateDocument> documents =

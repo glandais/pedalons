@@ -126,7 +126,7 @@ export function RouteDetailView({
 
       {/* Download Buttons - inline without wrapper */}
       {(hasDownloads || extraActions) && (
-        <Group gap="sm" wrap="wrap">
+        <Group gap="sm" wrap="wrap" data-testid="route-downloads">
           {hasDownloads && route.media.assets.gpx && (
             <Button
               variant="default"

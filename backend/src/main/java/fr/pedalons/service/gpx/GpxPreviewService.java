@@ -244,7 +244,7 @@ public class GpxPreviewService {
   /**
    * As {@link #create(GpxDocument, String, boolean, PlannerState, WaypointPlan,
    * PreviewDepartureEdit)}; {@code documentNameFirst} false names the preview {@code fallbackName}
-   * whatever the file says — a copy of a route keeps the route's title (docs/LEDGER_*.md API-179).
+   * whatever the file says — a copy of a route keeps the route's title (docs/LEDGER_*.md API-180).
    */
   private GpxPreview create(
       GpxDocument gpx,
@@ -985,7 +985,7 @@ public class GpxPreviewService {
 
   /**
    * A preview made from a team's route, for a caller who may read the route but not edit it
-   * (docs/LEDGER_*.md API-179): the route's original GPX, its title, its planner state and its
+   * (docs/LEDGER_*.md API-180): the route's original GPX, its title, its planner state and its
    * waypoints. The preview is the caller's, like any other: only they edit it and read its planner
    * state. The route is left as it is.
    *

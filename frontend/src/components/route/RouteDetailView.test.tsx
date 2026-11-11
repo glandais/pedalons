@@ -176,8 +176,20 @@ describe('RouteDetailView — the page’s extra actions (WEB-169)', () => {
     expect(screen.queryByRole('link', { name: 'Télécharger GPX' })).toBeNull()
   })
 
+  it('renders them in a row of their own', () => {
+    show({ extraActions: <button type="button">Modifier une copie</button> })
+    expect(screen.getByTestId('route-downloads')).toBeTruthy()
+  })
+
   it('renders no row when there is neither', () => {
     show({ route: withGpx, showDownload: false })
     expect(screen.queryByRole('link', { name: 'Télécharger GPX' })).toBeNull()
+    expect(screen.queryByTestId('route-downloads')).toBeNull()
+  })
+
+  it('renders no row when the page hides its action (extraActions={false})', () => {
+    const { container } = show({ route: withGpx, showDownload: false, extraActions: false })
+    expect(screen.queryByTestId('route-downloads')).toBeNull()
+    expect(container.textContent).not.toContain('false')
   })
 })

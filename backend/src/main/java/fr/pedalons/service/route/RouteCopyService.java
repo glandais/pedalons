@@ -16,6 +16,7 @@ import fr.pedalons.dto.tags.response.TagDto;
 import fr.pedalons.enums.ActionType;
 import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.EntityType;
+import fr.pedalons.infrastructure.exception.NotFoundException;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.route.GpxTrackRepository;
@@ -29,7 +30,6 @@ import fr.pedalons.service.team.TeamService;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -43,7 +43,7 @@ import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Copies of a route (docs/LEDGER_*.md API-178, API-179): a duplicate in its own team, or a GPX
+ * Copies of a route (docs/LEDGER_*.md API-179, API-180): a duplicate in its own team, or a GPX
  * preview of the caller's.
  *
  * <p>Neither copies a row. Both replay the creation they stand for — {@link
@@ -88,32 +88,47 @@ public class RouteCopyService {
    * attachments ({@link AssetService#copyMedia}). Requires the right to edit the source — an
    * organizer of the team, routes on — and {@link RouteService#createRoute} checks the right to
    * create one.
+   *
+   * <p>Not {@code @Transactional} as a whole: the source is read in a short transaction, its
+   * original GPX downloaded with no connection held, and only then does the transaction that
+   * copies the media and creates the route start. The media copies stay in that one: an asset row
+   * and its file must commit, or be dropped, together ({@link AssetService#copyMedia}).
    */
-  @Transactional
   @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.UPDATE)
   public RouteDto duplicate(String teamSlug, String routeSlug, String name) {
-    Team team = teamService.getTeam(teamSlug);
-    Route route = routeService.findBySlug(team, routeSlug);
-    Source source = readSource(route);
-    List<String> tagIds =
-        tagLookup.forContents(List.of(route.getId())).forContent(route.getId()).stream()
-            .map(TagDto::id)
-            .toList();
-    MediaDto media = assetService.copyMedia(route, team);
-    RouteRequest request =
-        new RouteRequest(
-            name, media, route.getSurfaceType(), route.getVisibility(), null, tagIds, null, null);
+    Source source =
+        QuarkusTransaction.requiringNew().call(() -> readSource(findLive(teamSlug, routeSlug)));
     Path gpxPath = downloadOriginal(source);
     try {
-      return routeService.createRoute(
-          teamSlug, request, gpxPath, source.state(), source.surfaces(), source.waypoints());
+      return QuarkusTransaction.requiringNew()
+          .call(() -> {
+            Team team = teamService.getTeam(teamSlug);
+            Route route = findLive(teamSlug, routeSlug);
+            List<String> tagIds =
+                tagLookup.forContents(List.of(route.getId())).forContent(route.getId()).stream()
+                    .map(TagDto::id)
+                    .toList();
+            MediaDto media = assetService.copyMedia(route, team);
+            RouteRequest request =
+                new RouteRequest(
+                    name,
+                    media,
+                    route.getSurfaceType(),
+                    route.getVisibility(),
+                    null,
+                    tagIds,
+                    null,
+                    null);
+            return routeService.createRoute(
+                teamSlug, request, gpxPath, source.state(), source.surfaces(), source.waypoints());
+          });
     } finally {
       deleteQuietly(gpxPath);
     }
   }
 
   /**
-   * A GPX preview of the route, for a signed-in caller who may read it (docs/LEDGER_*.md API-179):
+   * A GPX preview of the route, for a signed-in caller who may read it (docs/LEDGER_*.md API-180):
    * same title, track, planner state and waypoints. The preview is the caller's; nothing is created
    * in the team. Deliberately not {@code @Transactional}, like every preview creation: the source
    * is read in a short transaction of its own, the pipeline runs with no connection held.
@@ -122,9 +137,7 @@ public class RouteCopyService {
   @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.READ)
   public GpxPreviewDto createPreview(String teamSlug, String routeSlug) {
     Source source =
-        QuarkusTransaction.requiringNew()
-            .call(() ->
-                readSource(routeService.findBySlug(teamService.getTeam(teamSlug), routeSlug)));
+        QuarkusTransaction.requiringNew().call(() -> readSource(findLive(teamSlug, routeSlug)));
     Path gpxPath = downloadOriginal(source);
     try {
       return gpxPreviewService.createFromRoute(
@@ -132,6 +145,19 @@ public class RouteCopyService {
     } finally {
       deleteQuietly(gpxPath);
     }
+  }
+
+  /**
+   * The route to copy, never a deleted one: {@link RouteService#findBySlug} includes deleted routes
+   * for a team admin, and a copy would bring back online a route the team deleted or a moderator
+   * removed ({@code undeleteRoute} refuses the latter). Same answer as an unknown slug.
+   */
+  private Route findLive(String teamSlug, String routeSlug) {
+    Route route = routeService.findBySlug(teamService.getTeam(teamSlug), routeSlug);
+    if (route.isDeleted()) {
+      throw new NotFoundException(EntityType.ROUTE, routeSlug);
+    }
+    return route;
   }
 
   /**
