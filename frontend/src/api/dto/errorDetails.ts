@@ -3,6 +3,7 @@ import type { ErrorCode } from './errorCode.ts'
 import type { ErrorValidationDetails } from './errorValidationDetails.ts'
 import type { IncompatibleVisibilityDetails } from './incompatibleVisibilityDetails.ts'
 import type { NotFoundDetails } from './notFoundDetails.ts'
+import type { TeamMemberLimitDetails } from './teamMemberLimitDetails.ts'
 
 /**
  * Error details
@@ -18,5 +19,8 @@ export type ErrorDetails =
       type?: ErrorCode
     })
   | (IncompatibleVisibilityDetails & {
+      type?: ErrorCode
+    })
+  | (TeamMemberLimitDetails & {
       type?: ErrorCode
     })

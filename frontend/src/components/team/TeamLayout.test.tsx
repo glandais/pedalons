@@ -28,8 +28,10 @@ vi.mock('../common/NavButtons', () => ({ NavButtons: () => null }))
 
 import { TeamLayout } from './TeamLayout'
 
-function team(role?: TeamRole) {
+function team(role?: TeamRole, members?: { memberCount: number; memberLimit?: number }) {
   return {
+    memberCount: 3,
+    ...members,
     id: 't1',
     slug: 'vc-craponne',
     name: 'VC Craponne',
@@ -94,5 +96,31 @@ describe('TeamLayout (docs/LEDGER_*.md API-137)', () => {
     signIn(false)
     renderLayout(team('MEMBER'))
     expect(screen.queryByRole('link', { name: 'teams.detail.actions.admin' })).toBeNull()
+  })
+
+  it('a full free team replaces the join button by the reason (BILL-10)', () => {
+    signIn(false)
+    renderLayout(team(undefined, { memberCount: 25, memberLimit: 25 }))
+    expect(screen.queryByRole('button', { name: 'teams.detail.actions.join' })).toBeNull()
+    expect(screen.getByText('teams.memberLimit.fullAskAdmin')).toBeInTheDocument()
+  })
+
+  it('a free team with a place left still offers to join', () => {
+    signIn(false)
+    renderLayout(team(undefined, { memberCount: 24, memberLimit: 25 }))
+    expect(screen.getByRole('button', { name: 'teams.detail.actions.join' })).toBeInTheDocument()
+    expect(screen.queryByText('teams.memberLimit.fullAskAdmin')).toBeNull()
+  })
+
+  it('a platform admin, exempt from the cap, may still join a full team', () => {
+    signIn(true)
+    renderLayout(team(undefined, { memberCount: 25, memberLimit: 25 }))
+    expect(screen.getByRole('button', { name: 'teams.detail.actions.join' })).toBeInTheDocument()
+  })
+
+  it('a member of a full team sees no notice', () => {
+    signIn(false)
+    renderLayout(team('MEMBER', { memberCount: 25, memberLimit: 25 }))
+    expect(screen.queryByText('teams.memberLimit.fullAskAdmin')).toBeNull()
   })
 })

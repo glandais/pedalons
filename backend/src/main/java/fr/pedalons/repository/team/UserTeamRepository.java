@@ -195,6 +195,15 @@ public class UserTeamRepository implements BaseRepository<UserTeam> {
         TeamRole.ADMIN);
   }
 
+  /**
+   * The team's live members, whatever their role — what the free plan's member cap is compared to
+   * (docs/LEDGER_*.md BILL-10). An account soft-deleted since is not one: its membership no longer
+   * shows in any roster.
+   */
+  public long countActiveMembers(Long teamId) {
+    return count("team.id = ?1 and user.deleted = false", teamId);
+  }
+
   public Optional<UserTeam> findByUserAndTeam(Long userId, Long teamId) {
     return getEntityManager()
         .createQuery(

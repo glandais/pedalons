@@ -70,3 +70,19 @@ Map<String, dynamic> _$ErrorDetailsIncompatibleVisibilityToJson(
   'usages': instance.usages.map((e) => e.toJson()).toList(),
   'type': instance.$type,
 };
+
+ErrorDetailsTeamMemberLimitReached _$ErrorDetailsTeamMemberLimitReachedFromJson(
+  Map<String, dynamic> json,
+) => ErrorDetailsTeamMemberLimitReached(
+  limit: (json['limit'] as num).toInt(),
+  current: (json['current'] as num).toInt(),
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$ErrorDetailsTeamMemberLimitReachedToJson(
+  ErrorDetailsTeamMemberLimitReached instance,
+) => <String, dynamic>{
+  'limit': instance.limit,
+  'current': instance.current,
+  'type': instance.$type,
+};

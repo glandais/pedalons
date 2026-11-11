@@ -109,6 +109,12 @@ public class TeamMemberResource {
         description = "Team is full or user is already a member",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
+        responseCode = "409",
+        description =
+            "Already a member (ALREADY_REGISTERED), or the team's tier caps its members and the cap"
+                + " is reached (TEAM_MEMBER_LIMIT_REACHED, with the cap and the member count)",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
         responseCode = "401",
         description = "Unauthorized",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
@@ -163,6 +169,13 @@ public class TeamMemberResource {
     @APIResponse(
         responseCode = "400",
         description = "Invalid request or user already a member",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "409",
+        description =
+            "Already a member (ALREADY_REGISTERED), or the team's tier caps its members and the cap"
+                + " is reached (TEAM_MEMBER_LIMIT_REACHED, with the cap and the member count); a"
+                + " platform admin is exempt",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "401",

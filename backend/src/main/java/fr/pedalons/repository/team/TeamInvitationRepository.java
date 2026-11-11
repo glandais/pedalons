@@ -91,6 +91,22 @@ public class TeamInvitationRepository implements BaseRepository<TeamInvitation> 
         Instant.now().minus(minutes, ChronoUnit.MINUTES));
   }
 
+  /**
+   * The team's invitations still waiting for an answer, bar the one for {@code exceptEmail} — which
+   * a new invitation to that address revokes and replaces, so it must not be counted twice. A
+   * lapsed one the nightly sweep has not marked yet is not counted: its accept would be refused.
+   * What a new invitation adds to the member count under the free plan's cap (docs/LEDGER_*.md
+   * BILL-10).
+   */
+  public long countPendingByTeam(Long teamId, String exceptEmail) {
+    return count(
+        "team.id = ?1 and status = ?2 and expiresAt > ?3 and email <> ?4",
+        teamId,
+        InvitationStatus.PENDING,
+        Instant.now(),
+        exceptEmail);
+  }
+
   /** Marks lapsed invitations, which is also what frees the (team, email) slot for a re-invite. */
   public long expireOverdue() {
     return update(

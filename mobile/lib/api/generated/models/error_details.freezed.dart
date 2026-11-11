@@ -32,6 +32,10 @@ ErrorDetails _$ErrorDetailsFromJson(
           return ErrorDetailsIncompatibleVisibility.fromJson(
             json
           );
+                case 'TEAM_MEMBER_LIMIT_REACHED':
+          return ErrorDetailsTeamMemberLimitReached.fromJson(
+            json
+          );
         
           default:
             throw CheckedFromJsonException(
@@ -90,14 +94,15 @@ extension ErrorDetailsPatterns on ErrorDetails {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ErrorDetailsValidation value)?  validation,TResult Function( ErrorDetailsNotFound value)?  notFound,TResult Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ErrorDetailsValidation value)?  validation,TResult Function( ErrorDetailsNotFound value)?  notFound,TResult Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,TResult Function( ErrorDetailsTeamMemberLimitReached value)?  teamMemberLimitReached,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
 return validation(_that);case ErrorDetailsNotFound() when notFound != null:
 return notFound(_that);case ErrorDetailsAssetNotAvailable() when assetNotAvailable != null:
 return assetNotAvailable(_that);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
-return incompatibleVisibility(_that);case _:
+return incompatibleVisibility(_that);case ErrorDetailsTeamMemberLimitReached() when teamMemberLimitReached != null:
+return teamMemberLimitReached(_that);case _:
   return orElse();
 
 }
@@ -115,14 +120,15 @@ return incompatibleVisibility(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ErrorDetailsValidation value)  validation,required TResult Function( ErrorDetailsNotFound value)  notFound,required TResult Function( ErrorDetailsAssetNotAvailable value)  assetNotAvailable,required TResult Function( ErrorDetailsIncompatibleVisibility value)  incompatibleVisibility,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ErrorDetailsValidation value)  validation,required TResult Function( ErrorDetailsNotFound value)  notFound,required TResult Function( ErrorDetailsAssetNotAvailable value)  assetNotAvailable,required TResult Function( ErrorDetailsIncompatibleVisibility value)  incompatibleVisibility,required TResult Function( ErrorDetailsTeamMemberLimitReached value)  teamMemberLimitReached,}){
 final _that = this;
 switch (_that) {
 case ErrorDetailsValidation():
 return validation(_that);case ErrorDetailsNotFound():
 return notFound(_that);case ErrorDetailsAssetNotAvailable():
 return assetNotAvailable(_that);case ErrorDetailsIncompatibleVisibility():
-return incompatibleVisibility(_that);}
+return incompatibleVisibility(_that);case ErrorDetailsTeamMemberLimitReached():
+return teamMemberLimitReached(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -136,14 +142,15 @@ return incompatibleVisibility(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ErrorDetailsValidation value)?  validation,TResult? Function( ErrorDetailsNotFound value)?  notFound,TResult? Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult? Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ErrorDetailsValidation value)?  validation,TResult? Function( ErrorDetailsNotFound value)?  notFound,TResult? Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult? Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,TResult? Function( ErrorDetailsTeamMemberLimitReached value)?  teamMemberLimitReached,}){
 final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
 return validation(_that);case ErrorDetailsNotFound() when notFound != null:
 return notFound(_that);case ErrorDetailsAssetNotAvailable() when assetNotAvailable != null:
 return assetNotAvailable(_that);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
-return incompatibleVisibility(_that);case _:
+return incompatibleVisibility(_that);case ErrorDetailsTeamMemberLimitReached() when teamMemberLimitReached != null:
+return teamMemberLimitReached(_that);case _:
   return null;
 
 }
@@ -160,13 +167,14 @@ return incompatibleVisibility(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( List<FieldError> fieldErrors)?  validation,TResult Function( String entityType,  String searchedBy,  String id)?  notFound,TResult Function( String assetId)?  assetNotAvailable,TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( List<FieldError> fieldErrors)?  validation,TResult Function( String entityType,  String searchedBy,  String id)?  notFound,TResult Function( String assetId)?  assetNotAvailable,TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,TResult Function( int limit,  int current)?  teamMemberLimitReached,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
 return validation(_that.fieldErrors);case ErrorDetailsNotFound() when notFound != null:
 return notFound(_that.entityType,_that.searchedBy,_that.id);case ErrorDetailsAssetNotAvailable() when assetNotAvailable != null:
 return assetNotAvailable(_that.assetId);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
-return incompatibleVisibility(_that.routes,_that.usages);case _:
+return incompatibleVisibility(_that.routes,_that.usages);case ErrorDetailsTeamMemberLimitReached() when teamMemberLimitReached != null:
+return teamMemberLimitReached(_that.limit,_that.current);case _:
   return orElse();
 
 }
@@ -184,13 +192,14 @@ return incompatibleVisibility(_that.routes,_that.usages);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( List<FieldError> fieldErrors)  validation,required TResult Function( String entityType,  String searchedBy,  String id)  notFound,required TResult Function( String assetId)  assetNotAvailable,required TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)  incompatibleVisibility,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( List<FieldError> fieldErrors)  validation,required TResult Function( String entityType,  String searchedBy,  String id)  notFound,required TResult Function( String assetId)  assetNotAvailable,required TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)  incompatibleVisibility,required TResult Function( int limit,  int current)  teamMemberLimitReached,}) {final _that = this;
 switch (_that) {
 case ErrorDetailsValidation():
 return validation(_that.fieldErrors);case ErrorDetailsNotFound():
 return notFound(_that.entityType,_that.searchedBy,_that.id);case ErrorDetailsAssetNotAvailable():
 return assetNotAvailable(_that.assetId);case ErrorDetailsIncompatibleVisibility():
-return incompatibleVisibility(_that.routes,_that.usages);}
+return incompatibleVisibility(_that.routes,_that.usages);case ErrorDetailsTeamMemberLimitReached():
+return teamMemberLimitReached(_that.limit,_that.current);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -204,13 +213,14 @@ return incompatibleVisibility(_that.routes,_that.usages);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( List<FieldError> fieldErrors)?  validation,TResult? Function( String entityType,  String searchedBy,  String id)?  notFound,TResult? Function( String assetId)?  assetNotAvailable,TResult? Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( List<FieldError> fieldErrors)?  validation,TResult? Function( String entityType,  String searchedBy,  String id)?  notFound,TResult? Function( String assetId)?  assetNotAvailable,TResult? Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,TResult? Function( int limit,  int current)?  teamMemberLimitReached,}) {final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
 return validation(_that.fieldErrors);case ErrorDetailsNotFound() when notFound != null:
 return notFound(_that.entityType,_that.searchedBy,_that.id);case ErrorDetailsAssetNotAvailable() when assetNotAvailable != null:
 return assetNotAvailable(_that.assetId);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
-return incompatibleVisibility(_that.routes,_that.usages);case _:
+return incompatibleVisibility(_that.routes,_that.usages);case ErrorDetailsTeamMemberLimitReached() when teamMemberLimitReached != null:
+return teamMemberLimitReached(_that.limit,_that.current);case _:
   return null;
 
 }
@@ -546,6 +556,85 @@ class _$ErrorDetailsIncompatibleVisibilityCopyWithImpl<$Res>
 routes: null == routes ? _self._routes : routes // ignore: cast_nullable_to_non_nullable
 as List<IncompatibleRouteDto>,usages: null == usages ? _self._usages : usages // ignore: cast_nullable_to_non_nullable
 as List<IncompatibleRouteUsageDto>,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class ErrorDetailsTeamMemberLimitReached implements ErrorDetails {
+  const ErrorDetailsTeamMemberLimitReached({required this.limit, required this.current,  String? $type}): $type = $type ?? 'TEAM_MEMBER_LIMIT_REACHED';
+  factory ErrorDetailsTeamMemberLimitReached.fromJson(Map<String, dynamic> json) => _$ErrorDetailsTeamMemberLimitReachedFromJson(json);
+
+/// Member cap of the team's tier
+ final  int limit;
+/// What was counted against the cap: active members, plus pending invitations when sending one
+ final  int current;
+
+@JsonKey(name: 'type')
+final String $type;
+
+
+/// Create a copy of ErrorDetails
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ErrorDetailsTeamMemberLimitReachedCopyWith<ErrorDetailsTeamMemberLimitReached> get copyWith => _$ErrorDetailsTeamMemberLimitReachedCopyWithImpl<ErrorDetailsTeamMemberLimitReached>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ErrorDetailsTeamMemberLimitReachedToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ErrorDetailsTeamMemberLimitReached&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.current, current) || other.current == current));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,limit,current);
+}
+
+@override
+String toString() {
+    return 'ErrorDetails.teamMemberLimitReached(limit: $limit, current: $current)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ErrorDetailsTeamMemberLimitReachedCopyWith<$Res> implements $ErrorDetailsCopyWith<$Res> {
+  factory $ErrorDetailsTeamMemberLimitReachedCopyWith(ErrorDetailsTeamMemberLimitReached value, $Res Function(ErrorDetailsTeamMemberLimitReached) _then) = _$ErrorDetailsTeamMemberLimitReachedCopyWithImpl;
+@useResult
+$Res call({
+ int limit, int current
+});
+
+
+
+
+}
+/// @nodoc
+class _$ErrorDetailsTeamMemberLimitReachedCopyWithImpl<$Res>
+    implements $ErrorDetailsTeamMemberLimitReachedCopyWith<$Res> {
+  _$ErrorDetailsTeamMemberLimitReachedCopyWithImpl(this._self, this._then);
+
+  final ErrorDetailsTeamMemberLimitReached _self;
+  final $Res Function(ErrorDetailsTeamMemberLimitReached) _then;
+
+/// Create a copy of ErrorDetails
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? limit = null,Object? current = null,}) {
+  return _then(ErrorDetailsTeamMemberLimitReached(
+limit: null == limit ? _self.limit : limit // ignore: cast_nullable_to_non_nullable
+as int,current: null == current ? _self.current : current // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 

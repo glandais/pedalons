@@ -14,6 +14,7 @@ import 'incompatible_route_usage_dto.dart';
 import 'incompatible_visibility_details.dart';
 import 'not_found_details.dart';
 import 'searched_by.dart';
+import 'team_member_limit_details.dart';
 
 part 'error_details.freezed.dart';
 part 'error_details.g.dart';
@@ -53,6 +54,15 @@ sealed class ErrorDetails with _$ErrorDetails {
     /// Saving a route as TEAM: the rides and trips visible outside the team that use it — directly, through a group or through a stage — drafts included, deleted ones left out. There is no alignment in this direction: change them first. Empty when a ride or a trip was saved.
     required List<IncompatibleRouteUsageDto> usages,
   }) = ErrorDetailsIncompatibleVisibility;
+
+  @FreezedUnionValue('TEAM_MEMBER_LIMIT_REACHED')
+  const factory ErrorDetails.teamMemberLimitReached({
+    /// Member cap of the team's tier
+    required int limit,
+
+    /// What was counted against the cap: active members, plus pending invitations when sending one
+    required int current,
+  }) = ErrorDetailsTeamMemberLimitReached;
 
   factory ErrorDetails.fromJson(Map<String, Object?> json) =>
       _$ErrorDetailsFromJson(json);

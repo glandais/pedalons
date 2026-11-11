@@ -4,6 +4,7 @@ import static fr.pedalons.common.TokenUtils.generateSecureToken;
 import static fr.pedalons.common.TokenUtils.hashToken;
 import static org.geolatte.geom.crs.CoordinateReferenceSystems.WGS84;
 
+import fr.pedalons.common.TokenUtils;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.ad.Ad;
 import fr.pedalons.domain.asset.Asset;
@@ -286,6 +287,40 @@ public class TestDataService {
   public void setTeamPublicContentAllowed(Team team, boolean allowed) {
     Team managed = teamRepository.findById(team.getId());
     managed.setPublicContentAllowed(allowed);
+  }
+
+  /**
+   * A pending invitation written straight to the table, past the rate limits of the endpoint, for
+   * tests that need many of them. Returns the raw token, to accept it with.
+   */
+  @Transactional
+  public String createPendingInvitation(Team team, User inviter, String email) {
+    String token = TokenUtils.generateSecureToken();
+    teamInvitationRepository.persistAndFlush(
+        new TeamInvitation(
+            userRepository.findById(inviter.getId()),
+            teamRepository.findById(team.getId()),
+            email,
+            TeamRole.MEMBER,
+            TokenUtils.hashToken(token),
+            Instant.now().plus(14, ChronoUnit.DAYS)));
+    return token;
+  }
+
+  /**
+   * Adds {@code count} fresh members to the team, in one transaction — to bring it up to a tier's
+   * member cap.
+   */
+  @Transactional
+  public void addFillerMembers(Team team, String prefix, int count) {
+    Team managed = teamRepository.findById(team.getId());
+    for (int i = 0; i < count; i++) {
+      User user =
+          new User(managed.getDomain(), prefix + "-" + i + "@example.com", prefix + " " + i);
+      userRepository.persist(user);
+      userTeamRepository.persist(new UserTeam(user, user, managed, TeamRole.MEMBER));
+    }
+    userTeamRepository.flush();
   }
 
   @Transactional

@@ -2292,7 +2292,7 @@
       },
       "ErrorCode" : {
         "type" : "string",
-        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "TRIP_FINISHED", "INVALID_VISIBILITY", "INCOMPATIBLE_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "PLANNER_STATE_INVALID", "PLANNER_IMPORT_TOO_LARGE", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "GEOCODING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
+        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "TRIP_FINISHED", "INVALID_VISIBILITY", "INCOMPATIBLE_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "PLANNER_STATE_INVALID", "PLANNER_IMPORT_TOO_LARGE", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "GEOCODING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "TEAM_MEMBER_LIMIT_REACHED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
       },
       "ErrorDetails" : {
         "oneOf" : [ {
@@ -2303,6 +2303,8 @@
           "$ref" : "#/components/schemas/AssetNotAvailableDetails"
         }, {
           "$ref" : "#/components/schemas/IncompatibleVisibilityDetails"
+        }, {
+          "$ref" : "#/components/schemas/TeamMemberLimitDetails"
         } ],
         "description" : "Error details",
         "discriminator" : {
@@ -2311,7 +2313,8 @@
             "VALIDATION" : "#/components/schemas/ErrorValidationDetails",
             "NOT_FOUND" : "#/components/schemas/NotFoundDetails",
             "ASSET_NOT_AVAILABLE" : "#/components/schemas/AssetNotAvailableDetails",
-            "INCOMPATIBLE_VISIBILITY" : "#/components/schemas/IncompatibleVisibilityDetails"
+            "INCOMPATIBLE_VISIBILITY" : "#/components/schemas/IncompatibleVisibilityDetails",
+            "TEAM_MEMBER_LIMIT_REACHED" : "#/components/schemas/TeamMemberLimitDetails"
           }
         },
         "type" : "object",
@@ -6869,6 +6872,27 @@
             "type" : "integer",
             "format" : "int32",
             "description" : "Page size"
+          }
+        }
+      },
+      "TeamMemberLimitDetails" : {
+        "type" : "object",
+        "required" : [ "type", "limit", "current" ],
+        "properties" : {
+          "type" : {
+            "description" : "Type",
+            "type" : "string",
+            "$ref" : "#/components/schemas/ErrorCode"
+          },
+          "limit" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Member cap of the team's tier"
+          },
+          "current" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "What was counted against the cap: active members, plus pending invitations when sending one"
           }
         }
       },
@@ -13406,6 +13430,16 @@
                 }
               }
             }
+          },
+          "409" : {
+            "description" : "The team's tier caps its members and the cap is reached since the invitation was sent (TEAM_MEMBER_LIMIT_REACHED, with the cap and the member count); the invitation stays pending",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         },
         "security" : [ {
@@ -16627,7 +16661,7 @@
             }
           },
           "409" : {
-            "description" : "The address already belongs to a member of this team",
+            "description" : "The address already belongs to a member of this team (TEAM_INVITE_ALREADY_MEMBER), or the team's tier caps its members and members plus pending invitations reach the cap (TEAM_MEMBER_LIMIT_REACHED, with the cap and that count); a platform admin is exempt",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -16895,6 +16929,16 @@
               }
             }
           },
+          "409" : {
+            "description" : "Already a member (ALREADY_REGISTERED), or the team's tier caps its members and the cap is reached (TEAM_MEMBER_LIMIT_REACHED, with the cap and the member count); a platform admin is exempt",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401" : {
             "description" : "Unauthorized",
             "content" : {
@@ -16959,6 +17003,16 @@
           },
           "400" : {
             "description" : "Team is full or user is already a member",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Already a member (ALREADY_REGISTERED), or the team's tier caps its members and the cap is reached (TEAM_MEMBER_LIMIT_REACHED, with the cap and the member count)",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -25338,6 +25392,16 @@
                 }
               }
             }
+          },
+          "409" : {
+            "description" : "The team's tier caps its members and the cap is reached since the invitation was sent (TEAM_MEMBER_LIMIT_REACHED, with the cap and the member count); the invitation stays pending",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         },
         "security" : [ {
@@ -25543,7 +25607,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "14.1.0",
+    "version" : "14.2.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

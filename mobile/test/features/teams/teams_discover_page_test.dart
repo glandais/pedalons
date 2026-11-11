@@ -80,6 +80,23 @@ DioException _forbidden() => DioException(
   ),
 );
 
+DioException _memberLimitReached() => DioException(
+  requestOptions: RequestOptions(path: '/'),
+  type: DioExceptionType.badResponse,
+  response: Response<Map<String, dynamic>>(
+    requestOptions: RequestOptions(path: '/'),
+    statusCode: 409,
+    data: <String, dynamic>{
+      'code': 'TEAM_MEMBER_LIMIT_REACHED',
+      'errorDetails': <String, dynamic>{
+        'type': 'TEAM_MEMBER_LIMIT_REACHED',
+        'limit': 25,
+        'current': 25,
+      },
+    },
+  ),
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -203,6 +220,32 @@ void main() {
     expect(find.byType(PdlBanner), findsOneWidget);
     expect(find.textContaining('Impossible de rejoindre A'), findsOneWidget);
   });
+
+  testWidgets(
+    'une équipe pleine : la carte revient, le bandeau dit la limite',
+    (WidgetTester tester) async {
+      await openDiscover(
+        tester,
+        repository: _StubTeamRepository(
+          teams: <TeamDetailDto>[
+            fixtureTeam(slug: 'a', name: 'A', memberCount: 25),
+          ],
+          joinError: _memberLimitReached(),
+        ),
+      );
+
+      await tester.tap(find.text('Rejoindre l\'équipe'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Rejoindre l\'équipe'), findsOneWidget);
+      expect(find.text('25 membres'), findsOneWidget);
+      expect(find.textContaining('Impossible de rejoindre A'), findsOneWidget);
+      expect(
+        find.textContaining('a atteint 25 membres, la limite de l\'offre'),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('le mode sombre rend le même écran', (WidgetTester tester) async {
     await openDiscover(

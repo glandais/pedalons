@@ -474,6 +474,7 @@
             "other": "{} membres"
           }
         },
+        "memberCountOfLimit": "{count} / {limit} membres",
         "roleSplit": "Répartition des membres par rôle",
         "newestMembers": "Nouveaux membres",
         "noNewMembers": "Aucun membre pour le moment.",
@@ -1853,6 +1854,7 @@
       "SLUG_TAKEN": "Cette URL personnalisée est déjà utilisée",
       "STATUS_INVALID": "Ce changement de statut n'est pas autorisé",
       "TEAM_CREATION_DISABLED": "La création d'équipes est désactivée sur cette plateforme",
+      "TEAM_MEMBER_LIMIT_REACHED": "L'équipe a atteint {limit} membres, la limite de l'offre gratuite. Pour aller au-delà, un administrateur de l'équipe peut nous contacter.",
       "TEAM_INVITE_ALREADY_MEMBER": "Cette adresse appartient déjà à un membre de l'équipe.",
       "TEAM_INVITE_EMAIL_MISMATCH": "Cette invitation est adressée à quelqu'un d'autre. Déconnectez-vous et reconnectez-vous avec l'adresse invitée.",
       "TEAM_INVITE_EXPIRED": "Cette invitation a expiré. Demandez-en une nouvelle à l'équipe.",

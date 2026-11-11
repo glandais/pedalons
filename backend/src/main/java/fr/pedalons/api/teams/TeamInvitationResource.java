@@ -72,7 +72,11 @@ public class TeamInvitationResource {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "409",
-        description = "The address already belongs to a member of this team",
+        description =
+            "The address already belongs to a member of this team (TEAM_INVITE_ALREADY_MEMBER), or"
+                + " the team's tier caps its members and members plus pending invitations reach the"
+                + " cap (TEAM_MEMBER_LIMIT_REACHED, with the cap and that count); a platform admin"
+                + " is exempt",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "429",

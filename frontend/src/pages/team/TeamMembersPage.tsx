@@ -44,6 +44,7 @@ import { useScrollToListTop } from '../../hooks/useScrollToListTop'
 import { useTeamMembersData } from './teamMembersData'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
+import { TeamFullNotice, isTeamFull } from '../../components/team/TeamMemberLimit'
 
 export function TeamMembersPage() {
   const { t } = useTranslation()
@@ -95,6 +96,10 @@ export function TeamMembersPage() {
   if (!teamAccess(team, isPlatformAdmin).isAdmin) {
     return <Navigate to={paths.team(teamSlug!)} replace />
   }
+
+  // A platform admin is exempt from the cap (TeamMemberLimit on the backend, docs/LEDGER_*.md
+  // BILL-10); for everyone else a full free team takes no new invitation.
+  const inviteBlockedByLimit = isTeamFull(team) && !isPlatformAdmin
 
   const closeInviteModal = () => {
     setShowAddMember(false)
@@ -162,13 +167,33 @@ export function TeamMembersPage() {
     <TeamAdminLayout team={team} currentTab="members">
       <Box py="md">
         <Group justify="space-between" mb="lg">
-          <Title order={2}>{t('teams.admin.tabs.members')}</Title>
+          <Group gap="sm" align="baseline">
+            <Title order={2}>{t('teams.admin.tabs.members')}</Title>
+            {team.memberLimit != null && (
+              <Text c="dimmed" size="sm">
+                {t('teams.memberLimit.counter', {
+                  current: team.memberCount,
+                  limit: team.memberLimit,
+                })}
+              </Text>
+            )}
+          </Group>
           {team.addMemberAllowed && (
-            <Button onClick={() => setShowAddMember(true)} leftSection={<IconPlus size={16} />}>
+            <Button
+              onClick={() => setShowAddMember(true)}
+              leftSection={<IconPlus size={16} />}
+              disabled={inviteBlockedByLimit}
+            >
               {t('teams.invitations.invite')}
             </Button>
           )}
         </Group>
+
+        {team.addMemberAllowed && inviteBlockedByLimit && team.memberLimit != null && (
+          <Alert color="yellow" variant="light" mb="lg">
+            <TeamFullNotice limit={team.memberLimit} canContact />
+          </Alert>
+        )}
 
         <Group align="flex-end" mb="lg">
           <SearchInput
@@ -235,7 +260,7 @@ export function TeamMembersPage() {
 
         {/* Invite by e-mail */}
         <Modal
-          opened={showAddMember && !!team.addMemberAllowed}
+          opened={showAddMember && !!team.addMemberAllowed && !inviteBlockedByLimit}
           onClose={closeInviteModal}
           title={t('teams.invitations.invite')}
           size="md"

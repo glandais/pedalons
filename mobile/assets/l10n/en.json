@@ -474,6 +474,7 @@
             "other": "{} members"
           }
         },
+        "memberCountOfLimit": "{count} / {limit} members",
         "roleSplit": "Members by role",
         "newestMembers": "New members",
         "noNewMembers": "No member yet.",
@@ -1853,6 +1854,7 @@
       "SLUG_TAKEN": "This custom URL is already in use",
       "STATUS_INVALID": "This status change is not allowed",
       "TEAM_CREATION_DISABLED": "Team creation is disabled on this platform",
+      "TEAM_MEMBER_LIMIT_REACHED": "The team has reached {limit} members, the limit of the free plan. To go beyond it, a team administrator can contact us.",
       "TEAM_INVITE_ALREADY_MEMBER": "That address already belongs to a member of this team.",
       "TEAM_INVITE_EMAIL_MISMATCH": "This invitation is addressed to someone else. Sign out and sign back in with the invited address.",
       "TEAM_INVITE_EXPIRED": "This invitation has expired. Ask a team administrator for a new one.",

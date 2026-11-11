@@ -28,6 +28,7 @@ import fr.pedalons.infrastructure.exception.NotFoundException;
 import fr.pedalons.repository.team.TeamInvitationRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.repository.user.UserRepository;
+import fr.pedalons.service.limits.TeamMemberLimit;
 import fr.pedalons.service.notification.NotificationPublisher;
 import fr.pedalons.service.notification.event.TeamInvited;
 import fr.pedalons.service.security.PedalonsQueryContext;
@@ -72,6 +73,8 @@ public class TeamInvitationService {
   @Inject TeamService teamService;
 
   @Inject TeamMembershipService membershipService;
+
+  @Inject TeamMemberLimit memberLimit;
 
   @Inject TeamInvitationEmailService invitationEmailService;
 
@@ -130,6 +133,9 @@ public class TeamInvitationService {
       // Folding this into a uniform 201 would only produce invitations to people already there.
       throw new ConflictException(ErrorCode.TEAM_INVITE_ALREADY_MEMBER);
     }
+    // Members and pending invitations together, so that every invitation sent can be accepted;
+    // after the checks above, which name a more precise refusal (docs/LEDGER_*.md BILL-10).
+    memberLimit.requireRoomForInvitation(team, email);
 
     enforceRateLimits(inviter, team, domainId, email);
 

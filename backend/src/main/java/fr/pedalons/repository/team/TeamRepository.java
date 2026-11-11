@@ -25,6 +25,21 @@ import org.jspecify.annotations.Nullable;
 @ApplicationScoped
 public class TeamRepository implements BaseRepository<Team> {
 
+  /**
+   * Locks the team row ({@code SELECT … FOR UPDATE}) until the end of the transaction, before the
+   * free plan's member cap is counted (docs/LEDGER_*.md BILL-10). Counting then inserting lets two
+   * simultaneous arrivals both see room for one; with the lock the second waits for the first to
+   * commit, and its count — a fresh statement under READ COMMITTED — includes it. Native rather
+   * than {@code lock()}: a lock on the versioned entity would fail if an edit of the team committed
+   * since it was read, and nothing here writes the row.
+   */
+  public void lockForMembership(Long teamId) {
+    getEntityManager()
+        .createNativeQuery("select id from teams where id = :id for update")
+        .setParameter("id", teamId)
+        .getSingleResult();
+  }
+
   public Optional<Team> findBySlugAndDomain(Long domainId, String slug) {
     return find("domain.id = ?1 and slug = ?2 and deleted = false", domainId, slug)
         .firstResultOptional();

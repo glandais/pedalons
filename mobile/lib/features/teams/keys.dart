@@ -107,6 +107,12 @@ class TeamDashboardKeys {
   );
   final admin = const _TeamDashboardKey('admin');
 
+  /// « 24 / 25 membres » quand l'équipe a une limite, sinon « 24 membres ».
+  final memberCount = const _TeamDashboardKey('memberCount');
+
+  /// Le pourquoi d'une invitation désactivée, à la limite de l'offre gratuite.
+  final memberLimitReached = const _TeamDashboardKey('memberLimitReached');
+
   /// La carte d'une sortie à venir, par son slug.
   ValueKey<String> rideCard(String rideSlug) =>
       _TeamDashboardKey('rideCard_$rideSlug');

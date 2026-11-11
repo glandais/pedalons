@@ -85,6 +85,36 @@ void main() {
       expect(resolved.message, 'Ce groupe est complet');
     });
 
+    test('a code interpolates the scalar fields of its errorDetails', () {
+      // BILL-10 : la limite de membres vient du serveur, pas de l'app.
+      final Map<String, dynamic> payload = <String, dynamic>{
+        'code': 'TEAM_MEMBER_LIMIT_REACHED',
+        'errorDetails': <String, dynamic>{
+          'type': 'TEAM_MEMBER_LIMIT_REACHED',
+          'limit': 25,
+          'current': 25,
+        },
+      };
+      _loadLocale('fr');
+      final fr = resolveApiError(
+        _dio(DioExceptionType.badResponse, response: _errorResponse(payload)),
+      );
+      expect(fr.kind, ApiErrorKind.api);
+      expect(fr.code, 'TEAM_MEMBER_LIMIT_REACHED');
+      expect(
+        fr.message,
+        "L'équipe a atteint 25 membres, la limite de l'offre gratuite. "
+        "Pour aller au-delà, un administrateur de l'équipe peut nous "
+        'contacter.',
+      );
+
+      _loadLocale('en');
+      final en = resolveApiError(
+        _dio(DioExceptionType.badResponse, response: _errorResponse(payload)),
+      );
+      expect(en.message, startsWith('The team has reached 25 members'));
+    });
+
     test('an unknown business code falls back but keeps the code', () {
       _loadLocale('fr');
       final resolved = resolveApiError(

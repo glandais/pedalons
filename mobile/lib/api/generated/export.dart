@@ -298,6 +298,7 @@ export 'models/team_detail_dto.dart';
 export 'models/team_invitation_dto.dart';
 export 'models/team_invitation_list_response.dart';
 export 'models/team_list_response.dart';
+export 'models/team_member_limit_details.dart';
 export 'models/team_page_dto.dart';
 export 'models/team_page_request.dart';
 export 'models/team_page_summary_dto.dart';

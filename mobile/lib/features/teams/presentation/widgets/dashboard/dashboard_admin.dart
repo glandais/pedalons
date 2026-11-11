@@ -94,6 +94,11 @@ class DashboardAdmin extends StatelessWidget {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
     final MemberCountByRoleDto? split = team.memberCountByRole;
+    // Plafond de l'offre gratuite (docs/LEDGER_*.md BILL-10) : nul pour une
+    // équipe débloquée. À la limite, l'invitation serait refusée — le bouton
+    // le dit d'avance, le texte dit pourquoi.
+    final int? limit = team.memberLimit;
+    final bool full = limit != null && team.memberCount >= limit;
     final List<String> features = <String>[
       if (team.enableRides) 'rides',
       if (team.enableRoutes) 'routes',
@@ -112,9 +117,27 @@ class DashboardAdmin extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Text(
-              'teams.membersList.count'.plural(team.memberCount),
+              limit == null
+                  ? 'teams.membersList.count'.plural(team.memberCount)
+                  : 'teams.dashboard.admin.memberCountOfLimit'.tr(
+                      namedArgs: <String, String>{
+                        'count': '${team.memberCount}',
+                        'limit': '$limit',
+                      },
+                    ),
+              key: keys.teamDashboard.memberCount,
               style: t.sectionTitle,
             ),
+            if (full) ...<Widget>[
+              const SizedBox(height: PdlSpacing.chipGap),
+              Text(
+                'errors.api.TEAM_MEMBER_LIMIT_REACHED'.tr(
+                  namedArgs: <String, String>{'limit': '$limit'},
+                ),
+                key: keys.teamDashboard.memberLimitReached,
+                style: t.sub,
+              ),
+            ],
             if (split != null) ...<Widget>[
               const SizedBox(height: PdlSpacing.chipGap),
               _RoleSplit(split: split),
@@ -160,6 +183,7 @@ class DashboardAdmin extends StatelessWidget {
                     label: 'teams.dashboard.admin.invite'.tr(),
                     icon: PdlIcons.personAdd,
                     size: PdlButtonSize.sm,
+                    enabled: !full,
                     onPressed: () => openTeamWebPage(
                       context,
                       TeamWebPaths.adminMembersInvite(team.slug),

@@ -17,6 +17,7 @@ import fr.pedalons.enums.TeamRole;
 import fr.pedalons.infrastructure.exception.*;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.repository.user.UserRepository;
+import fr.pedalons.service.limits.TeamMemberLimit;
 import fr.pedalons.service.security.Context;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.annotation.CheckAccess;
@@ -37,6 +38,8 @@ public class TeamMembershipService {
   @Inject PedalonsQueryContext pedalonsContext;
 
   @Inject TeamService teamService;
+
+  @Inject TeamMemberLimit memberLimit;
 
   /**
    * The team's roster, graded by what the caller is entitled to see.
@@ -139,6 +142,8 @@ public class TeamMembershipService {
    */
   @Transactional
   public MemberDto addMemberFromInvitation(Team team, User user, TeamInvitation invitation) {
+    // An invitation sent under the cap may still find the team full: others came in meanwhile.
+    memberLimit.requireRoomForMember(team);
     UserTeam membership = new UserTeam(invitation.getCreatedBy(), user, team, invitation.getRole());
     userTeamRepository.persist(membership);
     return MemberDto.from(membership);
@@ -153,6 +158,9 @@ public class TeamMembershipService {
     if (existingMembership.isPresent()) {
       throw new ConflictException(ErrorCode.ALREADY_REGISTERED);
     }
+    // The tier's cap, after the flags: a closed team says so rather than that it is full
+    // (docs/LEDGER_*.md BILL-10).
+    memberLimit.requireRoomForMember(team);
 
     // Create new membership
     UserTeam membership = new UserTeam(creator, user, team, role);

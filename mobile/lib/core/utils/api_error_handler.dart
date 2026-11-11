@@ -73,7 +73,9 @@ ApiError resolveApiError(Object error, [StackTrace? stackTrace]) {
       final code = responseData['code'];
       if (code is String) {
         final key = 'errors.api.$code';
-        final translated = key.tr();
+        final translated = key.tr(
+          namedArgs: _detailArgs(responseData['errorDetails']),
+        );
         if (translated != key) {
           return ApiError(
             kind: ApiErrorKind.api,
@@ -100,6 +102,22 @@ ApiError resolveApiError(Object error, [StackTrace? stackTrace]) {
   );
   AppLog.instance.error('error', '${error.runtimeType}: $error');
   return ApiError(kind: ApiErrorKind.unknown, message: 'common.error'.tr());
+}
+
+/// The scalar fields of an error's `errorDetails`, as named arguments of its
+/// translation: `TEAM_MEMBER_LIMIT_REACHED` carries `{limit, current}`, and
+/// its copy reads « L'équipe a atteint {limit} membres… ». A message without
+/// placeholders ignores them; nested values and the `type` discriminator are
+/// left out.
+Map<String, String> _detailArgs(Object? details) {
+  if (details is! Map) return const <String, String>{};
+  return <String, String>{
+    for (final MapEntry<dynamic, dynamic> e in details.entries)
+      if (e.key is String &&
+          e.key != 'type' &&
+          (e.value is String || e.value is num || e.value is bool))
+        e.key as String: '${e.value}',
+  };
 }
 
 /// Extracts a user-friendly, localized error message from an exception.

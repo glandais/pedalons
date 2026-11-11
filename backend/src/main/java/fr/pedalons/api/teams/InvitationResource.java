@@ -89,6 +89,13 @@ public class InvitationResource {
         description =
             "Signed in as someone else (TEAM_INVITE_EMAIL_MISMATCH), or the account's address is"
                 + " unverified (EMAIL_NOT_VERIFIED)",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "409",
+        description =
+            "The team's tier caps its members and the cap is reached since the invitation was sent"
+                + " (TEAM_MEMBER_LIMIT_REACHED, with the cap and the member count); the invitation"
+                + " stays pending",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   @RolesAllowed("user")

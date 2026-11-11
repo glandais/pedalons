@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/config/paths.generated.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
@@ -356,6 +357,48 @@ void main() {
 
       expect(find.text('Inviter'), findsNothing);
       expect(find.text('Gérer les membres'), findsOneWidget);
+    });
+
+    testWidgets('offre gratuite : « 24 / 25 membres », invitation ouverte', (
+      WidgetTester tester,
+    ) async {
+      final TeamDashboardDto d = _dashboard(role: 'ADMIN');
+      await renderBody(
+        tester,
+        d.copyWith(team: d.team.copyWith(memberCount: 24, memberLimit: 25)),
+      );
+
+      expect(find.text('24 / 25 membres'), findsOneWidget);
+      expect(find.byKey(keys.teamDashboard.memberLimitReached), findsNothing);
+      expect(
+        tester
+            .widget<PdlButton>(find.widgetWithText(PdlButton, 'Inviter'))
+            .enabled,
+        isTrue,
+      );
+    });
+
+    testWidgets('à la limite, l\'invitation est désactivée et dit pourquoi', (
+      WidgetTester tester,
+    ) async {
+      final TeamDashboardDto d = _dashboard(role: 'ADMIN');
+      await renderBody(
+        tester,
+        d.copyWith(team: d.team.copyWith(memberCount: 25, memberLimit: 25)),
+      );
+
+      expect(find.text('25 / 25 membres'), findsOneWidget);
+      expect(find.byKey(keys.teamDashboard.memberLimitReached), findsOneWidget);
+      expect(
+        find.textContaining('a atteint 25 membres, la limite de l\'offre'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<PdlButton>(find.widgetWithText(PdlButton, 'Inviter'))
+            .enabled,
+        isFalse,
+      );
     });
 
     testWidgets('se rend en mode sombre, à la largeur d\'un téléphone', (

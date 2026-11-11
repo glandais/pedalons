@@ -24,6 +24,8 @@ import { invalidateTeamSwitcher } from './teamSwitcherData'
 import type { TeamDetailDto } from '@/api/dto'
 import { paths } from '@/config/paths'
 import { useTeamAccess } from '@/lib/teamAccess'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { TeamFullNotice, isTeamFull } from './TeamMemberLimit'
 
 interface TeamLayoutProps {
   team: TeamDetailDto
@@ -60,6 +62,10 @@ export function TeamLayout({
   const { isMember, isOrganizer } = useTeamAccess(team)
   // `joinable` is what UserTeamAccessChecker enforces; without it the button only earns a 403.
   const canJoin = isAuthenticated && !isMember && team.visibility !== 'TEAM' && team.joinable
+  // A full free team refuses the join (TEAM_MEMBER_LIMIT_REACHED, docs/LEDGER_*.md BILL-10): the
+  // button gives way to the reason. A platform admin is exempt from the cap and keeps the button.
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
+  const joinBlockedByLimit = canJoin && isTeamFull(team) && !isPlatformAdmin
   const canLeave = isMember && team.role !== 'ADMIN'
 
   const joinMutation = useJoinTeam()
@@ -113,7 +119,13 @@ export function TeamLayout({
             <Group gap="sm">
               {actions}
 
-              {canJoin && (
+              {joinBlockedByLimit && team.memberLimit != null && (
+                <Box maw={360}>
+                  <TeamFullNotice limit={team.memberLimit} canContact={false} />
+                </Box>
+              )}
+
+              {canJoin && !joinBlockedByLimit && (
                 <Button onClick={handleJoin} loading={joinMutation.isPending}>
                   {joinMutation.isPending
                     ? t('teams.detail.actions.joining')

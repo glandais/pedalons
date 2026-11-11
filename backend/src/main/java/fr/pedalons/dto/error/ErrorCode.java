@@ -96,6 +96,12 @@ public enum ErrorCode {
   USER_TEAM_LIMIT_REACHED,
   TEAM_JOIN_NOT_ALLOWED,
   TEAM_ADD_MEMBER_NOT_ALLOWED,
+  /**
+   * The team is on a tier whose member cap is reached — HTTP 409, with {@link
+   * TeamMemberLimitDetails} carrying the cap and the count it was compared to (docs/LEDGER_*.md
+   * BILL-10).
+   */
+  TEAM_MEMBER_LIMIT_REACHED,
   // GPS service errors
   GPS_SERVICE_ALREADY_CONNECTED,
   GPS_SERVICE_NOT_CONNECTED,

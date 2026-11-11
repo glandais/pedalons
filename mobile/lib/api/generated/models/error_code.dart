@@ -130,6 +130,8 @@ enum ErrorCode {
   teamJoinNotAllowed('TEAM_JOIN_NOT_ALLOWED'),
   @JsonValue('TEAM_ADD_MEMBER_NOT_ALLOWED')
   teamAddMemberNotAllowed('TEAM_ADD_MEMBER_NOT_ALLOWED'),
+  @JsonValue('TEAM_MEMBER_LIMIT_REACHED')
+  teamMemberLimitReached('TEAM_MEMBER_LIMIT_REACHED'),
   @JsonValue('GPS_SERVICE_ALREADY_CONNECTED')
   gpsServiceAlreadyConnected('GPS_SERVICE_ALREADY_CONNECTED'),
   @JsonValue('GPS_SERVICE_NOT_CONNECTED')

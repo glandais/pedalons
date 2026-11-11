@@ -2349,6 +2349,7 @@ components:
       - USER_TEAM_LIMIT_REACHED
       - TEAM_JOIN_NOT_ALLOWED
       - TEAM_ADD_MEMBER_NOT_ALLOWED
+      - TEAM_MEMBER_LIMIT_REACHED
       - GPS_SERVICE_ALREADY_CONNECTED
       - GPS_SERVICE_NOT_CONNECTED
       - GPS_SERVICE_NOT_CONFIGURED
@@ -2411,6 +2412,7 @@ components:
       - $ref: "#/components/schemas/NotFoundDetails"
       - $ref: "#/components/schemas/AssetNotAvailableDetails"
       - $ref: "#/components/schemas/IncompatibleVisibilityDetails"
+      - $ref: "#/components/schemas/TeamMemberLimitDetails"
       description: Error details
       discriminator:
         propertyName: type
@@ -2419,6 +2421,7 @@ components:
           NOT_FOUND: "#/components/schemas/NotFoundDetails"
           ASSET_NOT_AVAILABLE: "#/components/schemas/AssetNotAvailableDetails"
           INCOMPATIBLE_VISIBILITY: "#/components/schemas/IncompatibleVisibilityDetails"
+          TEAM_MEMBER_LIMIT_REACHED: "#/components/schemas/TeamMemberLimitDetails"
       type: object
       properties:
         type:
@@ -7036,6 +7039,26 @@ components:
           type: integer
           format: int32
           description: Page size
+    TeamMemberLimitDetails:
+      type: object
+      required:
+      - type
+      - limit
+      - current
+      properties:
+        type:
+          description: Type
+          type: string
+          $ref: "#/components/schemas/ErrorCode"
+        limit:
+          type: integer
+          format: int32
+          description: Member cap of the team's tier
+        current:
+          type: integer
+          format: int64
+          description: "What was counted against the cap: active members, plus pending\
+            \ invitations when sending one"
     TeamPageDto:
       description: Team page detail
       type: object
@@ -12280,6 +12303,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "The team's tier caps its members and the cap is reached since\
+            \ the invitation was sent (TEAM_MEMBER_LIMIT_REACHED, with the cap and\
+            \ the member count); the invitation stays pending"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       security:
       - SecurityScheme:
         - user
@@ -14669,7 +14700,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "409":
-          description: The address already belongs to a member of this team
+          description: "The address already belongs to a member of this team (TEAM_INVITE_ALREADY_MEMBER),\
+            \ or the team's tier caps its members and members plus pending invitations\
+            \ reach the cap (TEAM_MEMBER_LIMIT_REACHED, with the cap and that count);\
+            \ a platform admin is exempt"
           content:
             application/json:
               schema:
@@ -14865,6 +14899,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "Already a member (ALREADY_REGISTERED), or the team's tier\
+            \ caps its members and the cap is reached (TEAM_MEMBER_LIMIT_REACHED,\
+            \ with the cap and the member count); a platform admin is exempt"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Unauthorized
           content:
@@ -14909,6 +14951,14 @@ paths:
                 $ref: "#/components/schemas/MemberDto"
         "400":
           description: Team is full or user is already a member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "Already a member (ALREADY_REGISTERED), or the team's tier\
+            \ caps its members and the cap is reached (TEAM_MEMBER_LIMIT_REACHED,\
+            \ with the cap and the member count)"
           content:
             application/json:
               schema:
@@ -20902,6 +20952,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "The team's tier caps its members and the cap is reached since\
+            \ the invitation was sent (TEAM_MEMBER_LIMIT_REACHED, with the cap and\
+            \ the member count); the invitation stays pending"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       security:
       - SecurityScheme:
         - user
@@ -21060,7 +21118,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 14.1.0
+  version: 14.2.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080
