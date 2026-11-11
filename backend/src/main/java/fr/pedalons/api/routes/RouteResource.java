@@ -583,6 +583,9 @@ public class RouteResource {
 
   @POST
   @Path("/{routeSlug}/preview")
+  // The request carries no body, so no Content-Type is sent either: without this the class-level
+  // @Consumes(APPLICATION_JSON) makes RESTEasy answer 415 (same as UserResource /me/export).
+  @Consumes(MediaType.WILDCARD)
   @Operation(
       operationId = "createPreviewFromRoute",
       summary = "Create an analysed GPX file from a route",

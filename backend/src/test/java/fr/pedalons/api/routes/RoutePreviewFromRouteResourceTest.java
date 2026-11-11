@@ -6,6 +6,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.dto.common.asset.MediaDto;
@@ -14,10 +16,13 @@ import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.builder.MultiPartSpecBuilder;
 import io.restassured.response.ValidatableResponse;
+import io.restassured.specification.MultiPartSpecification;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.core.MediaType;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +32,21 @@ import org.junit.jupiter.api.Test;
  */
 @QuarkusTest
 class RoutePreviewFromRouteResourceTest extends AbstractResourceTest {
+
+  @Inject ObjectMapper objectMapper;
+
+  /** The route part as UTF-8 bytes: RestAssured would write an accent as "?" in its default charset. */
+  private MultiPartSpecification routePart(Object route) {
+    try {
+      return new MultiPartSpecBuilder(
+              objectMapper.writeValueAsString(route).getBytes(StandardCharsets.UTF_8))
+          .controlName("route")
+          .mimeType(MediaType.APPLICATION_JSON)
+          .build();
+    } catch (JsonProcessingException e) {
+      throw new IllegalStateException(e);
+    }
+  }
 
   @Inject EntityManager em;
 
@@ -53,7 +73,7 @@ class RoutePreviewFromRouteResourceTest extends AbstractResourceTest {
     return given()
         .auth()
         .oauth2(getAccessToken(USER1))
-        .multiPart("route", request, MediaType.APPLICATION_JSON)
+        .multiPart(routePart(request))
         .when()
         .post("/api/teams/" + team1Slug + "/routes")
         .then()

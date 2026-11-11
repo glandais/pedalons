@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.TsidUtils;
@@ -42,11 +44,14 @@ import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.service.asset.AssetService;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.builder.MultiPartSpecBuilder;
 import io.restassured.response.ValidatableResponse;
+import io.restassured.specification.MultiPartSpecification;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.core.MediaType;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +64,21 @@ import org.junit.jupiter.api.Test;
  */
 @QuarkusTest
 class RouteDuplicateResourceTest extends AbstractResourceTest {
+
+  @Inject ObjectMapper objectMapper;
+
+  /** The route part as UTF-8 bytes: RestAssured would write an accent as "?" in its default charset. */
+  private MultiPartSpecification routePart(Object route) {
+    try {
+      return new MultiPartSpecBuilder(
+              objectMapper.writeValueAsString(route).getBytes(StandardCharsets.UTF_8))
+          .controlName("route")
+          .mimeType(MediaType.APPLICATION_JSON)
+          .build();
+    } catch (JsonProcessingException e) {
+      throw new IllegalStateException(e);
+    }
+  }
 
   private static final File EXAMPLE_GPX = new File("src/test/resources/example.gpx");
   private static final File IMAGE = new File("src/test/resources/image.png");
@@ -97,11 +117,7 @@ class RouteDuplicateResourceTest extends AbstractResourceTest {
   }
 
   private ValidatableResponse create(RouteRequest route, File gpx) {
-    var spec =
-        given()
-            .auth()
-            .oauth2(getAccessToken(USER1))
-            .multiPart("route", route, MediaType.APPLICATION_JSON);
+    var spec = given().auth().oauth2(getAccessToken(USER1)).multiPart(routePart(route));
     if (gpx != null) {
       spec = spec.multiPart("gpxFile", gpx, "application/gpx+xml");
     }
