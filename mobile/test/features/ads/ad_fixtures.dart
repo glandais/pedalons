@@ -1,5 +1,7 @@
 import 'package:pedalons/api/generated/export.dart';
 
+import '../../support/content_permissions.dart';
+
 /// Jeux de données du lot 5 pour les annonces.
 ///
 /// Un `AdDto` coûte treize champs obligatoires ; deux copies de ce coût
@@ -10,6 +12,7 @@ const MediaDto kEmptyMedia = MediaDto(
 );
 
 const TeamPublicationDto kAdTeam = TeamPublicationDto(
+  accessible: true,
   id: 't1',
   slug: 'n-peloton',
   name: 'N-Peloton',
@@ -31,6 +34,7 @@ AdDto fixtureAd({
   String createdByDisplayName = 'Jeanne Martin',
   MediaDto media = kEmptyMedia,
 }) => AdDto(
+  permissions: kNoPermissions,
   tags: const [],
   team: kAdTeam,
   id: 'ad-$slug',

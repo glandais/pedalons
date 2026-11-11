@@ -649,11 +649,12 @@ public class PublicationService {
     // The rows whose team's member names the caller may see — at most one query for the page, none
     // for a visitor or a platform admin (docs/LEDGER_*.md API-144). A non-member is sent the
     // counts, never the names: no participants, no leader, no signed author.
-    Set<Long> namedTeamIds =
-        memberNamesVisibility.teamsWithNames(
-            publications.items().stream()
-                .map(p -> p.getTeam().getId())
-                .collect(Collectors.toSet()));
+    // The same lookup gives every row its permissions block (docs/LEDGER_*.md API-176): who the
+    // caller is to each team of the page, still one query for the page.
+    Set<Long> pageTeamIds =
+        publications.items().stream().map(p -> p.getTeam().getId()).collect(Collectors.toSet());
+    CallerRoles caller = memberNamesVisibility.callerRoles(pageTeamIds);
+    Set<Long> namedTeamIds = caller.teamsWithNames(pageTeamIds);
     Set<Long> namedRideIds =
         itemsOfType(publications.items(), Ride.class).stream()
             .filter(r -> namedTeamIds.contains(r.getTeam().getId()))
@@ -686,6 +687,7 @@ public class PublicationService {
     // page without trips.
     Map<Long, ThemedThumbnail> tripThumbnails =
         thumbnailLookup.forTrips(itemsOfType(publications.items(), Trip.class));
+    ContentPermissions permissions = ContentPermissions.forList(caller);
     List<PublicationDto> dtos =
         publications.items().stream()
             .map(publication ->
@@ -704,6 +706,7 @@ public class PublicationService {
                     // Resolved with the participations: the joined groups' routes are only known
                     // there, and the page makes one sync lookup (docs/LEDGER_*.md API-120).
                     participations.gpsSync(),
+                    permissions,
                     view))
             .toList();
     return new PublicationListResponse(dtos, publications.total(), query.page(), query.size());

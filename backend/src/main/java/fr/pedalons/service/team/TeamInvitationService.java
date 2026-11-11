@@ -227,7 +227,7 @@ public class TeamInvitationService {
             // An invitation to a team they already belong to is noise, not an offer.
             .filter(i ->
                 userTeamRepository.findByUserAndTeam(user.getId(), i.getTeam().getId()).isEmpty())
-            .map(MyInvitationDto::from)
+            .map(i -> MyInvitationDto.from(i, user.isPlatformAdmin()))
             .toList();
     return new MyInvitationListResponse(invitations);
   }

@@ -31,6 +31,9 @@ _RouteDetailDto _$RouteDetailDtoFromJson(Map<String, dynamic> json) =>
       tags: (json['tags'] as List<dynamic>)
           .map((e) => TagDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      permissions: ContentPermissionsDto.fromJson(
+        json['permissions'] as Map<String, dynamic>,
+      ),
       start: json['start'] == null
           ? null
           : GeoJsonPoint.fromJson(json['start'] as Map<String, dynamic>),
@@ -68,6 +71,7 @@ Map<String, dynamic> _$RouteDetailDtoToJson(
   'waypoints': instance.waypoints.map((e) => e.toJson()).toList(),
   'deleted': instance.deleted,
   'tags': instance.tags.map((e) => e.toJson()).toList(),
+  'permissions': instance.permissions.toJson(),
   'start': instance.start?.toJson(),
   'end': instance.end?.toJson(),
   'createdBy': instance.createdBy?.toJson(),

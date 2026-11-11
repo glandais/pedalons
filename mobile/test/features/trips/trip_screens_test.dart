@@ -28,6 +28,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../support/localization.dart';
 import '../rides/ride_fixtures.dart';
 import 'trip_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// S24-1, S24-6, S25-2 et S25-4 — les deux écrans montés en entier.
 ///
@@ -112,6 +113,9 @@ class _StubTeamRepository implements TeamRepository {
   Future<List<TeamDetailDto>> getMyTeams() async => member
       ? <TeamDetailDto>[
           const TeamDetailDto(
+            allowedContentVisibilities: kAllContentVisibilities,
+            defaultContentVisibility: 'PUBLIC',
+            publicContentAllowed: false,
             timezone: 'Europe/Paris',
             id: 't1',
             slug: 'n-peloton',
@@ -937,6 +941,7 @@ void main() {
 
     // 68,2 km plein nord, une montée, deux points.
     final RouteDetailDto route = RouteDetailDto(
+      permissions: kNoPermissions,
       elevationState: 'HD',
       tags: const [],
       id: 'route-gtmc-j2',

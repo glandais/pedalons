@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'content_permissions_dto.dart';
 import 'instant.dart';
 import 'media_dto.dart';
 import 'place_detail_dto.dart';
@@ -31,8 +32,8 @@ part 'publication_dto.g.dart';
 sealed class PublicationDto with _$PublicationDto {
   @FreezedUnionValue('RIDE')
   const factory PublicationDto.ride({
-    /// Every group of the ride in sort order, as a card shows it: name, pace, start time and fill (countParticipants against maxParticipants). Filled on list rows too, where groups is empty — a card draws its per-group fill bars without opening the ride. Carries no leader nor participants: those are on groups, in the detail.
-    required List<RideGroupSummaryDto> groupSummaries,
+    /// Whether every group of the ride has reached its capacity. False when the ride has no group, or when at least one group has no maxParticipants.
+    required bool full,
 
     /// Publication ID (TSID)
     required String id,
@@ -76,14 +77,8 @@ sealed class PublicationDto with _$PublicationDto {
     /// Ride groups
     required List<RideGroupDto> groups,
 
-    /// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
-    required List<PublicUserDto> topParticipants,
-
-    /// Whether every group of the ride has reached its capacity. False when the ride has no group, or when at least one group has no maxParticipants.
-    required bool full,
-
-    /// Whether the current user is registered in one of this ride's groups. False if anonymous.
-    required bool registered,
+    /// Every group of the ride in sort order, as a card shows it: name, pace, start time and fill (countParticipants against maxParticipants). Filled on list rows too, where groups is empty — a card draws its per-group fill bars without opening the ride. Carries no leader nor participants: those are on groups, in the detail.
+    required List<RideGroupSummaryDto> groupSummaries,
 
     /// The team's RIDE tags the ride carries, sorted by label. Empty when it carries none.
     required List<TagDto> tags,
@@ -91,8 +86,14 @@ sealed class PublicationDto with _$PublicationDto {
     /// Whether the ride is soft-deleted
     required bool deleted,
 
-    /// Total elevation gain in meters, from the same route as distance. Null when no route is set anywhere.
-    double? elevationGain,
+    /// Whether the current user is registered in one of this ride's groups. False if anonymous.
+    required bool registered,
+
+    /// What the caller may do with the ride: edit, delete, register, comment, see who rides. allowedVisibilities is only on the detail.
+    required ContentPermissionsDto permissions,
+
+    /// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
+    required List<PublicUserDto> topParticipants,
 
     /// Surface type, from the same route as distance. Null when no route is set anywhere.
     String? surfaceType,
@@ -103,11 +104,11 @@ sealed class PublicationDto with _$PublicationDto {
     /// End place
     PlaceDetailDto? endPlace,
 
-    /// Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route.
-    List<RouteGpsSyncStatusDto>? gpsSyncStatuses,
+    /// Total elevation gain in meters, from the same route as distance. Null when no route is set anywhere.
+    double? elevationGain,
 
-    /// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
-    String? thumbnailLightUrl,
+    /// Creation timestamp
+    String? createdAt,
 
     /// Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailDarkUrl,
@@ -115,11 +116,11 @@ sealed class PublicationDto with _$PublicationDto {
     /// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailUrl,
 
-    /// Distance in meters of the ride's route — or, when the ride itself has none, of the route of its first group (in sort order) that has one. Null when no route is set anywhere.
-    double? distance,
-
     /// Route slug
     String? routeSlug,
+
+    /// Publication timestamp
+    String? publishAt,
 
     /// ID (TSID) of the group the current user joined, null if not registered
     String? registeredGroupId,
@@ -127,8 +128,8 @@ sealed class PublicationDto with _$PublicationDto {
     /// The group the current user joined, in full — the same object as the matching entry of groups. Null if not registered or anonymous. Set on list rows too, where groups is empty: a client rendering "my next ride" needs no second request for its group. Its leader is the group's own, null when none was designated.
     RideGroupDto? registeredGroup,
 
-    /// Creation timestamp
-    String? createdAt,
+    /// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
+    String? thumbnailLightUrl,
 
     /// Capacity of the whole ride: the sum of its groups' maxParticipants, to render participantCount against it ("12/40"). Null when the ride has no group, or when at least one group has no maxParticipants — the ride then has no overall limit, and is never full. Set on list rows too, where groups is empty.
     int? maxParticipants,
@@ -142,8 +143,11 @@ sealed class PublicationDto with _$PublicationDto {
     /// The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.
     RideWeatherSummaryDto? weather,
 
-    /// Publication timestamp
-    String? publishAt,
+    /// Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route.
+    List<RouteGpsSyncStatusDto>? gpsSyncStatuses,
+
+    /// Distance in meters of the ride's route — or, when the ride itself has none, of the route of its first group (in sort order) that has one. Null when no route is set anywhere.
+    double? distance,
   }) = PublicationDtoRide;
 
   @FreezedUnionValue('POST')
@@ -183,6 +187,9 @@ sealed class PublicationDto with _$PublicationDto {
 
     /// The team's POST tags the post carries, sorted by label. Empty when it carries none.
     required List<TagDto> tags,
+
+    /// What the caller may do with the post: edit, delete, comment. allowedVisibilities is only on the detail.
+    required ContentPermissionsDto permissions,
 
     /// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
     String? excerpt,
@@ -258,6 +265,9 @@ sealed class PublicationDto with _$PublicationDto {
 
     /// The team's TRIP tags the trip carries, sorted by label. Empty when it carries none.
     required List<TagDto> tags,
+
+    /// What the caller may do with the trip: edit, delete, register, comment, see who goes. allowedVisibilities is only on the detail.
+    required ContentPermissionsDto permissions,
 
     /// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
     String? excerpt,

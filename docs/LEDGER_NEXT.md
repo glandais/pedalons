@@ -719,7 +719,22 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       contenu des équipes privées, et les images d'un contenu public d'équipe privée sortent en
       `noindex`. Couvert par `PrivateTeamPublicContentResourceTest`, `ContentVisibilityRulesTest`,
       `AssetImageUrlTest`, `AdminTeamResourceTest`. Aucune équipe n'a le drapeau : rien ne change
-      tant que le site (`WEB-166`) n'est pas livré. Restent les lots 2 et 3.
+      tant que le site (`WEB-166`) n'est pas livré.
+      **Lot 2 fait le 11 novembre 2026** (contrat `13.7.0`) : bloc `permissions` des entités,
+      `accessible` du résumé d'équipe, `allowedContentVisibilities` et `defaultContentVisibility`
+      de l'équipe, champs requis ; les `*AccessChecker` et le bloc lisent la même règle
+      (`ContentPermissionsConsistencyTest`). Avec lui : `joinTrip` refuse un voyage non publié
+      pour tout le monde, le logo d'une équipe privée est public quand elle a le drapeau, et le préfixe d'image indexable est réservé à une entité « Public » d'une équipe
+      « Public ». Reste le lot 3.
+
+- [ ] `API-177` **Le rôle de l'appelant dans l'équipe, lu une fois par requête (S)** — sur un
+      détail, `PedalonsQueryContext.getContext` lit le rôle pour `@CheckAccess`
+      (`findByUserAndTeam`) sans le garder, puis `TeamEntityService.detailPermissions` le relit
+      pour le bloc `permissions` (`API-176`) : une requête de trop par détail, indépendante de la
+      taille de page. Le mémoïser par équipe dans le contexte de requête, en l'invalidant quand la
+      requête change l'appartenance (rejoindre, quitter, changer un rôle). Touche le contexte de
+      sécurité de tous les endpoints d'équipe : à faire à part, avec les `…QueryCountTest` pour
+      mesurer.
 
 ### Heure de départ : audit du 7 novembre 2026
 

@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../support/localization.dart';
 import '../rides/ride_fixtures.dart';
 import 'trip_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// La météo d'un voyage : la ligne de résumé des cartes d'étape (écran 24),
 /// et la section Météo de l'écran 25 dans ses états (ledger `MOB-134`,
@@ -47,6 +48,9 @@ class _Teams implements TeamRepository {
   @override
   Future<List<TeamDetailDto>> getMyTeams() async => <TeamDetailDto>[
     TeamDetailDto(
+      allowedContentVisibilities: kAllContentVisibilities,
+      defaultContentVisibility: 'PUBLIC',
+      publicContentAllowed: false,
       timezone: 'Europe/Paris',
       id: 't1',
       slug: 'n-peloton',

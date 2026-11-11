@@ -1,10 +1,13 @@
 import 'package:pedalons/api/generated/export.dart';
 
+import '../../support/content_permissions.dart';
+
 /// Jeux de données des modèles de sortie (ledger `MOB-78`), partagés par les
 /// tests du formulaire, de la liste et de l'éditeur : un `RideTemplateDto`
 /// compte une douzaine de champs obligatoires, et trois copies de ce coût
 /// divergent dès qu'un champ s'ajoute au contrat.
 const TeamPublicationDto kFixtureTemplateTeam = TeamPublicationDto(
+  accessible: true,
   id: 't1',
   slug: 'n-peloton',
   name: 'N-Peloton',
@@ -66,6 +69,9 @@ TeamDetailDto fixtureTemplateTeamDetail({
   String? role,
   String visibility = 'PUBLIC',
 }) => TeamDetailDto(
+  allowedContentVisibilities: kAllContentVisibilities,
+  defaultContentVisibility: 'PUBLIC',
+  publicContentAllowed: false,
   timezone: 'Europe/Paris',
   role: role,
   id: 't1',

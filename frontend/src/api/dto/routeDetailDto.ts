@@ -1,3 +1,4 @@
+import type { ContentPermissionsDto } from './contentPermissionsDto.ts'
 import type { ElevationState } from './elevationState.ts'
 import type { GeoJsonPoint } from './geoJsonPoint.ts'
 import type { Instant } from './instant.ts'
@@ -57,4 +58,6 @@ export interface RouteDetailDto {
   tags: TagDto[]
   /** Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it. */
   gpsSyncStatuses?: RouteGpsSyncStatusDto[]
+  /** What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only). */
+  permissions: ContentPermissionsDto
 }

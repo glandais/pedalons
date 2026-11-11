@@ -9,9 +9,7 @@ part of 'publication_dto.dart';
 PublicationDtoRide _$PublicationDtoRideFromJson(
   Map<String, dynamic> json,
 ) => PublicationDtoRide(
-  groupSummaries: (json['groupSummaries'] as List<dynamic>)
-      .map((e) => RideGroupSummaryDto.fromJson(e as Map<String, dynamic>))
-      .toList(),
+  full: json['full'] as bool,
   id: json['id'] as String,
   slug: json['slug'] as String,
   name: json['name'] as String,
@@ -28,16 +26,20 @@ PublicationDtoRide _$PublicationDtoRideFromJson(
   groups: (json['groups'] as List<dynamic>)
       .map((e) => RideGroupDto.fromJson(e as Map<String, dynamic>))
       .toList(),
-  topParticipants: (json['topParticipants'] as List<dynamic>)
-      .map((e) => PublicUserDto.fromJson(e as Map<String, dynamic>))
+  groupSummaries: (json['groupSummaries'] as List<dynamic>)
+      .map((e) => RideGroupSummaryDto.fromJson(e as Map<String, dynamic>))
       .toList(),
-  full: json['full'] as bool,
-  registered: json['registered'] as bool,
   tags: (json['tags'] as List<dynamic>)
       .map((e) => TagDto.fromJson(e as Map<String, dynamic>))
       .toList(),
   deleted: json['deleted'] as bool,
-  elevationGain: (json['elevationGain'] as num?)?.toDouble(),
+  registered: json['registered'] as bool,
+  permissions: ContentPermissionsDto.fromJson(
+    json['permissions'] as Map<String, dynamic>,
+  ),
+  topParticipants: (json['topParticipants'] as List<dynamic>)
+      .map((e) => PublicUserDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
   surfaceType: json['surfaceType'] as String?,
   startPlace: json['startPlace'] == null
       ? null
@@ -45,33 +47,34 @@ PublicationDtoRide _$PublicationDtoRideFromJson(
   endPlace: json['endPlace'] == null
       ? null
       : PlaceDetailDto.fromJson(json['endPlace'] as Map<String, dynamic>),
-  gpsSyncStatuses: (json['gpsSyncStatuses'] as List<dynamic>?)
-      ?.map((e) => RouteGpsSyncStatusDto.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  thumbnailLightUrl: json['thumbnailLightUrl'] as String?,
+  elevationGain: (json['elevationGain'] as num?)?.toDouble(),
+  createdAt: json['createdAt'] as String?,
   thumbnailDarkUrl: json['thumbnailDarkUrl'] as String?,
   thumbnailUrl: json['thumbnailUrl'] as String?,
-  distance: (json['distance'] as num?)?.toDouble(),
   routeSlug: json['routeSlug'] as String?,
+  publishAt: json['publishAt'] as String?,
   registeredGroupId: json['registeredGroupId'] as String?,
   registeredGroup: json['registeredGroup'] == null
       ? null
       : RideGroupDto.fromJson(json['registeredGroup'] as Map<String, dynamic>),
-  createdAt: json['createdAt'] as String?,
+  thumbnailLightUrl: json['thumbnailLightUrl'] as String?,
   maxParticipants: (json['maxParticipants'] as num?)?.toInt(),
   commentCount: (json['commentCount'] as num?)?.toInt(),
   excerpt: json['excerpt'] as String?,
   weather: json['weather'] == null
       ? null
       : RideWeatherSummaryDto.fromJson(json['weather'] as Map<String, dynamic>),
-  publishAt: json['publishAt'] as String?,
+  gpsSyncStatuses: (json['gpsSyncStatuses'] as List<dynamic>?)
+      ?.map((e) => RouteGpsSyncStatusDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  distance: (json['distance'] as num?)?.toDouble(),
   $type: json['type'] as String?,
 );
 
 Map<String, dynamic> _$PublicationDtoRideToJson(
   PublicationDtoRide instance,
 ) => <String, dynamic>{
-  'groupSummaries': instance.groupSummaries.map((e) => e.toJson()).toList(),
+  'full': instance.full,
   'id': instance.id,
   'slug': instance.slug,
   'name': instance.name,
@@ -86,29 +89,30 @@ Map<String, dynamic> _$PublicationDtoRideToJson(
   'participantCount': instance.participantCount,
   'groupCount': instance.groupCount,
   'groups': instance.groups.map((e) => e.toJson()).toList(),
-  'topParticipants': instance.topParticipants.map((e) => e.toJson()).toList(),
-  'full': instance.full,
-  'registered': instance.registered,
+  'groupSummaries': instance.groupSummaries.map((e) => e.toJson()).toList(),
   'tags': instance.tags.map((e) => e.toJson()).toList(),
   'deleted': instance.deleted,
-  'elevationGain': instance.elevationGain,
+  'registered': instance.registered,
+  'permissions': instance.permissions.toJson(),
+  'topParticipants': instance.topParticipants.map((e) => e.toJson()).toList(),
   'surfaceType': instance.surfaceType,
   'startPlace': instance.startPlace?.toJson(),
   'endPlace': instance.endPlace?.toJson(),
-  'gpsSyncStatuses': instance.gpsSyncStatuses?.map((e) => e.toJson()).toList(),
-  'thumbnailLightUrl': instance.thumbnailLightUrl,
+  'elevationGain': instance.elevationGain,
+  'createdAt': instance.createdAt,
   'thumbnailDarkUrl': instance.thumbnailDarkUrl,
   'thumbnailUrl': instance.thumbnailUrl,
-  'distance': instance.distance,
   'routeSlug': instance.routeSlug,
+  'publishAt': instance.publishAt,
   'registeredGroupId': instance.registeredGroupId,
   'registeredGroup': instance.registeredGroup?.toJson(),
-  'createdAt': instance.createdAt,
+  'thumbnailLightUrl': instance.thumbnailLightUrl,
   'maxParticipants': instance.maxParticipants,
   'commentCount': instance.commentCount,
   'excerpt': instance.excerpt,
   'weather': instance.weather?.toJson(),
-  'publishAt': instance.publishAt,
+  'gpsSyncStatuses': instance.gpsSyncStatuses?.map((e) => e.toJson()).toList(),
+  'distance': instance.distance,
   'type': instance.$type,
 };
 
@@ -128,6 +132,9 @@ PublicationDtoPost _$PublicationDtoPostFromJson(Map<String, dynamic> json) =>
       tags: (json['tags'] as List<dynamic>)
           .map((e) => TagDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      permissions: ContentPermissionsDto.fromJson(
+        json['permissions'] as Map<String, dynamic>,
+      ),
       excerpt: json['excerpt'] as String?,
       thumbnailUrl: json['thumbnailUrl'] as String?,
       publishAt: json['publishAt'] as String?,
@@ -153,6 +160,7 @@ Map<String, dynamic> _$PublicationDtoPostToJson(PublicationDtoPost instance) =>
       'deleted': instance.deleted,
       'signedAsTeam': instance.signedAsTeam,
       'tags': instance.tags.map((e) => e.toJson()).toList(),
+      'permissions': instance.permissions.toJson(),
       'excerpt': instance.excerpt,
       'thumbnailUrl': instance.thumbnailUrl,
       'publishAt': instance.publishAt,
@@ -188,6 +196,9 @@ PublicationDtoTrip _$PublicationDtoTripFromJson(Map<String, dynamic> json) =>
       tags: (json['tags'] as List<dynamic>)
           .map((e) => TagDto.fromJson(e as Map<String, dynamic>))
           .toList(),
+      permissions: ContentPermissionsDto.fromJson(
+        json['permissions'] as Map<String, dynamic>,
+      ),
       excerpt: json['excerpt'] as String?,
       endDate: json['endDate'] as String?,
       publishAt: json['publishAt'] as String?,
@@ -227,6 +238,7 @@ Map<String, dynamic> _$PublicationDtoTripToJson(PublicationDtoTrip instance) =>
       'deleted': instance.deleted,
       'registered': instance.registered,
       'tags': instance.tags.map((e) => e.toJson()).toList(),
+      'permissions': instance.permissions.toJson(),
       'excerpt': instance.excerpt,
       'endDate': instance.endDate,
       'publishAt': instance.publishAt,

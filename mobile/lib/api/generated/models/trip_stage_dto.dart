@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'content_permissions_dto.dart';
 import 'instant.dart';
 import 'media_dto.dart';
 import 'place_detail_dto.dart';
@@ -42,6 +43,9 @@ abstract class TripStageDto with _$TripStageDto {
 
     /// How many live stages the trip has — the '/ 5' of 'Day 2 / 5'.
     required int stageCount,
+
+    /// What the caller may do with the stage: comment on it, and edit or delete it — through its trip, which a stage is written with. No allowedVisibilities: a stage has its trip's visibility.
+    required ContentPermissionsDto permissions,
 
     /// Average speed in km/h
     double? averageSpeed,

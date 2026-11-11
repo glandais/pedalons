@@ -1,5 +1,7 @@
 import 'package:pedalons/api/generated/export.dart';
 
+import '../../support/content_permissions.dart';
+
 /// Jeux de données de l'éditeur de parcours (ledger `MOB-79`) : l'équipe, un
 /// parcours, et un GPX minimal.
 const MediaDto fixtureEmptyMedia = MediaDto(
@@ -12,6 +14,9 @@ TeamDetailDto fixtureRouteTeam({
   String visibility = 'PUBLIC',
   bool enableRoutes = true,
 }) => TeamDetailDto(
+  allowedContentVisibilities: kAllContentVisibilities,
+  defaultContentVisibility: 'PUBLIC',
+  publicContentAllowed: false,
   timezone: 'Europe/Paris',
   role: role,
   id: 't1',
@@ -45,10 +50,12 @@ RouteDetailDto fixtureRouteDetail({
   bool deleted = false,
   String createdBy = 'u9',
 }) => RouteDetailDto(
+  permissions: kNoPermissions,
   id: 'r1',
   slug: slug,
   elevationState: 'HD',
   team: const TeamPublicationDto(
+    accessible: true,
     id: 't1',
     slug: 'n-peloton',
     name: 'N-Peloton',

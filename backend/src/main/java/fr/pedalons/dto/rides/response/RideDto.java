@@ -7,6 +7,7 @@ import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.dto.comments.response.CommentCounts;
+import fr.pedalons.dto.common.ContentPermissionsDto;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.gps.response.RouteGpsSyncStatusDto;
 import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
@@ -26,6 +27,7 @@ import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.asset.ThumbnailLookup.ThemedThumbnail;
+import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.common.ParticipantPreviewLookup.ParticipantPreview;
 import fr.pedalons.service.common.ParticipantPreviewLookup.PreviewedParticipant;
 import fr.pedalons.service.publication.PublicationEndCalculator;
@@ -274,6 +276,13 @@ public class RideDto implements PublicationDto {
               + " Absent when there is none: anonymous caller, no such service, no route.")
   final List<RouteGpsSyncStatusDto> gpsSyncStatuses;
 
+  @Schema(
+      description =
+          "What the caller may do with the ride: edit, delete, register, comment, see who rides."
+              + " allowedVisibilities is only on the detail.",
+      required = true)
+  final ContentPermissionsDto permissions;
+
   public RideDto(
       TeamPublicationDto team,
       String id,
@@ -311,7 +320,8 @@ public class RideDto implements PublicationDto {
       @Nullable Integer commentCount,
       List<TagDto> tags,
       @Nullable RideWeatherSummaryDto weather,
-      @Nullable List<RouteGpsSyncStatusDto> gpsSyncStatuses) {
+      @Nullable List<RouteGpsSyncStatusDto> gpsSyncStatuses,
+      ContentPermissionsDto permissions) {
     super();
     this.team = team;
     this.id = id;
@@ -352,6 +362,7 @@ public class RideDto implements PublicationDto {
     this.tags = tags;
     this.weather = weather;
     this.gpsSyncStatuses = gpsSyncStatuses;
+    this.permissions = permissions;
   }
 
   /**
@@ -376,6 +387,8 @@ public class RideDto implements PublicationDto {
    *     groups' by {@code ParticipationLookup.forListPage} in one {@code GpsSyncLookup} call
    * @param view {@link ListViewMode#COMPACT} leaves the markdown body and the asset inventory out of the
    *     row; {@code excerpt} and {@code thumbnailUrl} carry what it renders instead
+   * @param permissions the caller's rights on the page, from one {@code CallerRoles} resolved for
+   *     the whole page (docs/LEDGER_*.md API-176)
    */
   public static RideDto fromListItem(
       Ride ride,
@@ -387,6 +400,7 @@ public class RideDto implements PublicationDto {
       RideWeatherSummaries weather,
       Map<Long, ThemedThumbnail> thumbnails,
       RouteGpsSyncStatuses gpsSync,
+      ContentPermissions permissions,
       @Nullable ListViewMode view) {
     return build(
         ride,
@@ -406,6 +420,7 @@ public class RideDto implements PublicationDto {
         weather,
         thumbnails.get(ride.getId()),
         gpsSync,
+        permissions,
         view);
   }
 
@@ -422,6 +437,8 @@ public class RideDto implements PublicationDto {
    *     {@code topParticipants} — the counts stay (docs/LEDGER_*.md API-144)
    * @param gpsSync the caller's sync statuses of the ride's route and of its groups', resolved at
    *     once by {@code GpsSyncLookup}
+   * @param permissions the caller's rights, resolved with the member names (docs/LEDGER_*.md
+   *     API-176)
    */
   public static RideDto from(
       Ride ride,
@@ -433,7 +450,8 @@ public class RideDto implements PublicationDto {
       List<TagDto> tags,
       RideWeatherSummaries weather,
       boolean withNames,
-      RouteGpsSyncStatuses gpsSync) {
+      RouteGpsSyncStatuses gpsSync,
+      ContentPermissions permissions) {
     Long registeredGroupId = participations.registeredGroupId(ride.getId());
     List<RideGroup> groups =
         ride.getGroups().stream().sorted(Comparator.comparing(RideGroup::getSortOrder)).toList();
@@ -513,6 +531,7 @@ public class RideDto implements PublicationDto {
         weather,
         ownOrRouteThumbnail(ride, assetService),
         gpsSync,
+        permissions,
         ListViewMode.FULL);
   }
 
@@ -567,6 +586,7 @@ public class RideDto implements PublicationDto {
       RideWeatherSummaries weather,
       @Nullable ThemedThumbnail thumbnail,
       RouteGpsSyncStatuses gpsSync,
+      ContentPermissions permissions,
       @Nullable ListViewMode view) {
     Place startPlace = ride.getStart();
     Place endPlace = ride.getEnd();
@@ -575,7 +595,7 @@ public class RideDto implements PublicationDto {
         ride.getRoute() != null ? metricsOf(ride.getRoute()) : firstGroupRoute;
 
     return new RideDto(
-        TeamPublicationDto.from(ride.getTeam()),
+        TeamPublicationDto.from(ride.getTeam(), permissions.teamAccessible(ride.getTeam())),
         TsidUtils.toString(ride.getId()),
         ride.getSlug(),
         ride.getName(),
@@ -611,6 +631,7 @@ public class RideDto implements PublicationDto {
         commentCount,
         tags,
         RideWeatherSummaryDto.fromNullable(weather.forRide(ride.getId())),
-        gpsSync.fieldFor(ride.getRoute() != null ? ride.getRoute().getId() : null));
+        gpsSync.fieldFor(ride.getRoute() != null ? ride.getRoute().getId() : null),
+        permissions.of(ride));
   }
 }

@@ -4,9 +4,14 @@ import 'package:pedalons/features/rides/domain/ride_form.dart'
     show kRideMarkdownMaxLength;
 import 'package:pedalons/features/routes/domain/route_form.dart';
 
+import '../../support/content_permissions.dart';
+
 /// Le formulaire d'un parcours (ledger `MOB-79`) : ce qui part au serveur, qui
 /// réécrit le parcours en entier.
 TeamDetailDto _team({String visibility = 'PUBLIC'}) => TeamDetailDto(
+  allowedContentVisibilities: kAllContentVisibilities,
+  defaultContentVisibility: 'PUBLIC',
+  publicContentAllowed: false,
   timezone: 'Europe/Paris',
   id: 't1',
   slug: 'n-peloton',
@@ -40,10 +45,12 @@ RouteDetailDto _route({
   List<TagDto> tags = const <TagDto>[],
   MediaDto? media,
 }) => RouteDetailDto(
+  permissions: kNoPermissions,
   id: 'r1',
   slug: 'col',
   elevationState: 'HD',
   team: const TeamPublicationDto(
+    accessible: true,
     id: 't1',
     slug: 'n-peloton',
     name: 'N-Peloton',

@@ -11,6 +11,7 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
 public class PostAccessChecker implements AccessChecker {
@@ -50,11 +51,19 @@ public class PostAccessChecker implements AccessChecker {
           // filtering done via SQL
           yield true;
         } else {
-          // organizer in post team
-          yield teamRole != null && teamRole.isOrganizer();
+          yield canWrite(team, teamRole);
         }
       }
       case LIST, LIST_ALL_TEAMS, LEAVE, JOIN -> false;
     };
+  }
+
+  /**
+   * {@code UPDATE} and {@code DELETE} of a post the caller can read: an organizer of its team,
+   * posts on. Shared with the permissions block ({@code ContentPermissions}, docs/LEDGER_*.md
+   * API-176); the platform admin's bypass is {@code SecurityVerifier}'s.
+   */
+  public static boolean canWrite(Team team, @Nullable TeamRole teamRole) {
+    return team.isEnablePosts() && teamRole != null && teamRole.isOrganizer();
   }
 }

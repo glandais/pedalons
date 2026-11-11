@@ -212,6 +212,37 @@ public class UserTeamRepository implements BaseRepository<UserTeam> {
   }
 
   /**
+   * The user's role in each of these teams they belong to — one query for a whole page, same
+   * live-only rules as {@link #findMemberTeamIds}. A team the user is not a member of is absent.
+   * What a page's permissions block and its member names both read (docs/LEDGER_*.md API-176): the
+   * key set is exactly {@link #findMemberTeamIds}, so one query answers both.
+   */
+  public Map<Long, TeamRole> findMemberRoles(Long userId, Long domainId, Collection<Long> teamIds) {
+    if (teamIds.isEmpty()) {
+      return Map.of();
+    }
+    Map<Long, TeamRole> roles = new java.util.HashMap<>();
+    for (Object[] row :
+        getEntityManager()
+            .createQuery(
+                "SELECT t.id, ut.role FROM UserTeam ut "
+                    + "JOIN ut.team t "
+                    + "JOIN ut.user u "
+                    + "WHERE ut.user.id = :userId AND t.id IN (:teamIds) "
+                    + "AND t.domain.id = :domainId "
+                    + "AND t.deleted = false "
+                    + "AND u.deleted = false",
+                Object[].class)
+            .setParameter("userId", userId)
+            .setParameter("teamIds", teamIds)
+            .setParameter("domainId", domainId)
+            .getResultList()) {
+      roles.put((Long) row[0], (TeamRole) row[1]);
+    }
+    return roles;
+  }
+
+  /**
    * Which of these teams the user is a member of — one query for a whole page.
    *
    * <p>Same rule as {@link #findByUserAndTeam} (any role counts, neither side soft-deleted), asked

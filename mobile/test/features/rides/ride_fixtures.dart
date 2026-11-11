@@ -1,5 +1,7 @@
 import 'package:pedalons/api/generated/export.dart';
 
+import '../../support/content_permissions.dart';
+
 /// Jeux de données du lot 2 pour les sorties.
 ///
 /// Partagés par les tests de la carte de groupe, du contrôleur d'inscription
@@ -47,10 +49,12 @@ RideDto fixtureRide({
 }) {
   final List<RideGroupDto> gs = groups ?? <RideGroupDto>[fixtureGroup()];
   return RideDto(
+    permissions: kNoPermissions,
     timezone: 'Europe/Paris',
     tags: const [],
     type: 'RIDE',
     team: const TeamPublicationDto(
+      accessible: true,
       id: 't1',
       slug: 'n-peloton',
       name: 'N-Peloton',

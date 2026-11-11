@@ -14,6 +14,7 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
 public class CommentAccessChecker implements AccessChecker {
@@ -35,7 +36,7 @@ public class CommentAccessChecker implements AccessChecker {
     User user = context.user();
     TeamRole teamRole = context.teamRole();
 
-    if (team == null || user == null || teamRole == null) {
+    if (team == null || user == null || !canComment(teamRole)) {
       return false;
     }
 
@@ -63,5 +64,16 @@ public class CommentAccessChecker implements AccessChecker {
       }
       case LIST_ALL_TEAMS, JOIN, LEAVE -> false;
     };
+  }
+
+  /**
+   * Reading and writing the comments of a team's content: a member of the team, whatever the
+   * content's visibility. Shared with the permissions block ({@code ContentPermissions},
+   * docs/LEDGER_*.md API-176), which also reports it as {@code canSeeParticipants}: the same
+   * {@code member || platformAdmin} rule as the member names (API-144). The platform admin's bypass
+   * is {@code SecurityVerifier}'s.
+   */
+  public static boolean canComment(@Nullable TeamRole teamRole) {
+    return teamRole != null;
   }
 }

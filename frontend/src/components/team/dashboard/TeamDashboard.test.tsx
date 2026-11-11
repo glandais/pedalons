@@ -46,7 +46,9 @@ const TEAM_REF = {
   name: 'VC Craponne',
   slug: 'vc-craponne',
   visibility: 'PUBLIC',
+  accessible: true,
 } as const
+const PERMISSIONS = { canEdit: false, canDelete: false, indexable: false }
 const MEDIA = { markdown: '', assets: { images: [], attachments: [] } }
 
 function team(overrides: Partial<TeamDetailDto> = {}): TeamDetailDto {
@@ -146,6 +148,7 @@ function post(): PostDto {
     createdBy: { id: 'u1', displayName: 'Martine L.' },
     commentCount: 4,
     tags: [],
+    permissions: PERMISSIONS,
   } as PostDto
 }
 
@@ -171,6 +174,7 @@ function trip(): TripDto {
     deleted: false,
     registered: true,
     tags: [],
+    permissions: PERMISSIONS,
   } as TripDto
 }
 
@@ -193,6 +197,7 @@ function ad(price?: number): AdDto {
     createdByDisplayName: 'Karim B.',
     deleted: false,
     tags: [],
+    permissions: PERMISSIONS,
   } as AdDto
 }
 

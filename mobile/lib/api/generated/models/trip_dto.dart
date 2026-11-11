@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'content_permissions_dto.dart';
 import 'instant.dart';
 import 'media_dto.dart';
 import 'public_user_dto.dart';
@@ -79,6 +80,9 @@ abstract class TripDto with _$TripDto {
 
     /// The team's TRIP tags the trip carries, sorted by label. Empty when it carries none.
     required List<TagDto> tags,
+
+    /// What the caller may do with the trip: edit, delete, register, comment, see who goes. allowedVisibilities is only on the detail.
+    required ContentPermissionsDto permissions,
 
     /// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
     String? excerpt,

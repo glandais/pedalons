@@ -4,6 +4,7 @@ import 'package:pedalons/features/rides/domain/ride_permissions.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_manage_menu.dart';
 
 import 'ride_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// La règle de `RideAccessChecker`, recopiée côté app (ledger `MOB-80`).
 void main() {
@@ -25,6 +26,9 @@ void main() {
   group('canManageTeamRoutes (MOB-79)', () {
     TeamDetailDto team({bool routes = true, bool rides = true}) =>
         TeamDetailDto(
+          allowedContentVisibilities: kAllContentVisibilities,
+          defaultContentVisibility: 'PUBLIC',
+          publicContentAllowed: false,
           timezone: 'Europe/Paris',
           id: 't1',
           slug: 'n-peloton',

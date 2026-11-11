@@ -4,6 +4,7 @@ import fr.pedalons.common.CoarseLocation;
 import fr.pedalons.common.MarkdownExcerpt;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.ad.Ad;
+import fr.pedalons.dto.common.ContentPermissionsDto;
 import fr.pedalons.dto.common.GeoJsonPoint;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.publications.response.TeamPublicationDto;
@@ -16,6 +17,7 @@ import fr.pedalons.enums.RentalPeriod;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.service.asset.AssetService;
+import fr.pedalons.service.common.ContentPermissions;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -92,21 +94,34 @@ public record AdDto(
             description =
                 "The team's AD tags the ad carries, sorted by label. Empty when it carries none.",
             required = true)
-        List<TagDto> tags) {
+        List<TagDto> tags,
+    @Schema(
+            description =
+                "What the caller may do with the ad: edit and delete (its author or a team admin)."
+                    + " allowedVisibilities, on the detail only, is always [TEAM].",
+            required = true)
+        ContentPermissionsDto permissions) {
 
-  public static AdDto from(Ad ad, AssetService assetService, ContentTags tags) {
-    return from(ad, assetService, tags, ListViewMode.FULL);
+  public static AdDto from(
+      Ad ad, AssetService assetService, ContentTags tags, ContentPermissions permissions) {
+    return from(ad, assetService, tags, permissions, ListViewMode.FULL);
   }
 
   /**
    * @param tags the tags of this whole page, resolved in one query by {@code TagLookup}
    * @param view {@link ListViewMode#COMPACT} leaves the description and the asset inventory out of the
    *     row; {@code excerpt} and {@code thumbnailUrl} carry what it renders instead
+   * @param permissions the caller's rights on the page, from one {@code CallerRoles} resolved for
+   *     the whole page (docs/LEDGER_*.md API-176)
    */
   public static AdDto from(
-      Ad ad, AssetService assetService, ContentTags tags, @Nullable ListViewMode view) {
+      Ad ad,
+      AssetService assetService,
+      ContentTags tags,
+      ContentPermissions permissions,
+      @Nullable ListViewMode view) {
     return new AdDto(
-        TeamPublicationDto.from(ad.getTeam()),
+        TeamPublicationDto.from(ad.getTeam(), permissions.teamAccessible(ad.getTeam())),
         TsidUtils.toString(ad.getId()),
         ad.getSlug(),
         ad.getName(),
@@ -128,6 +143,7 @@ public record AdDto(
         TsidUtils.toString(ad.getCreatedBy().getId()),
         ad.getCreatedBy().getDisplayName(),
         ad.isDeleted(),
-        tags.forContent(ad.getId()));
+        tags.forContent(ad.getId()),
+        permissions.of(ad));
   }
 }

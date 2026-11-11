@@ -43,6 +43,8 @@ import fr.pedalons.repository.ridetemplate.RideTemplateRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.service.asset.ThumbnailLookup;
 import fr.pedalons.service.comment.CommentCountLookup;
+import fr.pedalons.service.common.CallerRoles;
+import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.common.MemberNamesVisibility;
 import fr.pedalons.service.common.ParticipantPreviewLookup;
 import fr.pedalons.service.common.ParticipationLookup;
@@ -143,7 +145,9 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
             .toList();
     // One query for a logged-in caller, none for the others: only a member of the team is told who
     // rides (docs/LEDGER_*.md API-144).
-    boolean withNames = memberNamesVisibility.canSeeNames(entity.getTeam().getId());
+    // The same answer gives the permissions block (docs/LEDGER_*.md API-176).
+    CallerRoles caller = memberNamesVisibility.callerRoles(entity.getTeam().getId());
+    boolean withNames = caller.seesMembers(entity.getTeam().getId());
     // The ride's route and its groups', for where they stand at the caller's synced services: at
     // most two queries for all of them, none for a visitor (docs/LEDGER_*.md API-120).
     List<Long> syncedRouteIds = new ArrayList<>(groupRouteIds);
@@ -163,7 +167,8 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
         // the forecast window, at most one query otherwise.
         rideWeatherLookup.forRides(List.of(entity)),
         withNames,
-        gpsSyncLookup.forRoutes(syncedRouteIds));
+        gpsSyncLookup.forRoutes(syncedRouteIds),
+        ContentPermissions.forDetail(caller));
   }
 
   /**
@@ -639,8 +644,9 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
    */
   private void checkJoinable(RideGroup group) {
     // The clients hide « Rejoindre » once the group has left; the rule is here. Leaving stays
-    // open, to correct who actually came.
-    if (group.getStartAt().isBefore(Instant.now())) {
+    // open, to correct who actually came. RideGroup.hasLeft is also what the permissions block of a
+    // ride detail reads (docs/LEDGER_*.md API-176).
+    if (group.hasLeft(Instant.now())) {
       throw new ConflictException(ErrorCode.RIDE_PAST);
     }
     checkCapacity(group);

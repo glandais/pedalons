@@ -12,6 +12,7 @@ import 'package:pedalons/features/ads/providers/ad_list_provider.dart';
 
 import '../../support/localization.dart';
 import 'ad_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// S32-2 — la rubrique Annonces montée en entier.
 ///
@@ -49,6 +50,9 @@ class _StubAdRepository implements AdRepository {
 }
 
 const TeamDetailDto _team = TeamDetailDto(
+  allowedContentVisibilities: kAllContentVisibilities,
+  defaultContentVisibility: 'PUBLIC',
+  publicContentAllowed: false,
   timezone: 'Europe/Paris',
   id: 't1',
   slug: 'n-peloton',

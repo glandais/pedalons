@@ -1,5 +1,7 @@
 import 'package:pedalons/api/generated/export.dart';
 
+import '../../support/content_permissions.dart';
+
 /// Jeux de données du lot 5 pour les équipes, les membres et la découverte.
 const MediaDto kEmptyMedia = MediaDto(
   markdown: '',
@@ -7,6 +9,7 @@ const MediaDto kEmptyMedia = MediaDto(
 );
 
 const TeamPublicationDto kMemberTeam = TeamPublicationDto(
+  accessible: true,
   id: 't1',
   slug: 'n-peloton',
   name: 'N-Peloton',
@@ -26,6 +29,9 @@ TeamDetailDto fixtureTeam({
   int recentPostCount = 0,
   String? logoUrl,
 }) => TeamDetailDto(
+  allowedContentVisibilities: kAllContentVisibilities,
+  defaultContentVisibility: 'PUBLIC',
+  publicContentAllowed: false,
   timezone: 'Europe/Paris',
   id: 'team-$slug',
   slug: slug,

@@ -1,3 +1,4 @@
+import type { ContentPermissionsDto } from './contentPermissionsDto.ts'
 import type { MediaDto } from './mediaDto.ts'
 import type { TeamPublicationDto } from './teamPublicationDto.ts'
 import type { Visibility } from './visibility.ts'
@@ -22,4 +23,6 @@ export interface TeamPageDto {
   order: number
   /** Whether the page is soft-deleted */
   deleted: boolean
+  /** What the caller may do with the page: edit, delete (never the about page), and the visibilities it may be saved with. */
+  permissions: ContentPermissionsDto
 }

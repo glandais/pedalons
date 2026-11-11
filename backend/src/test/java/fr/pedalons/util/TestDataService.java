@@ -1055,6 +1055,13 @@ public class TestDataService {
     return attachAsset(managed.getAboutPage(), createdBy, AssetType.LOGO, "logo.png");
   }
 
+  /** Any asset on a team's about page, through the managed team ({@code aboutPage} is lazy). */
+  @Transactional
+  public Asset attachToAboutPage(Team team, User createdBy, AssetType type, String fileName) {
+    Team managed = teamRepository.findById(team.getId());
+    return attachAsset(managed.getAboutPage(), createdBy, type, fileName);
+  }
+
   /** Gives any team entity a markdown body — what {@code excerpt} and {@code view} are about. */
   @Transactional
   public void setMarkdown(TeamEntity entity, String markdown) {

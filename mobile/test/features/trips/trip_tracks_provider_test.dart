@@ -8,6 +8,7 @@ import 'package:pedalons/features/trips/providers/trip_detail_provider.dart';
 import 'package:pedalons/features/trips/providers/trip_tracks_provider.dart';
 
 import 'trip_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// S24-3 — le chargement des tracés d'un voyage.
 ///
@@ -47,6 +48,7 @@ class _CountingRouteRepository implements RouteRepository {
         for (final String slug in slugs)
           if (!failFor.contains(slug))
             RouteDetailDto(
+              permissions: kNoPermissions,
               elevationState: 'HD',
               tags: const [],
               id: 'r-$slug',

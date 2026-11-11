@@ -29,6 +29,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../support/localization.dart';
 import '../rides/ride_fixtures.dart';
 import 'trip_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// La carte du détail d'une étape en mode « Météo » (ledger `MOB-94`) : la
 /// carte de son parcours (`RouteSection` → `RouteMap`), comme
@@ -105,6 +106,7 @@ void main() {
   );
 
   final RouteDetailDto route = RouteDetailDto(
+    permissions: kNoPermissions,
     elevationState: 'HD',
     tags: const [],
     id: 'route-gtmc-j1',

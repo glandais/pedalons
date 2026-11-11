@@ -82,6 +82,16 @@ public class RideGroup extends BaseEntity {
     this.startAt = ride.getDateTime();
   }
 
+  /**
+   * Whether the group has left at {@code now}: from then on it takes no new registration ({@code
+   * RIDE_PAST}). The one test of the join endpoints ({@code RideService.checkJoinable}) and of the
+   * {@code canRegister} of a ride detail ({@code ContentPermissions}), docs/LEDGER_*.md API-170,
+   * API-176.
+   */
+  public boolean hasLeft(Instant now) {
+    return startAt.isBefore(now);
+  }
+
   public void addParticipation(RideParticipation participation) {
     participations.add(participation);
     participation.setRideGroup(this);

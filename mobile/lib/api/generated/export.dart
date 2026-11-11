@@ -98,6 +98,8 @@ export 'models/comment_request.dart';
 export 'models/compass_point.dart';
 export 'models/complete_request.dart';
 export 'models/config_dto.dart';
+export 'models/content_permissions_dto.dart';
+export 'models/content_visibilities_dto.dart';
 export 'models/count_response.dart';
 export 'models/create_domain_alias_request.dart';
 export 'models/create_domain_request.dart';

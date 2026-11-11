@@ -22,7 +22,13 @@ function route(deleted: boolean): RouteDto {
   return {
     id: '0abcdefghijkl',
     slug: 'boucle',
-    team: { id: '0team', name: 'Vélo club', slug: 'velo', visibility: Visibility.PUBLIC },
+    team: {
+      id: '0team',
+      name: 'Vélo club',
+      slug: 'velo',
+      visibility: Visibility.PUBLIC,
+      accessible: true,
+    },
     name: 'Boucle des étangs',
     media: defaultMedia(),
     distance: 42_000,
@@ -34,6 +40,7 @@ function route(deleted: boolean): RouteDto {
     createdAt: '2026-10-15T08:00:00Z',
     deleted,
     tags: [],
+    permissions: { canEdit: false, canDelete: false, canComment: false, indexable: true },
   }
 }
 

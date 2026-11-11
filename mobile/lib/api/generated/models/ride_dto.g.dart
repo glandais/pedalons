@@ -7,9 +7,7 @@ part of 'ride_dto.dart';
 // **************************************************************************
 
 _RideDto _$RideDtoFromJson(Map<String, dynamic> json) => _RideDto(
-  topParticipants: (json['topParticipants'] as List<dynamic>)
-      .map((e) => PublicUserDto.fromJson(e as Map<String, dynamic>))
-      .toList(),
+  full: json['full'] as bool,
   team: TeamPublicationDto.fromJson(json['team'] as Map<String, dynamic>),
   id: json['id'] as String,
   slug: json['slug'] as String,
@@ -30,13 +28,17 @@ _RideDto _$RideDtoFromJson(Map<String, dynamic> json) => _RideDto(
   groups: (json['groups'] as List<dynamic>)
       .map((e) => RideGroupDto.fromJson(e as Map<String, dynamic>))
       .toList(),
-  full: json['full'] as bool,
+  topParticipants: (json['topParticipants'] as List<dynamic>)
+      .map((e) => PublicUserDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
   tags: (json['tags'] as List<dynamic>)
       .map((e) => TagDto.fromJson(e as Map<String, dynamic>))
       .toList(),
   registered: json['registered'] as bool,
   deleted: json['deleted'] as bool,
-  elevationGain: (json['elevationGain'] as num?)?.toDouble(),
+  permissions: ContentPermissionsDto.fromJson(
+    json['permissions'] as Map<String, dynamic>,
+  ),
   surfaceType: json['surfaceType'] as String?,
   startPlace: json['startPlace'] == null
       ? null
@@ -44,30 +46,31 @@ _RideDto _$RideDtoFromJson(Map<String, dynamic> json) => _RideDto(
   endPlace: json['endPlace'] == null
       ? null
       : PlaceDetailDto.fromJson(json['endPlace'] as Map<String, dynamic>),
-  gpsSyncStatuses: (json['gpsSyncStatuses'] as List<dynamic>?)
-      ?.map((e) => RouteGpsSyncStatusDto.fromJson(e as Map<String, dynamic>))
-      .toList(),
+  elevationGain: (json['elevationGain'] as num?)?.toDouble(),
   thumbnailLightUrl: json['thumbnailLightUrl'] as String?,
   thumbnailDarkUrl: json['thumbnailDarkUrl'] as String?,
   thumbnailUrl: json['thumbnailUrl'] as String?,
   distance: (json['distance'] as num?)?.toDouble(),
-  publishAt: json['publishAt'] as String?,
+  routeSlug: json['routeSlug'] as String?,
   registeredGroupId: json['registeredGroupId'] as String?,
   registeredGroup: json['registeredGroup'] == null
       ? null
       : RideGroupDto.fromJson(json['registeredGroup'] as Map<String, dynamic>),
-  routeSlug: json['routeSlug'] as String?,
+  publishAt: json['publishAt'] as String?,
   maxParticipants: (json['maxParticipants'] as num?)?.toInt(),
   commentCount: (json['commentCount'] as num?)?.toInt(),
   createdAt: json['createdAt'] as String?,
   weather: json['weather'] == null
       ? null
       : RideWeatherSummaryDto.fromJson(json['weather'] as Map<String, dynamic>),
+  gpsSyncStatuses: (json['gpsSyncStatuses'] as List<dynamic>?)
+      ?.map((e) => RouteGpsSyncStatusDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
   excerpt: json['excerpt'] as String?,
 );
 
 Map<String, dynamic> _$RideDtoToJson(_RideDto instance) => <String, dynamic>{
-  'topParticipants': instance.topParticipants.map((e) => e.toJson()).toList(),
+  'full': instance.full,
   'team': instance.team.toJson(),
   'id': instance.id,
   'slug': instance.slug,
@@ -84,26 +87,27 @@ Map<String, dynamic> _$RideDtoToJson(_RideDto instance) => <String, dynamic>{
   'participantCount': instance.participantCount,
   'groupCount': instance.groupCount,
   'groups': instance.groups.map((e) => e.toJson()).toList(),
-  'full': instance.full,
+  'topParticipants': instance.topParticipants.map((e) => e.toJson()).toList(),
   'tags': instance.tags.map((e) => e.toJson()).toList(),
   'registered': instance.registered,
   'deleted': instance.deleted,
-  'elevationGain': instance.elevationGain,
+  'permissions': instance.permissions.toJson(),
   'surfaceType': instance.surfaceType,
   'startPlace': instance.startPlace?.toJson(),
   'endPlace': instance.endPlace?.toJson(),
-  'gpsSyncStatuses': instance.gpsSyncStatuses?.map((e) => e.toJson()).toList(),
+  'elevationGain': instance.elevationGain,
   'thumbnailLightUrl': instance.thumbnailLightUrl,
   'thumbnailDarkUrl': instance.thumbnailDarkUrl,
   'thumbnailUrl': instance.thumbnailUrl,
   'distance': instance.distance,
-  'publishAt': instance.publishAt,
+  'routeSlug': instance.routeSlug,
   'registeredGroupId': instance.registeredGroupId,
   'registeredGroup': instance.registeredGroup?.toJson(),
-  'routeSlug': instance.routeSlug,
+  'publishAt': instance.publishAt,
   'maxParticipants': instance.maxParticipants,
   'commentCount': instance.commentCount,
   'createdAt': instance.createdAt,
   'weather': instance.weather?.toJson(),
+  'gpsSyncStatuses': instance.gpsSyncStatuses?.map((e) => e.toJson()).toList(),
   'excerpt': instance.excerpt,
 };

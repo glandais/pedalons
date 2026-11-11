@@ -16,6 +16,7 @@ import 'package:pedalons/keys.dart';
 
 import '../../support/localization.dart';
 import 'ride_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// La pilule du parcours sélectionné, sur la carte d'une sortie à plusieurs
 /// parcours : posée par la coquille (`PdlMapHero.pill`), plus par les
@@ -40,6 +41,7 @@ void main() {
   ).copyWith(routeSlug: 'principal');
 
   RouteDetailDto route(String slug) => RouteDetailDto(
+    permissions: kNoPermissions,
     elevationState: 'HD',
     tags: const [],
     id: 'r-$slug',

@@ -20,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
 import 'route_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// L'éditeur de parcours (ledger `MOB-79`) : le refus pour qui n'organise pas,
 /// le contrôle du fichier, et surtout **ce qui part** — la requête et le
@@ -43,6 +44,7 @@ class _StubRoutes implements RouteRepository {
   ) async => detail;
 
   RouteDto _dto(String slug, String name) => RouteDto(
+    permissions: kNoPermissions,
     id: 'r1',
     slug: slug,
     elevationState: 'HD',

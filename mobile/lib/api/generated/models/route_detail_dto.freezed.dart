@@ -33,7 +33,8 @@ mixin _$RouteDetailDto {
  List<TrackDto> get tracks;/// Waypoints
  List<WaypointDto> get waypoints;/// Whether the route is soft-deleted
  bool get deleted;/// The team's ROUTE tags the route carries, sorted by label. Empty when it carries none.
- List<TagDto> get tags; GeoJsonPoint? get start; GeoJsonPoint? get end;/// Creator user. Absent when the caller is not a member of the team: member names are never sent to anyone else.
+ List<TagDto> get tags;/// What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only).
+ ContentPermissionsDto get permissions; GeoJsonPoint? get start; GeoJsonPoint? get end;/// Creator user. Absent when the caller is not a member of the team: member names are never sent to anyone else.
  PublicUserDto? get createdBy;/// Number of comments, replies included. Absent when the caller may not read the comments of this route — comments are members-only, so an outsider is told nothing, not even zero.
  int? get commentCount;/// Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it.
  List<RouteGpsSyncStatusDto>? get gpsSyncStatuses;
@@ -50,20 +51,20 @@ $RouteDetailDtoCopyWith<RouteDetailDto> get copyWith => _$RouteDetailDtoCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as RouteDetailDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouteDetailDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.team, _this.team) || other.team == _this.team)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.media, _this.media) || other.media == _this.media)&&(identical(other.distance, _this.distance) || other.distance == _this.distance)&&(identical(other.elevationGain, _this.elevationGain) || other.elevationGain == _this.elevationGain)&&(identical(other.elevationLoss, _this.elevationLoss) || other.elevationLoss == _this.elevationLoss)&&(identical(other.elevationState, _this.elevationState) || other.elevationState == _this.elevationState)&&(identical(other.surfaceType, _this.surfaceType) || other.surfaceType == _this.surfaceType)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt)&&const DeepCollectionEquality().equals(other.tracks, _this.tracks)&&const DeepCollectionEquality().equals(other.waypoints, _this.waypoints)&&(identical(other.deleted, _this.deleted) || other.deleted == _this.deleted)&&const DeepCollectionEquality().equals(other.tags, _this.tags)&&(identical(other.start, _this.start) || other.start == _this.start)&&(identical(other.end, _this.end) || other.end == _this.end)&&(identical(other.createdBy, _this.createdBy) || other.createdBy == _this.createdBy)&&(identical(other.commentCount, _this.commentCount) || other.commentCount == _this.commentCount)&&const DeepCollectionEquality().equals(other.gpsSyncStatuses, _this.gpsSyncStatuses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouteDetailDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.team, _this.team) || other.team == _this.team)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.media, _this.media) || other.media == _this.media)&&(identical(other.distance, _this.distance) || other.distance == _this.distance)&&(identical(other.elevationGain, _this.elevationGain) || other.elevationGain == _this.elevationGain)&&(identical(other.elevationLoss, _this.elevationLoss) || other.elevationLoss == _this.elevationLoss)&&(identical(other.elevationState, _this.elevationState) || other.elevationState == _this.elevationState)&&(identical(other.surfaceType, _this.surfaceType) || other.surfaceType == _this.surfaceType)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt)&&const DeepCollectionEquality().equals(other.tracks, _this.tracks)&&const DeepCollectionEquality().equals(other.waypoints, _this.waypoints)&&(identical(other.deleted, _this.deleted) || other.deleted == _this.deleted)&&const DeepCollectionEquality().equals(other.tags, _this.tags)&&(identical(other.permissions, _this.permissions) || other.permissions == _this.permissions)&&(identical(other.start, _this.start) || other.start == _this.start)&&(identical(other.end, _this.end) || other.end == _this.end)&&(identical(other.createdBy, _this.createdBy) || other.createdBy == _this.createdBy)&&(identical(other.commentCount, _this.commentCount) || other.commentCount == _this.commentCount)&&const DeepCollectionEquality().equals(other.gpsSyncStatuses, _this.gpsSyncStatuses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RouteDetailDto;
-  return Object.hashAll([runtimeType,_this.id,_this.slug,_this.team,_this.name,_this.media,_this.distance,_this.elevationGain,_this.elevationLoss,_this.elevationState,_this.surfaceType,_this.visibility,_this.createdAt,_this.updatedAt,const DeepCollectionEquality().hash(_this.tracks),const DeepCollectionEquality().hash(_this.waypoints),_this.deleted,const DeepCollectionEquality().hash(_this.tags),_this.start,_this.end,_this.createdBy,_this.commentCount,const DeepCollectionEquality().hash(_this.gpsSyncStatuses)]);
+  return Object.hashAll([runtimeType,_this.id,_this.slug,_this.team,_this.name,_this.media,_this.distance,_this.elevationGain,_this.elevationLoss,_this.elevationState,_this.surfaceType,_this.visibility,_this.createdAt,_this.updatedAt,const DeepCollectionEquality().hash(_this.tracks),const DeepCollectionEquality().hash(_this.waypoints),_this.deleted,const DeepCollectionEquality().hash(_this.tags),_this.permissions,_this.start,_this.end,_this.createdBy,_this.commentCount,const DeepCollectionEquality().hash(_this.gpsSyncStatuses)]);
 }
 
 @override
 String toString() {
   final _this = this as RouteDetailDto;
-  return 'RouteDetailDto(id: ${_this.id}, slug: ${_this.slug}, team: ${_this.team}, name: ${_this.name}, media: ${_this.media}, distance: ${_this.distance}, elevationGain: ${_this.elevationGain}, elevationLoss: ${_this.elevationLoss}, elevationState: ${_this.elevationState}, surfaceType: ${_this.surfaceType}, visibility: ${_this.visibility}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt}, tracks: ${_this.tracks}, waypoints: ${_this.waypoints}, deleted: ${_this.deleted}, tags: ${_this.tags}, start: ${_this.start}, end: ${_this.end}, createdBy: ${_this.createdBy}, commentCount: ${_this.commentCount}, gpsSyncStatuses: ${_this.gpsSyncStatuses})';
+  return 'RouteDetailDto(id: ${_this.id}, slug: ${_this.slug}, team: ${_this.team}, name: ${_this.name}, media: ${_this.media}, distance: ${_this.distance}, elevationGain: ${_this.elevationGain}, elevationLoss: ${_this.elevationLoss}, elevationState: ${_this.elevationState}, surfaceType: ${_this.surfaceType}, visibility: ${_this.visibility}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt}, tracks: ${_this.tracks}, waypoints: ${_this.waypoints}, deleted: ${_this.deleted}, tags: ${_this.tags}, permissions: ${_this.permissions}, start: ${_this.start}, end: ${_this.end}, createdBy: ${_this.createdBy}, commentCount: ${_this.commentCount}, gpsSyncStatuses: ${_this.gpsSyncStatuses})';
 }
 
 
@@ -74,11 +75,11 @@ abstract mixin class $RouteDetailDtoCopyWith<$Res>  {
   factory $RouteDetailDtoCopyWith(RouteDetailDto value, $Res Function(RouteDetailDto) _then) = _$RouteDetailDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String slug, TeamPublicationDto team, String name, MediaDto media, double distance, double elevationGain, double elevationLoss, String elevationState, String surfaceType, String visibility, String createdAt, String updatedAt, List<TrackDto> tracks, List<WaypointDto> waypoints, bool deleted, List<TagDto> tags, GeoJsonPoint? start, GeoJsonPoint? end, PublicUserDto? createdBy, int? commentCount, List<RouteGpsSyncStatusDto>? gpsSyncStatuses
+ String id, String slug, TeamPublicationDto team, String name, MediaDto media, double distance, double elevationGain, double elevationLoss, String elevationState, String surfaceType, String visibility, String createdAt, String updatedAt, List<TrackDto> tracks, List<WaypointDto> waypoints, bool deleted, List<TagDto> tags, ContentPermissionsDto permissions, GeoJsonPoint? start, GeoJsonPoint? end, PublicUserDto? createdBy, int? commentCount, List<RouteGpsSyncStatusDto>? gpsSyncStatuses
 });
 
 
-$TeamPublicationDtoCopyWith<$Res> get team;$MediaDtoCopyWith<$Res> get media;$GeoJsonPointCopyWith<$Res>? get start;$GeoJsonPointCopyWith<$Res>? get end;$PublicUserDtoCopyWith<$Res>? get createdBy;
+$TeamPublicationDtoCopyWith<$Res> get team;$MediaDtoCopyWith<$Res> get media;$ContentPermissionsDtoCopyWith<$Res> get permissions;$GeoJsonPointCopyWith<$Res>? get start;$GeoJsonPointCopyWith<$Res>? get end;$PublicUserDtoCopyWith<$Res>? get createdBy;
 
 }
 /// @nodoc
@@ -91,7 +92,7 @@ class _$RouteDetailDtoCopyWithImpl<$Res>
 
 /// Create a copy of RouteDetailDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? slug = null,Object? team = null,Object? name = null,Object? media = null,Object? distance = null,Object? elevationGain = null,Object? elevationLoss = null,Object? elevationState = null,Object? surfaceType = null,Object? visibility = null,Object? createdAt = null,Object? updatedAt = null,Object? tracks = null,Object? waypoints = null,Object? deleted = null,Object? tags = null,Object? start = freezed,Object? end = freezed,Object? createdBy = freezed,Object? commentCount = freezed,Object? gpsSyncStatuses = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? slug = null,Object? team = null,Object? name = null,Object? media = null,Object? distance = null,Object? elevationGain = null,Object? elevationLoss = null,Object? elevationState = null,Object? surfaceType = null,Object? visibility = null,Object? createdAt = null,Object? updatedAt = null,Object? tracks = null,Object? waypoints = null,Object? deleted = null,Object? tags = null,Object? permissions = null,Object? start = freezed,Object? end = freezed,Object? createdBy = freezed,Object? commentCount = freezed,Object? gpsSyncStatuses = freezed,}) {
   return _then(RouteDetailDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
@@ -110,7 +111,8 @@ as String,tracks: null == tracks ? _self.tracks : tracks // ignore: cast_nullabl
 as List<TrackDto>,waypoints: null == waypoints ? _self.waypoints : waypoints // ignore: cast_nullable_to_non_nullable
 as List<WaypointDto>,deleted: null == deleted ? _self.deleted : deleted // ignore: cast_nullable_to_non_nullable
 as bool,tags: null == tags ? _self.tags : tags // ignore: cast_nullable_to_non_nullable
-as List<TagDto>,start: freezed == start ? _self.start : start // ignore: cast_nullable_to_non_nullable
+as List<TagDto>,permissions: null == permissions ? _self.permissions : permissions // ignore: cast_nullable_to_non_nullable
+as ContentPermissionsDto,start: freezed == start ? _self.start : start // ignore: cast_nullable_to_non_nullable
 as GeoJsonPoint?,end: freezed == end ? _self.end : end // ignore: cast_nullable_to_non_nullable
 as GeoJsonPoint?,createdBy: freezed == createdBy ? _self.createdBy : createdBy // ignore: cast_nullable_to_non_nullable
 as PublicUserDto?,commentCount: freezed == commentCount ? _self.commentCount : commentCount // ignore: cast_nullable_to_non_nullable
@@ -135,6 +137,15 @@ $MediaDtoCopyWith<$Res> get media {
   
   return $MediaDtoCopyWith<$Res>(_self.media, (value) {
     return _then(_self.copyWith(media: value));
+  });
+}/// Create a copy of RouteDetailDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ContentPermissionsDtoCopyWith<$Res> get permissions {
+  
+  return $ContentPermissionsDtoCopyWith<$Res>(_self.permissions, (value) {
+    return _then(_self.copyWith(permissions: value));
   });
 }/// Create a copy of RouteDetailDto
 /// with the given fields replaced by the non-null parameter values.
@@ -254,10 +265,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String slug,  TeamPublicationDto team,  String name,  MediaDto media,  double distance,  double elevationGain,  double elevationLoss,  String elevationState,  String surfaceType,  String visibility,  String createdAt,  String updatedAt,  List<TrackDto> tracks,  List<WaypointDto> waypoints,  bool deleted,  List<TagDto> tags,  GeoJsonPoint? start,  GeoJsonPoint? end,  PublicUserDto? createdBy,  int? commentCount,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String slug,  TeamPublicationDto team,  String name,  MediaDto media,  double distance,  double elevationGain,  double elevationLoss,  String elevationState,  String surfaceType,  String visibility,  String createdAt,  String updatedAt,  List<TrackDto> tracks,  List<WaypointDto> waypoints,  bool deleted,  List<TagDto> tags,  ContentPermissionsDto permissions,  GeoJsonPoint? start,  GeoJsonPoint? end,  PublicUserDto? createdBy,  int? commentCount,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RouteDetailDto() when $default != null:
-return $default(_that.id,_that.slug,_that.team,_that.name,_that.media,_that.distance,_that.elevationGain,_that.elevationLoss,_that.elevationState,_that.surfaceType,_that.visibility,_that.createdAt,_that.updatedAt,_that.tracks,_that.waypoints,_that.deleted,_that.tags,_that.start,_that.end,_that.createdBy,_that.commentCount,_that.gpsSyncStatuses);case _:
+return $default(_that.id,_that.slug,_that.team,_that.name,_that.media,_that.distance,_that.elevationGain,_that.elevationLoss,_that.elevationState,_that.surfaceType,_that.visibility,_that.createdAt,_that.updatedAt,_that.tracks,_that.waypoints,_that.deleted,_that.tags,_that.permissions,_that.start,_that.end,_that.createdBy,_that.commentCount,_that.gpsSyncStatuses);case _:
   return orElse();
 
 }
@@ -275,10 +286,10 @@ return $default(_that.id,_that.slug,_that.team,_that.name,_that.media,_that.dist
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String slug,  TeamPublicationDto team,  String name,  MediaDto media,  double distance,  double elevationGain,  double elevationLoss,  String elevationState,  String surfaceType,  String visibility,  String createdAt,  String updatedAt,  List<TrackDto> tracks,  List<WaypointDto> waypoints,  bool deleted,  List<TagDto> tags,  GeoJsonPoint? start,  GeoJsonPoint? end,  PublicUserDto? createdBy,  int? commentCount,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String slug,  TeamPublicationDto team,  String name,  MediaDto media,  double distance,  double elevationGain,  double elevationLoss,  String elevationState,  String surfaceType,  String visibility,  String createdAt,  String updatedAt,  List<TrackDto> tracks,  List<WaypointDto> waypoints,  bool deleted,  List<TagDto> tags,  ContentPermissionsDto permissions,  GeoJsonPoint? start,  GeoJsonPoint? end,  PublicUserDto? createdBy,  int? commentCount,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses)  $default,) {final _that = this;
 switch (_that) {
 case _RouteDetailDto():
-return $default(_that.id,_that.slug,_that.team,_that.name,_that.media,_that.distance,_that.elevationGain,_that.elevationLoss,_that.elevationState,_that.surfaceType,_that.visibility,_that.createdAt,_that.updatedAt,_that.tracks,_that.waypoints,_that.deleted,_that.tags,_that.start,_that.end,_that.createdBy,_that.commentCount,_that.gpsSyncStatuses);case _:
+return $default(_that.id,_that.slug,_that.team,_that.name,_that.media,_that.distance,_that.elevationGain,_that.elevationLoss,_that.elevationState,_that.surfaceType,_that.visibility,_that.createdAt,_that.updatedAt,_that.tracks,_that.waypoints,_that.deleted,_that.tags,_that.permissions,_that.start,_that.end,_that.createdBy,_that.commentCount,_that.gpsSyncStatuses);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -295,10 +306,10 @@ return $default(_that.id,_that.slug,_that.team,_that.name,_that.media,_that.dist
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String slug,  TeamPublicationDto team,  String name,  MediaDto media,  double distance,  double elevationGain,  double elevationLoss,  String elevationState,  String surfaceType,  String visibility,  String createdAt,  String updatedAt,  List<TrackDto> tracks,  List<WaypointDto> waypoints,  bool deleted,  List<TagDto> tags,  GeoJsonPoint? start,  GeoJsonPoint? end,  PublicUserDto? createdBy,  int? commentCount,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String slug,  TeamPublicationDto team,  String name,  MediaDto media,  double distance,  double elevationGain,  double elevationLoss,  String elevationState,  String surfaceType,  String visibility,  String createdAt,  String updatedAt,  List<TrackDto> tracks,  List<WaypointDto> waypoints,  bool deleted,  List<TagDto> tags,  ContentPermissionsDto permissions,  GeoJsonPoint? start,  GeoJsonPoint? end,  PublicUserDto? createdBy,  int? commentCount,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses)?  $default,) {final _that = this;
 switch (_that) {
 case _RouteDetailDto() when $default != null:
-return $default(_that.id,_that.slug,_that.team,_that.name,_that.media,_that.distance,_that.elevationGain,_that.elevationLoss,_that.elevationState,_that.surfaceType,_that.visibility,_that.createdAt,_that.updatedAt,_that.tracks,_that.waypoints,_that.deleted,_that.tags,_that.start,_that.end,_that.createdBy,_that.commentCount,_that.gpsSyncStatuses);case _:
+return $default(_that.id,_that.slug,_that.team,_that.name,_that.media,_that.distance,_that.elevationGain,_that.elevationLoss,_that.elevationState,_that.surfaceType,_that.visibility,_that.createdAt,_that.updatedAt,_that.tracks,_that.waypoints,_that.deleted,_that.tags,_that.permissions,_that.start,_that.end,_that.createdBy,_that.commentCount,_that.gpsSyncStatuses);case _:
   return null;
 
 }
@@ -310,7 +321,7 @@ return $default(_that.id,_that.slug,_that.team,_that.name,_that.media,_that.dist
 @JsonSerializable()
 
 class _RouteDetailDto implements RouteDetailDto {
-  const _RouteDetailDto({required this.id, required this.slug, required this.team, required this.name, required this.media, required this.distance, required this.elevationGain, required this.elevationLoss, required this.elevationState, required this.surfaceType, required this.visibility, required this.createdAt, required this.updatedAt, required  List<TrackDto> tracks, required  List<WaypointDto> waypoints, required this.deleted, required  List<TagDto> tags, this.start, this.end, this.createdBy, this.commentCount,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses}): _tracks = tracks,_waypoints = waypoints,_tags = tags,_gpsSyncStatuses = gpsSyncStatuses;
+  const _RouteDetailDto({required this.id, required this.slug, required this.team, required this.name, required this.media, required this.distance, required this.elevationGain, required this.elevationLoss, required this.elevationState, required this.surfaceType, required this.visibility, required this.createdAt, required this.updatedAt, required  List<TrackDto> tracks, required  List<WaypointDto> waypoints, required this.deleted, required  List<TagDto> tags, required this.permissions, this.start, this.end, this.createdBy, this.commentCount,  List<RouteGpsSyncStatusDto>? gpsSyncStatuses}): _tracks = tracks,_waypoints = waypoints,_tags = tags,_gpsSyncStatuses = gpsSyncStatuses;
   factory _RouteDetailDto.fromJson(Map<String, dynamic> json) => _$RouteDetailDtoFromJson(json);
 
 /// Route ID (TSID)
@@ -368,6 +379,8 @@ class _RouteDetailDto implements RouteDetailDto {
   return EqualUnmodifiableListView(_tags);
 }
 
+/// What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only).
+@override final  ContentPermissionsDto permissions;
 @override final  GeoJsonPoint? start;
 @override final  GeoJsonPoint? end;
 /// Creator user. Absent when the caller is not a member of the team: member names are never sent to anyone else.
@@ -399,18 +412,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouteDetailDto&&(identical(other.id, id) || other.id == id)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.team, team) || other.team == team)&&(identical(other.name, name) || other.name == name)&&(identical(other.media, media) || other.media == media)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.elevationGain, elevationGain) || other.elevationGain == elevationGain)&&(identical(other.elevationLoss, elevationLoss) || other.elevationLoss == elevationLoss)&&(identical(other.elevationState, elevationState) || other.elevationState == elevationState)&&(identical(other.surfaceType, surfaceType) || other.surfaceType == surfaceType)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other.tracks, _tracks)&&const DeepCollectionEquality().equals(other.waypoints, _waypoints)&&(identical(other.deleted, deleted) || other.deleted == deleted)&&const DeepCollectionEquality().equals(other.tags, _tags)&&(identical(other.start, start) || other.start == start)&&(identical(other.end, end) || other.end == end)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.commentCount, commentCount) || other.commentCount == commentCount)&&const DeepCollectionEquality().equals(other.gpsSyncStatuses, _gpsSyncStatuses));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouteDetailDto&&(identical(other.id, id) || other.id == id)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.team, team) || other.team == team)&&(identical(other.name, name) || other.name == name)&&(identical(other.media, media) || other.media == media)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.elevationGain, elevationGain) || other.elevationGain == elevationGain)&&(identical(other.elevationLoss, elevationLoss) || other.elevationLoss == elevationLoss)&&(identical(other.elevationState, elevationState) || other.elevationState == elevationState)&&(identical(other.surfaceType, surfaceType) || other.surfaceType == surfaceType)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other.tracks, _tracks)&&const DeepCollectionEquality().equals(other.waypoints, _waypoints)&&(identical(other.deleted, deleted) || other.deleted == deleted)&&const DeepCollectionEquality().equals(other.tags, _tags)&&(identical(other.permissions, permissions) || other.permissions == permissions)&&(identical(other.start, start) || other.start == start)&&(identical(other.end, end) || other.end == end)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.commentCount, commentCount) || other.commentCount == commentCount)&&const DeepCollectionEquality().equals(other.gpsSyncStatuses, _gpsSyncStatuses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,id,slug,team,name,media,distance,elevationGain,elevationLoss,elevationState,surfaceType,visibility,createdAt,updatedAt,const DeepCollectionEquality().hash(_tracks),const DeepCollectionEquality().hash(_waypoints),deleted,const DeepCollectionEquality().hash(_tags),start,end,createdBy,commentCount,const DeepCollectionEquality().hash(_gpsSyncStatuses)]);
+    return Object.hashAll([runtimeType,id,slug,team,name,media,distance,elevationGain,elevationLoss,elevationState,surfaceType,visibility,createdAt,updatedAt,const DeepCollectionEquality().hash(_tracks),const DeepCollectionEquality().hash(_waypoints),deleted,const DeepCollectionEquality().hash(_tags),permissions,start,end,createdBy,commentCount,const DeepCollectionEquality().hash(_gpsSyncStatuses)]);
 }
 
 @override
 String toString() {
-    return 'RouteDetailDto(id: $id, slug: $slug, team: $team, name: $name, media: $media, distance: $distance, elevationGain: $elevationGain, elevationLoss: $elevationLoss, elevationState: $elevationState, surfaceType: $surfaceType, visibility: $visibility, createdAt: $createdAt, updatedAt: $updatedAt, tracks: $tracks, waypoints: $waypoints, deleted: $deleted, tags: $tags, start: $start, end: $end, createdBy: $createdBy, commentCount: $commentCount, gpsSyncStatuses: $gpsSyncStatuses)';
+    return 'RouteDetailDto(id: $id, slug: $slug, team: $team, name: $name, media: $media, distance: $distance, elevationGain: $elevationGain, elevationLoss: $elevationLoss, elevationState: $elevationState, surfaceType: $surfaceType, visibility: $visibility, createdAt: $createdAt, updatedAt: $updatedAt, tracks: $tracks, waypoints: $waypoints, deleted: $deleted, tags: $tags, permissions: $permissions, start: $start, end: $end, createdBy: $createdBy, commentCount: $commentCount, gpsSyncStatuses: $gpsSyncStatuses)';
 }
 
 
@@ -421,11 +434,11 @@ abstract mixin class _$RouteDetailDtoCopyWith<$Res> implements $RouteDetailDtoCo
   factory _$RouteDetailDtoCopyWith(_RouteDetailDto value, $Res Function(_RouteDetailDto) _then) = __$RouteDetailDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String slug, TeamPublicationDto team, String name, MediaDto media, double distance, double elevationGain, double elevationLoss, String elevationState, String surfaceType, String visibility, String createdAt, String updatedAt, List<TrackDto> tracks, List<WaypointDto> waypoints, bool deleted, List<TagDto> tags, GeoJsonPoint? start, GeoJsonPoint? end, PublicUserDto? createdBy, int? commentCount, List<RouteGpsSyncStatusDto>? gpsSyncStatuses
+ String id, String slug, TeamPublicationDto team, String name, MediaDto media, double distance, double elevationGain, double elevationLoss, String elevationState, String surfaceType, String visibility, String createdAt, String updatedAt, List<TrackDto> tracks, List<WaypointDto> waypoints, bool deleted, List<TagDto> tags, ContentPermissionsDto permissions, GeoJsonPoint? start, GeoJsonPoint? end, PublicUserDto? createdBy, int? commentCount, List<RouteGpsSyncStatusDto>? gpsSyncStatuses
 });
 
 
-@override $TeamPublicationDtoCopyWith<$Res> get team;@override $MediaDtoCopyWith<$Res> get media;@override $GeoJsonPointCopyWith<$Res>? get start;@override $GeoJsonPointCopyWith<$Res>? get end;@override $PublicUserDtoCopyWith<$Res>? get createdBy;
+@override $TeamPublicationDtoCopyWith<$Res> get team;@override $MediaDtoCopyWith<$Res> get media;@override $ContentPermissionsDtoCopyWith<$Res> get permissions;@override $GeoJsonPointCopyWith<$Res>? get start;@override $GeoJsonPointCopyWith<$Res>? get end;@override $PublicUserDtoCopyWith<$Res>? get createdBy;
 
 }
 /// @nodoc
@@ -438,7 +451,7 @@ class __$RouteDetailDtoCopyWithImpl<$Res>
 
 /// Create a copy of RouteDetailDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? slug = null,Object? team = null,Object? name = null,Object? media = null,Object? distance = null,Object? elevationGain = null,Object? elevationLoss = null,Object? elevationState = null,Object? surfaceType = null,Object? visibility = null,Object? createdAt = null,Object? updatedAt = null,Object? tracks = null,Object? waypoints = null,Object? deleted = null,Object? tags = null,Object? start = freezed,Object? end = freezed,Object? createdBy = freezed,Object? commentCount = freezed,Object? gpsSyncStatuses = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? slug = null,Object? team = null,Object? name = null,Object? media = null,Object? distance = null,Object? elevationGain = null,Object? elevationLoss = null,Object? elevationState = null,Object? surfaceType = null,Object? visibility = null,Object? createdAt = null,Object? updatedAt = null,Object? tracks = null,Object? waypoints = null,Object? deleted = null,Object? tags = null,Object? permissions = null,Object? start = freezed,Object? end = freezed,Object? createdBy = freezed,Object? commentCount = freezed,Object? gpsSyncStatuses = freezed,}) {
   return _then(_RouteDetailDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
@@ -457,7 +470,8 @@ as String,tracks: null == tracks ? _self._tracks : tracks // ignore: cast_nullab
 as List<TrackDto>,waypoints: null == waypoints ? _self._waypoints : waypoints // ignore: cast_nullable_to_non_nullable
 as List<WaypointDto>,deleted: null == deleted ? _self.deleted : deleted // ignore: cast_nullable_to_non_nullable
 as bool,tags: null == tags ? _self._tags : tags // ignore: cast_nullable_to_non_nullable
-as List<TagDto>,start: freezed == start ? _self.start : start // ignore: cast_nullable_to_non_nullable
+as List<TagDto>,permissions: null == permissions ? _self.permissions : permissions // ignore: cast_nullable_to_non_nullable
+as ContentPermissionsDto,start: freezed == start ? _self.start : start // ignore: cast_nullable_to_non_nullable
 as GeoJsonPoint?,end: freezed == end ? _self.end : end // ignore: cast_nullable_to_non_nullable
 as GeoJsonPoint?,createdBy: freezed == createdBy ? _self.createdBy : createdBy // ignore: cast_nullable_to_non_nullable
 as PublicUserDto?,commentCount: freezed == commentCount ? _self.commentCount : commentCount // ignore: cast_nullable_to_non_nullable
@@ -483,6 +497,15 @@ $MediaDtoCopyWith<$Res> get media {
   
   return $MediaDtoCopyWith<$Res>(_self.media, (value) {
     return _then(_self.copyWith(media: value));
+  });
+}/// Create a copy of RouteDetailDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ContentPermissionsDtoCopyWith<$Res> get permissions {
+  
+  return $ContentPermissionsDtoCopyWith<$Res>(_self.permissions, (value) {
+    return _then(_self.copyWith(permissions: value));
   });
 }/// Create a copy of RouteDetailDto
 /// with the given fields replaced by the non-null parameter values.

@@ -56,6 +56,15 @@ public class Ride extends Publication {
     group.setRide(this);
   }
 
+  /**
+   * Whether one of the groups has not left yet at {@code now} — {@link RideGroup#hasLeft}, the test
+   * a join applies to the group it is asked for. False for a ride without a group: there is nothing
+   * to join. Walks {@link #getGroups()}: for a detail, never a list row (docs/LEDGER_*.md API-176).
+   */
+  public boolean hasGroupStillToLeave(Instant now) {
+    return groups.stream().anyMatch(group -> !group.hasLeft(now));
+  }
+
   public int getParticipantCount() {
     return groups.stream().mapToInt(RideGroup::getCurrentParticipants).sum();
   }

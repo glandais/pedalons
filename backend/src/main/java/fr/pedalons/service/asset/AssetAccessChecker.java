@@ -8,6 +8,7 @@ import fr.pedalons.enums.ActionType;
 import fr.pedalons.enums.EntityType;
 import fr.pedalons.enums.TeamRole;
 import fr.pedalons.repository.asset.AssetRepository;
+import fr.pedalons.service.common.ContentVisibilityRules;
 import fr.pedalons.service.security.AccessChecker;
 import fr.pedalons.service.security.Context;
 import fr.pedalons.service.security.PedalonsQueryContext;
@@ -62,6 +63,15 @@ public class AssetAccessChecker implements AccessChecker {
           yield user != null
               && teamRole != null
               && asset.getCreatedBy().getId().equals(user.getId());
+        }
+        // The logo of a private team that publishes by link: readable by anyone, since its public
+        // content embeds it (TeamPublicationDto.logoUrl). The logo only — Team.logoAssetId, the
+        // formula that DTO reads — never the rest of the about page. Read off the team already
+        // loaded: no query, members and open teams included (docs/LEDGER_*.md API-176).
+        if (action == ActionType.READ
+            && ContentVisibilityRules.privateTeamLogoIsPublic(team)
+            && asset.getId().equals(team.getLogoAssetId())) {
+          yield true;
         }
         // User can read asset if he has rights to see related entity
         securityVerifier.verifyAccess(

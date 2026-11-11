@@ -93,8 +93,13 @@ const AccountDeletionImpactDto _noImpact = AccountDeletionImpactDto(
   migratedTeams: <TeamPublicationDto>[],
 );
 
-TeamPublicationDto _team(String name) =>
-    TeamPublicationDto(id: name, name: name, slug: name, visibility: 'TEAM');
+TeamPublicationDto _team(String name) => TeamPublicationDto(
+  accessible: true,
+  id: name,
+  name: name,
+  slug: name,
+  visibility: 'TEAM',
+);
 
 class _StubProfileRepository implements ProfileRepository {
   _StubProfileRepository([this.impact = _noImpact]);

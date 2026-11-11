@@ -63,7 +63,7 @@ public record AdEditDto(
   public static AdEditDto from(
       Ad ad, AssetService assetService, boolean exactLocation, List<TagDto> tags) {
     return new AdEditDto(
-        TeamPublicationDto.from(ad.getTeam()),
+        TeamPublicationDto.ofMember(ad.getTeam()),
         TsidUtils.toString(ad.getId()),
         ad.getSlug(),
         ad.getName(),

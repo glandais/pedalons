@@ -40,9 +40,20 @@ public abstract class TeamEntityService<
 
   @Inject protected ContentVisibilityRules contentVisibilityRules;
 
+  @Inject protected MemberNamesVisibility callerRolesLookup;
+
   protected abstract R getRepository();
 
   protected abstract D toDto(T entity);
+
+  /**
+   * The caller's rights on one entity, for a detail or a write's answer: one query for a logged-in
+   * caller, none for the others (docs/LEDGER_*.md API-176). A detail that also needs the member
+   * names resolves {@link MemberNamesVisibility#callerRoles} itself and reuses it for both.
+   */
+  protected ContentPermissions detailPermissions(TeamEntity entity) {
+    return ContentPermissions.forDetail(callerRolesLookup.callerRoles(entity.getTeam().getId()));
+  }
 
   protected D getDto(Team team, String entitySlug) {
     T entity = findBySlug(team, entitySlug);

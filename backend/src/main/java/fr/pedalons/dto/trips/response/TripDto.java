@@ -6,6 +6,7 @@ import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.dto.comments.response.CommentCounts;
+import fr.pedalons.dto.common.ContentPermissionsDto;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.publications.response.PublicationDto;
@@ -22,6 +23,7 @@ import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.asset.ThumbnailLookup.ThemedThumbnail;
+import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.common.ParticipantPreviewLookup.ParticipantPreview;
 import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.weather.RideWeatherSummaries;
@@ -208,6 +210,13 @@ public class TripDto implements PublicationDto {
               + " getTripWeather; present only with status OK, STALE or NOT_YET_AVAILABLE.")
   final RideWeatherSummaryDto weather;
 
+  @Schema(
+      description =
+          "What the caller may do with the trip: edit, delete, register, comment, see who goes."
+              + " allowedVisibilities is only on the detail.",
+      required = true)
+  final ContentPermissionsDto permissions;
+
   public TripDto(
       TeamPublicationDto team,
       String id,
@@ -237,7 +246,8 @@ public class TripDto implements PublicationDto {
       boolean registered,
       @Nullable Integer commentCount,
       List<TagDto> tags,
-      @Nullable RideWeatherSummaryDto weather) {
+      @Nullable RideWeatherSummaryDto weather,
+      ContentPermissionsDto permissions) {
     super();
     this.team = team;
     this.id = id;
@@ -270,6 +280,7 @@ public class TripDto implements PublicationDto {
     this.commentCount = commentCount;
     this.tags = tags;
     this.weather = weather;
+    this.permissions = permissions;
   }
 
   /**
@@ -302,6 +313,7 @@ public class TripDto implements PublicationDto {
       ContentTags tags,
       RideWeatherSummaries weather,
       Map<Long, ThemedThumbnail> thumbnails,
+      ContentPermissions permissions,
       @Nullable ListViewMode view) {
     return build(
         trip,
@@ -319,6 +331,7 @@ public class TripDto implements PublicationDto {
         RideWeatherSummaryDto.fromNullable(
             weather.forTrip(trip.getId()), weather.zoneForTrip(trip.getId())),
         thumbnails.get(trip.getId()),
+        permissions,
         view);
   }
 
@@ -339,7 +352,8 @@ public class TripDto implements PublicationDto {
       CommentCounts commentCounts,
       ParticipantPreview participants,
       ContentTags tags,
-      RouteGpsSyncStatuses gpsSync) {
+      RouteGpsSyncStatuses gpsSync,
+      ContentPermissions permissions) {
     List<TripStage> liveStages =
         trip.getStages().stream()
             .filter(s -> !s.isDeleted())
@@ -355,6 +369,7 @@ public class TripDto implements PublicationDto {
                     tags,
                     commentCounts,
                     gpsSync,
+                    permissions,
                     i + 1,
                     liveStages.size()))
             .toList();
@@ -375,6 +390,7 @@ public class TripDto implements PublicationDto {
         tags.forContent(trip.getId()),
         null,
         ownOrRouteThumbnail(trip, assetService),
+        permissions,
         ListViewMode.FULL);
   }
 
@@ -450,9 +466,10 @@ public class TripDto implements PublicationDto {
       List<TagDto> tags,
       @Nullable RideWeatherSummaryDto weather,
       @Nullable ThemedThumbnail thumbnail,
+      ContentPermissions permissions,
       @Nullable ListViewMode view) {
     return new TripDto(
-        TeamPublicationDto.from(trip.getTeam()),
+        TeamPublicationDto.from(trip.getTeam(), permissions.teamAccessible(trip.getTeam())),
         TsidUtils.toString(trip.getId()),
         trip.getSlug(),
         trip.getName(),
@@ -480,6 +497,7 @@ public class TripDto implements PublicationDto {
         registered,
         commentCount,
         tags,
-        weather);
+        weather,
+        permissions.of(trip));
   }
 }

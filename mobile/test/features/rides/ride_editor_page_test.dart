@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
 import 'ride_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// L'éditeur de sortie (ledger `MOB-80`) : le refus pour qui n'organise pas,
 /// et surtout **ce qui part** — la requête que le serveur appliquera champ par
@@ -69,6 +70,9 @@ class _StubEditor implements RideEditorRepository {
 }
 
 TeamDetailDto _team({String? role}) => TeamDetailDto(
+  allowedContentVisibilities: kAllContentVisibilities,
+  defaultContentVisibility: 'PUBLIC',
+  publicContentAllowed: false,
   timezone: 'Europe/Paris',
   role: role,
   id: 't1',

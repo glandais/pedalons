@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'content_permissions_dto.dart';
 import 'media_dto.dart';
 import 'team_publication_dto.dart';
 import 'visibility.dart';
@@ -38,6 +39,9 @@ abstract class TeamPageDto with _$TeamPageDto {
 
     /// Whether the page is soft-deleted
     required bool deleted,
+
+    /// What the caller may do with the page: edit, delete (never the about page), and the visibilities it may be saved with.
+    required ContentPermissionsDto permissions,
   }) = _TeamPageDto;
 
   factory TeamPageDto.fromJson(Map<String, Object?> json) =>

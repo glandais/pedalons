@@ -12,6 +12,7 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
 public class AdAccessChecker implements AccessChecker {
@@ -52,11 +53,24 @@ public class AdAccessChecker implements AccessChecker {
           // filtering done via SQL
           yield true;
         } else {
-          // only for admin/ad creator
-          yield teamRole.isAdmin() || ad.getCreatedBy().getId().equals(user.getId());
+          yield canWrite(team, teamRole, ad, user.getId());
         }
       }
       case LIST_ALL_TEAMS, JOIN, LEAVE -> false;
     };
+  }
+
+  /**
+   * {@code UPDATE} and {@code DELETE} of an ad the caller can read: ads on, and an admin of its team
+   * or its author while still a member. Shared with the permissions block ({@code
+   * ContentPermissions}, docs/LEDGER_*.md API-176); the platform admin's bypass is {@code
+   * SecurityVerifier}'s.
+   */
+  public static boolean canWrite(
+      Team team, @Nullable TeamRole teamRole, Ad ad, @Nullable Long userId) {
+    return team.isEnableAds()
+        && teamRole != null
+        && userId != null
+        && (teamRole.isAdmin() || ad.getCreatedBy().getId().equals(userId));
   }
 }

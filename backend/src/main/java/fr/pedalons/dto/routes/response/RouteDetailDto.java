@@ -4,6 +4,7 @@ import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.route.GpxWaypoint;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.dto.comments.response.CommentCounts;
+import fr.pedalons.dto.common.ContentPermissionsDto;
 import fr.pedalons.dto.common.GeoJsonPoint;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.gps.response.RouteGpsSyncStatusDto;
@@ -18,6 +19,7 @@ import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.enums.WaypointType;
 import fr.pedalons.service.asset.AssetService;
+import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.route.ClimbNaming.NamedPoint;
 import fr.pedalons.service.surface.RouteSurfaces;
 import java.time.Instant;
@@ -92,7 +94,14 @@ public record RouteDetailDto(
                     + " uploaded by hand), sorted by service. Only ever about the caller's own"
                     + " connections. Absent when there is none — anonymous caller, no such"
                     + " service, or a response that does not report it.")
-        List<RouteGpsSyncStatusDto> gpsSyncStatuses) {
+        List<RouteGpsSyncStatusDto> gpsSyncStatuses,
+    @Schema(
+            description =
+                "What the caller may do with the route: edit, delete, comment, and the"
+                    + " visibilities it may be saved with (allowedVisibilities, on this detail"
+                    + " only).",
+            required = true)
+        ContentPermissionsDto permissions) {
 
   /**
    * The route detail.
@@ -110,6 +119,8 @@ public record RouteDetailDto(
    *     createdBy} is left out (docs/LEDGER_*.md API-144)
    * @param gpsSync the caller's sync statuses of the route — of the whole batch on the bulk path —
    *     from {@code GpsSyncLookup}
+   * @param permissions the caller's rights, from the {@code CallerRoles} that also decides {@code
+   *     withCreator} (docs/LEDGER_*.md API-176)
    */
   public static RouteDetailDto from(
       Route route,
@@ -119,11 +130,12 @@ public record RouteDetailDto(
       boolean withGeometry,
       RouteSurfaces surfaces,
       boolean withCreator,
-      RouteGpsSyncStatuses gpsSync) {
+      RouteGpsSyncStatuses gpsSync,
+      ContentPermissions permissions) {
     return new RouteDetailDto(
         TsidUtils.toString(route.getId()),
         route.getSlug(),
-        TeamPublicationDto.from(route.getTeam()),
+        TeamPublicationDto.from(route.getTeam(), permissions.teamAccessible(route.getTeam())),
         route.getName(),
         MediaDto.from(route, assetService),
         route.getDistance(),
@@ -146,7 +158,8 @@ public record RouteDetailDto(
         route.isDeleted(),
         commentCounts.forEntity(route.getId()),
         tags.forContent(route.getId()),
-        gpsSync.fieldFor(route.getId()));
+        gpsSync.fieldFor(route.getId()),
+        permissions.of(route));
   }
 
   /** The route's waypoints, to name the climbs they mark (docs/LEDGER_*.md API-10). */

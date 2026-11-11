@@ -2,9 +2,13 @@ package fr.pedalons.repository.common;
 
 import fr.pedalons.domain.common.SearchClause;
 import fr.pedalons.domain.common.TeamEntity;
+import fr.pedalons.domain.team.Team;
+import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.dto.common.PedalonsPage;
 import fr.pedalons.enums.EntityType;
+import fr.pedalons.enums.Status;
 import fr.pedalons.enums.TeamEntityType;
+import fr.pedalons.enums.Visibility;
 import fr.pedalons.repository.query.AndClause;
 import fr.pedalons.repository.query.OrClause;
 import fr.pedalons.repository.query.PedalonsQuery;
@@ -180,6 +184,53 @@ public interface TeamEntityRepository<T extends TeamEntity, Q extends TeamEntity
         getEntityManager().createQuery(pedalonsQuery.getStringQuery(), Object[].class);
     pedalonsQuery.getParams().forEach(typedQuery::setParameter);
     return typedQuery.setMaxResults(limit).getResultList();
+  }
+
+  /**
+   * Whether this one entity is what {@link #findIndexable} would announce — the {@code indexable}
+   * of its permissions block (docs/LEDGER_*.md API-176), which a client turns into {@code noindex}.
+   * The same clauses, read off an entity in hand rather than run as SQL: the anonymous listing of
+   * {@link #getPedalonsQuery} (entity {@code PUBLIC}, published or cancelled, not hidden by
+   * moderation, not an ad, not deleted, team not deleted, module on) plus the team clause of
+   * {@code findIndexable} (team {@code PUBLIC}). A private team's public content is readable by
+   * link only and never indexed (decision D1). Keep the two in step: {@code
+   * ContentIndexingTest} fails when they disagree.
+   *
+   * <p>A route follows the rule even though the sitemap leaves routes out: its page is still a
+   * public page a search engine may reach. A stage carries its trip's answer.
+   */
+  static boolean isIndexable(TeamEntity entity) {
+    if (entity instanceof TripStage stage) {
+      // The sitemap lists the live stages of the indexable trips.
+      return !stage.isDeleted() && isIndexable(stage.getTrip());
+    }
+    Team team = entity.getTeam();
+    boolean moduleOn =
+        switch (entity.getEntityType()) {
+          case RIDE -> team.isEnableRides() && team.isEnableRoutes();
+          case TRIP -> team.isEnableTrips() && team.isEnableRoutes();
+          case POST -> team.isEnablePosts();
+          case ROUTE -> team.isEnableRoutes();
+          case TEAM_PAGE -> true;
+          default -> false;
+        };
+    return moduleOn
+        && isIndexableVisibility(entity.getVisibility(), team.getVisibility())
+        && (entity.getStatus() == Status.PUBLISHED || entity.getStatus() == Status.CANCELLED)
+        && entity.getModerationHiddenAt() == null
+        && !entity.isDeleted()
+        && !team.isDeleted();
+  }
+
+  /**
+   * The visibility part of {@link #isIndexable} and of {@link #findIndexable}: entity {@code
+   * PUBLIC} and team {@code PUBLIC}. Also what picks the indexable {@code public} prefix of an
+   * asset URL ({@code AssetService.buildImageUrl}): the images and files of content that may not be
+   * indexed get a prefix {@code ApiNoIndexFilter} sends {@code noindex} with (docs/LEDGER_*.md
+   * API-176, decision D1).
+   */
+  static boolean isIndexableVisibility(Visibility entityVisibility, Visibility teamVisibility) {
+    return entityVisibility == Visibility.PUBLIC && teamVisibility == Visibility.PUBLIC;
   }
 
   default PedalonsQuery getPedalonsQuery(Q query, boolean list, QueryShape shape) {

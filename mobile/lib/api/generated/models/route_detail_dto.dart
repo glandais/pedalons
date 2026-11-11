@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'content_permissions_dto.dart';
 import 'elevation_state.dart';
 import 'geo_json_point.dart';
 import 'instant.dart';
@@ -74,6 +75,9 @@ abstract class RouteDetailDto with _$RouteDetailDto {
 
     /// The team's ROUTE tags the route carries, sorted by label. Empty when it carries none.
     required List<TagDto> tags,
+
+    /// What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only).
+    required ContentPermissionsDto permissions,
     GeoJsonPoint? start,
     GeoJsonPoint? end,
 

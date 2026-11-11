@@ -18,6 +18,7 @@ import fr.pedalons.enums.ListViewMode;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.asset.ThumbnailLookup.ThemedThumbnail;
+import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.weather.RideWeatherSummaries;
 import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.media.DiscriminatorMapping;
@@ -80,6 +81,8 @@ public interface PublicationDto {
    *     loaded in one query by {@code ThumbnailLookup.forTrips}
    * @param gpsSync where the page's ride routes stand at the caller's synced GPS services, loaded
    *     with the participations by {@code ParticipationLookup.forListPage}
+   * @param permissions the caller's rights on the page, from the {@code CallerRoles} the member
+   *     names were resolved with (docs/LEDGER_*.md API-176)
    */
   static PublicationDto from(
       Publication publication,
@@ -94,9 +97,11 @@ public interface PublicationDto {
       Map<Long, ThemedThumbnail> rideThumbnails,
       Map<Long, ThemedThumbnail> tripThumbnails,
       RouteGpsSyncStatuses gpsSync,
+      ContentPermissions permissions,
       @Nullable ListViewMode view) {
     return switch (publication) {
-      case Post post -> PostDto.from(post, assetService, commentCounts, postAuthors, tags, view);
+      case Post post ->
+          PostDto.from(post, assetService, commentCounts, postAuthors, tags, permissions, view);
       case Ride ride ->
           RideDto.fromListItem(
               ride,
@@ -108,6 +113,7 @@ public interface PublicationDto {
               rideWeather,
               rideThumbnails,
               gpsSync,
+              permissions,
               view);
       case Trip trip ->
           TripDto.fromListItem(
@@ -119,6 +125,7 @@ public interface PublicationDto {
               tags,
               tripWeather,
               tripThumbnails,
+              permissions,
               view);
       default -> throw new IllegalStateException("Invalid Publication object");
     };

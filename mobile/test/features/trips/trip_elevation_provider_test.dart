@@ -7,6 +7,7 @@ import 'package:pedalons/features/trips/providers/trip_detail_provider.dart';
 import 'package:pedalons/features/trips/providers/trip_elevation_provider.dart';
 
 import 'trip_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// S24-4 — le profil global d'un voyage.
 ///
@@ -59,6 +60,7 @@ class _FakeRouteRepository implements RouteRepository {
 /// Une étape rectiligne de quatre sommets, montant de 100 à 130 m, dont la
 /// mesure `M` repart de zéro — comme le fait tout tracé du serveur.
 RouteDetailDto _route(String slug, double distance) => RouteDetailDto(
+  permissions: kNoPermissions,
   elevationState: 'HD',
   tags: const [],
   id: 'r-$slug',

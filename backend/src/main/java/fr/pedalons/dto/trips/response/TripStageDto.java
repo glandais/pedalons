@@ -3,6 +3,7 @@ package fr.pedalons.dto.trips.response;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.dto.comments.response.CommentCounts;
+import fr.pedalons.dto.common.ContentPermissionsDto;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.places.response.PlaceDetailDto;
@@ -10,6 +11,7 @@ import fr.pedalons.dto.routes.response.RouteDto;
 import fr.pedalons.dto.tags.response.ContentTags;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.service.asset.AssetService;
+import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.publication.PublicationEndCalculator.LegEstimate;
 import java.time.Instant;
@@ -67,7 +69,14 @@ public record TripStageDto(
             description =
                 "Minutes from dateTime to estimatedArrival, rounded. Absent when"
                     + " estimatedArrival is.")
-        Integer estimatedDurationMinutes) {
+        Integer estimatedDurationMinutes,
+    @Schema(
+            description =
+                "What the caller may do with the stage: comment on it, and edit or delete it —"
+                    + " through its trip, which a stage is written with. No allowedVisibilities: a"
+                    + " stage has its trip's visibility.",
+            required = true)
+        ContentPermissionsDto permissions) {
 
   /**
    * @param routeTags the tags of the stage's route, resolved with the trip's own by {@code
@@ -78,6 +87,7 @@ public record TripStageDto(
    *     CommentCountLookup}
    * @param gpsSync the caller's sync statuses of the stages' routes, resolved with the whole trip
    *     by {@code GpsSyncLookup} — never one lookup per stage
+   * @param permissions the caller's rights, resolved with the trip's (docs/LEDGER_*.md API-176)
    */
   public static TripStageDto from(
       TripStage stage,
@@ -85,6 +95,7 @@ public record TripStageDto(
       ContentTags routeTags,
       CommentCounts commentCounts,
       RouteGpsSyncStatuses gpsSync,
+      ContentPermissions permissions,
       int stageIndex,
       int stageCount) {
     LegEstimate estimate = PublicationEndCalculator.estimate(stage);
@@ -96,7 +107,13 @@ public record TripStageDto(
         stage.zone().getId(),
         stage.getAverageSpeed(),
         stage.getRoute() != null
-            ? RouteDto.from(stage.getRoute(), assetService, CommentCounts.NONE, routeTags, gpsSync)
+            ? RouteDto.from(
+                stage.getRoute(),
+                assetService,
+                CommentCounts.NONE,
+                routeTags,
+                gpsSync,
+                permissions.embedded())
             : null,
         stage.getStartPlace() != null ? PlaceDetailDto.from(stage.getStartPlace()) : null,
         stage.getEndPlace() != null ? PlaceDetailDto.from(stage.getEndPlace()) : null,
@@ -106,6 +123,7 @@ public record TripStageDto(
         stageCount,
         commentCounts.forEntity(stage.getId()),
         estimate != null ? estimate.arrival() : null,
-        estimate != null ? estimate.durationMinutes() : null);
+        estimate != null ? estimate.durationMinutes() : null,
+        permissions.embedded().of(stage));
   }
 }

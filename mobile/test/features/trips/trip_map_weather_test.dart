@@ -23,6 +23,7 @@ import 'package:pedalons/keys.dart';
 import '../../support/localization.dart';
 import '../rides/ride_fixtures.dart';
 import 'trip_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// La carte d'ensemble d'un voyage en mode « Météo » (ledger `MOB-94`) :
 /// chaque étape colorée par **son** vent, les pastilles de **toutes** les
@@ -64,6 +65,7 @@ TrackDto _track(double lat0, int km) => TrackDto(
 );
 
 RouteDetailDto _route(String slug, List<TrackDto> tracks) => RouteDetailDto(
+  permissions: kNoPermissions,
   elevationState: 'HD',
   tags: const [],
   id: 'r-$slug',

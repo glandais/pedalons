@@ -40,7 +40,7 @@ public class TeamPageService extends TeamEntityService<TeamPage, TeamPageReposit
 
   @Override
   protected TeamPageDto toDto(TeamPage entity) {
-    return TeamPageDto.from(entity, assetService);
+    return TeamPageDto.from(entity, assetService, detailPermissions(entity));
   }
 
   @Override
@@ -102,7 +102,7 @@ public class TeamPageService extends TeamEntityService<TeamPage, TeamPageReposit
 
     teamPageRepository.persist(page);
 
-    return TeamPageDto.from(page, assetService);
+    return TeamPageDto.from(page, assetService, detailPermissions(page));
   }
 
   @Transactional
@@ -125,7 +125,7 @@ public class TeamPageService extends TeamEntityService<TeamPage, TeamPageReposit
 
     teamPageRepository.persist(page);
 
-    return TeamPageDto.from(page, assetService);
+    return TeamPageDto.from(page, assetService, detailPermissions(page));
   }
 
   @CheckAccess(entityType = EntityType.TEAM_PAGE, action = ActionType.UPDATE)
@@ -157,7 +157,7 @@ public class TeamPageService extends TeamEntityService<TeamPage, TeamPageReposit
     TeamPage page = findBySlugIncludeDeleted(team, pageSlug);
     page.setDeleted(false);
     teamPageRepository.persist(page);
-    return TeamPageDto.from(page, assetService);
+    return TeamPageDto.from(page, assetService, detailPermissions(page));
   }
 
   @Transactional

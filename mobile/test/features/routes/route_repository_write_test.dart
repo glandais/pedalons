@@ -8,6 +8,8 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
 import 'package:pedalons/features/routes/domain/gpx_check.dart';
 
+import '../../support/content_permissions.dart';
+
 /// L'écriture d'un parcours sur le fil (ledger `MOB-79`).
 ///
 /// **La forme du multipart est celle du site** (`routes.ts` :
@@ -45,10 +47,12 @@ const MediaDto _media = MediaDto(
 );
 
 RouteDto _route({String slug = 'col', bool deleted = false}) => RouteDto(
+  permissions: kNoPermissions,
   id: 'r1',
   slug: slug,
   elevationState: 'HD',
   team: const TeamPublicationDto(
+    accessible: true,
     id: 't1',
     slug: 'x',
     name: 'X',
@@ -68,10 +72,12 @@ RouteDto _route({String slug = 'col', bool deleted = false}) => RouteDto(
 
 RouteDetailDto _detail({String slug = 'col', bool deleted = false}) =>
     RouteDetailDto(
+      permissions: kNoPermissions,
       id: 'r1',
       slug: slug,
       elevationState: 'HD',
       team: const TeamPublicationDto(
+        accessible: true,
         id: 't1',
         slug: 'x',
         name: 'X',

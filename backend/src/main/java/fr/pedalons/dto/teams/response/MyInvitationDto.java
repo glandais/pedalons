@@ -5,6 +5,7 @@ import fr.pedalons.domain.team.TeamInvitation;
 import fr.pedalons.dto.publications.response.TeamPublicationDto;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.enums.TeamRole;
+import fr.pedalons.service.team.TeamAccessChecker;
 import java.time.Instant;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -26,10 +27,17 @@ public record MyInvitationDto(
     @Schema(description = "Role granted on acceptance", required = true) TeamRole role,
     @Schema(description = "When it stops being redeemable", required = true) Instant expiresAt) {
 
-  public static MyInvitationDto from(TeamInvitation invitation) {
+  /**
+   * @param platformAdmin whether the invitee is a platform admin: the only way a non-member opens a
+   *     private team (docs/LEDGER_*.md API-176)
+   */
+  public static MyInvitationDto from(TeamInvitation invitation, boolean platformAdmin) {
     return new MyInvitationDto(
         TsidUtils.toString(invitation.getId()),
-        TeamPublicationDto.from(invitation.getTeam()),
+        // Not a member yet: listMine drops the teams the invitee already belongs to.
+        TeamPublicationDto.from(
+            invitation.getTeam(),
+            platformAdmin || TeamAccessChecker.canRead(invitation.getTeam(), null)),
         invitation.getCreatedBy().getDisplayName(),
         invitation.getRole(),
         invitation.getExpiresAt());

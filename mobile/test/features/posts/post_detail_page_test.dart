@@ -11,6 +11,7 @@ import 'package:pedalons/features/posts/domain/post_neighbours.dart';
 import 'package:pedalons/features/posts/presentation/pages/post_detail_page.dart';
 
 import '../../support/localization.dart';
+import '../../support/content_permissions.dart';
 
 /// S31-1 à S31-3 — l'écran d'une publication.
 ///
@@ -19,6 +20,7 @@ import '../../support/localization.dart';
 /// publication signée par l'équipe le tait aux lecteurs), et aucun bloc de
 /// navigation en ouverture froide.
 const TeamPublicationDto _team = TeamPublicationDto(
+  accessible: true,
   id: 't1',
   slug: 'n-peloton',
   name: 'N-Peloton',
@@ -36,6 +38,7 @@ PostDto _post({
   PublicUserDto? createdBy,
   String timezone = 'Europe/Paris',
 }) => PostDto(
+  permissions: kNoPermissions,
   timezone: timezone,
   tags: const [],
   type: 'POST',
@@ -192,6 +195,7 @@ void main() {
       tester,
       _post(
         team: const TeamPublicationDto(
+          accessible: true,
           id: 't1',
           slug: 'n-peloton',
           name: 'N-Peloton',

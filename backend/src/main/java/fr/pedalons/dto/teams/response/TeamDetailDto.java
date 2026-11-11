@@ -13,6 +13,7 @@ import fr.pedalons.enums.Status;
 import fr.pedalons.enums.TeamRole;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.service.asset.AssetService;
+import fr.pedalons.service.common.ContentVisibilityRules;
 import fr.pedalons.service.team.response.TeamAndRole;
 import fr.pedalons.service.team.response.TeamStats;
 import java.time.Instant;
@@ -132,7 +133,29 @@ public record TeamDetailDto(
                     + " place locates them. Administrators change it through TeamRequest.timezone.",
             examples = "Europe/Paris",
             required = true)
-        String timezone) {
+        String timezone,
+    @Schema(
+            description =
+                "The visibilities the team accepts for each type of content: what a creation form"
+                    + " offers. The same for every caller who may read the team — the server"
+                    + " still decides who may write. A private team holds TEAM only, unless a"
+                    + " platform admin set publicContentAllowed.",
+            required = true)
+        ContentVisibilitiesDto allowedContentVisibilities,
+    @Schema(
+            description =
+                "The visibility a creation form starts from: the team's own, so TEAM for a private"
+                    + " team, publicContentAllowed or not. Not for ads, which are always TEAM.",
+            required = true)
+        Visibility defaultContentVisibility,
+    @Schema(
+            description =
+                "Whether a platform admin allowed this private team to publish content as public"
+                    + " or unlisted, readable by link only and kept out of every listing and of"
+                    + " the sitemap. Meaningless for a team that is not private. For the platform"
+                    + " administration screen: editors read allowedContentVisibilities.",
+            required = true)
+        boolean publicContentAllowed) {
   public static TeamDetailDto from(
       TeamAndRole teamAndRole, AssetService assetService, boolean seeAllPages) {
     return from(teamAndRole, assetService, seeAllPages, TeamStats.EMPTY);
@@ -201,7 +224,12 @@ public record TeamDetailDto(
         teamAndRole.teamRole(),
         team.getCreatedAt(),
         team.getGeometry(),
-        team.getTimezone());
+        team.getTimezone(),
+        // From the team alone, so no query whatever the page: the rule its writes validate
+        // against (docs/LEDGER_*.md API-176).
+        ContentVisibilitiesDto.of(team),
+        ContentVisibilityRules.defaultVisibility(team),
+        team.isPublicContentAllowed());
   }
 
   /**

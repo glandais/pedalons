@@ -4,6 +4,7 @@ import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/rides/domain/ride_form.dart';
 
 import 'ride_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// Le formulaire de l'éditeur de sortie (ledger `MOB-80`) : ce qu'il envoie
 /// doit être ce que le site envoie (`rideToRequest`, `templateForNewRide`),
@@ -16,6 +17,9 @@ void main() {
   });
 
   TeamDetailDto team({String visibility = 'PUBLIC'}) => TeamDetailDto(
+    allowedContentVisibilities: kAllContentVisibilities,
+    defaultContentVisibility: 'PUBLIC',
+    publicContentAllowed: false,
     timezone: 'Europe/Paris',
     id: 't1',
     slug: 'n-peloton',
@@ -161,6 +165,7 @@ void main() {
       ).copyWith(startPlaceId: () => 'p1');
       const RideTemplateDto template = RideTemplateDto(
         team: TeamPublicationDto(
+          accessible: true,
           id: 't1',
           slug: 'n-peloton',
           name: 'N-Peloton',

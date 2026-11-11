@@ -66,6 +66,7 @@ final nextRideProvider = FutureProvider<NextRide?>((Ref ref) async {
 /// est dans `registeredGroup`.
 @visibleForTesting
 RideDto rideFromListRow(PublicationDtoRide p) => RideDto(
+  permissions: p.permissions,
   tags: p.tags,
   type: 'RIDE',
   team: p.team,

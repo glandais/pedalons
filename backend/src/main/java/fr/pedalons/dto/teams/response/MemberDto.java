@@ -35,7 +35,9 @@ public record MemberDto(
    */
   public static MemberDto from(UserTeam userTeam, boolean full) {
     return new MemberDto(
-        TeamPublicationDto.from(userTeam.getTeam()),
+        // A roster or a membership of one's own: served to a member of the team, or to a platform
+        // admin (docs/LEDGER_*.md API-176).
+        TeamPublicationDto.ofMember(userTeam.getTeam()),
         TsidUtils.toString(userTeam.getId()),
         PublicUserDto.from(userTeam.getUser()),
         full ? userTeam.getRole() : null,

@@ -50,7 +50,8 @@ public class PostService extends TeamEntityService<Post, PostRepository, PostDto
         assetService,
         commentCountLookup.forEntity(entity),
         postAuthorLookup.forPost(entity),
-        tagLookup.forContents(List.of(entity.getId())));
+        tagLookup.forContents(List.of(entity.getId())),
+        detailPermissions(entity));
   }
 
   @Override
@@ -190,6 +191,7 @@ public class PostService extends TeamEntityService<Post, PostRepository, PostDto
         assetService,
         CommentCounts.NONE,
         postAuthorLookup.forPost(post),
-        tagLookup.forContents(List.of(post.getId())));
+        tagLookup.forContents(List.of(post.getId())),
+        detailPermissions(post));
   }
 }

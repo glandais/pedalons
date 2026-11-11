@@ -1,9 +1,9 @@
 # Contenu public d'une équipe privée, et droits calculés par le backend
 
-Écrit le 11 novembre 2026. **État : lot 1 fait le 11 novembre 2026 (drapeau, `V87`, règle unique d'écriture, lecture par lien, contrat `13.6.0`) ; lots 2 à 5 à faire.** Ledger `API-176` (backend et
+Écrit le 11 novembre 2026. **État : lot 1 fait le 11 novembre 2026 (drapeau, `V87`, règle unique d'écriture, lecture par lien, contrat `13.6.0`) ; lot 2 fait le même jour (droits calculés, contrat `13.7.0`) ; lots 3 à 5 à faire.** Ledger `API-176` (backend et
 contrat), `WEB-166` (site), `MOB-137` (application), `SEC-51` (constat relevé, hors périmètre).
 Branche prévue : `feat/visibilite-equipe-privee`, un commit par lot. Numéros vérifiés libres le
-11 novembre 2026 : `API-176`, `WEB-166`, `MOB-137`, `SEC-51`, migration `V87`, contrat `13.5.0`
+11 novembre 2026 : `API-176`, `API-177`, `WEB-166`, `MOB-137`, `SEC-51`, migration `V87`, contrat `13.5.0`
 aujourd'hui.
 
 Chemins relatifs à `backend/src/main/java/fr/pedalons/` sauf mention contraire.
@@ -126,7 +126,11 @@ propriétaire.
   inscription, `GET team`, tableau de bord, tags de l'équipe.
 
 Ce que le lien révèle, par construction : le nom et le slug de l'équipe privée, portés par le DTO
-de l'entité. Pas son logo : il appartient à la page « À propos », qui reste « Équipe ».
+de l'entité, les tags de l'entité (pas le vocabulaire de l'équipe), et **le logo de l'équipe**
+(décision du 11 novembre 2026) : le logo seul, pas les autres pièces de la page « À propos », est
+public exactement quand l'équipe a `publicContentAllowed`. Sans le drapeau, le logo reste fermé,
+même s'il reste du contenu public d'avant son retrait, et le résumé d'équipe embarqué ne porte alors
+ni identifiant ni URL de logo pour un appelant qui ne peut pas consulter l'équipe.
 
 Deux ajouts du lot 1, issus de sa relecture, à ne pas défaire :
 
@@ -135,7 +139,10 @@ Deux ajouts du lot 1, issus de sa relecture, à ne pas défaire :
   pouvait encore porter du contenu non « Équipe », que seule la clause retirée cachait.
 - **Les images d'une entité « Public » d'une équipe privée sortent sous le préfixe
   `public_unlisted`** (`AssetService.buildImageUrl`), qui porte `noindex` : le préfixe `public` est
-  laissé indexable par `ApiNoIndexFilter`, ce qui contredirait D1.
+  laissé indexable par `ApiNoIndexFilter`, ce qui contredirait D1. Étendu le même jour à la règle
+  d'indexation complète : le préfixe `public` ne sert que pour une entité « Public » d'une équipe
+  « Public », si bien que les images d'une équipe non répertoriée passent aussi en `noindex`,
+  comme ses pages (`WEB-4`).
 
 `makeContentTeamOnly` ne change pas (D3). Avec le drapeau, une équipe passée en privé peut ensuite
 rouvrir entité par entité.
@@ -184,7 +191,7 @@ Principe (D7) : le backend répond, le client affiche. Aucun client ne lit `team
 | Champ | Sens |
 |---|---|
 | `canEdit`, `canDelete` | ce que décident déjà les `*AccessChecker` pour `UPDATE` et `DELETE` |
-| `canRegister` | sortie, voyage : membre et entité publiée |
+| `canRegister` | sortie, voyage : membre et entité publiée ; **sur un détail**, faux aussi quand tous les groupes sont partis ou que le voyage est terminé (la condition même des endpoints d'inscription). En liste, pas de prise en compte du temps : aucune requête par ligne, la valeur peut différer du détail |
 | `canComment`, `canSeeParticipants` | membre ou administrateur de la plateforme |
 | `allowedVisibilities` | les valeurs que **cette** entité peut prendre : la liste de l'équipe, moins `TEAM` pour un parcours utilisé publiquement (§4.4) |
 | `indexable` | la règle de `findIndexable` : entité `PUBLIC`, équipe `PUBLIC`, publiée |
@@ -199,11 +206,21 @@ Contraintes :
   calculent que sur le détail, pas sur les cartes de liste (où `allowedVisibilities` est absent) ;
 - les `…QueryCountTest` restent verts sans être modifiés ;
 - le bloc ne porte jamais un nom, un identifiant de membre ni un rôle : il ne dit que ce que
-  l'appelant peut faire.
+  l'appelant peut faire ;
+- les `*AccessChecker` exposent la règle qu'ils appliquent et le bloc appelle la même ;
+  `ContentPermissionsConsistencyTest` échoue s'ils divergent, modules désactivés compris.
+
+Arbitrages du lot 2 (11 novembre 2026) : `TripService.joinTrip` refuse un voyage non publié pour
+tout le monde, administrateur de la plateforme compris, comme les sorties ; la page « À propos » a
+`canEdit` vrai (elle se modifie par l'équipe), `canDelete` faux et pas d'`allowedVisibilities` ; le
+rôle de l'appelant est lu deux fois par requête de détail, ce que `API-177` supprimera.
 
 ### 4.6 Contrat
 
-Tout est additif (champs nouveaux, un code d'erreur, un champ de requête optionnel) : **`13.6.0`**.
+Tout est additif (champs nouveaux, un code d'erreur, un champ de requête optionnel) : `13.6.0` au
+lot 1, **`13.7.0`** au lot 2, une version mineure de plus au lot 3. Les champs calculés sont
+**requis** dans le contrat (décision du 11 novembre 2026) : le backend les renvoie toujours, un
+client n'a pas de cas « absent » à gérer.
 Compétence `contract-first-api`, puis régénération des deux clients. Une application mobile d'une
 version antérieure continue de fonctionner : son éditeur masque le sélecteur en équipe privée et
 renvoie la visibilité que l'entité avait.
@@ -265,7 +282,7 @@ renvoie la visibilité que l'entité avait.
 | Lot | Contenu | Taille |
 |---|---|---|
 | 1 | drapeau, `V87`, règle unique d'écriture, lecture par lien | S |
-| 2 | champs calculés, contrat `13.6.0`, clients régénérés | M |
+| 2 | champs calculés, contrat `13.7.0`, clients régénérés | M |
 | 3 | invariant de compatibilité, `INCOMPATIBLE_VISIBILITY`, `alignVisibility` | S |
 | 4 | site web | M |
 | 5 | application mobile | S |

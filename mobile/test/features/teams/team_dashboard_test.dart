@@ -21,6 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
 import 'team_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// Le tableau de bord d'équipe : un écran, trois rôles.
 ///
@@ -528,6 +529,7 @@ void main() {
 // ─────────────────────────────────────────────────────────────── jeux de données
 
 const TeamPublicationDto _team = TeamPublicationDto(
+  accessible: true,
   id: 't1',
   slug: 'n-peloton',
   name: 'N-Peloton',
@@ -564,6 +566,7 @@ PublicationDto _ride({
   String status = 'PUBLISHED',
   double? distance,
 }) => PublicationDto.ride(
+  permissions: kNoPermissions,
   timezone: 'Europe/Paris',
   full: false,
   id: 'ride-$slug',
@@ -658,6 +661,7 @@ TeamDashboardDto _dashboard({required String role}) {
     upcomingRides: _list(<PublicationDto>[saturday, night], total: 5),
     latestPosts: _list(<PublicationDto>[
       const PublicationDto.post(
+        permissions: kNoPermissions,
         timezone: 'Europe/Paris',
         team: _team,
         id: 'post-1',
@@ -678,6 +682,7 @@ TeamDashboardDto _dashboard({required String role}) {
     newRoutes: RouteListResponse(
       routes: <RouteDto>[
         RouteDto(
+          permissions: kNoPermissions,
           elevationState: 'HD',
           id: 'r1',
           slug: 'mont-thou',
@@ -794,6 +799,7 @@ AdDto _ad({
   String adType = 'SALE',
   num? price,
 }) => AdDto(
+  permissions: kNoPermissions,
   team: _team,
   id: 'ad-$slug',
   slug: slug,

@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'content_visibilities_dto.dart';
 import 'instant.dart';
 import 'media_dto.dart';
 import 'member_count_by_role_dto.dart';
@@ -87,6 +88,15 @@ abstract class TeamDetailDto with _$TeamDetailDto {
 
     /// The team's IANA zone: the one its rides, trips and posts fall back on when no place locates them. Administrators change it through TeamRequest.timezone.
     required String timezone,
+
+    /// The visibilities the team accepts for each type of content: what a creation form offers. The same for every caller who may read the team — the server still decides who may write. A private team holds TEAM only, unless a platform admin set publicContentAllowed.
+    required ContentVisibilitiesDto allowedContentVisibilities,
+
+    /// The visibility a creation form starts from: the team's own, so TEAM for a private team, publicContentAllowed or not. Not for ads, which are always TEAM.
+    required String defaultContentVisibility,
+
+    /// Whether a platform admin allowed this private team to publish content as public or unlisted, readable by link only and kept out of every listing and of the sitemap. Meaningless for a team that is not private. For the platform administration screen: editors read allowedContentVisibilities.
+    required bool publicContentAllowed,
 
     /// Plain-text opening of the about page, flattened and cut on a word boundary at about 200 characters. Null when the about page holds no text. Lets a team card render its two lines without parsing the markdown client-side.
     String? excerpt,

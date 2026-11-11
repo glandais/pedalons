@@ -1,5 +1,6 @@
 import type { AdDtoLocationGeometry } from './adDtoLocationGeometry.ts'
 import type { AdType } from './adType.ts'
+import type { ContentPermissionsDto } from './contentPermissionsDto.ts'
 import type { Instant } from './instant.ts'
 import type { MediaDto } from './mediaDto.ts'
 import type { RentalPeriod } from './rentalPeriod.ts'
@@ -54,4 +55,6 @@ export interface AdDto {
   deleted: boolean
   /** The team's AD tags the ad carries, sorted by label. Empty when it carries none. */
   tags: TagDto[]
+  /** What the caller may do with the ad: edit and delete (its author or a team admin). allowedVisibilities, on the detail only, is always [TEAM]. */
+  permissions: ContentPermissionsDto
 }

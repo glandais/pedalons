@@ -15,6 +15,9 @@ _TeamPageDto _$TeamPageDtoFromJson(Map<String, dynamic> json) => _TeamPageDto(
   visibility: json['visibility'] as String,
   order: (json['order'] as num).toInt(),
   deleted: json['deleted'] as bool,
+  permissions: ContentPermissionsDto.fromJson(
+    json['permissions'] as Map<String, dynamic>,
+  ),
 );
 
 Map<String, dynamic> _$TeamPageDtoToJson(_TeamPageDto instance) =>
@@ -27,4 +30,5 @@ Map<String, dynamic> _$TeamPageDtoToJson(_TeamPageDto instance) =>
       'visibility': instance.visibility,
       'order': instance.order,
       'deleted': instance.deleted,
+      'permissions': instance.permissions.toJson(),
     };

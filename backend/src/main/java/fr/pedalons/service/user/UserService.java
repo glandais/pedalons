@@ -157,15 +157,15 @@ public class UserService {
     List<TeamPublicationDto> blockingTeams =
         userTeamRepository.findTeamsLeftWithoutAdmin(user.getId(), domainId).stream()
             .filter(team -> !migratedIds.contains(team.getId()))
-            .map(TeamPublicationDto::from)
+            .map(TeamPublicationDto::ofMember)
             .toList();
     List<TeamPublicationDto> deletedTeams =
         userTeamRepository.findTeamsAdministeredAlone(user.getId(), domainId).stream()
             .filter(team -> !migratedIds.contains(team.getId()))
-            .map(TeamPublicationDto::from)
+            .map(TeamPublicationDto::ofMember)
             .toList();
     List<TeamPublicationDto> migratedTeams =
-        migrated.stream().map(TeamPublicationDto::from).toList();
+        migrated.stream().map(TeamPublicationDto::ofMember).toList();
     return new AccountDeletionImpactDto(
         !blockingTeams.isEmpty() || !migratedTeams.isEmpty(),
         blockingTeams,

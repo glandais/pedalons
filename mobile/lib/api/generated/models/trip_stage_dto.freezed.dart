@@ -25,7 +25,8 @@ mixin _$TripStageDto {
  MediaDto get media;/// Sort order
  int get sortOrder;/// Position of this stage among the trip's live stages, 1-based — the 'Day 2' of a stage header. Unlike sortOrder, which is a persisted rank that may have gaps, this is a rank a client can print.
  int get stageIndex;/// How many live stages the trip has — the '/ 5' of 'Day 2 / 5'.
- int get stageCount;/// Average speed in km/h
+ int get stageCount;/// What the caller may do with the stage: comment on it, and edit or delete it — through its trip, which a stage is written with. No allowedVisibilities: a stage has its trip's visibility.
+ ContentPermissionsDto get permissions;/// Average speed in km/h
  double? get averageSpeed;/// Route
  RouteDto? get route;/// Start place
  PlaceDetailDto? get startPlace;/// End place
@@ -46,20 +47,20 @@ $TripStageDtoCopyWith<TripStageDto> get copyWith => _$TripStageDtoCopyWithImpl<T
 @override
 bool operator ==(Object other) {
   final _this = this as TripStageDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TripStageDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.dateTime, _this.dateTime) || other.dateTime == _this.dateTime)&&(identical(other.timezone, _this.timezone) || other.timezone == _this.timezone)&&(identical(other.media, _this.media) || other.media == _this.media)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&(identical(other.stageIndex, _this.stageIndex) || other.stageIndex == _this.stageIndex)&&(identical(other.stageCount, _this.stageCount) || other.stageCount == _this.stageCount)&&(identical(other.averageSpeed, _this.averageSpeed) || other.averageSpeed == _this.averageSpeed)&&(identical(other.route, _this.route) || other.route == _this.route)&&(identical(other.startPlace, _this.startPlace) || other.startPlace == _this.startPlace)&&(identical(other.endPlace, _this.endPlace) || other.endPlace == _this.endPlace)&&(identical(other.commentCount, _this.commentCount) || other.commentCount == _this.commentCount)&&(identical(other.estimatedArrival, _this.estimatedArrival) || other.estimatedArrival == _this.estimatedArrival)&&(identical(other.estimatedDurationMinutes, _this.estimatedDurationMinutes) || other.estimatedDurationMinutes == _this.estimatedDurationMinutes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TripStageDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.dateTime, _this.dateTime) || other.dateTime == _this.dateTime)&&(identical(other.timezone, _this.timezone) || other.timezone == _this.timezone)&&(identical(other.media, _this.media) || other.media == _this.media)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&(identical(other.stageIndex, _this.stageIndex) || other.stageIndex == _this.stageIndex)&&(identical(other.stageCount, _this.stageCount) || other.stageCount == _this.stageCount)&&(identical(other.permissions, _this.permissions) || other.permissions == _this.permissions)&&(identical(other.averageSpeed, _this.averageSpeed) || other.averageSpeed == _this.averageSpeed)&&(identical(other.route, _this.route) || other.route == _this.route)&&(identical(other.startPlace, _this.startPlace) || other.startPlace == _this.startPlace)&&(identical(other.endPlace, _this.endPlace) || other.endPlace == _this.endPlace)&&(identical(other.commentCount, _this.commentCount) || other.commentCount == _this.commentCount)&&(identical(other.estimatedArrival, _this.estimatedArrival) || other.estimatedArrival == _this.estimatedArrival)&&(identical(other.estimatedDurationMinutes, _this.estimatedDurationMinutes) || other.estimatedDurationMinutes == _this.estimatedDurationMinutes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as TripStageDto;
-  return Object.hash(runtimeType,_this.id,_this.slug,_this.name,_this.dateTime,_this.timezone,_this.media,_this.sortOrder,_this.stageIndex,_this.stageCount,_this.averageSpeed,_this.route,_this.startPlace,_this.endPlace,_this.commentCount,_this.estimatedArrival,_this.estimatedDurationMinutes);
+  return Object.hash(runtimeType,_this.id,_this.slug,_this.name,_this.dateTime,_this.timezone,_this.media,_this.sortOrder,_this.stageIndex,_this.stageCount,_this.permissions,_this.averageSpeed,_this.route,_this.startPlace,_this.endPlace,_this.commentCount,_this.estimatedArrival,_this.estimatedDurationMinutes);
 }
 
 @override
 String toString() {
   final _this = this as TripStageDto;
-  return 'TripStageDto(id: ${_this.id}, slug: ${_this.slug}, name: ${_this.name}, dateTime: ${_this.dateTime}, timezone: ${_this.timezone}, media: ${_this.media}, sortOrder: ${_this.sortOrder}, stageIndex: ${_this.stageIndex}, stageCount: ${_this.stageCount}, averageSpeed: ${_this.averageSpeed}, route: ${_this.route}, startPlace: ${_this.startPlace}, endPlace: ${_this.endPlace}, commentCount: ${_this.commentCount}, estimatedArrival: ${_this.estimatedArrival}, estimatedDurationMinutes: ${_this.estimatedDurationMinutes})';
+  return 'TripStageDto(id: ${_this.id}, slug: ${_this.slug}, name: ${_this.name}, dateTime: ${_this.dateTime}, timezone: ${_this.timezone}, media: ${_this.media}, sortOrder: ${_this.sortOrder}, stageIndex: ${_this.stageIndex}, stageCount: ${_this.stageCount}, permissions: ${_this.permissions}, averageSpeed: ${_this.averageSpeed}, route: ${_this.route}, startPlace: ${_this.startPlace}, endPlace: ${_this.endPlace}, commentCount: ${_this.commentCount}, estimatedArrival: ${_this.estimatedArrival}, estimatedDurationMinutes: ${_this.estimatedDurationMinutes})';
 }
 
 
@@ -70,11 +71,11 @@ abstract mixin class $TripStageDtoCopyWith<$Res>  {
   factory $TripStageDtoCopyWith(TripStageDto value, $Res Function(TripStageDto) _then) = _$TripStageDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String slug, String name, String dateTime, String timezone, MediaDto media, int sortOrder, int stageIndex, int stageCount, double? averageSpeed, RouteDto? route, PlaceDetailDto? startPlace, PlaceDetailDto? endPlace, int? commentCount, String? estimatedArrival, int? estimatedDurationMinutes
+ String id, String slug, String name, String dateTime, String timezone, MediaDto media, int sortOrder, int stageIndex, int stageCount, ContentPermissionsDto permissions, double? averageSpeed, RouteDto? route, PlaceDetailDto? startPlace, PlaceDetailDto? endPlace, int? commentCount, String? estimatedArrival, int? estimatedDurationMinutes
 });
 
 
-$MediaDtoCopyWith<$Res> get media;$RouteDtoCopyWith<$Res>? get route;$PlaceDetailDtoCopyWith<$Res>? get startPlace;$PlaceDetailDtoCopyWith<$Res>? get endPlace;
+$MediaDtoCopyWith<$Res> get media;$ContentPermissionsDtoCopyWith<$Res> get permissions;$RouteDtoCopyWith<$Res>? get route;$PlaceDetailDtoCopyWith<$Res>? get startPlace;$PlaceDetailDtoCopyWith<$Res>? get endPlace;
 
 }
 /// @nodoc
@@ -87,7 +88,7 @@ class _$TripStageDtoCopyWithImpl<$Res>
 
 /// Create a copy of TripStageDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? slug = null,Object? name = null,Object? dateTime = null,Object? timezone = null,Object? media = null,Object? sortOrder = null,Object? stageIndex = null,Object? stageCount = null,Object? averageSpeed = freezed,Object? route = freezed,Object? startPlace = freezed,Object? endPlace = freezed,Object? commentCount = freezed,Object? estimatedArrival = freezed,Object? estimatedDurationMinutes = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? slug = null,Object? name = null,Object? dateTime = null,Object? timezone = null,Object? media = null,Object? sortOrder = null,Object? stageIndex = null,Object? stageCount = null,Object? permissions = null,Object? averageSpeed = freezed,Object? route = freezed,Object? startPlace = freezed,Object? endPlace = freezed,Object? commentCount = freezed,Object? estimatedArrival = freezed,Object? estimatedDurationMinutes = freezed,}) {
   return _then(TripStageDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
@@ -98,7 +99,8 @@ as String,media: null == media ? _self.media : media // ignore: cast_nullable_to
 as MediaDto,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
 as int,stageIndex: null == stageIndex ? _self.stageIndex : stageIndex // ignore: cast_nullable_to_non_nullable
 as int,stageCount: null == stageCount ? _self.stageCount : stageCount // ignore: cast_nullable_to_non_nullable
-as int,averageSpeed: freezed == averageSpeed ? _self.averageSpeed : averageSpeed // ignore: cast_nullable_to_non_nullable
+as int,permissions: null == permissions ? _self.permissions : permissions // ignore: cast_nullable_to_non_nullable
+as ContentPermissionsDto,averageSpeed: freezed == averageSpeed ? _self.averageSpeed : averageSpeed // ignore: cast_nullable_to_non_nullable
 as double?,route: freezed == route ? _self.route : route // ignore: cast_nullable_to_non_nullable
 as RouteDto?,startPlace: freezed == startPlace ? _self.startPlace : startPlace // ignore: cast_nullable_to_non_nullable
 as PlaceDetailDto?,endPlace: freezed == endPlace ? _self.endPlace : endPlace // ignore: cast_nullable_to_non_nullable
@@ -116,6 +118,15 @@ $MediaDtoCopyWith<$Res> get media {
   
   return $MediaDtoCopyWith<$Res>(_self.media, (value) {
     return _then(_self.copyWith(media: value));
+  });
+}/// Create a copy of TripStageDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ContentPermissionsDtoCopyWith<$Res> get permissions {
+  
+  return $ContentPermissionsDtoCopyWith<$Res>(_self.permissions, (value) {
+    return _then(_self.copyWith(permissions: value));
   });
 }/// Create a copy of TripStageDto
 /// with the given fields replaced by the non-null parameter values.
@@ -235,10 +246,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String slug,  String name,  String dateTime,  String timezone,  MediaDto media,  int sortOrder,  int stageIndex,  int stageCount,  double? averageSpeed,  RouteDto? route,  PlaceDetailDto? startPlace,  PlaceDetailDto? endPlace,  int? commentCount,  String? estimatedArrival,  int? estimatedDurationMinutes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String slug,  String name,  String dateTime,  String timezone,  MediaDto media,  int sortOrder,  int stageIndex,  int stageCount,  ContentPermissionsDto permissions,  double? averageSpeed,  RouteDto? route,  PlaceDetailDto? startPlace,  PlaceDetailDto? endPlace,  int? commentCount,  String? estimatedArrival,  int? estimatedDurationMinutes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TripStageDto() when $default != null:
-return $default(_that.id,_that.slug,_that.name,_that.dateTime,_that.timezone,_that.media,_that.sortOrder,_that.stageIndex,_that.stageCount,_that.averageSpeed,_that.route,_that.startPlace,_that.endPlace,_that.commentCount,_that.estimatedArrival,_that.estimatedDurationMinutes);case _:
+return $default(_that.id,_that.slug,_that.name,_that.dateTime,_that.timezone,_that.media,_that.sortOrder,_that.stageIndex,_that.stageCount,_that.permissions,_that.averageSpeed,_that.route,_that.startPlace,_that.endPlace,_that.commentCount,_that.estimatedArrival,_that.estimatedDurationMinutes);case _:
   return orElse();
 
 }
@@ -256,10 +267,10 @@ return $default(_that.id,_that.slug,_that.name,_that.dateTime,_that.timezone,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String slug,  String name,  String dateTime,  String timezone,  MediaDto media,  int sortOrder,  int stageIndex,  int stageCount,  double? averageSpeed,  RouteDto? route,  PlaceDetailDto? startPlace,  PlaceDetailDto? endPlace,  int? commentCount,  String? estimatedArrival,  int? estimatedDurationMinutes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String slug,  String name,  String dateTime,  String timezone,  MediaDto media,  int sortOrder,  int stageIndex,  int stageCount,  ContentPermissionsDto permissions,  double? averageSpeed,  RouteDto? route,  PlaceDetailDto? startPlace,  PlaceDetailDto? endPlace,  int? commentCount,  String? estimatedArrival,  int? estimatedDurationMinutes)  $default,) {final _that = this;
 switch (_that) {
 case _TripStageDto():
-return $default(_that.id,_that.slug,_that.name,_that.dateTime,_that.timezone,_that.media,_that.sortOrder,_that.stageIndex,_that.stageCount,_that.averageSpeed,_that.route,_that.startPlace,_that.endPlace,_that.commentCount,_that.estimatedArrival,_that.estimatedDurationMinutes);case _:
+return $default(_that.id,_that.slug,_that.name,_that.dateTime,_that.timezone,_that.media,_that.sortOrder,_that.stageIndex,_that.stageCount,_that.permissions,_that.averageSpeed,_that.route,_that.startPlace,_that.endPlace,_that.commentCount,_that.estimatedArrival,_that.estimatedDurationMinutes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -276,10 +287,10 @@ return $default(_that.id,_that.slug,_that.name,_that.dateTime,_that.timezone,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String slug,  String name,  String dateTime,  String timezone,  MediaDto media,  int sortOrder,  int stageIndex,  int stageCount,  double? averageSpeed,  RouteDto? route,  PlaceDetailDto? startPlace,  PlaceDetailDto? endPlace,  int? commentCount,  String? estimatedArrival,  int? estimatedDurationMinutes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String slug,  String name,  String dateTime,  String timezone,  MediaDto media,  int sortOrder,  int stageIndex,  int stageCount,  ContentPermissionsDto permissions,  double? averageSpeed,  RouteDto? route,  PlaceDetailDto? startPlace,  PlaceDetailDto? endPlace,  int? commentCount,  String? estimatedArrival,  int? estimatedDurationMinutes)?  $default,) {final _that = this;
 switch (_that) {
 case _TripStageDto() when $default != null:
-return $default(_that.id,_that.slug,_that.name,_that.dateTime,_that.timezone,_that.media,_that.sortOrder,_that.stageIndex,_that.stageCount,_that.averageSpeed,_that.route,_that.startPlace,_that.endPlace,_that.commentCount,_that.estimatedArrival,_that.estimatedDurationMinutes);case _:
+return $default(_that.id,_that.slug,_that.name,_that.dateTime,_that.timezone,_that.media,_that.sortOrder,_that.stageIndex,_that.stageCount,_that.permissions,_that.averageSpeed,_that.route,_that.startPlace,_that.endPlace,_that.commentCount,_that.estimatedArrival,_that.estimatedDurationMinutes);case _:
   return null;
 
 }
@@ -291,7 +302,7 @@ return $default(_that.id,_that.slug,_that.name,_that.dateTime,_that.timezone,_th
 @JsonSerializable()
 
 class _TripStageDto implements TripStageDto {
-  const _TripStageDto({required this.id, required this.slug, required this.name, required this.dateTime, required this.timezone, required this.media, required this.sortOrder, required this.stageIndex, required this.stageCount, this.averageSpeed, this.route, this.startPlace, this.endPlace, this.commentCount, this.estimatedArrival, this.estimatedDurationMinutes});
+  const _TripStageDto({required this.id, required this.slug, required this.name, required this.dateTime, required this.timezone, required this.media, required this.sortOrder, required this.stageIndex, required this.stageCount, required this.permissions, this.averageSpeed, this.route, this.startPlace, this.endPlace, this.commentCount, this.estimatedArrival, this.estimatedDurationMinutes});
   factory _TripStageDto.fromJson(Map<String, dynamic> json) => _$TripStageDtoFromJson(json);
 
 /// Stage ID (TSID)
@@ -312,6 +323,8 @@ class _TripStageDto implements TripStageDto {
 @override final  int stageIndex;
 /// How many live stages the trip has — the '/ 5' of 'Day 2 / 5'.
 @override final  int stageCount;
+/// What the caller may do with the stage: comment on it, and edit or delete it — through its trip, which a stage is written with. No allowedVisibilities: a stage has its trip's visibility.
+@override final  ContentPermissionsDto permissions;
 /// Average speed in km/h
 @override final  double? averageSpeed;
 /// Route
@@ -340,18 +353,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TripStageDto&&(identical(other.id, id) || other.id == id)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.dateTime, dateTime) || other.dateTime == dateTime)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.media, media) || other.media == media)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.stageIndex, stageIndex) || other.stageIndex == stageIndex)&&(identical(other.stageCount, stageCount) || other.stageCount == stageCount)&&(identical(other.averageSpeed, averageSpeed) || other.averageSpeed == averageSpeed)&&(identical(other.route, route) || other.route == route)&&(identical(other.startPlace, startPlace) || other.startPlace == startPlace)&&(identical(other.endPlace, endPlace) || other.endPlace == endPlace)&&(identical(other.commentCount, commentCount) || other.commentCount == commentCount)&&(identical(other.estimatedArrival, estimatedArrival) || other.estimatedArrival == estimatedArrival)&&(identical(other.estimatedDurationMinutes, estimatedDurationMinutes) || other.estimatedDurationMinutes == estimatedDurationMinutes));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TripStageDto&&(identical(other.id, id) || other.id == id)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.name, name) || other.name == name)&&(identical(other.dateTime, dateTime) || other.dateTime == dateTime)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.media, media) || other.media == media)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.stageIndex, stageIndex) || other.stageIndex == stageIndex)&&(identical(other.stageCount, stageCount) || other.stageCount == stageCount)&&(identical(other.permissions, permissions) || other.permissions == permissions)&&(identical(other.averageSpeed, averageSpeed) || other.averageSpeed == averageSpeed)&&(identical(other.route, route) || other.route == route)&&(identical(other.startPlace, startPlace) || other.startPlace == startPlace)&&(identical(other.endPlace, endPlace) || other.endPlace == endPlace)&&(identical(other.commentCount, commentCount) || other.commentCount == commentCount)&&(identical(other.estimatedArrival, estimatedArrival) || other.estimatedArrival == estimatedArrival)&&(identical(other.estimatedDurationMinutes, estimatedDurationMinutes) || other.estimatedDurationMinutes == estimatedDurationMinutes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,slug,name,dateTime,timezone,media,sortOrder,stageIndex,stageCount,averageSpeed,route,startPlace,endPlace,commentCount,estimatedArrival,estimatedDurationMinutes);
+    return Object.hash(runtimeType,id,slug,name,dateTime,timezone,media,sortOrder,stageIndex,stageCount,permissions,averageSpeed,route,startPlace,endPlace,commentCount,estimatedArrival,estimatedDurationMinutes);
 }
 
 @override
 String toString() {
-    return 'TripStageDto(id: $id, slug: $slug, name: $name, dateTime: $dateTime, timezone: $timezone, media: $media, sortOrder: $sortOrder, stageIndex: $stageIndex, stageCount: $stageCount, averageSpeed: $averageSpeed, route: $route, startPlace: $startPlace, endPlace: $endPlace, commentCount: $commentCount, estimatedArrival: $estimatedArrival, estimatedDurationMinutes: $estimatedDurationMinutes)';
+    return 'TripStageDto(id: $id, slug: $slug, name: $name, dateTime: $dateTime, timezone: $timezone, media: $media, sortOrder: $sortOrder, stageIndex: $stageIndex, stageCount: $stageCount, permissions: $permissions, averageSpeed: $averageSpeed, route: $route, startPlace: $startPlace, endPlace: $endPlace, commentCount: $commentCount, estimatedArrival: $estimatedArrival, estimatedDurationMinutes: $estimatedDurationMinutes)';
 }
 
 
@@ -362,11 +375,11 @@ abstract mixin class _$TripStageDtoCopyWith<$Res> implements $TripStageDtoCopyWi
   factory _$TripStageDtoCopyWith(_TripStageDto value, $Res Function(_TripStageDto) _then) = __$TripStageDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String slug, String name, String dateTime, String timezone, MediaDto media, int sortOrder, int stageIndex, int stageCount, double? averageSpeed, RouteDto? route, PlaceDetailDto? startPlace, PlaceDetailDto? endPlace, int? commentCount, String? estimatedArrival, int? estimatedDurationMinutes
+ String id, String slug, String name, String dateTime, String timezone, MediaDto media, int sortOrder, int stageIndex, int stageCount, ContentPermissionsDto permissions, double? averageSpeed, RouteDto? route, PlaceDetailDto? startPlace, PlaceDetailDto? endPlace, int? commentCount, String? estimatedArrival, int? estimatedDurationMinutes
 });
 
 
-@override $MediaDtoCopyWith<$Res> get media;@override $RouteDtoCopyWith<$Res>? get route;@override $PlaceDetailDtoCopyWith<$Res>? get startPlace;@override $PlaceDetailDtoCopyWith<$Res>? get endPlace;
+@override $MediaDtoCopyWith<$Res> get media;@override $ContentPermissionsDtoCopyWith<$Res> get permissions;@override $RouteDtoCopyWith<$Res>? get route;@override $PlaceDetailDtoCopyWith<$Res>? get startPlace;@override $PlaceDetailDtoCopyWith<$Res>? get endPlace;
 
 }
 /// @nodoc
@@ -379,7 +392,7 @@ class __$TripStageDtoCopyWithImpl<$Res>
 
 /// Create a copy of TripStageDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? slug = null,Object? name = null,Object? dateTime = null,Object? timezone = null,Object? media = null,Object? sortOrder = null,Object? stageIndex = null,Object? stageCount = null,Object? averageSpeed = freezed,Object? route = freezed,Object? startPlace = freezed,Object? endPlace = freezed,Object? commentCount = freezed,Object? estimatedArrival = freezed,Object? estimatedDurationMinutes = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? slug = null,Object? name = null,Object? dateTime = null,Object? timezone = null,Object? media = null,Object? sortOrder = null,Object? stageIndex = null,Object? stageCount = null,Object? permissions = null,Object? averageSpeed = freezed,Object? route = freezed,Object? startPlace = freezed,Object? endPlace = freezed,Object? commentCount = freezed,Object? estimatedArrival = freezed,Object? estimatedDurationMinutes = freezed,}) {
   return _then(_TripStageDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
@@ -390,7 +403,8 @@ as String,media: null == media ? _self.media : media // ignore: cast_nullable_to
 as MediaDto,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
 as int,stageIndex: null == stageIndex ? _self.stageIndex : stageIndex // ignore: cast_nullable_to_non_nullable
 as int,stageCount: null == stageCount ? _self.stageCount : stageCount // ignore: cast_nullable_to_non_nullable
-as int,averageSpeed: freezed == averageSpeed ? _self.averageSpeed : averageSpeed // ignore: cast_nullable_to_non_nullable
+as int,permissions: null == permissions ? _self.permissions : permissions // ignore: cast_nullable_to_non_nullable
+as ContentPermissionsDto,averageSpeed: freezed == averageSpeed ? _self.averageSpeed : averageSpeed // ignore: cast_nullable_to_non_nullable
 as double?,route: freezed == route ? _self.route : route // ignore: cast_nullable_to_non_nullable
 as RouteDto?,startPlace: freezed == startPlace ? _self.startPlace : startPlace // ignore: cast_nullable_to_non_nullable
 as PlaceDetailDto?,endPlace: freezed == endPlace ? _self.endPlace : endPlace // ignore: cast_nullable_to_non_nullable
@@ -409,6 +423,15 @@ $MediaDtoCopyWith<$Res> get media {
   
   return $MediaDtoCopyWith<$Res>(_self.media, (value) {
     return _then(_self.copyWith(media: value));
+  });
+}/// Create a copy of TripStageDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ContentPermissionsDtoCopyWith<$Res> get permissions {
+  
+  return $ContentPermissionsDtoCopyWith<$Res>(_self.permissions, (value) {
+    return _then(_self.copyWith(permissions: value));
   });
 }/// Create a copy of TripStageDto
 /// with the given fields replaced by the non-null parameter values.

@@ -24,7 +24,8 @@ mixin _$TeamPageDto {
  MediaDto get media;/// Visibility level
  String get visibility;/// Page order
  int get order;/// Whether the page is soft-deleted
- bool get deleted;
+ bool get deleted;/// What the caller may do with the page: edit, delete (never the about page), and the visibilities it may be saved with.
+ ContentPermissionsDto get permissions;
 /// Create a copy of TeamPageDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -38,20 +39,20 @@ $TeamPageDtoCopyWith<TeamPageDto> get copyWith => _$TeamPageDtoCopyWithImpl<Team
 @override
 bool operator ==(Object other) {
   final _this = this as TeamPageDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TeamPageDto&&(identical(other.team, _this.team) || other.team == _this.team)&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.media, _this.media) || other.media == _this.media)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&(identical(other.order, _this.order) || other.order == _this.order)&&(identical(other.deleted, _this.deleted) || other.deleted == _this.deleted));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TeamPageDto&&(identical(other.team, _this.team) || other.team == _this.team)&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.media, _this.media) || other.media == _this.media)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&(identical(other.order, _this.order) || other.order == _this.order)&&(identical(other.deleted, _this.deleted) || other.deleted == _this.deleted)&&(identical(other.permissions, _this.permissions) || other.permissions == _this.permissions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as TeamPageDto;
-  return Object.hash(runtimeType,_this.team,_this.id,_this.title,_this.slug,_this.media,_this.visibility,_this.order,_this.deleted);
+  return Object.hash(runtimeType,_this.team,_this.id,_this.title,_this.slug,_this.media,_this.visibility,_this.order,_this.deleted,_this.permissions);
 }
 
 @override
 String toString() {
   final _this = this as TeamPageDto;
-  return 'TeamPageDto(team: ${_this.team}, id: ${_this.id}, title: ${_this.title}, slug: ${_this.slug}, media: ${_this.media}, visibility: ${_this.visibility}, order: ${_this.order}, deleted: ${_this.deleted})';
+  return 'TeamPageDto(team: ${_this.team}, id: ${_this.id}, title: ${_this.title}, slug: ${_this.slug}, media: ${_this.media}, visibility: ${_this.visibility}, order: ${_this.order}, deleted: ${_this.deleted}, permissions: ${_this.permissions})';
 }
 
 
@@ -62,11 +63,11 @@ abstract mixin class $TeamPageDtoCopyWith<$Res>  {
   factory $TeamPageDtoCopyWith(TeamPageDto value, $Res Function(TeamPageDto) _then) = _$TeamPageDtoCopyWithImpl;
 @useResult
 $Res call({
- TeamPublicationDto team, String id, String title, String slug, MediaDto media, String visibility, int order, bool deleted
+ TeamPublicationDto team, String id, String title, String slug, MediaDto media, String visibility, int order, bool deleted, ContentPermissionsDto permissions
 });
 
 
-$TeamPublicationDtoCopyWith<$Res> get team;$MediaDtoCopyWith<$Res> get media;
+$TeamPublicationDtoCopyWith<$Res> get team;$MediaDtoCopyWith<$Res> get media;$ContentPermissionsDtoCopyWith<$Res> get permissions;
 
 }
 /// @nodoc
@@ -79,7 +80,7 @@ class _$TeamPageDtoCopyWithImpl<$Res>
 
 /// Create a copy of TeamPageDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? team = null,Object? id = null,Object? title = null,Object? slug = null,Object? media = null,Object? visibility = null,Object? order = null,Object? deleted = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? team = null,Object? id = null,Object? title = null,Object? slug = null,Object? media = null,Object? visibility = null,Object? order = null,Object? deleted = null,Object? permissions = null,}) {
   return _then(TeamPageDto(
 team: null == team ? _self.team : team // ignore: cast_nullable_to_non_nullable
 as TeamPublicationDto,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
@@ -89,7 +90,8 @@ as String,media: null == media ? _self.media : media // ignore: cast_nullable_to
 as MediaDto,visibility: null == visibility ? _self.visibility : visibility // ignore: cast_nullable_to_non_nullable
 as String,order: null == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
 as int,deleted: null == deleted ? _self.deleted : deleted // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,permissions: null == permissions ? _self.permissions : permissions // ignore: cast_nullable_to_non_nullable
+as ContentPermissionsDto,
   ));
 }
 /// Create a copy of TeamPageDto
@@ -109,6 +111,15 @@ $MediaDtoCopyWith<$Res> get media {
   
   return $MediaDtoCopyWith<$Res>(_self.media, (value) {
     return _then(_self.copyWith(media: value));
+  });
+}/// Create a copy of TeamPageDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ContentPermissionsDtoCopyWith<$Res> get permissions {
+  
+  return $ContentPermissionsDtoCopyWith<$Res>(_self.permissions, (value) {
+    return _then(_self.copyWith(permissions: value));
   });
 }
 }
@@ -192,10 +203,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TeamPublicationDto team,  String id,  String title,  String slug,  MediaDto media,  String visibility,  int order,  bool deleted)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TeamPublicationDto team,  String id,  String title,  String slug,  MediaDto media,  String visibility,  int order,  bool deleted,  ContentPermissionsDto permissions)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TeamPageDto() when $default != null:
-return $default(_that.team,_that.id,_that.title,_that.slug,_that.media,_that.visibility,_that.order,_that.deleted);case _:
+return $default(_that.team,_that.id,_that.title,_that.slug,_that.media,_that.visibility,_that.order,_that.deleted,_that.permissions);case _:
   return orElse();
 
 }
@@ -213,10 +224,10 @@ return $default(_that.team,_that.id,_that.title,_that.slug,_that.media,_that.vis
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TeamPublicationDto team,  String id,  String title,  String slug,  MediaDto media,  String visibility,  int order,  bool deleted)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TeamPublicationDto team,  String id,  String title,  String slug,  MediaDto media,  String visibility,  int order,  bool deleted,  ContentPermissionsDto permissions)  $default,) {final _that = this;
 switch (_that) {
 case _TeamPageDto():
-return $default(_that.team,_that.id,_that.title,_that.slug,_that.media,_that.visibility,_that.order,_that.deleted);case _:
+return $default(_that.team,_that.id,_that.title,_that.slug,_that.media,_that.visibility,_that.order,_that.deleted,_that.permissions);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -233,10 +244,10 @@ return $default(_that.team,_that.id,_that.title,_that.slug,_that.media,_that.vis
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TeamPublicationDto team,  String id,  String title,  String slug,  MediaDto media,  String visibility,  int order,  bool deleted)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TeamPublicationDto team,  String id,  String title,  String slug,  MediaDto media,  String visibility,  int order,  bool deleted,  ContentPermissionsDto permissions)?  $default,) {final _that = this;
 switch (_that) {
 case _TeamPageDto() when $default != null:
-return $default(_that.team,_that.id,_that.title,_that.slug,_that.media,_that.visibility,_that.order,_that.deleted);case _:
+return $default(_that.team,_that.id,_that.title,_that.slug,_that.media,_that.visibility,_that.order,_that.deleted,_that.permissions);case _:
   return null;
 
 }
@@ -248,7 +259,7 @@ return $default(_that.team,_that.id,_that.title,_that.slug,_that.media,_that.vis
 @JsonSerializable()
 
 class _TeamPageDto implements TeamPageDto {
-  const _TeamPageDto({required this.team, required this.id, required this.title, required this.slug, required this.media, required this.visibility, required this.order, required this.deleted});
+  const _TeamPageDto({required this.team, required this.id, required this.title, required this.slug, required this.media, required this.visibility, required this.order, required this.deleted, required this.permissions});
   factory _TeamPageDto.fromJson(Map<String, dynamic> json) => _$TeamPageDtoFromJson(json);
 
 /// Team
@@ -267,6 +278,8 @@ class _TeamPageDto implements TeamPageDto {
 @override final  int order;
 /// Whether the page is soft-deleted
 @override final  bool deleted;
+/// What the caller may do with the page: edit, delete (never the about page), and the visibilities it may be saved with.
+@override final  ContentPermissionsDto permissions;
 
 /// Create a copy of TeamPageDto
 /// with the given fields replaced by the non-null parameter values.
@@ -281,18 +294,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TeamPageDto&&(identical(other.team, team) || other.team == team)&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.media, media) || other.media == media)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.order, order) || other.order == order)&&(identical(other.deleted, deleted) || other.deleted == deleted));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TeamPageDto&&(identical(other.team, team) || other.team == team)&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.media, media) || other.media == media)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.order, order) || other.order == order)&&(identical(other.deleted, deleted) || other.deleted == deleted)&&(identical(other.permissions, permissions) || other.permissions == permissions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,team,id,title,slug,media,visibility,order,deleted);
+    return Object.hash(runtimeType,team,id,title,slug,media,visibility,order,deleted,permissions);
 }
 
 @override
 String toString() {
-    return 'TeamPageDto(team: $team, id: $id, title: $title, slug: $slug, media: $media, visibility: $visibility, order: $order, deleted: $deleted)';
+    return 'TeamPageDto(team: $team, id: $id, title: $title, slug: $slug, media: $media, visibility: $visibility, order: $order, deleted: $deleted, permissions: $permissions)';
 }
 
 
@@ -303,11 +316,11 @@ abstract mixin class _$TeamPageDtoCopyWith<$Res> implements $TeamPageDtoCopyWith
   factory _$TeamPageDtoCopyWith(_TeamPageDto value, $Res Function(_TeamPageDto) _then) = __$TeamPageDtoCopyWithImpl;
 @override @useResult
 $Res call({
- TeamPublicationDto team, String id, String title, String slug, MediaDto media, String visibility, int order, bool deleted
+ TeamPublicationDto team, String id, String title, String slug, MediaDto media, String visibility, int order, bool deleted, ContentPermissionsDto permissions
 });
 
 
-@override $TeamPublicationDtoCopyWith<$Res> get team;@override $MediaDtoCopyWith<$Res> get media;
+@override $TeamPublicationDtoCopyWith<$Res> get team;@override $MediaDtoCopyWith<$Res> get media;@override $ContentPermissionsDtoCopyWith<$Res> get permissions;
 
 }
 /// @nodoc
@@ -320,7 +333,7 @@ class __$TeamPageDtoCopyWithImpl<$Res>
 
 /// Create a copy of TeamPageDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? team = null,Object? id = null,Object? title = null,Object? slug = null,Object? media = null,Object? visibility = null,Object? order = null,Object? deleted = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? team = null,Object? id = null,Object? title = null,Object? slug = null,Object? media = null,Object? visibility = null,Object? order = null,Object? deleted = null,Object? permissions = null,}) {
   return _then(_TeamPageDto(
 team: null == team ? _self.team : team // ignore: cast_nullable_to_non_nullable
 as TeamPublicationDto,id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
@@ -330,7 +343,8 @@ as String,media: null == media ? _self.media : media // ignore: cast_nullable_to
 as MediaDto,visibility: null == visibility ? _self.visibility : visibility // ignore: cast_nullable_to_non_nullable
 as String,order: null == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
 as int,deleted: null == deleted ? _self.deleted : deleted // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,permissions: null == permissions ? _self.permissions : permissions // ignore: cast_nullable_to_non_nullable
+as ContentPermissionsDto,
   ));
 }
 
@@ -351,6 +365,15 @@ $MediaDtoCopyWith<$Res> get media {
   
   return $MediaDtoCopyWith<$Res>(_self.media, (value) {
     return _then(_self.copyWith(media: value));
+  });
+}/// Create a copy of TeamPageDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ContentPermissionsDtoCopyWith<$Res> get permissions {
+  
+  return $ContentPermissionsDtoCopyWith<$Res>(_self.permissions, (value) {
+    return _then(_self.copyWith(permissions: value));
   });
 }
 }

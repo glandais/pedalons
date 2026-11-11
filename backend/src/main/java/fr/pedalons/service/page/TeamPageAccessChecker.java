@@ -11,6 +11,7 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
 public class TeamPageAccessChecker implements AccessChecker {
@@ -47,11 +48,19 @@ public class TeamPageAccessChecker implements AccessChecker {
           // filtering done via SQL
           yield true;
         } else {
-          // admin in page team
-          yield teamRole != null && teamRole.isAdmin();
+          yield canWrite(teamRole);
         }
       }
       case LIST_ALL_TEAMS, JOIN, LEAVE -> false;
     };
+  }
+
+  /**
+   * {@code UPDATE} and {@code DELETE} of a page the caller can read: an admin of its team. Shared
+   * with the permissions block ({@code ContentPermissions}, docs/LEDGER_*.md API-176); the platform
+   * admin's bypass is {@code SecurityVerifier}'s.
+   */
+  public static boolean canWrite(@Nullable TeamRole teamRole) {
+    return teamRole != null && teamRole.isAdmin();
   }
 }

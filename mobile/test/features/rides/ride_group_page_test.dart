@@ -34,6 +34,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../support/localization.dart';
 import '../routes/route_fixtures.dart';
 import 'ride_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// La page d'un groupe de sortie (ledgers `MOB-67`, `MOB-134`) : une page qui
 /// défile, sans onglets ni barre d'action — bloc de départ et inscription,
@@ -113,6 +114,9 @@ class _Teams implements TeamRepository {
     return member
         ? <TeamDetailDto>[
             const TeamDetailDto(
+              allowedContentVisibilities: kAllContentVisibilities,
+              defaultContentVisibility: 'PUBLIC',
+              publicContentAllowed: false,
               timezone: 'Europe/Paris',
               id: 't1',
               slug: 'n-peloton',
@@ -290,6 +294,7 @@ void main() {
   // dont la distance repart de 0 — 30 km chaînés, saut nul.
   RouteDetailDto route({List<WaypointDto> waypoints = const <WaypointDto>[]}) =>
       RouteDetailDto(
+        permissions: kNoPermissions,
         elevationState: 'HD',
         tags: const [],
         id: 'r-court',

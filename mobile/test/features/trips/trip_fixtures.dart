@@ -1,5 +1,7 @@
 import 'package:pedalons/api/generated/export.dart';
 
+import '../../support/content_permissions.dart';
+
 /// Jeux de données du lot 4 pour les voyages.
 ///
 /// Un `TripDto` coûte quinze champs obligatoires ; deux copies de ce coût
@@ -12,6 +14,7 @@ const MediaDto kEmptyMedia = MediaDto(
 );
 
 const TeamPublicationDto kFixtureTeam = TeamPublicationDto(
+  accessible: true,
   id: 't1',
   slug: 'n-peloton',
   name: 'N-Peloton',
@@ -24,6 +27,7 @@ RouteDto fixtureStageRoute({
   double distance = 78400,
   double elevationGain = 1120,
 }) => RouteDto(
+  permissions: kNoPermissions,
   elevationState: 'HD',
   tags: const [],
   id: 'route-$slug',
@@ -53,6 +57,7 @@ TripStageDto fixtureStage({
   int? commentCount,
   String timezone = 'Europe/Paris',
 }) => TripStageDto(
+  permissions: kNoPermissions,
   timezone: timezone,
   id: 's$index',
   slug: slug ?? 'j$index',
@@ -106,6 +111,7 @@ TripDto fixtureTrip({
         fixtureStage(index: 3),
       ];
   return TripDto(
+    permissions: kNoPermissions,
     timezone: 'Europe/Paris',
     tags: const [],
     type: 'TRIP',

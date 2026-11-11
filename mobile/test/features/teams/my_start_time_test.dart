@@ -19,6 +19,7 @@ import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
+import '../../support/content_permissions.dart';
 
 /// `docs/LEDGER_*.md MOB-112` : la carte du fil, la carte « Sorties à venir »
 /// et la ligne « Vos prochaines sorties » donnent le départ **qui concerne la
@@ -68,6 +69,7 @@ void main() {
     bool registered = false,
     RideGroupDto? registeredGroup,
   }) => PublicationDtoRide(
+    permissions: kNoPermissions,
     timezone: 'Europe/Paris',
     tags: const <TagDto>[],
     groupSummaries: <RideGroupSummaryDto>[
@@ -75,6 +77,7 @@ void main() {
       summary('g-b', 'Groupe B', groupAt),
     ],
     team: const TeamPublicationDto(
+      accessible: true,
       id: 't1',
       slug: 'n-peloton',
       name: 'N-Peloton',
@@ -320,7 +323,9 @@ void main() {
         'unique, dans une boîte turquoise', (WidgetTester tester) async {
       // Du vendredi 17 octobre 2036, 09:00 à Paris, au dimanche 19.
       const PublicationDtoTrip trip = PublicationDtoTrip(
+        permissions: kNoPermissions,
         team: TeamPublicationDto(
+          accessible: true,
           id: 't1',
           slug: 'n-peloton',
           name: 'N-Peloton',

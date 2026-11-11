@@ -4,6 +4,7 @@ import fr.pedalons.common.MarkdownExcerpt;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.post.Post;
 import fr.pedalons.dto.comments.response.CommentCounts;
+import fr.pedalons.dto.common.ContentPermissionsDto;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.publications.response.PublicationDto;
 import fr.pedalons.dto.publications.response.PublicationType;
@@ -16,6 +17,7 @@ import fr.pedalons.enums.ListViewMode;
 import fr.pedalons.enums.Status;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.service.asset.AssetService;
+import fr.pedalons.service.common.ContentPermissions;
 import java.time.Instant;
 import java.util.List;
 import lombok.Getter;
@@ -122,6 +124,13 @@ public class PostDto implements PublicationDto {
       required = true)
   final List<TagDto> tags;
 
+  @Schema(
+      description =
+          "What the caller may do with the post: edit, delete, comment. allowedVisibilities is"
+              + " only on the detail.",
+      required = true)
+  final ContentPermissionsDto permissions;
+
   public PostDto(
       TeamPublicationDto team,
       String id,
@@ -140,7 +149,8 @@ public class PostDto implements PublicationDto {
       @Nullable Integer commentCount,
       boolean signedAsTeam,
       @Nullable PublicUserDto createdBy,
-      List<TagDto> tags) {
+      List<TagDto> tags,
+      ContentPermissionsDto permissions) {
     super();
     this.team = team;
     this.id = id;
@@ -160,6 +170,7 @@ public class PostDto implements PublicationDto {
     this.signedAsTeam = signedAsTeam;
     this.createdBy = createdBy;
     this.tags = tags;
+    this.permissions = permissions;
   }
 
   public static PostDto from(
@@ -167,8 +178,9 @@ public class PostDto implements PublicationDto {
       AssetService assetService,
       CommentCounts commentCounts,
       PostAuthors authors,
-      ContentTags tags) {
-    return from(post, assetService, commentCounts, authors, tags, ListViewMode.FULL);
+      ContentTags tags,
+      ContentPermissions permissions) {
+    return from(post, assetService, commentCounts, authors, tags, permissions, ListViewMode.FULL);
   }
 
   /**
@@ -176,6 +188,8 @@ public class PostDto implements PublicationDto {
    *     row; {@code excerpt} and {@code thumbnailUrl} carry what it renders instead
    * @param authors resolved for the whole page by {@code PostAuthorLookup}, never per row
    * @param tags resolved for the whole page by {@code TagLookup}, never per row
+   * @param permissions the caller's rights on the page, from one {@code CallerRoles} resolved for
+   *     the whole page (docs/LEDGER_*.md API-176)
    */
   public static PostDto from(
       Post post,
@@ -183,9 +197,10 @@ public class PostDto implements PublicationDto {
       CommentCounts commentCounts,
       PostAuthors authors,
       ContentTags tags,
+      ContentPermissions permissions,
       @Nullable ListViewMode view) {
     return new PostDto(
-        TeamPublicationDto.from(post.getTeam()),
+        TeamPublicationDto.from(post.getTeam(), permissions.teamAccessible(post.getTeam())),
         TsidUtils.toString(post.getId()),
         post.getSlug(),
         post.getName(),
@@ -202,6 +217,7 @@ public class PostDto implements PublicationDto {
         commentCounts.forEntity(post.getId()),
         post.isSignedAsTeam(),
         authors.forPost(post.getId()),
-        tags.forContent(post.getId()));
+        tags.forContent(post.getId()),
+        permissions.of(post));
   }
 }

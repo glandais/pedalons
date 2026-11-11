@@ -37,6 +37,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../support/localization.dart';
 import '../routes/route_fixtures.dart';
 import 'ride_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// S12-8 — l'assemblage de l'écran 12 et ses états.
 ///
@@ -185,6 +186,9 @@ class _StubTeamRepository implements TeamRepository {
   Future<List<TeamDetailDto>> getMyTeams() async => member
       ? <TeamDetailDto>[
           TeamDetailDto(
+            allowedContentVisibilities: kAllContentVisibilities,
+            defaultContentVisibility: 'PUBLIC',
+            publicContentAllowed: false,
             timezone: 'Europe/Paris',
             role: role,
             id: 't1',

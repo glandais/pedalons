@@ -22,6 +22,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
 import '../trips/trip_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// Ledgers `MOB-114` et `MOB-115` (règle `BRAND-8`, BRANDING §7.1, §7.8,
 /// §8.3) : sur les cartes du fil, la date quitte la rangée de statistiques
@@ -44,6 +45,7 @@ void main() {
   tearDown(() => AppFormatters.setDisplayTimezone(null));
 
   const TeamPublicationDto team = TeamPublicationDto(
+    accessible: true,
     id: 't1',
     slug: 'n-peloton',
     name: 'N-Peloton',
@@ -61,6 +63,7 @@ void main() {
     bool finished = false,
     int groupCount = 2,
   }) => PublicationDtoRide(
+    permissions: kNoPermissions,
     timezone: 'Europe/Paris',
     tags: const <TagDto>[],
     groupSummaries: const <RideGroupSummaryDto>[],
@@ -85,6 +88,7 @@ void main() {
 
   // Du vendredi 17 octobre 2036, 09:00 à Paris, au dimanche 19.
   const PublicationDtoTrip trip = PublicationDtoTrip(
+    permissions: kNoPermissions,
     team: team,
     id: 'trip1',
     slug: 'gtmc',

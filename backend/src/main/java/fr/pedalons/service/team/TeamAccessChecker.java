@@ -11,6 +11,7 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
 public class TeamAccessChecker implements AccessChecker {
@@ -38,17 +39,18 @@ public class TeamAccessChecker implements AccessChecker {
 
     return switch (action) {
       case CREATE, LIST -> true; // Handled above
-      case READ -> {
-        if (team == null) {
-          yield false;
-        }
-        if (team.getVisibility() != Visibility.TEAM) {
-          yield true;
-        }
-        yield teamRole != null;
-      }
+      case READ -> team != null && canRead(team, teamRole);
       case UPDATE, DELETE -> teamRole == TeamRole.ADMIN;
       case LIST_ALL_TEAMS, JOIN, LEAVE -> false;
     };
+  }
+
+  /**
+   * {@code READ} of a team — {@code GET team}, its dashboard, publications and tags: a team that is
+   * not private, or a member of it. What {@code TeamPublicationDto.accessible} reports
+   * (docs/LEDGER_*.md API-176), the platform admin's bypass being {@code SecurityVerifier}'s.
+   */
+  public static boolean canRead(Team team, @Nullable TeamRole teamRole) {
+    return team.getVisibility() != Visibility.TEAM || teamRole != null;
   }
 }

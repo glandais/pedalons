@@ -22,6 +22,7 @@ import fr.pedalons.enums.*;
 import fr.pedalons.repository.ad.AdContactRepository;
 import fr.pedalons.repository.ad.AdQuery;
 import fr.pedalons.repository.ad.AdRepository;
+import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.common.TeamEntityService;
 import fr.pedalons.service.security.annotation.CheckAccess;
 import fr.pedalons.service.security.annotation.Logged;
@@ -72,7 +73,11 @@ public class AdService extends TeamEntityService<Ad, AdRepository, AdDto> {
 
   @Override
   protected AdDto toDto(Ad entity) {
-    return AdDto.from(entity, assetService, tagLookup.forContents(List.of(entity.getId())));
+    return AdDto.from(
+        entity,
+        assetService,
+        tagLookup.forContents(List.of(entity.getId())),
+        detailPermissions(entity));
   }
 
   @Override
@@ -163,8 +168,14 @@ public class AdService extends TeamEntityService<Ad, AdRepository, AdDto> {
                 .build());
     // One query for the tags of the whole page, none for an empty one.
     ContentTags tags = tagLookup.forContents(ads.items().stream().map(Ad::getId).toList());
+    // One more for the caller's role, the permissions block of every row (docs/LEDGER_*.md
+    // API-176): every ad of the page is of this one team.
+    ContentPermissions permissions =
+        ContentPermissions.forList(callerRolesLookup.callerRoles(team.getId()));
     List<AdDto> dtos =
-        ads.items().stream().map(ad -> AdDto.from(ad, assetService, tags, view)).toList();
+        ads.items().stream()
+            .map(ad -> AdDto.from(ad, assetService, tags, permissions, view))
+            .toList();
     return new AdListResponse(dtos, ads.total(), page, size);
   }
 

@@ -21,6 +21,7 @@ import fr.pedalons.infrastructure.image.ImageFormat;
 import fr.pedalons.infrastructure.imgproxy.ImgProxyService;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.asset.AssetRepository;
+import fr.pedalons.repository.common.TeamEntityRepository;
 import fr.pedalons.service.asset.response.AssetWithFile;
 import fr.pedalons.service.gpx.TrackAttachmentSanitizer;
 import fr.pedalons.service.security.PedalonsQueryContext;
@@ -369,7 +370,8 @@ public class AssetService {
     } else {
       visibility = asset.getTeamEntity().getVisibility();
     }
-    String teamSlug = asset.getTeam().getSlug();
+    Team team = asset.getTeam();
+    String teamSlug = team.getSlug();
     AssetDimensionsDto assetDimensionsDto;
     String imageUrl;
     if (asset.getContentType().startsWith("image/")) {
@@ -384,7 +386,7 @@ public class AssetService {
     }
     String url =
         "/api/download/"
-            + visibility.name().toLowerCase()
+            + urlPrefix(team.getVisibility(), visibility)
             + "/assets/"
             + teamSlug
             + "/"
@@ -466,11 +468,8 @@ public class AssetService {
    * Bulk callers project those two scalars in their own query and land here, so the URL shape stays
    * defined in exactly one place. See {@code ThumbnailLookup}.
    *
-   * <p>The prefix only decides whether the image is indexable ({@code ApiNoIndexFilter} spares
-   * {@code /api/download/public/images/}); access is checked on the owning entity whatever the
-   * prefix. The {@code PUBLIC} content of a private team is readable by link only, never indexed
-   * (docs/LEDGER_*.md API-176, decision D1), so its images get the unlisted prefix, which keeps the
-   * {@code noindex} header while link previews still fetch them.
+   * <p>The prefix is {@link #urlPrefix}: it only decides whether the image is indexable, never who
+   * may fetch it.
    */
   public static String buildImageUrl(
       String teamSlug,
@@ -478,18 +477,35 @@ public class AssetService {
       Visibility visibility,
       Long assetId,
       Long fileId) {
-    Visibility urlVisibility =
-        visibility == Visibility.PUBLIC && teamVisibility == Visibility.TEAM
-            ? Visibility.PUBLIC_UNLISTED
-            : visibility;
     return "/api/download/"
-        + urlVisibility.name().toLowerCase()
+        + urlPrefix(teamVisibility, visibility)
         + "/images/"
         + teamSlug
         + "/"
         + TsidUtils.toString(assetId)
         + "/{size}"
         + versionQuery(fileId);
+  }
+
+  /**
+   * The visibility segment of an asset or image URL. It only decides whether the response may be
+   * indexed: {@code ApiNoIndexFilter} spares {@code /api/download/public/images/} alone, and every
+   * download endpoint checks access on the owning entity whatever the prefix, so a URL issued
+   * under an older rule keeps working.
+   *
+   * <p>{@code public} only for what the sitemap may list — entity {@code PUBLIC} and team {@code
+   * PUBLIC}, {@link TeamEntityRepository#isIndexableVisibility}. The {@code PUBLIC} content of an
+   * unlisted or a private team is readable by link but never indexed (docs/LEDGER_*.md API-176,
+   * decision D1), so it gets the unlisted prefix, which keeps the {@code noindex} header while link
+   * previews still fetch the images. Any other visibility keeps its own segment.
+   */
+  static String urlPrefix(Visibility teamVisibility, Visibility visibility) {
+    Visibility urlVisibility =
+        visibility == Visibility.PUBLIC
+                && !TeamEntityRepository.isIndexableVisibility(visibility, teamVisibility)
+            ? Visibility.PUBLIC_UNLISTED
+            : visibility;
+    return urlVisibility.name().toLowerCase();
   }
 
   /**

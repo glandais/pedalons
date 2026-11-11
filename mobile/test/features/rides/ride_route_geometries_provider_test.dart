@@ -8,6 +8,7 @@ import 'package:pedalons/features/rides/providers/ride_group_selection_provider.
 import 'package:pedalons/features/routes/data/route_repository.dart';
 
 import 'ride_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// M1 — le chargement des tracés d'une sortie ne doit pas suivre le cycle de
 /// vie de son détail.
@@ -38,11 +39,13 @@ class _CountingRouteRepository implements RouteRepository {
       routes: <RouteDetailDto>[
         for (final String slug in slugs)
           RouteDetailDto(
+            permissions: kNoPermissions,
             elevationState: 'HD',
             tags: const [],
             id: 'r-$slug',
             slug: slug,
             team: const TeamPublicationDto(
+              accessible: true,
               id: 't1',
               slug: 'n-peloton',
               name: 'N-Peloton',

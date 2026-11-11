@@ -21,6 +21,7 @@ import 'package:pedalons/features/trips/providers/trip_participation_controller.
 
 import '../trips/trip_fixtures.dart';
 import 'ride_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// Une inscription faite dans l'app doit atteindre **toutes** les vues qui
 /// dérivent de mes participations — pas seulement le détail de la sortie.
@@ -194,6 +195,7 @@ RideDto _twoGroups({String? registeredIn}) => fixtureRide(
 /// Une ligne de `listMyParticipations` : pas de `groups[]`, comme côté
 /// serveur, mais le groupe rejoint en entier (`registeredGroup`).
 PublicationDtoRide _asListRow(RideDto r) => PublicationDtoRide(
+  permissions: kNoPermissions,
   timezone: r.timezone,
   tags: r.tags,
   team: r.team,

@@ -22,6 +22,9 @@ _PostDto _$PostDtoFromJson(Map<String, dynamic> json) => _PostDto(
   tags: (json['tags'] as List<dynamic>)
       .map((e) => TagDto.fromJson(e as Map<String, dynamic>))
       .toList(),
+  permissions: ContentPermissionsDto.fromJson(
+    json['permissions'] as Map<String, dynamic>,
+  ),
   excerpt: json['excerpt'] as String?,
   thumbnailUrl: json['thumbnailUrl'] as String?,
   publishAt: json['publishAt'] as String?,
@@ -46,6 +49,7 @@ Map<String, dynamic> _$PostDtoToJson(_PostDto instance) => <String, dynamic>{
   'deleted': instance.deleted,
   'signedAsTeam': instance.signedAsTeam,
   'tags': instance.tags.map((e) => e.toJson()).toList(),
+  'permissions': instance.permissions.toJson(),
   'excerpt': instance.excerpt,
   'thumbnailUrl': instance.thumbnailUrl,
   'publishAt': instance.publishAt,

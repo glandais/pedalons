@@ -20,6 +20,7 @@ import 'package:pedalons/keys.dart';
 
 import '../../support/localization.dart';
 import 'ride_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// La carte du détail d'une **sortie solo** en mode « Météo » (ledger
 /// `MOB-94`) : `RideGroupsMap` sans `onlyGroup`, avec le leg du groupe
@@ -36,6 +37,7 @@ void main() {
   const RideKey key = RideKey(teamSlug: 'n-peloton', rideSlug: 'np-665');
 
   RouteDetailDto route(String slug) => RouteDetailDto(
+    permissions: kNoPermissions,
     elevationState: 'HD',
     tags: const [],
     id: 'r-$slug',

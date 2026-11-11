@@ -1,3 +1,4 @@
+import type { ContentPermissionsDto } from './contentPermissionsDto.ts'
 import type { Instant } from './instant.ts'
 import type { MediaDto } from './mediaDto.ts'
 import type { PlaceDetailDto } from './placeDetailDto.ts'
@@ -39,4 +40,6 @@ export interface TripStageDto {
   estimatedArrival?: Instant
   /** Minutes from dateTime to estimatedArrival, rounded. Absent when estimatedArrival is. */
   estimatedDurationMinutes?: number
+  /** What the caller may do with the stage: comment on it, and edit or delete it — through its trip, which a stage is written with. No allowedVisibilities: a stage has its trip's visibility. */
+  permissions: ContentPermissionsDto
 }

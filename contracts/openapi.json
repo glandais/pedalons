@@ -85,7 +85,7 @@
       "AdDto" : {
         "description" : "Ad data",
         "type" : "object",
-        "required" : [ "team", "id", "slug", "name", "media", "images", "status", "visibility", "adType", "createdAt", "updatedAt", "createdById", "createdByDisplayName", "deleted", "tags" ],
+        "required" : [ "team", "id", "slug", "name", "media", "images", "status", "visibility", "adType", "createdAt", "updatedAt", "createdById", "createdByDisplayName", "deleted", "tags", "permissions" ],
         "properties" : {
           "team" : {
             "description" : "Team",
@@ -201,6 +201,11 @@
               "$ref" : "#/components/schemas/TagDto"
             },
             "description" : "The team's AD tags the ad carries, sorted by label. Empty when it carries none."
+          },
+          "permissions" : {
+            "description" : "What the caller may do with the ad: edit and delete (its author or a team admin). allowedVisibilities, on the detail only, is always [TEAM].",
+            "type" : "object",
+            "$ref" : "#/components/schemas/ContentPermissionsDto"
           }
         }
       },
@@ -1537,6 +1542,94 @@
           "gpsAutoSyncEnabled" : {
             "type" : "boolean",
             "description" : "Whether this deployment sends the routes of a member's rides to their GPS services on its own (GpsServiceConnectionDto.autoSync). When false the clients offer no switch: it would promise a sending that never happens."
+          }
+        }
+      },
+      "ContentPermissionsDto" : {
+        "type" : "object",
+        "description" : "What the caller may do with this entity, computed by the server from the rules that guard the matching endpoints. A client shows or hides its controls from these fields alone, and never derives them from the team's visibility or the caller's role.",
+        "required" : [ "canEdit", "canDelete", "indexable" ],
+        "properties" : {
+          "canEdit" : {
+            "type" : "boolean",
+            "description" : "Whether the caller may edit this entity (the update endpoints would accept it). For a trip stage, whether they may edit its trip, which a stage is written through. For the team's about page, whether they may edit it through the team update, the only way it is written."
+          },
+          "canDelete" : {
+            "type" : "boolean",
+            "description" : "Whether the caller may delete this entity. For a trip stage, whether they may delete its trip."
+          },
+          "canRegister" : {
+            "type" : "boolean",
+            "description" : "Rides and trips only: whether the caller may register — a member of the team (or a platform admin), the entity published. On a detail it is exact about timing too: false once every group of the ride has left or the trip is finished, as the join endpoints answer. On list rows it does not look at timing, so it may be true on a row and false on the detail of the same entity. Never counts capacity: a full group still refuses. Absent on the other types."
+          },
+          "canComment" : {
+            "type" : "boolean",
+            "description" : "Whether the caller may read and write the comment thread: a member of the team or a platform admin, whatever the entity's visibility. Absent on the types that carry no comments (team pages, ads)."
+          },
+          "canSeeParticipants" : {
+            "type" : "boolean",
+            "description" : "Rides and trips only: whether the caller may see who takes part (names, the participants endpoints). Same rule as canComment. When false, only the counts are sent. Absent on the other types."
+          },
+          "allowedVisibilities" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Visibility"
+            },
+            "description" : "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+          },
+          "indexable" : {
+            "type" : "boolean",
+            "description" : "Whether search engines may index the entity's page: the rule of the sitemap — entity PUBLIC, team PUBLIC, published or cancelled, not hidden by moderation. False means the page must carry noindex. A trip stage carries its trip's answer."
+          }
+        }
+      },
+      "ContentVisibilitiesDto" : {
+        "type" : "object",
+        "description" : "The visibilities the team accepts for each type of content, in the order of the Visibility enum. What a creation form offers; an editor hides its selector when a list has a single value. Never empty: TEAM is always accepted.",
+        "required" : [ "ride", "rideTemplate", "route", "post", "trip", "teamPage", "ad" ],
+        "properties" : {
+          "ride" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Visibility"
+            }
+          },
+          "rideTemplate" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Visibility"
+            }
+          },
+          "route" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Visibility"
+            }
+          },
+          "post" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Visibility"
+            }
+          },
+          "trip" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Visibility"
+            }
+          },
+          "teamPage" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Visibility"
+            }
+          },
+          "ad" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Visibility"
+            },
+            "description" : "Always [TEAM]: ads are members-only in every team."
           }
         }
       },
@@ -4103,7 +4196,7 @@
       "PostDto" : {
         "description" : "Post summary data",
         "type" : "object",
-        "required" : [ "type", "team", "id", "slug", "name", "media", "dateTime", "timezone", "status", "visibility", "deleted", "signedAsTeam", "tags" ],
+        "required" : [ "type", "team", "id", "slug", "name", "media", "dateTime", "timezone", "status", "visibility", "deleted", "signedAsTeam", "tags", "permissions" ],
         "properties" : {
           "type" : {
             "description" : "Type",
@@ -4194,6 +4287,11 @@
               "$ref" : "#/components/schemas/TagDto"
             },
             "description" : "The team's POST tags the post carries, sorted by label. Empty when it carries none."
+          },
+          "permissions" : {
+            "description" : "What the caller may do with the post: edit, delete, comment. allowedVisibilities is only on the detail.",
+            "type" : "object",
+            "$ref" : "#/components/schemas/ContentPermissionsDto"
           }
         }
       },
@@ -4637,7 +4735,7 @@
       "RideDto" : {
         "description" : "Ride summary data",
         "type" : "object",
-        "required" : [ "type", "team", "id", "slug", "name", "media", "dateTime", "timezone", "endDateTime", "status", "finished", "visibility", "participantCount", "groupCount", "groups", "groupSummaries", "topParticipants", "deleted", "registered", "full", "tags" ],
+        "required" : [ "type", "team", "id", "slug", "name", "media", "dateTime", "timezone", "endDateTime", "status", "finished", "visibility", "participantCount", "groupCount", "groups", "groupSummaries", "topParticipants", "deleted", "registered", "full", "tags", "permissions" ],
         "properties" : {
           "type" : {
             "description" : "Type",
@@ -4830,6 +4928,11 @@
               "$ref" : "#/components/schemas/RouteGpsSyncStatusDto"
             },
             "description" : "Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route."
+          },
+          "permissions" : {
+            "description" : "What the caller may do with the ride: edit, delete, register, comment, see who rides. allowedVisibilities is only on the detail.",
+            "type" : "object",
+            "$ref" : "#/components/schemas/ContentPermissionsDto"
           }
         }
       },
@@ -5457,7 +5560,7 @@
       "RouteDetailDto" : {
         "description" : "Detailed route information",
         "type" : "object",
-        "required" : [ "id", "slug", "team", "name", "media", "distance", "elevationGain", "elevationLoss", "elevationState", "surfaceType", "visibility", "createdAt", "updatedAt", "tracks", "waypoints", "deleted", "tags" ],
+        "required" : [ "id", "slug", "team", "name", "media", "distance", "elevationGain", "elevationLoss", "elevationState", "surfaceType", "visibility", "createdAt", "updatedAt", "tracks", "waypoints", "deleted", "tags", "permissions" ],
         "properties" : {
           "id" : {
             "type" : "string",
@@ -5570,13 +5673,18 @@
               "$ref" : "#/components/schemas/RouteGpsSyncStatusDto"
             },
             "description" : "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it."
+          },
+          "permissions" : {
+            "description" : "What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only).",
+            "type" : "object",
+            "$ref" : "#/components/schemas/ContentPermissionsDto"
           }
         }
       },
       "RouteDto" : {
         "type" : "object",
         "description" : "Route summary data",
-        "required" : [ "id", "slug", "team", "name", "media", "distance", "elevationGain", "elevationLoss", "elevationState", "surfaceType", "visibility", "createdAt", "deleted", "tags" ],
+        "required" : [ "id", "slug", "team", "name", "media", "distance", "elevationGain", "elevationLoss", "elevationState", "surfaceType", "visibility", "createdAt", "deleted", "tags", "permissions" ],
         "properties" : {
           "id" : {
             "type" : "string",
@@ -5665,6 +5773,11 @@
               "$ref" : "#/components/schemas/RouteGpsSyncStatusDto"
             },
             "description" : "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it (create, update)."
+          },
+          "permissions" : {
+            "description" : "What the caller may do with the route: edit, delete, comment. A list row and the route of a stage carry no allowedVisibilities; the detail (RouteDetailDto) does.",
+            "type" : "object",
+            "$ref" : "#/components/schemas/ContentPermissionsDto"
           }
         }
       },
@@ -6363,7 +6476,7 @@
       "TeamDetailDto" : {
         "type" : "object",
         "description" : "Detailed team information",
-        "required" : [ "id", "name", "slug", "about", "visibility", "enableTrips", "enableAds", "enablePosts", "enableRides", "enableRoutes", "enableMemberDirectory", "postsAsTeamByDefault", "visibilityEditable", "joinable", "addMemberAllowed", "enableRoutePlanner", "memberCount", "upcomingRideCount", "routeCount", "upcomingTripCount", "recentPostCount", "createdAt", "timezone" ],
+        "required" : [ "id", "name", "slug", "about", "visibility", "enableTrips", "enableAds", "enablePosts", "enableRides", "enableRoutes", "enableMemberDirectory", "postsAsTeamByDefault", "visibilityEditable", "joinable", "addMemberAllowed", "enableRoutePlanner", "memberCount", "upcomingRideCount", "routeCount", "upcomingTripCount", "recentPostCount", "createdAt", "timezone", "allowedContentVisibilities", "defaultContentVisibility", "publicContentAllowed" ],
         "properties" : {
           "id" : {
             "type" : "string",
@@ -6512,6 +6625,20 @@
             "type" : "string",
             "description" : "The team's IANA zone: the one its rides, trips and posts fall back on when no place locates them. Administrators change it through TeamRequest.timezone.",
             "examples" : [ "Europe/Paris" ]
+          },
+          "allowedContentVisibilities" : {
+            "description" : "The visibilities the team accepts for each type of content: what a creation form offers. The same for every caller who may read the team — the server still decides who may write. A private team holds TEAM only, unless a platform admin set publicContentAllowed.",
+            "type" : "object",
+            "$ref" : "#/components/schemas/ContentVisibilitiesDto"
+          },
+          "defaultContentVisibility" : {
+            "description" : "The visibility a creation form starts from: the team's own, so TEAM for a private team, publicContentAllowed or not. Not for ads, which are always TEAM.",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Visibility"
+          },
+          "publicContentAllowed" : {
+            "type" : "boolean",
+            "description" : "Whether a platform admin allowed this private team to publish content as public or unlisted, readable by link only and kept out of every listing and of the sitemap. Meaningless for a team that is not private. For the platform administration screen: editors read allowedContentVisibilities."
           }
         }
       },
@@ -6621,7 +6748,7 @@
       "TeamPageDto" : {
         "description" : "Team page detail",
         "type" : "object",
-        "required" : [ "team", "id", "title", "slug", "media", "visibility", "order", "deleted" ],
+        "required" : [ "team", "id", "title", "slug", "media", "visibility", "order", "deleted", "permissions" ],
         "properties" : {
           "team" : {
             "description" : "Team",
@@ -6658,6 +6785,11 @@
           "deleted" : {
             "type" : "boolean",
             "description" : "Whether the page is soft-deleted"
+          },
+          "permissions" : {
+            "description" : "What the caller may do with the page: edit, delete (never the about page), and the visibilities it may be saved with.",
+            "type" : "object",
+            "$ref" : "#/components/schemas/ContentPermissionsDto"
           }
         }
       },
@@ -6721,7 +6853,7 @@
       "TeamPublicationDto" : {
         "type" : "object",
         "description" : "Team information",
-        "required" : [ "id", "name", "slug", "visibility" ],
+        "required" : [ "id", "name", "slug", "visibility", "accessible" ],
         "properties" : {
           "id" : {
             "type" : "string",
@@ -6743,7 +6875,11 @@
           },
           "logoUrl" : {
             "type" : "string",
-            "description" : "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
+            "description" : "URL template of the team's logo (with a {size} placeholder), when it has one and the caller may download it. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Absent when accessible is false and the private team does not publish content by link: its logo is then closed to the caller. Opaque URL: may carry a query string; substitute {size} only."
+          },
+          "accessible" : {
+            "type" : "boolean",
+            "description" : "Whether GET team answers the caller: the team is not private, or the caller is a member of it or a platform admin. A client loads the team, links to it or shows its header only when true; otherwise it renders this summary. The public content of a private team is read by link with this false."
           }
         }
       },
@@ -7232,7 +7368,7 @@
       "TripDto" : {
         "description" : "Trip data",
         "type" : "object",
-        "required" : [ "type", "team", "id", "slug", "name", "media", "dateTime", "timezone", "endDateTime", "status", "finished", "visibility", "participantCount", "stageCount", "stages", "participants", "deleted", "registered", "tags" ],
+        "required" : [ "type", "team", "id", "slug", "name", "media", "dateTime", "timezone", "endDateTime", "status", "finished", "visibility", "participantCount", "stageCount", "stages", "participants", "deleted", "registered", "tags", "permissions" ],
         "properties" : {
           "type" : {
             "description" : "Type",
@@ -7383,6 +7519,11 @@
             "description" : "The weather line of a list card: that of the trip's next leg — its first stage still to leave, else the trip itself when it has no stage — at the start of its route, over the window from its departure to its estimated arrival. Absent when there is nothing to show — trip finished, draft or cancelled, next stage without a route, forecast not in cache yet — and on the trip's own detail, which reads getTripWeather; present only with status OK, STALE or NOT_YET_AVAILABLE.",
             "type" : "object",
             "$ref" : "#/components/schemas/RideWeatherSummaryDto"
+          },
+          "permissions" : {
+            "description" : "What the caller may do with the trip: edit, delete, register, comment, see who goes. allowedVisibilities is only on the detail.",
+            "type" : "object",
+            "$ref" : "#/components/schemas/ContentPermissionsDto"
           }
         }
       },
@@ -7496,7 +7637,7 @@
       "TripStageDto" : {
         "type" : "object",
         "description" : "Trip stage information",
-        "required" : [ "id", "slug", "name", "dateTime", "timezone", "media", "sortOrder", "stageIndex", "stageCount" ],
+        "required" : [ "id", "slug", "name", "dateTime", "timezone", "media", "sortOrder", "stageIndex", "stageCount", "permissions" ],
         "properties" : {
           "id" : {
             "type" : "string",
@@ -7574,6 +7715,11 @@
             "type" : "integer",
             "format" : "int32",
             "description" : "Minutes from dateTime to estimatedArrival, rounded. Absent when estimatedArrival is."
+          },
+          "permissions" : {
+            "description" : "What the caller may do with the stage: comment on it, and edit or delete it — through its trip, which a stage is written with. No allowedVisibilities: a stage has its trip's visibility.",
+            "type" : "object",
+            "$ref" : "#/components/schemas/ContentPermissionsDto"
           }
         }
       },
@@ -25089,7 +25235,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "13.6.0",
+    "version" : "13.7.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

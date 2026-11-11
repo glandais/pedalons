@@ -51,7 +51,7 @@ public record RideTemplateDto(
         template.getGroups().stream().map(RideTemplateGroupDto::from).toList();
 
     return new RideTemplateDto(
-        TeamPublicationDto.from(template.getTeam()),
+        TeamPublicationDto.ofMember(template.getTeam()),
         TsidUtils.toString(template.getId()),
         template.getSlug(),
         template.getName(),

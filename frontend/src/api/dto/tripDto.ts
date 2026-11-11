@@ -1,3 +1,4 @@
+import type { ContentPermissionsDto } from './contentPermissionsDto.ts'
 import type { Instant } from './instant.ts'
 import type { MediaDto } from './mediaDto.ts'
 import type { PublicUserDto } from './publicUserDto.ts'
@@ -74,4 +75,6 @@ export interface TripDto {
   tags: TagDto[]
   /** The weather line of a list card: that of the trip's next leg — its first stage still to leave, else the trip itself when it has no stage — at the start of its route, over the window from its departure to its estimated arrival. Absent when there is nothing to show — trip finished, draft or cancelled, next stage without a route, forecast not in cache yet — and on the trip's own detail, which reads getTripWeather; present only with status OK, STALE or NOT_YET_AVAILABLE. */
   weather?: RideWeatherSummaryDto
+  /** What the caller may do with the trip: edit, delete, register, comment, see who goes. allowedVisibilities is only on the detail. */
+  permissions: ContentPermissionsDto
 }

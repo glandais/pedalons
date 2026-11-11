@@ -20,7 +20,8 @@ mixin _$TeamPublicationDto {
  String get id;/// Team name
  String get name;/// Team URL slug
  String get slug;/// Whether the team is public
- String get visibility;/// URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only.
+ String get visibility;/// Whether GET team answers the caller: the team is not private, or the caller is a member of it or a platform admin. A client loads the team, links to it or shows its header only when true; otherwise it renders this summary. The public content of a private team is read by link with this false.
+ bool get accessible;/// URL template of the team's logo (with a {size} placeholder), when it has one and the caller may download it. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Absent when accessible is false and the private team does not publish content by link: its logo is then closed to the caller. Opaque URL: may carry a query string; substitute {size} only.
  String? get logoUrl;
 /// Create a copy of TeamPublicationDto
 /// with the given fields replaced by the non-null parameter values.
@@ -35,20 +36,20 @@ $TeamPublicationDtoCopyWith<TeamPublicationDto> get copyWith => _$TeamPublicatio
 @override
 bool operator ==(Object other) {
   final _this = this as TeamPublicationDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TeamPublicationDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&(identical(other.logoUrl, _this.logoUrl) || other.logoUrl == _this.logoUrl));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TeamPublicationDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.visibility, _this.visibility) || other.visibility == _this.visibility)&&(identical(other.accessible, _this.accessible) || other.accessible == _this.accessible)&&(identical(other.logoUrl, _this.logoUrl) || other.logoUrl == _this.logoUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as TeamPublicationDto;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.slug,_this.visibility,_this.logoUrl);
+  return Object.hash(runtimeType,_this.id,_this.name,_this.slug,_this.visibility,_this.accessible,_this.logoUrl);
 }
 
 @override
 String toString() {
   final _this = this as TeamPublicationDto;
-  return 'TeamPublicationDto(id: ${_this.id}, name: ${_this.name}, slug: ${_this.slug}, visibility: ${_this.visibility}, logoUrl: ${_this.logoUrl})';
+  return 'TeamPublicationDto(id: ${_this.id}, name: ${_this.name}, slug: ${_this.slug}, visibility: ${_this.visibility}, accessible: ${_this.accessible}, logoUrl: ${_this.logoUrl})';
 }
 
 
@@ -59,7 +60,7 @@ abstract mixin class $TeamPublicationDtoCopyWith<$Res>  {
   factory $TeamPublicationDtoCopyWith(TeamPublicationDto value, $Res Function(TeamPublicationDto) _then) = _$TeamPublicationDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String slug, String visibility, String? logoUrl
+ String id, String name, String slug, String visibility, bool accessible, String? logoUrl
 });
 
 
@@ -76,13 +77,14 @@ class _$TeamPublicationDtoCopyWithImpl<$Res>
 
 /// Create a copy of TeamPublicationDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? slug = null,Object? visibility = null,Object? logoUrl = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? slug = null,Object? visibility = null,Object? accessible = null,Object? logoUrl = freezed,}) {
   return _then(TeamPublicationDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
 as String,visibility: null == visibility ? _self.visibility : visibility // ignore: cast_nullable_to_non_nullable
-as String,logoUrl: freezed == logoUrl ? _self.logoUrl : logoUrl // ignore: cast_nullable_to_non_nullable
+as String,accessible: null == accessible ? _self.accessible : accessible // ignore: cast_nullable_to_non_nullable
+as bool,logoUrl: freezed == logoUrl ? _self.logoUrl : logoUrl // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -168,10 +170,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String slug,  String visibility,  String? logoUrl)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String slug,  String visibility,  bool accessible,  String? logoUrl)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TeamPublicationDto() when $default != null:
-return $default(_that.id,_that.name,_that.slug,_that.visibility,_that.logoUrl);case _:
+return $default(_that.id,_that.name,_that.slug,_that.visibility,_that.accessible,_that.logoUrl);case _:
   return orElse();
 
 }
@@ -189,10 +191,10 @@ return $default(_that.id,_that.name,_that.slug,_that.visibility,_that.logoUrl);c
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String slug,  String visibility,  String? logoUrl)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String slug,  String visibility,  bool accessible,  String? logoUrl)  $default,) {final _that = this;
 switch (_that) {
 case _TeamPublicationDto():
-return $default(_that.id,_that.name,_that.slug,_that.visibility,_that.logoUrl);case _:
+return $default(_that.id,_that.name,_that.slug,_that.visibility,_that.accessible,_that.logoUrl);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +211,10 @@ return $default(_that.id,_that.name,_that.slug,_that.visibility,_that.logoUrl);c
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String slug,  String visibility,  String? logoUrl)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String slug,  String visibility,  bool accessible,  String? logoUrl)?  $default,) {final _that = this;
 switch (_that) {
 case _TeamPublicationDto() when $default != null:
-return $default(_that.id,_that.name,_that.slug,_that.visibility,_that.logoUrl);case _:
+return $default(_that.id,_that.name,_that.slug,_that.visibility,_that.accessible,_that.logoUrl);case _:
   return null;
 
 }
@@ -224,7 +226,7 @@ return $default(_that.id,_that.name,_that.slug,_that.visibility,_that.logoUrl);c
 @JsonSerializable()
 
 class _TeamPublicationDto implements TeamPublicationDto {
-  const _TeamPublicationDto({required this.id, required this.name, required this.slug, required this.visibility, this.logoUrl});
+  const _TeamPublicationDto({required this.id, required this.name, required this.slug, required this.visibility, required this.accessible, this.logoUrl});
   factory _TeamPublicationDto.fromJson(Map<String, dynamic> json) => _$TeamPublicationDtoFromJson(json);
 
 /// Team ID (TSID)
@@ -235,7 +237,9 @@ class _TeamPublicationDto implements TeamPublicationDto {
 @override final  String slug;
 /// Whether the team is public
 @override final  String visibility;
-/// URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only.
+/// Whether GET team answers the caller: the team is not private, or the caller is a member of it or a platform admin. A client loads the team, links to it or shows its header only when true; otherwise it renders this summary. The public content of a private team is read by link with this false.
+@override final  bool accessible;
+/// URL template of the team's logo (with a {size} placeholder), when it has one and the caller may download it. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Absent when accessible is false and the private team does not publish content by link: its logo is then closed to the caller. Opaque URL: may carry a query string; substitute {size} only.
 @override final  String? logoUrl;
 
 /// Create a copy of TeamPublicationDto
@@ -251,18 +255,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TeamPublicationDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.logoUrl, logoUrl) || other.logoUrl == logoUrl));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TeamPublicationDto&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.visibility, visibility) || other.visibility == visibility)&&(identical(other.accessible, accessible) || other.accessible == accessible)&&(identical(other.logoUrl, logoUrl) || other.logoUrl == logoUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,slug,visibility,logoUrl);
+    return Object.hash(runtimeType,id,name,slug,visibility,accessible,logoUrl);
 }
 
 @override
 String toString() {
-    return 'TeamPublicationDto(id: $id, name: $name, slug: $slug, visibility: $visibility, logoUrl: $logoUrl)';
+    return 'TeamPublicationDto(id: $id, name: $name, slug: $slug, visibility: $visibility, accessible: $accessible, logoUrl: $logoUrl)';
 }
 
 
@@ -273,7 +277,7 @@ abstract mixin class _$TeamPublicationDtoCopyWith<$Res> implements $TeamPublicat
   factory _$TeamPublicationDtoCopyWith(_TeamPublicationDto value, $Res Function(_TeamPublicationDto) _then) = __$TeamPublicationDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String slug, String visibility, String? logoUrl
+ String id, String name, String slug, String visibility, bool accessible, String? logoUrl
 });
 
 
@@ -290,13 +294,14 @@ class __$TeamPublicationDtoCopyWithImpl<$Res>
 
 /// Create a copy of TeamPublicationDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? slug = null,Object? visibility = null,Object? logoUrl = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? slug = null,Object? visibility = null,Object? accessible = null,Object? logoUrl = freezed,}) {
   return _then(_TeamPublicationDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
 as String,visibility: null == visibility ? _self.visibility : visibility // ignore: cast_nullable_to_non_nullable
-as String,logoUrl: freezed == logoUrl ? _self.logoUrl : logoUrl // ignore: cast_nullable_to_non_nullable
+as String,accessible: null == accessible ? _self.accessible : accessible // ignore: cast_nullable_to_non_nullable
+as bool,logoUrl: freezed == logoUrl ? _self.logoUrl : logoUrl // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

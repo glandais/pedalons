@@ -10,6 +10,7 @@ import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
+import '../../support/content_permissions.dart';
 
 /// La ligne météo d'une carte de fil, et son transport jusqu'à « Ma prochaine
 /// sortie » (`rideFromListRow`).
@@ -30,10 +31,12 @@ void main() {
     bool finished = false,
     String status = 'PUBLISHED',
   }) => PublicationDtoRide(
+    permissions: kNoPermissions,
     timezone: 'Europe/Paris',
     tags: const <TagDto>[],
     groupSummaries: const [],
     team: const TeamPublicationDto(
+      accessible: true,
       id: 't1',
       slug: 'n-peloton',
       name: 'N-Peloton',
@@ -65,9 +68,11 @@ void main() {
     bool finished = false,
     String status = 'PUBLISHED',
   }) => PublicationDtoTrip(
+    permissions: kNoPermissions,
     timezone: 'Europe/Paris',
     tags: const <TagDto>[],
     team: const TeamPublicationDto(
+      accessible: true,
       id: 't1',
       slug: 'n-peloton',
       name: 'N-Peloton',

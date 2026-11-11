@@ -84,7 +84,12 @@ export const ListAllRoutesResponse = zod
                   .string()
                   .optional()
                   .describe(
-                    "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
+                    "URL template of the team's logo (with a {size} placeholder), when it has one and the caller may download it. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Absent when accessible is false and the private team does not publish content by link: its logo is then closed to the caller. Opaque URL: may carry a query string; substitute {size} only."
+                  ),
+                accessible: zod
+                  .boolean()
+                  .describe(
+                    'Whether GET team answers the caller: the team is not private, or the caller is a member of it or a platform admin. A client loads the team, links to it or shows its header only when true; otherwise it renders this summary. The public content of a private team is read by link with this false.'
                   ),
               })
               .describe('Team'),
@@ -443,6 +448,51 @@ export const ListAllRoutesResponse = zod
               .describe(
                 "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it (create, update)."
               ),
+            permissions: zod
+              .object({
+                canEdit: zod
+                  .boolean()
+                  .describe(
+                    "Whether the caller may edit this entity (the update endpoints would accept it). For a trip stage, whether they may edit its trip, which a stage is written through. For the team's about page, whether they may edit it through the team update, the only way it is written."
+                  ),
+                canDelete: zod
+                  .boolean()
+                  .describe(
+                    'Whether the caller may delete this entity. For a trip stage, whether they may delete its trip.'
+                  ),
+                canRegister: zod
+                  .boolean()
+                  .optional()
+                  .describe(
+                    'Rides and trips only: whether the caller may register — a member of the team (or a platform admin), the entity published. On a detail it is exact about timing too: false once every group of the ride has left or the trip is finished, as the join endpoints answer. On list rows it does not look at timing, so it may be true on a row and false on the detail of the same entity. Never counts capacity: a full group still refuses. Absent on the other types.'
+                  ),
+                canComment: zod
+                  .boolean()
+                  .optional()
+                  .describe(
+                    "Whether the caller may read and write the comment thread: a member of the team or a platform admin, whatever the entity's visibility. Absent on the types that carry no comments (team pages, ads)."
+                  ),
+                canSeeParticipants: zod
+                  .boolean()
+                  .optional()
+                  .describe(
+                    'Rides and trips only: whether the caller may see who takes part (names, the participants endpoints). Same rule as canComment. When false, only the counts are sent. Absent on the other types.'
+                  ),
+                allowedVisibilities: zod
+                  .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
+                  .optional()
+                  .describe(
+                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                  ),
+                indexable: zod
+                  .boolean()
+                  .describe(
+                    "Whether search engines may index the entity's page: the rule of the sitemap — entity PUBLIC, team PUBLIC, published or cancelled, not hidden by moderation. False means the page must carry noindex. A trip stage carries its trip's answer."
+                  ),
+              })
+              .describe(
+                'What the caller may do with the route: edit, delete, comment. A list row and the route of a stage carry no allowedVisibilities; the detail (RouteDetailDto) does.'
+              ),
           })
           .describe('Route summary data')
       )
@@ -713,7 +763,12 @@ export const ListRoutesResponse = zod
                   .string()
                   .optional()
                   .describe(
-                    "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
+                    "URL template of the team's logo (with a {size} placeholder), when it has one and the caller may download it. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Absent when accessible is false and the private team does not publish content by link: its logo is then closed to the caller. Opaque URL: may carry a query string; substitute {size} only."
+                  ),
+                accessible: zod
+                  .boolean()
+                  .describe(
+                    'Whether GET team answers the caller: the team is not private, or the caller is a member of it or a platform admin. A client loads the team, links to it or shows its header only when true; otherwise it renders this summary. The public content of a private team is read by link with this false.'
                   ),
               })
               .describe('Team'),
@@ -1071,6 +1126,51 @@ export const ListRoutesResponse = zod
               .optional()
               .describe(
                 "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it (create, update)."
+              ),
+            permissions: zod
+              .object({
+                canEdit: zod
+                  .boolean()
+                  .describe(
+                    "Whether the caller may edit this entity (the update endpoints would accept it). For a trip stage, whether they may edit its trip, which a stage is written through. For the team's about page, whether they may edit it through the team update, the only way it is written."
+                  ),
+                canDelete: zod
+                  .boolean()
+                  .describe(
+                    'Whether the caller may delete this entity. For a trip stage, whether they may delete its trip.'
+                  ),
+                canRegister: zod
+                  .boolean()
+                  .optional()
+                  .describe(
+                    'Rides and trips only: whether the caller may register — a member of the team (or a platform admin), the entity published. On a detail it is exact about timing too: false once every group of the ride has left or the trip is finished, as the join endpoints answer. On list rows it does not look at timing, so it may be true on a row and false on the detail of the same entity. Never counts capacity: a full group still refuses. Absent on the other types.'
+                  ),
+                canComment: zod
+                  .boolean()
+                  .optional()
+                  .describe(
+                    "Whether the caller may read and write the comment thread: a member of the team or a platform admin, whatever the entity's visibility. Absent on the types that carry no comments (team pages, ads)."
+                  ),
+                canSeeParticipants: zod
+                  .boolean()
+                  .optional()
+                  .describe(
+                    'Rides and trips only: whether the caller may see who takes part (names, the participants endpoints). Same rule as canComment. When false, only the counts are sent. Absent on the other types.'
+                  ),
+                allowedVisibilities: zod
+                  .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
+                  .optional()
+                  .describe(
+                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                  ),
+                indexable: zod
+                  .boolean()
+                  .describe(
+                    "Whether search engines may index the entity's page: the rule of the sitemap — entity PUBLIC, team PUBLIC, published or cancelled, not hidden by moderation. False means the page must carry noindex. A trip stage carries its trip's answer."
+                  ),
+              })
+              .describe(
+                'What the caller may do with the route: edit, delete, comment. A list row and the route of a stage carry no allowedVisibilities; the detail (RouteDetailDto) does.'
               ),
           })
           .describe('Route summary data')
@@ -1652,7 +1752,12 @@ export const CreateRouteResponse = zod
           .string()
           .optional()
           .describe(
-            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
+            "URL template of the team's logo (with a {size} placeholder), when it has one and the caller may download it. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Absent when accessible is false and the private team does not publish content by link: its logo is then closed to the caller. Opaque URL: may carry a query string; substitute {size} only."
+          ),
+        accessible: zod
+          .boolean()
+          .describe(
+            'Whether GET team answers the caller: the team is not private, or the caller is a member of it or a platform admin. A client loads the team, links to it or shows its header only when true; otherwise it renders this summary. The public content of a private team is read by link with this false.'
           ),
       })
       .describe('Team'),
@@ -1994,6 +2099,51 @@ export const CreateRouteResponse = zod
       .describe(
         "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it (create, update)."
       ),
+    permissions: zod
+      .object({
+        canEdit: zod
+          .boolean()
+          .describe(
+            "Whether the caller may edit this entity (the update endpoints would accept it). For a trip stage, whether they may edit its trip, which a stage is written through. For the team's about page, whether they may edit it through the team update, the only way it is written."
+          ),
+        canDelete: zod
+          .boolean()
+          .describe(
+            'Whether the caller may delete this entity. For a trip stage, whether they may delete its trip.'
+          ),
+        canRegister: zod
+          .boolean()
+          .optional()
+          .describe(
+            'Rides and trips only: whether the caller may register — a member of the team (or a platform admin), the entity published. On a detail it is exact about timing too: false once every group of the ride has left or the trip is finished, as the join endpoints answer. On list rows it does not look at timing, so it may be true on a row and false on the detail of the same entity. Never counts capacity: a full group still refuses. Absent on the other types.'
+          ),
+        canComment: zod
+          .boolean()
+          .optional()
+          .describe(
+            "Whether the caller may read and write the comment thread: a member of the team or a platform admin, whatever the entity's visibility. Absent on the types that carry no comments (team pages, ads)."
+          ),
+        canSeeParticipants: zod
+          .boolean()
+          .optional()
+          .describe(
+            'Rides and trips only: whether the caller may see who takes part (names, the participants endpoints). Same rule as canComment. When false, only the counts are sent. Absent on the other types.'
+          ),
+        allowedVisibilities: zod
+          .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
+          .optional()
+          .describe(
+            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+          ),
+        indexable: zod
+          .boolean()
+          .describe(
+            "Whether search engines may index the entity's page: the rule of the sitemap — entity PUBLIC, team PUBLIC, published or cancelled, not hidden by moderation. False means the page must carry noindex. A trip stage carries its trip's answer."
+          ),
+      })
+      .describe(
+        'What the caller may do with the route: edit, delete, comment. A list row and the route of a stage carry no allowedVisibilities; the detail (RouteDetailDto) does.'
+      ),
   })
   .describe('Route summary data')
 
@@ -2108,7 +2258,12 @@ export const GetRoutesBulkResponse = zod
                   .string()
                   .optional()
                   .describe(
-                    "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
+                    "URL template of the team's logo (with a {size} placeholder), when it has one and the caller may download it. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Absent when accessible is false and the private team does not publish content by link: its logo is then closed to the caller. Opaque URL: may carry a query string; substitute {size} only."
+                  ),
+                accessible: zod
+                  .boolean()
+                  .describe(
+                    'Whether GET team answers the caller: the team is not private, or the caller is a member of it or a platform admin. A client loads the team, links to it or shows its header only when true; otherwise it renders this summary. The public content of a private team is read by link with this false.'
                   ),
               })
               .describe('Team'),
@@ -2626,6 +2781,51 @@ export const GetRoutesBulkResponse = zod
               .optional()
               .describe(
                 "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it."
+              ),
+            permissions: zod
+              .object({
+                canEdit: zod
+                  .boolean()
+                  .describe(
+                    "Whether the caller may edit this entity (the update endpoints would accept it). For a trip stage, whether they may edit its trip, which a stage is written through. For the team's about page, whether they may edit it through the team update, the only way it is written."
+                  ),
+                canDelete: zod
+                  .boolean()
+                  .describe(
+                    'Whether the caller may delete this entity. For a trip stage, whether they may delete its trip.'
+                  ),
+                canRegister: zod
+                  .boolean()
+                  .optional()
+                  .describe(
+                    'Rides and trips only: whether the caller may register — a member of the team (or a platform admin), the entity published. On a detail it is exact about timing too: false once every group of the ride has left or the trip is finished, as the join endpoints answer. On list rows it does not look at timing, so it may be true on a row and false on the detail of the same entity. Never counts capacity: a full group still refuses. Absent on the other types.'
+                  ),
+                canComment: zod
+                  .boolean()
+                  .optional()
+                  .describe(
+                    "Whether the caller may read and write the comment thread: a member of the team or a platform admin, whatever the entity's visibility. Absent on the types that carry no comments (team pages, ads)."
+                  ),
+                canSeeParticipants: zod
+                  .boolean()
+                  .optional()
+                  .describe(
+                    'Rides and trips only: whether the caller may see who takes part (names, the participants endpoints). Same rule as canComment. When false, only the counts are sent. Absent on the other types.'
+                  ),
+                allowedVisibilities: zod
+                  .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
+                  .optional()
+                  .describe(
+                    "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+                  ),
+                indexable: zod
+                  .boolean()
+                  .describe(
+                    "Whether search engines may index the entity's page: the rule of the sitemap — entity PUBLIC, team PUBLIC, published or cancelled, not hidden by moderation. False means the page must carry noindex. A trip stage carries its trip's answer."
+                  ),
+              })
+              .describe(
+                'What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only).'
               ),
           })
           .describe('Detailed route information')
@@ -3331,7 +3531,12 @@ export const UpdateRouteResponse = zod
           .string()
           .optional()
           .describe(
-            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
+            "URL template of the team's logo (with a {size} placeholder), when it has one and the caller may download it. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Absent when accessible is false and the private team does not publish content by link: its logo is then closed to the caller. Opaque URL: may carry a query string; substitute {size} only."
+          ),
+        accessible: zod
+          .boolean()
+          .describe(
+            'Whether GET team answers the caller: the team is not private, or the caller is a member of it or a platform admin. A client loads the team, links to it or shows its header only when true; otherwise it renders this summary. The public content of a private team is read by link with this false.'
           ),
       })
       .describe('Team'),
@@ -3673,6 +3878,51 @@ export const UpdateRouteResponse = zod
       .describe(
         "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it (create, update)."
       ),
+    permissions: zod
+      .object({
+        canEdit: zod
+          .boolean()
+          .describe(
+            "Whether the caller may edit this entity (the update endpoints would accept it). For a trip stage, whether they may edit its trip, which a stage is written through. For the team's about page, whether they may edit it through the team update, the only way it is written."
+          ),
+        canDelete: zod
+          .boolean()
+          .describe(
+            'Whether the caller may delete this entity. For a trip stage, whether they may delete its trip.'
+          ),
+        canRegister: zod
+          .boolean()
+          .optional()
+          .describe(
+            'Rides and trips only: whether the caller may register — a member of the team (or a platform admin), the entity published. On a detail it is exact about timing too: false once every group of the ride has left or the trip is finished, as the join endpoints answer. On list rows it does not look at timing, so it may be true on a row and false on the detail of the same entity. Never counts capacity: a full group still refuses. Absent on the other types.'
+          ),
+        canComment: zod
+          .boolean()
+          .optional()
+          .describe(
+            "Whether the caller may read and write the comment thread: a member of the team or a platform admin, whatever the entity's visibility. Absent on the types that carry no comments (team pages, ads)."
+          ),
+        canSeeParticipants: zod
+          .boolean()
+          .optional()
+          .describe(
+            'Rides and trips only: whether the caller may see who takes part (names, the participants endpoints). Same rule as canComment. When false, only the counts are sent. Absent on the other types.'
+          ),
+        allowedVisibilities: zod
+          .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
+          .optional()
+          .describe(
+            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+          ),
+        indexable: zod
+          .boolean()
+          .describe(
+            "Whether search engines may index the entity's page: the rule of the sitemap — entity PUBLIC, team PUBLIC, published or cancelled, not hidden by moderation. False means the page must carry noindex. A trip stage carries its trip's answer."
+          ),
+      })
+      .describe(
+        'What the caller may do with the route: edit, delete, comment. A list row and the route of a stage carry no allowedVisibilities; the detail (RouteDetailDto) does.'
+      ),
   })
   .describe('Route summary data')
 
@@ -3703,7 +3953,12 @@ export const GetRouteResponse = zod
           .string()
           .optional()
           .describe(
-            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
+            "URL template of the team's logo (with a {size} placeholder), when it has one and the caller may download it. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Absent when accessible is false and the private team does not publish content by link: its logo is then closed to the caller. Opaque URL: may carry a query string; substitute {size} only."
+          ),
+        accessible: zod
+          .boolean()
+          .describe(
+            'Whether GET team answers the caller: the team is not private, or the caller is a member of it or a platform admin. A client loads the team, links to it or shows its header only when true; otherwise it renders this summary. The public content of a private team is read by link with this false.'
           ),
       })
       .describe('Team'),
@@ -4196,6 +4451,51 @@ export const GetRouteResponse = zod
       .describe(
         "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it."
       ),
+    permissions: zod
+      .object({
+        canEdit: zod
+          .boolean()
+          .describe(
+            "Whether the caller may edit this entity (the update endpoints would accept it). For a trip stage, whether they may edit its trip, which a stage is written through. For the team's about page, whether they may edit it through the team update, the only way it is written."
+          ),
+        canDelete: zod
+          .boolean()
+          .describe(
+            'Whether the caller may delete this entity. For a trip stage, whether they may delete its trip.'
+          ),
+        canRegister: zod
+          .boolean()
+          .optional()
+          .describe(
+            'Rides and trips only: whether the caller may register — a member of the team (or a platform admin), the entity published. On a detail it is exact about timing too: false once every group of the ride has left or the trip is finished, as the join endpoints answer. On list rows it does not look at timing, so it may be true on a row and false on the detail of the same entity. Never counts capacity: a full group still refuses. Absent on the other types.'
+          ),
+        canComment: zod
+          .boolean()
+          .optional()
+          .describe(
+            "Whether the caller may read and write the comment thread: a member of the team or a platform admin, whatever the entity's visibility. Absent on the types that carry no comments (team pages, ads)."
+          ),
+        canSeeParticipants: zod
+          .boolean()
+          .optional()
+          .describe(
+            'Rides and trips only: whether the caller may see who takes part (names, the participants endpoints). Same rule as canComment. When false, only the counts are sent. Absent on the other types.'
+          ),
+        allowedVisibilities: zod
+          .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
+          .optional()
+          .describe(
+            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+          ),
+        indexable: zod
+          .boolean()
+          .describe(
+            "Whether search engines may index the entity's page: the rule of the sitemap — entity PUBLIC, team PUBLIC, published or cancelled, not hidden by moderation. False means the page must carry noindex. A trip stage carries its trip's answer."
+          ),
+      })
+      .describe(
+        'What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only).'
+      ),
   })
   .describe('Detailed route information')
 
@@ -4401,7 +4701,12 @@ export const ChangeRouteSlugResponse = zod
           .string()
           .optional()
           .describe(
-            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
+            "URL template of the team's logo (with a {size} placeholder), when it has one and the caller may download it. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Absent when accessible is false and the private team does not publish content by link: its logo is then closed to the caller. Opaque URL: may carry a query string; substitute {size} only."
+          ),
+        accessible: zod
+          .boolean()
+          .describe(
+            'Whether GET team answers the caller: the team is not private, or the caller is a member of it or a platform admin. A client loads the team, links to it or shows its header only when true; otherwise it renders this summary. The public content of a private team is read by link with this false.'
           ),
       })
       .describe('Team'),
@@ -4894,6 +5199,51 @@ export const ChangeRouteSlugResponse = zod
       .describe(
         "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it."
       ),
+    permissions: zod
+      .object({
+        canEdit: zod
+          .boolean()
+          .describe(
+            "Whether the caller may edit this entity (the update endpoints would accept it). For a trip stage, whether they may edit its trip, which a stage is written through. For the team's about page, whether they may edit it through the team update, the only way it is written."
+          ),
+        canDelete: zod
+          .boolean()
+          .describe(
+            'Whether the caller may delete this entity. For a trip stage, whether they may delete its trip.'
+          ),
+        canRegister: zod
+          .boolean()
+          .optional()
+          .describe(
+            'Rides and trips only: whether the caller may register — a member of the team (or a platform admin), the entity published. On a detail it is exact about timing too: false once every group of the ride has left or the trip is finished, as the join endpoints answer. On list rows it does not look at timing, so it may be true on a row and false on the detail of the same entity. Never counts capacity: a full group still refuses. Absent on the other types.'
+          ),
+        canComment: zod
+          .boolean()
+          .optional()
+          .describe(
+            "Whether the caller may read and write the comment thread: a member of the team or a platform admin, whatever the entity's visibility. Absent on the types that carry no comments (team pages, ads)."
+          ),
+        canSeeParticipants: zod
+          .boolean()
+          .optional()
+          .describe(
+            'Rides and trips only: whether the caller may see who takes part (names, the participants endpoints). Same rule as canComment. When false, only the counts are sent. Absent on the other types.'
+          ),
+        allowedVisibilities: zod
+          .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
+          .optional()
+          .describe(
+            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+          ),
+        indexable: zod
+          .boolean()
+          .describe(
+            "Whether search engines may index the entity's page: the rule of the sitemap — entity PUBLIC, team PUBLIC, published or cancelled, not hidden by moderation. False means the page must carry noindex. A trip stage carries its trip's answer."
+          ),
+      })
+      .describe(
+        'What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only).'
+      ),
   })
   .describe('Detailed route information')
 
@@ -4924,7 +5274,12 @@ export const UndeleteRouteResponse = zod
           .string()
           .optional()
           .describe(
-            "URL template of the team's logo (with a {size} placeholder), when it has one. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Opaque URL: may carry a query string; substitute {size} only."
+            "URL template of the team's logo (with a {size} placeholder), when it has one and the caller may download it. Same value as TeamDetailDto.logoUrl, so a publication can show its team's logo without loading the team. Absent when accessible is false and the private team does not publish content by link: its logo is then closed to the caller. Opaque URL: may carry a query string; substitute {size} only."
+          ),
+        accessible: zod
+          .boolean()
+          .describe(
+            'Whether GET team answers the caller: the team is not private, or the caller is a member of it or a platform admin. A client loads the team, links to it or shows its header only when true; otherwise it renders this summary. The public content of a private team is read by link with this false.'
           ),
       })
       .describe('Team'),
@@ -5416,6 +5771,51 @@ export const UndeleteRouteResponse = zod
       .optional()
       .describe(
         "Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it."
+      ),
+    permissions: zod
+      .object({
+        canEdit: zod
+          .boolean()
+          .describe(
+            "Whether the caller may edit this entity (the update endpoints would accept it). For a trip stage, whether they may edit its trip, which a stage is written through. For the team's about page, whether they may edit it through the team update, the only way it is written."
+          ),
+        canDelete: zod
+          .boolean()
+          .describe(
+            'Whether the caller may delete this entity. For a trip stage, whether they may delete its trip.'
+          ),
+        canRegister: zod
+          .boolean()
+          .optional()
+          .describe(
+            'Rides and trips only: whether the caller may register — a member of the team (or a platform admin), the entity published. On a detail it is exact about timing too: false once every group of the ride has left or the trip is finished, as the join endpoints answer. On list rows it does not look at timing, so it may be true on a row and false on the detail of the same entity. Never counts capacity: a full group still refuses. Absent on the other types.'
+          ),
+        canComment: zod
+          .boolean()
+          .optional()
+          .describe(
+            "Whether the caller may read and write the comment thread: a member of the team or a platform admin, whatever the entity's visibility. Absent on the types that carry no comments (team pages, ads)."
+          ),
+        canSeeParticipants: zod
+          .boolean()
+          .optional()
+          .describe(
+            'Rides and trips only: whether the caller may see who takes part (names, the participants endpoints). Same rule as canComment. When false, only the counts are sent. Absent on the other types.'
+          ),
+        allowedVisibilities: zod
+          .array(zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']))
+          .optional()
+          .describe(
+            "The visibilities this entity may be saved with, in the order of the Visibility enum; an editor hides its selector when there is only one. Present on a detail only: absent on list rows, on embedded summaries, on the types without a visibility of their own (trip stages) and on the team's about page, whose visibility no endpoint sets. Clients that create read TeamDetailDto.allowedContentVisibilities instead."
+          ),
+        indexable: zod
+          .boolean()
+          .describe(
+            "Whether search engines may index the entity's page: the rule of the sitemap — entity PUBLIC, team PUBLIC, published or cancelled, not hidden by moderation. False means the page must carry noindex. A trip stage carries its trip's answer."
+          ),
+      })
+      .describe(
+        'What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only).'
       ),
   })
   .describe('Detailed route information')

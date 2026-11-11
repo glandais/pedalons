@@ -4,6 +4,7 @@ import fr.pedalons.common.MarkdownExcerpt;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.dto.comments.response.CommentCounts;
+import fr.pedalons.dto.common.ContentPermissionsDto;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.gps.response.RouteGpsSyncStatusDto;
 import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
@@ -16,6 +17,7 @@ import fr.pedalons.enums.ListViewMode;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.service.asset.AssetService;
+import fr.pedalons.service.common.ContentPermissions;
 import java.time.Instant;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -83,15 +85,23 @@ public record RouteDto(
                     + " uploaded by hand), sorted by service. Only ever about the caller's own"
                     + " connections. Absent when there is none — anonymous caller, no such"
                     + " service, or a response that does not report it (create, update).")
-        List<RouteGpsSyncStatusDto> gpsSyncStatuses) {
+        List<RouteGpsSyncStatusDto> gpsSyncStatuses,
+    @Schema(
+            description =
+                "What the caller may do with the route: edit, delete, comment. A list row and the"
+                    + " route of a stage carry no allowedVisibilities; the detail"
+                    + " (RouteDetailDto) does.",
+            required = true)
+        ContentPermissionsDto permissions) {
 
   public static RouteDto from(
       Route route,
       AssetService assetService,
       CommentCounts commentCounts,
       ContentTags tags,
-      RouteGpsSyncStatuses gpsSync) {
-    return from(route, assetService, commentCounts, tags, gpsSync, ListViewMode.FULL);
+      RouteGpsSyncStatuses gpsSync,
+      ContentPermissions permissions) {
+    return from(route, assetService, commentCounts, tags, gpsSync, permissions, ListViewMode.FULL);
   }
 
   /**
@@ -100,6 +110,8 @@ public record RouteDto(
    *     GpsSyncLookup} — never one lookup per row
    * @param view {@link ListViewMode#COMPACT} leaves the description and the asset inventory out of the
    *     row; {@code excerpt} and {@code thumbnailUrl} carry what it renders instead
+   * @param permissions the caller's rights on the page, from one {@code CallerRoles} resolved for
+   *     the whole page (docs/LEDGER_*.md API-176)
    */
   public static RouteDto from(
       Route route,
@@ -107,11 +119,12 @@ public record RouteDto(
       CommentCounts commentCounts,
       ContentTags tags,
       RouteGpsSyncStatuses gpsSync,
+      ContentPermissions permissions,
       @Nullable ListViewMode view) {
     return new RouteDto(
         TsidUtils.toString(route.getId()),
         route.getSlug(),
-        TeamPublicationDto.from(route.getTeam()),
+        TeamPublicationDto.from(route.getTeam(), permissions.teamAccessible(route.getTeam())),
         route.getName(),
         MediaDto.from(route, assetService, view),
         MarkdownExcerpt.of(route.getMarkdown()),
@@ -126,7 +139,8 @@ public record RouteDto(
         route.isDeleted(),
         commentCounts.forEntity(route.getId()),
         tags.forContent(route.getId()),
-        gpsSync.fieldFor(route.getId()));
+        gpsSync.fieldFor(route.getId()),
+        permissions.of(route));
   }
 
   /** The route's own thumbnail, light preferred over dark — the map preview a card shows. */

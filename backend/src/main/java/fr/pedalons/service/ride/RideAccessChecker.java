@@ -13,6 +13,7 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
 public class RideAccessChecker implements AccessChecker {
@@ -34,9 +35,7 @@ public class RideAccessChecker implements AccessChecker {
     TeamRole teamRole = context.teamRole();
 
     // Check if rides are enabled for the team (also disabled when routes are disabled)
-    if (team != null
-        && (!team.isEnableRides() || !team.isEnableRoutes())
-        && action != ActionType.READ) {
+    if (team != null && !isEnabled(team) && action != ActionType.READ) {
       return false;
     }
 
@@ -54,8 +53,7 @@ public class RideAccessChecker implements AccessChecker {
           // filtering done via SQL
           yield true;
         } else {
-          // organizer in ride team
-          yield teamRole != null && teamRole.isOrganizer();
+          yield canWrite(team, teamRole);
         }
       }
       case JOIN, LEAVE -> {
@@ -64,10 +62,33 @@ public class RideAccessChecker implements AccessChecker {
           yield false;
         }
         Ride ride = rideService.findBySlug(team, slug);
-        // only members and ride has to be published
-        yield teamRole != null && ride.getStatus() == Status.PUBLISHED;
+        yield canJoin(team, teamRole, ride);
       }
       case LIST, LIST_ALL_TEAMS -> false;
     };
+  }
+
+  /** Rides are on: a team without routes has no rides either. */
+  /**
+   * Whether the module is on for the team. The listing and detail queries hide the content of a
+   * module that is off from everyone, platform admin included (docs/LEDGER_*.md API-176).
+   */
+  public static boolean isEnabled(Team team) {
+    return team.isEnableRides() && team.isEnableRoutes();
+  }
+
+  /**
+   * {@code UPDATE} and {@code DELETE} of a ride the caller can read: an organizer of its team, rides
+   * on. The rule {@link #hasRights} applies and the permissions block of a ride reports
+   * ({@code ContentPermissions}, docs/LEDGER_*.md API-176) — one method, so they cannot diverge.
+   * The platform admin's bypass is {@code SecurityVerifier}'s, not this rule's.
+   */
+  public static boolean canWrite(Team team, @Nullable TeamRole teamRole) {
+    return isEnabled(team) && teamRole != null && teamRole.isOrganizer();
+  }
+
+  /** {@code JOIN} and {@code LEAVE}: a member of the team, the ride published, rides on. */
+  public static boolean canJoin(Team team, @Nullable TeamRole teamRole, Ride ride) {
+    return isEnabled(team) && teamRole != null && ride.getStatus() == Status.PUBLISHED;
   }
 }

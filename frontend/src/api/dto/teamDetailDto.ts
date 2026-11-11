@@ -1,3 +1,4 @@
+import type { ContentVisibilitiesDto } from './contentVisibilitiesDto.ts'
 import type { Instant } from './instant.ts'
 import type { MediaDto } from './mediaDto.ts'
 import type { MemberCountByRoleDto } from './memberCountByRoleDto.ts'
@@ -68,4 +69,10 @@ export interface TeamDetailDto {
   geometry?: TeamDetailDtoGeometry
   /** The team's IANA zone: the one its rides, trips and posts fall back on when no place locates them. Administrators change it through TeamRequest.timezone. */
   timezone: string
+  /** The visibilities the team accepts for each type of content: what a creation form offers. The same for every caller who may read the team — the server still decides who may write. A private team holds TEAM only, unless a platform admin set publicContentAllowed. */
+  allowedContentVisibilities: ContentVisibilitiesDto
+  /** The visibility a creation form starts from: the team's own, so TEAM for a private team, publicContentAllowed or not. Not for ads, which are always TEAM. */
+  defaultContentVisibility: Visibility
+  /** Whether a platform admin allowed this private team to publish content as public or unlisted, readable by link only and kept out of every listing and of the sitemap. Meaningless for a team that is not private. For the platform administration screen: editors read allowedContentVisibilities. */
+  publicContentAllowed: boolean
 }

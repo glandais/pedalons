@@ -1,3 +1,4 @@
+import type { ContentPermissionsDto } from './contentPermissionsDto.ts'
 import type { Instant } from './instant.ts'
 import type { MediaDto } from './mediaDto.ts'
 import type { PlaceDetailDto } from './placeDetailDto.ts'
@@ -94,4 +95,6 @@ export interface RideDto {
   weather?: RideWeatherSummaryDto
   /** Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route. */
   gpsSyncStatuses?: RouteGpsSyncStatusDto[]
+  /** What the caller may do with the ride: edit, delete, register, comment, see who rides. allowedVisibilities is only on the detail. */
+  permissions: ContentPermissionsDto
 }

@@ -13,6 +13,7 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
 public class TripAccessChecker implements AccessChecker {
@@ -33,9 +34,7 @@ public class TripAccessChecker implements AccessChecker {
     TeamRole teamRole = context.teamRole();
 
     // Check if trips are enabled for the team (also disabled when routes are disabled)
-    if (team != null
-        && (!team.isEnableTrips() || !team.isEnableRoutes())
-        && action != ActionType.READ) {
+    if (team != null && !isEnabled(team) && action != ActionType.READ) {
       return false;
     }
 
@@ -53,8 +52,7 @@ public class TripAccessChecker implements AccessChecker {
           // filtering done via SQL
           yield true;
         } else {
-          // organizer in trip team
-          yield teamRole != null && teamRole.isOrganizer();
+          yield canWrite(team, teamRole);
         }
       }
       case JOIN, LEAVE -> {
@@ -63,10 +61,33 @@ public class TripAccessChecker implements AccessChecker {
           yield false;
         }
         Trip trip = tripService.findBySlug(team, slug);
-        // only members and trip has to be published
-        yield teamRole != null && trip.getStatus() == Status.PUBLISHED;
+        yield canJoin(team, teamRole, trip);
       }
       case LIST, LIST_ALL_TEAMS -> false;
     };
+  }
+
+  /** Trips are on: a team without routes has no trips either. */
+  /**
+   * Whether the module is on for the team. The listing and detail queries hide the content of a
+   * module that is off from everyone, platform admin included (docs/LEDGER_*.md API-176).
+   */
+  public static boolean isEnabled(Team team) {
+    return team.isEnableTrips() && team.isEnableRoutes();
+  }
+
+  /**
+   * {@code UPDATE} and {@code DELETE} of a trip the caller can read — its stages included, which
+   * are written through it: an organizer of its team, trips on. Shared with the permissions block
+   * ({@code ContentPermissions}, docs/LEDGER_*.md API-176); the platform admin's bypass is {@code
+   * SecurityVerifier}'s.
+   */
+  public static boolean canWrite(Team team, @Nullable TeamRole teamRole) {
+    return isEnabled(team) && teamRole != null && teamRole.isOrganizer();
+  }
+
+  /** {@code JOIN} and {@code LEAVE}: a member of the team, the trip published, trips on. */
+  public static boolean canJoin(Team team, @Nullable TeamRole teamRole, Trip trip) {
+    return isEnabled(team) && teamRole != null && trip.getStatus() == Status.PUBLISHED;
   }
 }

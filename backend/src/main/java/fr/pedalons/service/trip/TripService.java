@@ -39,6 +39,8 @@ import fr.pedalons.repository.trip.TripParticipationRepository;
 import fr.pedalons.repository.trip.TripRepository;
 import fr.pedalons.repository.trip.TripStageRepository;
 import fr.pedalons.service.comment.CommentCountLookup;
+import fr.pedalons.service.common.CallerRoles;
+import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.common.MemberNamesVisibility;
 import fr.pedalons.service.common.ParticipantPreviewLookup;
 import fr.pedalons.service.common.ParticipationLookup;
@@ -128,7 +130,10 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
     entity.getStages().stream().filter(stage -> !stage.isDeleted()).forEach(commented::add);
     // One query for a logged-in caller, none for the others: only a member of the team is told who
     // goes (docs/LEDGER_*.md API-144).
-    boolean withNames = memberNamesVisibility.canSeeNames(entity.getTeam().getId());
+    // The same answer gives the permissions block of the trip and its stages (docs/LEDGER_*.md
+    // API-176).
+    CallerRoles caller = memberNamesVisibility.callerRoles(entity.getTeam().getId());
+    boolean withNames = caller.seesMembers(entity.getTeam().getId());
     // One indexed lookup resolves the "registered" flag; anonymous callers cost nothing.
     return TripDto.from(
         entity,
@@ -141,7 +146,8 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
         tagLookup.forContents(taggedIds),
         // Where the stages' routes stand at the caller's synced services: at most two queries for
         // every stage, none for a visitor (docs/LEDGER_*.md API-120).
-        gpsSyncLookup.forRoutes(stageRouteIds));
+        gpsSyncLookup.forRoutes(stageRouteIds),
+        ContentPermissions.forDetail(caller));
   }
 
   /**
@@ -508,6 +514,12 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
   public TripParticipationDto joinTrip(String teamSlug, String tripSlug) {
     Team team = teamService.getTeam(teamSlug);
     Trip trip = findBySlug(team, tripSlug);
+    // For everyone, the platform admin included — whose bypass skips the access check's own status
+    // test — as RideService.joinGroup does for a ride: a draft or a cancelled trip takes no one
+    // (docs/LEDGER_*.md API-176).
+    if (trip.getStatus() != Status.PUBLISHED) {
+      throw new ForbiddenException();
+    }
     User user = pedalonsContext.getUser();
 
     Optional<TripParticipation> existingParticipation =
@@ -517,7 +529,8 @@ public class TripService extends TeamEntityService<Trip, TripRepository, TripDto
       throw new ConflictException(ErrorCode.ALREADY_REGISTERED);
     }
     // The clients hide « Rejoindre » once the trip is over; the rule is here. A trip under way
-    // stays open (its later stages are still to ride), and leaving stays open, as for a ride.
+    // stays open (its later stages are still to ride), and leaving stays open, as for a ride. The
+    // permissions block of a trip detail reads the same Trip.isFinished (docs/LEDGER_*.md API-176).
     if (trip.isFinished(Instant.now())) {
       throw new ConflictException(ErrorCode.TRIP_FINISHED);
     }

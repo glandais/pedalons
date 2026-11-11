@@ -12,6 +12,7 @@ _TeamPublicationDto _$TeamPublicationDtoFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       slug: json['slug'] as String,
       visibility: json['visibility'] as String,
+      accessible: json['accessible'] as bool,
       logoUrl: json['logoUrl'] as String?,
     );
 
@@ -21,5 +22,6 @@ Map<String, dynamic> _$TeamPublicationDtoToJson(_TeamPublicationDto instance) =>
       'name': instance.name,
       'slug': instance.slug,
       'visibility': instance.visibility,
+      'accessible': instance.accessible,
       'logoUrl': instance.logoUrl,
     };

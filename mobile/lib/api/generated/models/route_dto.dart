@@ -4,6 +4,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'content_permissions_dto.dart';
 import 'elevation_state.dart';
 import 'instant.dart';
 import 'media_dto.dart';
@@ -61,6 +62,9 @@ abstract class RouteDto with _$RouteDto {
 
     /// The team's ROUTE tags the route carries, sorted by label. Empty when it carries none.
     required List<TagDto> tags,
+
+    /// What the caller may do with the route: edit, delete, comment. A list row and the route of a stage carry no allowedVisibilities; the detail (RouteDetailDto) does.
+    required ContentPermissionsDto permissions,
 
     /// Plain-text opening of the description, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the description holds no text. Lets a list row render its two lines without the description being sent at all — see the 'view' parameter.
     String? excerpt,

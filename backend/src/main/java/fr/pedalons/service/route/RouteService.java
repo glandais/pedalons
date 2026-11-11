@@ -50,6 +50,8 @@ import fr.pedalons.repository.route.RouteQuery;
 import fr.pedalons.repository.route.RouteRepository;
 import fr.pedalons.repository.trip.TripRepository;
 import fr.pedalons.service.comment.CommentCountLookup;
+import fr.pedalons.service.common.CallerRoles;
+import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.common.MemberNamesVisibility;
 import fr.pedalons.service.common.TeamEntityService;
 import fr.pedalons.service.elevation.ElevationRefreshService;
@@ -146,6 +148,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
   @Override
   protected RouteDetailDto toDto(Route entity) {
+    // One answer for the creator's name and the permissions block (docs/LEDGER_*.md API-176).
+    CallerRoles caller = memberNamesVisibility.callerRoles(entity.getTeam().getId());
     return RouteDetailDto.from(
         entity,
         assetService,
@@ -153,10 +157,11 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         tagsOf(entity),
         true,
         surfaceRefreshService.readRoute(entity),
-        memberNamesVisibility.canSeeNames(entity.getTeam().getId()),
+        caller.seesMembers(entity.getTeam().getId()),
         // Where it stands at the caller's synced services (docs/LEDGER_*.md API-120): at most two
         // queries, none for a visitor.
-        gpsSyncLookup.forRoutes(List.of(entity.getId())));
+        gpsSyncLookup.forRoutes(List.of(entity.getId())),
+        ContentPermissions.forDetail(caller));
   }
 
   @Override
@@ -234,7 +239,11 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         geometry ? surfaceRefreshService.readRoutes(routes) : Map.of();
 
     // Once for the batch: every route belongs to this team (docs/LEDGER_*.md API-144).
-    boolean withCreator = memberNamesVisibility.canSeeNames(team.getId());
+    CallerRoles caller = memberNamesVisibility.callerRoles(team.getId());
+    boolean withCreator = caller.seesMembers(team.getId());
+    // Each row is a detail the caller asked for by slug: allowedVisibilities included, at no cost
+    // (docs/LEDGER_*.md API-176).
+    ContentPermissions permissions = ContentPermissions.forDetail(caller);
     Map<String, RouteDetailDto> bySlug = new LinkedHashMap<>();
     for (Route route : routes) {
       bySlug.put(
@@ -247,7 +256,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
               geometry,
               surfaces.getOrDefault(route.getId(), RouteSurfaces.NONE),
               withCreator,
-              gpsSync));
+              gpsSync,
+              permissions));
     }
 
     List<RouteDetailDto> ordered =
@@ -452,7 +462,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
           assetService,
           commentCountLookup.forEntity(route),
           tagsOf(route),
-          RouteGpsSyncStatuses.NONE);
+          RouteGpsSyncStatuses.NONE,
+          detailPermissions(route));
     } catch (Exception e) {
       gpxProcessingService.deleteRouteFiles(route);
       throw e;
@@ -682,7 +693,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         assetService,
         commentCountLookup.forEntity(route),
         tagsOf(route),
-        RouteGpsSyncStatuses.NONE);
+        RouteGpsSyncStatuses.NONE,
+        detailPermissions(route));
   }
 
   /**
@@ -991,10 +1003,17 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     // (docs/LEDGER_*.md API-120), none for a visitor.
     RouteGpsSyncStatuses gpsSync =
         gpsSyncLookup.forRoutes(routes.items().stream().map(Route::getId).toList());
+    // One more for the caller's role in the page's teams, the permissions block of every row
+    // (docs/LEDGER_*.md API-176); none for a visitor or a platform admin.
+    ContentPermissions permissions =
+        ContentPermissions.forList(
+            memberNamesVisibility.callerRoles(
+                routes.items().stream().map(r -> r.getTeam().getId()).distinct().toList()));
     List<RouteDto> dtos =
         routes.items().stream()
             .map(route ->
-                RouteDto.from(route, assetService, commentCounts, tags, gpsSync, params.view()))
+                RouteDto.from(
+                    route, assetService, commentCounts, tags, gpsSync, permissions, params.view()))
             .toList();
     return new RouteListResponse(dtos, routes.total(), params.page(), params.size());
   }

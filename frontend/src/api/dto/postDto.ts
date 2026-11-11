@@ -1,3 +1,4 @@
+import type { ContentPermissionsDto } from './contentPermissionsDto.ts'
 import type { Instant } from './instant.ts'
 import type { MediaDto } from './mediaDto.ts'
 import type { PostDtoType } from './postDtoType.ts'
@@ -48,4 +49,6 @@ export interface PostDto {
   createdBy?: PublicUserDto
   /** The team's POST tags the post carries, sorted by label. Empty when it carries none. */
   tags: TagDto[]
+  /** What the caller may do with the post: edit, delete, comment. allowedVisibilities is only on the detail. */
+  permissions: ContentPermissionsDto
 }

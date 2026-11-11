@@ -639,6 +639,40 @@ class TripResourceTest extends AbstractResourceTest {
         .statusCode(404);
   }
 
+  /**
+   * The platform admin's bypass gets them past the access check, not past the trip's status: a
+   * draft or cancelled trip takes no one, as a ride does (docs/LEDGER_*.md API-176). Their
+   * permissions block says {@code canRegister: false} for the same trips.
+   */
+  @Test
+  void joinTrip_whenNotPublished_isRefused_evenToAPlatformAdmin() {
+    dataService.createPlatformAdminUser("root@example.com", "Root");
+    Instant soon = Instant.now().plus(30, ChronoUnit.DAYS);
+    for (Status status : List.of(Status.DRAFT, Status.CANCELLED)) {
+      String tripSlug =
+          dataService
+              .createTrip(
+                  team1, user1, "Admin " + status + " Trip", soon, Visibility.PUBLIC, status, null)
+              .getSlug();
+      given()
+          .auth()
+          .oauth2(getAccessToken("root"))
+          .when()
+          .get("/api/teams/" + team1Slug + "/trips/" + tripSlug)
+          .then()
+          .statusCode(200)
+          .body("permissions.canRegister", equalTo(false));
+      given()
+          .contentType("application/json")
+          .auth()
+          .oauth2(getAccessToken("root"))
+          .when()
+          .post("/api/teams/" + team1Slug + "/trips/" + tripSlug + "/join")
+          .then()
+          .statusCode(403);
+    }
+  }
+
   @Test
   void joinTrip_whenAlreadyJoined_shouldReturnConflict() {
     String tripSlug = createTestTrip("Already Joined Trip", Status.PUBLISHED, Visibility.PUBLIC);

@@ -21,6 +21,7 @@ import 'package:pedalons/keys.dart';
 
 import '../../support/localization.dart';
 import 'ride_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// Le vent sur la carte d'un groupe (ledger `MOB-91`) : la légende selon le
 /// statut du leg et le mode, les couleurs posées sur le tracé, et le leg
@@ -38,6 +39,7 @@ void main() {
   // 30 km plein nord, un sommet par kilomètre : les deux tronçons du leg
   // (0 → 15 face, 15 → 30 dos) se partagent les 30 intervalles.
   final RouteDetailDto route = RouteDetailDto(
+    permissions: kNoPermissions,
     elevationState: 'HD',
     tags: const [],
     id: 'r-court',

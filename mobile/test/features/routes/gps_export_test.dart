@@ -27,6 +27,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../support/localization.dart';
 import '../rides/ride_fixtures.dart';
 import 'route_fixtures.dart';
+import '../../support/content_permissions.dart';
 
 /// docs/plans/2026-11-10-refonte-ecrans-detail-mobile.md, lot 4 : un seul
 /// bouton « GPS » et une seule feuille partout où un parcours s'exporte, et
@@ -581,10 +582,12 @@ void main() {
       WidgetTester tester,
     ) async {
       const PublicationDtoRide row = PublicationDtoRide(
+        permissions: kNoPermissions,
         timezone: 'Europe/Paris',
         tags: <TagDto>[],
         groupSummaries: <RideGroupSummaryDto>[],
         team: TeamPublicationDto(
+          accessible: true,
           id: 't1',
           slug: 'n-peloton',
           name: 'N-Peloton',

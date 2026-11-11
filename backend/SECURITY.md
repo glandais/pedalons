@@ -441,7 +441,7 @@ AND (TYPE(te) <> Ad OR te.team.enableAds = true)
 | | LIST/CREATE | No | No | No | Yes |
 | | UPDATE/DELETE | No | No | No | Yes |
 | **Asset** | CREATE | No | Yes | Yes | Yes |
-| | READ | Depends on parent entity visibility |
+| | READ | Depends on parent entity visibility; the logo of a private team with `publicContentAllowed` is readable by anyone (ledger `API-176`) |
 | | UPDATE/DELETE | No | No | Yes | Yes |
 | **Comment** | LIST/CREATE | No | Yes | Yes | Yes |
 | | UPDATE/DELETE | No | Own only | Yes | Yes |

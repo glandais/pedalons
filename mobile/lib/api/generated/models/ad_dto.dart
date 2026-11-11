@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'ad_dto_location_geometry.dart';
 import 'ad_type.dart';
+import 'content_permissions_dto.dart';
 import 'instant.dart';
 import 'media_dto.dart';
 import 'rental_period.dart';
@@ -65,6 +66,9 @@ abstract class AdDto with _$AdDto {
 
     /// The team's AD tags the ad carries, sorted by label. Empty when it carries none.
     required List<TagDto> tags,
+
+    /// What the caller may do with the ad: edit and delete (its author or a team admin). allowedVisibilities, on the detail only, is always [TEAM].
+    required ContentPermissionsDto permissions,
 
     /// Plain-text opening of the description, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the description holds no text. Lets a list row render its two lines without the description being sent at all — see the 'view' parameter.
     String? excerpt,
