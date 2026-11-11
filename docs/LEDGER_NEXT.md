@@ -128,6 +128,14 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       reste aux membres (`buildTeamSections`), alors que le site l'ouvre à l'administrateur de la
       plateforme.
 
+- [ ] `MOB-137` **Contenu public d'une équipe privée : éditeurs et écrans de détail sur les droits
+      calculés (S)** — les éditeurs de sortie, de modèle et de parcours masquent la visibilité dès
+      que l'équipe est privée (`teamOnly`, `ride_editor_page.dart`, `ride_template_editor_page.dart`,
+      `route_editor_page.dart`) et recopient donc une règle du serveur ; un lien profond vers
+      l'entité d'une équipe non consultable pose « Équipe indisponible » sous l'écran de détail.
+      Lire `allowedContentVisibilities` et `permissions` (`API-176`), confirmer l'alignement des
+      parcours, corriger le retour arrière. Plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/2026-11-11-visibilite-contenu-equipe-privee.md) §6.
+
 ### Heure de départ : audit du 7 novembre 2026
 
 Audit de la visibilité de la date et de l'heure de départ (sortie, groupe, voyage, étape) sur les
@@ -534,6 +542,16 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       manquante jusqu'au passage suivant du planner, `STALE` quelques minutes) et le rendu mobile du
       web. Pas d'écran mobile : l'app n'a pas d'aperçus GPX.
 
+- [ ] `WEB-166` **Contenu public d'une équipe privée : pages de détail sans `GET team`, éditeurs
+      sur les droits calculés (M)** — une page de détail exige le DTO de l'équipe (« non trouvé » ou
+      renvoi vers `/teams` sinon) et le SSR pose un 404 sur tout échec de `GET team`
+      (`entry-server.tsx`) : le lien d'une sortie publique d'une équipe privée n'ouvrirait rien.
+      Cinq éditeurs recopient la règle `team.visibility !== 'TEAM'`, `TeamPageForm` l'ignore, et
+      passer une équipe en privé bascule son contenu sans prévenir. Composant de visibilité partagé,
+      pages de détail sur `permissions` et le résumé d'équipe embarqué, `noindex` sur
+      `permissions.indexable`, confirmations (alignement des parcours, passage en privé),
+      interrupteur `publicContentAllowed`. Dépend d'`API-176`. Plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/2026-11-11-visibilite-contenu-equipe-privee.md) §5.
+
 ### Heure de départ : audit du 7 novembre 2026
 
 Pendant web de `MOB-111` à `MOB-116` ; la règle commune est `BRAND-8`.
@@ -682,6 +700,20 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       pour les **pièces jointes**, qui n'ont pas de ligne `gpx_waypoints`. Lire leurs `course_point`
       avec type et distance (vcyclist 6.11) pour que les points d'une sortie enregistrée ne se
       perdent plus au nettoyage.
+
+- [ ] `API-176` **Contenu public d'une équipe privée, par lien, et droits calculés par le backend
+      (M, contrat `13.6.0`, migration `V87`)** — une équipe privée ne peut annoncer aucune sortie
+      par lien (`TeamEntityService.validateVisibility`, clause d'équipe de
+      `TeamEntityRepository.getPublicEntity`) ; un parcours peut repasser en « Équipe » sous une
+      sortie publique (`RouteService.updateRoute` ne vérifie rien) ; et le contrat n'expose aucun
+      droit, que les clients redérivent du rôle et de la visibilité. Trois lots : drapeau
+      `Team.publicContentAllowed` posé par l'administrateur de la plateforme, règle unique
+      d'écriture, lecture du détail par lien (listes et sitemap inchangés) ; champs calculés
+      (`allowedContentVisibilities`, `defaultContentVisibility`, bloc `permissions` des entités,
+      `accessible` du résumé d'équipe) ; invariant « un conteneur non Équipe n'utilise que des
+      parcours non Équipe » dans les deux sens (`INCOMPATIBLE_VISIBILITY`, `alignVisibility`).
+      Décisions du 11 novembre 2026 et audit des règles en place : plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/2026-11-11-visibilite-contenu-equipe-privee.md).
+      Suites : `WEB-166`, `MOB-137`.
 
 ### Heure de départ : audit du 7 novembre 2026
 
@@ -1359,6 +1391,7 @@ n'a pas de sévérité tant que son test de validation n'a pas tourné.
 | `SEC-48` | — | Nov. V5 | À valider | Un appel facturé à un fournisseur n'a pas de quota par compte. Aperçus GPX datés (API-153) : 20 à venir par compte, sans plafond de points de prévision par aperçu ; reste ouvert : pas de plafond journalier sur les PUT qui changent le tracé, ni de priorité des sorties |
 | `SEC-49` | — | Nov. V6 | À valider | Un quota d'envoi suit le motif compter-puis-insérer (même famille que `SEC-35` et `SEC-39`) |
 | `SEC-50` | — | Nov. V7 | À valider | La désactivation d'un domaine ne s'applique pas à tous les chemins de résolution |
+| `SEC-51` | — | Audit des permissions du 11 novembre 2026 (plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/2026-11-11-visibilite-contenu-equipe-privee.md), A4) | Faible | Une réponse de l'API distingue deux cas qu'elle devrait confondre pour un appelant sans droit |
 
 ---
 
