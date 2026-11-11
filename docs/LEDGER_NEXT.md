@@ -1557,6 +1557,19 @@ et le préfixe `BILL` lui-même (Q12) se tranche avant le premier commit de code
       encaissé : Open-Meteo en plan payant (`OPS-29`), conditions VersaTiles relues (§8 du plan ;
       le géocodage est chez Stadia Maps depuis `OPS-49`, un plan payant déjà, plus rien à relire
       côté Nominatim), et aucun environnement hors prod capable d'émettre une facture.
+- [ ] `BILL-10` **Limiter l'offre gratuite, débloquer une équipe à la main (M)** — avant tout
+      paiement : deux paliers sur `Team` (`tier` FREE | UNLOCKED, posé par l'admin plateforme seul),
+      une équipe gratuite plafonnée à **25 membres** (invitations en cours comprises : `joinTeam`,
+      ajout, invitation, acceptation, verrou sur la ligne d'équipe, `409 TEAM_MEMBER_LIMIT_REACHED`)
+      et à **10 parcours tracés au planificateur par mois civil** (`team_planner_usages`, un parcours
+      compte une fois par mois, `403 ROUTE_PLANNER_QUOTA_REACHED`, plus un plafond quotidien de
+      calculs `/api/router` par équipe, aujourd'hui sans aucune borne). En contrepartie une nouvelle
+      équipe naît ouverte (`joinable`, `addMemberAllowed`, `enableRoutePlanner` à `true` dans
+      `TeamService.createTeam`) ; toutes les équipes existantes et importées de biketeam sont
+      débloquées d'office. Tout le reste (envoi GPS, webhook, import GPX) reste gratuit. Plan :
+      [`plans/2026-11-11-limites-offre-gratuite.md`](plans/2026-11-11-limites-offre-gratuite.md),
+      trois lots (paliers sans refus, plafond de membres, quota du planificateur). Tranche Q3 et Q7
+      du plan de monétisation.
 
 ---
 

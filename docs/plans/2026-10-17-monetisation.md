@@ -7,6 +7,11 @@ suite à la lecture du rapport Ride with GPS
 ([`../research/2026-10-17-rwgps-state-of-the-cycling-club-2026.md`](../research/2026-10-17-rwgps-state-of-the-cycling-club-2026.md)),
 dont le §7 parle de commercialisation sans dire comment facturer.
 
+> **11 novembre 2026** : les limites du gratuit et le déblocage manuel sont décidés à part, avant
+> tout paiement — [`2026-11-11-limites-offre-gratuite.md`](2026-11-11-limites-offre-gratuite.md)
+> (ledger `BILL-10`). Q3 (25 membres) et Q7 (équipes offertes) y sont tranchées ; le planificateur
+> y devient un quota plutôt qu'un droit Club.
+
 L'état de Pédalons décrit ici a été vérifié dans le code le 17 octobre 2026 (`develop`, contrat
 `11.5.1`, migration `V71`). Les chemins Java sont relatifs à `backend/src/main/java/fr/pedalons/`.
 Les faits sur l'API Qonto ont été lus dans sa documentation le même jour ; ils sont au §9 avec ce
