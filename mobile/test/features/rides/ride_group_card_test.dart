@@ -98,7 +98,7 @@ void main() {
         rideGroupAction(
           ride: fixtureRide(),
           group: fixtureGroup(),
-          isMember: true,
+          canRegister: true,
         ),
         RideGroupAction.join,
       );
@@ -109,7 +109,7 @@ void main() {
         rideGroupAction(
           ride: fixtureRide(registered: true, registeredGroupId: 'g1'),
           group: fixtureGroup(registered: true),
-          isMember: true,
+          canRegister: true,
         ),
         RideGroupAction.leave,
       );
@@ -122,7 +122,7 @@ void main() {
           rideGroupAction(
             ride: fixtureRide(),
             group: fixtureGroup(full: true, countParticipants: 16),
-            isMember: true,
+            canRegister: true,
           ),
           RideGroupAction.full,
         );
@@ -134,7 +134,7 @@ void main() {
         rideGroupAction(
           ride: fixtureRide(),
           group: fixtureGroup(),
-          isMember: false,
+          canRegister: false,
         ),
         RideGroupAction.none,
       );
@@ -145,7 +145,7 @@ void main() {
         rideGroupAction(
           ride: fixtureRide(dateTime: '2020-01-01T08:00:00Z'),
           group: fixtureGroup(),
-          isMember: true,
+          canRegister: true,
         ),
         RideGroupAction.none,
       );
@@ -160,7 +160,7 @@ void main() {
             registeredGroupId: 'g1',
           ),
           group: fixtureGroup(registered: true),
-          isMember: true,
+          canRegister: true,
         ),
         RideGroupAction.none,
       );
@@ -184,7 +184,7 @@ void main() {
           rideGroupAction(
             ride: inG1(),
             group: fixtureGroup(id: 'g2', name: 'G2'),
-            isMember: true,
+            canRegister: true,
             now: before,
           ),
           RideGroupAction.switchTo,
@@ -196,7 +196,7 @@ void main() {
           rideGroupAction(
             ride: inG1(),
             group: fixtureGroup(id: 'g2', full: true),
-            isMember: true,
+            canRegister: true,
             now: before,
           ),
           RideGroupAction.full,
@@ -210,7 +210,7 @@ void main() {
           rideGroupAction(
             ride: inG1(),
             group: fixtureGroup(id: 'g2'),
-            isMember: true,
+            canRegister: true,
             now: after,
           ),
           RideGroupAction.join,
@@ -222,7 +222,7 @@ void main() {
           rideGroupAction(
             ride: inG1(),
             group: fixtureGroup(registered: true),
-            isMember: true,
+            canRegister: true,
             now: before,
           ),
           RideGroupAction.leave,
@@ -247,7 +247,7 @@ void main() {
         rideGroupAction(
           ride: fixtureRide(registered: true, registeredGroupId: 'g1'),
           group: opaque,
-          isMember: true,
+          canRegister: true,
         ),
         RideGroupAction.leave,
       );

@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'module.dart';
@@ -85,6 +85,26 @@ final class Ride extends Module {
 
   /// Whether the error state reads [text].
   bool loadErrorShows(String text) => shows(keys.ride.loadError, text);
+
+  /// Whether the non-member banner is built: neither registration nor names for the caller.
+  bool get saysNotMember => _inTree(keys.ride.notMemberBanner);
+
+  /// Whether the page offers to open the ride's team: the line above the title is a link, or the
+  /// non-member banner carries « Voir l'équipe ».
+  bool get offersTeam =>
+      _inTree(keys.ride.viewTeamButton) ||
+      find
+          .descendant(
+            of: find.byKey(keys.ride.teamLine),
+            matching: find.byType(InkWell),
+          )
+          .evaluate()
+          .isNotEmpty;
+
+  /// The back button of the ride's bar.
+  Future<void> goBack() async {
+    await $(keys.ride.backButton).tap();
+  }
 
   /// The ride's name as the page shows it, or null when no ride is shown.
   String? get title =>

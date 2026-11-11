@@ -42,9 +42,13 @@ import '../../support/content_permissions.dart';
 /// qui partagent la sélection avec le détail, `?tab=weather` toléré, et le
 /// groupe disparu.
 class _Repository implements RideRepository {
-  _Repository(this.ride, this.weather);
+  _Repository(this.ride, this.weather, {this.permissions});
 
   final RideDto ride;
+
+  /// Le bloc `permissions` que le serveur calcule pour l'appelant (docs/
+  /// LEDGER_*.md MOB-137) ; nul, celui du jeu d'essai.
+  final ContentPermissionsDto? permissions;
   RideWeatherDto weather;
   final List<String> joined = <String>[];
   final List<String> left = <String>[];
@@ -52,7 +56,8 @@ class _Repository implements RideRepository {
   int weatherCalls = 0;
 
   @override
-  Future<RideDto> getRide(String teamSlug, String rideSlug) async => ride;
+  Future<RideDto> getRide(String teamSlug, String rideSlug) async =>
+      permissions == null ? ride : ride.copyWith(permissions: permissions!);
 
   @override
   Future<RideWeatherDto> getRideWeather(String t, String r) async {
@@ -228,7 +233,14 @@ void main() {
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
 
-    repository = _Repository(ride ?? twoGroups, dto);
+    // L'écran lit le droit dans la sortie, plus dans « Mes équipes » : un
+    // membre l'a, une appartenance inconnue ne vaut rien (docs/LEDGER_*.md
+    // MOB-137).
+    repository = _Repository(
+      ride ?? twoGroups,
+      dto,
+      permissions: permissionsFor(member: member && !membershipPending),
+    );
     participants = _Participants();
     container = ProviderContainer(
       retry: (int _, Object _) => null,
@@ -1716,7 +1728,11 @@ void main() {
       String initialLocation = '/',
       bool nested = false,
     }) async {
-      repository = _Repository(ride, weather());
+      repository = _Repository(
+        ride,
+        weather(),
+        permissions: permissionsFor(member: true),
+      );
       participants = _Participants();
       container = ProviderContainer(
         retry: (int _, Object _) => null,

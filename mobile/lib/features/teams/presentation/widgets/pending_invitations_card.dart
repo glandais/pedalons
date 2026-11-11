@@ -11,6 +11,7 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../data/invitations_repository.dart';
 import '../../providers/team_providers.dart';
+import '../../providers/membership_scoped_content.dart';
 import '../../../../keys.dart';
 
 /// « Vous avez des invitations en attente », en tête de « Mes équipes ».
@@ -49,6 +50,7 @@ class _PendingInvitationsCardState
       await ref.read(invitationsRepositoryProvider).accept(invitation.id);
       ref.invalidate(myInvitationsProvider);
       ref.invalidate(myTeamsProvider);
+      invalidateMembershipScopedContent((p) => ref.invalidate(p));
     } catch (error, stackTrace) {
       if (mounted) setState(() => _error = getErrorMessage(error, stackTrace));
     } finally {

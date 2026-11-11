@@ -17,8 +17,8 @@ void main() {
   });
 
   TeamDetailDto team({String visibility = 'PUBLIC'}) => TeamDetailDto(
-    allowedContentVisibilities: kAllContentVisibilities,
-    defaultContentVisibility: 'PUBLIC',
+    allowedContentVisibilities: contentVisibilitiesFor(visibility),
+    defaultContentVisibility: visibility,
     publicContentAllowed: false,
     timezone: 'Europe/Paris',
     id: 't1',

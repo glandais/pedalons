@@ -8,6 +8,7 @@ import '../../../core/utils/api_error_handler.dart';
 import '../data/team_repository.dart';
 import '../domain/team_discovery_filters.dart';
 import 'team_providers.dart';
+import 'membership_scoped_content.dart';
 
 /// Filtres courants de la découverte.
 final teamDiscoveryFiltersProvider =
@@ -130,6 +131,7 @@ class TeamJoinController extends StateNotifier<TeamJoinState> {
       );
       // « Mes équipes » vient d'en gagner une.
       _ref.invalidate(myTeamsProvider);
+      invalidateMembershipScopedContent((p) => _ref.invalidate(p));
     } catch (error, stackTrace) {
       final ApiError resolved = resolveApiError(error, stackTrace);
       // Rétablissement **complet** avant d'expliquer : la carte revient à ce

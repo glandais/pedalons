@@ -13,6 +13,7 @@ import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
+import '../../support/content_permissions.dart';
 import 'route_fixtures.dart';
 
 /// Le menu « Gérer le parcours » de la fiche (ledger `MOB-79`).
@@ -30,12 +31,21 @@ class _StubRoutes implements RouteRepository {
     String routeSlug,
   ) async {
     restored.add('$teamSlug/$routeSlug');
-    return fixtureRouteDetail(slug: routeSlug);
+    return managedRoute(slug: routeSlug);
   }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+
+/// Un parcours que l'appelant peut modifier et supprimer : le bloc
+/// `permissions` d'un organisateur (docs/LEDGER_*.md MOB-137).
+RouteDetailDto managedRoute({String? slug, bool deleted = false}) =>
+    fixtureRouteDetail(
+      slug: slug ?? 'col-de-la-croix',
+      deleted: deleted,
+      permissions: permissionsFor(member: true, role: 'ORGANIZER'),
+    );
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +54,7 @@ void main() {
   group('routeManageActions', () {
     test("selon l'état, comme le menu du site", () {
       expect(
-        routeManageActions(fixtureRouteDetail(), canReport: true),
+        routeManageActions(managedRoute(), canReport: true),
         <RouteManageAction>[
           RouteManageAction.edit,
           RouteManageAction.replaceGpx,
@@ -56,7 +66,7 @@ void main() {
 
     test("pas de signalement de son propre parcours", () {
       expect(
-        routeManageActions(fixtureRouteDetail(), canReport: false),
+        routeManageActions(managedRoute(), canReport: false),
         <RouteManageAction>[
           RouteManageAction.edit,
           RouteManageAction.replaceGpx,
@@ -68,13 +78,47 @@ void main() {
     test("un parcours supprimé n'offre que sa restauration", () {
       for (final bool canReport in <bool>[true, false]) {
         expect(
-          routeManageActions(
-            fixtureRouteDetail(deleted: true),
-            canReport: canReport,
-          ),
+          routeManageActions(managedRoute(deleted: true), canReport: canReport),
           <RouteManageAction>[RouteManageAction.restore],
         );
       }
+    });
+
+    // Les droits viennent du bloc `permissions` du parcours, pas du rôle
+    // (docs/LEDGER_*.md MOB-137).
+    test('sans aucun droit : le signalement seul, et pas de « Gérer »', () {
+      final RouteDetailDto route = fixtureRouteDetail(
+        permissions: kNoPermissions,
+      );
+      expect(routeManageActions(route, canReport: true), <RouteManageAction>[
+        RouteManageAction.report,
+      ]);
+      expect(routeHasManageActions(route), isFalse);
+    });
+
+    test('supprimé, sans canDelete : rien à restaurer', () {
+      expect(
+        routeManageActions(
+          fixtureRouteDetail(
+            deleted: true,
+            permissions: kNoPermissions.copyWith(canEdit: true),
+          ),
+          canReport: true,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('canEdit sans canDelete : modifier et remplacer, pas supprimer', () {
+      final RouteDetailDto route = fixtureRouteDetail(
+        permissions: kNoPermissions.copyWith(canEdit: true),
+      );
+      expect(routeManageActions(route, canReport: true), <RouteManageAction>[
+        RouteManageAction.edit,
+        RouteManageAction.replaceGpx,
+        RouteManageAction.report,
+      ]);
+      expect(routeHasManageActions(route), isTrue);
     });
   });
 
@@ -160,7 +204,7 @@ void main() {
     testWidgets('liste les gestes, destructif avant « Signaler »', (
       WidgetTester tester,
     ) async {
-      await pump(tester, route: fixtureRouteDetail());
+      await pump(tester, route: managedRoute());
 
       expect(find.text('Gérer le parcours'), findsOneWidget);
       expect(find.byKey(keys.routeManage.edit), findsOneWidget);
@@ -177,7 +221,7 @@ void main() {
     testWidgets('sans signalement pour son propre parcours', (
       WidgetTester tester,
     ) async {
-      await pump(tester, route: fixtureRouteDetail(), canReport: false);
+      await pump(tester, route: managedRoute(), canReport: false);
 
       expect(find.byKey(keys.routeManage.delete), findsOneWidget);
       expect(find.byKey(keys.routeManage.report), findsNothing);
@@ -186,7 +230,7 @@ void main() {
     testWidgets('un parcours supprimé : « Restaurer » seulement', (
       WidgetTester tester,
     ) async {
-      await pump(tester, route: fixtureRouteDetail(deleted: true));
+      await pump(tester, route: managedRoute(deleted: true));
 
       expect(find.byKey(keys.routeManage.restore), findsOneWidget);
       expect(find.byKey(keys.routeManage.edit), findsNothing);
@@ -200,7 +244,7 @@ void main() {
     });
 
     testWidgets('« Modifier » ouvre l\'éditeur', (WidgetTester tester) async {
-      await pump(tester, route: fixtureRouteDetail());
+      await pump(tester, route: managedRoute());
 
       await tester.tap(find.byKey(keys.routeManage.edit));
       await settle(tester);
@@ -211,7 +255,7 @@ void main() {
     testWidgets(
       '« Remplacer le fichier GPX » ouvre l\'éditeur sur le sélecteur',
       (WidgetTester tester) async {
-        await pump(tester, route: fixtureRouteDetail());
+        await pump(tester, route: managedRoute());
 
         await tester.tap(find.byKey(keys.routeManage.replaceGpx));
         await settle(tester);
@@ -225,7 +269,7 @@ void main() {
     testWidgets('la suppression demande confirmation, puis supprime', (
       WidgetTester tester,
     ) async {
-      await pump(tester, route: fixtureRouteDetail());
+      await pump(tester, route: managedRoute());
 
       await tester.tap(find.byKey(keys.routeManage.delete));
       await settle(tester);
@@ -248,7 +292,7 @@ void main() {
     testWidgets('annuler la confirmation ne supprime rien', (
       WidgetTester tester,
     ) async {
-      await pump(tester, route: fixtureRouteDetail());
+      await pump(tester, route: managedRoute());
 
       await tester.tap(find.byKey(keys.routeManage.delete));
       await settle(tester);

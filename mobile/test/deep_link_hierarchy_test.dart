@@ -506,6 +506,90 @@ void main() {
     });
   });
 
+  // docs/LEDGER_*.md MOB-137: someone who cannot read the team (a private
+  // team's public ride, opened by link) gets no team page under the entity —
+  // it would only say « Équipe indisponible ». Derived from the same table.
+  group('team not accessible', () {
+    final teamScoped = <String>{
+      for (final locale in PathVariants.team(_teamSlug).keys) ...[
+        PathVariants.team(_teamSlug)[locale]!,
+        PathVariants.teamAgenda(_teamSlug)[locale]!,
+        PathVariants.teamPosts(_teamSlug)[locale]!,
+        PathVariants.teamAds(_teamSlug)[locale]!,
+        PathVariants.routes(_teamSlug)[locale]!,
+        PathVariants.rideTemplates(_teamSlug)[locale]!,
+      ],
+    };
+
+    for (final c in _cases) {
+      for (final locale in c.target.keys) {
+        final target = c.target[locale]!;
+        final full = c.ancestors.map((a) => a[locale]!).toList();
+        if (!full.any(teamScoped.contains)) continue;
+        // A page of the team itself (a section, an editor, the templates)
+        // shares its fate; an entity has a visibility of its own.
+        final section = !const <String>{
+          'teamPage',
+          'ride',
+          // `…/sorties/nouvelle` is also the ride of slug `nouvelle`, and the
+          // ride's entry comes first.
+          'rideNew',
+          'rideGroup',
+          'post',
+          'trip',
+          'stage',
+          'ad',
+          'route',
+        }.contains(c.id);
+        test('${c.id} [$locale] keeps the entity ancestors only', () {
+          final reduced = ancestorsForDeepLink(target, teamAccessible: false);
+          if (section) {
+            expect(reduced, full);
+            expect(deepLinkEntityTeamSlug(target), isNull);
+          } else {
+            expect(reduced, full.where((a) => !teamScoped.contains(a)));
+            expect(reduced.first, PathVariants.teams()[locale]);
+            expect(deepLinkEntityTeamSlug(target), _teamSlug);
+          }
+        });
+      }
+    }
+
+    test('a ride goes back to the teams tab, a group to its ride', () {
+      final ride = PathVariants.ride(_teamSlug, _rideSlug)['fr']!;
+      final group = PathVariants.rideGroup(
+        _teamSlug,
+        _rideSlug,
+        _groupId,
+      )['fr']!;
+      final stage = PathVariants.stage(_teamSlug, _tripSlug, _stageSlug)['fr']!;
+      expect(ancestorsForDeepLink(ride, teamAccessible: false), [
+        PathVariants.teams()['fr'],
+      ]);
+      expect(ancestorsForDeepLink(group, teamAccessible: false), [
+        PathVariants.teams()['fr'],
+        ride,
+      ]);
+      expect(ancestorsForDeepLink(stage, teamAccessible: false), [
+        PathVariants.teams()['fr'],
+        PathVariants.trip(_teamSlug, _tripSlug)['fr'],
+      ]);
+    });
+
+    test('pages outside any team are left alone', () {
+      final privacy = PathVariants.profilePrivacy()['fr']!;
+      expect(
+        ancestorsForDeepLink(privacy, teamAccessible: false),
+        ancestorsForDeepLink(privacy),
+      );
+      expect(deepLinkEntityTeamSlug(privacy), isNull);
+      expect(
+        deepLinkEntityTeamSlug(PathVariants.team(_teamSlug)['fr']!),
+        isNull,
+      );
+    });
+  });
+
   // The two guards that keep the table above honest: it must list exactly the
   // entries declared in router.dart, and every deep-linkable mobile route of
   // the contract must be accounted for — with a hierarchy or as a page that

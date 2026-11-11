@@ -51,6 +51,7 @@ import '../features/teams/presentation/pages/team_home_page.dart';
 import '../features/teams/presentation/pages/teams_discover_page.dart';
 import '../features/teams/presentation/widgets/team_sections.dart';
 import '../features/teams/presentation/pages/teams_page.dart';
+import '../features/teams/providers/team_access_probe.dart';
 import 'paths.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -77,7 +78,16 @@ typedef _AncestorBuilder = String Function(
 class _DeepLinkHierarchy {
   final Map<String, String> patterns;
   final List<_AncestorBuilder> ancestors;
-  const _DeepLinkHierarchy({required this.patterns, required this.ancestors});
+
+  /// The target is an entity of a team (a ride, a route, a post…), which can
+  /// be readable by link while its team is not (docs/LEDGER_*.md MOB-137) —
+  /// unlike the team's own pages, which share its fate.
+  final bool entity;
+  const _DeepLinkHierarchy({
+    required this.patterns,
+    required this.ancestors,
+    this.entity = false,
+  });
 }
 
 String _homeAncestor(Map<String, String> p, String locale) =>
@@ -106,6 +116,21 @@ String _teamRoutesAncestor(Map<String, String> p, String locale) =>
     PathVariants.routes(p['teamSlug']!)[locale]!;
 String _routeAncestor(Map<String, String> p, String locale) =>
     PathVariants.route(p['teamSlug']!, p['routeSlug']!)[locale]!;
+
+/// The ancestors that are pages **of the team** — its home, or one of its
+/// sections or lists. They answer « Équipe indisponible » to a caller who
+/// cannot read the team: someone outside a private team who opens the link of
+/// one of its public rides (docs/LEDGER_*.md MOB-137). [ancestorsForDeepLink]
+/// drops them for such a caller, keeping the teams tab and the entity
+/// ancestors (a ride under its group, a trip under its stage).
+final Set<_AncestorBuilder> _teamScopedAncestors = <_AncestorBuilder>{
+  _teamAncestor,
+  _teamAgendaAncestor,
+  _teamPostsAncestor,
+  _teamAdsAncestor,
+  _teamRoutesAncestor,
+  _rideTemplatesAncestor,
+};
 
 final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   // Standalone pages outside any shell: without an ancestor they would be the
@@ -234,18 +259,21 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
 
   // Detail pages.
   _DeepLinkHierarchy(
+    entity: true,
     patterns: PathVariants.teamPage(':teamSlug', ':pageSlug'),
     ancestors: [_teamsAncestor, _teamAncestor],
   ),
   // Une sortie et un voyage sont rangés sous l'Agenda, une publication sous
   // les Publications — comme le fil d'Ariane du site (ledger `MOB-60`).
   _DeepLinkHierarchy(
+    entity: true,
     patterns: PathVariants.ride(':teamSlug', ':rideSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamAgendaAncestor],
   ),
   // La page d'un groupe sous sa sortie : le détail se reconstruit dessous,
   // et le groupe y reste sélectionné au retour (ledger `MOB-67`).
   _DeepLinkHierarchy(
+    entity: true,
     patterns: PathVariants.rideGroup(':teamSlug', ':rideSlug', ':groupId'),
     ancestors: [
       _teamsAncestor,
@@ -284,14 +312,17 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
     ancestors: [_teamsAncestor, _teamAncestor, _rideTemplatesAncestor],
   ),
   _DeepLinkHierarchy(
+    entity: true,
     patterns: PathVariants.post(':teamSlug', ':postSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamPostsAncestor],
   ),
   _DeepLinkHierarchy(
+    entity: true,
     patterns: PathVariants.trip(':teamSlug', ':tripSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamAgendaAncestor],
   ),
   _DeepLinkHierarchy(
+    entity: true,
     patterns: PathVariants.stage(':teamSlug', ':tripSlug', ':stageSlug'),
     ancestors: [
       _teamsAncestor,
@@ -301,6 +332,7 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
     ],
   ),
   _DeepLinkHierarchy(
+    entity: true,
     patterns: PathVariants.ad(':teamSlug', ':adSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamAdsAncestor],
   ),
@@ -322,6 +354,7 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
     ],
   ),
   _DeepLinkHierarchy(
+    entity: true,
     patterns: PathVariants.route(':teamSlug', ':routeSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamRoutesAncestor],
   ),
@@ -346,17 +379,52 @@ Map<String, String>? _matchPattern(String pattern, String actualPath) {
 /// in the same locale the path was authored in. Empty when the target already
 /// carries its own navigation (home, main shell tabs, auth pages) — the deep
 /// link handler then just [GoRouter.go]es to it.
-List<String> ancestorsForDeepLink(String path) {
+///
+/// [teamAccessible] false — the caller cannot read the team of the linked
+/// entity, a private team whose public ride was shared — drops the team's own
+/// pages from the stack ([_teamScopedAncestors]): going back then leads to the
+/// teams tab instead of rebuilding a team home that would only say « Équipe
+/// indisponible » (docs/LEDGER_*.md MOB-137). Only an entity's link is
+/// affected; a team page keeps its ancestors.
+List<String> ancestorsForDeepLink(String path, {bool teamAccessible = true}) {
+  final match = _matchHierarchy(path);
+  if (match == null) return const [];
+  final (hierarchy, params, locale) = match;
+  return [
+    for (final fn in hierarchy.ancestors)
+      if (teamAccessible ||
+          !hierarchy.entity ||
+          !_teamScopedAncestors.contains(fn))
+        fn(params, locale),
+  ];
+}
+
+/// The team of an entity's link — a ride, a route, a post, … — whose
+/// ancestors include the team's own pages; null for any other path. That is
+/// the team whose readability [openDeepLink] asks about before building the
+/// stack.
+String? deepLinkEntityTeamSlug(String path) {
+  final match = _matchHierarchy(path);
+  if (match == null) return null;
+  final (hierarchy, params, _) = match;
+  if (!hierarchy.entity ||
+      !hierarchy.ancestors.any(_teamScopedAncestors.contains)) {
+    return null;
+  }
+  return params['teamSlug'];
+}
+
+(_DeepLinkHierarchy, Map<String, String>, String)? _matchHierarchy(
+  String path,
+) {
   final barePath = path.split('?').first;
   for (final hierarchy in _deepLinkHierarchies) {
     for (final entry in hierarchy.patterns.entries) {
       final params = _matchPattern(entry.value, barePath);
-      if (params != null) {
-        return hierarchy.ancestors.map((fn) => fn(params, entry.key)).toList();
-      }
+      if (params != null) return (hierarchy, params, entry.key);
     }
   }
-  return const [];
+  return null;
 }
 
 /// Paths considered "auth-adjacent" — visits to these skip the
@@ -387,9 +455,14 @@ bool isAuthAdjacent(String location) {
 
 /// Opens [path] with its ancestor stack ([ancestorsForDeepLink]) underneath, so
 /// back walks the logical hierarchy instead of closing the app. The query string
-/// travels with the target (`/garmin?code=…`).
-void openWithHierarchy(GoRouter router, String path) {
-  final ancestors = ancestorsForDeepLink(path);
+/// travels with the target (`/garmin?code=…`). [teamAccessible] false leaves
+/// the team's own pages out of the stack (docs/LEDGER_*.md MOB-137).
+void openWithHierarchy(
+  GoRouter router,
+  String path, {
+  bool teamAccessible = true,
+}) {
+  final ancestors = ancestorsForDeepLink(path, teamAccessible: teamAccessible);
   if (ancestors.isEmpty) {
     router.go(path);
     return;
@@ -401,6 +474,42 @@ void openWithHierarchy(GoRouter router, String path) {
   router.push(path);
 }
 
+/// [openWithHierarchy], après avoir demandé à [teamAccess] si l'équipe d'une
+/// entité liée se consulte (docs/LEDGER_*.md MOB-137). Le lien d'une sortie
+/// publique d'une équipe privée, ouvert par quelqu'un qui n'en est pas
+/// membre, ne reconstruit donc pas dessous une page d'équipe qui ne dirait
+/// que « Équipe indisponible » : le retour mène à l'onglet Équipes. Sans
+/// [teamAccess], ou pour un lien qui n'est pas celui d'une entité, la pile
+/// complète, sans attente.
+Future<void> openWithTeamAwareHierarchy(
+  GoRouter router,
+  String path, {
+  TeamAccessProbe? teamAccess,
+}) async {
+  final int generation = ++_teamAwareOpenGeneration;
+  final String? teamSlug = teamAccess == null
+      ? null
+      : deepLinkEntityTeamSlug(path);
+  if (teamAccess == null || teamSlug == null) {
+    openWithHierarchy(router, path);
+    return;
+  }
+  final Uri before = router.routerDelegate.currentConfiguration.uri;
+  final bool teamAccessible = await teamAccess(teamSlug);
+  // La question peut prendre jusqu'à [kTeamAccessProbeTimeout]. Un lien plus
+  // récent, ou une navigation faite entre-temps, l'emporte : ouvrir celui-ci
+  // maintenant effacerait ce que la personne regarde déjà.
+  if (generation != _teamAwareOpenGeneration ||
+      router.routerDelegate.currentConfiguration.uri != before) {
+    return;
+  }
+  openWithHierarchy(router, path, teamAccessible: teamAccessible);
+}
+
+/// Le rang du dernier lien confié à [openWithTeamAwareHierarchy] : un lien dont
+/// la réponse arrive après celle d'un plus récent est abandonné.
+int _teamAwareOpenGeneration = 0;
+
 /// Ouvre un lien profond — web, QR code, notification — une fois l'app
 /// navigable.
 ///
@@ -410,12 +519,16 @@ void openWithHierarchy(GoRouter router, String path) {
 /// délibéré : la redirection voit aussi l'écran quitté par une déconnexion, qui
 /// se rejouerait alors pour le membre suivant. Une page ouverte sans session
 /// (connexion, CGU, apps…) s'ouvre directement et n'est jamais mise en attente.
-void openDeepLink(
+///
+/// [teamAccess] dit si l'équipe d'une entité liée se consulte, pour la pile
+/// ([openWithTeamAwareHierarchy]).
+Future<void> openDeepLink(
   GoRouter router,
   String path, {
   required bool signedIn,
   required PendingSignInLink pending,
-}) {
+  TeamAccessProbe? teamAccess,
+}) async {
   // Une page du site que le manifeste Android n'a pas su exclure : au
   // navigateur, sans session requise ni pile touchée (docs/LEDGER_*.md MOB-59).
   if (isSitePageLocation(path)) {
@@ -427,26 +540,33 @@ void openDeepLink(
     router.go(Paths.login());
     return;
   }
-  openWithHierarchy(router, path);
+  await openWithTeamAwareHierarchy(router, path, teamAccess: teamAccess);
 }
 
 /// Où aller une fois connecté — mot de passe, passkey, vérification de
 /// l'e-mail, réinitialisation : le lien ouvert hors session s'il y en a un,
 /// avec ses ancêtres comme tout lien profond, sinon l'accueil. Le lien est
 /// consommé : il ne sert qu'une fois.
-void resumeAfterSignIn(GoRouter router, PendingSignInLink pending) {
+Future<void> resumeAfterSignIn(
+  GoRouter router,
+  PendingSignInLink pending, {
+  TeamAccessProbe? teamAccess,
+}) async {
   final location = pending.take();
   if (location == null) {
     router.go(Paths.home());
     return;
   }
-  openWithHierarchy(router, location);
+  await openWithTeamAwareHierarchy(router, location, teamAccess: teamAccess);
 }
 
 /// [resumeAfterSignIn] depuis une page de l'authentification.
-void goAfterSignIn(WidgetRef ref) => resumeAfterSignIn(
-  ref.read(routerProvider),
-  ref.read(pendingSignInLinkProvider),
+void goAfterSignIn(WidgetRef ref) => unawaited(
+  resumeAfterSignIn(
+    ref.read(routerProvider),
+    ref.read(pendingSignInLinkProvider),
+    teamAccess: ref.read(teamAccessProbeProvider),
+  ),
 );
 
 /// Register one [GoRoute] per unique locale variant of [variants].

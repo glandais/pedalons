@@ -18,17 +18,16 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/share_link.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
+import '../../../../core/widgets/team_banner.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../comments/data/comment_repository.dart';
 import '../../../comments/presentation/widgets/comment_thread.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
-import '../../../teams/providers/team_providers.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../data/post_repository.dart';
 import '../../domain/post_neighbours.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../../keys.dart';
-import '../../../../core/utils/push_location.dart';
 
 final postDetailProvider =
     FutureProvider.family<PostDto, ({String teamSlug, String postSlug})>((
@@ -118,7 +117,10 @@ class _PostDetailContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final PdlColors c = context.pdl;
-    final bool? isMember = ref.watch(teamMembershipProvider(post.team.slug));
+    // Le droit de commenter, calculé par le backend pour **cette**
+    // publication (docs/LEDGER_*.md MOB-137).
+    final bool canComment = post.permissions.canComment ?? false;
+    final VoidCallback? viewTeam = teamLinkOf(context, post.team);
     final List<AssetDto> attachments = post.media.assets.attachments;
 
     return Scaffold(
@@ -180,19 +182,24 @@ class _PostDetailContent extends ConsumerWidget {
                       teamSlug: post.team.slug,
                       slug: post.slug,
                     ),
-                    canComment: isMember ?? false,
+                    canComment: canComment,
                   )
                 else
+                  // Une équipe que l'appelant ne peut pas consulter (privée,
+                  // publication lue par lien) n'offre pas de lien vers elle.
                   PdlBanner(
                     tone: PdlBannerTone.info,
-                    message: 'posts.commentsMembersOnly'.tr(),
-                    action: PdlButton(
-                      label: 'teams.viewTeam'.tr(),
-                      variant: PdlButtonVariant.outline,
-                      size: PdlButtonSize.sm,
-                      onPressed: () =>
-                          pushLocation(context, Paths.team(post.team.slug)),
-                    ),
+                    message: viewTeam == null
+                        ? 'posts.commentsPrivateTeam'.tr()
+                        : 'posts.commentsMembersOnly'.tr(),
+                    action: viewTeam == null
+                        ? null
+                        : PdlButton(
+                            label: 'teams.viewTeam'.tr(),
+                            variant: PdlButtonVariant.outline,
+                            size: PdlButtonSize.sm,
+                            onPressed: viewTeam,
+                          ),
                   ),
               ],
             ),
@@ -266,7 +273,7 @@ class _PostDetailContent extends ConsumerWidget {
         PdlTeamLine(
           label: post.team.name,
           imageUrl: post.team.logoUrl,
-          onTap: () => pushLocation(context, Paths.team(post.team.slug)),
+          onTap: teamLinkOf(context, post.team),
         ),
         const SizedBox(height: PdlSpacing.chipGap),
         Row(

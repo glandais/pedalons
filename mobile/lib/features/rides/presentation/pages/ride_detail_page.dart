@@ -20,15 +20,14 @@ import '../../../../core/widgets/detail_section.dart';
 import '../../../../core/widgets/detail_stat_tiles.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
+import '../../../../core/widgets/team_banner.dart';
 import '../../../comments/data/comment_repository.dart';
 import '../../../comments/presentation/widgets/comment_thread.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../participants/presentation/widgets/participants_sheet.dart';
 import '../../../teams/domain/publication_timing.dart';
-import '../../../teams/providers/team_providers.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../providers/ride_detail_provider.dart';
-import '../../providers/ride_editor_providers.dart';
 import '../widgets/ride_manage_menu.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../../routes/domain/track_surfaces.dart';
@@ -50,7 +49,6 @@ import '../widgets/ride_weather_widgets.dart';
 import '../widgets/weather_section.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../../keys.dart';
-import '../../../../core/utils/push_location.dart';
 import '../../../../screenshots/screenshot_mode.dart';
 
 /// L'écran 12 — détail d'une sortie et inscription à un groupe.
@@ -235,8 +233,9 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
 
   @override
   Widget build(BuildContext context) {
-    final bool canManage =
-        ref.watch(canManageRidesProvider(ride.team.slug)) ?? false;
+    // Ce que le backend dit de **cette** sortie (docs/LEDGER_*.md MOB-137) :
+    // jamais déduit du rôle ni de la visibilité de l'équipe.
+    final ContentPermissionsDto permissions = ride.permissions;
     final RideGroupDto? solo = soloGroupOf(ride);
     final bool multi = ride.groups.length > 1;
 
@@ -306,6 +305,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
         // avec sa ligne d'équipe et ses badges. Le répéter en 17 dans la
         // barre le dit deux fois sur le même écran.
         onBack: () => context.pop(),
+        backKey: keys.ride.backButton,
         backSemanticLabel: 'common.back'.tr(),
         actions: <Widget>[
           PdlAppBarAction(
@@ -315,7 +315,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
           ),
           // L'organisateur modifie d'un geste, et trouve le reste — publier,
           // annuler, supprimer, signaler — sous `⋯` (ledger `MOB-80`).
-          if (canManage && !ride.deleted)
+          if (permissions.canEdit && !ride.deleted)
             PdlAppBarAction(
               key: keys.rideManage.editButton,
               icon: PdlIcons.edit,
@@ -327,7 +327,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
             key: keys.ride.moreButton,
             icon: PdlIcons.more,
             semanticLabel: 'moderation.more'.tr(),
-            onPressed: canManage
+            onPressed: rideHasManageActions(ride)
                 ? () => showRideManageMenu(context, ref, ride)
                 : () => showDetailModerationMenu(
                     context,
@@ -405,8 +405,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
             child: registrationFailureBanner(
               registration.failure!,
               ref.read(rideRegistrationProvider(rideKey).notifier),
-              onViewTeam: () =>
-                  pushLocation(context, Paths.team(ride.team.slug)),
+              onViewTeam: teamLinkOf(context, ride.team),
             ),
           ),
         ),
@@ -614,9 +613,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
   /// `MOB-134`, lot 8). Inscrite dans un groupe ([RideDto.joinedGroup]),
   /// l'écran parle de lui : son heure en gros, ses tuiles, sa météo au départ.
   List<Widget> _multiGroupSlivers(BuildContext context) {
-    final bool canSeeNames = ref.watch(
-      canSeeMemberNamesProvider(ride.team.slug),
-    );
+    final bool canSeeNames = ride.permissions.canSeeParticipants ?? false;
     final RideGroupDto? mine = ride.joinedGroup;
     // La sélection est initialisée sur *mon* groupe quand j'en ai un : c'est
     // celui qu'on veut voir en premier sur la carte comme dans le profil.
@@ -723,7 +720,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
             onShowRideParticipants: canSeeNames
                 ? () => ParticipantsSheet.openRide(context, ride)
                 : null,
-            onViewTeam: () => pushLocation(context, Paths.team(ride.team.slug)),
+            onViewTeam: teamLinkOf(context, ride.team),
             now: widget.now,
           ),
         ),
@@ -782,9 +779,12 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
           // Le logo d'équipe quand elle en a un (`TeamPublicationDto.logoUrl`,
           // API 5.8.0), sinon les initiales teintées.
           PdlTeamLine(
+            key: keys.ride.teamLine,
             label: ride.team.name,
             imageUrl: ride.team.logoUrl,
-            onTap: () => pushLocation(context, Paths.team(ride.team.slug)),
+            // Pas de lien vers une équipe que l'appelant ne peut pas
+            // consulter (`team.accessible`, docs/LEDGER_*.md MOB-137).
+            onTap: teamLinkOf(context, ride.team),
           ),
           const SizedBox(height: 2),
           Text(ride.name, key: keys.ride.title, style: t.screenTitle),
@@ -845,7 +845,12 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
 
   // ── Bandeaux : supprimée, annulée, non-membre ───────────────────────────
   List<Widget> _banners() {
-    final bool? isMember = ref.watch(teamMembershipProvider(ride.team.slug));
+    // Ni inscription ni noms pour qui n'est pas membre (`canComment`,
+    // membre ou administrateur de la plateforme) : le bandeau le dit. Une
+    // équipe que l'appelant ne peut pas consulter (privée, sortie lue par
+    // lien) n'offre pas de lien vers elle, et le bandeau dit pourquoi.
+    final bool notMember = ride.permissions.canComment != true;
+    final VoidCallback? viewTeam = teamLinkOf(context, ride.team);
     return <Widget>[
       if (ride.deleted)
         SliverToBoxAdapter(
@@ -868,20 +873,25 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
             fullBleed: true,
           ),
         ),
-      if (isMember == false)
+      if (notMember)
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: PdlBanner(
+              key: keys.ride.notMemberBanner,
               tone: PdlBannerTone.warn,
-              message: 'rides.notMemberBanner'.tr(),
-              action: PdlButton(
-                label: 'teams.viewTeam'.tr(),
-                variant: PdlButtonVariant.outline,
-                size: PdlButtonSize.sm,
-                onPressed: () =>
-                    pushLocation(context, Paths.team(ride.team.slug)),
-              ),
+              message: viewTeam == null
+                  ? 'rides.privateTeamBanner'.tr()
+                  : 'rides.notMemberBanner'.tr(),
+              action: viewTeam == null
+                  ? null
+                  : PdlButton(
+                      key: keys.ride.viewTeamButton,
+                      label: 'teams.viewTeam'.tr(),
+                      variant: PdlButtonVariant.outline,
+                      size: PdlButtonSize.sm,
+                      onPressed: viewTeam,
+                    ),
             ),
           ),
         ),
@@ -890,14 +900,13 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
 
   // ── Commentaires ────────────────────────────────────────────────────────
   Widget _comments({required bool countAtEnd}) {
-    final bool? isMember = ref.watch(teamMembershipProvider(ride.team.slug));
     return CommentThread(
       target: CommentTarget(
         entity: CommentEntity.ride,
         teamSlug: ride.team.slug,
         slug: ride.slug,
       ),
-      canComment: isMember ?? false,
+      canComment: ride.permissions.canComment ?? false,
       countAtEnd: countAtEnd,
     );
   }

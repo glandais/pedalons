@@ -75,6 +75,14 @@ final class Teams extends Module {
     return DateTime.now().difference(start);
   }
 
+  /// Waits for the teams tab — « Mes équipes », with its « Découvrir » button.
+  Future<void> waitUntilTeamsListIsShown() async {
+    await $(keys.teams.discoverButton).waitUntilVisible();
+  }
+
+  /// Whether a team's error state (« Équipe indisponible ») is built, on screen or under it.
+  bool get showsLoadError => $(keys.team.loadError).exists;
+
   /// « Réessayer » of the team's error state.
   Future<void> retryLoad() async {
     await $(keys.team.loadErrorRetryButton).tap();

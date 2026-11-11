@@ -100,17 +100,23 @@ void main() {
   });
 
   group('rideManageActions', () {
+    // Le droit vient de la sortie, calculé par le backend (docs/LEDGER_*.md
+    // MOB-137) : un organisateur, puis un membre sans droit.
+    final ContentPermissionsDto organizer = permissionsFor(
+      member: true,
+      role: 'ORGANIZER',
+    );
+    RideDto managed({String status = 'PUBLISHED'}) =>
+        fixtureRide(status: status).copyWith(permissions: organizer);
+
     test('selon le statut, comme le menu du site', () {
+      expect(rideManageActions(managed(status: 'DRAFT')), <RideManageAction>[
+        RideManageAction.publish,
+        RideManageAction.delete,
+        RideManageAction.report,
+      ]);
       expect(
-        rideManageActions(fixtureRide(status: 'DRAFT')),
-        <RideManageAction>[
-          RideManageAction.publish,
-          RideManageAction.delete,
-          RideManageAction.report,
-        ],
-      );
-      expect(
-        rideManageActions(fixtureRide(status: 'PUBLISHED')),
+        rideManageActions(managed(status: 'PUBLISHED')),
         <RideManageAction>[
           RideManageAction.unpublish,
           RideManageAction.cancel,
@@ -119,7 +125,7 @@ void main() {
         ],
       );
       expect(
-        rideManageActions(fixtureRide(status: 'CANCELLED')),
+        rideManageActions(managed(status: 'CANCELLED')),
         <RideManageAction>[
           RideManageAction.reinstate,
           RideManageAction.delete,
@@ -130,9 +136,31 @@ void main() {
 
     test('une sortie supprimée n\'offre que sa restauration', () {
       expect(
-        rideManageActions(fixtureRide().copyWith(deleted: true)),
+        rideManageActions(managed().copyWith(deleted: true)),
         <RideManageAction>[RideManageAction.restore],
       );
+    });
+
+    test('sans droit calculé, le signalement seul, quel que soit le rôle', () {
+      final RideDto ride = fixtureRide().copyWith(
+        permissions: permissionsFor(member: true),
+      );
+      expect(rideManageActions(ride), <RideManageAction>[
+        RideManageAction.report,
+      ]);
+      expect(rideHasManageActions(ride), isFalse);
+      expect(rideManageActions(ride.copyWith(deleted: true)), isEmpty);
+    });
+
+    test('canEdit sans canDelete : les statuts, pas la suppression', () {
+      final RideDto ride = fixtureRide().copyWith(
+        permissions: organizer.copyWith(canDelete: false),
+      );
+      expect(rideManageActions(ride), <RideManageAction>[
+        RideManageAction.unpublish,
+        RideManageAction.cancel,
+        RideManageAction.report,
+      ]);
     });
   });
 }

@@ -953,7 +953,8 @@
       "deletedBanner": "Cette sortie est supprimée. Seul le rôle Administrateur de l'équipe la voit."
     },
     "groupSwitchTo": "Changer pour {group}",
-    "groupLeaveLong": "Quitter le groupe"
+    "groupLeaveLong": "Quitter le groupe",
+    "privateTeamBanner": "Cette sortie appartient à une équipe privée : seules ses personnes membres peuvent s'y inscrire et voir qui y participe."
   },
   "posts": {
     "title": "Publications",
@@ -961,7 +962,8 @@
     "previous": "Publication précédente",
     "next": "Publication suivante",
     "commentsMembersOnly": "Les commentaires sont réservés aux membres de l'équipe.",
-    "onBehalfOfTeam": "Au nom de l'équipe"
+    "onBehalfOfTeam": "Au nom de l'équipe",
+    "commentsPrivateTeam": "Les commentaires sont réservés aux membres de cette équipe privée."
   },
   "ads": {
     "title": "Annonces",
@@ -1090,7 +1092,8 @@
       "mapSharesAll": "Parts additionnées des {count} étapes",
       "mapSharesSome": "Parts additionnées des étapes avec prévision : {count} sur {total}",
       "mapSharesOne": "Parts de la seule étape avec prévision : {stage}"
-    }
+    },
+    "privateTeamBanner": "Ce voyage appartient à une équipe privée : seules ses personnes membres peuvent s'y inscrire et voir qui y participe."
   },
   "routes": {
     "title": "Parcours",
@@ -1826,6 +1829,7 @@
       "GPX_FAILURE": "Erreur lors du traitement du fichier GPX",
       "GPX_NOT_FOUND": "Fichier GPX introuvable",
       "GROUP_FULL": "Ce groupe est complet",
+      "INCOMPATIBLE_VISIBILITY": "Visibilités incompatibles : un parcours « Équipe » ne peut pas servir à une sortie ou un voyage visible hors de l'équipe",
       "RIDE_PAST": "Cette sortie est passée : on ne peut plus s'y inscrire",
       "INTERNAL_ERROR": "Erreur interne du serveur",
       "INVALID_CREDENTIALS": "Adresse e-mail ou mot de passe incorrect",
@@ -1980,7 +1984,29 @@
   "visibility": {
     "public": "Public",
     "public_unlisted": "Non répertorié",
-    "team": "Équipe"
+    "team": "Équipe",
+    "privateTeamHint": "Équipe privée : en « Public » ou « Non répertorié », ce contenu est lisible par toute personne qui a le lien, mais n'apparaît dans aucune liste ni aucun moteur de recherche.",
+    "currentNotAllowed": "Cette visibilité n'est plus possible dans cette équipe : choisissez-en une autre pour enregistrer.",
+    "noneAllowed": "Aucune visibilité ne peut être enregistrée pour l'instant : ce parcours sert à des sorties ou des voyages visibles hors de l'équipe, et l'équipe ne publie plus qu'en « Équipe ». Repassez d'abord ces sorties et ces voyages en « Équipe ».",
+    "align": {
+      "title": "Ouvrir aussi les parcours ?",
+      "messageRide": "Cette sortie sera visible hors de l'équipe, mais certains de ses parcours sont réservés à l'équipe. Pour l'enregistrer, ils changent de visibilité :",
+      "messageTrip": "Ce voyage sera visible hors de l'équipe, mais certains de ses parcours sont réservés à l'équipe. Pour l'enregistrer, ils changent de visibilité :",
+      "route": "{name} : {from} → {to}",
+      "confirm": "Ouvrir les parcours et enregistrer"
+    },
+    "restoreBlocked": {
+      "title": "Restauration impossible pour l'instant",
+      "messageRide": "Cette sortie est visible hors de l'équipe, mais ces parcours sont désormais réservés à l'équipe. Passez-les d'abord en « Non répertorié » ou « Public », puis restaurez la sortie.",
+      "messageTrip": "Ce voyage est visible hors de l'équipe, mais ces parcours sont désormais réservés à l'équipe. Passez-les d'abord en « Non répertorié » ou « Public », puis restaurez le voyage."
+    },
+    "routeInUse": {
+      "title": "Ce parcours reste visible hors de l'équipe",
+      "message": "Il sert à des sorties ou des voyages visibles hors de l'équipe : il ne peut pas passer en « Équipe » tant que ces sorties et ces voyages le restent. Repassez-les d'abord en « Équipe », ou gardez une autre visibilité à ce parcours.",
+      "ride": "Sortie",
+      "trip": "Voyage",
+      "usage": "{kind} « {name} » ({visibility})"
+    }
   },
   "publicationType": {
     "ride": "Sortie",

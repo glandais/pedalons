@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../../../api/generated/export.dart';
 import '../../../core/utils/api_error_handler.dart';
 import '../data/team_repository.dart';
+import 'membership_scoped_content.dart';
 import 'team_providers.dart';
 
 /// L'état d'adhésion à **une** équipe, du point de vue de sa page.
@@ -139,6 +140,9 @@ class TeamMembershipController extends StateNotifier<TeamMembershipState> {
       // perdre une.
       _ref.invalidate(teamDetailProvider(_teamSlug));
       _ref.invalidate(myTeamsProvider);
+      // Et les droits calculés des entités déjà lues (docs/LEDGER_*.md
+      // MOB-137).
+      invalidateMembershipScopedContent((p) => _ref.invalidate(p));
     } catch (error, stackTrace) {
       final ApiError resolved = resolveApiError(error, stackTrace);
       // Rétablissement **complet** avant d'expliquer : le bouton revient à ce

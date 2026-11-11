@@ -133,14 +133,17 @@ final class BackendClient {
   // ── Teams ───────────────────────────────────────────────────────────────
 
   /// A team owned by [owner] (its ADMIN). `POST /api/teams` always creates a members-only team:
-  /// any other [visibility], and the admin-only [joinable] / [addMemberAllowed] attributes, are
-  /// applied afterwards as the platform admin — as `newTeam` does in the web suite.
+  /// any other [visibility], and the admin-only [joinable] / [addMemberAllowed] /
+  /// [publicContentAllowed] attributes, are applied afterwards as the platform admin — as
+  /// `newTeam` does in the web suite. [publicContentAllowed] lets a private team publish content
+  /// readable by link (docs/LEDGER_*.md MOB-137).
   Future<Json> newTeam(
     TestUser owner,
     String label, {
     String visibility = 'TEAM',
     bool? joinable,
     bool? addMemberAllowed,
+    bool? publicContentAllowed,
   }) async {
     final request = _teamRequest(unique(label));
     var team = await post(owner, '/api/teams', request);
@@ -150,7 +153,9 @@ final class BackendClient {
         'visibility': visibility,
       });
     }
-    if (joinable != null || addMemberAllowed != null) {
+    if (joinable != null ||
+        addMemberAllowed != null ||
+        publicContentAllowed != null) {
       final admin = await this.admin();
       final path = '/api/admin/teams/${team['id']}';
       final current = await get(admin, path);
@@ -159,6 +164,8 @@ final class BackendClient {
         'joinable': joinable ?? current['joinable'],
         'addMemberAllowed': addMemberAllowed ?? current['addMemberAllowed'],
         'enableRoutePlanner': current['enableRoutePlanner'],
+        'publicContentAllowed':
+            publicContentAllowed ?? current['publicContentAllowed'],
       });
     }
     return team;
@@ -206,19 +213,21 @@ final class BackendClient {
 
   // ── Rides ───────────────────────────────────────────────────────────────
 
-  /// A published, members-only ride two days ahead, with [groups] (one « Groupe A » by default).
-  /// A group is `{'name': …}`, plus `'leaderId'` for a designated leader.
+  /// A published ride two days ahead, members-only unless [visibility] says otherwise, with
+  /// [groups] (one « Groupe A » by default). A group is `{'name': …}`, plus `'leaderId'` for a
+  /// designated leader.
   Future<Json> newRide(
     TestUser by,
     String teamSlug,
     String label, {
     List<Json>? groups,
+    String visibility = 'TEAM',
   }) => post(by, '/api/teams/$teamSlug/rides', {
     'name': unique(label),
     'media': markdownMedia(),
     'dateTime': wallTimeOf(DateTime.now().add(const Duration(days: 2))),
     'status': 'PUBLISHED',
-    'visibility': 'TEAM',
+    'visibility': visibility,
     'groups':
         groups ??
         [

@@ -24,6 +24,10 @@ import '../../../rides/presentation/widgets/editor/slug_edit_sheet.dart';
 import '../../../tags/presentation/tag_filter.dart';
 import '../../../tags/providers/team_tags_provider.dart';
 import '../../../teams/providers/team_providers.dart';
+import '../../../visibility/domain/content_visibility.dart';
+import '../../../visibility/domain/incompatible_visibility.dart';
+import '../../../visibility/presentation/visibility_field.dart';
+import '../../../visibility/presentation/visibility_refusal.dart';
 import '../../data/gpx_file_source.dart';
 import '../../data/route_repository.dart';
 import '../../domain/gpx_check.dart';
@@ -105,29 +109,30 @@ class RouteEditorPage extends ConsumerWidget {
       return shell(const Center(child: CircularProgressIndicator.adaptive()));
     }
 
+    Widget forbidden() => shell(
+      PdlEmptyState(
+        key: keys.routeEditor.forbidden,
+        variant: PdlEmptyVariant.empty,
+        icon: PdlIcons.admin,
+        title: 'routes.editor.forbiddenTitle'.tr(),
+        message: teamValue.enableRoutes
+            ? 'routes.editor.forbiddenMessage'.tr()
+            : 'routes.editor.modulesOffMessage'.tr(),
+        actions: <Widget>[
+          PdlButton(
+            label: 'common.back'.tr(),
+            variant: PdlButtonVariant.outline,
+            onPressed: () => context.pop(),
+          ),
+        ],
+      ),
+    );
+
     // 2. Le refus est tranché **avant** de lire le parcours : un simple
     // membre qui l'écouterait lirait le 403 du serveur (parcours d'équipe
-    // privé) au lieu de l'écran de refus.
-    if (!canManage || !teamValue.enableRoutes) {
-      return shell(
-        PdlEmptyState(
-          key: keys.routeEditor.forbidden,
-          variant: PdlEmptyVariant.empty,
-          icon: PdlIcons.admin,
-          title: 'routes.editor.forbiddenTitle'.tr(),
-          message: teamValue.enableRoutes
-              ? 'routes.editor.forbiddenMessage'.tr()
-              : 'routes.editor.modulesOffMessage'.tr(),
-          actions: <Widget>[
-            PdlButton(
-              label: 'common.back'.tr(),
-              variant: PdlButtonVariant.outline,
-              onPressed: () => context.pop(),
-            ),
-          ],
-        ),
-      );
-    }
+    // privé) au lieu de l'écran de refus. La création n'a pas d'entité : la
+    // règle de rôle est la seule (aucun champ calculé ne la porte).
+    if (!canManage || !teamValue.enableRoutes) return forbidden();
 
     // 3. Le parcours à modifier.
     final String? slug = routeSlug;
@@ -148,6 +153,9 @@ class RouteEditorPage extends ConsumerWidget {
       if (route == null) {
         return shell(const Center(child: CircularProgressIndicator.adaptive()));
       }
+      // Puis le droit que le backend calcule pour **ce** parcours
+      // (docs/LEDGER_*.md MOB-137) : c'est lui qui tranche.
+      if (!route.permissions.canEdit) return forbidden();
     }
 
     return _RouteEditorForm(
@@ -468,6 +476,21 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
       // Un refus du fichier par le serveur (illisible, vide, trop long, trop
       // gros) se lit dans la section Tracé, formulaire conservé ; tout autre
       // échec est une erreur de l'écran.
+      // Décision D6 : un parcours qui sert publiquement ne passe pas en
+      // « Équipe ». Le refus liste ses usages dans une feuille, formulaire
+      // conservé — pas le message générique en plus.
+      final IncompatibleVisibility? incompatible = incompatibleVisibilityOf(
+        error,
+      );
+      if (incompatible != null && incompatible.usages.isNotEmpty) {
+        setState(() => _saving = false);
+        await showRouteInUseRefusal(
+          context,
+          teamSlug: _teamSlug,
+          usages: incompatible.usages,
+        );
+        return;
+      }
       final GpxRefusal? refusal = _refusalOf(error, stackTrace);
       setState(() {
         _saving = false;
@@ -523,7 +546,6 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
     final bool creating = route == null;
     // La création commence par le choix du fichier : pas de formulaire avant.
     final bool picking = creating && _gpx == null;
-    final bool teamOnly = widget.team.visibility == Visibility.team.json;
     final bool busy = _saving || _uploading || _reading;
 
     final List<TagWithUsageDto> vocabulary =
@@ -665,23 +687,23 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
                       ],
                     ),
                   ),
-                  if (!teamOnly)
-                    EditorSection(
-                      title: 'routes.editor.visibility'.tr(),
-                      child: PdlSegmented<Visibility>(
-                        key: keys.routeEditor.visibility,
-                        value: _form.visibility,
-                        onChanged: (Visibility v) =>
-                            _update(_form.copyWith(visibility: v)),
-                        segments: <PdlSegment<Visibility>>[
-                          for (final Visibility v in Visibility.$valuesDefined)
-                            PdlSegment<Visibility>(
-                              value: v,
-                              label: 'visibility.${v.json!.toLowerCase()}'.tr(),
-                            ),
-                        ],
-                      ),
+                  // Les valeurs que le backend permet à ce parcours : moins
+                  // « Équipe » s'il sert publiquement, et parfois aucune
+                  // (docs/LEDGER_*.md MOB-137).
+                  VisibilityField(
+                    title: 'routes.editor.visibility'.tr(),
+                    selectorKey: keys.routeEditor.visibility,
+                    allowed: allowedVisibilitiesFor(
+                      widget.team,
+                      VisibilityKind.route,
+                      permissions: route?.permissions,
                     ),
+                    value: _form.visibility,
+                    onChanged: (Visibility v) =>
+                        _update(_form.copyWith(visibility: v)),
+                    teamPrivate: isPrivateTeam(widget.team),
+                    enabled: !busy,
+                  ),
 
                   // ── Tags ── Rien à proposer sans vocabulaire, sauf à
                   // garder des tags déjà posés.

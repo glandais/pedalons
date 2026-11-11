@@ -11,8 +11,6 @@ import 'package:pedalons/features/routes/presentation/pages/route_detail_page.da
 import 'package:pedalons/features/routes/presentation/widgets/gps_button.dart';
 import 'package:pedalons/features/routes/presentation/widgets/route_section.dart';
 import 'package:pedalons/features/routes/providers/route_detail_provider.dart';
-import 'package:pedalons/features/routes/providers/route_editor_providers.dart';
-import 'package:pedalons/features/teams/providers/team_providers.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -138,8 +136,6 @@ void main() {
           routeDetailProvider(_key).overrideWith((Ref ref) async => route),
           routeUsagesProvider(_key)
               .overrideWith((Ref ref) async => const <RouteUsageDto>[_usage]),
-          teamMembershipProvider('n-peloton').overrideWithValue(true),
-          canManageRoutesProvider('n-peloton').overrideWithValue(false),
         ],
         child: MaterialApp(
           theme: PedalonsTheme.build(Brightness.light),
@@ -266,6 +262,18 @@ void main() {
     expect(find.byKey(keys.routeDetail.commentsSection), findsNothing);
     expect(find.byType(CommentThread), findsNothing);
     expect(comments.targets, isEmpty);
+  });
+
+  testWidgets('équipe non consultable : la ligne d\'équipe ne mène nulle part '
+      '(MOB-137)', (WidgetTester tester) async {
+    final RouteDetailDto route = _route(commentCount: null);
+    await open(
+      tester,
+      route.copyWith(team: route.team.copyWith(accessible: false)),
+    );
+
+    expect(find.byType(PdlTeamLine), findsOneWidget);
+    expect(tester.widget<PdlTeamLine>(find.byType(PdlTeamLine)).onTap, isNull);
   });
 
   testWidgets('sans description, pas de section Description', (

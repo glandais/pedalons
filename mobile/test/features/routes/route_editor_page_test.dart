@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -27,7 +27,13 @@ import '../../support/content_permissions.dart';
 /// fichier que le serveur recevra.
 class _StubRoutes implements RouteRepository {
   _StubRoutes({RouteDetailDto? detail})
-    : detail = detail ?? fixtureRouteDetail();
+    : detail =
+          detail ??
+          // Le droit que le serveur calcule pour un organisateur
+          // (docs/LEDGER_*.md MOB-137).
+          fixtureRouteDetail(
+            permissions: permissionsFor(member: true, role: 'ORGANIZER'),
+          );
 
   final RouteDetailDto detail;
 
@@ -880,6 +886,116 @@ void main() {
 
       expect(find.text('Abandonner les modifications ?'), findsNothing);
       expect(find.text('accueil'), findsOneWidget);
+    });
+  });
+
+  /// docs/LEDGER_*.md MOB-137 : le sélecteur lit ce que le backend permet à
+  /// **ce** parcours, et la baisse d'un parcours qui sert publiquement est
+  /// refusée avec ses usages (décision D6) — sans alignement.
+  group('visibilité calculée', () {
+    testWidgets('un parcours qui sert publiquement ne propose pas « Équipe »', (
+      WidgetTester tester,
+    ) async {
+      final _StubRoutes routes = _StubRoutes(
+        detail: fixtureRouteDetail(
+          permissions: permissionsFor(member: true, role: 'ORGANIZER').copyWith(
+            allowedVisibilities: const <Visibility>[
+              Visibility.publicUnlisted,
+              Visibility.public,
+            ],
+          ),
+        ),
+      );
+      await open(
+        tester,
+        routes: routes,
+        picker: _FakePicker(<GpxFile?>[]),
+        routeSlug: 'col-de-la-croix',
+      );
+
+      expect(find.byKey(keys.routeEditor.visibility), findsOneWidget);
+      expect(find.byKey(keys.visibility.option('TEAM')), findsNothing);
+      expect(find.byKey(keys.visibility.option('PUBLIC')), findsOneWidget);
+    });
+
+    testWidgets('aucune visibilité permise : l\'explication', (
+      WidgetTester tester,
+    ) async {
+      final _StubRoutes routes = _StubRoutes(
+        detail: fixtureRouteDetail(
+          permissions: permissionsFor(
+            member: true,
+            role: 'ORGANIZER',
+          ).copyWith(allowedVisibilities: const <Visibility>[]),
+        ),
+      );
+      await open(
+        tester,
+        routes: routes,
+        picker: _FakePicker(<GpxFile?>[]),
+        routeSlug: 'col-de-la-croix',
+      );
+
+      expect(find.byKey(keys.visibility.noneAllowed), findsOneWidget);
+      expect(find.byKey(keys.routeEditor.visibility), findsNothing);
+    });
+
+    testWidgets('le refus liste les usages, sans le message générique', (
+      WidgetTester tester,
+    ) async {
+      final _StubRoutes routes = _StubRoutes()
+        ..failWith = DioException(
+          requestOptions: RequestOptions(path: '/routes'),
+          type: DioExceptionType.badResponse,
+          response: Response<dynamic>(
+            requestOptions: RequestOptions(path: '/routes'),
+            statusCode: 400,
+            data: <String, dynamic>{
+              'code': 'INCOMPATIBLE_VISIBILITY',
+              'errorDetails': <String, dynamic>{
+                'type': 'INCOMPATIBLE_VISIBILITY',
+                'routes': <Map<String, dynamic>>[],
+                'usages': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'type': 'RIDE',
+                    'slug': 'sortie',
+                    'name': 'Sortie du samedi',
+                    'visibility': 'PUBLIC',
+                  },
+                  <String, dynamic>{
+                    'type': 'TRIP',
+                    'slug': 'voyage',
+                    'name': 'Grand tour',
+                    'visibility': 'PUBLIC_UNLISTED',
+                  },
+                ],
+              },
+            },
+          ),
+        );
+      await open(
+        tester,
+        routes: routes,
+        picker: _FakePicker(<GpxFile?>[]),
+        routeSlug: 'col-de-la-croix',
+      );
+      await tester.tap(find.byKey(keys.visibility.option('TEAM')));
+      await tester.tap(find.byKey(keys.routeEditor.saveButton));
+      for (int i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      expect(find.byKey(keys.visibility.routeInUseSheet), findsOneWidget);
+      expect(find.text('Sortie « Sortie du samedi » (Public)'), findsOneWidget);
+      expect(
+        find.text('Voyage « Grand tour » (Non répertorié)'),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(keys.visibility.usage('RIDE', 'sortie')),
+        findsOneWidget,
+      );
+      expect(find.byKey(keys.routeEditor.errorBanner), findsNothing);
     });
   });
 }

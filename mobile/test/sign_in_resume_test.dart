@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -105,6 +107,121 @@ void main() {
     });
   });
 
+  // docs/LEDGER_*.md MOB-137 : le lien d'une sortie publique d'une équipe
+  // privée, ouvert par quelqu'un qui n'en est pas membre, ne reconstruit pas
+  // dessous une page d'équipe qui ne dirait que « Équipe indisponible ».
+  group('openDeepLink, équipe non consultable (MOB-137)', () {
+    final ride = PathVariants.ride('velo-club', 'dimanche')['fr']!;
+
+    test('équipe fermée : l\'onglet Équipes, puis la sortie', () async {
+      final asked = <String>[];
+      await openDeepLink(
+        router,
+        ride,
+        signedIn: true,
+        pending: pending,
+        teamAccess: (String slug) async {
+          asked.add(slug);
+          return false;
+        },
+      );
+
+      expect(asked, ['velo-club']);
+      expect(router.calls, ['go ${PathVariants.teams()['fr']}', 'push $ride']);
+    });
+
+    test('équipe consultable : la pile complète, comme avant', () async {
+      await openDeepLink(
+        router,
+        ride,
+        signedIn: true,
+        pending: pending,
+        teamAccess: (String _) async => true,
+      );
+
+      expect(router.calls, [
+        'go ${PathVariants.teams()['fr']}',
+        'push ${PathVariants.team('velo-club')['fr']}',
+        'push ${PathVariants.teamAgenda('velo-club')['fr']}',
+        'push $ride',
+      ]);
+    });
+
+    test('la page d\'une équipe ne pose pas la question', () async {
+      final team = PathVariants.teamAbout('velo-club')['fr']!;
+      await openDeepLink(
+        router,
+        team,
+        signedIn: true,
+        pending: pending,
+        teamAccess: (String _) async => fail('no probe for a team page'),
+      );
+
+      expect(router.calls, [
+        'go ${PathVariants.teams()['fr']}',
+        'push ${PathVariants.team('velo-club')['fr']}',
+        'push $team',
+      ]);
+    });
+
+    test('un lien plus récent l\'emporte sur une réponse tardive', () async {
+      final slow = Completer<bool>();
+      final first = openDeepLink(
+        router,
+        ride,
+        signedIn: true,
+        pending: pending,
+        teamAccess: (String _) => slow.future,
+      );
+      final post = PathVariants.post('autre-club', 'compte-rendu')['fr']!;
+      await openDeepLink(
+        router,
+        post,
+        signedIn: true,
+        pending: pending,
+        teamAccess: (String _) async => true,
+      );
+      final afterSecond = List<String>.of(router.calls);
+
+      slow.complete(false);
+      await first;
+
+      expect(afterSecond.last, 'push $post');
+      expect(router.calls, afterSecond, reason: 'the stale link is dropped');
+    });
+
+    test('une navigation pendant la question l\'emporte aussi', () async {
+      final slow = Completer<bool>();
+      final opening = openDeepLink(
+        router,
+        ride,
+        signedIn: true,
+        pending: pending,
+        teamAccess: (String _) => slow.future,
+      );
+      final elsewhere = PathVariants.teams()['fr']!;
+      router.go(elsewhere);
+
+      slow.complete(true);
+      await opening;
+
+      expect(router.calls, ['go $elsewhere']);
+    });
+
+    test('après la connexion aussi', () async {
+      openDeepLink(router, ride, signedIn: false, pending: pending);
+      router.calls.clear();
+
+      await resumeAfterSignIn(
+        router,
+        pending,
+        teamAccess: (String _) async => false,
+      );
+
+      expect(router.calls, ['go ${PathVariants.teams()['fr']}', 'push $ride']);
+    });
+  });
+
   group('resumeAfterSignIn', () {
     test('lands on the pending link, hierarchy rebuilt, then forgets it', () {
       final ride = PathVariants.ride('velo-club', 'dimanche')['fr']!;
@@ -169,14 +286,38 @@ void main() {
 class _RecordingRouter extends Fake implements GoRouter {
   final List<String> calls = [];
 
+  /// Where the stack currently ends — what `openWithTeamAwareHierarchy`
+  /// compares before and after its probe.
+  String location = '/';
+
   @override
-  void go(String location, {Object? extra}) => calls.add('go $location');
+  late final GoRouterDelegate routerDelegate = _RecordingDelegate(this);
+
+  @override
+  void go(String location, {Object? extra}) {
+    calls.add('go $location');
+    this.location = location;
+  }
 
   @override
   Future<T?> push<T extends Object?>(String location, {Object? extra}) {
     calls.add('push $location');
+    this.location = location;
     return Future<T?>.value();
   }
+}
+
+class _RecordingDelegate extends Fake implements GoRouterDelegate {
+  _RecordingDelegate(this.router);
+
+  final _RecordingRouter router;
+
+  @override
+  RouteMatchList get currentConfiguration => RouteMatchList(
+    matches: const [],
+    uri: Uri.parse(router.location),
+    pathParameters: const {},
+  );
 }
 
 class _FakeStorage extends Fake implements SecureTokenStorage {

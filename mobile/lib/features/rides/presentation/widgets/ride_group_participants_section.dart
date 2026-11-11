@@ -13,7 +13,6 @@ import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../participants/presentation/widgets/participants_sheet.dart';
-import '../../../teams/providers/team_providers.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_registration_controller.dart';
 import 'ride_group_leader_row.dart';
@@ -32,7 +31,8 @@ import 'ride_registration_control.dart';
 ///    « Quitter le groupe », sans confirmation — même une fois le groupe
 ///    parti, pour corriger qui est vraiment venu ([rideGroupCanLeave]).
 ///
-/// **Aucun nom pour un non-membre** ([canSeeMemberNamesProvider]) : le compte,
+/// **Aucun nom pour un non-membre** (`permissions.canSeeParticipants`, calculé
+/// par le backend, docs/LEDGER_*.md MOB-137) : le compte,
 /// la barre et les places seulement — ni capitaine, ni visages, ni liste.
 class RideGroupParticipantsSection extends ConsumerWidget {
   const RideGroupParticipantsSection({
@@ -53,9 +53,7 @@ class RideGroupParticipantsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final PdlTypography t = context.pdlText;
-    final bool canSeeNames = ref.watch(
-      canSeeMemberNamesProvider(ride.team.slug),
-    );
+    final bool canSeeNames = ride.permissions.canSeeParticipants ?? false;
     final String? currentUserId = ref.watch(
       authProvider.select((AuthState s) => s.user?.id),
     );

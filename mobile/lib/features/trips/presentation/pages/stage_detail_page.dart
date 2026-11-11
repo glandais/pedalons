@@ -45,7 +45,6 @@ import '../../../routes/presentation/widgets/route_waypoints_section.dart';
 import '../../../routes/presentation/widgets/waypoint_selection.dart';
 import '../../../routes/providers/route_detail_provider.dart';
 import '../../../teams/domain/publication_timing.dart';
-import '../../../teams/providers/team_providers.dart';
 import '../../domain/trip_weather_map.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../providers/trip_weather_provider.dart';
@@ -289,7 +288,6 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
     final RouteCursorController? cursor = route == null
         ? null
         : _cursorFor(route);
-    final bool? isMember = ref.watch(teamMembershipProvider(trip.team.slug));
 
     // Le mode de la carte de l'étape (ledgers `MOB-94`, `MOB-105`), partagé
     // avec la carte d'ensemble du voyage : gardé en vie tant que la page est
@@ -439,7 +437,9 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
                     teamSlug: trip.team.slug,
                     slug: stage.slug,
                   ),
-                  canComment: isMember ?? false,
+                  // Le droit calculé par le backend pour l'étape
+                  // (docs/LEDGER_*.md MOB-137).
+                  canComment: stage.permissions.canComment ?? false,
                   countAtEnd: true,
                 ),
               ),

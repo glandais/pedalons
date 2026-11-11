@@ -20,6 +20,7 @@ import 'features/routes/keys.dart';
 import 'features/tags/keys.dart';
 import 'features/teams/keys.dart';
 import 'features/trips/keys.dart';
+import 'features/visibility/keys.dart';
 
 /// Les clés des widgets que les tests de bout en bout (`patrol_test/`)
 /// trouvent. Une clé n'existe ici que si un widget la porte.
@@ -65,4 +66,5 @@ class Keys {
   final feed = FeedKeys();
   final adsList = AdsListKeys();
   final tags = TagKeys();
+  final visibility = VisibilityKeys();
 }

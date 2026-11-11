@@ -5,6 +5,20 @@ class _RideDetailKey extends ValueKey<String> {
 }
 
 class RideDetailKeys {
+  /// Le bandeau du non-membre (« Rejoignez cette équipe… », ou l'équipe
+  /// privée d'une sortie lue par lien, docs/LEDGER_*.md MOB-137).
+  final notMemberBanner = const _RideDetailKey('notMemberBanner');
+
+  /// « Voir l'équipe » dans ce bandeau, absent quand l'équipe n'est pas
+  /// consultable.
+  final viewTeamButton = const _RideDetailKey('viewTeamButton');
+
+  /// La ligne d'équipe au-dessus du titre.
+  final teamLine = const _RideDetailKey('teamLine');
+
+  /// Le retour de la barre du détail.
+  final backButton = const _RideDetailKey('backButton');
+
   /// Le bandeau « Sortie annulée » sous l'identité.
   final cancelledBanner = const _RideDetailKey('cancelledBanner');
 

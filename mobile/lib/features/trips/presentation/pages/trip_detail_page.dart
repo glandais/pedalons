@@ -16,7 +16,6 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/directions.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../core/utils/push_location.dart';
 import '../../../../core/utils/share_link.dart';
 import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/detail_section.dart';
@@ -24,6 +23,7 @@ import '../../../../core/widgets/detail_stat_tiles.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../../core/widgets/team_banner.dart';
 import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
@@ -35,7 +35,6 @@ import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../participants/presentation/widgets/participants_sheet.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../../teams/domain/publication_timing.dart';
-import '../../../teams/providers/team_providers.dart';
 import '../../domain/trip_weather_map.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../providers/trip_participation_controller.dart';
@@ -158,7 +157,11 @@ class _TripDetailContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bool? isMember = ref.watch(teamMembershipProvider(trip.team.slug));
+    // Ce que le backend dit de **ce** voyage (docs/LEDGER_*.md MOB-137) :
+    // jamais déduit du rôle ni de la visibilité de l'équipe.
+    final ContentPermissionsDto permissions = trip.permissions;
+    final bool canRegister = permissions.canRegister ?? false;
+    final VoidCallback? viewTeam = teamLinkOf(context, trip.team);
     final List<TripStageDto> stages = trip.orderedStages;
     final String? selected = ref.watch(selectedStageProvider(tripKey));
     final PublicationPhase phase = tripPhase(trip, now: now);
@@ -211,8 +214,10 @@ class _TripDetailContent extends ConsumerWidget {
           // Aucun endpoint ICS par publication (§5.2) : « Ajouter à mon
           // calendrier » ouvre l'abonnement d'équipe de l'écran 22, qui porte
           // le voyage parmi ses événements. Un non-membre n'a pas ce
-          // calendrier — le bouton disparaît plutôt que d'échouer.
-          if (isMember == true)
+          // calendrier — le bouton disparaît plutôt que d'échouer. La règle de
+          // l'Agenda de l'équipe (membre ou administration de la plateforme)
+          // est celle de `canSeeParticipants`, et l'équipe doit se consulter.
+          if (permissions.canSeeParticipants == true && trip.team.accessible)
             PdlAppBarAction(
               icon: PdlIcons.date,
               semanticLabel: 'trips.addToCalendar'.tr(),
@@ -252,20 +257,27 @@ class _TripDetailContent extends ConsumerWidget {
               fullBleed: true,
             ),
           ),
-        if (isMember == false)
+        // Ni inscription ni noms pour qui n'est pas membre (`canComment` :
+        // membre ou administration de la plateforme). Une équipe que
+        // l'appelant ne peut pas consulter n'offre pas de lien vers elle.
+        if (permissions.canComment != true)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: PdlBanner(
+                key: keys.trip.notMemberBanner,
                 tone: PdlBannerTone.warn,
-                message: 'trips.notMemberBanner'.tr(),
-                action: PdlButton(
-                  label: 'teams.viewTeam'.tr(),
-                  variant: PdlButtonVariant.outline,
-                  size: PdlButtonSize.sm,
-                  onPressed: () =>
-                      pushLocation(context, Paths.team(trip.team.slug)),
-                ),
+                message: viewTeam == null
+                    ? 'trips.privateTeamBanner'.tr()
+                    : 'trips.notMemberBanner'.tr(),
+                action: viewTeam == null
+                    ? null
+                    : PdlButton(
+                        label: 'teams.viewTeam'.tr(),
+                        variant: PdlButtonVariant.outline,
+                        size: PdlButtonSize.sm,
+                        onPressed: viewTeam,
+                      ),
               ),
             ),
           ),
@@ -277,7 +289,7 @@ class _TripDetailContent extends ConsumerWidget {
               child: _failureBanner(context, ref, participation.failure!),
             ),
           ),
-        if (_departure(context, ref, participation, isMember, phase)
+        if (_departure(context, ref, participation, canRegister, phase)
             case final Widget departure)
           SliverPadding(
             padding: block(top: 0),
@@ -355,7 +367,7 @@ class _TripDetailContent extends ConsumerWidget {
                     teamSlug: trip.team.slug,
                     slug: trip.slug,
                   ),
-                  canComment: isMember ?? false,
+                  canComment: permissions.canComment ?? false,
                   countAtEnd: true,
                 ),
               ),
@@ -377,7 +389,7 @@ class _TripDetailContent extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     TripParticipationState participation,
-    bool? isMember,
+    bool canRegister,
     PublicationPhase phase,
   ) {
     if (trip.registered) {
@@ -388,9 +400,11 @@ class _TripDetailContent extends ConsumerWidget {
         size: PdlBadgeSize.lg,
       );
     }
+    // `canRegister` : membre et voyage publié, pas terminé — le backend le
+    // calcule sur le détail (docs/LEDGER_*.md MOB-137).
     if (trip.isCancelled ||
         phase == PublicationPhase.finished ||
-        isMember != true) {
+        !canRegister) {
       return null;
     }
     return PdlButton(
@@ -418,13 +432,14 @@ class _TripDetailContent extends ConsumerWidget {
       onDismiss: controller.dismissFailure,
       dismissSemanticLabel: 'common.close'.tr(),
       action: failure.reason == TripParticipationFailureReason.notMember
-          ? PdlButton(
-              label: 'teams.viewTeam'.tr(),
-              variant: PdlButtonVariant.outline,
-              size: PdlButtonSize.sm,
-              onPressed: () =>
-                  pushLocation(context, Paths.team(trip.team.slug)),
-            )
+          ? (trip.team.accessible
+                ? PdlButton(
+                    label: 'teams.viewTeam'.tr(),
+                    variant: PdlButtonVariant.outline,
+                    size: PdlButtonSize.sm,
+                    onPressed: teamLinkOf(context, trip.team),
+                  )
+                : null)
           : PdlButton(
               label: 'common.retry'.tr(),
               variant: PdlButtonVariant.outline,
@@ -459,8 +474,9 @@ class _TripDetailContent extends ConsumerWidget {
   /// Le titre et le compte, la grappe d'avatars et « Voir toutes les
   /// personnes inscrites », puis, inscrit, le lien « Se désinscrire ».
   ///
-  /// **Aucun nom pour un non-membre** ([canSeeMemberNamesProvider], ledger
-  /// `API-144`) : le compte seul, ni visages ni liste.
+  /// **Aucun nom pour un non-membre** (`permissions.canSeeParticipants`,
+  /// calculé par le backend, ledgers `API-144`, `MOB-137`) : le compte seul,
+  /// ni visages ni liste.
   Widget _participants(
     BuildContext context,
     WidgetRef ref,
@@ -468,9 +484,7 @@ class _TripDetailContent extends ConsumerWidget {
   ) {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
-    final bool canSeeNames = ref.watch(
-      canSeeMemberNamesProvider(trip.team.slug),
-    );
+    final bool canSeeNames = trip.permissions.canSeeParticipants ?? false;
     final String? currentUserId = ref.watch(
       authProvider.select((AuthState s) => s.user?.id),
     );
@@ -586,7 +600,7 @@ class _TripDetailContent extends ConsumerWidget {
           PdlTeamLine(
             label: trip.team.name,
             imageUrl: trip.team.logoUrl,
-            onTap: () => pushLocation(context, Paths.team(trip.team.slug)),
+            onTap: teamLinkOf(context, trip.team),
           ),
           const SizedBox(height: 2),
           Text(trip.name, key: keys.trip.title, style: t.screenTitle),
@@ -639,7 +653,7 @@ class _TripDetailContent extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     TripParticipationState participation,
-    bool? isMember,
+    bool canRegister,
     PublicationPhase phase,
   ) {
     final DateTime? instant = DateTime.tryParse(trip.dateTime);
@@ -690,7 +704,7 @@ class _TripDetailContent extends ConsumerWidget {
         context,
         ref,
         participation,
-        isMember,
+        canRegister,
         phase,
       ),
       places: <Widget>[

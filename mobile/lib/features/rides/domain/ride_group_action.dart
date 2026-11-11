@@ -38,20 +38,22 @@ enum RideGroupAction {
 
 /// Dérive l'action d'un groupe, sans heuristique.
 ///
-/// [isMember] traduit l'appartenance à l'équipe : un non-membre ne voit aucun
-/// bouton, un bandeau prend sa place à l'échelle de l'écran. [now] ne sert
+/// [canRegister] est le droit que le backend calcule pour la sortie
+/// (`permissions.canRegister`, docs/LEDGER_*.md MOB-137) : sans lui — non-
+/// membre, sortie non publiée —, aucun bouton ; un bandeau prend sa place à
+/// l'échelle de l'écran. [now] ne sert
 /// qu'aux tests.
 RideGroupAction rideGroupAction({
   required RideDto ride,
   required RideGroupDto group,
-  required bool isMember,
+  required bool canRegister,
   DateTime? now,
 }) {
   // Une sortie annulée ne propose rien, **pas même « Quitter »** : elle n'a
   // plus lieu, se désinscrire n'a plus de sens.
   if (ride.isCancelled || ride.isPast) return RideGroupAction.none;
   if (group.registered) return RideGroupAction.leave;
-  if (!isMember) return RideGroupAction.none;
+  if (!canRegister) return RideGroupAction.none;
   if (group.full) return RideGroupAction.full;
   final RideGroupDto? mine = ride.joinedGroup;
   if (mine != null && mine.id != group.id && !_hasLeft(group, now)) {

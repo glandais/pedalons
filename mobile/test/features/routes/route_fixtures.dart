@@ -14,8 +14,8 @@ TeamDetailDto fixtureRouteTeam({
   String visibility = 'PUBLIC',
   bool enableRoutes = true,
 }) => TeamDetailDto(
-  allowedContentVisibilities: kAllContentVisibilities,
-  defaultContentVisibility: 'PUBLIC',
+  allowedContentVisibilities: contentVisibilitiesFor(visibility),
+  defaultContentVisibility: visibility,
   publicContentAllowed: false,
   timezone: 'Europe/Paris',
   role: role,
@@ -49,8 +49,9 @@ RouteDetailDto fixtureRouteDetail({
   String surfaceType = 'GRAVEL',
   bool deleted = false,
   String createdBy = 'u9',
+  ContentPermissionsDto permissions = kNoPermissions,
 }) => RouteDetailDto(
-  permissions: kNoPermissions,
+  permissions: permissions,
   id: 'r1',
   slug: slug,
   elevationState: 'HD',

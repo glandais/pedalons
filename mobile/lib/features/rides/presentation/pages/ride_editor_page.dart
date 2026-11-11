@@ -19,9 +19,15 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../../keys.dart';
 import '../../../profile/presentation/widgets/confirm_sheet.dart';
+import '../../../routes/providers/route_changes.dart';
+import '../../../routes/providers/route_detail_provider.dart';
 import '../../../tags/presentation/tag_filter.dart';
 import '../../../tags/providers/team_tags_provider.dart';
 import '../../../teams/providers/team_providers.dart';
+import '../../../visibility/domain/content_visibility.dart';
+import '../../../visibility/domain/incompatible_visibility.dart';
+import '../../../visibility/presentation/visibility_field.dart';
+import '../../../visibility/presentation/visibility_refusal.dart';
 import '../../data/ride_editor_repository.dart';
 import '../../data/ride_repository.dart';
 import '../../domain/ride_form.dart';
@@ -73,7 +79,12 @@ class RideEditorPage extends ConsumerWidget {
     final AsyncValue<RideDto>? ride = rideKey == null
         ? null
         : ref.watch(rideDetailProvider(rideKey));
-    final bool? canManage = ref.watch(canManageRidesProvider(teamSlug));
+    // La modification lit le droit que le backend calcule pour **cette**
+    // sortie ; la création, qui n'a pas d'entité, garde la règle de rôle
+    // (docs/LEDGER_*.md MOB-137 : aucun champ calculé ne la porte).
+    final bool? canManage = _isEdit
+        ? ride?.value?.permissions.canEdit
+        : ref.watch(canManageRidesProvider(teamSlug));
 
     final String title = _isEdit
         ? 'rides.editor.editTitle'.tr()
@@ -731,8 +742,19 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm>
       _saving = true;
       _error = null;
     });
+    await _send(_form.toRequest());
+  }
+
+  /// Envoie [request] ; sur un refus `INCOMPATIBLE_VISIBILITY` (une sortie
+  /// visible hors de l'équipe dont des parcours sont « Équipe », décision
+  /// D5), demande s'il faut ouvrir ces parcours, puis rejoue **la même**
+  /// requête avec `alignVisibility` — le formulaire n'a pas bougé entre-temps,
+  /// la feuille le recouvre (docs/LEDGER_*.md MOB-137).
+  Future<void> _send(
+    RideRequest request, {
+    List<IncompatibleRouteDto> aligned = const <IncompatibleRouteDto>[],
+  }) async {
     final RideRepository rides = ref.read(rideRepositoryProvider);
-    final RideRequest request = _form.toRequest();
     final RideDto? ride = _ride;
     try {
       final RideDto saved = ride == null
@@ -741,6 +763,14 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm>
       if (!mounted) return;
       final RideKey key = RideKey(teamSlug: _teamSlug, rideSlug: saved.slug);
       notifyRideChanged(ref, rideKey: key);
+      // Les parcours ouverts par l'alignement ont changé de visibilité.
+      for (final IncompatibleRouteDto route in aligned) {
+        notifyRouteChanged(
+          ref,
+          teamSlug: _teamSlug,
+          routeKey: RouteKey(teamSlug: _teamSlug, routeSlug: route.slug),
+        );
+      }
       _saved = true;
       final ScaffoldMessengerState? messenger = ScaffoldMessenger.maybeOf(
         context,
@@ -765,6 +795,29 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm>
       }
     } catch (error, stackTrace) {
       if (!mounted) return;
+      final IncompatibleVisibility? refusal = incompatibleVisibilityOf(error);
+      // Le refus liste les parcours : c'est la feuille qui le dit, pas le
+      // message générique. Déjà rejouée, ou sans liste, la requête finit en
+      // erreur de l'écran.
+      if (refusal != null &&
+          refusal.routes.isNotEmpty &&
+          request.alignVisibility != true) {
+        final bool align = await confirmVisibilityAlignment(
+          context,
+          kind: AlignedKind.ride,
+          routes: refusal.routes,
+        );
+        if (!mounted) return;
+        if (align) {
+          await _send(
+            request.copyWith(alignVisibility: true),
+            aligned: refusal.routes,
+          );
+          return;
+        }
+        setState(() => _saving = false);
+        return;
+      }
       setState(() {
         _saving = false;
         _error = getErrorMessage(error, stackTrace);
@@ -825,7 +878,6 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm>
               .watch(editorRouteProvider((teamSlug: _teamSlug, id: routeSlug)))
               .value;
 
-    final bool teamOnly = widget.team.visibility == Visibility.team.json;
     final bool busy = _saving || _uploading;
 
     return PopScope(
@@ -1070,24 +1122,22 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm>
                     ),
                   ),
 
-                // ── Visibilité et statut ──
-                if (!teamOnly)
-                  EditorSection(
-                    title: 'rides.editor.visibility'.tr(),
-                    child: PdlSegmented<Visibility>(
-                      key: keys.rideEditor.visibility,
-                      value: _form.visibility,
-                      onChanged: (Visibility v) =>
-                          _update(_form.copyWith(visibility: v)),
-                      segments: <PdlSegment<Visibility>>[
-                        for (final Visibility v in Visibility.$valuesDefined)
-                          PdlSegment<Visibility>(
-                            value: v,
-                            label: 'visibility.${v.json!.toLowerCase()}'.tr(),
-                          ),
-                      ],
-                    ),
+                // ── Visibilité et statut ── Les valeurs que le backend
+                // permet à cette sortie (docs/LEDGER_*.md MOB-137).
+                VisibilityField(
+                  title: 'rides.editor.visibility'.tr(),
+                  selectorKey: keys.rideEditor.visibility,
+                  allowed: allowedVisibilitiesFor(
+                    widget.team,
+                    VisibilityKind.ride,
+                    permissions: _ride?.permissions,
                   ),
+                  value: _form.visibility,
+                  onChanged: (Visibility v) =>
+                      _update(_form.copyWith(visibility: v)),
+                  teamPrivate: isPrivateTeam(widget.team),
+                  enabled: !busy,
+                ),
                 EditorSection(
                   title: 'rides.editor.status'.tr(),
                   child: Column(

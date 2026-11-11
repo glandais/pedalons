@@ -69,8 +69,8 @@ TeamDetailDto fixtureTemplateTeamDetail({
   String? role,
   String visibility = 'PUBLIC',
 }) => TeamDetailDto(
-  allowedContentVisibilities: kAllContentVisibilities,
-  defaultContentVisibility: 'PUBLIC',
+  allowedContentVisibilities: contentVisibilitiesFor(visibility),
+  defaultContentVisibility: visibility,
   publicContentAllowed: false,
   timezone: 'Europe/Paris',
   role: role,

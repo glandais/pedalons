@@ -14,12 +14,12 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../core/utils/push_location.dart';
 import '../../../../core/utils/share_link.dart';
 import '../../../../core/widgets/detail_section.dart';
 import '../../../../core/widgets/detail_stat_tiles.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
+import '../../../../core/widgets/team_banner.dart';
 import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
@@ -28,11 +28,9 @@ import '../../../comments/presentation/widgets/comment_thread.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../tags/presentation/content_tags.dart';
-import '../../../teams/providers/team_providers.dart';
 import '../../domain/elevation_refresh.dart';
 import '../../domain/track_surfaces.dart';
 import '../../providers/route_detail_provider.dart';
-import '../../providers/route_editor_providers.dart';
 import '../widgets/route_climbs_section.dart';
 import '../widgets/route_cursor_controller.dart';
 import '../widgets/route_manage_menu.dart';
@@ -142,7 +140,6 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
   Widget _content(RouteDetailDto route) {
     final RouteCursorController cursor = _cursorFor(route);
     final UnitSystem units = ref.watch(unitSystemProvider);
-    final bool? isMember = ref.watch(teamMembershipProvider(route.team.slug));
     final List<ClimbDto> climbs = route.allClimbs;
     final bool hasDescription =
         route.media.markdown.trim().isNotEmpty ||
@@ -283,7 +280,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                     teamSlug: route.team.slug,
                     slug: route.slug,
                   ),
-                  canComment: isMember ?? false,
+                  canComment: route.permissions.canComment ?? false,
                   countAtEnd: true,
                 ),
               ),
@@ -302,8 +299,9 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     final String? currentUserId = ref.watch(
       authProvider.select((AuthState s) => s.user?.id),
     );
-    final bool canManage =
-        ref.watch(canManageRoutesProvider(route.team.slug)) ?? false;
+    // Le droit de **ce** parcours, calculé par le backend (docs/LEDGER_*.md
+    // MOB-137) — ni le rôle ni la visibilité de l'équipe.
+    final bool canManage = routeHasManageActions(route);
     final bool canReport =
         currentUserId != null && currentUserId != route.createdBy?.id;
 
@@ -321,7 +319,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
           ),
         ),
       ),
-      if (canManage && !route.deleted)
+      if (route.permissions.canEdit && !route.deleted)
         PdlAppBarAction(
           key: keys.routeManage.editButton,
           icon: PdlIcons.edit,
@@ -369,7 +367,9 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
           PdlTeamLine(
             label: route.team.name,
             imageUrl: route.team.logoUrl,
-            onTap: () => pushLocation(context, Paths.team(route.team.slug)),
+            // Pas de lien vers une équipe que l'appelant ne peut pas
+            // consulter (`team.accessible`, docs/LEDGER_*.md MOB-137).
+            onTap: teamLinkOf(context, route.team),
           ),
           const SizedBox(height: 2),
           Text(route.name, key: keys.routeDetail.title, style: t.screenTitle),

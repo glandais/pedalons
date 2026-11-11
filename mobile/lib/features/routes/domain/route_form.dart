@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../api/generated/export.dart';
 import '../../rides/domain/ride_form.dart' show kRideMarkdownMaxLength;
+import '../../visibility/domain/content_visibility.dart';
 
 /// Bornes de `RouteRequest` au contrat. La description (`MediaDto`) a celle de
 /// la sortie : [kRideMarkdownMaxLength], le même DTO.
@@ -22,7 +23,9 @@ class RouteForm {
     this.tagIds = const <String>[],
   });
 
-  /// Un parcours vierge : visibilité de l'équipe, surface route, sans tag.
+  /// Un parcours vierge : la visibilité de départ que donne le backend
+  /// (`defaultContentVisibility`, docs/LEDGER_*.md MOB-137), surface route,
+  /// sans tag.
   factory RouteForm.initial(TeamDetailDto team) => RouteForm(
     name: '',
     media: const MediaDto(
@@ -30,7 +33,7 @@ class RouteForm {
       assets: AssetsDto(images: <AssetDto>[], attachments: <AssetDto>[]),
     ),
     surfaceType: SurfaceType.road,
-    visibility: Visibility.fromJson(team.visibility),
+    visibility: defaultContentVisibilityOf(team),
   );
 
   /// Le parcours tel qu'il est, prêt à être réécrit. Une surface que cette

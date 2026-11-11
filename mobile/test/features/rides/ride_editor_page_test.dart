@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,12 +30,22 @@ class _StubRides implements RideRepository {
   final List<RideRequest> created = <RideRequest>[];
   final List<RideRequest> updated = <RideRequest>[];
 
+  /// Le bloc `permissions` que le serveur calcule pour l'appelant (docs/
+  /// LEDGER_*.md MOB-137) ; nul, celui du jeu d'essai.
+  ContentPermissionsDto? permissions;
+
+  /// Les erreurs que lèvent les prochains enregistrements, dans l'ordre ;
+  /// vide, un succès.
+  final List<Object> failures = <Object>[];
+
   @override
-  Future<RideDto> getRide(String teamSlug, String rideSlug) async => ride;
+  Future<RideDto> getRide(String teamSlug, String rideSlug) async =>
+      permissions == null ? ride : ride.copyWith(permissions: permissions!);
 
   @override
   Future<RideDto> createRide(String teamSlug, RideRequest request) async {
     created.add(request);
+    if (failures.isNotEmpty) throw failures.removeAt(0);
     return ride.copyWith(slug: 'nouvelle-sortie', name: request.name);
   }
 
@@ -45,6 +56,7 @@ class _StubRides implements RideRepository {
     RideRequest request,
   ) async {
     updated.add(request);
+    if (failures.isNotEmpty) throw failures.removeAt(0);
     return ride.copyWith(name: request.name);
   }
 
@@ -161,6 +173,9 @@ void main() {
         ),
       ],
     );
+    // Le droit sur la sortie modifiée, tel que le serveur le calcule pour
+    // ce rôle (docs/LEDGER_*.md MOB-137).
+    rides.permissions ??= permissionsFor(member: role != null, role: role);
     await tester.pumpWidget(
       ProviderScope(
         retry: (int _, Object _) => null,
@@ -301,5 +316,134 @@ void main() {
     expect(find.text('liste modèles n-peloton'), findsOneWidget);
     expect(find.text('Choisir un modèle'), findsNothing);
     expect(find.byKey(keys.rideEditor.manageTemplatesButton), findsNothing);
+  });
+
+  /// Décision D5 (docs/LEDGER_*.md MOB-137) : le refus liste les parcours
+  /// « Équipe » ; la feuille dit ce qu'ils deviennent, puis la même requête
+  /// repart avec `alignVisibility`.
+  group('alignement des parcours', () {
+    DioException refusal() => DioException(
+      requestOptions: RequestOptions(path: '/rides'),
+      type: DioExceptionType.badResponse,
+      response: Response<dynamic>(
+        requestOptions: RequestOptions(path: '/rides'),
+        statusCode: 400,
+        data: <String, dynamic>{
+          'code': 'INCOMPATIBLE_VISIBILITY',
+          'errorDetails': <String, dynamic>{
+            'type': 'INCOMPATIBLE_VISIBILITY',
+            'routes': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'slug': 'col-du-coq',
+                'name': 'Col du Coq',
+                'visibility': 'TEAM',
+                'proposedVisibility': 'PUBLIC_UNLISTED',
+              },
+            ],
+            'usages': <Map<String, dynamic>>[],
+          },
+        },
+      ),
+    );
+
+    Future<void> save(WidgetTester tester) async {
+      await tester.tap(find.byKey(keys.rideEditor.saveButton));
+      for (int i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+    }
+
+    testWidgets('confirmer rejoue la même requête avec alignVisibility', (
+      WidgetTester tester,
+    ) async {
+      final _StubRides rides = _StubRides(fixtureRide())
+        ..failures.add(refusal());
+      await open(tester, rides: rides, rideSlug: 'np-665');
+      await tester.enterText(
+        find.byKey(keys.rideEditor.nameField),
+        'Sortie ouverte',
+      );
+      await save(tester);
+
+      // La feuille nomme le parcours et sa visibilité à venir ; pas le
+      // message générique en plus.
+      expect(find.byKey(keys.visibility.alignSheet), findsOneWidget);
+      expect(find.text('Col du Coq : Équipe → Non répertorié'), findsOneWidget);
+      expect(find.byKey(keys.rideEditor.errorBanner), findsNothing);
+      expect(rides.updated.single.alignVisibility, isNull);
+
+      await tester.tap(find.byKey(keys.visibility.alignConfirm));
+      for (int i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      expect(rides.updated, hasLength(2));
+      final RideRequest replay = rides.updated.last;
+      expect(replay.alignVisibility, isTrue);
+      expect(replay.name, 'Sortie ouverte');
+      expect(
+        replay.copyWith(alignVisibility: null),
+        rides.updated.first.copyWith(alignVisibility: null),
+      );
+      expect(find.byKey(keys.visibility.alignSheet), findsNothing);
+    });
+
+    testWidgets('annuler ne rejoue rien et garde le formulaire', (
+      WidgetTester tester,
+    ) async {
+      final _StubRides rides = _StubRides(fixtureRide())
+        ..failures.add(refusal());
+      await open(tester, rides: rides);
+      await tester.enterText(
+        find.byKey(keys.rideEditor.nameField),
+        'Sortie du dimanche',
+      );
+      await save(tester);
+      expect(find.byKey(keys.visibility.alignSheet), findsOneWidget);
+
+      await tester.tap(find.byKey(keys.visibility.alignCancel));
+      for (int i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      expect(rides.created, hasLength(1));
+      expect(find.byKey(keys.visibility.alignSheet), findsNothing);
+      expect(find.byKey(keys.rideEditor.errorBanner), findsNothing);
+      expect(find.text('Sortie du dimanche'), findsOneWidget);
+      // Le bouton est rendu : un nouvel essai reste possible.
+      expect(find.byKey(keys.rideEditor.saveButton), findsOneWidget);
+    });
+
+    testWidgets(
+      'un refus rejoué une seconde fois finit en erreur de l\'écran',
+      (WidgetTester tester) async {
+        final _StubRides rides = _StubRides(fixtureRide())
+          ..failures.addAll(<Object>[refusal(), refusal()]);
+        await open(tester, rides: rides);
+        await tester.enterText(
+          find.byKey(keys.rideEditor.nameField),
+          'Sortie du dimanche',
+        );
+        await save(tester);
+        await tester.tap(find.byKey(keys.visibility.alignConfirm));
+        for (int i = 0; i < 12; i++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+
+        expect(rides.created, hasLength(2));
+        expect(find.byKey(keys.visibility.alignSheet), findsNothing);
+        expect(find.byKey(keys.rideEditor.errorBanner), findsOneWidget);
+      },
+    );
+  });
+
+  testWidgets('modifier sans canEdit : le refus, même pour un organisateur', (
+    WidgetTester tester,
+  ) async {
+    final _StubRides rides = _StubRides(fixtureRide())
+      ..permissions = permissionsFor(member: true);
+    await open(tester, rides: rides, rideSlug: 'np-665');
+
+    expect(find.byKey(keys.rideEditor.forbidden), findsOneWidget);
   });
 }

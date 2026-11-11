@@ -18,6 +18,8 @@ import '../../../../keys.dart';
 import '../../../profile/presentation/widgets/confirm_sheet.dart';
 import '../../../tags/presentation/tag_filter.dart';
 import '../../../tags/providers/team_tags_provider.dart';
+import '../../../visibility/domain/content_visibility.dart';
+import '../../../visibility/presentation/visibility_field.dart';
 import '../../data/ride_template_repository.dart';
 import '../../domain/ride_form.dart';
 import '../../domain/ride_template_form.dart';
@@ -337,8 +339,6 @@ class _RideTemplateEditorFormState
             .value ??
         const <TagWithUsageDto>[];
 
-    final bool teamOnly = widget.team.visibility == Visibility.team.json;
-
     return PopScope(
       canPop: !_dirty || _saving,
       onPopInvokedWithResult: (bool didPop, Object? _) async {
@@ -462,23 +462,21 @@ class _RideTemplateEditorFormState
                   ),
 
                 // ── Visibilité et statut des sorties créées ──
-                if (!teamOnly)
-                  EditorSection(
-                    title: 'rides.templates.visibility'.tr(),
-                    child: PdlSegmented<Visibility>(
-                      key: keys.rideTemplateEditor.visibility,
-                      value: _form.visibility,
-                      onChanged: (Visibility v) =>
-                          _update(_form.copyWith(visibility: v)),
-                      segments: <PdlSegment<Visibility>>[
-                        for (final Visibility v in Visibility.$valuesDefined)
-                          PdlSegment<Visibility>(
-                            value: v,
-                            label: 'visibility.${v.json!.toLowerCase()}'.tr(),
-                          ),
-                      ],
-                    ),
+                // Le modèle n'a pas de bloc `permissions` : la liste de
+                // l'équipe pour les modèles (docs/LEDGER_*.md MOB-137).
+                VisibilityField(
+                  title: 'rides.templates.visibility'.tr(),
+                  selectorKey: keys.rideTemplateEditor.visibility,
+                  allowed: allowedVisibilitiesFor(
+                    widget.team,
+                    VisibilityKind.rideTemplate,
                   ),
+                  value: _form.visibility,
+                  onChanged: (Visibility v) =>
+                      _update(_form.copyWith(visibility: v)),
+                  teamPrivate: isPrivateTeam(widget.team),
+                  enabled: !_saving,
+                ),
                 EditorSection(
                   title: 'rides.templates.status'.tr(),
                   child: PdlSegmented<Status>(

@@ -16,7 +16,7 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/deleted_badge.dart';
 import '../../../tags/presentation/content_tags.dart';
-import '../../../../core/utils/push_location.dart';
+import '../../../../core/widgets/team_banner.dart';
 
 /// La densité « vignettes » de la parcothèque — un bandeau média de 208 px,
 /// l'équipe, le nom, deux chiffres, deux badges.
@@ -76,8 +76,7 @@ class RouteCard extends ConsumerWidget {
                 PdlTeamLine(
                   label: route.team.name,
                   imageUrl: route.team.logoUrl,
-                  onTap: () =>
-                      pushLocation(context, Paths.team(route.team.slug)),
+                  onTap: teamLinkOf(context, route.team),
                 ),
                 const SizedBox(height: 4),
                 Text(

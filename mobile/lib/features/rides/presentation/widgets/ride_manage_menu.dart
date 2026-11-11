@@ -11,6 +11,8 @@ import '../../../../core/utils/api_error_handler.dart';
 import '../../../../keys.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../profile/presentation/widgets/confirm_sheet.dart';
+import '../../../visibility/domain/incompatible_visibility.dart';
+import '../../../visibility/presentation/visibility_refusal.dart';
 import '../../data/ride_repository.dart';
 import '../../providers/ride_changes.dart';
 import '../../providers/ride_detail_provider.dart';
@@ -31,19 +33,34 @@ enum RideManageAction {
 
 /// Les gestes offerts pour [ride], dans l'ordre du menu. Une sortie
 /// supprimée n'offre que sa restauration.
+///
+/// Chaque geste suit le droit que le backend calcule pour **cette** sortie
+/// (`permissions`, docs/LEDGER_*.md MOB-137) : changer le statut demande
+/// `canEdit`, supprimer et restaurer `canDelete`. Signaler reste à tout le
+/// monde.
 List<RideManageAction> rideManageActions(RideDto ride) {
-  if (ride.deleted) return const <RideManageAction>[RideManageAction.restore];
+  final bool edit = ride.permissions.canEdit;
+  final bool delete = ride.permissions.canDelete;
+  if (ride.deleted) {
+    return <RideManageAction>[if (delete) RideManageAction.restore];
+  }
   return <RideManageAction>[
-    if (ride.status == Status.draft.json) RideManageAction.publish,
-    if (ride.status == Status.published.json) ...<RideManageAction>[
+    if (edit && ride.status == Status.draft.json) RideManageAction.publish,
+    if (edit && ride.status == Status.published.json) ...<RideManageAction>[
       RideManageAction.unpublish,
       RideManageAction.cancel,
     ],
-    if (ride.status == Status.cancelled.json) RideManageAction.reinstate,
-    RideManageAction.delete,
+    if (edit && ride.status == Status.cancelled.json)
+      RideManageAction.reinstate,
+    if (delete) RideManageAction.delete,
     RideManageAction.report,
   ];
 }
+
+/// Le menu « Gérer la sortie » a-t-il un geste de gestion à offrir ? Sinon
+/// la fiche n'ouvre que le signalement.
+bool rideHasManageActions(RideDto ride) =>
+    ride.permissions.canEdit || ride.permissions.canDelete;
 
 /// Ouvre le menu « Gérer la sortie » et exécute le geste choisi.
 Future<void> showRideManageMenu(
@@ -142,6 +159,25 @@ Future<void> runRideManageAction(
         return;
     }
   } catch (error, stackTrace) {
+    // Restaurer une sortie visible hors de l'équipe dont des parcours sont
+    // passés en « Équipe » entre-temps : refusé avec leur liste, sans
+    // alignement possible (pas de corps de requête, plan §4.4). La feuille
+    // le dit, pas le message générique. Un refus sans liste garde le message,
+    // qui nomme le code (`errors.api.INCOMPATIBLE_VISIBILITY`).
+    final IncompatibleVisibility? incompatible = incompatibleVisibilityOf(
+      error,
+    );
+    if (incompatible != null &&
+        incompatible.routes.isNotEmpty &&
+        context.mounted) {
+      await showRestoreRefusal(
+        context,
+        teamSlug: team,
+        kind: AlignedKind.ride,
+        routes: incompatible.routes,
+      );
+      return;
+    }
     messenger?.showSnackBar(
       SnackBar(content: Text(getErrorMessage(error, stackTrace))),
     );

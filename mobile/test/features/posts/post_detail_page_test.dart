@@ -283,6 +283,25 @@ void main() {
     await openPost(tester, _post(commentCount: null));
 
     expect(find.textContaining('réservés aux membres'), findsOneWidget);
+    expect(find.text('Voir l\'équipe'), findsOneWidget);
+  });
+
+  testWidgets('équipe non consultable : ni lien vers elle, ni « Voir '
+      'l\'équipe » (MOB-137)', (WidgetTester tester) async {
+    await openPost(
+      tester,
+      _post(
+        commentCount: null,
+        team: _team.copyWith(accessible: false, visibility: 'TEAM'),
+      ),
+    );
+
+    expect(
+      find.textContaining('membres de cette équipe privée'),
+      findsOneWidget,
+    );
+    expect(find.text('Voir l\'équipe'), findsNothing);
+    expect(tester.widget<PdlTeamLine>(find.byType(PdlTeamLine)).onTap, isNull);
   });
 
   testWidgets('le mode sombre rend le même écran', (WidgetTester tester) async {

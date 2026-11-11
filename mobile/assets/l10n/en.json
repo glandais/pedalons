@@ -953,7 +953,8 @@
       "deletedBanner": "This ride is deleted. Only team administrators can see it."
     },
     "groupSwitchTo": "Switch to {group}",
-    "groupLeaveLong": "Leave the group"
+    "groupLeaveLong": "Leave the group",
+    "privateTeamBanner": "This ride belongs to a private team: only its members can register and see who takes part."
   },
   "posts": {
     "title": "Posts",
@@ -961,7 +962,8 @@
     "previous": "Previous post",
     "next": "Next post",
     "commentsMembersOnly": "Comments are reserved for team members.",
-    "onBehalfOfTeam": "On behalf of the team"
+    "onBehalfOfTeam": "On behalf of the team",
+    "commentsPrivateTeam": "Comments are reserved for the members of this private team."
   },
   "ads": {
     "title": "Ads",
@@ -1090,7 +1092,8 @@
       "mapSharesAll": "Shares added up over all {count} stages",
       "mapSharesSome": "Shares added up over the stages with a forecast: {count} of {total}",
       "mapSharesOne": "Shares of the only stage with a forecast: {stage}"
-    }
+    },
+    "privateTeamBanner": "This trip belongs to a private team: only its members can register and see who takes part."
   },
   "routes": {
     "title": "Routes",
@@ -1826,6 +1829,7 @@
       "GPX_FAILURE": "Failed to process the GPX file",
       "GPX_NOT_FOUND": "GPX file not found",
       "GROUP_FULL": "This group is full",
+      "INCOMPATIBLE_VISIBILITY": "Incompatible visibilities: a “Team” route cannot be used by a ride or a trip visible outside the team",
       "RIDE_PAST": "This ride is over: registration is closed",
       "INTERNAL_ERROR": "Internal server error",
       "INVALID_CREDENTIALS": "Invalid email address or password",
@@ -1980,7 +1984,29 @@
   "visibility": {
     "public": "Public",
     "public_unlisted": "Unlisted",
-    "team": "Team"
+    "team": "Team",
+    "privateTeamHint": "Private team: as “Public” or “Unlisted”, this content can be read by anyone with the link, but it shows up in no list and no search engine.",
+    "currentNotAllowed": "This visibility is no longer allowed in this team: choose another one to save.",
+    "noneAllowed": "No visibility can be saved for now: this route is used by rides or trips visible outside the team, and the team now only publishes as “Team”. Turn those rides and trips back to “Team” first.",
+    "align": {
+      "title": "Open the routes too?",
+      "messageRide": "This ride will be visible outside the team, but some of its routes are reserved for the team. To save it, they change visibility:",
+      "messageTrip": "This trip will be visible outside the team, but some of its routes are reserved for the team. To save it, they change visibility:",
+      "route": "{name}: {from} → {to}",
+      "confirm": "Open the routes and save"
+    },
+    "restoreBlocked": {
+      "title": "Cannot restore for now",
+      "messageRide": "This ride is visible outside the team, but these routes are now reserved for the team. Set them to “Unlisted” or “Public” first, then restore the ride.",
+      "messageTrip": "This trip is visible outside the team, but these routes are now reserved for the team. Set them to “Unlisted” or “Public” first, then restore the trip."
+    },
+    "routeInUse": {
+      "title": "This route stays visible outside the team",
+      "message": "It is used by rides or trips visible outside the team: it cannot become “Team” while those rides and trips stay so. Turn them back to “Team” first, or keep another visibility for this route.",
+      "ride": "Ride",
+      "trip": "Trip",
+      "usage": "{kind} “{name}” ({visibility})"
+    }
   },
   "publicationType": {
     "ride": "Ride",

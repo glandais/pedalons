@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../api/generated/export.dart';
 import '../../../core/utils/formatters.dart';
+import '../../visibility/domain/content_visibility.dart';
 
 /// Bornes de `RideRequest` et `GroupRequest` au contrat.
 const int kRideNameMinLength = 3;
@@ -199,7 +200,8 @@ class RideForm {
   });
 
   /// Le formulaire vide du site (`CreateRidePage`) : dimanche prochain 8 h
-  /// dans le fuseau de l'équipe, la visibilité de l'équipe, brouillon, un
+  /// dans le fuseau de l'équipe, la visibilité de départ que donne le backend
+  /// (`defaultContentVisibility`, docs/LEDGER_*.md MOB-137), brouillon, un
   /// groupe « Groupe 1 ».
   factory RideForm.initial(
     TeamDetailDto team, {
@@ -218,7 +220,7 @@ class RideForm {
       now: now,
     ),
     status: Status.draft,
-    visibility: Visibility.fromJson(team.visibility),
+    visibility: defaultContentVisibilityOf(team),
     groups: <RideGroupForm>[RideGroupForm(name: firstGroupName)],
   );
 

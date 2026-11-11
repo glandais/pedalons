@@ -8,7 +8,6 @@ import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../keys.dart';
 import '../../../teams/domain/publication_timing.dart';
-import '../../../teams/providers/team_providers.dart';
 import '../../domain/ride_group_action.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_registration_controller.dart';
@@ -27,10 +26,11 @@ import '../../providers/ride_registration_controller.dart';
 ///   après le départ, pour corriger qui est vraiment venu (décision du
 ///   2026-11-10, docs/LEDGER_*.md MOB-134). Une sortie annulée n'offre rien,
 ///   pas même cela ;
-/// * l'appartenance **inconnue** ([isMember] `null`, « Mes équipes » pas encore
-///   là ou en échec) ne propose rien, pas même « Rejoindre » : rien tant
-///   qu'on ne sait pas. Une inscription dans ce groupe, elle, se sait sans
-///   l'appartenance (`registered` vient du serveur) ;
+/// * le droit de s'inscrire est celui que le backend calcule pour la sortie
+///   (`permissions.canRegister`, docs/LEDGER_*.md MOB-137) : membre, sortie
+///   publiée, un groupe encore à partir — faux, rien n'est proposé, pas même
+///   « Rejoindre ». Une inscription dans ce groupe, elle, se sait sans lui
+///   (`registered` vient du serveur) ;
 /// * [RideGroupAction.leave] se rend en badge « J'y vais » : se désinscrire
 ///   est le lien « Quitter le groupe », en bas de « Personnes inscrites ».
 ///
@@ -38,7 +38,7 @@ import '../../providers/ride_registration_controller.dart';
 RideGroupAction rideRegistrationControlAction({
   required RideDto ride,
   required RideGroupDto group,
-  required bool? isMember,
+  required bool canRegister,
   DateTime? now,
 }) {
   if (ride.isCancelled) return RideGroupAction.none;
@@ -47,12 +47,12 @@ RideGroupAction rideRegistrationControlAction({
   if (rideGroupPhase(ride, group, now: now).hasStarted) {
     return RideGroupAction.none;
   }
-  if (isMember != true) return RideGroupAction.none;
+  if (!canRegister) return RideGroupAction.none;
   // Le départ de la sortie ne compte plus : celui du groupe vient d'être lu.
   return rideGroupAction(
     ride: ride.copyWith(finished: false),
     group: group,
-    isMember: true,
+    canRegister: true,
     now: now,
   );
 }
@@ -63,7 +63,7 @@ bool rideGroupCanLeave(RideDto ride, RideGroupDto group, {DateTime? now}) =>
     rideRegistrationControlAction(
       ride: ride,
       group: group,
-      isMember: null,
+      canRegister: false,
       now: now,
     ) ==
     RideGroupAction.leave;
@@ -103,7 +103,7 @@ class RideRegistrationControl extends ConsumerWidget {
   /// Un instant, pour les tests ; maintenant sinon.
   final DateTime? now;
 
-  /// L'action du contrôle, l'appartenance lue au même provider que lui.
+  /// L'action du contrôle, le droit lu dans la sortie comme lui.
   static RideGroupAction actionOf(
     WidgetRef ref,
     RideDto ride,
@@ -112,7 +112,7 @@ class RideRegistrationControl extends ConsumerWidget {
   }) => rideRegistrationControlAction(
     ride: ride,
     group: group,
-    isMember: ref.watch(teamMembershipProvider(ride.team.slug)),
+    canRegister: ride.permissions.canRegister ?? false,
     now: now,
   );
 

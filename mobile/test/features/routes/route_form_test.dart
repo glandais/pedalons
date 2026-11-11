@@ -9,8 +9,8 @@ import '../../support/content_permissions.dart';
 /// Le formulaire d'un parcours (ledger `MOB-79`) : ce qui part au serveur, qui
 /// réécrit le parcours en entier.
 TeamDetailDto _team({String visibility = 'PUBLIC'}) => TeamDetailDto(
-  allowedContentVisibilities: kAllContentVisibilities,
-  defaultContentVisibility: 'PUBLIC',
+  allowedContentVisibilities: contentVisibilitiesFor(visibility),
+  defaultContentVisibility: visibility,
   publicContentAllowed: false,
   timezone: 'Europe/Paris',
   id: 't1',

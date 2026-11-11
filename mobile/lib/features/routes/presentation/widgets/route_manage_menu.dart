@@ -29,16 +29,28 @@ List<RouteManageAction> routeManageActions(
   RouteDetailDto route, {
   required bool canReport,
 }) {
+  // Le droit de **ce** parcours, calculé par le backend (docs/LEDGER_*.md
+  // MOB-137) : modifier et remplacer le GPX demandent `canEdit`, supprimer
+  // et restaurer `canDelete`.
+  final bool edit = route.permissions.canEdit;
+  final bool delete = route.permissions.canDelete;
   if (route.deleted) {
-    return const <RouteManageAction>[RouteManageAction.restore];
+    return <RouteManageAction>[if (delete) RouteManageAction.restore];
   }
   return <RouteManageAction>[
-    RouteManageAction.edit,
-    RouteManageAction.replaceGpx,
-    RouteManageAction.delete,
+    if (edit) ...<RouteManageAction>[
+      RouteManageAction.edit,
+      RouteManageAction.replaceGpx,
+    ],
+    if (delete) RouteManageAction.delete,
     if (canReport) RouteManageAction.report,
   ];
 }
+
+/// Le `⋯` de la fiche ouvre-t-il « Gérer le parcours » plutôt que la seule
+/// modération ?
+bool routeHasManageActions(RouteDetailDto route) =>
+    route.permissions.canEdit || route.permissions.canDelete;
 
 /// Ouvre le menu « Gérer le parcours » et exécute le geste choisi.
 Future<void> showRouteManageMenu(

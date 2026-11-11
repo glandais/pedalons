@@ -52,6 +52,10 @@ class _StubRideRepository implements RideRepository {
 
   final RideDto ride;
 
+  /// Le bloc `permissions` que le serveur calcule pour l'appelant, posé sur
+  /// la sortie servie ; nul, celui du jeu d'essai.
+  ContentPermissionsDto? permissions;
+
   /// La météo servie ; `null` sert `OUT_OF_RANGE`, qui ne rend rien.
   RideWeatherDto? weather;
 
@@ -82,7 +86,9 @@ class _StubRideRepository implements RideRepository {
   Future<RideDto> getRide(String teamSlug, String rideSlug) {
     rideCalls++;
     if (neverCompletes) return Completer<RideDto>().future;
-    return Future<RideDto>.value(ride);
+    return Future<RideDto>.value(
+      permissions == null ? ride : ride.copyWith(permissions: permissions!),
+    );
   }
 
   final List<String> joined = <String>[];
@@ -256,7 +262,10 @@ void main() {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         rideRepositoryProvider.overrideWithValue(
-          repository ?? _StubRideRepository(ride, neverCompletes: loading),
+          (repository ?? _StubRideRepository(ride, neverCompletes: loading))
+            // Ce que le serveur répond à cet appelant (docs/LEDGER_*.md
+            // MOB-137) : l'écran ne lit plus « Mes équipes ».
+            ..permissions ??= permissionsFor(member: member, role: role),
         ),
         teamRepositoryProvider.overrideWithValue(
           _StubTeamRepository(member: member, role: role),
@@ -396,6 +405,81 @@ void main() {
 
     await scrollToGroups(tester);
     expect(find.text('Rejoindre'), findsNothing);
+  });
+
+  /// docs/LEDGER_*.md MOB-137 : la sortie publique d'une équipe privée, lue
+  /// par lien par quelqu'un qui n'en est pas membre. Le résumé embarqué dit
+  /// que l'équipe ne se consulte pas (`accessible` faux) et ne porte pas de
+  /// logo ; le bloc `permissions` ne donne ni inscription, ni noms, ni
+  /// commentaires.
+  group('équipe non consultable', () {
+    RideDto linked(RideDto ride) => ride.copyWith(
+      team: ride.team.copyWith(
+        accessible: false,
+        visibility: 'TEAM',
+        logoUrl: null,
+      ),
+    );
+
+    testWidgets('ni lien vers l\'équipe, ni « Voir l\'équipe »', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, linked(fixtureRide()), member: false, height: 4000);
+
+      expect(find.byKey(keys.ride.title), findsOneWidget);
+      expect(find.byKey(keys.ride.notMemberBanner), findsOneWidget);
+      expect(
+        find.textContaining('appartient à une équipe privée'),
+        findsOneWidget,
+      );
+      expect(find.byKey(keys.ride.viewTeamButton), findsNothing);
+      // La ligne d'équipe nomme l'équipe sans y mener, ni logo.
+      final PdlTeamLine line = tester.widget<PdlTeamLine>(
+        find.byKey(keys.ride.teamLine),
+      );
+      expect(line.label, 'N-Peloton');
+      expect(line.onTap, isNull);
+      expect(line.imageUrl, isNull);
+      // Aucune inscription proposée.
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+      expect(find.text('Rejoindre'), findsNothing);
+    });
+
+    testWidgets('une équipe consultable garde son lien et son bouton', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, fixtureRide(), member: false);
+
+      expect(find.byKey(keys.ride.viewTeamButton), findsOneWidget);
+      expect(
+        tester.widget<PdlTeamLine>(find.byKey(keys.ride.teamLine)).onTap,
+        isNotNull,
+      );
+    });
+
+    testWidgets('le droit vient de la sortie, pas de « Mes équipes »', (
+      WidgetTester tester,
+    ) async {
+      // « Mes équipes » dit membre, le serveur dit le contraire : c'est le
+      // serveur qui gagne.
+      final _StubRideRepository repository = _StubRideRepository(fixtureRide())
+        ..permissions = kNoPermissions;
+      await open(tester, fixtureRide(), repository: repository);
+
+      expect(find.byKey(keys.ride.notMemberBanner), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
+      expect(find.byKey(keys.rideManage.editButton), findsNothing);
+    });
+
+    testWidgets('canEdit seul ouvre le crayon, quel que soit le rôle', (
+      WidgetTester tester,
+    ) async {
+      final _StubRideRepository repository = _StubRideRepository(fixtureRide())
+        ..permissions = permissionsFor(member: true, role: 'ORGANIZER');
+      await open(tester, fixtureRide(), repository: repository, role: 'MEMBER');
+
+      expect(find.byKey(keys.rideManage.editButton), findsOneWidget);
+    });
   });
 
   testWidgets('un membre se voit proposer « Rejoindre »', (
@@ -1417,7 +1501,8 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             rideRepositoryProvider.overrideWithValue(
-              _StubRideRepository(ride, weather: ok()),
+              _StubRideRepository(ride, weather: ok())
+                ..permissions = permissionsFor(member: true),
             ),
             teamRepositoryProvider.overrideWithValue(
               _StubTeamRepository(member: true),

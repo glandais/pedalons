@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../api/generated/export.dart';
+import '../../visibility/domain/content_visibility.dart';
 import 'ride_form.dart';
 
 /// Bornes de `RideTemplateRequest` au contrat. La description et les groupes
@@ -31,14 +32,14 @@ class RideTemplateForm {
   });
 
   /// Le formulaire vide du site (`CreateRideTemplatePage`) : sans nom, la
-  /// visibilité de l'équipe, publié, un groupe « Groupe 1 ».
+  /// visibilité de départ que donne le backend (`defaultContentVisibility`), publié, un groupe « Groupe 1 ».
   factory RideTemplateForm.initial(
     TeamDetailDto team, {
     required String firstGroupName,
   }) => RideTemplateForm(
     name: '',
     markdown: '',
-    visibility: Visibility.fromJson(team.visibility),
+    visibility: defaultContentVisibilityOf(team),
     status: Status.published,
     groups: <RideGroupForm>[RideGroupForm(name: firstGroupName)],
   );

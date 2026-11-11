@@ -135,6 +135,11 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       l'entité d'une équipe non consultable pose « Équipe indisponible » sous l'écran de détail.
       Lire `allowedContentVisibilities` et `permissions` (`API-176`), confirmer l'alignement des
       parcours, corriger le retour arrière. Plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/2026-11-11-visibilite-contenu-equipe-privee.md) §6.
+      **Code écrit le 11 novembre 2026** (`check.sh` vert, 1800+ tests) : champ partagé
+      `features/visibility/`, écrans de détail sur `permissions`, sonde d'accès à l'équipe avant
+      de reconstruire la pile d'un lien (`team_access_probe.dart`), contenus de détail invalidés
+      quand l'appartenance change. Reste à faire tourner Patrol
+      (`private_team_public_ride_test.dart`) avant de ranger l'entrée.
 
 ### Heure de départ : audit du 7 novembre 2026
 

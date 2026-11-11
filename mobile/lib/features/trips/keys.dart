@@ -5,6 +5,10 @@ class _TripKey extends ValueKey<String> {
 }
 
 class TripDetailKeys {
+  /// Le bandeau du non-membre (« Rejoignez cette équipe… », ou l'équipe
+  /// privée d'un voyage lu par lien, docs/LEDGER_*.md MOB-137).
+  final notMemberBanner = const _TripKey('notMemberBanner');
+
   /// Le nom du voyage, en tête de l'écran 24.
   final title = const _TripKey('title');
 

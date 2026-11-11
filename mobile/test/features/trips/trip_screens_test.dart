@@ -49,11 +49,17 @@ class _StubTripRepository implements TripRepository {
   final TripWeatherDto? weather;
   int reads = 0;
 
+  /// Le bloc `permissions` que le serveur calcule pour l'appelant (docs/
+  /// LEDGER_*.md MOB-137) ; nul, celui du jeu d'essai.
+  ContentPermissionsDto? permissions;
+
   @override
   Future<TripDto> getTrip(String teamSlug, String tripSlug) {
     reads++;
     if (neverCompletes) return Completer<TripDto>().future;
-    return Future<TripDto>.value(trip);
+    return Future<TripDto>.value(
+      permissions == null ? trip : trip.copyWith(permissions: permissions!),
+    );
   }
 
   /// Pas de météo à montrer par défaut : `trip_weather_test.dart` couvre ses
@@ -177,7 +183,10 @@ void main() {
         ),
         sharedPreferencesProvider.overrideWithValue(prefs),
         tripRepositoryProvider.overrideWithValue(
-          repository ?? _StubTripRepository(trip, neverCompletes: loading),
+          (repository ?? _StubTripRepository(trip, neverCompletes: loading))
+            // Ce que le serveur répond à cet appelant (docs/LEDGER_*.md
+            // MOB-137) : l'écran ne lit plus « Mes équipes ».
+            ..permissions ??= permissionsFor(member: member),
         ),
         teamRepositoryProvider.overrideWithValue(
           _StubTeamRepository(member: member),
@@ -469,6 +478,43 @@ void main() {
         findsOneWidget,
       );
       expect(find.byKey(keys.trip.joinButton), findsNothing);
+    });
+
+    testWidgets('équipe non consultable : ni lien vers elle, ni « Voir '
+        'l\'équipe » (MOB-137)', (WidgetTester tester) async {
+      final TripDto trip = fixtureTrip();
+      await openTrip(
+        tester,
+        trip.copyWith(
+          team: trip.team.copyWith(accessible: false, logoUrl: null),
+        ),
+        member: false,
+      );
+
+      expect(find.byKey(keys.trip.notMemberBanner), findsOneWidget);
+      expect(
+        find.textContaining('appartient à une équipe privée'),
+        findsOneWidget,
+      );
+      expect(find.text('Voir l\'équipe'), findsNothing);
+      expect(
+        tester.widget<PdlTeamLine>(find.byType(PdlTeamLine)).onTap,
+        isNull,
+      );
+      expect(find.byKey(keys.trip.joinButton), findsNothing);
+    });
+
+    testWidgets('équipe consultable : le bandeau mène à l\'équipe', (
+      WidgetTester tester,
+    ) async {
+      await openTrip(tester, fixtureTrip(), member: false);
+
+      expect(find.byKey(keys.trip.notMemberBanner), findsOneWidget);
+      expect(find.text('Voir l\'équipe'), findsOneWidget);
+      expect(
+        tester.widget<PdlTeamLine>(find.byType(PdlTeamLine)).onTap,
+        isNotNull,
+      );
     });
 
     testWidgets('les étapes se rendent en cartes, dans l\'ordre', (

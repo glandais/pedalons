@@ -104,6 +104,13 @@ ApiError resolveApiError(Object error, [StackTrace? stackTrace]) {
 
 /// Extracts a user-friendly, localized error message from an exception.
 ///
+/// A screen that renders a code itself reads it **before** falling back to
+/// this message, so the person never reads both: `INCOMPATIBLE_VISIBILITY`
+/// opens the alignment or refusal sheet of `features/visibility`
+/// (`incompatibleVisibilityOf`, docs/LEDGER_*.md MOB-137). Elsewhere — a
+/// refusal without its list, an older screen — its translation is the clear
+/// message.
+///
 /// Convenience wrapper over [resolveApiError] for callers that only render a
 /// single line of text.
 String getErrorMessage(Object error, [StackTrace? stackTrace]) =>

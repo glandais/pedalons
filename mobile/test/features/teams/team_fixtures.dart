@@ -29,8 +29,8 @@ TeamDetailDto fixtureTeam({
   int recentPostCount = 0,
   String? logoUrl,
 }) => TeamDetailDto(
-  allowedContentVisibilities: kAllContentVisibilities,
-  defaultContentVisibility: 'PUBLIC',
+  allowedContentVisibilities: contentVisibilitiesFor(visibility),
+  defaultContentVisibility: visibility,
   publicContentAllowed: false,
   timezone: 'Europe/Paris',
   id: 'team-$slug',

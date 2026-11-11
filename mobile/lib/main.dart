@@ -23,6 +23,7 @@ import 'features/auth/providers/pending_sign_in_link.dart';
 import 'features/feedback/presentation/unreported_fatal_prompt.dart';
 import 'features/feedback/providers/error_reporter_binding.dart';
 import 'features/notifications/providers/push_provider.dart';
+import 'features/teams/providers/team_access_probe.dart';
 import 'screenshots/screenshot_mode.dart';
 
 void main() async {
@@ -330,11 +331,16 @@ class _DeepLinkHandlerState extends ConsumerState<_DeepLinkHandler> {
 
   void _openWithHierarchy(String path) {
     // Hors session, le lien attend la connexion au lieu d'être perdu.
-    openDeepLink(
-      ref.read(routerProvider),
-      path,
-      signedIn: ref.read(authProvider).isAuthenticated,
-      pending: ref.read(pendingSignInLinkProvider),
+    // L'équipe d'une entité liée se consulte-t-elle ? Sinon sa page n'est
+    // pas reconstruite dessous (docs/LEDGER_*.md MOB-137).
+    unawaited(
+      openDeepLink(
+        ref.read(routerProvider),
+        path,
+        signedIn: ref.read(authProvider).isAuthenticated,
+        pending: ref.read(pendingSignInLinkProvider),
+        teamAccess: ref.read(teamAccessProbeProvider),
+      ),
     );
   }
 
