@@ -180,16 +180,25 @@ Compter puis insérer laisse passer deux arrivées simultanées : les quatre che
 ### 3.3 Les codes d'erreur
 
 Deux codes nouveaux dans `ErrorCode`, chacun avec `details` : `limit`, `current`, et pour le
-planificateur `scope` (`TEAM` | `PERSONAL`) et `resetsOn` (premier jour du mois suivant).
+planificateur `scope` (`TEAM` | `PERSONAL`), `resetsOn` (premier jour du mois suivant) et, pour
+`TEAM`, `teamName`.
 `ROUTE_PLANNER_DISABLED` reste pour le drapeau fermé. Les clients affichent :
 
 - membres : « L'équipe a atteint 25 membres, la limite de l'offre gratuite. Pour aller au-delà,
   contactez-nous. » — un lien vers la page de contact pour un admin d'équipe ; « Demandez à un
   administrateur de l'équipe » pour les autres ;
-- planificateur, équipe : « L'équipe a utilisé ses 20 enregistrements au planificateur ce mois-ci.
-  L'import de GPX reste disponible, et le compteur repart le 1er décembre. » ;
-- planificateur, personnel : « Vous avez utilisé vos 10 enregistrements au planificateur ce
-  mois-ci. L'import de GPX reste disponible, et le compteur repart le 1er décembre. »
+- planificateur, équipe : « <Équipe> utilise l'offre gratuite, qui permet 20 enregistrements
+  de parcours tracés sur la carte par mois. Ils sont tous utilisés ce mois-ci. L'import de GPX
+  reste disponible, et le compteur repart le 1er décembre. Pour lever la limite, un
+  administrateur de l'équipe peut nous contacter. » ;
+- planificateur, personnel : « Vous ne faites partie d'aucune équipe débloquée : dans les outils
+  GPX, le tracé sur la carte est limité à 10 enregistrements par mois, tous utilisés ce mois-ci.
+  L'import de GPX reste disponible, et le compteur repart le 1er décembre. Rejoindre une équipe
+  débloquée lève cette limite. »
+
+Chaque message dit **pourquoi** la limite s'applique (l'équipe est en offre gratuite ; vous
+n'êtes membre d'aucune équipe débloquée), pas seulement qu'elle est atteinte. Le nom de l'équipe
+vient de `details.teamName` (`scope: TEAM`).
 
 Copie épicène (BRANDING §8.2), relue au moment du code.
 
@@ -240,9 +249,9 @@ début, et la version mobile qui sait le rendre part avec le même lot. À relir
   - création d'un parcours d'équipe : l'option « Tracer sur la carte » (l'import de GPX reste
     actif).
 - Refus de l'API (`PLANNER_QUOTA_REACHED`, quota atteint en cours de route : un autre membre a
-  enregistré entre-temps, un autre onglet) : une **modale bloquante** dit que le quota du mois est
-  atteint (équipe ou personnel selon `scope`), quand il repart (`resetsOn`), et rappelle l'import
-  de GPX. Un seul composant, partagé par l'éditeur d'équipe et les outils GPX, déclenché par le
+  enregistré entre-temps, un autre onglet) : une **modale bloquante** porte le message du §3.3 selon
+  `scope` : pourquoi la limite s'applique (équipe en offre gratuite, ou aucune équipe débloquée),
+  quand le compteur repart (`resetsOn`), et l'import de GPX qui reste possible. Un seul composant, partagé par l'éditeur d'équipe et les outils GPX, déclenché par le
   code d'erreur quel que soit l'appel (enregistrement ou calcul d'itinéraire).
 - Page de rejoindre une équipe pleine : le bouton est remplacé par le message.
 - Aucune mention de prix nulle part : il n'y en a pas encore.
