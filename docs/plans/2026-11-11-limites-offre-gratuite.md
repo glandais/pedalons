@@ -232,10 +232,18 @@ début, et la version mobile qui sait le rendre part avec le même lot. À relir
   sélecteur « Gratuit / Débloqué » et la note, à côté des drapeaux existants.
 - Paramètres d'équipe, liste des membres et invitation : « 24 / 25 membres » quand une limite
   existe, l'invitation désactivée à 25 avec le message du §3.3.
-- Éditeur de parcours (`RouteEditor`), dans une équipe : « 14 / 20 enregistrements ce mois-ci » ;
-  dans les outils GPX : « 7 / 10 ». À quota plein, le planificateur ne s'ouvre plus (le message dit
-  pourquoi et rappelle l'import), et un enregistrement en cours d'édition refusé garde le tracé à
-  l'écran pour qu'on puisse l'exporter.
+- Planificateur : **aucun compteur affiché**. Le front ne fait qu'une chose avant l'appel :
+  quand `plannerQuota.used >= limit` est **déjà** atteint, il désactive le point d'entrée, avec le
+  message du §3.3 en infobulle ou en texte d'aide —
+  - outils GPX : le bouton « Créer un parcours » (le tracé au planificateur ; l'import de fichier
+    reste actif) ;
+  - création d'un parcours d'équipe : l'option « Tracer sur la carte » (l'import de GPX reste
+    actif).
+- Refus de l'API (`PLANNER_QUOTA_REACHED`, quota atteint en cours de route : un autre membre a
+  enregistré entre-temps, un autre onglet) : une **modale bloquante** dit que le quota du mois est
+  atteint (équipe ou personnel selon `scope`), quand il repart (`resetsOn`), et rappelle l'import
+  de GPX. Un seul composant, partagé par l'éditeur d'équipe et les outils GPX, déclenché par le
+  code d'erreur quel que soit l'appel (enregistrement ou calcul d'itinéraire).
 - Page de rejoindre une équipe pleine : le bouton est remplacé par le message.
 - Aucune mention de prix nulle part : il n'y en a pas encore.
 
@@ -262,8 +270,9 @@ pas de parcours. Rien sur Karoo ni Garmin.
 - Concurrence : deux `joinTeam` simultanés sur une équipe à 24 → un seul passe.
 - `…QueryCountTest` : la liste des équipes de l'admin plateforme ne coûte pas une requête par
   ligne pour le palier (c'est une colonne) ; le compteur de membres reste par page.
-- e2e Playwright : le 26ᵉ membre refusé, les deux compteurs du planificateur, le déblocage depuis
-  l'admin plateforme.
+- e2e Playwright : le 26ᵉ membre refusé ; à quota plein, « Créer un parcours » (outils GPX) et
+  « Tracer sur la carte » (équipe) désactivés ; la modale sur un refus de l'API ; le déblocage
+  depuis l'admin plateforme.
 
 ---
 
@@ -273,7 +282,7 @@ pas de parcours. Rien sur Karoo ni Garmin.
 |---|---|---|
 | 1 | Migration, `TeamTier`, `PlanLimits`, défauts d'ouverture à la création, admin plateforme (contrat + page), `tier` et `memberLimit` dans `TeamDetailDto` — **sans refus** | S |
 | 2 | Plafond de membres : les quatre chemins, verrou, erreur, clients web et mobile | S–M |
-| 3 | Quotas du planificateur : journal `planner_saves`, les points de contrôle équipe et personnel, le routeur et son plafond quotidien par utilisateur, les deux compteurs dans l'éditeur | M |
+| 3 | Quotas du planificateur : journal `planner_saves`, les points de contrôle équipe et personnel, le routeur et son plafond quotidien par utilisateur, les points d'entrée désactivés à quota plein et la modale de refus | M |
 
 L'ordre permet de déployer le lot 1 et de vérifier les paliers en prod avant qu'un refus existe.
 Le lot 2 suffit à protéger contre l'usage « club gratuit » ; le lot 3 protège la facture Stadia.
