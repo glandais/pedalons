@@ -137,7 +137,7 @@ describe('the departure on the screens migrated by WEB-138', () => {
       registered: false,
     } as unknown as TripDto
     renderIn(<AgendaRow publication={trip} />)
-    expect(line()).toBe('ven. 15 → dim. 17 mai')
+    expect(line()).toBe('Départ 08:00 · ven. 15 → dim. 17 mai')
   })
 
   it('TripStageCard: « Demain · 09:00 », not the long date', () => {

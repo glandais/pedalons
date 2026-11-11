@@ -107,7 +107,8 @@ export function RouteUsages({ teamSlug, routeSlug }: RouteUsagesProps) {
 
 /**
  * A trip's « start → end », both rendezvous in the usage's one zone, with one zone indicator for
- * the range (docs/LEDGER_*.md API-60).
+ * the range (docs/LEDGER_*.md API-60) — through the feed card's formatter, « ven. 20 → dim. 22
+ * nov. » (docs/LEDGER_*.md WEB-167, D17).
  */
 function UsageRange({ usage }: { usage: RouteUsageDto }) {
   const rendezvous = useRendezvousFormat(usage.timezone)
@@ -117,7 +118,7 @@ function UsageRange({ usage }: { usage: RouteUsageDto }) {
       zone={usage.timezone}
       size="sm"
       tone="teal"
-      label={`${rendezvous.formatDepartureDay(usage.dateTime)} → ${rendezvous.formatDepartureDay(usage.endDate)}`}
+      label={usage.endDate ? rendezvous.formatTripSpan(usage.dateTime, usage.endDate) : undefined}
     />
   )
 }

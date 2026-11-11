@@ -133,7 +133,7 @@ test('a user draws a route from two points on the map, sees it routed and traced
     await expect(surface).toBeHidden()
   }
   await expect(
-    main.getByText(`${(segmentLength / 1000).toFixed(1)} km`, { exact: true })
+    main.getByText(`${(segmentLength / 1000).toFixed(1).replace('.', ',')} km`, { exact: true })
   ).toBeVisible()
   // On a finger the form shows the preview card instead, whose count is the control points: the
   // routed points are then only checked in what is sent.

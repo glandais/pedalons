@@ -98,8 +98,8 @@ export function DepartureLine({
 
 /**
  * The departure line of a ride or a trip: a ride's « Départ 09:00 » from the
- * reader's group's departure (`spanStart`, docs/LEDGER_*.md WEB-136), a trip's span on the
- * turquoise clock.
+ * reader's group's departure (`spanStart`, docs/LEDGER_*.md WEB-136), a trip's « Départ 09:00 »
+ * followed by its span on the turquoise clock.
  */
 export function PublicationDepartureLine({
   publication,
@@ -115,14 +115,26 @@ export function PublicationDepartureLine({
   const { t, i18n } = useTranslation()
   const { timezone: readerZone } = useEffectiveTimezone()
   if (publication.type === 'TRIP') {
+    // « Départ 09:00 » then the span, dimmed — the app's trip card (KIT §9, docs/LEDGER_*.md
+    // WEB-167).
+    const span = formatPublicationSpan(publication, 'full', i18n.language, t, readerZone)
     return (
       <DepartureLine
         date={publication.dateTime}
         zone={publication.timezone}
         size={size}
         tone="teal"
-        label={formatPublicationSpan(publication, 'full', i18n.language, t, readerZone)}
-        detail={detail}
+        detail={
+          detail ? (
+            <>
+              {span}
+              {' · '}
+              {detail}
+            </>
+          ) : (
+            span
+          )
+        }
       />
     )
   }

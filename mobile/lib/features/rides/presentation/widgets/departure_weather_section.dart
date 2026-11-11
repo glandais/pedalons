@@ -82,6 +82,7 @@ class DepartureConditionsBlock extends StatelessWidget {
           namedArgs: <String, String>{
             'amount': AppFormatters.formatPrecipitation(
               conditions.precipitation,
+              units,
             ),
           },
         ),

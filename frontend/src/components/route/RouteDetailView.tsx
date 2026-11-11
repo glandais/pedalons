@@ -75,7 +75,7 @@ export function RouteDetailView({
   extraActions,
 }: RouteDetailViewProps) {
   const { t } = useTranslation()
-  const { distance, elevation, formatDistance, config } = useUnits()
+  const { distance, elevation, formatDistance, config, grade } = useUnits()
   const { isAuthenticated } = useAuth()
   const mode = useWindColorMode({
     tracks: route.tracks,
@@ -306,7 +306,7 @@ export function RouteDetailView({
                             {t('routes.detail.climbs.avgGradient')}:
                           </Text>{' '}
                           <Text span fw={500}>
-                            {climb.averageGradient.toFixed(1)}%
+                            {grade(climb.averageGradient)}
                           </Text>
                         </Text>
                         <Text size="sm">
@@ -314,7 +314,7 @@ export function RouteDetailView({
                             {t('routes.detail.climbs.maxGradient')}:
                           </Text>{' '}
                           <Text span fw={500}>
-                            {climb.maxGradient.toFixed(1)}%
+                            {grade(climb.maxGradient)}
                           </Text>
                         </Text>
                       </Group>

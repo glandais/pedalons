@@ -27,8 +27,8 @@ describe('GroupWeatherLine', () => {
     renderLine(weatherLeg('g1', { windExposure: { head: 30_000, cross: 5_000, tail: 15_000 } }))
     const line = plain(screen.getByTestId('group-weather-line').textContent)
     expect(line).toContain('12 °C · Ciel dégagé')
-    expect(line).toContain('Face 30.0 km')
-    expect(line).toContain('Dos 15.0 km')
+    expect(line).toContain('Face 30,0 km')
+    expect(line).toContain('Dos 15,0 km')
     // The crosswind is the detail page's business; and no rain, no rain badge.
     expect(line).not.toContain('Travers')
     expect(line).not.toContain('Pluie')
@@ -51,7 +51,7 @@ describe('GroupWeatherLine', () => {
     renderLine(weatherLeg('g1', { windExposure: { head: 0, cross: 0, tail: 20_000 } }))
     const line = plain(screen.getByTestId('group-weather-line').textContent)
     expect(line).not.toContain('Face')
-    expect(line).toContain('Dos 20.0 km')
+    expect(line).toContain('Dos 20,0 km')
   })
 
   it('draws nothing without a forecast for the group', () => {

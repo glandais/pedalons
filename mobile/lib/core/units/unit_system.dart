@@ -36,11 +36,16 @@ abstract final class UnitSymbols {
   static const String celsius = '°C';
   static const String fahrenheit = '°F';
 
-  /// Hauteur de précipitation. Elle ne se convertit pas : le plan météo
-  /// (`docs/plans/archive/2026-10-05-weather.md` §1) ne convertit que les
-  /// températures et les vitesses.
+  /// Hauteur de précipitation, en métrique.
   static const String millimeter = 'mm';
+
+  /// Hauteur de précipitation, en impérial — comme le site
+  /// (`frontend/src/utils/unitFormat.ts`, `formatPrecipitation`).
+  static const String inch = 'in';
 }
+
+/// Un pouce international, en millimètres. Valeur exacte par définition.
+const double kMillimetersPerInch = 25.4;
 
 /// Conversions dérivées de [UnitSystem], l'énumération générée depuis le
 /// contrat (`METRIC` / `IMPERIAL`).
@@ -81,6 +86,19 @@ extension UnitSystemConversion on UnitSystem {
 
   String get temperatureSymbol =>
       isImperial ? UnitSymbols.fahrenheit : UnitSymbols.celsius;
+
+  /// Hauteur de précipitation : millimètres → millimètres ou pouces. L'API
+  /// parle toujours en mm (docs/LEDGER_*.md MOB-139, D7).
+  double precipitation(num millimeters) =>
+      isImperial ? millimeters / kMillimetersPerInch : millimeters.toDouble();
+
+  String get precipitationSymbol =>
+      isImperial ? UnitSymbols.inch : UnitSymbols.millimeter;
+
+  /// Décimales d'une hauteur de précipitation : le dixième de millimètre, le
+  /// centième de pouce — un dixième de pouce vaut 2,5 mm, trop grossier pour
+  /// une averse.
+  int get precipitationFractionDigits => isImperial ? 2 : 1;
 
   /// Chemin inverse, pour les rares endroits qui saisissent dans l'unité
   /// affichée et doivent rendre des mètres à l'API.

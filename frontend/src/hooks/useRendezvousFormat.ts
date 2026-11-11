@@ -11,6 +11,7 @@ import {
   relativeDay,
   useEffectiveTimezone,
 } from '@/utils/dateFormat'
+import { formatTripSpan } from '@/utils/publicationTiming'
 import { rendezvousMention, type RendezvousMention } from '@/utils/rendezvous'
 import { supportedZone } from '@/utils/zoneLabel'
 
@@ -40,7 +41,7 @@ export function useRendezvousFormat(zone: string | null | undefined) {
     /** The zone the text is rendered in. */
     zone: entityZone,
     formatDate: (date: DateInput) => formatDate(date, language, entityZone),
-    formatDateTime: (date: DateInput) => formatDateTime(date, language, entityZone),
+    formatDateTime: (date: DateInput) => formatDateTime(date, language, entityZone, new Date(), t),
     formatTime: (date: DateInput) => formatTime(date, language, entityZone),
     formatPattern: (date: DateInput, pattern: string) =>
       formatPattern(date, pattern, language, entityZone),
@@ -52,6 +53,9 @@ export function useRendezvousFormat(zone: string | null | undefined) {
       formatDeparture(date, language, entityZone, t, options),
     /** « sam. 12 avr. » (the year outside the current one), in the zone. */
     formatDepartureDay: (date: DateInput) => formatDepartureDay(date, language, entityZone, t),
+    /** A trip's days, « ven. 20 → dim. 22 nov. », both ends in the zone (`formatTripSpan`). */
+    formatTripSpan: (start: string, end: string) =>
+      formatTripSpan(start, end, language, t, entityZone),
     /** « samedi 12 avril » (the year outside the current one), in the zone. */
     formatLongDay: (date: DateInput) => formatLongDay(date, language, entityZone, t),
     /** « Aujourd'hui » / « Demain » in the zone, else `null`. */

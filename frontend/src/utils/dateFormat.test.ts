@@ -28,7 +28,7 @@ describe('formatDeparture', () => {
       'sam. 25 avr. · 09:00'
     )
     expect(formatDeparture('2026-04-25T07:00:00Z', 'en', PARIS, en, { now: NOW })).toBe(
-      'Sat, Apr 25 · 9:00 AM'
+      'Sat, Apr 25 · 9:00\u202fAM'
     )
   })
 
@@ -37,7 +37,7 @@ describe('formatDeparture', () => {
       'sam. 10 avr. 2027 · 09:00'
     )
     expect(formatDeparture('2027-04-10T07:00:00Z', 'en', PARIS, en, { now: NOW })).toBe(
-      'Sat, Apr 10, 2027 · 9:00 AM'
+      'Sat, Apr 10, 2027 · 9:00\u202fAM'
     )
   })
 
@@ -49,7 +49,7 @@ describe('formatDeparture', () => {
       'Demain · 09:00'
     )
     expect(formatDeparture('2026-04-11T07:00:00Z', 'en', PARIS, en, { now: NOW })).toBe(
-      'Tomorrow · 9:00 AM'
+      'Tomorrow · 9:00\u202fAM'
     )
     // The day after tomorrow and yesterday are dated.
     expect(formatDeparture('2026-04-12T07:00:00Z', 'fr', PARIS, fr, { now: NOW })).toBe(
@@ -127,6 +127,6 @@ describe('formatDateTime', () => {
     vi.setSystemTime(NOW)
     expect(formatDateTime('2026-04-11T07:00:00Z', 'fr', PARIS)).toBe('sam. 11 avr. · 09:00')
     expect(formatDateTime('2027-04-10T07:00:00Z', 'fr', PARIS)).toBe('sam. 10 avr. 2027 · 09:00')
-    expect(formatDateTime('2026-04-11T07:00:00Z', 'en', PARIS)).toBe('Sat, Apr 11 · 9:00 AM')
+    expect(formatDateTime('2026-04-11T07:00:00Z', 'en', PARIS)).toBe('Sat, Apr 11 · 9:00\u202fAM')
   })
 })

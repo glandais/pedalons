@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { formatDistanceToNow, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
 import { formatInTimeZone } from 'date-fns-tz'
 import { fr } from 'date-fns/locale/fr'
 import { enUS } from 'date-fns/locale/en-US'
@@ -86,7 +86,26 @@ function toDate(date: Date | string | null | undefined): Date | null {
 }
 
 /**
- * Format full date: "15 juin 2025" (fr) / "June 15, 2025" (en)
+ * The time of day in the language's clock: « 18:30 » (fr), « 6:30 PM » (en). English puts a narrow
+ * no-break space (U+202F) before the meridiem, as CLDR — and so the app's `intl` — writes it:
+ * « 6:30 » and « PM » never split, and both clients read the same (contracts/format-cases.json).
+ */
+function clockTime(dateObj: Date, timeZone: string, language: string): string {
+  return formatInTimeZone(dateObj, timeZone, 'p', { locale: getLocale(language) }).replace(
+    / (AM|PM)$/,
+    '\u202f$1'
+  )
+}
+
+/**
+ * The long date of each language, without the weekday. Not date-fns's `PPP`, whose English writes
+ * an ordinal (« June 15th, 2025 ») the app's `intl` (`yMMMMd`) does not. Kept in code rather than
+ * in the catalogue: it must hold where a test mocks `react-i18next`.
+ */
+const LONG_DATE_PATTERNS: Record<string, string> = { fr: 'd MMMM yyyy', en: 'MMMM d, yyyy' }
+
+/**
+ * Format full date, without the weekday: « 15 juin 2025 » (fr) / « June 15, 2025 » (en).
  */
 export function formatDate(
   date: Date | string | null | undefined,
@@ -96,8 +115,23 @@ export function formatDate(
   const dateObj = toDate(date)
   if (!dateObj) return ''
 
-  const locale = getLocale(language)
-  return formatInTimeZone(dateObj, timeZone, 'PPP', { locale })
+  return formatInTimeZone(dateObj, timeZone, LONG_DATE_PATTERNS[language] ?? 'MMMM d, yyyy', {
+    locale: getLocale(language),
+  })
+}
+
+/**
+ * The month and the year, inside a sentence: « mars 2024 » (fr), « March 2024 » (en) — « Membre
+ * depuis mars 2024 » (docs/plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md §9).
+ */
+export function formatMonthYear(
+  date: Date | string | null | undefined,
+  language: string = 'fr',
+  timeZone: string = SERVER_FALLBACK_TIMEZONE
+): string {
+  const dateObj = toDate(date)
+  if (!dateObj) return ''
+  return formatInTimeZone(dateObj, timeZone, 'MMMM yyyy', { locale: getLocale(language) })
 }
 
 /**
@@ -109,9 +143,11 @@ export function formatDate(
 export function formatDateTime(
   date: Date | string | null | undefined,
   language: string = 'fr',
-  timeZone: string = SERVER_FALLBACK_TIMEZONE
+  timeZone: string = SERVER_FALLBACK_TIMEZONE,
+  now: Date = new Date(),
+  t: TFunction = i18n.getFixedT(language)
 ): string {
-  return formatDeparture(date, language, timeZone, i18n.getFixedT(language), { relative: false })
+  return formatDeparture(date, language, timeZone, t, { now, relative: false })
 }
 
 /**
@@ -141,7 +177,7 @@ export function formatTime(
   const dateObj = toDate(date)
   if (!dateObj) return ''
 
-  return formatInTimeZone(dateObj, timeZone, 'p', { locale: getLocale(language) })
+  return clockTime(dateObj, timeZone, language)
 }
 
 /**
@@ -226,7 +262,7 @@ export function formatDeparture(
 ): string {
   const dateObj = toDate(date)
   if (!dateObj) return ''
-  const time = formatInTimeZone(dateObj, timeZone, 'p', { locale: getLocale(language) })
+  const time = clockTime(dateObj, timeZone, language)
   const day =
     (relative ? formatRelativeDay(dateObj, timeZone, t, now) : null) ??
     formatDepartureDay(dateObj, language, timeZone, t, now)
@@ -280,18 +316,49 @@ export function formatLongDay(
   )
 }
 
+/** Beyond, a relative date disorients more than it informs: the date is written instead. */
+const RELATIVE_ABSOLUTE_THRESHOLD_DAYS = 7
+
 /**
- * Format relative: "il y a 2 heures" (fr) / "2 hours ago" (en)
+ * A moment relative to now, the app's way (docs/plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md
+ * §9, docs/LEDGER_*.md WEB-167): « à l'instant » under a minute, then « il y a 5 minutes », « il y a
+ * 2 heures », « il y a 3 jours » — whole units, never « environ » — and, beyond 7 days, the date
+ * (« 3 novembre 2026 », in `timeZone`). The future reads « dans 2 heures ». Same cut-offs as
+ * `RelativeTime.between` in the app (`mobile/lib/core/utils/formatters.dart`).
  */
 export function formatRelative(
   date: Date | string | null | undefined,
-  language: string = 'fr'
+  language: string,
+  timeZone: string,
+  t: TFunction,
+  now: Date = new Date()
 ): string {
   const dateObj = toDate(date)
   if (!dateObj) return ''
 
-  const locale = getLocale(language)
-  return formatDistanceToNow(dateObj, { addSuffix: true, locale })
+  const delta = now.getTime() - dateObj.getTime()
+  const past = delta >= 0
+  const seconds = Math.floor(Math.abs(delta) / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
+  if (seconds < 60) return t('dateFormats.relative.now')
+  if (minutes < 60) {
+    return past
+      ? t('dateFormats.relative.minutesAgo', { count: minutes })
+      : t('dateFormats.relative.inMinutes', { count: minutes })
+  }
+  if (hours < 24) {
+    return past
+      ? t('dateFormats.relative.hoursAgo', { count: hours })
+      : t('dateFormats.relative.inHours', { count: hours })
+  }
+  if (days <= RELATIVE_ABSOLUTE_THRESHOLD_DAYS) {
+    return past
+      ? t('dateFormats.relative.daysAgo', { count: days })
+      : t('dateFormats.relative.inDays', { count: days })
+  }
+  return formatDate(dateObj, language, timeZone)
 }
 
 /**
@@ -311,10 +378,13 @@ export function useFormattedDate() {
     formatRelativeDay: (date: Date | string | null | undefined) =>
       formatRelativeDay(date, timezone, t),
     formatDate: (date: Date | string | null | undefined) => formatDate(date, language, timezone),
+    formatMonthYear: (date: Date | string | null | undefined) =>
+      formatMonthYear(date, language, timezone),
     formatDateTime: (date: Date | string | null | undefined) =>
-      formatDateTime(date, language, timezone),
+      formatDateTime(date, language, timezone, new Date(), t),
     formatTime: (date: Date | string | null | undefined) => formatTime(date, language, timezone),
-    formatRelative: (date: Date | string | null | undefined) => formatRelative(date, language),
+    formatRelative: (date: Date | string | null | undefined) =>
+      formatRelative(date, language, timezone, t),
     formatPattern: (date: Date | string | null | undefined, pattern: string) =>
       formatPattern(date, pattern, language, timezone),
     isToday: (date: Date | string | null | undefined) => isSameDay(date, timezone),

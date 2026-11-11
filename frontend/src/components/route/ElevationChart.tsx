@@ -136,7 +136,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
     const { t } = useTranslation()
     const colorScheme = useResolvedColorScheme()
     const theme = useMantineTheme()
-    const { config, distance: distanceFormat, elevation, formatDistance } = useUnits()
+    const { config, distance: distanceFormat, elevation, formatDistance, grade } = useUnits()
     const { relativeWind: relativeWindLabel } = useWeatherLabels()
     const chartRef = useRef<ChartJS<'line'>>(null)
 
@@ -361,7 +361,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
 
                 let label = `${elevation(item.parsed.y ?? 0)}`
                 if (gradient !== 0) {
-                  label += ` (${gradient.toFixed(1)}%)`
+                  label += ` (${grade(gradient)})`
                 }
                 return label
               },
@@ -404,7 +404,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
                       total: climbs.length,
                       gain: elevation(climb.elevationGain),
                       distance: distanceFormat(climb.endDistance - climb.startDistance),
-                      gradient: climb.averageGradient.toFixed(1),
+                      gradient: grade(climb.averageGradient),
                     })
                   )
 
@@ -417,7 +417,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
                           index: pi + 1,
                           total: climb.parts.length,
                           distance: distanceFormat(part.endDistance - part.startDistance),
-                          gradient: part.grade.toFixed(1),
+                          gradient: grade(part.grade),
                         })
                       )
                       break
@@ -552,6 +552,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
         distanceFormat,
         elevation,
         formatDistance,
+        grade,
         zoomEnabled,
         route.distance,
         xRange,

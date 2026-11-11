@@ -236,7 +236,7 @@ test.describe('member directory — web', () => {
 
       // The API sent no role: no badge, no join date, no filter on what cannot be seen.
       await expect(page.getByText('Organisateur', { exact: true })).toHaveCount(0)
-      await expect(page.getByText(/^A rejoint le/)).toHaveCount(0)
+      await expect(page.getByText(/^Membre depuis/)).toHaveCount(0)
       await expect(page.getByRole('textbox', { name: 'Rôle' })).toHaveCount(0)
       // And none of the admin screen's actions.
       await expect(page.getByRole('button', { name: 'Retirer' })).toHaveCount(0)

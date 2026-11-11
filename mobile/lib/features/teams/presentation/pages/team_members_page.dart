@@ -360,9 +360,7 @@ class _MemberRow extends StatelessWidget {
           ? null
           : 'teams.membersList.since'.tr(
               namedArgs: <String, String>{
-                'date':
-                    '${AppFormatters.monthCapitalized(joined.month).toLowerCase()} '
-                    '${joined.year}',
+                'date': AppFormatters.formatMonthAndYear(joined),
               },
             ),
       roleBadge: role == null

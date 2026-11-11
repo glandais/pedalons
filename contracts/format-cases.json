@@ -1,0 +1,394 @@
+[
+  {
+    "kind": "distance",
+    "input": 92400,
+    "locale": "fr",
+    "units": "metric",
+    "expected": "92,4\u00a0km"
+  },
+  {
+    "kind": "distance",
+    "input": 92400,
+    "locale": "en",
+    "units": "metric",
+    "expected": "92.4\u00a0km"
+  },
+  {
+    "kind": "distance",
+    "input": 46300,
+    "locale": "en",
+    "units": "imperial",
+    "expected": "28.8\u00a0mi"
+  },
+  {
+    "kind": "distance",
+    "input": 46300,
+    "locale": "fr",
+    "units": "imperial",
+    "expected": "28,8\u00a0mi"
+  },
+  {
+    "kind": "elevation",
+    "input": 1240,
+    "locale": "fr",
+    "units": "metric",
+    "expected": "1\u202f240\u00a0m"
+  },
+  {
+    "kind": "elevation",
+    "input": 1240,
+    "locale": "en",
+    "units": "metric",
+    "expected": "1,240\u00a0m"
+  },
+  {
+    "kind": "elevation",
+    "input": 980,
+    "locale": "fr",
+    "units": "metric",
+    "expected": "980\u00a0m"
+  },
+  {
+    "kind": "elevation",
+    "input": 1240,
+    "locale": "en",
+    "units": "imperial",
+    "expected": "4,068\u00a0ft"
+  },
+  {
+    "kind": "speed",
+    "input": 25.4,
+    "locale": "fr",
+    "units": "metric",
+    "expected": "25\u00a0km/h"
+  },
+  {
+    "kind": "speed",
+    "input": 25,
+    "locale": "en",
+    "units": "imperial",
+    "expected": "16\u00a0mph"
+  },
+  {
+    "kind": "percent",
+    "input": 60,
+    "locale": "fr",
+    "units": "metric",
+    "expected": "60\u00a0%"
+  },
+  {
+    "kind": "percent",
+    "input": 20,
+    "locale": "en",
+    "units": "metric",
+    "expected": "20\u00a0%",
+    "note": "No written rule for English; the app's rendering is kept (no-break space, as in French)."
+  },
+  {
+    "kind": "grade",
+    "input": 6.5,
+    "locale": "fr",
+    "units": "metric",
+    "expected": "6,5\u00a0%"
+  },
+  {
+    "kind": "grade",
+    "input": 6.5,
+    "locale": "en",
+    "units": "metric",
+    "expected": "6.5\u00a0%"
+  },
+  {
+    "kind": "price",
+    "input": {
+      "price": 1200
+    },
+    "locale": "fr",
+    "units": "metric",
+    "expected": "1\u202f200,00\u00a0€"
+  },
+  {
+    "kind": "price",
+    "input": {
+      "price": 1200
+    },
+    "locale": "en",
+    "units": "metric",
+    "expected": "€1,200.00"
+  },
+  {
+    "kind": "price",
+    "input": {
+      "price": 15,
+      "rentalPeriod": "WEEK"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "expected": "15,00\u00a0€ / semaine"
+  },
+  {
+    "kind": "price",
+    "input": {
+      "price": 15,
+      "rentalPeriod": "DAY"
+    },
+    "locale": "en",
+    "units": "metric",
+    "expected": "€15.00 / day"
+  },
+  {
+    "kind": "price",
+    "input": {
+      "price": null
+    },
+    "locale": "fr",
+    "units": "metric",
+    "expected": "Prix à négocier"
+  },
+  {
+    "kind": "price",
+    "input": {
+      "price": null,
+      "rentalPeriod": "MONTH"
+    },
+    "locale": "en",
+    "units": "metric",
+    "expected": "Price negotiable"
+  },
+  {
+    "kind": "shortDateTime",
+    "input": {
+      "date": "2026-11-08T17:30:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "dim. 8 nov. · 18:30"
+  },
+  {
+    "kind": "shortDateTime",
+    "input": {
+      "date": "2026-11-08T17:30:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "en",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "Sun, Nov 8 · 6:30\u202fPM",
+    "note": "intl (CLDR) puts a narrow no-break space before AM/PM; no written rule decides, the app's rendering is kept and the site follows it."
+  },
+  {
+    "kind": "shortDateTime",
+    "input": {
+      "date": "2025-03-02T08:05:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "dim. 2 mars 2025 · 09:05"
+  },
+  {
+    "kind": "shortDateTime",
+    "input": {
+      "date": "2026-11-11T11:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "mer. 11 nov. · 12:00",
+    "note": "Never relative: no « Aujourd'hui »."
+  },
+  {
+    "kind": "tripSpan",
+    "input": {
+      "start": "2026-11-20T08:00:00Z",
+      "end": "2026-11-22T16:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "ven. 20 → dim. 22 nov."
+  },
+  {
+    "kind": "tripSpan",
+    "input": {
+      "start": "2026-11-20T08:00:00Z",
+      "end": "2026-11-22T16:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "en",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "Fri 20 → Sun, Nov 22"
+  },
+  {
+    "kind": "tripSpan",
+    "input": {
+      "start": "2026-11-27T08:00:00Z",
+      "end": "2026-12-01T16:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "ven. 27 nov. → mar. 1 déc."
+  },
+  {
+    "kind": "tripSpan",
+    "input": {
+      "start": "2026-12-30T08:00:00Z",
+      "end": "2027-01-02T16:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "mer. 30 déc. → sam. 2 janv. 2027"
+  },
+  {
+    "kind": "tripSpan",
+    "input": {
+      "start": "2026-11-20T08:00:00Z",
+      "end": "2026-11-20T16:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "ven. 20 nov."
+  },
+  {
+    "kind": "relative",
+    "input": {
+      "date": "2026-11-11T11:59:30Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "à l'instant"
+  },
+  {
+    "kind": "relative",
+    "input": {
+      "date": "2026-11-11T11:59:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "il y a 1 minute"
+  },
+  {
+    "kind": "relative",
+    "input": {
+      "date": "2026-11-11T11:55:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "il y a 5 minutes"
+  },
+  {
+    "kind": "relative",
+    "input": {
+      "date": "2026-11-11T10:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "il y a 2 heures"
+  },
+  {
+    "kind": "relative",
+    "input": {
+      "date": "2026-11-11T10:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "en",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "2 hours ago"
+  },
+  {
+    "kind": "relative",
+    "input": {
+      "date": "2026-11-08T12:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "il y a 3 jours"
+  },
+  {
+    "kind": "relative",
+    "input": {
+      "date": "2026-11-04T12:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "il y a 7 jours"
+  },
+  {
+    "kind": "relative",
+    "input": {
+      "date": "2026-11-03T12:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "3 novembre 2026"
+  },
+  {
+    "kind": "relative",
+    "input": {
+      "date": "2026-11-03T12:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "en",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "November 3, 2026"
+  },
+  {
+    "kind": "relative",
+    "input": {
+      "date": "2026-11-11T14:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "now": "2026-11-11T12:00:00Z",
+    "expected": "dans 2 heures"
+  },
+  {
+    "kind": "memberSince",
+    "input": {
+      "date": "2024-03-03T10:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "fr",
+    "units": "metric",
+    "expected": "Membre depuis mars 2024"
+  },
+  {
+    "kind": "memberSince",
+    "input": {
+      "date": "2024-03-03T10:00:00Z",
+      "zone": "Europe/Paris"
+    },
+    "locale": "en",
+    "units": "metric",
+    "expected": "Member since March 2024"
+  }
+]

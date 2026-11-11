@@ -282,7 +282,10 @@ class _CheckpointRow extends ConsumerWidget {
         ? null
         : 'rides.weather.precipitation'.tr(
             namedArgs: <String, String>{
-              'amount': AppFormatters.formatPrecipitation(w.precipitation),
+              'amount': AppFormatters.formatPrecipitation(
+                w.precipitation,
+                units,
+              ),
             },
           );
     final String? relativeLabel = relative?.labelKey.tr();

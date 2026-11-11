@@ -2,11 +2,16 @@ import { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePreferencesStore } from '../store/preferencesStore'
 import {
+  distanceText,
+  elevationText,
   formatDistance,
   formatElevation,
+  formatGrade,
+  formatPercent,
   formatPrecipitation,
   formatSpeed,
   formatTemperature,
+  speedText,
   getUnitConfig,
   speedToDisplay as speedToDisplayFn,
   speedFromDisplay as speedFromDisplayFn,
@@ -22,34 +27,26 @@ export function useUnits() {
   const config = useMemo(() => getUnitConfig(unitSystem), [unitSystem])
   const isImperial = unitSystem === 'IMPERIAL'
 
+  // The numbers follow the language of the interface, the unit is bound by a no-break space
+  // (docs/LEDGER_*.md WEB-167, D13; cases in contracts/format-cases.json).
+  const language = i18n?.language ?? 'fr'
+
+  /** « 92,4 km » / « 28.8 mi ». */
   const distance = useCallback(
-    (meters: number) => {
-      const key = isImperial ? 'distance_imperial' : 'distance'
-      return t(key satisfies 'distance' | 'distance_imperial', {
-        distance: formatDistance(meters, unitSystem),
-      })
-    },
-    [t, unitSystem, isImperial]
+    (meters: number) => distanceText(meters, unitSystem, language),
+    [unitSystem, language]
   )
 
+  /** « 1 240 m » / « 4,068 ft ». */
   const elevation = useCallback(
-    (meters: number) => {
-      const key = isImperial ? 'elevation_imperial' : 'elevation'
-      return t(key satisfies 'elevation' | 'elevation_imperial', {
-        elevation: formatElevation(meters, unitSystem),
-      })
-    },
-    [t, unitSystem, isImperial]
+    (meters: number) => elevationText(meters, unitSystem, language),
+    [unitSystem, language]
   )
 
+  /** « 25 km/h » / « 16 mph ». */
   const speed = useCallback(
-    (kmh: number) => {
-      const key = isImperial ? 'speed_imperial' : 'speed'
-      return t(key satisfies 'speed' | 'speed_imperial', {
-        speed: formatSpeed(kmh, unitSystem),
-      })
-    },
-    [t, unitSystem, isImperial]
+    (kmh: number) => speedText(kmh, unitSystem, language),
+    [unitSystem, language]
   )
 
   /** « 12 °C » / « 54 °F » — the API always speaks °C. */
@@ -63,15 +60,21 @@ export function useUnits() {
     [t, unitSystem, isImperial]
   )
 
+  /** « 6,5 % » — a gradient, to the tenth. */
+  const grade = useCallback((percent: number) => formatGrade(percent, language), [language])
+
+  /** « 60 % » — a whole percentage. */
+  const percent = useCallback((value: number) => formatPercent(value, language), [language])
+
   /** « 1,2 mm » / « 0.05 in » — the API always speaks mm, the decimal follows the language. */
   const precipitation = useCallback(
     (mm: number) => {
       const key = isImperial ? 'precipitation_imperial' : 'precipitation'
       return t(key satisfies 'precipitation' | 'precipitation_imperial', {
-        precipitation: formatPrecipitation(mm, unitSystem, i18n?.language),
+        precipitation: formatPrecipitation(mm, unitSystem, language),
       })
     },
-    [t, i18n?.language, unitSystem, isImperial]
+    [t, language, unitSystem, isImperial]
   )
 
   const distanceUnit = useCallback(() => {
@@ -95,11 +98,20 @@ export function useUnits() {
   }, [t, isImperial])
 
   // Raw formatters for special cases (charts, inputs)
-  const formatDistanceFn = useCallback((m: number) => formatDistance(m, unitSystem), [unitSystem])
+  const formatDistanceFn = useCallback(
+    (m: number) => formatDistance(m, unitSystem, language),
+    [unitSystem, language]
+  )
 
-  const formatElevationFn = useCallback((m: number) => formatElevation(m, unitSystem), [unitSystem])
+  const formatElevationFn = useCallback(
+    (m: number) => formatElevation(m, unitSystem, language),
+    [unitSystem, language]
+  )
 
-  const formatSpeedFn = useCallback((kmh: number) => formatSpeed(kmh, unitSystem), [unitSystem])
+  const formatSpeedFn = useCallback(
+    (kmh: number) => formatSpeed(kmh, unitSystem, language),
+    [unitSystem, language]
+  )
 
   // Converters for form inputs
   const speedToDisplay = useCallback(
@@ -140,6 +152,8 @@ export function useUnits() {
     speed,
     temperature,
     precipitation,
+    grade,
+    percent,
     distanceUnit,
     elevationUnit,
     // Raw formatters for special cases (charts, inputs)

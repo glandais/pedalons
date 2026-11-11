@@ -258,6 +258,15 @@ void main() {
         withLocale('fr', fr, () => AppFormatters.formatPrecipitation(0.4)),
         n('0,4 mm'),
       );
+      // En impérial, des pouces au centième, comme le site (D7).
+      expect(
+        withLocale(
+          'en',
+          en,
+          () => AppFormatters.formatPrecipitation(1.2, UnitSystem.imperial),
+        ),
+        n('0.05 in'),
+      );
       expect(
         withLocale('fr', fr, () => AppFormatters.formatPercent(60)),
         n('60 %'),
@@ -303,15 +312,15 @@ void main() {
   });
 
   group('prix', () {
-    test('le montant est en euros français quelle que soit la locale', () {
-      const String expected = '1 200,00 €';
+    test('le montant suit la langue de l’interface, toujours au centime', () {
+      // D26 (docs/LEDGER_*.md MOB-139) : plus de `fr_FR` imposé.
       expect(
         withLocale('fr', fr, () => AppFormatters.formatAmount(1200)),
-        expected,
+        '1 200,00 €',
       );
       expect(
         withLocale('en', en, () => AppFormatters.formatAmount(1200)),
-        expected,
+        '€1,200.00',
       );
     });
 
@@ -453,11 +462,16 @@ void main() {
       );
     });
 
-    test('au-delà du seuil, la date longue reprend la main', () {
+    test('au-delà du seuil, la date reprend la main, sans jour', () {
+      // KIT §9 : « 3 novembre 2026 », sans jour de la semaine.
       final DateTime old = DateTime(2026, 1, 15, 8, 30);
       expect(
         withLocale('fr', fr, () => AppFormatters.formatRelative(old, now: now)),
-        'jeudi 15 janvier 2026',
+        '15 janvier 2026',
+      );
+      expect(
+        withLocale('en', en, () => AppFormatters.formatRelative(old, now: now)),
+        'January 15, 2026',
       );
     });
   });
@@ -473,14 +487,36 @@ void main() {
         withLocale('fr', fr, () => AppFormatters.formatLongDateTime(date)),
         'jeudi 15 janvier 2026 à 08:30',
       );
-      // En anglais, l'heure passe en 12 h : la langue décide.
+      expect(
+        withLocale('fr', fr, () => AppFormatters.formatDayMonth(date)),
+        '15 janvier',
+      );
+      expect(
+        withLocale('fr', fr, () => AppFormatters.formatMonthYear(date)),
+        'Janvier 2026',
+      );
+      // En anglais, l'heure passe en 12 h et la date suit le motif `intl` de
+      // la langue, plus un assemblage à la main (« Thursday 15 january ») :
+      // docs/LEDGER_*.md MOB-139, D6.
       expect(
         withLocale(
           'en',
           en,
           () => AppFormatters.formatLongDateTime(date),
         ).replaceAll('\u202F', ' '),
-        'Thursday 15 january 2026 at 8:30 AM',
+        'Thursday, January 15, 2026 at 8:30 AM',
+      );
+      expect(
+        withLocale('en', en, () => AppFormatters.formatFullDate(date)),
+        'Thursday, January 15',
+      );
+      expect(
+        withLocale('en', en, () => AppFormatters.formatDayMonth(date)),
+        'January 15',
+      );
+      expect(
+        withLocale('en', en, () => AppFormatters.formatMonthYear(date)),
+        'January 2026',
       );
     });
 

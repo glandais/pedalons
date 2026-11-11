@@ -35,19 +35,85 @@ export function getUnitConfig(unitSystem: UnitSystem): UnitConfig {
   }
 }
 
-export function formatDistance(meters: number, unitSystem: UnitSystem): string {
-  const config = getUnitConfig(unitSystem)
-  return (meters * config.distanceMultiplier).toFixed(1)
+/** No-break space (U+00A0), between a value and its unit (docs/BRANDING.md §8.3). */
+export const NBSP = '\u00a0'
+
+const decimalFormats = new Map<string, Intl.NumberFormat>()
+
+/**
+ * A number in the language of the interface, to a fixed number of decimals: « 92,4 » and « 1 240 »
+ * (narrow no-break space, U+202F, as Intl writes it) in French, « 92.4 » and « 1,240 » in English
+ * (docs/LEDGER_*.md WEB-167, D13). Cached per language: a chart formats hundreds of labels.
+ */
+export function formatNumber(value: number, locale: string, fractionDigits: number = 0): string {
+  const key = `${locale}/${fractionDigits}`
+  let format = decimalFormats.get(key)
+  if (!format) {
+    format = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    })
+    decimalFormats.set(key, format)
+  }
+  // `+ 0` folds -0 into 0: « -0 m » reads as a bug.
+  return format.format((fractionDigits === 0 ? Math.round(value) : value) + 0)
 }
 
-export function formatElevation(meters: number, unitSystem: UnitSystem): string {
-  const config = getUnitConfig(unitSystem)
-  return Math.round(meters * config.elevationMultiplier).toString()
+/** A value and its unit, bound by a no-break space: « 92,4 km » never splits at a line end. */
+export function withUnit(value: string, symbol: string): string {
+  return `${value}${NBSP}${symbol}`
 }
 
-export function formatSpeed(kmh: number, unitSystem: UnitSystem): string {
+/** A route's length, to the tenth, without its unit: « 92,4 » (fr), « 28.8 » (mi, en). */
+export function formatDistance(meters: number, unitSystem: UnitSystem, locale: string): string {
   const config = getUnitConfig(unitSystem)
-  return Math.round(kmh * config.speedMultiplier).toString()
+  return formatNumber(meters * config.distanceMultiplier, locale, 1)
+}
+
+/** A climb or an altitude, to the unit, without its unit: « 1 240 » (fr), « 4,068 » (ft, en). */
+export function formatElevation(meters: number, unitSystem: UnitSystem, locale: string): string {
+  const config = getUnitConfig(unitSystem)
+  return formatNumber(meters * config.elevationMultiplier, locale)
+}
+
+/** A speed, to the unit, without its unit: « 25 », « 16 » (mph). */
+export function formatSpeed(kmh: number, unitSystem: UnitSystem, locale: string): string {
+  const config = getUnitConfig(unitSystem)
+  return formatNumber(kmh * config.speedMultiplier, locale)
+}
+
+/** « 92,4 km », « 28.8 mi » — the one rendering of a distance (`useUnits().distance`). */
+export function distanceText(meters: number, unitSystem: UnitSystem, locale: string): string {
+  return withUnit(
+    formatDistance(meters, unitSystem, locale),
+    getUnitConfig(unitSystem).distanceUnit
+  )
+}
+
+/** « 1 240 m », « 4,068 ft » (`useUnits().elevation`). */
+export function elevationText(meters: number, unitSystem: UnitSystem, locale: string): string {
+  return withUnit(
+    formatElevation(meters, unitSystem, locale),
+    getUnitConfig(unitSystem).elevationUnit
+  )
+}
+
+/** « 25 km/h », « 16 mph » (`useUnits().speed`). */
+export function speedText(kmh: number, unitSystem: UnitSystem, locale: string): string {
+  return withUnit(formatSpeed(kmh, unitSystem, locale), getUnitConfig(unitSystem).speedUnit)
+}
+
+/**
+ * A whole percentage: « 60 % ». The no-break space before « % » holds in English too — the app's
+ * rendering (`AppFormatters.formatPercent`), kept by `contracts/format-cases.json`.
+ */
+export function formatPercent(percent: number, locale: string): string {
+  return withUnit(formatNumber(percent, locale), '%')
+}
+
+/** A gradient, to the tenth: « 6,5 % » (fr), « 6.5 % » (en) — the app's `formatGrade`. */
+export function formatGrade(percent: number, locale: string): string {
+  return withUnit(formatNumber(percent, locale, 1), '%')
 }
 
 /**

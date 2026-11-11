@@ -33,7 +33,7 @@ export function TeamMemberList({
   isRemoving = false,
 }: TeamMemberListProps) {
   const { t } = useTranslation()
-  const { formatDate, isGuessedTimezone } = useFormattedDate()
+  const { formatMonthYear, isGuessedTimezone } = useFormattedDate()
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [selectedRole, setSelectedRole] = useState<TeamRole>(TeamRole.MEMBER)
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
@@ -123,8 +123,8 @@ export function TeamMemberList({
                     {/* Null, like `role`, when the caller is not entitled to it (API-39). */}
                     {member.joinedAt && (
                       <Text size="xs" c="dimmed" suppressHydrationWarning={isGuessedTimezone}>
-                        {t('teams.detail.members.joined', {
-                          date: formatDate(member.joinedAt) || t('unknown'),
+                        {t('teams.detail.members.since', {
+                          date: formatMonthYear(member.joinedAt) || t('unknown'),
                         })}
                       </Text>
                     )}

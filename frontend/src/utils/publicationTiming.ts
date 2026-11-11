@@ -55,22 +55,41 @@ export function formatPublicationSpan(
   now: Date = new Date()
 ): string {
   const startZone = supportedZone(publication.timezone) || fallbackZone
-  const endZone = publication.type === 'TRIP' ? tripEndZone(publication) || fallbackZone : startZone
   const start = spanStart(publication)
-  const end = publication.endDateTime
-  const inStart = (pattern: string) => formatPattern(start, pattern, language, startZone)
-  const inEnd = (pattern: string) => formatPattern(end, pattern, language, endZone)
-  const sameDay = inStart('yyyy-MM-dd') === inEnd('yyyy-MM-dd')
 
   if (publication.type === 'TRIP') {
-    if (sameDay) return formatDepartureDay(start, language, startZone, t, now)
-    const firstDay =
-      inStart('yyyy-MM') === inEnd('yyyy-MM')
-        ? inStart(t('dateFormats.weekdayDay'))
-        : formatDepartureDay(start, language, startZone, t, now)
-    return `${firstDay} → ${formatDepartureDay(end, language, endZone, t, now)}`
+    const endZone = tripEndZone(publication) || fallbackZone
+    return formatTripSpan(start, publication.endDateTime, language, t, startZone, endZone, now)
   }
   return mode === 'full'
     ? formatDeparture(start, language, startZone, t, { now, relative: false })
     : formatTime(start, language, startZone)
+}
+
+/**
+ * A trip's days, from `start` to `end`: « ven. 16 → dim. 18 oct. », the month once when it does not
+ * change, « ven. 16 oct. » on a single day, the year only outside the current one. The start reads
+ * in `startZone`, the end in `endZone` (its last stage's when known, docs/LEDGER_*.md API-60) — the
+ * feed card and a route's « Utilisé dans » share it (docs/LEDGER_*.md WEB-167, D17), and so does the
+ * app's `tripDaySpan` (contracts/format-cases.json).
+ */
+export function formatTripSpan(
+  start: string,
+  end: string,
+  language: string,
+  t: TFunction,
+  startZone: string,
+  endZone: string = startZone,
+  now: Date = new Date()
+): string {
+  const inStart = (pattern: string) => formatPattern(start, pattern, language, startZone)
+  const inEnd = (pattern: string) => formatPattern(end, pattern, language, endZone)
+  if (inStart('yyyy-MM-dd') === inEnd('yyyy-MM-dd')) {
+    return formatDepartureDay(start, language, startZone, t, now)
+  }
+  const firstDay =
+    inStart('yyyy-MM') === inEnd('yyyy-MM')
+      ? inStart(t('dateFormats.weekdayDay'))
+      : formatDepartureDay(start, language, startZone, t, now)
+  return `${firstDay} → ${formatDepartureDay(end, language, endZone, t, now)}`
 }

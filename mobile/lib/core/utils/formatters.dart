@@ -150,10 +150,19 @@ class AppFormatters {
     );
   }
 
-  /// Hauteur de précipitation, au dixième de millimètre : « 0,4 mm ».
-  static String formatPrecipitation(num millimeters) => withUnit(
-    formatNumber(millimeters, fractionDigits: 1),
-    UnitSymbols.millimeter,
+  /// Hauteur de précipitation : « 0,4 mm » au dixième de millimètre, ou
+  /// « 0.05 in » au centième de pouce en impérial, comme le site
+  /// (docs/LEDGER_*.md MOB-139, D7). L'entrée est **toujours en mm**, comme
+  /// les prévisions du contrat.
+  static String formatPrecipitation(
+    num millimeters, [
+    UnitSystem units = UnitSystem.metric,
+  ]) => withUnit(
+    formatNumber(
+      units.precipitation(millimeters),
+      fractionDigits: units.precipitationFractionDigits,
+    ),
+    units.precipitationSymbol,
   );
 
   /// Pourcentage entier : « 60 % ».
@@ -202,14 +211,26 @@ class AppFormatters {
   // Prix
   // ─────────────────────────────────────────────────────────────────────────
 
-  static final NumberFormat _currency = NumberFormat.currency(
-    locale: 'fr_FR',
-    symbol: '€',
-    decimalDigits: 2,
-  );
+  static final Map<String, NumberFormat> _currencyCache =
+      <String, NumberFormat>{};
 
-  /// Montant seul : « 1 200,00 € ».
-  static String formatAmount(num price) => _currency.format(price);
+  /// Montant seul, dans la langue de l'interface : « 1 200,00 € »,
+  /// « €1,200.00 » — toujours deux décimales, comme la carte du site
+  /// (docs/LEDGER_*.md MOB-139, D26). Mis en cache par locale, comme
+  /// [_decimal].
+  static String formatAmount(num price) {
+    final String locale = Intl.getCurrentLocale();
+    return _currencyCache
+        .putIfAbsent(
+          locale,
+          () => NumberFormat.currency(
+            locale: locale,
+            symbol: '€',
+            decimalDigits: 2,
+          ),
+        )
+        .format(price);
+  }
 
   /// Le prix d'une annonce, décomposé pour l'affichage.
   ///
@@ -246,26 +267,6 @@ class AppFormatters {
     // 2026-01-05 est un lundi.
     final DateTime date = DateTime(2026, 1, 4 + weekday);
     return DateFormat.E().format(date);
-  }
-
-  /// Nom complet du jour de la semaine (1 = lundi, 7 = dimanche).
-  static String dayFull(int weekday, {BuildContext? context}) {
-    if (weekday < 1 || weekday > 7) return '?';
-    final DateTime date = DateTime(2026, 1, 4 + weekday);
-    return DateFormat.EEEE().format(date);
-  }
-
-  /// Nom du mois, initiale capitale (1 = janvier, 12 = décembre).
-  static String monthCapitalized(int month, {BuildContext? context}) {
-    if (month < 1 || month > 12) return '?';
-    final String name = DateFormat.MMMM().format(DateTime(2026, month));
-    return name[0].toUpperCase() + name.substring(1);
-  }
-
-  /// Nom du mois en minuscules (1 = janvier, 12 = décembre).
-  static String monthLower(int month, {BuildContext? context}) {
-    if (month < 1 || month > 12) return '?';
-    return DateFormat.MMMM().format(DateTime(2026, month)).toLowerCase();
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -562,27 +563,33 @@ class AppFormatters {
   static String formatTime(DateTime date) =>
       DateFormat.jm().format(toDisplayTime(date));
 
-  /// « 15 janvier ».
-  static String formatDayMonth(DateTime date) {
-    final DateTime local = toDisplayTime(date);
-    return '${local.day} ${monthLower(local.month)}';
-  }
+  // Les dates longues sortent des motifs `intl` de chaque langue, jamais d'un
+  // assemblage à la main : l'ordre, la virgule et la casse du mois sont ceux
+  // de la langue (« lundi 15 janvier » ; « Monday, January 15 ») —
+  // docs/LEDGER_*.md MOB-139, D6.
 
-  /// « lundi 15 janvier ».
-  static String formatFullDate(DateTime date) {
-    final DateTime local = toDisplayTime(date);
-    return '${dayFull(local.weekday)} ${local.day} ${monthLower(local.month)}';
-  }
+  /// « 15 janvier », « January 15 ».
+  static String formatDayMonth(DateTime date) =>
+      DateFormat.MMMMd().format(toDisplayTime(date));
 
-  /// « Janvier 2026 ».
+  /// « lundi 15 janvier », « Monday, January 15 ».
+  static String formatFullDate(DateTime date) =>
+      DateFormat.MMMMEEEEd().format(toDisplayTime(date));
+
+  /// « Janvier 2026 », « January 2026 » : un titre de mois, initiale capitale.
   static String formatMonthYear(DateTime date) {
-    final DateTime local = toDisplayTime(date);
-    return '${monthCapitalized(local.month)} ${local.year}';
+    final String text = formatMonthAndYear(date);
+    return text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
   }
 
-  /// « lundi 15 janvier 2026 ».
+  /// « mars 2024 », « March 2024 » : le mois et l'année au fil d'une phrase
+  /// (« Membre depuis mars 2024 », KIT §9).
+  static String formatMonthAndYear(DateTime date) =>
+      DateFormat.yMMMM().format(toDisplayTime(date));
+
+  /// « lundi 15 janvier 2026 », « Monday, January 15, 2026 ».
   static String formatLongDate(DateTime date) =>
-      '${formatFullDate(date)} ${toDisplayTime(date).year}';
+      DateFormat.yMMMMEEEEd().format(toDisplayTime(date));
 
   /// Date longue **sans jour de la semaine** : « 3 novembre 2026 »,
   /// « November 3, 2026 » — le « Créé le » d'un parcours, comme le web
@@ -703,20 +710,26 @@ class AppFormatters {
     );
   }
 
-  /// L'heure d'émission d'une prévision : « mar. 10 nov. · 08:30 », pour
-  /// « Prévision du … » (KIT §8). C'est un **horodatage** — lu dans le fuseau
-  /// du lecteur ([toDisplayTime]) —, au format du départ mais **jamais
-  /// relatif** : « Prévision du Aujourd'hui » ne se dit pas. D'où
-  /// [formatDepartureDate] sans fuseau d'entité (il retombe alors sur le
-  /// fuseau d'affichage) plutôt que [formatDeparture], qui dirait
-  /// « Aujourd'hui · 08:30 ». [now] ne sert qu'aux tests.
-  static String formatTimestamp(DateTime instant, {DateTime? now}) =>
-      'dates.departureAt'.tr(
-        namedArgs: <String, String>{
-          'date': formatDepartureDate(instant, null, now: now),
-          'time': formatTime(instant),
-        },
-      );
+  /// Un horodatage court : « mar. 10 nov. · 08:30 », l'année seulement hors
+  /// de l'année en cours — « Prévision du … » (KIT §8), la date d'une
+  /// annonce ou d'une publication sur sa carte (KIT §9, docs/LEDGER_*.md
+  /// MOB-139). Au format du départ mais **jamais relatif** : « Prévision du
+  /// Aujourd'hui » ne se dit pas. D'où [formatDepartureDate] plutôt que
+  /// [formatDeparture], qui dirait « Aujourd'hui · 08:30 ».
+  ///
+  /// Sans [zone], c'est un horodatage lu dans le fuseau du lecteur
+  /// ([toDisplayTime]) ; avec, un rendez-vous lu dans celui de l'entité (la
+  /// date d'une publication, `PostDto.timezone`). [now] ne sert qu'aux tests.
+  static String formatTimestamp(
+    DateTime instant, {
+    String? zone,
+    DateTime? now,
+  }) => 'dates.departureAt'.tr(
+    namedArgs: <String, String>{
+      'date': formatDepartureDate(instant, zone, now: now),
+      'time': formatTime(toZoneTime(instant, zone)),
+    },
+  );
 
   // ─────────────────────────────────────────────────────────────────────────
   // Durées
@@ -751,7 +764,8 @@ class AppFormatters {
   /// « il y a 3 jours », « dans 2 h », « à l'instant ».
   ///
   /// Au-delà de [RelativeTime.absoluteThresholdDays] jours, le relatif n'aide
-  /// plus personne : on rend la date longue.
+  /// plus personne : on rend la date, sans jour de la semaine (« 3 novembre
+  /// 2026 », KIT §9).
   static String formatRelative(DateTime date, {DateTime? now}) {
     final RelativeTime relative = RelativeTime.between(
       toDisplayTime(date),
@@ -759,7 +773,7 @@ class AppFormatters {
     );
     return switch (relative.unit) {
       RelativeUnit.now => 'dates.relative.now'.tr(),
-      RelativeUnit.absolute => formatLongDate(date),
+      RelativeUnit.absolute => formatLongDateWithoutWeekday(date),
       RelativeUnit.minutes ||
       RelativeUnit.hours ||
       RelativeUnit.days => 'dates.relative.${relative.translationKey}'.plural(

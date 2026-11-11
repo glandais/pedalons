@@ -5,7 +5,8 @@ import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { Rendezvous } from '@/components/common/Rendezvous'
 import { CardImage, SurfaceBadge, Stat, TypeBadge } from '@/components/card/common'
 import { RouteThumbnail } from '@/components/route/RouteThumbnail'
-import type { AdDto, AdType, PostDto, RentalPeriod, RouteDto } from '@/api/dto'
+import type { AdDto, PostDto, RouteDto } from '@/api/dto'
+import { formatAdPrice } from '@/utils/priceFormat'
 import { paths } from '@/config/paths'
 import { useUnits } from '@/hooks/useUnits'
 
@@ -55,7 +56,7 @@ export function LatestPostsList({ posts }: { posts: PostDto[] }) {
                   </Text>
                 )}
                 <Text size="xs" c="dimmed">
-                  <Rendezvous date={post.dateTime} zone={post.timezone} format="date" />
+                  <Rendezvous date={post.dateTime} zone={post.timezone} />
                   {author && ` · ${author}`}
                   {post.commentCount !== undefined &&
                     ` · ${t('comments.count', { count: post.commentCount })}`}
@@ -117,22 +118,6 @@ export function NewRoutesList({ routes }: { routes: RouteDto[] }) {
 export function LatestAdsList({ ads }: { ads: AdDto[] }) {
   const { t, i18n } = useTranslation()
 
-  const formatPrice = (price: number | undefined, adType: AdType, rentalPeriod?: RentalPeriod) => {
-    if (price === undefined || price === null) return t('ads.detail.priceNegotiable')
-    const formatted = new Intl.NumberFormat(i18n.language, {
-      style: 'currency',
-      currency: 'EUR',
-      maximumFractionDigits: Number.isInteger(price) ? 0 : 2,
-    }).format(price)
-    if (adType === 'RENTAL' && rentalPeriod) {
-      const period = t(
-        `ads.rentalPeriod.${rentalPeriod satisfies 'DAY' | 'WEEK' | 'MONTH'}`
-      ).toLowerCase()
-      return t('ads.pricePerPeriod', { price: formatted, period })
-    }
-    return formatted
-  }
-
   return (
     <Stack gap="sm">
       {ads.map((ad) => (
@@ -142,7 +127,7 @@ export function LatestAdsList({ ads }: { ads: AdDto[] }) {
               {t(`ads.adType.${ad.adType satisfies 'SALE' | 'RENTAL' | 'WANTED'}`)}
             </TypeBadge>
             <Text size="sm" fw={600}>
-              {formatPrice(ad.price, ad.adType, ad.rentalPeriod)}
+              {formatAdPrice(ad.price, ad.adType, ad.rentalPeriod, i18n.language, t)}
             </Text>
           </Group>
           <Anchor

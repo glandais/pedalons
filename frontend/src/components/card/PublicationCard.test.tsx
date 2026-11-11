@@ -182,7 +182,9 @@ describe('PublicationCard: the departure is primary', () => {
     renderCard(trip())
     const box = screen.getByTestId('day-box')
     expect(box.textContent).toBe('ven.15mai')
-    expect(plain(screen.getByTestId('departure-line').textContent)).toBe('ven. 15 → dim. 17 mai')
+    expect(plain(screen.getByTestId('departure-line').textContent)).toBe(
+      'Départ 08:00 · ven. 15 → dim. 17 mai'
+    )
     expect(text()).toContain('3 étapes')
   })
 

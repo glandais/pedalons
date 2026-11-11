@@ -122,9 +122,9 @@ describe('TripOverviewMap (WEB-118)', () => {
     await screen.findByTestId('routes-map')
     fireEvent.click(screen.getByLabelText('Météo'))
     const legend = plain(screen.getByTestId('wind-map-legend').textContent)
-    expect(legend).toContain('Dos 16.0 km')
-    expect(legend).toContain('Travers 4.0 km')
-    expect(legend).toContain('Face 30.0 km')
+    expect(legend).toContain('Dos 16,0 km')
+    expect(legend).toContain('Travers 4,0 km')
+    expect(legend).toContain('Face 30,0 km')
     expect(legend).toContain('Open-Meteo.com')
     // Both stages ride at the default speed: said for the stages
     expect(legend).toContain('pour les étapes sans vitesse indiquée')

@@ -151,7 +151,9 @@ test('a team admin creates a route by uploading a GPX; its page shows its stats,
   expect(stored.distance).toBeLessThan(4_100)
 
   // Its stats, as the API has them.
-  await expect(statValue(main, 'Distance')).toHaveText(`${(stored.distance / 1000).toFixed(1)} km`)
+  await expect(statValue(main, 'Distance')).toHaveText(
+    `${(stored.distance / 1000).toFixed(1).replace('.', ',')} km`
+  )
   await expect(statValue(main, 'Dénivelé positif')).toHaveText(
     `${Math.round(stored.elevationGain)} m`
   )
@@ -1034,7 +1036,7 @@ test.describe('GPX files in the route forms', () => {
     expect(stored.distance).toBeGreaterThan(5_900)
     expect(stored.distance).toBeLessThan(6_100)
     await expect(statValue(main, 'Distance')).toHaveText(
-      `${(stored.distance / 1000).toFixed(1)} km`
+      `${(stored.distance / 1000).toFixed(1).replace('.', ',')} km`
     )
 
     // The download is the new track: it ends where the longer one ends.
@@ -1056,7 +1058,7 @@ test.describe('GPX files in the route forms', () => {
     const watcher = watchRouteReads(page, team.slug, route.slug)
     await openRide(page, team.slug, ride)
     await expect(page.getByTestId('group-stats')).toContainText(
-      `${(stored.distance / 1000).toFixed(1)} km`
+      `${(stored.distance / 1000).toFixed(1).replace('.', ',')} km`
     )
     await pageHydrated(page)
     const reads = await watcher.reads()

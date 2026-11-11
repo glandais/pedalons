@@ -125,7 +125,9 @@ class AdCard extends StatelessWidget {
                     ),
                     if (at != null)
                       PdlStat(
-                        value: AppFormatters.formatLongDate(at),
+                        // Courte avec l'heure (KIT §9) : « jeu. 5 nov. ·
+                        // 18:42 ».
+                        value: AppFormatters.formatTimestamp(at),
                         icon: PdlIcons.date,
                       ),
                     // Un secteur, jamais une épingle : la position est

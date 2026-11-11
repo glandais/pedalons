@@ -8,7 +8,8 @@ import { EntityLogo } from '../common/EntityLogo'
 import { FormattedDateTime } from '../common/FormattedDate'
 import { paths } from '@/config/paths'
 import { TagList } from '../tag/TagList'
-import { AdDto, AdType, RentalPeriod } from '@/api/dto'
+import { AdDto } from '@/api/dto'
+import { formatAdPrice } from '@/utils/priceFormat'
 
 interface AdCardProps {
   ad: AdDto
@@ -17,25 +18,7 @@ interface AdCardProps {
 }
 
 export function AdCard({ ad, actions }: AdCardProps) {
-  const { t } = useTranslation()
-
-  const formatPrice = (price: number | undefined, adType: AdType, rentalPeriod?: RentalPeriod) => {
-    if (price === undefined || price === null) {
-      return t('ads.detail.priceNegotiable')
-    }
-    const formattedPrice = new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(price)
-
-    if (adType === AdType.RENTAL && rentalPeriod) {
-      const period = t(
-        `ads.rentalPeriod.${rentalPeriod satisfies 'DAY' | 'WEEK' | 'MONTH'}`
-      ).toLowerCase()
-      return t('ads.pricePerPeriod', { price: formattedPrice, period })
-    }
-    return formattedPrice
-  }
+  const { t, i18n } = useTranslation()
 
   return (
     <Card to={paths.ad(ad.team.slug, ad.slug)} actions={actions}>
@@ -72,7 +55,7 @@ export function AdCard({ ad, actions }: AdCardProps) {
 
         <StatGroup>
           <Stat icon={<IconCurrencyEuro size={16} />}>
-            {formatPrice(ad.price, ad.adType, ad.rentalPeriod)}
+            {formatAdPrice(ad.price, ad.adType, ad.rentalPeriod, i18n.language, t)}
           </Stat>
           <Stat icon={<IconCalendar size={16} />}>
             <FormattedDateTime date={ad.createdAt} />

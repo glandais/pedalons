@@ -71,7 +71,8 @@ class _PostRow extends StatelessWidget {
         ? post.team.name
         : post.createdBy?.displayName;
     final List<String> meta = <String>[
-      if (at != null) AppFormatters.formatDayMonth(at),
+      // Courte avec l'heure, comme la carte du fil (KIT §9).
+      if (at != null) AppFormatters.formatTimestamp(at, zone: post.timezone),
       ?author,
       if (post.commentCount != null && post.commentCount! > 0)
         'comments.count'.plural(post.commentCount!),

@@ -195,7 +195,7 @@ describe('GroupWeatherSection', () => {
     fireEvent.click(cols[4])
     expect(columns()[4].getAttribute('aria-pressed')).toBe('true')
     expect(columns()[0].getAttribute('aria-pressed')).toBe('false')
-    expect(detail()).toContain('km 60.0')
+    expect(detail()).toContain('km 60,0')
     expect(detail()).toContain('10:30')
     expect(detail()).toContain('16 °C')
     expect(detail()).toContain('ressenti 14 °C')
@@ -205,7 +205,7 @@ describe('GroupWeatherSection', () => {
     expect(detail()).toContain('Dos du km 60 au km 90')
 
     fireEvent.click(columns()[6])
-    expect(detail()).toContain('Arrivée · km 90.0')
+    expect(detail()).toContain('Arrivée · km 90,0')
   })
 
   it('selects the first point of a phase, from the bar and from the list', () => {
@@ -213,7 +213,7 @@ describe('GroupWeatherSection', () => {
     const bar = screen.getByRole('group', { name: 'Le vent, tronçon par tronçon' })
     fireEvent.click(within(bar).getAllByRole('button')[1])
     expect(columns()[1].getAttribute('aria-pressed')).toBe('true')
-    expect(detail()).toContain('km 15.0')
+    expect(detail()).toContain('km 15,0')
 
     const list = screen.getByRole('heading', { name: 'Par tronçon', hidden: true }).parentElement!
     const items = within(list).getAllByRole('button', { hidden: true })
@@ -275,7 +275,7 @@ describe('GroupWeatherSection', () => {
     renderSection({})
     const live = () => plain(document.querySelector('[aria-live="polite"]')?.textContent)
     fireEvent.click(columns()[4])
-    expect(live()).toBe('km 60.0, 10:30')
+    expect(live()).toBe('km 60,0, 10:30')
     fireEvent.change(screen.getByRole('slider', { hidden: true }), { target: { value: '2' } })
     expect(live()).toBe('')
   })
@@ -290,7 +290,7 @@ describe('GroupWeatherSection', () => {
     })
     fireEvent.change(slider, { target: { value: '2' } })
     expect(columns()[2].getAttribute('aria-pressed')).toBe('true')
-    expect(slider.getAttribute('aria-valuetext')).toContain('09:30, km 30.0')
+    expect(slider.getAttribute('aria-valuetext')).toContain('09:30, km 30,0')
   })
 
   describe('its selection held by the page (WEB-117)', () => {
@@ -298,7 +298,7 @@ describe('GroupWeatherSection', () => {
       const onSelectionChange = vi.fn()
       const { rerender } = renderSection({ selection: { position: 3 }, onSelectionChange })
       expect(columns()[3].getAttribute('aria-pressed')).toBe('true')
-      expect(detail()).toContain('km 45.0')
+      expect(detail()).toContain('km 45,0')
 
       fireEvent.click(columns()[5])
       expect(onSelectionChange).toHaveBeenCalledWith({ position: 5 })

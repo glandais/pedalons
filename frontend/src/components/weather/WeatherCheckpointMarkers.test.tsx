@@ -139,7 +139,7 @@ describe('WeatherCheckpointMarkers (WEB-116)', () => {
     fireEvent.click(badges()[2])
     expect(badges()[2].getAttribute('aria-expanded')).toBe('true')
     // Its accessible title: the place and the passage, read in Paris time
-    expect(screen.getByRole('dialog', { name: /^km\s30\.0\s·\s09:30$/ })).toBeTruthy()
+    expect(screen.getByRole('dialog', { name: /^km\s30,0\s·\s09:30$/ })).toBeTruthy()
     const text = detail()
     expect(text).toContain('9 °C')
     expect(text).toContain('Partiellement nuageux')
@@ -204,7 +204,7 @@ describe('WeatherCheckpointMarkers (WEB-116)', () => {
     fireEvent.click(badges()[1])
     fireEvent.click(badges()[3])
     expect(screen.getAllByTestId('popup')).toHaveLength(1)
-    expect(detail()).toContain('km 45.0')
+    expect(detail()).toContain('km 45,0')
     expect(badges()[1].getAttribute('aria-expanded')).toBe('false')
 
     fireEvent.click(badges()[3])
@@ -225,7 +225,7 @@ describe('WeatherCheckpointMarkers (WEB-116)', () => {
     show()
     fireEvent.click(badges()[2])
     expect(document.activeElement).toBe(
-      screen.getByRole('dialog', { name: /^km\s30\.0\s·\s09:30$/ })
+      screen.getByRole('dialog', { name: /^km\s30,0\s·\s09:30$/ })
     )
   })
 
@@ -293,7 +293,7 @@ describe('WeatherCheckpointMarkers (WEB-116)', () => {
       expect(screen.queryByTestId('popup')).toBeNull()
       // A row of the table: the popup opens on its point, the focus stays on the row
       rerender(controlled(4))
-      expect(detail()).toContain('km 60.0')
+      expect(detail()).toContain('km 60,0')
       expect(badges()[4].getAttribute('aria-expanded')).toBe('true')
       expect(document.activeElement).toBe(outside)
       outside.remove()
@@ -343,7 +343,7 @@ describe('WeatherCheckpointMarkers (WEB-116)', () => {
       expect(plain(badges()[2].getAttribute('aria-label'))).toMatch(/^Étape 3, dim\. 18 oct\. — /)
       fireEvent.click(badges()[2])
       expect(
-        screen.getByRole('dialog', { name: /^Étape 3, dim\. 18 oct\. — km\s30\.0\s·\s09:30$/ })
+        screen.getByRole('dialog', { name: /^Étape 3, dim\. 18 oct\. — km\s30,0\s·\s09:30$/ })
       ).toBeTruthy()
       expect(plain(screen.getByTestId('weather-rain-alert').getAttribute('aria-label'))).toBe(
         'Étape 3, dim. 18 oct. — Averses probable (55 %) vers 10:00, à km 45'
@@ -360,7 +360,7 @@ describe('WeatherCheckpointMarkers (WEB-116)', () => {
       show(alertLeg())
       expect(plain(badges()[2].getAttribute('aria-label'))).not.toContain('Étape')
       fireEvent.click(badges()[2])
-      expect(screen.getByRole('dialog', { name: /^km\s30\.0\s·\s09:30$/ })).toBeTruthy()
+      expect(screen.getByRole('dialog', { name: /^km\s30,0\s·\s09:30$/ })).toBeTruthy()
     })
   })
 

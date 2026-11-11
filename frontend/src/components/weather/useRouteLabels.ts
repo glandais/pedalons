@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { WeatherCheckpointDto } from '@/api/dto'
 import { WeatherCheckpointKind } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
+import { formatNumber, withUnit } from '@/utils/unitFormat'
 import { durationParts } from './windPhases'
 
 /**
@@ -10,13 +11,14 @@ import { durationParts } from './windPhases'
  * route, whole), « km 105.1 » (a point, to the tenth), « 90 km » (a length, whole), « 1 h 05 ».
  */
 export function useRouteLabels() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { config, formatDistance, unitSystem } = useUnits()
+  const language = i18n?.language ?? 'fr'
   const isImperial = unitSystem === 'IMPERIAL'
 
   const whole = useCallback(
-    (meters: number) => Math.round(meters * config.distanceMultiplier).toString(),
-    [config]
+    (meters: number) => formatNumber(meters * config.distanceMultiplier, language),
+    [config, language]
   )
 
   /** « km 150 » — where along the route; `precise` keeps the tenth. */
@@ -34,14 +36,8 @@ export function useRouteLabels() {
 
   /** « 90 km » — a length, whole. */
   const length = useCallback(
-    (meters: number) =>
-      t(
-        (isImperial ? 'distance_imperial' : 'distance') satisfies 'distance' | 'distance_imperial',
-        {
-          distance: whole(meters),
-        }
-      ),
-    [t, isImperial, whole]
+    (meters: number) => withUnit(whole(meters), config.distanceUnit),
+    [config, whole]
   )
 
   /** « km 15–45 » — a stretch. */

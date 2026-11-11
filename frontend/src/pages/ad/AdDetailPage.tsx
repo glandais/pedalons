@@ -52,7 +52,8 @@ import { ContentActionsMenu } from '../../components/moderation/ContentActionsMe
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 import { FormattedDateTime } from '../../components/common/FormattedDate'
 import { paths } from '@/config/paths'
-import { AdType, RentalPeriod, ReportTargetType, Status } from '../../api/dto'
+import { ReportTargetType, Status } from '../../api/dto'
+import { formatAdPrice } from '@/utils/priceFormat'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useAdDetailData } from './adDetailData'
 import { AD_TYPE_COLORS, STATUS_COLORS } from '@/lib/badgeColors.generated'
@@ -60,7 +61,7 @@ import { TagList } from '@/components/tag'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 
 export function AdDetailPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug, adSlug } = useParams<{ teamSlug: string; adSlug: string }>()
   const navigate = useNavigate()
@@ -133,21 +134,6 @@ export function AdDetailPage() {
   const canEdit = ad.permissions.canEdit
 
   const formattedDate = <FormattedDateTime date={ad.createdAt} />
-
-  const formatPrice = (price: number | undefined, adType: AdType, rentalPeriod?: RentalPeriod) => {
-    if (price === undefined || price === null) {
-      return t('ads.detail.priceNegotiable')
-    }
-    const formattedPrice = new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(price)
-
-    if (adType === AdType.RENTAL && rentalPeriod) {
-      return `${formattedPrice} / ${t(`ads.rentalPeriod.${rentalPeriod satisfies 'DAY' | 'WEEK' | 'MONTH'}`).toLowerCase()}`
-    }
-    return formattedPrice
-  }
 
   const invalidateAds = () => {
     queryClient.invalidateQueries({ queryKey: getListAdsQueryKey(teamSlug!) })
@@ -312,7 +298,7 @@ export function AdDetailPage() {
           <Group gap="xs">
             <IconCurrencyEuro size={24} />
             <Text size="xl" fw={700}>
-              {formatPrice(ad.price, ad.adType, ad.rentalPeriod)}
+              {formatAdPrice(ad.price, ad.adType, ad.rentalPeriod, i18n.language, t)}
             </Text>
           </Group>
         </Box>

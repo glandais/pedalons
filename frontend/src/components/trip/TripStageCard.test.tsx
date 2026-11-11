@@ -77,7 +77,7 @@ describe('TripStageCard (WEB-155)', () => {
     renderCard()
     expect(screen.getByText('Gîte du Kalblin')).toBeTruthy()
     expect(screen.getByText('Auberge du lac')).toBeTruthy()
-    expect(screen.getByText(/^72(\.0)? km$/)).toBeTruthy()
+    expect(screen.getByText(/^72(,0)? km$/)).toBeTruthy()
     expect(screen.getByText(/^1[\s\u202f]?650 m$/)).toBeTruthy()
     expect(screen.getByTestId('route-actions')).toBeTruthy()
   })

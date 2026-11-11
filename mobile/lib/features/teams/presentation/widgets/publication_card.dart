@@ -508,7 +508,12 @@ class _PostBody extends StatelessWidget {
       ],
       stats: <PdlStat>[
         if (at != null)
-          PdlStat(value: AppFormatters.formatLongDate(at), icon: PdlIcons.date),
+          PdlStat(
+            // Courte avec l'heure, l'année hors de l'année en cours (KIT §9,
+            // docs/LEDGER_*.md MOB-139) : « dim. 8 nov. · 18:30 ».
+            value: AppFormatters.formatTimestamp(at, zone: post.timezone),
+            icon: PdlIcons.date,
+          ),
         if (post.commentCount != null && post.commentCount! > 0)
           PdlStat(
             value: 'comments.count'.plural(post.commentCount!),

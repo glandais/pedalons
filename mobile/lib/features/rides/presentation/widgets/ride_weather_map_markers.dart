@@ -381,6 +381,7 @@ class RideWeatherCheckpointDetails extends StatelessWidget {
                     namedArgs: <String, String>{
                       'amount': AppFormatters.formatPrecipitation(
                         w.precipitation,
+                        units,
                       ),
                     },
                   ),

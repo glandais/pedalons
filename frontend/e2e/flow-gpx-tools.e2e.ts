@@ -56,7 +56,8 @@ const getPreview = (who: AuthResponse | undefined, id: string) =>
 const myPreviews = (owner: AuthResponse) =>
   apiGet<GpxPreviewListResponse>(owner, '/api/gpx-previews')
 
-const km = (metres: number) => `${(metres / 1000).toFixed(1)} km`
+// The French decimal comma, as the site writes it (docs/LEDGER_*.md WEB-167, D13).
+const km = (metres: number) => `${(metres / 1000).toFixed(1).replace('.', ',')} km`
 
 /** Opens a preview's page and waits for its title. Returns the page's main region. */
 async function openPreview(page: Page, id: string, name: string) {
