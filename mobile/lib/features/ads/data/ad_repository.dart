@@ -39,9 +39,26 @@ class AdRepository {
       sortBy: filters.sortBy,
       sortDir: filters.sortDir,
       tags: filters.tagIds.isEmpty ? null : filters.tagIds,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
       view: view,
     );
     return PageResult<AdDto>(items: response.ads, total: response.total);
+  }
+
+  /// Combien d'annonces répondent à [filters] — le bouton « Voir N annonces »
+  /// de la feuille de prix.
+  Future<int> countAds(AdFilters filters) async {
+    final String? search = filters.search?.trim();
+    final CountResponse response = await _adsClient.countAds(
+      teamSlug: filters.teamSlug,
+      adType: filters.adType,
+      search: search == null || search.isEmpty ? null : search,
+      tags: filters.tagIds.isEmpty ? null : filters.tagIds,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+    );
+    return response.total;
   }
 
   /// Relais d'un message vers l'auteur d'une annonce.

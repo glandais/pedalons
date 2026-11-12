@@ -69,6 +69,12 @@ abstract class PagedListNotifier<T> extends StateNotifier<PagedListState<T>> {
         items: result.items,
         total: result.total,
         loadedPages: pages,
+        firstSectionTotal: result.firstSectionTotal,
+        firstSectionLoaded: _inFirstSection(
+          result,
+          pages - 1,
+          List<int>.generate(result.items.length, (int i) => i),
+        ),
         hasMore: _hasMoreAfter(pages, result),
         isLoadingInitial: false,
       );
@@ -110,10 +116,15 @@ abstract class PagedListNotifier<T> extends StateNotifier<PagedListState<T>> {
       final (result, pages) = await _fetchFrom(current.loadedPages, generation);
       if (!mounted || generation != _generation) return;
       final loadedPages = state.loadedPages + pages;
+      final List<int> kept = _keptIndexes(state.items, result.items);
       state = state.copyWith(
-        items: _append(state.items, result.items),
+        items: <T>[...state.items, for (final int i in kept) result.items[i]],
         total: result.total,
         loadedPages: loadedPages,
+        firstSectionTotal: result.firstSectionTotal,
+        firstSectionLoaded:
+            state.firstSectionLoaded +
+            _inFirstSection(result, loadedPages - 1, kept),
         hasMore: _hasMoreAfter(loadedPages, result),
         isLoadingNext: false,
       );
@@ -170,24 +181,35 @@ abstract class PagedListNotifier<T> extends StateNotifier<PagedListState<T>> {
 
   /// Whether pages remain after the first [loadedPages], counted in pages
   /// rather than items: the items shown can fall short of the total when the
-  /// server filters a page, or when [_append] drops a duplicate.
+  /// server filters a page, or when [_keptIndexes] drops a duplicate.
   bool _hasMoreAfter(int loadedPages, PageResult<T> result) =>
       loadedPages * pageSize < result.total;
 
-  List<T> _append(List<T> existing, List<T> incoming) {
+  /// The indexes of [incoming] to append: those whose [itemKey] is not
+  /// already on screen.
+  List<int> _keptIndexes(List<T> existing, List<T> incoming) {
     final seen = <Object>{};
     for (final item in existing) {
       final key = itemKey(item);
       if (key != null) seen.add(key);
     }
-    if (seen.isEmpty) return [...existing, ...incoming];
-
-    return [
-      ...existing,
-      ...incoming.where((item) {
-        final key = itemKey(item);
-        return key == null || seen.add(key);
-      }),
+    return <int>[
+      for (int i = 0; i < incoming.length; i++)
+        if (seen.isEmpty || _isNew(incoming[i], seen)) i,
     ];
+  }
+
+  bool _isNew(T item, Set<Object> seen) {
+    final key = itemKey(item);
+    return key == null || seen.add(key);
+  }
+
+  /// How many of the rows [kept] (indexes into the page [pageIndex]) belong
+  /// to the first section: their position in the whole list, `pageIndex *
+  /// pageSize + i`, is below [PageResult.firstSectionTotal].
+  int _inFirstSection(PageResult<T> result, int pageIndex, List<int> kept) {
+    final int? first = result.firstSectionTotal;
+    if (first == null) return 0;
+    return kept.where((int i) => pageIndex * pageSize + i < first).length;
   }
 }

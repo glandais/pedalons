@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/lists/list_states.dart';
+import '../../../../core/lists/list_toolbar.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
@@ -81,23 +82,30 @@ class _RideTemplateList extends ConsumerWidget {
         title: 'rides.templates.listTitle'.tr(),
         onBack: () => context.pop(),
         backSemanticLabel: 'common.back'.tr(),
-        actions: <Widget>[
-          PdlAppBarAction(
-            key: keys.rideTemplates.newButton,
-            icon: PdlIcons.add,
-            semanticLabel: 'rides.templates.new'.tr(),
-            onPressed: openNew,
-          ),
-        ],
       ),
+      // « Créer » à droite de la recherche (règle RL13) : le « + » de la barre
+      // de titre y est rangé. La liste n'ouvre qu'à qui crée des sorties
+      // ([RideTemplateAccessGate]), le bouton n'a donc pas d'autre condition.
       toolbar: Padding(
         padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
-        child: PdlSearchField(
-          key: keys.rideTemplates.searchField,
-          value: search,
-          hintText: 'rides.templates.search'.tr(),
-          clearTooltip: 'common.clearSearch'.tr(),
-          onChanged: onSearch,
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: PdlSearchField(
+                key: keys.rideTemplates.searchField,
+                value: search,
+                hintText: 'rides.templates.search'.tr(),
+                clearTooltip: 'common.clearSearch'.tr(),
+                onChanged: onSearch,
+              ),
+            ),
+            const SizedBox(width: PdlSpacing.chipGap),
+            ListCreateButton(
+              key: keys.rideTemplates.newButton,
+              semanticLabel: 'lists.createLabel.template'.tr(),
+              onPressed: openNew,
+            ),
+          ],
         ),
       ),
       onRefresh: notifier.refresh,
@@ -154,9 +162,9 @@ class _RideTemplateList extends ConsumerWidget {
                   title: 'rides.templates.emptyTitle'.tr(),
                   message: 'rides.templates.emptyMessage'.tr(),
                   actions: <Widget>[
-                    PdlButton(
+                    ListEmptyCreateButton(
                       key: keys.rideTemplates.emptyNewButton,
-                      label: 'rides.templates.new'.tr(),
+                      label: 'lists.createLabel.template'.tr(),
                       onPressed: openNew,
                     ),
                   ],

@@ -48,6 +48,8 @@ class _RecordingAdsClient implements AdsClient {
       'sortBy': sortBy,
       'sortDir': sortDir,
       'view': view,
+      'minPrice': ?minPrice,
+      'maxPrice': ?maxPrice,
     });
     final int offset = (page ?? 0) * (size ?? 20);
     final int remaining = (total - offset).clamp(0, size ?? 20);
@@ -88,6 +90,14 @@ void main() {
         'sortDir': SortDirection.desc,
         'view': ListViewMode.compact,
       });
+    });
+
+    test('RL3 — les bornes de prix partent au serveur', () async {
+      final _RecordingAdsClient client = _RecordingAdsClient();
+      await AdRepository(client)
+          .fetchAds(filters: base.copyWith(price: (min: 100, max: 500)));
+      expect(client.calls.single['minPrice'], 100);
+      expect(client.calls.single['maxPrice'], 500);
     });
 
     test('une recherche blanche ne part pas comme filtre', () async {

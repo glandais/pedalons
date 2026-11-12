@@ -128,6 +128,9 @@ abstract final class PdlIcons {
   // ── Carte ──────────────────────────────────────────────────────────────
   static const IconData map = Icons.map_outlined;
   static const IconData list = Icons.view_list_outlined;
+
+  /// La vue « Vignettes » d'une liste (règle RL9), à côté de [list] (« Lignes »).
+  static const IconData cards = Icons.grid_view_outlined;
   static const IconData layers = Icons.layers_outlined;
   static const IconData fullscreen = Icons.fullscreen;
   static const IconData locate = Icons.my_location;

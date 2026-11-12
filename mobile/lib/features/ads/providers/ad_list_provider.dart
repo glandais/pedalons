@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../api/generated/export.dart';
@@ -44,3 +45,10 @@ class AdListNotifier extends PagedListNotifier<AdDto> {
   @override
   Object? itemKey(AdDto item) => item.id;
 }
+
+/// Combien d'annonces [filters] laisserait voir : le bouton de la feuille de
+/// prix annonce le compte **du serveur** avant qu'on applique.
+final adCountProvider = FutureProvider.autoDispose.family<int, AdFilters>(
+  (Ref ref, AdFilters filters) =>
+      ref.watch(adRepositoryProvider).countAds(filters),
+);

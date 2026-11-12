@@ -6,6 +6,8 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
+import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/rides/data/ride_template_repository.dart';
@@ -157,7 +159,25 @@ void main() {
   ) async {
     await open(tester, templates: _StubTemplates(two()));
 
+    // RL13 : « Créer » dans la barre, à droite de la recherche — plus de
+    // « + » dans la barre de titre ; le lecteur d'écran lit le nom complet.
     expect(find.byKey(keys.rideTemplates.newButton), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(PdlAppBar),
+        matching: find.byIcon(PdlIcons.add),
+      ),
+      findsNothing,
+    );
+    expect(
+      tester.getCenter(find.byKey(keys.rideTemplates.newButton)).dy,
+      closeTo(
+        tester.getCenter(find.byKey(keys.rideTemplates.searchField)).dy,
+        4,
+      ),
+    );
+    expect(find.text('Créer'), findsOneWidget);
+    expect(find.bySemanticsLabel('Créer un modèle'), findsOneWidget);
     expect(find.byKey(keys.rideTemplates.card('dimanche')), findsOneWidget);
     expect(find.byKey(keys.rideTemplates.card('semaine')), findsOneWidget);
     expect(find.text('Sortie du dimanche'), findsOneWidget);
@@ -227,6 +247,7 @@ void main() {
     expect(find.byKey(keys.rideTemplates.empty), findsOneWidget);
     expect(find.text('Aucun modèle'), findsWidgets);
     expect(find.byKey(keys.rideTemplates.emptyNewButton), findsOneWidget);
+    expect(find.text('Créer un modèle'), findsOneWidget);
 
     await tester.tap(find.byKey(keys.rideTemplates.emptyNewButton));
     for (int i = 0; i < 6; i++) {

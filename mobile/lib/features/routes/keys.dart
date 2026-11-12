@@ -33,24 +33,36 @@ class RoutesKeys {
   /// Le compteur sous la barre (« 47 parcours », règle RL8).
   final resultCount = const _RoutesKey('resultCount');
 
-  /// « Ajouter un parcours » de cet état vide, pour qui gère les parcours.
+  /// « Créer un parcours » de cet état vide, pour qui gère les parcours.
   final emptyAddButton = const _RoutesKey('emptyAddButton');
 
   final filterApplyButton = const _RoutesKey('filterApplyButton');
   final filterButton = const _RoutesKey('filterButton');
 
+  /// « Effacer les filtres » dans la feuille de filtres (règle RL4).
+  final filterClearButton = const _RoutesKey('filterClearButton');
+
   /// Une valeur d'un choix de la feuille de filtres (revêtement, relief…).
   ValueKey<String> filterChoice(Object value) =>
       _RoutesKey('filterChoice_$value');
 
+  /// Les trois segments du contrôle de vue (règle RL9) : « Vignettes »,
+  /// « Lignes », « Carte ».
   final listViewSegment = const _RoutesKey('listViewSegment');
-  final mapView = const _RoutesKey('mapView');
+  final rowsViewSegment = const _RoutesKey('rowsViewSegment');
   final mapViewSegment = const _RoutesKey('mapViewSegment');
+  final mapView = const _RoutesKey('mapView');
   final searchField = const _RoutesKey('searchField');
 
-  /// « Ajouter » : créer un parcours, à droite de la recherche de l'équipe
-  /// (ledger `MOB-79`).
-  final addButton = const _RoutesKey('addButton');
+  /// La puce « Portée » d'Explorer (règle RL2).
+  final scopeChip = const _RoutesKey('scopeChip');
+
+  /// La puce de tri, en tête des critères.
+  final sortChip = const _RoutesKey('sortChip');
+
+  /// « Créer » : créer un parcours, à droite de la recherche de l'équipe
+  /// (ledger `MOB-79`, règle RL13).
+  final createButton = const _RoutesKey('createButton');
 }
 
 class _RouteDetailKey extends ValueKey<String> {

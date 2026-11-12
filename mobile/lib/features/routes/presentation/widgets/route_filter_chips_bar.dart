@@ -28,7 +28,11 @@ class RouteFilterChipsBar extends ConsumerWidget {
     super.key,
     required this.filters,
     required this.onChanged,
+    this.leading = const <Widget>[],
   });
+
+  /// Avant le tri : la puce « Portée » d'Explorer.
+  final List<Widget> leading;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -57,7 +61,9 @@ class RouteFilterChipsBar extends ConsumerWidget {
     // débordement au lieu de le subir.
     return PdlChipRow(
       children: <Widget>[
+        ...leading,
         PdlChip(
+          key: keys.routes.sortChip,
           sortStyle: true,
           icon: filters.sortDir == SortDirection.asc
               ? PdlIcons.chevronUp

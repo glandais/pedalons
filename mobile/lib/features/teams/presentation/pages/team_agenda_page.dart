@@ -1,16 +1,18 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
-import '../../../../core/lists/list_states.dart';
-import '../../../../core/pdl/pdl.dart';
+import '../../../../core/lists/list_toolbar.dart';
 import '../../../../core/theme/pdl_colors.dart';
-import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../keys.dart';
 import '../../../calendar/presentation/pages/calendar_page.dart';
 import '../../../calendar/providers/calendar_month_provider.dart';
 import '../../../feed/presentation/widgets/publication_feed_view.dart';
+import '../../../rides/presentation/ride_editor_location.dart';
+import '../../../rides/providers/ride_editor_providers.dart';
 import '../widgets/team_header.dart';
 import '../widgets/team_sections.dart';
 import '../widgets/team_sections_bar.dart';
@@ -39,20 +41,24 @@ List<PublicationType?> agendaTypeOptions(TeamDetailDto team) =>
 
 /// L'Agenda d'une équipe : ses sorties et ses voyages (ledger `MOB-60`).
 ///
-/// **La période** : « À venir » (par défaut), « Je participe », « Passées » —
-/// `when=UPCOMING|PAST` (+ `participating`), le serveur triant le plus proche
-/// d'abord pour l'avenir, le plus récent d'abord pour le passé (ledger
-/// `API-85`). Une sortie partie et pas rentrée reste dans « À venir », marquée
-/// « En cours ».
+/// **Une liste, deux sections** (règle RL15 des listes, KIT §10) : « À
+/// venir », du plus proche au plus lointain — une sortie partie et pas rentrée
+/// y reste, marquée « En cours » —, puis « Plus tôt », du plus récent au plus
+/// ancien, chacune avec son compteur, dans le même défilement
+/// (`when=UPCOMING_FIRST`). **La période** se réduit à « Toutes les dates /
+/// Je participe », qui vaut pour les deux sections.
 ///
-/// **La vue** : la liste de cartes, ou le calendrier du mois filtré sur
-/// l'équipe — réservé aux membres, comme au site (plan §7.2). En calendrier,
-/// la période se réduit à « Tout / Je participe » : on y navigue par mois.
+/// **La barre** (règle RL6) : la recherche en tête, « Créer » à sa droite pour
+/// qui crée des sorties (RL13) ; la période sur toute la largeur ; les types
+/// en puces alignées à gauche ; puis, sur la ligne du compteur, **le seul**
+/// contrôle de vue : « Vignettes · Lignes · Calendrier » (RL9) — le
+/// calendrier du mois filtré sur l'équipe, réservé aux membres, comme au site
+/// (plan §7.2).
 ///
 /// **Le type** (Tout / Sorties / Voyages) est tenu **ici**, ouvert sur celui
 /// du lien (`teamTrips`, `?type=ride`) et gardé d'une vue à l'autre. Il n'est
 /// jamais recopié dans `publicationFeedTypeProvider` — leçon de `WEB-64`.
-class TeamAgendaPage extends StatefulWidget {
+class TeamAgendaPage extends ConsumerStatefulWidget {
   const TeamAgendaPage({
     super.key,
     required this.team,
@@ -60,8 +66,8 @@ class TeamAgendaPage extends StatefulWidget {
     required this.chrome,
     this.leadingSlivers = const <Widget>[],
     this.initialType,
-    this.initialScope = AgendaScope.upcoming,
-    this.initialView = AgendaView.list,
+    this.initialScope = AgendaScope.all,
+    this.initialView = AgendaView.cards,
     this.platformAdmin = false,
   });
 
@@ -72,7 +78,7 @@ class TeamAgendaPage extends StatefulWidget {
 
   final TeamChromeBuilder chrome;
 
-  /// L'en-tête d'équipe interpolé et ce qui le suit, en vue Liste.
+  /// L'en-tête d'équipe interpolé et ce qui le suit, en vue liste.
   final List<Widget> leadingSlivers;
 
   final PublicationType? initialType;
@@ -85,10 +91,10 @@ class TeamAgendaPage extends StatefulWidget {
   final bool platformAdmin;
 
   @override
-  State<TeamAgendaPage> createState() => _TeamAgendaPageState();
+  ConsumerState<TeamAgendaPage> createState() => _TeamAgendaPageState();
 }
 
-class _TeamAgendaPageState extends State<TeamAgendaPage> {
+class _TeamAgendaPageState extends ConsumerState<TeamAgendaPage> {
   /// Les types offerts : ceux des modules de l'équipe.
   List<PublicationType?> get _typeOptions => agendaTypeOptions(widget.team);
 
@@ -104,10 +110,20 @@ class _TeamAgendaPageState extends State<TeamAgendaPage> {
   /// l'administration de la plateforme.
   bool get _canShowCalendar => widget.team.role != null || widget.platformAdmin;
 
+  /// Créer une sortie : la règle de l'éditeur et du tableau de bord
+  /// (`canManageRidesProvider` — organisation, modules sorties et parcours).
+  bool get _canCreate =>
+      ref.watch(canManageRidesProvider(widget.team.slug)) ?? false;
+
+  void _openNew() => context.push(rideNewLocation(widget.team.slug));
+
   @override
   Widget build(BuildContext context) {
-    final AgendaView view = _canShowCalendar ? _view : AgendaView.list;
+    final AgendaView view = _canShowCalendar || _view != AgendaView.calendar
+        ? _view
+        : AgendaView.cards;
     final String slug = widget.team.slug;
+    final bool canCreate = _canCreate;
 
     if (view == AgendaView.calendar) {
       return widget.chrome(
@@ -123,14 +139,20 @@ class _TeamAgendaPageState extends State<TeamAgendaPage> {
             ),
             Material(
               color: context.pdl.overlaySolid,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  PdlSpacing.section,
-                  PdlMetrics.toolbarPadding,
-                  PdlSpacing.section,
-                  0,
-                ),
-                child: _header(view),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      PdlSpacing.section,
+                      PdlMetrics.toolbarPadding,
+                      PdlSpacing.section,
+                      0,
+                    ),
+                    child: _period(),
+                  ),
+                  ListCountRow(viewSwitch: _viewSwitch(view)),
+                ],
               ),
             ),
             Expanded(
@@ -146,7 +168,7 @@ class _TeamAgendaPageState extends State<TeamAgendaPage> {
                     setState(() => _type = _publicationType(next)),
                 registeredOnly: _scope == AgendaScope.participating,
                 onClearRegisteredOnly: () =>
-                    setState(() => _scope = AgendaScope.upcoming),
+                    setState(() => _scope = AgendaScope.all),
               ),
             ),
           ],
@@ -167,113 +189,78 @@ class _TeamAgendaPageState extends State<TeamAgendaPage> {
             current: TeamSectionKind.agenda,
           ),
         ],
-        toolbarHeader: _header(view),
+        period: _period(),
+        searchTrailing: canCreate
+            ? ListCreateButton(
+                key: keys.teamAgenda.createButton,
+                semanticLabel: 'lists.createLabel.ride'.tr(),
+                onPressed: _openNew,
+              )
+            : null,
+        viewSwitch: _viewSwitch(view),
+        rows: view == AgendaView.rows,
         typeOptions: _typeOptions,
         selectedType: _type,
         onTypeChanged: (PublicationType? next) => setState(() => _type = next),
-        when: _scope == AgendaScope.past
-            ? PublicationWhen.past
-            : PublicationWhen.upcoming,
+        datedSections: true,
+        datedOnly: true,
         participating: _scope == AgendaScope.participating,
-        // « Je participe » et « Passées » sont des filtres : le vide filtré
-        // les nomme, et « Effacer les filtres » ramène à « À venir » (règle
-        // RL10).
-        periodFilterLabel: switch (_scope) {
-          AgendaScope.upcoming => null,
-          AgendaScope.participating => 'teams.agenda.scope.participating'.tr(),
-          AgendaScope.past => 'teams.agenda.scope.past'.tr(),
-        },
-        onClearPeriod: () => setState(() => _scope = AgendaScope.upcoming),
+        // « Je participe » est un filtre : le vide filtré le nomme, et
+        // « Effacer les filtres » ramène à « Toutes les dates » (règle RL10).
+        periodFilterLabel: _scope == AgendaScope.participating
+            ? 'lists.period.participating'.tr()
+            : null,
+        onClearPeriod: () => setState(() => _scope = AgendaScope.all),
         filteredTitleKey: 'lists.emptyFiltered.agenda',
         itemNounKey: 'lists.noun.agenda',
         searchHint: 'teams.agenda.searchPlaceholder'.tr(),
-        countLabel: (int total) => agendaCountLabel(_scope, _type, total),
         emptyMessage: 'teams.agenda.empty.title'.tr(),
         emptyHint: 'teams.agenda.empty.message'.tr(),
+        // Le vide simple reprend l'action de la barre, nom complet (RL13).
         emptyActions: <Widget>[
-          if (_scope != AgendaScope.past)
-            PdlButton(
-              key: keys.teamAgenda.seePastButton,
-              label: 'teams.agenda.empty.seePast'.tr(),
-              variant: PdlButtonVariant.outline,
-              size: PdlButtonSize.sm,
-              onPressed: () => setState(() => _scope = AgendaScope.past),
+          if (canCreate)
+            ListEmptyCreateButton(
+              key: keys.teamAgenda.emptyCreateButton,
+              label: 'lists.createLabel.ride'.tr(),
+              onPressed: _openNew,
             ),
         ],
       ),
     );
   }
 
-  /// La période à gauche, la bascule Liste / Calendrier à droite.
-  Widget _header(AgendaView view) {
-    final bool calendar = view == AgendaView.calendar;
-    // En calendrier, « À venir » et « Passées » n'ont plus de sens : on y
-    // navigue par mois. Le filtre se réduit à « Tout / Je participe ».
-    final AgendaScope scope = calendar && _scope == AgendaScope.past
-        ? AgendaScope.upcoming
-        : _scope;
+  /// « Toutes les dates / Je participe », sur toute la largeur.
+  Widget _period() => FeedPeriodControl(
+    allLabelKey: 'lists.period.allDates',
+    participating: _scope == AgendaScope.participating,
+    onChanged: (bool participating) => setState(
+      () =>
+          _scope = participating ? AgendaScope.participating : AgendaScope.all,
+    ),
+  );
 
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: PdlSegmented<AgendaScope>(
-            value: scope,
-            onChanged: (AgendaScope next) => setState(() => _scope = next),
-            segments: <PdlSegment<AgendaScope>>[
-              PdlSegment<AgendaScope>(
-                key: keys.teamAgenda.scope(AgendaScope.upcoming.name),
-                value: AgendaScope.upcoming,
-                label: calendar
-                    ? 'teams.agenda.scope.all'.tr()
-                    : 'teams.agenda.scope.upcoming'.tr(),
-              ),
-              PdlSegment<AgendaScope>(
-                key: keys.teamAgenda.scope(AgendaScope.participating.name),
-                value: AgendaScope.participating,
-                label: 'teams.agenda.scope.participating'.tr(),
-              ),
-              if (!calendar)
-                PdlSegment<AgendaScope>(
-                  key: keys.teamAgenda.scope(AgendaScope.past.name),
-                  value: AgendaScope.past,
-                  label: 'teams.agenda.scope.past'.tr(),
-                ),
-            ],
-          ),
-        ),
-        if (_canShowCalendar) ...<Widget>[
-          const SizedBox(width: PdlSpacing.chipGap),
-          Semantics(
-            container: true,
-            label: 'teams.agenda.view.label'.tr(),
-            child: SizedBox(
-              width: PdlMetrics.tapTarget * 2 + PdlSpacing.chipGap,
-              child: PdlSegmented<AgendaView>(
-                value: view,
-                onChanged: (AgendaView next) => setState(() => _view = next),
-                segments: <PdlSegment<AgendaView>>[
-                  PdlSegment<AgendaView>(
-                    key: keys.teamAgenda.view(AgendaView.list.name),
-                    value: AgendaView.list,
-                    label: 'teams.agenda.view.list'.tr(),
-                    icon: PdlIcons.list,
-                    iconOnly: true,
-                  ),
-                  PdlSegment<AgendaView>(
-                    key: keys.teamAgenda.view(AgendaView.calendar.name),
-                    value: AgendaView.calendar,
-                    label: 'teams.agenda.view.calendar'.tr(),
-                    icon: PdlIcons.calendar,
-                    iconOnly: true,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+  /// « Vignettes · Lignes · Calendrier » ; sans le calendrier pour qui n'est
+  /// pas membre.
+  Widget _viewSwitch(AgendaView view) => ListViewSwitch(
+    views: <ListViewKind>[
+      ListViewKind.cards,
+      ListViewKind.rows,
+      if (_canShowCalendar) ListViewKind.calendar,
+    ],
+    value: switch (view) {
+      AgendaView.cards => ListViewKind.cards,
+      AgendaView.rows => ListViewKind.rows,
+      AgendaView.calendar => ListViewKind.calendar,
+    },
+    segmentKey: (ListViewKind kind) => keys.teamAgenda.view(kind.name),
+    onChanged: (ListViewKind next) => setState(
+      () => _view = switch (next) {
+        ListViewKind.rows => AgendaView.rows,
+        ListViewKind.calendar => AgendaView.calendar,
+        _ => AgendaView.cards,
+      },
+    ),
+  );
 
   static CalendarTypeFilter _calendarType(PublicationType? type) =>
       switch (type) {
@@ -288,21 +275,4 @@ class _TeamAgendaPageState extends State<TeamAgendaPage> {
         CalendarTypeFilter.trips => PublicationType.trip,
         CalendarTypeFilter.all => null,
       };
-}
-
-/// « 5 sorties et voyages à venir », selon la période et le type — les mêmes
-/// neuf tournures qu'au site (`list.count.agenda*`), le nombre formaté
-/// (règle RL8).
-String agendaCountLabel(AgendaScope scope, PublicationType? type, int total) {
-  final String period = switch (scope) {
-    AgendaScope.upcoming => 'upcoming',
-    AgendaScope.participating => 'participating',
-    AgendaScope.past => 'past',
-  };
-  final String kind = switch (type) {
-    PublicationType.ride => 'rides',
-    PublicationType.trip => 'trips',
-    _ => 'all',
-  };
-  return listCountLabel('teams.agenda.count.$period.$kind', total);
 }

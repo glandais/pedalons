@@ -7,6 +7,9 @@ class _TeamsPageKey extends ValueKey<String> {
 class TeamsPageKeys {
   final discoverButton = const _TeamsPageKey('discoverButton');
 
+  /// La recherche de « Mes équipes », toujours visible (règle RL6).
+  final searchField = const _TeamsPageKey('searchField');
+
   /// La carte d'une équipe de « Mes équipes ».
   ValueKey<String> teamCard(String teamSlug) =>
       _TeamsPageKey('teamCard_$teamSlug');
@@ -198,12 +201,12 @@ class _TeamAgendaKey extends ValueKey<String> {
 
 /// L'Agenda d'une équipe (ledger `MOB-60`) : sa période et sa vue.
 class TeamAgendaKeys {
-  /// Un segment de la période — `upcoming`, `participating`, `past`.
-  ValueKey<String> scope(String name) => _TeamAgendaKey('scope_$name');
-
-  /// Un segment de la vue — `list`, `calendar`.
+  /// Un segment de la vue — `cards`, `rows`, `calendar`.
   ValueKey<String> view(String name) => _TeamAgendaKey('view_$name');
 
-  /// « Voir les passées », dans l'état vide.
-  final seePastButton = const _TeamAgendaKey('seePast');
+  /// « Créer » dans la barre (règle RL13).
+  final createButton = const _TeamAgendaKey('create');
+
+  /// « Créer une sortie » dans l'état vide simple.
+  final emptyCreateButton = const _TeamAgendaKey('emptyCreate');
 }

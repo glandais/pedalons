@@ -36,18 +36,26 @@ class PdlChipRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget row = SingleChildScrollView(
-      controller: controller,
-      scrollDirection: Axis.horizontal,
-      padding: padding,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          for (int i = 0; i < children.length; i++) ...<Widget>[
-            if (i > 0) SizedBox(width: gap),
-            children[i],
+    // Alignée au début de la ligne, qu'elle déborde ou non (règle RL6 des
+    // listes) : une rangée plus courte que l'écran se centrait dans une
+    // colonne centrée, et le fondu tombait alors sur sa dernière chip.
+    final Widget row = Align(
+      alignment: AlignmentDirectional.centerStart,
+      // La hauteur reste celle des chips : seule la largeur s'étend.
+      heightFactor: 1,
+      child: SingleChildScrollView(
+        controller: controller,
+        scrollDirection: Axis.horizontal,
+        padding: padding,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            for (int i = 0; i < children.length; i++) ...<Widget>[
+              if (i > 0) SizedBox(width: gap),
+              children[i],
+            ],
           ],
-        ],
+        ),
       ),
     );
 

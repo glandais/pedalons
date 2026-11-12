@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/lists/list_scope.dart';
 import '../../../../core/lists/list_states.dart';
+import '../../../../core/lists/list_toolbar.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../keys.dart';
@@ -63,13 +65,19 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
   bool _densityNoticeShown = false;
   bool _showDensityNotice = false;
 
+  /// La liste dont la vue et la densité se retiennent : Explorer, ou les
+  /// parcours des équipes (règle RL9 — une préférence par liste).
+  RouteListKind get _kind => routeListKindOf(widget.teamSlug);
+
   @override
   void initState() {
     super.initState();
     final RouteViewMode? forced = widget.initialView;
     if (forced != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) ref.read(routeViewModeProvider.notifier).select(forced);
+        if (mounted) {
+          ref.read(routeViewModeProvider(_kind).notifier).select(forced);
+        }
       });
     }
   }
@@ -104,21 +112,25 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
     final RouteFilters filters = ref.watch(
       routeFiltersProvider(widget.teamSlug),
     );
-    final RouteViewMode view = ref.watch(routeViewModeProvider);
+    final RouteViewMode view = ref.watch(routeViewModeProvider(_kind));
 
     final Widget toolbar = RoutesToolbar(
       filters: filters,
       onChanged: _setFilters,
       onOpenFilters: _openFilterSheet,
-      view: view,
-      onViewChanged: (RouteViewMode next) =>
-          ref.read(routeViewModeProvider.notifier).select(next),
+      listView: view == RouteViewMode.list,
       showScopeSelector: widget.teamSlug == null,
-      trailing: _addButton(),
+      trailing: _createButton(),
     );
 
     final Widget body = view == RouteViewMode.map
-        ? _MapBody(toolbar: toolbar, filters: filters, onChanged: _setFilters)
+        ? _MapBody(
+            toolbar: toolbar,
+            // Pas de compteur en vue carte : le contrôle de vue seul (RL9).
+            viewSwitch: _viewSwitch(ListViewKind.map),
+            filters: filters,
+            onChanged: _setFilters,
+          )
         : _buildList(filters, toolbar);
 
     if (widget.embedded) return body;
@@ -133,7 +145,7 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
     );
   }
 
-  /// « Ajouter » : créer un parcours, pour un organisateur de la section
+  /// « Créer » : créer un parcours, pour un organisateur de la section
   /// Parcours d'une équipe seulement — ni pour un simple membre, ni sur
   /// l'onglet Explorer de toutes les équipes (ledger `MOB-79`).
   bool get _canAdd {
@@ -144,25 +156,50 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
 
   void _openNew() => context.push(Paths.routeNew(widget.teamSlug!));
 
-  Widget? _addButton() {
+  /// Le bouton court de la barre (règle RL13) ; le lecteur d'écran lit
+  /// « Créer un parcours ».
+  Widget? _createButton() {
     if (!_canAdd) return null;
-    void open() => _openNew();
-    // Le libellé visible est court (« Ajouter ») ; le lecteur d'écran lit
-    // « Ajouter un parcours ».
-    return Semantics(
-      label: 'routes.editor.addSemantic'.tr(),
-      excludeSemantics: true,
-      button: true,
-      onTap: open,
-      child: PdlButton(
-        key: keys.routes.addButton,
-        label: 'routes.editor.add'.tr(),
-        icon: PdlIcons.add,
-        size: PdlButtonSize.sm,
-        onPressed: open,
-      ),
+    return ListCreateButton(
+      key: keys.routes.createButton,
+      semanticLabel: 'lists.createLabel.route'.tr(),
+      onPressed: _openNew,
     );
   }
+
+  /// « Vignettes · Lignes · Carte » : **le seul** contrôle de vue, sur la
+  /// ligne du compteur (règle RL9). Les deux premiers sont la vue liste dans
+  /// ses deux densités.
+  Widget _viewSwitch(ListViewKind current) => ListViewSwitch(
+    views: const <ListViewKind>[
+      ListViewKind.cards,
+      ListViewKind.rows,
+      ListViewKind.map,
+    ],
+    value: current,
+    segmentKey: (ListViewKind kind) => switch (kind) {
+      ListViewKind.rows => keys.routes.rowsViewSegment,
+      ListViewKind.map => keys.routes.mapViewSegment,
+      _ => keys.routes.listViewSegment,
+    },
+    onChanged: (ListViewKind next) {
+      final RouteViewModeNotifier view = ref.read(
+        routeViewModeProvider(_kind).notifier,
+      );
+      if (next == ListViewKind.map) {
+        view.select(RouteViewMode.map);
+        return;
+      }
+      view.select(RouteViewMode.list);
+      ref
+          .read(routeDensityProvider(_kind).notifier)
+          .select(
+            next == ListViewKind.rows
+                ? RouteListDensity.compact
+                : RouteListDensity.cards,
+          );
+    },
+  );
 
   Widget _buildList(RouteFilters filters, Widget toolbar) {
     final PagedListState<RouteDto> state = ref.watch(
@@ -234,11 +271,11 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
     if (state.isEmpty) {
       // Les filtres d'abord : sans eux, « Aucun parcours pour ces filtres » et
       // son « Effacer les filtres » sans effet décrivaient faussement une
-      // équipe qui n'a simplement pas de parcours. La portée n'en est pas un
-      // — « Effacer les filtres » la garde —, comme dans [RouteFilters.cleared].
+      // équipe qui n'a simplement pas de parcours. Une portée écartée de son
+      // défaut en est un : « Effacer les filtres » la remet (règle RL4).
       return <Widget>[
         ListStateSliver(
-          child: filters.activeFields.isNotEmpty
+          child: filters.activeCount > 0
               ? RoutesEmptyState(filters: filters, onChanged: _setFilters)
               : PdlEmptyState(
                   key: keys.routes.noneState,
@@ -248,10 +285,9 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
                   message: 'routes.list.noneHint'.tr(),
                   actions: <Widget>[
                     if (_canAdd)
-                      PdlButton(
+                      ListEmptyCreateButton(
                         key: keys.routes.emptyAddButton,
-                        label: 'routes.editor.addSemantic'.tr(),
-                        icon: PdlIcons.add,
+                        label: 'lists.createLabel.route'.tr(),
                         onPressed: _openNew,
                       ),
                   ],
@@ -262,23 +298,25 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
 
     final int? total = state.total;
     final RouteListDensity density = effectiveRouteDensity(
-      ref.watch(routeDensityProvider),
+      ref.watch(routeDensityProvider(_kind)),
       total,
     );
     _maybeNoticeDensityCrossing(total);
 
     return <Widget>[
+      // « 412 parcours » et la vue (règles RL8 et RL9) : le total **du jeu
+      // affiché** — sous un filtre, le total filtré seul, comme au site.
       SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            PdlSpacing.section,
-            PdlSpacing.chipGap,
-            PdlSpacing.section,
-            4,
+        child: ListCountRow(
+          count: listCountLabel(
+            'routes.list.count',
+            total ?? state.items.length,
           ),
-          child: _CountAndDensityRow(
-            shown: total ?? state.items.length,
-            density: density,
+          countKey: keys.routes.resultCount,
+          viewSwitch: _viewSwitch(
+            density == RouteListDensity.compact
+                ? ListViewKind.rows
+                : ListViewKind.cards,
           ),
         ),
       ),
@@ -339,11 +377,15 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
   void _maybeNoticeDensityCrossing(int? total) {
     if (total == null || _densityNoticeShown) return;
     if (total <= kRouteCompactThreshold) return;
-    if (ref.read(routeDensityProvider) != RouteListDensity.cards) return;
+    if (ref.read(routeDensityProvider(_kind)) != RouteListDensity.cards) {
+      return;
+    }
     _densityNoticeShown = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(routeDensityProvider.notifier).select(RouteListDensity.compact);
+      ref
+          .read(routeDensityProvider(_kind).notifier)
+          .select(RouteListDensity.compact);
       setState(() => _showDensityNotice = true);
     });
   }
@@ -368,11 +410,13 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
 class _MapBody extends StatelessWidget {
   const _MapBody({
     required this.toolbar,
+    required this.viewSwitch,
     required this.filters,
     required this.onChanged,
   });
 
   final Widget toolbar;
+  final Widget viewSwitch;
   final RouteFilters filters;
   final ValueChanged<RouteFilters> onChanged;
 
@@ -387,7 +431,14 @@ class _MapBody extends StatelessWidget {
             padding: const EdgeInsets.symmetric(
               vertical: PdlMetrics.toolbarPadding,
             ),
-            child: toolbar,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                toolbar,
+                ListCountRow(viewSwitch: viewSwitch),
+              ],
+            ),
           ),
         ),
         Divider(height: 1, color: c.borderSubtle),
@@ -396,54 +447,6 @@ class _MapBody extends StatelessWidget {
             key: keys.routes.mapView,
             filters: filters,
             onChanged: onChanged,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// « 412 parcours » et le segmenté de densité.
-///
-/// Le compteur dit le total **du jeu affiché** : sous un filtre, le total
-/// filtré seul, sans « sur 2 585 » (règle RL8 des listes, KIT §10) — le même
-/// texte que le site, et un seul appel. Il ne se pose pas à zéro : la liste
-/// vide a son propre état.
-class _CountAndDensityRow extends ConsumerWidget {
-  const _CountAndDensityRow({required this.shown, required this.density});
-
-  final int shown;
-  final RouteListDensity density;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final PdlTypography t = context.pdlText;
-
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: Text(
-            listCountLabel('routes.list.count', shown),
-            key: keys.routes.resultCount,
-            style: t.count,
-          ),
-        ),
-        SizedBox(
-          width: 176,
-          child: PdlSegmented<RouteListDensity>(
-            value: density,
-            onChanged: (RouteListDensity next) =>
-                ref.read(routeDensityProvider.notifier).select(next),
-            segments: <PdlSegment<RouteListDensity>>[
-              PdlSegment<RouteListDensity>(
-                value: RouteListDensity.cards,
-                label: 'routes.density.cards'.tr(),
-              ),
-              PdlSegment<RouteListDensity>(
-                value: RouteListDensity.compact,
-                label: 'routes.density.compact'.tr(),
-              ),
-            ],
           ),
         ),
       ],
@@ -483,6 +486,8 @@ class RoutesEmptyState extends ConsumerWidget {
     // Les filtres posés, **nommés par leur valeur**, comme leurs puces :
     // « 50 km – 100 km · vallonné » (règle RL10).
     final List<String> named = <String>[
+      // La portée d'Explorer, écartée de son défaut, est un filtre (RL4).
+      if (!filters.scopeIsDefault) membershipScopeLabel(filters.minRole),
       for (final RouteFilterField field in filters.activeFields)
         ...switch (field) {
           RouteFilterField.search => <String>[quotedSearch(filters.search!)],

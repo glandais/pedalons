@@ -16,6 +16,7 @@ import '../../../tags/providers/team_tags_provider.dart';
 import '../../domain/ad_filters.dart';
 import '../../providers/ad_list_provider.dart';
 import '../widgets/ad_card.dart';
+import '../widgets/ad_price_sheet.dart';
 import '../widgets/ads_toolbar.dart';
 
 /// La rubrique Annonces d'une équipe.
@@ -193,8 +194,8 @@ class _AdsPageState extends ConsumerState<AdsPage> {
 /// Cul-de-sac : les filtres ne laissent rien passer.
 ///
 /// La forme commune du vide filtré (règle RL10) : les filtres nommés — la
-/// recherche, le type, les tags —, et « Effacer les filtres », qui garde le
-/// tri. Pas de « Retirer le filtre X » : il faudrait un appel `count` par
+/// recherche, le type, le prix, les tags —, et « Effacer les filtres », qui
+/// garde le tri. Pas de « Retirer le filtre X » : il faudrait un appel `count` par
 /// filtre posé à chaque frappe, que l'app ne fait pas pour une suggestion
 /// secondaire.
 class _AdsDeadEnd extends ConsumerWidget {
@@ -218,6 +219,7 @@ class _AdsDeadEnd extends ConsumerWidget {
         if (search != null && search.isNotEmpty) quotedSearch(search),
         if (filters.adType case final AdType type)
           'ads.adType.${type.json}'.tr(),
+        ...adPriceFilterNames(filters),
         ...tagNames(vocabulary, filters.tagIds),
       ],
       onClear: () => onChanged(filters.cleared),

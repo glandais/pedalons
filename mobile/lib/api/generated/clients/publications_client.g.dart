@@ -22,9 +22,6 @@ class _PublicationsClient implements PublicationsClient {
 
   @override
   Future<PublicationListResponse> listAllPublications({
-    int? page = 0,
-    bool? participating = false,
-    int? size = 20,
     String? from,
     MinRole? minRole,
     String? search,
@@ -34,12 +31,13 @@ class _PublicationsClient implements PublicationsClient {
     PublicationType? type,
     ListViewMode? view,
     PublicationWhen? whenField,
+    bool? dated = false,
+    int? page = 0,
+    bool? participating = false,
+    int? size = 20,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
-      r'page': page,
-      r'participating': participating,
-      r'size': size,
       r'from': from,
       r'minRole': minRole?.toJson(),
       r'search': search,
@@ -49,6 +47,10 @@ class _PublicationsClient implements PublicationsClient {
       r'type': type?.toJson(),
       r'view': view?.toJson(),
       r'when': whenField?.toJson(),
+      r'dated': dated,
+      r'page': page,
+      r'participating': participating,
+      r'size': size,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -76,7 +78,6 @@ class _PublicationsClient implements PublicationsClient {
 
   @override
   Future<CountResponse> countAllPublications({
-    bool? participating = false,
     String? from,
     MinRole? minRole,
     String? search,
@@ -84,10 +85,11 @@ class _PublicationsClient implements PublicationsClient {
     String? to,
     PublicationType? type,
     PublicationWhen? whenField,
+    bool? dated = false,
+    bool? participating = false,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
-      r'participating': participating,
       r'from': from,
       r'minRole': minRole?.toJson(),
       r'search': search,
@@ -95,6 +97,8 @@ class _PublicationsClient implements PublicationsClient {
       r'to': to,
       r'type': type?.toJson(),
       r'when': whenField?.toJson(),
+      r'dated': dated,
+      r'participating': participating,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -123,11 +127,6 @@ class _PublicationsClient implements PublicationsClient {
   @override
   Future<PublicationListResponse> listPublications({
     required String teamSlug,
-    int? page = 0,
-    bool? participating = false,
-    int? size = 20,
-    bool? withFullGroup = false,
-    bool? withoutRoute = false,
     String? from,
     String? search,
     SortDirection? sortDir,
@@ -137,14 +136,15 @@ class _PublicationsClient implements PublicationsClient {
     PublicationType? type,
     ListViewMode? view,
     PublicationWhen? whenField,
+    bool? dated = false,
+    int? page = 0,
+    bool? participating = false,
+    int? size = 20,
+    bool? withFullGroup = false,
+    bool? withoutRoute = false,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
-      r'page': page,
-      r'participating': participating,
-      r'size': size,
-      r'withFullGroup': withFullGroup,
-      r'withoutRoute': withoutRoute,
       r'from': from,
       r'search': search,
       r'sortDir': sortDir?.toJson(),
@@ -154,6 +154,12 @@ class _PublicationsClient implements PublicationsClient {
       r'type': type?.toJson(),
       r'view': view?.toJson(),
       r'when': whenField?.toJson(),
+      r'dated': dated,
+      r'page': page,
+      r'participating': participating,
+      r'size': size,
+      r'withFullGroup': withFullGroup,
+      r'withoutRoute': withoutRoute,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -182,9 +188,6 @@ class _PublicationsClient implements PublicationsClient {
   @override
   Future<CountResponse> countPublications({
     required String teamSlug,
-    bool? participating = false,
-    bool? withFullGroup = false,
-    bool? withoutRoute = false,
     String? from,
     String? search,
     Status? status,
@@ -192,12 +195,13 @@ class _PublicationsClient implements PublicationsClient {
     String? to,
     PublicationType? type,
     PublicationWhen? whenField,
+    bool? dated = false,
+    bool? participating = false,
+    bool? withFullGroup = false,
+    bool? withoutRoute = false,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
-      r'participating': participating,
-      r'withFullGroup': withFullGroup,
-      r'withoutRoute': withoutRoute,
       r'from': from,
       r'search': search,
       r'status': status?.toJson(),
@@ -205,6 +209,10 @@ class _PublicationsClient implements PublicationsClient {
       r'to': to,
       r'type': type?.toJson(),
       r'when': whenField?.toJson(),
+      r'dated': dated,
+      r'participating': participating,
+      r'withFullGroup': withFullGroup,
+      r'withoutRoute': withoutRoute,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};

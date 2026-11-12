@@ -9,6 +9,7 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/config/router.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
+import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/link_launcher.dart';
@@ -16,11 +17,14 @@ import 'package:pedalons/features/calendar/presentation/pages/calendar_page.dart
 import 'package:pedalons/features/calendar/providers/calendar_month_provider.dart';
 import 'package:pedalons/features/feed/presentation/widgets/publication_feed_view.dart';
 import 'package:pedalons/features/feed/providers/publication_feed_provider.dart';
+import 'package:pedalons/features/rides/providers/ride_editor_providers.dart';
 import 'package:pedalons/features/tags/providers/team_tags_provider.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_agenda_page.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_home_page.dart';
+import 'package:pedalons/features/teams/presentation/widgets/publication_card.dart';
 import 'package:pedalons/features/teams/presentation/widgets/team_sections.dart';
 import 'package:pedalons/features/teams/providers/team_providers.dart';
+import 'package:pedalons/dev/card_gallery/gallery_data.dart';
 import 'package:pedalons/keys.dart';
 
 import '../../support/localization.dart';
@@ -89,22 +93,22 @@ void main() {
         PathVariants.teamAgenda('velo-club'),
         TeamSectionKind.agenda,
         null,
-        AgendaScope.upcoming,
-        AgendaView.list,
+        AgendaScope.all,
+        AgendaView.cards,
       ),
       'teamPosts': (
         PathVariants.teamPosts('velo-club'),
         TeamSectionKind.posts,
         null,
-        AgendaScope.upcoming,
-        AgendaView.list,
+        AgendaScope.all,
+        AgendaView.cards,
       ),
       // L'Agenda en vue Calendrier.
       'teamCalendar': (
         PathVariants.teamCalendar('velo-club'),
         TeamSectionKind.agenda,
         null,
-        AgendaScope.upcoming,
+        AgendaScope.all,
         AgendaView.calendar,
       ),
       // Les anciens onglets « Sorties » et « Voyages » (ledger `WEB-64`),
@@ -113,15 +117,15 @@ void main() {
         PathVariants.teamRides('velo-club'),
         TeamSectionKind.agenda,
         null,
-        AgendaScope.upcoming,
-        AgendaView.list,
+        AgendaScope.all,
+        AgendaView.cards,
       ),
       'teamTrips': (
         PathVariants.teamTrips('velo-club'),
         TeamSectionKind.agenda,
         PublicationType.trip,
-        AgendaScope.upcoming,
-        AgendaView.list,
+        AgendaScope.all,
+        AgendaView.cards,
       ),
     };
 
@@ -215,17 +219,32 @@ void main() {
       expect(trips.type, PublicationType.trip);
     });
 
-    test('?w=me / ?w=upcoming / ?w=all : « Je participe » / « À venir »', () {
+    test('?w=me / ?w=upcoming / ?w=all : « Je participe » / « Toutes les '
+        'dates »', () {
       final TeamSectionTarget me = at(const <String, String>{'w': 'me'});
       expect(me.kind, TeamSectionKind.agenda);
       expect(me.scope, AgendaScope.participating);
       for (final String w in <String>['upcoming', 'all']) {
         final TeamSectionTarget target = at(<String, String>{'w': w});
         expect(target.kind, TeamSectionKind.agenda);
-        expect(target.scope, AgendaScope.upcoming);
+        expect(target.scope, AgendaScope.all);
         expect(target.type, isNull);
       }
     });
+  });
+
+  // RL15 — les liens profonds de l'ancienne période restent lus : `?w=past`
+  // (la période « Passées » disparue) mène à « Toutes les dates », où les
+  // passées sont, dans « Plus tôt ».
+  testWidgets('RL15 — ?w=past ouvre l\'Agenda sur « Toutes les dates »', (
+    WidgetTester tester,
+  ) async {
+    final TeamHomePage home = await pageAt(
+      tester,
+      '${PathVariants.teamAgenda('velo-club')['fr']!}?w=past',
+    );
+    expect(home.section, TeamSectionKind.agenda);
+    expect(home.agendaScope, AgendaScope.all);
   });
 
   group('Agenda', () {
@@ -237,10 +256,13 @@ void main() {
       WidgetTester tester, {
       String? role = 'MEMBER',
       PublicationType? initialType,
-      AgendaScope initialScope = AgendaScope.upcoming,
+      AgendaScope initialScope = AgendaScope.all,
       TeamDetailDto? team,
       bool emptyFeed = false,
       bool failingFeed = false,
+      bool canCreate = false,
+      PageResult<PublicationDto>? page,
+      AgendaView initialView = AgendaView.cards,
     }) async {
       final TeamDetailDto shown =
           team ?? fixtureTeam(slug: 'velo-club', role: role);
@@ -249,6 +271,7 @@ void main() {
       addTearDown(tester.view.reset);
       final ProviderContainer container = ProviderContainer(
         overrides: [
+          unitSystemProvider.overrideWithValue(UnitSystem.metric),
           // Aucun tag : pas d'appel réseau pour le vocabulaire du type.
           teamTagsProvider.overrideWith(
             (ref, key) async => const <TagWithUsageDto>[],
@@ -256,10 +279,12 @@ void main() {
           publicationFeedProvider.overrideWith((ref, key) {
             requested.add(key);
             if (failingFeed) return _FailingFeedNotifier(key);
+            if (page != null) return _PageFeedNotifier(key, page);
             return emptyFeed
                 ? _EmptyFeedNotifier(key)
                 : _StuckFeedNotifier(key);
           }),
+          canManageRidesProvider.overrideWith((ref, slug) => canCreate),
           publicationFeedCountProvider.overrideWith((ref, key) async => 5),
           myTeamsProvider.overrideWith((ref) async => const <TeamDetailDto>[]),
           calendarMonthProvider.overrideWith(
@@ -278,6 +303,7 @@ void main() {
               sections: buildTeamSections(shown),
               initialType: initialType,
               initialScope: initialScope,
+              initialView: initialView,
               chrome: ({required Widget? header, required Widget body}) =>
                   Scaffold(body: body),
             ),
@@ -295,15 +321,19 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
     }
 
-    testWidgets('« À venir » par défaut : when=UPCOMING, sans participation, '
-        'et le nombre de résultats', (WidgetTester tester) async {
+    testWidgets('RL15 — « Toutes les dates » par défaut : when=UPCOMING_FIRST, '
+        'sans participation, et plus de période « Passées »', (
+      WidgetTester tester,
+    ) async {
       await pumpAgenda(tester);
 
       expect(requested, isNotEmpty);
-      expect(requested.last.when, PublicationWhen.upcoming);
+      expect(requested.last.when, PublicationWhen.upcomingFirst);
       expect(requested.last.participating, isFalse);
       expect(requested.last.type, isNull);
-      expect(find.text('5 sorties et voyages à venir'), findsOneWidget);
+      expect(find.text('Toutes les dates'), findsOneWidget);
+      expect(find.text('Passées'), findsNothing);
+      expect(find.text('À venir'), findsNothing);
       // Les chips de l'Agenda : Tout, Sorties, Voyages — pas de publications.
       expect(
         find.byKey(keys.feed.typeChip(PublicationType.post)),
@@ -317,23 +347,114 @@ void main() {
       await tearDownFeed(tester);
     });
 
-    testWidgets('« Je participe » puis « Passées »', (
+    testWidgets('RL15 — « Je participe » vaut pour les deux sections', (
       WidgetTester tester,
     ) async {
       await pumpAgenda(tester);
 
-      await tester.tap(find.byKey(keys.teamAgenda.scope('participating')));
+      await tester.tap(find.byKey(keys.feed.period(true)));
       await tester.pump();
       await tester.pump();
-      expect(requested.last.when, PublicationWhen.upcoming);
+      expect(requested.last.when, PublicationWhen.upcomingFirst);
       expect(requested.last.participating, isTrue);
 
-      await tester.tap(find.byKey(keys.teamAgenda.scope('past')));
+      await tester.tap(find.byKey(keys.feed.period(false)));
       await tester.pump();
       await tester.pump();
-      expect(requested.last.when, PublicationWhen.past);
       expect(requested.last.participating, isFalse);
-      expect(find.text('5 sorties et voyages passés'), findsOneWidget);
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('RL15 — « À venir » puis « Plus tôt », chacune avec son '
+        'compteur, et plus de compteur global', (WidgetTester tester) async {
+      final GalleryData d = GalleryData(images: false);
+      await pumpAgenda(
+        tester,
+        page: PageResult<PublicationDto>(
+          items: <PublicationDto>[
+            d.feedRide(),
+            d.feedRide(
+              slug: 'tour-du-lac',
+              name: 'Tour du lac',
+              dateTime: d.at(-3, 9),
+              finished: true,
+            ),
+          ],
+          total: 37,
+          firstSectionTotal: 1,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(keys.feed.upcomingSection), findsOneWidget);
+      expect(find.byKey(keys.feed.earlierSection), findsOneWidget);
+      expect(find.text('1 sortie ou voyage'), findsOneWidget);
+      expect(find.text('36 sorties et voyages'), findsOneWidget);
+      // La frontière tombe entre les deux : « Plus tôt » sous la première.
+      expect(
+        tester.getTopLeft(find.byKey(keys.feed.earlierSection)).dy,
+        greaterThan(
+          tester.getTopLeft(find.byKey(keys.feed.card(kRideSlug))).dy,
+        ),
+      );
+      expect(
+        tester.getTopLeft(find.byKey(keys.feed.card('tour-du-lac'))).dy,
+        greaterThan(tester.getTopLeft(find.byKey(keys.feed.earlierSection)).dy),
+      );
+      expect(find.byKey(keys.feed.resultCount), findsNothing);
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('RL9 — « Lignes » : la ligne d\'agenda au lieu de la carte', (
+      WidgetTester tester,
+    ) async {
+      final GalleryData d = GalleryData(images: false);
+      await pumpAgenda(
+        tester,
+        page: PageResult<PublicationDto>(
+          items: <PublicationDto>[d.feedRide()],
+          total: 1,
+          firstSectionTotal: 1,
+        ),
+      );
+      await tester.pump();
+      expect(find.byType(PublicationCard), findsOneWidget);
+      expect(find.byType(PublicationRow), findsNothing);
+
+      await tester.tap(find.byKey(keys.teamAgenda.view('rows')));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byType(PublicationRow), findsOneWidget);
+      expect(find.byType(PublicationCard), findsNothing);
+      expect(find.text(kRideName), findsOneWidget);
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('RL13 — « Créer » dans la barre pour qui crée des sorties, '
+        'nom complet pour le lecteur d\'écran et dans le vide simple', (
+      WidgetTester tester,
+    ) async {
+      await pumpAgenda(tester, canCreate: true, emptyFeed: true);
+
+      expect(find.byKey(keys.teamAgenda.createButton), findsOneWidget);
+      expect(find.bySemanticsLabel('Créer une sortie'), findsWidgets);
+      expect(find.byKey(keys.teamAgenda.emptyCreateButton), findsOneWidget);
+      // « Voir les passées » n'a plus d'objet : les passées sont dans la liste.
+      expect(find.text('Voir les passées'), findsNothing);
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('RL13 — rien pour une personne simplement membre', (
+      WidgetTester tester,
+    ) async {
+      await pumpAgenda(tester, emptyFeed: true);
+
+      expect(find.byKey(keys.teamAgenda.createButton), findsNothing);
+      expect(find.byKey(keys.teamAgenda.emptyCreateButton), findsNothing);
 
       await tearDownFeed(tester);
     });
@@ -350,7 +471,6 @@ void main() {
         <PublicationType?>{PublicationType.trip},
         reason: 'aucune page « Tout » demandée puis jetée',
       );
-      expect(find.text('5 voyages à venir'), findsOneWidget);
 
       // Point de départ, pas filtre imposé : les chips restent libres.
       await tester.tap(find.byKey(keys.feed.typeChip(PublicationType.ride)));
@@ -392,11 +512,12 @@ void main() {
       expect(calendar.teamSlug, 'velo-club');
       expect(calendar.registeredOnly, isTrue);
       expect(calendar.typeFilter, CalendarTypeFilter.rides);
-      // En calendrier, la période se réduit à « Tout / Je participe ».
-      expect(find.byKey(keys.teamAgenda.scope('past')), findsNothing);
-      expect(find.text('Tout'), findsWidgets);
+      // RL6 — une seule rangée « Tout » : celle des types ; la période dit
+      // « Toutes les dates ».
+      expect(find.text('Tout'), findsOneWidget);
+      expect(find.text('Toutes les dates'), findsOneWidget);
 
-      await tester.tap(find.byKey(keys.teamAgenda.view('list')));
+      await tester.tap(find.byKey(keys.teamAgenda.view('cards')));
       await tester.pump();
       await tester.pump();
       expect(find.byType(CalendarPage), findsNothing);
@@ -516,7 +637,7 @@ void main() {
 
       testWidgets(
         '« Je participe » sans résultat : le vide filtré, qui revient '
-        'à « À venir »',
+        'à « Toutes les dates »',
         (WidgetTester tester) async {
           await pumpAgenda(
             tester,
@@ -538,39 +659,12 @@ void main() {
           await tester.pump();
           await tester.pump();
           expect(requested.last.participating, isFalse);
-          expect(requested.last.when, PublicationWhen.upcoming);
+          expect(requested.last.when, PublicationWhen.upcomingFirst);
           expect(find.byKey(keys.feed.emptyState), findsOneWidget);
 
           await tearDownFeed(tester);
         },
       );
-
-      // RL10 (KIT §10) : « Passées » est un filtre — l'app cessait d'annoncer
-      // « pour le moment » un passé vide. Ce test codait l'ancien vide absolu.
-      testWidgets('« Passées » sans résultat : le vide filtré, qui revient à '
-          '« À venir »', (WidgetTester tester) async {
-        await pumpAgenda(
-          tester,
-          emptyFeed: true,
-          initialScope: AgendaScope.past,
-        );
-
-        expect(find.byKey(keys.feed.filteredEmptyState), findsOneWidget);
-        expect(find.byKey(keys.feed.emptyState), findsNothing);
-        expect(
-          find.text('Aucune sortie ni aucun voyage pour ces filtres'),
-          findsOneWidget,
-        );
-        expect(find.text('Rien ne correspond à : Passées.'), findsOneWidget);
-
-        await tester.tap(find.byKey(keys.feed.clearFiltersButton));
-        await tester.pump();
-        await tester.pump();
-        expect(requested.last.when, PublicationWhen.upcoming);
-        expect(find.byKey(keys.feed.emptyState), findsOneWidget);
-
-        await tearDownFeed(tester);
-      });
     });
 
     testWidgets('un visiteur n\'a pas de calendrier', (
@@ -594,6 +688,23 @@ class _StuckFeedNotifier extends PublicationFeedNotifier {
   @override
   Future<PageResult<PublicationDto>> fetchPage(int page) =>
       Completer<PageResult<PublicationDto>>().future;
+}
+
+/// Rend toujours [page] : une liste chargée.
+class _PageFeedNotifier extends PublicationFeedNotifier {
+  _PageFeedNotifier(PublicationFeedKey key, this.page)
+    : super(PublicationsClient(Dio()), key);
+
+  final PageResult<PublicationDto> page;
+
+  @override
+  Future<PageResult<PublicationDto>> fetchPage(int index) async => index == 0
+      ? page
+      : PageResult<PublicationDto>(
+          items: const <PublicationDto>[],
+          total: page.total,
+          firstSectionTotal: page.firstSectionTotal,
+        );
 }
 
 /// Rend une liste vide : les états vides du fil.

@@ -43,6 +43,10 @@ class HomePage extends ConsumerWidget {
         teamSlug: null,
         emptyMessage: 'home.feed.empty'.tr(),
         showSectionHeader: true,
+        // « Tout / Je participe » (règle RL3), et « À venir » puis « Plus
+        // tôt » dès que le fil montre des sorties ou des voyages (RL15).
+        showPeriod: true,
+        datedSections: true,
         // Tirer sur la liste rafraîchit l'écran entier, pas sa seule moitié
         // basse.
         onRefreshExtras: () async {

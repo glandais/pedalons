@@ -33,7 +33,7 @@ final class RideTemplates extends Module {
         !isShown(keys.rideTemplateEditor.saveButton);
   }
 
-  /// « Nouveau modèle »: the empty state's button when the list is empty, the app bar's « + »
+  /// « Créer un modèle »: the empty state's button when the list is empty, the bar's « Créer »
   /// otherwise.
   Future<void> startNew() async {
     if (isShown(keys.rideTemplates.emptyNewButton)) {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../../../api/generated/export.dart';
 import '../../../api/pedalons_api_client.dart';
 import '../../../core/pagination/pagination.dart';
+import '../data/publication_feed_repository.dart';
 
 /// Ce qui identifie un jeu de résultats du fil : une portée et ses filtres.
 ///
@@ -17,12 +18,14 @@ import '../../../core/pagination/pagination.dart';
 /// n'y sont pas égales — chaque reconstruction aurait créé un notifier neuf.
 /// Le serveur accepte d'ailleurs `?tags=a,b` tel quel.
 ///
-/// `when` et `participating` sont les filtres de date de l'Agenda d'une équipe
-/// (ledger `MOB-60`, contrat 10.15.0) : « À venir » (`UPCOMING`), « Je
-/// participe » (`UPCOMING` + `participating`) et « Passées » (`PAST`). Le
-/// serveur en déduit le tri — le plus proche d'abord pour l'avenir, le plus
-/// récent d'abord pour le passé — et en écarte les publications, qui n'ont pas
-/// de fin. `null` et `false` ailleurs : le fil d'accueil et les Publications.
+/// `when` et `participating` disent quels événements datés la liste montre, et
+/// dans quel ordre. `when=UPCOMING_FIRST` (contrat 14.8.0, règle RL15 des
+/// listes) sert **une seule liste à deux sections** : « À venir », du plus
+/// proche au plus lointain, puis « Plus tôt », du plus récent au plus ancien
+/// — les publications y sont, à leur date de parution. C'est l'ordre de
+/// l'Agenda d'une équipe et du fil d'accueil, sauf sous « Publications »
+/// seules (`when` nul). `participating` : « Je participe ». `datedOnly` :
+/// sorties et voyages seulement, sans publications — l'Agenda.
 typedef PublicationFeedKey = ({
   String? teamSlug,
   PublicationType? type,
@@ -31,6 +34,7 @@ typedef PublicationFeedKey = ({
   String? tags,
   PublicationWhen? when,
   bool participating,
+  bool datedOnly,
 });
 
 /// Filtre de type courant, par portée. Le fil d'accueil et un fil d'équipe
@@ -58,9 +62,6 @@ String? feedTagsKey({
   return tagIds.join(',');
 }
 
-List<String>? _tagList(String? tags) =>
-    tags == null || tags.isEmpty ? null : tags.split(',');
-
 /// Recherche plein texte du fil, par portée.
 ///
 /// Le fil était le seul écran de liste sans champ de recherche alors que
@@ -83,6 +84,11 @@ typedef PublicationFeedScopeChoice = ({MinRole? minRole});
 final publicationFeedScopeProvider = StateProvider.autoDispose
     .family<PublicationFeedScopeChoice?, String?>((ref, teamSlug) => null);
 
+/// « Je participe » sur le fil d'accueil, par portée : la période « Tout / Je
+/// participe » (règle RL3). L'Agenda d'une équipe tient la sienne lui-même.
+final publicationFeedParticipatingProvider = StateProvider.autoDispose
+    .family<bool, String?>((ref, scope) => false);
+
 /// Le fil paginé d'une portée et de ses filtres.
 final publicationFeedProvider = StateNotifierProvider.autoDispose
     .family<
@@ -101,69 +107,21 @@ final publicationFeedProvider = StateNotifierProvider.autoDispose
 /// Un appel séparé, parce que l'en-tête doit annoncer le total **avant** que
 /// tout soit chargé : « 1 248 publications » se dit dès la première page.
 final publicationFeedCountProvider = FutureProvider.autoDispose
-    .family<int, PublicationFeedKey>((Ref ref, PublicationFeedKey key) async {
-      final PublicationsClient client = ref.watch(publicationsClientProvider);
-      final String? search = _trimmed(key.search);
-      final CountResponse response = key.teamSlug == null
-          ? await client.countAllPublications(
-              type: key.type,
-              search: search,
-              minRole: key.minRole,
-            )
-          : await client.countPublications(
-              teamSlug: key.teamSlug!,
-              type: key.type,
-              search: search,
-              tags: _tagList(key.tags),
-              whenField: key.when,
-              participating: key.participating,
-            );
-      return response.total;
-    });
-
-String? _trimmed(String? value) {
-  final String? v = value?.trim();
-  return (v == null || v.isEmpty) ? null : v;
-}
+    .family<int, PublicationFeedKey>(
+      (Ref ref, PublicationFeedKey key) =>
+          ref.watch(publicationFeedRepositoryProvider).count(key),
+    );
 
 class PublicationFeedNotifier extends PagedListNotifier<PublicationDto> {
-  PublicationFeedNotifier(this._client, this._key);
+  PublicationFeedNotifier(PublicationsClient client, this._key)
+    : _repository = PublicationFeedRepository(client);
 
-  final PublicationsClient _client;
+  final PublicationFeedRepository _repository;
   final PublicationFeedKey _key;
 
   @override
-  Future<PageResult<PublicationDto>> fetchPage(int page) async {
-    final String? teamSlug = _key.teamSlug;
-    final PublicationListResponse response = teamSlug == null
-        ? await _client.listAllPublications(
-            page: page,
-            size: pageSize,
-            type: _key.type,
-            search: _trimmed(_key.search),
-            minRole: _key.minRole,
-            // **Vue compacte.** Sans elle, chaque page embarque vingt corps
-            // markdown complets pour rendre deux lignes d'extrait. `excerpt`
-            // et `thumbnailUrl` sont présents dans les deux vues ; ce sont eux
-            // que la carte lit.
-            view: ListViewMode.compact,
-          )
-        : await _client.listPublications(
-            teamSlug: teamSlug,
-            page: page,
-            size: pageSize,
-            type: _key.type,
-            search: _trimmed(_key.search),
-            tags: _tagList(_key.tags),
-            whenField: _key.when,
-            participating: _key.participating,
-            view: ListViewMode.compact,
-          );
-    return PageResult<PublicationDto>(
-      items: response.publications,
-      total: response.total,
-    );
-  }
+  Future<PageResult<PublicationDto>> fetchPage(int page) =>
+      _repository.fetchPage(_key, page: page, size: pageSize);
 
   @override
   Object? itemKey(PublicationDto item) => item.id;

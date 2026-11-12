@@ -27,7 +27,9 @@ const List<double> kRouteNearRadiiMeters = <double>[10000, 25000, 50000];
 /// l'API (`nearRadius` vaut 25 000 m par défaut).
 const double kDefaultRouteNearRadiusMeters = 25000;
 
-/// Les deux vues de l'écran 21.
+/// Les deux vues de l'écran 21 — la liste (en « Vignettes » ou en « Lignes »,
+/// voir [RouteListDensity]) ou la carte. Un seul contrôle les offre toutes les
+/// trois : « Vignettes · Lignes · Carte » (règle RL9 des listes, KIT §10).
 ///
 /// **La vue n'est pas un filtre** : elle ne vit donc pas dans [RouteFilters],
 /// qui est la clé de famille de la liste. La faire entrer ici rejouerait tout
@@ -40,7 +42,7 @@ enum RouteListDensity {
   /// `RouteCard`, bandeau média de 208 px.
   cards,
 
-  /// `CompactRouteRow`, ligne de 100 px.
+  /// `CompactRouteRow`, ligne de 100 px — la vue « Lignes ».
   compact,
 }
 
@@ -75,9 +77,12 @@ enum RouteFilterField {
 /// Elle porte quatre familles de contraintes, et **la portée en fait partie** :
 /// `teamSlug` et `minRole` changent la source des données autant que
 /// `surfaceType` change son contenu, et les deux doivent produire une liste
-/// neuve. C'est aussi pourquoi le compteur du bouton de filtres compte la
-/// portée (§3.1) : en vue Carte, où les chips disparaissent, il est le seul
-/// témoin qu'on ne regarde pas tout.
+/// neuve.
+///
+/// **Le compteur du bouton de filtres compte exactement ce que « Effacer les
+/// filtres » lève** (règle RL4, KIT §10) : la recherche, chaque critère, les
+/// tags, et la portée quand elle s'écarte de son défaut. Ni l'équipe de la
+/// page, qui n'est pas un filtre, ni le tri.
 @immutable
 class RouteFilters {
   /// Portée — l'équipe interrogée, ou `null` pour toutes celles que
@@ -86,6 +91,11 @@ class RouteFilters {
 
   /// Portée — rôle minimum dans l'équipe propriétaire du parcours.
   final MinRole? minRole;
+
+  /// La portée d'ouverture de la liste : « Membre » dans Explorer, ou
+  /// « Toutes les équipes » pour qui n'a aucune équipe (règle RL1) ; nulle
+  /// dans la section d'une équipe. « Effacer les filtres » y ramène [minRole].
+  final MinRole? defaultMinRole;
 
   final String? search;
 
@@ -128,6 +138,7 @@ class RouteFilters {
   const RouteFilters({
     this.teamSlug,
     this.minRole,
+    this.defaultMinRole,
     this.search,
     this.minDistance,
     this.maxDistance,
@@ -168,16 +179,14 @@ class RouteFilters {
     if (tagIds.isNotEmpty) RouteFilterField.tags,
   ];
 
-  /// Vrai quand la portée est « tout ce que je peux voir ».
-  bool get scopeIsDefault => teamSlug == null && minRole == null;
+  /// Vrai quand la portée est celle d'ouverture de la liste. L'équipe de la
+  /// page ([teamSlug]) n'est pas une portée choisie : elle n'y entre pas.
+  bool get scopeIsDefault => minRole == defaultMinRole;
 
-  /// Count shown on the filter button badge. Search has its own visible input,
-  /// so it is not counted here — **la portée, elle, l'est** (§3.1).
-  int get activeCount =>
-      activeFields
-          .where((RouteFilterField f) => f != RouteFilterField.search)
-          .length +
-      (scopeIsDefault ? 0 : 1);
+  /// La pastille du bouton de filtres : **ce que [cleared] lève**, un par
+  /// filtre — la recherche, chaque critère, les tags, la portée écartée de son
+  /// défaut (règle RL4). Jamais au repos.
+  int get activeCount => activeFields.length + (scopeIsDefault ? 0 : 1);
 
   bool get hasDefaultSort =>
       sortBy == kDefaultRouteSortBy && sortDir == kDefaultRouteSortDir;
@@ -255,18 +264,14 @@ class RouteFilters {
     };
   }
 
-  /// Everything cleared, sort included. **La portée survit** : elle dit où
-  /// l'utilisateur cherche, pas ce qu'il cherche, et la réinitialiser le
-  /// renverrait sans le prévenir dans les parcours de toutes ses équipes.
-  RouteFilters get cleared =>
-      RouteFilters(teamSlug: teamSlug, minRole: minRole);
-
-  /// All filters cleared but the search text, the scope and the sort kept,
-  /// which is what "Réinitialiser" inside the sheet does.
-  RouteFilters get filtersCleared => RouteFilters(
+  /// « Effacer les filtres », dans la feuille comme dans le vide filtré
+  /// (règle RL4) : la recherche, les critères et les tags levés, **la portée
+  /// remise à son défaut**, le tri gardé — il n'est pas un filtre — et
+  /// l'équipe de la page aussi.
+  RouteFilters get cleared => RouteFilters(
     teamSlug: teamSlug,
-    minRole: minRole,
-    search: search,
+    minRole: defaultMinRole,
+    defaultMinRole: defaultMinRole,
     sortBy: sortBy,
     sortDir: sortDir,
   );
@@ -298,6 +303,7 @@ class RouteFilters {
     final RouteFilters next = RouteFilters(
       teamSlug: nextTeamSlug,
       minRole: identical(minRole, _unset) ? this.minRole : minRole as MinRole?,
+      defaultMinRole: defaultMinRole,
       search: identical(search, _unset) ? this.search : search as String?,
       minDistance: identical(minDistance, _unset)
           ? this.minDistance
@@ -353,6 +359,7 @@ class RouteFilters {
     return RouteFilters(
       teamSlug: teamSlug,
       minRole: minRole,
+      defaultMinRole: defaultMinRole,
       search: search,
       minDistance: minDistance,
       maxDistance: maxDistance,
@@ -378,6 +385,7 @@ class RouteFilters {
       other is RouteFilters &&
           other.teamSlug == teamSlug &&
           other.minRole == minRole &&
+          other.defaultMinRole == defaultMinRole &&
           other.search == search &&
           other.minDistance == minDistance &&
           other.maxDistance == maxDistance &&
@@ -398,6 +406,7 @@ class RouteFilters {
   int get hashCode => Object.hash(
     teamSlug,
     minRole,
+    defaultMinRole,
     search,
     minDistance,
     maxDistance,

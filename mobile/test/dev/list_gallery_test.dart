@@ -22,6 +22,7 @@ import 'support/list_gallery_harness.dart';
 const Map<String, List<String>> _cahier = <String, List<String>>{
   'accueil': <String>[
     'accueil-repos',
+    'accueil-sections',
     'accueil-filtre',
     'accueil-criteres',
     'accueil-vide',
@@ -39,9 +40,9 @@ const Map<String, List<String>> _cahier = <String, List<String>>{
   ],
   'agenda': <String>[
     'agenda-repos',
+    'agenda-sections',
     'agenda-filtre',
     'agenda-criteres',
-    'agenda-passees',
     'agenda-vide',
     'agenda-vide-filtre',
     'agenda-erreur',

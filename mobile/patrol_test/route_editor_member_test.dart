@@ -2,7 +2,7 @@ import 'api/routes_seed.dart';
 import 'common.dart';
 
 /// Web counterpart: `CreateRoutePage` / `EditRoutePage` are organizers' pages. In the app (ledger
-/// `MOB-79`), a plain member reads the team's routes with no « Ajouter », a route with no pencil,
+/// `MOB-79`), a plain member reads the team's routes with no « Créer », a route with no pencil,
 /// and the creation and edition links opened by hand show the organizers-only refusal rather than
 /// a form that would end in a 403.
 ///

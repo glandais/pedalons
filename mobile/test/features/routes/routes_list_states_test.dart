@@ -12,6 +12,7 @@ import 'package:pedalons/dev/card_gallery/gallery_data.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
 import 'package:pedalons/features/routes/domain/route_filters.dart';
 import 'package:pedalons/features/routes/presentation/pages/routes_page.dart';
+import 'package:pedalons/features/routes/presentation/widgets/compact_route_row.dart';
 import 'package:pedalons/features/routes/providers/route_count_provider.dart';
 import 'package:pedalons/features/routes/providers/route_editor_providers.dart';
 import 'package:pedalons/features/routes/providers/route_list_provider.dart';
@@ -191,10 +192,170 @@ void main() {
   testWidgets('DL6 — Explorer nomme sa portée « Toutes les équipes »', (
     WidgetTester tester,
   ) async {
-    await open(tester, teamSlug: null);
+    await open(
+      tester,
+      teamSlug: null,
+      routes: <RouteDto>[GalleryData(images: false).route()],
+    );
 
     expect(find.text('Toutes les équipes'), findsOneWidget);
     expect(find.text('Toutes mes équipes'), findsNothing);
+  });
+
+  group('RL2 — la portée d\'Explorer', () {
+    testWidgets('une puce « Portée » en tête des puces, dont la feuille a '
+        'quatre valeurs et aucune équipe', (WidgetTester tester) async {
+      await open(
+        tester,
+        teamSlug: null,
+        routes: <RouteDto>[GalleryData(images: false).route()],
+        filters: const RouteFilters(
+          minRole: MinRole.member,
+          defaultMinRole: MinRole.member,
+        ),
+      );
+
+      expect(find.byKey(keys.routes.scopeChip), findsOneWidget);
+      expect(find.byType(PdlScopeSelector), findsOneWidget);
+      // La puce précède le tri.
+      expect(
+        tester.getTopLeft(find.byKey(keys.routes.scopeChip)).dx,
+        lessThan(tester.getTopLeft(find.byKey(keys.routes.sortChip)).dx),
+      );
+
+      await tester.tap(find.byKey(keys.routes.scopeChip));
+      await tester.pumpAndSettle();
+      expect(find.text('Organisateur'), findsOneWidget);
+      expect(find.text('Administrateur'), findsOneWidget);
+      expect(find.text('Rôle minimum'), findsNothing);
+      expect(find.text('Tous les rôles'), findsNothing);
+    });
+
+    testWidgets('la section d\'une équipe n\'en a pas', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        teamSlug: 'n-peloton',
+        routes: <RouteDto>[GalleryData(images: false).route()],
+      );
+      expect(find.byKey(keys.routes.scopeChip), findsNothing);
+    });
+  });
+
+  group('RL4 — la pastille compte ce que « Effacer les filtres » lève', () {
+    int badge(WidgetTester tester) => tester
+        .widget<PdlFilterButton>(find.byKey(keys.routes.filterButton))
+        .activeCount;
+
+    testWidgets('au repos, aucune pastille : l\'équipe de la page n\'est '
+        'pas un filtre', (WidgetTester tester) async {
+      await open(
+        tester,
+        teamSlug: 'n-peloton',
+        routes: <RouteDto>[GalleryData(images: false).route()],
+      );
+      expect(badge(tester), 0);
+    });
+
+    testWidgets('la recherche, chaque critère et la portée écartée de son '
+        'défaut comptent ; le tri non', (WidgetTester tester) async {
+      await open(
+        tester,
+        teamSlug: null,
+        routes: <RouteDto>[GalleryData(images: false).route()],
+        filters: const RouteFilters(
+          defaultMinRole: MinRole.member,
+          search: 'col',
+          surfaceType: SurfaceType.gravel,
+          sortBy: RouteSortBy.distance,
+        ),
+      );
+      expect(badge(tester), 3);
+    });
+
+    testWidgets('le vide filtré nomme la portée et « Effacer les filtres » '
+        'la remet à son défaut, en gardant le tri', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        teamSlug: null,
+        filters: const RouteFilters(
+          defaultMinRole: MinRole.member,
+          sortBy: RouteSortBy.distance,
+          sortDir: SortDirection.asc,
+        ),
+      );
+
+      expect(find.byKey(keys.routes.emptyState), findsOneWidget);
+      expect(
+        find.text('Rien ne correspond à : Toutes les équipes.'),
+        findsOneWidget,
+      );
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(RoutesPage)),
+      );
+      await tester.tap(find.text('Effacer les filtres'));
+      await tester.pump();
+      final RouteFilters after = container.read(routeFiltersProvider(null));
+      expect(after.minRole, MinRole.member);
+      expect(after.sortBy, RouteSortBy.distance);
+      expect(after.sortDir, SortDirection.asc);
+    });
+  });
+
+  group('RL9 — un seul contrôle de vue', () {
+    testWidgets('« Vignettes · Lignes · Carte » sur la ligne du compteur', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        teamSlug: 'n-peloton',
+        routes: <RouteDto>[GalleryData(images: false).route()],
+      );
+
+      expect(find.byKey(keys.routes.listViewSegment), findsOneWidget);
+      expect(find.byKey(keys.routes.rowsViewSegment), findsOneWidget);
+      expect(find.byKey(keys.routes.mapViewSegment), findsOneWidget);
+      expect(find.text('Compact'), findsNothing);
+      expect(find.text('Liste'), findsNothing);
+      // Sur la même ligne que le compteur.
+      expect(
+        tester.getCenter(find.byKey(keys.routes.rowsViewSegment)).dy,
+        closeTo(tester.getCenter(find.byKey(keys.routes.resultCount)).dy, 12),
+      );
+
+      await tester.tap(find.byKey(keys.routes.rowsViewSegment));
+      await tester.pump();
+      expect(find.byType(CompactRouteRow), findsOneWidget);
+    });
+
+    testWidgets('la vue choisie dans une équipe ne change pas celle '
+        'd\'Explorer', (WidgetTester tester) async {
+      await open(
+        tester,
+        teamSlug: 'n-peloton',
+        routes: <RouteDto>[GalleryData(images: false).route()],
+      );
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(RoutesPage)),
+      );
+
+      await tester.tap(find.byKey(keys.routes.rowsViewSegment));
+      await tester.pump();
+
+      expect(
+        container.read(routeDensityProvider(RouteListKind.team)),
+        RouteListDensity.compact,
+      );
+      expect(
+        container.read(routeDensityProvider(RouteListKind.explore)),
+        isNull,
+      );
+      expect(prefs.getString('routes.density'), isNull);
+      expect(prefs.getString('routes.team.density'), 'compact');
+    });
   });
 
   testWidgets('DL8 — compteur formaté, pied nommé', (

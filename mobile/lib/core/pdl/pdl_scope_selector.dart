@@ -1,97 +1,51 @@
 import 'package:flutter/material.dart';
 
-import '../theme/pdl_colors.dart';
 import '../theme/pdl_icons.dart';
-import '../theme/pdl_tokens.dart';
-import '../theme/pdl_typography.dart';
 import 'pdl_chip.dart';
 
-/// Les deux rendus du sélecteur de portée.
-enum PdlScopeStyle {
-  /// Chip de tri (contour `text`), dans une rangée de chips.
-  chip,
-
-  /// Ligne pleine largeur de 44 px, dans une barre d'outils — le rendu de
-  /// l'écran 22.
-  row,
-}
-
-/// B23 — Sélecteur de portée : toutes mes équipes, une équipe, un rôle
-/// minimum.
+/// B23 — La puce « Portée » : la seule forme du choix de portée d'une liste
+/// (règle RL2 des listes, KIT §10) — au fil d'accueil, dans Explorer et au
+/// calendrier global.
 ///
-/// Il **ne choisit rien lui-même** : il affiche la portée courante et déclenche
-/// [onTap], à charge de l'écran d'ouvrir la feuille de sélection. Deux raisons :
-/// la liste des portées est faite de DTO, et la feuille (`PdlSheet`) appartient
-/// à la vague C.
+/// Elle **ne choisit rien elle-même** : elle dit la portée courante et
+/// déclenche [onTap], à charge de l'écran d'ouvrir la feuille à coche (la liste
+/// des portées est faite de DTO, que `core/pdl` ne connaît pas).
 ///
-/// Le contour `text` de la variante chip ([PdlChip.sortStyle]) le distingue des
-/// filtres qui l'entourent : une portée n'est pas un filtre de plus, elle
-/// **change la source des données**.
+/// **Neutre au défaut, teintée hors du défaut** ([active]) : une portée qu'on
+/// a écartée de son défaut restreint ce qu'on lit, et la puce le dit comme
+/// toute puce de filtre posée. Le chevron annonce une feuille de choix ; le
+/// contour `text` ([PdlChip.sortStyle]) la distingue des filtres qui
+/// l'entourent quand elle est au repos.
 class PdlScopeSelector extends StatelessWidget {
   const PdlScopeSelector({
     super.key,
     required this.label,
     required this.onTap,
-    this.style = PdlScopeStyle.chip,
+    this.active = false,
     this.icon = PdlIcons.teams,
     this.semanticLabel,
   });
 
-  /// Portée courante, déjà traduite — « Toutes mes équipes », « N-Peloton ».
+  /// Portée courante, déjà traduite — « Membre », « Toutes mes équipes ».
   final String label;
 
   final VoidCallback? onTap;
-  final PdlScopeStyle style;
+
+  /// Vrai quand la portée s'écarte de son défaut : la puce se teinte.
+  final bool active;
   final IconData icon;
   final String? semanticLabel;
 
   @override
-  Widget build(BuildContext context) {
-    final PdlColors c = context.pdl;
-    final PdlTypography t = context.pdlText;
-
-    if (style == PdlScopeStyle.chip) {
-      return Semantics(
-        label: semanticLabel,
-        child: PdlChip(label: label, icon: icon, sortStyle: true, onTap: onTap),
-      );
-    }
-
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: Material(
-        color: c.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: PdlRadii.mdAll,
-          side: BorderSide(color: c.border),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: PdlMetrics.tapTarget),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: <Widget>[
-                  Icon(icon, size: 20, color: c.textDimmed),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.bodyStrong,
-                    ),
-                  ),
-                  Icon(PdlIcons.chevronRight, size: 16, color: c.textDimmed),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Semantics(
+    label: semanticLabel,
+    child: PdlChip(
+      label: label,
+      icon: icon,
+      trailingIcon: PdlIcons.chevronDown,
+      sortStyle: true,
+      selected: active,
+      onTap: onTap,
+    ),
+  );
 }

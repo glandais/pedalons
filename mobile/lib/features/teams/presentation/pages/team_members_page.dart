@@ -308,11 +308,9 @@ class _MembersToolbar extends StatelessWidget {
                 PdlChip(
                   label: AppFormatters.roleName(role.json ?? ''),
                   selected: filters.role == role,
-                  onTap: () => onChanged(
-                    filters.role == role
-                        ? filters.copyWith(clearRole: true)
-                        : filters.copyWith(role: role),
-                  ),
+                  // Retoucher la puce choisie ne la lève pas : c'est le rôle
+                  // de « Tous » (règle RL4, la même sur toutes les listes).
+                  onTap: () => onChanged(filters.copyWith(role: role)),
                 ),
             ],
           ),

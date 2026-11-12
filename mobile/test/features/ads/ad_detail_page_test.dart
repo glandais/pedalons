@@ -37,6 +37,9 @@ class _StubAdRepository implements AdRepository {
   Future<AdDto> getAd(String teamSlug, String adSlug) async => ad;
 
   @override
+  Future<int> countAds(AdFilters filters) async => 0;
+
+  @override
   Future<void> contactSeller({
     required String teamSlug,
     required String adSlug,

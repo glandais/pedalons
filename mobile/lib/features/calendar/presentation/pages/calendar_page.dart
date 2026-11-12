@@ -364,7 +364,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     // si le mois a bien des événements : un mois vide reste le vide du mois,
     // filtre ou non, avec son « Aller au prochain mois avec une sortie ».
     final List<String> filters = <String>[
-      if (widget.registeredOnly) 'teams.agenda.scope.participating'.tr(),
+      if (widget.registeredOnly) 'lists.period.participating'.tr(),
       if (type != CalendarTypeFilter.all) 'calendar.filters.${type.name}'.tr(),
     ];
     if (filters.isNotEmpty && monthHasEvents) {

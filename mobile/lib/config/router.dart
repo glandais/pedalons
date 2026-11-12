@@ -673,12 +673,8 @@ GoRoute _teamTree(String locale) {
     ),
   );
 
-  TeamSectionTarget plain(TeamSectionKind kind) => (
-    kind: kind,
-    type: null,
-    scope: AgendaScope.upcoming,
-    view: AgendaView.list,
-  );
+  TeamSectionTarget plain(TeamSectionKind kind) =>
+      (kind: kind, type: null, scope: AgendaScope.all, view: AgendaView.cards);
 
   return GoRoute(
     path: teamBase,

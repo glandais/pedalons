@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/lists/list_scope.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
@@ -13,22 +14,19 @@ import '../../../../keys.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../providers/calendar_month_provider.dart';
 
-/// Au-delà de ce nombre d'équipes, la rangée de chips devient illisible et
-/// c'est le sélecteur de portée qui prend le relais. En deçà, une chip par
-/// équipe est plus rapide qu'une feuille à ouvrir.
-const int kCalendarTeamChipsMax = 3;
-
 /// La barre d'outils du calendrier : le mois, la portée, les filtres.
 ///
-/// **Sémantique des chips**, que la maquette ne dit pas et que le plan tranche
-/// (§3.2) : le **type** est exclusif (Tout | Sorties | Voyages), l'**équipe**
-/// est exclusive (Toutes mes équipes | une équipe), et les deux groupes se
-/// combinent. Un filet vertical les sépare, parce que deux exclusivités côte à
-/// côte sans séparation se lisent comme une seule.
+/// **La portée est la puce « Portée »** de toutes les listes (règle RL2 des
+/// listes, KIT §10) — en tête de la rangée, neutre sur « Toutes mes équipes »,
+/// teintée sur une équipe — et sa feuille à coche liste « Toutes mes équipes /
+/// {équipe}… ». C'est la seule liste où l'on choisit une équipe : le
+/// calendrier global n'a pas de page par équipe. Elle remplace la rangée de
+/// puces d'équipe, coupée dès trois équipes (« Toutes m… »).
 ///
-/// La chip d'équipe **change d'endpoint** : elle ne filtre pas une liste déjà
-/// chargée, elle en demande une autre. La chip de type, elle, ne coûte aucun
-/// appel — le mois entier est en mémoire.
+/// Le **type** est exclusif (Tout | Sorties | Voyages) et se combine avec la
+/// portée. La portée **change d'endpoint** : elle ne filtre pas une liste déjà
+/// chargée, elle en demande une autre. Le type, lui, ne coûte aucun appel — le
+/// mois entier est en mémoire.
 class CalendarToolbar extends ConsumerWidget {
   const CalendarToolbar({
     super.key,
@@ -64,8 +62,6 @@ class CalendarToolbar extends ConsumerWidget {
     final PdlTypography t = context.pdlText;
     final List<TeamDetailDto> teams =
         ref.watch(myTeamsProvider).value ?? const <TeamDetailDto>[];
-    final bool chipsFitTeams =
-        showScope && teams.length <= kCalendarTeamChipsMax;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -104,24 +100,17 @@ class CalendarToolbar extends ConsumerWidget {
             ],
           ],
         ),
-        // Au-delà de trois équipes, la portée passe par le sélecteur : une
-        // rangée de dix chips d'équipe ne se lit pas. En deçà, les chips
-        // ci-dessous suffisent et le sélecteur ferait doublon.
-        if (showScope && !chipsFitTeams) ...<Widget>[
-          const SizedBox(height: PdlSpacing.chipGap),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
-            child: PdlScopeSelector(
-              style: PdlScopeStyle.row,
-              label: _scopeLabel(teams),
-              semanticLabel: 'calendar.scope'.tr(),
-              onTap: () => _pickScope(context, teams),
-            ),
-          ),
-        ],
         const SizedBox(height: 4),
         PdlChipRow(
           children: <Widget>[
+            if (showScope)
+              PdlScopeSelector(
+                key: keys.calendar.scopeChip,
+                label: _scopeLabel(teams),
+                active: monthKey.teamSlug != null,
+                semanticLabel: 'lists.scope.title'.tr(),
+                onTap: () => _pickScope(context, teams),
+              ),
             for (final CalendarTypeFilter type in typeOptions)
               PdlChip(
                 label: _typeLabel(type),
@@ -129,28 +118,6 @@ class CalendarToolbar extends ConsumerWidget {
                 selected: typeFilter == type,
                 onTap: () => onTypeChanged(type),
               ),
-            if (chipsFitTeams && teams.isNotEmpty) ...<Widget>[
-              _ChipDivider(color: c.borderSubtle),
-              PdlChip(
-                label: 'calendar.allMyTeams'.tr(),
-                selected: monthKey.teamSlug == null,
-                onTap: () => onMonthChanged(
-                  CalendarMonthKey(year: monthKey.year, month: monthKey.month),
-                ),
-              ),
-              for (final TeamDetailDto team in teams)
-                PdlChip(
-                  label: team.name,
-                  selected: monthKey.teamSlug == team.slug,
-                  onTap: () => onMonthChanged(
-                    CalendarMonthKey(
-                      year: monthKey.year,
-                      month: monthKey.month,
-                      teamSlug: team.slug,
-                    ),
-                  ),
-                ),
-            ],
           ],
         ),
       ],
@@ -180,55 +147,27 @@ class CalendarToolbar extends ConsumerWidget {
     BuildContext context,
     List<TeamDetailDto> teams,
   ) async {
-    final Object? picked = await PdlSheet.show<Object>(
-      context: context,
-      builder: (BuildContext sheetContext) => PdlSheet(
-        title: 'calendar.scope'.tr(),
-        bodyPadding: EdgeInsets.zero,
-        footer: const SafeArea(top: false, child: SizedBox(height: 8)),
-        children: <Widget>[
-          PdlSettingRow(
-            title: 'calendar.allMyTeams'.tr(),
-            trailing: _check(sheetContext, monthKey.teamSlug == null),
-            onTap: () => Navigator.of(sheetContext).pop(_kAllTeams),
-          ),
-          for (final TeamDetailDto team in teams)
-            PdlSettingRow(
-              title: team.name,
-              trailing: _check(sheetContext, monthKey.teamSlug == team.slug),
-              onTap: () => Navigator.of(sheetContext).pop(team.slug),
-            ),
-        ],
-      ),
+    final List<String?> slugs = <String?>[
+      null,
+      for (final TeamDetailDto team in teams) team.slug,
+    ];
+    final int? picked = await showCheckSheet<String?>(
+      context,
+      title: 'lists.scope.title'.tr(),
+      selected: monthKey.teamSlug,
+      options: <CheckOption<String?>>[
+        (value: null, label: 'calendar.allMyTeams'.tr()),
+        for (final TeamDetailDto team in teams)
+          (value: team.slug, label: team.name),
+      ],
     );
     if (picked == null) return;
     onMonthChanged(
       CalendarMonthKey(
         year: monthKey.year,
         month: monthKey.month,
-        teamSlug: picked == _kAllTeams ? null : picked as String,
+        teamSlug: slugs[picked],
       ),
     );
   }
-
-  static Widget _check(BuildContext context, bool selected) => selected
-      ? Icon(PdlIcons.check, size: 20, color: context.pdl.primary)
-      : const SizedBox.shrink();
-}
-
-/// Sentinelle : « toutes mes équipes » n'est pas un slug, et rendre `null`
-/// depuis une feuille se confondrait avec un abandon.
-const Object _kAllTeams = Object();
-
-/// Le filet vertical qui sépare les deux exclusivités de la rangée.
-class _ChipDivider extends StatelessWidget {
-  const _ChipDivider({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    height: PdlMetrics.tapTarget,
-    child: Center(child: Container(width: 1, height: 20, color: color)),
-  );
 }

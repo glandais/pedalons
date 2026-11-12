@@ -44,6 +44,20 @@ class FeedKeys {
   /// La ligne du nombre de résultats (« 5 sorties et voyages à venir »).
   final resultCount = const _FeedKey('resultCount');
 
+  /// La puce « Portée » du fil d'accueil (règle RL2).
+  final scopeChip = const _FeedKey('scopeChip');
+
+  /// Un segment de la période : « Tout » / « Toutes les dates » (`false`) ou
+  /// « Je participe » (`true`) — règles RL3 et RL15.
+  ValueKey<String> period(bool participating) =>
+      _FeedKey('period_${participating ? 'participating' : 'all'}');
+
+  /// L'en-tête de la section « À venir » (règle RL15).
+  final upcomingSection = const _FeedKey('upcomingSection');
+
+  /// L'en-tête de la section « Plus tôt » (règle RL15).
+  final earlierSection = const _FeedKey('earlierSection');
+
   /// La puce d'un type de publication ; `null` pour « Tout ».
   ValueKey<String> typeChip(PublicationType? type) =>
       _FeedKey('typeChip_${type?.json ?? 'all'}');

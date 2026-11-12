@@ -10,7 +10,7 @@ import 'package:pedalons/features/routes/domain/gpx_check.dart';
 
 import 'module.dart';
 
-/// The route editor (ledger `MOB-79`) and the organizer's gestures on a route page: the « Ajouter »
+/// The route editor (ledger `MOB-79`) and the organizer's gestures on a route page: the « Créer »
 /// button of the team's Parcours section, the pencil, and the « Gérer le parcours » menu behind
 /// `⋯`.
 ///
@@ -51,12 +51,12 @@ final class RouteEditor extends Module {
     await $(keys.routes.searchField).waitUntilVisible();
   }
 
-  bool get offersAdd => isShown(keys.routes.addButton);
+  bool get offersAdd => isShown(keys.routes.createButton);
 
-  /// The team's Parcours section → « Ajouter » → the first step of the creation.
+  /// The team's Parcours section → « Créer » → the first step of the creation.
   Future<void> openAddFromTeamRoutes() async {
-    await $(keys.routes.addButton).waitUntilVisible();
-    await $(keys.routes.addButton).tap();
+    await $(keys.routes.createButton).waitUntilVisible();
+    await $(keys.routes.createButton).tap();
     await $(keys.routeEditor.pickButton).waitUntilVisible();
   }
 

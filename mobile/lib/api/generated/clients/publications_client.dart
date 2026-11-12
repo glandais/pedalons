@@ -25,6 +25,8 @@ abstract class PublicationsClient {
   ///
   /// Get publications from all accessible teams (user's teams + public teams).
   ///
+  /// [dated] - Only the rides and trips — the publications that have a departure; posts are left out. Whatever when says: with when=UPCOMING_FIRST it is an agenda, both sections free of posts, total and upcomingTotal counting rides and trips only. Combines with type: type=POST then yields an empty list (zero on a count endpoint), as when=UPCOMING does, rather than an error. Omitted or false: no such filter.
+  ///
   /// [from] - Start date filter (ISO format).
   ///
   /// [minRole] - Only publications from teams where the user has at least this role. Yields nothing for an anonymous visitor.
@@ -47,12 +49,9 @@ abstract class PublicationsClient {
   ///
   /// [view] - How much of each row to send. COMPACT (case-insensitive) returns media.markdown empty and media.assets trimmed to the logo, the first image and the themed thumbnails — read 'excerpt' and 'thumbnailUrl' instead, both of which are present either way. The markdown body, the attachments, the GPX and FIT files and every image past the first are dropped. Omitted, or FULL, is the previous behaviour, byte for byte.
   ///
-  /// [when] - Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first.
+  /// [when] - Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and, unless dated=true, the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first.
   @GET('/api/publications')
   Future<PublicationListResponse> listAllPublications({
-    @Query('page') int? page = 0,
-    @Query('participating') bool? participating = false,
-    @Query('size') int? size = 20,
     @Query('from') String? from,
     @Query('minRole') MinRole? minRole,
     @Query('search') String? search,
@@ -62,11 +61,17 @@ abstract class PublicationsClient {
     @Query('type') PublicationType? type,
     @Query('view') ListViewMode? view,
     @Query('when') PublicationWhen? whenField,
+    @Query('dated') bool? dated = false,
+    @Query('page') int? page = 0,
+    @Query('participating') bool? participating = false,
+    @Query('size') int? size = 20,
   });
 
   /// Count all publications.
   ///
   /// How many publications match the filters, with none of them read. Accepts exactly the same filters as the listing, minus pagination, so a count and the list it opens can never disagree.
+  ///
+  /// [dated] - Only the rides and trips — the publications that have a departure; posts are left out. Whatever when says: with when=UPCOMING_FIRST it is an agenda, both sections free of posts, total and upcomingTotal counting rides and trips only. Combines with type: type=POST then yields an empty list (zero on a count endpoint), as when=UPCOMING does, rather than an error. Omitted or false: no such filter.
   ///
   /// [from] - Start date filter (ISO format).
   ///
@@ -82,10 +87,9 @@ abstract class PublicationsClient {
   ///
   /// [type] - Types.
   ///
-  /// [when] - Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first.
+  /// [when] - Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and, unless dated=true, the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first.
   @GET('/api/publications/count')
   Future<CountResponse> countAllPublications({
-    @Query('participating') bool? participating = false,
     @Query('from') String? from,
     @Query('minRole') MinRole? minRole,
     @Query('search') String? search,
@@ -93,6 +97,8 @@ abstract class PublicationsClient {
     @Query('to') String? to,
     @Query('type') PublicationType? type,
     @Query('when') PublicationWhen? whenField,
+    @Query('dated') bool? dated = false,
+    @Query('participating') bool? participating = false,
   });
 
   /// List publications.
@@ -100,6 +106,8 @@ abstract class PublicationsClient {
   /// Get paginated list of publications for a team with optional filtering.
   ///
   /// [teamSlug] - Team URL slug.
+  ///
+  /// [dated] - Only the rides and trips — the publications that have a departure; posts are left out. Whatever when says: with when=UPCOMING_FIRST it is an agenda, both sections free of posts, total and upcomingTotal counting rides and trips only. Combines with type: type=POST then yields an empty list (zero on a count endpoint), as when=UPCOMING does, rather than an error. Omitted or false: no such filter.
   ///
   /// [from] - Start date filter (ISO format).
   ///
@@ -123,7 +131,7 @@ abstract class PublicationsClient {
   ///
   /// [view] - How much of each row to send. COMPACT (case-insensitive) returns media.markdown empty and media.assets trimmed to the logo, the first image and the themed thumbnails — read 'excerpt' and 'thumbnailUrl' instead, both of which are present either way. The markdown body, the attachments, the GPX and FIT files and every image past the first are dropped. Omitted, or FULL, is the previous behaviour, byte for byte.
   ///
-  /// [when] - Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first.
+  /// [when] - Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and, unless dated=true, the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first.
   ///
   /// [withFullGroup] - Only the rides with at least one group at capacity (maxParticipants reached). Every other type of publication is left out.
   ///
@@ -131,11 +139,6 @@ abstract class PublicationsClient {
   @GET('/api/teams/{teamSlug}/publications')
   Future<PublicationListResponse> listPublications({
     @Path('teamSlug') required String teamSlug,
-    @Query('page') int? page = 0,
-    @Query('participating') bool? participating = false,
-    @Query('size') int? size = 20,
-    @Query('withFullGroup') bool? withFullGroup = false,
-    @Query('withoutRoute') bool? withoutRoute = false,
     @Query('from') String? from,
     @Query('search') String? search,
     @Query('sortDir') SortDirection? sortDir,
@@ -145,6 +148,12 @@ abstract class PublicationsClient {
     @Query('type') PublicationType? type,
     @Query('view') ListViewMode? view,
     @Query('when') PublicationWhen? whenField,
+    @Query('dated') bool? dated = false,
+    @Query('page') int? page = 0,
+    @Query('participating') bool? participating = false,
+    @Query('size') int? size = 20,
+    @Query('withFullGroup') bool? withFullGroup = false,
+    @Query('withoutRoute') bool? withoutRoute = false,
   });
 
   /// Count publications.
@@ -152,6 +161,8 @@ abstract class PublicationsClient {
   /// How many of the team's publications match the filters, with none of them read. Accepts exactly the same filters as the listing, minus pagination, so a count and the list it opens can never disagree.
   ///
   /// [teamSlug] - Team URL slug.
+  ///
+  /// [dated] - Only the rides and trips — the publications that have a departure; posts are left out. Whatever when says: with when=UPCOMING_FIRST it is an agenda, both sections free of posts, total and upcomingTotal counting rides and trips only. Combines with type: type=POST then yields an empty list (zero on a count endpoint), as when=UPCOMING does, rather than an error. Omitted or false: no such filter.
   ///
   /// [from] - Start date filter (ISO format).
   ///
@@ -167,7 +178,7 @@ abstract class PublicationsClient {
   ///
   /// [type] - Type.
   ///
-  /// [when] - Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first.
+  /// [when] - Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and, unless dated=true, the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first.
   ///
   /// [withFullGroup] - Only the rides with at least one group at capacity (maxParticipants reached). Every other type of publication is left out.
   ///
@@ -175,9 +186,6 @@ abstract class PublicationsClient {
   @GET('/api/teams/{teamSlug}/publications/count')
   Future<CountResponse> countPublications({
     @Path('teamSlug') required String teamSlug,
-    @Query('participating') bool? participating = false,
-    @Query('withFullGroup') bool? withFullGroup = false,
-    @Query('withoutRoute') bool? withoutRoute = false,
     @Query('from') String? from,
     @Query('search') String? search,
     @Query('status') Status? status,
@@ -185,5 +193,9 @@ abstract class PublicationsClient {
     @Query('to') String? to,
     @Query('type') PublicationType? type,
     @Query('when') PublicationWhen? whenField,
+    @Query('dated') bool? dated = false,
+    @Query('participating') bool? participating = false,
+    @Query('withFullGroup') bool? withFullGroup = false,
+    @Query('withoutRoute') bool? withoutRoute = false,
   });
 }

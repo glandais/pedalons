@@ -13,14 +13,15 @@ import '../../../../core/theme/pdl_icons.dart';
 /// et voyages, dont le calendrier est une vue) et aux **Publications**.
 enum TeamSectionKind { dashboard, agenda, posts, routes, ads, members, about }
 
-/// La période de l'Agenda (plan §2.2) : « À venir » par défaut, « Je
-/// participe », « Passées ». Pas de « Tout » : trié dans un sens, il
-/// commençait par la sortie la plus lointaine et finissait dans l'archive.
-enum AgendaScope { upcoming, participating, past }
+/// La période de l'Agenda (règle RL15 des listes, KIT §10) : « Toutes les
+/// dates » par défaut, ou « Je participe ». Plus de « À venir » ni de
+/// « Passées » : la liste montre « À venir » puis « Plus tôt », deux sections
+/// d'une même liste paginée, et « Je participe » vaut pour les deux.
+enum AgendaScope { all, participating }
 
-/// La vue de l'Agenda : la liste de cartes, ou le calendrier du mois — réservé
-/// aux membres (plan §7.2).
-enum AgendaView { list, calendar }
+/// La vue de l'Agenda (règle RL9) : « Vignettes », « Lignes », ou le
+/// calendrier du mois — réservé aux membres (plan §7.2).
+enum AgendaView { cards, rows, calendar }
 
 /// Ce qu'une adresse d'équipe demande : une section et, pour l'Agenda, son
 /// type, sa période et sa vue de départ.
@@ -37,7 +38,10 @@ typedef TeamSectionTarget = ({
 const String kTeamTabParam = 'tab';
 const String kTeamTabFeed = 'publications';
 
-/// La période de l'Agenda dans son URL (`?w=me`, `?w=past`), comme au site.
+/// La période de l'Agenda dans son URL (`?w=me`), comme au site. Les anciennes
+/// valeurs (`?w=past`, `?w=upcoming`, `?w=all`) restent lues : elles mènent à
+/// « Toutes les dates », l'état le plus proche — les passées y sont, dans
+/// « Plus tôt ».
 const String kAgendaScopeParam = 'w';
 
 /// Le type de l'Agenda dans son URL (`?type=ride`, `?type=trip`).
@@ -51,8 +55,7 @@ PublicationType? _agendaType(String? value) => switch (value) {
 
 AgendaScope _agendaScope(String? value) => switch (value) {
   'me' => AgendaScope.participating,
-  'past' => AgendaScope.past,
-  _ => AgendaScope.upcoming,
+  _ => AgendaScope.all,
 };
 
 /// L'Agenda tel que le demande [query] — `?type=` et `?w=`, ce qu'écrivent le
@@ -61,7 +64,7 @@ AgendaScope _agendaScope(String? value) => switch (value) {
 TeamSectionTarget agendaTarget(
   Map<String, String> query, {
   PublicationType? type,
-  AgendaView view = AgendaView.list,
+  AgendaView view = AgendaView.cards,
 }) => (
   kind: TeamSectionKind.agenda,
   type: type ?? _agendaType(query[kAgendaTypeParam]),
@@ -80,7 +83,7 @@ TeamSectionTarget agendaTarget(
 /// |---|---|
 /// | `?tab=publications&type=post` | Publications |
 /// | `?tab=publications&type=ride\|trip` | Agenda, sur ce type |
-/// | `?w=me` / `?w=upcoming` / `?w=all` | Agenda, « Je participe » / « À venir » |
+/// | `?w=me` / `?w=upcoming` / `?w=all` | Agenda, « Je participe » / « Toutes les dates » |
 /// | `?tab=publications` seul | le tableau de bord |
 TeamSectionTarget resolveTeamRootSection(Map<String, String> query) {
   final String? type = query[kAgendaTypeParam];
@@ -88,8 +91,8 @@ TeamSectionTarget resolveTeamRootSection(Map<String, String> query) {
   final TeamSectionTarget dashboard = (
     kind: TeamSectionKind.dashboard,
     type: null,
-    scope: AgendaScope.upcoming,
-    view: AgendaView.list,
+    scope: AgendaScope.all,
+    view: AgendaView.cards,
   );
   final bool isFeed =
       query[kTeamTabParam] == kTeamTabFeed || type != null || scope != null;
@@ -98,13 +101,14 @@ TeamSectionTarget resolveTeamRootSection(Map<String, String> query) {
     return (
       kind: TeamSectionKind.posts,
       type: PublicationType.post,
-      scope: AgendaScope.upcoming,
-      view: AgendaView.list,
+      scope: AgendaScope.all,
+      view: AgendaView.cards,
     );
   }
   if (type == 'ride' || type == 'trip') return agendaTarget(query);
   if (scope == 'me' || scope == 'upcoming' || scope == 'all') {
-    // `w=all`, que l'Agenda n'a plus, vaut « À venir ».
+    // `w=upcoming` et `w=all`, que l'Agenda n'a plus, valent « Toutes les
+    // dates ».
     return agendaTarget(query);
   }
   return dashboard;

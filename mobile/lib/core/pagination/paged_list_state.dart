@@ -9,7 +9,20 @@ class PageResult<T> {
   /// Total number of items matching the query, across all pages.
   final int total;
 
-  const PageResult({required this.items, required this.total});
+  /// La taille de la **première section** d'une liste servie en deux sections
+  /// (`when=UPCOMING_FIRST` : « À venir », puis « Plus tôt »), la même sur
+  /// toutes les pages ; `null` pour une liste d'un seul tenant.
+  ///
+  /// Les `firstSectionTotal` premières lignes de toute la liste forment la
+  /// première section : la ligne d'indice `i` de la page `p` y est quand
+  /// `p * size + i < firstSectionTotal` (règle RL15 des listes, KIT §10).
+  final int? firstSectionTotal;
+
+  const PageResult({
+    required this.items,
+    required this.total,
+    this.firstSectionTotal,
+  });
 }
 
 const Object _unset = Object();
@@ -35,6 +48,18 @@ class PagedListState<T> {
   /// How many pages have been loaded so far — also the index of the next one.
   final int loadedPages;
 
+  /// La taille de la première section d'une liste à deux sections, telle que
+  /// le serveur l'annonce ([PageResult.firstSectionTotal]) ; `null` pour une
+  /// liste d'un seul tenant.
+  final int? firstSectionTotal;
+
+  /// Combien des [items] chargés appartiennent à la première section : ce sont
+  /// les `firstSectionLoaded` premiers, l'ordre étant servi par le serveur.
+  /// Compté **à l'arrivée de chaque page**, d'après la position de chaque
+  /// ligne dans la liste entière — un doublon écarté par la déduplication ne
+  /// décale donc pas la frontière.
+  final int firstSectionLoaded;
+
   final bool hasMore;
   final bool isLoadingInitial;
   final bool isLoadingNext;
@@ -50,6 +75,8 @@ class PagedListState<T> {
     this.items = const [],
     this.total,
     this.loadedPages = 0,
+    this.firstSectionTotal,
+    this.firstSectionLoaded = 0,
     this.hasMore = true,
     this.isLoadingInitial = true,
     this.isLoadingNext = false,
@@ -65,10 +92,15 @@ class PagedListState<T> {
   /// True while the very first page is in flight and nothing is on screen yet.
   bool get showsSkeletons => isLoadingInitial && items.isEmpty;
 
+  /// Vrai quand la liste est servie en deux sections.
+  bool get isSectioned => firstSectionTotal != null;
+
   PagedListState<T> copyWith({
     List<T>? items,
     Object? total = _unset,
     int? loadedPages,
+    Object? firstSectionTotal = _unset,
+    int? firstSectionLoaded,
     bool? hasMore,
     bool? isLoadingInitial,
     bool? isLoadingNext,
@@ -80,6 +112,10 @@ class PagedListState<T> {
       items: items ?? this.items,
       total: identical(total, _unset) ? this.total : total as int?,
       loadedPages: loadedPages ?? this.loadedPages,
+      firstSectionTotal: identical(firstSectionTotal, _unset)
+          ? this.firstSectionTotal
+          : firstSectionTotal as int?,
+      firstSectionLoaded: firstSectionLoaded ?? this.firstSectionLoaded,
       hasMore: hasMore ?? this.hasMore,
       isLoadingInitial: isLoadingInitial ?? this.isLoadingInitial,
       isLoadingNext: isLoadingNext ?? this.isLoadingNext,

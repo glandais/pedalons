@@ -244,10 +244,12 @@ GalleryRoute _myTeamsRoute(
   ListMode mode, {
   TeamDetailDto? team,
 }) {
-  final List<TeamDetailDto> mine = <TeamDetailDto>[
+  // Triées par nom, comme le serveur les rend sous `sortBy=NAME` — l'ordre de
+  // « Mes équipes » (règle RL5).
+  final List<TeamDetailDto> mine = sortedTeams(<TeamDetailDto>[
     team ?? d.clubDesMonts(),
     ...d.myTeams.skip(1),
-  ];
+  ], TeamSortBy.name);
   final ListFixture<TeamDetailDto> fixture = ListFixture<TeamDetailDto>(
     items: mine,
     total: ListTotals.myTeams,
@@ -340,6 +342,93 @@ List<GalleryRoute> _publicationRoutes(
   ),
 ];
 
+/// Une liste de publications **à deux sections** quand la requête porte
+/// `when=UPCOMING_FIRST` (règle RL15, contrat 14.8.0) : [upcoming] puis
+/// [earlier], et `upcomingTotal`. Sans filtre, les totaux annoncés sont
+/// [upcomingTotal] et [earlierTotal] ; sous un filtre, ceux des éléments
+/// retenus. Une requête sans `when` lit [plain].
+List<GalleryRoute> _datedPublicationRoutes(
+  String template,
+  ListMode mode, {
+  required List<PublicationDto> upcoming,
+  required List<PublicationDto> earlier,
+  required int upcomingTotal,
+  required int earlierTotal,
+  required bool Function(GalleryRequest r) isFiltered,
+  required ListFixture<PublicationDto> plain,
+}) {
+  bool dated(GalleryRequest r) => r.text('when') == 'UPCOMING_FIRST';
+
+  /// Les deux sections de la page 0 et leurs totaux, ou `null` (erreur,
+  /// attente).
+  ({List<PublicationDto> items, int total, int upcoming})? answer(
+    GalleryRequest r,
+  ) {
+    switch (mode) {
+      case ListMode.error:
+      case ListMode.loading:
+        return null;
+      case ListMode.empty:
+        return (items: const <PublicationDto>[], total: 0, upcoming: 0);
+      case ListMode.emptyFiltered when isFiltered(r):
+        return (items: const <PublicationDto>[], total: 0, upcoming: 0);
+      case ListMode.full:
+      case ListMode.emptyFiltered:
+        if (!isFiltered(r)) {
+          return (
+            items: pageOf(r, <PublicationDto>[...upcoming, ...earlier]),
+            total: upcomingTotal + earlierTotal,
+            upcoming: upcomingTotal,
+          );
+        }
+        final List<PublicationDto> keptUpcoming = <PublicationDto>[
+          for (final PublicationDto p in upcoming)
+            if (_publicationMatches(r, p)) p,
+        ];
+        final List<PublicationDto> keptEarlier = <PublicationDto>[
+          for (final PublicationDto p in earlier)
+            if (_publicationMatches(r, p)) p,
+        ];
+        return (
+          items: pageOf(r, <PublicationDto>[...keptUpcoming, ...keptEarlier]),
+          total: keptUpcoming.length + keptEarlier.length,
+          upcoming: keptUpcoming.length,
+        );
+    }
+  }
+
+  GalleryReply reply(GalleryRequest r, Object Function(dynamic a) body) =>
+      switch (mode) {
+        ListMode.error => const GalleryError(),
+        ListMode.loading => const GalleryPending(),
+        _ => GalleryJson(body(answer(r)!)),
+      };
+
+  return <GalleryRoute>[
+    GalleryRoute.get(
+      '$template/count',
+      (GalleryRequest r) =>
+          reply(r, (dynamic a) => <String, int>{'total': a.total as int}),
+      when: dated,
+    ),
+    GalleryRoute.get(
+      template,
+      (GalleryRequest r) => reply(
+        r,
+        (dynamic a) => PublicationListResponse(
+          publications: a.items as List<PublicationDto>,
+          total: a.total as int,
+          page: r.page,
+          size: r.size,
+          upcomingTotal: a.upcoming as int,
+        ),
+      ),
+      when: dated,
+    ),
+    ..._publicationRoutes(template, mode, (_) => plain),
+  ];
+}
+
 /// Les événements de [events] compris entre `from` et `to`.
 GalleryReply _events(
   GalleryRequest r,
@@ -380,6 +469,7 @@ ListCase _home(
   List<Override> Function(GalleryData d) overrides = _noOverrides,
   List<ListStep> steps = const <ListStep>[],
   String? loaded,
+  bool frontier = false,
 }) {
   // Un chargement initial vaut pour tout l'écran ; un vide, pour ce que
   // Camille fait à vélo — ni sortie à venir, ni semaine — mais elle garde ses
@@ -400,46 +490,58 @@ ListCase _home(
       ...steps,
     ],
     loaded: loaded,
-    api: (GalleryData d) => <GalleryRoute>[
-      ..._publicationRoutes(
-        '/api/publications',
-        mode,
-        (_) => ListFixture<PublicationDto>(
-          items: d.feedItems,
-          total: ListTotals.feed,
-          // « Membre » est la portée par défaut : « Toutes les équipes » en
-          // écarte la requête, et c'est un filtre.
-          isFiltered: (GalleryRequest r) =>
-              r.any(<String>['type', 'search']) ||
-              r.text('minRole') != 'MEMBER',
-          matches: _publicationMatches,
-        ),
-      ),
-      GalleryRoute.get('/api/users/me/participations', (GalleryRequest r) {
-        if (blocks == ListMode.loading) return const GalleryPending();
-        final List<PublicationDto> mine = blocks == ListMode.empty
-            ? const <PublicationDto>[]
-            : <PublicationDto>[d.feedRide(registeredIn: 'B')];
-        return GalleryJson(
-          PublicationListResponse(
-            publications: mine,
-            total: mine.length,
-            page: 0,
-            size: r.size,
+    api: (GalleryData d) {
+      // « Membre » est la portée par défaut : « Toutes les équipes » en écarte
+      // la requête, et c'est un filtre ; « Je participe » aussi.
+      bool filtered(GalleryRequest r) =>
+          r.any(<String>['type', 'search']) ||
+          r.text('minRole') != 'MEMBER' ||
+          r.text('participating') == 'true';
+      return <GalleryRoute>[
+        // « Tout » : « À venir » puis « Plus tôt » (règle RL15). Au repos, la
+        // première page n'est faite que d'« À venir » ; `accueil-sections`
+        // montre la frontière.
+        ..._datedPublicationRoutes(
+          '/api/publications',
+          mode,
+          upcoming: frontier ? d.homeUpcoming.take(2).toList() : d.homeUpcoming,
+          earlier: frontier ? d.homeEarlier : const <PublicationDto>[],
+          upcomingTotal: frontier ? 2 : ListTotals.homeUpcoming,
+          earlierTotal: ListTotals.homeEarlier,
+          isFiltered: filtered,
+          plain: ListFixture<PublicationDto>(
+            items: d.feedItems,
+            total: ListTotals.feed,
+            isFiltered: filtered,
+            matches: _publicationMatches,
           ),
-        );
-      }),
-      GalleryRoute.get(
-        '/api/calendar/events',
-        (GalleryRequest r) => _events(r, blocks, d.weekEvents),
-      ),
-      ..._common(
-        d,
-        myTeamsMode: blocks == ListMode.loading
-            ? ListMode.loading
-            : ListMode.full,
-      ),
-    ],
+        ),
+        GalleryRoute.get('/api/users/me/participations', (GalleryRequest r) {
+          if (blocks == ListMode.loading) return const GalleryPending();
+          final List<PublicationDto> mine = blocks == ListMode.empty
+              ? const <PublicationDto>[]
+              : <PublicationDto>[d.feedRide(registeredIn: 'B')];
+          return GalleryJson(
+            PublicationListResponse(
+              publications: mine,
+              total: mine.length,
+              page: 0,
+              size: r.size,
+            ),
+          );
+        }),
+        GalleryRoute.get(
+          '/api/calendar/events',
+          (GalleryRequest r) => _events(r, blocks, d.weekEvents),
+        ),
+        ..._common(
+          d,
+          myTeamsMode: blocks == ListMode.loading
+              ? ListMode.loading
+              : ListMode.full,
+        ),
+      ];
+    },
   );
 }
 
@@ -451,12 +553,19 @@ List<Override> _homeAllRides(GalleryData _) => <Override>[
 
 final List<ListCase> _accueilCases = <ListCase>[
   _home('accueil-repos', loaded: kRideName),
+  // La frontière entre « À venir » et « Plus tôt », dans le même défilement.
+  _home(
+    'accueil-sections',
+    frontier: true,
+    // La dernière carte « À venir » en haut : l'en-tête « Plus tôt » suit,
+    // sous la barre épinglée.
+    steps: <ListStep>[ListScrollTo(ListTarget.key(keys.feed.card(kRideSlug)))],
+    loaded: kPostName,
+  ),
   _home('accueil-filtre', overrides: _homeAllRides, loaded: kRideName),
   _home(
     'accueil-criteres',
-    steps: const <ListStep>[
-      ListTap(ListTarget.icon(Icons.tune, within: PdlChip)),
-    ],
+    steps: <ListStep>[ListTap(ListTarget.key(keys.feed.scopeChip))],
     loaded: kRideName,
   ),
   _home('accueil-vide', mode: ListMode.empty),
@@ -528,7 +637,10 @@ ListCase _agenda(
   ListMode mode = ListMode.full,
   String role = 'ORGANIZER',
   PublicationType? type,
-  AgendaScope scope = AgendaScope.upcoming,
+  AgendaScope scope = AgendaScope.all,
+  AgendaView view = AgendaView.cards,
+  bool frontier = false,
+  List<ListStep> steps = const <ListStep>[],
   String? loaded,
 }) => ListCase(
   id,
@@ -537,36 +649,56 @@ ListCase _agenda(
     section: TeamSectionKind.agenda,
     agendaType: type,
     agendaScope: scope,
+    agendaView: view,
   ),
+  steps: steps,
   loaded: loaded,
-  api: (GalleryData d) => <GalleryRoute>[
-    ..._publicationRoutes(
-      '/api/teams/{teamSlug}/publications',
-      mode,
-      (GalleryRequest r) => ListFixture<PublicationDto>(
-        items: r.text('when') == 'PAST' ? d.agendaPast : d.agendaUpcoming,
-        total: r.text('when') == 'PAST' ? ListTotals.past : ListTotals.agenda,
-        // La période n'est pas un filtre ; le type et « Je participe » en
-        // sont.
-        isFiltered: (GalleryRequest r) =>
-            r.any(<String>['search', 'tags', 'type']) ||
-            r.text('participating') == 'true',
-        matches: _publicationMatches,
+  api: (GalleryData d) {
+    // Le type, la recherche, les tags et « Je participe » sont des filtres.
+    bool filtered(GalleryRequest r) =>
+        r.any(<String>['search', 'tags', 'type']) ||
+        r.text('participating') == 'true';
+    return <GalleryRoute>[
+      // « À venir » puis « Plus tôt » (règle RL15). Au repos, la première
+      // page n'est faite que d'« À venir » (18) ; `agenda-sections` montre
+      // la frontière.
+      ..._datedPublicationRoutes(
+        '/api/teams/{teamSlug}/publications',
+        mode,
+        upcoming: d.agendaUpcoming,
+        earlier: frontier ? d.agendaPast : const <PublicationDto>[],
+        upcomingTotal: frontier ? d.agendaUpcoming.length : ListTotals.agenda,
+        earlierTotal: ListTotals.past,
+        isFiltered: filtered,
+        plain: ListFixture<PublicationDto>(
+          items: d.agendaUpcoming,
+          total: ListTotals.agenda,
+          isFiltered: filtered,
+          matches: _publicationMatches,
+        ),
       ),
-    ),
-    ..._common(d, team: d.clubDesMonts(role: role)),
-  ],
+      ..._common(d, team: d.clubDesMonts(role: role)),
+    ];
+  },
 );
 
 final List<ListCase> _agendaCases = <ListCase>[
   _agenda('agenda-repos', loaded: 'Sortie récupération'),
+  // La frontière entre « À venir » et « Plus tôt », dans le même défilement.
+  _agenda(
+    'agenda-sections',
+    frontier: true,
+    // La dernière carte « À venir » en haut : l'en-tête « Plus tôt » suit,
+    // sous la barre épinglée.
+    steps: <ListStep>[ListScrollTo(ListTarget.key(keys.feed.card(kTripSlug)))],
+    loaded: 'Tour du lac',
+  ),
   _agenda(
     'agenda-filtre',
     type: PublicationType.ride,
     scope: AgendaScope.participating,
     loaded: kRideName,
   ),
-  _agenda('agenda-passees', scope: AgendaScope.past, loaded: 'Tour du lac'),
   _agenda('agenda-vide', mode: ListMode.empty),
   _agenda(
     'agenda-vide-filtre',
@@ -619,7 +751,9 @@ final List<ListCase> _calendrierCases = <ListCase>[
   _calendar('calendrier-repos', loaded: 'Sortie récupération'),
   _calendar('calendrier-filtre', overrides: _ridesOnly, loaded: kRideName),
   _calendar('calendrier-equipe', team: true, loaded: 'Sortie récupération'),
-  _calendar('calendrier-vide', mode: ListMode.empty),
+  // Le mois courant est vide, le suivant ne l'est pas : l'état vide propose
+  // « Aller au prochain mois avec une sortie » (règle RL10).
+  _calendar('calendrier-vide', events: (GalleryData d) => d.laterMonthEvents),
   _calendar(
     'calendrier-vide-filtre',
     events: (GalleryData d) => d.monthStagesOnly,
@@ -631,17 +765,17 @@ final List<ListCase> _calendrierCases = <ListCase>[
 
 // ─────────────────────────────────────────────────────────────── parcours
 
-/// La vue Liste ou Carte, imposée : sans quoi la dernière vue employée sur
+/// La vue liste ou carte, imposée : sans quoi la dernière vue employée sur
 /// l'appareil (préférences) déciderait de la capture.
 class _GalleryRouteView extends RouteViewModeNotifier {
-  _GalleryRouteView(this.initial);
+  _GalleryRouteView(super.kind, this.initial);
   final RouteViewMode initial;
   @override
   RouteViewMode build() => initial;
 }
 
 class _GalleryRouteDensity extends RouteDensityNotifier {
-  _GalleryRouteDensity(this.initial);
+  _GalleryRouteDensity(super.kind, this.initial);
   final RouteListDensity? initial;
   @override
   RouteListDensity? build() => initial;
@@ -729,8 +863,10 @@ ListCase _routes(
   steps: steps,
   loaded: loaded,
   overrides: (_) => <Override>[
-    routeViewModeProvider.overrideWith(() => _GalleryRouteView(view)),
-    routeDensityProvider.overrideWith(() => _GalleryRouteDensity(density)),
+    routeViewModeProvider(RouteListKind.team)
+        .overrideWith(() => _GalleryRouteView(RouteListKind.team, view)),
+    routeDensityProvider(RouteListKind.team)
+        .overrideWith(() => _GalleryRouteDensity(RouteListKind.team, density)),
     if (filters != null)
       routeFiltersProvider(_vcm).overrideWith((Ref ref) => filters),
   ],
@@ -805,10 +941,11 @@ ListCase _explore(
   steps: steps,
   loaded: loaded,
   overrides: (_) => <Override>[
-    routeViewModeProvider.overrideWith(
-      () => _GalleryRouteView(RouteViewMode.list),
+    routeViewModeProvider(RouteListKind.explore).overrideWith(
+      () => _GalleryRouteView(RouteListKind.explore, RouteViewMode.list),
     ),
-    routeDensityProvider.overrideWith(() => _GalleryRouteDensity(null)),
+    routeDensityProvider(RouteListKind.explore)
+        .overrideWith(() => _GalleryRouteDensity(RouteListKind.explore, null)),
     if (filters != null)
       routeFiltersProvider(null).overrideWith((Ref ref) => filters),
   ],
@@ -818,15 +955,17 @@ ListCase _explore(
   ],
 );
 
-const RouteFilters _memberRoad = RouteFilters(
-  minRole: MinRole.member,
+/// « Toutes les équipes » (la portée écartée de « Membre », son défaut) et
+/// « Route » : deux filtres.
+const RouteFilters _allTeamsRoad = RouteFilters(
+  defaultMinRole: MinRole.member,
   surfaceType: SurfaceType.road,
   addedOrder: <RouteFilterField>[RouteFilterField.surfaceType],
 );
 
 final List<ListCase> _explorerCases = <ListCase>[
   _explore('explorer-repos', loaded: 'Landes du Cragou'),
-  _explore('explorer-filtre', filters: _memberRoad, loaded: kRideName),
+  _explore('explorer-filtre', filters: _allTeamsRoad, loaded: kRideName),
   _explore(
     'explorer-criteres',
     steps: <ListStep>[ListTap(ListTarget.key(keys.routes.filterButton))],
@@ -835,7 +974,7 @@ final List<ListCase> _explorerCases = <ListCase>[
   _explore(
     'explorer-vide-filtre',
     mode: ListMode.emptyFiltered,
-    filters: _memberRoad,
+    filters: _allTeamsRoad,
   ),
   _explore('explorer-erreur', mode: ListMode.error),
 ];
@@ -910,8 +1049,8 @@ final List<ListCase> _annoncesCases = <ListCase>[
 
 // ─────────────────────────────────────────────────────────────── équipes
 
+// La recherche est toujours visible (règle RL6) : on y tape directement.
 const List<ListStep> _searchBretagne = <ListStep>[
-  ListTap(ListTarget.tooltip('teams.search.open')),
   ListEnterText(ListTarget.field(), 'bretagne'),
 ];
 
@@ -935,17 +1074,25 @@ final List<ListCase> _equipesCases = <ListCase>[
     page: (_) => const TeamsDiscoverPage(),
     loaded: 'Cyclos de Morlaix',
     api: (GalleryData d) {
-      final ListFixture<TeamDetailDto> fixture = ListFixture<TeamDetailDto>(
-        items: d.discoverTeams,
-        total: ListTotals.discover,
-        isFiltered: (GalleryRequest r) => r.any(<String>['search']),
-        matches: (GalleryRequest r, TeamDetailDto t) =>
-            textMatches(r.text('search'), <String?>[t.name, t.excerpt]),
-      );
+      // Dans l'ordre demandé (`sortBy`) : par nombre de membres sous
+      // « Toutes », par nom sous « Mes équipes » (règle RL5).
+      ListFixture<TeamDetailDto> fixture(GalleryRequest r) =>
+          ListFixture<TeamDetailDto>(
+            items: sortedTeams(
+              d.discoverTeams,
+              r.text('sortBy') == 'MEMBER_COUNT'
+                  ? TeamSortBy.memberCount
+                  : TeamSortBy.name,
+            ),
+            total: ListTotals.discover,
+            isFiltered: (GalleryRequest r) => r.any(<String>['search']),
+            matches: (GalleryRequest r, TeamDetailDto t) =>
+                textMatches(r.text('search'), <String?>[t.name, t.excerpt]),
+          );
       return <GalleryRoute>[
         GalleryRoute.get(
           '/api/teams',
-          (GalleryRequest r) => fixture.list(
+          (GalleryRequest r) => fixture(r).list(
             r,
             ListMode.full,
             (List<TeamDetailDto> page, int total) => TeamListResponse(

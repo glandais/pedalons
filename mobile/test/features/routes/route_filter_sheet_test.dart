@@ -28,7 +28,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const String windRow = 'routes.filters.windDirection';
-  const String sortRow = 'routes.filters.sort';
 
   late SharedPreferences prefs;
 
@@ -96,7 +95,7 @@ void main() {
     double textScale,
   ) async {
     await openSheet(tester, textScale: textScale);
-    for (final String label in <String>[windRow, sortRow]) {
+    for (final String label in <String>[windRow]) {
       // Il faut d'abord les amener à l'écran : elles sont en bas d'un corps
       // qui défile — ce qui est précisément le comportement attendu, au lieu
       // de s'écraser pour tenir sans défilement.
@@ -136,6 +135,63 @@ void main() {
     );
     // Le champ de recherche de la feuille porte un debounce de 350 ms : sans
     // ce délai, le binding se plaint d'un timer encore en vol au démontage.
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  // RL6 (KIT §10) : la feuille ne garde que les critères ; le tri est la puce
+  // visible en tête de la rangée. Ce test remplace la mesure de « Trier par »,
+  // qui vivait dans la feuille.
+  testWidgets('RL6 — plus de « Trier par » dans la feuille', (
+    WidgetTester tester,
+  ) async {
+    await openSheet(tester, textScale: 1.0);
+    expect(find.text('routes.filters.sort'), findsNothing);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('RL4 — « Effacer les filtres » lève recherche, critères et '
+      'tags, remet la portée à son défaut et garde le tri', (
+    WidgetTester tester,
+  ) async {
+    RouteFilters? applied;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        child: MaterialApp(
+          home: Builder(
+            builder: (BuildContext context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () async => applied = await showRouteFilterSheet(
+                    context,
+                    filters: everythingSet.copyWith(
+                      minRole: MinRole.organizer,
+                      sortBy: RouteSortBy.distance,
+                      sortDir: SortDirection.asc,
+                    ),
+                  ),
+                  child: const Text('ouvrir'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('ouvrir'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('common.clearFilters'));
+    await tester.pump();
+    await tester.tap(find.textContaining('routes.filters.apply'));
+    await tester.pumpAndSettle();
+
+    expect(applied, isNotNull);
+    expect(applied!.activeFields, isEmpty);
+    expect(applied!.search, isNull);
+    expect(applied!.minRole, applied!.defaultMinRole);
+    expect(applied!.sortBy, RouteSortBy.distance);
+    expect(applied!.sortDir, SortDirection.asc);
     await tester.pump(const Duration(seconds: 1));
   });
 }

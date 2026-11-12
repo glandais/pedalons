@@ -219,9 +219,7 @@
     "viewRide": "View ride",
     "explore": "Explore",
     "latestPublications": "Latest publications",
-    "scopeAllTeams": "All teams",
     "typeAll": "All",
-    "scope": "Scope",
     "publicationCount": {
       "zero": "No publication",
       "one": "{} publication",
@@ -287,8 +285,6 @@
       "title": "Team unavailable"
     },
     "search": {
-      "open": "Search a team",
-      "close": "Close search",
       "clear": "Clear search",
       "hint": "Search teams…"
     },
@@ -507,74 +503,9 @@
     "agenda": {
       "underWay": "Under way",
       "searchPlaceholder": "Search the agenda…",
-      "scope": {
-        "upcoming": "Upcoming",
-        "participating": "I'm going",
-        "past": "Past",
-        "all": "All"
-      },
-      "view": {
-        "label": "View",
-        "list": "List",
-        "calendar": "Calendar"
-      },
       "empty": {
         "title": "Nothing on the agenda yet",
-        "message": "The team's rides and trips will show up here.",
-        "seePast": "See past ones"
-      },
-      "count": {
-        "upcoming": {
-          "all": {
-            "zero": "No upcoming ride or trip",
-            "one": "{} upcoming ride or trip",
-            "other": "{} upcoming rides and trips"
-          },
-          "rides": {
-            "zero": "No upcoming ride",
-            "one": "{} upcoming ride",
-            "other": "{} upcoming rides"
-          },
-          "trips": {
-            "zero": "No upcoming trip",
-            "one": "{} upcoming trip",
-            "other": "{} upcoming trips"
-          }
-        },
-        "participating": {
-          "all": {
-            "zero": "No ride or trip you are registered for",
-            "one": "{} ride or trip you are registered for",
-            "other": "{} rides and trips you are registered for"
-          },
-          "rides": {
-            "zero": "No ride you are registered for",
-            "one": "{} ride you are registered for",
-            "other": "{} rides you are registered for"
-          },
-          "trips": {
-            "zero": "No trip you are registered for",
-            "one": "{} trip you are registered for",
-            "other": "{} trips you are registered for"
-          }
-        },
-        "past": {
-          "all": {
-            "zero": "No past ride or trip",
-            "one": "{} past ride or trip",
-            "other": "{} past rides and trips"
-          },
-          "rides": {
-            "zero": "No past ride",
-            "one": "{} past ride",
-            "other": "{} past rides"
-          },
-          "trips": {
-            "zero": "No past trip",
-            "one": "{} past trip",
-            "other": "{} past trips"
-          }
-        }
+        "message": "The team's rides and trips will show up here."
       }
     },
     "posts": {
@@ -887,7 +818,6 @@
     },
     "templates": {
       "listTitle": "Ride templates",
-      "new": "New template",
       "createTitle": "New template",
       "editTitle": "Edit template",
       "manage": "Manage templates",
@@ -1003,6 +933,24 @@
       "membersOnly": {
         "title": "Members only",
         "message": "The team's ads are only visible to its members."
+      },
+      "price": {
+        "chip": "Price",
+        "title": "Price",
+        "min": "Min price",
+        "max": "Max price",
+        "placeholder": "Any",
+        "hint": "A price bound leaves out the ads with no set price.",
+        "minActive": "Min. price €{price}",
+        "maxActive": "Max. price €{price}",
+        "upTo": "Up to €{price}",
+        "range": "€{min} – €{max}",
+        "apply": {
+          "zero": "No ad",
+          "one": "Show {} ad",
+          "other": "Show {} ads"
+        },
+        "applyUnknown": "Show ads"
       }
     },
     "sort": {
@@ -1119,11 +1067,10 @@
       },
       "none": "No routes",
       "noneHint": "No routes are available at the moment.",
-      "densitySwitched": "Past {threshold} results the list switches to the compact layout. You can go back to thumbnails at any time."
+      "densitySwitched": "Past {threshold} results the list switches to the “Rows” view. You can go back to cards at any time."
     },
     "filters": {
       "title": "Filters",
-      "reset": "Reset",
       "apply": {
         "zero": "No results",
         "one": "Show {} route",
@@ -1244,20 +1191,6 @@
         "other": "{} points"
       }
     },
-    "view": {
-      "list": "List",
-      "map": "Map"
-    },
-    "density": {
-      "cards": "Thumbnails",
-      "compact": "Compact"
-    },
-    "scope": {
-      "title": "Scope",
-      "allTeams": "All teams",
-      "minRole": "Minimum role",
-      "anyRole": "Any role"
-    },
     "nearMe": {
       "title": "Around me",
       "active": "Around me · {radius}",
@@ -1266,8 +1199,6 @@
     "editor": {
       "createTitle": "New route",
       "editTitle": "Edit route",
-      "add": "Add",
-      "addSemantic": "Add a route",
       "create": "Create route",
       "save": "Save",
       "saving": "Saving…",
@@ -1383,7 +1314,6 @@
     },
     "cancelled": "Cancelled",
     "today": "Today",
-    "scope": "Scope",
     "allMyTeams": "All my teams",
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
@@ -2177,6 +2107,33 @@
         "one": "comment",
         "other": "comments"
       }
+    },
+    "scope": {
+      "title": "Scope",
+      "all": "All teams"
+    },
+    "period": {
+      "all": "All",
+      "allDates": "All dates",
+      "participating": "I'm going"
+    },
+    "sections": {
+      "upcoming": "Upcoming",
+      "earlier": "Earlier"
+    },
+    "countNamed": "{count} {noun}",
+    "create": "Create",
+    "createLabel": {
+      "ride": "Create a ride",
+      "route": "Create a route",
+      "template": "Create a template"
+    },
+    "view": {
+      "label": "View",
+      "cards": "Cards",
+      "rows": "Rows",
+      "map": "Map",
+      "calendar": "Calendar"
     }
   }
 }

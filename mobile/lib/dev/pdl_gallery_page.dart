@@ -1581,15 +1581,15 @@ class _GalleryBodyState extends State<_GalleryBody> {
           title: 'B23 · PdlScopeSelector',
           children: <Widget>[
             PdlScopeSelector(
-              label: 'Toutes mes équipes',
+              label: 'Membre',
               onTap: () {},
-              semanticLabel: 'Portée : toutes mes équipes',
+              semanticLabel: 'Portée : membre',
             ),
             const SizedBox(height: 12),
-            const _Caption('variante ligne — barre d\'outils du calendrier'),
+            const _Caption('hors du défaut — teintée'),
             PdlScopeSelector(
-              label: 'N-Peloton',
-              style: PdlScopeStyle.row,
+              label: 'Toutes les équipes',
+              active: true,
               onTap: () {},
             ),
           ],

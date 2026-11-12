@@ -30,6 +30,7 @@ class PdlChip extends StatelessWidget {
     this.onTap,
     this.onRemoved,
     this.icon,
+    this.trailingIcon,
     this.sortStyle = false,
   });
 
@@ -41,6 +42,10 @@ class PdlChip extends StatelessWidget {
   final VoidCallback? onRemoved;
 
   final IconData? icon;
+
+  /// Une icône après le libellé — le chevron d'une chip qui ouvre une feuille
+  /// de choix (la portée). Ignorée quand [onRemoved] pose sa croix.
+  final IconData? trailingIcon;
 
   /// Contour `text` : sélecteur de portée ou de tri, à distinguer des filtres.
   final bool sortStyle;
@@ -85,6 +90,9 @@ class PdlChip extends StatelessWidget {
           if (onRemoved != null) ...<Widget>[
             const SizedBox(width: 6),
             Icon(PdlIcons.remove, size: 16, color: foreground),
+          ] else if (trailingIcon != null) ...<Widget>[
+            const SizedBox(width: 4),
+            Icon(trailingIcon, size: 16, color: foreground),
           ],
         ],
       ),

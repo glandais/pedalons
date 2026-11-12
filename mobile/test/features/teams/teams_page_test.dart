@@ -179,13 +179,31 @@ void main() {
     );
   });
 
+  // RL6 (KIT §10) : la recherche est toujours visible, épinglée sous la barre
+  // de titre ; la loupe qui l'ouvrait disparaît.
+  testWidgets('RL6 — la recherche est visible d\'emblée, sans loupe', (
+    WidgetTester tester,
+  ) async {
+    final _StubTeamRepository repository = _StubTeamRepository(fixtureTeams(3));
+    await openWith(tester, repository);
+
+    expect(find.byKey(keys.teams.searchField), findsOneWidget);
+    expect(find.text('Rechercher une équipe…'), findsOneWidget);
+    expect(find.byTooltip('Rechercher une équipe'), findsNothing);
+    // Au-dessus de la liste : elle ne défile pas avec les cartes.
+    expect(
+      tester.getTopLeft(find.byKey(keys.teams.searchField)).dy,
+      lessThan(
+        tester.getTopLeft(find.byKey(keys.teams.teamCard('equipe-1'))).dy,
+      ),
+    );
+  });
+
   testWidgets('RL10 — une recherche sans résultat est un vide filtré nommé', (
     WidgetTester tester,
   ) async {
     final _StubTeamRepository repository = _StubTeamRepository(fixtureTeams(3));
     await openWith(tester, repository);
-    await tester.tap(find.byTooltip('Rechercher une équipe'));
-    await tester.pumpAndSettle();
     await tester.enterText(find.byType(EditableText), 'zzz');
     // L'icône de l'état vide flotte sans fin : pas de `pumpAndSettle`.
     for (int i = 0; i < 6; i++) {
@@ -207,8 +225,6 @@ void main() {
     final _StubTeamRepository repository = _StubTeamRepository(fixtureTeams(3));
     await openWith(tester, repository);
 
-    await tester.tap(find.byTooltip('Rechercher une équipe'));
-    await tester.pumpAndSettle();
     await tester.enterText(find.byType(EditableText), 'Équipe 2');
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();

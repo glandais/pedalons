@@ -45,6 +45,12 @@ class AdsListKeys {
 
   final searchField = const _AdsListKey('searchField');
 
+  /// La puce « Prix » et sa feuille (règle RL3).
+  final priceChip = const _AdsListKey('priceChip');
+  final minPriceField = const _AdsListKey('minPriceField');
+  final maxPriceField = const _AdsListKey('maxPriceField');
+  final priceApplyButton = const _AdsListKey('priceApplyButton');
+
   /// La puce d'un type d'annonce (`AdType.json`) ; `null` pour « Tous ».
   ValueKey<String> typeChip(String? adType) =>
       _AdsListKey('typeChip_${adType ?? 'all'}');

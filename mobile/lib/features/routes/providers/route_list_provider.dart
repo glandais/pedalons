@@ -25,14 +25,16 @@ import '../domain/route_filters.dart';
 /// contenu public des équipes publiques. La section d'une équipe n'a pas de
 /// portée à choisir.
 final routeFiltersProvider = StateProvider.autoDispose
-    .family<RouteFilters, String?>(
-      (ref, teamSlug) => RouteFilters(
+    .family<RouteFilters, String?>((ref, teamSlug) {
+      final MinRole? scope = teamSlug == null
+          ? ref.watch(membershipDefaultScopeProvider)
+          : null;
+      return RouteFilters(
         teamSlug: teamSlug,
-        minRole: teamSlug == null
-            ? ref.watch(membershipDefaultScopeProvider)
-            : null,
-      ),
-    );
+        minRole: scope,
+        defaultMinRole: scope,
+      );
+    });
 
 /// The paginated route list for one filter set.
 ///
@@ -102,23 +104,44 @@ final routeBoundsProvider = FutureProvider.autoDispose
 // Ni l'une ni l'autre n'est un filtre : elles ne changent pas le jeu de
 // résultats, seulement son rendu. Les faire entrer dans `RouteFilters` — qui
 // est la clé de famille de la liste — rejouerait tout le jeu à chaque bascule.
+//
+// **Une préférence par liste** (règle RL9) : Explorer d'un côté, la section
+// Parcours des équipes de l'autre. Choisir la carte dans une équipe ne rouvre
+// plus Explorer sur la carte.
 
-const String _kRouteViewKey = 'routes.view';
-const String _kRouteDensityKey = 'routes.density';
+/// La liste dont on lit la vue : Explorer, ou les parcours d'une équipe.
+enum RouteListKind { explore, team }
 
-/// Liste ou carte. Persistée : revenir sur l'onglet Explorer restitue la vue
+RouteListKind routeListKindOf(String? teamSlug) =>
+    teamSlug == null ? RouteListKind.explore : RouteListKind.team;
+
+/// La clé de préférence d'Explorer reste celle d'avant : sa vue survit à la
+/// mise à jour.
+String _viewPrefKey(RouteListKind kind) =>
+    kind == RouteListKind.explore ? 'routes.view' : 'routes.team.view';
+
+String _densityPrefKey(RouteListKind kind) =>
+    kind == RouteListKind.explore ? 'routes.density' : 'routes.team.density';
+
+/// Liste ou carte, par liste. Persistée : revenir sur Explorer restitue la vue
 /// qu'on y avait laissée.
 final routeViewModeProvider =
-    NotifierProvider<RouteViewModeNotifier, RouteViewMode>(
-      RouteViewModeNotifier.new,
-    );
+    NotifierProvider.family<
+      RouteViewModeNotifier,
+      RouteViewMode,
+      RouteListKind
+    >(RouteViewModeNotifier.new);
 
 class RouteViewModeNotifier extends Notifier<RouteViewMode> {
+  RouteViewModeNotifier(this.kind);
+
+  final RouteListKind kind;
+
   @override
   RouteViewMode build() {
     final String? stored = ref
         .watch(sharedPreferencesProvider)
-        .getString(_kRouteViewKey);
+        .getString(_viewPrefKey(kind));
     return stored == RouteViewMode.map.name
         ? RouteViewMode.map
         : RouteViewMode.list;
@@ -128,26 +151,33 @@ class RouteViewModeNotifier extends Notifier<RouteViewMode> {
     state = mode;
     await ref
         .read(sharedPreferencesProvider)
-        .setString(_kRouteViewKey, mode.name);
+        .setString(_viewPrefKey(kind), mode.name);
   }
 }
 
-/// Densité **choisie** par l'utilisateur, ou `null` tant qu'il n'a rien choisi.
+/// Densité **choisie** par l'utilisateur pour une liste, ou `null` tant qu'il
+/// n'a rien choisi.
 ///
 /// Le nul est significatif : c'est lui qui laisse la règle automatique
-/// (vignettes sous [kRouteCompactThreshold] résultats, compact au-delà)
+/// (vignettes sous [kRouteCompactThreshold] résultats, lignes au-delà)
 /// s'appliquer. Un choix manuel l'écrase et survit au redémarrage.
 final routeDensityProvider =
-    NotifierProvider<RouteDensityNotifier, RouteListDensity?>(
-      RouteDensityNotifier.new,
-    );
+    NotifierProvider.family<
+      RouteDensityNotifier,
+      RouteListDensity?,
+      RouteListKind
+    >(RouteDensityNotifier.new);
 
 class RouteDensityNotifier extends Notifier<RouteListDensity?> {
+  RouteDensityNotifier(this.kind);
+
+  final RouteListKind kind;
+
   @override
   RouteListDensity? build() {
     final String? stored = ref
         .watch(sharedPreferencesProvider)
-        .getString(_kRouteDensityKey);
+        .getString(_densityPrefKey(kind));
     return switch (stored) {
       'cards' => RouteListDensity.cards,
       'compact' => RouteListDensity.compact,
@@ -158,7 +188,7 @@ class RouteDensityNotifier extends Notifier<RouteListDensity?> {
   Future<void> select(RouteListDensity density) async {
     state = density;
     final SharedPreferences prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setString(_kRouteDensityKey, density.name);
+    await prefs.setString(_densityPrefKey(kind), density.name);
   }
 }
 

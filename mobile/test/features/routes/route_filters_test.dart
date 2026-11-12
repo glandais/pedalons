@@ -5,35 +5,66 @@ import 'package:pedalons/features/routes/providers/route_list_provider.dart';
 
 void main() {
   group('portée', () {
-    test('elle compte dans le badge du bouton de filtres', () {
-      // §3.1 : en vue Carte les chips disparaissent, le compteur est le seul
-      // témoin restant — il doit donc compter la portée.
+    // RL4 (KIT §10) : la pastille compte exactement ce que « Effacer les
+    // filtres » lève. Ces tests codaient l'ancien compte — l'équipe de la
+    // page comptait, la recherche non — et la portée gardée par `cleared`.
+    test('l\'équipe de la page ne compte pas ; une portée écartée de son '
+        'défaut, si', () {
       expect(const RouteFilters().activeCount, 0);
-      expect(const RouteFilters(teamSlug: 'n-peloton').activeCount, 1);
+      expect(const RouteFilters(teamSlug: 'n-peloton').activeCount, 0);
+      expect(
+        const RouteFilters(
+          minRole: MinRole.member,
+          defaultMinRole: MinRole.member,
+        ).activeCount,
+        0,
+      );
+      expect(const RouteFilters(defaultMinRole: MinRole.member).activeCount, 1);
       expect(const RouteFilters(minRole: MinRole.admin).activeCount, 1);
       expect(
         const RouteFilters(
           teamSlug: 'n-peloton',
           surfaceType: SurfaceType.gravel,
         ).activeCount,
-        2,
+        1,
       );
     });
 
-    test('la recherche ne compte pas, elle a son propre champ', () {
-      expect(const RouteFilters(search: 'ventoux').activeCount, 0);
+    test('la recherche compte : « Effacer les filtres » la lève', () {
+      expect(const RouteFilters(search: 'ventoux').activeCount, 1);
     });
 
-    test('« tout réinitialiser » garde la portée', () {
+    test('le tri ne compte jamais', () {
+      expect(
+        const RouteFilters(
+          sortBy: RouteSortBy.distance,
+          sortDir: SortDirection.asc,
+        ).activeCount,
+        0,
+      );
+    });
+
+    test('« Effacer les filtres » remet la portée à son défaut, garde le tri '
+        'et l\'équipe de la page', () {
       const RouteFilters filters = RouteFilters(
         teamSlug: 'n-peloton',
         search: 'ventoux',
         surfaceType: SurfaceType.gravel,
+        sortBy: RouteSortBy.distance,
       );
       final RouteFilters cleared = filters.cleared;
       expect(cleared.teamSlug, 'n-peloton');
       expect(cleared.search, isNull);
       expect(cleared.surfaceType, isNull);
+      expect(cleared.sortBy, RouteSortBy.distance);
+      expect(cleared.activeCount, 0);
+
+      const RouteFilters explorer = RouteFilters(
+        minRole: MinRole.admin,
+        defaultMinRole: MinRole.member,
+      );
+      expect(explorer.cleared.minRole, MinRole.member);
+      expect(explorer.cleared.scopeIsDefault, isTrue);
     });
   });
 
@@ -44,8 +75,8 @@ void main() {
         tagIds: <String>['a1', 'b2'],
       );
       expect(filters.activeFields, contains(RouteFilterField.tags));
-      // Portée + tags.
-      expect(filters.activeCount, 2);
+      // Les tags seuls : l'équipe de la page n'est pas un filtre (RL4).
+      expect(filters.activeCount, 1);
       final RouteFilters without = filters.without(RouteFilterField.tags);
       expect(without.tagIds, isEmpty);
       expect(without.teamSlug, 'n-peloton');
@@ -79,13 +110,12 @@ void main() {
       expect(a == const RouteFilters(teamSlug: 'n-peloton'), isFalse);
     });
 
-    test('« tout réinitialiser » lève les tags', () {
+    test('« Effacer les filtres » lève les tags', () {
       const RouteFilters filters = RouteFilters(
         teamSlug: 'n-peloton',
         tagIds: <String>['a1'],
       );
       expect(filters.cleared.tagIds, isEmpty);
-      expect(filters.filtersCleared.tagIds, isEmpty);
     });
   });
 

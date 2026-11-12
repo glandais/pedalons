@@ -10,6 +10,7 @@ import 'package:pedalons/features/ads/data/ad_repository.dart';
 import 'package:pedalons/features/ads/domain/ad_filters.dart';
 import 'package:pedalons/features/ads/presentation/pages/ads_page.dart';
 import 'package:pedalons/features/ads/presentation/widgets/ad_card.dart';
+import 'package:pedalons/keys.dart';
 import 'package:pedalons/features/ads/providers/ad_list_provider.dart';
 
 import '../../support/localization.dart';
@@ -59,6 +60,9 @@ class _StubAdRepository implements AdRepository {
       total: total,
     );
   }
+
+  @override
+  Future<int> countAds(AdFilters filters) async => total;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -314,5 +318,107 @@ void main() {
     await openAds(tester, repository: _StubAdRepository());
 
     expect(find.text('Rechercher une annonce…'), findsOneWidget);
+  });
+
+  group('RL3 — la puce « Prix »', () {
+    AdFilters current(WidgetTester tester) =>
+        ProviderScope.containerOf(tester.element(find.byType(AdsPage)))
+            .read(adFiltersProvider(_team.slug));
+
+    PdlChip priceChip(WidgetTester tester) =>
+        tester.widget<PdlChip>(find.byKey(keys.adsList.priceChip));
+
+    testWidgets('après le tri, elle ouvre « Prix min. / Prix max. » et dit '
+        'la plage une fois réglée, avec une croix', (
+      WidgetTester tester,
+    ) async {
+      await openAds(tester, repository: _StubAdRepository());
+
+      expect(priceChip(tester).label, 'Prix');
+      expect(priceChip(tester).selected, isFalse);
+      expect(
+        tester.getTopLeft(find.byKey(keys.adsList.priceChip)).dx,
+        greaterThan(tester.getTopLeft(find.text('Plus récentes d\'abord')).dx),
+      );
+
+      await tester.tap(find.byKey(keys.adsList.priceChip));
+      await tester.pumpAndSettle();
+      expect(find.text('Prix min.'), findsOneWidget);
+      expect(find.text('Prix max.'), findsOneWidget);
+      expect(find.text('Indifférent'), findsNWidgets(2));
+      expect(
+        find.text('Un prix limite écarte les annonces à négocier.'),
+        findsOneWidget,
+      );
+
+      await tester.enterText(find.byKey(keys.adsList.maxPriceField), '500');
+      await tester.pumpAndSettle();
+      expect(find.text('Voir 57 annonces'), findsOneWidget);
+      await tester.tap(find.byKey(keys.adsList.priceApplyButton));
+      await tester.pumpAndSettle();
+
+      expect(current(tester).maxPrice, 500);
+      expect(current(tester).minPrice, isNull);
+      expect(priceChip(tester).label, 'Jusqu\'à 500\u00a0€');
+      expect(priceChip(tester).selected, isTrue);
+      expect(priceChip(tester).onRemoved, isNotNull);
+
+      priceChip(tester).onRemoved!();
+      await tester.pump();
+      expect(current(tester).hasPrice, isFalse);
+      expect(priceChip(tester).label, 'Prix');
+    });
+
+    testWidgets('« Prix min. … » et la plage entière', (
+      WidgetTester tester,
+    ) async {
+      await openAds(
+        tester,
+        repository: _StubAdRepository(),
+        filters: const AdFilters(teamSlug: 'n-peloton', minPrice: 100),
+      );
+      expect(priceChip(tester).label, 'Prix min. 100\u00a0€');
+    });
+
+    testWidgets('le vide filtré nomme les bornes, comme le site', (
+      WidgetTester tester,
+    ) async {
+      await openAds(
+        tester,
+        repository: _StubAdRepository(emptyWhenFiltered: true),
+        filters: const AdFilters(
+          teamSlug: 'n-peloton',
+          minPrice: 100,
+          maxPrice: 1500,
+        ),
+      );
+      expect(priceChip(tester).label, '100 – 1\u00a0500\u00a0€');
+      expect(
+        find.text(
+          'Rien ne correspond à : Prix min. 100\u00a0€ · '
+          'Prix max. 1\u00a0500\u00a0€.',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Effacer les filtres'));
+      await tester.pump();
+      expect(current(tester).hasPrice, isFalse);
+    });
+  });
+
+  testWidgets('RL4 — retoucher une puce de type ne la lève pas', (
+    WidgetTester tester,
+  ) async {
+    await openAds(tester, repository: _StubAdRepository());
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(AdsPage)),
+    );
+
+    await tester.tap(find.byKey(keys.adsList.typeChip('SALE')));
+    await tester.pump();
+    expect(container.read(adFiltersProvider(_team.slug)).adType, AdType.sale);
+    await tester.tap(find.byKey(keys.adsList.typeChip('SALE')));
+    await tester.pump();
+    expect(container.read(adFiltersProvider(_team.slug)).adType, AdType.sale);
   });
 }

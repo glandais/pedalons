@@ -20,13 +20,13 @@ import '../../../../keys.dart';
 
 /// The teams the user belongs to.
 ///
-/// The magnifier used to be an icon-action with neither effect nor tooltip —
-/// the accessibility defect named in the brief §5. It opens a real search,
-/// and the search is now **server-side** (`search` of `GET /api/teams`, on the
-/// name and the presentation), like Découvrir's: the list is paginated, so a
-/// search over what happens to be loaded would miss the teams of the next
-/// pages. Finding a team one is not a member of is another job, and it has its
-/// own screen — which is where the empty state's call to action leads.
+/// **The search is always visible**, pinned under the app bar (règle RL6 des
+/// listes, KIT §10) — no magnifier to open it any more, like every other list.
+/// It is **server-side** (`search` of `GET /api/teams`, on the name and the
+/// presentation), like Découvrir's: the list is paginated, so a search over
+/// what happens to be loaded would miss the teams of the next pages. Finding a
+/// team one is not a member of is another job, and it has its own screen —
+/// which is where the empty state's call to action leads.
 class TeamsPage extends ConsumerStatefulWidget {
   const TeamsPage({super.key});
 
@@ -35,25 +35,11 @@ class TeamsPage extends ConsumerStatefulWidget {
 }
 
 class _TeamsPageState extends ConsumerState<TeamsPage> {
-  /// Whether the search field is shown. Hidden by default: over three teams, a
-  /// permanent field would cost more room than it gives.
-  bool _searching = false;
-
   /// Current query, as [PdlSearchField] hands it over (trimmed, debounced),
   /// `null` when empty.
   String? _query;
 
-  void _toggleSearch() {
-    setState(() {
-      _searching = !_searching;
-      if (!_searching) _query = null;
-    });
-  }
-
-  void _clearSearch() => setState(() {
-    _searching = false;
-    _query = null;
-  });
+  void _clearSearch() => setState(() => _query = null);
 
   void _onQueryChanged(String? value) => setState(() => _query = value);
 
@@ -83,13 +69,6 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
         title: Text('teams.title'.tr()),
         actions: [
           IconButton(
-            icon: Icon(_searching ? PdlIcons.close : PdlIcons.search),
-            tooltip: _searching
-                ? 'teams.search.close'.tr()
-                : 'teams.search.open'.tr(),
-            onPressed: _toggleSearch,
-          ),
-          IconButton(
             key: keys.teams.discoverButton,
             icon: const Icon(Icons.travel_explore_outlined),
             tooltip: 'teams.discover'.tr(),
@@ -99,21 +78,22 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
       ),
       body: Column(
         children: [
-          const PendingInvitationsCard(),
-          if (_searching)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: PdlSpacing.section,
-                vertical: PdlSpacing.feedGap,
-              ),
-              child: PdlSearchField(
-                value: _query,
-                autofocus: true,
-                onChanged: _onQueryChanged,
-                hintText: 'teams.search.hint'.tr(),
-                clearTooltip: 'teams.search.clear'.tr(),
-              ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              PdlSpacing.section,
+              PdlSpacing.feedGap,
+              PdlSpacing.section,
+              PdlSpacing.feedGap,
             ),
+            child: PdlSearchField(
+              key: keys.teams.searchField,
+              value: _query,
+              onChanged: _onQueryChanged,
+              hintText: 'teams.search.hint'.tr(),
+              clearTooltip: 'teams.search.clear'.tr(),
+            ),
+          ),
+          const PendingInvitationsCard(),
           Expanded(child: _body(state, notifier)),
         ],
       ),

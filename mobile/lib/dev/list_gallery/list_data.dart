@@ -10,11 +10,25 @@ import '../card_gallery/gallery_data.dart';
 
 /// Les totaux annoncés au repos : plus grands que la page de trois éléments,
 /// pour que compteur et pied de liste soient visibles.
+/// [teams] dans l'ordre que le serveur rend pour [sortBy] : par nom, ou par
+/// nombre de membres, du plus grand au plus petit.
+List<TeamDetailDto> sortedTeams(List<TeamDetailDto> teams, TeamSortBy sortBy) =>
+    <TeamDetailDto>[...teams]..sort(
+      (TeamDetailDto a, TeamDetailDto b) => sortBy == TeamSortBy.memberCount
+          ? b.memberCount.compareTo(a.memberCount)
+          : a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+
 abstract final class ListTotals {
   static const int feed = 47;
   static const int posts = 47;
   static const int agenda = 18;
   static const int past = 36;
+
+  /// Le fil d'accueil en deux sections : « À venir », puis « Plus tôt »
+  /// (règle RL15).
+  static const int homeUpcoming = 12;
+  static const int homeEarlier = 35;
   static const int routes = 47;
   static const int explore = 47;
 
@@ -88,6 +102,33 @@ extension ListGalleryData on GalleryData {
     feedRide(),
     feedTrip(),
     feedPost(),
+  ];
+
+  /// « À venir » au fil d'accueil : la sortie récupération (demain), la
+  /// boucle des Monts d'Arrée, la Traversée du Morvan — du plus proche au plus
+  /// lointain.
+  List<PublicationDto> get homeUpcoming => <PublicationDto>[
+    feedRide(
+      slug: 'sortie-recuperation',
+      name: 'Sortie récupération',
+      dateTime: at(1, 18, 30),
+      withRoute: false,
+      commentCount: 0,
+    ),
+    feedRide(),
+    feedTrip(),
+  ];
+
+  /// « Plus tôt » au fil d'accueil : la publication, puis une sortie finie —
+  /// du plus récent au plus ancien.
+  List<PublicationDto> get homeEarlier => <PublicationDto>[
+    feedPost(),
+    feedRide(
+      slug: 'tour-du-lac-du-drennec',
+      name: 'Tour du lac du Drennec',
+      dateTime: at(-3, 9),
+      finished: true,
+    ),
   ];
 
   // ───────────────────────────────────────────────────────── publications
@@ -169,7 +210,6 @@ extension ListGalleryData on GalleryData {
       name: 'Tour du lac du Drennec',
       dateTime: at(-2, 9),
       finished: true,
-      registeredIn: 'B',
     ),
     feedRide(
       slug: 'sortie-nocturne',
@@ -208,6 +248,24 @@ extension ListGalleryData on GalleryData {
         ),
     ];
   }
+
+  /// Les mêmes cinq événements, cinq semaines plus tard : le mois courant est
+  /// vide, un mois suivant ne l'est pas (cas `calendrier-vide`).
+  List<CalendarEventDto> get laterMonthEvents => <CalendarEventDto>[
+    for (final CalendarEventDto e in monthEvents)
+      e.copyWith(
+        start: DateTime.parse(e.start)
+            .add(const Duration(days: 35))
+            .toUtc()
+            .toIso8601String(),
+        end: e.end == null
+            ? null
+            : DateTime.parse(e.end!)
+                  .add(const Duration(days: 35))
+                  .toUtc()
+                  .toIso8601String(),
+      ),
+  ];
 
   /// Le mois où seul figure l'étape du voyage : le filtre « Sorties » n'y
   /// trouve rien.

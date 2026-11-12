@@ -5,6 +5,9 @@ class _CalendarKey extends ValueKey<String> {
 }
 
 class CalendarKeys {
+  /// La puce « Portée » du calendrier global (règle RL2).
+  final scopeChip = const _CalendarKey('scopeChip');
+
   /// La carte d'agenda d'un événement, par le slug de sa sortie ou de son
   /// étape (`CalendarEventDto.entitySlug`).
   ValueKey<String> agendaCard(String entitySlug) =>

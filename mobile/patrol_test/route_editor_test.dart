@@ -4,7 +4,7 @@ import 'api/routes_seed.dart';
 import 'common.dart';
 
 /// Web counterpart: `flow-routes.e2e.ts` › an organizer creates, edits and deletes a route
-/// (`CreateRoutePage`, `EditRoutePage`). In the app since ledger `MOB-79`: the « Ajouter » button
+/// (`CreateRoutePage`, `EditRoutePage`). In the app since ledger `MOB-79`: the « Créer » button
 /// of the team's Parcours section, the route editor, the pencil of the route page and its
 /// « Gérer le parcours » menu. The track is **imported** from a GPX file, never drawn: the route
 /// planner stays on the web. What leaves the app is checked through the API.
@@ -29,7 +29,7 @@ void main() {
 
       await openAppSignedIn($, organizer);
       await openLink($, Paths.routes(teamSlug));
-      // « Ajouter » attendu : openAddFromTeamRoutes patiente jusqu'à son apparition.
+      // « Créer » attendu : openAddFromTeamRoutes patiente jusqu'à son apparition.
       await modules.routeEditor.openAddFromTeamRoutes();
 
       // A file that is no GPX is refused on the spot, with a way to choose another.

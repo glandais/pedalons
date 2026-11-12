@@ -219,9 +219,7 @@
     "viewRide": "Voir la sortie",
     "explore": "Explorer",
     "latestPublications": "Dernières publications",
-    "scopeAllTeams": "Toutes les équipes",
     "typeAll": "Tout",
-    "scope": "Portée",
     "publicationCount": {
       "zero": "Aucune publication",
       "one": "{} publication",
@@ -287,8 +285,6 @@
       "title": "Équipe indisponible"
     },
     "search": {
-      "open": "Rechercher une équipe",
-      "close": "Fermer la recherche",
       "clear": "Effacer la recherche",
       "hint": "Rechercher une équipe…"
     },
@@ -507,74 +503,9 @@
     "agenda": {
       "underWay": "En cours",
       "searchPlaceholder": "Rechercher dans l'agenda…",
-      "scope": {
-        "upcoming": "À venir",
-        "participating": "Je participe",
-        "past": "Passées",
-        "all": "Tout"
-      },
-      "view": {
-        "label": "Affichage",
-        "list": "Liste",
-        "calendar": "Calendrier"
-      },
       "empty": {
         "title": "Rien à l'agenda pour le moment",
-        "message": "Les sorties et les voyages de l'équipe apparaîtront ici.",
-        "seePast": "Voir les passées"
-      },
-      "count": {
-        "upcoming": {
-          "all": {
-            "zero": "Aucune sortie ni aucun voyage à venir",
-            "one": "{} sortie ou voyage à venir",
-            "other": "{} sorties et voyages à venir"
-          },
-          "rides": {
-            "zero": "Aucune sortie à venir",
-            "one": "{} sortie à venir",
-            "other": "{} sorties à venir"
-          },
-          "trips": {
-            "zero": "Aucun voyage à venir",
-            "one": "{} voyage à venir",
-            "other": "{} voyages à venir"
-          }
-        },
-        "participating": {
-          "all": {
-            "zero": "Aucune sortie ni aucun voyage auquel vous participez",
-            "one": "{} sortie ou voyage auquel vous participez",
-            "other": "{} sorties et voyages auxquels vous participez"
-          },
-          "rides": {
-            "zero": "Aucune sortie à laquelle vous participez",
-            "one": "{} sortie à laquelle vous participez",
-            "other": "{} sorties auxquelles vous participez"
-          },
-          "trips": {
-            "zero": "Aucun voyage auquel vous participez",
-            "one": "{} voyage auquel vous participez",
-            "other": "{} voyages auxquels vous participez"
-          }
-        },
-        "past": {
-          "all": {
-            "zero": "Aucune sortie ni aucun voyage passé",
-            "one": "{} sortie ou voyage passé",
-            "other": "{} sorties et voyages passés"
-          },
-          "rides": {
-            "zero": "Aucune sortie passée",
-            "one": "{} sortie passée",
-            "other": "{} sorties passées"
-          },
-          "trips": {
-            "zero": "Aucun voyage passé",
-            "one": "{} voyage passé",
-            "other": "{} voyages passés"
-          }
-        }
+        "message": "Les sorties et les voyages de l'équipe apparaîtront ici."
       }
     },
     "posts": {
@@ -887,7 +818,6 @@
     },
     "templates": {
       "listTitle": "Modèles de sortie",
-      "new": "Nouveau modèle",
       "createTitle": "Nouveau modèle",
       "editTitle": "Modifier le modèle",
       "manage": "Gérer les modèles",
@@ -1003,6 +933,24 @@
       "membersOnly": {
         "title": "Réservées aux membres",
         "message": "Les annonces de l'équipe ne sont visibles que par ses membres."
+      },
+      "price": {
+        "chip": "Prix",
+        "title": "Prix",
+        "min": "Prix min.",
+        "max": "Prix max.",
+        "placeholder": "Indifférent",
+        "hint": "Un prix limite écarte les annonces à négocier.",
+        "minActive": "Prix min. {price} €",
+        "maxActive": "Prix max. {price} €",
+        "upTo": "Jusqu'à {price} €",
+        "range": "{min} – {max} €",
+        "apply": {
+          "zero": "Aucune annonce",
+          "one": "Voir {} annonce",
+          "other": "Voir {} annonces"
+        },
+        "applyUnknown": "Voir les annonces"
       }
     },
     "sort": {
@@ -1119,11 +1067,10 @@
       },
       "none": "Aucun parcours",
       "noneHint": "Aucun parcours n'est disponible pour le moment.",
-      "densitySwitched": "Au-delà de {threshold} résultats, la liste passe en affichage compact. Vous pouvez revenir aux vignettes à tout moment."
+      "densitySwitched": "Au-delà de {threshold} résultats, la liste passe en vue « Lignes ». Vous pouvez revenir aux vignettes à tout moment."
     },
     "filters": {
       "title": "Filtres",
-      "reset": "Réinitialiser",
       "apply": {
         "zero": "Aucun résultat",
         "one": "Voir {} parcours",
@@ -1244,20 +1191,6 @@
         "other": "{} points"
       }
     },
-    "view": {
-      "list": "Liste",
-      "map": "Carte"
-    },
-    "density": {
-      "cards": "Vignettes",
-      "compact": "Compact"
-    },
-    "scope": {
-      "title": "Portée",
-      "allTeams": "Toutes les équipes",
-      "minRole": "Rôle minimum",
-      "anyRole": "Tous les rôles"
-    },
     "nearMe": {
       "title": "Autour de moi",
       "active": "Autour de moi · {radius}",
@@ -1266,8 +1199,6 @@
     "editor": {
       "createTitle": "Nouveau parcours",
       "editTitle": "Modifier le parcours",
-      "add": "Ajouter",
-      "addSemantic": "Ajouter un parcours",
       "create": "Créer le parcours",
       "save": "Enregistrer",
       "saving": "Enregistrement…",
@@ -1383,7 +1314,6 @@
     },
     "cancelled": "Annulé",
     "today": "Aujourd'hui",
-    "scope": "Portée",
     "allMyTeams": "Toutes mes équipes",
     "previousMonth": "Mois précédent",
     "nextMonth": "Mois suivant",
@@ -2177,6 +2107,33 @@
         "one": "commentaire",
         "other": "commentaires"
       }
+    },
+    "scope": {
+      "title": "Portée",
+      "all": "Toutes les équipes"
+    },
+    "period": {
+      "all": "Tout",
+      "allDates": "Toutes les dates",
+      "participating": "Je participe"
+    },
+    "sections": {
+      "upcoming": "À venir",
+      "earlier": "Plus tôt"
+    },
+    "countNamed": "{count} {noun}",
+    "create": "Créer",
+    "createLabel": {
+      "ride": "Créer une sortie",
+      "route": "Créer un parcours",
+      "template": "Créer un modèle"
+    },
+    "view": {
+      "label": "Affichage",
+      "cards": "Vignettes",
+      "rows": "Lignes",
+      "map": "Carte",
+      "calendar": "Calendrier"
     }
   }
 }

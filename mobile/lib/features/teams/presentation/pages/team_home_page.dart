@@ -46,8 +46,8 @@ class TeamHomePage extends ConsumerWidget {
     required this.teamSlug,
     required this.section,
     this.agendaType,
-    this.agendaScope = AgendaScope.upcoming,
-    this.agendaView = AgendaView.list,
+    this.agendaScope = AgendaScope.all,
+    this.agendaView = AgendaView.cards,
   });
 
   final String teamSlug;

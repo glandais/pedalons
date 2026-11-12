@@ -88,13 +88,16 @@ class _RouteFilterSheetState extends ConsumerState<_RouteFilterSheet> {
         'routes.filters.title'.tr(),
         style: context.pdlText.sectionTitle,
       ),
-      headerAction: _draft.activeFields.isEmpty
+      // Le même geste que le vide filtré (règle RL4) : « Effacer les
+      // filtres » lève tout ce que la pastille compte, et garde le tri.
+      headerAction: _draft.activeCount == 0
           ? null
           : PdlButton(
-              label: 'routes.filters.reset'.tr(),
+              key: keys.routes.filterClearButton,
+              label: 'common.clearFilters'.tr(),
               variant: PdlButtonVariant.text,
               size: PdlButtonSize.sm,
-              onPressed: () => _update(_draft.filtersCleared),
+              onPressed: () => _update(_draft.cleared),
             ),
       footer: SafeArea(
         top: false,
@@ -116,17 +119,8 @@ class _RouteFilterSheetState extends ConsumerState<_RouteFilterSheet> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // « Trier par » ouvre la feuille, comme la maquette : c'est la
-              // première décision qu'on prend sur une liste de 2 585 entrées,
-              // pas la dernière. F-DE-5 l'avait laissée écrasée à 1 pt en fin
-              // de colonne ; elle est désormais en tête, à 52 px garantis.
-              _NavigationRow(
-                label: 'routes.filters.sort'.tr(),
-                value: _sortSummary(),
-                onTap: _pickSort,
-                showTopBorder: false,
-              ),
-              const SizedBox(height: 12),
+              // La feuille ne garde que les critères : le tri est la puce
+              // visible en tête de la rangée, hors de la feuille (règle RL6).
               _RangeSection(
                 label: 'routes.filters.distance'.tr(),
                 summary: RouteFilterLabels.filterRange(
@@ -206,11 +200,6 @@ class _RouteFilterSheetState extends ConsumerState<_RouteFilterSheet> {
     );
   }
 
-  String _sortSummary() {
-    final arrow = _draft.sortDir == SortDirection.asc ? '↑' : '↓';
-    return '${RouteFilterLabels.routeSortByName(_draft.sortBy)} $arrow';
-  }
-
   Future<void> _pickWindDirection() async {
     final result = await PdlSheet.show<_Optional<WindDirection>>(
       context: context,
@@ -232,17 +221,6 @@ class _RouteFilterSheetState extends ConsumerState<_RouteFilterSheet> {
       selected: _draft.tagIds,
     );
     if (result != null) _update(_draft.copyWith(tagIds: result));
-  }
-
-  Future<void> _pickSort() async {
-    final result = await showRouteSortSheet(
-      context,
-      sortBy: _draft.sortBy,
-      sortDir: _draft.sortDir,
-    );
-    if (result != null) {
-      _update(_draft.copyWith(sortBy: result.by, sortDir: result.dir));
-    }
   }
 }
 
@@ -354,7 +332,7 @@ class _ChoiceSection<T> extends StatelessWidget {
 /// Hauteur plancher des deux lignes de navigation de la feuille de filtres.
 ///
 /// Elle est publique parce qu'elle est **la** garantie de F-DE-5 : le test de
-/// régression mesure « Direction du vent » et « Trier par » contre cette
+/// régression mesure « Direction du vent » contre cette
 /// valeur, à `textScaleFactor` 1 comme à 1,3.
 const double kFilterNavigationRowHeight = 52;
 
@@ -362,13 +340,11 @@ class _NavigationRow extends StatelessWidget {
   final String label;
   final String value;
   final VoidCallback onTap;
-  final bool showTopBorder;
 
   const _NavigationRow({
     required this.label,
     required this.value,
     required this.onTap,
-    this.showTopBorder = true,
   });
 
   @override
@@ -380,9 +356,7 @@ class _NavigationRow extends StatelessWidget {
       // C'est exactement ce que F-DE-5 avait perdu — cette ligne mesurait
       // 1 pt. `minTileHeight` la rend vérifiable par un test.
       minTileHeight: kFilterNavigationRowHeight,
-      shape: showTopBorder
-          ? Border(top: BorderSide(color: theme.dividerColor))
-          : null,
+      shape: Border(top: BorderSide(color: theme.dividerColor)),
       title: Text(label, style: theme.textTheme.titleSmall),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

@@ -20,7 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
 
-/// Le bouton « Ajouter » de la section Parcours (ledger `MOB-79`) : pour un
+/// Le bouton « Créer » de la section Parcours (ledger `MOB-79`, règle RL13) : pour un
 /// organisateur de l'équipe, à droite de la recherche — ni pour un simple
 /// membre, ni sur l'onglet Explorer de toutes les équipes.
 void main() {
@@ -77,15 +77,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
   }
 
-  testWidgets('un organisateur voit « Ajouter » et ouvre la création', (
+  testWidgets('RL13 — un organisateur voit « Créer » et ouvre la création', (
     WidgetTester tester,
   ) async {
     await open(tester, teamSlug: 'n-peloton', canManage: true);
 
-    expect(find.byKey(keys.routes.addButton), findsOneWidget);
-    expect(find.text('Ajouter'), findsOneWidget);
+    expect(find.byKey(keys.routes.createButton), findsOneWidget);
+    // Le texte visible est court ; le lecteur d'écran lit le nom complet.
+    expect(find.text('Créer'), findsOneWidget);
+    expect(find.bySemanticsLabel('Créer un parcours'), findsOneWidget);
 
-    await tester.tap(find.byKey(keys.routes.addButton));
+    await tester.tap(find.byKey(keys.routes.createButton));
     for (int i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 50));
     }
@@ -95,7 +97,7 @@ void main() {
   testWidgets('un simple membre ne voit rien', (WidgetTester tester) async {
     await open(tester, teamSlug: 'n-peloton', canManage: false);
 
-    expect(find.byKey(keys.routes.addButton), findsNothing);
+    expect(find.byKey(keys.routes.createButton), findsNothing);
   });
 
   testWidgets('l\'onglet Explorer de toutes les équipes non plus', (
@@ -103,7 +105,7 @@ void main() {
   ) async {
     await open(tester, teamSlug: null, canManage: true);
 
-    expect(find.byKey(keys.routes.addButton), findsNothing);
+    expect(find.byKey(keys.routes.createButton), findsNothing);
   });
 }
 
