@@ -475,6 +475,84 @@
      ]
     ]
    ]
+  ],
+  [
+   "listes-cibles",
+   "Listes — cibles",
+   [
+    [
+     [
+      "cible-listes-rl2-portee.dc.html",
+      1280,
+      2400,
+      "RL2 — Contrôle de portée — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-listes-rl3-criteres.dc.html",
+      1280,
+      2400,
+      "RL3 — Quels critères une liste propose — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-listes-rl4-filtre-actif.dc.html",
+      1280,
+      2400,
+      "RL4 — Signaler un filtre actif, et le lever — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-listes-rl6-barre.dc.html",
+      1280,
+      2400,
+      "RL6 et RL8 — Barre d'outils et compteur — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-listes-rl9-vues.dc.html",
+      1280,
+      2400,
+      "RL9 — Bascule de vue — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-listes-rl10-vide.dc.html",
+      1280,
+      2400,
+      "RL10 — Vide et vide filtré — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-listes-rl11-erreur.dc.html",
+      1280,
+      2400,
+      "RL11 — Erreur et chargement — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-listes-rl13-creer.dc.html",
+      1280,
+      2400,
+      "RL13 — Créer depuis une liste — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-listes-rl15-a-venir-passees.dc.html",
+      1280,
+      2400,
+      "RL15 — À venir, puis passées — avant / cible"
+     ]
+    ]
+   ]
   ]
  ]
 }
