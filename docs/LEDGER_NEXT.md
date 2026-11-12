@@ -396,6 +396,12 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 - [ ] `WEB-161` **Contrôles de carte : recette à l'œil de `WEB-157` (S)** — scindé de `WEB-158`
       (les e2e sont passés le 10 novembre 2026), plan [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md).
       À l'œil, clair et sombre : l'ordre des deux colonnes ; la liste de la recherche par-dessus le zoom ;
+- [ ] `WEB-170` **Servir la police Inter sur le site (S à M)** — la charte et le thème demandent Inter (BRANDING §4.1,
+      `frontend/src/lib/theme.ts`), mais aucun fichier de police n'est servi : chaque visiteur voit la police de son système.
+      Relevé le 12 novembre 2026 en cherchant pourquoi « 1 240 m » se lisait « 1240 m » (la police du système dessine
+      l'espace fine insécable à moins de 2 px). Rustine en place (`WEB-167`) : une mini-police limitée à U+202F,
+      `Pedalons Narrow Space` dans `index.css`. Charger Inter (sous-ensemble latin, quatre graisses, `font-display: swap`)
+      change l'aspect de tout le site et demande une passe visuelle large ; la rustine se retire alors.
 - [ ] `WEB-167` **Homogénéité des cartes, côté site (M, par lots)** — pendant de `MOB-139` : une douzaine de défauts du
       site (nombres sans la langue, « Quitter » sur une sortie annulée, aucun changement de groupe, plage de voyage écrite
       de deux façons, épingle d'une annonce…) et les règles décidées le 11 novembre 2026 (`KIT.md` §9). Détail dans
