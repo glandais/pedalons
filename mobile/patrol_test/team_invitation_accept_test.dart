@@ -47,6 +47,7 @@ void main() {
       expect(modules.teams.showsPendingInvitations, isFalse);
       expect((await backend.team(invitee, teamSlug))['role'], 'MEMBER');
       expect(await backend.myInvitations(invitee), isEmpty);
+      expect(modules.teams.myTeamShowsRole(teamSlug, 'Membre'), isTrue);
 
       await modules.teams.openMyTeam(teamSlug);
       expect(modules.teams.offersLeave, isTrue);

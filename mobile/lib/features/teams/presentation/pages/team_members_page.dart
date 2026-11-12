@@ -367,6 +367,14 @@ class _MemberRow extends StatelessWidget {
               label: AppFormatters.roleName(role),
               tone: TeamRole.fromJson(role).tone(c),
             ),
+      // Le `⋯` annonce ce que le toucher de la ligne fait déjà : Signaler,
+      // Bloquer (règle R13, KIT §9). Pas sur sa propre ligne.
+      trailing: onTap == null
+          ? null
+          : ModerationMoreButton(
+              key: keys.team.memberMore(member.user.id),
+              onPressed: onTap!,
+            ),
       showDivider: showDivider,
     );
   }

@@ -74,13 +74,17 @@ void main() {
         modules.calendar.eventShows(otherSlug, alsoMine['name'] as String),
         isTrue,
       );
+      // « J'y vais » sans le groupe : la première ligne le nomme, « heure ·
+      // équipe · groupe » (règle R11).
       expect(
-        modules.calendar.registeredBadgeShows(
-          joinedSlug,
-          'J\'y vais · Groupe A',
-        ),
+        modules.calendar.registeredBadgeShows(joinedSlug, 'J\'y vais'),
         isTrue,
       );
+      expect(
+        modules.calendar.registeredBadgeShows(joinedSlug, 'Groupe A'),
+        isFalse,
+      );
+      expect(modules.calendar.eventShows(joinedSlug, '· Groupe A'), isTrue);
       expect(modules.calendar.showsRegistered(otherSlug), isFalse);
 
       // An event opens its ride.

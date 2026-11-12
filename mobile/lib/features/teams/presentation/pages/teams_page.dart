@@ -6,20 +6,15 @@ import 'package:go_router/go_router.dart';
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/pdl/pdl.dart';
-import '../../../../core/theme/enum_colors.dart';
-import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
-import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/widgets/widgets.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../providers/team_providers.dart';
 import '../widgets/pending_invitations_card.dart';
+import '../widgets/team_discovery_card.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../../keys.dart';
-import '../../../../core/utils/push_location.dart';
-import '../../../visibility/presentation/visibility_badge.dart';
 
 /// The teams the user belongs to.
 ///
@@ -198,81 +193,26 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
       );
     }
 
+    // La carte de la découverte, la seule carte d'équipe de l'app (règle
+    // R12, KIT §9) : bandeau, extrait sur deux lignes, membres et rôle réel.
+    // Toucher la carte ouvre l'équipe ; une équipe dont on est membre n'a
+    // pas d'autre action.
     return PdlRefresh(
       onRefresh: _refresh,
-      child: AnimatedResponsiveGrid(
+      child: ListView.separated(
         padding: const EdgeInsets.all(PdlSpacing.section),
         itemCount: visible.length,
-        childAspectRatio: 2.5,
-        itemBuilder: (context, index) => _TeamCard(team: visible[index]),
-      ),
-    );
-  }
-}
-
-/// Une équipe de l'onglet Équipes : logo, nom, nombre de membres et rôle.
-///
-/// Les jetons et composants Pdl de « Mes équipes » (`HomeTeamRow`), le logo
-/// lu dans `team.logoUrl` comme les autres cartes d'équipe (ledger `MOB-139`,
-/// D9). Le contenu reste celui d'avant : il relève d'une règle encore ouverte.
-class _TeamCard extends StatelessWidget {
-  final TeamDetailDto team;
-
-  const _TeamCard({required this.team});
-
-  @override
-  Widget build(BuildContext context) {
-    final PdlColors c = context.pdl;
-    final PdlTypography t = context.pdlText;
-    final String? role = team.role;
-
-    return PdlCard(
-      key: keys.teams.teamCard(team.slug),
-      onTap: () => pushLocation(context, Paths.team(team.slug)),
-      child: Row(
-        children: <Widget>[
-          PdlAvatar(name: team.name, imageUrl: team.logoUrl, size: 56),
-          const SizedBox(width: PdlSpacing.card),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  team.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: t.cardTitle.copyWith(color: c.text),
-                ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: PdlSpacing.cardTight,
-                  runSpacing: PdlSpacing.badgeGap,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    // Accordé : « 1 membre » (ledger `MOB-139`, D3).
-                    PdlStat(
-                      value: 'teams.membersList.count'.plural(team.memberCount),
-                      icon: PdlIcons.people,
-                    ),
-                    // « Équipe uniquement » sur une équipe privée, rien sur
-                    // une équipe publique (règle R1, KIT §9).
-                    ...teamVisibilityBadges(
-                      team.visibility,
-                      key: keys.teams.teamCardVisibility(team.slug),
-                    ),
-                    if (role != null)
-                      PdlBadge(
-                        label: AppFormatters.roleName(role),
-                        tone: TeamRole.fromJson(role).tone(c),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Icon(PdlIcons.chevronRight, size: 18, color: c.textDimmed),
-        ],
+        separatorBuilder: (_, _) =>
+            const SizedBox(height: PdlSpacing.teamCardGap),
+        itemBuilder: (BuildContext context, int index) {
+          final TeamDetailDto team = visible[index];
+          return TeamDiscoveryCard(
+            key: keys.teams.teamCard(team.slug),
+            team: team,
+            visibilityKey: keys.teams.teamCardVisibility(team.slug),
+            roleKey: keys.teams.teamCardRole(team.slug),
+          );
+        },
       ),
     );
   }

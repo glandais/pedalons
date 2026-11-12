@@ -17,6 +17,8 @@ import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_dashboard_page.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_home_page.dart';
 import 'package:pedalons/features/teams/presentation/widgets/team_sections.dart';
+import 'package:pedalons/features/rides/presentation/widgets/ride_group_place_line.dart';
+import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -129,23 +131,64 @@ void main() {
       );
     });
 
-    testWidgets('le groupe rejoint porte son nom et son allure', (
+    testWidgets('sous le départ, « Groupe B · Place de la Croix-Rousse », '
+        'puis la distance d’affichage (règles R11 et R3)', (
       WidgetTester tester,
     ) async {
       await renderBody(tester, _dashboard(role: 'MEMBER'));
 
+      final Finder row = find.byKey(
+        keys.teamDashboard.myUpcomingRow('sortie-du-samedi'),
+      );
+      expect(row, findsOneWidget);
       expect(
-        find.byKey(keys.teamDashboard.myUpcomingRow('sortie-du-samedi')),
+        tester
+            .widget<RideGroupPlaceLine>(
+              find.byKey(
+                keys.teamDashboard.myUpcomingGroupPlace('sortie-du-samedi'),
+              ),
+            )
+            .label,
+        'Groupe B · Place de la Croix-Rousse',
+      );
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.text(AppFormatters.formatDistance(64500)),
+        ),
+        findsOneWidget,
+      );
+      // Ni la distance de la sortie, ni l'allure du groupe dans la ligne.
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.text(AppFormatters.formatDistance(72000)),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('« Sorties à venir » : la distance d’affichage, rien sans elle '
+        '(règle R3)', (WidgetTester tester) async {
+      await renderBody(tester, _dashboard(role: 'MEMBER'));
+
+      final Finder saturday = find.byKey(
+        keys.teamDashboard.rideCard('sortie-du-samedi'),
+      );
+      expect(
+        find.descendant(
+          of: saturday,
+          matching: find.text(AppFormatters.formatDistance(64500)),
+        ),
         findsOneWidget,
       );
       expect(
         find.descendant(
-          of: find.byKey(keys.teamDashboard.myUpcomingRow('sortie-du-samedi')),
-          matching: find.textContaining('Groupe B ·'),
+          of: saturday,
+          matching: find.text(AppFormatters.formatDistance(72000)),
         ),
-        findsOneWidget,
+        findsNothing,
       );
-      expect(find.text('Place de la Croix-Rousse'), findsWidgets);
     });
 
     // Ledger `MOB-139`, D10 : le compteur de groupes n'a pas l'icône des
@@ -717,6 +760,7 @@ PublicationDto _ride({
   String? routeSlug,
   String status = 'PUBLISHED',
   double? distance,
+  double? displayDistance,
 }) => PublicationDto.ride(
   permissions: kNoPermissions,
   timezone: 'Europe/Paris',
@@ -744,6 +788,8 @@ PublicationDto _ride({
   routeSlug: routeSlug,
   distance: distance,
   elevationGain: distance == null ? null : 980,
+  displayDistance: displayDistance,
+  displayElevationGain: displayDistance == null ? null : 760,
   surfaceType: 'ROAD',
   startPlace: const PlaceDetailDto(
     id: 'p1',
@@ -770,6 +816,9 @@ TeamDashboardDto _dashboard({required String role}) {
     name: 'Sortie du samedi',
     routeSlug: 'monts-d-or',
     distance: 72000,
+    // Le parcours du groupe B, que le serveur donne à la personne inscrite
+    // (règle R3, docs/LEDGER_*.md API-178).
+    displayDistance: 64500,
     registered: true,
     registeredGroup: const RideGroupDto(
       startAt: '2026-10-11T06:00:00Z',

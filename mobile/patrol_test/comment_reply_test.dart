@@ -36,7 +36,8 @@ void main() {
       await modules.post.waitUntilCommentIsShown(theirsId);
 
       // A comment of one's own, at the top level.
-      final rootText = unique('Mon commentaire');
+      // Typed with asterisks: the thread shows them as typed (rule R12).
+      final rootText = '${unique('Mon commentaire')} **samedi**';
       await modules.post.sendComment(rootText);
       final mine = (await backend.postComments(
         member,
@@ -47,6 +48,7 @@ void main() {
       expect((mine!['author'] as Json)['id'], member.id);
       final mineId = mine['id'] as String;
       await modules.post.waitUntilCommentIsShown(mineId);
+      expect(modules.post.commentText(mineId), rootText);
 
       // A reply, nested under the teammate's comment.
       await modules.post.startReplyTo(theirsId);

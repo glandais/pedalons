@@ -15,6 +15,8 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/card_header_image.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../visibility/presentation/visibility_badge.dart';
+import '../../../rides/presentation/widgets/ride_group_place_line.dart';
+import '../../../rides/presentation/widgets/ride_display_stats.dart';
 import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
 import '../../../rides/providers/ride_detail_provider.dart';
 import '../../../routes/presentation/gps_export_runner.dart';
@@ -279,20 +281,24 @@ class NextRideCard extends ConsumerWidget {
     ],
   );
 
-  /// Date et heure de départ, groupe, lieu — les faits qui décident si l'on y
-  /// va.
+  /// Date et heure de départ, puis « Groupe B · Place de la Mairie » — les
+  /// faits qui décident si l'on y va.
   ///
   /// L'heure est celle de [start], le départ qui concerne la personne : la ligne
-  /// de départ la porte, la mention de fuseau la commente, et le fait « groupe »
-  /// ne dit l'écart à la sortie que lorsqu'il y en a un (docs/LEDGER_*.md
-  /// MOB-111).
+  /// de départ la porte, la mention de fuseau la commente (docs/LEDGER_*.md
+  /// MOB-111). Dessous, le groupe rejoint et le lieu, **nom seul** — l'adresse
+  /// est sur la page de la sortie (règle R11, KIT §9).
   List<Widget> _facts(
     PdlColors c,
     PdlTypography t,
     String start,
     DateTime? instant,
   ) {
-    final RideGroupDto? g = group;
+    final Widget? groupPlace = RideGroupPlaceLine.maybe(
+      key: keys.home.nextRideGroup,
+      groupName: group?.name,
+      placeName: ride.startPlace?.name,
+    );
     return <Widget>[
       // « Départ 22:30 » en 20/700 (BRANDING §7.8), puis le retour ; le jour
       // est la boîte posée sur l'image et, en toutes lettres, l'étiquette
@@ -300,23 +306,14 @@ class NextRideCard extends ConsumerWidget {
       if (instant != null)
         Padding(
           key: keys.home.nextRideStart,
-          padding: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.only(bottom: 6),
           child: _departureLine(start, instant),
         ),
       // « heure de Tokyo (ven. 01:00 chez vous) » quand le lecteur est
       // ailleurs, à l'heure affichée juste au-dessus (docs/LEDGER_*.md API-60).
       if (ZoneMentionLine.maybe(start, ride.timezone) case final Widget mention)
-        Padding(padding: const EdgeInsets.only(bottom: 10), child: mention),
-      if (g != null)
-        _fact(c, t, PdlIcons.people, g.name, key: keys.home.nextRideGroup),
-      if (ride.startPlace != null) ...<Widget>[
-        const SizedBox(height: 10),
-        PdlPlaceRow(
-          kind: PdlPlaceKind.start,
-          name: ride.startPlace!.name,
-          address: ride.startPlace!.address,
-        ),
-      ],
+        Padding(padding: const EdgeInsets.only(bottom: 6), child: mention),
+      ?groupPlace,
     ];
   }
 
@@ -340,53 +337,19 @@ class NextRideCard extends ConsumerWidget {
     );
   }
 
-  Widget _fact(
-    PdlColors c,
-    PdlTypography t,
-    IconData icon,
-    String label, {
-    Key? key,
-  }) => Padding(
-    key: key,
-    padding: const EdgeInsets.only(bottom: 10),
-    child: Row(
-      children: <Widget>[
-        Icon(icon, size: 16, color: c.textDimmed),
-        const SizedBox(width: 5),
-        Expanded(
-          child: Text(
-            label,
-            style: t.statValue,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    ),
-  );
-
-  /// Distance et dénivelé viennent du **groupe**, pas de la sortie : deux
-  /// groupes d'une même sortie ne roulent pas le même parcours. Le compte des
+  /// Distance et dénivelé tels que le serveur les donne pour la personne qui
+  /// lit (`RideDto.displayDistance`, règle R3, KIT §9, docs/LEDGER_*.md
+  /// API-178) : ceux du parcours de son groupe. La carte ne choisit plus entre
+  /// la sortie et le groupe ; absents, rien ne s'affiche. Le compte des
   /// personnes n'y est plus : il rejoint la grappe, « 11/12 personnes »
   /// (règle R5, KIT §9).
-  Widget _stats(UnitSystem units) {
-    final RideGroupDto? g = group;
-    return PdlStatRow(
-      stats: <PdlStat>[
-        if (g?.distance != null)
-          PdlStat(
-            value: AppFormatters.formatDistance(g!.distance!, units),
-            icon: PdlIcons.distance,
-          ),
-        if (g?.elevationGain != null)
-          PdlStat(
-            value: AppFormatters.formatElevation(g!.elevationGain!, units),
-            icon: PdlIcons.elevationUp,
-            trend: PdlStatTrend.up,
-          ),
-      ],
-    );
-  }
+  Widget _stats(UnitSystem units) => PdlStatRow(
+    stats: rideDisplayStats(
+      distance: ride.displayDistance,
+      elevationGain: ride.displayElevationGain,
+      units: units,
+    ),
+  );
 
   /// Les personnes du groupe rejoint, comme sur sa carte de groupe (règle
   /// R5, KIT §9, docs/LEDGER_*.md MOB-139) : la grappe — soi en primaire —,

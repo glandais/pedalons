@@ -16,7 +16,7 @@ class CalendarRepository {
   /// Les événements d'une fenêtre, pour une portée.
   ///
   /// **Un seul appel, et aucun appel de détail derrière** : depuis la 1.5.0,
-  /// `CalendarEventDto` porte `distance`, `elevationGain`, `groupName`,
+  /// `CalendarEventDto` porte `displayDistance`, `displayElevationGain`, `groupName`,
   /// `registered`, `startPlaceName`, `status` et `thumbnailUrl`. La carte
   /// d'agenda se rend donc entièrement avec ce que ce seul appel a rendu — le
   /// `getRide` par événement disparaît, et c'est le gain principal de l'écran.

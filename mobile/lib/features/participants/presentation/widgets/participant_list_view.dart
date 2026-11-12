@@ -171,6 +171,13 @@ class _ParticipantListViewState extends ConsumerState<ParticipantListView> {
                 onTap: widget.team == null || person.id == currentUserId
                     ? null
                     : () => _openMemberMenu(person),
+                // Le `⋯` qui l'annonce, en bout de ligne (règle R13, KIT §9).
+                trailing: widget.team == null || person.id == currentUserId
+                    ? null
+                    : ModerationMoreButton(
+                        key: keys.participants.personMore(person.id),
+                        onPressed: () => _openMemberMenu(person),
+                      ),
               ),
             ),
           // Un bouton plutôt qu'un préchargement au défilement : la feuille

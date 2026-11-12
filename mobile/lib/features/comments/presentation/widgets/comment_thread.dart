@@ -10,7 +10,6 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../core/widgets/markdown_content.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
@@ -293,9 +292,15 @@ class _CommentThreadState extends ConsumerState<CommentThread> {
                 ],
               ),
               const SizedBox(height: 2),
-              // Un commentaire ne porte pas d'asset, mais il porte des liens :
-              // passer par la façade est ce qui les rend actifs.
-              MarkdownContent(data: comment.content),
+              // Le texte tel qu'il a été tapé, retours à la ligne gardés, sans
+              // rendu Markdown (règle R12, KIT §9) : la saisie ne le propose
+              // pas, et un `**gras**` rendu change ce que la personne a écrit
+              // — comme un lien `[texte](adresse)` y cacherait son adresse.
+              Text(
+                comment.content,
+                key: keys.comments.content(comment.id),
+                style: t.body,
+              ),
               if (widget.canComment && !isReply)
                 Align(
                   alignment: Alignment.centerLeft,

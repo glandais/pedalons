@@ -10,6 +10,7 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/card_header_image.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/push_location.dart';
 import '../../../../keys.dart';
 import '../../../visibility/presentation/visibility_badge.dart';
@@ -24,7 +25,11 @@ const double _kLogoSize = 56;
 ///
 /// Bandeau de 120 px — la photo de l'équipe, sinon `gradTeam` —, **logo de 56 px débordant de 20 px sous le
 /// bandeau**, titre, « Équipe uniquement » sur une équipe privée, extrait de deux lignes, compte de
-/// membres et action.
+/// membres, rôle réel de la personne quand elle est membre, sinon l'action.
+///
+/// **La seule carte d'équipe de l'app** (règle R12, KIT §9) : la découverte
+/// et l'onglet Équipes la montent tous deux ; la ligne « Mes équipes » de
+/// l'accueil reste une ligne compacte.
 ///
 /// Le débord est la seule difficulté : il exige un [Stack] à
 /// `clipBehavior: Clip.none` et un corps décalé de 26 px vers le bas. Un clip
@@ -37,20 +42,30 @@ class TeamDiscoveryCard extends StatelessWidget {
   const TeamDiscoveryCard({
     super.key,
     required this.team,
-    required this.onJoin,
+    this.onJoin,
     this.joining = false,
+    this.visibilityKey,
+    this.roleKey,
   });
 
   final TeamDetailDto team;
 
-  /// Demande d'adhésion. Appelée seulement dans l'état « Rejoindre ».
-  final VoidCallback onJoin;
+  /// Les clés du badge de visibilité et du badge de rôle, quand l'écran qui
+  /// monte la carte a les siennes (l'onglet Équipes) ; celles de la
+  /// découverte sinon.
+  final Key? visibilityKey;
+  final Key? roleKey;
+
+  /// Demande d'adhésion. Appelée seulement dans l'état « Rejoindre » ; sans
+  /// objet pour une équipe dont on est membre (l'onglet Équipes).
+  final VoidCallback? onJoin;
 
   /// Un appel d'adhésion est en vol pour **cette** équipe.
   final bool joining;
 
   @override
   Widget build(BuildContext context) {
+    final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
 
     return PdlCard(
@@ -103,7 +118,9 @@ class TeamDiscoveryCard extends StatelessWidget {
                     // publique, le cas ordinaire, ne porte rien (règle R1).
                     for (final Widget badge in teamVisibilityBadges(
                       team.visibility,
-                      key: keys.teamsDiscover.cardVisibility(team.slug),
+                      key:
+                          visibilityKey ??
+                          keys.teamsDiscover.cardVisibility(team.slug),
                     )) ...<Widget>[
                       const SizedBox(width: PdlSpacing.chipGap),
                       badge,
@@ -124,16 +141,35 @@ class TeamDiscoveryCard extends StatelessWidget {
                 Row(
                   children: <Widget>[
                     Expanded(
-                      child: PdlStat(
-                        // Accordé : « 1 membre » (ledger `MOB-139`, D3).
-                        value: 'teams.membersList.count'.plural(
-                          team.memberCount,
-                        ),
-                        icon: PdlIcons.people,
+                      child: Wrap(
+                        spacing: PdlSpacing.chipGap,
+                        runSpacing: PdlSpacing.badgeGap,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: <Widget>[
+                          // Accordé : « 1 membre » (ledger `MOB-139`, D3).
+                          PdlStat(
+                            value: 'teams.membersList.count'.plural(
+                              team.memberCount,
+                            ),
+                            icon: PdlIcons.people,
+                          ),
+                          // Le rôle réel de la personne (« Organisateur »…),
+                          // plus un « Membre » générique (règle R12, KIT §9).
+                          if (team.role case final String role)
+                            PdlBadge(
+                              key:
+                                  roleKey ??
+                                  keys.teamsDiscover.cardRole(team.slug),
+                              label: AppFormatters.roleName(role),
+                              tone: TeamRole.fromJson(role).tone(c),
+                            ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: PdlSpacing.chipGap),
-                    _Action(team: team, onJoin: onJoin, joining: joining),
+                    if (_Action.shows(team, joining: joining)) ...<Widget>[
+                      const SizedBox(width: PdlSpacing.chipGap),
+                      _Action(team: team, onJoin: onJoin, joining: joining),
+                    ],
                   ],
                 ),
               ],
@@ -145,14 +181,17 @@ class TeamDiscoveryCard extends StatelessWidget {
   }
 }
 
-/// Les quatre états de l'action, et rien d'autre.
+/// L'action de la carte, pour une personne qui n'est pas membre :
 ///
-/// * `joinable && role == null` → « Rejoindre l'équipe », plein ;
+/// * `joinable` → « Rejoindre l'équipe », plein ;
 /// * appel en vol → contour grisé « Adhésion… » ;
-/// * `role != null` → badge « Membre » et « Voir l'équipe », contour ;
-/// * `!joinable && role == null` → « Sur invitation », désactivé — l'équipe
-///   existe, elle ne se rejoint simplement pas d'un bouton, et le dire vaut
-///   mieux que de ne rien montrer.
+/// * `!joinable` → « Sur invitation », désactivé — l'équipe existe, elle ne
+///   se rejoint simplement pas d'un bouton, et le dire vaut mieux que de ne
+///   rien montrer.
+///
+/// **Rien pour une personne membre** (`role != null`) : son rôle est le badge
+/// à côté du nombre de membres, et toucher la carte ouvre l'équipe — le
+/// bouton « Voir l'équipe » qui le doublait est parti (règle R12, KIT §9).
 class _Action extends StatelessWidget {
   const _Action({
     required this.team,
@@ -161,13 +200,14 @@ class _Action extends StatelessWidget {
   });
 
   final TeamDetailDto team;
-  final VoidCallback onJoin;
+  final VoidCallback? onJoin;
   final bool joining;
+
+  static bool shows(TeamDetailDto team, {required bool joining}) =>
+      joining || team.role == null;
 
   @override
   Widget build(BuildContext context) {
-    final PdlColors c = context.pdl;
-
     if (joining) {
       return PdlButton(
         label: 'teams.discovery.joining'.tr(),
@@ -175,26 +215,6 @@ class _Action extends StatelessWidget {
         size: PdlButtonSize.sm,
         loading: true,
         loadingLabel: 'teams.discovery.joining'.tr(),
-      );
-    }
-
-    if (team.role != null) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          PdlBadge(
-            label: 'teams.discovery.memberBadge'.tr(),
-            tone: PdlDerivedTones.registered(c),
-            icon: PdlIcons.check,
-          ),
-          const SizedBox(width: PdlSpacing.chipGap),
-          PdlButton(
-            label: 'teams.viewTeam'.tr(),
-            variant: PdlButtonVariant.outline,
-            size: PdlButtonSize.sm,
-            onPressed: () => pushLocation(context, Paths.team(team.slug)),
-          ),
-        ],
       );
     }
 

@@ -26,6 +26,10 @@ class FeedKeys {
   /// la visibilité diffère de celle de l'équipe (règle R1).
   ValueKey<String> visibilityBadge(String slug) => _FeedKey('visibility_$slug');
 
+  /// « Groupe B · Place de la Mairie » sous le départ d'une carte de sortie,
+  /// par son slug (règle R11).
+  ValueKey<String> groupPlaceLine(String slug) => _FeedKey('groupPlace_$slug');
+
   /// Le compte de personnes d'une carte de voyage, par son slug (règle R4).
   ValueKey<String> tripParticipantCount(String slug) =>
       _FeedKey('tripParticipants_$slug');

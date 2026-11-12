@@ -104,6 +104,12 @@ final class Teams extends Module {
 
   bool showsMyTeam(String teamSlug) => isShown(keys.teams.teamCard(teamSlug));
 
+  /// Whether the card of [teamSlug] in the Teams tab gives the member's real role, [role]
+  /// (« Membre », « Organisateur »…) — a badge renders its label in capitals. The tab mounts the
+  /// discovery card (rule R12), with no « Voir l'équipe » button: tapping the card opens the team.
+  bool myTeamShowsRole(String teamSlug, String role) =>
+      shows(keys.teams.teamCardRole(teamSlug), role.toUpperCase());
+
   /// « Accepter »: the invitation leaves the card — the last one takes the card with it — and the
   /// team enters the list.
   Future<void> acceptInvitation(String teamSlug) async {

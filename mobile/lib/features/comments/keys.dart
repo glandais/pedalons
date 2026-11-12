@@ -10,6 +10,10 @@ class CommentKeys {
   ValueKey<String> moreButton(String commentId) =>
       _CommentKey('more_$commentId');
 
+  /// Le texte d'un commentaire, tel qu'il a été tapé (règle R12).
+  ValueKey<String> content(String commentId) =>
+      _CommentKey('content_$commentId');
+
   /// Un fil : le commentaire racine et les réponses rangées sous lui.
   ValueKey<String> thread(String commentId) => _CommentKey('thread_$commentId');
 

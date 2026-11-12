@@ -15,6 +15,10 @@ class TeamsPageKeys {
   ValueKey<String> teamCardVisibility(String teamSlug) =>
       _TeamsPageKey('teamCardVisibility_$teamSlug');
 
+  /// Le rôle de la personne sur la carte d'une équipe (règle R12).
+  ValueKey<String> teamCardRole(String teamSlug) =>
+      _TeamsPageKey('teamCardRole_$teamSlug');
+
   /// « Vous avez des invitations en attente », en tête de la liste.
   final pendingInvitationsCard = const _TeamsPageKey('pendingInvitations');
 
@@ -35,6 +39,12 @@ class TeamsDiscoverKeys {
   /// « Équipe uniquement » sur la carte d'une équipe privée (règle R1).
   ValueKey<String> cardVisibility(String teamSlug) =>
       _TeamsDiscoverKey('cardVisibility_$teamSlug');
+
+  /// Le rôle réel de la personne sur la carte d'une équipe dont elle est
+  /// membre (« Organisateur »…), à la place d'un « Membre » générique (règle
+  /// R12).
+  ValueKey<String> cardRole(String teamSlug) =>
+      _TeamsDiscoverKey('cardRole_$teamSlug');
 }
 
 class _TeamPageKey extends ValueKey<String> {
@@ -78,6 +88,10 @@ class TeamPageKeys {
   /// l'utilisateur.
   ValueKey<String> memberRow(String userId) =>
       _TeamPageKey('memberRow_$userId');
+
+  /// Le `⋯` en bout de ligne d'un membre : Signaler, Bloquer (règle R13).
+  ValueKey<String> memberMore(String userId) =>
+      _TeamPageKey('memberMore_$userId');
 
   /// La recherche de la section « Membres ».
   final membersSearchField = const _TeamPageKey('membersSearchField');
@@ -151,6 +165,10 @@ class TeamDashboardKeys {
   /// (ledger `BRAND-8`).
   ValueKey<String> myUpcomingDeparture(String slug) =>
       _TeamDashboardKey('myUpcomingDeparture_$slug');
+
+  /// « Groupe B · Place de la Mairie » sous ce départ (règle R11).
+  ValueKey<String> myUpcomingGroupPlace(String slug) =>
+      _TeamDashboardKey('myUpcomingGroupPlace_$slug');
 
   /// Le bouton « GPS » d'une ligne de « Vos prochaines sorties ».
   ValueKey<String> myUpcomingGps(String slug) =>

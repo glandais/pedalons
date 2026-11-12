@@ -32,12 +32,13 @@ final class DetailMenus extends Module {
 
   Future<void> waitUntilAdClosed() => waitUntilGone(keys.ad.moreButton);
 
-  /// The team's « Membres » section: taps [userId]'s row, which opens its menu.
+  /// The team's « Membres » section: taps the `⋯` at the end of [userId]'s row, which opens its
+  /// menu (rule R13 — tapping the row does the same, the `⋯` says so).
   Future<void> openMemberMenu(String userId) async {
-    await (await scrolledTo(keys.team.memberRow(userId))).tap();
+    await (await scrolledTo(keys.team.memberMore(userId))).tap();
   }
 
-  /// The ride's participants sheet → [userId]'s row, which opens its menu.
+  /// The ride's participants sheet → the `⋯` of [userId]'s row, which opens its menu (rule R13).
   ///
   /// The sheet opens from « Voir toutes les personnes inscrites » at the foot of a single-group
   /// ride's « Personnes inscrites » section (ledger `MOB-134`, lot 7 — the group's own sheet), or,
@@ -50,6 +51,6 @@ final class DetailMenus extends Module {
         ? keys.ride.participantsButton
         : keys.rideGroup.viewAllParticipants;
     await (await scrolledTo(button)).tap();
-    await $(keys.participants.person(userId)).tap();
+    await $(keys.participants.personMore(userId)).tap();
   }
 }

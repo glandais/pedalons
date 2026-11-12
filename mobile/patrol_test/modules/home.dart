@@ -51,6 +51,11 @@ final class Home extends Module {
   bool nextRideShows(String rideSlug, String text) =>
       shows(keys.home.nextRideCard(rideSlug), text);
 
+  /// Whether the line under « Départ 09:30 » — « Groupe B · Place de la Mairie », the joined
+  /// group then the start place, name only (rule R11) — reads [text].
+  bool nextRideGroupLineShows(String text) =>
+      shows(keys.home.nextRideGroup, text);
+
   bool get nextRideOffersLeave => isShown(keys.home.nextRideLeaveButton);
 
   /// Taps « Se désinscrire » on the next-ride card.

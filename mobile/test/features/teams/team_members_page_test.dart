@@ -5,11 +5,16 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/features/auth/data/auth_repository.dart';
+import 'package:pedalons/features/auth/data/secure_storage.dart';
+import 'package:pedalons/features/auth/domain/auth_state.dart';
+import 'package:pedalons/features/auth/providers/auth_provider.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/features/teams/domain/member_filters.dart';
 import 'package:pedalons/features/teams/domain/team_discovery_filters.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_members_page.dart';
 import 'package:pedalons/features/teams/providers/team_members_provider.dart';
+import 'package:pedalons/keys.dart';
 
 import '../../support/localization.dart';
 import 'team_fixtures.dart';
@@ -70,11 +75,13 @@ void main() {
     MemberFilters? filters,
     Brightness brightness = Brightness.light,
     bool rolesShown = true,
+    bool signedInAsU1 = false,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           teamRepositoryProvider.overrideWithValue(repository),
+          if (signedInAsU1) authProvider.overrideWith((Ref ref) => _Me(ref)),
           if (filters != null)
             memberFiltersProvider('n-peloton').overrideWith((ref) => filters),
         ],
@@ -129,6 +136,24 @@ void main() {
     },
   );
 
+  testWidgets('règle R13 : un `⋯` en bout de ligne ouvre Signaler / Bloquer, '
+      'jamais sur sa propre ligne', (WidgetTester tester) async {
+    await openMembers(
+      tester,
+      repository: _StubTeamRepository(total: 3),
+      signedInAsU1: true,
+    );
+
+    expect(find.byKey(keys.team.memberMore('u0')), findsOneWidget);
+    expect(find.byKey(keys.team.memberMore('u2')), findsOneWidget);
+    expect(find.byKey(keys.team.memberMore('u1')), findsNothing);
+
+    await tester.tap(find.byKey(keys.team.memberMore('u0')));
+    await tester.pumpAndSettle();
+    expect(find.text('Signaler ce membre'), findsOneWidget);
+    expect(find.text('Bloquer Membre 0'), findsOneWidget);
+  });
+
   testWidgets('les chips de rôle sont exclusives et partent au serveur', (
     WidgetTester tester,
   ) async {
@@ -178,4 +203,32 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('3\u00a0membres'), findsOneWidget);
   });
+}
+
+class _NoAuth implements AuthRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _NoStorage implements SecureTokenStorage {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Connecté en « Membre 1 » (`u1`).
+class _Me extends AuthNotifier {
+  _Me(Ref ref) : super(_NoAuth(), _NoStorage(), ref) {
+    state = const AuthState(
+      isInitialized: true,
+      accessToken: 'token',
+      user: UserDto(
+        plannerQuota: PlannerQuotaDto(used: 0, resetsOn: '2026-12-01'),
+        id: 'u1',
+        email: 'moi@example.org',
+        displayName: 'Membre 1',
+        contactableByMembers: true,
+        emailVerified: true,
+      ),
+    );
+  }
 }

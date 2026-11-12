@@ -21,6 +21,8 @@ import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../posts/domain/post_neighbours.dart';
 import '../../../rides/domain/group_start.dart';
+import '../../../rides/presentation/widgets/ride_display_stats.dart';
+import '../../../rides/presentation/widgets/ride_group_place_line.dart';
 import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
 import '../../../rides/providers/participation_changes.dart';
 import '../../../tags/presentation/content_tags.dart';
@@ -386,6 +388,17 @@ class _RideBody extends ConsumerWidget {
           : _themed(context, ride.thumbnailLightUrl, ride.thumbnailDarkUrl),
     );
 
+    // Sous « Départ 09:30 », « Groupe B · Place de la Mairie » : le groupe
+    // quand la personne y est inscrite, le lieu, nom seul, s'il existe (règle
+    // R11, KIT §9). Une inscription faite depuis le chargement du fil n'a pas
+    // encore de groupe sur la ligne : le lieu seul, jusqu'au rechargement.
+    final Widget? groupPlace = RideGroupPlaceLine.maybe(
+      key: keys.feed.groupPlaceLine(ride.slug),
+      groupName: registered ? ride.registeredGroup?.name : null,
+      placeName: ride.startPlace?.name,
+    );
+    final Widget? departureLine = departure?.line();
+
     return _CardShell(
       onTap: () => context.push(Paths.ride(ride.team.slug, ride.slug)),
       tone: PdlMediaTone.ride,
@@ -397,7 +410,19 @@ class _RideBody extends ConsumerWidget {
       title: ride.name,
       dayBox: departure?.dayBox(),
       relativeLabel: departure?.relative,
-      departure: departure?.line(),
+      departure: departureLine == null && groupPlace == null
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                ?departureLine,
+                if (groupPlace != null) ...<Widget>[
+                  const SizedBox(height: 2),
+                  groupPlace,
+                ],
+              ],
+            ),
       // **`excerpt`, pas `media.markdown`** : en vue compacte le corps n'est
       // même pas envoyé, et l'aplatir côté client rendait des liens bruts.
       excerpt: ride.excerpt,
@@ -465,6 +490,13 @@ class _RideBody extends ConsumerWidget {
       // La date n'est plus une statistique (BRANDING §7.1, ledger `BRAND-8`) :
       // elle est la boîte du jour et la ligne de départ, en haut.
       stats: <PdlStat>[
+        // La distance et le D+ que le serveur donne pour la personne qui lit
+        // (règle R3, KIT §9, docs/LEDGER_*.md API-178).
+        ...rideDisplayStats(
+          distance: ride.displayDistance,
+          elevationGain: ride.displayElevationGain,
+          units: ref.watch(unitSystemProvider),
+        ),
         // Sans groupe, personne ne peut s'inscrire : pas de compteur ; et un
         // compteur à zéro ne s'affiche pas (règle R4, KIT §9).
         if (ride.groupCount > 0 && ride.participantCount > 0)

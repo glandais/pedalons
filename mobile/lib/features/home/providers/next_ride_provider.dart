@@ -102,6 +102,8 @@ RideDto rideFromListRow(PublicationDtoRide p) => RideDto(
   groupSummaries: p.groupSummaries,
   distance: p.distance,
   elevationGain: p.elevationGain,
+  displayDistance: p.displayDistance,
+  displayElevationGain: p.displayElevationGain,
   surfaceType: p.surfaceType,
   topParticipants: p.topParticipants,
   deleted: p.deleted,

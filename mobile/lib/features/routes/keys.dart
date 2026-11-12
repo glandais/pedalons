@@ -20,6 +20,10 @@ class RoutesKeys {
   ValueKey<String> cardVisibility(String routeSlug) =>
       _RoutesKey('cardVisibility_$routeSlug');
 
+  /// L'extrait d'une carte de parcours en densité « vignettes » (règle R12).
+  ValueKey<String> cardExcerpt(String routeSlug) =>
+      _RoutesKey('cardExcerpt_$routeSlug');
+
   /// L'état vide filtré, « cul-de-sac ».
   final emptyState = const _RoutesKey('emptyState');
 

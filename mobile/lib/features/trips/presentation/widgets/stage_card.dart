@@ -24,7 +24,9 @@ import '../../../../keys.dart';
 ///
 /// 1. le rang, le titre de l'étape et le repère de couleur de son tracé ;
 /// 2. le départ « ven. 20 nov. · 08:30 », horloge devant, dans le fuseau de
-///    l'étape, et la mention de fuseau quand le lecteur est ailleurs ;
+///    l'étape, et la mention de fuseau quand le lecteur est ailleurs ; puis
+///    « Autun → Château-Chinon », ses lieux de départ et d'arrivée
+///    ([stagePlacesLine], règle R11) ;
 /// 3. la ligne de chiffres ([PublicationStatsLine]) : distance · D+ · vitesse ;
 /// 4. la ligne météo ([RideWeatherSummaryLine]), au format de la carte de
 ///    groupe : plage de températures · vent (flèche) · « Pluie N % ».
@@ -78,6 +80,25 @@ class StageCard extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<StageCard> createState() => _StageCardState();
+}
+
+/// La ligne « Départ → Arrivée » d'une carte d'étape (règle R11, KIT §9) :
+/// les noms des lieux de départ et d'arrivée de l'étape, le seul qui existe
+/// quand l'autre manque, `null` sans aucun. Elle ne se répète pas quand le
+/// titre de l'étape la dit déjà mot pour mot.
+String? stagePlacesLine(TripStageDto stage) {
+  String? clean(String? s) {
+    final String? v = s?.trim();
+    return v == null || v.isEmpty ? null : v;
+  }
+
+  final String? from = clean(stage.startPlace?.name);
+  final String? to = clean(stage.endPlace?.name);
+  if (from == null && to == null) return null;
+  final String line = from != null && to != null
+      ? '$from → $to'
+      : (from ?? to)!;
+  return line == stage.name.trim() ? null : line;
 }
 
 /// « GPS » sur l'étape (règle R7) : la personne participe au voyage, il est
@@ -174,6 +195,27 @@ class _StageCardState extends ConsumerState<StageCard>
                 // L'étape dans son fuseau, et la mention en seconde ligne
                 // quand le lecteur est ailleurs (docs/LEDGER_*.md API-60).
                 ?ZoneMentionLine.maybe(stage.dateTime, stage.timezone),
+                // « Autun → Château-Chinon » : ce sont les lieux qui
+                // distinguent les étapes (règle R11, KIT §9).
+                if (stagePlacesLine(stage) case final String places)
+                  Padding(
+                    key: keys.trip.stagePlaces(stage.slug),
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Row(
+                      children: <Widget>[
+                        Icon(PdlIcons.route, size: 14, color: c.textDimmed),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            places,
+                            style: t.sub,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 if (route != null || stage.averageSpeed != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),

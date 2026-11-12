@@ -68,6 +68,7 @@ const Map<String, List<String>> _cahier = <String, List<String>>{
   'etapes': <String>[
     'etapes',
     'etape-inscrite',
+    'etape-lieux',
     'etape-sans-parcours',
     'etape-alerte-pluie',
   ],
@@ -88,6 +89,7 @@ const Map<String, List<String>> _cahier = <String, List<String>>{
     'equipe',
     'equipe-admin',
     'equipe-decouverte',
+    'equipe-decouverte-membre',
     'equipe-photo',
     'invitations',
     'membre',
@@ -113,6 +115,7 @@ const Map<String, List<String>> _cahier = <String, List<String>>{
     'modele-brouillon',
     'appareils',
     'commentaires',
+    'commentaire-markdown',
   ],
 };
 
@@ -131,6 +134,7 @@ const Map<String, String> _loaded = <String, String>{
   'inscrits': 'Malo Guérin',
   'appareils': 'Karoo',
   'commentaires': 'café avant le départ',
+  'commentaire-markdown': '**avant le départ**',
 };
 
 void main() {

@@ -10,6 +10,7 @@ import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/core/widgets/zone_mention_line.dart';
 import 'package:pedalons/features/home/presentation/widgets/next_ride_card.dart';
 import 'package:pedalons/features/home/providers/next_ride_provider.dart';
+import 'package:pedalons/features/rides/presentation/widgets/ride_group_place_line.dart';
 import 'package:pedalons/keys.dart';
 
 import '../../support/localization.dart';
@@ -48,6 +49,11 @@ String _textOf(WidgetTester tester, Key key) => tester
       find.descendant(of: find.byKey(key), matching: find.byType(Text)).first,
     )
     .data!;
+
+/// « Groupe B · Place de la Mairie », sous la ligne de départ (règle R11).
+String _lineOf(WidgetTester tester) => tester
+    .widget<RideGroupPlaceLine>(find.byKey(keys.home.nextRideGroup))
+    .label;
 
 void main() {
   setUpAll(loadTestTranslations);
@@ -106,7 +112,7 @@ void main() {
       );
 
       expect(_textOf(tester, keys.home.nextRideStart), contains('21:30'));
-      expect(_textOf(tester, keys.home.nextRideGroup), 'Chill Route Long');
+      expect(_lineOf(tester), 'Groupe Chill Route Long');
       expect(
         find.descendant(
           of: find.byKey(keys.home.nextRideGroup),
@@ -129,7 +135,7 @@ void main() {
       final String date = _textOf(tester, keys.home.nextRideStart);
       expect(date, contains('22:30'));
       expect(date, isNot(contains('21:30')));
-      expect(_textOf(tester, keys.home.nextRideGroup), 'Chill Route Long');
+      expect(_lineOf(tester), 'Groupe Chill Route Long');
     },
   );
 
@@ -205,5 +211,68 @@ void main() {
     await _pump(tester, fixtureRide(dateTime: rideAt), null);
 
     expect(find.byKey(keys.home.nextRideDayPill), findsNothing);
+  });
+
+  group('règles R3 et R11 (docs/LEDGER_*.md MOB-139)', () {
+    const PlaceDetailDto mairie = PlaceDetailDto(
+      id: 'p1',
+      name: 'Place de la Mairie',
+      address: 'Huelgoat',
+      startPlace: true,
+      endPlace: false,
+    );
+
+    testWidgets('sous le départ, « Groupe B · Place de la Mairie », sans '
+        'l’adresse', (WidgetTester tester) async {
+      await _pump(
+        tester,
+        fixtureRide(dateTime: rideAt).copyWith(startPlace: mairie),
+        fixtureGroup(name: 'B', startAt: rideAt),
+      );
+
+      expect(_lineOf(tester), 'Groupe B · Place de la Mairie');
+      expect(find.textContaining('Huelgoat'), findsNothing);
+      expect(find.byType(PdlPlaceRow), findsNothing);
+    });
+
+    testWidgets('le lieu seul quand le groupe manque', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        fixtureRide(dateTime: rideAt).copyWith(startPlace: mairie),
+        null,
+      );
+
+      expect(_lineOf(tester), 'Place de la Mairie');
+    });
+
+    testWidgets('la distance et le D+ sont ceux que le serveur donne, pas ceux '
+        'du groupe', (WidgetTester tester) async {
+      await _pump(
+        tester,
+        fixtureRide(dateTime: rideAt)
+            .copyWith(displayDistance: 78000, displayElevationGain: 980),
+        fixtureGroup(startAt: rideAt),
+      );
+
+      expect(find.text(AppFormatters.formatDistance(78000)), findsOneWidget);
+      expect(find.text(AppFormatters.formatElevation(980)), findsOneWidget);
+      // Le parcours du groupe de la fixture, plus lu par la carte.
+      expect(find.text(AppFormatters.formatDistance(66500)), findsNothing);
+    });
+
+    testWidgets('sans distance d’affichage, ni distance ni D+', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        fixtureRide(dateTime: rideAt),
+        fixtureGroup(startAt: rideAt),
+      );
+
+      expect(find.byIcon(PdlIcons.distance), findsNothing);
+      expect(find.byIcon(PdlIcons.elevationUp), findsNothing);
+    });
   });
 }

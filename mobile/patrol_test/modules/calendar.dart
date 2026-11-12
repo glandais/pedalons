@@ -52,8 +52,8 @@ final class Calendar extends Module {
   bool showsRegistered(String entitySlug) =>
       isShown(keys.calendar.agendaRegisteredBadge(entitySlug));
 
-  /// Whether the « Inscrit · groupe » badge reads [text] — a badge renders its label in
-  /// capitals.
+  /// Whether the « J'y vais » badge reads [text] — a badge renders its label in capitals. The
+  /// group is not in the badge any more: the card's first line names it (rule R11).
   bool registeredBadgeShows(String entitySlug, String text) => shows(
     keys.calendar.agendaRegisteredBadge(entitySlug),
     text.toUpperCase(),

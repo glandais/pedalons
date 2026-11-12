@@ -325,7 +325,12 @@ final GallerySection _agenda = GallerySection(
       'agenda-sortie',
       (GalleryData d) => _agendaCard(
         d,
-        d.event(id: 'e-sortie', title: kRideName, start: d.at(4, 9)),
+        d.event(
+          id: 'e-sortie',
+          title: kRideName,
+          start: d.at(4, 9),
+          display: false,
+        ),
       ),
     ),
     GalleryCase(
@@ -372,6 +377,7 @@ final GallerySection _agenda = GallerySection(
           start: d.at(-2, 9),
           entitySlug: 'boucle-terminee',
           finished: true,
+          display: false,
         ),
       ),
     ),
@@ -581,6 +587,13 @@ final GallerySection _stages = GallerySection(
       'etape-inscrite',
       (GalleryData d) => _stage(d, d.stage(1), d.weather(), exportable: true),
     ),
+    // Un titre qui ne nomme pas les lieux : la carte dit « Autun →
+    // Château-Chinon » sous la date (règle R11).
+    GalleryCase(
+      'etape-lieux',
+      (GalleryData d) =>
+          _stage(d, d.stage(1, name: 'Par les lacs du Morvan'), d.weather()),
+    ),
     GalleryCase(
       'etape-sans-parcours',
       (GalleryData d) =>
@@ -715,10 +728,11 @@ class _OwnScrollState extends State<_OwnScroll> {
   );
 }
 
-/// `_TeamCard` est privée à l'onglet Équipes : la galerie monte l'onglet
-/// lui-même, avec une seule équipe, dans un cadre de hauteur fixe.
+/// L'onglet Équipes monte la carte de la découverte (règle R12) : la galerie
+/// monte l'onglet lui-même, avec une seule équipe, dans un cadre de hauteur
+/// fixe.
 Widget _teamsTab(GalleryData d, String role) =>
-    _scoped(d, const _OwnScroll(height: 180, child: TeamsPage()), <Override>[
+    _scoped(d, const _OwnScroll(height: 352, child: TeamsPage()), <Override>[
       // Une valeur déjà là : l'onglet ne passe pas par son squelette de
       // chargement, trois cartes qui débordent du cadre.
       myTeamsProvider.overrideWithValue(
@@ -764,6 +778,15 @@ final GallerySection _teams = GallerySection(
       'equipe-decouverte',
       (GalleryData d) => TeamDiscoveryCard(
         team: d.teamDetail(clubDesMonts: false),
+        onJoin: _noop,
+      ),
+    ),
+    // Camille y est organisatrice : son rôle réel, et ni « Membre » ni
+    // « Voir l'équipe » (règle R12).
+    GalleryCase(
+      'equipe-decouverte-membre',
+      (GalleryData d) => TeamDiscoveryCard(
+        team: d.teamDetail(clubDesMonts: false, role: 'ORGANIZER'),
         onJoin: _noop,
       ),
     ),
@@ -978,26 +1001,33 @@ final GallerySection _misc = GallerySection(
         pairedDevicesProvider.overrideWith((Ref ref) async => d.pairedDevices),
       ]),
     ),
-    GalleryCase('commentaires', (GalleryData d) {
-      const CommentTarget target = CommentTarget(
-        entity: CommentEntity.ride,
-        teamSlug: 'velo-club-des-monts',
-        slug: kRideSlug,
-      );
-      return _scoped(
-        d,
-        const CommentThread(target: target, canComment: false),
-        <Override>[
-          commentRepositoryProvider.overrideWithValue(
-            GalleryCommentRepository(d.comments),
-          ),
-          myTeamsProvider.overrideWith(
-            (Ref ref) async => <TeamDetailDto>[
-              d.teamDetail(clubDesMonts: true, role: 'MEMBER'),
-            ],
-          ),
-        ],
-      );
-    }),
+    GalleryCase('commentaires', (GalleryData d) => _comments(d, d.comments)),
+    // Tapé avec des astérisques, affiché tel quel (règle R12).
+    GalleryCase(
+      'commentaire-markdown',
+      (GalleryData d) => _comments(d, d.markdownComments),
+    ),
   ],
 );
+
+Widget _comments(GalleryData d, List<CommentDto> comments) {
+  const CommentTarget target = CommentTarget(
+    entity: CommentEntity.ride,
+    teamSlug: 'velo-club-des-monts',
+    slug: kRideSlug,
+  );
+  return _scoped(
+    d,
+    const CommentThread(target: target, canComment: false),
+    <Override>[
+      commentRepositoryProvider.overrideWithValue(
+        GalleryCommentRepository(comments),
+      ),
+      myTeamsProvider.overrideWith(
+        (Ref ref) async => <TeamDetailDto>[
+          d.teamDetail(clubDesMonts: true, role: 'MEMBER'),
+        ],
+      ),
+    ],
+  );
+}

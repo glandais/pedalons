@@ -14,6 +14,8 @@ import '../../../../../core/theme/pdl_tokens.dart';
 import '../../../../../core/theme/pdl_typography.dart';
 import '../../../../../core/utils/formatters.dart';
 import '../../../../../keys.dart';
+import '../../../../rides/presentation/widgets/ride_display_stats.dart';
+import '../../../../rides/presentation/widgets/ride_group_place_line.dart';
 import '../../../../rides/providers/participation_changes.dart';
 import '../../../../routes/presentation/gps_export_runner.dart';
 import '../../../../routes/presentation/widgets/gps_button.dart';
@@ -186,7 +188,25 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow>
                     // (BRANDING §7.8, ledger `BRAND-8`) : « Départ 09:30 »
                     // en 700, jamais une statistique atténuée parmi d'autres.
                     ?_departure(p),
-                    if (stats.isNotEmpty) ...<Widget>[
+                    // Sous « Départ 09:30 », « Groupe B · Place de la Mairie »
+                    // (règle R11, KIT §9), puis distance · D+ en ligne.
+                    if (p is PublicationDtoRide) ...<Widget>[
+                      if (RideGroupPlaceLine.maybe(
+                            key: keys.teamDashboard.myUpcomingGroupPlace(
+                              p.slug,
+                            ),
+                            groupName: p.registeredGroup?.name,
+                            placeName: p.startPlace?.name,
+                          )
+                          case final Widget line) ...<Widget>[
+                        const SizedBox(height: 2),
+                        line,
+                      ],
+                      if (stats.isNotEmpty) ...<Widget>[
+                        const SizedBox(height: PdlSpacing.chipGap),
+                        PdlStatRow(stats: stats),
+                      ],
+                    ] else if (stats.isNotEmpty) ...<Widget>[
                       const SizedBox(height: PdlSpacing.chipGap),
                       // Une ligne par fait, tronquée : un lieu de départ ou
                       // un nom de groupe n'a pas de longueur bornée, et une
@@ -294,23 +314,15 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow>
     );
   }
 
-  /// Lieu de départ, puis « Groupe B · 26 km/h ». L'heure est la ligne de
-  /// départ ([_departure]).
-  List<PdlStat> _rideStats(PublicationDtoRide ride, UnitSystem units) {
-    final RideGroupDto? group = ride.registeredGroup;
-    return <PdlStat>[
-      if (ride.startPlace != null)
-        PdlStat(value: ride.startPlace!.name, icon: PdlIcons.placeStart),
-      if (group != null)
-        PdlStat(
-          value: group.averageSpeed == null
-              ? group.name
-              : '${group.name} · '
-                    '${AppFormatters.formatSpeed(group.averageSpeed!, units)}',
-          icon: PdlIcons.speed,
-        ),
-    ];
-  }
+  /// Distance et D+ tels que le serveur les donne pour la personne qui lit
+  /// (règle R3, KIT §9, docs/LEDGER_*.md API-178) : ceux de son groupe. Le
+  /// groupe et le lieu sont la ligne sous le départ (règle R11).
+  List<PdlStat> _rideStats(PublicationDtoRide ride, UnitSystem units) =>
+      rideDisplayStats(
+        distance: ride.displayDistance,
+        elevationGain: ride.displayElevationGain,
+        units: units,
+      );
 
   /// Étapes et distance. La plage et l'heure sont la ligne de départ
   /// ([_departure]).
@@ -406,7 +418,8 @@ class DashboardUpcomingRides extends StatelessWidget {
   }
 }
 
-/// La carte d'une sortie à venir : revêtement, distance, dénivelé, et une
+/// La carte d'une sortie à venir : revêtement, distance et dénivelé donnés
+/// par le serveur pour la personne qui lit, et une
 /// barre de remplissage par groupe.
 class DashboardRideCard extends ConsumerWidget {
   const DashboardRideCard({
@@ -487,20 +500,13 @@ class DashboardRideCard extends ConsumerWidget {
           const SizedBox(height: PdlSpacing.chipGap),
           PdlStatRow(
             stats: <PdlStat>[
-              if (ride.distance != null)
-                PdlStat(
-                  value: AppFormatters.formatDistance(ride.distance!, units),
-                  icon: PdlIcons.distance,
-                ),
-              if (ride.elevationGain != null)
-                PdlStat(
-                  value: AppFormatters.formatElevation(
-                    ride.elevationGain!,
-                    units,
-                  ),
-                  icon: PdlIcons.elevationUp,
-                  trend: PdlStatTrend.up,
-                ),
+              // La distance et le D+ que le serveur donne pour la personne
+              // qui lit (règle R3, KIT §9, docs/LEDGER_*.md API-178).
+              ...rideDisplayStats(
+                distance: ride.displayDistance,
+                elevationGain: ride.displayElevationGain,
+                units: units,
+              ),
               // Un compteur à zéro ne s'affiche pas — plus d'« Aucun
               // groupe » (règle R4, KIT §9).
               if (ride.groupCount > 0)

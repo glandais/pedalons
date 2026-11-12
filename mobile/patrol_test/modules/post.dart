@@ -64,6 +64,11 @@ final class Post extends Module {
           ?.text ??
       '';
 
+  /// The text of [commentId] as the thread renders it: as typed, with no Markdown rendering
+  /// (rule R12).
+  String? commentText(String commentId) =>
+      $.tester.widget<Text>(find.byKey(keys.comments.content(commentId))).data;
+
   // ── Replies ─────────────────────────────────────────────────────────────
 
   bool offersReplyTo(String commentId) =>

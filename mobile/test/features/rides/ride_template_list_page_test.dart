@@ -11,6 +11,7 @@ import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/rides/data/ride_template_repository.dart';
 import 'package:pedalons/features/rides/presentation/pages/ride_template_list_page.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
+import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -159,9 +160,56 @@ void main() {
       tester.widget<Text>(find.byKey(keys.rideTemplates.count)).data,
       '2 modèles',
     );
-    // Le statut des sorties créées, en capitales : c'est le badge.
-    expect(find.text('PUBLIÉ'), findsOneWidget);
+    // Le statut des sorties créées, seulement par exception (règles R1 et
+    // R12) : « Brouillon », jamais « Publié ».
+    expect(find.text('PUBLIÉ'), findsNothing);
     expect(find.text('BROUILLON'), findsOneWidget);
+    expect(
+      find.byKey(keys.rideTemplates.statusBadge('dimanche')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(keys.rideTemplates.statusBadge('semaine')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('règle R12 : les groupes et leur vitesse, la description en '
+      'texte sur deux lignes', (WidgetTester tester) async {
+    await open(
+      tester,
+      templates: _StubTemplates(<RideTemplateDto>[
+        fixtureTemplate(
+          markdown:
+              'Le rendez-vous **du dimanche**, [plan](https://x.invalid).',
+          groups: <RideTemplateGroupDto>[
+            fixtureTemplateGroup(id: 'a', name: 'A', averageSpeed: 28),
+            fixtureTemplateGroup(id: 'c', name: 'C', sortOrder: 2),
+            fixtureTemplateGroup(
+              id: 'b',
+              name: 'B',
+              sortOrder: 1,
+              averageSpeed: 25,
+            ),
+          ],
+        ),
+        fixtureTemplate(id: 'tpl-2', slug: 'nue', name: 'Sans description'),
+      ]),
+    );
+
+    expect(
+      tester
+          .widget<Text>(find.byKey(keys.rideTemplates.groupsLine('dimanche')))
+          .data,
+      'A ${AppFormatters.formatSpeed(28)} · B ${AppFormatters.formatSpeed(25)}'
+      ' · C',
+    );
+    final Text description = tester.widget<Text>(
+      find.byKey(keys.rideTemplates.description('dimanche')),
+    );
+    expect(description.data, 'Le rendez-vous du dimanche, plan.');
+    expect(description.maxLines, 2);
+    expect(find.byKey(keys.rideTemplates.description('nue')), findsNothing);
   });
 
   testWidgets('sans modèle, l\'état vide propose d\'en créer un', (

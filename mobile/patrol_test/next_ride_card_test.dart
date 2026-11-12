@@ -39,7 +39,7 @@ void main() {
         modules.home.nextRideShows(rideSlug, ride['name'] as String),
         isTrue,
       );
-      expect(modules.home.nextRideShows(rideSlug, 'Groupe unique'), isTrue);
+      expect(modules.home.nextRideGroupLineShows('Groupe unique'), isTrue);
       expect(modules.home.nextRideOffersLeave, isTrue);
 
       await modules.home.leaveNextRide();

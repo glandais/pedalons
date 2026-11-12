@@ -158,6 +158,15 @@ void main() {
   test('« Ma prochaine sortie » garde la météo de la ligne de liste', () {
     expect(rideFromListRow(row()).weather, summary);
   });
+
+  test('« Ma prochaine sortie » garde la distance d’affichage de la ligne '
+      '(règle R3, docs/LEDGER_*.md API-178)', () {
+    final RideDto ride = rideFromListRow(
+      row().copyWith(displayDistance: 78000, displayElevationGain: 980),
+    );
+    expect(ride.displayDistance, 78000);
+    expect(ride.displayElevationGain, 980);
+  });
 }
 
 Future<SharedPreferences> _prefs() async {

@@ -20,7 +20,7 @@ import '../../../visibility/presentation/visibility_badge.dart';
 import '../../../../core/widgets/team_banner.dart';
 
 /// La densité « vignettes » de la parcothèque — un bandeau média de 208 px,
-/// l'équipe, le nom, deux chiffres, deux badges.
+/// l'équipe, le nom, son extrait sur deux lignes, deux chiffres, deux badges.
 ///
 /// C'est la densité par défaut sous [kRouteCompactThreshold] résultats : quand
 /// on parcourt, la miniature du tracé en dit plus qu'un nom.
@@ -86,6 +86,19 @@ class RouteCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                   style: t.cardTitle.copyWith(color: c.text),
                 ),
+                // L'extrait sur deux lignes, sous le nom (règle R12, KIT §9,
+                // BRANDING §7.2) ; pas sur la ligne compacte.
+                if (route.excerpt case final String excerpt
+                    when excerpt.trim().isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 4),
+                  Text(
+                    excerpt.trim(),
+                    key: keys.routes.cardExcerpt(route.slug),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.sub,
+                  ),
+                ],
                 const SizedBox(height: 8),
                 PdlStatRow(stats: routeStats(route, units)),
                 const SizedBox(height: 8),

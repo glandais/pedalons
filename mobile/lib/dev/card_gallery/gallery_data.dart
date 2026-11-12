@@ -539,6 +539,11 @@ class GalleryData {
       startPlace: startPlace,
       distance: routed ? 92400 : null,
       elevationGain: routed ? 1240 : null,
+      // Ce que le serveur calcule pour Camille (règle R3, ledger `API-178`) :
+      // le parcours de son groupe quand elle est inscrite (B, 78,0 km,
+      // 980 m) ; sinon rien, les trois groupes roulant trois parcours.
+      displayDistance: routed ? mine?.distance : null,
+      displayElevationGain: routed ? mine?.elevationGain : null,
       routeSlug: routed ? kRouteSlug : null,
       thumbnailLightUrl: routed ? _img(GalleryImageUrls.mapLight) : null,
       thumbnailDarkUrl: routed ? _img(GalleryImageUrls.mapDark) : null,
@@ -597,6 +602,8 @@ class GalleryData {
       startPlace: startPlace,
       distance: 92400,
       elevationGain: 1240,
+      displayDistance: mine?.distance,
+      displayElevationGain: mine?.elevationGain,
       routeSlug: kRouteSlug,
       thumbnailLightUrl: _img(GalleryImageUrls.mapLight),
       thumbnailDarkUrl: _img(GalleryImageUrls.mapDark),
@@ -728,20 +735,65 @@ class GalleryData {
   );
 
   /// Les trois étapes du voyage.
+  ///
+  /// Chacune a ses lieux de départ et d'arrivée, que son titre nomme déjà :
+  /// la carte ne les répète pas (règle R11). [name] donne à l'étape un titre
+  /// qui ne les dit pas — le cas `etape-lieux`.
   TripStageDto stage(
     int index, {
     bool withRoute = true,
     bool withSpeed = true,
+    String? name,
   }) {
-    final (String name, String date, double km, double up) = switch (index) {
-      1 => ('Autun → Château-Chinon', at(10, 8, 30), 74000.0, 1380.0),
-      2 => ('Château-Chinon → Saulieu', at(11, 9), 68000.0, 1120.0),
-      _ => ('Saulieu → Avallon', at(12, 9), 59000.0, 840.0),
+    final (
+      String title,
+      String from,
+      String to,
+      String date,
+      double km,
+      double up,
+    ) = switch (index) {
+      1 => (
+        'Autun → Château-Chinon',
+        'Autun',
+        'Château-Chinon',
+        at(10, 8, 30),
+        74000.0,
+        1380.0,
+      ),
+      2 => (
+        'Château-Chinon → Saulieu',
+        'Château-Chinon',
+        'Saulieu',
+        at(11, 9),
+        68000.0,
+        1120.0,
+      ),
+      _ => (
+        'Saulieu → Avallon',
+        'Saulieu',
+        'Avallon',
+        at(12, 9),
+        59000.0,
+        840.0,
+      ),
     };
     return TripStageDto(
       id: 'stage-$index',
       slug: 'etape-$index',
-      name: name,
+      name: name ?? title,
+      startPlace: PlaceDetailDto(
+        id: 'p-stage-$index-from',
+        name: from,
+        startPlace: true,
+        endPlace: false,
+      ),
+      endPlace: PlaceDetailDto(
+        id: 'p-stage-$index-to',
+        name: to,
+        startPlace: false,
+        endPlace: true,
+      ),
       dateTime: date,
       timezone: kGalleryZone,
       media: emptyMedia,
@@ -754,7 +806,7 @@ class GalleryData {
       route: withRoute
           ? route(
               slug: 'morvan-etape-$index',
-              name: name,
+              name: title,
               distance: km,
               elevationGain: up,
               tags: const <TagDto>[],
@@ -805,6 +857,7 @@ class GalleryData {
     String? tripSlug,
     double? distance = 92400,
     double? elevationGain = 1240,
+    bool display = true,
     String? place = 'Place de la Mairie',
   }) => CalendarEventDto(
     id: id,
@@ -827,6 +880,11 @@ class GalleryData {
     startPlaceName: place,
     distance: distance,
     elevationGain: elevationGain,
+    // Ce que la carte affiche (règle R3) : [display] faux pour la boucle des
+    // Monts d'Arrée lue par une personne qui n'y est pas inscrite — ses
+    // trois groupes roulent trois parcours, le serveur ne donne rien.
+    displayDistance: display ? distance : null,
+    displayElevationGain: display ? elevationGain : null,
     groupName: groupName,
   );
 
@@ -1052,7 +1110,13 @@ class GalleryData {
     id: draft ? 'tpl-hiver' : 'tpl-dimanche',
     slug: draft ? 'sortie-d-hiver' : 'sortie-du-dimanche',
     name: draft ? 'Sortie d’hiver' : 'Sortie du dimanche',
-    markdown: '',
+    // Une description sur le modèle publié, rien sur le brouillon (règle
+    // R12 : deux lignes quand elle existe).
+    markdown: draft
+        ? ''
+        : 'Trois allures au départ de la **place de la Mairie**, '
+              'regroupement au sommet du Roc’h Trévézel et café au retour. '
+              'Le groupe C attend tout le monde dans les montées.',
     visibility: 'TEAM',
     status: draft ? 'DRAFT' : 'PUBLISHED',
     createdAt: '2025-09-01T10:00:00Z',
@@ -1104,6 +1168,21 @@ class GalleryData {
 
   // ───────────────────────────────────────────────────────── commentaires
 
+  /// Un commentaire tapé avec des astérisques : la carte l'affiche tel quel,
+  /// `**avant le départ**` compris (règle R12, cas `commentaire-markdown`).
+  List<CommentDto> get markdownComments => <CommentDto>[
+    CommentDto(
+      id: 'c-karim-markdown',
+      content:
+          'Je roule avec le B. On se retrouve au café **avant le départ** ?',
+      author: karim,
+      createdAt: ago(const Duration(hours: 5)),
+      replies: const <CommentDto>[],
+      replyCount: 0,
+      deleted: false,
+    ),
+  ];
+
   /// Un commentaire et sa réponse, puis un commentaire supprimé.
   List<CommentDto> get comments => <CommentDto>[
     CommentDto(
@@ -1114,7 +1193,7 @@ class GalleryData {
       replies: <CommentDto>[
         CommentDto(
           id: 'c-lea',
-          content: 'Oui, 8 h 45 au café de la place, je prends les clés.',
+          content: 'Oui, 8 h 45 au café de la place.\nJe prends les clés.',
           author: lea,
           createdAt: ago(const Duration(hours: 4)),
           replies: const <CommentDto>[],

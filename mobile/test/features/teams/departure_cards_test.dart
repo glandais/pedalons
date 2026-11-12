@@ -14,6 +14,7 @@ import 'package:pedalons/features/auth/data/secure_storage.dart';
 import 'package:pedalons/features/auth/domain/auth_state.dart';
 import 'package:pedalons/features/auth/providers/auth_provider.dart';
 import 'package:pedalons/features/calendar/presentation/widgets/agenda_card.dart';
+import 'package:pedalons/features/rides/presentation/widgets/ride_group_place_line.dart';
 import 'package:pedalons/features/rides/providers/participation_changes.dart';
 import 'package:pedalons/features/teams/presentation/widgets/publication_card.dart';
 import 'package:pedalons/features/trips/presentation/widgets/stage_card.dart';
@@ -159,6 +160,92 @@ void main() {
   );
 
   group('carte de sortie du fil', () {
+    const PlaceDetailDto mairie = PlaceDetailDto(
+      id: 'p1',
+      name: 'Place de la Mairie',
+      address: 'Huelgoat',
+      startPlace: true,
+      endPlace: false,
+    );
+    const RideGroupDto groupB = RideGroupDto(
+      id: 'g-b',
+      name: 'B',
+      startAt: '2036-07-29T19:30:00Z',
+      countParticipants: 11,
+      participants: <PublicUserDto>[],
+      sortOrder: 1,
+      registered: true,
+      full: false,
+      distance: 78000,
+      elevationGain: 980,
+    );
+
+    testWidgets('règle R11 : « Groupe B · Place de la Mairie » sous le départ '
+        'd’une personne inscrite, le lieu seul sinon', (
+      WidgetTester tester,
+    ) async {
+      await pump(
+        tester,
+        PublicationCard(
+          publication: ride().copyWith(
+            startPlace: mairie,
+            registered: true,
+            registeredGroupId: 'g-b',
+            registeredGroup: groupB,
+          ),
+        ),
+      );
+      final Finder line = find.byKey(keys.feed.groupPlaceLine('np-665'));
+      expect(
+        tester.widget<RideGroupPlaceLine>(line).label,
+        'Groupe B · Place de la Mairie',
+      );
+      expect(find.textContaining('Huelgoat'), findsNothing);
+      expect(
+        tester.getTopLeft(line).dy,
+        greaterThan(tester.getTopLeft(find.text('Départ 21:30')).dy),
+      );
+
+      await pump(
+        tester,
+        PublicationCard(publication: ride().copyWith(startPlace: mairie)),
+      );
+      expect(
+        tester.widget<RideGroupPlaceLine>(line).label,
+        'Place de la Mairie',
+      );
+
+      await pump(tester, PublicationCard(publication: ride()));
+      expect(line, findsNothing);
+    });
+
+    testWidgets('règle R3 : distance et D+ d’affichage, rien sans eux', (
+      WidgetTester tester,
+    ) async {
+      await pump(
+        tester,
+        PublicationCard(
+          publication: ride().copyWith(
+            distance: 92400,
+            elevationGain: 1240,
+            displayDistance: 78000,
+            displayElevationGain: 980,
+          ),
+        ),
+      );
+      expect(find.text(AppFormatters.formatDistance(78000)), findsOneWidget);
+      expect(find.text(AppFormatters.formatElevation(980)), findsOneWidget);
+      expect(find.text(AppFormatters.formatDistance(92400)), findsNothing);
+
+      await pump(
+        tester,
+        PublicationCard(
+          publication: ride().copyWith(distance: 92400, elevationGain: 1240),
+        ),
+      );
+      expect(find.byIcon(PdlIcons.distance), findsNothing);
+    });
+
     // Ledger `MOB-139`, D1 : un brouillon se badge, comme une publication.
     testWidgets('une sortie en brouillon porte « Brouillon »', (
       WidgetTester tester,
@@ -390,11 +477,70 @@ void main() {
       );
       // L'heure n'est plus au milieu de « Équipe · 21:30 · Lieu ».
       expect(find.textContaining('· 21:30 ·'), findsNothing);
+      // Le lieu n'est plus derrière l'équipe : il a sa propre ligne (règle
+      // R11).
+      expect(find.textContaining('vallées · Parking'), findsNothing);
       expect(
-        find.textContaining('N-Peloton des collines et des vallées · Parking'),
+        find.text('Parking du lac de la Cassière, côté plage'),
         findsOneWidget,
       );
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('règle R11 : « heure · équipe · groupe », puis le lieu sur sa '
+        'ligne ; « J’y vais » sans le groupe', (WidgetTester tester) async {
+      await pump(
+        tester,
+        AgendaCard(
+          event: event.copyWith(
+            teamName: 'Vélo Club des Monts',
+            registered: true,
+            groupName: 'B',
+            startPlaceName: 'Place de la Mairie',
+          ),
+        ),
+      );
+
+      expect(find.text('Vélo Club des Monts · B'), findsOneWidget);
+      expect(
+        tester
+            .widget<Text>(find.byKey(keys.calendar.agendaPlace('np-665')))
+            .data,
+        'Place de la Mairie',
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(keys.calendar.agendaRegisteredBadge('np-665')),
+          matching: find.text('J\'y vais'.toUpperCase()),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('J\'Y VAIS ·'), findsNothing);
+    });
+
+    testWidgets('règle R3 : la distance d’affichage, pas celle de la sortie', (
+      WidgetTester tester,
+    ) async {
+      await pump(
+        tester,
+        AgendaCard(
+          event: event.copyWith(
+            distance: 92400,
+            elevationGain: 1240,
+            displayDistance: 78000,
+            displayElevationGain: 980,
+          ),
+        ),
+      );
+      expect(find.text(AppFormatters.formatDistance(78000)), findsOneWidget);
+      expect(find.text(AppFormatters.formatElevation(980)), findsOneWidget);
+      expect(find.text(AppFormatters.formatDistance(92400)), findsNothing);
+
+      await pump(
+        tester,
+        AgendaCard(event: event.copyWith(distance: 92400, elevationGain: 1240)),
+      );
+      expect(find.text(AppFormatters.formatDistance(92400)), findsNothing);
     });
 
     test('l’en-tête de jour dit le jour de semaine, et « Demain »', () {
@@ -446,6 +592,59 @@ void main() {
         isFalse,
       );
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('règle R11 : « Départ → Arrivée » sous la date', (
+      WidgetTester tester,
+    ) async {
+      await pump(
+        tester,
+        StageCard(
+          stage: fixtureStage(
+            index: 1,
+            name: 'Par les crêtes',
+            startPlaceName: 'Clermont-Ferrand',
+            endPlaceName: 'Issoire',
+          ),
+          selected: false,
+          onTap: () {},
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byKey(keys.trip.stagePlaces('j1')),
+          matching: find.text('Clermont-Ferrand → Issoire'),
+        ),
+        findsOneWidget,
+      );
+      // Sous la date, pas à côté du titre.
+      expect(
+        tester.getTopLeft(find.byKey(keys.trip.stagePlaces('j1'))).dy,
+        greaterThan(
+          tester.getTopLeft(find.byKey(keys.trip.stageDeparture('j1'))).dy,
+        ),
+      );
+    });
+
+    test('règle R11 : la ligne des lieux ne répète pas le titre, et se '
+        'contente d’un seul lieu', () {
+      expect(
+        stagePlacesLine(
+          fixtureStage(
+            index: 1,
+            name: 'Clermont-Ferrand → Issoire',
+            startPlaceName: 'Clermont-Ferrand',
+            endPlaceName: 'Issoire',
+          ),
+        ),
+        isNull,
+      );
+      expect(
+        stagePlacesLine(fixtureStage(index: 1, startPlaceName: 'Autun')),
+        'Autun',
+      );
+      expect(stagePlacesLine(fixtureStage(index: 1)), isNull);
     });
   });
 }

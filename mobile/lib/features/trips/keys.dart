@@ -73,6 +73,10 @@ class TripDetailKeys {
   ValueKey<String> stageDeparture(String stageSlug) =>
       _TripKey('stageDeparture_$stageSlug');
 
+  /// « Départ → Arrivée » sur la carte d'une étape (règle R11).
+  ValueKey<String> stagePlaces(String stageSlug) =>
+      _TripKey('stagePlaces_$stageSlug');
+
   /// « GPS » sur la carte d'une étape d'un voyage où l'on est inscrit.
   ValueKey<String> stageGps(String stageSlug) =>
       _TripKey('stageGps_$stageSlug');

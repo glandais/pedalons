@@ -423,6 +423,17 @@ class RideTemplateKeys {
 
   /// Le `⋯` de la carte d'un modèle, par son slug.
   ValueKey<String> moreButton(String slug) => _RideTemplateKey('more_$slug');
+
+  /// « Brouillon » ou « Annulé » sur la carte d'un modèle — jamais « Publié »
+  /// (règles R1, R12).
+  ValueKey<String> statusBadge(String slug) => _RideTemplateKey('status_$slug');
+
+  /// La description d'un modèle, sur deux lignes (règle R12).
+  ValueKey<String> description(String slug) =>
+      _RideTemplateKey('description_$slug');
+
+  /// « A 28 km/h · B 25 km/h » sur la carte d'un modèle (règle R12).
+  ValueKey<String> groupsLine(String slug) => _RideTemplateKey('groups_$slug');
 }
 
 class _RideTemplateEditorKey extends ValueKey<String> {

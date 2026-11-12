@@ -20,4 +20,9 @@ class ParticipantsSheetKeys {
   /// La ligne d'un participant, par son identifiant.
   ValueKey<String> person(String userId) =>
       _ParticipantsSheetKey('person_$userId');
+
+  /// Le `⋯` en bout de ligne d'un participant : Signaler, Bloquer (règle
+  /// R13).
+  ValueKey<String> personMore(String userId) =>
+      _ParticipantsSheetKey('personMore_$userId');
 }

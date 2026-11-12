@@ -6,6 +6,11 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/features/auth/data/auth_repository.dart';
+import 'package:pedalons/features/auth/data/secure_storage.dart';
+import 'package:pedalons/features/auth/domain/auth_state.dart';
+import 'package:pedalons/features/auth/providers/auth_provider.dart';
+import 'package:pedalons/features/moderation/presentation/moderation_menu.dart';
 import 'package:pedalons/features/participants/data/participant_repository.dart';
 import 'package:pedalons/features/participants/domain/participant_query.dart';
 import 'package:pedalons/features/participants/presentation/widgets/participants_sheet.dart';
@@ -74,6 +79,8 @@ void main() {
     WidgetTester tester, {
     List<PublicUserDto> people = three,
     String? organizerId,
+    TeamPublicationDto? team,
+    bool signedInAsU1 = false,
   }) async {
     final _FakeParticipantRepository repository = _FakeParticipantRepository(
       people,
@@ -82,6 +89,7 @@ void main() {
       ProviderScope(
         overrides: [
           participantRepositoryProvider.overrideWithValue(repository),
+          if (signedInAsU1) authProvider.overrideWith((Ref ref) => _Me(ref)),
         ],
         child: MaterialApp(
           theme: PedalonsTheme.build(Brightness.light),
@@ -91,6 +99,7 @@ void main() {
               source: source,
               count: people.length,
               organizerId: organizerId,
+              team: team,
             ),
           ),
         ),
@@ -100,6 +109,38 @@ void main() {
     await tester.pump();
     return repository;
   }
+
+  testWidgets('règle R13 : un `⋯` en bout de ligne, sauf sur la sienne', (
+    WidgetTester tester,
+  ) async {
+    await open(
+      tester,
+      signedInAsU1: true,
+      team: const TeamPublicationDto(
+        accessible: true,
+        id: 't1',
+        slug: 'team',
+        name: 'Équipe',
+        visibility: 'TEAM',
+      ),
+    );
+    expect(find.byKey(keys.participants.personMore('u1')), findsNothing);
+    expect(find.byKey(keys.participants.personMore('u2')), findsOneWidget);
+    expect(find.byKey(keys.participants.personMore('u3')), findsOneWidget);
+    final ModerationMoreButton more = tester.widget<ModerationMoreButton>(
+      find.byKey(keys.participants.personMore('u2')),
+    );
+    final PdlPersonRow row = tester.widget<PdlPersonRow>(
+      find.byKey(keys.participants.person('u2')),
+    );
+    expect(row.trailing, same(more));
+    expect(row.onTap, isNotNull);
+  });
+
+  testWidgets('sans équipe, ni `⋯` ni menu', (WidgetTester tester) async {
+    await open(tester);
+    expect(find.byType(ModerationMoreButton), findsNothing);
+  });
 
   testWidgets('sans meneur désigné, aucune pastille — le cas courant', (
     WidgetTester tester,
@@ -184,4 +225,32 @@ void main() {
     expect(server.calls, <(String, int)>[('', 0), ('', 1)]);
     expect(find.byKey(keys.participants.loadMore), findsNothing);
   });
+}
+
+class _NoAuth implements AuthRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _NoStorage implements SecureTokenStorage {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Connecté en Antoine Yvon (`u1`).
+class _Me extends AuthNotifier {
+  _Me(Ref ref) : super(_NoAuth(), _NoStorage(), ref) {
+    state = const AuthState(
+      isInitialized: true,
+      accessToken: 'token',
+      user: UserDto(
+        plannerQuota: PlannerQuotaDto(used: 0, resetsOn: '2026-12-01'),
+        id: 'u1',
+        email: 'moi@example.org',
+        displayName: 'Antoine Yvon',
+        contactableByMembers: true,
+        emailVerified: true,
+      ),
+    );
+  }
 }

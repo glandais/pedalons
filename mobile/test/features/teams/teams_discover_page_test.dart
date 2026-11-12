@@ -13,6 +13,7 @@ import 'package:pedalons/features/teams/domain/member_filters.dart';
 import 'package:pedalons/features/teams/domain/team_discovery_filters.dart';
 import 'package:pedalons/features/teams/presentation/pages/teams_discover_page.dart';
 import 'package:pedalons/features/teams/presentation/widgets/team_discovery_card.dart';
+import 'package:pedalons/keys.dart';
 
 import '../../support/localization.dart';
 import 'team_fixtures.dart';
@@ -176,21 +177,38 @@ void main() {
     expect(repository.queries.last.scope, TeamDiscoveryScope.joinable);
   });
 
-  testWidgets('les quatre états de l\'action', (WidgetTester tester) async {
+  testWidgets('les états de l\'action ; membre, le rôle réel et aucun bouton '
+      '(règle R12)', (WidgetTester tester) async {
     await openDiscover(
       tester,
       repository: _StubTeamRepository(
         teams: <TeamDetailDto>[
           fixtureTeam(slug: 'a', name: 'A', joinable: true),
           fixtureTeam(slug: 'b', name: 'B', joinable: false),
-          fixtureTeam(slug: 'c', name: 'C', joinable: true, role: 'MEMBER'),
+          fixtureTeam(slug: 'c', name: 'C', joinable: true, role: 'ORGANIZER'),
         ],
       ),
     );
 
     expect(find.text('Rejoindre l\'équipe'), findsOneWidget);
     expect(find.text('Sur invitation'), findsOneWidget);
-    expect(find.text('Voir l\'équipe'), findsOneWidget);
+    // Plus de « Voir l'équipe » ni de « Membre » générique : le rôle réel, et
+    // toucher la carte ouvre l'équipe.
+    expect(find.text('Voir l\'équipe'), findsNothing);
+    expect(find.text('MEMBRE'), findsNothing);
+    expect(
+      tester
+          .widget<PdlBadge>(find.byKey(keys.teamsDiscover.cardRole('c')))
+          .label,
+      'Organisateur',
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(keys.teamsDiscover.card('c')),
+        matching: find.byType(PdlButton),
+      ),
+      findsNothing,
+    );
     final PdlButton inviteOnly = tester.widget<PdlButton>(
       find.widgetWithText(PdlButton, 'Sur invitation'),
     );
@@ -211,7 +229,7 @@ void main() {
 
     repository.gate!.complete();
     await tester.pumpAndSettle();
-    expect(find.text('Voir l\'équipe'), findsOneWidget);
+    expect(find.byKey(keys.teamsDiscover.cardRole('a')), findsOneWidget);
     expect(find.text('Rejoindre l\'équipe'), findsNothing);
   });
 

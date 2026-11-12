@@ -14,6 +14,7 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../keys.dart';
+import '../../../rides/presentation/widgets/ride_display_stats.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 
 /// La couleur d'un événement de calendrier.
@@ -106,28 +107,31 @@ class AgendaCard extends ConsumerWidget {
     final UnitSystem units = ref.watch(unitSystemProvider);
     final Color accent = calendarEventColor(c, event.type);
 
-    // L'heure en tête et en gras (ledger `MOB-115`, BRANDING §7.8) : au
-    // milieu de « Équipe · 08:30 · Lieu », c'était elle que l'ellipse
-    // mangeait. Elle n'est plus jamais tronquée ; l'équipe et le lieu, si.
+    // La première ligne de toutes les cartes de sortie, celle des 7 prochains
+    // jours (règle R11, KIT §9) : « 09:30 · Vélo Club des Monts · B ». L'heure
+    // en tête et en gras (ledger `MOB-115`, BRANDING §7.8), jamais tronquée ;
+    // le groupe rejoint seulement quand la personne est inscrite.
     final String? time = event.allDay ? null : AppFormatters.formatTime(_start);
     final String meta = <String>[
       event.teamName,
-      if (event.startPlaceName != null && event.startPlaceName!.isNotEmpty)
-        event.startPlaceName!,
+      if (event.groupName != null && event.groupName!.isNotEmpty)
+        event.groupName!,
     ].join(' · ');
+    // Le lieu sur sa propre ligne, nom seul : derrière l'équipe, c'était lui
+    // que l'ellipse mangeait (« Place de la Mai… »).
+    final String? place =
+        event.startPlaceName == null || event.startPlaceName!.trim().isEmpty
+        ? null
+        : event.startPlaceName!.trim();
 
-    final List<PdlStat> stats = <PdlStat>[
-      if (event.distance != null)
-        PdlStat(
-          icon: PdlIcons.distance,
-          value: AppFormatters.formatDistance(event.distance!, units),
-        ),
-      if (event.elevationGain != null)
-        PdlStat(
-          icon: PdlIcons.elevationUp,
-          value: AppFormatters.formatElevation(event.elevationGain!, units),
-        ),
-    ];
+    // La distance et le D+ que le serveur donne pour la personne qui lit
+    // (règle R3, KIT §9, docs/LEDGER_*.md API-178) ; pour une étape, ceux de
+    // son parcours.
+    final List<PdlStat> stats = rideDisplayStats(
+      distance: event.displayDistance,
+      elevationGain: event.displayElevationGain,
+      units: units,
+    );
 
     final Widget card = PdlCard(
       key: keys.calendar.agendaCard(event.entitySlug),
@@ -197,6 +201,14 @@ class AgendaCard extends ConsumerWidget {
                     ),
                     if (!event.allDay)
                       ?ZoneMentionLine.maybe(event.start, event.timezone),
+                    if (place != null)
+                      Text(
+                        place,
+                        key: keys.calendar.agendaPlace(event.entitySlug),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: t.sub,
+                      ),
                     if (stats.isNotEmpty) ...<Widget>[
                       const SizedBox(height: 6),
                       PdlStatRow(stats: stats),
@@ -246,13 +258,9 @@ class AgendaCard extends ConsumerWidget {
     if (event.registered)
       PdlBadge(
         key: keys.calendar.agendaRegisteredBadge(event.entitySlug),
-        // « Inscrit · Chill route long » : le groupe rejoint est la moitié
-        // utile de l'information, et `groupName` la porte depuis la 1.5.0.
-        label: event.groupName == null
-            ? 'rides.registered'.tr()
-            : 'rides.registeredIn'.tr(
-                namedArgs: <String, String>{'group': event.groupName!},
-              ),
+        // « J'y vais », sans le groupe : la première ligne le dit (règle
+        // R11, KIT §9).
+        label: 'rides.registered'.tr(),
         icon: PdlIcons.check,
         tone: PdlDerivedTones.registered(c),
       ),
