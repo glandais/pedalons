@@ -41,13 +41,21 @@ public class PublicationResource {
           + " what is not over yet (end >= now — an outing under way included), PAST what is over"
           + " (end < now). Keeps rides and trips only: a post has no end. Sets the order too —"
           + " UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With"
-          + " participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing"
-          + " and orders the list in two sections (rule RL15): first what UPCOMING keeps,"
-          + " soonest departure first, then everything else — the rides and trips over and the"
-          + " posts — latest first; the id ends each section's key, so the order is total. The"
-          + " listing then fills upcomingTotal, the size of the first section; sortDir is"
-          + " ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when"
-          + " does. Omitted: no such filter, newest first.";
+          + " participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and"
+          + " orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest"
+          + " departure first, then everything else — the rides and trips over and, unless"
+          + " dated=true, the posts — latest first; the id ends each section's key, so the order is"
+          + " total. The listing then fills upcomingTotal, the size of the first section; sortDir"
+          + " is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting"
+          + " when does. Omitted: no such filter, newest first.";
+
+  /** Shared by the four publication lists and counts, so they cannot describe it apart. */
+  static final String DATED_PARAM_DESCRIPTION =
+      "Only the rides and trips — the publications that have a departure; posts are left out."
+          + " Whatever when says: with when=UPCOMING_FIRST it is an agenda, both sections free of"
+          + " posts, total and upcomingTotal counting rides and trips only. Combines with type:"
+          + " type=POST then yields an empty list (zero on a count endpoint), as when=UPCOMING"
+          + " does, rather than an error. Omitted or false: no such filter.";
 
   static final String VIEW_PARAM_DESCRIPTION =
       "How much of each row to send. COMPACT (case-insensitive) returns media.markdown empty and"
@@ -108,6 +116,8 @@ public class PublicationResource {
           @Nullable SortDirection sortDir,
       @Parameter(description = WHEN_PARAM_DESCRIPTION) @QueryParam("when")
           @Nullable PublicationWhen when,
+      @Parameter(description = DATED_PARAM_DESCRIPTION) @QueryParam("dated") @DefaultValue("false")
+          boolean dated,
       @Parameter(description = "Page number") @QueryParam("page") @DefaultValue("0") int page,
       @Parameter(description = "Page size") @QueryParam("size") @DefaultValue("20") int size) {
 
@@ -126,6 +136,7 @@ public class PublicationResource {
             view,
             when,
             sortDir,
+            dated,
             page,
             size);
 
@@ -178,13 +189,16 @@ public class PublicationResource {
           @DefaultValue("false")
           boolean participating,
       @Parameter(description = WHEN_PARAM_DESCRIPTION) @QueryParam("when")
-          @Nullable PublicationWhen when) {
+          @Nullable PublicationWhen when,
+      @Parameter(description = DATED_PARAM_DESCRIPTION) @QueryParam("dated") @DefaultValue("false")
+          boolean dated) {
 
     Instant from = QueryInstants.parse(fromStr);
     Instant to = QueryInstants.parse(toStr);
 
     CountResponse count =
-        publicationService.countAll(type, search, from, to, minRole, status, participating, when);
+        publicationService.countAll(
+            type, search, from, to, minRole, status, participating, when, dated);
 
     // The figure depends on who is asking — both through the visibility rules and through
     // 'participating': not shareable between users.

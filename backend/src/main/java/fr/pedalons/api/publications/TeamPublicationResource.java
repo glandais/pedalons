@@ -108,6 +108,10 @@ public class TeamPublicationResource {
           @QueryParam("withFullGroup")
           @DefaultValue("false")
           boolean withFullGroup,
+      @Parameter(description = PublicationResource.DATED_PARAM_DESCRIPTION)
+          @QueryParam("dated")
+          @DefaultValue("false")
+          boolean dated,
       @Parameter(description = "Page number") @QueryParam("page") @DefaultValue("0") int page,
       @Parameter(description = "Page size") @QueryParam("size") @DefaultValue("20") int size) {
 
@@ -129,6 +133,7 @@ public class TeamPublicationResource {
             sortDir,
             withoutRoute,
             withFullGroup,
+            dated,
             page,
             size);
 
@@ -191,7 +196,11 @@ public class TeamPublicationResource {
           @DefaultValue("false")
           boolean withFullGroup,
       @Parameter(description = PublicationResource.WHEN_PARAM_DESCRIPTION) @QueryParam("when")
-          @Nullable PublicationWhen when) {
+          @Nullable PublicationWhen when,
+      @Parameter(description = PublicationResource.DATED_PARAM_DESCRIPTION)
+          @QueryParam("dated")
+          @DefaultValue("false")
+          boolean dated) {
 
     Instant from = QueryInstants.parse(fromStr);
     Instant to = QueryInstants.parse(toStr);
@@ -208,7 +217,8 @@ public class TeamPublicationResource {
             tags,
             withoutRoute,
             withFullGroup,
-            when);
+            when,
+            dated);
 
     // The figure depends on who is asking — both through the visibility rules and through
     // 'participating': not shareable between users.

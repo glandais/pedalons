@@ -25,7 +25,9 @@ import org.junit.jupiter.api.Test;
  * {@code when=UPCOMING_FIRST} on the team and the cross-team publication lists (docs/LEDGER_*.md
  * API-185, rule RL15): one list in two sections — « À venir », the rides and trips not over yet
  * judged by their end, soonest departure first; then « Plus tôt », everything else, posts included,
- * latest first — with {@code upcomingTotal}, the size of the first section, on every page.
+ * latest first — with {@code upcomingTotal}, the size of the first section, on every page. And
+ * {@code dated=true}, the agenda: the rides and trips only, posts out of both sections, whatever
+ * {@code when} says.
  */
 @QuarkusTest
 class PublicationUpcomingFirstTest extends AbstractResourceTest {
@@ -97,6 +99,20 @@ class PublicationUpcomingFirstTest extends AbstractResourceTest {
   private String[] wholeList() {
     String[] upcoming = upcomingSection();
     String[] earlier = earlierSection();
+    String[] all = new String[upcoming.length + earlier.length];
+    System.arraycopy(upcoming, 0, all, 0, upcoming.length);
+    System.arraycopy(earlier, 0, all, upcoming.length, earlier.length);
+    return all;
+  }
+
+  /** « Plus tôt » with {@code dated=true}: the same rows in the same order, posts dropped. */
+  private String[] earlierDatedSection() {
+    return new String[] {id(overRecent), id(overOld), id(pastTieB), id(pastTieA), id(pastTrip)};
+  }
+
+  private String[] wholeDatedList() {
+    String[] upcoming = upcomingSection();
+    String[] earlier = earlierDatedSection();
     String[] all = new String[upcoming.length + earlier.length];
     System.arraycopy(upcoming, 0, all, 0, upcoming.length);
     System.arraycopy(earlier, 0, all, upcoming.length, earlier.length);
@@ -346,5 +362,188 @@ class PublicationUpcomingFirstTest extends AbstractResourceTest {
         .statusCode(200)
         .body("publications.id", contains(upcomingSection()))
         .body("upcomingTotal", nullValue());
+  }
+
+  // --- dated=true: the agenda (rides and trips only) -------------------------------------------
+
+  @Test
+  void dated_withUpcomingFirst_dropsThePosts_fromBothLists_withCountsToMatch() {
+    for (String list : new String[] {teamList(), "/api/publications"}) {
+      asUser1()
+          .queryParam("when", "UPCOMING_FIRST")
+          .queryParam("dated", true)
+          .when()
+          .get(list)
+          .then()
+          .statusCode(200)
+          .body("publications.id", contains(wholeDatedList()))
+          .body("total", equalTo(12))
+          .body("upcomingTotal", equalTo(7));
+      asUser1()
+          .queryParam("when", "UPCOMING_FIRST")
+          .queryParam("dated", true)
+          .when()
+          .get(list + "/count")
+          .then()
+          .statusCode(200)
+          .body("total", equalTo(12));
+    }
+  }
+
+  @Test
+  void dated_withUpcomingFirst_keepsTheBoundary_inTheMiddleOfAPage() {
+    // Positions 5 and 6 are « À venir », 7 to 9 « Plus tôt » — no post among them.
+    asUser1()
+        .queryParam("when", "UPCOMING_FIRST")
+        .queryParam("dated", true)
+        .queryParam("size", 5)
+        .queryParam("page", 1)
+        .when()
+        .get(teamList())
+        .then()
+        .statusCode(200)
+        .body(
+            "publications.id",
+            contains(id(tieB), id(trip), id(overRecent), id(overOld), id(pastTieB)))
+        .body("total", equalTo(12))
+        .body("upcomingTotal", equalTo(7));
+    asUser1()
+        .queryParam("when", "UPCOMING_FIRST")
+        .queryParam("dated", true)
+        .queryParam("size", 5)
+        .queryParam("page", 2)
+        .when()
+        .get(teamList())
+        .then()
+        .statusCode(200)
+        .body("publications.id", contains(id(pastTieA), id(pastTrip)))
+        .body("total", equalTo(12))
+        .body("upcomingTotal", equalTo(7));
+  }
+
+  @Test
+  void dated_withoutWhen_dropsThePosts_newestFirst_noSections() {
+    String[] expected = {
+      id(trip),
+      id(tieB),
+      id(tieA),
+      id(future2),
+      id(future1),
+      id(underWay),
+      id(overRecent),
+      id(longUnderWay),
+      id(overOld),
+      id(pastTieB),
+      id(pastTieA),
+      id(pastTrip)
+    };
+    for (String list : new String[] {teamList(), "/api/publications"}) {
+      asUser1()
+          .queryParam("dated", true)
+          .when()
+          .get(list)
+          .then()
+          .statusCode(200)
+          .body("publications.id", contains(expected))
+          .body("total", equalTo(12))
+          .body("upcomingTotal", nullValue());
+      asUser1()
+          .queryParam("dated", true)
+          .when()
+          .get(list + "/count")
+          .then()
+          .statusCode(200)
+          .body("total", equalTo(12));
+    }
+  }
+
+  @Test
+  void dated_withUpcomingOrPast_changesNothing_theyHoldNoPostAlready() {
+    asUser1()
+        .queryParam("when", "UPCOMING")
+        .queryParam("dated", true)
+        .when()
+        .get(teamList())
+        .then()
+        .statusCode(200)
+        .body("publications.id", contains(upcomingSection()))
+        .body("total", equalTo(7));
+    asUser1()
+        .queryParam("when", "PAST")
+        .queryParam("dated", true)
+        .when()
+        .get("/api/publications")
+        .then()
+        .statusCode(200)
+        .body("publications.id", contains(earlierDatedSection()))
+        .body("total", equalTo(5));
+    asUser1()
+        .queryParam("when", "PAST")
+        .queryParam("dated", true)
+        .when()
+        .get(teamList() + "/count")
+        .then()
+        .statusCode(200)
+        .body("total", equalTo(5));
+  }
+
+  @Test
+  void dated_combinesWithType_postsOnlyYieldsAnEmptyList_notAnError() {
+    for (String list : new String[] {teamList(), "/api/publications"}) {
+      asUser1()
+          .queryParam("when", "UPCOMING_FIRST")
+          .queryParam("dated", true)
+          .queryParam("type", "POST")
+          .when()
+          .get(list)
+          .then()
+          .statusCode(200)
+          .body("publications", empty())
+          .body("total", equalTo(0))
+          .body("upcomingTotal", equalTo(0));
+      asUser1()
+          .queryParam("dated", true)
+          .queryParam("type", "POST")
+          .when()
+          .get(list + "/count")
+          .then()
+          .statusCode(200)
+          .body("total", equalTo(0));
+    }
+    // A dated type: dated adds nothing to it.
+    asUser1()
+        .queryParam("when", "UPCOMING_FIRST")
+        .queryParam("dated", true)
+        .queryParam("type", "TRIP")
+        .when()
+        .get(teamList())
+        .then()
+        .statusCode(200)
+        .body("publications.id", contains(id(trip), id(pastTrip)))
+        .body("total", equalTo(2))
+        .body("upcomingTotal", equalTo(1));
+  }
+
+  @Test
+  void datedFalse_isTheListWithoutTheParameter_postsIncluded() {
+    for (String list : new String[] {teamList(), "/api/publications"}) {
+      asUser1()
+          .queryParam("when", "UPCOMING_FIRST")
+          .queryParam("dated", false)
+          .when()
+          .get(list)
+          .then()
+          .statusCode(200)
+          .body("publications.id", contains(wholeList()))
+          .body("total", equalTo(14))
+          .body("upcomingTotal", equalTo(7));
+      asUser1()
+          .queryParam("dated", false)
+          .when()
+          .get(list + "/count")
+          .then()
+          .statusCode(200)
+          .body("total", equalTo(14));
+    }
   }
 }

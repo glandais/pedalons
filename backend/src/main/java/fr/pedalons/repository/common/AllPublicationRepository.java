@@ -90,6 +90,13 @@ public class AllPublicationRepository
           + " where p.rideGroup.id = g.id)))";
 
   /**
+   * The publications that have a departure, hence an end: the rides and the trips, never a post.
+   * The one spelling of « dated » — the {@code dated} filter and every bound on the end share it,
+   * so the agenda and the sections of {@code when} can never disagree on what is an outing.
+   */
+  private static final String DATED_CLAUSE = "TYPE(te) IN (Ride, Trip)";
+
+  /**
    * The end of a ride or a trip, as every list reads it: the stored one, else the departure plus
    * {@link PublicationEndCalculator#DEFAULT_DURATION} — the rows an older backend wrote during a
    * start-first deploy, or not yet reached by {@code PublicationEndBackfill}. Spelt as two branches
@@ -97,7 +104,9 @@ public class AllPublicationRepository
    * each column ({@code :x} and {@code :x} minus the default duration) and the indexes stay usable.
    */
   private static String endClause(String operator, String param) {
-    return "(TYPE(te) IN (Ride, Trip) AND (te.endDateTime "
+    return "("
+        + DATED_CLAUSE
+        + " AND (te.endDateTime "
         + operator
         + " :"
         + param
@@ -145,6 +154,9 @@ public class AllPublicationRepository
     }
     if (query.withFullGroup()) {
       pedalonsQuery = pedalonsQuery.and(WITH_FULL_GROUP_CLAUSE, Map.of());
+    }
+    if (query.dated()) {
+      pedalonsQuery = pedalonsQuery.and(DATED_CLAUSE, Map.of());
     }
     Set<Long> tagIds = query.tagIds();
     if (tagIds != null) {

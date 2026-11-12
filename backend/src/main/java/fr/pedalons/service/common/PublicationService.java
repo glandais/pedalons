@@ -214,6 +214,43 @@ public class PublicationService {
       @Nullable SortDirection sortDir,
       int page,
       int size) {
+    return listAll(
+        type,
+        search,
+        from,
+        to,
+        minRole,
+        status,
+        participating,
+        view,
+        when,
+        sortDir,
+        false,
+        page,
+        size);
+  }
+
+  /**
+   * @param dated only the rides and trips — the publications that have a departure — whatever
+   *     {@code when} says: with {@link PublicationWhen#UPCOMING_FIRST}, an agenda in two sections
+   *     with no post in either (docs/LEDGER_*.md API-185). With a {@code type} of another type, the
+   *     list is empty. False: no such filter.
+   */
+  @CheckAccess(entityType = EntityType.PUBLICATION, action = ActionType.LIST_ALL_TEAMS)
+  public PublicationListResponse listAll(
+      @Nullable PublicationType type,
+      @Nullable String search,
+      @Nullable Instant from,
+      @Nullable Instant to,
+      @Nullable MinRole minRole,
+      @Nullable Status status,
+      boolean participating,
+      @Nullable ListViewMode view,
+      @Nullable PublicationWhen when,
+      @Nullable SortDirection sortDir,
+      boolean dated,
+      int page,
+      int size) {
     return list(
         withWhen(
                 baseQuery(page, size)
@@ -224,6 +261,7 @@ public class PublicationService {
                     .minRole(minRole)
                     .status(status)
                     .participating(participating)
+                    .dated(dated)
                     .includeDeleted(false),
                 when,
                 sortDir)
@@ -392,6 +430,47 @@ public class PublicationService {
       boolean withFullGroup,
       int page,
       int size) {
+    return listTeam(
+        teamSlug,
+        type,
+        search,
+        from,
+        to,
+        status,
+        participating,
+        tags,
+        view,
+        when,
+        sortDir,
+        withoutRoute,
+        withFullGroup,
+        false,
+        page,
+        size);
+  }
+
+  /**
+   * @param dated as on {@link #listAll}: only the rides and trips, whatever {@code when} says — a
+   *     team's agenda (docs/LEDGER_*.md API-185)
+   */
+  @CheckAccess(entityType = EntityType.PUBLICATION, action = ActionType.LIST)
+  public PublicationListResponse listTeam(
+      String teamSlug,
+      @Nullable PublicationType type,
+      @Nullable String search,
+      @Nullable Instant from,
+      @Nullable Instant to,
+      @Nullable Status status,
+      boolean participating,
+      @Nullable List<String> tags,
+      @Nullable ListViewMode view,
+      @Nullable PublicationWhen when,
+      @Nullable SortDirection sortDir,
+      boolean withoutRoute,
+      boolean withFullGroup,
+      boolean dated,
+      int page,
+      int size) {
     Team team = teamService.getTeam(teamSlug);
     boolean includeDeleted = includeDeletedService.isTeamEntityIncludeDeleted(team);
     return list(
@@ -407,6 +486,7 @@ public class PublicationService {
                     .participating(participating)
                     .withoutRoute(withoutRoute)
                     .withFullGroup(withFullGroup)
+                    .dated(dated)
                     .includeDeleted(includeDeleted),
                 when,
                 sortDir)
@@ -460,6 +540,21 @@ public class PublicationService {
       @Nullable Status status,
       boolean participating,
       @Nullable PublicationWhen when) {
+    return countAll(type, search, from, to, minRole, status, participating, when, false);
+  }
+
+  /** Same, with the {@code dated} filter of {@link #listAll}. */
+  @CheckAccess(entityType = EntityType.PUBLICATION, action = ActionType.LIST_ALL_TEAMS)
+  public CountResponse countAll(
+      @Nullable PublicationType type,
+      @Nullable String search,
+      @Nullable Instant from,
+      @Nullable Instant to,
+      @Nullable MinRole minRole,
+      @Nullable Status status,
+      boolean participating,
+      @Nullable PublicationWhen when,
+      boolean dated) {
     return count(
         withWhen(
                 baseQuery(0, 0)
@@ -470,6 +565,7 @@ public class PublicationService {
                     .minRole(minRole)
                     .status(status)
                     .participating(participating)
+                    .dated(dated)
                     .includeDeleted(false),
                 when,
                 null)
@@ -544,6 +640,36 @@ public class PublicationService {
       boolean withoutRoute,
       boolean withFullGroup,
       @Nullable PublicationWhen when) {
+    return countTeam(
+        teamSlug,
+        type,
+        search,
+        from,
+        to,
+        status,
+        participating,
+        tags,
+        withoutRoute,
+        withFullGroup,
+        when,
+        false);
+  }
+
+  /** Same, with the {@code dated} filter of {@link #listTeam}. */
+  @CheckAccess(entityType = EntityType.PUBLICATION, action = ActionType.LIST)
+  public CountResponse countTeam(
+      String teamSlug,
+      @Nullable PublicationType type,
+      @Nullable String search,
+      @Nullable Instant from,
+      @Nullable Instant to,
+      @Nullable Status status,
+      boolean participating,
+      @Nullable List<String> tags,
+      boolean withoutRoute,
+      boolean withFullGroup,
+      @Nullable PublicationWhen when,
+      boolean dated) {
     Team team = teamService.getTeam(teamSlug);
     boolean includeDeleted = includeDeletedService.isTeamEntityIncludeDeleted(team);
     return count(
@@ -559,6 +685,7 @@ public class PublicationService {
                     .participating(participating)
                     .withoutRoute(withoutRoute)
                     .withFullGroup(withFullGroup)
+                    .dated(dated)
                     .includeDeleted(includeDeleted),
                 when,
                 null)
