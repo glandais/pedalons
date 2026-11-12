@@ -32,8 +32,11 @@ class GpxPreviewDepartureResourceTest extends AbstractResourceTest {
 
   private static final String PARIS_POINTS =
       "[{\"lng\":4.8357,\"lat\":45.7640},{\"lng\":4.8500,\"lat\":45.7700}]";
+  // In the Asia/Tokyo zone, but in the mountains of Nagano, not in the city: the preview's
+  // thumbnail is rendered by the test tileserver, and central Tokyo's tiles took it 15 to 30 s
+  // cold on a slow machine — the HTTP client's read timeout.
   private static final String TOKYO_POINTS =
-      "[{\"lng\":139.6917,\"lat\":35.6895},{\"lng\":139.7100,\"lat\":35.7000}]";
+      "[{\"lng\":137.6000,\"lat\":36.2000},{\"lng\":137.6180,\"lat\":36.2100}]";
 
   @Override
   @BeforeEach

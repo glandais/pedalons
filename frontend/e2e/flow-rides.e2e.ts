@@ -82,7 +82,9 @@ async function openFeed(page: Page, teamSlug: string) {
   await expect(main(page).getByRole('heading', { name: 'Agenda', level: 2 })).toBeVisible()
   await expect(
     main(page)
-      .getByText(/^\d+ sorties? (et|ou) voyages? à venir$/)
+      // One count per section, « À venir » then « Plus tôt » (docs/LEDGER_*.md WEB-175).
+      .getByText(/^\d+ sorties? (et|ou) voyages?$/)
+      .first()
       .or(emptyAgenda(page))
   ).toBeVisible()
 }
@@ -153,7 +155,8 @@ test.describe('ride journey', () => {
     // --- Create, from the team feed's « Créer une sortie ».
     await signIn(page.context(), organizer)
     await openFeed(page, team.slug)
-    const create = main(page).getByRole('link', { name: 'Créer une sortie' })
+    // An empty list repeats the header's create button under its message: the header's is first.
+    const create = main(page).getByRole('link', { name: 'Créer une sortie' }).first()
     await hydrated(create)
     await create.click()
     await expect(
@@ -484,7 +487,7 @@ test.describe('regressions', () => {
 
     // The agenda's create button, whose chevron offers the other kind it lists, the trip.
     await openFeed(page, team.slug)
-    await expect(main(page).getByRole('link', { name: 'Créer une sortie' })).toBeVisible()
+    await expect(main(page).getByRole('link', { name: 'Créer une sortie' }).first()).toBeVisible()
     const createOther = main(page).getByRole('button', { name: 'Créer autre chose', exact: true })
     await hydrated(createOther)
     await createOther.click()

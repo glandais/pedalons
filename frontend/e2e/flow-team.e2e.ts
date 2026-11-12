@@ -367,9 +367,9 @@ test.describe('team pages', () => {
     await hydrated(titleInput)
     await titleInput.fill(title)
     await writeRichText(form, EDITOR_LABEL.teamPage, content, 10000)
-    await expect(form.getByRole('combobox', { name: 'Visibilité' })).toHaveValue(
-      'Équipe uniquement'
-    )
+    // This team only lets a page be « Équipe uniquement »: one value, so no field to choose from
+    // (docs/LEDGER_*.md WEB-166) — the page read back below is TEAM.
+    await expect(form.getByRole('radiogroup', { name: 'Visibilité' })).toHaveCount(0)
     await form.getByRole('button', { name: 'Créer la page' }).click()
 
     await expect(page.getByText('Page créée avec succès', { exact: true })).toBeVisible()

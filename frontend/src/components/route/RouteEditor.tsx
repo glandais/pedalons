@@ -236,7 +236,10 @@ export function RouteEditor({
     }
   }
 
-  const showPlanner = canUsePlanner && sourceMode === 'planner'
+  // `sourceMode` is only ever 'planner' when the quota had room: on opening (above) or through a
+  // button a spent quota disables. A quota spent while the planner is open must not take it away —
+  // its refusal dialog lives in it, and so does the drawing (docs/LEDGER_*.md BILL-12).
+  const showPlanner = plannerOpen && sourceMode === 'planner'
 
   return (
     <form
@@ -293,7 +296,7 @@ export function RouteEditor({
         )}
 
         {/* GPX File Upload */}
-        {(sourceMode === 'gpx' || !canUsePlanner) && (
+        {!showPlanner && (
           <FileInput
             label={
               <>

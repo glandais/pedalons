@@ -33,6 +33,14 @@ const SETTLE_DEBOUNCE_MS = 5000
 let auditWindowOpen = false
 
 /**
+ * `meta` key of a query that is deliberately left to the client — not a hole in the route's
+ * `prefetch()`, so the audit does not report it. For a read the server must not render into the
+ * HTML (the planner's editing state, hundreds of KB on an authenticated page), never to quiet a
+ * real gap: say why where the query is declared.
+ */
+export const CLIENT_ONLY_QUERY = 'clientOnly'
+
+/**
  * True while the audit is still watching the first page load. `lib/prefetch.ts` suppresses link
  * prefetching during that window: a hover fetches ANOTHER route's queries, which the audit would
  * count as a gap in the current route's `prefetch()` — a false gap is worse than a missed warm-up,
@@ -73,7 +81,7 @@ export function installPrefetchAudit(queryClient: QueryClient, router: Router): 
   const unsubscribeCache = queryClient.getQueryCache().subscribe((event) => {
     if (event.type === 'updated' && event.action.type === 'fetch') {
       const hash = event.query.queryHash
-      if (!coveredHashes.has(hash)) {
+      if (!coveredHashes.has(hash) && !event.query.meta?.[CLIENT_ONLY_QUERY]) {
         coveredHashes.add(hash)
         missed.push(JSON.stringify(event.query.queryKey))
       }

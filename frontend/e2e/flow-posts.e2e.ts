@@ -102,7 +102,8 @@ test('a post goes from the editor to the feeds, gets a comment, is edited, then 
     await expect(
       main.getByRole('heading', { level: 2, name: 'Publications', exact: true })
     ).toBeVisible()
-    const create = main.getByRole('link', { name: 'Créer une publication' })
+    // An empty list repeats the header's create button under its message: the header's is first.
+    const create = main.getByRole('link', { name: 'Créer une publication' }).first()
     await hydrated(create)
     await create.click()
     await expect(
@@ -384,7 +385,8 @@ test('a post saved as a draft is hidden from members until it is published from 
   await expect(
     main.getByRole('heading', { level: 2, name: 'Publications', exact: true })
   ).toBeVisible()
-  const create = main.getByRole('link', { name: 'Créer une publication' })
+  // An empty list repeats the header's create button under its message: the header's is first.
+  const create = main.getByRole('link', { name: 'Créer une publication' }).first()
   await hydrated(create)
   await create.click()
   await expect(main.getByRole('heading', { level: 1, name: 'Nouvelle publication' })).toBeVisible()

@@ -90,6 +90,13 @@ async function openRouteList(page: Page, teamSlug: string) {
 
 const routeCard = entityCard
 
+/**
+ * The route form's file field. A team draws by default (docs/LEDGER_*.md BILL-10), so the form also
+ * has the source choice « Importer un fichier GPX » / « Tracer sur la carte »: the field is named
+ * from its label's start.
+ */
+const gpxField = (main: Locator) => main.getByRole('button', { name: /^Fichier GPX/ })
+
 /** The value shown under one of the detail page's stat labels (« Distance », « Dénivelé positif »). */
 const statValue = (main: Locator, label: string) =>
   main.getByText(label, { exact: true }).locator('xpath=following-sibling::*[1]')
@@ -113,7 +120,7 @@ test('a team admin creates a route by uploading a GPX; its page shows its stats,
   const list = await openRouteList(page, team.slug)
   // An empty team offers the form twice — in the header and in the empty state; either will do.
   await expect(list.getByRole('heading', { name: 'Aucun parcours' })).toBeVisible()
-  const create = list.getByRole('link', { name: 'Créer un nouveau parcours' }).first()
+  const create = list.getByRole('link', { name: 'Créer un parcours' }).first()
   await hydrated(create)
   await create.click()
 
@@ -718,7 +725,7 @@ test.describe('what a route shows to whom', () => {
     }
   })
 
-  test('a plain member has no Modifier, Supprimer, Importer GPX nor « Créer un nouveau parcours »; an organizer has them', async ({
+  test('a plain member has no Modifier, Supprimer, Importer GPX nor « Créer un parcours »; an organizer has them', async ({
     page,
     context,
     browser,
@@ -740,7 +747,7 @@ test.describe('what a route shows to whom', () => {
     await expect(routeCard(list, name)).toBeVisible()
     await pageHydrated(page)
     await expect(list.getByRole('button', { name: 'Importer GPX' })).toHaveCount(0)
-    await expect(list.getByRole('link', { name: 'Créer un nouveau parcours' })).toHaveCount(0)
+    await expect(list.getByRole('link', { name: 'Créer un parcours' })).toHaveCount(0)
     await expect(list.locator('input[type="file"]')).toHaveCount(0)
 
     // The organizer, on the same pages: every one of them.
@@ -756,9 +763,7 @@ test.describe('what a route shows to whom', () => {
       ).toBeVisible()
       const organizerList = await openRouteList(organizerPage, team.slug)
       await expect(organizerList.getByRole('button', { name: 'Importer GPX' })).toBeVisible()
-      await expect(
-        organizerList.getByRole('link', { name: 'Créer un nouveau parcours' })
-      ).toBeVisible()
+      await expect(organizerList.getByRole('link', { name: 'Créer un parcours' })).toBeVisible()
     } finally {
       await organizerContext.close()
     }
@@ -964,7 +969,7 @@ test.describe('GPX files in the route forms', () => {
     await hydrated(submit)
     await main.locator('input[type="file"][accept=".gpx"]').setInputFiles(notes)
     await expect(main.getByRole('alert')).toHaveText('Le fichier doit être au format .gpx')
-    await expect(main.getByRole('button', { name: 'Fichier GPX' })).not.toHaveText('notes.txt')
+    await expect(gpxField(main)).not.toHaveText('notes.txt')
     await main.getByRole('textbox', { name: 'Nom du parcours' }).fill(unique('Sans trace'))
     await expect(submit).toBeDisabled()
     expect((await listRoutes(owner, team.slug)).routes).toEqual([])
@@ -987,7 +992,7 @@ test.describe('GPX files in the route forms', () => {
     await hydrated(submit)
     await main.locator('input[type="file"][accept=".gpx"]').setInputFiles(upper)
     await expect(main.getByRole('textbox', { name: 'Nom du parcours' })).toHaveValue('Boucle')
-    await expect(main.getByRole('button', { name: 'Fichier GPX' })).toHaveText('BOUCLE.GPX', {
+    await expect(gpxField(main)).toHaveText('BOUCLE.GPX', {
       timeout: 5_000,
     })
     await expect(main.getByRole('alert')).toHaveCount(0)
@@ -1016,8 +1021,12 @@ test.describe('GPX files in the route forms', () => {
     await expect(main.getByRole('textbox', { name: 'Nom du parcours' })).toHaveValue(name)
     const save = main.getByRole('button', { name: 'Enregistrer' })
     await hydrated(save)
+    // A route with a track opens on the planner: the file field comes with the other source.
+    // By its text: the planner's toolbar has a button of the same name, an icon with a label.
+    await main.locator('button').filter({ hasText: 'Importer un fichier GPX' }).click()
+    await expect(gpxField(main)).toBeVisible()
     await main.locator('input[type="file"][accept=".gpx"]').setInputFiles(longerPath)
-    await expect(main.getByRole('button', { name: 'Fichier GPX' })).toHaveText('boucle-longue.gpx')
+    await expect(gpxField(main)).toHaveText('boucle-longue.gpx')
     // The new track is parsed and stored before the answer: under load that outlasts the 5 s of
     // an expect, so the page is checked once the server has answered.
     const replaced = page.waitForResponse(

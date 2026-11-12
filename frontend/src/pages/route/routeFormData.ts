@@ -6,6 +6,7 @@ import {
   prefetchGetRouteQuery,
 } from '@/api/endpoints/routes/routes'
 import { prefetchTeamTags } from '@/config/prefetchHelpers'
+import { CLIENT_ONLY_QUERY } from '@/lib/prefetchAudit'
 
 /**
  * The one description of what `CreateRoutePage` and `EditRoutePage` read, consumed two ways: the
@@ -62,6 +63,8 @@ export function useEditRouteFormData(teamSlug?: string, routeSlug?: string) {
       gcTime: 0,
       retry: false,
       refetchOnWindowFocus: false,
+      // Deliberately not prefetched (above): the prefetch audit must not call it a gap.
+      meta: { [CLIENT_ONLY_QUERY]: true },
     },
     // A failed read is shown by the page itself (the track opens as an import)
     request: { skipErrorToast: true },

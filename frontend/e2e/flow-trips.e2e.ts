@@ -91,7 +91,11 @@ async function openFeed(page: Page, teamSlug: string) {
   const main = page.getByRole('main')
   await expect(main.getByRole('heading', { name: 'Agenda', level: 2 })).toBeVisible()
   await expect(
-    main.getByText(/^\d+ sorties? (et|ou) voyages? à venir$/).or(emptyAgenda(main))
+    // One count per section, « À venir » then « Plus tôt » (docs/LEDGER_*.md WEB-175).
+    main
+      .getByText(/^\d+ sorties? (et|ou) voyages?$/)
+      .first()
+      .or(emptyAgenda(main))
   ).toBeVisible()
   return main
 }

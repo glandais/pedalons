@@ -211,9 +211,13 @@ const KINDS: readonly Kind[] = ['ride', 'trip', 'post']
 const COMMENTED: readonly Commented[] = [...KINDS, 'stage']
 
 /** The server document of `path`, as `auth` (or nobody) gets it, checked to be a real render. */
-async function documentAs(path: string, auth: AuthResponse | undefined): Promise<RawDocument> {
+async function documentAs(
+  path: string,
+  auth: AuthResponse | undefined,
+  status = 200
+): Promise<RawDocument> {
   const document = await rawDocument(path, { cookie: auth ? sessionCookie(auth) : undefined })
-  expect(document.status, `${path}: status`).toBe(200)
+  expect(document.status, `${path}: status`).toBe(status)
   expect(authState(document.html)?.user?.id ?? null, `${path}: rendered as`).toBe(
     auth?.user.id ?? null
   )
@@ -410,7 +414,9 @@ test.describe('public content, seen from outside the team', () => {
       }
       for (const kind of KINDS) {
         const { path, name, text } = scene.closed[kind]
-        const document = await documentAs(path, auth)
+        // A real 404, not a 200 saying « non trouvée »: the server reads the entity the loaders
+        // could not get (docs/LEDGER_*.md WEB-166).
+        const document = await documentAs(path, auth, 404)
         for (const [label, secret] of Object.entries({ name, text }))
           expect
             .soft(document.html.includes(secret), `${kind}: its ${label} in the document`)

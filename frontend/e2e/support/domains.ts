@@ -3,6 +3,8 @@ import type {
   AdminDomainAliasDto,
   AdminDomainDto,
   AdminDomainListResponse,
+  AdminTeamAttributesRequest,
+  AdminTeamDto,
   AdminUserDto,
   AssignPlatformRoleRequest,
   CreateDomainAliasRequest,
@@ -10,7 +12,7 @@ import type {
   TeamDetailDto,
   UpdateDomainAliasRequest,
 } from '../../src/api/dto'
-import { ApiError, apiGet, apiPost, apiPut, expectOk, type AuthResponse } from './api'
+import { ApiError, apiGet, apiPatch, apiPost, apiPut, expectOk, type AuthResponse } from './api'
 import { roleSession, SESSION_MAX_AGE_MS, teamRequest } from './data'
 import { linkTokenIn, mailbox, waitForNewMail } from './mailpit'
 import { keepRotatedSession, type RawDocument } from './ssr'
@@ -508,6 +510,21 @@ export function plannerSite(): Promise<{
         )
     )
     if (team.slug !== PLANNER_TEAM.slug) throw new Error(`planner team got slug ${team.slug}`)
+    // One user draws and saves for the whole suite: a free plan stops at 10 saves a month in the
+    // GPX tools and 20 in a team (docs/LEDGER_*.md BILL-10). Unlocking its team lifts both — the
+    // caps themselves are planner-quota.e2e.ts's subject, on users of its own.
+    if (team.tier !== 'UNLOCKED') {
+      const current = await apiGet<AdminTeamDto>(admin, `/api/admin/teams/${team.id}`)
+      await apiPatch(admin, `/api/admin/teams/${team.id}/attributes`, {
+        visibilityEditable: current.visibilityEditable,
+        joinable: current.joinable,
+        addMemberAllowed: current.addMemberAllowed,
+        enableRoutePlanner: current.enableRoutePlanner,
+        publicContentAllowed: current.publicContentAllowed,
+        tier: 'UNLOCKED',
+        tierNote: 'e2e: the planner suite',
+      } satisfies AdminTeamAttributesRequest)
+    }
 
     const aliases = `/api/admin/domains/${domain.id}/aliases`
     const alias = await getOrCreate(

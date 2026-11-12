@@ -141,7 +141,8 @@ test.describe('ad journey', () => {
     await signIn(context, member)
     await page.goto(listPath(team.slug))
     await expect(page.getByRole('heading', { level: 2, name: 'Annonces' })).toBeVisible()
-    const create = page.getByRole('main').getByRole('link', { name: 'Créer une annonce' })
+    // An empty list repeats the header's create button under its message: the header's is first.
+    const create = page.getByRole('main').getByRole('link', { name: 'Créer une annonce' }).first()
     await hydrated(create)
     await create.click()
 

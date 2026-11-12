@@ -1,3 +1,4 @@
+import { CLIENT_ONLY_QUERY } from '@/lib/prefetchAudit'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   useGetPreview,
@@ -38,6 +39,7 @@ export function useGpxPreviewPlannerState(previewId: string | undefined, enabled
       gcTime: 0,
       retry: false,
       refetchOnWindowFocus: false,
+      meta: { [CLIENT_ONLY_QUERY]: true },
     },
     request: { skipErrorToast: true },
   })

@@ -75,21 +75,27 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
   sont codées et vérifiées par tests et par les captures de la galerie `/dev/listes`, pas sur une app qui tourne. À
   regarder : mode sombre, texte agrandi (l'invite de recherche est coupée à côté de « Créer »), anglais, feuilles de
   portée et de prix, défilement à travers la frontière « À venir » / « Plus tôt », vue en lignes de l'agenda, liens
-  profonds `?w=past`. Pendant côté site : `WEB-176`.
+  profonds `?w=past`. La suite Patrol, elle, est passée le 12 novembre 2026 sur la pile e2e (commit `12bec34c4`) :
+  69 sur 69 sur l'émulateur Android, 68 sur 69 sur le simulateur iOS puis 69 une fois `calendar_test` mis au pas — sous
+  les lignes de période et de vue, la liste de l'Agenda d'équipe en vue Calendrier n'est plus qu'une bande en bas de
+  l'écran, et le test fait défiler cette liste-là pour y trouver sa carte (`patrol_test/modules/calendar.dart`). À
+  regarder sur appareil : cette bande est-elle assez haute pour être utilisable. Pendant côté site : `WEB-176`.
 - [ ] `MOB-141` **Cartes homogènes : recette sur appareil de `MOB-139` (S)** — les règles communes des cartes sont
       codées et vérifiées par tests et par captures de la galerie (`flutter test`, hors appareil), jamais sur simulateur
       ni sur appareil : mode sombre, texte agrandi, petit écran, anglais, impérial, feuilles (GPS, signaler / bloquer,
       confirmation de suppression d'un commentaire), cache réel des images. La suite Patrol, elle, a tourné le 12 novembre
-      2026 sur la pile e2e : 69 sur 69 sur le simulateur iOS, 69 sur 69 sur l'émulateur Android. Reste donc le regard
+      2026 sur la pile e2e : 69 sur 69 sur le simulateur iOS, 69 sur 69 sur l'émulateur Android, et de nouveau en fin
+      de journée sur `12bec34c4` (voir `MOB-146`). Reste donc le regard
       sur l'écran, à faire avec `MOB-135`. Points ouverts dans [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) : espace des milliers,
       « Groupe B » ou « B », indigo dans les teintes d'avatar.
 - [ ] `MOB-135` **Refonte des écrans de détail : recette sur appareil de `MOB-134` (S)** — la refonte est livrée
-      (`MOB-134`) sans avoir été regardée : **aucune passe Patrol, ni iOS ni Android, depuis le lot 6**, et les
-      écrans voyage, parcours et étape (lots 9 à 11) n'ont **jamais été vus à l'écran** (la sortie à plusieurs
-      groupes l'a été une fois sur simulateur, au lot 8). Tests Patrol adaptés à la lecture, jamais lancés :
-      `ride_group_page_test`, `ride_leader_test`, `ride_participants_map_test`, `ride_past_cancelled_test`,
-      `ride_solo_group_test`, `report_members_test`, `trip_join_leave_test`, `user_timezone_test`, et les modules
-      `ride`, `trip`, `routes`, `detail_menus` ; les lancer d'abord (iOS puis Android). Puis sur appareil : petit
+      (`MOB-134`) sans avoir été regardée à l'œil : les écrans voyage, parcours et étape (lots 9 à 11) n'ont
+      **jamais été vus à l'écran** hors des tests (la sortie à plusieurs groupes l'a été une fois sur simulateur, au
+      lot 8). Les tests Patrol adaptés à la lecture (`ride_group_page_test`, `ride_leader_test`,
+      `ride_participants_map_test`, `ride_past_cancelled_test`, `ride_solo_group_test`, `report_members_test`,
+      `trip_join_leave_test`, `user_timezone_test`, modules `ride`, `trip`, `routes`, `detail_menus`) ont tourné : sur
+      la branche le 10 novembre 2026 (deux assistants corrigés, `trip.dart` et `share_sheet.dart`), puis sur `develop`
+      le 12 novembre, 69 sur 69 sur iOS et sur Android. Reste le regard sur appareil : petit
       écran, texte à 130 %, mode sombre, impérial, anglais en 12 h, fuseau différent ; feuille GPS Android
       (enregistrer, envoyer) et iOS (partager) ; « Connecter un compteur » vers `/profil/appareils` ;
       `?tab=weather` depuis un lien profond à froid, qui défile jusqu'à la météo ; puces de groupe épinglées ; ce
@@ -411,30 +417,21 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 - [ ] `WEB-176` **Listes homogènes : recette en navigateur de `WEB-175` (S)** — même réserve que `MOB-146` : vérifié
   par tests et par les captures de `dev/lists.html`. À regarder sur le site servi : barres à 390 px, sections
   « À venir » / « Plus tôt » d'une page à l'autre, calendrier (mois vide, choix d'une équipe), erreur sans notification,
-  anciens liens `?w=past`.
+  anciens liens `?w=past`. La suite Playwright, elle, est passée le 12 novembre 2026 sur la pile e2e (commit `12bec34c4`,
+  2 016 tests, projets `desktop` et `mobile`) une fois ses tests mis à jour : second bouton « Créer … » d'une liste
+  vide, compteur par section de l'agenda, « Créer un parcours » (`flow-ads`, `flow-posts`, `flow-rides`, `flow-routes`,
+  `flow-trips`).
 - [ ] `WEB-172` **Cartes homogènes : recette en navigateur de `WEB-167` (S)** — même réserve que `MOB-141` côté site :
       vérifié par tests unitaires et par captures de la galerie de développement, pas sur le site servi (SSR, hydratation,
       mode sombre, largeurs intermédiaires). La suite Playwright a tourné le 12 novembre 2026 sur la pile e2e : 1 981
-      passés ; trois échecs dus au chantier, corrigés et relancés verts ; les 23 autres sont ceux du nightly de `develop`
+      passés ; trois échecs dus au chantier, corrigés et relancés verts ; les 23 autres étaient ceux du nightly de `develop`
       du même jour (formulaire de parcours, préchargement de l'édition d'un parcours et des paramètres d'équipe, contenu
-      réservé vu de l'extérieur, page personnalisée, planificateur et son quota) et ne viennent pas des cartes. Reste le
-      regard sur le site servi.
+      réservé vu de l'extérieur, page personnalisée, planificateur et son quota) et ne venaient pas des cartes : traités
+      le soir même (`BILL-12`, et les tests alignés sur `BILL-10`, `WEB-166` et `WEB-175`), la suite est verte sur
+      `12bec34c4`. Reste le regard sur le site servi.
 - [ ] `WEB-165` **Aligner le web sur les décisions des cibles mobiles (M, à cadrer)** — heure de son groupe en gros,
       « Changer pour A », bouton « GPS » unique, tuiles dans le même ordre :
       [`maquettes/KIT.md`](plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) §8. Hors périmètre de `MOB-134`.
-- [ ] `WEB-158` **Contrôles de carte : recette navigateur et e2e de `WEB-157` (S)** — livré sans
-      qu'un navigateur ni la pile e2e aient tourné, plan [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md). Sur `tribly-e2e` :
-      `gpx-planner` en entier, projets `desktop` et `mobile` (barre d'outils, bouton résumé, cibles de
-      44 px, 360 px, le `role="status"` et le message de quota désormais *dans* un bouton),
-      `route-maps`, `flow-routes` (clic au centre de `/parcours/carte`), `routes-render`. À l'œil,
-      clair et sombre : l'ordre des deux colonnes ; la liste de la recherche par-dessus le zoom ;
-      infobulles et panneaux du bon côté ; l'échelle et le crédit au-dessus du profil d'un groupe (aux
-      bornes 110 et 200 px) et d'une sortie à plusieurs parcours, puis au ras du bas en plein écran ;
-      la barre du planificateur sur une carte étroite, une erreur longue tronquée, la mini-carte
-      au-dessus du crédit ; au doigt, la colonne en bas à droite, la recherche sur toute la largeur,
-      les consignes sous elle, le résumé sur deux lignes en erreur, l'état pressé du bouton résumé ;
-      les cartes compactes avec des boutons de 36 px ; le bleu d'état actif de maplibre-theme en clair.
-
 - [ ] `WEB-160` **Recette à l'œil de `WEB-155` (S)** — scindé de `WEB-156` (les e2e sont passés le
       10 novembre 2026). Voyage de plus de quatre étapes (`SiblingNav` en liste), largeur téléphone
       (carte au-dessus, flèches sans débordement), mode sombre des cartes enfant mises en évidence,
@@ -1588,10 +1585,10 @@ et le préfixe `BILL` lui-même (Q12) se tranche avant le premier commit de code
       le géocodage est chez Stadia Maps depuis `OPS-49`, un plan payant déjà, plus rien à relire
       côté Nominatim), et aucun environnement hors prod capable d'émettre une facture.
 - [ ] `BILL-11` **Recette des limites de l'offre gratuite (S)** — les e2e Playwright écrits avec
-      `BILL-10` n'ont jamais tourné : `planner-quota.e2e.ts` (modale au 21ᵉ enregistrement, point
-      d'entrée désactivé au rechargement) et les préconditions revues de `flow-team.e2e.ts` et
-      `flow-platform-admin.e2e.ts` (une nouvelle équipe naît ouverte). Puis une recette manuelle sur
-      la pile locale : passer une équipe en Gratuit depuis le formulaire, refus du 26ᵉ membre (web et
+      `BILL-10` sont passés le 12 novembre 2026 sur la pile e2e, après un défaut corrigé (`BILL-12`)
+      et des tests mis au pas d'une équipe née avec le planificateur ouvert (`flow-routes`, et
+      l'équipe de la suite du planificateur débloquée dans `e2e/support/domains.ts`, dont l'unique
+      compte épuisait le quota personnel). Reste une recette manuelle sur la pile locale : passer une équipe en Gratuit depuis le formulaire, refus du 26ᵉ membre (web et
       mobile), modale du quota personnel dans les outils GPX. Plan :
       [`plans/archive/2026-11-11-limites-offre-gratuite.md`](plans/archive/2026-11-11-limites-offre-gratuite.md).
 
