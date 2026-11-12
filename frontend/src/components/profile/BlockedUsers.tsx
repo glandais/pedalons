@@ -10,6 +10,7 @@ import {
 } from '@/api/endpoints/moderation/moderation'
 import type { PublicUserDto } from '@/api/dto'
 import { UserAvatar } from '../common/UserAvatar'
+import { QueryStateBoundary } from '../common/QueryStateBoundary'
 import { invalidateModeratedContent } from '@/lib/moderationCacheInvalidation'
 
 /**
@@ -19,7 +20,8 @@ import { invalidateModeratedContent } from '@/lib/moderationCacheInvalidation'
 export function BlockedUsers() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const { data, isLoading } = useListMyBlockedUsers()
+  const blocked = useListMyBlockedUsers()
+  const { data, isLoading } = blocked
   const unblockMutation = useUnblockUser()
   const [pendingId, setPendingId] = useState<string | null>(null)
 
@@ -50,34 +52,40 @@ export function BlockedUsers() {
         {t('profile.blockedUsers.description')}
       </Text>
 
-      {isLoading ? (
-        <Skeleton height={40} />
-      ) : users.length === 0 ? (
-        <Text size="sm" c="dimmed" fs="italic">
-          {t('profile.blockedUsers.empty')}
-        </Text>
-      ) : (
-        <Stack gap="xs">
-          {users.map((user) => (
-            <Group key={user.id} justify="space-between" wrap="nowrap">
-              <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
-                <UserAvatar user={user} size="sm" />
-                <Text size="sm" truncate>
-                  {user.displayName}
-                </Text>
+      <QueryStateBoundary
+        isLoading={isLoading}
+        isError={blocked.isError}
+        error={blocked.error}
+        onRetry={() => void blocked.refetch()}
+        skeleton={<Skeleton height={40} />}
+      >
+        {users.length === 0 ? (
+          <Text size="sm" c="dimmed" fs="italic">
+            {t('profile.blockedUsers.empty')}
+          </Text>
+        ) : (
+          <Stack gap="xs">
+            {users.map((user) => (
+              <Group key={user.id} justify="space-between" wrap="nowrap">
+                <Group gap="sm" wrap="nowrap" style={{ minWidth: 0 }}>
+                  <UserAvatar user={user} size="sm" />
+                  <Text size="sm" truncate>
+                    {user.displayName}
+                  </Text>
+                </Group>
+                <Button
+                  variant="default"
+                  size="xs"
+                  onClick={() => handleUnblock(user)}
+                  loading={pendingId === user.id}
+                >
+                  {t('profile.blockedUsers.unblock')}
+                </Button>
               </Group>
-              <Button
-                variant="default"
-                size="xs"
-                onClick={() => handleUnblock(user)}
-                loading={pendingId === user.id}
-              >
-                {t('profile.blockedUsers.unblock')}
-              </Button>
-            </Group>
-          ))}
-        </Stack>
-      )}
+            ))}
+          </Stack>
+        )}
+      </QueryStateBoundary>
     </Stack>
   )
 }

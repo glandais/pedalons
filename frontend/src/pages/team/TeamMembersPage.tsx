@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import i18next from 'i18next'
 import { paths } from '../../config/paths'
-import { IconPlus, IconSend } from '@tabler/icons-react'
+import { IconPlus, IconSearchOff, IconSend, IconUsers } from '@tabler/icons-react'
 import {
   Alert,
   Box,
@@ -35,6 +35,10 @@ import { useAuth } from '../../hooks/useAuth'
 import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { TeamMemberList, TeamMemberListSkeleton } from '../../components/team/TeamMemberList'
 import { TeamAdminLayout } from '../../components/team/TeamAdminLayout'
+import { TeamUnavailable } from '../../components/team/TeamUnavailable'
+import { EmptyState } from '../../components/common/EmptyState'
+import { OutOfRangeState } from '../../components/common/OutOfRangeState'
+import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { TeamInvitationList } from '../../components/team/TeamInvitationList'
 import { SearchInput } from '../../components/common/SearchInput'
 import { TeamRole } from '@/api/dto'
@@ -74,9 +78,10 @@ export function TeamMembersPage() {
   const [search, setSearch] = useDebouncedSearch(filters.search ?? '', commitSearch)
   const { listTopRef, scrollToListTop } = useScrollToListTop()
 
-  const { data: team, isLoading: isLoadingTeam } = useGetTeam(teamSlug!, {
+  const teamQuery = useGetTeam(teamSlug!, {
     query: { enabled: !!teamSlug },
   })
+  const { data: team, isLoading: isLoadingTeam } = teamQuery
 
   const updateRoleMutation = useUpdateMemberRole()
   const removeMemberMutation = useRemoveMember()
@@ -89,7 +94,13 @@ export function TeamMembersPage() {
   }
 
   if (!team) {
-    return <Navigate to={paths.teams()} replace />
+    return (
+      <TeamUnavailable
+        error={teamQuery.error}
+        isError={teamQuery.isError}
+        onRetry={() => void teamQuery.refetch()}
+      />
+    )
   }
 
   // Only admins can see member list
@@ -218,41 +229,62 @@ export function TeamMembersPage() {
           />
         </Group>
 
-        {isLoadingMembers ? (
-          <TeamMemberListSkeleton count={5} />
-        ) : membersData?.members && membersData.members.length > 0 ? (
-          <>
-            <Box ref={listTopRef}>
-              <TeamMemberList
-                members={membersData.members}
-                // The rights the list grants: a platform admin manages the members of any team.
-                currentUserRole={isPlatformAdmin ? TeamRole.ADMIN : (team.role ?? null)}
-                currentUserId={user?.id ?? null}
-                onUpdateRole={handleUpdateRole}
-                onRemoveMember={handleRemoveMember}
-                isUpdating={updateRoleMutation.isPending}
-                isRemoving={removeMemberMutation.isPending}
-              />
-            </Box>
+        <QueryStateBoundary
+          isLoading={isLoadingMembers}
+          isError={members.isError}
+          error={members.error}
+          onRetry={() => void members.refetch()}
+          skeleton={<TeamMemberListSkeleton count={5} />}
+        >
+          {membersData?.members && membersData.members.length > 0 ? (
+            <>
+              <Box ref={listTopRef}>
+                <TeamMemberList
+                  members={membersData.members}
+                  // The rights the list grants: a platform admin manages the members of any team.
+                  currentUserRole={isPlatformAdmin ? TeamRole.ADMIN : (team.role ?? null)}
+                  currentUserId={user?.id ?? null}
+                  onUpdateRole={handleUpdateRole}
+                  onRemoveMember={handleRemoveMember}
+                  isUpdating={updateRoleMutation.isPending}
+                  isRemoving={removeMemberMutation.isPending}
+                />
+              </Box>
 
-            <Box mt="xl">
-              <Pagination
-                currentPage={filters.page}
-                totalPages={totalPages}
-                onPageChange={(page) => {
-                  setFilters({ page })
-                  scrollToListTop()
-                }}
-              />
-            </Box>
-          </>
-        ) : (
-          <Text c="dimmed">
-            {search || filters.role
-              ? t('teams.detail.members.noResults')
-              : t('teams.detail.members.empty')}
-          </Text>
-        )}
+              <Box mt="xl">
+                <Pagination
+                  currentPage={filters.page}
+                  totalPages={totalPages}
+                  onPageChange={(page) => {
+                    setFilters({ page })
+                    scrollToListTop()
+                  }}
+                />
+              </Box>
+            </>
+          ) : filters.page > 0 ? (
+            <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+          ) : search || filters.role ? (
+            <EmptyState
+              variant="filtered"
+              icon={<IconSearchOff size={48} />}
+              title={t('teams.detail.members.noResults')}
+              actions={
+                <Button
+                  variant="default"
+                  onClick={() => {
+                    setSearch('')
+                    setFilters({ search: undefined, role: undefined, page: 0 })
+                  }}
+                >
+                  {t('common.clearFilters')}
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState icon={<IconUsers size={48} />} title={t('teams.detail.members.empty')} />
+          )}
+        </QueryStateBoundary>
 
         <Box mt="xl">
           <TeamInvitationList teamSlug={teamSlug!} />

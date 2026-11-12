@@ -1,13 +1,13 @@
 import { useState, useCallback } from 'react'
 import { invalidateTeamDashboard } from '@/lib/teamDashboardCache'
-import { Navigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import { paths } from '../../config/paths'
-import { IconPlus, IconFiles } from '@tabler/icons-react'
-import { Box, Button, Group, Stack, Title, Text, Paper, Center, Loader } from '@mantine/core'
+import { IconPlus, IconFiles, IconSearchOff } from '@tabler/icons-react'
+import { Box, Button, Group, Stack, Title, Center, Loader } from '@mantine/core'
 import { useGetTeam } from '@/api/endpoints/teams/teams'
 import {
   useDeleteTemplate,
@@ -15,6 +15,10 @@ import {
 } from '@/api/endpoints/ride-templates/ride-templates'
 import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { TeamAdminLayout } from '../../components/team/TeamAdminLayout'
+import { TeamUnavailable } from '../../components/team/TeamUnavailable'
+import { EmptyState } from '../../components/common/EmptyState'
+import { OutOfRangeState } from '../../components/common/OutOfRangeState'
+import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { Pagination } from '../../components/common/Pagination'
 import { useDebouncedSearch } from '../../hooks/useDebouncedSearch'
 import { useScrollToListTop } from '../../hooks/useScrollToListTop'
@@ -43,9 +47,10 @@ export function RideTemplateListPage() {
   const [search, setSearch] = useDebouncedSearch(filters.search ?? '', commitSearch)
   const { listTopRef, scrollToListTop } = useScrollToListTop()
 
-  const { data: team, isLoading: isLoadingTeam } = useGetTeam(teamSlug!, {
+  const teamQuery = useGetTeam(teamSlug!, {
     query: { enabled: !!teamSlug },
   })
+  const { data: team, isLoading: isLoadingTeam } = teamQuery
   const deleteMutation = useDeleteTemplate()
 
   useCanonicalPath(team ? paths.rideTemplates(team.slug) : undefined)
@@ -55,10 +60,20 @@ export function RideTemplateListPage() {
   }
 
   if (!team) {
-    return <Navigate to={paths.teams()} replace />
+    return (
+      <TeamUnavailable
+        error={teamQuery.error}
+        isError={teamQuery.isError}
+        onRetry={() => void teamQuery.refetch()}
+      />
+    )
   }
 
   const canManage = teamAccess(team, isPlatformAdmin).isOrganizer
+  const clearSearch = () => {
+    setSearch('')
+    setFilters({ search: undefined, page: 0 })
+  }
 
   const handleDelete = (template: RideTemplateDto) => {
     setTemplateToDelete(template)
@@ -109,58 +124,73 @@ export function RideTemplateListPage() {
         />
 
         {/* Templates List */}
-        {isLoadingTemplates ? (
-          <Center py="xl">
-            <Loader />
-          </Center>
-        ) : templatesData?.templates && templatesData.templates.length > 0 ? (
-          <>
-            <Stack ref={listTopRef}>
-              {templatesData.templates.map((template) => (
-                <RideTemplateCard
-                  key={template.id}
-                  template={template}
-                  canManage={canManage}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </Stack>
+        <QueryStateBoundary
+          isLoading={isLoadingTemplates}
+          isError={templates.isError}
+          error={templates.error}
+          onRetry={() => void templates.refetch()}
+          skeleton={
+            <Center py="xl">
+              <Loader />
+            </Center>
+          }
+        >
+          {templatesData?.templates && templatesData.templates.length > 0 ? (
+            <>
+              <Stack ref={listTopRef}>
+                {templatesData.templates.map((template) => (
+                  <RideTemplateCard
+                    key={template.id}
+                    template={template}
+                    canManage={canManage}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </Stack>
 
-            <Box mt="xl">
-              <Pagination
-                currentPage={filters.page}
-                totalPages={totalPages}
-                onPageChange={(page) => {
-                  setFilters({ page })
-                  scrollToListTop()
-                }}
-              />
-            </Box>
-          </>
-        ) : (
-          <Paper withBorder py="xl">
-            <Center>
-              <Stack align="center">
-                <IconFiles size={48} color="var(--mantine-color-dimmed)" />
-                <Title order={3}>
-                  {search ? t('rideTemplates.list.noResults') : t('rideTemplates.list.empty.title')}
-                </Title>
-                {!search && (
-                  <Text c="dimmed">
-                    {canManage
-                      ? t('rideTemplates.list.empty.admin')
-                      : t('rideTemplates.list.empty.member')}
-                  </Text>
-                )}
-                {canManage && !search && (
-                  <Button component={PrefetchLink} to={paths.rideTemplateNew(teamSlug!)} mt="sm">
+              <Box mt="xl">
+                <Pagination
+                  currentPage={filters.page}
+                  totalPages={totalPages}
+                  onPageChange={(page) => {
+                    setFilters({ page })
+                    scrollToListTop()
+                  }}
+                />
+              </Box>
+            </>
+          ) : filters.page > 0 ? (
+            <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+          ) : search ? (
+            <EmptyState
+              variant="filtered"
+              icon={<IconSearchOff size={48} />}
+              title={t('rideTemplates.list.noResults')}
+              actions={
+                <Button variant="light" onClick={clearSearch}>
+                  {t('common.clearSearch')}
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={<IconFiles size={48} />}
+              title={t('rideTemplates.list.empty.title')}
+              description={
+                canManage
+                  ? t('rideTemplates.list.empty.admin')
+                  : t('rideTemplates.list.empty.member')
+              }
+              actions={
+                canManage ? (
+                  <Button component={PrefetchLink} to={paths.rideTemplateNew(teamSlug!)}>
                     {t('rideTemplates.create.title')}
                   </Button>
-                )}
-              </Stack>
-            </Center>
-          </Paper>
-        )}
+                ) : undefined
+              }
+            />
+          )}
+        </QueryStateBoundary>
       </Stack>
 
       {/* Delete Confirmation Dialog */}

@@ -1,5 +1,9 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { getListPublicationsQueryKey } from '@/api/endpoints/publications/publications'
+import {
+  getListAllPublicationsQueryKey,
+  getListPublicationsQueryKey,
+} from '@/api/endpoints/publications/publications'
+import { getGetEventsQueryKey, getGetTeamEventsQueryKey } from '@/api/endpoints/calendar/calendar'
 import { getGetTeamDashboardQueryKey } from '@/api/endpoints/teams/teams'
 
 /**
@@ -14,10 +18,16 @@ export function invalidateTeamDashboard(queryClient: QueryClient, teamSlug: stri
 
 /**
  * After a publication (ride, post, trip) is created, edited or published: the team's publication
- * lists and the dashboard, which shows drafts, upcoming rides and rides without a route.
+ * lists, the home feed (`listAllPublications`), the calendars (`getEvents`, `getTeamEvents`) and the
+ * dashboard, which shows drafts, upcoming rides and rides without a route. Without the feed and the
+ * calendars, a new ride stayed out of the home page for 3 min and out of the calendar for 5 — the
+ * same set `invalidateRegistration` refreshes.
  */
 export function invalidateTeamPublications(queryClient: QueryClient, teamSlug: string): void {
   void queryClient.invalidateQueries({ queryKey: getListPublicationsQueryKey(teamSlug) })
+  void queryClient.invalidateQueries({ queryKey: getListAllPublicationsQueryKey() })
+  void queryClient.invalidateQueries({ queryKey: getGetEventsQueryKey() })
+  void queryClient.invalidateQueries({ queryKey: getGetTeamEventsQueryKey(teamSlug) })
   invalidateTeamDashboard(queryClient, teamSlug)
 }
 

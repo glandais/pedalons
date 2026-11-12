@@ -53,11 +53,6 @@ export function AgendaFilterBar({
 
   const rides = !!team.enableRides && !!team.enableRoutes
   const trips = !!team.enableTrips && !!team.enableRoutes
-  const types = [
-    { value: 'all', label: t('agenda.type.all') },
-    ...(rides ? [{ value: 'ride', label: t('agenda.type.ride') }] : []),
-    ...(trips ? [{ value: 'trip', label: t('agenda.type.trip') }] : []),
-  ]
 
   return (
     <Group gap="sm" wrap="wrap" align="center">
@@ -69,14 +64,39 @@ export function AgendaFilterBar({
       />
       {/* Shown with a single kind too: its tags are only offered once it is picked. */}
       {(rides || trips) && (
-        <SegmentedControl
-          value={type}
-          onChange={(next) => onTypeChange(next as AgendaTypeValue)}
-          data={types}
-          aria-label={t('agenda.type.label')}
-        />
+        <AgendaTypeControl rides={rides} trips={trips} value={type} onChange={onTypeChange} />
       )}
       {children}
     </Group>
+  )
+}
+
+interface AgendaTypeControlProps {
+  /** Offer « Sorties »: false hides it (a team without the module). */
+  rides: boolean
+  /** Offer « Voyages ». */
+  trips: boolean
+  value: AgendaTypeValue
+  onChange: (type: AgendaTypeValue) => void
+}
+
+/**
+ * The kind selector « Tout / Sorties / Voyages » alone — the agenda bar's, and the personal
+ * calendar's (`CalendarPage`), which spans every team and so offers both kinds.
+ */
+export function AgendaTypeControl({ rides, trips, value, onChange }: AgendaTypeControlProps) {
+  const { t } = useTranslation()
+  const types = [
+    { value: 'all', label: t('agenda.type.all') },
+    ...(rides ? [{ value: 'ride', label: t('agenda.type.ride') }] : []),
+    ...(trips ? [{ value: 'trip', label: t('agenda.type.trip') }] : []),
+  ]
+  return (
+    <SegmentedControl
+      value={value}
+      onChange={(next) => onChange(next as AgendaTypeValue)}
+      data={types}
+      aria-label={t('agenda.type.label')}
+    />
   )
 }

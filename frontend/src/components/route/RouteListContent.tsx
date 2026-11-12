@@ -1,19 +1,24 @@
 import { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconMap, IconSearchOff } from '@tabler/icons-react'
-import { Box, Button, Center, Paper, SimpleGrid, Stack, Title } from '@mantine/core'
+import { Box, Button, SimpleGrid, Stack } from '@mantine/core'
 import type { RouteDto } from '@/api/dto'
 import { RouteCard, RouteCardSkeleton } from '../card'
 import { RouteRow } from './RouteRow'
 import type { RouteDensity } from '@/hooks/filters/routeFilters'
 import { EmptyState } from '../common/EmptyState'
 import { Pagination } from '../common/Pagination'
+import { OutOfRangeState } from '../common/OutOfRangeState'
+import { QueryStateBoundary } from '../common/QueryStateBoundary'
 import { useScrollToListTop } from '@/hooks/useScrollToListTop'
 
 interface RouteListContentProps {
   routes: RouteDto[] | undefined
   isLoading: boolean
   isError?: boolean
+  error?: unknown
+  /** Reloads the list — the error state's « Réessayer ». */
+  onRetry?: () => void
   showTeam: boolean
   hasFiltersOrSearch: boolean
   currentPage: number
@@ -33,6 +38,8 @@ export function RouteListContent({
   routes,
   isLoading,
   isError,
+  error,
+  onRetry,
   showTeam,
   hasFiltersOrSearch,
   currentPage,
@@ -62,14 +69,9 @@ export function RouteListContent({
 
   if (isError) {
     return (
-      <Paper shadow="xs" withBorder>
-        <Center>
-          <Stack align="center">
-            <IconMap size={48} color="var(--mantine-color-red-filled)" />
-            <Title order={3}>{t('error.loading')}</Title>
-          </Stack>
-        </Center>
-      </Paper>
+      <QueryStateBoundary isLoading={false} isError error={error} onRetry={onRetry}>
+        {null}
+      </QueryStateBoundary>
     )
   }
 
@@ -104,6 +106,11 @@ export function RouteListContent({
         </Box>
       </>
     )
+  }
+
+  // Past the last page (an old link, a list that shrank): not empty, so neither empty state.
+  if (currentPage > 0) {
+    return <OutOfRangeState onFirstPage={() => onPageChange(0)} />
   }
 
   // The filtered case is precisely the one needing the richest copy: it always carries a

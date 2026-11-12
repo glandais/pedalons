@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { keepPreviousData } from '@tanstack/react-query'
 import { IconUsers, IconShieldCheck } from '@tabler/icons-react'
-import { Stack, Group, Text, Box, ThemeIcon, Center, Loader } from '@mantine/core'
+import { Stack, Group, Text, Box, ThemeIcon, Center, Loader, Button } from '@mantine/core'
 import { useGetRideParticipants } from '@/api/endpoints/rides/rides'
 import { useGetTripParticipants } from '@/api/endpoints/trips/trips'
 import {
@@ -14,6 +14,7 @@ import { ContentActionsMenu } from '../moderation/ContentActionsMenu'
 import { ReportTargetType } from '@/api/dto'
 import { Pagination } from '../common/Pagination'
 import { SearchInput } from '../common/SearchInput'
+import { QueryStateBoundary } from '../common/QueryStateBoundary'
 
 /** Whose participants: a ride (optionally one of its groups) or a trip. */
 export type ParticipantSource = (
@@ -83,7 +84,7 @@ export function ParticipantList({
     params,
     { query: { placeholderData: keepPreviousData, enabled: enabled && source.kind === 'trip' } }
   )
-  const { data, isPending, error } = source.kind === 'ride' ? ride : trip
+  const { data, isPending, error, refetch } = source.kind === 'ride' ? ride : trip
 
   const participants = data?.participants ?? []
   const total = data?.total ?? count
@@ -105,15 +106,20 @@ export function ParticipantList({
           <Loader />
         </Center>
       ) : error ? (
-        <Center py="xl">
-          <Text c="red">{t('participants.loadError')}</Text>
-        </Center>
+        <QueryStateBoundary isLoading={false} isError error={error} onRetry={() => void refetch()}>
+          {null}
+        </QueryStateBoundary>
       ) : participants.length === 0 ? (
         <Stack align="center" py="xl">
           <IconUsers size={48} color="var(--mantine-color-dimmed)" />
           <Text size="sm" fw={500} c="dimmed">
             {search ? (noMatch ?? t('participants.noMatch', { search })) : t('participants.empty')}
           </Text>
+          {search && (
+            <Button variant="light" onClick={() => onSearchInputChange('')}>
+              {t('common.clearSearch')}
+            </Button>
+          )}
         </Stack>
       ) : (
         <>

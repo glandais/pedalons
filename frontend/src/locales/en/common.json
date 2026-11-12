@@ -1378,7 +1378,6 @@
   "participantCount_one": "{{count}} participant",
   "participantCount_other": "{{count}} participants",
   "participants.empty": "Nobody has signed up yet.",
-  "participants.loadError": "The participant list could not be loaded. Try again.",
   "participants.noMatch": "No participant matches “{{search}}”.",
   "participants.noMatchGeneric": "No participant matches your search.",
   "participants.searchByName": "Search by name…",

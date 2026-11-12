@@ -1,10 +1,11 @@
-import { Navigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { paths } from '../../config/paths'
 import { IconPlus } from '@tabler/icons-react'
 import { Button, Group, Stack, Title } from '@mantine/core'
 import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { TeamLayout } from '../../components/team/TeamLayout'
+import { TeamUnavailable } from '@/components/team/TeamUnavailable'
 import { useRouteListData } from './routeListData'
 import { resolveRouteDensity } from '../../hooks/filters/routeFilters'
 import { RouteFilterPanel } from '../../components/route/RouteFilterPanel'
@@ -33,11 +34,13 @@ export function RouteListPage() {
     handlePageChange,
     hasFiltersOrSearch,
     clearFilters,
-    team: { data: team, isLoading: isLoadingTeam },
-    routes: { data: routesData, isLoading: isLoadingRoutes },
+    team: teamQuery,
+    routes,
     totalPages,
   } = useRouteListData(teamSlug)
 
+  const { data: team, isLoading: isLoadingTeam } = teamQuery
+  const { data: routesData, isLoading: isLoadingRoutes } = routes
   const density = resolveRouteDensity(filters.density, routesData?.total)
 
   useCanonicalPath(team ? paths.routes(team.slug) : undefined)
@@ -47,7 +50,13 @@ export function RouteListPage() {
   }
 
   if (!team) {
-    return <Navigate to={paths.teams()} replace />
+    return (
+      <TeamUnavailable
+        error={teamQuery.error}
+        isError={teamQuery.isError}
+        onRetry={() => void teamQuery.refetch()}
+      />
+    )
   }
 
   const canCreateRoute = teamAccess(team, isPlatformAdmin).isOrganizer
@@ -107,6 +116,9 @@ export function RouteListPage() {
           }
           routes={routesData?.routes}
           isLoading={isLoadingRoutes}
+          isError={routes.isError}
+          error={routes.error}
+          onRetry={() => void routes.refetch()}
           showTeam={false}
           hasFiltersOrSearch={hasFiltersOrSearch}
           currentPage={filters.page}

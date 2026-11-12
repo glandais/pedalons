@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Box, Button, Group, Select, Stack, Title } from '@mantine/core'
 import { IconLock, IconSearchOff, IconUsers } from '@tabler/icons-react'
@@ -15,10 +15,12 @@ import { useScrollToListTop } from '../../hooks/useScrollToListTop'
 import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { EmptyState } from '../../components/common/EmptyState'
+import { OutOfRangeState } from '../../components/common/OutOfRangeState'
 import { ResultCount } from '../../components/common/ResultCount'
 import { SearchInput } from '../../components/common/SearchInput'
 import { Pagination } from '../../components/common/Pagination'
 import { TeamLayout } from '../../components/team/TeamLayout'
+import { TeamUnavailable } from '../../components/team/TeamUnavailable'
 import { TeamMemberList, TeamMemberListSkeleton } from '../../components/team/TeamMemberList'
 import { useTeamMembersData } from './teamMembersData'
 import { teamAccess } from '@/lib/teamAccess'
@@ -45,9 +47,10 @@ export function TeamDirectoryPage() {
   const [search, setSearch] = useDebouncedSearch(filters.search ?? '', commitSearch)
   const { listTopRef, scrollToListTop } = useScrollToListTop()
 
-  const { data: team, isLoading: isLoadingTeam } = useGetTeam(teamSlug!, {
+  const teamQuery = useGetTeam(teamSlug!, {
     query: { enabled: !!teamSlug },
   })
+  const { data: team, isLoading: isLoadingTeam } = teamQuery
 
   useCanonicalPath(team ? paths.teamMembers(team.slug) : undefined)
 
@@ -56,7 +59,13 @@ export function TeamDirectoryPage() {
   }
 
   if (!team) {
-    return <Navigate to={paths.teams()} replace />
+    return (
+      <TeamUnavailable
+        error={teamQuery.error}
+        isError={teamQuery.isError}
+        onRetry={() => void teamQuery.refetch()}
+      />
+    )
   }
 
   // Roles come back only to an admin, or to everyone once the directory is open: filtering on a
@@ -129,7 +138,9 @@ export function TeamDirectoryPage() {
                 isEmpty={list.length === 0}
                 skeleton={<TeamMemberListSkeleton count={5} />}
                 empty={
-                  isFiltered ? (
+                  filters.page > 0 ? (
+                    <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+                  ) : isFiltered ? (
                     <EmptyState
                       variant="filtered"
                       icon={<IconSearchOff size={48} />}

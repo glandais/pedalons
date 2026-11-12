@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ListViewMode, PublicationType } from '@/api/dto'
+import { ListViewMode, PublicationType, PublicationWhen } from '@/api/dto'
 import { COMMON_ALIAS, pageField, searchField, sizeField } from './common'
 
 export const PUBLICATION_PAGE_SIZE = 12
@@ -12,14 +12,19 @@ export type PublicationFilterValue = 'all' | 'ride' | 'post' | 'trip'
  */
 export type PublicationScopeValue = 'all' | 'upcoming' | 'me'
 
-/** Projects a scope onto the `from` / `participating` parameters of the list endpoints. */
-export function publicationScopeToParams(
-  scope: PublicationScopeValue,
-  nowIso: string
-): { from?: string; participating?: boolean } {
+/**
+ * Projects a scope onto the `when` / `participating` parameters of the list endpoints. « À venir »
+ * is `when=UPCOMING`, as in the agenda (`agendaApiParams`): the server keeps what is not over yet —
+ * a ride under way included — and sorts it soonest first. A bare `from=now` kept the feed's default
+ * order, the farthest ride first, and dropped a ride already started.
+ */
+export function publicationScopeToParams(scope: PublicationScopeValue): {
+  when?: PublicationWhen
+  participating?: boolean
+} {
   switch (scope) {
     case 'upcoming':
-      return { from: nowIso }
+      return { when: PublicationWhen.UPCOMING }
     case 'me':
       return { participating: true }
     default:
@@ -60,21 +65,18 @@ export const publicationFiltersAlias = { ...COMMON_ALIAS, filter: 'type', scope:
  * `view` is always COMPACT here: a feed card draws a title, an excerpt and a picture, never the
  * markdown body or the attachments of twelve publications.
  */
-export function publicationApiParams(
-  filters: z.infer<typeof publicationFiltersSchema>,
-  nowIso: string
-) {
+export function publicationApiParams(filters: z.infer<typeof publicationFiltersSchema>) {
   return {
     search: filters.search,
     page: filters.page,
     size: filters.size,
     type: publicationFilterToType[filters.filter],
-    ...publicationScopeToParams(filters.scope, nowIso),
+    ...publicationScopeToParams(filters.scope),
     view: ListViewMode.COMPACT,
   }
 }
 
 /** The params a bare URL produces — what a route `prefetch` must fill the cache with. */
-export function defaultPublicationApiParams(nowIso: string) {
-  return publicationApiParams(publicationFiltersSchema.parse({}), nowIso)
+export function defaultPublicationApiParams() {
+  return publicationApiParams(publicationFiltersSchema.parse({}))
 }

@@ -11,10 +11,11 @@ import { useScrollToListTop } from '../../hooks/useScrollToListTop'
 import type { MembershipFilterValue } from '../../hooks/filters/membership'
 import { TeamCard, TeamCardSkeleton } from '../../components/card'
 import { EmptyState } from '../../components/common/EmptyState'
+import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { Pagination } from '../../components/common/Pagination'
 import { SearchInput } from '../../components/common/SearchInput'
 import { PendingInvitationsBanner } from '../../components/team/PendingInvitationsBanner'
-import { Select, Box, Group, Title, Text, Stack, Button, SimpleGrid, Alert } from '@mantine/core'
+import { Select, Box, Group, Title, Text, Stack, Button, SimpleGrid } from '@mantine/core'
 import { useTeamListData } from './teamListData'
 
 export function TeamListPage() {
@@ -36,7 +37,7 @@ export function TeamListPage() {
   const [search, setSearch] = useDebouncedSearch(filters.search ?? '', commitSearch)
   const { listTopRef, scrollToListTop } = useScrollToListTop()
 
-  const { data: teamsData, isLoading, error } = teamsQuery
+  const { data: teamsData, isLoading, isError, error, refetch } = teamsQuery
 
   const teams = teamsData?.teams
   const hasTeams = (teamsData?.total ?? 0) > 0
@@ -93,61 +94,65 @@ export function TeamListPage() {
         )}
       </Group>
 
-      {error && (
-        <Alert color="red">
-          {error instanceof Error ? error.message : t('errors.api.failedToLoad')}
-        </Alert>
-      )}
-
-      {isLoading ? (
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-          <TeamCardSkeleton count={6} />
-        </SimpleGrid>
-      ) : teams && teams.length > 0 ? (
-        <Stack>
-          <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-            {teams.map((team) => (
-              <TeamCard key={team.id} team={team} showRole={true} />
-            ))}
+      {/* A failure shows the error alone: the empty state under it (« Aucune équipe n'a encore été
+          créée ») would contradict it. */}
+      <QueryStateBoundary
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        onRetry={() => void refetch()}
+        skeleton={
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+            <TeamCardSkeleton count={6} />
           </SimpleGrid>
+        }
+      >
+        {teams && teams.length > 0 ? (
+          <Stack>
+            <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+              {teams.map((team) => (
+                <TeamCard key={team.id} team={team} showRole={true} />
+              ))}
+            </SimpleGrid>
 
-          <Box mt="lg">
-            <Pagination
-              currentPage={filters.page}
-              totalPages={totalPages}
-              onPageChange={(page) => {
-                setFilters({ page })
-                scrollToListTop()
-              }}
-            />
-          </Box>
-        </Stack>
-      ) : filters.page > 0 ? (
-        <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
-      ) : (
-        <EmptyState
-          variant={hasFiltersOrSearch ? 'filtered' : 'absolute'}
-          icon={hasFiltersOrSearch ? <IconSearchOff size={48} /> : <IconUsersGroup size={48} />}
-          title={
-            hasFiltersOrSearch ? t('teams.list.empty.title') : t('teams.list.empty.noTeamsTitle')
-          }
-          description={
-            hasFiltersOrSearch
-              ? t('teams.list.empty.publicTeams')
-              : t('teams.list.empty.noTeamsDescription')
-          }
-          actions={
-            <>
-              {hasFiltersOrSearch && (
-                <Button variant="light" onClick={clearFilters}>
-                  {t('common.clearFilters')}
-                </Button>
-              )}
-              {createTeamButton}
-            </>
-          }
-        />
-      )}
+            <Box mt="lg">
+              <Pagination
+                currentPage={filters.page}
+                totalPages={totalPages}
+                onPageChange={(page) => {
+                  setFilters({ page })
+                  scrollToListTop()
+                }}
+              />
+            </Box>
+          </Stack>
+        ) : filters.page > 0 ? (
+          <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+        ) : (
+          <EmptyState
+            variant={hasFiltersOrSearch ? 'filtered' : 'absolute'}
+            icon={hasFiltersOrSearch ? <IconSearchOff size={48} /> : <IconUsersGroup size={48} />}
+            title={
+              hasFiltersOrSearch ? t('teams.list.empty.title') : t('teams.list.empty.noTeamsTitle')
+            }
+            description={
+              hasFiltersOrSearch
+                ? t('teams.list.empty.publicTeams')
+                : t('teams.list.empty.noTeamsDescription')
+            }
+            actions={
+              <>
+                {hasFiltersOrSearch && (
+                  <Button variant="light" onClick={clearFilters}>
+                    {t('common.clearFilters')}
+                  </Button>
+                )}
+                {createTeamButton}
+              </>
+            }
+          />
+        )}
+      </QueryStateBoundary>
     </Stack>
   )
 }

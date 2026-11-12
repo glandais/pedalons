@@ -1429,7 +1429,6 @@
   "participantCount_many": "{{count}} personnes",
   "participantCount_other": "{{count}} personnes",
   "participants.empty": "Aucune inscription pour le moment.",
-  "participants.loadError": "La liste des inscriptions n'a pas pu être chargée. Réessayez.",
   "participants.noMatch": "Personne ne correspond à « {{search}} ».",
   "participants.noMatchGeneric": "Personne ne correspond à votre recherche.",
   "participants.searchByName": "Rechercher par nom…",

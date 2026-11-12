@@ -23,7 +23,7 @@ export function AllRoutesPage() {
     totalPages,
   } = useAllRouteListData()
 
-  const { data: routesData, isLoading, isError } = routes
+  const { data: routesData, isLoading, isError, error, refetch } = routes
 
   return (
     <Stack my="lg">
@@ -60,6 +60,8 @@ export function AllRoutesPage() {
         routes={routesData?.routes}
         isLoading={isLoading}
         isError={isError}
+        error={error}
+        onRetry={() => void refetch()}
         showTeam={!isSingleTeam()}
         hasFiltersOrSearch={hasFiltersOrSearch}
         currentPage={filters.page}

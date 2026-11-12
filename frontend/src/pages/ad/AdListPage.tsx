@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { OutOfRangeState } from '@/components/common/OutOfRangeState'
+import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { Navigate, useParams } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
@@ -33,6 +34,7 @@ import { Pagination } from '../../components/common/Pagination'
 import { ResultCount } from '../../components/common/ResultCount'
 import { SearchInput } from '../../components/common/SearchInput'
 import { TeamLayout } from '../../components/team/TeamLayout'
+import { TeamUnavailable } from '../../components/team/TeamUnavailable'
 import { TagFilter } from '../../components/tag'
 import { paths } from '@/config/paths'
 import { AdType } from '../../api/dto'
@@ -62,7 +64,13 @@ export function AdListPage() {
   }
 
   if (!teamData) {
-    return <Navigate to={paths.teams()} replace />
+    return (
+      <TeamUnavailable
+        error={team.error}
+        isError={team.isError}
+        onRetry={() => void team.refetch()}
+      />
+    )
   }
 
   // The module is off for this team: the API refuses every ad, so there is nothing to show here.
@@ -211,57 +219,67 @@ export function AdListPage() {
       <ResultCount total={adsResponse?.total} resource="ads" />
 
       {/* Content */}
-      {isLoadingAds ? (
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <AdCardSkeleton key={i} />
-          ))}
-        </SimpleGrid>
-      ) : adsList.length === 0 ? (
-        filters.page > 0 ? (
-          <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
-        ) : (
-          <EmptyState
-            variant={hasFiltersOrSearch ? 'filtered' : 'absolute'}
-            icon={hasFiltersOrSearch ? <IconSearchOff size={48} /> : <IconTag size={48} />}
-            title={hasFiltersOrSearch ? t('ads.list.noResultsTitle') : t('ads.list.empty.title')}
-            description={hasFiltersOrSearch ? t('ads.list.noResults') : t('ads.list.empty.member')}
-            actions={
-              hasFiltersOrSearch ? (
-                <Button variant="light" onClick={clearFilters}>
-                  {t('common.clearFilters')}
-                </Button>
-              ) : undefined
-            }
-          />
-        )
-      ) : (
-        <Stack>
-          <SimpleGrid
-            ref={listTopRef}
-            cols={{ base: 1, sm: 2, lg: 3 }}
-            spacing="lg"
-            style={{ opacity: isFetching ? 0.5 : 1 }}
-          >
-            {adsList.map((ad) => (
-              <AdCard key={ad.id} ad={ad} actions={<AdCardActions ad={ad} />} />
+      <QueryStateBoundary
+        isLoading={isLoadingAds}
+        isError={ads.isError}
+        error={ads.error}
+        onRetry={() => void ads.refetch()}
+        skeleton={
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <AdCardSkeleton key={i} />
             ))}
           </SimpleGrid>
+        }
+      >
+        {adsList.length === 0 ? (
+          filters.page > 0 ? (
+            <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+          ) : (
+            <EmptyState
+              variant={hasFiltersOrSearch ? 'filtered' : 'absolute'}
+              icon={hasFiltersOrSearch ? <IconSearchOff size={48} /> : <IconTag size={48} />}
+              title={hasFiltersOrSearch ? t('ads.list.noResultsTitle') : t('ads.list.empty.title')}
+              description={
+                hasFiltersOrSearch ? t('ads.list.noResults') : t('ads.list.empty.member')
+              }
+              actions={
+                hasFiltersOrSearch ? (
+                  <Button variant="light" onClick={clearFilters}>
+                    {t('common.clearFilters')}
+                  </Button>
+                ) : undefined
+              }
+            />
+          )
+        ) : (
+          <Stack>
+            <SimpleGrid
+              ref={listTopRef}
+              cols={{ base: 1, sm: 2, lg: 3 }}
+              spacing="lg"
+              style={{ opacity: isFetching ? 0.5 : 1 }}
+            >
+              {adsList.map((ad) => (
+                <AdCard key={ad.id} ad={ad} actions={<AdCardActions ad={ad} />} />
+              ))}
+            </SimpleGrid>
 
-          {totalPages > 1 && (
-            <Box mt="md">
-              <Pagination
-                currentPage={filters.page}
-                totalPages={totalPages}
-                onPageChange={(page) => {
-                  setFilters({ page })
-                  scrollToListTop()
-                }}
-              />
-            </Box>
-          )}
-        </Stack>
-      )}
+            {totalPages > 1 && (
+              <Box mt="md">
+                <Pagination
+                  currentPage={filters.page}
+                  totalPages={totalPages}
+                  onPageChange={(page) => {
+                    setFilters({ page })
+                    scrollToListTop()
+                  }}
+                />
+              </Box>
+            )}
+          </Stack>
+        )}
+      </QueryStateBoundary>
     </TeamLayout>
   )
 }

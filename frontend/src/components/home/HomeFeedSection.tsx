@@ -1,23 +1,12 @@
 import { useCallback, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Box,
-  Button,
-  Center,
-  Chip,
-  Group,
-  Paper,
-  Select,
-  SimpleGrid,
-  Stack,
-  Text,
-  Title,
-} from '@mantine/core'
+import { Box, Button, Chip, Group, Select, SimpleGrid, Stack, Text, Title } from '@mantine/core'
 import { IconNews, IconSearchOff } from '@tabler/icons-react'
 import { isSingleTeam } from '@/config/appConfig'
 import { PublicationCard, PublicationCardSkeleton } from '@/components/card'
 import { EmptyState } from '@/components/common/EmptyState'
 import { OutOfRangeState } from '@/components/common/OutOfRangeState'
+import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { Pagination } from '@/components/common/Pagination'
 import { ResultCount } from '@/components/common/ResultCount'
 import { SearchInput } from '@/components/common/SearchInput'
@@ -83,7 +72,7 @@ export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps)
     })
   }, [setSearch, setFilters, membershipDefault])
 
-  const { data: publicationsData, isLoading, isError } = publications
+  const { data: publicationsData, isLoading, isError, error, refetch } = publications
 
   return (
     <Stack component="section" aria-labelledby="home-feed-title">
@@ -151,14 +140,9 @@ export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps)
           ))}
         </SimpleGrid>
       ) : isError ? (
-        <Paper withBorder p="xl" radius="md">
-          <Center>
-            <Stack align="center" gap="sm">
-              <IconNews size={48} color="var(--mantine-color-red-filled)" />
-              <Text fw={500}>{t('error.loading')}</Text>
-            </Stack>
-          </Center>
-        </Paper>
+        <QueryStateBoundary isLoading={false} isError error={error} onRetry={() => void refetch()}>
+          {null}
+        </QueryStateBoundary>
       ) : publicationsData?.publications && publicationsData.publications.length > 0 ? (
         <Stack>
           <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">

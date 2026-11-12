@@ -26,6 +26,7 @@ import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { OutOfRangeState } from '@/components/common/OutOfRangeState'
+import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { Pagination } from '@/components/common/Pagination'
 import { ResultCount, type CountedResource } from '@/components/common/ResultCount'
 import { SearchInput } from '@/components/common/SearchInput'
@@ -235,75 +236,83 @@ export function TeamAgendaPage() {
           <ListViewSwitch views={views} value={density} onChange={onViewChange} />
         </Group>
 
-        {isLoadingPublications ? (
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-            {[...Array(6)].map((_, i) => (
-              <PublicationCardSkeleton key={i} />
-            ))}
-          </SimpleGrid>
-        ) : items.length > 0 ? (
-          <Stack gap="xl">
-            {density === 'row' ? (
-              <Stack ref={listTopRef} gap="sm">
-                {items.map((publication) => (
-                  <AgendaRow
-                    key={publication.id}
-                    publication={publication}
-                    actions={<PublicationCardActions publication={publication} />}
-                  />
-                ))}
-              </Stack>
-            ) : (
-              <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-                {items.map((publication) => (
-                  <PublicationCard
-                    key={publication.id}
-                    publication={publication}
-                    showTeam={false}
-                    actions={<PublicationCardActions publication={publication} />}
-                  />
-                ))}
-              </SimpleGrid>
-            )}
-            <Box>
-              <Pagination
-                currentPage={filters.page}
-                totalPages={totalPages}
-                onPageChange={(page) => {
-                  setFilters({ page })
-                  scrollToListTop()
-                }}
-              />
-            </Box>
-          </Stack>
-        ) : filters.page > 0 ? (
-          <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
-        ) : hasFilters ? (
-          <EmptyState
-            variant="filtered"
-            icon={<IconSearchOff size={48} />}
-            title={t('noResults')}
-            description={t('agenda.empty.filteredDescription')}
-            actions={
-              <Button variant="light" onClick={clearFilters}>
-                {hasPanelFilters && filters.filter === 'all' && filters.scope === 'upcoming'
-                  ? t('common.clearSearch')
-                  : t('common.clearFilters')}
-              </Button>
-            }
-          />
-        ) : (
-          <EmptyState
-            icon={<IconCalendarEvent size={48} />}
-            title={t('agenda.empty.title')}
-            description={t('agenda.empty.description')}
-            actions={
-              <Button variant="light" onClick={() => setFilters({ scope: 'past' })}>
-                {t('agenda.empty.seePast')}
-              </Button>
-            }
-          />
-        )}
+        <QueryStateBoundary
+          isLoading={isLoadingPublications}
+          isError={publications.isError}
+          error={publications.error}
+          onRetry={() => void publications.refetch()}
+          skeleton={
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+              {[...Array(6)].map((_, i) => (
+                <PublicationCardSkeleton key={i} />
+              ))}
+            </SimpleGrid>
+          }
+        >
+          {items.length > 0 ? (
+            <Stack gap="xl">
+              {density === 'row' ? (
+                <Stack ref={listTopRef} gap="sm">
+                  {items.map((publication) => (
+                    <AgendaRow
+                      key={publication.id}
+                      publication={publication}
+                      actions={<PublicationCardActions publication={publication} />}
+                    />
+                  ))}
+                </Stack>
+              ) : (
+                <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+                  {items.map((publication) => (
+                    <PublicationCard
+                      key={publication.id}
+                      publication={publication}
+                      showTeam={false}
+                      actions={<PublicationCardActions publication={publication} />}
+                    />
+                  ))}
+                </SimpleGrid>
+              )}
+              <Box>
+                <Pagination
+                  currentPage={filters.page}
+                  totalPages={totalPages}
+                  onPageChange={(page) => {
+                    setFilters({ page })
+                    scrollToListTop()
+                  }}
+                />
+              </Box>
+            </Stack>
+          ) : filters.page > 0 ? (
+            <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+          ) : hasFilters ? (
+            <EmptyState
+              variant="filtered"
+              icon={<IconSearchOff size={48} />}
+              title={t('noResults')}
+              description={t('agenda.empty.filteredDescription')}
+              actions={
+                <Button variant="light" onClick={clearFilters}>
+                  {hasPanelFilters && filters.filter === 'all' && filters.scope === 'upcoming'
+                    ? t('common.clearSearch')
+                    : t('common.clearFilters')}
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={<IconCalendarEvent size={48} />}
+              title={t('agenda.empty.title')}
+              description={t('agenda.empty.description')}
+              actions={
+                <Button variant="light" onClick={() => setFilters({ scope: 'past' })}>
+                  {t('agenda.empty.seePast')}
+                </Button>
+              }
+            />
+          )}
+        </QueryStateBoundary>
       </Stack>
     </TeamLayout>
   )

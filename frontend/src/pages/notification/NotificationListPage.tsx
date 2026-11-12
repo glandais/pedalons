@@ -6,6 +6,7 @@ import { paths } from '@/config/paths'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Pagination } from '@/components/common/Pagination'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
+import { OutOfRangeState } from '@/components/common/OutOfRangeState'
 import { ResultCount } from '@/components/common/ResultCount'
 import { NotificationItem } from '@/components/notification/NotificationItem'
 import { useNotificationActions } from '@/hooks/useNotifications'
@@ -76,7 +77,9 @@ export function NotificationListPage() {
           </Stack>
         }
         empty={
-          isNotificationFiltered(filters) ? (
+          filters.page > 0 ? (
+            <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+          ) : isNotificationFiltered(filters) ? (
             <EmptyState
               variant="filtered"
               icon={<IconSearchOff size={48} />}

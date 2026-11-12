@@ -36,7 +36,8 @@ import { NEXT_RIDE_PARAMS } from './nextRideParams'
  * doesn't pull `HomePage` out of its lazy chunk.
  *
  * Two things have to agree byte-for-byte across the two sides:
- * - `hourAlignedNowIso()` — the `from` boundary of both the feed and "ma prochaine sortie". Each
+ * - `hourAlignedNowIso()` — the `from` boundary of "ma prochaine sortie" (the feed's « À venir »
+ *   is `when=UPCOMING`, no clock in its key). Each
  *   side calls it itself (it isn't threaded through as a parameter): computed a few hundred ms
  *   apart, on the same clock, it lands on the same hour almost always — that's the whole point of
  *   rounding it. Threading a value through instead would just move the divergence risk elsewhere.
@@ -97,16 +98,16 @@ export function useHomeFeedData() {
     alwaysSerialize: homeFiltersAlwaysSerialize,
   })
 
-  // Hour-aligned and frozen per mount: a `from` that changed on every render, or that disagreed
+  // Hour-aligned and frozen per mount (for « ma prochaine sortie »): a `from` that changed on every render, or that disagreed
   // with the SSR prefetch computed a few hundred ms earlier, would defeat the query cache.
   const nowIso = useMemo(() => hourAlignedNowIso(), [])
 
   const apiParams = useMemo(
     () => ({
-      ...publicationApiParams(filters, nowIso),
+      ...publicationApiParams(filters),
       minRole: membershipToMinRole[filters.membership],
     }),
-    [filters, nowIso]
+    [filters]
   )
 
   const publications = useListAllPublications(apiParams)
@@ -163,7 +164,7 @@ export async function prefetchHomeFeed(queryClient: QueryClient, url: URL): Prom
   }
   const filters = readUrlFilters(url.searchParams, homeFeedFilterOptions(membershipDefault))
   const feedParams = {
-    ...publicationApiParams(filters, hourAlignedNowIso()),
+    ...publicationApiParams(filters),
     minRole: membershipToMinRole[filters.membership],
   }
   await prefetchPageWindow(feedParams, (p) => prefetchListAllPublicationsQuery(queryClient, p))

@@ -7,6 +7,7 @@ import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { OutOfRangeState } from '@/components/common/OutOfRangeState'
+import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { Pagination } from '@/components/common/Pagination'
 import { ResultCount } from '@/components/common/ResultCount'
 import { SearchInput } from '@/components/common/SearchInput'
@@ -105,57 +106,65 @@ export function TeamPostsPage() {
 
         <ResultCount total={publicationsData?.total} resource="publications" />
 
-        {isLoadingPublications ? (
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-            {[...Array(6)].map((_, i) => (
-              <PublicationCardSkeleton key={i} />
-            ))}
-          </SimpleGrid>
-        ) : posts.length > 0 ? (
-          <Stack gap="xl">
-            <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-              {posts.map((publication, index) => (
-                <PublicationCard
-                  key={publication.id}
-                  publication={publication}
-                  showTeam={false}
-                  priority={index === 0}
-                  actions={<PublicationCardActions publication={publication} />}
-                />
+        <QueryStateBoundary
+          isLoading={isLoadingPublications}
+          isError={publications.isError}
+          error={publications.error}
+          onRetry={() => void publications.refetch()}
+          skeleton={
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+              {[...Array(6)].map((_, i) => (
+                <PublicationCardSkeleton key={i} />
               ))}
             </SimpleGrid>
-            <Box>
-              <Pagination
-                currentPage={filters.page}
-                totalPages={totalPages}
-                onPageChange={(page) => {
-                  setFilters({ page })
-                  scrollToListTop()
-                }}
-              />
-            </Box>
-          </Stack>
-        ) : filters.page > 0 ? (
-          <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
-        ) : (
-          <EmptyState
-            variant={hasFilters ? 'filtered' : 'absolute'}
-            icon={hasFilters ? <IconSearchOff size={48} /> : <IconArticle size={48} />}
-            title={hasFilters ? t('noResults') : t('teams.posts.empty')}
-            description={
-              hasFilters
-                ? t('teams.posts.search.noResultsDescription')
-                : t('teams.posts.emptyDescription')
-            }
-            actions={
-              hasFilters ? (
-                <Button variant="light" onClick={clearFilters}>
-                  {hasTagFilter ? t('common.clearFilters') : t('common.clearSearch')}
-                </Button>
-              ) : undefined
-            }
-          />
-        )}
+          }
+        >
+          {posts.length > 0 ? (
+            <Stack gap="xl">
+              <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+                {posts.map((publication, index) => (
+                  <PublicationCard
+                    key={publication.id}
+                    publication={publication}
+                    showTeam={false}
+                    priority={index === 0}
+                    actions={<PublicationCardActions publication={publication} />}
+                  />
+                ))}
+              </SimpleGrid>
+              <Box>
+                <Pagination
+                  currentPage={filters.page}
+                  totalPages={totalPages}
+                  onPageChange={(page) => {
+                    setFilters({ page })
+                    scrollToListTop()
+                  }}
+                />
+              </Box>
+            </Stack>
+          ) : filters.page > 0 ? (
+            <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+          ) : (
+            <EmptyState
+              variant={hasFilters ? 'filtered' : 'absolute'}
+              icon={hasFilters ? <IconSearchOff size={48} /> : <IconArticle size={48} />}
+              title={hasFilters ? t('noResults') : t('teams.posts.empty')}
+              description={
+                hasFilters
+                  ? t('teams.posts.search.noResultsDescription')
+                  : t('teams.posts.emptyDescription')
+              }
+              actions={
+                hasFilters ? (
+                  <Button variant="light" onClick={clearFilters}>
+                    {hasTagFilter ? t('common.clearFilters') : t('common.clearSearch')}
+                  </Button>
+                ) : undefined
+              }
+            />
+          )}
+        </QueryStateBoundary>
       </Stack>
     </TeamLayout>
   )
