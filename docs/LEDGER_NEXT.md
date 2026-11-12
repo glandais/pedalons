@@ -83,6 +83,27 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       sombre du markdown et les libellés Material en français. Revérifier à chaque `flutter upgrade` quelles
       dépendances ont migré (`grep -rl "package:flutter/material.dart"` dans leur `lib/`).
 
+      **Relevé amont du 12 novembre 2026** (dernières versions de pub.dev, dépôts GitHub) :
+
+      | Dépendance | Ce qu'elle tire de l'ancien Material | Avancement |
+      |---|---|---|
+      | `markdown_widget` 2.3.2+8 | `SelectionArea`, `Theme.of`, `InkWell`, `Scaffold` (18 fichiers) — c'est elle qui casse les 55 tests | rien : ni issue ni PR, dernier commit le 17 janvier 2026 |
+      | `easy_localization` 3.0.8 | fournit les délégués `GlobalMaterialLocalizations` dépréciés | PR #791 « Handle new Delegates » ouverte le 19 octobre 2026, non fusionnée ; dernier commit le 19 janvier 2026 |
+      | `maplibre` 0.3.7 | `Theme.of`, `IconButton` dans ses widgets d'interface (échelle, attribution, boutons) | PR #672 fusionnée le 7 novembre 2026 (plus aucun import Material), pas publiée : 0.3.7+1 et 0.4.0-pre.2 les ont encore |
+      | `photo_view` 0.15.0 | `CircularProgressIndicator` et `Icons.broken_image` par défaut | rien : dernier commit le 4 septembre 2024 |
+      | `octo_image` 2.1.5 (via `cached_network_image`) | `CircularProgressIndicator` et `Icons.error` par défaut | issue #50 ouverte, mainteneurs en attente (réponse du 30 octobre, d'avant la dépréciation) ; la 2.1.5 du 12 novembre n'a pas migré |
+
+      Le verrou dur est `markdown_widget`, dormant : attendre, le forker (18 fichiers d'imports) ou le
+      remplacer. `easy_localization` se contourne (`app.dart` passe sa propre liste de délégués au lieu de
+      `context.localizationDelegates`) ; `maplibre` pèse peu, l'app ayant ses propres `pdl_map_scale` et
+      `pdl_map_attribution` (usage de `MapControlButtons` non vérifié) ; `photo_view` et `octo_image` ne
+      touchent que leurs indicateurs par défaut (à vérifier : `pdl_image_viewer.dart` fournit-il les siens ?).
+      Ne bloquent pas : `go_router` et `cached_network_image`, déjà migrés, et `flutter_riverpod` à partir de
+      la 3.5.0 (l'app est en 3.4.3) ; `scrollable_positioned_list` (dépôt archivé), `flutter_highlight`,
+      `maplibre_android`, `maplibre_ios`, `firebase_messaging_platform_interface` et les paquets `*_web`, qui
+      importent l'ancien Material sans thème, traduction ni widget. `patrol` et `patrol_finders` 3.7.0
+      l'importent encore, sans issue amont : effet sur les e2e à évaluer avant la bascule.
+
 - [ ] `MOB-146` **Listes homogènes : recette sur appareil de `MOB-143` (S)** — les quinze règles de listes (`plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md` §10)
   sont codées et vérifiées par tests et par les captures de la galerie `/dev/listes`, pas sur une app qui tourne. À
   regarder : mode sombre, texte agrandi (l'invite de recherche est coupée à côté de « Créer »), anglais, feuilles de
