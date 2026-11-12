@@ -293,13 +293,32 @@ Garmin Connect IQ app themselves — see [karoo/](karoo/) and [garmin-app/](garm
 
 ### Team Governance
 
-Platform admins control the following per-team attributes (configurable via the team admin page):
+Only platform admins set the following per-team attributes, from the team form or
+`PATCH /api/admin/teams/{id}/attributes`:
 
-| Attribute | Description |
-|-----------|-------------|
-| `visibilityEditable` | If `true`, team admins can change visibility. If `false`, only platform admins can. |
-| `joinable` | If `true` and the team is public, any domain user can self-join. |
-| `addMemberAllowed` | If `true`, team admins can add members directly. If `false`, only platform admins can. |
+| Attribute | New team | Description |
+|-----------|----------|-------------|
+| `visibilityEditable` | `false` | If `true`, team admins can change the team's visibility. If `false`, only platform admins can. |
+| `joinable` | `true` | If `true` and the team is not private (`TEAM`), any domain user can self-join. |
+| `addMemberAllowed` | `true` | If `true`, team admins can add and invite members. If `false`, only platform admins can. |
+| `enableRoutePlanner` | `true` | Opens the interactive route planner (drawing a track on the map). GPX import, replacement and download stay available when it is `false`. |
+| `publicContentAllowed` | `false` | Lets a private (`TEAM`) team publish an entity as public or unlisted, readable by link only — never in a listing nor in the sitemap. Meaningless for a team that is not private. |
+| `tier` | `FREE` | The plan: `FREE` caps the team, `UNLOCKED` lifts the caps. `tierNote` records why, for platform admins only. |
 
-A team created by a user starts with `visibility` `TEAM` (enforced by the backend) and the three
-attributes above `false`. A non-platform-admin user can create at most one team per domain.
+A team created by a user is born private (`visibility` `TEAM`, enforced by the backend) but open:
+making it public stays a moderation decision, and the plan's caps protect the platform instead of
+a closed door. A non-platform-admin user can administer at most one team per domain, and a
+single-team domain accepts no second team.
+
+A `FREE` team is held to the caps of `pedalons.limits.*` (`application.properties`), read by
+`PlanLimits` alone:
+
+- **25 members**, pending invitations included, on every path in (join, add, invite, accept) —
+  platform admins and the biketeam migration are exempt;
+- **20 saves of a drawn route per calendar month**; a user who belongs to no `UNLOCKED` team of the
+  domain gets 10 a month in the GPX tools. GPX import is never counted.
+
+Every team that existed before the plans, and every team imported from biketeam, is `UNLOCKED`. A
+governance flag at `false` closes a team whatever its tier. Omitting `publicContentAllowed`, `tier`
+or `tierNote` from the `PATCH` leaves it as it is, so an older client never withdraws or downgrades
+one.
