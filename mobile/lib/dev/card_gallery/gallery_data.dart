@@ -127,6 +127,7 @@ class GalleryData {
     id: 'u-camille',
     email: 'camille.durand@example.org',
     displayName: 'Camille Durand',
+    plannerQuota: PlannerQuotaDto(used: 0, resetsOn: '2026-12-01'),
     contactableByMembers: true,
     emailVerified: true,
     timezone: kGalleryZone,
@@ -207,6 +208,7 @@ class GalleryData {
     final List<Visibility> v = clubDesMonts ? _teamOnly : _all;
     final TeamPublicationDto t = clubDesMonts ? vcm : gravel;
     return TeamDetailDto(
+      tier: 'FREE',
       id: t.id,
       name: t.name,
       slug: t.slug,

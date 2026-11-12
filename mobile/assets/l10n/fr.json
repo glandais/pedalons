@@ -478,7 +478,7 @@
             "other": "{} membres"
           }
         },
-        "memberCountOfLimit": "{count} / {limit} membres",
+        "memberCountOfLimit": "{count} / {limit} membres",
         "roleSplit": "Répartition des membres par rôle",
         "newestMembers": "Nouveaux membres",
         "noNewMembers": "Aucun membre pour le moment.",

@@ -70,6 +70,7 @@ const AuthState _signedIn = AuthState(
     id: 'u-me',
     email: 'moi@example.org',
     displayName: 'Moi',
+    plannerQuota: PlannerQuotaDto(used: 0, resetsOn: '2026-12-01'),
     emailVerified: true,
     contactableByMembers: true,
   ),

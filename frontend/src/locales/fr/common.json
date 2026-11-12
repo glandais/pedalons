@@ -2534,7 +2534,7 @@
   "teams.list.search.placeholder": "Rechercher des équipes...",
   "teams.list.subtitle": "Parcourez les équipes cyclistes ou créez la vôtre",
   "teams.memberLimit.contact": "Pour aller au-delà, contactez-nous.",
-  "teams.memberLimit.counter": "{{current}} / {{limit}} membres",
+  "teams.memberLimit.counter": "{{current}} / {{limit}} membres",
   "teams.memberLimit.full": "L'équipe a atteint {{limit}} membres, la limite de l'offre gratuite.",
   "teams.memberLimit.fullAskAdmin": "L'équipe a atteint {{limit}} membres, la limite de l'offre gratuite. Pour aller au-delà, demandez à un administrateur de l'équipe.",
   "teams.notifications.created": "Équipe créée avec succès",

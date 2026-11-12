@@ -7,7 +7,6 @@ import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/config/paths.generated.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
-import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/auth/data/auth_repository.dart';
@@ -449,7 +448,7 @@ void main() {
         d.copyWith(team: d.team.copyWith(memberCount: 24, memberLimit: 25)),
       );
 
-      expect(find.text('24 / 25 membres'), findsOneWidget);
+      expect(find.text('24 / 25\u00A0membres'), findsOneWidget);
       expect(find.byKey(keys.teamDashboard.memberLimitReached), findsNothing);
       expect(
         tester
@@ -468,7 +467,7 @@ void main() {
         d.copyWith(team: d.team.copyWith(memberCount: 25, memberLimit: 25)),
       );
 
-      expect(find.text('25 / 25 membres'), findsOneWidget);
+      expect(find.text('25 / 25\u00A0membres'), findsOneWidget);
       expect(find.byKey(keys.teamDashboard.memberLimitReached), findsOneWidget);
       expect(
         find.textContaining('a atteint 25 membres, la limite de l\'offre'),
@@ -500,7 +499,7 @@ void main() {
           ),
         );
 
-        expect(find.text('25 / 25 membres'), findsOneWidget);
+        expect(find.text('25 / 25\u00A0membres'), findsOneWidget);
         expect(find.byKey(keys.teamDashboard.memberLimitReached), findsNothing);
         expect(
           tester

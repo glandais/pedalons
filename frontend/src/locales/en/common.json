@@ -2450,7 +2450,7 @@
   "teams.list.search.placeholder": "Search teams...",
   "teams.list.subtitle": "Browse cycling teams or create your own",
   "teams.memberLimit.contact": "To go beyond it, contact us.",
-  "teams.memberLimit.counter": "{{current}} / {{limit}} members",
+  "teams.memberLimit.counter": "{{current}} / {{limit}} members",
   "teams.memberLimit.full": "The team has reached {{limit}} members, the limit of the free plan.",
   "teams.memberLimit.fullAskAdmin": "The team has reached {{limit}} members, the limit of the free plan. To go beyond it, ask a team administrator.",
   "teams.notifications.created": "Team created successfully",

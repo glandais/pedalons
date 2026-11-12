@@ -254,7 +254,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Rejoindre l\'équipe'), findsOneWidget);
-      expect(find.text('25 membres'), findsOneWidget);
+      expect(find.text('25\u00A0membres'), findsOneWidget);
       expect(find.textContaining('Impossible de rejoindre A'), findsOneWidget);
       expect(
         find.textContaining('a atteint 25 membres, la limite de l\'offre'),
