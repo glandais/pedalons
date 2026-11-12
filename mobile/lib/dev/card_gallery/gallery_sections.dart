@@ -32,6 +32,7 @@ import '../../features/rides/presentation/widgets/ride_registration_control.dart
 import '../../features/rides/presentation/widgets/templates/ride_template_card.dart';
 import '../../features/rides/providers/ride_detail_provider.dart';
 import '../../features/rides/providers/ride_group_selection_provider.dart';
+import '../../features/rides/providers/ride_registration_controller.dart';
 import '../../features/routes/presentation/widgets/compact_route_row.dart';
 import '../../features/routes/presentation/widgets/route_card.dart';
 import '../../features/routes/presentation/widgets/route_usages_section.dart';
@@ -373,6 +374,86 @@ Widget _groupsSection(GalleryData d, RideDto ride) {
   );
 }
 
+/// La section « Groupes » après un « Rejoindre » refusé sur B : la dernière
+/// place vient d'être prise (règle R6, l'échec dans la carte concernée).
+Widget _groupsSectionFailed(GalleryData d) {
+  final RideDto base = d.ride(sameTime: true);
+  final RideDto ride = base.copyWith(
+    groups: <RideGroupDto>[
+      for (final RideGroupDto g in base.groups)
+        g.name == 'B' ? d.group('B', sameTime: true, forceFull: true) : g,
+    ],
+  );
+  final RideKey key = RideKey(teamSlug: ride.team.slug, rideSlug: ride.slug);
+  return _scoped(
+    d,
+    RideGroupsSection(
+      rideKey: key,
+      ride: ride,
+      selectedRouteSlug: ride.groups.first.routeSlug,
+      onSelect: (String _) {},
+      weather: d.rideWeather(ride),
+      onOpenGroup: (RideGroupDto _) {},
+      onShowParticipants: (RideGroupDto _) {},
+      onShowRideParticipants: _noop,
+    ),
+    <Override>[
+      rideDetailProvider(key).overrideWith((Ref ref) async => ride),
+      rideRegistrationProvider(key).overrideWith(
+        (Ref ref) => _FailedRegistration(
+          ref,
+          key,
+          ride,
+          const RegistrationFailure(
+            reason: RegistrationFailureReason.groupFull,
+            groupId: 'g-b',
+            groupName: 'B',
+            message: 'Ce groupe est complet',
+          ),
+        ),
+      ),
+      rideRouteGeometriesProvider(key)
+          .overrideWith((Ref ref) => RideRouteGeometriesController(ref, key)),
+    ],
+  );
+}
+
+/// Un contrôleur d'inscription arrêté sur un échec.
+class _FailedRegistration extends RideRegistrationController {
+  _FailedRegistration(
+    super.ref,
+    super.key,
+    RideDto ride,
+    RegistrationFailure failure,
+  ) {
+    state = RideRegistrationState(
+      ride: AsyncValue<RideDto>.data(ride),
+      failure: failure,
+    );
+  }
+
+  @override
+  void adopt(AsyncValue<RideDto> detail) {}
+}
+
+/// Ce que voit une personne hors de l'équipe : le serveur ne lui donne ni
+/// visage, ni capitaine, ni droit de s'inscrire (`MemberNamesVisibility`).
+Widget _groupCardNonMember(GalleryData d) {
+  final RideDto base = d.ride(sameTime: true);
+  final RideDto ride = base.copyWith(
+    permissions: GalleryData.memberPermissions.copyWith(
+      canRegister: false,
+      canComment: false,
+      canSeeParticipants: false,
+    ),
+  );
+  final RideGroupDto group = ride.groups.first.copyWith(
+    participants: const <PublicUserDto>[],
+    leader: null,
+  );
+  return _groupCard(d, ride, group);
+}
+
 /// Une carte de groupe seule, son action calculée comme la section le fait.
 Widget _groupCard(GalleryData d, RideDto ride, RideGroupDto group) =>
     RideGroupCard(
@@ -380,7 +461,7 @@ Widget _groupCard(GalleryData d, RideDto ride, RideGroupDto group) =>
       rideDateTime: ride.dateTime,
       timezone: ride.timezone,
       showDeparture: false,
-      action: rideRegistrationControlAction(
+      action: rideGroupCardAction(
         ride: ride,
         group: group,
         canRegister: ride.permissions.canRegister ?? false,
@@ -398,14 +479,20 @@ final GallerySection _groups = GallerySection(
   id: 'groupes',
   title: 'Groupes',
   cases: <GalleryCase>[
+    // La section pose ses marges (`DetailSection`), comme sur l'écran de la
+    // sortie : ses cartes y ont leur vraie largeur, 358 pt à 390.
     GalleryCase(
       'groupes-inscrite-b',
       (GalleryData d) => _groupsSection(d, d.ride(registeredIn: 'B')),
+      bleed: true,
     ),
     GalleryCase(
       'groupes-non-inscrite',
       (GalleryData d) => _groupsSection(d, d.ride(sameTime: true)),
+      bleed: true,
     ),
+    GalleryCase('groupe-erreur', _groupsSectionFailed, bleed: true),
+    GalleryCase('groupe-non-membre', _groupCardNonMember),
     GalleryCase('groupe-sans-parcours', (GalleryData d) {
       final RideDto ride = d.ride(sameTime: true);
       return _groupCard(
@@ -426,10 +513,17 @@ final GallerySection _groups = GallerySection(
 Widget _stage(
   GalleryData d,
   TripStageDto stage,
-  RideWeatherSummaryDto? weather,
-) => _scoped(
+  RideWeatherSummaryDto? weather, {
+  bool exportable = false,
+}) => _scoped(
   d,
-  StageCard(stage: stage, selected: false, onTap: _noop, weather: weather),
+  StageCard(
+    stage: stage,
+    selected: false,
+    onTap: _noop,
+    weather: weather,
+    exportable: exportable,
+  ),
 );
 
 final GallerySection _stages = GallerySection(
@@ -447,6 +541,11 @@ final GallerySection _stages = GallerySection(
           ],
         ],
       ),
+    ),
+    // Camille participe au voyage : « GPS » sur l'étape (règle R7).
+    GalleryCase(
+      'etape-inscrite',
+      (GalleryData d) => _stage(d, d.stage(1), d.weather(), exportable: true),
     ),
     GalleryCase(
       'etape-sans-parcours',

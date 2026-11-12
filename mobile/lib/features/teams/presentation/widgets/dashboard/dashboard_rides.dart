@@ -618,7 +618,8 @@ class _GroupFill extends StatelessWidget {
         ? 'teams.dashboard.upcomingRides.registeredCount'.plural(
             group.countParticipants,
           )
-        : '${group.countParticipants} / $max';
+        // « 8/12 », la forme du compte partout ailleurs (règle R5, KIT §9).
+        : '${group.countParticipants}/$max';
     final String label = <String>[
       group.name,
       if (group.averageSpeed != null)
@@ -684,9 +685,11 @@ class _GroupFill extends StatelessWidget {
             const SizedBox(width: PdlSpacing.chipGap),
             if (max != null && max > 0)
               Expanded(
+                // Primaire, rouge si plein : plus de vert ni d'orange
+                // (règle R5, KIT §9).
                 child: PdlProgressBar(
                   value: group.countParticipants / max,
-                  color: group.full ? c.danger : null,
+                  color: group.full ? c.danger : c.primary,
                 ),
               ),
             const SizedBox(width: PdlSpacing.chipGap),

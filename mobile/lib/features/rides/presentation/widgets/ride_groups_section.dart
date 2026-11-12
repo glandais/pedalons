@@ -11,6 +11,7 @@ import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/widgets/detail_section.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../../domain/ride_group_action.dart';
 import '../../domain/ride_route_layers.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../providers/ride_detail_provider.dart';
@@ -135,6 +136,12 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
         ? groups
         : groups.take(_kCollapsedGroupCount).toList();
     final int hidden = groups.length - shown.length;
+    // L'échec se dit dans la carte du groupe concerné (règle R6, KIT §9) ;
+    // en tête de section seulement si cette carte est repliée.
+    final RegistrationFailure? failure = registration.failure;
+    final bool failureInCard =
+        failure != null &&
+        shown.any((RideGroupDto g) => g.id == failure.groupId);
     final int people = ride.participantCount;
 
     return DetailSection(
@@ -145,9 +152,9 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          if (registration.failure != null) ...<Widget>[
+          if (failure != null && !failureInCard) ...<Widget>[
             registrationFailureBanner(
-              registration.failure!,
+              failure,
               controller,
               onViewTeam: widget.onViewTeam,
             ),
@@ -213,9 +220,21 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
     required WeatherLegDto? weatherLeg,
   }) {
     final String? routeSlug = group.routeSlug ?? ride.routeSlug;
+    // Jusqu'à la fin de la sortie — son arrivée estimée, pas son départ —,
+    // « GPS » et « Quitter le groupe » restent sur la carte de son groupe
+    // (règles R6 et R7, KIT §9) ; une fois la sortie terminée, ni l'un ni
+    // l'autre. Le badge « J'y vais » reste.
+    final RideGroupAction action = rideGroupCardAction(
+      ride: ride,
+      group: group,
+      canRegister: ride.permissions.canRegister ?? false,
+      now: widget.now,
+    );
+    final RegistrationFailure? failure = registration.failure;
     // « GPS » sur la carte de son groupe seulement (KIT §8) : les autres
     // parcours se prennent sur la page de leur groupe.
-    final GpsExportTarget? gps = group.registered
+    final GpsExportTarget? gps =
+        rideGroupCardOffersGps(ride, group, now: widget.now)
         ? gpsTargetOfGroup(
             subtitle: gpsSubtitleOfGroup(group, units),
             teamSlug: ride.team.slug,
@@ -232,12 +251,7 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
       showDeparture: showDeparture,
       // Chaque groupe jugé sur son départ, et l'appartenance inconnue ne
       // propose rien — les règles du contrôle de la page d'un groupe.
-      action: RideRegistrationControl.actionOf(
-        ref,
-        ride,
-        group,
-        now: widget.now,
-      ),
+      action: action,
       // La couleur de son parcours : les groupes qui le partagent portent la
       // même, celle de leur trace commune.
       trackColor: multiTrackColor(groupTrackColorIndex(ride, group)),
@@ -259,6 +273,13 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
           ? (BuildContext button) => openGpsSheet(gps, button, tag: group.id)
           : null,
       gpsLoading: gpsExportingFor(group.id),
+      failure: failure != null && failure.groupId == group.id
+          ? registrationFailureNotice(
+              failure,
+              controller,
+              onViewTeam: widget.onViewTeam,
+            )
+          : null,
     );
   }
 }

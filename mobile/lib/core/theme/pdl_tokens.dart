@@ -35,8 +35,10 @@ abstract final class PdlSpacing {
   /// Pile de badges.
   static const double badgeGap = 4;
 
-  /// Chevauchement d'une grappe d'avatars.
-  static const double avatarOverlap = -8;
+  /// Chevauchement d'une grappe d'avatars : 4 pt, pour que la seconde
+  /// initiale d'une pastille de 26 pt reste lisible sous la suivante (règle
+  /// R5 des cartes, docs/LEDGER_*.md MOB-139 — à −8, « LM » se lisait « L »).
+  static const double avatarOverlap = -4;
 
   /// Grille méta à deux colonnes — 14 vertical, 16 horizontal.
   static const double meta2V = 14;

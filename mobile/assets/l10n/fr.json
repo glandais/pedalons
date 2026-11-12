@@ -651,7 +651,13 @@
       "exclusive": "Inscription impossible à {group}.",
       "full": "{group} est complet.",
       "notMember": "Réservé aux membres de l'équipe.",
-      "generic": "Inscription impossible à {group}."
+      "generic": "Inscription impossible à {group}.",
+      "inCard": {
+        "full": "Ce groupe est complet. Choisissez un autre groupe.",
+        "exclusive": "Vous participez déjà à cette sortie, dans un autre groupe. Changez de groupe avec « Changer pour {group} ».",
+        "notMember": "L'inscription est réservée aux membres de l'équipe. Rejoignez l'équipe pour participer.",
+        "generic": "{message}. Réessayez."
+      }
     },
     "cancelledMessage": "Cette sortie n'aura pas lieu. Aucune inscription n'est possible.",
     "weather": {

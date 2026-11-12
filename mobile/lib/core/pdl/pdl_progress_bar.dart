@@ -5,10 +5,11 @@ import '../theme/pdl_tokens.dart';
 
 /// A8 — Barre de remplissage, dite « barre de places ».
 ///
-/// 6 px de haut, rayon pilule, fond `neutralSoft`. La couleur du remplissage
-/// **dit l'urgence** : `success` tant qu'il reste de la place, `warning` à
-/// partir de 80 %, `danger` à 100 %. C'est un signal, pas une décoration :
-/// l'appelant ne devrait pas avoir à le calculer.
+/// 6 px de haut, rayon pilule, fond `neutralSoft`. Le remplissage est
+/// `primary` tant qu'il reste de la place, `danger` à 100 % : plein est le
+/// seul état qui change ce qu'on peut faire (pas de liste d'attente). Plus de
+/// vert ni d'orange (règle R5 des cartes, KIT §9, docs/LEDGER_*.md MOB-139) :
+/// un groupe à 80 % n'est pas une alerte. L'appelant n'a pas à le calculer.
 ///
 /// Ne porte aucun texte : le « 40/48 » qui l'accompagne dans les maquettes est
 /// un libellé posé à côté par le composé appelant.
@@ -33,9 +34,7 @@ class PdlProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
     final double ratio = value.isNaN ? 0 : value.clamp(0.0, 1.0);
-    final Color fill =
-        color ??
-        (ratio >= 1.0 ? c.danger : (ratio >= 0.8 ? c.warning : c.success));
+    final Color fill = color ?? (ratio >= 1.0 ? c.danger : c.primary);
 
     return Semantics(
       label: semanticLabel,

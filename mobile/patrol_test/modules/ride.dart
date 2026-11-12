@@ -192,13 +192,43 @@ final class Ride extends Module {
 
   bool offersFull(String groupId) => _offers(_fullKey(groupId));
 
-  /// Waits for the registration failure banner, and tells whether it names [groupName].
-  Future<bool> waitUntilFailureNames(String groupName) async {
-    await $(keys.ride.registrationFailure).waitUntilExists();
-    return shows(keys.ride.registrationFailure, groupName);
+  /// The registration failure of [groupId]: on a ride of several groups, inside that group's
+  /// card (rule R6 of the cards, KIT §9, ledger `MOB-139`) — no longer a banner at the head of
+  /// « Groupes »; on a single-group ride, the screen's banner.
+  Key _failureKey(String groupId) => _solo
+      ? keys.ride.registrationFailure
+      : keys.ride.groupRegistrationFailure(groupId);
+
+  /// Waits for the registration failure of [groupId], and tells whether it says so where it
+  /// should: inside the card of [groupId] on a ride of several groups — the card names the group,
+  /// the sentence no longer does (« Ce groupe est complet. Choisissez un autre groupe. ») —, in the
+  /// banner naming [groupName] on a single-group ride.
+  Future<bool> waitUntilFailureOn(String groupId, String groupName) async {
+    final Key key = _failureKey(groupId);
+    await $(find.byKey(key, skipOffstage: false)).waitUntilExists();
+    if (_solo) return shows(key, groupName);
+    return find
+        .descendant(
+          of: find.byKey(keys.ride.group(groupId), skipOffstage: false),
+          matching: find.byKey(key, skipOffstage: false),
+          skipOffstage: false,
+        )
+        .evaluate()
+        .isNotEmpty;
   }
 
-  bool get showsFailure => isShown(keys.ride.registrationFailure);
+  /// Whether a registration failure is shown — the screen's banner, or one inside any group card.
+  bool get showsFailure =>
+      isShown(keys.ride.registrationFailure) ||
+      find
+          .byWidgetPredicate(
+            (Widget w) =>
+                w.key is ValueKey<String> &&
+                (w.key! as ValueKey<String>).value.contains('groupFailure_'),
+            skipOffstage: false,
+          )
+          .evaluate()
+          .isNotEmpty;
 
   // ── Past and cancelled rides ────────────────────────────────────────────
 

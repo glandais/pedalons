@@ -17,6 +17,13 @@ import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
 import '../../../rides/providers/ride_detail_provider.dart';
 import '../../../routes/presentation/gps_export_runner.dart';
 import '../../../routes/presentation/widgets/gps_button.dart';
+import '../../../routes/data/route_repository.dart';
+import '../../../routes/providers/route_detail_provider.dart' show RouteKey;
+import '../../../rides/presentation/widgets/ride_group_participants_section.dart'
+    show RideGroupLeaveLink;
+import '../../../teams/domain/publication_timing.dart';
+import '../../../auth/domain/auth_state.dart';
+import '../../../auth/providers/auth_provider.dart';
 import '../../../rides/domain/group_title.dart';
 import '../../providers/next_ride_leave_controller.dart';
 import '../../../teams/presentation/widgets/publication_card.dart';
@@ -194,7 +201,15 @@ class NextRideCard extends ConsumerWidget {
                     ],
                     if (group != null) ...<Widget>[
                       const SizedBox(height: PdlSpacing.cardTight),
-                      _seats(context, c, t, group!),
+                      _seats(
+                        context,
+                        c,
+                        t,
+                        group!,
+                        ref.watch(
+                          authProvider.select((AuthState s) => s.user?.id),
+                        ),
+                      ),
                     ],
                     const SizedBox(height: 14),
                     _NextRideActions(
@@ -321,7 +336,9 @@ class NextRideCard extends ConsumerWidget {
   );
 
   /// Distance et dénivelé viennent du **groupe**, pas de la sortie : deux
-  /// groupes d'une même sortie ne roulent pas le même parcours.
+  /// groupes d'une même sortie ne roulent pas le même parcours. Le compte des
+  /// personnes n'y est plus : il rejoint la grappe, « 11/12 personnes »
+  /// (règle R5, KIT §9).
   Widget _stats(UnitSystem units) {
     final RideGroupDto? g = group;
     return PdlStatRow(
@@ -337,50 +354,77 @@ class NextRideCard extends ConsumerWidget {
             icon: PdlIcons.elevationUp,
             trend: PdlStatTrend.up,
           ),
-        PdlStat(
-          // Le compte du groupe rejoint, avec ou sans maximum ; celui de la
-          // sortie seulement sans groupe (docs/LEDGER_*.md MOB-139, N13 —
-          // « 31 » pour un groupe de 11).
-          value: g == null
-              ? '${ride.participantCount}'
-              : g.maxParticipants == null
-              ? '${g.countParticipants}'
-              : '${g.countParticipants}/${g.maxParticipants}',
-          icon: PdlIcons.people,
-        ),
       ],
     );
   }
 
+  /// Les personnes du groupe rejoint, comme sur sa carte de groupe (règle
+  /// R5, KIT §9, docs/LEDGER_*.md MOB-139) : la grappe — soi en primaire —,
+  /// « 11/12 personnes » (« 11 personnes » sans maximum, compte du **groupe**,
+  /// N13), puis la barre de places quand il y a un maximum, primaire, rouge
+  /// si plein. Pas de « Voir tout » : la carte s'ouvre sur la sortie. La
+  /// carte ne nomme pas de capitaine : la grappe garde tout le monde.
   Widget _seats(
     BuildContext context,
     PdlColors c,
     PdlTypography t,
     RideGroupDto g,
+    String? currentUserId,
   ) {
-    return Row(
+    final int? max = g.maxParticipants;
+    final String count = max == null
+        ? 'rides.participants'.plural(
+            g.countParticipants,
+            namedArgs: <String, String>{'count': '${g.countParticipants}'},
+          )
+        : 'rides.participantsOf'.plural(
+            max,
+            namedArgs: <String, String>{
+              'count': '${g.countParticipants}',
+              'max': '$max',
+            },
+          );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        if (g.participants.isNotEmpty)
-          PdlAvatarStack(
-            people: <PdlAvatarEntry>[
-              for (final PublicUserDto p in g.participants)
-                PdlAvatarEntry(name: p.displayName, imageUrl: p.avatarUrl),
-            ],
-            total: g.countParticipants,
-          ),
-        if (g.maxParticipants != null) ...<Widget>[
-          const SizedBox(width: PdlSpacing.cardTight),
-          Expanded(
-            child: PdlProgressBar(
-              value: g.countParticipants / g.maxParticipants!,
-              semanticLabel: 'rides.participantsOf'.plural(
-                g.maxParticipants!,
-                namedArgs: <String, String>{
-                  'count': '${g.countParticipants}',
-                  'max': '${g.maxParticipants}',
-                },
-              ),
+        // Comme sur la carte de groupe : faute de place, le compte passe sous
+        // la grappe en entier plutôt que de se couper.
+        Wrap(
+          spacing: PdlSpacing.chipGap,
+          runSpacing: PdlSpacing.badgeGap,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            if (g.participants.isNotEmpty)
+              PdlAvatarStack(
+                key: keys.home.nextRideAvatars,
+                people: <PdlAvatarEntry>[
+                  for (final PublicUserDto p in g.participants)
+                    PdlAvatarEntry(
+                      name: p.displayName,
+                      imageUrl: p.avatarUrl,
+                      isCurrentUser: p.id == currentUserId,
+                    ),
+                ],
+                total: g.countParticipants,
+                semanticLabel: count,
+              )
+            else
+              Icon(PdlIcons.people, size: 16, color: c.textDimmed),
+            Text(
+              count,
+              key: keys.home.nextRideCount,
+              style: t.sub.copyWith(color: c.text, fontWeight: FontWeight.w500),
             ),
+          ],
+        ),
+        if (max != null) ...<Widget>[
+          const SizedBox(height: PdlSpacing.chipGap),
+          PdlProgressBar(
+            key: keys.home.nextRideSeatsBar,
+            value: max == 0 ? 1 : g.countParticipants / max,
+            semanticLabel: count,
+            color: g.full ? c.danger : c.primary,
           ),
         ],
       ],
@@ -388,8 +432,8 @@ class NextRideCard extends ConsumerWidget {
   }
 }
 
-/// Les actions de la carte : « Voir la sortie », « Se désinscrire », et
-/// l'envoi du parcours du groupe vers un compteur connecté.
+/// Les actions de la carte : « Voir la sortie » en pleine largeur, « GPS »
+/// dessous, et « Se désinscrire » en lien rouge au pied.
 ///
 /// À état parce que l'envoi a une issue à dire — succès ou échec, en bandeau
 /// persistant sous les boutons, comme sur les cartes de groupe de la sortie.
@@ -412,6 +456,9 @@ class _NextRideActions extends ConsumerStatefulWidget {
 
 class _NextRideActionsState extends ConsumerState<_NextRideActions>
     with GpsExportRunner<_NextRideActions> {
+  /// Les fichiers du parcours se cherchent, avant d'ouvrir la feuille.
+  bool _resolving = false;
+
   @override
   Widget build(BuildContext context) {
     final RideDto ride = widget.ride;
@@ -419,74 +466,113 @@ class _NextRideActionsState extends ConsumerState<_NextRideActions>
     // Le parcours du groupe, sinon celui de la sortie : le même repli que les
     // cartes de groupe du détail.
     final String? routeSlug = joined?.routeSlug ?? ride.routeSlug;
-    final List<GpsServiceConnectionDto> services = watchGpsServices();
-    // Le résumé ne porte pas les fichiers du parcours : la feuille n'offre
-    // ici que l'envoi vers un appareil, et le bouton n'apparaît qu'avec un
-    // service connecté, comme avant elle.
-    final bool canSend =
-        routeSlug != null && services.isNotEmpty && !ride.isPast;
+    // Jusqu'à la fin de la sortie — son arrivée estimée, pas son départ
+    // (`finished` d'une ligne de liste ne dit que « partie ») —, et jamais
+    // sur une sortie annulée : se désinscrire et exporter (règles R6 et R7,
+    // KIT §9).
+    final bool open =
+        !ride.isCancelled && ridePhase(ride) != PublicationPhase.finished;
+    // Dès qu'il y a un parcours, avec ou sans service connecté : la feuille
+    // offre alors GPX et FIT, que la ligne de liste ne porte pas — ils se
+    // demandent au moment d'ouvrir la feuille ([_openGps]).
+    final bool canExport = routeSlug != null && open;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: PdlButton(
-                label: 'home.viewRide'.tr(),
-                onPressed: () =>
-                    context.push(Paths.ride(ride.team.slug, ride.slug)),
-              ),
-            ),
-            // Aucune désinscription sur une sortie annulée : elle n'a plus
-            // lieu.
-            if (joined != null &&
-                !ride.isCancelled &&
-                !ride.isPast) ...<Widget>[
-              const SizedBox(width: PdlSpacing.chipGap),
-              PdlButton(
-                key: keys.home.nextRideLeaveButton,
-                label: 'rides.leave'.tr(),
-                loadingLabel: 'rides.leaving'.tr(),
-                variant: PdlButtonVariant.outline,
-                loading: widget.registration.pendingGroupId == joined.id,
-                // Le groupe rejoint, porté par la ligne : **jamais une
-                // boucle** sur les groupes.
-                onPressed: () => ref
-                    .read(nextRideLeaveProvider(widget.rideKey).notifier)
-                    .leave(ride, joined),
-              ),
-            ],
-          ],
+        PdlButton(
+          label: 'home.viewRide'.tr(),
+          fullWidth: true,
+          onPressed: () => context.push(Paths.ride(ride.team.slug, ride.slug)),
         ),
-        // Sur sa propre ligne : à trois boutons, « Voir la sortie » se
-        // coupait (« Voir … ») à la largeur d'un téléphone.
-        if (canSend) ...<Widget>[
+        if (canExport) ...<Widget>[
           const SizedBox(height: PdlSpacing.chipGap),
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: GpsButton(
               key: keys.home.nextRideGps,
-              loading: gpsExporting,
-              onPressed: (BuildContext button) => openGpsSheet(
-                GpsExportTarget(
-                  subtitle: joined == null
-                      ? ride.name
-                      : '${groupTitle(joined.name, 'rides.groupPage.title'.tr())}'
-                            ' · ${ride.name}',
-                  teamSlug: ride.team.slug,
-                  routeSlug: routeSlug,
-                ),
-                button,
-              ),
+              loading: gpsExporting || _resolving,
+              onPressed: (BuildContext button) =>
+                  _openGps(ride, joined, routeSlug, button),
             ),
           ),
         ],
         ...gpsExportBanners(gap: PdlSpacing.chipGap, gapBefore: true),
+        // « Se désinscrire » en lien rouge au pied de la carte, la forme de
+        // « Quitter le groupe » (règle R6, KIT §9).
+        if (joined != null && open) ...<Widget>[
+          const SizedBox(height: PdlSpacing.badgeGap),
+          RideGroupLeaveLink(
+            linkKey: keys.home.nextRideLeaveButton,
+            label: 'rides.leave'.tr(),
+            pending: widget.registration.pendingGroupId == joined.id,
+            // Le groupe rejoint, porté par la ligne : **jamais une boucle**
+            // sur les groupes.
+            onPressed: () => ref
+                .read(nextRideLeaveProvider(widget.rideKey).notifier)
+                .leave(ride, joined),
+          ),
+        ],
       ],
     );
   }
+
+  /// Ouvre la feuille GPS du parcours [routeSlug], ses fichiers GPX et FIT
+  /// demandés d'abord : la ligne de liste ne les porte pas. Un seul appel
+  /// existant, `getRoutesBulk(geometry: false)` — les métadonnées et les
+  /// liens d'asset, sans le tracé. S'il échoue, la feuille s'ouvre quand même,
+  /// avec les appareils seuls (ou « Connecter un compteur »).
+  Future<void> _openGps(
+    RideDto ride,
+    RideGroupDto? joined,
+    String routeSlug,
+    BuildContext button,
+  ) async {
+    if (_resolving || gpsExporting) return;
+    setState(() => _resolving = true);
+    final RouteDetailDto? route = await ref.read(
+      nextRideRouteFilesProvider(
+        RouteKey(teamSlug: ride.team.slug, routeSlug: routeSlug),
+      ).future,
+    );
+    if (!mounted) return;
+    setState(() => _resolving = false);
+    if (!button.mounted) return;
+    await openGpsSheet(
+      GpsExportTarget(
+        subtitle: joined == null
+            ? ride.name
+            : '${groupTitle(joined.name, 'rides.groupPage.title'.tr())}'
+                  ' · ${ride.name}',
+        teamSlug: ride.team.slug,
+        routeSlug: routeSlug,
+        gpx: route?.media.assets.gpx,
+        fit: route?.media.assets.fit,
+      ),
+      button,
+    );
+  }
 }
+
+/// Les fichiers du parcours de « Ma prochaine sortie », pour sa feuille GPS :
+/// `getRoutesBulk(geometry: false)`, un endpoint qui existe, sans le tracé.
+/// `null` si le parcours manque à la réponse ou si l'appel échoue — la feuille
+/// garde alors les appareils. `autoDispose` : il ne sert qu'à l'ouverture.
+final nextRideRouteFilesProvider = FutureProvider.autoDispose
+    .family<RouteDetailDto?, RouteKey>((Ref ref, RouteKey key) async {
+      try {
+        final RoutesBulkResponse response = await ref
+            .watch(routeRepositoryProvider)
+            .getRoutesBulk(key.teamSlug, <String>[
+              key.routeSlug,
+            ], geometry: false);
+        return response.routes
+            .where((RouteDetailDto r) => r.slug == key.routeSlug)
+            .firstOrNull;
+      } catch (_) {
+        return null;
+      }
+    });
 
 /// Ce qui remplace le bloc quand aucune participation n'est à venir.
 ///

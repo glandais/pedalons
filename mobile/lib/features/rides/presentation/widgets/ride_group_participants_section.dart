@@ -169,11 +169,16 @@ class RideGroupLeaveLink extends StatelessWidget {
     required this.pending,
     required this.onPressed,
     this.linkKey,
+    this.label,
   });
 
   final bool pending;
   final VoidCallback? onPressed;
   final Key? linkKey;
+
+  /// Le libellé, « Quitter le groupe » sinon — « Se désinscrire » sur « Ma
+  /// prochaine sortie », qui prend la même forme (règle R6, KIT §9).
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +199,9 @@ class RideGroupLeaveLink extends StatelessWidget {
               alignment: AlignmentDirectional.centerStart,
               widthFactor: 1,
               child: Text(
-                pending ? 'rides.leaving'.tr() : 'rides.groupLeaveLong'.tr(),
+                pending
+                    ? 'rides.leaving'.tr()
+                    : (label ?? 'rides.groupLeaveLong'.tr()),
                 style: t.sub.copyWith(
                   color: pending ? c.textDimmed : c.danger,
                   fontWeight: FontWeight.w600,

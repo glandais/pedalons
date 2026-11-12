@@ -22,7 +22,7 @@ class PdlAvatarEntry {
 
 /// B2 — Grappe d'avatars qui se chevauchent.
 ///
-/// Chevauchement de [PdlSpacing.avatarOverlap] (−8), anneau 2 px `surface`
+/// Chevauchement de [PdlSpacing.avatarOverlap] (−4), anneau 2 px `surface`
 /// pour détacher chaque disque du précédent, et une pastille « +N » quand la
 /// grappe dépasse [max].
 ///

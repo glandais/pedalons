@@ -6,8 +6,8 @@ import 'common.dart';
 ///
 /// The group fills up behind the screen: the page still offers « Rejoindre », the optimistic flip
 /// meets a 409 `GROUP_FULL`, and the controller (`ride_registration_controller.dart`, `_fail`)
-/// restores the ride as it was, names the group in the banner, then refetches — after which that
-/// card says « Complet » and the other group is still open. The banner outlives the refetch:
+/// restores the ride as it was, says the failure inside that group's card, then refetches — after which that
+/// card says « Complet » and the other group is still open. The failure outlives the refetch:
 /// `adopt` keeps `failure`, and the page renders the refreshed value without a skeleton.
 void main() {
   testApp(
@@ -45,7 +45,11 @@ void main() {
       await backend.joinGroup(other, teamSlug, rideSlug, fullId);
 
       await modules.ride.tapJoin(fullId);
-      expect(await modules.ride.waitUntilFailureNames('Groupe plein'), isTrue);
+      // The failure is said inside that group's card (rule R6, KIT §9).
+      expect(
+        await modules.ride.waitUntilFailureOn(fullId, 'Groupe plein'),
+        isTrue,
+      );
       await modules.ride.waitUntilFull(fullId);
       expect(modules.ride.offersJoin(fullId), isFalse);
       expect(modules.ride.offersLeave(fullId), isFalse);

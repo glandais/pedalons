@@ -57,6 +57,41 @@ RideGroupAction rideRegistrationControlAction({
   );
 }
 
+/// L'action d'une **carte de groupe** (sortie à plusieurs groupes) :
+/// [rideRegistrationControlAction], et « Quitter le groupe » jusqu'à la fin
+/// de la sortie seulement — son arrivée estimée (`endDateTime`), pas son
+/// départ (règle R6, KIT §9, docs/LEDGER_*.md MOB-139). La page du groupe,
+/// elle, garde « Quitter » après coup, pour corriger qui est venu.
+RideGroupAction rideGroupCardAction({
+  required RideDto ride,
+  required RideGroupDto group,
+  required bool canRegister,
+  DateTime? now,
+}) {
+  final RideGroupAction action = rideRegistrationControlAction(
+    ride: ride,
+    group: group,
+    canRegister: canRegister,
+    now: now,
+  );
+  if (action == RideGroupAction.leave && rideIsOver(ride, now: now)) {
+    return RideGroupAction.none;
+  }
+  return action;
+}
+
+/// « GPS » sur une carte de groupe : la sienne, sortie maintenue, jusqu'à la
+/// fin de la sortie (règle R7, KIT §9).
+bool rideGroupCardOffersGps(
+  RideDto ride,
+  RideGroupDto group, {
+  DateTime? now,
+}) => group.registered && !ride.isCancelled && !rideIsOver(ride, now: now);
+
+/// La sortie est-elle terminée — arrivée estimée passée ?
+bool rideIsOver(RideDto ride, {DateTime? now}) =>
+    ridePhase(ride, now: now) == PublicationPhase.finished;
+
 /// Peut-on quitter [group] ? Inscrit et sortie maintenue, que le groupe soit
 /// parti ou non — le lien « Quitter le groupe » de « Personnes inscrites ».
 bool rideGroupCanLeave(RideDto ride, RideGroupDto group, {DateTime? now}) =>

@@ -32,18 +32,23 @@ import '../../../../keys.dart';
 /// 3. la ligne de chiffres ([PublicationStatsLine]) : distance · D+ · vitesse ;
 /// 4. la ligne météo du groupe ([RideGroupWeatherLine]) ;
 /// 5. le capitaine, s'il y en a un (jamais de repli sur `createdBy`) ;
-/// 6. les visages, « 11/12 personnes », « Voir tout », la barre de places ;
+/// 6. les visages, « 11/12 personnes », « Voir tout » (dès que la grappe
+///    affiche « +N »), la barre de places (primaire, rouge si plein) ;
+/// 6 bis. l'échec d'inscription de ce groupe ([failure]) ;
 /// 7. le bouton « GPS » ([onOpenGps]) — l'appelant ne le donne qu'à la carte
 ///    de son groupe ;
 /// 8. « Changer pour A », bouton plein en pleine largeur, quand [action] vaut
 ///    [RideGroupAction.switchTo] — au pied, pour que le nom tienne en entier ;
-/// 9. « Quitter le groupe », lien discret, quand [action] vaut
-///    [RideGroupAction.leave] — inscrite ici, que le groupe soit parti ou non.
+/// 9. « Quitter le groupe », lien rouge, quand [action] vaut
+///    [RideGroupAction.leave] — inscrite ici, jusqu'à la fin de la sortie.
 ///
 /// Elle ne décide de rien : [action] est calculée par
 /// `rideRegistrationControlAction` (chaque groupe jugé sur **son** départ,
 /// ledger `API-170`) et [pending] par le contrôleur d'inscription. Aucune
 /// confirmation, ni pour rejoindre, ni pour changer, ni pour quitter.
+/// Les visages montrés par la grappe d'une carte de groupe avant « +N ».
+const int kGroupCardFaces = 5;
+
 class RideGroupCard extends StatelessWidget {
   const RideGroupCard({
     super.key,
@@ -65,6 +70,7 @@ class RideGroupCard extends StatelessWidget {
     this.onShowParticipants,
     this.onOpenGps,
     this.gpsLoading = false,
+    this.failure,
   });
 
   final RideGroupDto group;
@@ -125,6 +131,11 @@ class RideGroupCard extends StatelessWidget {
   /// Un export lancé depuis cette carte est en cours.
   final bool gpsLoading;
 
+  /// L'échec d'inscription **de ce groupe** (`registrationFailureNotice`),
+  /// sous ses places et au-dessus de ses actions — dans la carte concernée,
+  /// plus en tête de section (règle R6, KIT §9). `null` : rien.
+  final Widget? failure;
+
   @override
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
@@ -160,6 +171,10 @@ class RideGroupCard extends StatelessWidget {
           ],
           const SizedBox(height: PdlSpacing.cardTight),
           _participantsRow(context, c, t),
+          if (failure != null) ...<Widget>[
+            const SizedBox(height: PdlSpacing.cardTight),
+            failure!,
+          ],
           if (onOpenGps != null) ...<Widget>[
             const SizedBox(height: PdlSpacing.cardTight),
             GpsButton(
@@ -352,34 +367,25 @@ class RideGroupCard extends StatelessWidget {
   }
 
   // ───────────────────────────────────────────────────────────── ligne 3
+  /// Les personnes inscrites (règle R5 des cartes, KIT §9, docs/LEDGER_*.md
+  /// MOB-139) : la grappe, « 11/12 personnes » (« 11 personnes » sans
+  /// maximum), « Voir tout » dès que la grappe affiche « +N », puis la barre
+  /// de places quand le groupe a un maximum — primaire, rouge s'il est plein.
+  ///
+  /// **La grappe reste sur un groupe plein** : ses visages disent qui vient,
+  /// la barre rouge et « Complet » disent qu'il n'y a plus de place.
+  ///
+  /// Sans aucun visage — une personne hors de l'équipe, à qui le serveur ne
+  /// donne aucun nom (`MemberNamesVisibility`, ledger `API-144`) —, l'icône
+  /// des personnes et le compte seuls, jamais de « Voir tout ».
   Widget _participantsRow(BuildContext context, PdlColors c, PdlTypography t) {
     final int? max = group.maxParticipants;
-    // La maquette met ce compteur en `xs` **gras et en couleur de texte**, pas
-    // en `count` estompé : c'est l'information qui décide si l'on peut encore
-    // entrer dans le groupe.
-    final TextStyle countStyle = t.xs.copyWith(
+    // 14 px dans la couleur du texte : c'est l'information qui décide si l'on
+    // peut encore entrer dans le groupe.
+    final TextStyle countStyle = t.sub.copyWith(
       color: c.text,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500,
     );
-
-    // Un groupe complet ne montre pas des visages, il montre qu'il est plein :
-    // la barre de places remplace la grappe d'avatars, et le compteur tombe à
-    // « 18/18 », sans le mot « participants » qui n'ajoute rien ici.
-    if (group.full && max != null) {
-      return Row(
-        children: <Widget>[
-          Expanded(
-            child: PdlProgressBar(
-              value: 1,
-              semanticLabel: _countLabel(max),
-              color: c.danger,
-            ),
-          ),
-          const SizedBox(width: PdlSpacing.chipGap),
-          Text('${group.countParticipants}/$max', style: countStyle),
-        ],
-      );
-    }
 
     // La grappe sans la personne capitaine : la ligne « Capitaine : … »
     // au-dessus la nomme déjà (KIT §8, docs/LEDGER_*.md MOB-139, N10). Le
@@ -391,14 +397,23 @@ class RideGroupCard extends StatelessWidget {
     ];
     final int facesTotal =
         group.countParticipants - (group.participants.length - faces.length);
+    // La grappe montre `kGroupCardFaces` visages, puis « +N » pour le reste.
+    final bool hidesSome =
+        faces.isNotEmpty && facesTotal > faces.length.clamp(0, kGroupCardFaces);
 
     // Les visages et « 11/12 personnes » forment un bloc qui ne s'abrège
     // jamais ; « Voir tout » passe à la ligne s'il n'a plus la place
     // (docs/LEDGER_*.md MOB-139, N2 — « 11/12 p… » à côté de « Voir tout »).
-    final Widget count = Row(
-      mainAxisSize: MainAxisSize.min,
+    //
+    // Un `Wrap` et non une `Row` : à 320 pt, cinq visages et « 11/12
+    // personnes » ne tiennent plus sur une ligne, et le compte passe dessous
+    // en entier plutôt que de se couper.
+    final Widget count = Wrap(
+      spacing: PdlSpacing.chipGap,
+      runSpacing: PdlSpacing.badgeGap,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
-        if (faces.isNotEmpty) ...<Widget>[
+        if (faces.isNotEmpty)
           PdlAvatarStack(
             key: keys.ride.groupAvatars(group.id),
             people: <PdlAvatarEntry>[
@@ -409,36 +424,57 @@ class RideGroupCard extends StatelessWidget {
                   isCurrentUser: p.id == currentUserId,
                 ),
             ],
+            max: kGroupCardFaces,
             total: facesTotal,
             onTap: onShowParticipants,
             semanticLabel: _countLabel(max),
-          ),
-          const SizedBox(width: PdlSpacing.chipGap),
-        ],
-        Flexible(
-          child: Text(
-            _countLabel(max),
-            key: keys.ride.groupCount(group.id),
-            style: countStyle,
-          ),
+          )
+        else
+          Icon(PdlIcons.people, size: 16, color: c.textDimmed),
+        Text(
+          _countLabel(max),
+          key: keys.ride.groupCount(group.id),
+          style: countStyle,
         ),
       ],
     );
 
-    // « Voir tout » n'est offert que sur la carte sélectionnée : dix groupes
-    // portant chacun quatre lignes pleines dépassent l'écran. Les avatars,
-    // eux, restent cliquables partout.
-    if (!selected || onShowParticipants == null) return count;
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    // « Voir tout » sur toute carte dont la grappe cache quelqu'un, pas
+    // seulement la carte sélectionnée : c'est la grappe qui le rend utile.
+    // « Voir tout » à droite de la même ligne ; faute de place, c'est le
+    // compte qui passe sous la grappe, pas le lien.
+    final Widget line = !hidesSome || onShowParticipants == null
+        ? count
+        : Row(
+            children: <Widget>[
+              Expanded(
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: count,
+                ),
+              ),
+              PdlButton(
+                key: keys.ride.groupViewAll(group.id),
+                label: 'common.viewAll'.tr(),
+                variant: PdlButtonVariant.text,
+                size: PdlButtonSize.sm,
+                onPressed: onShowParticipants,
+              ),
+            ],
+          );
+
+    if (max == null) return line;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        count,
-        PdlButton(
-          label: 'common.viewAll'.tr(),
-          variant: PdlButtonVariant.text,
-          size: PdlButtonSize.sm,
-          onPressed: onShowParticipants,
+        Align(alignment: AlignmentDirectional.centerStart, child: line),
+        const SizedBox(height: PdlSpacing.chipGap),
+        PdlProgressBar(
+          key: keys.ride.groupSeatsBar(group.id),
+          value: max == 0 ? 1 : group.countParticipants / max,
+          semanticLabel: _countLabel(max),
+          color: group.full ? c.danger : c.primary,
         ),
       ],
     );

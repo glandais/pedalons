@@ -6,7 +6,7 @@ import '../widgets/authenticated_image.dart';
 /// A4 — Avatar rond : photo authentifiée, sinon initiales sur un aplat.
 ///
 /// **Teinte.** Elle est dérivée d'un hachage stable du nom sur les douze
-/// accents de [PdlColors.avatarAccents] — deux personnes homonymes ont la même
+/// teintes foncées de [PdlColors.avatarAccents] — deux personnes homonymes ont la même
 /// couleur, la même personne garde la sienne d'un écran à l'autre. Le hachage
 /// est calculé à la main sur les unités de code : `String.hashCode` n'est pas
 /// garanti stable d'une exécution à l'autre, et un avatar qui change de couleur

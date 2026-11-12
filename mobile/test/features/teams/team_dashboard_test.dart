@@ -174,7 +174,7 @@ void main() {
     ) async {
       await renderBody(tester, _dashboard(role: 'MEMBER'));
 
-      expect(find.text('11 / 16'), findsOneWidget);
+      expect(find.text('11/16'), findsOneWidget);
       expect(find.text('COMPLET'), findsOneWidget);
       // Une sortie que rien ne route le dit.
       expect(find.text('Aucun parcours associé'), findsOneWidget);

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart';
 import '../../../api/pedalons_api_client.dart';
 import '../../rides/providers/ride_detail_provider.dart' show RideTiming;
+import '../../teams/domain/publication_timing.dart';
 
 /// Ma prochaine participation, avec le groupe que j'ai rejoint.
 @immutable
@@ -22,8 +23,8 @@ class NextRide {
 ///
 /// **Un seul appel** : `GET /api/users/me/participations` — l'endpoint qui rend
 /// ce bloc possible (sans lui, il faudrait parcourir toutes les équipes et
-/// toutes leurs sorties pour retrouver celle où l'on est inscrit). `size: 1` :
-/// on ne veut que la plus proche ; `view: COMPACT` : la ligne compacte porte
+/// toutes leurs sorties pour retrouver celle où l'on est inscrit). La plus
+/// proche qui n'est pas terminée — en cours comprise ; `view: COMPACT` : la ligne compacte porte
 /// tout ce que la carte rend.
 ///
 /// La ligne de liste n'a pas de `groups[]`, mais elle porte le **groupe
@@ -40,12 +41,17 @@ class NextRide {
 /// consultable sans lui, et le brief refuse qu'un enrichissement casse un
 /// écran.
 final nextRideProvider = FutureProvider<NextRide?>((Ref ref) async {
+  final DateTime now = DateTime.now().toUtc();
   final PublicationListResponse response = await ref
       .watch(usersClientProvider)
       .listMyParticipations(
-        from: DateTime.now().toUtc().toIso8601String(),
+        // `from` filtre sur le **départ** : une sortie partie depuis une heure
+        // en sortait, et avec elle « Se désinscrire » et « GPS », qui restent
+        // offerts jusqu'à la fin de la sortie (règles R6 et R7, KIT §9). On
+        // remonte d'une journée et on écarte ce qui est terminé.
+        from: now.subtract(kNextRideLookBack).toIso8601String(),
         status: Status.published,
-        size: 1,
+        size: kNextRidePageSize,
         view: ListViewMode.compact,
       );
 
@@ -54,11 +60,21 @@ final nextRideProvider = FutureProvider<NextRide?>((Ref ref) async {
     // de sorties. « Cette semaine » montre les deux.
     if (publication is PublicationDtoRide) {
       final RideDto ride = rideFromListRow(publication);
+      // Terminée — arrivée estimée passée (`endDateTime`, le serveur) : la
+      // suivante, s'il y en a une dans la page.
+      if (ridePhase(ride, now: now) == PublicationPhase.finished) continue;
       return NextRide(ride: ride, group: ride.joinedGroup);
     }
   }
   return null;
 });
+
+/// Jusqu'où « Ma prochaine sortie » remonte pour garder une sortie en cours.
+const Duration kNextRideLookBack = Duration(days: 1);
+
+/// Les lignes lues pour trouver la première sortie pas encore terminée : les
+/// sorties terminées de la dernière journée passent devant elle.
+const int kNextRidePageSize = 5;
 
 /// Reconstruit un `RideDto` depuis une ligne de fil, champ pour champ.
 ///

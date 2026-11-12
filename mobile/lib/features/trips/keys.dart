@@ -73,6 +73,10 @@ class TripDetailKeys {
   ValueKey<String> stageDeparture(String stageSlug) =>
       _TripKey('stageDeparture_$stageSlug');
 
+  /// « GPS » sur la carte d'une étape d'un voyage où l'on est inscrit.
+  ValueKey<String> stageGps(String stageSlug) =>
+      _TripKey('stageGps_$stageSlug');
+
   /// Le bloc de départ du détail d'un voyage, sous le titre (BRANDING §7.8,
   /// ledger `BRAND-8`).
   final departureBlock = const _TripKey('departureBlock');

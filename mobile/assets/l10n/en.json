@@ -651,7 +651,13 @@
       "exclusive": "Cannot join {group}.",
       "full": "{group} is full.",
       "notMember": "Team members only.",
-      "generic": "Cannot join {group}."
+      "generic": "Cannot join {group}.",
+      "inCard": {
+        "full": "This group is full. Choose another group.",
+        "exclusive": "You are already registered for this ride, in another group. Use “Switch to {group}” to change groups.",
+        "notMember": "Registration is for team members only. Join the team to take part.",
+        "generic": "{message}. Try again."
+      }
     },
     "cancelledMessage": "This ride will not take place. No registration is possible.",
     "weather": {

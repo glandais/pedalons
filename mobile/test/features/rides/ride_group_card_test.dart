@@ -60,6 +60,8 @@ void main() {
     double textScale = 1.0,
     String timezone = 'Europe/Paris',
     bool? showDeparture,
+    VoidCallback? onShowParticipants,
+    Widget? failure,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -82,6 +84,8 @@ void main() {
                 onJoin: () {},
                 onSwitch: () => switched++,
                 onLeave: () => left++,
+                onShowParticipants: onShowParticipants,
+                failure: failure,
               ),
             ),
           ),
@@ -538,9 +542,16 @@ void main() {
             .first,
       );
       expect(node.properties.enabled, isFalse);
-      // Le groupe plein montre sa barre de places, pas ses visages.
+      // Le groupe plein garde ses visages, et sa barre passe au rouge
+      // (règle R5, KIT §9).
+      expect(find.byType(PdlAvatarStack), findsOneWidget);
       expect(find.byType(PdlProgressBar), findsOneWidget);
-      expect(find.text('18/18'), findsOneWidget);
+      expect(find.text('18/18\u00a0personnes'), findsOneWidget);
+      final PdlProgressBar bar = tester.widget(find.byType(PdlProgressBar));
+      final PdlColors c = brightness == Brightness.light
+          ? PdlColors.light
+          : PdlColors.dark;
+      expect(bar.color, c.danger);
     });
 
     testWidgets('l\'état sans action ne rend aucun bouton — $mode', (
@@ -555,6 +566,103 @@ void main() {
       expect(find.byType(PdlButton), findsNothing);
     });
   }
+
+  // ── Personnes inscrites (règle R5, KIT §9, docs/LEDGER_*.md MOB-139) ────
+
+  group('personnes inscrites', () {
+    testWidgets('un groupe à maximum : la barre de places sous la grappe, en '
+        'primaire', (WidgetTester tester) async {
+      await pump(
+        tester,
+        g: fixtureGroup(countParticipants: 3, maxParticipants: 16),
+        action: RideGroupAction.join,
+      );
+      expect(find.text('3/16\u00a0personnes'), findsOneWidget);
+      final PdlProgressBar bar = tester.widget(
+        find.byKey(keys.ride.groupSeatsBar('g1')),
+      );
+      expect(bar.color, PdlColors.light.primary);
+      // Sous la grappe, pas à côté.
+      expect(
+        tester.getTopLeft(find.byKey(keys.ride.groupSeatsBar('g1'))).dy,
+        greaterThan(
+          tester.getBottomLeft(find.byKey(keys.ride.groupAvatars('g1'))).dy,
+        ),
+      );
+    });
+
+    testWidgets('sans maximum : « 3 personnes », pas de barre', (
+      WidgetTester tester,
+    ) async {
+      await pump(
+        tester,
+        g: fixtureGroup(countParticipants: 3, maxParticipants: null),
+        action: RideGroupAction.join,
+      );
+      expect(find.text('3\u00a0personnes'), findsOneWidget);
+      expect(find.byType(PdlProgressBar), findsNothing);
+    });
+
+    testWidgets('« Voir tout » dès que la grappe affiche « +N », sélectionnée '
+        'ou non', (WidgetTester tester) async {
+      await pump(
+        tester,
+        g: fixtureGroup(countParticipants: 8, maxParticipants: 12),
+        action: RideGroupAction.join,
+        onShowParticipants: () {},
+      );
+      expect(find.text('+3'), findsOneWidget);
+      expect(find.byKey(keys.ride.groupViewAll('g1')), findsOneWidget);
+    });
+
+    testWidgets('pas de « Voir tout » quand la grappe montre tout le monde', (
+      WidgetTester tester,
+    ) async {
+      await pump(
+        tester,
+        g: fixtureGroup(countParticipants: 4, maxParticipants: 12),
+        action: RideGroupAction.join,
+        onShowParticipants: () {},
+      );
+      expect(find.byKey(keys.ride.groupViewAll('g1')), findsNothing);
+    });
+
+    testWidgets('hors de l\'équipe, aucun visage : l\'icône et le compte '
+        'seuls, ni grappe ni « Voir tout »', (WidgetTester tester) async {
+      await pump(
+        tester,
+        g: fixtureGroup(
+          countParticipants: 8,
+          maxParticipants: 12,
+        ).copyWith(participants: const <PublicUserDto>[]),
+        action: RideGroupAction.none,
+        onShowParticipants: () {},
+      );
+      expect(find.byType(PdlAvatarStack), findsNothing);
+      expect(find.byIcon(PdlIcons.people), findsOneWidget);
+      expect(find.text('8/12\u00a0personnes'), findsOneWidget);
+      expect(find.byKey(keys.ride.groupViewAll('g1')), findsNothing);
+      expect(find.byType(PdlProgressBar), findsOneWidget);
+    });
+
+    testWidgets('l\'échec d\'inscription se dit dans la carte, sous les '
+        'places', (WidgetTester tester) async {
+      await pump(
+        tester,
+        g: fixtureGroup(full: true, countParticipants: 12, maxParticipants: 12),
+        action: RideGroupAction.full,
+        failure: const Text('échec', key: ValueKey<String>('failure')),
+      );
+      final Finder failure = find.byKey(const ValueKey<String>('failure'));
+      expect(failure, findsOneWidget);
+      expect(
+        tester.getTopLeft(failure).dy,
+        greaterThan(
+          tester.getBottomLeft(find.byKey(keys.ride.groupSeatsBar('g1'))).dy,
+        ),
+      );
+    });
+  });
 
   // ── Le meneur, conditionnel ─────────────────────────────────────────────
 

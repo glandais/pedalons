@@ -29,6 +29,11 @@ class HomeKeys {
   /// Le bouton « GPS » de la carte « Ma prochaine sortie ».
   final nextRideGps = const _HomeKey('nextRideGps');
 
+  /// La grappe, le compte et la barre de places de « Ma prochaine sortie ».
+  final nextRideAvatars = const _HomeKey('nextRideAvatars');
+  final nextRideCount = const _HomeKey('nextRideCount');
+  final nextRideSeatsBar = const _HomeKey('nextRideSeatsBar');
+
   /// Le bloc « Cette semaine ».
   final weekSection = const _HomeKey('weekSection');
 

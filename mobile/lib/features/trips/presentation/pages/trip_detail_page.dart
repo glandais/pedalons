@@ -793,6 +793,7 @@ class _TripDetailContent extends ConsumerWidget {
                   key: keys.trip.stageCard(stages[i].slug),
                   stage: stages[i],
                   weather: summaries[stages[i].id],
+                  exportable: stageExportable(trip, stages[i], now: now),
                   selected: stages[i].id == selected,
                   onSelect: () => select(stages[i].id),
                   onTap: () => context.push(

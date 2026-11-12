@@ -209,6 +209,18 @@ class RideDetailKeys {
   /// Le « Complet » désactivé d'un groupe plein.
   ValueKey<String> groupFullButton(String groupId) =>
       _RideDetailKey('groupFull_$groupId');
+
+  /// La barre de places sous la grappe d'une carte de groupe à maximum.
+  ValueKey<String> groupSeatsBar(String groupId) =>
+      _RideDetailKey('groupSeats_$groupId');
+
+  /// « Voir tout », sur une carte de groupe dont la grappe affiche « +N ».
+  ValueKey<String> groupViewAll(String groupId) =>
+      _RideDetailKey('groupViewAll_$groupId');
+
+  /// L'échec d'inscription, dans la carte du groupe concerné (règle R6).
+  ValueKey<String> groupRegistrationFailure(String groupId) =>
+      _RideDetailKey('groupFailure_$groupId');
 }
 
 class _RideGroupKey extends ValueKey<String> {

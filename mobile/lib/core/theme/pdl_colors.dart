@@ -247,21 +247,42 @@ class PdlColors extends ThemeExtension<PdlColors> {
     softIndigo,
   ];
 
-  /// Les douze accents servant à teinter un avatar par hachage de son nom.
+  /// Les douze teintes servant à colorer un avatar par hachage de son nom.
   /// L'utilisateur courant n'y passe jamais : il est toujours [primary].
-  List<Color> get avatarAccents => <Color>[
-    accentBlue,
-    accentTeal,
-    accentGrape,
-    accentLime,
-    accentOrange,
-    accentViolet,
-    accentCyan,
-    accentPink,
-    success,
-    warning,
-    danger,
-    accentIndigo,
+  ///
+  /// **Des teintes foncées, les mêmes dans les deux thèmes** (règle R5 des
+  /// cartes, KIT §8 et §9, docs/LEDGER_*.md MOB-139) : les initiales sont
+  /// blanches, et les accents clairs du thème clair (citron, turquoise,
+  /// cyan, orange, vert, jaune en nuance 6) ne leur laissaient que 1,8 à
+  /// 2,8:1 de contraste. Les quatre de KIT §8 (orange `#e8590c`, bleu
+  /// `#1971c2`, vert `#2f9e44`, raisin `#ae3ec9`), les autres en nuance 8 ou
+  /// 9 de leur famille, le jaune en ocre `#a16207`. Toutes ≥ 3:1 avec le
+  /// blanc (`avatar_tints_test.dart`).
+  ///
+  /// **L'ordre compte** : c'est lui que le hachage indexe, et le site le
+  /// recopie valeur pour valeur (`frontend/src/lib/avatarTint.ts`) pour
+  /// qu'une personne ait la même couleur sur les deux supports. Il est choisi
+  /// pour que les personnes des maquettes portent celles de KIT §8 — Léa
+  /// Martin en orange, Karim Benali en bleu, Noé Perrin en vert (Inès Roche,
+  /// au même indice que Karim, ne peut pas avoir le raisin) —, les trois
+  /// verts (turquoise, citron, vert) écartés les uns des autres.
+  List<Color> get avatarAccents => _avatarTints;
+
+  static const List<Color> _avatarTints = <Color>[
+    Color(0xFF087F5B), // turquoise 9 — 5,0:1
+    Color(0xFF6741D9), // violet 8 — 6,3:1
+    Color(0xFF0B7285), // cyan 9 — 5,6:1
+    Color(0xFF1971C2), // bleu 8 — 5,0:1
+    Color(0xFF5C940D), // citron 9 — 3,7:1
+    Color(0xFFAE3EC9), // raisin 7 — 4,9:1
+    Color(0xFFC2255C), // rose 8 — 5,7:1
+    // Le jaune 9 de Mantine (`#e67700`) n'atteint pas 3:1 (2,998) : un ocre
+    // plus foncé, hors palette, garde la famille.
+    Color(0xFFA16207), // ocre (jaune foncé) — 4,9:1
+    Color(0xFFC92A2A), // rouge 9 — 5,5:1
+    Color(0xFF3B5BDB), // indigo 8 — 5,7:1
+    Color(0xFF2F9E44), // vert 8 — 3,5:1
+    Color(0xFFE8590C), // orange 8 — 3,6:1
   ];
 
   static const PdlColors light = PdlColors(

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
+import 'package:pedalons/core/theme/pdl_colors.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/dev/card_gallery/gallery_data.dart';
@@ -138,8 +139,15 @@ void main() {
       );
       expect(tester.widget<Text>(count).data, '11/12\u00a0personnes');
       expectWhole(tester, count);
-      // « Voir tout » reste offert.
-      expect(inCase('groupes-inscrite-b', find.text('Voir tout')), findsOne);
+      // « Voir tout » reste offert, sur chaque carte dont la grappe affiche
+      // « +N » (règle R5) : les trois groupes en ont.
+      for (final String g in <String>['g-a', 'g-b', 'g-c']) {
+        expect(
+          inCase('groupes-inscrite-b', find.byKey(keys.ride.groupViewAll(g))),
+          findsOne,
+          reason: g,
+        );
+      }
     });
 
     testWidgets('N3 — « départ 10:00 » jamais tronqué sur la carte de sortie '
@@ -268,8 +276,16 @@ void main() {
     final List<String> shown = texts(
       inCase('prochaine-sortie-sans-maximum', find.byType(Column)),
     );
-    expect(shown, contains('11'));
-    expect(shown, isNot(contains('31')));
+    // « 11 personnes », à côté de la grappe, sans barre (règle R5).
+    expect(shown, contains('11\u00a0personnes'));
+    expect(shown.where((String s) => s.contains('31')), isEmpty);
+    expect(
+      inCase(
+        'prochaine-sortie-sans-maximum',
+        find.byKey(keys.home.nextRideSeatsBar),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('N14 — aucune coupure entre un nombre et son nom', (
@@ -312,6 +328,84 @@ void main() {
     expect(
       inCase('prochaine-sortie', find.byKey(keys.home.nextRideGps)),
       findsOne,
+    );
+  });
+
+  // ── Règles R5, R6, R7 (KIT §9, docs/LEDGER_*.md MOB-139) ──────────────
+
+  testWidgets('R6 — l’échec d’inscription se dit dans la carte du groupe, '
+      'plus en tête de section', (WidgetTester tester) async {
+    await pumpSection(tester, 'groupes');
+    final Finder inCard = find.descendant(
+      of: inCase('groupe-erreur', find.byKey(keys.ride.group('g-b'))),
+      matching: find.byKey(keys.ride.groupRegistrationFailure('g-b')),
+      skipOffstage: false,
+    );
+    expect(inCard, findsOne);
+    expect(
+      inCase('groupe-erreur', find.byKey(keys.ride.registrationFailure)),
+      findsNothing,
+    );
+    expect(
+      texts(inCard).join(),
+      contains('Ce groupe est complet. Choisissez un autre groupe.'),
+    );
+    // « Complet » désactivé à la place de « Rejoindre ».
+    final PdlButton full = tester.widget(
+      inCase('groupe-erreur', find.byKey(keys.ride.groupFullButton('g-b'))),
+    );
+    expect(full.enabled, isFalse);
+  });
+
+  testWidgets('R5 — hors de l’équipe : le compte et la barre, jamais de '
+      'grappe ni de nom', (WidgetTester tester) async {
+    await pumpSection(tester, 'groupes');
+    expect(
+      inCase('groupe-non-membre', find.byType(PdlAvatarStack)),
+      findsNothing,
+    );
+    expect(
+      inCase('groupe-non-membre', find.text('8/12\u00a0personnes')),
+      findsOne,
+    );
+    expect(
+      inCase('groupe-non-membre', find.textContaining('Léa')),
+      findsNothing,
+    );
+    expect(
+      inCase('groupe-non-membre', find.byKey(keys.ride.groupSeatsBar('g-a'))),
+      findsOne,
+    );
+    expect(inCase('groupe-non-membre', find.text('Voir tout')), findsNothing);
+  });
+
+  testWidgets('R5 — la grappe reste sur un groupe plein, la barre est rouge', (
+    WidgetTester tester,
+  ) async {
+    await pumpSection(tester, 'groupes');
+    expect(
+      inCase('groupes-non-inscrite', find.byKey(keys.ride.groupAvatars('g-c'))),
+      findsOne,
+    );
+    final PdlProgressBar bar = tester.widget(
+      inCase(
+        'groupes-non-inscrite',
+        find.byKey(keys.ride.groupSeatsBar('g-c')),
+      ),
+    );
+    expect(bar.color, PdlColors.light.danger);
+  });
+
+  testWidgets('R7 — « GPS » sur l’étape d’un voyage où l’on est inscrite, '
+      'pas ailleurs', (WidgetTester tester) async {
+    await pumpSection(tester, 'etapes');
+    expect(
+      inCase('etape-inscrite', find.byKey(keys.trip.stageGps('etape-1'))),
+      findsOne,
+    );
+    expect(
+      inCase('etapes', find.byKey(keys.trip.stageGps('etape-1'))),
+      findsNothing,
     );
   });
 }

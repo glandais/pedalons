@@ -23,6 +23,7 @@ import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dar
 import 'package:pedalons/features/routes/presentation/gps_export_runner.dart';
 import 'package:pedalons/features/routes/presentation/gps_sheet.dart';
 import 'package:pedalons/features/routes/presentation/widgets/gps_button.dart';
+import 'package:pedalons/features/routes/providers/route_detail_provider.dart';
 import 'package:pedalons/features/teams/presentation/widgets/dashboard/dashboard_rides.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -195,6 +196,7 @@ void main() {
     WidgetTester tester,
     Widget child, {
     List<GpsServiceConnectionDto> services = const <GpsServiceConnectionDto>[],
+    RouteDetailDto? nextRideRoute,
   }) async {
     tester.view.physicalSize = const Size(1000, 3000);
     tester.view.devicePixelRatio = 1;
@@ -207,6 +209,11 @@ void main() {
           unitSystemProvider.overrideWithValue(UnitSystem.metric),
           authProvider.overrideWith((ref) => _StubAuthNotifier(ref, services)),
           routeExportOperationsProvider.overrideWithValue(ops.operations),
+          // Les fichiers du parcours de « Ma prochaine sortie », que sa ligne
+          // de liste ne porte pas.
+          nextRideRouteFilesProvider.overrideWith(
+            (Ref ref, RouteKey key) async => nextRideRoute,
+          ),
         ],
         child: MaterialApp(
           theme: PedalonsTheme.build(Brightness.light),
@@ -652,17 +659,47 @@ void main() {
       expect(find.byKey(keys.gpsSheet.successBanner), findsOneWidget);
     });
 
-    testWidgets('« Ma prochaine sortie » sans service : pas de « GPS », comme '
-        'avant', (WidgetTester tester) async {
+    testWidgets('« Ma prochaine sortie » sans service : « GPS » quand même, '
+        'la feuille offre GPX, FIT et « Connecter un compteur » (règle R7)', (
+      WidgetTester tester,
+    ) async {
+      await onPlatform(TargetPlatform.iOS, () async {
+        final RideDto ride = fixtureRide(
+          dateTime: '2099-07-29T19:30:00Z',
+          groups: <RideGroupDto>[fixtureGroup(id: 'g1', routeSlug: 'court')],
+        );
+        await pump(
+          tester,
+          NextRideCard(
+            next: NextRide(ride: ride, group: ride.groups.single),
+          ),
+          nextRideRoute: route(),
+        );
+        final Finder gps = find.byKey(keys.home.nextRideGps);
+        expect(gps, findsOneWidget);
+        await tester.tap(gps);
+        await settle(tester);
+        expect(find.byKey(keys.gpsSheet.sheet), findsOneWidget);
+        expect(find.byKey(keys.gpsSheet.toDevice), findsNothing);
+        expect(find.byKey(keys.gpsSheet.gpxShare), findsOneWidget);
+        expect(find.byKey(keys.gpsSheet.fitShare), findsOneWidget);
+        expect(find.byKey(keys.gpsSheet.connectDevice), findsOneWidget);
+      });
+    });
+
+    testWidgets('« Ma prochaine sortie » sans parcours : pas de « GPS »', (
+      WidgetTester tester,
+    ) async {
       final RideDto ride = fixtureRide(
         dateTime: '2099-07-29T19:30:00Z',
-        groups: <RideGroupDto>[fixtureGroup(id: 'g1', routeSlug: 'court')],
-      );
+        groups: <RideGroupDto>[fixtureGroup(id: 'g1')],
+      ).copyWith(routeSlug: null);
       await pump(
         tester,
         NextRideCard(
           next: NextRide(ride: ride, group: ride.groups.single),
         ),
+        services: _services,
       );
       expect(find.byKey(keys.home.nextRideGps), findsNothing);
     });

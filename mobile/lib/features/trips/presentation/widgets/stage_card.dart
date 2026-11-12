@@ -13,6 +13,9 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/publication_stats_line.dart';
 import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
 import '../../providers/trip_detail_provider.dart';
+import '../../../routes/presentation/gps_export_runner.dart';
+import '../../../routes/presentation/widgets/gps_button.dart';
+import '../../../teams/domain/publication_timing.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../../keys.dart';
 
@@ -36,7 +39,12 @@ import '../../../../keys.dart';
 /// Au-delà de dix étapes la palette cycle. Ce n'est pas idéal — deux étapes
 /// portent alors la même couleur — mais la maquette ne dit rien de ce cas et
 /// inventer une onzième teinte hors charte serait pire.
-class StageCard extends ConsumerWidget {
+///
+/// **« GPS »** ([exportable]) : sur l'étape d'un voyage auquel la personne
+/// participe, jusqu'à l'arrivée de l'étape (règle R7, KIT §9, docs/LEDGER_*.md
+/// MOB-139). La même feuille que sur la carte de son groupe : appareils
+/// connectés, puis GPX et FIT du parcours de l'étape.
+class StageCard extends ConsumerStatefulWidget {
   const StageCard({
     super.key,
     required this.stage,
@@ -44,6 +52,7 @@ class StageCard extends ConsumerWidget {
     required this.onTap,
     this.onSelect,
     this.weather,
+    this.exportable = false,
   });
 
   final TripStageDto stage;
@@ -62,18 +71,52 @@ class StageCard extends ConsumerWidget {
   /// Sélectionner sans naviguer — la moitié « liste » de la sélection croisée.
   final VoidCallback? onSelect;
 
+  /// Offrir « GPS » : la personne participe au voyage, il n'est pas annulé,
+  /// l'étape n'est pas arrivée (`stageExportable`). L'étape doit encore avoir
+  /// un parcours, et la feuille quelque chose à proposer.
+  final bool exportable;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StageCard> createState() => _StageCardState();
+}
+
+/// « GPS » sur l'étape (règle R7) : la personne participe au voyage, il est
+/// maintenu, l'étape n'est pas encore arrivée. [now] ne sert qu'aux tests.
+bool stageExportable(TripDto trip, TripStageDto stage, {DateTime? now}) =>
+    trip.registered &&
+    !trip.isCancelled &&
+    stage.route != null &&
+    tripStagePhase(trip, stage, now: now) != PublicationPhase.finished;
+
+class _StageCardState extends ConsumerState<StageCard>
+    with GpsExportRunner<StageCard> {
+  @override
+  Widget build(BuildContext context) {
+    final TripStageDto stage = widget.stage;
+    final RideWeatherSummaryDto? weather = widget.weather;
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
     final UnitSystem units = ref.watch(unitSystemProvider);
     final RouteDto? route = stage.route;
     final DateTime? instant = DateTime.tryParse(stage.dateTime);
 
+    final GpsExportTarget? gps = widget.exportable && route != null
+        ? GpsExportTarget(
+            subtitle: route.distance > 0
+                ? '${stage.name} · ${AppFormatters.formatDistance(route.distance, units)}'
+                : stage.name,
+            teamSlug: route.team.slug,
+            routeSlug: route.slug,
+            gpx: route.media.assets.gpx,
+            fit: route.media.assets.fit,
+          )
+        : null;
+    final bool showGps = gps != null && gps.offered(watchGpsServices());
+
     return PdlCard(
-      selected: selected,
-      onTap: onTap,
-      onLongPress: onSelect,
+      selected: widget.selected,
+      onTap: widget.onTap,
+      onLongPress: widget.onSelect,
       padding: PdlCardPadding.tight,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,6 +193,17 @@ class StageCard extends ConsumerWidget {
                       units: units,
                     ),
                   ),
+                if (showGps) ...<Widget>[
+                  const SizedBox(height: PdlSpacing.chipGap),
+                  GpsButton(
+                    key: keys.trip.stageGps(stage.slug),
+                    compact: true,
+                    loading: gpsExporting,
+                    onPressed: (BuildContext button) =>
+                        openGpsSheet(gps, button),
+                  ),
+                ],
+                ...gpsExportBanners(gap: PdlSpacing.chipGap, gapBefore: true),
               ],
             ),
           ),

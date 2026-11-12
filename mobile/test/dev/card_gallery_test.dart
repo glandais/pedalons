@@ -55,10 +55,17 @@ const Map<String, List<String>> _cahier = <String, List<String>>{
   'groupes': <String>[
     'groupes-inscrite-b',
     'groupes-non-inscrite',
+    'groupe-erreur',
+    'groupe-non-membre',
     'groupe-sans-parcours',
     'groupe-sans-meteo',
   ],
-  'etapes': <String>['etapes', 'etape-sans-parcours', 'etape-alerte-pluie'],
+  'etapes': <String>[
+    'etapes',
+    'etape-inscrite',
+    'etape-sans-parcours',
+    'etape-alerte-pluie',
+  ],
   'parcours': <String>[
     'parcours',
     'parcours-sans-vignette',

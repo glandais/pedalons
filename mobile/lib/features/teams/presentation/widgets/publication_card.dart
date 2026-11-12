@@ -16,6 +16,8 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/deleted_badge.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../auth/domain/auth_state.dart';
+import '../../../auth/providers/auth_provider.dart';
 import '../../../posts/domain/post_neighbours.dart';
 import '../../../rides/domain/group_start.dart';
 import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
@@ -284,14 +286,21 @@ class _CardShell extends StatelessWidget {
 }
 
 /// Grappe d'avatars et barre de places : la « ligne sociale ».
-class _SocialLine extends StatelessWidget {
+///
+/// La personne qui lit y est en primaire, comme sur toute grappe (règle R5,
+/// KIT §9) ; la carte ne nomme pas de capitaine, la grappe garde tout le
+/// monde.
+class _SocialLine extends ConsumerWidget {
   const _SocialLine({required this.people, required this.count});
 
   final List<PublicUserDto> people;
   final int count;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final String? currentUserId = ref.watch(
+      authProvider.select((AuthState s) => s.user?.id),
+    );
     // **Pas de barre de places ici.** Le compteur brut est dans la rangée de
     // statistiques ; la barre est sur la carte « Ma prochaine sortie », qui
     // connaît le groupe et donc sa capacité. La capacité de la sortie entière
@@ -301,7 +310,11 @@ class _SocialLine extends StatelessWidget {
     return PdlAvatarStack(
       people: <PdlAvatarEntry>[
         for (final PublicUserDto p in people)
-          PdlAvatarEntry(name: p.displayName, imageUrl: p.avatarUrl),
+          PdlAvatarEntry(
+            name: p.displayName,
+            imageUrl: p.avatarUrl,
+            isCurrentUser: p.id == currentUserId,
+          ),
       ],
       total: count,
       semanticLabel: '$count',
