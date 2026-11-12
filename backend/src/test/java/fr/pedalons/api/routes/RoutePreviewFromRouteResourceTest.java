@@ -13,6 +13,7 @@ import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.dto.common.asset.MediaDto;
 import fr.pedalons.dto.routes.request.RouteRequest;
 import fr.pedalons.enums.SurfaceType;
+import fr.pedalons.enums.TeamTier;
 import fr.pedalons.enums.Visibility;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
@@ -23,6 +24,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.ws.rs.core.MediaType;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -144,6 +146,24 @@ class RoutePreviewFromRouteResourceTest extends AbstractResourceTest {
 
     preview(USER1, slug).statusCode(404);
     preview(USER4, slug).statusCode(404);
+  }
+
+  /**
+   * A copy of a drawn route draws nothing: it keeps the {@code drawn} flag but is not a save
+   * against the caller's personal planner quota, and is not refused when that quota is spent
+   * (docs/LEDGER_*.md BILL-10), as a duplicate of a route does not count against the team's.
+   */
+  @Test
+  void aPreviewOfADrawnRoute_countsNothing_evenWithThePersonalQuotaSpent() {
+    // Nobody has an unlocked team: the personal quota applies to user4
+    dataService.setTeamTier(team1, TeamTier.FREE);
+    dataService.setTeamTier(team2, TeamTier.FREE);
+    String slug = createDrawn("Boucle", Visibility.PUBLIC);
+    dataService.addPlannerSaves(user4, null, 10, Instant.now());
+
+    preview(USER4, slug).statusCode(201);
+
+    assertEquals(10, dataService.countPlannerSaves(null, user4));
   }
 
   @Test

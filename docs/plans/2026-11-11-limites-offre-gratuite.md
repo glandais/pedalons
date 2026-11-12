@@ -169,6 +169,11 @@ Compter puis insérer laisse passer deux arrivées simultanées : les quatre che
   pour promouvoir ensuite. Il bute sur ses 10 enregistrements personnels, et la promotion compte
   encore dans le quota de l'équipe. Le contournement qui reste — exporter le GPX d'un aperçu et
   le réimporter comme fichier — est déjà accepté (`API-127`) : il ne coûte aucun calcul de plus.
+- **Une copie ne compte pas** (ajouté le 12 novembre 2026, au rebase sur `API-179` / `API-180`) :
+  dupliquer un parcours dans son équipe ne compte pas dans le quota de l'équipe, et l'aperçu fait
+  depuis un parcours ne compte pas dans le quota personnel — ni l'un ni l'autre ne dessine. L'aperçu
+  garde le drapeau `drawn` du parcours : le promouvoir compte donc dans le quota de l'équipe
+  d'arrivée, et modifier son tracé dans le quota personnel.
 - **Le calcul sans enregistrement** reste ouvert tant que le quota n'est pas atteint. Il n'est
   borné par rien d'autre aujourd'hui que le quota mensuel global de Stadia Maps
   (`ROUTING_QUOTA_EXCEEDED`), commun à toutes les équipes. Le lot 3 ajoute un plafond de calculs
@@ -227,7 +232,7 @@ AdminTeamAttributesRequest: + tier, tierNote
 Le point d'accès exact du « moi » (`/api/users/me` ou celui qui porte déjà le profil) est à relire
 au code.
 
-**Version** : `14.1.0` pour les champs ; les refus sont un changement de comportement. Un mobile
+**Version** : `14.1.0` pour les champs (livrés en `14.2.0` à `14.5.0`, après `14.1.0` pris par `API-179`) ; les refus sont un changement de comportement. Un mobile
 ancien affiche son message d'erreur générique au 26ᵉ membre — acceptable : le cas est rare au
 début, et la version mobile qui sait le rendre part avec le même lot. À relire si l'on préfère
 `15.0.0`.

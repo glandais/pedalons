@@ -36,6 +36,7 @@ import fr.pedalons.enums.AssetType;
 import fr.pedalons.enums.SurfaceType;
 import fr.pedalons.enums.TagTarget;
 import fr.pedalons.enums.TeamRole;
+import fr.pedalons.enums.TeamTier;
 import fr.pedalons.enums.Visibility;
 import fr.pedalons.enums.WaypointType;
 import fr.pedalons.infrastructure.storage.StorageService;
@@ -213,6 +214,22 @@ class RouteDuplicateResourceTest extends AbstractResourceTest {
     detail(copySlug).body("name", equalTo("Copie de Boucle des étangs"));
     // The source keeps its name.
     detail(slug).body("name", equalTo("Boucle des étangs"));
+  }
+
+  /**
+   * A duplicate draws nothing: it is not a save against the team's planner quota, and is not
+   * refused when that quota is spent (docs/LEDGER_*.md BILL-10).
+   */
+  @Test
+  void aDuplicate_countsNothing_evenWithTheTeamQuotaSpent() {
+    dataService.setTeamTier(team1, TeamTier.FREE);
+    String slug = createDrawn("Boucle des étangs", Visibility.PUBLIC);
+    assertEquals(1, dataService.countPlannerSaves(team1, user1));
+    dataService.addPlannerSaves(user1, team1, 19, Instant.now());
+
+    duplicate(USER2, slug, "Copie de Boucle des étangs").statusCode(201);
+
+    assertEquals(20, dataService.countPlannerSaves(team1, user1));
   }
 
   @Test

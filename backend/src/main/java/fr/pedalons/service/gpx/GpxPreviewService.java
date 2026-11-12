@@ -246,13 +246,16 @@ public class GpxPreviewService {
       @Nullable PlannerState state,
       WaypointPlan plan,
       PreviewDepartureEdit edit) {
-    return create(gpx, fallbackName, drawn, state, plan, edit, true);
+    return create(gpx, fallbackName, drawn, state, plan, edit, true, drawn);
   }
 
   /**
    * As {@link #create(GpxDocument, String, boolean, PlannerState, WaypointPlan,
    * PreviewDepartureEdit)}; {@code documentNameFirst} false names the preview {@code fallbackName}
    * whatever the file says — a copy of a route keeps the route's title (docs/LEDGER_*.md API-180).
+   * {@code countedSave} records a save against the creator's personal planner quota: false for a
+   * copy of a route, which keeps the route's {@code drawn} flag but draws nothing — like a
+   * duplicate of a route, which the team quota does not count either (docs/LEDGER_*.md BILL-10).
    */
   private GpxPreview create(
       GpxDocument gpx,
@@ -261,7 +264,8 @@ public class GpxPreviewService {
       @Nullable PlannerState state,
       WaypointPlan plan,
       PreviewDepartureEdit edit,
-      boolean documentNameFirst) {
+      boolean documentNameFirst,
+      boolean countedSave) {
     User creator = pedalonsContext.getUser();
     Domain domain = pedalonsContext.getDomain();
     UUID publicId = UUID.randomUUID();
@@ -324,7 +328,7 @@ public class GpxPreviewService {
       QuarkusTransaction.requiringNew()
           .run(() -> {
             gpxPreviewRepository.persist(preview);
-            if (drawn) {
+            if (countedSave) {
               plannerQuota.recordPersonalSave(preview.getId());
             }
             if (quality == ElevationQuality.FAST) {
@@ -1034,6 +1038,7 @@ public class GpxPreviewService {
             kept,
             new WaypointPlan(waypoints, false),
             PreviewDepartureEdit.KEEP,
+            false,
             false));
   }
 

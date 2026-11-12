@@ -120,7 +120,13 @@ public class RouteCopyService {
                     null,
                     null);
             return routeService.createRoute(
-                teamSlug, request, gpxPath, source.state(), source.surfaces(), source.waypoints());
+                teamSlug,
+                request,
+                gpxPath,
+                source.state(),
+                source.surfaces(),
+                source.waypoints(),
+                false);
           });
     } finally {
       deleteQuietly(gpxPath);
