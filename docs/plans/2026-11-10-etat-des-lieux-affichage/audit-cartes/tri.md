@@ -41,7 +41,29 @@ Tranchées avec le propriétaire, une par une. Les règles sont écrites dans [`
 | **R14** Webhook | Un seul badge (« Actif », « Échec », « Désactivé ») ; « Réussi » ; « JSON ». L'app s'aligne. |
 | **R3** Distance d'une sortie | Calculée par l'API pour la personne qui lit : celle de son groupe si elle est inscrite, sinon celle du parcours commun, sinon rien. Entrée `API-…` à créer. |
 
-Restent à décider, sur maquette : R1, R2, R4, R5, R6, R7, R10, R11, R12, R13.
+### Décisions du 12 novembre 2026, sur les planches « Cartes — cibles »
+
+Les planches sont `maquettes/project/cible-cartes-r*.dc.html` ; l'état réel de départ est dans
+[constat-captures.md](constat-captures.md).
+
+| Règle | Décision |
+|---|---|
+| **R1** Badges d'état | Un badge signale une exception : Supprimé → type → un état (Annulé, En cours, Terminée, Brouillon) → J'y vais. Jamais « Publié ». La visibilité seulement si elle diffère de celle de l'équipe. BRANDING §7.1 à modifier. |
+| **R2** Ligne météo | Celle de l'app partout : « 9–13 °C · vent · Pluie 20 % », alerte « Pluie 60 % vers 11:00 », « Météo dès le 15 novembre ». Le site s'aligne ; sa carte de groupe perd la condition nommée et les badges Face / Dos. |
+| **R4** Compteurs | Zéros masqués partout. Voyage : étapes · distance · D+ · personnes, commentaires s'il y en a. Une personne non membre voit le compte, jamais les noms. |
+| **R5** Personnes inscrites | Une seule forme : « 11/12 personnes », grappe gardée même sur un groupe plein, initiales lisibles, une couleur par personne sur les deux supports (BRANDING §7.5 à modifier), capitaine hors de la grappe, « Voir tout » dès que la grappe affiche « +N ». Barre de places sous la grappe, **indigo, rouge si plein** (plus de vert ni d'orange). |
+| **R6** Inscription | Les règles de l'app partout : lien rouge « Quitter le groupe » au pied de la carte, « Complet » en bouton désactivé même si l'on est inscrit ailleurs, erreur dans la carte concernée, quitter possible jusqu'à la fin de la sortie, « Se désinscrire » de « Ma prochaine sortie » en lien rouge. BRANDING §7.7 à réécrire. |
+| **R7** Export | Un seul bouton « GPS » (appareil, GPX, FIT), sur la carte de son groupe, sur « Ma prochaine sortie » et sur les étapes d'un voyage où l'on est inscrit. **Visible jusqu'à la fin de la sortie** (la planche le dessine masqué au départ : à corriger). |
+| **R10** Image d'en-tête | Photo, sinon carte du tracé, sinon dégradé ; pas de vignette du tracé quand le bandeau est déjà la carte ; trait de couleur du tracé sur la carte d'étape du site. Sans changement d'API. |
+| **R11** Lieu et groupe | Première ligne heure · équipe · groupe ; le lieu sur sa propre ligne, nom seul (« Groupe B · Place de la Mairie » sous « Départ 09:30 ») ; la carte d'étape nomme départ → arrivée, la date sous le titre. |
+| **R12** Équipe, parcours | Une seule carte d'équipe dans l'app (celle de la découverte : bandeau, extrait sur 2 lignes, vrai rôle, membres) ; extrait sur 2 lignes sur la carte de parcours de l'app. |
+| **R12** Modèle de sortie | Carte commune : nom et statut, « 3 groupes · prochaine sortie #12 », groupes avec leur vitesse, description sur 2 lignes si elle existe. Ni visibilité ni tags sur la carte. |
+| **R12** Commentaire | Texte brut des deux côtés ; l'app cesse de rendre le Markdown. |
+| **R13** Actions | Le site gagne « Rejoindre l'équipe » sur la carte d'équipe, « Créer une sortie » sur la carte d'un modèle, et un menu ⋯ « Signaler / Bloquer » sur les lignes de membre et de personne inscrite (menu ⋯ ajouté aussi dans l'app, où l'action existe sans être montrée). |
+
+Toutes les règles sont décidées. Restent ouverts, relevés par les planches : espace fine ou normale pour les milliers
+(lisibilité en gras) ; « Groupe B » ou « B » dans les lignes compactes ; répéter ou non départ → arrivée quand le titre de
+l'étape le dit déjà ; l'export depuis « Ma prochaine sortie » peut demander une donnée que son résumé n'a pas.
 
 ---
 

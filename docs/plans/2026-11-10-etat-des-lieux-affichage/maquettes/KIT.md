@@ -258,3 +258,30 @@ inscription, export, image d'en-tête, lieu et groupe, champs propres, actions) 
 - **Vocabulaire** : visibilité « Équipe uniquement » ; notification d'inscription « {nom} a rejoint votre sortie » ; notification
   de modification, le titre dit ce qui change (« Une sortie change de date ») ; webhook, un seul badge « Actif » / « Échec » /
   « Désactivé », dernier envoi « Réussi », format « JSON ».
+
+### Règles décidées sur les planches « Cartes — cibles » (2026-11-12)
+
+- **Badges d'état** : un badge signale une exception. Ordre : Supprimé → type → un état (Annulé, En cours, Terminée, Brouillon)
+  → J'y vais. Jamais « Publié ». La visibilité seulement quand elle diffère de celle de l'équipe.
+- **Ligne météo** : « 9–13 °C · flèche 18 km/h · Pluie 20 % » ; en alerte, « Pluie 60 % vers 11:00 » ; avant l'ouverture,
+  « Météo dès le 15 novembre ». Ni condition nommée ni badges Face / Dos sur une carte.
+- **Compteurs** : un compteur à zéro ne s'affiche pas. Voyage : étapes · distance · D+ · personnes ; commentaires s'il y en a.
+  Hors de l'équipe, le compte de personnes, jamais les noms.
+- **Personnes inscrites** : « 11/12 personnes » (« 11 personnes » sans maximum) ; grappe gardée même si le groupe est plein ;
+  initiales lisibles, une couleur par personne, soi en primaire, sans la personne capitaine ; « Voir tout » dès que la grappe
+  affiche « +N » ; barre de places sous la grappe, indigo, rouge si plein.
+- **Inscription** : « J'y vais » en haut de sa carte et lien rouge « Quitter le groupe » au pied ; « Changer pour {groupe} » en
+  bouton plein au pied des autres ; « Complet » en bouton désactivé, même si l'on est inscrit ailleurs ; erreur dans la carte
+  concernée ; quitter possible jusqu'à la fin de la sortie ; « Se désinscrire » de « Ma prochaine sortie » en lien rouge.
+- **Export** : un seul bouton « GPS », sur la carte de son groupe, sur « Ma prochaine sortie » et sur les étapes d'un voyage où
+  l'on est inscrit ; visible jusqu'à la fin de la sortie.
+- **Image d'en-tête** : photo, sinon carte du tracé, sinon dégradé ; pas de vignette du tracé quand le bandeau l'est déjà.
+- **Lieu et groupe** : heure · équipe · groupe sur la première ligne ; le lieu sur sa ligne, nom seul ; sous « Départ 09:30 »,
+  « Groupe B · Place de la Mairie ». Carte d'étape : titre, date dessous, puis départ → arrivée.
+- **Carte d'équipe** : une seule, avec bandeau, extrait sur 2 lignes, rôle réel, nombre de membres. **Carte de parcours** : extrait
+  sur 2 lignes.
+- **Carte de modèle de sortie** : nom et statut ; « 3 groupes · prochaine sortie #12 » ; « A 28 km/h · B 25 km/h » ; description
+  sur 2 lignes si elle existe.
+- **Commentaire** : texte brut, sans rendu Markdown.
+- **Actions d'une carte** : « Rejoindre l'équipe » sur la carte d'équipe ; « Créer une sortie » sur la carte d'un modèle ; menu ⋯
+  « Signaler / Bloquer » sur une ligne de membre ou de personne inscrite.
