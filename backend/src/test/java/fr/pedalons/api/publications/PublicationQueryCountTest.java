@@ -193,6 +193,36 @@ class PublicationQueryCountTest extends AbstractQueryCountTest {
     assertFlatQueryCount("GET /api/publications", asUser1(), "/api/publications");
   }
 
+  /**
+   * Ledger API-185: the two-section order and the size of its first section cost one count for the
+   * page, whatever its rows — half the seeded rides ahead, half over, so both sections are filled.
+   */
+  @Test
+  void listPublications_upcomingFirst_costDoesNotScaleWithRowCount() {
+    seedRides(LARGE_PAGE / 2);
+    List<Ride> past = new ArrayList<>();
+    for (int i = 0; i < LARGE_PAGE / 2; i++) {
+      past.add(
+          dataService.createRide(
+              team1,
+              user1,
+              "Past Budget Ride " + i,
+              "past-budget-ride-" + i,
+              Instant.now().minus(7, ChronoUnit.DAYS).minusSeconds(i),
+              Visibility.PUBLIC,
+              Status.PUBLISHED));
+    }
+    assertEquals(LARGE_PAGE / 2, past.size());
+    assertFlatQueryCount(
+        "GET /api/publications?when=UPCOMING_FIRST",
+        asUser1(),
+        "/api/publications?when=UPCOMING_FIRST");
+    assertFlatQueryCount(
+        "GET /api/teams/{teamSlug}/publications?when=UPCOMING_FIRST",
+        asUser1(),
+        "/api/teams/" + team1Slug + "/publications?when=UPCOMING_FIRST");
+  }
+
   /** Ledger API-137: a platform admin's cross-team listing takes the real-role query shape. */
   @Test
   void listAllPublications_asPlatformAdmin_costDoesNotScaleWithRowCount() {

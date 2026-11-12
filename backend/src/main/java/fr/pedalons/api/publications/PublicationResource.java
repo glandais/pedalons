@@ -41,7 +41,13 @@ public class PublicationResource {
           + " what is not over yet (end >= now — an outing under way included), PAST what is over"
           + " (end < now). Keeps rides and trips only: a post has no end. Sets the order too —"
           + " UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With"
-          + " participating=true, UPCOMING is « Je participe ». Omitted: no such filter.";
+          + " participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing"
+          + " and orders the list in two sections (rule RL15): first what UPCOMING keeps,"
+          + " soonest departure first, then everything else — the rides and trips over and the"
+          + " posts — latest first; the id ends each section's key, so the order is total. The"
+          + " listing then fills upcomingTotal, the size of the first section; sortDir is"
+          + " ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when"
+          + " does. Omitted: no such filter, newest first.";
 
   static final String VIEW_PARAM_DESCRIPTION =
       "How much of each row to send. COMPACT (case-insensitive) returns media.markdown empty and"
@@ -96,7 +102,8 @@ public class PublicationResource {
               description =
                   "Order of the publication date. Omitted, or DESC, is newest first (the feed);"
                       + " ASC is soonest first — what a window of upcoming outings needs, so a"
-                      + " page keeps the nearest ones. Given, it overrides the order set by when.")
+                      + " page keeps the nearest ones. Given, it overrides the order set by when,"
+                      + " except with when=UPCOMING_FIRST, which ignores it.")
           @QueryParam("sortDir")
           @Nullable SortDirection sortDir,
       @Parameter(description = WHEN_PARAM_DESCRIPTION) @QueryParam("when")

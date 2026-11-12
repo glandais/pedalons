@@ -158,12 +158,43 @@ public class AllPublicationRepository
     if (endedBefore != null) {
       pedalonsQuery = andEnd(pedalonsQuery, "<", "endedBefore", endedBefore);
     }
-    if (query.ascending()) {
+    Instant upcomingFirstAt = query.upcomingFirstAt();
+    if (upcomingFirstAt != null) {
+      pedalonsQuery = orderUpcomingFirst(pedalonsQuery, upcomingFirstAt);
+    } else if (query.ascending()) {
       // getPedalonsQuery set the default ordering before calling us; order() replaces it.
       // The id ends the key, in the same direction, so a tie on the date keeps one fixed order.
       pedalonsQuery = pedalonsQuery.order("te.dateTime asc, te.id asc");
     }
     return pedalonsQuery;
+  }
+
+  /**
+   * One list in two sections (docs/LEDGER_*.md API-185, rule RL15): the rides and trips not over at
+   * {@code at} — the very clause of {@code notEndedAt}, so a section and the {@code when=UPCOMING}
+   * list it mirrors can never disagree — soonest departure first, then every other row, latest
+   * first. A total order: the id ends each section's key, in the section's direction.
+   *
+   * <p>Within the first section the second key sorts the departures and the third ties; within the
+   * second, the second key is null everywhere and the third sorts. The ids follow the same pattern.
+   * Bound parameters in the {@code ORDER BY}, held by the ordering itself ({@link
+   * PedalonsQuery#order(String, Map)}): {@code countMatching} drops both together.
+   */
+  private static PedalonsQuery orderUpcomingFirst(PedalonsQuery pedalonsQuery, Instant at) {
+    String upcoming = endClause(">=", "upcomingFirstAt");
+    return pedalonsQuery.order(
+        "case when "
+            + upcoming
+            + " then 0 else 1 end asc, case when "
+            + upcoming
+            + " then te.dateTime end asc, te.dateTime desc, case when "
+            + upcoming
+            + " then te.id end asc, te.id desc",
+        Map.of(
+            "upcomingFirstAt",
+            at,
+            "upcomingFirstAtStart",
+            at.minus(PublicationEndCalculator.DEFAULT_DURATION)));
   }
 
   @Override

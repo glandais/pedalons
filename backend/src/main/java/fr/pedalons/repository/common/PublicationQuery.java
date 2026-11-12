@@ -28,8 +28,12 @@ import org.jspecify.annotations.Nullable;
  *     (docs/LEDGER_*.md API-85). Drops every other type of publication.
  * @param endedBefore keep only the rides and trips over at this instant, by the same end. Drops
  *     every other type of publication.
+ * @param upcomingFirstAt orders the list in two sections, judged at this instant (docs/LEDGER_*.md
+ *     API-185): first the rides and trips {@link #notEndedAt()} would keep, soonest departure
+ *     first, then every other row — the ones over and the posts — latest first. Filters nothing,
+ *     and wins over {@link #ascending()}.
  */
-@Builder
+@Builder(toBuilder = true)
 public record PublicationQuery(
     Long domainId,
     @Nullable PublicationType type,
@@ -43,6 +47,7 @@ public record PublicationQuery(
     @Nullable Instant to,
     @Nullable Instant notEndedAt,
     @Nullable Instant endedBefore,
+    @Nullable Instant upcomingFirstAt,
     @Nullable MinRole minRole,
     @Nullable Status status,
     @Nullable Set<Long> tagIds,

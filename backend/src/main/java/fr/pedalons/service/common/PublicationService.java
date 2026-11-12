@@ -194,8 +194,10 @@ public class PublicationService {
 
   /**
    * @param when {@link PublicationWhen#UPCOMING}: the rides and trips not over yet, soonest first;
-   *     {@link PublicationWhen#PAST}: those over, latest first; null: no such filter. Judged by the
-   *     end, not the start (docs/LEDGER_*.md API-85). Posts are never in either.
+   *     {@link PublicationWhen#PAST}: those over, latest first; {@link
+   *     PublicationWhen#UPCOMING_FIRST}: no filter, the first ones then everything else, posts
+   *     included (docs/LEDGER_*.md API-185); null: no such filter. Judged by the end, not the
+   *     start (docs/LEDGER_*.md API-85). Posts are never in the first two.
    * @param sortDir order of {@code dateTime}; given, it overrides the order {@code when} sets
    */
   @CheckAccess(entityType = EntityType.PUBLICATION, action = ActionType.LIST_ALL_TEAMS)
@@ -232,13 +234,18 @@ public class PublicationService {
   /**
    * What {@code when} stands for: the bound on the end, at the time of the request, and the order —
    * soonest departure first for what is ahead, latest first for what is over. An explicit {@code
-   * sortDir} wins over that order.
+   * sortDir} wins over that order, except with {@link PublicationWhen#UPCOMING_FIRST}: there the
+   * order is the whole point (two sections, docs/LEDGER_*.md API-185), and {@code sortDir} is
+   * ignored.
    */
   static PublicationQuery.PublicationQueryBuilder withWhen(
       PublicationQuery.PublicationQueryBuilder query,
       @Nullable PublicationWhen when,
       @Nullable SortDirection sortDir) {
     Instant now = Instant.now();
+    if (when == PublicationWhen.UPCOMING_FIRST) {
+      return query.upcomingFirstAt(now).ascending(false);
+    }
     if (when == PublicationWhen.UPCOMING) {
       query.notEndedAt(now);
     } else if (when == PublicationWhen.PAST) {
@@ -641,11 +648,21 @@ public class PublicationService {
   }
 
   protected PublicationListResponse list(PublicationQuery query, @Nullable ListViewMode view) {
+    Instant upcomingFirstAt = query.upcomingFirstAt();
     if (query.participating() && query.userId() == null) {
       // An anonymous visitor participates in nothing; no need to ask the database.
-      return new PublicationListResponse(List.of(), 0, query.page(), query.size());
+      return new PublicationListResponse(
+          List.of(), 0, query.page(), query.size(), upcomingFirstAt != null ? 0L : null);
     }
     PedalonsPage<Publication> publications = allPublicationRepository.find(query);
+    // The size of the first section of a two-section list (docs/LEDGER_*.md API-185): one count
+    // for the page, with the page's own filters and its own instant — the very clause that ranks a
+    // row in the first section. Lists without sections pay nothing.
+    Long upcomingTotal =
+        upcomingFirstAt != null
+            ? allPublicationRepository.countMatching(
+                query.toBuilder().upcomingFirstAt(null).notEndedAt(upcomingFirstAt).build())
+            : null;
     // The rows whose team's member names the caller may see — at most one query for the page, none
     // for a visitor or a platform admin (docs/LEDGER_*.md API-144). A non-member is sent the
     // counts, never the names: no participants, no leader, no signed author.
@@ -709,7 +726,8 @@ public class PublicationService {
                     permissions,
                     view))
             .toList();
-    return new PublicationListResponse(dtos, publications.total(), query.page(), query.size());
+    return new PublicationListResponse(
+        dtos, publications.total(), query.page(), query.size(), upcomingTotal);
   }
 
   protected CountResponse count(PublicationQuery query) {
