@@ -535,8 +535,9 @@ test.describe('the platform-wide list (/parcours)', () => {
     const found = await listAllRoutes(owner, wanted)
     expect(found.routes.map((r) => r.name)).toEqual([wanted])
 
-    // A card opens its route, in its team.
-    await routeCard(main, wanted).click()
+    // A card opens its route, in its team. The click lands on the route's name: the middle of the
+    // card is its team line, which opens the team.
+    await routeCard(main, wanted).getByRole('heading', { name: wanted }).click()
     await expect(main.getByRole('heading', { level: 1, name: wanted })).toBeVisible()
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/parcours/[^/?]+$`))
   })

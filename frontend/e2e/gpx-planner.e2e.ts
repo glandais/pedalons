@@ -903,7 +903,7 @@ test.describe('the fullscreen editor, over the form', () => {
     await expect(surface).toBeHidden()
     // The form shows the still preview with the figures; the map waits off screen.
     await expect(main.getByTestId('planner-silhouette')).toBeVisible()
-    await expect(main.getByText(/^\d+([.,]\d+)? km$/).first()).toBeVisible()
+    await expect(main.getByText(/^\d+([.,]\d+)?\skm$/).first()).toBeVisible()
     await expect(canvases).toHaveCount(0)
 
     await main.getByRole('button', { name: 'Modifier le tracé' }).click()
