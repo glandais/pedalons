@@ -25,15 +25,17 @@ export const GetMembersQueryParams = zod.object({
     .describe('Search by display name. Also matches the e-mail address, for administrators only.'),
   size: zod.int().default(getMembersQuerySizeDefault).describe('Page size'),
   sortBy: zod
-    .enum(['JOINED_AT'])
+    .enum(['NAME', 'JOINED_AT'])
     .optional()
     .describe(
-      'Order of the list. JOINED_AT is the join date, then the membership id; only for a caller who gets the join dates (an administrator, or anyone once the directory is open): 403 otherwise. Omitted, the order is unspecified.'
+      'Order of the list, always ended by the membership id so pages never overlap. NAME is the display name, regardless of case. JOINED_AT is the join date; only for a caller who gets the join dates (an administrator, or anyone once the directory is open): 403 otherwise. Omitted, NAME.'
     ),
   sortDir: zod
     .enum(['ASC', 'DESC'])
     .optional()
-    .describe('Direction of sortBy. Omitted is DESC — newest first.'),
+    .describe(
+      'Direction of sortBy. Omitted is ASC (A to Z) for NAME, and DESC (newest first) for JOINED_AT.'
+    ),
 })
 
 export const GetMembersResponse = zod

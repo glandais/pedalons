@@ -71,6 +71,13 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       son groupe, accueil, tableau de bord ; `TripStageDto.route` pour l'étape. Même
       vocabulaire d'état que l'interrupteur (`profile.gps.autoSync.*`). Pendant web : `WEB-163`.
 
+- [ ] `MOB-143` **Listes homogènes entre l'app et le site, côté app : les règles (M)** — après les défauts (`MOB-145`),
+  il reste les quinze règles du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §2. Décidées le 12 novembre 2026 et à coder : Explorer › Parcours s'ouvre sur
+  « Membre » (RL1), équipes triées selon la portée (RL5), invites « Rechercher {un objet}… » (RL7), un seul pied de
+  liste (RL12). À décider sur planche : RL2, RL3, RL4, RL6, RL8, RL9, RL10, RL11, RL13, RL15. Restes des défauts :
+  `myTeamsProvider` (rôle, barres d'outils, sélecteur d'équipe) s'arrête toujours à 20 équipes ; en-têtes « N modèles »
+  et « N équipes » de Découvrir non formatés au-delà de 999 ; la section Annonces manque à une personne qui administre
+  la plateforme sans être membre (DL24). Même chantier côté site : `WEB-175`.
 - [ ] `MOB-141` **Cartes homogènes : recette sur appareil de `MOB-139` (S)** — les règles communes des cartes sont
       codées et vérifiées par tests et par captures de la galerie (`flutter test`, hors appareil), jamais sur simulateur
       ni sur appareil : mode sombre, texte agrandi, petit écran, anglais, impérial, feuilles (GPS, signaler / bloquer,
@@ -403,6 +410,12 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       l'espace fine insécable à moins de 2 px). Rustine en place (`WEB-167`) : une mini-police limitée à U+202F,
       `Pedalons Narrow Space` dans `index.css`. Charger Inter (sous-ensemble latin, quatre graisses, `font-display: swap`)
       change l'aspect de tout le site et demande une passe visuelle large ; la rustine se retire alors.
+- [ ] `WEB-175` **Listes homogènes entre l'app et le site, côté site : les règles (M)** — pendant de `MOB-143`. Décidées
+  le 12 novembre 2026 et à coder : commentaires du plus ancien au plus récent (RL5), équipes triées selon la portée
+  (RL5), invites « Rechercher {un objet}… » (RL7), « Afficher plus de commentaires » (RL12). À décider sur planche :
+  les mêmes règles que `MOB-143`. Reste des défauts : la page des modèles de sortie s'ouvre à une personne simplement
+  membre, à qui le serveur refuse la liste (DL23) ; un refus (403) sur une liste affiche « Chargement impossible »
+  (forme d'erreur : RL11).
 - [ ] `WEB-172` **Cartes homogènes : recette en navigateur de `WEB-167` (S)** — même réserve que `MOB-141` côté site :
       vérifié par tests unitaires et par captures de la galerie de développement, pas sur le site servi (SSR, hydratation,
       mode sombre, largeurs intermédiaires). La suite Playwright a tourné le 12 novembre 2026 sur la pile e2e : 1 981
@@ -633,6 +646,12 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 ---
 
 ## API — Contrat d'API et backend
+
+- [ ] `API-185` **Événements datés : « à venir » puis « passées » dans une même liste paginée (S)** — quand l'agenda ou
+  un fil affiche tout, la prochaine sortie est noyée : l'ordre est `dateTime desc`, la plus lointaine d'abord. Demande du
+  12 novembre 2026 (règle RL15 du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md)) : « À venir » du plus proche au plus lointain, puis « Passées » de la plus récente
+  à la plus ancienne. À servir par page (`AllPublicationRepository`, `TeamEntityRepository`), pour que les numéros de
+  page du site et le défilement de l'app restent une seule liste. Forme à trancher sur planche (`MOB-143`, `WEB-175`).
 
 - [ ] `API-173` **La ligne météo d'un voyage dans les listes s'arrête au départ de sa dernière étape (S)** — reste
       de `API-170` : la page du voyage et celle de l'étape gardent leur météo jusqu'à la fin estimée de l'étape,
@@ -1660,6 +1679,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `MOB-88` | **Mode mono-équipe dans l'app** (masquer l'onglet Équipes, ouvrir l'équipe épinglée, lire `pinnedTeamSlugProvider`) | Non (24 octobre 2026) | L'app ne sert que `pedalons.fr`, et ce domaine n'est jamais mono-équipe : le mode n'y a pas de cas d'usage. `pinnedTeamSlugProvider` (`core/config/config_provider.dart`) reste sans lecteur. Le web garde son `hideWhenSingleTeam`, qui sert les autres domaines. À rouvrir si l'app devait un jour servir un domaine mono-équipe |
 | `MOB-89` | **Pages personnalisées d'équipe en puces de section, comme les onglets du web** | Non (24 octobre 2026) | Au mobile, elles restent une liste dans « À propos », une ligne par page qui ouvre son écran (`team_about_page.dart`), comme le demandait la note de conception (`plans/archive/audit-ux/BRIEF.md`, onglet À propos). Avec plusieurs pages, la rangée de puces déborderait. Le web garde ses onglets : sa rangée a la place et n'a pas de menu de débordement (`WEB-25`). Le filtrage des pages réservées aux membres se fait côté backend (`isListed` dans `TeamDetailDto`). L'autre volet de l'entrée, la visibilité de « Membres », n'avait rien à changer au mobile : c'est sa règle que le web reprend (`WEB-112`) |
 | `WEB-171` | **Mention de fuseau en ligne sur le site, comme dans l'app** (« heure de Tokyo (ven. 01:00 chez vous) ») | Non (12 novembre 2026, écart voulu V5 du [tri de l'audit des cartes](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) §3) | Même texte, deux formes : une ligne visible dans l'app (`ZoneMentionLine`, `core/widgets/zone_mention_line.dart`), une icône globe à infobulle sur le site (`ZoneMentionIcon`, `components/common/Rendezvous.tsx`). Au doigt il n'y a pas de survol, d'où la ligne ; au bureau, l'infobulle garde la carte courte. BRANDING §8.3 fixe le texte, pas la forme. La date d'une publication n'en relève pas : c'est la règle des dates de carte (KIT §9) |
+| `MOB-144` | **Créer une annonce ou une équipe depuis l'app** | Non (12 novembre 2026, écart voulu VL11 du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §3) | Choix de périmètre : ces deux créations restent sur le site ; les listes de l'app n'en portent pas le bouton |
 | `MOB-140` | **Lignes d'agenda du site (`AgendaRow`) portées dans l'app** | Non (12 novembre 2026, écart voulu V7 du [tri de l'audit des cartes](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) §3) | L'app n'a pas de vue « Lignes » : l'Agenda n'y a que Liste et Calendrier (BRANDING §6), et sa liste montre les cartes du fil. Ce qui distinguait la ligne du site — lieu de départ, visibilité, « 0 groupe » — est réglé par les règles communes des cartes (lieu et groupe, badges par exception, zéros masqués ; KIT §9), pas par une vue de plus. À rouvrir si l'agenda d'une équipe chargée devient illisible en cartes |
 
 ---

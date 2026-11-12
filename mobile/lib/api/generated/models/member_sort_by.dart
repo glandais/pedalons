@@ -6,6 +6,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 @JsonEnum()
 enum MemberSortBy {
+  @JsonValue('NAME')
+  name('NAME'),
   @JsonValue('JOINED_AT')
   joinedAt('JOINED_AT'),
 

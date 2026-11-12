@@ -49,8 +49,9 @@ Sur le site, `TeamDirectoryPage.tsx` est l'annuaire des membres d'une équipe ; 
 | Étape | État |
 |---|---|
 | Audit (quatre axes) | Fait le 12 novembre 2026 |
-| 1. Tri | Proposé le 12 novembre 2026 : 22 défauts, 14 règles (9 avec planche), 15 écarts voulus. À relire |
-| 2. Galeries de listes | À faire |
+| 1. Tri | Proposé le 12 novembre 2026 : 22 défauts, 14 règles (9 avec planche), 15 écarts voulus. Cinq règles décidées sans planche le même jour (RL1, RL5, RL7, RL12 ; RL14 reclassée en défauts), RL15 ajoutée sur demande |
+| Lot 0, les défauts | Fait le 12 novembre 2026 (`MOB-145`, `WEB-174`, `API-184`, contrat 14.7.0) ; DL23 et DL24 restent (`WEB-175`, `MOB-143`). Rien vu à l'écran |
+| 2. Galeries de listes | Cahier écrit ([galerie.md](galerie.md)) ; galeries à construire |
 | 3. Planches avant / cible | À faire |
 | 4. Décisions | À faire |
 | 5. Lots | À faire |

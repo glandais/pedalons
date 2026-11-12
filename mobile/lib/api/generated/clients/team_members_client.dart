@@ -34,9 +34,9 @@ abstract class TeamMembersClient {
   ///
   /// [size] - Page size.
   ///
-  /// [sortBy] - Order of the list. JOINED_AT is the join date, then the membership id; only for a caller who gets the join dates (an administrator, or anyone once the directory is open): 403 otherwise. Omitted, the order is unspecified.
+  /// [sortBy] - Order of the list, always ended by the membership id so pages never overlap. NAME is the display name, regardless of case. JOINED_AT is the join date; only for a caller who gets the join dates (an administrator, or anyone once the directory is open): 403 otherwise. Omitted, NAME.
   ///
-  /// [sortDir] - Direction of sortBy. Omitted is DESC — newest first.
+  /// [sortDir] - Direction of sortBy. Omitted is ASC (A to Z) for NAME, and DESC (newest first) for JOINED_AT.
   @GET('/api/teams/{teamSlug}/members')
   Future<MemberListResponse> getMembers({
     @Path('teamSlug') required String teamSlug,

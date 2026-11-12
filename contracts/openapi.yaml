@@ -3509,6 +3509,7 @@ components:
     MemberSortBy:
       type: string
       enum:
+      - NAME
       - JOINED_AT
     MessageResponse:
       description: Simple message response
@@ -14975,14 +14976,16 @@ paths:
           type: integer
           format: int32
           default: 50
-      - description: "Order of the list. JOINED_AT is the join date, then the membership\
-          \ id; only for a caller who gets the join dates (an administrator, or anyone\
-          \ once the directory is open): 403 otherwise. Omitted, the order is unspecified."
+      - description: "Order of the list, always ended by the membership id so pages\
+          \ never overlap. NAME is the display name, regardless of case. JOINED_AT\
+          \ is the join date; only for a caller who gets the join dates (an administrator,\
+          \ or anyone once the directory is open): 403 otherwise. Omitted, NAME."
         name: sortBy
         in: query
         schema:
           $ref: "#/components/schemas/MemberSortBy"
-      - description: Direction of sortBy. Omitted is DESC — newest first.
+      - description: "Direction of sortBy. Omitted is ASC (A to Z) for NAME, and DESC\
+          \ (newest first) for JOINED_AT."
         name: sortDir
         in: query
         schema:
@@ -21273,7 +21276,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 14.6.0
+  version: 14.7.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080
