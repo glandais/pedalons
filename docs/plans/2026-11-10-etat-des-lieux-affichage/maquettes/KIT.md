@@ -351,7 +351,12 @@ site ; défilement infini contre numéros de page ; filtres en mémoire contre f
   tôt », à leur date de parution. Le compteur est dans l'en-tête de chaque section ; sur le site, l'en-tête se répète
   en haut d'une page qui s'ouvre au milieu d'une section. L'ordre est servi par l'API, page par page (`when=UPCOMING_FIRST`, `upcomingTotal` ; `dated=true` pour une liste
   sans publications, comme l'agenda).
-  - Agenda d'une équipe : la barre devient « Toutes les dates / Je participe » ; la période « Passées » disparaît,
-    « Je participe » vaut pour les deux sections.
-  - Fil d'accueil : « Tout / Je participe », des deux côtés ; plus de « À venir ».
+  - Agenda d'une équipe : « Toutes les dates / Je participe / Plus tôt ». Fil d'accueil : « Tout / Je participe /
+    Plus tôt ». Plus de « À venir » ni de « Passées ».
+  - **« Plus tôt »** (complément du 12 novembre 2026, après l'essai en production) : « Tout » sans ce qui est à venir —
+    sorties et voyages passés, et, au fil d'accueil, publications à leur date de parution —, du plus récent au plus
+    ancien, sans section. Raison : une équipe qui planifie un an à l'avance repousse « Plus tôt » de seize pages. Il
+    s'exclut avec « Je participe », compte comme un filtre (« Effacer les filtres » ramène à « Tout »), et a son
+    adresse sur le site (`?w=earlier`). Pas de limite sur la section « À venir » de « Tout » (écarté).
+  - API : `when=EARLIER` au fil d'accueil (contrat 14.9.0), `when=PAST` à l'agenda.
 - **Mots communs** : l'option neutre d'un critère de type est « Tout » (jamais « Tous », « Tous les types »).

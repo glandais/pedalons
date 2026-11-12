@@ -91,8 +91,19 @@ Toutes les options recommandées ont été retenues. La forme vérifiable de cha
 | **RL13** | Bouton court « Créer » dans la barre de l'app (agenda, parcours, modèles) ; libellés « Créer {un objet} » sur le site. |
 | **RL15** | Une liste, deux sections « À venir » · « Plus tôt » ; les publications dans la seconde ; agenda « Toutes les dates / Je participe » ; fil d'accueil « Tout / Je participe ». Ajout à l'API (`API-185`). |
 
-Conséquence : les planches RL4, RL6, RL9, RL10 et RL13 dessinent encore l'agenda avec ses trois périodes ; la barre
-décidée par RL15 prévaut.
+Les neuf planches ont été recalées sur ces décisions et sur le livré le 12 novembre 2026.
+
+### Complément du 12 novembre 2026, après l'essai en production
+
+Constat dans Chrome sur le site de production : deux équipes planifient une sortie par semaine jusqu'en 2028. Le fil
+d'accueil compte 195 sorties à venir, et « Plus tôt » — donc la sortie d'hier d'une autre équipe — ne commence qu'en
+page 17 ; même défaut dans l'agenda de ces équipes (page 9).
+
+| Décision | |
+|---|---|
+| **Troisième choix de période, « Plus tôt »** | Fil d'accueil « Tout / Je participe / Plus tôt », agenda « Toutes les dates / Je participe / Plus tôt ». « Plus tôt » = « Tout » sans ce qui est à venir, du plus récent au plus ancien. Planche : artifact « Plus tôt en un geste ». |
+| Écarté | Borner la section « À venir » du fil à six éléments avec un lien « Voir les 195 à venir » (une vue « À venir seulement » de plus, jugée inutile) ; borner à 30 jours ; trier par proximité à aujourd'hui ; remplacer les sections de l'agenda par « À venir / Plus tôt ». |
+| Contrepartie acceptée | L'accueil s'ouvre toujours sur les sorties à venir ; la dernière publication se voit sous « Plus tôt ». |
 
 ---
 

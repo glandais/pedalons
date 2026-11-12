@@ -931,8 +931,8 @@ Une page de liste se lit de haut en bas :
    contrôle par support, « Toutes les équipes / Membre / Organisateur / Administrateur », ouvert
    sur « Membre ». Une puce neutre au défaut et teintée sinon dans l'app ; un sélecteur sur le
    site. On ne choisit **une équipe** qu'au calendrier global (« Toutes mes équipes / {équipe} »).
-3. **Critères** : période (« Toutes les dates / Je participe » à l'agenda, « Tout / Je
-   participe » au fil), type, tri, « Filtres » (§7.3).
+3. **Critères** : période (« Toutes les dates / Je participe / Plus tôt » à l'agenda, « Tout /
+   Je participe / Plus tôt » au fil), type, tri, « Filtres » (§7.3).
 4. **Compteur** à gauche, **contrôle de vue** à droite, sur la même ligne. Le compteur est formaté
    et accordé, dit le total filtré seul (« 2 parcours »), et **disparaît à zéro**. Le contrôle de
    vue est unique, à icônes, avec les mêmes noms des deux côtés : « Vignettes · Lignes · Carte »
@@ -945,7 +945,8 @@ filtre de période est une seule liste paginée à deux sections : **« À venir
 plus lointain (une sortie en cours y reste), puis **« Plus tôt »**, du plus récent au plus ancien.
 Dans un fil, les publications sont dans « Plus tôt », à leur date de parution. Chaque en-tête
 porte son compteur ; sur le site, il se répète en haut d'une page qui s'ouvre au milieu d'une
-section.
+section. Le choix **« Plus tôt »** montre la seconde section seule, en un geste : une équipe qui
+planifie un an à l'avance la repousserait sinon de plusieurs pages.
 
 **États**, les mêmes sur toutes les listes :
 
@@ -987,7 +988,7 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 | Routes of every team (global page) | **Explorer** (entrée de navigation et titre ; elle ouvre la carte). « Parcours » reste la section d'une équipe (`WEB-114`) | « Parcours » pour la page globale |
 | Post | **publication**, notifications comprises | « article », « news », « post » |
 | Trip | **voyage** ; ses composants sont des **étapes** | « séjour », « tour » |
-| Rides + trips of a team | **Agenda** (section : sorties et voyages ; période « Toutes les dates », « Je participe ») ; état vide « Rien à l'agenda pour le moment » | « événements », « programme », « activités » |
+| Rides + trips of a team | **Agenda** (section : sorties et voyages ; période « Toutes les dates », « Je participe », « Plus tôt ») ; état vide « Rien à l'agenda pour le moment » | « événements », « programme », « activités » |
 | Sections of a dated list | **À venir**, puis **Plus tôt** (sans accord : juste pour une sortie, un voyage, une publication) | « Passées », « Historique », « Terminé(e)s » en en-tête |
 | Neutral option of a type filter | **Tout** | « Tous », « Tous les types » |
 | Reset filters | **Effacer les filtres** (un seul libellé ; garde le tri) | « Effacer », « Réinitialiser », « Tout réinitialiser », « Voir toutes les notifications » |
