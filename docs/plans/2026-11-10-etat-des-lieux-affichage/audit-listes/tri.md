@@ -45,7 +45,35 @@ Chemins : `app/` = `mobile/lib/`, `site/` = `frontend/src/`, `back/` = `backend/
 
 ## Décisions prises
 
-Aucune pour l'instant.
+### Décisions du 12 novembre 2026, sans planche
+
+| Règle | Décision |
+|---|---|
+| **RL1** | Une liste inter-équipes s'ouvre sur **mes équipes** (« Membre »), ou sur toutes les équipes pour qui n'en a aucune. Explorer › Parcours de l'app s'aligne. |
+| **RL5** — membres | **Par nom**, départagé par id. Nouvelle valeur `NAME` de `MemberSortBy`, ordre par défaut de l'API (DL22). |
+| **RL5** — commentaires | **Le plus ancien d'abord**, des deux côtés. Le site change. |
+| **RL5** — équipes | **Selon la portée** : mes équipes par nom, toutes les équipes par nombre de membres. L'ordre est dit à côté du compteur. |
+| **RL7** | Invite de recherche : **« Rechercher {un objet}… »** partout, avec « … » (U+2026), même texte des deux côtés. Exception : « Rechercher par nom ou e-mail… » pour qui administre les membres. |
+| **RL12** | Retenu sans question (option recommandée, sans enjeu) : dans l'app, un seul pied « {N} {objets} sur {M} · Vous avez tout vu », formaté ; « Afficher plus de commentaires » des deux côtés ; la taille de page reste propre à chaque support. |
+| **RL14** | **Ce n'était pas une décision.** Le serveur refuse la liste des modèles à qui n'organise pas (`back/service/ridetemplate/RideTemplateAccessChecker.java:40`, vérifié). L'app a raison. Devient deux défauts : **DL23** (site : la page des modèles s'ouvre à une personne simplement membre, qui reçoit un refus) et **DL24** (app : la section Annonces manque à une personne qui administre la plateforme sans être membre, alors que le site la lui montre). |
+| **VL11** | **Voulu** : l'app ne crée ni annonce ni équipe. À écrire dans « Délibérément dehors ». |
+
+### RL15 — Événements datés quand on affiche « Tout » (demande du 12 novembre 2026)
+
+Demande de la personne qui décide, hors audit : pour les événements datés (sorties, voyages), quand la liste affiche
+tout, il faut **deux listes** : « À venir », du plus proche au plus lointain, puis « Passées », du plus récent au plus
+ancien. Aujourd'hui « Tout » est une seule liste en `dateTime desc` : la sortie la plus lointaine d'abord, la prochaine
+noyée au milieu (T12, DL16 pour le cas « À venir » de l'accueil du site).
+
+- **Listes** : agenda d'une équipe, fil d'accueil et publications quand ils montrent des sorties ou des voyages, « Mes
+  sorties » du tableau de bord.
+- **À trancher sur planche** : la place des publications (non datées par un départ) dans un fil mixte ; deux sections
+  dans une seule liste paginée, ou deux listes côte à côte ; le libellé des en-têtes.
+- **Coût** : **API** — un ordre « à venir d'abord (croissant), puis passées (décroissant) » servi par page, pour que les
+  numéros de page du site et le défilement de l'app restent une seule liste ; ou deux requêtes par client. App S, site S.
+- **Se voit** : oui, planche.
+
+Restent à décider, sur planche : RL2, RL3, RL4, RL6, RL8, RL9, RL10, RL11, RL13, RL15.
 
 ---
 
