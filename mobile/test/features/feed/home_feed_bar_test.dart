@@ -13,6 +13,7 @@ import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/dev/card_gallery/gallery_data.dart';
 import 'package:pedalons/features/feed/presentation/widgets/publication_feed_view.dart';
 import 'package:pedalons/features/feed/providers/publication_feed_provider.dart';
+import 'package:pedalons/features/teams/presentation/widgets/team_sections.dart';
 import 'package:pedalons/features/teams/providers/team_providers.dart';
 import 'package:pedalons/keys.dart';
 
@@ -31,6 +32,7 @@ void main() {
   Future<void> pumpHome(
     WidgetTester tester, {
     PageResult<PublicationDto>? page,
+    int count = 47,
   }) async {
     tester.view.physicalSize = const Size(1000, 2400);
     tester.view.devicePixelRatio = 1;
@@ -43,7 +45,7 @@ void main() {
             requested.add(key);
             return _Feed(key, page);
           }),
-          publicationFeedCountProvider.overrideWith((ref, key) async => 47),
+          publicationFeedCountProvider.overrideWith((ref, key) async => count),
           myTeamsProvider.overrideWith(
             (ref) async => <TeamDetailDto>[fixtureTeam()],
           ),
@@ -124,11 +126,11 @@ void main() {
         'restreint les deux sections', (WidgetTester tester) async {
       await pumpHome(tester);
 
-      expect(find.byKey(keys.feed.period(false)), findsOneWidget);
+      expect(find.byKey(keys.feed.period(AgendaScope.all)), findsOneWidget);
       expect(requested.last.when, PublicationWhen.upcomingFirst);
       expect(requested.last.participating, isFalse);
 
-      await tester.tap(find.byKey(keys.feed.period(true)));
+      await tester.tap(find.byKey(keys.feed.period(AgendaScope.participating)));
       await tester.pump();
       await tester.pump();
       expect(requested.last.when, PublicationWhen.upcomingFirst);
@@ -207,7 +209,7 @@ void main() {
           firstSectionTotal: 0,
         ),
       );
-      await tester.tap(find.byKey(keys.feed.period(true)));
+      await tester.tap(find.byKey(keys.feed.period(AgendaScope.participating)));
       await tester.pump();
       await tester.pump();
 
@@ -218,6 +220,123 @@ void main() {
       await tester.pump();
       await tester.pump();
       expect(requested.last.participating, isFalse);
+
+      await tearDownFeed(tester);
+    });
+  });
+
+  // RL15, complément du 12 novembre 2026 : « Plus tôt », tout sauf l'à-venir,
+  // en une liste simple.
+  group('RL15 — « Plus tôt »', () {
+    Future<void> tapEarlier(WidgetTester tester) async {
+      await tester.tap(find.byKey(keys.feed.period(AgendaScope.earlier)));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('trois choix ; « Plus tôt » envoie when=EARLIER, sans '
+        'participation', (WidgetTester tester) async {
+      await pumpHome(tester);
+
+      expect(find.text('Tout'), findsWidgets);
+      expect(find.text('Je participe'), findsOneWidget);
+      expect(find.text('Plus tôt'), findsOneWidget);
+
+      await tapEarlier(tester);
+      expect(requested.last.when, PublicationWhen.earlier);
+      expect(requested.last.participating, isFalse);
+      expect(requested.last.datedOnly, isFalse);
+
+      // « Je participe » l'exclut : un seul segmenté.
+      await tester.tap(find.byKey(keys.feed.period(AgendaScope.participating)));
+      await tester.pump();
+      await tester.pump();
+      expect(requested.last.when, PublicationWhen.upcomingFirst);
+      expect(requested.last.participating, isTrue);
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('se combine avec le type : « Sorties » reste EARLIER', (
+      WidgetTester tester,
+    ) async {
+      await pumpHome(tester);
+      await tapEarlier(tester);
+
+      await tester.tap(find.byKey(keys.feed.typeChip(PublicationType.ride)));
+      await tester.pump();
+      expect(requested.last.when, PublicationWhen.earlier);
+      expect(requested.last.type, PublicationType.ride);
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('une liste simple : ni section ni « Dernières publications », '
+        'le compteur global sur sa ligne', (WidgetTester tester) async {
+      final GalleryData d = GalleryData(images: false);
+      await pumpHome(
+        tester,
+        page: PageResult<PublicationDto>(
+          items: <PublicationDto>[d.feedPost(), d.feedRide(finished: true)],
+          total: 47,
+        ),
+      );
+      await tapEarlier(tester);
+      await tester.pump();
+
+      expect(find.byKey(keys.feed.upcomingSection), findsNothing);
+      expect(find.byKey(keys.feed.earlierSection), findsNothing);
+      expect(find.text('Dernières publications'), findsNothing);
+      expect(find.byKey(keys.feed.resultCount), findsOneWidget);
+      // Le même compteur que l'en-tête d'une section.
+      expect(find.text('47 publications'), findsOneWidget);
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('masqué à zéro', (WidgetTester tester) async {
+      final GalleryData d = GalleryData(images: false);
+      await pumpHome(
+        tester,
+        count: 0,
+        page: PageResult<PublicationDto>(
+          items: <PublicationDto>[d.feedPost()],
+          total: 1,
+        ),
+      );
+      await tapEarlier(tester);
+      await tester.pump();
+
+      expect(find.byKey(keys.feed.resultCount), findsNothing);
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('compte comme un filtre : le vide filtré le nomme, « Effacer '
+        'les filtres » ramène à « Tout »', (WidgetTester tester) async {
+      await pumpHome(
+        tester,
+        page: const PageResult<PublicationDto>(
+          items: <PublicationDto>[],
+          total: 0,
+        ),
+      );
+      await tapEarlier(tester);
+      await tester.tap(find.byKey(keys.feed.typeChip(PublicationType.ride)));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(keys.feed.filteredEmptyState), findsOneWidget);
+      expect(
+        find.text('Rien ne correspond à : Plus tôt · Sorties.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(keys.feed.clearFiltersButton));
+      await tester.pump();
+      await tester.pump();
+      expect(requested.last.when, PublicationWhen.upcomingFirst);
+      expect(requested.last.type, isNull);
 
       await tearDownFeed(tester);
     });

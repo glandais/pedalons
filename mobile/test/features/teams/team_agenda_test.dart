@@ -219,11 +219,16 @@ void main() {
       expect(trips.type, PublicationType.trip);
     });
 
-    test('?w=me / ?w=upcoming / ?w=all : « Je participe » / « Toutes les '
-        'dates »', () {
+    test('?w=me / ?w=earlier|past / ?w=upcoming|all : « Je participe » / '
+        '« Plus tôt » / « Toutes les dates »', () {
       final TeamSectionTarget me = at(const <String, String>{'w': 'me'});
       expect(me.kind, TeamSectionKind.agenda);
       expect(me.scope, AgendaScope.participating);
+      for (final String w in <String>['earlier', 'past']) {
+        final TeamSectionTarget target = at(<String, String>{'w': w});
+        expect(target.kind, TeamSectionKind.agenda);
+        expect(target.scope, AgendaScope.earlier);
+      }
       for (final String w in <String>['upcoming', 'all']) {
         final TeamSectionTarget target = at(<String, String>{'w': w});
         expect(target.kind, TeamSectionKind.agenda);
@@ -233,19 +238,29 @@ void main() {
     });
   });
 
-  // RL15 — les liens profonds de l'ancienne période restent lus : `?w=past`
-  // (la période « Passées » disparue) mène à « Toutes les dates », où les
-  // passées sont, dans « Plus tôt ».
-  testWidgets('RL15 — ?w=past ouvre l\'Agenda sur « Toutes les dates »', (
-    WidgetTester tester,
-  ) async {
-    final TeamHomePage home = await pageAt(
-      tester,
-      '${PathVariants.teamAgenda('velo-club')['fr']!}?w=past',
-    );
-    expect(home.section, TeamSectionKind.agenda);
-    expect(home.agendaScope, AgendaScope.all);
-  });
+  // RL15 — la période dans l'adresse de l'Agenda : `?w=earlier` et l'ancienne
+  // `?w=past` (« Passées ») mènent à « Plus tôt », qui montre la même chose ;
+  // `?w=me` à « Je participe » ; le reste à « Toutes les dates ». (Ce test
+  // menait `?w=past` à « Toutes les dates » avant « Plus tôt ».)
+  for (final (String w, AgendaScope scope) in <(String, AgendaScope)>[
+    ('past', AgendaScope.earlier),
+    ('earlier', AgendaScope.earlier),
+    ('me', AgendaScope.participating),
+    ('upcoming', AgendaScope.all),
+    ('all', AgendaScope.all),
+    ('autre', AgendaScope.all),
+  ]) {
+    testWidgets('RL15 — ?w=$w ouvre l\'Agenda sur ${scope.name}', (
+      WidgetTester tester,
+    ) async {
+      final TeamHomePage home = await pageAt(
+        tester,
+        '${PathVariants.teamAgenda('velo-club')['fr']!}?w=$w',
+      );
+      expect(home.section, TeamSectionKind.agenda);
+      expect(home.agendaScope, scope);
+    });
+  }
 
   group('Agenda', () {
     late List<PublicationFeedKey> requested;
@@ -352,16 +367,102 @@ void main() {
     ) async {
       await pumpAgenda(tester);
 
-      await tester.tap(find.byKey(keys.feed.period(true)));
+      await tester.tap(find.byKey(keys.feed.period(AgendaScope.participating)));
       await tester.pump();
       await tester.pump();
       expect(requested.last.when, PublicationWhen.upcomingFirst);
       expect(requested.last.participating, isTrue);
 
-      await tester.tap(find.byKey(keys.feed.period(false)));
+      await tester.tap(find.byKey(keys.feed.period(AgendaScope.all)));
       await tester.pump();
       await tester.pump();
       expect(requested.last.participating, isFalse);
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('RL15 — « Plus tôt » : when=PAST avec dated=true, et exclut '
+        '« Je participe »', (WidgetTester tester) async {
+      await pumpAgenda(tester);
+
+      expect(find.text('Plus tôt'), findsOneWidget);
+      await tester.tap(find.byKey(keys.feed.period(AgendaScope.earlier)));
+      await tester.pump();
+      await tester.pump();
+      expect(requested.last.when, PublicationWhen.past);
+      expect(requested.last.datedOnly, isTrue);
+      expect(requested.last.participating, isFalse);
+
+      // Avec le type : toujours PAST.
+      await tester.tap(find.byKey(keys.feed.typeChip(PublicationType.trip)));
+      await tester.pump();
+      expect(requested.last.when, PublicationWhen.past);
+      expect(requested.last.type, PublicationType.trip);
+
+      await tester.tap(find.byKey(keys.feed.period(AgendaScope.participating)));
+      await tester.pump();
+      await tester.pump();
+      expect(requested.last.when, PublicationWhen.upcomingFirst);
+      expect(requested.last.participating, isTrue);
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('RL15 — « Plus tôt » : une liste simple, sans en-tête, le '
+        'compteur global sur la ligne du contrôle de vue', (
+      WidgetTester tester,
+    ) async {
+      final GalleryData d = GalleryData(images: false);
+      await pumpAgenda(
+        tester,
+        initialScope: AgendaScope.earlier,
+        page: PageResult<PublicationDto>(
+          items: <PublicationDto>[
+            d.feedRide(
+              slug: 'tour-du-lac',
+              name: 'Tour du lac',
+              dateTime: d.at(-3, 9),
+              finished: true,
+            ),
+          ],
+          total: 5,
+        ),
+      );
+      await tester.pump();
+
+      expect(requested.last.when, PublicationWhen.past);
+      expect(find.byKey(keys.feed.upcomingSection), findsNothing);
+      expect(find.byKey(keys.feed.earlierSection), findsNothing);
+      expect(find.byKey(keys.feed.resultCount), findsOneWidget);
+      expect(find.text('5 sorties et voyages'), findsOneWidget);
+      // Sur la même ligne que le contrôle de vue.
+      expect(
+        tester.getCenter(find.byKey(keys.feed.resultCount)).dy,
+        moreOrLessEquals(
+          tester.getCenter(find.byKey(keys.teamAgenda.view('cards'))).dy,
+          epsilon: 12,
+        ),
+      );
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('RL15 — la vue Calendrier n\'offre pas « Plus tôt »', (
+      WidgetTester tester,
+    ) async {
+      await pumpAgenda(
+        tester,
+        initialScope: AgendaScope.earlier,
+        initialView: AgendaView.calendar,
+      );
+
+      expect(find.byType(CalendarPage), findsOneWidget);
+      expect(find.byKey(keys.feed.period(AgendaScope.earlier)), findsNothing);
+      expect(find.byKey(keys.feed.period(AgendaScope.all)), findsOneWidget);
+      expect(
+        tester.widget<CalendarPage>(find.byType(CalendarPage)).registeredOnly,
+        isFalse,
+      );
 
       await tearDownFeed(tester);
     });
@@ -665,6 +766,33 @@ void main() {
           await tearDownFeed(tester);
         },
       );
+
+      testWidgets('« Plus tôt » sans résultat : le vide filtré le nomme, et '
+          '« Effacer les filtres » revient à « Toutes les dates »', (
+        WidgetTester tester,
+      ) async {
+        await pumpAgenda(
+          tester,
+          emptyFeed: true,
+          initialScope: AgendaScope.earlier,
+          initialType: PublicationType.ride,
+        );
+
+        expect(find.byKey(keys.feed.filteredEmptyState), findsOneWidget);
+        expect(
+          find.text('Rien ne correspond à : Plus tôt · Sorties.'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(keys.feed.clearFiltersButton));
+        await tester.pump();
+        await tester.pump();
+        expect(requested.last.when, PublicationWhen.upcomingFirst);
+        expect(requested.last.type, isNull);
+        expect(find.byKey(keys.feed.emptyState), findsOneWidget);
+
+        await tearDownFeed(tester);
+      });
     });
 
     testWidgets('un visiteur n\'a pas de calendrier', (

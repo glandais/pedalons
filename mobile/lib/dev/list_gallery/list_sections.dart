@@ -346,18 +346,29 @@ List<GalleryRoute> _publicationRoutes(
 /// `when=UPCOMING_FIRST` (règle RL15, contrat 14.8.0) : [upcoming] puis
 /// [earlier], et `upcomingTotal`. Sans filtre, les totaux annoncés sont
 /// [upcomingTotal] et [earlierTotal] ; sous un filtre, ceux des éléments
-/// retenus. Une requête sans `when` lit [plain].
+/// retenus. « Plus tôt » (`when=EARLIER` au fil d'accueil, `when=PAST` à
+/// l'Agenda) lit [past], sur [earlierTotal] et sans `upcomingTotal`. Une
+/// requête sans `when` lit [plain].
 List<GalleryRoute> _datedPublicationRoutes(
   String template,
   ListMode mode, {
   required List<PublicationDto> upcoming,
   required List<PublicationDto> earlier,
+  required List<PublicationDto> past,
   required int upcomingTotal,
   required int earlierTotal,
   required bool Function(GalleryRequest r) isFiltered,
   required ListFixture<PublicationDto> plain,
 }) {
   bool dated(GalleryRequest r) => r.text('when') == 'UPCOMING_FIRST';
+  bool pastOnly(GalleryRequest r) =>
+      r.text('when') == 'EARLIER' || r.text('when') == 'PAST';
+  final ListFixture<PublicationDto> pastFixture = ListFixture<PublicationDto>(
+    items: past,
+    total: earlierTotal,
+    isFiltered: isFiltered,
+    matches: _publicationMatches,
+  );
 
   /// Les deux sections de la page 0 et leurs totaux, ou `null` (erreur,
   /// attente).
@@ -425,6 +436,13 @@ List<GalleryRoute> _datedPublicationRoutes(
       ),
       when: dated,
     ),
+    // « Plus tôt » : une liste simple, servie comme une liste sans `when`.
+    for (final GalleryRoute route in _publicationRoutes(
+      template,
+      mode,
+      (_) => pastFixture,
+    ))
+      GalleryRoute.get(route.template, route.handler, when: pastOnly),
     ..._publicationRoutes(template, mode, (_) => plain),
   ];
 }
@@ -506,6 +524,7 @@ ListCase _home(
           mode,
           upcoming: frontier ? d.homeUpcoming.take(2).toList() : d.homeUpcoming,
           earlier: frontier ? d.homeEarlier : const <PublicationDto>[],
+          past: d.homeEarlier,
           upcomingTotal: frontier ? 2 : ListTotals.homeUpcoming,
           earlierTotal: ListTotals.homeEarlier,
           isFiltered: filtered,
@@ -551,6 +570,11 @@ List<Override> _homeAllRides(GalleryData _) => <Override>[
       .overrideWith((Ref ref) => PublicationType.ride),
 ];
 
+List<Override> _homeEarlier(GalleryData _) => <Override>[
+  publicationFeedPeriodProvider(null)
+      .overrideWith((Ref ref) => AgendaScope.earlier),
+];
+
 final List<ListCase> _accueilCases = <ListCase>[
   _home('accueil-repos', loaded: kRideName),
   // La frontière entre « À venir » et « Plus tôt », dans le même défilement.
@@ -562,6 +586,9 @@ final List<ListCase> _accueilCases = <ListCase>[
     steps: <ListStep>[ListScrollTo(ListTarget.key(keys.feed.card(kRideSlug)))],
     loaded: kPostName,
   ),
+  // « Plus tôt » : tout sauf l'à-venir, en une liste simple, son compteur sur
+  // sa ligne (RL15, complément du 12 novembre 2026).
+  _home('accueil-plus-tot', overrides: _homeEarlier, loaded: kPostName),
   _home('accueil-filtre', overrides: _homeAllRides, loaded: kRideName),
   _home(
     'accueil-criteres',
@@ -667,6 +694,7 @@ ListCase _agenda(
         mode,
         upcoming: d.agendaUpcoming,
         earlier: frontier ? d.agendaPast : const <PublicationDto>[],
+        past: d.agendaPast,
         upcomingTotal: frontier ? d.agendaUpcoming.length : ListTotals.agenda,
         earlierTotal: ListTotals.past,
         isFiltered: filtered,
@@ -692,6 +720,13 @@ final List<ListCase> _agendaCases = <ListCase>[
     // sous la barre épinglée.
     steps: <ListStep>[ListScrollTo(ListTarget.key(keys.feed.card(kTripSlug)))],
     loaded: 'Tour du lac',
+  ),
+  // « Plus tôt » : les sorties et voyages passés, en une liste simple, son
+  // compteur sur la ligne du contrôle de vue (RL15, 12 novembre 2026).
+  _agenda(
+    'agenda-plus-tot',
+    scope: AgendaScope.earlier,
+    loaded: 'Tour du lac du Drennec',
   ),
   _agenda(
     'agenda-filtre',

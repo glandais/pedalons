@@ -45,8 +45,11 @@ List<PublicationType?> agendaTypeOptions(TeamDetailDto team) =>
 /// venir », du plus proche au plus lointain — une sortie partie et pas rentrée
 /// y reste, marquée « En cours » —, puis « Plus tôt », du plus récent au plus
 /// ancien, chacune avec son compteur, dans le même défilement
-/// (`when=UPCOMING_FIRST`). **La période** se réduit à « Toutes les dates /
-/// Je participe », qui vaut pour les deux sections.
+/// (`when=UPCOMING_FIRST`). **La période** : « Toutes les dates / Je
+/// participe / Plus tôt » — « Je participe » vaut pour les deux sections,
+/// « Plus tôt » ne garde que la seconde, en une liste simple sans en-tête
+/// (`when=PAST`, complément du 12 novembre 2026). La vue Calendrier n'offre
+/// pas « Plus tôt ».
 ///
 /// **La barre** (règle RL6) : la recherche en tête, « Créer » à sa droite pour
 /// qui crée des sorties (RL13) ; la période sur toute la largeur ; les types
@@ -149,7 +152,8 @@ class _TeamAgendaPageState extends ConsumerState<TeamAgendaPage> {
                       PdlSpacing.section,
                       0,
                     ),
-                    child: _period(),
+                    // Pas de « Plus tôt » dans le calendrier du mois.
+                    child: _period(showEarlier: false),
                   ),
                   ListCountRow(viewSwitch: _viewSwitch(view)),
                 ],
@@ -204,12 +208,11 @@ class _TeamAgendaPageState extends ConsumerState<TeamAgendaPage> {
         onTypeChanged: (PublicationType? next) => setState(() => _type = next),
         datedSections: true,
         datedOnly: true,
-        participating: _scope == AgendaScope.participating,
-        // « Je participe » est un filtre : le vide filtré le nomme, et
-        // « Effacer les filtres » ramène à « Toutes les dates » (règle RL10).
-        periodFilterLabel: _scope == AgendaScope.participating
-            ? 'lists.period.participating'.tr()
-            : null,
+        selectedPeriod: _scope,
+        // « Je participe » et « Plus tôt » sont des filtres : le vide filtré
+        // les nomme, et « Effacer les filtres » ramène à « Toutes les dates »
+        // (règle RL10).
+        periodFilterLabel: feedPeriodFilterLabel(_scope),
         onClearPeriod: () => setState(() => _scope = AgendaScope.all),
         filteredTitleKey: 'lists.emptyFiltered.agenda',
         itemNounKey: 'lists.noun.agenda',
@@ -229,14 +232,12 @@ class _TeamAgendaPageState extends ConsumerState<TeamAgendaPage> {
     );
   }
 
-  /// « Toutes les dates / Je participe », sur toute la largeur.
-  Widget _period() => FeedPeriodControl(
+  /// « Toutes les dates / Je participe / Plus tôt », sur toute la largeur.
+  Widget _period({bool showEarlier = true}) => FeedPeriodControl(
     allLabelKey: 'lists.period.allDates',
-    participating: _scope == AgendaScope.participating,
-    onChanged: (bool participating) => setState(
-      () =>
-          _scope = participating ? AgendaScope.participating : AgendaScope.all,
-    ),
+    period: _scope,
+    showEarlier: showEarlier,
+    onChanged: (AgendaScope next) => setState(() => _scope = next),
   );
 
   /// « Vignettes · Lignes · Calendrier » ; sans le calendrier pour qui n'est

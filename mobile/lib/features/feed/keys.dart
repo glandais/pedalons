@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../../api/generated/export.dart';
+import '../teams/presentation/widgets/team_sections.dart';
 
 class _FeedKey extends ValueKey<String> {
   const _FeedKey(String value) : super('feed_$value');
@@ -47,10 +48,11 @@ class FeedKeys {
   /// La puce « Portée » du fil d'accueil (règle RL2).
   final scopeChip = const _FeedKey('scopeChip');
 
-  /// Un segment de la période : « Tout » / « Toutes les dates » (`false`) ou
-  /// « Je participe » (`true`) — règles RL3 et RL15.
-  ValueKey<String> period(bool participating) =>
-      _FeedKey('period_${participating ? 'participating' : 'all'}');
+  /// Un segment de la période : « Tout » / « Toutes les dates »
+  /// (`period_all`), « Je participe » (`period_participating`) ou « Plus tôt »
+  /// (`period_earlier`) — règles RL3 et RL15.
+  ValueKey<String> period(AgendaScope period) =>
+      _FeedKey('period_${period.name}');
 
   /// L'en-tête de la section « À venir » (règle RL15).
   final upcomingSection = const _FeedKey('upcomingSection');

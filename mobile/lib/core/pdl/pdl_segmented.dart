@@ -49,11 +49,19 @@ class PdlSegmented<T> extends StatelessWidget {
     required this.segments,
     required this.value,
     required this.onChanged,
+    this.dense = false,
   });
 
   final List<PdlSegment<T>> segments;
   final T value;
   final ValueChanged<T> onChanged;
+
+  /// Des marges internes resserrées (2 au lieu de 3 autour et entre les
+  /// segments, aucune au lieu de 4 dans chacun) : de quoi tenir trois
+  /// libellés longs sans les couper à 390 pt de large — « Toutes les dates /
+  /// Je participe / Plus tôt » (114 pt de texte pour 116 de segment). Le
+  /// texte, lui, garde sa taille, et chaque segment sa hauteur de cible.
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -62,8 +70,9 @@ class PdlSegmented<T> extends StatelessWidget {
     final Brightness brightness = Theme.of(context).brightness;
     final List<BoxShadow> thumbShadow = PdlShadows.segThumb(brightness);
 
+    final double gutter = dense ? 2 : 3;
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: EdgeInsets.all(gutter),
       decoration: BoxDecoration(
         color: c.neutralSoft,
         borderRadius: PdlRadii.mdAll,
@@ -71,7 +80,7 @@ class PdlSegmented<T> extends StatelessWidget {
       child: Row(
         children: <Widget>[
           for (int i = 0; i < segments.length; i++) ...<Widget>[
-            if (i > 0) const SizedBox(width: 3),
+            if (i > 0) SizedBox(width: gutter),
             Expanded(
               child: _Segment<T>(
                 key: segments[i].key,
@@ -84,6 +93,7 @@ class PdlSegmented<T> extends StatelessWidget {
                 border: brightness == Brightness.dark ? c.border : null,
                 shadow: thumbShadow,
                 style: t.buttonSm,
+                padding: dense ? 0 : 4,
               ),
             ),
           ],
@@ -105,6 +115,7 @@ class _Segment<T> extends StatelessWidget {
     required this.border,
     required this.shadow,
     required this.style,
+    required this.padding,
   });
 
   final PdlSegment<T> segment;
@@ -116,6 +127,7 @@ class _Segment<T> extends StatelessWidget {
   final Color? border;
   final List<BoxShadow> shadow;
   final TextStyle style;
+  final double padding;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +143,7 @@ class _Segment<T> extends StatelessWidget {
           duration: PdlMotion.stateChange,
           curve: PdlMotion.stateChangeCurve,
           constraints: const BoxConstraints(minHeight: PdlMetrics.tapTarget),
-          padding: const EdgeInsets.symmetric(horizontal: 4),
+          padding: EdgeInsets.symmetric(horizontal: padding),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected ? surface : null,

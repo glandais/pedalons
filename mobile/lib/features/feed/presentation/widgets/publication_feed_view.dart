@@ -15,6 +15,7 @@ import '../../../posts/domain/post_neighbours.dart';
 import '../../../tags/presentation/tag_filter.dart';
 import '../../../tags/providers/team_tags_provider.dart';
 import '../../../teams/presentation/widgets/publication_card.dart';
+import '../../../teams/presentation/widgets/team_sections.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../providers/publication_feed_provider.dart';
 
@@ -41,12 +42,13 @@ class PublicationFeedView extends ConsumerStatefulWidget {
   final List<Widget> leadingSlivers;
 
   /// La période, **sous la recherche**, sur toute la largeur (règle RL6) :
-  /// « Toutes les dates / Je participe » de l'Agenda. Sans elle, le fil
-  /// d'accueil pose la sienne, « Tout / Je participe » ([showPeriod]).
+  /// « Toutes les dates / Je participe / Plus tôt » de l'Agenda. Sans elle, le
+  /// fil d'accueil pose la sienne, « Tout / Je participe / Plus tôt »
+  /// ([showPeriod]).
   final Widget? period;
 
-  /// Le fil d'accueil porte sa période « Tout / Je participe » (règle RL3),
-  /// tenue dans `publicationFeedParticipatingProvider`.
+  /// Le fil d'accueil porte sa période « Tout / Je participe / Plus tôt »
+  /// (règles RL3 et RL15), tenue dans `publicationFeedPeriodProvider`.
   final bool showPeriod;
 
   /// À droite de la recherche : le bouton « Créer » de l'Agenda (règle RL13).
@@ -107,13 +109,14 @@ class PublicationFeedView extends ConsumerStatefulWidget {
   /// Sorties et voyages seulement, sans publications : l'Agenda.
   final bool datedOnly;
 
-  /// « Je participe » **tenu par l'appelant** (l'Agenda) ; ignoré quand
-  /// [showPeriod] pose la période du fil d'accueil.
-  final bool participating;
+  /// La période **tenue par l'appelant** (l'Agenda) ; ignorée quand
+  /// [showPeriod] pose la période du fil d'accueil. « Plus tôt » n'a d'effet
+  /// qu'avec [datedSections].
+  final AgendaScope selectedPeriod;
 
   /// La période de l'Agenda **quand elle s'écarte de son défaut** (« Je
-  /// participe ») : c'est un filtre, que le vide filtré nomme (règle RL10).
-  /// `null` à « Toutes les dates », et hors de l'Agenda.
+  /// participe », « Plus tôt ») : c'est un filtre, que le vide filtré nomme
+  /// (règle RL10). `null` à « Toutes les dates », et hors de l'Agenda.
   final String? periodFilterLabel;
 
   /// Remet la période à son défaut depuis l'état vide filtré : elle est tenue
@@ -152,7 +155,7 @@ class PublicationFeedView extends ConsumerStatefulWidget {
     this.onTypeChanged,
     this.datedSections = false,
     this.datedOnly = false,
-    this.participating = false,
+    this.selectedPeriod = AgendaScope.all,
     this.periodFilterLabel,
     this.onClearPeriod,
     this.filteredTitleKey = 'lists.emptyFiltered.publications',
@@ -215,9 +218,8 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
     );
   }
 
-  void _setParticipating(bool value) {
-    ref.read(publicationFeedParticipatingProvider(_scope).notifier).state =
-        value;
+  void _setPeriod(AgendaScope value) {
+    ref.read(publicationFeedPeriodProvider(_scope).notifier).state = value;
   }
 
   @override
@@ -225,7 +227,7 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
     super.didUpdateWidget(oldWidget);
     // Un autre jeu de résultats : retour en haut de liste.
     if (oldWidget.selectedType != widget.selectedType ||
-        oldWidget.participating != widget.participating) {
+        oldWidget.selectedPeriod != widget.selectedPeriod) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _scrollToTop();
       });
@@ -247,7 +249,7 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
     ref.listen(publicationFeedTagsProvider(_scope), (previous, next) {
       if (previous != next) _scrollToTop();
     });
-    ref.listen(publicationFeedParticipatingProvider(_scope), (previous, next) {
+    ref.listen(publicationFeedPeriodProvider(_scope), (previous, next) {
       if (previous != next) _scrollToTop();
     });
 
@@ -279,41 +281,65 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
     final List<String> tagIds = tagVocabulary.isEmpty
         ? const <String>[]
         : ref.watch(publicationFeedTagsProvider(_scope));
-    final bool participating = widget.showPeriod
-        ? ref.watch(publicationFeedParticipatingProvider(_scope))
-        : widget.participating;
+    final AgendaScope period = widget.showPeriod
+        ? ref.watch(publicationFeedPeriodProvider(_scope))
+        : widget.selectedPeriod;
+    final bool participating = period == AgendaScope.participating;
+    // « Plus tôt » : tout sauf l'à-venir, du plus récent au plus ancien, en
+    // une liste simple (règle RL15, complément du 12 novembre 2026).
+    final bool earlier = widget.datedSections && period == AgendaScope.earlier;
     // Deux sections dès que la liste montre des sorties ou des voyages : sous
-    // « Publications » seules, aucune (règle RL15).
-    final bool sectioned = widget.datedSections && type != PublicationType.post;
+    // « Publications » seules, aucune (règle RL15) ; sous « Plus tôt » non
+    // plus.
+    final bool sectioned =
+        widget.datedSections && type != PublicationType.post && !earlier;
     final PublicationFeedKey key = (
       teamSlug: widget.teamSlug,
       type: type,
       search: search,
       minRole: minRole,
       tags: feedTagsKey(teamSlug: teamSlug, type: type, tagIds: tagIds),
-      when: sectioned ? PublicationWhen.upcomingFirst : null,
+      // L'Agenda, sans publications, a déjà `PAST` ; le fil d'accueil a besoin
+      // d'`EARLIER`, qui garde les publications (contrat 14.9.0).
+      when: earlier
+          ? (widget.datedOnly ? PublicationWhen.past : PublicationWhen.earlier)
+          : sectioned
+          ? PublicationWhen.upcomingFirst
+          : null,
       participating: participating,
       datedOnly: widget.datedOnly,
     );
     final state = ref.watch(publicationFeedProvider(key));
     final notifier = ref.read(publicationFeedProvider(key).notifier);
+    // Le type ne filtre que là où il se choisit : dans les Publications, il
+    // *est* la liste.
+    final PublicationType? chosenType = widget.typeOptions.isNotEmpty
+        ? type
+        : null;
     // Avec des sections, chacune porte son compteur : pas de compteur global
-    // (règles RL8 et RL15).
-    final String? countLine = widget.countLabel == null || sectioned
+    // (règles RL8 et RL15). Sous « Plus tôt », la liste est d'un seul tenant :
+    // le compteur global revient, sur la ligne du contrôle de vue.
+    final String Function(int total)? countLabel = earlier
+        ? (int total) => countWithNoun(_nounKey(chosenType), total)
+        : widget.countLabel;
+    final String? countLine = countLabel == null || sectioned
         ? null
         : ref
               .watch(publicationFeedCountProvider(key))
               .maybeWhen(
-                data: (int total) =>
-                    total == 0 ? null : widget.countLabel!(total),
+                data: (int total) => total == 0 ? null : countLabel(total),
                 orElse: () => null,
               );
+    // « Dernières publications » : l'en-tête du fil d'accueil d'un seul
+    // tenant — pas sous « Plus tôt », dont le compteur est sur sa ligne.
+    final bool latestHeader =
+        widget.showSectionHeader && !sectioned && !earlier;
 
     return PdlRefresh(
       onRefresh: () async {
         await Future.wait<void>(<Future<void>>[
           notifier.refresh(),
-          if (countLine != null || (widget.showSectionHeader && !sectioned))
+          if (countLine != null || latestHeader)
             ref.refresh(publicationFeedCountProvider(key).future),
           if (widget.onRefreshExtras != null) widget.onRefreshExtras!(),
         ]);
@@ -335,10 +361,7 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
             padding: EdgeInsets.zero,
             child: FeedToolbar(
               period: widget.showPeriod
-                  ? FeedPeriodControl(
-                      participating: participating,
-                      onChanged: _setParticipating,
-                    )
+                  ? FeedPeriodControl(period: period, onChanged: _setPeriod)
                   : widget.period,
               searchTrailing: widget.searchTrailing,
               search: search,
@@ -356,7 +379,7 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
               onTagsChanged: _setTags,
             ),
           ),
-          if (widget.showSectionHeader && !sectioned)
+          if (latestHeader)
             SliverToBoxAdapter(
               child: ContentWidthConstraint(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -396,14 +419,12 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
             search: search,
             tagIds: tagIds,
             tagVocabulary: tagVocabulary,
-            // Le type ne filtre que là où il se choisit : dans les
-            // Publications, il *est* la liste.
-            chosenType: widget.typeOptions.isNotEmpty ? type : null,
+            chosenType: chosenType,
             // La portée ne filtre que si elle s'écarte de son défaut.
             scopeFilter: widget.teamSlug == null && minRole != defaultScope
                 ? minRole
                 : _noScopeFilter,
-            participating: participating,
+            period: period,
           ),
           const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
         ],
@@ -419,6 +440,15 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
     _ => null,
   };
 
+  /// Le nom de ce que la liste compte : celui du type choisi, sinon celui de
+  /// la liste (« publications », « sorties et voyages »).
+  String _nounKey(PublicationType? chosenType) => switch (chosenType) {
+    PublicationType.ride => 'lists.noun.ride',
+    PublicationType.trip => 'lists.noun.trip',
+    PublicationType.post => 'lists.noun.publication',
+    _ => widget.itemNounKey,
+  };
+
   /// Le marqueur « la portée n'est pas un filtre » : `null` est une portée,
   /// « Toutes les équipes ».
   static const Object _noScopeFilter = Object();
@@ -432,7 +462,7 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
     required List<TagWithUsageDto> tagVocabulary,
     required PublicationType? chosenType,
     required Object? scopeFilter,
-    required bool participating,
+    required AgendaScope period,
   }) {
     if (state.showsSkeletons) {
       return [
@@ -473,19 +503,19 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
       // apparaîtra ici.
       //
       // **Tout critère écarté de son défaut filtre** (règle RL10) : la
-      // recherche, la période (« Je participe », « Passées »), le type, les
+      // recherche, la période (« Je participe », « Plus tôt »), le type, les
       // tags, la portée.
       final bool searched = search != null && search.isNotEmpty;
       final bool scoped = !identical(scopeFilter, _noScopeFilter);
-      // « Je participe » est un filtre (règle RL10) : celui de l'Agenda, nommé
-      // par lui, ou celui du fil d'accueil.
-      final String? period = widget.showPeriod
-          ? (participating ? 'lists.period.participating'.tr() : null)
+      // « Je participe » et « Plus tôt » sont des filtres (règle RL10) : ceux
+      // de l'Agenda, nommés par lui, ou ceux du fil d'accueil.
+      final String? periodLabel = widget.showPeriod
+          ? feedPeriodFilterLabel(period)
           : widget.periodFilterLabel;
       final List<String> filters = <String>[
         if (searched) quotedSearch(search),
         if (scoped) membershipScopeLabel(scopeFilter as MinRole?),
-        ?period,
+        ?periodLabel,
         if (chosenType != null) _FilterChips.typeLabel(chosenType),
         ...tagNames(tagVocabulary, tagIds),
       ];
@@ -531,9 +561,9 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
                                 .state =
                             null;
                       }
-                      if (period != null) {
+                      if (periodLabel != null) {
                         if (widget.showPeriod) {
-                          _setParticipating(false);
+                          _setPeriod(AgendaScope.all);
                         } else {
                           widget.onClearPeriod?.call();
                         }
@@ -545,12 +575,7 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
       ];
     }
 
-    final String nounKey = switch (chosenType) {
-      PublicationType.ride => 'lists.noun.ride',
-      PublicationType.trip => 'lists.noun.trip',
-      PublicationType.post => 'lists.noun.publication',
-      _ => widget.itemNounKey,
-    };
+    final String nounKey = _nounKey(chosenType);
 
     Widget item(int index) {
       notifier.onItemBuilt(index);
@@ -634,38 +659,65 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
   }
 }
 
-/// La période du fil d'accueil : « Tout / Je participe » (règles RL3 et
-/// RL15). « Tout » montre « À venir » puis « Plus tôt » ; « Je participe »
-/// restreint les deux sections à ce où l'on est inscrit.
+/// Le nom que le vide filtré donne à la période quand elle s'écarte de son
+/// défaut (règle RL10) : « Je participe », « Plus tôt » ; `null` à « Tout ».
+String? feedPeriodFilterLabel(AgendaScope period) => switch (period) {
+  AgendaScope.all => null,
+  AgendaScope.participating => 'lists.period.participating'.tr(),
+  // Le même mot que l'en-tête de la seconde section.
+  AgendaScope.earlier => 'lists.sections.earlier'.tr(),
+};
+
+/// La période du fil d'accueil et de l'Agenda : « Tout / Je participe / Plus
+/// tôt » (règles RL3 et RL15). « Tout » montre « À venir » puis « Plus tôt » ;
+/// « Je participe » restreint les deux sections à ce où l'on est inscrit ;
+/// « Plus tôt » ne garde que la seconde, en une liste simple.
 class FeedPeriodControl extends StatelessWidget {
   const FeedPeriodControl({
     super.key,
-    required this.participating,
+    required this.period,
     required this.onChanged,
     this.allLabelKey = 'lists.period.all',
+    this.showEarlier = true,
   });
 
-  final bool participating;
-  final ValueChanged<bool> onChanged;
+  final AgendaScope period;
+  final ValueChanged<AgendaScope> onChanged;
 
   /// « Tout » au fil d'accueil, « Toutes les dates » à l'Agenda.
   final String allLabelKey;
 
+  /// « Plus tôt » est offert ; pas dans la vue Calendrier de l'Agenda, où
+  /// « Plus tôt » se lit « Toutes les dates ».
+  final bool showEarlier;
+
   @override
-  Widget build(BuildContext context) => PdlSegmented<bool>(
-    value: participating,
+  Widget build(BuildContext context) => PdlSegmented<AgendaScope>(
+    // Trois libellés, dont « Toutes les dates » : les marges se resserrent
+    // pour qu'aucun ne soit coupé à 390 pt.
+    dense: showEarlier,
+    value: !showEarlier && period == AgendaScope.earlier
+        ? AgendaScope.all
+        : period,
     onChanged: onChanged,
-    segments: <PdlSegment<bool>>[
-      PdlSegment<bool>(
-        key: keys.feed.period(false),
-        value: false,
+    segments: <PdlSegment<AgendaScope>>[
+      PdlSegment<AgendaScope>(
+        key: keys.feed.period(AgendaScope.all),
+        value: AgendaScope.all,
         label: allLabelKey.tr(),
       ),
-      PdlSegment<bool>(
-        key: keys.feed.period(true),
-        value: true,
+      PdlSegment<AgendaScope>(
+        key: keys.feed.period(AgendaScope.participating),
+        value: AgendaScope.participating,
         label: 'lists.period.participating'.tr(),
       ),
+      if (showEarlier)
+        PdlSegment<AgendaScope>(
+          key: keys.feed.period(AgendaScope.earlier),
+          value: AgendaScope.earlier,
+          // Le même mot que l'en-tête de la seconde section.
+          label: 'lists.sections.earlier'.tr(),
+        ),
     ],
   );
 }

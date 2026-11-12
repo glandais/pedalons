@@ -13,11 +13,17 @@ import '../../../../core/theme/pdl_icons.dart';
 /// et voyages, dont le calendrier est une vue) et aux **Publications**.
 enum TeamSectionKind { dashboard, agenda, posts, routes, ads, members, about }
 
-/// La période de l'Agenda (règle RL15 des listes, KIT §10) : « Toutes les
-/// dates » par défaut, ou « Je participe ». Plus de « À venir » ni de
-/// « Passées » : la liste montre « À venir » puis « Plus tôt », deux sections
-/// d'une même liste paginée, et « Je participe » vaut pour les deux.
-enum AgendaScope { all, participating }
+/// La période d'une liste d'événements datés (règle RL15 des listes, KIT
+/// §10) — l'Agenda d'une équipe et le fil d'accueil : « Toutes les dates » (ou
+/// « Tout ») par défaut, « Je participe », ou « Plus tôt ».
+///
+/// [all] et [participating] montrent « À venir » puis « Plus tôt », deux
+/// sections d'une même liste paginée (`when=UPCOMING_FIRST`) ; [earlier] (le
+/// complément du 12 novembre 2026) est « Tout » sans ce qui est à venir, du
+/// plus récent au plus ancien, **une liste simple, sans section**
+/// (`when=EARLIER` au fil d'accueil, `when=PAST` à l'Agenda). Un seul
+/// segmenté : « Plus tôt » et « Je participe » s'excluent.
+enum AgendaScope { all, participating, earlier }
 
 /// La vue de l'Agenda (règle RL9) : « Vignettes », « Lignes », ou le
 /// calendrier du mois — réservé aux membres (plan §7.2).
@@ -38,10 +44,10 @@ typedef TeamSectionTarget = ({
 const String kTeamTabParam = 'tab';
 const String kTeamTabFeed = 'publications';
 
-/// La période de l'Agenda dans son URL (`?w=me`), comme au site. Les anciennes
-/// valeurs (`?w=past`, `?w=upcoming`, `?w=all`) restent lues : elles mènent à
-/// « Toutes les dates », l'état le plus proche — les passées y sont, dans
-/// « Plus tôt ».
+/// La période de l'Agenda dans son URL : `?w=me` (« Je participe ») et
+/// `?w=earlier` (« Plus tôt »), comme au site. L'ancienne `?w=past`
+/// (« Passées ») mène à « Plus tôt », qui montre la même chose ; les autres
+/// (`?w=upcoming`, `?w=all`) à « Toutes les dates ».
 const String kAgendaScopeParam = 'w';
 
 /// Le type de l'Agenda dans son URL (`?type=ride`, `?type=trip`).
@@ -55,6 +61,7 @@ PublicationType? _agendaType(String? value) => switch (value) {
 
 AgendaScope _agendaScope(String? value) => switch (value) {
   'me' => AgendaScope.participating,
+  'earlier' || 'past' => AgendaScope.earlier,
   _ => AgendaScope.all,
 };
 
@@ -83,7 +90,7 @@ TeamSectionTarget agendaTarget(
 /// |---|---|
 /// | `?tab=publications&type=post` | Publications |
 /// | `?tab=publications&type=ride\|trip` | Agenda, sur ce type |
-/// | `?w=me` / `?w=upcoming` / `?w=all` | Agenda, « Je participe » / « Toutes les dates » |
+/// | `?w=me` / `?w=earlier` ou `?w=past` / `?w=upcoming` ou `?w=all` | Agenda, « Je participe » / « Plus tôt » / « Toutes les dates » |
 /// | `?tab=publications` seul | le tableau de bord |
 TeamSectionTarget resolveTeamRootSection(Map<String, String> query) {
   final String? type = query[kAgendaTypeParam];
@@ -106,7 +113,11 @@ TeamSectionTarget resolveTeamRootSection(Map<String, String> query) {
     );
   }
   if (type == 'ride' || type == 'trip') return agendaTarget(query);
-  if (scope == 'me' || scope == 'upcoming' || scope == 'all') {
+  if (scope == 'me' ||
+      scope == 'earlier' ||
+      scope == 'past' ||
+      scope == 'upcoming' ||
+      scope == 'all') {
     // `w=upcoming` et `w=all`, que l'Agenda n'a plus, valent « Toutes les
     // dates ».
     return agendaTarget(query);

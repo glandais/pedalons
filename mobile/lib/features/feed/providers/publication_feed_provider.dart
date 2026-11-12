@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../../../api/generated/export.dart';
 import '../../../api/pedalons_api_client.dart';
 import '../../../core/pagination/pagination.dart';
+import '../../teams/presentation/widgets/team_sections.dart';
 import '../data/publication_feed_repository.dart';
 
 /// Ce qui identifie un jeu de résultats du fil : une portée et ses filtres.
@@ -24,8 +25,11 @@ import '../data/publication_feed_repository.dart';
 /// proche au plus lointain, puis « Plus tôt », du plus récent au plus ancien
 /// — les publications y sont, à leur date de parution. C'est l'ordre de
 /// l'Agenda d'une équipe et du fil d'accueil, sauf sous « Publications »
-/// seules (`when` nul). `participating` : « Je participe ». `datedOnly` :
-/// sorties et voyages seulement, sans publications — l'Agenda.
+/// seules (`when` nul). « Plus tôt » envoie `when=EARLIER` au fil d'accueil
+/// (contrat 14.9.0 : tout sauf l'à-venir, publications comprises) et
+/// `when=PAST` à l'Agenda : une liste simple, sans section. `participating` :
+/// « Je participe ». `datedOnly` : sorties et voyages seulement, sans
+/// publications — l'Agenda.
 typedef PublicationFeedKey = ({
   String? teamSlug,
   PublicationType? type,
@@ -84,10 +88,11 @@ typedef PublicationFeedScopeChoice = ({MinRole? minRole});
 final publicationFeedScopeProvider = StateProvider.autoDispose
     .family<PublicationFeedScopeChoice?, String?>((ref, teamSlug) => null);
 
-/// « Je participe » sur le fil d'accueil, par portée : la période « Tout / Je
-/// participe » (règle RL3). L'Agenda d'une équipe tient la sienne lui-même.
-final publicationFeedParticipatingProvider = StateProvider.autoDispose
-    .family<bool, String?>((ref, scope) => false);
+/// La période du fil d'accueil, par portée : « Tout / Je participe / Plus
+/// tôt » (règles RL3 et RL15). L'Agenda d'une équipe tient la sienne
+/// lui-même.
+final publicationFeedPeriodProvider = StateProvider.autoDispose
+    .family<AgendaScope, String?>((ref, scope) => AgendaScope.all);
 
 /// Le fil paginé d'une portée et de ses filtres.
 final publicationFeedProvider = StateNotifierProvider.autoDispose

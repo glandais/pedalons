@@ -23,6 +23,7 @@ const Map<String, List<String>> _cahier = <String, List<String>>{
   'accueil': <String>[
     'accueil-repos',
     'accueil-sections',
+    'accueil-plus-tot',
     'accueil-filtre',
     'accueil-criteres',
     'accueil-vide',
@@ -41,6 +42,7 @@ const Map<String, List<String>> _cahier = <String, List<String>>{
   'agenda': <String>[
     'agenda-repos',
     'agenda-sections',
+    'agenda-plus-tot',
     'agenda-filtre',
     'agenda-criteres',
     'agenda-vide',
