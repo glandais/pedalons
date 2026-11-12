@@ -6,8 +6,11 @@ import '../../../../api/generated/export.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../keys.dart';
+import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
+import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../domain/ad_filters.dart';
 import '../../providers/ad_list_provider.dart';
 import '../widgets/ad_card.dart';
@@ -18,9 +21,10 @@ import '../../../feedback/presentation/report_problem_button.dart';
 ///
 /// **Le défaut central que cet écran corrige est une troncature silencieuse** :
 /// l'appel précédent omettait `page` et `size` et s'arrêtait à la première page
-/// du serveur sans jamais le dire. La liste est désormais paginée, son pied
-/// annonce « N sur M » depuis `AdListResponse.total`, et il n'existe aucun
-/// endpoint `count` à interroger pour cela.
+/// du serveur sans jamais le dire. La liste est désormais paginée, et son pied
+/// annonce « N annonces sur M » depuis `AdListResponse.total`, que la page
+/// apporte : nul besoin d'interroger pour cela `GET …/classifieds/count`, qui
+/// existe mais que l'app n'appelle pas.
 ///
 /// C'est un **corps de section**, pas un écran : l'en-tête d'équipe, la rangée
 /// de sections et l'état de chargement de l'équipe appartiennent à
@@ -105,6 +109,27 @@ class _AdsPageState extends ConsumerState<AdsPage> {
       ];
     }
 
+    // Un refus n'est pas une panne : un lien vers les annonces d'une équipe
+    // dont on n'est pas membre lit « Réservées aux membres », comme au site,
+    // pas « rubrique non activée, ou réseau indisponible » — ni « Réessayer »,
+    // qui rendrait le même 403.
+    if (state.initialError != null && isForbiddenError(state.initialError!)) {
+      return <Widget>[
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: PdlEmptyState(
+              key: keys.adsList.membersOnlyState,
+              variant: PdlEmptyVariant.empty,
+              icon: PdlIcons.visibilityTeam,
+              title: 'ads.list.membersOnly.title'.tr(),
+              message: 'ads.list.membersOnly.message'.tr(),
+            ),
+          ),
+        ),
+      ];
+    }
+
     if (state.initialError != null) {
       return <Widget>[
         SliverFillRemaining(
@@ -163,7 +188,10 @@ class _AdsPageState extends ConsumerState<AdsPage> {
             4,
           ),
           child: Text(
-            'ads.list.count'.plural(total),
+            'ads.list.count'.plural(
+              total,
+              args: <String>[AppFormatters.formatNumber(total)],
+            ),
             style: context.pdlText.count,
           ),
         ),
@@ -190,13 +218,12 @@ class _AdsPageState extends ConsumerState<AdsPage> {
             isEmpty: state.items.isEmpty,
             hasError: state.nextError != null,
             onRetry: notifier.retryNextPage,
-            // « N sur M » : le seul endroit qui dise ce que la liste cache
-            // encore, et il ne coûte aucun appel supplémentaire.
-            progressLabel: 'pagination.progress'.tr(
-              namedArgs: <String, String>{
-                'loaded': '${state.items.length}',
-                'total': '$total',
-              },
+            // « N annonces sur M » : le seul endroit qui dise ce que la liste
+            // cache encore, et il ne coûte aucun appel supplémentaire.
+            progressLabel: pagedProgressNamed(
+              'ads.list.noun',
+              state.items.length,
+              total,
             ),
             loadingLabel: 'pagination.loadingMore'.tr(),
             endLabel: 'pagination.endOfList'.tr(),
@@ -214,10 +241,9 @@ class _AdsPageState extends ConsumerState<AdsPage> {
 /// [PdlDeadEndEmpty] est réutilisé **tel quel**, avec `suggestedFilter: null`
 /// — c'est-à-dire sans « Retirer le filtre X » ni aperçu. La règle de S21-8
 /// veut qu'un filtre proposé soit celui qui, une fois levé, maximise le compte
-/// serveur ; or `GET …/classifieds/count` **n'existe pas**, et le simuler par
-/// N appels `?size=1&view=compact` coûterait jusqu'à cinq requêtes à chaque
-/// frappe pour une suggestion secondaire. « Tout réinitialiser » suffit à
-/// sortir du cul-de-sac.
+/// serveur : `GET …/classifieds/count` le permettrait, au prix d'un appel par
+/// filtre posé à chaque frappe, que l'app ne fait pas pour une suggestion
+/// secondaire. « Tout réinitialiser » suffit à sortir du cul-de-sac.
 class _AdsDeadEnd extends StatelessWidget {
   const _AdsDeadEnd({required this.filters, required this.onChanged});
 

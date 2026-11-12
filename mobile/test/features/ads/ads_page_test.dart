@@ -1,8 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/ads/data/ad_repository.dart';
 import 'package:pedalons/features/ads/domain/ad_filters.dart';
@@ -17,12 +19,24 @@ import '../../support/content_permissions.dart';
 /// S32-2 — la rubrique Annonces montée en entier.
 ///
 /// Ce qui se vérifie ici est ce que la v1 ne disait pas : **combien d'annonces
-/// la liste cache**. Le pied « 20 sur 57 » est le seul endroit qui le porte, et
-/// il n'existe aucun endpoint `count` pour le produire.
+/// la liste cache**. Le pied « 20 annonces sur 57 » est le seul endroit qui le
+/// porte, et il le tire du `total` de la page, sans appel à `…/count`.
 class _StubAdRepository implements AdRepository {
-  _StubAdRepository({this.total = 57, this.emptyWhenFiltered = false});
+  _StubAdRepository({
+    this.total = 57,
+    this.emptyWhenFiltered = false,
+    this.error,
+    this.perPage,
+  });
 
   final int total;
+
+  /// Annonces rendues par page, quand on en veut moins que la taille de page
+  /// (un total énorme sans vingt cartes à construire).
+  final int? perPage;
+
+  /// Levée à la place de toute page : un refus, une panne.
+  final Object? error;
 
   /// Rend zéro résultat dès qu'un filtre est posé — le cul-de-sac.
   final bool emptyWhenFiltered;
@@ -34,11 +48,12 @@ class _StubAdRepository implements AdRepository {
     int size = kDefaultPageSize,
     ListViewMode? view,
   }) async {
+    if (error != null) throw error!;
     if (emptyWhenFiltered && filters.isFiltered) {
       return const PageResult<AdDto>(items: <AdDto>[], total: 0);
     }
     final int offset = page * size;
-    final int remaining = (total - offset).clamp(0, size);
+    final int remaining = (total - offset).clamp(0, perPage ?? size);
     return PageResult<AdDto>(
       items: fixtureAds(remaining, from: offset),
       total: total,
@@ -165,7 +180,7 @@ void main() {
     expect(find.textContaining('gravel'), findsWidgets);
     expect(find.text('Tout réinitialiser'), findsOneWidget);
     // La suggestion « Retirer le filtre X » exigerait un compte par filtre
-    // levé, que l'API des annonces ne sait pas rendre : elle est absente.
+    // levé à chaque frappe, que l'app ne demande pas : elle est absente.
     expect(find.textContaining('Retirer le filtre'), findsNothing);
   });
 
@@ -187,5 +202,77 @@ void main() {
 
     expect(find.byType(AdCard), findsWidgets);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('les nombres passent par le formateur, le pied nomme ce qu\'il '
+      'compte', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1200, 24000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await openAds(
+      tester,
+      repository: _StubAdRepository(total: 2585, perPage: 1),
+    );
+
+    // Milliers en espace insécable normale (U+00A0), comme sur les cartes.
+    expect(find.text('2\u00a0585 annonces'), findsOneWidget);
+    expect(find.text('2585 annonces'), findsNothing);
+    // Le pied nomme ce qu'il compte (« 4 annonces sur 2 585 », selon les
+    // pages déjà chargées) ; il ne s'affiche qu'en chargement ou en fin de
+    // liste, d'où la lecture de son libellé.
+    final PdlPagedListFooter footer = tester.widget<PdlPagedListFooter>(
+      find.byType(PdlPagedListFooter),
+    );
+    expect(
+      footer.progressLabel,
+      matches(RegExp(r'^\d+ annonces? sur 2\u00a0585$')),
+    );
+  });
+
+  testWidgets('un refus (403) dit « Réservées aux membres », pas une panne', (
+    WidgetTester tester,
+  ) async {
+    final RequestOptions request = RequestOptions(path: '/api/classifieds');
+    await openAds(
+      tester,
+      repository: _StubAdRepository(
+        error: DioException(
+          requestOptions: request,
+          type: DioExceptionType.badResponse,
+          response: Response<Object?>(requestOptions: request, statusCode: 403),
+        ),
+      ),
+    );
+
+    expect(find.text('Réservées aux membres'), findsOneWidget);
+    expect(
+      find.text(
+        "Les annonces de l'équipe ne sont visibles que par ses membres.",
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Erreur de chargement'), findsNothing);
+    expect(find.text('Réessayer'), findsNothing);
+  });
+
+  testWidgets('une panne reste une erreur, avec « Réessayer »', (
+    WidgetTester tester,
+  ) async {
+    final RequestOptions request = RequestOptions(path: '/api/classifieds');
+    await openAds(
+      tester,
+      repository: _StubAdRepository(
+        error: DioException(
+          requestOptions: request,
+          type: DioExceptionType.badResponse,
+          response: Response<Object?>(requestOptions: request, statusCode: 500),
+        ),
+      ),
+    );
+
+    expect(find.text('Erreur de chargement'), findsOneWidget);
+    expect(find.text('Réessayer'), findsOneWidget);
+    expect(find.text('Réservées aux membres'), findsNothing);
   });
 }

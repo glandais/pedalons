@@ -14,6 +14,7 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../domain/route_filter_labels.dart';
 import '../../domain/route_filters.dart';
 import '../../providers/route_count_provider.dart';
@@ -135,11 +136,17 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
   /// « Ajouter » : créer un parcours, pour un organisateur de la section
   /// Parcours d'une équipe seulement — ni pour un simple membre, ni sur
   /// l'onglet Explorer de toutes les équipes (ledger `MOB-79`).
-  Widget? _addButton() {
+  bool get _canAdd {
     final String? teamSlug = widget.teamSlug;
-    if (teamSlug == null) return null;
-    if (!(ref.watch(canManageRoutesProvider(teamSlug)) ?? false)) return null;
-    void open() => context.push(Paths.routeNew(teamSlug));
+    if (teamSlug == null) return false;
+    return ref.watch(canManageRoutesProvider(teamSlug)) ?? false;
+  }
+
+  void _openNew() => context.push(Paths.routeNew(widget.teamSlug!));
+
+  Widget? _addButton() {
+    if (!_canAdd) return null;
+    void open() => _openNew();
     // Le libellé visible est court (« Ajouter ») ; le lecteur d'écran lit
     // « Ajouter un parcours ».
     return Semantics(
@@ -238,9 +245,33 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
     }
 
     if (state.isEmpty) {
+      // Les filtres d'abord : sans eux, « Aucun parcours pour ces filtres » et
+      // son « Tout réinitialiser » sans effet décrivaient faussement une
+      // équipe qui n'a simplement pas de parcours. La portée n'en est pas un
+      // — « Tout réinitialiser » la garde —, comme dans [RouteFilters.cleared].
       return <Widget>[
         SliverToBoxAdapter(
-          child: RoutesEmptyState(filters: filters, onChanged: _setFilters),
+          child: filters.activeFields.isNotEmpty
+              ? RoutesEmptyState(filters: filters, onChanged: _setFilters)
+              : Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: PdlEmptyState(
+                    key: keys.routes.noneState,
+                    variant: PdlEmptyVariant.empty,
+                    icon: PdlIcons.route,
+                    title: 'routes.list.none'.tr(),
+                    message: 'routes.list.noneHint'.tr(),
+                    actions: <Widget>[
+                      if (_canAdd)
+                        PdlButton(
+                          key: keys.routes.emptyAddButton,
+                          label: 'routes.editor.addSemantic'.tr(),
+                          icon: PdlIcons.add,
+                          onPressed: _openNew,
+                        ),
+                    ],
+                  ),
+                ),
         ),
       ];
     }
@@ -313,11 +344,10 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
             isEmpty: state.items.isEmpty,
             hasError: state.nextError != null,
             onRetry: notifier.retryNextPage,
-            progressLabel: 'pagination.progress'.tr(
-              namedArgs: <String, String>{
-                'loaded': '${state.items.length}',
-                'total': '${total ?? state.items.length}',
-              },
+            progressLabel: pagedProgressNamed(
+              'routes.list.noun',
+              state.items.length,
+              total ?? state.items.length,
             ),
             loadingLabel: 'pagination.loadingMore'.tr(),
             endLabel: 'pagination.endOfList'.tr(),
@@ -425,9 +455,15 @@ class _CountAndDensityRow extends ConsumerWidget {
 
     final String label = (filtered && total != null && total != shown)
         ? 'routes.list.countOf'.tr(
-            namedArgs: <String, String>{'shown': '$shown', 'total': '$total'},
+            namedArgs: <String, String>{
+              'shown': AppFormatters.formatNumber(shown),
+              'total': AppFormatters.formatNumber(total),
+            },
           )
-        : 'routes.list.count'.plural(shown);
+        : 'routes.list.count'.plural(
+            shown,
+            args: <String>[AppFormatters.formatNumber(shown)],
+          );
 
     return Row(
       children: <Widget>[

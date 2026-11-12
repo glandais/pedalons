@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/notifications/data/notifications_repository.dart';
@@ -19,9 +20,12 @@ import '../../support/localization.dart';
 /// afficherait `RIDE_PUBLISHED` tel quel serait passé à côté. Les cas ci-dessous
 /// vérifient la phrase, la destination et la distinction lu / non lu.
 class _StubRepository implements NotificationsRepository {
-  _StubRepository(this.items, {this.unread = 0});
+  _StubRepository(this.items, {this.unread = 0, this.total});
 
   final List<NotificationDto> items;
+
+  /// Le total annoncé par le serveur, quand il dépasse ce que la page rend.
+  final int? total;
   int unread;
   final List<String> markedRead = <String>[];
   bool markedAll = false;
@@ -37,7 +41,7 @@ class _StubRepository implements NotificationsRepository {
         : items;
     return PageResult<NotificationDto>(
       items: page == 0 ? visible : <NotificationDto>[],
-      total: visible.length,
+      total: total ?? visible.length,
     );
   }
 
@@ -164,6 +168,22 @@ void main() {
       expect(find.textContaining('null'), findsNothing);
     },
   );
+
+  testWidgets('le compteur et le pied passent par le formateur, et le pied '
+      'nomme ce qu\'il compte', (WidgetTester tester) async {
+    await open(
+      tester,
+      _StubRepository(<NotificationDto>[_notification()], total: 2585),
+    );
+
+    // Milliers en espace insécable normale (U+00A0), comme sur les cartes.
+    expect(find.text('2\u00a0585 notifications'), findsOneWidget);
+    expect(find.text('2585 notifications'), findsNothing);
+    final PdlPagedListFooter footer = tester.widget<PdlPagedListFooter>(
+      find.byType(PdlPagedListFooter),
+    );
+    expect(footer.progressLabel, '1 notification sur 2\u00a0585');
+  });
 
   testWidgets('la boîte vide le dit, et ne propose pas de sortie de filtre', (
     WidgetTester tester,

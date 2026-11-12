@@ -27,6 +27,12 @@ class RoutesKeys {
   /// L'état vide filtré, « cul-de-sac ».
   final emptyState = const _RoutesKey('emptyState');
 
+  /// L'état vide sans filtre : « Aucun parcours ».
+  final noneState = const _RoutesKey('noneState');
+
+  /// « Ajouter un parcours » de cet état vide, pour qui gère les parcours.
+  final emptyAddButton = const _RoutesKey('emptyAddButton');
+
   final filterApplyButton = const _RoutesKey('filterApplyButton');
   final filterButton = const _RoutesKey('filterButton');
 

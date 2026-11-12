@@ -25,6 +25,30 @@ class TeamRepository {
     return response.teams;
   }
 
+  /// Une page de « Mes équipes » (`minRole=MEMBER`), cherchée **côté
+  /// serveur** sur le nom et la présentation.
+  ///
+  /// C'est ce que [getMyTeams] ne fait pas : sans `page` ni `size`, il rend
+  /// les vingt premières équipes et rien ne dit qu'il en reste. Aucun `sortBy`
+  /// n'est envoyé : l'ordre reste celui du serveur, le même qu'avant.
+  Future<PageResult<TeamDetailDto>> fetchMyTeams({
+    String? search,
+    int page = 0,
+    int size = kDefaultPageSize,
+  }) async {
+    final String? query = search?.trim();
+    final TeamListResponse response = await _teamsClient.listTeams(
+      page: page,
+      size: size,
+      minRole: MinRole.member,
+      search: query == null || query.isEmpty ? null : query,
+    );
+    return PageResult<TeamDetailDto>(
+      items: response.teams,
+      total: response.total,
+    );
+  }
+
   /// Get public teams (for discovery)
   Future<List<TeamDetailDto>> getPublicTeams({
     int page = 0,

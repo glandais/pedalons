@@ -123,6 +123,7 @@
     "comingSoon": "This screen is coming in a future release.",
     "close": "Close",
     "clearSearch": "Clear search",
+    "clearFilters": "Clear filters",
     "delete": "Delete",
     "open": "Open",
     "details": "Details",
@@ -216,7 +217,8 @@
       "errorTitle": "Feed unavailable.",
       "emptyFiltered": {
         "title": "No results",
-        "message": "No publication matches “{search}”."
+        "message": "No publication matches “{search}”.",
+        "messageFilters": "Nothing matches the chosen filters."
       }
     },
     "nextRide": "My next ride",
@@ -317,6 +319,10 @@
       "since": "Member since {date}",
       "none": "No member",
       "noneHint": "This team's members will show up here.",
+      "forbidden": {
+        "title": "Member list not shared",
+        "message": "This team does not share its member list with you."
+      },
       "empty": {
         "title": "No member for these filters",
         "description": "No member matches this search or this role.",
@@ -1010,7 +1016,15 @@
         "one": "{} classified",
         "other": "{} classifieds"
       },
+      "noun": {
+        "one": "ad",
+        "other": "ads"
+      },
       "loadError": "Classifieds are not enabled on this team, or the network is unavailable.",
+      "membersOnly": {
+        "title": "Members only",
+        "message": "The team's ads are only visible to its members."
+      },
       "empty": {
         "title": "No classified for these filters",
         "description": "No classified matches this combination of filters.",
@@ -1122,6 +1136,10 @@
         "one": "{} route",
         "other": "{} routes"
       },
+      "noun": {
+        "one": "route",
+        "other": "routes"
+      },
       "empty": {
         "title": "No routes for these filters",
         "description": "No route matches this combination of filters.",
@@ -1131,6 +1149,8 @@
         "withoutFilter": "Without the {filter} filter"
       },
       "countOf": "{shown} of {total} routes",
+      "none": "No routes",
+      "noneHint": "No routes are available at the moment.",
       "densitySwitched": "Past {threshold} results the list switches to the compact layout. You can go back to thumbnails at any time."
     },
     "filters": {
@@ -1266,7 +1286,7 @@
     },
     "scope": {
       "title": "Scope",
-      "allTeams": "All my teams",
+      "allTeams": "All teams",
       "minRole": "Minimum role",
       "anyRole": "Any role"
     },
@@ -1398,14 +1418,15 @@
     "cancelled": "Cancelled",
     "today": "Today",
     "scope": "Scope",
+    "allMyTeams": "All my teams",
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
     "collapseGrid": "Collapse the month",
     "expandGrid": "Expand the month",
     "upcoming": "Upcoming",
-    "clearFilters": "Clear filters",
     "goToNextMonthWithEvents": "Go to the next month with a ride",
     "noEventsIn": "Your teams have published no ride or trip stage in {month}.",
+    "noEventsInTeam": "The team has published no ride or trip stage in {month}.",
     "eventCount": {
       "zero": "no events",
       "one": "{} event",
@@ -1645,6 +1666,10 @@
       "zero": "No notifications",
       "one": "{} notification",
       "other": "{} notifications"
+    },
+    "noun": {
+      "one": "notification",
+      "other": "notifications"
     },
     "filter": {
       "all": "All",

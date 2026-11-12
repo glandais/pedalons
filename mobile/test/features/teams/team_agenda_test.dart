@@ -237,7 +237,11 @@ void main() {
       String? role = 'MEMBER',
       PublicationType? initialType,
       AgendaScope initialScope = AgendaScope.upcoming,
+      TeamDetailDto? team,
+      bool emptyFeed = false,
     }) async {
+      final TeamDetailDto shown =
+          team ?? fixtureTeam(slug: 'velo-club', role: role);
       tester.view.physicalSize = const Size(1000, 2000);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -249,7 +253,9 @@ void main() {
           ),
           publicationFeedProvider.overrideWith((ref, key) {
             requested.add(key);
-            return _StuckFeedNotifier(key);
+            return emptyFeed
+                ? _EmptyFeedNotifier(key)
+                : _StuckFeedNotifier(key);
           }),
           publicationFeedCountProvider.overrideWith((ref, key) async => 5),
           myTeamsProvider.overrideWith((ref) async => const <TeamDetailDto>[]),
@@ -265,10 +271,8 @@ void main() {
           child: MaterialApp(
             theme: PedalonsTheme.build(Brightness.light),
             home: TeamAgendaPage(
-              team: fixtureTeam(slug: 'velo-club', role: role),
-              sections: buildTeamSections(
-                fixtureTeam(slug: 'velo-club', role: role),
-              ),
+              team: shown,
+              sections: buildTeamSections(shown),
               initialType: initialType,
               initialScope: initialScope,
               chrome: ({required Widget? header, required Widget body}) =>
@@ -399,6 +403,137 @@ void main() {
       await tearDownFeed(tester);
     });
 
+    group('DL7 — un type n\'est offert que si l\'équipe a le module', () {
+      final TeamDetailDto noTrips = fixtureTeam(
+        slug: 'velo-club',
+        role: 'MEMBER',
+      ).copyWith(enableTrips: false);
+
+      testWidgets('en liste : pas de chip « Voyages » sans le module', (
+        WidgetTester tester,
+      ) async {
+        await pumpAgenda(tester, team: noTrips);
+
+        expect(find.byKey(keys.feed.typeChip(null)), findsOneWidget);
+        expect(
+          find.byKey(keys.feed.typeChip(PublicationType.ride)),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(keys.feed.typeChip(PublicationType.trip)),
+          findsNothing,
+        );
+
+        await tearDownFeed(tester);
+      });
+
+      testWidgets('en calendrier non plus', (WidgetTester tester) async {
+        await pumpAgenda(tester, team: noTrips);
+
+        await tester.tap(find.byKey(keys.teamAgenda.view('calendar')));
+        await tester.pump();
+
+        final CalendarPage calendar = tester.widget<CalendarPage>(
+          find.byType(CalendarPage),
+        );
+        expect(calendar.typeOptions, <CalendarTypeFilter>[
+          CalendarTypeFilter.all,
+          CalendarTypeFilter.rides,
+        ]);
+        expect(find.text('Sorties'), findsOneWidget);
+        expect(find.text('Voyages'), findsNothing);
+
+        await tearDownFeed(tester);
+      });
+
+      testWidgets('un lien `?type=trip` sur une équipe sans voyages s\'ouvre '
+          'sur « Tout »', (WidgetTester tester) async {
+        await pumpAgenda(
+          tester,
+          team: noTrips,
+          initialType: PublicationType.trip,
+        );
+
+        expect(requested.last.type, isNull);
+
+        await tearDownFeed(tester);
+      });
+    });
+
+    group('DL2 — le type et « Je participe » comptent comme filtre', () {
+      testWidgets('sans filtre, le vide absolu de l\'Agenda', (
+        WidgetTester tester,
+      ) async {
+        await pumpAgenda(tester, emptyFeed: true);
+
+        expect(find.byKey(keys.feed.emptyState), findsOneWidget);
+        expect(find.text("Rien à l'agenda pour le moment"), findsOneWidget);
+
+        await tearDownFeed(tester);
+      });
+
+      testWidgets('« Sorties » sans résultat : le vide filtré, qui efface le '
+          'type', (WidgetTester tester) async {
+        await pumpAgenda(
+          tester,
+          emptyFeed: true,
+          initialType: PublicationType.ride,
+        );
+
+        expect(find.byKey(keys.feed.filteredEmptyState), findsOneWidget);
+        expect(find.text("Rien à l'agenda pour le moment"), findsNothing);
+        expect(
+          find.text('Rien ne correspond aux filtres choisis.'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byKey(keys.feed.clearFiltersButton));
+        await tester.pump();
+        await tester.pump();
+        expect(requested.last.type, isNull);
+        expect(find.byKey(keys.feed.emptyState), findsOneWidget);
+
+        await tearDownFeed(tester);
+      });
+
+      testWidgets(
+        '« Je participe » sans résultat : le vide filtré, qui revient '
+        'à « À venir »',
+        (WidgetTester tester) async {
+          await pumpAgenda(
+            tester,
+            emptyFeed: true,
+            initialScope: AgendaScope.participating,
+          );
+
+          expect(find.byKey(keys.feed.filteredEmptyState), findsOneWidget);
+
+          await tester.tap(find.byKey(keys.feed.clearFiltersButton));
+          await tester.pump();
+          await tester.pump();
+          expect(requested.last.participating, isFalse);
+          expect(requested.last.when, PublicationWhen.upcoming);
+          expect(find.byKey(keys.feed.emptyState), findsOneWidget);
+
+          await tearDownFeed(tester);
+        },
+      );
+
+      testWidgets('« Passées » reste le vide absolu (règle à décider)', (
+        WidgetTester tester,
+      ) async {
+        await pumpAgenda(
+          tester,
+          emptyFeed: true,
+          initialScope: AgendaScope.past,
+        );
+
+        expect(find.byKey(keys.feed.emptyState), findsOneWidget);
+
+        await tearDownFeed(tester);
+      });
+    });
+
     testWidgets('un visiteur n\'a pas de calendrier', (
       WidgetTester tester,
     ) async {
@@ -420,4 +555,14 @@ class _StuckFeedNotifier extends PublicationFeedNotifier {
   @override
   Future<PageResult<PublicationDto>> fetchPage(int page) =>
       Completer<PageResult<PublicationDto>>().future;
+}
+
+/// Rend une liste vide : les états vides du fil.
+class _EmptyFeedNotifier extends PublicationFeedNotifier {
+  _EmptyFeedNotifier(PublicationFeedKey key)
+    : super(PublicationsClient(Dio()), key);
+
+  @override
+  Future<PageResult<PublicationDto>> fetchPage(int page) async =>
+      const PageResult<PublicationDto>(items: <PublicationDto>[], total: 0);
 }

@@ -11,8 +11,12 @@ class FeedKeys {
   /// La carte d'une publication du fil, par son slug.
   ValueKey<String> card(String slug) => _FeedKey('card_$slug');
 
-  /// L'état vide d'une recherche qui ne trouve rien.
+  /// L'état vide d'une recherche ou de filtres qui ne trouvent rien.
   final filteredEmptyState = const _FeedKey('filteredEmptyState');
+
+  /// « Effacer les filtres » de cet état vide, quand plus que la recherche
+  /// filtre (type, « Je participe »…).
+  final clearFiltersButton = const _FeedKey('clearFiltersButton');
 
   final searchField = const _FeedKey('searchField');
 

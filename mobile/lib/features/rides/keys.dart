@@ -414,6 +414,7 @@ class RideTemplateKeys {
   final empty = const _RideTemplateKey('empty');
   final emptyNewButton = const _RideTemplateKey('emptyNewButton');
   final noResults = const _RideTemplateKey('noResults');
+  final clearSearchButton = const _RideTemplateKey('clearSearchButton');
   final menuCreateRide = const _RideTemplateKey('menuCreateRide');
   final menuEdit = const _RideTemplateKey('menuEdit');
   final menuDelete = const _RideTemplateKey('menuDelete');

@@ -25,6 +25,9 @@ class TeamsPageKeys {
   /// « Accepter », sur la ligne de l'invitation à [teamSlug].
   ValueKey<String> invitationAcceptButton(String teamSlug) =>
       _TeamsPageKey('invitationAccept_$teamSlug');
+
+  /// L'état d'erreur de la liste.
+  final loadError = const _TeamsPageKey('loadError');
 }
 
 class _TeamsDiscoverKey extends ValueKey<String> {
@@ -95,6 +98,9 @@ class TeamPageKeys {
 
   /// La recherche de la section « Membres ».
   final membersSearchField = const _TeamPageKey('membersSearchField');
+
+  /// « Liste des membres non partagée » : le serveur a refusé la liste (403).
+  final membersForbiddenState = const _TeamPageKey('membersForbiddenState');
 }
 
 class _TeamDashboardKey extends ValueKey<String> {

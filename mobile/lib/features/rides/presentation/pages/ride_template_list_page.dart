@@ -174,10 +174,21 @@ class _RideTemplateList extends ConsumerWidget {
                     ),
                   ],
                 )
+              // Un vide filtré a toujours sa sortie : effacer la recherche,
+              // seul filtre de la liste.
               : PdlEmptyState(
                   key: keys.rideTemplates.noResults,
                   variant: PdlEmptyVariant.filtered,
                   title: 'rides.templates.noResults'.tr(),
+                  actions: <Widget>[
+                    PdlButton(
+                      key: keys.rideTemplates.clearSearchButton,
+                      label: 'common.clearSearch'.tr(),
+                      variant: PdlButtonVariant.outline,
+                      size: PdlButtonSize.sm,
+                      onPressed: () => onSearch(null),
+                    ),
+                  ],
                 ),
         ),
       ];

@@ -12,6 +12,7 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/link_launcher.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../providers/notifications_provider.dart';
@@ -276,7 +277,10 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
             4,
           ),
           child: Text(
-            'notifications.count'.plural(total),
+            'notifications.count'.plural(
+              total,
+              args: <String>[AppFormatters.formatNumber(total)],
+            ),
             style: context.pdlText.count,
           ),
         ),
@@ -306,11 +310,10 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
             isEmpty: state.items.isEmpty,
             hasError: state.nextError != null,
             onRetry: notifier.retryNextPage,
-            progressLabel: 'pagination.progress'.tr(
-              namedArgs: <String, String>{
-                'loaded': '${state.items.length}',
-                'total': '$total',
-              },
+            progressLabel: pagedProgressNamed(
+              'notifications.noun',
+              state.items.length,
+              total,
             ),
             loadingLabel: 'pagination.loadingMore'.tr(),
             endLabel: 'pagination.endOfList'.tr(),

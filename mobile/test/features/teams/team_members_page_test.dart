@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,9 +27,12 @@ import 'team_fixtures.dart';
 /// n'aurait de toute façon transmis ni `page` ni `size` — vingt membres sur
 /// mille neuf cent quatre-vingt-dix-neuf, sans un mot.
 class _StubTeamRepository implements TeamRepository {
-  _StubTeamRepository({this.total = 1999});
+  _StubTeamRepository({this.total = 1999, this.error});
 
   final int total;
+
+  /// Levée à la place de toute page : un refus, une panne.
+  final Object? error;
   final List<Map<String, Object?>> calls = <Map<String, Object?>>[];
 
   @override
@@ -44,6 +48,7 @@ class _StubTeamRepository implements TeamRepository {
       'page': page,
       'size': size,
     });
+    if (error != null) throw error!;
     final int offset = page * size;
     final int remaining = (total - offset).clamp(0, size);
     return PageResult<MemberDto>(
@@ -192,6 +197,47 @@ void main() {
     );
 
     expect(find.text('Tout réinitialiser'), findsOneWidget);
+  });
+
+  DioException httpError(int status) {
+    final RequestOptions request = RequestOptions(path: '/api/members');
+    return DioException(
+      requestOptions: request,
+      type: DioExceptionType.badResponse,
+      response: Response<Object?>(requestOptions: request, statusCode: status),
+    );
+  }
+
+  testWidgets('une liste non partagée (403) le dit, sans « Erreur de '
+      'chargement »', (WidgetTester tester) async {
+    await openMembers(
+      tester,
+      repository: _StubTeamRepository(error: httpError(403)),
+    );
+
+    expect(find.byKey(keys.team.membersForbiddenState), findsOneWidget);
+    expect(find.text('Liste des membres non partagée'), findsOneWidget);
+    expect(
+      find.text(
+        'Cette équipe ne partage pas la liste de ses membres avec vous.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Erreur de chargement'), findsNothing);
+    expect(find.text('Réessayer'), findsNothing);
+  });
+
+  testWidgets('une panne reste une erreur, avec « Réessayer »', (
+    WidgetTester tester,
+  ) async {
+    await openMembers(
+      tester,
+      repository: _StubTeamRepository(error: httpError(500)),
+    );
+
+    expect(find.text('Erreur de chargement'), findsOneWidget);
+    expect(find.text('Réessayer'), findsOneWidget);
+    expect(find.byKey(keys.team.membersForbiddenState), findsNothing);
   });
 
   testWidgets('le mode sombre rend la même liste', (WidgetTester tester) async {

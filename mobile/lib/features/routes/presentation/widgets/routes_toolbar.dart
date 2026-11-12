@@ -141,8 +141,8 @@ class RoutesToolbar extends ConsumerWidget {
   }
 }
 
-/// La portée courante en toutes lettres : « Toutes mes équipes »,
-/// « N-Peloton », « Toutes mes équipes · Organisateur ».
+/// La portée courante en toutes lettres : « Toutes les équipes »,
+/// « N-Peloton », « Toutes les équipes · Organisateur ».
 String scopeLabel(BuildContext context, WidgetRef ref, RouteFilters filters) {
   final String? teamSlug = filters.teamSlug;
   final String base = teamSlug == null
@@ -160,7 +160,7 @@ String scopeLabel(BuildContext context, WidgetRef ref, RouteFilters filters) {
 
 /// Le choix de portée : une équipe, ou toutes, plus un rôle minimum.
 ///
-/// Le rôle minimum ne s'offre **que** pour « toutes mes équipes » : les
+/// Le rôle minimum ne s'offre **que** pour « toutes les équipes » : les
 /// endpoints d'équipe n'acceptent pas `minRole`, et le proposer là produirait
 /// un réglage sans effet — exactement ce que le brief §5 interdit.
 class _ScopeSheet extends ConsumerWidget {

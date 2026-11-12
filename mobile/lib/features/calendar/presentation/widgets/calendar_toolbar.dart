@@ -38,6 +38,7 @@ class CalendarToolbar extends ConsumerWidget {
     required this.onTypeChanged,
     this.showScope = true,
     this.onToday,
+    this.typeOptions = CalendarTypeFilter.values,
   });
 
   final CalendarMonthKey monthKey;
@@ -51,6 +52,11 @@ class CalendarToolbar extends ConsumerWidget {
   /// « Aujourd'hui ». Fourni **quand la page n'a pas d'app bar à elle** — la
   /// section d'équipe —, pour que le raccourci n'y disparaisse pas.
   final VoidCallback? onToday;
+
+  /// Les types proposés en chips. Tous au calendrier global ; dans celui
+  /// d'une équipe, seulement ceux de ses modules (`agendaTypeOptions`
+  /// de l'Agenda, comme au site).
+  final List<CalendarTypeFilter> typeOptions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -116,7 +122,7 @@ class CalendarToolbar extends ConsumerWidget {
         const SizedBox(height: 4),
         PdlChipRow(
           children: <Widget>[
-            for (final CalendarTypeFilter type in CalendarTypeFilter.values)
+            for (final CalendarTypeFilter type in typeOptions)
               PdlChip(
                 label: _typeLabel(type),
                 icon: _typeIcon(type),
@@ -126,7 +132,7 @@ class CalendarToolbar extends ConsumerWidget {
             if (chipsFitTeams && teams.isNotEmpty) ...<Widget>[
               _ChipDivider(color: c.borderSubtle),
               PdlChip(
-                label: 'routes.scope.allTeams'.tr(),
+                label: 'calendar.allMyTeams'.tr(),
                 selected: monthKey.teamSlug == null,
                 onTap: () => onMonthChanged(
                   CalendarMonthKey(year: monthKey.year, month: monthKey.month),
@@ -153,7 +159,7 @@ class CalendarToolbar extends ConsumerWidget {
 
   String _scopeLabel(List<TeamDetailDto> teams) {
     final String? slug = monthKey.teamSlug;
-    if (slug == null) return 'routes.scope.allTeams'.tr();
+    if (slug == null) return 'calendar.allMyTeams'.tr();
     return teams.where((TeamDetailDto t) => t.slug == slug).firstOrNull?.name ??
         slug;
   }
@@ -182,7 +188,7 @@ class CalendarToolbar extends ConsumerWidget {
         footer: const SafeArea(top: false, child: SizedBox(height: 8)),
         children: <Widget>[
           PdlSettingRow(
-            title: 'routes.scope.allTeams'.tr(),
+            title: 'calendar.allMyTeams'.tr(),
             trailing: _check(sheetContext, monthKey.teamSlug == null),
             onTap: () => Navigator.of(sheetContext).pop(_kAllTeams),
           ),

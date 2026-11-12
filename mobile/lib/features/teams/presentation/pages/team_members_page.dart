@@ -7,6 +7,7 @@ import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
+import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
@@ -148,6 +149,26 @@ class _TeamMembersPageState extends ConsumerState<TeamMembersPage> {
             child: PdlSkeletonCardList(
               variant: PdlSkeletonCardVariant.compact,
               count: 5,
+            ),
+          ),
+        ),
+      ];
+    }
+
+    // Un refus n'est pas une panne : l'équipe ne partage pas sa liste avec ce
+    // lecteur (lien direct, la chip de section étant masquée). On le dit,
+    // comme au site, sans « Réessayer » qui rendrait le même 403.
+    if (state.initialError != null && isForbiddenError(state.initialError!)) {
+      return <Widget>[
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: PdlEmptyState(
+              key: keys.team.membersForbiddenState,
+              variant: PdlEmptyVariant.empty,
+              icon: PdlIcons.visibilityTeam,
+              title: 'teams.membersList.forbidden.title'.tr(),
+              message: 'teams.membersList.forbidden.message'.tr(),
             ),
           ),
         ),

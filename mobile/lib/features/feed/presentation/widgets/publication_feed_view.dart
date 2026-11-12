@@ -90,6 +90,10 @@ class PublicationFeedView extends ConsumerStatefulWidget {
   /// inscrit.
   final bool participating;
 
+  /// Lève « Je participe » depuis l'état vide filtré : la période est tenue
+  /// par l'appelant, comme le type piloté.
+  final VoidCallback? onClearParticipating;
+
   const PublicationFeedView({
     super.key,
     required this.teamSlug,
@@ -108,6 +112,7 @@ class PublicationFeedView extends ConsumerStatefulWidget {
     this.onTypeChanged,
     this.when,
     this.participating = false,
+    this.onClearParticipating,
   });
 
   @override
@@ -308,7 +313,16 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
                 ),
               ),
             ),
-          ..._buildContentSlivers(context, state, notifier, search, tagIds),
+          ..._buildContentSlivers(
+            context,
+            state,
+            notifier,
+            search,
+            tagIds,
+            // Le type ne filtre que là où il se choisit : dans les
+            // Publications, il *est* la liste.
+            widget.typeOptions.isNotEmpty ? type : null,
+          ),
           const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
         ],
       ),
@@ -329,6 +343,7 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
     PublicationFeedNotifier notifier,
     String? search,
     List<String> tagIds,
+    PublicationType? chosenType,
   ) {
     if (state.showsSkeletons) {
       return [
@@ -373,12 +388,37 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
       // F-DE-9 : « rien ici » et « rien qui corresponde » ne disent pas la
       // même chose et n'appellent pas la même action. Le vide filtré offre la
       // sortie ; le vide absolu n'a rien à proposer et ne fait pas semblant.
-      final bool filtered = (search != null && search.isNotEmpty);
+      //
+      // **Tout critère écarté de son défaut filtre** : la recherche, les tags,
+      // mais aussi le type choisi et « Je participe ». Sans quoi « Sorties »
+      // sans résultat disait « Rien à l'agenda pour le moment », et la même
+      // chip « Je participe » donnait deux vides différents en Liste et en
+      // Calendrier. La période (« Passées ») n'en est pas, en attendant sa
+      // règle (RL10 du tri de l'audit des listes).
+      final bool searched = search != null && search.isNotEmpty;
+      final bool tagged = tagIds.isNotEmpty;
+      final bool typed = chosenType != null;
+      final bool participating = widget.participating;
+      final int criteria = <bool>[
+        searched,
+        tagged,
+        typed,
+        participating,
+      ].where((bool on) => on).length;
       return [
         SliverFillRemaining(
           hasScrollBody: false,
           child: Center(
-            child: !filtered && tagIds.isNotEmpty
+            child: criteria == 0
+                ? PdlEmptyState(
+                    key: keys.feed.emptyState,
+                    variant: PdlEmptyVariant.empty,
+                    icon: Icons.dynamic_feed,
+                    title: widget.emptyMessage,
+                    message: widget.emptyHint ?? 'home.feed.emptyHint'.tr(),
+                    actions: widget.emptyActions,
+                  )
+                : criteria == 1 && tagged
                 // Seuls les tags filtrent : la sortie est de les lever.
                 ? PdlEmptyState(
                     variant: PdlEmptyVariant.filtered,
@@ -394,31 +434,46 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
                       ),
                     ],
                   )
-                : filtered
-                ? PdlEmptyState(
+                : PdlEmptyState(
                     key: keys.feed.filteredEmptyState,
                     variant: PdlEmptyVariant.filtered,
                     icon: Icons.dynamic_feed,
                     title: 'home.feed.emptyFiltered.title'.tr(),
-                    message: 'home.feed.emptyFiltered.message'.tr(
-                      namedArgs: {'search': search},
-                    ),
+                    message: searched
+                        ? 'home.feed.emptyFiltered.message'.tr(
+                            namedArgs: {'search': search},
+                          )
+                        : 'home.feed.emptyFiltered.messageFilters'.tr(),
                     actions: [
-                      PdlButton(
-                        label: 'common.clearSearch'.tr(),
-                        variant: PdlButtonVariant.outline,
-                        size: PdlButtonSize.sm,
-                        onPressed: () => _setSearch(null),
-                      ),
+                      // Seule la recherche filtre : on l'efface. Sinon, tout
+                      // ce qui filtre s'efface d'un geste.
+                      if (criteria == 1 && searched)
+                        PdlButton(
+                          label: 'common.clearSearch'.tr(),
+                          variant: PdlButtonVariant.outline,
+                          size: PdlButtonSize.sm,
+                          onPressed: () => _setSearch(null),
+                        )
+                      else
+                        PdlButton(
+                          key: keys.feed.clearFiltersButton,
+                          label: 'common.clearFilters'.tr(),
+                          variant: PdlButtonVariant.outline,
+                          size: PdlButtonSize.sm,
+                          onPressed: () {
+                            if (searched) _setSearch(null);
+                            if (typed) {
+                              // Lever le type lève aussi ses tags.
+                              _setType(null);
+                            } else if (tagged) {
+                              _setTags(const <String>[]);
+                            }
+                            if (participating) {
+                              widget.onClearParticipating?.call();
+                            }
+                          },
+                        ),
                     ],
-                  )
-                : PdlEmptyState(
-                    key: keys.feed.emptyState,
-                    variant: PdlEmptyVariant.empty,
-                    icon: Icons.dynamic_feed,
-                    title: widget.emptyMessage,
-                    message: widget.emptyHint ?? 'home.feed.emptyHint'.tr(),
-                    actions: widget.emptyActions,
                   ),
           ),
         ),

@@ -120,6 +120,15 @@ Map<String, String> _detailArgs(Object? details) {
   };
 }
 
+/// Vrai quand le serveur a **refusé** l'accès (403) — un refus, pas une panne.
+///
+/// Même lecture que `teamAccessProbeProvider` : le statut de la réponse. Un
+/// écran de liste s'en sert pour dire « Réservées aux membres » ou « Liste non
+/// partagée » plutôt qu'« Erreur de chargement » et un « Réessayer » qui
+/// rendrait le même refus.
+bool isForbiddenError(Object error) =>
+    error is DioException && error.response?.statusCode == 403;
+
 /// Extracts a user-friendly, localized error message from an exception.
 ///
 /// A screen that renders a code itself reads it **before** falling back to

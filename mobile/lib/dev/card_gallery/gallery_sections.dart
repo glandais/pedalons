@@ -46,6 +46,7 @@ import '../../features/teams/presentation/widgets/dashboard/dashboard_todo.dart'
 import '../../features/teams/presentation/widgets/pending_invitations_card.dart';
 import '../../features/teams/presentation/widgets/publication_card.dart';
 import '../../features/teams/presentation/widgets/team_discovery_card.dart';
+import '../../features/teams/providers/my_teams_list_provider.dart';
 import '../../features/teams/providers/team_providers.dart';
 import '../../features/trips/presentation/widgets/stage_card.dart';
 import 'gallery_data.dart';
@@ -737,6 +738,12 @@ Widget _teamsTab(GalleryData d, String role) =>
       // chargement, trois cartes qui débordent du cadre.
       myTeamsProvider.overrideWithValue(
         AsyncData<List<TeamDetailDto>>(<TeamDetailDto>[
+          d.teamDetail(clubDesMonts: true, role: role),
+        ]),
+      ),
+      // La liste paginée de l'onglet, elle aussi déjà là.
+      myTeamsListProvider.overrideWith(
+        (Ref ref, String? search) => GalleryMyTeamsNotifier(<TeamDetailDto>[
           d.teamDetail(clubDesMonts: true, role: role),
         ]),
       ),

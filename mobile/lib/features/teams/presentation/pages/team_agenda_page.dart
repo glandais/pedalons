@@ -24,11 +24,17 @@ typedef TeamChromeBuilder = Widget Function({
 
 /// Les types de l'Agenda : ses sorties et ses voyages, jamais ses
 /// publications (plan `2026-10-06-team-agenda.md` §2).
-const List<PublicationType?> kAgendaTypeOptions = <PublicationType?>[
-  null,
-  PublicationType.ride,
-  PublicationType.trip,
-];
+///
+/// Ceux que l'Agenda de [team] propose : « Tout », puis « Sorties » et
+/// « Voyages » **seulement si l'équipe a le module** — et les parcours, sans
+/// lesquels ni l'un ni l'autre ne se publie —, comme au site
+/// (`AgendaFilterBar`). Une chip qui ne peut rien trouver n'est pas offerte.
+List<PublicationType?> agendaTypeOptions(TeamDetailDto team) =>
+    <PublicationType?>[
+      null,
+      if (team.enableRides && team.enableRoutes) PublicationType.ride,
+      if (team.enableTrips && team.enableRoutes) PublicationType.trip,
+    ];
 
 /// L'Agenda d'une équipe : ses sorties et ses voyages (ledger `MOB-60`).
 ///
@@ -82,7 +88,14 @@ class TeamAgendaPage extends StatefulWidget {
 }
 
 class _TeamAgendaPageState extends State<TeamAgendaPage> {
-  late PublicationType? _type = widget.initialType;
+  /// Les types offerts : ceux des modules de l'équipe.
+  List<PublicationType?> get _typeOptions => agendaTypeOptions(widget.team);
+
+  /// Le type du lien, s'il est offert : `?type=trip` sur une équipe sans
+  /// voyages s'ouvre sur « Tout », pas sur une chip absente.
+  late PublicationType? _type = _typeOptions.contains(widget.initialType)
+      ? widget.initialType
+      : null;
   late AgendaScope _scope = widget.initialScope;
   late AgendaView _view = widget.initialView;
 
@@ -124,6 +137,10 @@ class _TeamAgendaPageState extends State<TeamAgendaPage> {
                 teamSlug: slug,
                 embedded: true,
                 typeFilter: _calendarType(_type),
+                typeOptions: <CalendarTypeFilter>[
+                  for (final PublicationType? type in _typeOptions)
+                    _calendarType(type),
+                ],
                 onTypeChanged: (CalendarTypeFilter next) =>
                     setState(() => _type = _publicationType(next)),
                 registeredOnly: _scope == AgendaScope.participating,
@@ -150,13 +167,15 @@ class _TeamAgendaPageState extends State<TeamAgendaPage> {
           ),
         ],
         toolbarHeader: _header(view),
-        typeOptions: kAgendaTypeOptions,
+        typeOptions: _typeOptions,
         selectedType: _type,
         onTypeChanged: (PublicationType? next) => setState(() => _type = next),
         when: _scope == AgendaScope.past
             ? PublicationWhen.past
             : PublicationWhen.upcoming,
         participating: _scope == AgendaScope.participating,
+        onClearParticipating: () =>
+            setState(() => _scope = AgendaScope.upcoming),
         searchHint: 'teams.agenda.searchPlaceholder'.tr(),
         countLabel: (int total) => agendaCountLabel(_scope, _type, total),
         emptyMessage: 'teams.agenda.empty.title'.tr(),

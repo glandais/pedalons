@@ -35,6 +35,13 @@ class _StubTemplates implements RideTemplateRepository {
     required int size,
   }) async {
     listCalls++;
+    // Une recherche ne trouve rien : le vide filtré.
+    if (search != null) {
+      return const PageResult<RideTemplateDto>(
+        items: <RideTemplateDto>[],
+        total: 0,
+      );
+    }
     return PageResult<RideTemplateDto>(
       items: List<RideTemplateDto>.of(templates),
       total: templates.length,
@@ -226,6 +233,34 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
     }
     expect(find.text('création'), findsOneWidget);
+  });
+
+  testWidgets('une recherche sans résultat offre d\'effacer la recherche', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, templates: _StubTemplates(two()));
+
+    await tester.enterText(
+      find.descendant(
+        of: find.byKey(keys.rideTemplates.searchField),
+        matching: find.byType(EditableText),
+      ),
+      'zzz',
+    );
+    await tester.pump(const Duration(milliseconds: 400));
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+
+    expect(find.byKey(keys.rideTemplates.noResults), findsOneWidget);
+    expect(find.byKey(keys.rideTemplates.clearSearchButton), findsOneWidget);
+
+    await tester.tap(find.byKey(keys.rideTemplates.clearSearchButton));
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    expect(find.byKey(keys.rideTemplates.noResults), findsNothing);
+    expect(find.byKey(keys.rideTemplates.card('dimanche')), findsOneWidget);
   });
 
   testWidgets('un simple membre lit un refus, sans rien charger', (

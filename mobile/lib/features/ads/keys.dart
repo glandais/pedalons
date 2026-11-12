@@ -40,6 +40,9 @@ class AdsListKeys {
   /// L'état vide d'une liste filtrée, « cul-de-sac ».
   final filteredEmptyState = const _AdsListKey('filteredEmptyState');
 
+  /// « Réservées aux membres » : le serveur a refusé la liste (403).
+  final membersOnlyState = const _AdsListKey('membersOnlyState');
+
   final searchField = const _AdsListKey('searchField');
 
   /// La puce d'un type d'annonce (`AdType.json`) ; `null` pour « Tous ».

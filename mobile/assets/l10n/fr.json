@@ -123,6 +123,7 @@
     "comingSoon": "Cet écran arrive dans une prochaine version.",
     "close": "Fermer",
     "clearSearch": "Effacer la recherche",
+    "clearFilters": "Effacer les filtres",
     "delete": "Supprimer",
     "open": "Ouvrir",
     "details": "Détails",
@@ -216,7 +217,8 @@
       "errorTitle": "Fil indisponible.",
       "emptyFiltered": {
         "title": "Aucun résultat",
-        "message": "Aucune publication ne correspond à « {search} »."
+        "message": "Aucune publication ne correspond à « {search} ».",
+        "messageFilters": "Rien ne correspond aux filtres choisis."
       }
     },
     "nextRide": "Ma prochaine sortie",
@@ -317,6 +319,10 @@
       "since": "Membre depuis {date}",
       "none": "Aucun membre",
       "noneHint": "Les membres de cette équipe apparaîtront ici.",
+      "forbidden": {
+        "title": "Liste des membres non partagée",
+        "message": "Cette équipe ne partage pas la liste de ses membres avec vous."
+      },
       "empty": {
         "title": "Aucun membre pour ces filtres",
         "description": "Aucun membre ne correspond à cette recherche ni à ce rôle.",
@@ -1010,7 +1016,15 @@
         "one": "{} annonce",
         "other": "{} annonces"
       },
+      "noun": {
+        "one": "annonce",
+        "other": "annonces"
+      },
       "loadError": "La rubrique Annonces n'est pas activée sur cette équipe, ou le réseau est indisponible.",
+      "membersOnly": {
+        "title": "Réservées aux membres",
+        "message": "Les annonces de l'équipe ne sont visibles que par ses membres."
+      },
       "empty": {
         "title": "Aucune annonce pour ces filtres",
         "description": "Aucune annonce ne correspond à cette combinaison de filtres.",
@@ -1122,6 +1136,10 @@
         "one": "{} parcours",
         "other": "{} parcours"
       },
+      "noun": {
+        "one": "parcours",
+        "other": "parcours"
+      },
       "empty": {
         "title": "Aucun parcours pour ces filtres",
         "description": "Aucun parcours ne correspond à cette combinaison de filtres.",
@@ -1131,6 +1149,8 @@
         "withoutFilter": "Sans le filtre {filter}"
       },
       "countOf": "{shown} parcours sur {total}",
+      "none": "Aucun parcours",
+      "noneHint": "Aucun parcours n'est disponible pour le moment.",
       "densitySwitched": "Au-delà de {threshold} résultats, la liste passe en affichage compact. Vous pouvez revenir aux vignettes à tout moment."
     },
     "filters": {
@@ -1266,7 +1286,7 @@
     },
     "scope": {
       "title": "Portée",
-      "allTeams": "Toutes mes équipes",
+      "allTeams": "Toutes les équipes",
       "minRole": "Rôle minimum",
       "anyRole": "Tous les rôles"
     },
@@ -1398,14 +1418,15 @@
     "cancelled": "Annulé",
     "today": "Aujourd'hui",
     "scope": "Portée",
+    "allMyTeams": "Toutes mes équipes",
     "previousMonth": "Mois précédent",
     "nextMonth": "Mois suivant",
     "collapseGrid": "Replier le mois",
     "expandGrid": "Déplier le mois",
     "upcoming": "À venir",
-    "clearFilters": "Effacer les filtres",
     "goToNextMonthWithEvents": "Aller au prochain mois avec une sortie",
     "noEventsIn": "Vos équipes n'ont publié aucune sortie ni étape de voyage en {month}.",
+    "noEventsInTeam": "L'équipe n'a publié aucune sortie ni étape de voyage en {month}.",
     "eventCount": {
       "zero": "aucun événement",
       "one": "{} événement",
@@ -1645,6 +1666,10 @@
       "zero": "Aucune notification",
       "one": "{} notification",
       "other": "{} notifications"
+    },
+    "noun": {
+      "one": "notification",
+      "other": "notifications"
     },
     "filter": {
       "all": "Toutes",

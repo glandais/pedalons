@@ -46,6 +46,10 @@ class CalendarPage extends ConsumerStatefulWidget {
   /// Lève « Je participe » depuis l'état vide filtré.
   final VoidCallback? onClearRegisteredOnly;
 
+  /// Les types proposés en chips : tous par défaut, ceux des modules de
+  /// l'équipe dans son Agenda (`agendaTypeOptions`, comme au site).
+  final List<CalendarTypeFilter> typeOptions;
+
   const CalendarPage({
     super.key,
     this.teamSlug,
@@ -54,6 +58,7 @@ class CalendarPage extends ConsumerStatefulWidget {
     this.onTypeChanged,
     this.registeredOnly = false,
     this.onClearRegisteredOnly,
+    this.typeOptions = CalendarTypeFilter.values,
   });
 
   @override
@@ -101,6 +106,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               // Sans app bar à elle, la section d'équipe perdrait le raccourci
               // « Aujourd'hui » : il descend alors dans la barre d'outils.
               onToday: widget.embedded ? _goToToday : null,
+              typeOptions: widget.typeOptions,
             ),
           ),
         ),
@@ -114,6 +120,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                 registeredOnly: widget.registeredOnly,
               ),
               typeFilter,
+              monthHasEvents: !loaded.isEmpty,
             ),
             loading: _skeletons,
             error: (Object error, StackTrace stack) => Center(
@@ -170,8 +177,9 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   Widget _content(
     CalendarMonthKey monthKey,
     CalendarMonth month,
-    CalendarTypeFilter typeFilter,
-  ) {
+    CalendarTypeFilter typeFilter, {
+    required bool monthHasEvents,
+  }) {
     final List<_AgendaEntry> entries = _compose(month);
 
     return Column(
@@ -182,7 +190,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               ? SingleChildScrollView(
                   child: Column(
                     children: <Widget>[
-                      _emptyState(monthKey, typeFilter),
+                      _emptyState(monthKey, typeFilter, monthHasEvents),
                       CalendarSubscriptionCard(teamSlug: widget.teamSlug),
                       const SizedBox(height: 32),
                     ],
@@ -352,11 +360,19 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     ],
   );
 
-  Widget _emptyState(CalendarMonthKey monthKey, CalendarTypeFilter type) {
+  Widget _emptyState(
+    CalendarMonthKey monthKey,
+    CalendarTypeFilter type,
+    bool monthHasEvents,
+  ) {
     // Deux vides bien distincts : « rien ce mois-ci » et « rien *avec ces
     // filtres* ». Le second se résout en effaçant les filtres, jamais en
-    // changeant de mois.
-    if (type != CalendarTypeFilter.all || widget.registeredOnly) {
+    // changeant de mois — et il ne se dit que si le mois a bien des
+    // événements, sans quoi sa phrase (« Ce mois contient des événements… »)
+    // serait fausse : un mois vide reste le vide du mois, filtre ou non.
+    final bool filtered =
+        type != CalendarTypeFilter.all || widget.registeredOnly;
+    if (filtered && monthHasEvents) {
       return Padding(
         padding: const EdgeInsets.all(PdlSpacing.section),
         child: PdlEmptyState(
@@ -366,7 +382,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           message: 'calendar.noEventsFiltered.message'.tr(),
           actions: <Widget>[
             PdlButton(
-              label: 'calendar.clearFilters'.tr(),
+              label: 'common.clearFilters'.tr(),
               variant: PdlButtonVariant.outline,
               size: PdlButtonSize.sm,
               onPressed: () {
@@ -392,11 +408,17 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             variant: PdlEmptyVariant.empty,
             icon: PdlIcons.dateBusy,
             title: 'calendar.noEvents'.tr(),
-            message: 'calendar.noEventsIn'.tr(
-              namedArgs: <String, String>{
-                'month': AppFormatters.formatMonthYear(monthKey.start),
-              },
-            ),
+            // Sur une équipe (son Agenda, ou sa chip au calendrier global),
+            // c'est elle qui n'a rien publié — pas « vos équipes ».
+            message:
+                (monthKey.teamSlug == null
+                        ? 'calendar.noEventsIn'
+                        : 'calendar.noEventsInTeam')
+                    .tr(
+                      namedArgs: <String, String>{
+                        'month': AppFormatters.formatMonthYear(monthKey.start),
+                      },
+                    ),
             actions: <Widget>[
               if (next != null)
                 PdlButton(

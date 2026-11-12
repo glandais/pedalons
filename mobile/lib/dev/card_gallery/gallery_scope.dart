@@ -28,6 +28,7 @@ import '../../features/participants/domain/participant_query.dart';
 import '../../features/rides/providers/participation_changes.dart';
 import '../../features/teams/data/team_repository.dart';
 import '../../features/teams/domain/member_filters.dart';
+import '../../features/teams/providers/my_teams_list_provider.dart';
 import 'gallery_data.dart';
 
 /// Un cas de galerie dans son conteneur isolé, avec les [overrides] du cas
@@ -163,6 +164,30 @@ class GalleryTeamRepository implements TeamRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnsupportedError('Galerie de cartes : ${invocation.memberName}');
+}
+
+/// « Mes équipes » déjà chargée : les [teams] donnés, sans passer par le
+/// squelette de chargement (trois cartes qui déborderaient du cadre).
+class GalleryMyTeamsNotifier extends MyTeamsListNotifier {
+  GalleryMyTeamsNotifier(this.teams)
+    : super(const GalleryTeamRepository(<MemberDto>[]), null) {
+    state = PagedListState<TeamDetailDto>(
+      items: teams,
+      total: teams.length,
+      loadedPages: 1,
+      hasMore: false,
+      isLoadingInitial: false,
+    );
+  }
+
+  final List<TeamDetailDto> teams;
+
+  @override
+  Future<PageResult<TeamDetailDto>> fetchPage(int page) async =>
+      PageResult<TeamDetailDto>(
+        items: page == 0 ? teams : const <TeamDetailDto>[],
+        total: teams.length,
+      );
 }
 
 /// Les personnes inscrites : une seule page, les [people] donnés.
