@@ -3234,8 +3234,8 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
   publications comprises, du plus récent au plus ancien ; `sortDir` est ignoré et la page ne porte pas
   `upcomingTotal`. `PAST` ne convenait pas au fil : il écarte les publications. **À ne pas défaire** : `EARLIER` et la
   seconde section de `UPCOMING_FIRST` sont la même liste, dans le même ordre. Tests ajoutés à
-  `PublicationUpcomingFirstTest` ; cette classe et `PublicationQueryCountTest` vertes sur optiplex (42 tests), suite
-  entière non relancée.
+  `PublicationUpcomingFirstTest` ; cette classe et `PublicationQueryCountTest` vertes sur optiplex, puis la suite
+  entière (4 809 tests).
 - `API-184` **Listes paginées : ordre total, et membres par nom** (12 novembre 2026, contrat 14.7.0) — DL21 et DL22 du
   [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §1. Chaque liste paginée par offset termine sa clé de tri par l'id, dans le même sens : publications, agenda,
   parcours, annonces, modèles, lieux, invitations, aperçus GPX, listes d'administration. Sans cela, deux éléments à clé

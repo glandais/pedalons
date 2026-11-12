@@ -55,5 +55,5 @@ Sur le site, `TeamDirectoryPage.tsx` est l'annuaire des membres d'une équipe ; 
 | 3. Planches avant / cible | Faites le 12 novembre 2026 : neuf planches `maquettes/project/cible-listes-rl*.dc.html`, page « Listes — cibles » de l'artifact |
 | 4. Décisions | Prises le 12 novembre 2026, toutes les options recommandées ; écrites dans `maquettes/KIT.md` §10 |
 | 5. Lots | Faits le 12 novembre 2026 : `API-185` (contrat 14.8.0), `MOB-143`, `MOB-140`, `WEB-175` |
-| 5 bis. Complément « Plus tôt » | Décidé et codé le 12 novembre 2026 après l'essai en production (contrat 14.9.0, mêmes entrées de ledger) : troisième choix de période au fil et à l'agenda. Tests ciblés du serveur verts (42), suite entière non relancée, captures du site non refaites |
+| 5 bis. Complément « Plus tôt » | Décidé et codé le 12 novembre 2026 après l'essai en production (contrat 14.9.0, mêmes entrées de ledger) : troisième choix de période au fil et à l'agenda. Suite entière du serveur verte (4 809 tests), captures du site refaites |
 | 6. Vérification contre la cible | Tests et captures de galerie refaites, regardées par échantillon. Restent la recette complète (e2e) et l'écran réel : `MOB-146`, `WEB-176` |

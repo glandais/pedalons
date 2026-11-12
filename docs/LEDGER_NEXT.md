@@ -418,12 +418,11 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 - [ ] `WEB-176` **Listes homogènes : recette en navigateur de `WEB-175` (S)** — même réserve que `MOB-146` : vérifié
   par tests et par les captures de `dev/lists.html`. À regarder sur le site servi : barres à 390 px, sections
   « À venir » / « Plus tôt » d'une page à l'autre, calendrier (mois vide, choix d'une équipe), erreur sans notification,
-  profonds `?w=past`, les trois choix de période « Plus tôt » compris (fil et agenda, petit écran). La suite Patrol,
-  elle, est passée le 12 novembre 2026 sur la pile e2e (commit `12bec34c4`, avant « Plus tôt ») :
-  69 sur 69 sur l'émulateur Android, 68 sur 69 sur le simulateur iOS puis 69 une fois `calendar_test` mis au pas — sous
-  les lignes de période et de vue, la liste de l'Agenda d'équipe en vue Calendrier n'est plus qu'une bande en bas de
-  l'écran, et le test fait défiler cette liste-là pour y trouver sa carte (`patrol_test/modules/calendar.dart`). À
-  regarder sur appareil : cette bande est-elle assez haute pour être utilisable. Pendant côté site : `WEB-176`.
+  anciens liens `?w=past`, « Plus tôt » au fil et à l'agenda (trois segments à 390 px, champs de l'agenda alignés),
+  carte des parcours. La suite Playwright, elle, est passée le 12 novembre 2026 sur la pile e2e (commit `12bec34c4`,
+  avant « Plus tôt » ; 2 016 tests, projets `desktop` et `mobile`) une fois ses tests mis à jour : second bouton
+  « Créer … » d'une liste vide, compteur par section de l'agenda, « Créer un parcours » (`flow-ads`, `flow-posts`,
+  `flow-rides`, `flow-routes`, `flow-trips`).
 - [ ] `WEB-172` **Cartes homogènes : recette en navigateur de `WEB-167` (S)** — même réserve que `MOB-141` côté site :
       vérifié par tests unitaires et par captures de la galerie de développement, pas sur le site servi (SSR, hydratation,
       mode sombre, largeurs intermédiaires). La suite Playwright a tourné le 12 novembre 2026 sur la pile e2e : 1 981
