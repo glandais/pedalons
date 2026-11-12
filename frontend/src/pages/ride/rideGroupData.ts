@@ -109,7 +109,7 @@ export function prefetchRideGroupMap(
 
 /**
  * The group's leg when its map offers the Météo mode (WEB-115): a forecast with at least one
- * point's weather, on a ride neither finished nor cancelled. One rule for the group's page and its
+ * point's weather, on a ride neither over (`isOver` — under way keeps it, API-170) nor cancelled. One rule for the group's page and its
  * fullscreen map, which must agree: a link to the map in the Météo mode falls back on the grade
  * exactly when the page would.
  */
@@ -117,9 +117,7 @@ export function groupWindLeg(
   ride: RideDto,
   leg: WeatherLegDto | undefined
 ): WeatherLegDto | undefined {
-  return !ride.finished && ride.status !== Status.CANCELLED && hasWindForecast(leg)
-    ? leg
-    : undefined
+  return !isOver(ride) && ride.status !== Status.CANCELLED && hasWindForecast(leg) ? leg : undefined
 }
 
 /**

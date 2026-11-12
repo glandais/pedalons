@@ -372,7 +372,7 @@ describe('RideGroupPage (WEB-77)', () => {
     expect(weather?.querySelector('[aria-label="Le vent, tronçon par tronçon"]')).not.toBeNull()
     expect(weather?.textContent).toContain('Heure par heure, à votre passage')
     cleanup()
-    state.ride = ride({ finished: true })
+    state.ride = ride({ finished: true, endDateTime: '2020-01-01T10:00:00Z' })
     const { container: finished } = renderPage()
     expect(finished.querySelector('#meteo section')).toBeNull()
   })
@@ -473,7 +473,7 @@ describe('RideGroupPage (WEB-77)', () => {
     })
 
     it('offers nothing on a finished or cancelled ride', async () => {
-      state.ride = ride({ finished: true })
+      state.ride = ride({ finished: true, endDateTime: '2020-01-01T10:00:00Z' })
       renderPage()
       await findMap()
       expect(screen.queryByLabelText('Météo')).toBeNull()

@@ -60,8 +60,14 @@ describe('stageWindLeg (WEB-118)', () => {
     expect(stageWindLeg(trip(), undefined, 's1')).toBeUndefined()
   })
 
-  it('is none on a trip finished or cancelled', () => {
-    expect(stageWindLeg(trip({ finished: true }), tripWeather, 's1')).toBeUndefined()
+  it('is none on a trip over or cancelled, kept on one under way', () => {
+    expect(
+      stageWindLeg(trip({ finished: true, endDateTime: '2020-01-01T10:00:00Z' }), tripWeather, 's1')
+    ).toBeUndefined()
+    // Left, not back: `finished` only says the start has passed (API-170).
+    expect(
+      stageWindLeg(trip({ finished: true, endDateTime: '2999-01-01T10:00:00Z' }), tripWeather, 's1')
+    ).toBeTruthy()
     expect(stageWindLeg(trip({ status: Status.CANCELLED }), tripWeather, 's1')).toBeUndefined()
   })
 })
@@ -83,7 +89,12 @@ describe('tripMapWinds (WEB-118)', () => {
       { stageId: 's2', leg: weatherLeg(undefined) },
     ])
     expect([...tripMapWinds(trip(), someGone).keys()]).toEqual(['s2'])
-    expect(tripMapWinds(trip({ finished: true }), tripWeather).size).toBe(0)
+    expect(
+      tripMapWinds(trip({ finished: true, endDateTime: '2020-01-01T10:00:00Z' }), tripWeather).size
+    ).toBe(0)
+    expect(
+      tripMapWinds(trip({ finished: true, endDateTime: '2999-01-01T10:00:00Z' }), tripWeather).size
+    ).toBe(2)
     expect(tripMapWinds(trip({ status: Status.CANCELLED }), tripWeather).size).toBe(0)
     expect(tripMapWinds(trip(), undefined).size).toBe(0)
   })

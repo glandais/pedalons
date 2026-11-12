@@ -180,7 +180,7 @@ describe('RideGroupFullscreenMapPage (WEB-117)', () => {
     expect(state.view.windAttribution).toBeUndefined()
     cleanup()
     state.weather = okWeather
-    state.ride = ride({ finished: true })
+    state.ride = ride({ finished: true, endDateTime: '2020-01-01T10:00:00Z' })
     renderPage('?color=wind')
     expect(windLeg()).toBeUndefined()
     cleanup()

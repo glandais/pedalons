@@ -2,6 +2,7 @@ import type { RideDto, RideWeatherDto, WeatherLegDto } from '@/api/dto'
 import { Status } from '@/api/dto'
 import type { RouteWeatherSelection } from './RouteWeather'
 import { RouteWeatherSection } from './RouteWeatherSection'
+import { isOver } from '@/utils/publicationEnd'
 
 interface GroupWeatherSectionProps {
   ride: RideDto
@@ -40,7 +41,8 @@ export function GroupWeatherSection({
   return (
     <RouteWeatherSection
       subject="group"
-      offered={!ride.finished && ride.status !== Status.CANCELLED}
+      // Until the ride is over, not until it leaves: the server serves it to the end (API-170).
+      offered={!isOver(ride) && ride.status !== Status.CANCELLED}
       status={weather?.status}
       availableFrom={weather?.availableFrom}
       attribution={weather?.attribution}

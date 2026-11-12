@@ -185,7 +185,10 @@ describe('StageDetailPage — the page of a child, as a group (WEB-155)', () => 
   })
 
   it('offers no weather once the trip is over or cancelled', () => {
-    for (const over of [{ finished: true }, { status: Status.CANCELLED }]) {
+    for (const over of [
+      { finished: true, endDateTime: '2020-01-01T10:00:00Z' },
+      { status: Status.CANCELLED },
+    ]) {
       state.trip = trip(over)
       renderPage()
       expect(state.weatherSection.offered).toBe(false)
@@ -232,7 +235,10 @@ describe('StageDetailPage — the Météo mode of its map (WEB-118)', () => {
     expect(state.view.attribution).toBeUndefined()
     cleanup()
     state.weather = tripWeather(weatherLeg(undefined))
-    for (const over of [{ finished: true }, { status: Status.CANCELLED }]) {
+    for (const over of [
+      { finished: true, endDateTime: '2020-01-01T10:00:00Z' },
+      { status: Status.CANCELLED },
+    ]) {
       state.trip = trip(over)
       renderPage()
       expect(state.view.leg).toBeUndefined()

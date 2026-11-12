@@ -120,12 +120,19 @@ describe('RideWeatherSection', () => {
     expect(screen.getByText(/Ajoutez un lieu/)).toBeTruthy()
   })
 
-  it('draws nothing for a finished or cancelled ride, or an unknown status', () => {
+  it('draws nothing for a ride over or cancelled, or an unknown status', () => {
     const { container: finished } = renderSection({
-      ride: ride({ finished: true }),
+      ride: ride({ finished: true, endDateTime: '2020-01-01T10:00:00Z' }),
       weather: okWeather,
     })
     expect(finished.querySelector('section')).toBeNull()
+    cleanup()
+    // Left, not back: the forecast stays to the ride's end (API-170).
+    const { container: underWay } = renderSection({
+      ride: ride({ finished: true, endDateTime: '2999-01-01T10:00:00Z' }),
+      weather: okWeather,
+    })
+    expect(underWay.querySelector('section')).not.toBeNull()
     cleanup()
     const { container: cancelled } = renderSection({
       ride: ride({ status: Status.CANCELLED }),

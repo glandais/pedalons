@@ -8,6 +8,7 @@ import { WeatherAttribution } from './WeatherAttribution'
 import { WeatherStaleBadge } from './WeatherStaleBadge'
 import { WeatherStatusNotice } from './WeatherStatusNotice'
 import { hasForecast, showsDetailBlock } from './weatherDisplay'
+import { isOver } from '@/utils/publicationEnd'
 import { ownLeg } from '@/utils/soloGroup'
 
 interface RideWeatherSectionProps {
@@ -32,7 +33,7 @@ interface RideWeatherSectionProps {
  * one group's leg, under the departure — otherwise that weather would show nowhere.
  *
  * Every number is the server's (docs/plans/archive/2026-10-05-weather.md §1); this only words
- * them and converts the units. A finished or cancelled ride, OUT_OF_RANGE and a status this build
+ * them and converts the units. A ride over (`isOver`) or cancelled, OUT_OF_RANGE and a status this build
  * does not know draw nothing.
  */
 export function RideWeatherSection({
@@ -45,7 +46,8 @@ export function RideWeatherSection({
 }: RideWeatherSectionProps) {
   const { t } = useTranslation()
 
-  if (ride.finished || ride.status === Status.CANCELLED || isLoading) return null
+  // Over, not merely left: a ride under way keeps its weather, as the server serves it (API-170).
+  if (isOver(ride) || ride.status === Status.CANCELLED || isLoading) return null
 
   // No data — a failed read included — is the same promise as UNAVAILABLE: nothing to show yet,
   // try again. A failed *refetch* is not: React Query v5 keeps its data beside `isError`, and the

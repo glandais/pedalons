@@ -274,7 +274,10 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     expect(screen.queryByLabelText('Météo')).toBeNull()
     cleanup()
     state.weather = { ...okWeather, legs: [weatherLeg('g1')] }
-    for (const over of [{ finished: true }, { status: Status.CANCELLED }]) {
+    for (const over of [
+      { finished: true, endDateTime: '2020-01-01T10:00:00Z' },
+      { status: Status.CANCELLED },
+    ]) {
       state.ride = ride(over)
       renderPage()
       await screen.findByTestId('route-map')

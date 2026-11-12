@@ -159,7 +159,10 @@ describe('StageFullscreenMapPage — the Météo mode (WEB-118)', () => {
       cleanup()
     }
     state.weather = tripWeather(weatherLeg(undefined))
-    for (const over of [{ finished: true }, { status: Status.CANCELLED }]) {
+    for (const over of [
+      { finished: true, endDateTime: '2020-01-01T10:00:00Z' },
+      { status: Status.CANCELLED },
+    ]) {
       state.trip = trip(over)
       renderPage('?color=wind')
       expect(windLeg()).toBeUndefined()
