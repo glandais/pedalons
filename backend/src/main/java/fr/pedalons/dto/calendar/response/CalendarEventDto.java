@@ -111,7 +111,72 @@ public record CalendarEventDto(
                     + " reader's zone.",
             examples = "Europe/Paris",
             required = true)
-        String timezone) {
+        String timezone,
+    @Nullable
+        @Schema(
+            description =
+                "The distance in meters an agenda card shows to the caller, as"
+                    + " RideDto.displayDistance: for a ride, the route of the group they joined"
+                    + " when registered, else the route every group rides, else null (groups on"
+                    + " different routes, or no route); for a trip stage, the stage's route. Unlike"
+                    + " distance, which is only the ride's own route.")
+        Float displayDistance,
+    @Nullable
+        @Schema(
+            description =
+                "The elevation gain in meters an agenda card shows to the caller, from the same"
+                    + " route as displayDistance. Null whenever displayDistance is.")
+        Float displayElevationGain) {
+
+  /**
+   * An event without display figures — for the ICS writers, which never render a card. The agenda
+   * endpoints go through the canonical constructor (docs/LEDGER_*.md API-178).
+   */
+  public CalendarEventDto(
+      String id,
+      String title,
+      Instant start,
+      @Nullable Instant end,
+      boolean allDay,
+      CalendarEventType type,
+      String teamSlug,
+      String teamName,
+      String entitySlug,
+      @Nullable String tripSlug,
+      @Nullable String startPlaceName,
+      @Nullable Float distance,
+      @Nullable Float elevationGain,
+      @Nullable String thumbnailUrl,
+      @Nullable String thumbnailLightUrl,
+      @Nullable String thumbnailDarkUrl,
+      boolean registered,
+      @Nullable String groupName,
+      Status status,
+      String timezone) {
+    this(
+        id,
+        title,
+        start,
+        end,
+        allDay,
+        type,
+        teamSlug,
+        teamName,
+        entitySlug,
+        tripSlug,
+        startPlaceName,
+        distance,
+        elevationGain,
+        thumbnailUrl,
+        thumbnailLightUrl,
+        thumbnailDarkUrl,
+        registered,
+        groupName,
+        status,
+        timezone,
+        null,
+        null);
+  }
 
   /**
    * Whether the ride or stage is over: its end, or its start when it has none, has passed. Derived

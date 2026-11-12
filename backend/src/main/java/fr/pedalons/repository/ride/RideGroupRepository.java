@@ -2,11 +2,13 @@ package fr.pedalons.repository.ride;
 
 import fr.pedalons.domain.ride.RideGroup;
 import fr.pedalons.repository.common.BaseRepository;
+import fr.pedalons.service.ride.RideDisplayFigures;
 import fr.pedalons.service.timezone.EventTimezoneResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -53,6 +55,45 @@ public class RideGroupRepository implements BaseRepository<RideGroup> {
       groups.put((Long) row[0], new NameAndStart((String) row[1], (Instant) row[2]));
     }
     return groups;
+  }
+
+  /**
+   * Every group of a set of rides with its own route's figures, in one query — what {@link
+   * RideDisplayFigures} needs where the groups are not loaded otherwise, the calendar
+   * (docs/LEDGER_*.md API-178). Scalars only: no group nor route enters the persistence context.
+   *
+   * <p>The ride ids come from a {@code PedalonsQuery} the caller already ran: this widens nothing.
+   *
+   * @return ride id → its groups in sort order; a ride with no group is absent
+   */
+  public Map<Long, List<RideDisplayFigures.GroupRoute>> findGroupRoutesByRideIds(
+      Collection<Long> rideIds) {
+    if (rideIds.isEmpty()) {
+      return Map.of();
+    }
+    List<Object[]> rows =
+        getEntityManager()
+            .createQuery(
+                "select g.ride.id, g.id, r.id, r.distance, r.elevationGain, r.deleted"
+                    + " from RideGroup g left join g.route r"
+                    + " where g.ride.id in (:rideIds)"
+                    + " order by g.ride.id, g.sortOrder, g.id",
+                Object[].class)
+            .setParameter("rideIds", rideIds)
+            .getResultList();
+    Map<Long, List<RideDisplayFigures.GroupRoute>> byRide = new HashMap<>();
+    for (Object[] row : rows) {
+      Long routeId = (Long) row[2];
+      byRide
+          .computeIfAbsent((Long) row[0], k -> new ArrayList<>())
+          .add(
+              new RideDisplayFigures.GroupRoute(
+                  (Long) row[1],
+                  routeId != null && !Boolean.TRUE.equals(row[5])
+                      ? new RideDisplayFigures.RouteFigures(routeId, (Float) row[3], (Float) row[4])
+                      : null));
+    }
+    return byRide;
   }
 
   /**

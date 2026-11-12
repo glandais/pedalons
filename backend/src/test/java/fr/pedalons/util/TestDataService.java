@@ -857,6 +857,12 @@ public class TestDataService {
     routeRepository.getEntityManager().merge(route);
   }
 
+  /** Soft-deletes a route on its managed instance: the caller's copy may be stale. */
+  @Transactional
+  public void deleteManagedRoute(Route route) {
+    routeRepository.findById(route.getId()).setDeleted(true);
+  }
+
   @Transactional
   public void deleteTeam(Team team) {
     team.setDeleted(true);

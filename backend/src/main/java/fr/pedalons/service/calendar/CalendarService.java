@@ -31,6 +31,7 @@ import fr.pedalons.service.asset.ThumbnailLookup;
 import fr.pedalons.service.asset.ThumbnailLookup.ThemedThumbnail;
 import fr.pedalons.service.common.ParticipationLookup;
 import fr.pedalons.service.publication.PublicationEndCalculator;
+import fr.pedalons.service.ride.RideDisplayFigures;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.annotation.CheckAccess;
@@ -244,9 +245,9 @@ public class CalendarService {
    * Builds the whole window, then decorates it — deliberately in that order.
    *
    * <p>The default window is 210 days wide and has no pagination, so anything resolved per event is
-   * resolved a few hundred times. The three per-user or per-asset pieces the agenda needs
-   * (registrations, joined group names, thumbnails) are therefore loaded once for the entire window,
-   * before any DTO is built: three statements, whatever the window returns. Route metrics and start
+   * resolved a few hundred times. The four per-user, per-asset or per-group pieces the agenda needs
+   * (registrations, joined group names, thumbnails, the groups' routes) are therefore loaded once
+   * for the entire window, before any DTO is built: four statements, whatever the window returns. Route metrics and start
    * places cost nothing extra — {@code Ride.route}, {@code Ride.start} and the stage equivalents are
    * eager to-ones already loaded with the publication.
    */
@@ -274,10 +275,20 @@ public class CalendarService {
             participations.registeredGroupIdByRideId().values());
     Map<Long, ThemedThumbnail> thumbnails =
         thumbnailLookup.forTeamEntities(thumbnailIds(rides, stages));
+    // The groups' own routes, for the figures each card shows its reader: one statement for the
+    // window (docs/LEDGER_*.md API-178).
+    Map<Long, List<RideDisplayFigures.GroupRoute>> groupRoutes =
+        rideGroupRepository.findGroupRoutesByRideIds(ids(rides));
 
     List<CalendarEventDto> events = new ArrayList<>(rides.size() + stages.size());
     for (Ride ride : rides) {
-      events.add(toCalendarEvent(ride, participations, joinedGroups, thumbnails));
+      events.add(
+          toCalendarEvent(
+              ride,
+              participations,
+              joinedGroups,
+              thumbnails,
+              groupRoutes.getOrDefault(ride.getId(), List.of())));
     }
     for (TripStage stage : stages) {
       events.add(toCalendarEvent(stage, participations, thumbnails));
@@ -379,7 +390,8 @@ public class CalendarService {
       Ride ride,
       UserParticipations participations,
       Map<Long, NameAndStart> joinedGroups,
-      Map<Long, ThemedThumbnail> thumbnails) {
+      Map<Long, ThemedThumbnail> thumbnails,
+      List<RideDisplayFigures.GroupRoute> groupRoutes) {
     Team team = ride.getTeam();
     Route route = ride.getRoute();
     Place start = ride.getStart();
@@ -387,6 +399,8 @@ public class CalendarService {
     NameAndStart joined = registeredGroupId != null ? joinedGroups.get(registeredGroupId) : null;
     Instant startAt = joined != null ? joined.startAt() : ride.getDateTime();
     ThemedThumbnail rideThumbnails = thumbnails(thumbnails, ride.getId(), route);
+    RideDisplayFigures.Figures display =
+        RideDisplayFigures.resolve(RideDisplayFigures.live(route), groupRoutes, registeredGroupId);
     return new CalendarEventDto(
         TsidUtils.toString(ride.getId()),
         ride.getName(),
@@ -407,7 +421,9 @@ public class CalendarService {
         registeredGroupId != null,
         joined != null ? joined.name() : null,
         ride.getStatus(),
-        ride.zone().getId());
+        ride.zone().getId(),
+        display.distance(),
+        display.elevationGain());
   }
 
   private CalendarEventDto toCalendarEvent(
@@ -417,6 +433,9 @@ public class CalendarService {
     Route route = stage.getRoute();
     Place start = stage.getStartPlace();
     ThemedThumbnail stageThumbnails = thumbnails(thumbnails, stage.getId(), route);
+    // A stage has no groups: its own live route is the one every reader rides.
+    RideDisplayFigures.Figures display =
+        RideDisplayFigures.resolve(RideDisplayFigures.live(route), List.of(), null);
     return new CalendarEventDto(
         TsidUtils.toString(stage.getId()),
         stage.getName(),
@@ -440,7 +459,9 @@ public class CalendarService {
         participations.isRegisteredToTrip(trip.getId()),
         null,
         stage.getStatus(),
-        stage.zone().getId());
+        stage.zone().getId(),
+        display.distance(),
+        display.elevationGain());
   }
 
   /**

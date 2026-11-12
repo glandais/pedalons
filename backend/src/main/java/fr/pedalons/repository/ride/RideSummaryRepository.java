@@ -5,6 +5,7 @@ import fr.pedalons.dto.rides.response.RideGroupSummaryDto;
 import fr.pedalons.dto.rides.response.RideListSummary;
 import fr.pedalons.dto.users.response.PublicUserDto;
 import fr.pedalons.enums.SurfaceType;
+import fr.pedalons.service.ride.RideDisplayFigures;
 import fr.pedalons.service.timezone.EventTimezoneResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -62,6 +63,7 @@ public class RideSummaryRepository {
     Map<Long, Integer> capacity = new HashMap<>();
     Map<Long, List<RideGroupSummaryDto>> groups = new HashMap<>();
     Map<Long, RideListSummary.RouteMetrics> firstGroupRoute = new HashMap<>();
+    Map<Long, List<RideDisplayFigures.GroupRoute>> groupRoutes = new HashMap<>();
     // Rows come in (ride, sortOrder) order: the first routed group met is the first in sort order.
     for (Object[] row : loadGroupRows(rideIds)) {
       Long rideId = (Long) row[0];
@@ -101,6 +103,17 @@ public class RideSummaryRepository {
                   distance,
                   elevationGain,
                   (Integer) row[7]));
+      // docs/LEDGER_*.md API-178: the group's own route as the display rule sees it — live only,
+      // two more columns of this same statement.
+      Long routeId = (Long) row[14];
+      groupRoutes
+          .computeIfAbsent(rideId, k -> new ArrayList<>())
+          .add(
+              new RideDisplayFigures.GroupRoute(
+                  groupId,
+                  routeId != null && !Boolean.TRUE.equals(row[15])
+                      ? new RideDisplayFigures.RouteFigures(routeId, distance, elevationGain)
+                      : null));
       if (routeSlug != null) {
         firstGroupRoute.putIfAbsent(
             rideId,
@@ -119,7 +132,8 @@ public class RideSummaryRepository {
                 toMaxParticipants(capacity.get(rideId)),
                 topParticipants.getOrDefault(rideId, List.of()),
                 List.copyOf(groups.getOrDefault(rideId, List.of())),
-                firstGroupRoute.get(rideId))));
+                firstGroupRoute.get(rideId),
+                List.copyOf(groupRoutes.getOrDefault(rideId, List.of())))));
     return summaries;
   }
 
@@ -134,8 +148,8 @@ public class RideSummaryRepository {
   /**
    * One row per group, in {@code (ride, sortOrder)} order: {@code (rideId, groupId,
    * maxParticipants, participantCount, name, startAt, averageSpeed, sortOrder, routeSlug, distance,
-   * elevationGain, surfaceType, rideZone, rideDateTime)} — the route columns null when the group has
-   * none.
+   * elevationGain, surfaceType, rideZone, rideDateTime, routeId, routeDeleted)} — the route columns
+   * null when the group has none.
    *
    * <p>One row per group rather than per ride is what makes {@code full} and {@code
    * maxParticipants} computable: capacity is a per-group property, so a per-ride aggregate cannot
@@ -153,7 +167,8 @@ public class RideSummaryRepository {
                 + " r.slug, r.distance, r.elevationGain, r.surfaceType,"
                 // docs/LEDGER_*.md API-60: what reads the group's own time back from its start —
                 // an implicit join of this same statement, still one per page.
-                + " g.ride.timezone, g.ride.dateTime"
+                + " g.ride.timezone, g.ride.dateTime,"
+                + " r.id, r.deleted"
                 + " from RideGroup g left join g.route r"
                 + " where g.ride.id in (:rideIds)"
                 + " order by g.ride.id, g.sortOrder, g.id",

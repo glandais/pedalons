@@ -2,6 +2,7 @@ package fr.pedalons.api.calendar;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.everyItem;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.pedalons.api.AbstractQueryCountTest;
@@ -69,6 +70,33 @@ class CalendarQueryCountTest extends AbstractQueryCountTest {
       dataService.attachAsset(ride, user1, AssetType.RIDE_THUMBNAIL_LIGHT, "ride-" + i + ".png");
       RideGroup group = dataService.createRideGroup(user1, ride, "Groupe " + i, 0);
       dataService.createParticipation(group, user1);
+    }
+  }
+
+  /**
+   * docs/LEDGER_*.md API-178: one ride per day, two groups on routes of their own (40 km and
+   * 90 km), the caller in the second — so every event's display figures come from the groups'
+   * routes, which the calendar does not otherwise load.
+   */
+  private void seedRidesWithGroupRoutes(int count) {
+    for (int i = 0; i < count; i++) {
+      Ride ride =
+          dataService.createRide(
+              team1,
+              user1,
+              "Split " + i,
+              "split-" + i,
+              base.plus(i, ChronoUnit.DAYS).plusSeconds(3600));
+      Route shortRoute = dataService.createRoute(team1, user1, "Short " + i);
+      dataService.setRouteMetrics(shortRoute, 40000f, 300f);
+      Route longRoute = dataService.createRoute(team1, user1, "Long " + i);
+      dataService.setRouteMetrics(longRoute, 90000f, 1500f);
+      RideGroup a = dataService.createRideGroup(user1, ride, "A", 0);
+      dataService.setRideGroupRoute(a, shortRoute);
+      RideGroup b = dataService.createRideGroup(user1, ride, "B", 1);
+      // Route before the participation: merging the detached group afterwards would orphan it.
+      dataService.setRideGroupRoute(b, longRoute);
+      dataService.createParticipation(b, user1);
     }
   }
 
@@ -161,6 +189,27 @@ class CalendarQueryCountTest extends AbstractQueryCountTest {
     seedRides(LARGE_PAGE);
     assertFlatOverWindow(
         "GET /api/teams/{slug}/calendar/events", "/api/teams/" + team1Slug + "/calendar/events");
+  }
+
+  /** docs/LEDGER_*.md API-178: the groups' routes are one statement for the window. */
+  @Test
+  void getEvents_displayFigures_costDoesNotScaleWithTheWindow() {
+    seedRidesWithGroupRoutes(LARGE_PAGE);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get(
+            "/api/calendar/events?from="
+                + base.minusSeconds(60)
+                + "&to="
+                + base.plus(SMALL_PAGE, ChronoUnit.DAYS).plusSeconds(60))
+        .then()
+        .statusCode(200)
+        .body("events.displayDistance", everyItem(equalTo(90000f)));
+
+    assertFlatOverWindow("GET /api/calendar/events (display figures)", "/api/calendar/events");
   }
 
   /** Ledger API-137: a platform admin's personal agenda takes the member's query shape. */

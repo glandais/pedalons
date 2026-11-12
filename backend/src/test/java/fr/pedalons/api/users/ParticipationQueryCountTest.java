@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 
 import fr.pedalons.api.AbstractQueryCountTest;
 import fr.pedalons.domain.gps.GpsServiceConnection;
@@ -101,6 +102,36 @@ class ParticipationQueryCountTest extends AbstractQueryCountTest {
     return routes;
   }
 
+  /**
+   * docs/LEDGER_*.md API-178: two groups per ride on routes of their own, 40 km and 90 km, user1 in
+   * the second — every row's display figures come from the groups' routes.
+   */
+  private void seedJoinedRidesOnSplitRoutes(int count) {
+    Instant base = Instant.now().plus(7, ChronoUnit.DAYS);
+    for (int i = 0; i < count; i++) {
+      Ride ride =
+          dataService.createRide(
+              team1,
+              user1,
+              "Split Ride " + i,
+              "split-ride-" + i,
+              base.plusSeconds(i),
+              Visibility.PUBLIC,
+              Status.PUBLISHED);
+      Route shortRoute = dataService.createRoute(team1, user1, "Short " + i);
+      dataService.setRouteMetrics(shortRoute, 40000f, 300f);
+      Route longRoute = dataService.createRoute(team1, user1, "Long " + i);
+      dataService.setRouteMetrics(longRoute, 90000f, 1500f);
+      RideGroup a = dataService.createRideGroup(user1, ride, "A", 0);
+      dataService.setRideGroupRoute(a, shortRoute);
+      RideGroup b = dataService.createRideGroup(user1, ride, "B", 1);
+      // Route before the participation: merging the detached group afterwards would orphan it.
+      dataService.setRideGroupRoute(b, longRoute);
+      dataService.createParticipation(b, user1);
+      dataService.createParticipation(a, user2);
+    }
+  }
+
   private void seedJoinedTrips(int count) {
     Instant base = Instant.now().plus(7, ChronoUnit.DAYS);
     for (int i = 0; i < count; i++) {
@@ -191,6 +222,40 @@ class ParticipationQueryCountTest extends AbstractQueryCountTest {
     seedJoinedRidesOnTrackedRoutes(LARGE_PAGE);
     assertFlatQueryCount(
         "GET /api/publications (gps sync statuses)", asUser1(), "/api/publications");
+  }
+
+  /**
+   * docs/LEDGER_*.md API-178: the display figures are read from the group rows the page already
+   * loads — the joined group's route for user1, nothing for a member who joined none (the groups
+   * ride different routes) — and cost no statement per row.
+   */
+  @Test
+  void listPublications_displayFigures_costAPageNotARow() {
+    seedJoinedRidesOnSplitRoutes(LARGE_PAGE);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/users/me/participations?size=" + SMALL_PAGE)
+        .then()
+        .statusCode(200)
+        .body("publications.displayDistance", everyItem(equalTo(90000f)))
+        .body("publications.displayElevationGain", everyItem(equalTo(1500f)));
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER3))
+        .when()
+        .get("/api/publications?size=" + SMALL_PAGE)
+        .then()
+        .statusCode(200)
+        .body("publications.displayDistance", everyItem(nullValue()));
+
+    assertFlatQueryCount(
+        "GET /api/users/me/participations (display figures)",
+        asUser1(),
+        "/api/users/me/participations");
+    assertFlatQueryCount("GET /api/publications (display figures)", asUser1(), "/api/publications");
   }
 
   @Test

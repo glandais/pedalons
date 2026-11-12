@@ -31,6 +31,7 @@ import fr.pedalons.service.common.ContentPermissions;
 import fr.pedalons.service.common.ParticipantPreviewLookup.ParticipantPreview;
 import fr.pedalons.service.common.ParticipantPreviewLookup.PreviewedParticipant;
 import fr.pedalons.service.publication.PublicationEndCalculator;
+import fr.pedalons.service.ride.RideDisplayFigures;
 import fr.pedalons.service.weather.RideWeatherSummaries;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -170,6 +171,25 @@ public class RideDto implements PublicationDto {
   final SurfaceType surfaceType;
 
   @Nullable
+  @Schema(
+      description =
+          "The distance in meters a card shows to the caller, computed by the server: the route"
+              + " of the group they joined when they are registered (its own, else the ride's);"
+              + " otherwise the route every group of the ride rides (the ride's own when it has no"
+              + " group); otherwise null — groups on different routes and caller not registered,"
+              + " or no route at all. Anonymous and non-member callers get the not-registered"
+              + " answer. Same value on list rows and on the detail; clients show it as is instead"
+              + " of choosing between distance, registeredGroup.distance and the groups'.")
+  final Float displayDistance;
+
+  @Nullable
+  @Schema(
+      description =
+          "The elevation gain in meters a card shows to the caller, from the same route as"
+              + " displayDistance. Null whenever displayDistance is.")
+  final Float displayElevationGain;
+
+  @Nullable
   @Schema(description = "Start place")
   final PlaceDetailDto startPlace;
 
@@ -305,6 +325,8 @@ public class RideDto implements PublicationDto {
       @Nullable Float distance,
       @Nullable Float elevationGain,
       @Nullable SurfaceType surfaceType,
+      @Nullable Float displayDistance,
+      @Nullable Float displayElevationGain,
       @Nullable PlaceDetailDto startPlace,
       @Nullable PlaceDetailDto endPlace,
       List<PublicUserDto> topParticipants,
@@ -346,6 +368,8 @@ public class RideDto implements PublicationDto {
     this.distance = distance;
     this.elevationGain = elevationGain;
     this.surfaceType = surfaceType;
+    this.displayDistance = displayDistance;
+    this.displayElevationGain = displayElevationGain;
     this.startPlace = startPlace;
     this.endPlace = endPlace;
     this.topParticipants = topParticipants;
@@ -407,6 +431,7 @@ public class RideDto implements PublicationDto {
         List.of(),
         summary.groups(),
         summary.firstGroupRoute(),
+        summary.groupRoutes(),
         summary.groupCount(),
         summary.participantCount(),
         summary.topParticipants(),
@@ -513,11 +538,20 @@ public class RideDto implements PublicationDto {
             .map(RideDto::metricsOf)
             .orElse(null);
 
+    // The groups are loaded already: their routes cost nothing more (docs/LEDGER_*.md API-178).
+    List<RideDisplayFigures.GroupRoute> groupRoutes =
+        groups.stream()
+            .map(group ->
+                new RideDisplayFigures.GroupRoute(
+                    group.getId(), RideDisplayFigures.live(group.getRoute())))
+            .toList();
+
     return build(
         ride,
         groupDtos,
         groupDtos.stream().map(RideGroupSummaryDto::from).toList(),
         firstGroupRoute,
+        groupRoutes,
         groups.size(),
         participantCount,
         topParticipants,
@@ -573,6 +607,7 @@ public class RideDto implements PublicationDto {
       List<RideGroupDto> groupDtos,
       List<RideGroupSummaryDto> groupSummaries,
       RideListSummary.@Nullable RouteMetrics firstGroupRoute,
+      List<RideDisplayFigures.GroupRoute> groupRoutes,
       int groupCount,
       int participantCount,
       List<PublicUserDto> topParticipants,
@@ -593,6 +628,11 @@ public class RideDto implements PublicationDto {
     // Ride.route is an eager to-one, already loaded with the ride: the metrics cost no query.
     RideListSummary.RouteMetrics metrics =
         ride.getRoute() != null ? metricsOf(ride.getRoute()) : firstGroupRoute;
+    // The one rule of what the reader sees, from figures already in hand (docs/LEDGER_*.md
+    // API-178): no query here, on either path.
+    RideDisplayFigures.Figures display =
+        RideDisplayFigures.resolve(
+            RideDisplayFigures.live(ride.getRoute()), groupRoutes, registeredGroupId);
 
     return new RideDto(
         TeamPublicationDto.from(ride.getTeam(), permissions.teamAccessible(ride.getTeam())),
@@ -616,6 +656,8 @@ public class RideDto implements PublicationDto {
         metrics != null ? metrics.distance() : null,
         metrics != null ? metrics.elevationGain() : null,
         metrics != null ? metrics.surfaceType() : null,
+        display.distance(),
+        display.elevationGain(),
         startPlace != null ? PlaceDetailDto.from(startPlace) : null,
         endPlace != null ? PlaceDetailDto.from(endPlace) : null,
         topParticipants,

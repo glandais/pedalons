@@ -2,6 +2,7 @@ package fr.pedalons.dto.rides.response;
 
 import fr.pedalons.dto.users.response.PublicUserDto;
 import fr.pedalons.enums.SurfaceType;
+import fr.pedalons.service.ride.RideDisplayFigures;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
@@ -19,6 +20,8 @@ import org.jspecify.annotations.Nullable;
  * @param groups every group of the ride, in sort order
  * @param firstGroupRoute the route metrics of the first group (in sort order) that has a route —
  *     what the row shows when the ride itself has no route. Null when no group has one.
+ * @param groupRoutes every group of the ride with its own live route, in sort order — what {@link
+ *     RideDisplayFigures} picks the reader's figures from (docs/LEDGER_*.md API-178)
  */
 public record RideListSummary(
     int groupCount,
@@ -27,11 +30,12 @@ public record RideListSummary(
     @Nullable Integer maxParticipants,
     List<PublicUserDto> topParticipants,
     List<RideGroupSummaryDto> groups,
-    @Nullable RouteMetrics firstGroupRoute) {
+    @Nullable RouteMetrics firstGroupRoute,
+    List<RideDisplayFigures.GroupRoute> groupRoutes) {
 
   /** A ride with no groups at all. */
   public static final RideListSummary EMPTY =
-      new RideListSummary(0, 0, false, null, List.of(), List.of(), null);
+      new RideListSummary(0, 0, false, null, List.of(), List.of(), null, List.of());
 
   /** The figures of a route a ride card shows. */
   public record RouteMetrics(
