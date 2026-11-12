@@ -31,7 +31,7 @@ public class TeamInvitationRepository implements BaseRepository<TeamInvitation> 
     PedalonsQuery query =
         new PedalonsQuery()
             .and("team.id = :teamId", Map.of("teamId", teamId))
-            .order("createdAt desc");
+            .order("createdAt desc, id desc");
     if (status != null) {
       query.and("status = :status", Map.of("status", status));
     }

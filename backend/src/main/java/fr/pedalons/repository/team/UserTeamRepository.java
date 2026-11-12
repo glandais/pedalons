@@ -58,9 +58,10 @@ public class UserTeamRepository implements BaseRepository<UserTeam> {
   }
 
   /**
-   * @param sortBy null keeps the previous, unspecified order; otherwise the membership id ends the
-   *     key so pages never overlap
-   * @param sortDir null is descending — newest first for {@link MemberSortBy#JOINED_AT}
+   * @param sortBy null is {@link MemberSortBy#NAME}; whatever the key, the membership id ends it so
+   *     pages never overlap
+   * @param sortDir null is the key's own default: A to Z for a name, newest first for {@link
+   *     MemberSortBy#JOINED_AT}
    */
   public PedalonsPage<UserTeam> findByTeam(
       Long teamId,
@@ -94,10 +95,10 @@ public class UserTeamRepository implements BaseRepository<UserTeam> {
     if (role != null) {
       pedalonsQuery.and("role = :role", Map.of("role", role));
     }
-    if (sortBy != null) {
-      String dir = (sortDir != null ? sortDir : SortDirection.DESC).name().toLowerCase();
-      pedalonsQuery.order(sortBy.getField() + " " + dir + ", id " + dir);
-    }
+    // RL5 (12 November 2026): a roster reads in name order unless asked otherwise.
+    MemberSortBy key = sortBy != null ? sortBy : MemberSortBy.NAME;
+    String dir = (sortDir != null ? sortDir : key.getDefaultDirection()).name().toLowerCase();
+    pedalonsQuery.order(key.getField() + " " + dir + ", id " + dir);
     return getPage(pedalonsQuery, page, size);
   }
 

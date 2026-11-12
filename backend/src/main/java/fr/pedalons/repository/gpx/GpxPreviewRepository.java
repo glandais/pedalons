@@ -25,7 +25,8 @@ public class GpxPreviewRepository implements PanacheRepository<GpxPreview> {
       Long domainId, Long userId, Instant cutoff, int page, int size) {
     PanacheQuery<GpxPreview> query =
         find(
-            "domain.id = ?1 and createdBy.id = ?2 and createdAt >= ?3 order by createdAt desc",
+            "domain.id = ?1 and createdBy.id = ?2 and createdAt >= ?3"
+                + " order by createdAt desc, id desc",
             domainId,
             userId,
             cutoff);

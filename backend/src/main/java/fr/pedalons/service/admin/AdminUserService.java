@@ -66,7 +66,7 @@ public class AdminUserService {
 
     List<User> users =
         userRepository
-            .find(query + " order by createdAt desc", paramsArray)
+            .find(query + " order by createdAt desc, id desc", paramsArray)
             .page(page, size)
             .list();
     long total = userRepository.count(query, paramsArray);

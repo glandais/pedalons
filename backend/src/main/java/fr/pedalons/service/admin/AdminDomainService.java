@@ -35,7 +35,10 @@ public class AdminDomainService {
   @Admin
   public PedalonsPage<AdminDomainDto> listDomains(int page, int size) {
     List<Domain> domains =
-        domainRepository.find("deleted = false order by createdAt desc").page(page, size).list();
+        domainRepository
+            .find("deleted = false order by createdAt desc, id desc")
+            .page(page, size)
+            .list();
     long total = domainRepository.count("deleted = false");
 
     List<AdminDomainDto> items =

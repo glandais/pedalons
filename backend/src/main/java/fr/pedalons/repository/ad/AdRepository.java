@@ -124,8 +124,9 @@ public class AdRepository implements TeamEntityRepository<Ad, AdQuery> {
 
     if (query.sortBy() != null) {
       SortDirection dir = query.sortDir() != null ? query.sortDir() : SortDirection.DESC;
-      pedalonsQuery =
-          pedalonsQuery.order(query.sortBy().getField() + " " + dir.name().toLowerCase());
+      // The ad id ends the key, in the same direction, so equal prices or names stay in one order.
+      String d = dir.name().toLowerCase();
+      pedalonsQuery = pedalonsQuery.order(query.sortBy().getField() + " " + d + ", te.id " + d);
     }
     return pedalonsQuery;
   }

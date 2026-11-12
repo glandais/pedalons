@@ -48,7 +48,10 @@ public class AdminTeamService {
     Object[] params = values.toArray();
 
     List<Team> teams =
-        teamRepository.find(query + " order by createdAt desc", params).page(page, size).list();
+        teamRepository
+            .find(query + " order by createdAt desc, id desc", params)
+            .page(page, size)
+            .list();
     long total = teamRepository.count(query, params);
 
     List<AdminTeamDto> items =

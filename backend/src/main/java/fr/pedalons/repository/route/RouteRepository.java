@@ -213,7 +213,10 @@ public class RouteRepository implements TeamEntityRepository<Route, RouteQuery> 
     // Custom sorting
     if (query.sortBy() != null) {
       SortDirection dir = query.sortDir() != null ? query.sortDir() : SortDirection.DESC;
-      String orderClause = query.sortBy().getField() + " " + dir.name().toLowerCase();
+      // The route id ends the key, in the same direction: two routes of one distance must come
+      // back in one fixed order, or offset pagination repeats one and skips the other.
+      String d = dir.name().toLowerCase();
+      String orderClause = query.sortBy().getField() + " " + d + ", te.id " + d;
       pedalonsQuery = pedalonsQuery.order(orderClause);
     }
 

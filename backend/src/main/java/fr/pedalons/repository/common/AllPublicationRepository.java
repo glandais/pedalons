@@ -160,7 +160,8 @@ public class AllPublicationRepository
     }
     if (query.ascending()) {
       // getPedalonsQuery set the default ordering before calling us; order() replaces it.
-      pedalonsQuery = pedalonsQuery.order("dateTime asc");
+      // The id ends the key, in the same direction, so a tie on the date keeps one fixed order.
+      pedalonsQuery = pedalonsQuery.order("te.dateTime asc, te.id asc");
     }
     return pedalonsQuery;
   }

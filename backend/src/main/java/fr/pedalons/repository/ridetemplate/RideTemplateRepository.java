@@ -25,7 +25,9 @@ public class RideTemplateRepository implements BaseRepository<RideTemplate> {
   public PedalonsPage<RideTemplate> findByTeam(
       Long teamId, @Nullable String search, int page, int size) {
     PedalonsQuery pedalonsQuery =
-        new PedalonsQuery().and("team.id = :teamId", Map.of("teamId", teamId)).order("name ASC");
+        new PedalonsQuery()
+            .and("team.id = :teamId", Map.of("teamId", teamId))
+            .order("name asc, id asc");
 
     if (search != null && !search.isBlank()) {
       pedalonsQuery.and(

@@ -22,7 +22,11 @@ public class PlaceRepository implements BaseRepository<Place> {
   public PedalonsPage<Place> findByTeam(
       Long teamId, int page, int size, String search, boolean filterStart, boolean filterEnd) {
     PedalonsQuery pedalonsQuery =
-        new PedalonsQuery().and("team.id = :teamId", Map.of("teamId", teamId));
+        new PedalonsQuery()
+            .and("team.id = :teamId", Map.of("teamId", teamId))
+            // Name order, then the id: without an ORDER BY, offset pagination may repeat or skip
+            // a place between two pages.
+            .order("lower(name) asc, id asc");
     if (search != null && !search.isBlank()) {
       String searchParam = LikePatterns.contains(search.toLowerCase());
       OrClause orClause = new OrClause();

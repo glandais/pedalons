@@ -392,7 +392,9 @@ public interface TeamEntityRepository<T extends TeamEntity, Q extends TeamEntity
                 Map.of());
 
     if (shape.ordered()) {
-      pedalonsQuery = pedalonsQuery.order("dateTime desc");
+      // The id ends the key, in the same direction: rides imported together share a date, and
+      // offset pagination over a tie repeats one row and skips another (as in TeamRepository).
+      pedalonsQuery = pedalonsQuery.order("te.dateTime desc, te.id desc");
     }
 
     Set<Long> teamIds = query.teamIds();

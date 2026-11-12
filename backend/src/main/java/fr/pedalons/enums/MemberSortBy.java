@@ -10,8 +10,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum MemberSortBy {
+  /**
+   * The member's display name — what both clients show ({@code PublicUserDto.displayName}) —
+   * regardless of case, A to Z unless {@code sortDir} says otherwise. The order of the list when
+   * {@code sortBy} is omitted.
+   */
+  NAME("lower(user.displayName)", SortDirection.ASC),
   /** When the member joined the team — the « nouveaux membres » of the administration panel. */
-  JOINED_AT("joinedAt");
+  JOINED_AT("joinedAt", SortDirection.DESC);
 
   final String field;
+
+  /** The direction an omitted {@code sortDir} stands for. */
+  final SortDirection defaultDirection;
 }

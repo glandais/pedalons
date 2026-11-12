@@ -70,9 +70,10 @@ public class TeamMembershipService {
    * Same, ordered.
    *
    * @param sortBy {@link MemberSortBy#JOINED_AT} is refused (403) to a caller who does not get the
-   *     join dates, for the reason the role filter is: the order would hand them back. Null keeps the
-   *     unspecified order of before.
-   * @param sortDir null is descending
+   *     join dates, for the reason the role filter is: the order would hand them back. Null is
+   *     {@link MemberSortBy#NAME}, which everyone who reaches this list may have: it is made of the
+   *     names the response carries anyway.
+   * @param sortDir null is the key's default — A to Z for the name, newest first for the join date
    */
   @CheckAccess(entityType = EntityType.USER_TEAM, action = ActionType.LIST)
   public MemberListResponse getTeamMembers(
