@@ -21,7 +21,7 @@ import { hydrated, toasts } from './support/ui'
 
 /**
  * The free plan's limit on the planner (docs/LEDGER_*.md BILL-10, plan
- * docs/plans/2026-11-11-limites-offre-gratuite.md §3.2 and §5): 20 saves of a drawn track a month
+ * docs/plans/archive/2026-11-11-limites-offre-gratuite.md §3.2 and §5): 20 saves of a drawn track a month
  * per free team, 10 in the GPX tools for whoever is in no unlocked team. No counter is shown; once
  * the month is used up the entry point is disabled with the reason, and a refusal met on the way
  * (a save by someone else in the meantime) opens a dialog instead of a toast.

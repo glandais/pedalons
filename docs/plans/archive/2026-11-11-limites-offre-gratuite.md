@@ -2,7 +2,7 @@
 
 Écrit le 11 novembre 2026, révisé le même jour (chaque enregistrement compte, quota personnel des
 outils GPX). **État : décidé, pas codé.** Ledger `BILL-10`. Précède la monétisation
-([`2026-10-17-monetisation.md`](2026-10-17-monetisation.md)) : on pose les limites et le levier
+([`2026-10-17-monetisation.md`](../2026-10-17-monetisation.md)) : on pose les limites et le levier
 de déblocage **avant** tout paiement ; Qonto viendra plus tard comme une seconde façon de
 débloquer, sans rien changer à ce qui est décrit ici.
 
@@ -36,7 +36,7 @@ fait pas appel au routage. Le quota mesure donc le travail au planificateur, ce 
 dit en une phrase : « 20 enregistrements par mois ».
 
 **Le gratuit est un vrai produit.** Le rapport Ride with GPS
-([`../research/2026-10-17-rwgps-state-of-the-cycling-club-2026.md`](../research/2026-10-17-rwgps-state-of-the-cycling-club-2026.md))
+([`../research/2026-10-17-rwgps-state-of-the-cycling-club-2026.md`](../../research/2026-10-17-rwgps-state-of-the-cycling-club-2026.md))
 situe la frontière vers 25 membres : en dessous, 61 % des clubs n'ajoutent personne en un an — ce
 sont des groupes d'amis et des sections naissantes, sans budget ; au-dessus, un club a un bureau et
 une AG. Le bouche-à-oreille fait 42 % des arrivées : chaque petit groupe gratuit est aussi

@@ -8,7 +8,7 @@ suite à la lecture du rapport Ride with GPS
 dont le §7 parle de commercialisation sans dire comment facturer.
 
 > **11 novembre 2026** : les limites du gratuit et le déblocage manuel sont décidés à part, avant
-> tout paiement — [`2026-11-11-limites-offre-gratuite.md`](2026-11-11-limites-offre-gratuite.md)
+> tout paiement — [`archive/2026-11-11-limites-offre-gratuite.md`](archive/2026-11-11-limites-offre-gratuite.md)
 > (ledger `BILL-10`). Q3 (25 membres) et Q7 (équipes offertes) y sont tranchées ; le planificateur
 > y devient un quota (20 enregistrements par mois et par équipe, 10 à titre personnel) plutôt
 > qu'un droit Club.
