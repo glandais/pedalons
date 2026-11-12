@@ -22,6 +22,7 @@ import '../../support/localization.dart';
 /// Les sous-pages du profil : ce que « Confidentialité » rassemble, et le
 /// sélecteur de fuseau horaire des préférences.
 const UserDto _user = UserDto(
+  plannerQuota: PlannerQuotaDto(used: 0, resetsOn: '2026-12-01'),
   id: 'u-me',
   email: 'moi@example.org',
   displayName: 'Moi',

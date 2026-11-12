@@ -26,6 +26,7 @@ import '../../support/localization.dart';
 /// abstrait. Le second ne l'était pas du tout — ajouter une clé d'accès
 /// supprimait toutes les autres, en silence.
 const UserDto _user = UserDto(
+  plannerQuota: PlannerQuotaDto(used: 0, resetsOn: '2026-12-01'),
   id: 'u-me',
   email: 'moi@example.org',
   displayName: 'Moi',

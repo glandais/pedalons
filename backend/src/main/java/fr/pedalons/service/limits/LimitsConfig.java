@@ -14,6 +14,13 @@ public interface LimitsConfig {
   /** What a {@code FREE} team, or a user in no unlocked team, is held to. */
   Free free();
 
+  /**
+   * Route calculations one user may ask for per UTC day, whatever the plan: the bound of the
+   * calculation without a save, which the monthly quotas do not reach.
+   */
+  @WithDefault("300")
+  int routerDailyPerUser();
+
   interface Free {
     /** Members of a free team, pending invitations included. */
     @WithDefault("25")

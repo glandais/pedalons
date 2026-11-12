@@ -86,6 +86,10 @@ enum ErrorCode {
   routingNoRoute('ROUTING_NO_ROUTE'),
   @JsonValue('ROUTING_UNAVAILABLE')
   routingUnavailable('ROUTING_UNAVAILABLE'),
+  @JsonValue('PLANNER_QUOTA_REACHED')
+  plannerQuotaReached('PLANNER_QUOTA_REACHED'),
+  @JsonValue('ROUTING_DAILY_LIMIT_REACHED')
+  routingDailyLimitReached('ROUTING_DAILY_LIMIT_REACHED'),
   @JsonValue('GEOCODING_UNAVAILABLE')
   geocodingUnavailable('GEOCODING_UNAVAILABLE'),
   @JsonValue('INVALID_FORMAT')

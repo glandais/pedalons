@@ -21,7 +21,8 @@ mixin _$UserDto {
  String get email;/// User display name
  String get displayName;/// Whether team members may reach this user through the classified-ad relay. True unless they explicitly opted out, so an account that predates the preference is contactable.
  bool get contactableByMembers;/// Whether the account's email has been verified
- bool get emailVerified;/// User avatar URL
+ bool get emailVerified;/// Where the user's personal route planner quota stands this month: the saves of a track drawn on the map in the GPX tools (docs/LEDGER_*.md BILL-10). limit is null — unlimited — for a member of an unlocked team of this site. Clients show no counter; they close « create a route » in the GPX tools when used >= limit already.
+ PlannerQuotaDto get plannerQuota;/// User avatar URL
  String? get avatarUrl;/// Account creation timestamp
  String? get createdAt;/// Preferred unit system (metric or imperial)
  String? get unitSystem;/// Preferred colour scheme. Null means the user never chose one — distinct from SYSTEM, which they did choose — so a client is free to follow the device.
@@ -43,20 +44,20 @@ $UserDtoCopyWith<UserDto> get copyWith => _$UserDtoCopyWithImpl<UserDto>(this as
 @override
 bool operator ==(Object other) {
   final _this = this as UserDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.displayName, _this.displayName) || other.displayName == _this.displayName)&&(identical(other.contactableByMembers, _this.contactableByMembers) || other.contactableByMembers == _this.contactableByMembers)&&(identical(other.emailVerified, _this.emailVerified) || other.emailVerified == _this.emailVerified)&&(identical(other.avatarUrl, _this.avatarUrl) || other.avatarUrl == _this.avatarUrl)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.unitSystem, _this.unitSystem) || other.unitSystem == _this.unitSystem)&&(identical(other.theme, _this.theme) || other.theme == _this.theme)&&(identical(other.language, _this.language) || other.language == _this.language)&&(identical(other.timezone, _this.timezone) || other.timezone == _this.timezone)&&(identical(other.platformRole, _this.platformRole) || other.platformRole == _this.platformRole)&&const DeepCollectionEquality().equals(other.connectedServices, _this.connectedServices));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.displayName, _this.displayName) || other.displayName == _this.displayName)&&(identical(other.contactableByMembers, _this.contactableByMembers) || other.contactableByMembers == _this.contactableByMembers)&&(identical(other.emailVerified, _this.emailVerified) || other.emailVerified == _this.emailVerified)&&(identical(other.plannerQuota, _this.plannerQuota) || other.plannerQuota == _this.plannerQuota)&&(identical(other.avatarUrl, _this.avatarUrl) || other.avatarUrl == _this.avatarUrl)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.unitSystem, _this.unitSystem) || other.unitSystem == _this.unitSystem)&&(identical(other.theme, _this.theme) || other.theme == _this.theme)&&(identical(other.language, _this.language) || other.language == _this.language)&&(identical(other.timezone, _this.timezone) || other.timezone == _this.timezone)&&(identical(other.platformRole, _this.platformRole) || other.platformRole == _this.platformRole)&&const DeepCollectionEquality().equals(other.connectedServices, _this.connectedServices));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as UserDto;
-  return Object.hash(runtimeType,_this.id,_this.email,_this.displayName,_this.contactableByMembers,_this.emailVerified,_this.avatarUrl,_this.createdAt,_this.unitSystem,_this.theme,_this.language,_this.timezone,_this.platformRole,const DeepCollectionEquality().hash(_this.connectedServices));
+  return Object.hash(runtimeType,_this.id,_this.email,_this.displayName,_this.contactableByMembers,_this.emailVerified,_this.plannerQuota,_this.avatarUrl,_this.createdAt,_this.unitSystem,_this.theme,_this.language,_this.timezone,_this.platformRole,const DeepCollectionEquality().hash(_this.connectedServices));
 }
 
 @override
 String toString() {
   final _this = this as UserDto;
-  return 'UserDto(id: ${_this.id}, email: ${_this.email}, displayName: ${_this.displayName}, contactableByMembers: ${_this.contactableByMembers}, emailVerified: ${_this.emailVerified}, avatarUrl: ${_this.avatarUrl}, createdAt: ${_this.createdAt}, unitSystem: ${_this.unitSystem}, theme: ${_this.theme}, language: ${_this.language}, timezone: ${_this.timezone}, platformRole: ${_this.platformRole}, connectedServices: ${_this.connectedServices})';
+  return 'UserDto(id: ${_this.id}, email: ${_this.email}, displayName: ${_this.displayName}, contactableByMembers: ${_this.contactableByMembers}, emailVerified: ${_this.emailVerified}, plannerQuota: ${_this.plannerQuota}, avatarUrl: ${_this.avatarUrl}, createdAt: ${_this.createdAt}, unitSystem: ${_this.unitSystem}, theme: ${_this.theme}, language: ${_this.language}, timezone: ${_this.timezone}, platformRole: ${_this.platformRole}, connectedServices: ${_this.connectedServices})';
 }
 
 
@@ -67,11 +68,11 @@ abstract mixin class $UserDtoCopyWith<$Res>  {
   factory $UserDtoCopyWith(UserDto value, $Res Function(UserDto) _then) = _$UserDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String email, String displayName, bool contactableByMembers, bool emailVerified, String? avatarUrl, String? createdAt, String? unitSystem, String? theme, String? language, String? timezone, String? platformRole, List<GpsServiceConnectionDto>? connectedServices
+ String id, String email, String displayName, bool contactableByMembers, bool emailVerified, PlannerQuotaDto plannerQuota, String? avatarUrl, String? createdAt, String? unitSystem, String? theme, String? language, String? timezone, String? platformRole, List<GpsServiceConnectionDto>? connectedServices
 });
 
 
-
+$PlannerQuotaDtoCopyWith<$Res> get plannerQuota;
 
 }
 /// @nodoc
@@ -84,14 +85,15 @@ class _$UserDtoCopyWithImpl<$Res>
 
 /// Create a copy of UserDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? email = null,Object? displayName = null,Object? contactableByMembers = null,Object? emailVerified = null,Object? avatarUrl = freezed,Object? createdAt = freezed,Object? unitSystem = freezed,Object? theme = freezed,Object? language = freezed,Object? timezone = freezed,Object? platformRole = freezed,Object? connectedServices = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? email = null,Object? displayName = null,Object? contactableByMembers = null,Object? emailVerified = null,Object? plannerQuota = null,Object? avatarUrl = freezed,Object? createdAt = freezed,Object? unitSystem = freezed,Object? theme = freezed,Object? language = freezed,Object? timezone = freezed,Object? platformRole = freezed,Object? connectedServices = freezed,}) {
   return _then(UserDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
 as String,contactableByMembers: null == contactableByMembers ? _self.contactableByMembers : contactableByMembers // ignore: cast_nullable_to_non_nullable
 as bool,emailVerified: null == emailVerified ? _self.emailVerified : emailVerified // ignore: cast_nullable_to_non_nullable
-as bool,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
+as bool,plannerQuota: null == plannerQuota ? _self.plannerQuota : plannerQuota // ignore: cast_nullable_to_non_nullable
+as PlannerQuotaDto,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
 as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as String?,unitSystem: freezed == unitSystem ? _self.unitSystem : unitSystem // ignore: cast_nullable_to_non_nullable
 as String?,theme: freezed == theme ? _self.theme : theme // ignore: cast_nullable_to_non_nullable
@@ -102,7 +104,16 @@ as String?,connectedServices: freezed == connectedServices ? _self.connectedServ
 as List<GpsServiceConnectionDto>?,
   ));
 }
-
+/// Create a copy of UserDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PlannerQuotaDtoCopyWith<$Res> get plannerQuota {
+  
+  return $PlannerQuotaDtoCopyWith<$Res>(_self.plannerQuota, (value) {
+    return _then(_self.copyWith(plannerQuota: value));
+  });
+}
 }
 
 
@@ -184,10 +195,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String email,  String displayName,  bool contactableByMembers,  bool emailVerified,  String? avatarUrl,  String? createdAt,  String? unitSystem,  String? theme,  String? language,  String? timezone,  String? platformRole,  List<GpsServiceConnectionDto>? connectedServices)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String email,  String displayName,  bool contactableByMembers,  bool emailVerified,  PlannerQuotaDto plannerQuota,  String? avatarUrl,  String? createdAt,  String? unitSystem,  String? theme,  String? language,  String? timezone,  String? platformRole,  List<GpsServiceConnectionDto>? connectedServices)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UserDto() when $default != null:
-return $default(_that.id,_that.email,_that.displayName,_that.contactableByMembers,_that.emailVerified,_that.avatarUrl,_that.createdAt,_that.unitSystem,_that.theme,_that.language,_that.timezone,_that.platformRole,_that.connectedServices);case _:
+return $default(_that.id,_that.email,_that.displayName,_that.contactableByMembers,_that.emailVerified,_that.plannerQuota,_that.avatarUrl,_that.createdAt,_that.unitSystem,_that.theme,_that.language,_that.timezone,_that.platformRole,_that.connectedServices);case _:
   return orElse();
 
 }
@@ -205,10 +216,10 @@ return $default(_that.id,_that.email,_that.displayName,_that.contactableByMember
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String email,  String displayName,  bool contactableByMembers,  bool emailVerified,  String? avatarUrl,  String? createdAt,  String? unitSystem,  String? theme,  String? language,  String? timezone,  String? platformRole,  List<GpsServiceConnectionDto>? connectedServices)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String email,  String displayName,  bool contactableByMembers,  bool emailVerified,  PlannerQuotaDto plannerQuota,  String? avatarUrl,  String? createdAt,  String? unitSystem,  String? theme,  String? language,  String? timezone,  String? platformRole,  List<GpsServiceConnectionDto>? connectedServices)  $default,) {final _that = this;
 switch (_that) {
 case _UserDto():
-return $default(_that.id,_that.email,_that.displayName,_that.contactableByMembers,_that.emailVerified,_that.avatarUrl,_that.createdAt,_that.unitSystem,_that.theme,_that.language,_that.timezone,_that.platformRole,_that.connectedServices);case _:
+return $default(_that.id,_that.email,_that.displayName,_that.contactableByMembers,_that.emailVerified,_that.plannerQuota,_that.avatarUrl,_that.createdAt,_that.unitSystem,_that.theme,_that.language,_that.timezone,_that.platformRole,_that.connectedServices);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -225,10 +236,10 @@ return $default(_that.id,_that.email,_that.displayName,_that.contactableByMember
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String email,  String displayName,  bool contactableByMembers,  bool emailVerified,  String? avatarUrl,  String? createdAt,  String? unitSystem,  String? theme,  String? language,  String? timezone,  String? platformRole,  List<GpsServiceConnectionDto>? connectedServices)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String email,  String displayName,  bool contactableByMembers,  bool emailVerified,  PlannerQuotaDto plannerQuota,  String? avatarUrl,  String? createdAt,  String? unitSystem,  String? theme,  String? language,  String? timezone,  String? platformRole,  List<GpsServiceConnectionDto>? connectedServices)?  $default,) {final _that = this;
 switch (_that) {
 case _UserDto() when $default != null:
-return $default(_that.id,_that.email,_that.displayName,_that.contactableByMembers,_that.emailVerified,_that.avatarUrl,_that.createdAt,_that.unitSystem,_that.theme,_that.language,_that.timezone,_that.platformRole,_that.connectedServices);case _:
+return $default(_that.id,_that.email,_that.displayName,_that.contactableByMembers,_that.emailVerified,_that.plannerQuota,_that.avatarUrl,_that.createdAt,_that.unitSystem,_that.theme,_that.language,_that.timezone,_that.platformRole,_that.connectedServices);case _:
   return null;
 
 }
@@ -240,7 +251,7 @@ return $default(_that.id,_that.email,_that.displayName,_that.contactableByMember
 @JsonSerializable()
 
 class _UserDto implements UserDto {
-  const _UserDto({required this.id, required this.email, required this.displayName, required this.contactableByMembers, required this.emailVerified, this.avatarUrl, this.createdAt, this.unitSystem, this.theme, this.language, this.timezone, this.platformRole,  List<GpsServiceConnectionDto>? connectedServices}): _connectedServices = connectedServices;
+  const _UserDto({required this.id, required this.email, required this.displayName, required this.contactableByMembers, required this.emailVerified, required this.plannerQuota, this.avatarUrl, this.createdAt, this.unitSystem, this.theme, this.language, this.timezone, this.platformRole,  List<GpsServiceConnectionDto>? connectedServices}): _connectedServices = connectedServices;
   factory _UserDto.fromJson(Map<String, dynamic> json) => _$UserDtoFromJson(json);
 
 /// User ID (TSID)
@@ -253,6 +264,8 @@ class _UserDto implements UserDto {
 @override final  bool contactableByMembers;
 /// Whether the account's email has been verified
 @override final  bool emailVerified;
+/// Where the user's personal route planner quota stands this month: the saves of a track drawn on the map in the GPX tools (docs/LEDGER_*.md BILL-10). limit is null — unlimited — for a member of an unlocked team of this site. Clients show no counter; they close « create a route » in the GPX tools when used >= limit already.
+@override final  PlannerQuotaDto plannerQuota;
 /// User avatar URL
 @override final  String? avatarUrl;
 /// Account creation timestamp
@@ -292,18 +305,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserDto&&(identical(other.id, id) || other.id == id)&&(identical(other.email, email) || other.email == email)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.contactableByMembers, contactableByMembers) || other.contactableByMembers == contactableByMembers)&&(identical(other.emailVerified, emailVerified) || other.emailVerified == emailVerified)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.unitSystem, unitSystem) || other.unitSystem == unitSystem)&&(identical(other.theme, theme) || other.theme == theme)&&(identical(other.language, language) || other.language == language)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.platformRole, platformRole) || other.platformRole == platformRole)&&const DeepCollectionEquality().equals(other.connectedServices, _connectedServices));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserDto&&(identical(other.id, id) || other.id == id)&&(identical(other.email, email) || other.email == email)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.contactableByMembers, contactableByMembers) || other.contactableByMembers == contactableByMembers)&&(identical(other.emailVerified, emailVerified) || other.emailVerified == emailVerified)&&(identical(other.plannerQuota, plannerQuota) || other.plannerQuota == plannerQuota)&&(identical(other.avatarUrl, avatarUrl) || other.avatarUrl == avatarUrl)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.unitSystem, unitSystem) || other.unitSystem == unitSystem)&&(identical(other.theme, theme) || other.theme == theme)&&(identical(other.language, language) || other.language == language)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.platformRole, platformRole) || other.platformRole == platformRole)&&const DeepCollectionEquality().equals(other.connectedServices, _connectedServices));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,email,displayName,contactableByMembers,emailVerified,avatarUrl,createdAt,unitSystem,theme,language,timezone,platformRole,const DeepCollectionEquality().hash(_connectedServices));
+    return Object.hash(runtimeType,id,email,displayName,contactableByMembers,emailVerified,plannerQuota,avatarUrl,createdAt,unitSystem,theme,language,timezone,platformRole,const DeepCollectionEquality().hash(_connectedServices));
 }
 
 @override
 String toString() {
-    return 'UserDto(id: $id, email: $email, displayName: $displayName, contactableByMembers: $contactableByMembers, emailVerified: $emailVerified, avatarUrl: $avatarUrl, createdAt: $createdAt, unitSystem: $unitSystem, theme: $theme, language: $language, timezone: $timezone, platformRole: $platformRole, connectedServices: $connectedServices)';
+    return 'UserDto(id: $id, email: $email, displayName: $displayName, contactableByMembers: $contactableByMembers, emailVerified: $emailVerified, plannerQuota: $plannerQuota, avatarUrl: $avatarUrl, createdAt: $createdAt, unitSystem: $unitSystem, theme: $theme, language: $language, timezone: $timezone, platformRole: $platformRole, connectedServices: $connectedServices)';
 }
 
 
@@ -314,11 +327,11 @@ abstract mixin class _$UserDtoCopyWith<$Res> implements $UserDtoCopyWith<$Res> {
   factory _$UserDtoCopyWith(_UserDto value, $Res Function(_UserDto) _then) = __$UserDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String email, String displayName, bool contactableByMembers, bool emailVerified, String? avatarUrl, String? createdAt, String? unitSystem, String? theme, String? language, String? timezone, String? platformRole, List<GpsServiceConnectionDto>? connectedServices
+ String id, String email, String displayName, bool contactableByMembers, bool emailVerified, PlannerQuotaDto plannerQuota, String? avatarUrl, String? createdAt, String? unitSystem, String? theme, String? language, String? timezone, String? platformRole, List<GpsServiceConnectionDto>? connectedServices
 });
 
 
-
+@override $PlannerQuotaDtoCopyWith<$Res> get plannerQuota;
 
 }
 /// @nodoc
@@ -331,14 +344,15 @@ class __$UserDtoCopyWithImpl<$Res>
 
 /// Create a copy of UserDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? email = null,Object? displayName = null,Object? contactableByMembers = null,Object? emailVerified = null,Object? avatarUrl = freezed,Object? createdAt = freezed,Object? unitSystem = freezed,Object? theme = freezed,Object? language = freezed,Object? timezone = freezed,Object? platformRole = freezed,Object? connectedServices = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? email = null,Object? displayName = null,Object? contactableByMembers = null,Object? emailVerified = null,Object? plannerQuota = null,Object? avatarUrl = freezed,Object? createdAt = freezed,Object? unitSystem = freezed,Object? theme = freezed,Object? language = freezed,Object? timezone = freezed,Object? platformRole = freezed,Object? connectedServices = freezed,}) {
   return _then(_UserDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
 as String,contactableByMembers: null == contactableByMembers ? _self.contactableByMembers : contactableByMembers // ignore: cast_nullable_to_non_nullable
 as bool,emailVerified: null == emailVerified ? _self.emailVerified : emailVerified // ignore: cast_nullable_to_non_nullable
-as bool,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
+as bool,plannerQuota: null == plannerQuota ? _self.plannerQuota : plannerQuota // ignore: cast_nullable_to_non_nullable
+as PlannerQuotaDto,avatarUrl: freezed == avatarUrl ? _self.avatarUrl : avatarUrl // ignore: cast_nullable_to_non_nullable
 as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as String?,unitSystem: freezed == unitSystem ? _self.unitSystem : unitSystem // ignore: cast_nullable_to_non_nullable
 as String?,theme: freezed == theme ? _self.theme : theme // ignore: cast_nullable_to_non_nullable
@@ -350,7 +364,16 @@ as List<GpsServiceConnectionDto>?,
   ));
 }
 
-
+/// Create a copy of UserDto
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PlannerQuotaDtoCopyWith<$Res> get plannerQuota {
+  
+  return $PlannerQuotaDtoCopyWith<$Res>(_self.plannerQuota, (value) {
+    return _then(_self.copyWith(plannerQuota: value));
+  });
+}
 }
 
 // dart format on

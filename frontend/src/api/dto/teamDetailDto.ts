@@ -2,6 +2,7 @@ import type { ContentVisibilitiesDto } from './contentVisibilitiesDto.ts'
 import type { Instant } from './instant.ts'
 import type { MediaDto } from './mediaDto.ts'
 import type { MemberCountByRoleDto } from './memberCountByRoleDto.ts'
+import type { PlannerQuotaDto } from './plannerQuotaDto.ts'
 import type { TeamDetailDtoGeometry } from './teamDetailDtoGeometry.ts'
 import type { TeamPageSummaryDto } from './teamPageSummaryDto.ts'
 import type { TeamRole } from './teamRole.ts'
@@ -80,4 +81,6 @@ export interface TeamDetailDto {
   tier: TeamTier
   /** The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount. */
   memberLimit?: number
+  /** Where the team's route planner quota stands this month: the saves of a track drawn on the map, against the plan's limit (null when unlimited). Only for a caller who may create routes in the team, and only when one team is read: null for everyone else and in the team listings. Clients show no counter; they close « draw on the map » when used >= limit already. */
+  plannerQuota?: PlannerQuotaDto
 }

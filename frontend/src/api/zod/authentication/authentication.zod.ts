@@ -180,6 +180,22 @@ export const LoginWithPasswordResponse = zod
           )
           .optional()
           .describe('Connected GPS services'),
+        plannerQuota: zod
+          .object({
+            limit: zod
+              .int()
+              .optional()
+              .describe('Saves of a drawn track allowed per calendar month; null when unlimited'),
+            used: zod.int().describe('Saves of a drawn track counted this month'),
+            resetsOn: zod.iso
+              .date()
+              .describe(
+                "The day the count starts again: the first day of next month, in the team's zone for a team, in UTC for the personal quota"
+              ),
+          })
+          .describe(
+            "Where the user's personal route planner quota stands this month: the saves of a track drawn on the map in the GPX tools (docs/LEDGER_*.md BILL-10). limit is null — unlimited — for a member of an unlocked team of this site. Clients show no counter; they close « create a route » in the GPX tools when used >= limit already."
+          ),
       })
       .optional()
       .describe('Authenticated user'),
@@ -338,6 +354,22 @@ export const VerifyOtpResponse = zod
           )
           .optional()
           .describe('Connected GPS services'),
+        plannerQuota: zod
+          .object({
+            limit: zod
+              .int()
+              .optional()
+              .describe('Saves of a drawn track allowed per calendar month; null when unlimited'),
+            used: zod.int().describe('Saves of a drawn track counted this month'),
+            resetsOn: zod.iso
+              .date()
+              .describe(
+                "The day the count starts again: the first day of next month, in the team's zone for a team, in UTC for the personal quota"
+              ),
+          })
+          .describe(
+            "Where the user's personal route planner quota stands this month: the saves of a track drawn on the map in the GPX tools (docs/LEDGER_*.md BILL-10). limit is null — unlimited — for a member of an unlocked team of this site. Clients show no counter; they close « create a route » in the GPX tools when used >= limit already."
+          ),
       })
       .optional()
       .describe('Authenticated user'),
@@ -441,6 +473,22 @@ export const RefreshResponse = zod
           )
           .optional()
           .describe('Connected GPS services'),
+        plannerQuota: zod
+          .object({
+            limit: zod
+              .int()
+              .optional()
+              .describe('Saves of a drawn track allowed per calendar month; null when unlimited'),
+            used: zod.int().describe('Saves of a drawn track counted this month'),
+            resetsOn: zod.iso
+              .date()
+              .describe(
+                "The day the count starts again: the first day of next month, in the team's zone for a team, in UTC for the personal quota"
+              ),
+          })
+          .describe(
+            "Where the user's personal route planner quota stands this month: the saves of a track drawn on the map in the GPX tools (docs/LEDGER_*.md BILL-10). limit is null — unlimited — for a member of an unlocked team of this site. Clients show no counter; they close « create a route » in the GPX tools when used >= limit already."
+          ),
       })
       .optional()
       .describe('Authenticated user'),
@@ -605,6 +653,22 @@ export const ResetPasswordResponse = zod
           )
           .optional()
           .describe('Connected GPS services'),
+        plannerQuota: zod
+          .object({
+            limit: zod
+              .int()
+              .optional()
+              .describe('Saves of a drawn track allowed per calendar month; null when unlimited'),
+            used: zod.int().describe('Saves of a drawn track counted this month'),
+            resetsOn: zod.iso
+              .date()
+              .describe(
+                "The day the count starts again: the first day of next month, in the team's zone for a team, in UTC for the personal quota"
+              ),
+          })
+          .describe(
+            "Where the user's personal route planner quota stands this month: the saves of a track drawn on the map in the GPX tools (docs/LEDGER_*.md BILL-10). limit is null — unlimited — for a member of an unlocked team of this site. Clients show no counter; they close « create a route » in the GPX tools when used >= limit already."
+          ),
       })
       .optional()
       .describe('Authenticated user'),
@@ -733,6 +797,22 @@ export const ActivateAccountResponse = zod
           )
           .optional()
           .describe('Connected GPS services'),
+        plannerQuota: zod
+          .object({
+            limit: zod
+              .int()
+              .optional()
+              .describe('Saves of a drawn track allowed per calendar month; null when unlimited'),
+            used: zod.int().describe('Saves of a drawn track counted this month'),
+            resetsOn: zod.iso
+              .date()
+              .describe(
+                "The day the count starts again: the first day of next month, in the team's zone for a team, in UTC for the personal quota"
+              ),
+          })
+          .describe(
+            "Where the user's personal route planner quota stands this month: the saves of a track drawn on the map in the GPX tools (docs/LEDGER_*.md BILL-10). limit is null — unlimited — for a member of an unlocked team of this site. Clients show no counter; they close « create a route » in the GPX tools when used >= limit already."
+          ),
       })
       .optional()
       .describe('Authenticated user'),

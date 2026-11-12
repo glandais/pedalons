@@ -13,6 +13,7 @@ import fr.pedalons.domain.comment.Comment;
 import fr.pedalons.domain.common.TeamEntity;
 import fr.pedalons.domain.common.TeamEntitySlugRedirect;
 import fr.pedalons.domain.gpx.GpxPreview;
+import fr.pedalons.domain.limits.PlannerSave;
 import fr.pedalons.domain.place.Place;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.platform.DomainAlias;
@@ -43,6 +44,7 @@ import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.calendar.CalendarTokenRepository;
 import fr.pedalons.repository.comment.CommentRepository;
 import fr.pedalons.repository.common.TeamEntitySlugRedirectRepository;
+import fr.pedalons.repository.limits.PlannerSaveRepository;
 import fr.pedalons.repository.place.PlaceRepository;
 import fr.pedalons.repository.platform.DomainAliasRepository;
 import fr.pedalons.repository.platform.DomainRepository;
@@ -96,6 +98,7 @@ public class TestDataService {
   @Inject RouteRepository routeRepository;
   @Inject DomainRepository domainRepository;
   @Inject DomainAliasRepository domainAliasRepository;
+  @Inject PlannerSaveRepository plannerSaveRepository;
 
   /** Standard fixture shared by all resource tests, created in a single transaction. */
   public record StandardFixture(
@@ -321,6 +324,30 @@ public class TestDataService {
       userTeamRepository.persist(new UserTeam(user, user, managed, TeamRole.MEMBER));
     }
     userTeamRepository.flush();
+  }
+
+  /**
+   * Writes {@code count} rows of the planner journal (docs/LEDGER_*.md BILL-10) by {@code user}, for
+   * {@code team} — or the GPX tools when null — at {@code savedAt}: a quota filled without running
+   * the pipeline that many times.
+   */
+  @Transactional
+  public void addPlannerSaves(User user, @Nullable Team team, int count, Instant savedAt) {
+    Long domainId = userRepository.findById(user.getId()).getDomain().getId();
+    for (int i = 0; i < count; i++) {
+      plannerSaveRepository.persist(
+          new PlannerSave(
+              domainId, user.getId(), team == null ? null : team.getId(), savedAt, null));
+    }
+    plannerSaveRepository.flush();
+  }
+
+  /** The rows of the planner journal for {@code team}, or for {@code user}'s GPX tools if null. */
+  @Transactional
+  public long countPlannerSaves(@Nullable Team team, User user) {
+    return team != null
+        ? plannerSaveRepository.count("teamId", team.getId())
+        : plannerSaveRepository.count("teamId is null and userId = ?1", user.getId());
   }
 
   @Transactional

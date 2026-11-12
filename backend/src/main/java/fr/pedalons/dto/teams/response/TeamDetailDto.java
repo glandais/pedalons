@@ -7,6 +7,7 @@ import fr.pedalons.domain.team.TeamPage;
 import fr.pedalons.dto.common.GeoJsonPoint;
 import fr.pedalons.dto.common.asset.AssetDto;
 import fr.pedalons.dto.common.asset.MediaDto;
+import fr.pedalons.dto.limits.response.PlannerQuotaDto;
 import fr.pedalons.dto.pages.response.TeamPageSummaryDto;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.enums.Status;
@@ -170,7 +171,16 @@ public record TeamDetailDto(
                 "The most members the team may hold, pending invitations included; null when"
                     + " unlimited. Compare with memberCount.",
             examples = "25")
-        Integer memberLimit) {
+        Integer memberLimit,
+    @Nullable
+        @Schema(
+            description =
+                "Where the team's route planner quota stands this month: the saves of a track drawn"
+                    + " on the map, against the plan's limit (null when unlimited). Only for a"
+                    + " caller who may create routes in the team, and only when one team is read:"
+                    + " null for everyone else and in the team listings. Clients show no counter;"
+                    + " they close « draw on the map » when used >= limit already.")
+        PlannerQuotaDto plannerQuota) {
   public static TeamDetailDto from(
       TeamAndRole teamAndRole, AssetService assetService, boolean seeAllPages, TeamLimits limits) {
     return from(teamAndRole, assetService, seeAllPages, TeamStats.EMPTY, limits);
@@ -186,7 +196,7 @@ public record TeamDetailDto(
       boolean seeAllPages,
       TeamStats stats,
       TeamLimits limits) {
-    return from(teamAndRole, assetService, seeAllPages, stats, null, limits);
+    return from(teamAndRole, assetService, seeAllPages, stats, null, limits, null);
   }
 
   /**
@@ -197,6 +207,8 @@ public record TeamDetailDto(
    *     null leaves it out
    * @param limits the caps of the team's plan, from {@code PlanLimits.forTeam} — computed from the
    *     team alone, no query
+   * @param plannerQuota the team's planner quota this month, from {@code PlannerQuota.teamQuota} —
+   *     one query, so for a single team read by someone who may create routes in it; null otherwise
    */
   public static TeamDetailDto from(
       TeamAndRole teamAndRole,
@@ -204,7 +216,8 @@ public record TeamDetailDto(
       boolean seeAllPages,
       TeamStats stats,
       @Nullable MemberCountByRoleDto memberCountByRole,
-      TeamLimits limits) {
+      TeamLimits limits,
+      @Nullable PlannerQuotaDto plannerQuota) {
     Team team = teamAndRole.team();
     List<TeamPageSummaryDto> pages =
         team.getAdditionalPages().stream()
@@ -253,7 +266,8 @@ public record TeamDetailDto(
         ContentVisibilityRules.defaultVisibility(team),
         team.isPublicContentAllowed(),
         team.getTier(),
-        limits.memberLimit());
+        limits.memberLimit(),
+        plannerQuota);
   }
 
   /**

@@ -231,7 +231,10 @@ public class RouteResource {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "403",
-        description = "User is not a team member",
+        description =
+            "User may not create routes in the team (FORBIDDEN), or the team's route planner"
+                + " quota is spent (PLANNER_QUOTA_REACHED, scope TEAM, with PlannerQuotaDetails):"
+                + " points or a drawn planner state without a file count one save",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "404",
@@ -455,7 +458,11 @@ public class RouteResource {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "403",
-        description = "User is not authorized to update this route",
+        description =
+            "User is not authorized to update this route (FORBIDDEN), or the team's route"
+                + " planner quota is spent (PLANNER_QUOTA_REACHED, scope TEAM): every redraw of"
+                + " the track without a file counts one save; a rename, waypoints alone or a GPX"
+                + " file count nothing",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "404",

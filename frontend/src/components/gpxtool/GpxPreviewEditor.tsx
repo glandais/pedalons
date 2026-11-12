@@ -6,6 +6,7 @@ import type { GeoPoint, PlannerState, WaypointDto, WaypointRequest } from '@/api
 import { notifications } from '@mantine/notifications'
 import { plannerPayload } from '@/lib/plannerSubmit'
 import { RoutePlannerField, type RoutePlannerHandle } from '../planner/RoutePlannerField'
+import { usePlannerQuotaRefusal } from '../planner/usePlannerQuotaRefusal'
 import { isGpxPlannerEnabled } from '@/config/appConfig'
 import { DepartureFields } from './DepartureFields'
 import { departureChange, type DepartureChange, type DepartureValue } from './departure'
@@ -90,6 +91,8 @@ export function GpxPreviewEditor({
   const plannerRef = useRef<RoutePlannerHandle>(null)
   // Bumped by the « draw on the map » button: on a finger it opens the fullscreen editor.
   const [drawRequest, setDrawRequest] = useState(0)
+  // A save refused because the personal quota of the GPX tools is spent (docs/LEDGER_*.md BILL-10)
+  const quotaRefusal = usePlannerQuotaRefusal()
 
   const handleFileChange = useCallback(
     (file: File | null) => {
@@ -128,13 +131,19 @@ export function GpxPreviewEditor({
       payload.plannerState || payload.points
         ? { points: payload.points, plannerState: payload.plannerState }
         : undefined
-    await onSubmit(
-      name.trim(),
-      track,
-      file,
-      payload.waypoints,
-      departureChange(initialDeparture ?? {}, departure)
-    )
+    try {
+      await onSubmit(
+        name.trim(),
+        track,
+        file,
+        payload.waypoints,
+        departureChange(initialDeparture ?? {}, departure)
+      )
+    } catch (e) {
+      // Not saved, nothing dropped: the drawing stays in the form
+      if (quotaRefusal.offer(e)) return
+      throw e
+    }
     // Only once the save went through: a failed save did not drop anything
     if (payload.tooLarge) {
       notifications.show({ message: t('planner.state.tooLarge'), color: 'yellow' })
@@ -146,6 +155,7 @@ export function GpxPreviewEditor({
   return (
     <Stack>
       {error && <Alert color="red">{error}</Alert>}
+      {quotaRefusal.modal}
 
       {/* Track source selector — only when editing a single-track preview; hidden when creating
           from scratch, where the planner is the only source. */}

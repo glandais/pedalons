@@ -9,6 +9,7 @@ import { useCreateRoute } from '@/api/endpoints/routes/routes'
 import { SurfaceType as SurfaceTypeEnum } from '@/api/dto'
 import { defaultMedia } from '@/lib/apiUtils'
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
+import { invalidatePlannerQuota } from '@/lib/plannerQuota'
 import { Modal } from '@mantine/core'
 
 interface CreateRouteModalProps {
@@ -47,6 +48,8 @@ export function CreateRouteModal({ isOpen, onClose, onRouteCreated, team }: Crea
       {
         onSuccess: () => {
           invalidateRouteQueries(queryClient, team.slug)
+          // A drawn track counted against the team's quota
+          invalidatePlannerQuota(queryClient, team.slug)
           notifications.show({ message: i18next.t('routes.notifications.created'), color: 'green' })
         },
       }

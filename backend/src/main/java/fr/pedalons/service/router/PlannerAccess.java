@@ -4,6 +4,7 @@ import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.enums.ActionType;
 import fr.pedalons.enums.EntityType;
+import fr.pedalons.service.limits.PlannerQuota;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.SecurityVerifier;
 import fr.pedalons.service.team.TeamService;
@@ -21,6 +22,8 @@ public class PlannerAccess {
   @Inject SecurityVerifier securityVerifier;
 
   @Inject TeamService teamService;
+
+  @Inject PlannerQuota plannerQuota;
 
   /**
    * With a team, the caller must be allowed to create routes in it (the very rule of {@code
@@ -40,5 +43,26 @@ public class PlannerAccess {
     if (!teamService.getTeam(teamSlug).isEnableRoutePlanner()) {
       throw new BusinessException(ErrorCode.ROUTE_PLANNER_DISABLED);
     }
+  }
+
+  /**
+   * The rule of {@link #check} for a route calculation, the one call billed by the routing provider,
+   * plus the free plan's bounds (docs/LEDGER_*.md BILL-10): refused once the quota the save would
+   * draw on is spent — the team's with a team, the caller's own without — and past the caller's
+   * calculations of the day, whatever the plan. The import of a GPX into the editor and the relief
+   * of straight lines call no provider and keep {@link #check} alone.
+   *
+   * @throws fr.pedalons.common.exception.ForbiddenException {@code PLANNER_QUOTA_REACHED}
+   * @throws fr.pedalons.common.exception.TooManyRequestsException {@code
+   *     ROUTING_DAILY_LIMIT_REACHED}
+   */
+  public void checkRouting(@Nullable String teamSlug) {
+    check(teamSlug);
+    if (teamSlug == null || teamSlug.isBlank()) {
+      plannerQuota.requirePersonalRoom();
+    } else {
+      plannerQuota.requireTeamRoom(teamService.getTeam(teamSlug));
+    }
+    plannerQuota.admitRouting();
   }
 }

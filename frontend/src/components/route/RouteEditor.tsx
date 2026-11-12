@@ -27,6 +27,10 @@ import { MediaEditor } from '../common/MediaEditor'
 import { SlugEditor } from '../common/SlugEditor'
 import { paths } from '@/config/paths'
 import { RoutePlannerField, type RoutePlannerHandle } from '../planner/RoutePlannerField'
+import { PlannerQuotaMessage } from '../planner/PlannerQuotaModal'
+import { usePlannerQuotaRefusal } from '../planner/usePlannerQuotaRefusal'
+import { isPlannerQuotaSpent } from '@/lib/plannerQuota'
+import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { CreateRouteBody } from '@/api/zod/routes/routes.zod'
 import { TagPicker } from '@/components/tag'
 import { defaultGpxName, gpxNameCandidates, readGpxNames } from '@/lib/gpxNames'
@@ -114,7 +118,14 @@ export function RouteEditor({
 
   // Drawing is a per-team feature the platform admin opens; when it is closed the GPX file input
   // is the only source, and the backend refuses a payload carrying planner points anyway.
-  const canUsePlanner = team.enableRoutePlanner && (isCreateMode || !!initialTrack)
+  const plannerOpen = team.enableRoutePlanner && (isCreateMode || !!initialTrack)
+  // A free team whose monthly saves of a drawn track are all used (docs/LEDGER_*.md BILL-10): the
+  // option stays in sight, disabled, with the reason; the GPX import stays. No counter shown.
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
+  const quotaSpent = plannerOpen && isPlannerQuotaSpent(team.plannerQuota, isPlatformAdmin)
+  const canUsePlanner = plannerOpen && !quotaSpent
+  // A save refused because the quota was spent in the meantime: its dialog says why
+  const quotaRefusal = usePlannerQuotaRefusal(team.slug)
   const [sourceMode, setSourceMode] = useState<RouteSourceMode>(
     canUsePlanner && !isCreateMode ? 'planner' : 'gpx'
   )
@@ -201,17 +212,24 @@ export function RouteEditor({
         ? plannerPayload(plannerRef.current?.snapshot(), isCreateMode)
         : undefined
 
-    const saved = await onSubmit(
-      {
-        ...values,
-        points: track?.points,
-        plannerState: track?.plannerState,
-        // Only when the user touched the route points: absent, the server keeps them
-        waypoints: track?.waypoints,
-      },
-      // The file chosen in the GPX tab, or the one imported in the planner and left untouched
-      sourceMode === 'gpx' ? gpxFile || undefined : track?.file
-    )
+    let saved: void | boolean
+    try {
+      saved = await onSubmit(
+        {
+          ...values,
+          points: track?.points,
+          plannerState: track?.plannerState,
+          // Only when the user touched the route points: absent, the server keeps them
+          waypoints: track?.waypoints,
+        },
+        // The file chosen in the GPX tab, or the one imported in the planner and left untouched
+        sourceMode === 'gpx' ? gpxFile || undefined : track?.file
+      )
+    } catch (e) {
+      // Not saved, nothing dropped: the drawing stays in the form, for a GPX import or next month
+      if (quotaRefusal.offer(e)) return
+      throw e
+    }
     // Only once the save went through: a failed or refused save did not drop anything
     if (saved !== false && track?.tooLarge) {
       notifications.show({ message: t('planner.state.tooLarge'), color: 'yellow' })
@@ -231,9 +249,10 @@ export function RouteEditor({
     >
       <Stack>
         {error && <Alert color="red">{error}</Alert>}
+        {quotaRefusal.modal}
 
         {/* Route Source - Mode selector */}
-        {canUsePlanner && (
+        {plannerOpen && (
           <Stack gap="xs">
             <Text size="sm" fw={500}>
               {t('routes.create.form.sourceMode')}{' '}
@@ -252,6 +271,7 @@ export function RouteEditor({
               </Button>
               <Button
                 variant={sourceMode === 'planner' ? 'filled' : 'default'}
+                disabled={quotaSpent}
                 onClick={() => {
                   setSourceMode('planner')
                   setDrawRequest((n) => n + 1)
@@ -260,6 +280,15 @@ export function RouteEditor({
                 {t('routes.create.form.sourceModePlanner')}
               </Button>
             </Group>
+            {quotaSpent && team.plannerQuota?.limit != null && (
+              <PlannerQuotaMessage
+                scope="TEAM"
+                limit={team.plannerQuota.limit}
+                resetsOn={team.plannerQuota.resetsOn}
+                teamName={team.name}
+                help
+              />
+            )}
           </Stack>
         )}
 

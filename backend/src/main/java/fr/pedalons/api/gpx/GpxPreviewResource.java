@@ -178,6 +178,13 @@ public class GpxPreviewResource {
     @APIResponse(
         responseCode = "401",
         description = "Unauthorized",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "403",
+        description =
+            "The caller's personal planner quota is spent (PLANNER_QUOTA_REACHED, scope PERSONAL,"
+                + " with PlannerQuotaDetails): a member of no unlocked team has a monthly number of"
+                + " saves of a drawn track in the GPX tools",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   @RolesAllowed("user")
@@ -396,7 +403,9 @@ public class GpxPreviewResource {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "403",
-        description = "User is not the creator",
+        description =
+            "User is not the creator (FORBIDDEN), or the new track is drawn and the caller's"
+                + " personal planner quota is spent (PLANNER_QUOTA_REACHED, scope PERSONAL)",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "404",
@@ -543,7 +552,10 @@ public class GpxPreviewResource {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "403",
-        description = "User is not a team member",
+        description =
+            "User is not a team member, or the preview was drawn and the team's route planner"
+                + " quota is spent (PLANNER_QUOTA_REACHED, scope TEAM): the promotion of a drawn"
+                + " preview counts one save of the team",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "404",

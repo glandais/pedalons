@@ -2,13 +2,16 @@ import { useEffect, type Ref } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { PlannerSnapshot } from '@/hooks/useRoutePlanner'
 
 const snapshotMock = vi.hoisted(() => vi.fn())
 const notify = vi.hoisted(() => vi.fn())
 const fieldProps = vi.hoisted(() => ({ last: undefined as Record<string, unknown> | undefined }))
 
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }))
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'fr' } }),
+}))
 vi.mock('@/config/appConfig', () => ({ isGpxPlannerEnabled: () => true }))
 vi.mock('@mantine/notifications', () => ({ notifications: { show: notify } }))
 vi.mock('@/hooks/useResponsive', () => ({ useMediaMatch: () => false }))
@@ -58,6 +61,7 @@ vi.mock('./DepartureFields', () => ({
 }))
 
 import { GpxPreviewEditor } from './GpxPreviewEditor'
+import { ApiClientError } from '@/lib/apiError'
 
 const STATE = { version: 1, profile: 'GRAVEL', sources: [], junctions: [], pieces: [] } as never
 const POINTS = [
@@ -68,16 +72,18 @@ const POINTS = [
 function renderEditor(props: Partial<React.ComponentProps<typeof GpxPreviewEditor>> = {}) {
   const onSubmit = vi.fn()
   render(
-    <MantineProvider>
-      <GpxPreviewEditor
-        initialName="Ma sortie"
-        initialTrack={[[5, 45, 100]]}
-        onSubmit={onSubmit}
-        onCancel={() => {}}
-        isPending={false}
-        {...props}
-      />
-    </MantineProvider>
+    <QueryClientProvider client={new QueryClient()}>
+      <MantineProvider>
+        <GpxPreviewEditor
+          initialName="Ma sortie"
+          initialTrack={[[5, 45, 100]]}
+          onSubmit={onSubmit}
+          onCancel={() => {}}
+          isPending={false}
+          {...props}
+        />
+      </MantineProvider>
+    </QueryClientProvider>
   )
   return onSubmit
 }
@@ -270,5 +276,30 @@ describe('GpxPreviewEditor departure', () => {
     save()
     await waitFor(() => expect(second).toHaveBeenCalled())
     expect(lastChange(second)).toEqual({ clearDeparture: true })
+  })
+})
+
+describe('GpxPreviewEditor planner quota (BILL-10)', () => {
+  afterEach(cleanup)
+
+  it('opens the dialog on a save refused at a spent personal quota', async () => {
+    snapshotMock.mockReturnValue({ dirty: true, plannerState: STATE, points: POINTS })
+    const onSubmit = renderEditor()
+    onSubmit.mockRejectedValue(
+      new ApiClientError(403, {
+        code: 'PLANNER_QUOTA_REACHED',
+        errorDetails: {
+          type: 'PLANNER_QUOTA_REACHED',
+          scope: 'PERSONAL',
+          limit: 10,
+          current: 10,
+          resetsOn: '2026-12-01',
+        },
+      })
+    )
+    save()
+    expect(await screen.findByTestId('planner-quota-modal')).toBeTruthy()
+    expect(screen.getByText('planner.quota.personal')).toBeTruthy()
+    expect(screen.getByText('planner.quota.personalLift')).toBeTruthy()
   })
 })

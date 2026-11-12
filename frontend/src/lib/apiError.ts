@@ -49,8 +49,11 @@ export function apiErrorStatus(error: unknown): number | undefined {
  * The codes whose refusal the screen that made the call renders itself — a dialog that lists what
  * is in the way — so the mutator's generic toast stays quiet for them (`axiosMutator`). Every call
  * that can receive one must handle it: the ride and trip editors and their status actions, the
- * restore of a ride or a trip, the route editor (docs/LEDGER_*.md WEB-166).
+ * restore of a ride or a trip, the route editor (docs/LEDGER_*.md WEB-166). A spent planner quota
+ * opens PlannerQuotaModal from every planner call: the route and GPX preview editors, the promotion
+ * of a preview, the route calculation (docs/LEDGER_*.md BILL-10).
  */
 export const CALLER_RENDERED_ERROR_CODES: ReadonlySet<ErrorCode> = new Set([
   ErrorCode.INCOMPATIBLE_VISIBILITY,
+  ErrorCode.PLANNER_QUOTA_REACHED,
 ])

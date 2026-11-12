@@ -18,6 +18,9 @@ import {
 } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { paths } from '@/config/paths'
 import { isGpxPlannerEnabled } from '@/config/appConfig'
+import { PlannerQuotaMessage } from '@/components/planner/PlannerQuotaModal'
+import { isPlannerQuotaSpent } from '@/lib/plannerQuota'
+import { useAuthStore, selectIsPlatformAdmin, selectUser } from '@/store/authStore'
 
 /**
  * Hub for the GPX tools: view an uploaded file, draw a route from scratch on an empty map, open a
@@ -42,6 +45,12 @@ export function GpxToolsPage() {
   const [isUploading, setIsUploading] = useState(false)
   const mergeInputRef = useRef<HTMLInputElement>(null)
   const [isMerging, setIsMerging] = useState(false)
+  // The personal quota of the GPX tools (docs/LEDGER_*.md BILL-10), from /api/users/me: once all
+  // this month's saves of a drawn track are used, drawing is closed here with the reason. No
+  // counter is shown before that; the file cards stay open.
+  const plannerQuota = useAuthStore(selectUser)?.plannerQuota
+  const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
+  const quotaSpent = isPlannerQuotaSpent(plannerQuota, isPlatformAdmin)
 
   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -164,7 +173,19 @@ export function GpxToolsPage() {
                 </Text>
               </Stack>
 
-              <Button variant="default" onClick={() => navigate(paths.gpxToolsNew())}>
+              {quotaSpent && plannerQuota?.limit != null && (
+                <PlannerQuotaMessage
+                  scope="PERSONAL"
+                  limit={plannerQuota.limit}
+                  resetsOn={plannerQuota.resetsOn}
+                  help
+                />
+              )}
+              <Button
+                variant="default"
+                disabled={quotaSpent}
+                onClick={() => navigate(paths.gpxToolsNew())}
+              >
                 {t('gpxTools.createFromScratch.submit')}
               </Button>
             </Stack>

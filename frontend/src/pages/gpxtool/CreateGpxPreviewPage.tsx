@@ -15,6 +15,7 @@ import { departureFormFields, departureJsonFields } from '@/components/gpxtool/d
 import type { DepartureChange } from '@/components/gpxtool/departure'
 import { paths } from '@/config/paths'
 import { isGpxPlannerEnabled } from '@/config/appConfig'
+import { invalidatePlannerQuota } from '@/lib/plannerQuota'
 
 /**
  * Draws a GPX preview from scratch: an empty planner map, a name, and nothing else. On submit the
@@ -82,6 +83,8 @@ export function CreateGpxPreviewPage() {
         onSuccess: () => {
           // Refresh "my files": the key prefix matches every paginated variant.
           queryClient.invalidateQueries({ queryKey: getListMyPreviewsQueryKey() })
+          // A drawn track counted against the personal quota: « Créer un parcours » reads it
+          invalidatePlannerQuota(queryClient)
           notifications.show({ message: t('gpxTools.createFromScratch.created'), color: 'green' })
         },
       }

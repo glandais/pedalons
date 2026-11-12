@@ -47,6 +47,8 @@ import { useUnits } from '@/hooks/useUnits'
 import { apiErrorCode, ApiClientError } from '@/lib/apiError'
 import { defaultMedia } from '@/lib/apiUtils'
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
+import { invalidatePlannerQuota } from '@/lib/plannerQuota'
+import { usePlannerQuotaRefusal } from '@/components/planner/usePlannerQuotaRefusal'
 import { previewWindLeg, useGpxPreviewWeather } from '@/pages/gpxtool/gpxPreviewData'
 import { GpxPreviewWeatherSection } from './GpxPreviewWeatherSection'
 
@@ -85,6 +87,8 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
   const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
 
   const deletePreviewMutation = useDeletePreview()
+  // Promoting a drawn preview counts against the chosen team's quota (docs/LEDGER_*.md BILL-10)
+  const quotaRefusal = usePlannerQuotaRefusal()
 
   // Only teams the user may create routes on.
   const { data: teams } = useListTeams(
@@ -133,9 +137,12 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
         { skipErrorToast: true }
       )
       invalidateRouteQueries(queryClient, selectedTeam)
+      if (preview.drawn) invalidatePlannerQuota(queryClient, selectedTeam)
       notifications.show({ message: t('routes.notifications.created'), color: 'green' })
       navigate(paths.route(selectedTeam, route.slug))
     } catch (e) {
+      // The team's saves of the month are all used: the dialog says why, the form stays open
+      if (quotaRefusal.offer(e, selectedTeam)) return
       const code = apiErrorCode(e)
       if (!code) throw e
       notifications.show({
@@ -340,6 +347,8 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
           </Group>
         </Stack>
       </Modal>
+
+      {quotaRefusal.modal}
 
       <ConfirmDialog
         isOpen={deleteOpened}

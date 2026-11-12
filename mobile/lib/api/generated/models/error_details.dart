@@ -12,7 +12,10 @@ import 'field_error.dart';
 import 'incompatible_route_dto.dart';
 import 'incompatible_route_usage_dto.dart';
 import 'incompatible_visibility_details.dart';
+import 'local_date.dart';
 import 'not_found_details.dart';
+import 'planner_quota_details.dart';
+import 'planner_quota_scope.dart';
 import 'searched_by.dart';
 import 'team_member_limit_details.dart';
 
@@ -63,6 +66,24 @@ sealed class ErrorDetails with _$ErrorDetails {
     /// What was counted against the cap: active members, plus pending invitations when sending one
     required int current,
   }) = ErrorDetailsTeamMemberLimitReached;
+
+  @FreezedUnionValue('PLANNER_QUOTA_REACHED')
+  const factory ErrorDetails.plannerQuotaReached({
+    /// TEAM: the team is on the free plan and its monthly saves are spent. PERSONAL: the caller is a member of no unlocked team and their monthly saves in the GPX tools are spent.
+    required String scope,
+
+    /// Saves of a drawn track allowed per calendar month
+    required int limit,
+
+    /// Saves already counted this month
+    required int current,
+
+    /// The day the count starts again: the first day of next month, in the team's zone for TEAM, in UTC for PERSONAL
+    required String resetsOn,
+
+    /// Name of the team, for TEAM only
+    String? teamName,
+  }) = ErrorDetailsPlannerQuotaReached;
 
   factory ErrorDetails.fromJson(Map<String, Object?> json) =>
       _$ErrorDetailsFromJson(json);

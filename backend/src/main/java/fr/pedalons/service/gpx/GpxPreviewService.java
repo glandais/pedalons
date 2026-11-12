@@ -16,6 +16,7 @@ import fr.pedalons.domain.gpx.PreviewWaypointsDocument;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
+import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.common.PedalonsPage;
 import fr.pedalons.dto.error.ErrorCode;
@@ -47,6 +48,7 @@ import fr.pedalons.repository.gpx.PreviewWeatherRow;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.elevation.ElevationRefreshService;
 import fr.pedalons.service.gps.GpsService;
+import fr.pedalons.service.limits.PlannerQuota;
 import fr.pedalons.service.route.GpxLimits;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.GpxProcessingService.ComputedGpx;
@@ -139,6 +141,8 @@ public class GpxPreviewService {
   /** Previews are throwaway artifacts; keep them for a month, like biketeam's /gpxtool. */
   public static final int RETENTION_DAYS = 30;
 
+  @Inject PlannerQuota plannerQuota;
+
   @Inject GpxProcessingService gpxProcessingService;
 
   @Inject GpxPreviewRepository gpxPreviewRepository;
@@ -230,6 +234,10 @@ public class GpxPreviewService {
    * departure date and average speed (docs/LEDGER_*.md API-153). Dated, the weather cells it needs
    * are asked for once the row is committed, so the forecast does not wait for the next planner
    * pass.
+   *
+   * <p>A {@code drawn} preview is a save of a drawn track: it counts against the creator's personal
+   * planner quota, in the transaction of the insert, and is refused when that quota is spent
+   * (docs/LEDGER_*.md BILL-10).
    */
   public GpxPreview create(
       GpxDocument gpx,
@@ -316,6 +324,9 @@ public class GpxPreviewService {
       QuarkusTransaction.requiringNew()
           .run(() -> {
             gpxPreviewRepository.persist(preview);
+            if (drawn) {
+              plannerQuota.recordPersonalSave(preview.getId());
+            }
             if (quality == ElevationQuality.FAST) {
               // The row first: the request points at it
               gpxPreviewRepository.flush();
@@ -452,6 +463,10 @@ public class GpxPreviewService {
       throw new BusinessException(ErrorCode.GPX_EMPTY);
     }
     checkPlannerAllowed();
+    if (plannerState == null || plannerState.drawn()) {
+      // Before the pipeline: a spent quota costs nothing (docs/LEDGER_*.md BILL-10)
+      plannerQuota.requirePersonalRoom();
+    }
     WaypointPlan plan =
         waypoints == null
             ? WaypointPlan.FROM_DOCUMENT
@@ -571,11 +586,15 @@ public class GpxPreviewService {
       gpx = gpxProcessingService.parseGpx(gpxPath);
     } else if (plannerState != null) {
       checkPlannerAllowed();
-      gpx = gpxProcessingService.fromPoints(name, plannerStates.validateAndDerive(plannerState));
       drawn = plannerState.drawn();
+      if (drawn) {
+        plannerQuota.requirePersonalRoom();
+      }
+      gpx = gpxProcessingService.fromPoints(name, plannerStates.validateAndDerive(plannerState));
       newState = plannerState;
     } else if (hasPoints) {
       checkPlannerAllowed();
+      plannerQuota.requirePersonalRoom();
       gpx = gpxProcessingService.fromPoints(name, points);
       drawn = true;
     }
@@ -641,6 +660,10 @@ public class GpxPreviewService {
               // Whatever happens below, the new revision must not outlive a rollback
               deleteTrackFilesUnlessCommitted(pid, revision);
               lockForUpdate(previewId);
+              if (newDrawn) {
+                // A redraw is a save of a drawn track, counted with it (docs/LEDGER_*.md BILL-10)
+                plannerQuota.recordPersonalSave(previewId);
+              }
               GpxPreview managed = getByPublicId(publicId);
               // Read under the lock: a catch-up may have switched revisions since the load
               // above
@@ -939,11 +962,16 @@ public class GpxPreviewService {
   @Logged
   public RouteDto createRoute(String publicId, String teamSlug, RouteRequest request) {
     GpxPreview preview = getByPublicId(publicId);
-    if (preview.isDrawn()) {
+    boolean drawn = preview.isDrawn();
+    if (drawn) {
       securityVerifier.verifyAccess(EntityType.ROUTE, ActionType.CREATE, List.of(teamSlug));
-      if (!teamService.getTeam(teamSlug).isEnableRoutePlanner()) {
+      Team team = teamService.getTeam(teamSlug);
+      if (!team.isEnableRoutePlanner()) {
         throw new BusinessException(ErrorCode.ROUTE_PLANNER_DISABLED);
       }
+      // Before the download; RouteService counts the save against the team's quota
+      // (docs/LEDGER_*.md BILL-10)
+      plannerQuota.requireTeamRoom(team);
     }
     // Only the creator takes the planner state along: promoting someone else's preview must not
     // make its editing state readable by the editors of the team (WEB-100, C4a).
@@ -973,7 +1001,7 @@ public class GpxPreviewService {
     Path gpxPath = downloadOriginalGpx(preview);
     try {
       return routeService.createRoute(
-          teamSlug, request, gpxPath, copied, copiedSurfaces, copiedWaypoints);
+          teamSlug, request, gpxPath, copied, copiedSurfaces, copiedWaypoints, drawn);
     } finally {
       try {
         Files.deleteIfExists(gpxPath);

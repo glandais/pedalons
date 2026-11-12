@@ -57,6 +57,7 @@ import fr.pedalons.service.common.RouteVisibilityCompatibility;
 import fr.pedalons.service.common.TeamEntityService;
 import fr.pedalons.service.elevation.ElevationRefreshService;
 import fr.pedalons.service.gps.sync.GpsSyncLookup;
+import fr.pedalons.service.limits.PlannerQuota;
 import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.route.planner.PlannerStates;
 import fr.pedalons.service.route.response.TrackMetadata;
@@ -98,6 +99,8 @@ import org.jspecify.annotations.Nullable;
  */
 @ApplicationScoped
 public class RouteService extends TeamEntityService<Route, RouteRepository, RouteDetailDto> {
+
+  @Inject PlannerQuota plannerQuota;
 
   @Inject MemberNamesVisibility memberNamesVisibility;
 
@@ -363,7 +366,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   @Transactional
   @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.CREATE)
   public RouteDto createRoute(String teamSlug, RouteRequest request, @Nullable Path gpxPath) {
-    return doCreateRoute(teamSlug, request, gpxPath, null, null, null);
+    return doCreateRoute(teamSlug, request, gpxPath, null, null, null, false);
   }
 
   /**
@@ -384,13 +387,16 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       @Nullable Path gpxPath,
       @Nullable PlannerState copiedState,
       @Nullable List<@Nullable TrackSurfaceDocument> copiedSurfaces) {
-    return doCreateRoute(teamSlug, request, gpxPath, copiedState, copiedSurfaces, null);
+    return doCreateRoute(teamSlug, request, gpxPath, copiedState, copiedSurfaces, null, false);
   }
 
   /**
    * As {@link #createRoute(String, RouteRequest, Path, PlannerState, List)}, also taking the
    * waypoints of the preview, which {@code original.gpx} does not carry (docs/LEDGER_*.md API-134):
    * they are placed again on the new route, unless the request has a list of its own.
+   *
+   * @param drawnPromotion the preview was drawn in the planner: the file it is rebuilt from is then
+   *     a drawing, counted against the team's planner quota like one (docs/LEDGER_*.md BILL-10)
    */
   @Transactional
   @CheckAccess(entityType = EntityType.ROUTE, action = ActionType.CREATE)
@@ -400,8 +406,10 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       @Nullable Path gpxPath,
       @Nullable PlannerState copiedState,
       @Nullable List<@Nullable TrackSurfaceDocument> copiedSurfaces,
-      @Nullable List<WaypointDraft> copiedWaypoints) {
-    return doCreateRoute(teamSlug, request, gpxPath, copiedState, copiedSurfaces, copiedWaypoints);
+      @Nullable List<WaypointDraft> copiedWaypoints,
+      boolean drawnPromotion) {
+    return doCreateRoute(
+        teamSlug, request, gpxPath, copiedState, copiedSurfaces, copiedWaypoints, drawnPromotion);
   }
 
   private RouteDto doCreateRoute(
@@ -410,7 +418,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       @Nullable Path gpxPath,
       @Nullable PlannerState copiedState,
       @Nullable List<@Nullable TrackSurfaceDocument> copiedSurfaces,
-      @Nullable List<WaypointDraft> copiedWaypoints) {
+      @Nullable List<WaypointDraft> copiedWaypoints,
+      boolean drawnPromotion) {
     Team team = teamService.getTeam(teamSlug);
     User creator = pedalonsContext.getUser();
 
@@ -426,7 +435,11 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         && (routePoints == null || routePoints.isEmpty())) {
       throw new BusinessException(ErrorCode.GPX_EMPTY);
     }
-    checkPlannerAllowed(team, gpxPath, routePoints, requestedState);
+    boolean counted =
+        checkPlannerAllowed(team, gpxPath, routePoints, requestedState) || drawnPromotion;
+    if (drawnPromotion) {
+      plannerQuota.requireTeamRoom(team);
+    }
     List<GeoPoint> statePoints =
         requestedState == null ? null : plannerStates.validateAndDerive(requestedState);
 
@@ -476,6 +489,10 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
 
       updateMedia(route, request.media());
       routeRepository.persist(route);
+      if (counted) {
+        // Last, so the lock of the quota is held only until the commit that follows.
+        plannerQuota.recordTeamSave(team, route.getId());
+      }
       // A route just created: no sync row can hold it yet.
       return RouteDto.from(
           route,
@@ -508,7 +525,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
   }
 
   /**
-   * Refuse a drawn track when the team's planner is closed.
+   * Refuse a drawn track when the team's planner is closed, or when the team's planner quota is
+   * already spent (docs/LEDGER_*.md BILL-10), and tell whether the save counts against that quota.
    *
    * <p>The two sources are told apart the same way the processing below does it: a {@code gpxPath}
    * means an imported file and always wins, so points or a planner state only matter when no file
@@ -516,15 +534,24 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
    * checker only ever sees the team slug and the entity slug, never the payload, so it cannot
    * distinguish a drawing from an import.
    */
-  private void checkPlannerAllowed(
+  private boolean checkPlannerAllowed(
       Team team,
       @Nullable Path gpxPath,
       @Nullable List<GeoPoint> points,
       @Nullable PlannerState plannerState) {
-    boolean drawing = plannerState != null || (points != null && !points.isEmpty());
+    boolean hasPoints = points != null && !points.isEmpty();
+    boolean drawing = plannerState != null || hasPoints;
     if (gpxPath == null && drawing && !team.isEnableRoutePlanner()) {
       throw new BusinessException(ErrorCode.ROUTE_PLANNER_DISABLED);
     }
+    // Counted: what called the router. A state made of imported pieces only is not governed, as
+    // a file is not (WEB-100, C4a).
+    boolean counted =
+        gpxPath == null && (hasPoints || (plannerState != null && plannerState.drawn()));
+    if (counted) {
+      plannerQuota.requireTeamRoom(team);
+    }
+    return counted;
   }
 
   /** Points and a planner state are two sources for one track: never both (WEB-100, C4a). */
@@ -638,7 +665,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     rejectPointsWithState(request);
     // A file wins over a planner state, which is then ignored, not even validated.
     PlannerState requestedState = gpxPath == null ? request.plannerState() : null;
-    checkPlannerAllowed(team, gpxPath, request.points(), requestedState);
+    boolean counted = checkPlannerAllowed(team, gpxPath, request.points(), requestedState);
 
     // Update basic metadata
     route.setName(request.name());
@@ -698,6 +725,10 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
       }
     } catch (Exception e) {
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
+    }
+    if (counted) {
+      // Outside the try, so a spent quota is not wrapped as GPX_FAILURE; each redraw counts one.
+      plannerQuota.recordTeamSave(team, route.getId());
     }
     if (gpx != null) {
       // A new track is a new distance: every ride, group and stage riding it ends at another time

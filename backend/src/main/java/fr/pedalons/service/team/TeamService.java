@@ -17,6 +17,7 @@ import fr.pedalons.domain.trip.TripStage;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.common.PedalonsPage;
 import fr.pedalons.dto.error.ErrorCode;
+import fr.pedalons.dto.limits.response.PlannerQuotaDto;
 import fr.pedalons.dto.teams.request.TeamRequest;
 import fr.pedalons.dto.teams.response.MemberCountByRoleDto;
 import fr.pedalons.dto.teams.response.TeamDetailDto;
@@ -40,7 +41,9 @@ import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.common.SlugService;
 import fr.pedalons.service.limits.PlanLimits;
+import fr.pedalons.service.limits.PlannerQuota;
 import fr.pedalons.service.security.PedalonsQueryContext;
+import fr.pedalons.service.security.SecurityVerifier;
 import fr.pedalons.service.security.annotation.CheckAccess;
 import fr.pedalons.service.team.request.MinRole;
 import fr.pedalons.service.team.response.TeamAndRole;
@@ -86,6 +89,10 @@ public class TeamService {
   @Inject TeamTimezoneChange teamTimezoneChange;
 
   @Inject PlanLimits planLimits;
+
+  @Inject PlannerQuota plannerQuota;
+
+  @Inject SecurityVerifier securityVerifier;
 
   /**
    * Resolves a team by slug.
@@ -181,8 +188,15 @@ public class TeamService {
     UserTeam membership = new UserTeam(creator, creator, team, TeamRole.ADMIN);
     userTeamRepository.persist(membership);
 
+    // The creator administers it, so may create routes: the quota is theirs to see.
     return TeamDetailDto.from(
-        new TeamAndRole(team, TeamRole.ADMIN, 1L), assetService, false, planLimits.forTeam(team));
+        new TeamAndRole(team, TeamRole.ADMIN, 1L),
+        assetService,
+        false,
+        TeamStats.EMPTY,
+        null,
+        planLimits.forTeam(team),
+        plannerQuota.teamQuota(team));
   }
 
   @Transactional
@@ -258,13 +272,19 @@ public class TeamService {
         admin
             ? MemberCountByRoleDto.from(teamStatsRepository.countMembersByRole(team.getId()))
             : null;
+    // The planner quota is for whoever may draw a route of the team: one query, for this one team.
+    PlannerQuotaDto plannerQuota =
+        securityVerifier.canAccess(EntityType.ROUTE, ActionType.CREATE, List.of(teamSlug))
+            ? this.plannerQuota.teamQuota(team)
+            : null;
     return TeamDetailDto.from(
         teamAndRole,
         assetService,
         platformAdmin,
         stats,
         memberCountByRole,
-        planLimits.forTeam(team));
+        planLimits.forTeam(team),
+        plannerQuota);
   }
 
   /**

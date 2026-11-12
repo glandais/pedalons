@@ -18,6 +18,7 @@ function user(overrides: Partial<UserDto> = {}): UserDto {
     displayName: 'Camille',
     contactableByMembers: true,
     emailVerified: true,
+    plannerQuota: { limit: 10, used: 0, resetsOn: '2026-12-01' },
     ...overrides,
   }
 }

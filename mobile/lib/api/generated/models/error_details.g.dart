@@ -86,3 +86,25 @@ Map<String, dynamic> _$ErrorDetailsTeamMemberLimitReachedToJson(
   'current': instance.current,
   'type': instance.$type,
 };
+
+ErrorDetailsPlannerQuotaReached _$ErrorDetailsPlannerQuotaReachedFromJson(
+  Map<String, dynamic> json,
+) => ErrorDetailsPlannerQuotaReached(
+  scope: json['scope'] as String,
+  limit: (json['limit'] as num).toInt(),
+  current: (json['current'] as num).toInt(),
+  resetsOn: json['resetsOn'] as String,
+  teamName: json['teamName'] as String?,
+  $type: json['type'] as String?,
+);
+
+Map<String, dynamic> _$ErrorDetailsPlannerQuotaReachedToJson(
+  ErrorDetailsPlannerQuotaReached instance,
+) => <String, dynamic>{
+  'scope': instance.scope,
+  'limit': instance.limit,
+  'current': instance.current,
+  'resetsOn': instance.resetsOn,
+  'teamName': instance.teamName,
+  'type': instance.$type,
+};

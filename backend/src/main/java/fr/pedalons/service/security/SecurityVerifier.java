@@ -45,6 +45,11 @@ public class SecurityVerifier {
     }
   }
 
+  /** As {@link #verifyAccess}, answering instead of throwing: for a field shown to some callers. */
+  public boolean canAccess(EntityType entityType, ActionType action, List<Object> params) {
+    return hasAccess(entityType, action, params);
+  }
+
   protected boolean hasAccess(EntityType entityType, ActionType action, List<Object> params) {
     User userNullable = pedalonsContext.getUserNullable();
     if (userNullable != null && userNullable.isPlatformAdmin()) {

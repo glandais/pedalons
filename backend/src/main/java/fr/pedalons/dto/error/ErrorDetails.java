@@ -18,6 +18,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
   @JsonSubTypes.Type(value = AssetNotAvailableDetails.class, name = "ASSET_NOT_AVAILABLE"),
   @JsonSubTypes.Type(value = IncompatibleVisibilityDetails.class, name = "INCOMPATIBLE_VISIBILITY"),
   @JsonSubTypes.Type(value = TeamMemberLimitDetails.class, name = "TEAM_MEMBER_LIMIT_REACHED"),
+  @JsonSubTypes.Type(value = PlannerQuotaDetails.class, name = "PLANNER_QUOTA_REACHED"),
 })
 @Schema(
     description = "Error details",
@@ -32,13 +33,15 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
       @DiscriminatorMapping(
           value = "TEAM_MEMBER_LIMIT_REACHED",
           schema = TeamMemberLimitDetails.class),
+      @DiscriminatorMapping(value = "PLANNER_QUOTA_REACHED", schema = PlannerQuotaDetails.class),
     },
     oneOf = {
       ErrorValidationDetails.class,
       NotFoundDetails.class,
       AssetNotAvailableDetails.class,
       IncompatibleVisibilityDetails.class,
-      TeamMemberLimitDetails.class
+      TeamMemberLimitDetails.class,
+      PlannerQuotaDetails.class
     })
 @ValidateSchema
 public interface ErrorDetails {

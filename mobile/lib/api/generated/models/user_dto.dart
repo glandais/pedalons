@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'gps_service_connection_dto.dart';
 import 'instant.dart';
+import 'planner_quota_dto.dart';
 import 'platform_role.dart';
 import 'theme_preference.dart';
 import 'unit_system.dart';
@@ -31,6 +32,9 @@ abstract class UserDto with _$UserDto {
 
     /// Whether the account's email has been verified
     required bool emailVerified,
+
+    /// Where the user's personal route planner quota stands this month: the saves of a track drawn on the map in the GPX tools (docs/LEDGER_*.md BILL-10). limit is null — unlimited — for a member of an unlocked team of this site. Clients show no counter; they close « create a route » in the GPX tools when used >= limit already.
+    required PlannerQuotaDto plannerQuota,
 
     /// User avatar URL
     String? avatarUrl,

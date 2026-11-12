@@ -1,5 +1,6 @@
 import type { GpsServiceConnectionDto } from './gpsServiceConnectionDto.ts'
 import type { Instant } from './instant.ts'
+import type { PlannerQuotaDto } from './plannerQuotaDto.ts'
 import type { PlatformRole } from './platformRole.ts'
 import type { ThemePreference } from './themePreference.ts'
 import type { UnitSystem } from './unitSystem.ts'
@@ -34,4 +35,6 @@ export interface UserDto {
   emailVerified: boolean
   /** Connected GPS services */
   connectedServices?: GpsServiceConnectionDto[]
+  /** Where the user's personal route planner quota stands this month: the saves of a track drawn on the map in the GPX tools (docs/LEDGER_*.md BILL-10). limit is null — unlimited — for a member of an unlocked team of this site. Clients show no counter; they close « create a route » in the GPX tools when used >= limit already. */
+  plannerQuota: PlannerQuotaDto
 }

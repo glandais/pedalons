@@ -15,6 +15,7 @@ import type { DepartureChange } from '@/components/gpxtool/departure'
 import { optionalWallTime } from '@/utils/wallTime'
 import { paths } from '@/config/paths'
 import { isGpxPlannerEnabled } from '@/config/appConfig'
+import { invalidatePlannerQuota } from '@/lib/plannerQuota'
 import { useGpxPreviewFormData, useGpxPreviewPlannerState } from './gpxPreviewFormData'
 
 export function EditGpxPreviewPage() {
@@ -72,6 +73,8 @@ export function EditGpxPreviewPage() {
           queryClient.invalidateQueries({ queryKey: getGetPreviewQueryKey(preview.id) })
           // The date, the speed or the track moved: the forecast is another one
           queryClient.invalidateQueries({ queryKey: getGetPreviewWeatherQueryKey(preview.id) })
+          // A redrawn track counted against the personal quota
+          invalidatePlannerQuota(queryClient)
           notifications.show({ message: t('gpxTools.edit.updated'), color: 'green' })
         },
       }

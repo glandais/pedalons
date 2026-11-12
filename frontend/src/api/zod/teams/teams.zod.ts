@@ -454,6 +454,25 @@ export const ListTeamsResponse = zod
               .describe(
                 'The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.'
               ),
+            plannerQuota: zod
+              .object({
+                limit: zod
+                  .int()
+                  .optional()
+                  .describe(
+                    'Saves of a drawn track allowed per calendar month; null when unlimited'
+                  ),
+                used: zod.int().describe('Saves of a drawn track counted this month'),
+                resetsOn: zod.iso
+                  .date()
+                  .describe(
+                    "The day the count starts again: the first day of next month, in the team's zone for a team, in UTC for the personal quota"
+                  ),
+              })
+              .optional()
+              .describe(
+                "Where the team's route planner quota stands this month: the saves of a track drawn on the map, against the plan's limit (null when unlimited). Only for a caller who may create routes in the team, and only when one team is read: null for everyone else and in the team listings. Clients show no counter; they close « draw on the map » when used >= limit already."
+              ),
           })
           .describe('Detailed team information')
       )
@@ -1199,6 +1218,23 @@ export const CreateTeamResponse = zod
       .describe(
         'The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.'
       ),
+    plannerQuota: zod
+      .object({
+        limit: zod
+          .int()
+          .optional()
+          .describe('Saves of a drawn track allowed per calendar month; null when unlimited'),
+        used: zod.int().describe('Saves of a drawn track counted this month'),
+        resetsOn: zod.iso
+          .date()
+          .describe(
+            "The day the count starts again: the first day of next month, in the team's zone for a team, in UTC for the personal quota"
+          ),
+      })
+      .optional()
+      .describe(
+        "Where the team's route planner quota stands this month: the saves of a track drawn on the map, against the plan's limit (null when unlimited). Only for a caller who may create routes in the team, and only when one team is read: null for everyone else and in the team listings. Clients show no counter; they close « draw on the map » when used >= limit already."
+      ),
   })
   .describe('Detailed team information')
 
@@ -1941,6 +1977,23 @@ export const UpdateTeamResponse = zod
       .describe(
         'The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.'
       ),
+    plannerQuota: zod
+      .object({
+        limit: zod
+          .int()
+          .optional()
+          .describe('Saves of a drawn track allowed per calendar month; null when unlimited'),
+        used: zod.int().describe('Saves of a drawn track counted this month'),
+        resetsOn: zod.iso
+          .date()
+          .describe(
+            "The day the count starts again: the first day of next month, in the team's zone for a team, in UTC for the personal quota"
+          ),
+      })
+      .optional()
+      .describe(
+        "Where the team's route planner quota stands this month: the saves of a track drawn on the map, against the plan's limit (null when unlimited). Only for a caller who may create routes in the team, and only when one team is read: null for everyone else and in the team listings. Clients show no counter; they close « draw on the map » when used >= limit already."
+      ),
   })
   .describe('Detailed team information')
 
@@ -2366,6 +2419,23 @@ export const GetTeamResponse = zod
       .optional()
       .describe(
         'The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.'
+      ),
+    plannerQuota: zod
+      .object({
+        limit: zod
+          .int()
+          .optional()
+          .describe('Saves of a drawn track allowed per calendar month; null when unlimited'),
+        used: zod.int().describe('Saves of a drawn track counted this month'),
+        resetsOn: zod.iso
+          .date()
+          .describe(
+            "The day the count starts again: the first day of next month, in the team's zone for a team, in UTC for the personal quota"
+          ),
+      })
+      .optional()
+      .describe(
+        "Where the team's route planner quota stands this month: the saves of a track drawn on the map, against the plan's limit (null when unlimited). Only for a caller who may create routes in the team, and only when one team is read: null for everyone else and in the team listings. Clients show no counter; they close « draw on the map » when used >= limit already."
       ),
   })
   .describe('Detailed team information')
@@ -2871,6 +2941,23 @@ export const GetTeamDashboardResponse = zod
           .optional()
           .describe(
             'The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.'
+          ),
+        plannerQuota: zod
+          .object({
+            limit: zod
+              .int()
+              .optional()
+              .describe('Saves of a drawn track allowed per calendar month; null when unlimited'),
+            used: zod.int().describe('Saves of a drawn track counted this month'),
+            resetsOn: zod.iso
+              .date()
+              .describe(
+                "The day the count starts again: the first day of next month, in the team's zone for a team, in UTC for the personal quota"
+              ),
+          })
+          .optional()
+          .describe(
+            "Where the team's route planner quota stands this month: the saves of a track drawn on the map, against the plan's limit (null when unlimited). Only for a caller who may create routes in the team, and only when one team is read: null for everyone else and in the team listings. Clients show no counter; they close « draw on the map » when used >= limit already."
           ),
       })
       .describe(
@@ -22004,6 +22091,23 @@ export const ChangeTeamSlugResponse = zod
       .optional()
       .describe(
         'The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.'
+      ),
+    plannerQuota: zod
+      .object({
+        limit: zod
+          .int()
+          .optional()
+          .describe('Saves of a drawn track allowed per calendar month; null when unlimited'),
+        used: zod.int().describe('Saves of a drawn track counted this month'),
+        resetsOn: zod.iso
+          .date()
+          .describe(
+            "The day the count starts again: the first day of next month, in the team's zone for a team, in UTC for the personal quota"
+          ),
+      })
+      .optional()
+      .describe(
+        "Where the team's route planner quota stands this month: the saves of a track drawn on the map, against the plan's limit (null when unlimited). Only for a caller who may create routes in the team, and only when one team is read: null for everyone else and in the team listings. Clients show no counter; they close « draw on the map » when used >= limit already."
       ),
   })
   .describe('Detailed team information')

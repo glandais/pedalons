@@ -32,6 +32,7 @@ vi.mock('@/hooks/useGpsConnections', () => ({
 }))
 vi.mock('@/api/endpoints/teams/teams', () => ({
   useListTeams: () => ({ data: { teams: teamsState.teams } }),
+  getGetTeamQueryKey: (slug: string) => [`/api/teams/${slug}`],
 }))
 vi.mock('@/api/endpoints/gpx-previews/gpx-previews', () => ({
   createRouteFromPreview: vi.fn(),
@@ -48,6 +49,8 @@ vi.mock('@/components/route/RouteMapView', () => ({
 }))
 
 import { GpxPreviewView } from './GpxPreviewView'
+import { createRouteFromPreview } from '@/api/endpoints/gpx-previews/gpx-previews'
+import { ApiClientError } from '@/lib/apiError'
 
 const preview: GpxPreviewDto = {
   id: '0abcdefghijkl',
@@ -157,6 +160,36 @@ describe('GpxPreviewView', () => {
         .getByRole('option', { name: 'Équipe fermée', hidden: true })
         .hasAttribute('data-combobox-disabled')
     ).toBe(true)
+  })
+
+  it('explains a promotion refused at the team quota in the dialog, not in a toast', async () => {
+    // jsdom has no scrollIntoView, which the combobox calls on the picked option
+    Element.prototype.scrollIntoView = vi.fn()
+    state.isAuthenticated = true
+    teamsState.teams = [
+      { slug: 'open', name: 'Les Copains', enableRoutes: true, enableRoutePlanner: true },
+    ]
+    vi.mocked(createRouteFromPreview).mockRejectedValue(
+      new ApiClientError(403, {
+        code: 'PLANNER_QUOTA_REACHED',
+        errorDetails: {
+          type: 'PLANNER_QUOTA_REACHED',
+          scope: 'TEAM',
+          limit: 20,
+          current: 20,
+          resetsOn: '2026-12-01',
+          teamName: 'Les Copains',
+        },
+      })
+    )
+    renderView({ ...preview, drawn: true, owned: true })
+    fireEvent.click(screen.getByText('Enregistrer comme parcours'))
+    fireEvent.click(await screen.findByRole('combobox'))
+    fireEvent.click(screen.getByRole('option', { name: 'Les Copains', hidden: true }))
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
+    expect(await screen.findByTestId('planner-quota-modal')).toBeTruthy()
+    expect(screen.getByText(/Les Copains utilise l'offre gratuite/)).toBeTruthy()
+    expect(screen.getByText(/repart le 1er décembre/)).toBeTruthy()
   })
 
   describe('departure', () => {

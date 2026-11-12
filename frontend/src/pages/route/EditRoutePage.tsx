@@ -8,6 +8,7 @@ import { paths } from '../../config/paths'
 import { Alert, Box, Skeleton, Stack, Text, Title } from '@mantine/core'
 import { useUpdateRoute, useChangeRouteSlug } from '@/api/endpoints/routes/routes'
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
+import { invalidatePlannerQuota } from '@/lib/plannerQuota'
 import { SurfaceType, RouteRequest } from '@/api/dto'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { RouteEditor } from '@/components/route/RouteEditor'
@@ -106,6 +107,8 @@ export function EditRoutePage() {
         {
           onSuccess: () => {
             invalidateRouteQueries(queryClient, teamSlug!, routeSlug!)
+            // A redrawn track counted against the team's quota
+            invalidatePlannerQuota(queryClient, teamSlug!)
             notifications.show({
               message: i18next.t('routes.notifications.updated'),
               color: 'green',

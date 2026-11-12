@@ -8,6 +8,7 @@ import fr.pedalons.dto.common.PedalonsPage;
 import fr.pedalons.enums.MemberSortBy;
 import fr.pedalons.enums.SortDirection;
 import fr.pedalons.enums.TeamRole;
+import fr.pedalons.enums.TeamTier;
 import fr.pedalons.repository.common.BaseRepository;
 import fr.pedalons.repository.query.OrClause;
 import fr.pedalons.repository.query.PedalonsQuery;
@@ -202,6 +203,20 @@ public class UserTeamRepository implements BaseRepository<UserTeam> {
    */
   public long countActiveMembers(Long teamId) {
     return count("team.id = ?1 and user.deleted = false", teamId);
+  }
+
+  /**
+   * Whether the user is a member, whatever their role, of a live team of {@code tier} in the domain
+   * — for the personal planner quota, which a member of an unlocked team does not have
+   * (docs/LEDGER_*.md BILL-10).
+   */
+  public boolean existsMembershipInTier(Long userId, Long domainId, TeamTier tier) {
+    return count(
+            "user.id = ?1 and team.domain.id = ?2 and team.tier = ?3 and team.deleted = false",
+            userId,
+            domainId,
+            tier)
+        > 0;
   }
 
   public Optional<UserTeam> findByUserAndTeam(Long userId, Long teamId) {

@@ -2,6 +2,7 @@ import { useEffect, type Ref } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { TeamDetailDto } from '@/api/dto'
 import type { PlannerSnapshot } from '@/hooks/useRoutePlanner'
 
@@ -9,7 +10,9 @@ const snapshotMock = vi.hoisted(() => vi.fn())
 const notify = vi.hoisted(() => vi.fn())
 const fieldProps = vi.hoisted(() => ({ last: undefined as Record<string, unknown> | undefined }))
 
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }))
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'fr' } }),
+}))
 vi.mock('@mantine/notifications', () => ({ notifications: { show: notify } }))
 vi.mock('@/hooks/useResponsive', () => ({ useMediaMatch: () => false }))
 vi.mock('../common/MediaEditor', () => ({ MediaEditor: () => <div /> }))
@@ -38,6 +41,8 @@ vi.mock('../planner/RoutePlannerField', () => ({
 }))
 
 import { RouteEditor } from './RouteEditor'
+import { ApiClientError } from '@/lib/apiError'
+import { useAuthStore } from '@/store/authStore'
 import { defaultMedia } from '@/lib/apiUtils'
 
 const STATE = { version: 1, profile: 'GRAVEL', sources: [], junctions: [], pieces: [] } as never
@@ -58,25 +63,27 @@ const TEAM = {
 function renderEditor(props: Partial<React.ComponentProps<typeof RouteEditor>> = {}) {
   const onSubmit = vi.fn()
   render(
-    <MantineProvider>
-      <RouteEditor
-        team={TEAM}
-        teamSlug="club"
-        initialValues={{
-          name: 'Boucle du lac',
-          media: defaultMedia(),
-          surfaceType: 'ROAD',
-          visibility: 'TEAM',
-          tagIds: [],
-        }}
-        initialTrack={[[5, 45, 100]]}
-        submitButtonText="save"
-        onSubmit={onSubmit}
-        onCancel={() => {}}
-        isPending={false}
-        {...props}
-      />
-    </MantineProvider>
+    <QueryClientProvider client={new QueryClient()}>
+      <MantineProvider>
+        <RouteEditor
+          team={TEAM}
+          teamSlug="club"
+          initialValues={{
+            name: 'Boucle du lac',
+            media: defaultMedia(),
+            surfaceType: 'ROAD',
+            visibility: 'TEAM',
+            tagIds: [],
+          }}
+          initialTrack={[[5, 45, 100]]}
+          submitButtonText="save"
+          onSubmit={onSubmit}
+          onCancel={() => {}}
+          isPending={false}
+          {...props}
+        />
+      </MantineProvider>
+    </QueryClientProvider>
   )
   return onSubmit
 }
@@ -244,25 +251,27 @@ describe('surface type suggestion (C1c)', () => {
 
   function renderGpx() {
     return render(
-      <MantineProvider>
-        <RouteEditor
-          team={{ ...TEAM, enableRoutePlanner: false } as unknown as TeamDetailDto}
-          teamSlug="club"
-          initialValues={{
-            name: 'Boucle du lac',
-            media: defaultMedia(),
-            surfaceType: 'ROAD',
-            visibility: 'TEAM',
-            tagIds: [],
-          }}
-          initialTrack={[[5, 45, 100]]}
-          suggestedSurfaceType={'GRAVEL' as never}
-          submitButtonText="save"
-          onSubmit={vi.fn()}
-          onCancel={() => {}}
-          isPending={false}
-        />
-      </MantineProvider>
+      <QueryClientProvider client={new QueryClient()}>
+        <MantineProvider>
+          <RouteEditor
+            team={{ ...TEAM, enableRoutePlanner: false } as unknown as TeamDetailDto}
+            teamSlug="club"
+            initialValues={{
+              name: 'Boucle du lac',
+              media: defaultMedia(),
+              surfaceType: 'ROAD',
+              visibility: 'TEAM',
+              tagIds: [],
+            }}
+            initialTrack={[[5, 45, 100]]}
+            suggestedSurfaceType={'GRAVEL' as never}
+            submitButtonText="save"
+            onSubmit={vi.fn()}
+            onCancel={() => {}}
+            isPending={false}
+          />
+        </MantineProvider>
+      </QueryClientProvider>
     )
   }
 })
@@ -298,5 +307,70 @@ describe('names read from the GPX file', () => {
     fireEvent.click(screen.getByRole('button', { name: 'export' }))
     expect(name()).toBe('export')
     expect(screen.getByRole('button', { name: 'Retour' })).toBeTruthy()
+  })
+})
+
+describe('planner quota (BILL-10)', () => {
+  const SPENT = { limit: 20, used: 20, resetsOn: '2026-12-01' }
+  afterEach(() => {
+    cleanup()
+    useAuthStore.setState({ user: null })
+  })
+
+  it('disables « Tracer sur la carte » with the reason once the quota is spent; the file stays', () => {
+    renderEditor({
+      team: { ...TEAM, name: 'Club', plannerQuota: SPENT } as unknown as TeamDetailDto,
+      isCreateMode: true,
+      initialTrack: undefined,
+    })
+    const planner = screen.getByRole('button', { name: 'routes.create.form.sourceModePlanner' })
+    expect((planner as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByText('planner.quota.team')).toBeTruthy()
+    expect(screen.getByText('planner.quota.alternative')).toBeTruthy()
+    expect(screen.getByText('routes.create.form.gpxFile')).toBeTruthy()
+  })
+
+  it('keeps the option open below the quota and for the platform admin', () => {
+    renderEditor({
+      team: { ...TEAM, plannerQuota: { ...SPENT, used: 19 } } as unknown as TeamDetailDto,
+      isCreateMode: true,
+      initialTrack: undefined,
+    })
+    const below = screen.getByRole('button', { name: 'routes.create.form.sourceModePlanner' })
+    expect((below as HTMLButtonElement).disabled).toBe(false)
+    cleanup()
+
+    useAuthStore.setState({ user: { platformRole: 'PLATFORM_ADMIN' } as never })
+    renderEditor({
+      team: { ...TEAM, plannerQuota: SPENT } as unknown as TeamDetailDto,
+      isCreateMode: true,
+      initialTrack: undefined,
+    })
+    const admin = screen.getByRole('button', { name: 'routes.create.form.sourceModePlanner' })
+    expect((admin as HTMLButtonElement).disabled).toBe(false)
+    expect(screen.queryByTestId('planner-quota-message')).toBeNull()
+  })
+
+  it('opens the dialog when the save is refused at a quota spent in the meantime', async () => {
+    snapshotMock.mockReturnValue({ dirty: true, plannerState: STATE, points: POINTS })
+    const onSubmit = renderEditor()
+    onSubmit.mockRejectedValue(
+      new ApiClientError(403, {
+        code: 'PLANNER_QUOTA_REACHED',
+        errorDetails: {
+          type: 'PLANNER_QUOTA_REACHED',
+          scope: 'TEAM',
+          limit: 20,
+          current: 20,
+          resetsOn: '2026-12-01',
+          teamName: 'Club',
+        },
+      })
+    )
+    save()
+    expect(await screen.findByTestId('planner-quota-modal')).toBeTruthy()
+    expect(screen.getByText('planner.quota.teamLift')).toBeTruthy()
+    // Not saved: the warning about a dropped state is not given
+    expect(notify).not.toHaveBeenCalled()
   })
 })

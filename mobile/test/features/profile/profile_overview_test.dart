@@ -24,6 +24,7 @@ import '../../support/localization.dart';
 /// La vue d'ensemble du profil : une ligne d'état par sujet, sans flèche de
 /// retour (l'onglet est une racine), et « Se déconnecter » une seule fois.
 const UserDto _user = UserDto(
+  plannerQuota: PlannerQuotaDto(used: 0, resetsOn: '2026-12-01'),
   id: 'u-me',
   email: 'camille@example.org',
   displayName: 'Camille Durand',

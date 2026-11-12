@@ -18,6 +18,7 @@ import type { GeoPoint, PlannerState } from '@/api/dto'
 import { useHistoryOverlay } from '@/hooks/useHistoryOverlay'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { useRoutePlanner, type PlannerSnapshot } from '@/hooks/useRoutePlanner'
+import { PlannerQuotaModal } from './PlannerQuotaModal'
 import { useUnits } from '@/hooks/useUnits'
 import type { WaypointDto } from '@/api/dto'
 import {
@@ -622,6 +623,9 @@ export function RoutePlannerField({
         onClose={closeWaypointForm}
         busy={isLoading}
       />
+
+      {/* A calculation refused at a spent quota: why, and what is still possible (BILL-10) */}
+      <PlannerQuotaModal refusal={planner.quotaRefusal} onClose={planner.dismissQuotaRefusal} />
 
       <Modal.Root
         opened={opened}

@@ -40,6 +40,7 @@ import { RouterProfile, WaypointOrigin } from '@/api/dto'
 import type {
   GeoPoint,
   GpxImportResponse,
+  PlannerQuotaDetails,
   PlannerState,
   WaypointDto,
   WaypointRequest,
@@ -60,6 +61,7 @@ import {
 import { importGpx as importGpxRequest } from '@/api/endpoints/router/router'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 import { plannerErrorMessage } from '@/lib/plannerErrors'
+import { plannerQuotaRefusalOf } from '@/lib/plannerQuota'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
 import {
   isTunable,
@@ -148,6 +150,12 @@ export interface RoutePlannerState {
   controlPoints: RoutePoint[]
   isLoading: boolean
   error: string | null
+  /**
+   * A calculation refused because the plan's monthly saves are all used (PLANNER_QUOTA_REACHED):
+   * the view opens PlannerQuotaModal on it. Null otherwise.
+   */
+  quotaRefusal: PlannerQuotaDetails | null
+  dismissQuotaRefusal: () => void
   canUndo: boolean
   canRedo: boolean
   /** The route differs from the one the planner opened on (undoing back to the start makes it false). */
@@ -306,6 +314,8 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
   const [future, setFuture] = useState<PlannerEntry[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [quotaRefusal, setQuotaRefusal] = useState<PlannerQuotaDetails | null>(null)
+  const dismissQuotaRefusal = useCallback(() => setQuotaRefusal(null), [])
 
   const canUndo = history.length > 0
   const canRedo = future.length > 0
@@ -432,6 +442,8 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
       } catch (e) {
         if (controller.signal.aborted) return false
         setError(plannerErrorMessage(e, t, teamSlug, fallbackKey))
+        const refusal = plannerQuotaRefusalOf(e)
+        if (refusal) setQuotaRefusal(refusal)
         return false
       } finally {
         // Only the operation still in flight owns the loading state (a cancelled one already reset it)
@@ -868,6 +880,8 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     routeGeoJson,
     isLoading,
     error,
+    quotaRefusal,
+    dismissQuotaRefusal,
     routerProfile,
     setRouterProfile,
     routerTuning,

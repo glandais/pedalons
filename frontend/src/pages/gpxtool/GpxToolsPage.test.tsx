@@ -20,13 +20,17 @@ vi.mock('@/api/endpoints/gpx-previews/gpx-previews', () => ({
   getListMyPreviewsQueryKey: () => ['gpx-previews'],
 }))
 vi.mock('@mantine/notifications', () => ({ notifications: { show: vi.fn() } }))
-vi.mock('@/config/appConfig', () => ({ isGpxPlannerEnabled: () => false }))
+const planner = vi.hoisted(() => ({ enabled: false }))
+vi.mock('@/config/appConfig', () => ({ isGpxPlannerEnabled: () => planner.enabled }))
 
 import { GpxToolsPage } from './GpxToolsPage'
+import { useAuthStore } from '@/store/authStore'
 
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
+  planner.enabled = false
+  useAuthStore.setState({ user: null })
 })
 
 function renderHub() {
@@ -117,5 +121,39 @@ describe('GpxToolsPage', () => {
     fireEvent.change(input, { target: { files: [file] } })
     expect(await screen.findByTestId('preview')).toBeTruthy()
     expect(createPreview).toHaveBeenLastCalledWith({ gpxFile: file })
+  })
+
+  describe('personal planner quota (BILL-10)', () => {
+    const asUser = (plannerQuota: object, platformRole = 'USER') =>
+      useAuthStore.setState({ user: { platformRole, plannerQuota } as never })
+    const createButton = () =>
+      screen.getByRole('button', { name: 'Créer un parcours' }) as HTMLButtonElement
+
+    it('disables « Créer un parcours » with the reason once the month is used; files stay open', () => {
+      planner.enabled = true
+      asUser({ limit: 10, used: 10, resetsOn: '2026-12-01' })
+      renderHub()
+      expect(createButton().disabled).toBe(true)
+      expect(screen.getByText(/aucune équipe débloquée/)).toBeTruthy()
+      expect(screen.getByText(/repart le 1er décembre/)).toBeTruthy()
+      expect(
+        (screen.getByRole('button', { name: 'Choisir un fichier' }) as HTMLButtonElement).disabled
+      ).toBe(false)
+    })
+
+    it('shows no counter and keeps it open below the quota, unlimited, or for the platform admin', () => {
+      planner.enabled = true
+      for (const [quota, role] of [
+        [{ limit: 10, used: 9, resetsOn: '2026-12-01' }, 'USER'],
+        [{ used: 40, resetsOn: '2026-12-01' }, 'USER'],
+        [{ limit: 10, used: 10, resetsOn: '2026-12-01' }, 'PLATFORM_ADMIN'],
+      ] as const) {
+        asUser(quota, role)
+        renderHub()
+        expect(createButton().disabled).toBe(false)
+        expect(screen.queryByTestId('planner-quota-message')).toBeNull()
+        cleanup()
+      }
+    })
   })
 })

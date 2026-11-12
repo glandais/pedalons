@@ -19,12 +19,17 @@ public class ForbiddenException extends PedalonsException {
     super(errorCode, null, null);
   }
 
+  /** As {@link #ForbiddenException(ErrorCode)}, with the details the client needs to say why. */
+  public ForbiddenException(ErrorCode errorCode, ErrorDetails errorDetails) {
+    super(errorCode, errorDetails, null);
+  }
+
   public ForbiddenException(@Nullable Throwable cause) {
     this(null, cause);
   }
 
   public ForbiddenException() {
-    this(null, null);
+    this((ErrorDetails) null, null);
   }
 
   @Override

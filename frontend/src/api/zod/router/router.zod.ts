@@ -1,7 +1,7 @@
 import * as zod from 'zod'
 
 /**
- * Calculate a route between two points using the Stadia Maps routing API. Each call is billed against a monthly quota, so the checks come first: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503).
+ * Calculate a route between two points using the Stadia Maps routing API. Each call is billed against a monthly quota, so the checks come first: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Once the planner quota the save would draw on is spent — the team's with teamSlug, the caller's own without — the calculation is refused with PLANNER_QUOTA_REACHED (403); past the caller's calculations of the UTC day, whatever the plan, with ROUTING_DAILY_LIMIT_REACHED (429, Retry-After). Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503).
  * @summary Calculate route
  */
 export const routeBodyFromLngMin = -180

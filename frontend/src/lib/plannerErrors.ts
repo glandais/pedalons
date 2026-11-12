@@ -10,6 +10,10 @@ const PLANNER_ERROR_KEYS: Partial<Record<ErrorCode, TranslationKey>> = {
   [ErrorCode.ROUTING_QUOTA_EXCEEDED]: tRegister('planner.error.quota'),
   [ErrorCode.ROUTING_SEGMENT_TOO_LONG]: tRegister('planner.error.segmentTooLong'),
   [ErrorCode.ROUTING_UNAVAILABLE]: tRegister('planner.error.unavailable'),
+  // The plan's limits (docs/LEDGER_*.md BILL-10): the spent quota also opens PlannerQuotaModal,
+  // the daily cap of calculations per person resets the next day.
+  [ErrorCode.PLANNER_QUOTA_REACHED]: tRegister('planner.error.quotaReached'),
+  [ErrorCode.ROUTING_DAILY_LIMIT_REACHED]: tRegister('planner.error.dailyLimit'),
   // Refusals of the team named in the call (rights or team changed meanwhile): retrying changes nothing.
   [ErrorCode.FORBIDDEN]: tRegister('planner.error.forbidden'),
   [ErrorCode.NOT_FOUND]: tRegister('planner.error.forbidden'),

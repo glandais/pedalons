@@ -12,6 +12,7 @@ import { useCreateRoute } from '@/api/endpoints/routes/routes'
 import { SurfaceType, RouteRequest } from '@/api/dto'
 import { defaultMedia } from '@/lib/apiUtils'
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
+import { invalidatePlannerQuota } from '@/lib/plannerQuota'
 import { useCreateRouteFormData } from './routeFormData'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
@@ -43,6 +44,8 @@ export function CreateRoutePage() {
       {
         onSuccess: () => {
           invalidateRouteQueries(queryClient, teamSlug!)
+          // A drawn track counted against the team's quota: the editor's option reads it
+          invalidatePlannerQuota(queryClient, teamSlug!)
           notifications.show({ message: i18next.t('routes.notifications.created'), color: 'green' })
         },
       }

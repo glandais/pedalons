@@ -3,6 +3,7 @@ package fr.pedalons.dto.users.response;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.gps.response.GpsServiceConnectionDto;
+import fr.pedalons.dto.limits.response.PlannerQuotaDto;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.enums.PlatformRole;
 import fr.pedalons.enums.ThemePreference;
@@ -51,10 +52,19 @@ public record UserDto(
         PlatformRole platformRole,
     @Schema(description = "Whether the account's email has been verified", required = true)
         boolean emailVerified,
-    @Schema(description = "Connected GPS services")
-        List<GpsServiceConnectionDto> connectedServices) {
+    @Schema(description = "Connected GPS services") List<GpsServiceConnectionDto> connectedServices,
+    @Schema(
+            description =
+                "Where the user's personal route planner quota stands this month: the saves of a"
+                    + " track drawn on the map in the GPX tools (docs/LEDGER_*.md BILL-10). limit"
+                    + " is null — unlimited — for a member of an unlocked team of this site."
+                    + " Clients show no counter; they close « create a route » in the GPX tools"
+                    + " when used >= limit already.",
+            required = true)
+        PlannerQuotaDto plannerQuota) {
 
-  public static UserDto from(User user, List<GpsServiceConnectionDto> connectedServices) {
+  public static UserDto from(
+      User user, List<GpsServiceConnectionDto> connectedServices, PlannerQuotaDto plannerQuota) {
     return new UserDto(
         TsidUtils.toString(user.getId()),
         user.getEmail(),
@@ -68,6 +78,7 @@ public record UserDto(
         user.isContactableByMembers(),
         user.getPlatformRole(),
         user.isEmailVerified(),
-        connectedServices);
+        connectedServices,
+        plannerQuota);
   }
 }

@@ -36,6 +36,10 @@ ErrorDetails _$ErrorDetailsFromJson(
           return ErrorDetailsTeamMemberLimitReached.fromJson(
             json
           );
+                case 'PLANNER_QUOTA_REACHED':
+          return ErrorDetailsPlannerQuotaReached.fromJson(
+            json
+          );
         
           default:
             throw CheckedFromJsonException(
@@ -94,7 +98,7 @@ extension ErrorDetailsPatterns on ErrorDetails {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ErrorDetailsValidation value)?  validation,TResult Function( ErrorDetailsNotFound value)?  notFound,TResult Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,TResult Function( ErrorDetailsTeamMemberLimitReached value)?  teamMemberLimitReached,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ErrorDetailsValidation value)?  validation,TResult Function( ErrorDetailsNotFound value)?  notFound,TResult Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,TResult Function( ErrorDetailsTeamMemberLimitReached value)?  teamMemberLimitReached,TResult Function( ErrorDetailsPlannerQuotaReached value)?  plannerQuotaReached,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
@@ -102,7 +106,8 @@ return validation(_that);case ErrorDetailsNotFound() when notFound != null:
 return notFound(_that);case ErrorDetailsAssetNotAvailable() when assetNotAvailable != null:
 return assetNotAvailable(_that);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
 return incompatibleVisibility(_that);case ErrorDetailsTeamMemberLimitReached() when teamMemberLimitReached != null:
-return teamMemberLimitReached(_that);case _:
+return teamMemberLimitReached(_that);case ErrorDetailsPlannerQuotaReached() when plannerQuotaReached != null:
+return plannerQuotaReached(_that);case _:
   return orElse();
 
 }
@@ -120,7 +125,7 @@ return teamMemberLimitReached(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ErrorDetailsValidation value)  validation,required TResult Function( ErrorDetailsNotFound value)  notFound,required TResult Function( ErrorDetailsAssetNotAvailable value)  assetNotAvailable,required TResult Function( ErrorDetailsIncompatibleVisibility value)  incompatibleVisibility,required TResult Function( ErrorDetailsTeamMemberLimitReached value)  teamMemberLimitReached,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ErrorDetailsValidation value)  validation,required TResult Function( ErrorDetailsNotFound value)  notFound,required TResult Function( ErrorDetailsAssetNotAvailable value)  assetNotAvailable,required TResult Function( ErrorDetailsIncompatibleVisibility value)  incompatibleVisibility,required TResult Function( ErrorDetailsTeamMemberLimitReached value)  teamMemberLimitReached,required TResult Function( ErrorDetailsPlannerQuotaReached value)  plannerQuotaReached,}){
 final _that = this;
 switch (_that) {
 case ErrorDetailsValidation():
@@ -128,7 +133,8 @@ return validation(_that);case ErrorDetailsNotFound():
 return notFound(_that);case ErrorDetailsAssetNotAvailable():
 return assetNotAvailable(_that);case ErrorDetailsIncompatibleVisibility():
 return incompatibleVisibility(_that);case ErrorDetailsTeamMemberLimitReached():
-return teamMemberLimitReached(_that);}
+return teamMemberLimitReached(_that);case ErrorDetailsPlannerQuotaReached():
+return plannerQuotaReached(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -142,7 +148,7 @@ return teamMemberLimitReached(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ErrorDetailsValidation value)?  validation,TResult? Function( ErrorDetailsNotFound value)?  notFound,TResult? Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult? Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,TResult? Function( ErrorDetailsTeamMemberLimitReached value)?  teamMemberLimitReached,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ErrorDetailsValidation value)?  validation,TResult? Function( ErrorDetailsNotFound value)?  notFound,TResult? Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult? Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,TResult? Function( ErrorDetailsTeamMemberLimitReached value)?  teamMemberLimitReached,TResult? Function( ErrorDetailsPlannerQuotaReached value)?  plannerQuotaReached,}){
 final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
@@ -150,7 +156,8 @@ return validation(_that);case ErrorDetailsNotFound() when notFound != null:
 return notFound(_that);case ErrorDetailsAssetNotAvailable() when assetNotAvailable != null:
 return assetNotAvailable(_that);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
 return incompatibleVisibility(_that);case ErrorDetailsTeamMemberLimitReached() when teamMemberLimitReached != null:
-return teamMemberLimitReached(_that);case _:
+return teamMemberLimitReached(_that);case ErrorDetailsPlannerQuotaReached() when plannerQuotaReached != null:
+return plannerQuotaReached(_that);case _:
   return null;
 
 }
@@ -167,14 +174,15 @@ return teamMemberLimitReached(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( List<FieldError> fieldErrors)?  validation,TResult Function( String entityType,  String searchedBy,  String id)?  notFound,TResult Function( String assetId)?  assetNotAvailable,TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,TResult Function( int limit,  int current)?  teamMemberLimitReached,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( List<FieldError> fieldErrors)?  validation,TResult Function( String entityType,  String searchedBy,  String id)?  notFound,TResult Function( String assetId)?  assetNotAvailable,TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,TResult Function( int limit,  int current)?  teamMemberLimitReached,TResult Function( String scope,  int limit,  int current,  String resetsOn,  String? teamName)?  plannerQuotaReached,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
 return validation(_that.fieldErrors);case ErrorDetailsNotFound() when notFound != null:
 return notFound(_that.entityType,_that.searchedBy,_that.id);case ErrorDetailsAssetNotAvailable() when assetNotAvailable != null:
 return assetNotAvailable(_that.assetId);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
 return incompatibleVisibility(_that.routes,_that.usages);case ErrorDetailsTeamMemberLimitReached() when teamMemberLimitReached != null:
-return teamMemberLimitReached(_that.limit,_that.current);case _:
+return teamMemberLimitReached(_that.limit,_that.current);case ErrorDetailsPlannerQuotaReached() when plannerQuotaReached != null:
+return plannerQuotaReached(_that.scope,_that.limit,_that.current,_that.resetsOn,_that.teamName);case _:
   return orElse();
 
 }
@@ -192,14 +200,15 @@ return teamMemberLimitReached(_that.limit,_that.current);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( List<FieldError> fieldErrors)  validation,required TResult Function( String entityType,  String searchedBy,  String id)  notFound,required TResult Function( String assetId)  assetNotAvailable,required TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)  incompatibleVisibility,required TResult Function( int limit,  int current)  teamMemberLimitReached,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( List<FieldError> fieldErrors)  validation,required TResult Function( String entityType,  String searchedBy,  String id)  notFound,required TResult Function( String assetId)  assetNotAvailable,required TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)  incompatibleVisibility,required TResult Function( int limit,  int current)  teamMemberLimitReached,required TResult Function( String scope,  int limit,  int current,  String resetsOn,  String? teamName)  plannerQuotaReached,}) {final _that = this;
 switch (_that) {
 case ErrorDetailsValidation():
 return validation(_that.fieldErrors);case ErrorDetailsNotFound():
 return notFound(_that.entityType,_that.searchedBy,_that.id);case ErrorDetailsAssetNotAvailable():
 return assetNotAvailable(_that.assetId);case ErrorDetailsIncompatibleVisibility():
 return incompatibleVisibility(_that.routes,_that.usages);case ErrorDetailsTeamMemberLimitReached():
-return teamMemberLimitReached(_that.limit,_that.current);}
+return teamMemberLimitReached(_that.limit,_that.current);case ErrorDetailsPlannerQuotaReached():
+return plannerQuotaReached(_that.scope,_that.limit,_that.current,_that.resetsOn,_that.teamName);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -213,14 +222,15 @@ return teamMemberLimitReached(_that.limit,_that.current);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( List<FieldError> fieldErrors)?  validation,TResult? Function( String entityType,  String searchedBy,  String id)?  notFound,TResult? Function( String assetId)?  assetNotAvailable,TResult? Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,TResult? Function( int limit,  int current)?  teamMemberLimitReached,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( List<FieldError> fieldErrors)?  validation,TResult? Function( String entityType,  String searchedBy,  String id)?  notFound,TResult? Function( String assetId)?  assetNotAvailable,TResult? Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,TResult? Function( int limit,  int current)?  teamMemberLimitReached,TResult? Function( String scope,  int limit,  int current,  String resetsOn,  String? teamName)?  plannerQuotaReached,}) {final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
 return validation(_that.fieldErrors);case ErrorDetailsNotFound() when notFound != null:
 return notFound(_that.entityType,_that.searchedBy,_that.id);case ErrorDetailsAssetNotAvailable() when assetNotAvailable != null:
 return assetNotAvailable(_that.assetId);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
 return incompatibleVisibility(_that.routes,_that.usages);case ErrorDetailsTeamMemberLimitReached() when teamMemberLimitReached != null:
-return teamMemberLimitReached(_that.limit,_that.current);case _:
+return teamMemberLimitReached(_that.limit,_that.current);case ErrorDetailsPlannerQuotaReached() when plannerQuotaReached != null:
+return plannerQuotaReached(_that.scope,_that.limit,_that.current,_that.resetsOn,_that.teamName);case _:
   return null;
 
 }
@@ -635,6 +645,94 @@ class _$ErrorDetailsTeamMemberLimitReachedCopyWithImpl<$Res>
 limit: null == limit ? _self.limit : limit // ignore: cast_nullable_to_non_nullable
 as int,current: null == current ? _self.current : current // ignore: cast_nullable_to_non_nullable
 as int,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class ErrorDetailsPlannerQuotaReached implements ErrorDetails {
+  const ErrorDetailsPlannerQuotaReached({required this.scope, required this.limit, required this.current, required this.resetsOn, this.teamName,  String? $type}): $type = $type ?? 'PLANNER_QUOTA_REACHED';
+  factory ErrorDetailsPlannerQuotaReached.fromJson(Map<String, dynamic> json) => _$ErrorDetailsPlannerQuotaReachedFromJson(json);
+
+/// TEAM: the team is on the free plan and its monthly saves are spent. PERSONAL: the caller is a member of no unlocked team and their monthly saves in the GPX tools are spent.
+ final  String scope;
+/// Saves of a drawn track allowed per calendar month
+ final  int limit;
+/// Saves already counted this month
+ final  int current;
+/// The day the count starts again: the first day of next month, in the team's zone for TEAM, in UTC for PERSONAL
+ final  String resetsOn;
+/// Name of the team, for TEAM only
+ final  String? teamName;
+
+@JsonKey(name: 'type')
+final String $type;
+
+
+/// Create a copy of ErrorDetails
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ErrorDetailsPlannerQuotaReachedCopyWith<ErrorDetailsPlannerQuotaReached> get copyWith => _$ErrorDetailsPlannerQuotaReachedCopyWithImpl<ErrorDetailsPlannerQuotaReached>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ErrorDetailsPlannerQuotaReachedToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ErrorDetailsPlannerQuotaReached&&(identical(other.scope, scope) || other.scope == scope)&&(identical(other.limit, limit) || other.limit == limit)&&(identical(other.current, current) || other.current == current)&&(identical(other.resetsOn, resetsOn) || other.resetsOn == resetsOn)&&(identical(other.teamName, teamName) || other.teamName == teamName));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,scope,limit,current,resetsOn,teamName);
+}
+
+@override
+String toString() {
+    return 'ErrorDetails.plannerQuotaReached(scope: $scope, limit: $limit, current: $current, resetsOn: $resetsOn, teamName: $teamName)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ErrorDetailsPlannerQuotaReachedCopyWith<$Res> implements $ErrorDetailsCopyWith<$Res> {
+  factory $ErrorDetailsPlannerQuotaReachedCopyWith(ErrorDetailsPlannerQuotaReached value, $Res Function(ErrorDetailsPlannerQuotaReached) _then) = _$ErrorDetailsPlannerQuotaReachedCopyWithImpl;
+@useResult
+$Res call({
+ String scope, int limit, int current, String resetsOn, String? teamName
+});
+
+
+
+
+}
+/// @nodoc
+class _$ErrorDetailsPlannerQuotaReachedCopyWithImpl<$Res>
+    implements $ErrorDetailsPlannerQuotaReachedCopyWith<$Res> {
+  _$ErrorDetailsPlannerQuotaReachedCopyWithImpl(this._self, this._then);
+
+  final ErrorDetailsPlannerQuotaReached _self;
+  final $Res Function(ErrorDetailsPlannerQuotaReached) _then;
+
+/// Create a copy of ErrorDetails
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? scope = null,Object? limit = null,Object? current = null,Object? resetsOn = null,Object? teamName = freezed,}) {
+  return _then(ErrorDetailsPlannerQuotaReached(
+scope: null == scope ? _self.scope : scope // ignore: cast_nullable_to_non_nullable
+as String,limit: null == limit ? _self.limit : limit // ignore: cast_nullable_to_non_nullable
+as int,current: null == current ? _self.current : current // ignore: cast_nullable_to_non_nullable
+as int,resetsOn: null == resetsOn ? _self.resetsOn : resetsOn // ignore: cast_nullable_to_non_nullable
+as String,teamName: freezed == teamName ? _self.teamName : teamName // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

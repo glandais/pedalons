@@ -2327,6 +2327,8 @@ components:
       - ROUTING_SEGMENT_TOO_LONG
       - ROUTING_NO_ROUTE
       - ROUTING_UNAVAILABLE
+      - PLANNER_QUOTA_REACHED
+      - ROUTING_DAILY_LIMIT_REACHED
       - GEOCODING_UNAVAILABLE
       - INVALID_FORMAT
       - INVALID_TIMEZONE
@@ -2413,6 +2415,7 @@ components:
       - $ref: "#/components/schemas/AssetNotAvailableDetails"
       - $ref: "#/components/schemas/IncompatibleVisibilityDetails"
       - $ref: "#/components/schemas/TeamMemberLimitDetails"
+      - $ref: "#/components/schemas/PlannerQuotaDetails"
       description: Error details
       discriminator:
         propertyName: type
@@ -2422,6 +2425,7 @@ components:
           ASSET_NOT_AVAILABLE: "#/components/schemas/AssetNotAvailableDetails"
           INCOMPATIBLE_VISIBILITY: "#/components/schemas/IncompatibleVisibilityDetails"
           TEAM_MEMBER_LIMIT_REACHED: "#/components/schemas/TeamMemberLimitDetails"
+          PLANNER_QUOTA_REACHED: "#/components/schemas/PlannerQuotaDetails"
       type: object
       properties:
         type:
@@ -3283,6 +3287,11 @@ components:
       enum:
       - FULL
       - COMPACT
+    LocalDate:
+      type: string
+      format: date
+      examples:
+      - 2022-03-10
     LocalTime:
       type: string
       format: local-time
@@ -4297,6 +4306,70 @@ components:
       - ROUTED
       - DIRECT
       - IMPORTED
+    PlannerQuotaDetails:
+      type: object
+      required:
+      - type
+      - scope
+      - limit
+      - current
+      - resetsOn
+      properties:
+        type:
+          description: Type
+          type: string
+          $ref: "#/components/schemas/ErrorCode"
+        scope:
+          description: "TEAM: the team is on the free plan and its monthly saves are\
+            \ spent. PERSONAL: the caller is a member of no unlocked team and their\
+            \ monthly saves in the GPX tools are spent."
+          type: string
+          $ref: "#/components/schemas/PlannerQuotaScope"
+        limit:
+          type: integer
+          format: int32
+          description: Saves of a drawn track allowed per calendar month
+        current:
+          type: integer
+          format: int64
+          description: Saves already counted this month
+        resetsOn:
+          description: "The day the count starts again: the first day of next month,\
+            \ in the team's zone for TEAM, in UTC for PERSONAL"
+          type: string
+          $ref: "#/components/schemas/LocalDate"
+        teamName:
+          type: string
+          description: "Name of the team, for TEAM only"
+    PlannerQuotaDto:
+      type: object
+      description: "Saves of a drawn track this calendar month, against the plan's\
+        \ quota"
+      properties:
+        limit:
+          type: integer
+          format: int32
+          description: Saves of a drawn track allowed per calendar month; null when
+            unlimited
+          examples:
+          - 20
+        used:
+          type: integer
+          format: int32
+          description: Saves of a drawn track counted this month
+        resetsOn:
+          description: "The day the count starts again: the first day of next month,\
+            \ in the team's zone for a team, in UTC for the personal quota"
+          type: string
+          $ref: "#/components/schemas/LocalDate"
+      required:
+      - used
+      - resetsOn
+    PlannerQuotaScope:
+      type: string
+      enum:
+      - TEAM
+      - PERSONAL
     PlannerSource:
       type: object
       required:
@@ -6945,6 +7018,15 @@ components:
             \ null when unlimited. Compare with memberCount."
           examples:
           - 25
+        plannerQuota:
+          description: "Where the team's route planner quota stands this month: the\
+            \ saves of a track drawn on the map, against the plan's limit (null when\
+            \ unlimited). Only for a caller who may create routes in the team, and\
+            \ only when one team is read: null for everyone else and in the team listings.\
+            \ Clients show no counter; they close « draw on the map » when used >=\
+            \ limit already."
+          type: object
+          $ref: "#/components/schemas/PlannerQuotaDto"
     TeamInvitationDto:
       description: A pending or settled invitation to join a team
       type: object
@@ -8305,6 +8387,7 @@ components:
       - displayName
       - contactableByMembers
       - emailVerified
+      - plannerQuota
       properties:
         id:
           type: string
@@ -8359,6 +8442,14 @@ components:
           items:
             $ref: "#/components/schemas/GpsServiceConnectionDto"
           description: Connected GPS services
+        plannerQuota:
+          description: "Where the user's personal route planner quota stands this\
+            \ month: the saves of a track drawn on the map in the GPX tools (docs/LEDGER_*.md\
+            \ BILL-10). limit is null — unlimited — for a member of an unlocked team\
+            \ of this site. Clients show no counter; they close « create a route »\
+            \ in the GPX tools when used >= limit already."
+          type: object
+          $ref: "#/components/schemas/PlannerQuotaDto"
     UserExportDto:
       description: Status of a personal data export request
       type: object
@@ -11878,7 +11969,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "403":
-          description: Not Allowed
+          description: "The caller's personal planner quota is spent (PLANNER_QUOTA_REACHED,\
+            \ scope PERSONAL, with PlannerQuotaDetails): a member of no unlocked team\
+            \ has a monthly number of saves of a drawn track in the GPX tools"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       security:
       - SecurityScheme:
         - user
@@ -11988,7 +12085,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "403":
-          description: User is not the creator
+          description: "User is not the creator (FORBIDDEN), or the new track is drawn\
+            \ and the caller's personal planner quota is spent (PLANNER_QUOTA_REACHED,\
+            \ scope PERSONAL)"
           content:
             application/json:
               schema:
@@ -12210,7 +12309,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "403":
-          description: User is not a team member
+          description: "User is not a team member, or the preview was drawn and the\
+            \ team's route planner quota is spent (PLANNER_QUOTA_REACHED, scope TEAM):\
+            \ the promotion of a drawn preview counts one save of the team"
           content:
             application/json:
               schema:
@@ -12844,9 +12945,13 @@ paths:
         \ API. Each call is billed against a monthly quota, so the checks come first:\
         \ with teamSlug, the caller must be allowed to create routes in that team\
         \ and the team must have the route planner enabled; without it, the domain's\
-        \ GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Routing failures\
-        \ have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400),\
-        \ ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503)."
+        \ GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Once the\
+        \ planner quota the save would draw on is spent — the team's with teamSlug,\
+        \ the caller's own without — the calculation is refused with PLANNER_QUOTA_REACHED\
+        \ (403); past the caller's calculations of the UTC day, whatever the plan,\
+        \ with ROUTING_DAILY_LIMIT_REACHED (429, Retry-After). Routing failures have\
+        \ their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED\
+        \ and ROUTING_UNAVAILABLE (503)."
       operationId: route
       tags:
       - Router
@@ -12872,13 +12977,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "403":
-          description: User may not create routes in the team
+          description: "User may not create routes in the team (FORBIDDEN), or the\
+            \ planner quota is spent (PLANNER_QUOTA_REACHED, with PlannerQuotaDetails)"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Team not found in this domain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too many route calculations today (ROUTING_DAILY_LIMIT_REACHED);
+            Retry-After gives the seconds to the next UTC day
           content:
             application/json:
               schema:
@@ -17904,7 +18017,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "403":
-          description: User is not a team member
+          description: "User may not create routes in the team (FORBIDDEN), or the\
+            \ team's route planner quota is spent (PLANNER_QUOTA_REACHED, scope TEAM,\
+            \ with PlannerQuotaDetails): points or a drawn planner state without a\
+            \ file count one save"
           content:
             application/json:
               schema:
@@ -18538,7 +18654,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "403":
-          description: User is not authorized to update this route
+          description: "User is not authorized to update this route (FORBIDDEN), or\
+            \ the team's route planner quota is spent (PLANNER_QUOTA_REACHED, scope\
+            \ TEAM): every redraw of the track without a file counts one save; a rename,\
+            \ waypoints alone or a GPX file count nothing"
           content:
             application/json:
               schema:
@@ -21118,7 +21237,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 14.2.0
+  version: 14.3.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

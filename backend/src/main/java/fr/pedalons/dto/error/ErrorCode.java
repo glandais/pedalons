@@ -68,6 +68,17 @@ public enum ErrorCode {
   /** The routing provider failed, timed out or could not be reached — HTTP 503. */
   ROUTING_UNAVAILABLE,
   /**
+   * A route planner quota of the free plan is spent — HTTP 403, with {@link PlannerQuotaDetails}
+   * (docs/LEDGER_*.md BILL-10): the team's monthly saves, or the caller's own in the GPX tools.
+   * Refuses the save of a drawn track and the route calculation; a GPX import stays open.
+   */
+  PLANNER_QUOTA_REACHED,
+  /**
+   * The caller made too many route calculations today (UTC), whatever the plan — HTTP 429 with a
+   * Retry-After up to the next day (docs/LEDGER_*.md BILL-10).
+   */
+  ROUTING_DAILY_LIMIT_REACHED,
+  /**
    * The geocoder failed, timed out, could not be reached or its quota is spent, while resolving the
    * position of a picked place (GET /api/geocode/place) — HTTP 503.
    */

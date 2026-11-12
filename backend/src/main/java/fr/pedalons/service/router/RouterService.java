@@ -65,8 +65,9 @@ public class RouterService {
 
   @Logged
   public RouterResponse getRoute(RouterRequest routerRequest) {
-    // Every check comes before the call to Stadia Maps, which is billed against a monthly quota.
-    plannerAccess.check(routerRequest.teamSlug());
+    // Every check comes before the call to Stadia Maps, which is billed against a monthly quota:
+    // the rights, the planner flag, the free plan's quota and the caller's daily cap.
+    plannerAccess.checkRouting(routerRequest.teamSlug());
     ValhallaRequest valhallaRequest = getValhallaRequest(routerRequest);
 
     ValhallaResponse response;

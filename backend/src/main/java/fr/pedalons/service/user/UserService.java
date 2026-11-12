@@ -18,6 +18,7 @@ import fr.pedalons.repository.gps.GpsServiceConnectionRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.repository.user.UserRepository;
 import fr.pedalons.service.gps.sync.GpsRouteSyncService;
+import fr.pedalons.service.limits.PlannerQuota;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.annotation.Logged;
 import fr.pedalons.service.team.TeamService;
@@ -65,6 +66,8 @@ public class UserService {
 
   @Inject TeamService teamService;
 
+  @Inject PlannerQuota plannerQuota;
+
   @Logged
   public UserDto getUserDto() {
     return toDto(pedalonsContext.getUser());
@@ -81,7 +84,8 @@ public class UserService {
     List<GpsServiceConnectionDto> connections =
         gpsRouteSyncService.toDtos(
             user.getDomain().getId(), gpsConnectionRepository.findByUser(user.getId()));
-    return UserDto.from(user, connections);
+    // The personal planner quota: two queries at most (docs/LEDGER_*.md BILL-10).
+    return UserDto.from(user, connections, plannerQuota.personalQuota(user));
   }
 
   @Logged

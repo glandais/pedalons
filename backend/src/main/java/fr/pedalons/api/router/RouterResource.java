@@ -50,9 +50,12 @@ public class RouterResource {
               + " billed against a monthly quota, so the checks come first: with teamSlug, the"
               + " caller must be allowed to create routes in that team and the team must have the"
               + " route planner enabled; without it, the domain's GPX planner must be enabled."
-              + " Otherwise ROUTE_PLANNER_DISABLED. Routing failures have their own codes:"
-              + " ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and"
-              + " ROUTING_UNAVAILABLE (503).")
+              + " Otherwise ROUTE_PLANNER_DISABLED. Once the planner quota the save would draw on"
+              + " is spent — the team's with teamSlug, the caller's own without — the calculation"
+              + " is refused with PLANNER_QUOTA_REACHED (403); past the caller's calculations of"
+              + " the UTC day, whatever the plan, with ROUTING_DAILY_LIMIT_REACHED (429,"
+              + " Retry-After). Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG and"
+              + " ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503).")
   @APIResponses({
     @APIResponse(
         responseCode = "200",
@@ -67,11 +70,19 @@ public class RouterResource {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "403",
-        description = "User may not create routes in the team",
+        description =
+            "User may not create routes in the team (FORBIDDEN), or the planner quota is spent"
+                + " (PLANNER_QUOTA_REACHED, with PlannerQuotaDetails)",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "404",
         description = "Team not found in this domain",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "429",
+        description =
+            "Too many route calculations today (ROUTING_DAILY_LIMIT_REACHED); Retry-After gives"
+                + " the seconds to the next UTC day",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "503",

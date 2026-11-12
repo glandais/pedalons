@@ -103,6 +103,35 @@ describe('useRoutePlanner router errors and team', () => {
     expect(result.current.controlPoints).toHaveLength(1)
   })
 
+  it('hands a refusal at a spent quota to the view, for its dialog', async () => {
+    const details = {
+      type: 'PLANNER_QUOTA_REACHED',
+      scope: 'TEAM',
+      limit: 20,
+      current: 20,
+      resetsOn: '2026-12-01',
+      teamName: 'Club',
+    } as const
+    routeMock.mockRejectedValue(
+      new ApiClientError(403, { code: ErrorCode.PLANNER_QUOTA_REACHED, errorDetails: details })
+    )
+    const { result } = await drawTwoPoints('club')
+    act(() => result.current.addControlPoint(B, false))
+    await waitFor(() => expect(result.current.quotaRefusal).toEqual(details))
+    expect(result.current.error).toBe('planner.error.quotaReached')
+    expect(result.current.controlPoints).toHaveLength(1)
+    act(() => result.current.dismissQuotaRefusal())
+    expect(result.current.quotaRefusal).toBeNull()
+  })
+
+  it('a refusal of the daily cap has its own message and no dialog', async () => {
+    routeMock.mockRejectedValue(apiError(ErrorCode.ROUTING_DAILY_LIMIT_REACHED, 429))
+    const { result } = await drawTwoPoints()
+    act(() => result.current.addControlPoint(B, false))
+    await waitFor(() => expect(result.current.error).toBe('planner.error.dailyLimit'))
+    expect(result.current.quotaRefusal).toBeNull()
+  })
+
   it('blames the team, not the site, when a team was named', async () => {
     routeMock.mockRejectedValue(apiError(ErrorCode.ROUTE_PLANNER_DISABLED, 400))
     const { result } = await drawTwoPoints('club')

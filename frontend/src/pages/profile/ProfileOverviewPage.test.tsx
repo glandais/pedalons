@@ -45,6 +45,7 @@ const USER: UserDto = {
   displayName: 'Camille Dupont',
   contactableByMembers: false,
   emailVerified: true,
+  plannerQuota: { limit: 10, used: 0, resetsOn: '2026-12-01' },
 }
 
 const NEXT = {

@@ -66,6 +66,7 @@ class _StubCommentRepository implements CommentRepository {
 
 const AuthState _signedIn = AuthState(
   user: UserDto(
+    plannerQuota: PlannerQuotaDto(used: 0, resetsOn: '2026-12-01'),
     id: 'u-me',
     email: 'moi@example.org',
     displayName: 'Moi',

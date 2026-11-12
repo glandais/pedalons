@@ -12,6 +12,9 @@ _UserDto _$UserDtoFromJson(Map<String, dynamic> json) => _UserDto(
   displayName: json['displayName'] as String,
   contactableByMembers: json['contactableByMembers'] as bool,
   emailVerified: json['emailVerified'] as bool,
+  plannerQuota: PlannerQuotaDto.fromJson(
+    json['plannerQuota'] as Map<String, dynamic>,
+  ),
   avatarUrl: json['avatarUrl'] as String?,
   createdAt: json['createdAt'] as String?,
   unitSystem: json['unitSystem'] as String?,
@@ -30,6 +33,7 @@ Map<String, dynamic> _$UserDtoToJson(_UserDto instance) => <String, dynamic>{
   'displayName': instance.displayName,
   'contactableByMembers': instance.contactableByMembers,
   'emailVerified': instance.emailVerified,
+  'plannerQuota': instance.plannerQuota.toJson(),
   'avatarUrl': instance.avatarUrl,
   'createdAt': instance.createdAt,
   'unitSystem': instance.unitSystem,

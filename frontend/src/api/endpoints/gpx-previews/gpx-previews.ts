@@ -312,7 +312,7 @@ export const createPreviewFromPoints = (
 export const getCreatePreviewFromPointsMutationKey = () => ['createPreviewFromPoints'] as const
 
 export const getCreatePreviewFromPointsMutationOptions = <
-  TError = ErrorType<ErrorResponse | void>,
+  TError = ErrorType<ErrorResponse>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -351,7 +351,7 @@ export type CreatePreviewFromPointsMutationResult = NonNullable<
   Awaited<ReturnType<typeof createPreviewFromPoints>>
 >
 export type CreatePreviewFromPointsMutationBody = BodyType<GpxPreviewFromPointsRequest>
-export type CreatePreviewFromPointsMutationError = ErrorType<ErrorResponse | void>
+export type CreatePreviewFromPointsMutationError = ErrorType<ErrorResponse>
 export type CreatePreviewFromPointsMutationVariables = {
   data: BodyType<GpxPreviewFromPointsRequest>
 }
@@ -359,10 +359,7 @@ export type CreatePreviewFromPointsMutationVariables = {
 /**
  * @summary Create an analysed GPX file from planner points
  */
-export const useCreatePreviewFromPoints = <
-  TError = ErrorType<ErrorResponse | void>,
-  TContext = unknown,
->(
+export const useCreatePreviewFromPoints = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof createPreviewFromPoints>>,

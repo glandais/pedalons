@@ -2292,7 +2292,7 @@
       },
       "ErrorCode" : {
         "type" : "string",
-        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "TRIP_FINISHED", "INVALID_VISIBILITY", "INCOMPATIBLE_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "PLANNER_STATE_INVALID", "PLANNER_IMPORT_TOO_LARGE", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "GEOCODING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "TEAM_MEMBER_LIMIT_REACHED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
+        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "TRIP_FINISHED", "INVALID_VISIBILITY", "INCOMPATIBLE_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "PLANNER_STATE_INVALID", "PLANNER_IMPORT_TOO_LARGE", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "PLANNER_QUOTA_REACHED", "ROUTING_DAILY_LIMIT_REACHED", "GEOCODING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "TEAM_MEMBER_LIMIT_REACHED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
       },
       "ErrorDetails" : {
         "oneOf" : [ {
@@ -2305,6 +2305,8 @@
           "$ref" : "#/components/schemas/IncompatibleVisibilityDetails"
         }, {
           "$ref" : "#/components/schemas/TeamMemberLimitDetails"
+        }, {
+          "$ref" : "#/components/schemas/PlannerQuotaDetails"
         } ],
         "description" : "Error details",
         "discriminator" : {
@@ -2314,7 +2316,8 @@
             "NOT_FOUND" : "#/components/schemas/NotFoundDetails",
             "ASSET_NOT_AVAILABLE" : "#/components/schemas/AssetNotAvailableDetails",
             "INCOMPATIBLE_VISIBILITY" : "#/components/schemas/IncompatibleVisibilityDetails",
-            "TEAM_MEMBER_LIMIT_REACHED" : "#/components/schemas/TeamMemberLimitDetails"
+            "TEAM_MEMBER_LIMIT_REACHED" : "#/components/schemas/TeamMemberLimitDetails",
+            "PLANNER_QUOTA_REACHED" : "#/components/schemas/PlannerQuotaDetails"
           }
         },
         "type" : "object",
@@ -3178,6 +3181,11 @@
       "ListViewMode" : {
         "type" : "string",
         "enum" : [ "FULL", "COMPACT" ]
+      },
+      "LocalDate" : {
+        "type" : "string",
+        "format" : "date",
+        "examples" : [ "2022-03-10" ]
       },
       "LocalTime" : {
         "type" : "string",
@@ -4212,6 +4220,68 @@
       "PlannerPieceMode" : {
         "type" : "string",
         "enum" : [ "ROUTED", "DIRECT", "IMPORTED" ]
+      },
+      "PlannerQuotaDetails" : {
+        "type" : "object",
+        "required" : [ "type", "scope", "limit", "current", "resetsOn" ],
+        "properties" : {
+          "type" : {
+            "description" : "Type",
+            "type" : "string",
+            "$ref" : "#/components/schemas/ErrorCode"
+          },
+          "scope" : {
+            "description" : "TEAM: the team is on the free plan and its monthly saves are spent. PERSONAL: the caller is a member of no unlocked team and their monthly saves in the GPX tools are spent.",
+            "type" : "string",
+            "$ref" : "#/components/schemas/PlannerQuotaScope"
+          },
+          "limit" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Saves of a drawn track allowed per calendar month"
+          },
+          "current" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Saves already counted this month"
+          },
+          "resetsOn" : {
+            "description" : "The day the count starts again: the first day of next month, in the team's zone for TEAM, in UTC for PERSONAL",
+            "type" : "string",
+            "$ref" : "#/components/schemas/LocalDate"
+          },
+          "teamName" : {
+            "type" : "string",
+            "description" : "Name of the team, for TEAM only"
+          }
+        }
+      },
+      "PlannerQuotaDto" : {
+        "type" : "object",
+        "description" : "Saves of a drawn track this calendar month, against the plan's quota",
+        "properties" : {
+          "limit" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Saves of a drawn track allowed per calendar month; null when unlimited",
+            "examples" : [ 20 ]
+          },
+          "used" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Saves of a drawn track counted this month"
+          },
+          "resetsOn" : {
+            "description" : "The day the count starts again: the first day of next month, in the team's zone for a team, in UTC for the personal quota",
+            "type" : "string",
+            "$ref" : "#/components/schemas/LocalDate"
+          }
+        },
+        "required" : [ "used", "resetsOn" ]
+      },
+      "PlannerQuotaScope" : {
+        "type" : "string",
+        "enum" : [ "TEAM", "PERSONAL" ]
       },
       "PlannerSource" : {
         "type" : "object",
@@ -6769,6 +6839,11 @@
             "format" : "int32",
             "description" : "The most members the team may hold, pending invitations included; null when unlimited. Compare with memberCount.",
             "examples" : [ 25 ]
+          },
+          "plannerQuota" : {
+            "description" : "Where the team's route planner quota stands this month: the saves of a track drawn on the map, against the plan's limit (null when unlimited). Only for a caller who may create routes in the team, and only when one team is read: null for everyone else and in the team listings. Clients show no counter; they close « draw on the map » when used >= limit already.",
+            "type" : "object",
+            "$ref" : "#/components/schemas/PlannerQuotaDto"
           }
         }
       },
@@ -8097,7 +8172,7 @@
       "UserDto" : {
         "type" : "object",
         "description" : "User profile data",
-        "required" : [ "id", "email", "displayName", "contactableByMembers", "emailVerified" ],
+        "required" : [ "id", "email", "displayName", "contactableByMembers", "emailVerified", "plannerQuota" ],
         "properties" : {
           "id" : {
             "type" : "string",
@@ -8158,6 +8233,11 @@
               "$ref" : "#/components/schemas/GpsServiceConnectionDto"
             },
             "description" : "Connected GPS services"
+          },
+          "plannerQuota" : {
+            "description" : "Where the user's personal route planner quota stands this month: the saves of a track drawn on the map in the GPX tools (docs/LEDGER_*.md BILL-10). limit is null — unlimited — for a member of an unlocked team of this site. Clients show no counter; they close « create a route » in the GPX tools when used >= limit already.",
+            "type" : "object",
+            "$ref" : "#/components/schemas/PlannerQuotaDto"
           }
         }
       },
@@ -12842,7 +12922,14 @@
             }
           },
           "403" : {
-            "description" : "Not Allowed"
+            "description" : "The caller's personal planner quota is spent (PLANNER_QUOTA_REACHED, scope PERSONAL, with PlannerQuotaDetails): a member of no unlocked team has a monthly number of saves of a drawn track in the GPX tools",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         },
         "security" : [ {
@@ -12992,7 +13079,7 @@
             }
           },
           "403" : {
-            "description" : "User is not the creator",
+            "description" : "User is not the creator (FORBIDDEN), or the new track is drawn and the caller's personal planner quota is spent (PLANNER_QUOTA_REACHED, scope PERSONAL)",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -13307,7 +13394,7 @@
             }
           },
           "403" : {
-            "description" : "User is not a team member",
+            "description" : "User is not a team member, or the preview was drawn and the team's route planner quota is spent (PLANNER_QUOTA_REACHED, scope TEAM): the promotion of a drawn preview counts one save of the team",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -14131,7 +14218,7 @@
     "/api/router" : {
       "post" : {
         "summary" : "Calculate route",
-        "description" : "Calculate a route between two points using the Stadia Maps routing API. Each call is billed against a monthly quota, so the checks come first: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503).",
+        "description" : "Calculate a route between two points using the Stadia Maps routing API. Each call is billed against a monthly quota, so the checks come first: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Once the planner quota the save would draw on is spent — the team's with teamSlug, the caller's own without — the calculation is refused with PLANNER_QUOTA_REACHED (403); past the caller's calculations of the UTC day, whatever the plan, with ROUTING_DAILY_LIMIT_REACHED (429, Retry-After). Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503).",
         "operationId" : "route",
         "tags" : [ "Router" ],
         "requestBody" : {
@@ -14166,7 +14253,7 @@
             }
           },
           "403" : {
-            "description" : "User may not create routes in the team",
+            "description" : "User may not create routes in the team (FORBIDDEN), or the planner quota is spent (PLANNER_QUOTA_REACHED, with PlannerQuotaDetails)",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -14177,6 +14264,16 @@
           },
           "404" : {
             "description" : "Team not found in this domain",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "Too many route calculations today (ROUTING_DAILY_LIMIT_REACHED); Retry-After gives the seconds to the next UTC day",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -21168,7 +21265,7 @@
             }
           },
           "403" : {
-            "description" : "User is not a team member",
+            "description" : "User may not create routes in the team (FORBIDDEN), or the team's route planner quota is spent (PLANNER_QUOTA_REACHED, scope TEAM, with PlannerQuotaDetails): points or a drawn planner state without a file count one save",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -21994,7 +22091,7 @@
             }
           },
           "403" : {
-            "description" : "User is not authorized to update this route",
+            "description" : "User is not authorized to update this route (FORBIDDEN), or the team's route planner quota is spent (PLANNER_QUOTA_REACHED, scope TEAM): every redraw of the track without a file counts one save; a rename, waypoints alone or a GPX file count nothing",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -25607,7 +25704,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "14.2.0",
+    "version" : "14.3.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {
