@@ -46,13 +46,21 @@ describe('RideWeatherSummaryLine', () => {
   beforeEach(() => usePreferencesStore.setState({ unitSystem: 'METRIC' }))
   afterEach(cleanup)
 
-  it('reads the range min → max, the wind, and the rain badge', () => {
+  it('reads the range 8–14 °C, the arrow and the speed, and the alert in its tint', () => {
     renderLine(okSummary)
     const line = screen.getByTestId('ride-weather-summary')
     const text = plain(line.textContent)
-    expect(text).toContain('8 → 14 °C')
-    expect(text).toContain('SO 18 km/h')
-    expect(text).toMatch(/Averses dès \d{1,2}:\d{2}/)
+    // An en dash, no arrow (R2, the app's `formatTemperatureRange`).
+    expect(text).toContain('8–14 °C')
+    expect(text).not.toContain('→')
+    // The arrow carries the direction; the compass point stays for screen readers only.
+    expect(screen.getByTestId('wind-from-arrow')).toBeTruthy()
+    expect(text).toContain('18 km/h')
+    // The alert, written in full: no badge, no « dès », no tooltip.
+    expect(plain(screen.getByTestId('ride-weather-rain-alert').textContent)).toMatch(
+      /^Pluie 70 % vers \d{1,2}:\d{2}$/
+    )
+    expect(text).not.toContain('dès')
     expect(screen.getByRole('img', { name: 'Averses' })).toBeTruthy()
   })
 
@@ -61,58 +69,56 @@ describe('RideWeatherSummaryLine', () => {
     // docs/LEDGER_*.md API-60.
     renderLine({ ...okSummary, timezone: 'Asia/Tokyo' }, 'Europe/Paris')
     const text = plain(screen.getByTestId('ride-weather-summary').textContent)
-    expect(text).toContain('Averses dès 19:00')
+    expect(text).toContain('Pluie 70 % vers 19:00')
     cleanup()
     renderLine(okSummary, 'Europe/Paris')
     expect(plain(screen.getByTestId('ride-weather-summary').textContent)).toContain(
-      'Averses dès 12:00'
+      'Pluie 70 % vers 12:00'
     )
   })
 
-  it('names the rain badge after what falls, its probability in the tooltip', () => {
-    renderLine({ ...okSummary, rainAlert: { ...okSummary.rainAlert!, condition: 'SNOW' } })
-    const badge = screen.getByTitle('Probabilité de pluie : 70 %')
-    expect(plain(badge.textContent)).toMatch(/^Neige dès \d{1,2}:\d{2}$/)
+  it('always writes the chance of rain, without an alert', () => {
+    renderLine({ ...okSummary, rainAlert: undefined, maxPrecipitationProbability: 20 })
+    const text = plain(screen.getByTestId('ride-weather-summary').textContent)
+    expect(text).toContain('Pluie 20 %')
+    expect(screen.queryByTestId('ride-weather-rain-alert')).toBeNull()
     cleanup()
-    renderLine({ ...okSummary, rainAlert: { ...okSummary.rainAlert!, condition: 'THUNDERSTORM' } })
-    expect(plain(screen.getByTestId('ride-weather-summary').textContent)).toMatch(/Orage dès/)
-  })
-
-  it('falls back to « Pluie » when the hour does not precipitate, or is unknown here', () => {
-    // The alert is raised on probability alone: « Couvert dès 10:00 » would make no sense.
-    renderLine({ ...okSummary, rainAlert: { ...okSummary.rainAlert!, condition: 'OVERCAST' } })
-    expect(plain(screen.getByTestId('ride-weather-summary').textContent)).toMatch(/Pluie dès/)
-    cleanup()
-    renderLine({
-      ...okSummary,
-      rainAlert: {
-        ...okSummary.rainAlert!,
-        condition: 'VOLCANIC_ASH' as RideWeatherSummaryDto['condition'] & string,
-      },
-    })
-    expect(plain(screen.getByTestId('ride-weather-summary').textContent)).toMatch(/Pluie dès/)
+    // No probability from the model: nothing to write.
+    renderLine({ ...okSummary, rainAlert: undefined, maxPrecipitationProbability: undefined })
+    expect(plain(screen.getByTestId('ride-weather-summary').textContent)).not.toContain('Pluie')
   })
 
   it('converts to °F and mph for an imperial reader', () => {
     usePreferencesStore.setState({ unitSystem: 'IMPERIAL' })
     renderLine(okSummary)
     const text = plain(screen.getByTestId('ride-weather-summary').textContent)
-    expect(text).toContain('47 → 58 °F')
-    expect(text).toContain('SO 11 mph')
+    expect(text).toContain('47–58 °F')
+    expect(text).toContain('11 mph')
   })
 
   it('shows a single temperature when the range rounds to one degree', () => {
     renderLine({ ...okSummary, temperatureMin: 12.2, temperatureMax: 12.4, rainAlert: undefined })
     const text = plain(screen.getByTestId('ride-weather-summary').textContent)
     expect(text).toContain('12 °C')
-    expect(text).not.toContain('→')
-    expect(text).not.toContain(' dès ')
+    expect(text).not.toContain('–')
   })
 
-  it('says when the forecast opens, seven days before', () => {
-    renderLine({ status: WeatherStatus.NOT_YET_AVAILABLE, availableFrom: '2026-10-10T12:00:00Z' })
-    expect(plain(screen.getByTestId('ride-weather-summary').textContent)).toMatch(
-      /^Météo disponible à partir du \d{1,2} octobre 2026$/
+  it('says when the forecast opens, the year only outside the current one', () => {
+    const year = new Date().getFullYear()
+    renderLine({
+      status: WeatherStatus.NOT_YET_AVAILABLE,
+      availableFrom: `${year}-10-10T12:00:00Z`,
+    })
+    expect(plain(screen.getByTestId('ride-weather-summary').textContent)).toBe(
+      'Météo dès le 10 octobre'
+    )
+    cleanup()
+    renderLine({
+      status: WeatherStatus.NOT_YET_AVAILABLE,
+      availableFrom: `${year + 1}-01-15T12:00:00Z`,
+    })
+    expect(plain(screen.getByTestId('ride-weather-summary').textContent)).toBe(
+      `Météo dès le 15 janvier ${year + 1}`
     )
   })
 

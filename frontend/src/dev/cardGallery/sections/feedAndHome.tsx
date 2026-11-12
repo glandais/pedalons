@@ -8,18 +8,57 @@ import { hourAlignedNowIso } from '@/utils/nowIso'
 import type { GallerySection } from '../galleryLayout'
 import {
   CAMILLE,
+  GRAVEL_REF,
   GRAVEL_TEAM,
   VCM_TEAM,
   WEEK_EVENTS,
+  day,
   draftPost,
+  media,
   post,
   ride,
   rideUnderWay,
   rideWithoutGroups,
   trip,
 } from '../fixtures'
+import { PHOTO_URL } from '../images'
 
 const cancelled = { status: 'CANCELLED' as const, weather: undefined }
+
+/** A content with a photo: its first picture is the card's banner (R10), as the app's gallery. */
+const photoMedia = media({
+  images: [
+    {
+      id: 'as-photo',
+      fileName: 'photo.png',
+      contentType: 'image/svg+xml',
+      url: PHOTO_URL,
+      imageUrl: PHOTO_URL,
+    },
+  ],
+})
+
+/** « Traversée du Morvan » over: J−16 → J−14, its last stage at J−14 09:00 (the app's). */
+function tripOver() {
+  return trip(-16, { endDate: day(-14, '09:00'), endDateTime: day(-14, '16:00'), finished: true })
+}
+
+/** The same trip in a public team, read by someone outside it: the count, never a name (R4). */
+function tripOutsider() {
+  const base = trip()
+  return trip(10, {
+    team: GRAVEL_REF,
+    visibility: 'PUBLIC',
+    participants: [],
+    commentCount: undefined,
+    permissions: {
+      ...base.permissions,
+      canRegister: false,
+      canComment: false,
+      canSeeParticipants: false,
+    },
+  })
+}
 
 export const feedSection: GallerySection = {
   id: 'fil',
@@ -96,10 +135,61 @@ export const feedSection: GallerySection = {
       render: () => <PublicationCard publication={ride({ rainAlert: true })} showTeam={false} />,
     },
     {
+      id: 'fil-sortie-meteo-a-venir',
+      label: 'J+10, la prévision ouvre à J+3',
+      layout: 'grid',
+      render: () => (
+        <PublicationCard
+          publication={ride(
+            { offset: 10 },
+            {
+              slug: 'boucle-meteo-a-venir',
+              weather: { status: 'NOT_YET_AVAILABLE', availableFrom: day(3, '00:00') },
+            }
+          )}
+          showTeam={false}
+        />
+      ),
+    },
+    {
+      id: 'fil-sortie-photo',
+      label: 'une photo : en bandeau, la carte du tracé en vignette',
+      layout: 'grid',
+      render: () => (
+        <PublicationCard
+          publication={ride({}, { slug: 'boucle-photo', media: photoMedia })}
+          showTeam={false}
+        />
+      ),
+    },
+    {
+      id: 'fil-sortie-lien',
+      label: 'lisible par lien (Public) dans l’équipe privée',
+      layout: 'grid',
+      render: () => (
+        <PublicationCard
+          publication={ride({}, { slug: 'boucle-lien', visibility: 'PUBLIC' })}
+          showTeam={false}
+        />
+      ),
+    },
+    {
       id: 'fil-voyage',
       label: 'J+10 → J+12',
       layout: 'grid',
       render: () => <PublicationCard publication={trip()} showTeam={false} />,
+    },
+    {
+      id: 'fil-voyage-termine',
+      label: 'J−16 → J−14',
+      layout: 'grid',
+      render: () => <PublicationCard publication={tripOver()} showTeam={false} />,
+    },
+    {
+      id: 'fil-voyage-non-membre',
+      label: 'Gravel Bretagne (publique), vu d’une personne non membre',
+      layout: 'grid',
+      render: () => <PublicationCard publication={tripOutsider()} showTeam={false} />,
     },
     {
       id: 'fil-voyage-inscrit-en-cours',

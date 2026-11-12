@@ -1,4 +1,4 @@
-import { Badge, Group, Text } from '@mantine/core'
+import { Badge, Box, Group, Text } from '@mantine/core'
 import { IconMapPin } from '@tabler/icons-react'
 import type { RideWeatherSummaryDto, TripStageDto } from '@/api/dto'
 import { RideWeatherSummaryLine } from '@/components/weather'
@@ -23,6 +23,12 @@ interface TripStageCardProps {
    * the stage is over (docs/LEDGER_*.md WEB-167, R7). Anyone else exports from the route's page.
    */
   riding?: boolean
+  /**
+   * The colour of the stage's trace on the trip's map (`routeColorsById` over the map's items, the
+   * ride page's rule), recalled by a short bar after its name as in the app (KIT §8 « la couleur
+   * est sur chaque carte d'étape », docs/LEDGER_*.md WEB-167 R10); absent when it rides no route.
+   */
+  trackColor?: string
 }
 
 /**
@@ -40,6 +46,7 @@ export function TripStageCard({
   isHighlighted = false,
   weather,
   riding = false,
+  trackColor,
 }: TripStageCardProps) {
   const places = [stage.startPlace, stage.endPlace]
   return (
@@ -53,6 +60,18 @@ export function TripStageCard({
           <Badge size="lg" variant="light" color="primary" circle style={{ flexShrink: 0 }}>
             {index + 1}
           </Badge>
+        )
+      }
+      nameTrailing={
+        trackColor && (
+          <Box
+            data-testid="stage-track-color"
+            aria-hidden
+            w={14}
+            h={4}
+            ml={6}
+            style={{ flexShrink: 0, borderRadius: 2, backgroundColor: trackColor }}
+          />
         )
       }
       // « sam. 12 avr. · 09:00 » in 700, short enough not to squeeze the name (WEB-138).

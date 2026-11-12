@@ -213,7 +213,8 @@ test.describe('ad journey', () => {
     const listed = card(page, name)
     await expect(listed).toBeVisible()
     await expect(listed).toContainText(euros(350))
-    await expect(listed).toContainText('Publié')
+    // A published ad says its type only: never « Publié » on a card (docs/LEDGER_*.md WEB-167, R1).
+    await expect(listed).not.toContainText('Publié')
     await expect(listed.getByRole('img', { name })).toHaveAttribute('src', new RegExp(first.id))
   })
 

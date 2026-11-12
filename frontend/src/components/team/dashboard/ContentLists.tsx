@@ -58,8 +58,8 @@ export function LatestPostsList({ posts }: { posts: PostDto[] }) {
                 <Text size="xs" c="dimmed">
                   <Rendezvous date={post.dateTime} zone={post.timezone} />
                   {author && ` · ${author}`}
-                  {post.commentCount !== undefined &&
-                    ` · ${t('comments.count', { count: post.commentCount })}`}
+                  {/* No « 0 commentaire » (R4). */}
+                  {!!post.commentCount && ` · ${t('comments.count', { count: post.commentCount })}`}
                 </Text>
               </Stack>
             </Group>

@@ -17,6 +17,8 @@ interface ChildCardProps {
   name: string
   /** Before the name: a ride group's trace colour, a stage's number or logo. */
   marker?: ReactNode
+  /** Right after the name, before its chevron: a stage's trace colour (R10). */
+  nameTrailing?: ReactNode
   /** After the name: « Vous participez »… */
   badges?: ReactNode
   /** On the right of the name: a group's join actions, a stage's departure. Lifted above the link. */
@@ -59,6 +61,7 @@ export function ChildCard({
   href,
   name,
   marker,
+  nameTrailing,
   badges,
   corner,
   children,
@@ -102,6 +105,7 @@ export function ChildCard({
               <Text fw={600} truncate inherit>
                 {name}
               </Text>
+              {nameTrailing}
               <IconChevronRight size={16} aria-hidden style={{ flexShrink: 0 }} />
             </Group>
           </Anchor>

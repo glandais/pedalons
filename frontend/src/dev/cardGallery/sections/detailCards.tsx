@@ -7,6 +7,7 @@ import { TripStageCard } from '@/components/trip/TripStageCard'
 import { canSwitchTo, groupAction, groupsRegisteredFirst } from '@/pages/ride/rideGroupData'
 import { rideMapRoutes } from '@/pages/ride/rideMapRoutes'
 import { someGroupLeavesAtOwnTime } from '@/utils/groupStart'
+import { routeColor } from '@/lib/routeColors'
 import type { GallerySection } from '../galleryLayout'
 import {
   TRIP_SLUG,
@@ -186,6 +187,7 @@ function StageCards({
           tripSlug={TRIP_SLUG}
           weather={weather ? weatherSummary(false, 10 + index) : undefined}
           riding={riding}
+          trackColor={stage.route ? routeColor(index) : undefined}
         />
       ))}
     </Stack>
@@ -216,6 +218,7 @@ export const stagesSection: GallerySection = {
             tripSlug={TRIP_SLUG}
             weather={weatherSummary(false, 10)}
             riding
+            trackColor={routeColor(0)}
           />
         )
       },
@@ -246,6 +249,7 @@ export const stagesSection: GallerySection = {
             teamSlug={VCM_SLUG}
             tripSlug={TRIP_SLUG}
             weather={weatherSummary(true, 10)}
+            trackColor={routeColor(0)}
           />
         )
       },

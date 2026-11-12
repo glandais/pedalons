@@ -23,6 +23,7 @@ import {
   member,
   route,
 } from '../fixtures'
+import { PHOTO_URL } from '../images'
 
 export const routesSection: GallerySection = {
   id: 'parcours',
@@ -115,6 +116,31 @@ export const teamsSection: GallerySection = {
       label: 'Gravel Bretagne vue d’une personne non membre (même TeamCard, sans rôle)',
       layout: 'grid',
       render: () => <TeamCard team={{ ...GRAVEL_TEAM, role: undefined }} showRole />,
+    },
+    {
+      id: 'equipe-photo',
+      label: 'Gravel Bretagne avec sa photo en bandeau',
+      layout: 'grid',
+      render: () => (
+        <TeamCard
+          team={{
+            ...GRAVEL_TEAM,
+            role: undefined,
+            about: media({
+              images: [
+                {
+                  id: 'as-gravel-photo',
+                  fileName: 'photo.png',
+                  contentType: 'image/svg+xml',
+                  url: PHOTO_URL,
+                  imageUrl: PHOTO_URL,
+                },
+              ],
+            }),
+          }}
+          showRole
+        />
+      ),
     },
     {
       id: 'invitations',

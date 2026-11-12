@@ -19,7 +19,7 @@ import { IconCheck, IconMapPin, IconUsers } from '@tabler/icons-react'
 import type { RideDto } from '@/api/dto'
 import { Status } from '@/api/dto'
 import { useLeaveGroup } from '@/api/endpoints/rides/rides'
-import { CardDayOverlay, CardImage, CardTeamLink, Stat } from '../card/common'
+import { CardDayOverlay, CardImage, CardTeamLink, Stat, cardBanner } from '../card/common'
 import { DepartureLine } from '../common/DepartureLine'
 import { paths } from '@/config/paths'
 import { invalidateRegistration } from '@/lib/registration'
@@ -68,13 +68,18 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
   const routeSlug = group?.routeSlug ?? ride.routeSlug
   const ridePath = paths.ride(ride.team.slug, ride.slug)
 
-  // The map of the group's route first, then the ride's own picture; themed when possible.
-  const thumbnailUrl =
-    (colorScheme === 'dark'
-      ? (group?.thumbnailDarkUrl ?? ride.thumbnailDarkUrl)
-      : (group?.thumbnailLightUrl ?? ride.thumbnailLightUrl)) ??
-    group?.thumbnailUrl ??
-    ride.thumbnailUrl
+  // The banner, as the feed's card (docs/LEDGER_*.md WEB-167, R10): the ride's photo, else the
+  // map of the reader's group's route — the ride's when it has none —, themed; else the gradient.
+  const banner = cardBanner(
+    {
+      media: ride.media,
+      thumbnailLightUrl: group?.thumbnailLightUrl ?? ride.thumbnailLightUrl,
+      thumbnailDarkUrl: group?.thumbnailDarkUrl ?? ride.thumbnailDarkUrl,
+      thumbnailUrl: group?.thumbnailUrl ?? ride.thumbnailUrl,
+    },
+    colorScheme
+  )
+  const thumbnailUrl = banner.kind === 'gradient' ? undefined : banner.url
 
   // Leaving is not confirmed: it is undone by joining again, only a deletion is (KIT §9, as the app).
   const handleLeave = () => {

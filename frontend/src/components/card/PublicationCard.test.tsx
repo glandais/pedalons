@@ -207,3 +207,169 @@ describe('PublicationCard: the departure is primary', () => {
     expect(screen.queryByTestId('departure-line')).toBeNull()
   })
 })
+
+/** The badges of the card, top to bottom: the column beside the title. */
+function badges(): string[] {
+  return [...screen.getByTestId('card-badges').querySelectorAll('.mantine-Badge-root')].map((b) =>
+    plain(b.textContent)
+  )
+}
+
+// docs/LEDGER_*.md WEB-167, R1 (KIT §9 « Badges d'état »): Supprimé → type → one state → J'y vais,
+// never « Publié », the visibility only when it differs from the team's.
+describe('PublicationCard: state badges (R1)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-04-10T10:00:00Z'))
+  })
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+  })
+
+  it('says the type alone on a published ride: no « Publié », no ordinary visibility', () => {
+    // A public team's public ride: its visibility is the team's, nothing to say.
+    renderCard(ride({ visibility: 'PUBLIC' }))
+    expect(badges()).toEqual(['Sortie'])
+    expect(text()).not.toContain('Publié')
+    expect(text()).not.toContain('Public')
+  })
+
+  it('says the visibility when it differs from the team’s', () => {
+    renderCard(ride({ visibility: 'TEAM' }))
+    expect(badges()).toEqual(['Sortie', 'Équipe uniquement'])
+    cleanup()
+    renderCard(
+      ride({ team: { ...TEAM_REF, visibility: 'TEAM', accessible: true }, visibility: 'PUBLIC' })
+    )
+    expect(badges()).toEqual(['Sortie', 'Public'])
+  })
+
+  it('orders deleted, type, state, then « J’y vais »', () => {
+    renderCard(ride({ visibility: 'PUBLIC', deleted: true, status: 'CANCELLED', registered: true }))
+    expect(badges()).toEqual(['Supprimé', 'Sortie', 'Annulé', "J'y vais"])
+  })
+
+  it('says « Brouillon », « En cours » and « Terminée » in the state’s place', () => {
+    renderCard(ride({ visibility: 'PUBLIC', status: 'DRAFT' }))
+    expect(badges()).toEqual(['Sortie', 'Brouillon'])
+    cleanup()
+    renderCard(
+      ride({
+        visibility: 'PUBLIC',
+        dateTime: '2026-04-10T08:00:00Z',
+        endDateTime: '2026-04-10T13:00:00Z',
+        finished: true,
+      })
+    )
+    expect(badges()).toEqual(['Sortie', 'En cours'])
+    cleanup()
+    renderCard(
+      ride({
+        visibility: 'PUBLIC',
+        dateTime: '2026-04-08T07:00:00Z',
+        endDateTime: '2026-04-08T12:00:00Z',
+        finished: true,
+      })
+    )
+    expect(badges()).toEqual(['Sortie', 'Terminée'])
+  })
+
+  it('says « Terminé » of a trip whose end has passed, once it is over only', () => {
+    renderCard(
+      trip({
+        visibility: 'PUBLIC',
+        dateTime: '2026-03-20T06:00:00Z',
+        endDateTime: '2026-03-22T15:00:00Z',
+        finished: true,
+      })
+    )
+    expect(badges()).toEqual(['Voyage', 'Terminé'])
+  })
+})
+
+// docs/LEDGER_*.md WEB-167, R4: a counter at zero is not shown; a trip says stages · distance · D+ ·
+// people, the comments when there are some.
+describe('PublicationCard: counters (R4)', () => {
+  afterEach(cleanup)
+
+  it('hides « 0 commentaire » and « 0 groupe »', () => {
+    renderCard(ride({ commentCount: 0, groupCount: 0, participantCount: 0 }))
+    expect(text()).not.toContain('commentaire')
+    expect(text()).not.toContain('groupe')
+  })
+
+  it('reads a trip in the app’s order: stages, distance, D+, people', () => {
+    renderCard(trip({ totalDistance: 201_000, totalElevationGain: 3_340, commentCount: 0 }))
+    const stats = text()
+    const order = ['3 étapes', '201,0 km', '3 340 m', '5 personnes'].map((s) => stats.indexOf(s))
+    expect(order.every((i) => i >= 0)).toBe(true)
+    expect([...order].sort((a, b) => a - b)).toEqual(order)
+    expect(stats).not.toContain('commentaire')
+    cleanup()
+    renderCard(trip({ commentCount: 2 }))
+    expect(text()).toContain('2 commentaires')
+  })
+
+  it('gives an outsider the count of people on a trip, never a face', () => {
+    renderCard(trip({ participants: [], commentCount: undefined }))
+    expect(text()).toContain('5 personnes')
+    expect(document.querySelector('.mantine-Avatar-root')).toBeNull()
+  })
+
+  it('says no zero stage', () => {
+    renderCard(trip({ stageCount: 0 }))
+    expect(text()).not.toContain('étape')
+  })
+})
+
+const PHOTO = {
+  id: 'img1',
+  fileName: 'photo.jpg',
+  contentType: 'image/jpeg',
+  url: 'https://img.test/photo/{size}',
+  imageUrl: 'https://img.test/photo/{size}',
+}
+
+// docs/LEDGER_*.md WEB-167, R10: the photo, else the route's map, else the gradient; the 160 px
+// thumbnail only beside a photo.
+describe('PublicationCard: header image (R10)', () => {
+  afterEach(cleanup)
+
+  const mapped = {
+    thumbnailLightUrl: 'https://img.test/map-light/{size}',
+    thumbnailDarkUrl: 'https://img.test/map-dark/{size}',
+  }
+
+  it('opens on the route’s map, and drops the thumbnail that repeated it', () => {
+    renderCard(ride(mapped))
+    const images = [...document.querySelectorAll('img')].map((i) => i.getAttribute('src'))
+    expect(images).toEqual(['https://img.test/map-light/320'])
+    expect(screen.queryByRole('img', { name: 'Aperçu du parcours' })).toBeNull()
+  })
+
+  it('opens on the photo, and keeps the map as a thumbnail', () => {
+    renderCard(
+      ride({ ...mapped, media: { ...MEDIA, assets: { ...MEDIA.assets, images: [PHOTO] } } })
+    )
+    const header = screen.getByRole('img', { name: 'Boucle de la vallée' })
+    expect(header.getAttribute('src')).toBe('https://img.test/photo/320')
+    expect(screen.getByRole('img', { name: 'Aperçu du parcours' })).toBeTruthy()
+  })
+
+  it('falls back on the gradient without photo or route', () => {
+    renderCard(trip())
+    expect(screen.getByTestId('card-image-gradient')).toBeTruthy()
+    expect(document.querySelector('img')).toBeNull()
+  })
+})
+
+describe('PublicationCard: nobody registered yet (R4)', () => {
+  afterEach(cleanup)
+
+  it('says no « 0/12 personnes », as the app', () => {
+    renderCard(ride({ participantCount: 0, maxParticipants: 12 } as Partial<RideDto>))
+    expect(text()).not.toContain('personne')
+    expect(text()).toContain('3 groupes')
+  })
+})

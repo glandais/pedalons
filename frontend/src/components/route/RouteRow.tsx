@@ -4,6 +4,7 @@ import { Box, Group, Paper, Stack, Text } from '@mantine/core'
 import { IconArrowUp, IconChevronRight, IconMap } from '@tabler/icons-react'
 import type { RouteDto } from '@/api/dto'
 import { DeletedBadge, SurfaceBadge, VisibilityBadge } from '../card/common'
+import { visibilityIsException } from '@/utils/visibilityException'
 import { RouteThumbnail } from './RouteThumbnail'
 import { paths } from '@/config/paths'
 import { useUnits } from '@/hooks/useUnits'
@@ -75,7 +76,10 @@ export function RouteRow({ route, compact = false }: RouteRowProps) {
                   )}
                 </SurfaceBadge>
               )}
-              <VisibilityBadge visibility={route.visibility} />
+              {/* Only when it differs from its team's (docs/LEDGER_*.md WEB-167, R1). */}
+              {visibilityIsException(route.visibility, route.team) && (
+                <VisibilityBadge visibility={route.visibility} />
+              )}
             </Group>
           )}
 

@@ -11,6 +11,7 @@ import {
   formatPrecipitation,
   formatSpeed,
   formatTemperature,
+  formatTemperatureRange,
   speedText,
   getUnitConfig,
   speedToDisplay as speedToDisplayFn,
@@ -55,6 +56,17 @@ export function useUnits() {
       const key = isImperial ? 'temperature_imperial' : 'temperature'
       return t(key satisfies 'temperature' | 'temperature_imperial', {
         temperature: formatTemperature(celsius, unitSystem),
+      })
+    },
+    [t, unitSystem, isImperial]
+  )
+
+  /** « 9–13 °C » / « 48–55 °F », or « 13 °C » when both ends round alike (R2). */
+  const temperatureRange = useCallback(
+    (minCelsius: number, maxCelsius: number) => {
+      const key = isImperial ? 'temperature_imperial' : 'temperature'
+      return t(key satisfies 'temperature' | 'temperature_imperial', {
+        temperature: formatTemperatureRange(minCelsius, maxCelsius, unitSystem),
       })
     },
     [t, unitSystem, isImperial]
@@ -151,6 +163,7 @@ export function useUnits() {
     elevation,
     speed,
     temperature,
+    temperatureRange,
     precipitation,
     grade,
     percent,

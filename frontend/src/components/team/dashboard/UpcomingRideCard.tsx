@@ -9,7 +9,8 @@ import {
   IconStack2,
 } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
-import { Stat, SurfaceBadge } from '@/components/card/common'
+import { RegisteredBadge, Stat, StateBadge, SurfaceBadge } from '@/components/card/common'
+import { cardState } from '@/utils/cardState'
 import type { RideDto, RideGroupSummaryDto } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
@@ -50,11 +51,15 @@ export function UpcomingRideCard({ ride }: UpcomingRideCardProps) {
               )}
             </SurfaceBadge>
           )}
-          {ride.registered && (
-            <Badge color="primary" variant="light" size="sm" leftSection={<IconCheck size={12} />}>
-              {t('publications.registered')}
-            </Badge>
-          )}
+          {/* The cards' order (docs/LEDGER_*.md WEB-167, R1): one state, then « J'y vais ». */}
+          <StateBadge
+            state={cardState({
+              status: ride.status,
+              start: ride.dateTime,
+              end: ride.endDateTime,
+            })}
+          />
+          {ride.registered && <RegisteredBadge />}
         </Group>
 
         <div>
@@ -72,10 +77,13 @@ export function UpcomingRideCard({ ride }: UpcomingRideCardProps) {
           {ride.elevationGain !== undefined && (
             <Stat icon={<IconMountain size={16} />}>{elevation(ride.elevationGain)}</Stat>
           )}
-          <Stat icon={<IconStack2 size={16} />}>
-            {t('groups.groupCount', { count: groups.length || ride.groupCount })}
-          </Stat>
-          {ride.commentCount !== undefined && (
+          {/* No counter at zero (R4): « 0 groupe », « 0 commentaire » tell nothing. */}
+          {(groups.length || ride.groupCount) > 0 && (
+            <Stat icon={<IconStack2 size={16} />}>
+              {t('groups.groupCount', { count: groups.length || ride.groupCount })}
+            </Stat>
+          )}
+          {!!ride.commentCount && (
             <Stat icon={<IconMessageCircle size={16} />}>
               {t('comments.count', { count: ride.commentCount })}
             </Stat>

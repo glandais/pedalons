@@ -130,6 +130,21 @@ export function formatTemperature(celsius: number, unitSystem: UnitSystem): stri
   return temperatureToDisplay(celsius, unitSystem).toString()
 }
 
+/**
+ * A range of temperatures, without its unit: « 9–13 » (an en dash, no spaces — the app's
+ * `AppFormatters.formatTemperatureRange`), or the one value when both ends round to the same
+ * degree in the reader's units (docs/LEDGER_*.md WEB-167, R2).
+ */
+export function formatTemperatureRange(
+  minCelsius: number,
+  maxCelsius: number,
+  unitSystem: UnitSystem
+): string {
+  const low = temperatureToDisplay(Math.min(minCelsius, maxCelsius), unitSystem)
+  const high = temperatureToDisplay(Math.max(minCelsius, maxCelsius), unitSystem)
+  return low === high ? String(high) : `${low}\u2013${high}`
+}
+
 const MM_PER_INCH = 25.4
 
 /**

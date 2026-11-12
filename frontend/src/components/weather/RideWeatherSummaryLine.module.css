@@ -1,0 +1,12 @@
+/* The rain alert of a card's weather line, in the app's warning tint (`warning` for the icon,
+   `warningOnSoft` for the text: yellow 6 and 9), the text dark enough to read on a card's surface.
+   Light in dark mode, where yellow 9 would vanish. */
+.alertIcon {
+  flex-shrink: 0;
+  color: light-dark(var(--mantine-color-yellow-6), var(--mantine-color-yellow-5));
+}
+
+.alertText {
+  white-space: nowrap;
+  color: light-dark(var(--mantine-color-yellow-9), var(--mantine-color-yellow-4));
+}

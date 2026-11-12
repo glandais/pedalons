@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { IconCalendar, IconCurrencyEuro } from '@tabler/icons-react'
 import { Group, Box, Stack, Text } from '@mantine/core'
 import { Card, CardContent, CardTitle, CardDescription, CardImage } from './common'
-import { TypeBadge, StatusBadge, VisibilityBadge, Stat, StatGroup, CardSkeleton } from './common'
+import { TypeBadge, StateBadge, Stat, StatGroup, CardSkeleton } from './common'
+import { cardState } from '@/utils/cardState'
 import { EntityLogo } from '../common/EntityLogo'
 import { FormattedDateTime } from '../common/FormattedDate'
 import { paths } from '@/config/paths'
@@ -42,14 +43,14 @@ export function AdCard({ ad, actions }: AdCardProps) {
               <CardDescription markdown={true} media={ad.media} excerpt={ad.excerpt} />
             </Box>
           </Group>
-          <Stack gap={4} align="flex-end" ml="sm">
+          <Stack gap={4} align="flex-end" ml="sm" style={{ flexShrink: 0 }}>
             <TypeBadge type={ad.adType}>
               {t(`ads.adType.${ad.adType satisfies 'SALE' | 'RENTAL' | 'WANTED'}`)}
             </TypeBadge>
-            <StatusBadge status={ad.status}>
-              {t(`status.${ad.status satisfies 'DRAFT' | 'PUBLISHED' | 'CANCELLED'}`)}
-            </StatusBadge>
-            <VisibilityBadge visibility={ad.visibility} />
+            {/* The type, then « Brouillon » when it is not published — never « Publié », and no
+                visibility: an ad is always « Équipe uniquement », the badge taught nothing
+                (docs/LEDGER_*.md WEB-167, R1). */}
+            <StateBadge state={cardState({ status: ad.status })} />
           </Stack>
         </Group>
 

@@ -271,7 +271,6 @@ describe('N14: a count never leaves its noun at a line end', () => {
     'participantCount',
     'memberCount',
     'home.teams.activity.rides',
-    'teams.dashboard.ride.registeredCount',
     'rides.detail.groups.participantsNoMax',
   ]
   it.each([

@@ -4,20 +4,23 @@ import {
   IconCalendar,
   IconUsers,
   IconStack2,
-  IconCheck,
   IconMessageCircle,
+  IconMap,
+  IconArrowUp,
 } from '@tabler/icons-react'
-import { Badge, Group, Box, Stack } from '@mantine/core'
+import { Group, Box, Stack } from '@mantine/core'
 import { Card, CardContent, CardTitle, CardDescription, CardImage, CardTeamLink } from './common'
 import {
   TypeBadge,
-  StatusBadge,
   VisibilityBadge,
   DeletedBadge,
+  StateBadge,
+  RegisteredBadge,
   Stat,
   StatGroup,
   CardSkeleton,
   CardDayOverlay,
+  cardBanner,
 } from './common'
 import { EntityLogo } from '../common/EntityLogo'
 import { UserAvatarGroup } from '../common/UserAvatar'
@@ -28,8 +31,11 @@ import { PublicationCardProgress } from './PublicationCardProgress'
 import { RouteThumbnail } from '../route/RouteThumbnail'
 import { TagList } from '../tag/TagList'
 import { RideWeatherSummaryLine } from '../weather/RideWeatherSummaryLine'
-import { InProgressBadge } from '../agenda/InProgressBadge'
-import { isDated, isUnderWay, spanStart } from '@/utils/publicationTiming'
+import { isDated, spanStart } from '@/utils/publicationTiming'
+import { cardState } from '@/utils/cardState'
+import { visibilityIsException } from '@/utils/visibilityException'
+import { useUnits } from '@/hooks/useUnits'
+import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import type { PublicationDto, RideDto, TripDto } from '@/api/dto'
 import { Status } from '@/api/dto'
 
@@ -52,6 +58,8 @@ export function PublicationCard({
   priority = false,
 }: PublicationCardProps) {
   const { t } = useTranslation()
+  const { distance, elevation } = useUnits()
+  const colorScheme = useResolvedColorScheme()
   // Read the server-computed flag — never recompute registration client-side.
   const isRegistered =
     publication.type === 'RIDE' || publication.type === 'TRIP'
@@ -70,11 +78,6 @@ export function PublicationCard({
     }
   }
 
-  // Get the status translation - consolidated in common
-  const getStatusLabel = () => {
-    return t(`status.${publication.status satisfies 'DRAFT' | 'PUBLISHED' | 'CANCELLED'}`)
-  }
-
   // Get the type translation
   const getTypeLabel = () => {
     switch (publication.type) {
@@ -91,52 +94,76 @@ export function PublicationCard({
 
   // Render stats based on publication type. A ride's or a trip's date is not one of them: it is the
   // day box on the picture and the departure line under the title (docs/BRANDING.md §7.1, ledger
-  // `BRAND-8`) — it does not come back down here.
+  // `BRAND-8`) — it does not come back down here. A counter at zero is not shown: « 0 groupe »,
+  // « 0 commentaire », « 0 étape » tell nothing (docs/LEDGER_*.md WEB-167, R4).
   const renderStats = () => {
-    const calendarIcon = <IconCalendar size={16} />
     const participantsIcon = <IconUsers size={16} />
     const groupsIcon = <IconStack2 size={16} />
 
     // `commentCount` is absent when the caller may not read the comments — an outsider is
-    // told nothing, not even zero. Undefined therefore means "hide", not "none".
-    const commentCount = publication.commentCount
+    // told nothing, not even zero. Undefined therefore means "hide", and so does zero.
+    const commentCount = publication.commentCount ?? 0
     const commentStat =
-      commentCount === undefined ? null : (
+      commentCount > 0 ? (
         <Stat icon={<IconMessageCircle size={16} />}>
           {t('comments.count', { count: commentCount })}
         </Stat>
-      )
+      ) : null
 
     switch (publication.type) {
       case 'RIDE': {
         const ride = publication as RideDto
+        // A ride without groups takes no registration: no count; nobody yet, no count either, as
+        // the app's. « 8/12 personnes » when the ride has a limit, the group card's form (R5).
+        const people =
+          ride.groupCount > 0 && ride.participantCount > 0
+            ? ride.maxParticipants
+              ? t('rides.detail.groups.participants', {
+                  current: ride.participantCount,
+                  count: ride.maxParticipants,
+                })
+              : t('participantCount', { count: ride.participantCount })
+            : null
+        if (!people && ride.groupCount === 0 && !commentStat) return null
         return (
           <StatGroup>
-            {/* A ride without groups takes no registration: no count. */}
+            {people && <Stat icon={participantsIcon}>{people}</Stat>}
             {ride.groupCount > 0 && (
-              <Stat icon={participantsIcon}>
-                {/* « 8/12 personnes » when the ride has a limit, the group card's form (R5). */}
-                {ride.maxParticipants
-                  ? t('rides.detail.groups.participants', {
-                      current: ride.participantCount,
-                      count: ride.maxParticipants,
-                    })
-                  : t('participantCount', { count: ride.participantCount })}
-              </Stat>
+              <Stat icon={groupsIcon}>{t('groups.groupCount', { count: ride.groupCount })}</Stat>
             )}
-            <Stat icon={groupsIcon}>{t('groups.groupCount', { count: ride.groupCount })}</Stat>
             {commentStat}
           </StatGroup>
         )
       }
       case 'TRIP': {
+        // The app's order: stages · distance · D+ · people, the comments when there are some. The
+        // people's count is said to anyone who may read the trip — a count, never a name (API-144).
         const trip = publication as TripDto
+        const hasAny =
+          trip.stageCount > 0 ||
+          trip.totalDistance !== undefined ||
+          trip.totalElevationGain !== undefined ||
+          trip.participantCount > 0 ||
+          !!commentStat
+        if (!hasAny) return null
         return (
           <StatGroup>
-            <Stat icon={participantsIcon}>
-              {t('participantCount', { count: trip.participantCount })}
-            </Stat>
-            <Stat icon={groupsIcon}>{t('trips.card.stageCount', { count: trip.stageCount })}</Stat>
+            {trip.stageCount > 0 && (
+              <Stat icon={groupsIcon}>
+                {t('trips.card.stageCount', { count: trip.stageCount })}
+              </Stat>
+            )}
+            {trip.totalDistance !== undefined && (
+              <Stat icon={<IconMap size={16} />}>{distance(trip.totalDistance)}</Stat>
+            )}
+            {trip.totalElevationGain !== undefined && (
+              <Stat icon={<IconArrowUp size={16} />}>{elevation(trip.totalElevationGain)}</Stat>
+            )}
+            {trip.participantCount > 0 && (
+              <Stat icon={participantsIcon}>
+                {t('participantCount', { count: trip.participantCount })}
+              </Stat>
+            )}
             {commentStat}
           </StatGroup>
         )
@@ -144,7 +171,7 @@ export function PublicationCard({
       case 'POST':
         return (
           <StatGroup>
-            <Stat icon={calendarIcon}>{formattedDate}</Stat>
+            <Stat icon={<IconCalendar size={16} />}>{formattedDate}</Stat>
             {commentStat}
           </StatGroup>
         )
@@ -162,31 +189,31 @@ export function PublicationCard({
     return []
   }
 
-  // Get thumbnail URLs for rides and trips
-  const getThumbnailUrls = () => {
-    if (publication.type === 'RIDE') {
-      const ride = publication as RideDto
-      return {
-        lightUrl: ride.thumbnailLightUrl,
-        darkUrl: ride.thumbnailDarkUrl,
-      }
-    }
-    if (publication.type === 'TRIP') {
-      const trip = publication as TripDto
-      return {
-        lightUrl: trip.thumbnailLightUrl,
-        darkUrl: trip.thumbnailDarkUrl,
-      }
-    }
-    return { lightUrl: undefined, darkUrl: undefined }
-  }
-
   const participants = getParticipants()
-  const { lightUrl: thumbnailLightUrl, darkUrl: thumbnailDarkUrl } = getThumbnailUrls()
 
-  // `thumbnailUrl` is a photo only for posts. On rides and trips it is the map preview, already
-  // rendered below by RouteThumbnail — feeding it to the header would duplicate it.
-  const headerImageUrl = publication.type === 'POST' ? publication.thumbnailUrl : undefined
+  // The header (R10): a post's photo; a ride's or a trip's photo, else its route's map, else the
+  // gradient. `thumbnailUrl` is a photo only for a post — on a ride or a trip it is the map.
+  const banner = isDated(publication) ? cardBanner(publication, colorScheme) : undefined
+  const headerImageUrl =
+    publication.type === 'POST'
+      ? publication.thumbnailUrl
+      : banner && banner.kind !== 'gradient'
+        ? banner.url
+        : undefined
+  // The route's 160 px thumbnail, only beside a photo: under a map banner it repeated it.
+  const thumbnail =
+    banner?.kind === 'photo' && isDated(publication)
+      ? { light: publication.thumbnailLightUrl, dark: publication.thumbnailDarkUrl }
+      : undefined
+  const hasThumbnail = !!thumbnail && !!(thumbnail.light || thumbnail.dark)
+
+  // One state, after the type (R1): cancelled, draft, under way, over — never « Publié ».
+  const state = cardState({
+    status: publication.status,
+    start: isDated(publication) ? publication.dateTime : undefined,
+    end: isDated(publication) ? publication.endDateTime : undefined,
+  })
+  const stats = renderStats()
 
   return (
     <Card to={getPublicationPath()} actions={actions}>
@@ -234,36 +261,30 @@ export function PublicationCard({
               />
             </Box>
           </Group>
-          <Stack gap={4} align="flex-end" ml="sm">
-            {/* First in the stack: deletion outranks type, status and visibility, which all
-                describe an entity one still believes exists. */}
+          {/* Supprimé → type → one state → J'y vais, then the visibility only when it differs
+              from the team's (R1): the column no longer eats half the card (N30). */}
+          <Stack
+            gap={4}
+            align="flex-end"
+            ml="sm"
+            style={{ flexShrink: 0 }}
+            data-testid="card-badges"
+          >
             {publication.deleted && <DeletedBadge />}
-            {/* Derived on the client, like « J'y vais »: started, not over yet (API-85). */}
-            {isUnderWay(publication) && <InProgressBadge />}
-            {isRegistered && (
-              <Badge
-                size="sm"
-                color="primary"
-                variant="light"
-                leftSection={<IconCheck size={12} />}
-              >
-                {t('publications.registered')}
-              </Badge>
-            )}
             <TypeBadge type={publication.type}>{getTypeLabel()}</TypeBadge>
-            <StatusBadge status={publication.status}>{getStatusLabel()}</StatusBadge>
-            <VisibilityBadge visibility={publication.visibility} />
+            <StateBadge state={state} subject={publication.type === 'TRIP' ? 'trip' : 'ride'} />
+            {isRegistered && <RegisteredBadge />}
+            {visibilityIsException(publication.visibility, publication.team) && (
+              <VisibilityBadge visibility={publication.visibility} />
+            )}
           </Stack>
         </Group>
 
         {/* The content's team tags, after the badges that say what it is — never mixed with them. */}
         <TagList tags={publication.tags} max={3} mb="md" />
 
-        {/* Participants section - avatars, progress, and route thumbnail */}
-        {(participants.length > 0 ||
-          publication.type === 'RIDE' ||
-          thumbnailLightUrl ||
-          thumbnailDarkUrl) && (
+        {/* Participants section - avatars, progress, and the route's thumbnail beside a photo */}
+        {(participants.length > 0 || publication.type === 'RIDE' || hasThumbnail) && (
           <Group justify="space-between" align="center" mb="md" wrap="nowrap">
             <Group style={{ flex: 1 }}>
               {participants.length > 0 && (
@@ -277,10 +298,10 @@ export function PublicationCard({
                 <PublicationCardProgress ride={publication as RideDto} />
               )}
             </Group>
-            {(thumbnailLightUrl || thumbnailDarkUrl) && (
+            {hasThumbnail && (
               <RouteThumbnail
-                thumbnailLightUrl={thumbnailLightUrl}
-                thumbnailDarkUrl={thumbnailDarkUrl}
+                thumbnailLightUrl={thumbnail?.light}
+                thumbnailDarkUrl={thumbnail?.dark}
                 size="lg"
               />
             )}
@@ -288,7 +309,7 @@ export function PublicationCard({
         )}
 
         <Box mt="auto">
-          {renderStats()}
+          {stats}
           {/* The server sends it only within the forecast window, or with its opening date; a
               trip's is that of its next stage (docs/LEDGER_*.md API-82). */}
           {(publication.type === 'RIDE' || publication.type === 'TRIP') && (

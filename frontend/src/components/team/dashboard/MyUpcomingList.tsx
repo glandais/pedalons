@@ -115,9 +115,11 @@ function TripRow({ trip }: { trip: TripDto }) {
           <Group gap="md" wrap="wrap">
             {/* The stages take the feed's icon for them (`PublicationCard`), the distance its own
                 (docs/LEDGER_*.md WEB-167 N28). */}
-            <Stat icon={<IconStack2 size={16} />}>
-              {t('trips.card.stageCount', { count: trip.stageCount })}
-            </Stat>
+            {trip.stageCount > 0 && (
+              <Stat icon={<IconStack2 size={16} />}>
+                {t('trips.card.stageCount', { count: trip.stageCount })}
+              </Stat>
+            )}
             {trip.totalDistance !== undefined && (
               <Stat icon={<IconRoute size={16} />}>{distance(trip.totalDistance)}</Stat>
             )}

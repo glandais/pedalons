@@ -43,9 +43,12 @@ export function TemplatesPanel({ teamSlug, templates }: TemplatesPanelProps) {
               <Text size="sm" fw={500} style={{ flex: 1, minWidth: 0 }} truncate>
                 {template.name}
               </Text>
-              <Text size="xs" c="dimmed">
-                {t('groups.groupCount', { count: template.groupCount })}
-              </Text>
+              {/* No « 0 groupe » (docs/LEDGER_*.md WEB-167, R4). */}
+              {template.groupCount > 0 && (
+                <Text size="xs" c="dimmed">
+                  {t('groups.groupCount', { count: template.groupCount })}
+                </Text>
+              )}
               <IconChevronRight size={16} color="var(--mantine-color-dimmed)" />
             </Group>
           </UnstyledButton>

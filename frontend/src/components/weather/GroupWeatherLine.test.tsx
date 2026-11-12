@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
-import type { WeatherLegDto } from '@/api/dto'
+import type { RideWeatherSummaryDto, WeatherLegDto } from '@/api/dto'
 import { WeatherStatus } from '@/api/dto'
+import { usePreferencesStore } from '@/store/preferencesStore'
 import { plain, weatherLeg } from '@/test/weatherFixtures'
 
 vi.mock('react-i18next', async () => {
@@ -20,54 +21,56 @@ function renderLine(leg: WeatherLegDto | undefined) {
   )
 }
 
-describe('GroupWeatherLine', () => {
+/** The leg's own summary (`WeatherLegDto.summary`): what the card's line reads. */
+const summary: RideWeatherSummaryDto = {
+  status: WeatherStatus.OK,
+  condition: 'PARTLY_CLOUDY',
+  daylight: true,
+  temperature: 9,
+  temperatureMin: 9,
+  temperatureMax: 13,
+  maxPrecipitationProbability: 20,
+  wind: { speed: 18, direction: 270, compass: 'W' },
+}
+
+describe('GroupWeatherLine (docs/LEDGER_*.md WEB-167, R2)', () => {
+  beforeEach(() => usePreferencesStore.setState({ unitSystem: 'METRIC' }))
   afterEach(cleanup)
 
-  it("says the sky and temperature at the group's start, and its head and tail wind", () => {
-    renderLine(weatherLeg('g1', { windExposure: { head: 30_000, cross: 5_000, tail: 15_000 } }))
-    const line = plain(screen.getByTestId('group-weather-line').textContent)
-    expect(line).toContain('12 °C · Ciel dégagé')
-    expect(line).toContain('Face 30,0 km')
-    expect(line).toContain('Dos 15,0 km')
-    // The crosswind is the detail page's business; and no rain, no rain badge.
-    expect(line).not.toContain('Travers')
-    expect(line).not.toContain('Pluie')
+  it("reads the card's line on the group's summary: range, wind, rain — no sky, no Face / Dos", () => {
+    renderLine(weatherLeg('g1', { summary }))
+    const line = plain(screen.getByTestId('ride-weather-summary').textContent)
+    expect(line).toContain('9–13 °C')
+    expect(line).toContain('18 km/h')
+    expect(line).toContain('Pluie 20 %')
+    // The sky in words and the wind badges are the group page's (KIT §9).
+    expect(line).not.toContain('Partiellement nuageux')
+    expect(line).not.toContain('Face')
+    expect(line).not.toContain('Dos')
     // Never a link: the group's page is reached by the card's own links.
     expect(screen.queryByRole('link')).toBeNull()
   })
 
-  it('names the rain, its probability and its time', () => {
+  it('writes the alert of the group: its probability and its time', () => {
     renderLine(
       weatherLeg('g1', {
-        rainAlert: { probability: 40, time: '2026-10-08T10:30:00Z', condition: 'RAIN' },
+        summary: {
+          ...summary,
+          rainAlert: { probability: 60, time: '2026-10-08T11:00:00Z', condition: 'RAIN' },
+        },
       })
     )
-    expect(plain(screen.getByTestId('group-weather-line').textContent)).toContain(
-      'Pluie 40 % vers 10:30'
+    expect(plain(screen.getByTestId('ride-weather-rain-alert').textContent)).toBe(
+      'Pluie 60 % vers 11:00'
     )
   })
 
-  it('leaves out a wind the group never meets', () => {
-    renderLine(weatherLeg('g1', { windExposure: { head: 0, cross: 0, tail: 20_000 } }))
-    const line = plain(screen.getByTestId('group-weather-line').textContent)
-    expect(line).not.toContain('Face')
-    expect(line).toContain('Dos 20,0 km')
-  })
-
-  it('draws nothing without a forecast for the group', () => {
+  it('draws nothing without a summary for the group', () => {
     const { container: none } = renderLine(undefined)
-    expect(none.querySelector('[data-testid="group-weather-line"]')).toBeNull()
+    expect(none.querySelector('[data-testid="ride-weather-summary"]')).toBeNull()
     cleanup()
-    const { container: notYet } = renderLine(
-      weatherLeg('g1', { status: WeatherStatus.NOT_YET_AVAILABLE })
-    )
-    expect(notYet.querySelector('[data-testid="group-weather-line"]')).toBeNull()
-    cleanup()
-    const { container: noWeather } = renderLine(
-      weatherLeg('g1', {
-        checkpoints: weatherLeg('g1').checkpoints.map((c) => ({ ...c, weather: undefined })),
-      })
-    )
-    expect(noWeather.querySelector('[data-testid="group-weather-line"]')).toBeNull()
+    // A leg with checkpoints but no summary (an older server): nothing either.
+    const { container: noSummary } = renderLine(weatherLeg('g1'))
+    expect(noSummary.querySelector('[data-testid="ride-weather-summary"]')).toBeNull()
   })
 })

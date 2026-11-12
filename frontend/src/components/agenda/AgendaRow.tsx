@@ -1,14 +1,21 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Anchor, Badge, Group, Paper, Stack } from '@mantine/core'
-import { IconCheck, IconMapPin, IconStack2, IconUsers } from '@tabler/icons-react'
+import { Anchor, Group, Paper, Stack } from '@mantine/core'
+import { IconMapPin, IconStack2, IconUsers } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { DayBox } from '@/components/common/DayBox'
 import { PublicationDepartureLine } from '@/components/common/DepartureLine'
-import { Stat, StatusBadge, TypeBadge, VisibilityBadge } from '@/components/card/common'
+import {
+  RegisteredBadge,
+  Stat,
+  StateBadge,
+  TypeBadge,
+  VisibilityBadge,
+} from '@/components/card/common'
 import { publicationPath } from '@/components/team/dashboard/dashboardHelpers'
-import { isUnderWay, spanStart, type DatedPublication } from '@/utils/publicationTiming'
-import { InProgressBadge } from './InProgressBadge'
+import { spanStart, type DatedPublication } from '@/utils/publicationTiming'
+import { cardState } from '@/utils/cardState'
+import { visibilityIsException } from '@/utils/visibilityException'
 
 interface AgendaRowProps {
   publication: DatedPublication
@@ -41,24 +48,19 @@ export function AgendaRow({ publication, actions }: AgendaRowProps) {
             <Anchor component={PrefetchLink} to={path} fw={600} c="inherit" lineClamp={1}>
               {publication.name}
             </Anchor>
-            {isUnderWay(publication) && <InProgressBadge />}
-            {publication.registered && (
-              <Badge
-                size="sm"
-                color="primary"
-                variant="light"
-                leftSection={<IconCheck size={12} />}
-              >
-                {t('publications.registered')}
-              </Badge>
-            )}
+            {/* The cards' order (docs/LEDGER_*.md WEB-167, R1): type, one state, « J'y vais », the
+                visibility only when it differs from the team's. */}
             {isTrip && <TypeBadge type="TRIP">{t('publicationType.trip')}</TypeBadge>}
-            {publication.status !== 'PUBLISHED' && (
-              <StatusBadge status={publication.status}>
-                {t(`status.${publication.status satisfies 'DRAFT' | 'PUBLISHED' | 'CANCELLED'}`)}
-              </StatusBadge>
-            )}
-            {publication.visibility !== 'PUBLIC' && (
+            <StateBadge
+              state={cardState({
+                status: publication.status,
+                start: publication.dateTime,
+                end: publication.endDateTime,
+              })}
+              subject={isTrip ? 'trip' : 'ride'}
+            />
+            {publication.registered && <RegisteredBadge />}
+            {visibilityIsException(publication.visibility, publication.team) && (
               <VisibilityBadge visibility={publication.visibility} />
             )}
           </Group>
@@ -67,17 +69,21 @@ export function AgendaRow({ publication, actions }: AgendaRowProps) {
             {!isTrip && publication.startPlace && (
               <Stat icon={<IconMapPin size={16} />}>{publication.startPlace.name}</Stat>
             )}
-            <Stat icon={<IconStack2 size={16} />}>
-              {publication.type === 'TRIP'
-                ? t('trips.card.stageCount', { count: publication.stageCount })
-                : t('groups.groupCount', { count: publication.groupCount })}
-            </Stat>
-            {/* A trip registers on itself; a ride through its groups — none, no count. */}
-            {(isTrip || publication.groupCount > 0) && (
-              <Stat icon={<IconUsers size={16} />}>
-                {t('participantCount', { count: publication.participantCount })}
+            {/* No counter at zero (R4). A trip registers on itself; a ride through its groups. */}
+            {(publication.type === 'TRIP' ? publication.stageCount : publication.groupCount) >
+              0 && (
+              <Stat icon={<IconStack2 size={16} />}>
+                {publication.type === 'TRIP'
+                  ? t('trips.card.stageCount', { count: publication.stageCount })
+                  : t('groups.groupCount', { count: publication.groupCount })}
               </Stat>
             )}
+            {(publication.type === 'TRIP' || publication.groupCount > 0) &&
+              publication.participantCount > 0 && (
+                <Stat icon={<IconUsers size={16} />}>
+                  {t('participantCount', { count: publication.participantCount })}
+                </Stat>
+              )}
           </Group>
         </Stack>
         {actions}

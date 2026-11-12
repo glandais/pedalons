@@ -24,6 +24,8 @@ interface CardImageProps {
    * than lazily. Only for a card at the very top of a page.
    */
   priority?: boolean
+  /** The gradient's icon, when it is not the type's: a route on the ride's gradient (R10). */
+  icon?: typeof IconBike
 }
 
 const typeIcons: Record<CardType, typeof IconBike> = {
@@ -42,6 +44,7 @@ export function CardImage({
   thumbnailUrl,
   sizes = CARD_GRID_SIZES,
   priority = false,
+  icon,
 }: CardImageProps) {
   const { assets } = media
 
@@ -68,12 +71,13 @@ export function CardImage({
   // Logos are shown inline with titles via EntityLogo, not as headers
   // Route thumbnails are shown via RouteThumbnail component
   if (type) {
-    const Icon = typeIcons[type]
+    const Icon = icon ?? typeIcons[type]
     const gradient = FALLBACK_GRADIENTS[type]
 
     return (
       <Box
         h={height}
+        data-testid="card-image-gradient"
         style={{
           background: gradient,
         }}

@@ -120,6 +120,33 @@ export function formatDate(
   })
 }
 
+/** The day and the month of each language, and the same with the year (`formatDayMonth`). */
+const DAY_MONTH_PATTERNS: Record<string, [string, string]> = {
+  fr: ['d MMMM', 'd MMMM yyyy'],
+  en: ['MMMM d', 'MMMM d, yyyy'],
+}
+
+/**
+ * The day and the month, inside a sentence: « 15 novembre » (fr), « November 15 » (en), the year
+ * only outside the current one (« 15 janvier 2027 ») — « Météo dès le 15 novembre », the app's
+ * `AppFormatters.formatDayMonth` (docs/LEDGER_*.md WEB-167, R2).
+ */
+export function formatDayMonth(
+  date: Date | string | null | undefined,
+  language: string = 'fr',
+  timeZone: string = SERVER_FALLBACK_TIMEZONE,
+  now: Date = new Date()
+): string {
+  const dateObj = toDate(date)
+  if (!dateObj) return ''
+  const [short, withYear] = DAY_MONTH_PATTERNS[language] ?? DAY_MONTH_PATTERNS.en
+  const sameYear =
+    formatInTimeZone(dateObj, timeZone, 'yyyy') === formatInTimeZone(now, timeZone, 'yyyy')
+  return formatInTimeZone(dateObj, timeZone, sameYear ? short : withYear, {
+    locale: getLocale(language),
+  })
+}
+
 /**
  * The month and the year, inside a sentence: « mars 2024 » (fr), « March 2024 » (en) — « Membre
  * depuis mars 2024 » (docs/plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md §9).
@@ -380,6 +407,8 @@ export function useFormattedDate() {
     formatDate: (date: Date | string | null | undefined) => formatDate(date, language, timezone),
     formatMonthYear: (date: Date | string | null | undefined) =>
       formatMonthYear(date, language, timezone),
+    formatDayMonth: (date: Date | string | null | undefined) =>
+      formatDayMonth(date, language, timezone),
     formatDateTime: (date: Date | string | null | undefined) =>
       formatDateTime(date, language, timezone, new Date(), t),
     formatTime: (date: Date | string | null | undefined) => formatTime(date, language, timezone),

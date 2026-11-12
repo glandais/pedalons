@@ -37,14 +37,14 @@ function event(index: number): CalendarEventDto {
   } as CalendarEventDto
 }
 
-function renderAgenda(count: number) {
+function renderAgenda(count: number, edit: (e: CalendarEventDto) => CalendarEventDto = (e) => e) {
   return render(
     <MantineProvider>
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
           <WeekAgenda
             nowIso={NOW}
-            events={Array.from({ length: count }, (_, i) => event(i))}
+            events={Array.from({ length: count }, (_, i) => edit(event(i)))}
             isLoading={false}
           />
         </MemoryRouter>
@@ -70,5 +70,15 @@ describe('WeekAgenda', () => {
   it('says nothing more when every event has its row', () => {
     renderAgenda(5)
     expect(screen.queryByTestId('week-more')).toBeNull()
+  })
+
+  // docs/LEDGER_*.md WEB-167, R1: one state, then « J'y vais »; never « Publié ».
+  it('says the state before « J’y vais », and nothing of a published event', () => {
+    renderAgenda(1, (e) => ({ ...e, status: 'CANCELLED', registered: true }))
+    const row = screen.getByText('Sortie 0').parentElement!
+    expect(row.textContent).toBe("Sortie 0AnnuléJ'y vais")
+    cleanup()
+    renderAgenda(1)
+    expect(screen.getByText('Sortie 0').parentElement!.textContent).toBe('Sortie 0')
   })
 })

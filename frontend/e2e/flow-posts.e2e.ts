@@ -215,7 +215,8 @@ test('a post goes from the editor to the feeds, gets a comment, is edited, then 
     const card = feedCard(title)
     await expect(card).toBeVisible()
     await expect(card.getByText('Publication', { exact: true })).toBeVisible()
-    await expect(card.getByText('0 commentaire', { exact: true })).toBeVisible()
+    // No counter at zero on a card (docs/LEDGER_*.md WEB-167, R4): « 0 commentaire » is gone.
+    await expect(card.getByText('0 commentaire', { exact: true })).toHaveCount(0)
   })
 
   await test.step('a member finds it on the home feed, opens it and comments', async () => {

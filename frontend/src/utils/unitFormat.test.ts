@@ -3,6 +3,7 @@ import {
   formatFileSize,
   formatPrecipitation,
   formatTemperature,
+  formatTemperatureRange,
   temperatureToDisplay,
 } from './unitFormat'
 
@@ -54,5 +55,18 @@ describe('formatPrecipitation', () => {
   it('converts to inches, to the hundredth, for an imperial reader', () => {
     expect(formatPrecipitation(25.4, 'IMPERIAL', 'en')).toBe('1.00')
     expect(formatPrecipitation(1.2, 'IMPERIAL', 'fr')).toBe('0,05')
+  })
+})
+
+// docs/LEDGER_*.md WEB-167, R2: the app's « 9–13 °C ».
+describe('formatTemperatureRange', () => {
+  it('joins the ends with an en dash, no spaces', () => {
+    expect(formatTemperatureRange(9.2, 12.6, 'METRIC')).toBe('9\u201313')
+    expect(formatTemperatureRange(12.6, 9.2, 'METRIC')).toBe('9\u201313')
+  })
+
+  it('gives one value when both ends round alike, in the reader’s units', () => {
+    expect(formatTemperatureRange(12.2, 12.4, 'METRIC')).toBe('12')
+    expect(formatTemperatureRange(8.2, 14.4, 'IMPERIAL')).toBe('47\u201358')
   })
 })

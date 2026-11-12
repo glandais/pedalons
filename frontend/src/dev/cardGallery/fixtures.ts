@@ -304,6 +304,8 @@ export function weatherLeg(
     rainAlert: alert
       ? { probability: 60, time: day(rideDay, '11:00'), condition: 'RAIN' }
       : undefined,
+    // The card's line, the leg's own summary (API 13.5.0): what `GroupWeatherLine` reads (R2).
+    summary: { ...weatherSummary(alert, rideDay), timezone: undefined },
   }
 }
 

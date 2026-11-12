@@ -16,7 +16,8 @@ import {
 import { IconChevronRight } from '@tabler/icons-react'
 import type { CalendarEventDto } from '@/api/dto'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
-import { StatusBadge } from '@/components/card/common'
+import { StateBadge } from '@/components/card/common'
+import { eventState } from '@/utils/cardState'
 import { paths } from '@/config/paths'
 import classes from './Home.module.css'
 import { eventPath } from './memberHomeHelpers'
@@ -166,9 +167,8 @@ export function WeekAgenda({ nowIso, events, isLoading, isError, nextRide }: Wee
                     <Text size="sm" fw={600} truncate>
                       {event.title}
                     </Text>
-                    {event.status !== 'PUBLISHED' && (
-                      <StatusBadge status={event.status}>{t(`status.${event.status}`)}</StatusBadge>
-                    )}
+                    {/* One state, then « J'y vais » (docs/LEDGER_*.md WEB-167, R1). */}
+                    <StateBadge state={eventState(event)} />
                     {event.registered && (
                       <Badge size="xs" color="primary" variant="light" style={{ flexShrink: 0 }}>
                         {t('publications.registered')}

@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '../../components/common/DetailPageSkeleton'
 import { TripStageCard } from '../../components/trip/TripStageCard'
+import { routeColorsById } from '@/lib/routeColors'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 
 import type { MapRouteItem } from '../../components/route/RoutesMapView'
@@ -82,6 +83,9 @@ export function TripDetailPage() {
       routeSlug: stage.route?.slug,
     }))
   }, [trip])
+
+  // The colour of each stage's trace on the map, by stage id: the map's own rule (R10).
+  const stageColors = useMemo(() => routeColorsById(mapItems), [mapItems])
 
   if (fullTeam && (!fullTeam.enableTrips || !fullTeam.enableRoutes)) {
     return <Navigate to={paths.team(teamSlug!)} replace />
@@ -196,6 +200,7 @@ export function TripDetailPage() {
                     isHighlighted={litStageId === stage.id}
                     weather={weatherQuery.data?.stages.find((w) => w.stageId === stage.id)?.summary}
                     riding={hasJoined && trip.status !== Status.CANCELLED}
+                    trackColor={stageColors.get(stage.id)}
                   />
                 ))}
               </Stack>

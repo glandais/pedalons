@@ -2,6 +2,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { TFunction } from 'i18next'
 import { createServerI18n } from '@/i18n'
 import {
+  formatDayMonth,
   formatDateTime,
   formatDeparture,
   formatDepartureDay,
@@ -128,5 +129,24 @@ describe('formatDateTime', () => {
     expect(formatDateTime('2026-04-11T07:00:00Z', 'fr', PARIS)).toBe('sam. 11 avr. · 09:00')
     expect(formatDateTime('2027-04-10T07:00:00Z', 'fr', PARIS)).toBe('sam. 10 avr. 2027 · 09:00')
     expect(formatDateTime('2026-04-11T07:00:00Z', 'en', PARIS)).toBe('Sat, Apr 11 · 9:00\u202fAM')
+  })
+})
+
+// docs/LEDGER_*.md WEB-167, R2: « Météo dès le 15 novembre », the year only outside the current one.
+describe('formatDayMonth', () => {
+  const now = new Date('2026-11-12T10:00:00Z')
+
+  it('says the day and the month in the current year', () => {
+    expect(formatDayMonth('2026-11-15T00:00:00Z', 'fr', 'Europe/Paris', now)).toBe('15 novembre')
+    expect(formatDayMonth('2026-11-15T00:00:00Z', 'en', 'Europe/Paris', now)).toBe('November 15')
+  })
+
+  it('adds the year outside it', () => {
+    expect(formatDayMonth('2027-01-15T12:00:00Z', 'fr', 'Europe/Paris', now)).toBe(
+      '15 janvier 2027'
+    )
+    expect(formatDayMonth('2027-01-15T12:00:00Z', 'en', 'Europe/Paris', now)).toBe(
+      'January 15, 2027'
+    )
   })
 })

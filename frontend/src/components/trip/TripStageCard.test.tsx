@@ -41,7 +41,7 @@ const stage = {
   stageCount: 3,
 } as unknown as TripStageDto
 
-function renderCard(overrides: Partial<TripStageDto> = {}, riding = false) {
+function renderCard(overrides: Partial<TripStageDto> = {}, riding = false, trackColor?: string) {
   return render(
     <MantineProvider>
       <QueryClientProvider client={new QueryClient()}>
@@ -52,6 +52,7 @@ function renderCard(overrides: Partial<TripStageDto> = {}, riding = false) {
             teamSlug="np"
             tripSlug="vosges"
             riding={riding}
+            trackColor={trackColor}
           />
         </MemoryRouter>
       </QueryClientProvider>
@@ -114,5 +115,17 @@ describe('TripStageCard (WEB-155)', () => {
     }
     expect(stageIsOver(withArrival, at(5))).toBe(false)
     expect(stageIsOver(withArrival, at(6))).toBe(true)
+  })
+
+  // docs/LEDGER_*.md WEB-167, R10: the colour of its trace after its name, as the app's card.
+  it('recalls its trace’s colour after its name, and nothing without a trace', () => {
+    renderCard({}, false, '#1d32a8')
+    const bar = screen.getByTestId('stage-track-color')
+    expect(bar.style.backgroundColor).toBe('rgb(29, 50, 168)')
+    // After the name, inside the name's link, before its chevron.
+    expect(bar.closest('a')?.textContent).toContain('Munster → Gérardmer')
+    cleanup()
+    renderCard()
+    expect(screen.queryByTestId('stage-track-color')).toBeNull()
   })
 })

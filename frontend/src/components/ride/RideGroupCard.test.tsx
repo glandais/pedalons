@@ -83,17 +83,27 @@ describe('RideGroupCard (WEB-77)', () => {
     expect(screen.getByRole('button', { name: 'Rejoindre' })).toBeTruthy()
   })
 
-  it("carries the group's weather line — not a link — when its leg has a forecast", () => {
+  it("carries the group's weather line — not a link — read on its leg's summary (R2)", () => {
     renderCard(
       weatherLeg('g1', {
-        rainAlert: { probability: 40, time: '2026-10-08T10:30:00Z', condition: 'RAIN' },
         windExposure: { head: 20_000, cross: 0, tail: 30_000 },
+        summary: {
+          status: 'OK',
+          condition: 'RAIN',
+          temperatureMin: 9,
+          temperatureMax: 13,
+          maxPrecipitationProbability: 40,
+          wind: { speed: 18, direction: 270, compass: 'W' },
+          rainAlert: { probability: 40, time: '2026-10-08T10:30:00Z', condition: 'RAIN' },
+        },
       })
     )
-    const line = screen.getByTestId('group-weather-line')
+    const line = screen.getByTestId('ride-weather-summary')
+    expect(plain(line.textContent)).toContain('9–13 °C')
     expect(plain(line.textContent)).toContain('Pluie 40 % vers 10:30')
-    expect(plain(line.textContent)).toContain('Face 20,0 km')
-    expect(plain(line.textContent)).toContain('Dos 30,0 km')
+    // The Face / Dos badges stay on the group's page, not on its card (KIT §9).
+    expect(plain(line.textContent)).not.toContain('Face')
+    expect(plain(line.textContent)).not.toContain('Dos')
     expect(line.closest('a')).toBeNull()
     expect(line.querySelector('a')).toBeNull()
   })
@@ -111,7 +121,7 @@ describe('RideGroupCard (WEB-77)', () => {
 
   it('carries no weather line without a forecast', () => {
     renderCard(undefined)
-    expect(screen.queryByTestId('group-weather-line')).toBeNull()
+    expect(screen.queryByTestId('ride-weather-summary')).toBeNull()
   })
 
   it('recalls the colour of its trace on the map in front of its name', () => {
