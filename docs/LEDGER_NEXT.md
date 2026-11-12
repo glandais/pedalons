@@ -74,10 +74,9 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 - [ ] `MOB-141` **Cartes homogènes : recette sur appareil de `MOB-139` (S)** — les règles communes des cartes sont
       codées et vérifiées par tests et par captures de la galerie (`flutter test`, hors appareil), jamais sur simulateur
       ni sur appareil : mode sombre, texte agrandi, petit écran, anglais, impérial, feuilles (GPS, signaler / bloquer,
-      confirmation de suppression d'un commentaire), cache réel des images. Les tests Patrol adaptés à la lecture pendant
-      le chantier n'ont jamais tourné (`calendar_test`, `next_ride_card_test`, `comment_reply_test`,
-      `comment_moderator_delete_test`, `team_invitation_accept_test`, `ride_group_full_rollback_test`,
-      `report_members_test`). À faire avec `MOB-135`. Points ouverts dans [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) : espace des milliers,
+      confirmation de suppression d'un commentaire), cache réel des images. La suite Patrol, elle, a tourné le 12 novembre
+      2026 sur la pile e2e : 69 sur 69 sur le simulateur iOS, 69 sur 69 sur l'émulateur Android. Reste donc le regard
+      sur l'écran, à faire avec `MOB-135`. Points ouverts dans [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) : espace des milliers,
       « Groupe B » ou « B », indigo dans les teintes d'avatar.
 - [ ] `MOB-135` **Refonte des écrans de détail : recette sur appareil de `MOB-134` (S)** — la refonte est livrée
       (`MOB-134`) sans avoir été regardée : **aucune passe Patrol, ni iOS ni Android, depuis le lot 6**, et les
@@ -406,10 +405,11 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       change l'aspect de tout le site et demande une passe visuelle large ; la rustine se retire alors.
 - [ ] `WEB-172` **Cartes homogènes : recette en navigateur de `WEB-167` (S)** — même réserve que `MOB-141` côté site :
       vérifié par tests unitaires et par captures de la galerie de développement, pas sur le site servi (SSR, hydratation,
-      mode sombre, largeurs intermédiaires). Les e2e Playwright adaptés à la lecture n'ont pas tourné (`rides`, `calendar`,
-      `flow-rides`, `flow-routes`, `flow-trips`, `flow-posts`, `flow-ads`, `flow-notifications`, `member-directory`,
-      `flow-gpx-tools`, `gpx-planner`). Reste aussi : la carte du tracé, carrée, est rognée dans le bandeau d'une carte
-      du fil ; pas de distance sur les lignes d'agenda d'équipe (`AgendaRow`).
+      mode sombre, largeurs intermédiaires). La suite Playwright a tourné le 12 novembre 2026 sur la pile e2e : 1 981
+      passés ; trois échecs dus au chantier, corrigés et relancés verts ; les 23 autres sont ceux du nightly de `develop`
+      du même jour (formulaire de parcours, préchargement de l'édition d'un parcours et des paramètres d'équipe, contenu
+      réservé vu de l'extérieur, page personnalisée, planificateur et son quota) et ne viennent pas des cartes. Reste le
+      regard sur le site servi.
 - [ ] `WEB-165` **Aligner le web sur les décisions des cibles mobiles (M, à cadrer)** — heure de son groupe en gros,
       « Changer pour A », bouton « GPS » unique, tuiles dans le même ordre :
       [`maquettes/KIT.md`](plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) §8. Hors périmètre de `MOB-134`.
