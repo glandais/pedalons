@@ -70,8 +70,11 @@ class PedalonsView extends WatchUi.View {
             }
 
             // My next rides entry: the groups the user is registered in, always first
-            var groupsSublabel =
-                groups.size() + " " + WatchUi.loadResource(Rez.Strings.Registrations);
+            var groupsSublabel = countLabel(
+                groups.size(),
+                Rez.Strings.RegistrationOne,
+                Rez.Strings.RegistrationMany
+            );
             if (groups.size() == 0) {
                 groupsSublabel = WatchUi.loadResource(Rez.Strings.NoRegisteredGroups);
             }
@@ -86,7 +89,7 @@ class PedalonsView extends WatchUi.View {
 
             // Rides entry
             var ridesLabel = WatchUi.loadResource(Rez.Strings.Rides);
-            var ridesSublabel = rides.size() + " " + ridesLabel.toLower();
+            var ridesSublabel = countLabel(rides.size(), Rez.Strings.RideOne, Rez.Strings.RideMany);
             if (rides.size() == 0) {
                 ridesSublabel = WatchUi.loadResource(Rez.Strings.NoRides);
             }
@@ -94,7 +97,11 @@ class PedalonsView extends WatchUi.View {
 
             // Routes entry
             var routesLabel = WatchUi.loadResource(Rez.Strings.Routes);
-            var routesSublabel = routes.size() + " " + routesLabel.toLower();
+            var routesSublabel = countLabel(
+                routes.size(),
+                Rez.Strings.RouteOne,
+                Rez.Strings.RouteMany
+            );
             if (routes.size() == 0) {
                 routesSublabel = WatchUi.loadResource(Rez.Strings.NoRoutes);
             }
@@ -123,6 +130,11 @@ class PedalonsView extends WatchUi.View {
             _error = WatchUi.loadResource(Rez.Strings.ConnectionError);
             WatchUi.requestUpdate();
         }
+    }
+
+    // "1 ride" / "3 rides": zero never comes here, each entry has its own empty wording.
+    private function countLabel(count, oneId, manyId) {
+        return count + " " + WatchUi.loadResource(count == 1 ? oneId : manyId);
     }
 
     function getApiClient() {

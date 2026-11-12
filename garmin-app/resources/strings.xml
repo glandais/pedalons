@@ -6,7 +6,7 @@
     <string id="ScanOrGoTo">Scan or go to</string>
     <string id="Waiting">Waiting...</string>
     <string id="CodeExpired">Code expired</string>
-    <string id="AuthError">Auth error</string>
+    <string id="AuthError">Authentication error</string>
     <string id="LoadingRoutes">Loading routes...</string>
     <string id="NoRoutes">No routes available</string>
     <string id="Download">Download</string>
@@ -19,7 +19,7 @@
     <string id="Distance">Distance</string>
     <string id="Elevation">Elevation</string>
     <string id="RefreshRoutes">Refresh</string>
-    <string id="PressSelectToLogin">Press SELECT to login</string>
+    <string id="PressSelectToLogin">Press SELECT to log in</string>
     <string id="PressSelect">Press SELECT</string>
     <string id="Unknown">Unknown</string>
     <string id="UnitKm">km</string>
@@ -33,12 +33,17 @@
     <string id="SelectHint"> - SELECT</string>
     <string id="RoutesTitle">Pédalons</string>
     <string id="RegisteredGroups">My next rides</string>
-    <string id="Registrations">registrations</string>
+    <string id="RegistrationOne">registration</string>
+    <string id="RegistrationMany">registrations</string>
     <string id="NoRegisteredGroups">Not registered for any ride</string>
     <string id="Rides">Rides</string>
     <string id="Routes">Routes</string>
+    <string id="RideOne">ride</string>
+    <string id="RideMany">rides</string>
+    <string id="RouteOne">route</string>
+    <string id="RouteMany">routes</string>
     <string id="NoRides">No upcoming rides</string>
-    <string id="Logout">Logout</string>
+    <string id="Logout">Log out</string>
     <string id="SyncSent">In Garmin Connect</string>
     <string id="SyncOutdated">Old version in Connect</string>
     <string id="SyncPending">Update pending</string>

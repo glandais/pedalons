@@ -6,7 +6,7 @@
     <string id="ScanOrGoTo">Scannez ou allez sur</string>
     <string id="Waiting">En attente...</string>
     <string id="CodeExpired">Code expiré</string>
-    <string id="AuthError">Erreur auth</string>
+    <string id="AuthError">Erreur d'authentification</string>
     <string id="LoadingRoutes">Chargement des parcours...</string>
     <string id="NoRoutes">Aucun parcours disponible</string>
     <string id="Download">Télécharger</string>
@@ -32,16 +32,21 @@
     <string id="MenuTitle">Pédalons</string>
     <string id="SelectHint"> - SELECT</string>
     <string id="RoutesTitle">Pédalons</string>
-    <string id="RegisteredGroups">Prochaines sorties</string>
-    <string id="Registrations">inscriptions</string>
+    <string id="RegisteredGroups">Mes prochaines sorties</string>
+    <string id="RegistrationOne">inscription</string>
+    <string id="RegistrationMany">inscriptions</string>
     <string id="NoRegisteredGroups">Aucune inscription</string>
     <string id="Rides">Sorties</string>
     <string id="Routes">Parcours</string>
-    <string id="NoRides">Aucune sortie</string>
+    <string id="RideOne">sortie</string>
+    <string id="RideMany">sorties</string>
+    <string id="RouteOne">parcours</string>
+    <string id="RouteMany">parcours</string>
+    <string id="NoRides">Aucune sortie à venir</string>
     <string id="Logout">Déconnexion</string>
     <string id="SyncSent">Déjà dans Garmin Connect</string>
     <string id="SyncOutdated">Ancienne version dans Connect</string>
     <string id="SyncPending">Mise à jour en attente</string>
-    <string id="SyncFailing">Envoi en échec</string>
+    <string id="SyncFailing">Échec de l'envoi</string>
     <string id="SyncReconnect">Reconnecter Garmin</string>
 </strings>

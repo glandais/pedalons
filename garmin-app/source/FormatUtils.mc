@@ -103,7 +103,7 @@ class FormatUtils {
             if (hour == 0) {
                 hour = 12; // 0:xx and 12:xx both display as 12
             }
-            var suffix = info.hour >= 12 ? "PM" : "AM";
+            var suffix = WatchUi.loadResource(info.hour >= 12 ? Rez.Strings.PM : Rez.Strings.AM);
             timeStr = hour.format("%02d") + ":" + info.min.format("%02d") + " " + suffix;
         }
         // Date format: DD/MM for 24h (Europe/Asia), MM/DD for 12h (USA)
