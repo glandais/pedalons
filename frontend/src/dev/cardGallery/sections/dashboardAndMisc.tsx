@@ -23,6 +23,7 @@ import {
   AD_RENTAL,
   AD_SALE,
   AD_WANTED,
+  MARKDOWN_COMMENTS_SLUG,
   NOTIFICATION_READ,
   NOTIFICATION_UNREAD,
   NOTIFICATION_UPDATED,
@@ -288,6 +289,20 @@ export const miscSection: GallerySection = {
           teamName={VCM_REF.name}
           entityType="rides"
           entitySlug={RIDE_SLUG}
+          isOrganizer={false}
+        />
+      ),
+    },
+    {
+      id: 'commentaire-markdown',
+      label: 'tapé avec des astérisques : affiché tel quel, sans gras',
+      layout: 'full',
+      render: () => (
+        <CommentSection
+          teamSlug={VCM_SLUG}
+          teamName={VCM_REF.name}
+          entityType="rides"
+          entitySlug={MARKDOWN_COMMENTS_SLUG}
           isOrganizer={false}
         />
       ),

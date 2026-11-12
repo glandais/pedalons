@@ -163,7 +163,8 @@ describe('NextRideCard: the departure that concerns the reader', () => {
       <NextRideCard ride={ride({ registeredGroupId: 'g2', registeredGroup: joined(LATER) })} />
     )
     expect(text()).toContain('Départ 07:15')
-    expect(text()).toContain('Groupe B · ')
+    // The group under the departure (R11), never in the people's count.
+    expect(screen.getByTestId('group-place-line').textContent).toMatch(/^Groupe B/)
     expect(text()).not.toContain('après la sortie')
     // The day of the group's departure, posed on the picture (docs/LEDGER_*.md WEB-138).
     const box = screen.getByTestId('day-box')
@@ -177,6 +178,6 @@ describe('NextRideCard: the departure that concerns the reader', () => {
     )
     expect(text()).toContain('06:30')
     expect(text()).not.toContain('après la sortie')
-    expect(text()).toContain('Groupe B · ')
+    expect(screen.getByTestId('group-place-line').textContent).toMatch(/^Groupe B/)
   })
 })

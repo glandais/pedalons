@@ -10,13 +10,22 @@ import {
   participantsPageParams,
 } from '@/hooks/filters/groupParticipantFilters'
 import { UserAvatar } from '../common/UserAvatar'
+import { ContentActionsMenu } from '../moderation/ContentActionsMenu'
+import { ReportTargetType } from '@/api/dto'
 import { Pagination } from '../common/Pagination'
 import { SearchInput } from '../common/SearchInput'
 
 /** Whose participants: a ride (optionally one of its groups) or a trip. */
-export type ParticipantSource =
+export type ParticipantSource = (
   | { kind: 'ride'; teamSlug: string; rideSlug: string; groupId?: string }
   | { kind: 'trip'; teamSlug: string; tripSlug: string }
+) & {
+  /**
+   * The team's name, which a report names as its recipient: with it, every row but the reader's
+   * own gets the « Signaler / Bloquer » menu (docs/LEDGER_*.md WEB-167, R13).
+   */
+  teamName?: string
+}
 
 interface ParticipantListProps {
   source: ParticipantSource
@@ -158,7 +167,19 @@ export function ParticipantList({
                         </Text>
                       )}
                     </Box>
-                    {/* No chevron: the row opens nothing (docs/LEDGER_*.md WEB-167). */}
+                    {/* No chevron: the row opens nothing (docs/LEDGER_*.md WEB-167). Its ⋯ menu,
+                        the comments' one with the member as target; the menu itself hides on
+                        the reader's own row (R13). */}
+                    {source.teamName && (
+                      <ContentActionsMenu
+                        teamSlug={source.teamSlug}
+                        teamName={source.teamName}
+                        targetType={ReportTargetType.MEMBER}
+                        targetId={participant.id}
+                        author={participant}
+                        placement="inline"
+                      />
+                    )}
                   </Group>
                 </Box>
               )

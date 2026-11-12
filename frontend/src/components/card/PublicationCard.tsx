@@ -26,6 +26,7 @@ import { EntityLogo } from '../common/EntityLogo'
 import { UserAvatarGroup } from '../common/UserAvatar'
 import { Rendezvous } from '../common/Rendezvous'
 import { PublicationDepartureLine } from '../common/DepartureLine'
+import { GroupPlaceLine } from '../common/GroupPlaceLine'
 import { paths } from '@/config/paths'
 import { PublicationCardProgress } from './PublicationCardProgress'
 import { RouteThumbnail } from '../route/RouteThumbnail'
@@ -124,9 +125,19 @@ export function PublicationCard({
                 })
               : t('participantCount', { count: ride.participantCount })
             : null
-        if (!people && ride.groupCount === 0 && !commentStat) return null
+        // The distance and climb the server picks for this reader — their group's route, else the
+        // route every group shares, else nothing (docs/LEDGER_*.md API-178, R3). First, as the app's.
+        const hasFigures =
+          ride.displayDistance !== undefined || ride.displayElevationGain !== undefined
+        if (!people && ride.groupCount === 0 && !commentStat && !hasFigures) return null
         return (
           <StatGroup>
+            {ride.displayDistance !== undefined && (
+              <Stat icon={<IconMap size={16} />}>{distance(ride.displayDistance)}</Stat>
+            )}
+            {ride.displayElevationGain !== undefined && (
+              <Stat icon={<IconArrowUp size={16} />}>{elevation(ride.displayElevationGain)}</Stat>
+            )}
             {people && <Stat icon={participantsIcon}>{people}</Stat>}
             {ride.groupCount > 0 && (
               <Stat icon={groupsIcon}>{t('groups.groupCount', { count: ride.groupCount })}</Stat>
@@ -252,6 +263,16 @@ export function PublicationCard({
               {isDated(publication) && (
                 <Box mt={4} mb={6}>
                   <PublicationDepartureLine publication={publication} />
+                  {/* A ride the reader joined: « Groupe B · Place de la Mairie » under the
+                      departure, which is their group's (docs/LEDGER_*.md WEB-167, R11). */}
+                  {publication.type === 'RIDE' && (publication as RideDto).registeredGroup && (
+                    <Box mt={4}>
+                      <GroupPlaceLine
+                        group={(publication as RideDto).registeredGroup?.name}
+                        place={(publication as RideDto).startPlace?.name}
+                      />
+                    </Box>
+                  )}
                 </Box>
               )}
               <CardDescription

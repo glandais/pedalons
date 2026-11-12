@@ -134,11 +134,26 @@ afterEach(cleanup)
 
 describe('D13: thousands are grouped on a card, and the gap shows', () => {
   it('renders « 1 240 m » (narrow no-break space) on a dashboard card, never « 1240 »', () => {
-    const { container } = renderIn(<UpcomingRideCard ride={ride()} />)
+    const { container } = renderIn(
+      <UpcomingRideCard ride={ride({ displayDistance: 92_400, displayElevationGain: 1_240 })} />
+    )
     const text = container.textContent ?? ''
     expect(text).toContain(`1${NNBSP}240${NBSP}m`)
     expect(text).toContain(`92,4${NBSP}km`)
     expect(text).not.toMatch(/1240/)
+  })
+
+  // docs/LEDGER_*.md API-178, R3: the server's distance for the reader, never the ride's own.
+  it('shows the server’s distance on « Sorties à venir », and none when it sends none', () => {
+    const { container } = renderIn(
+      <UpcomingRideCard ride={ride({ distance: 92_400, elevationGain: 1_240 })} />
+    )
+    expect(container.textContent).not.toContain('92,4')
+    cleanup()
+    const again = renderIn(
+      <UpcomingRideCard ride={ride({ distance: 92_400, displayDistance: 78_000 })} />
+    )
+    expect(again.container.textContent).toContain(`78,0${NBSP}km`)
   })
 
   it('draws U+202F with a face that has a visible width: first in both font stacks', () => {

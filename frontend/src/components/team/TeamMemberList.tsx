@@ -4,7 +4,8 @@ import { Paper, Group, Text, Badge, Button, Select, Box, Stack, Skeleton } from 
 import { UserAvatar } from '../common/UserAvatar'
 import { ConfirmDialog } from '../common/ConfirmDialog'
 import type { MemberDto } from '@/api/dto'
-import { TeamRole } from '@/api/dto'
+import { ReportTargetType, TeamRole } from '@/api/dto'
+import { ContentActionsMenu } from '../moderation/ContentActionsMenu'
 import { useFormattedDate } from '../../utils/dateFormat'
 
 interface TeamMemberListProps {
@@ -205,6 +206,19 @@ export function TeamMemberList({
                         </Button>
                       )}
                     </>
+                  )}
+                  {/* « Signaler » and « Bloquer {nom} » at the end of the row, the comments' menu
+                      with the member as target — never on one's own row (docs/LEDGER_*.md
+                      WEB-167, R13). */}
+                  {!isCurrentUser && (
+                    <ContentActionsMenu
+                      teamSlug={member.team.slug}
+                      teamName={member.team.name}
+                      targetType={ReportTargetType.MEMBER}
+                      targetId={member.user.id}
+                      author={member.user}
+                      placement="inline"
+                    />
                   )}
                 </Group>
               </Group>

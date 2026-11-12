@@ -224,6 +224,25 @@ export const stagesSection: GallerySection = {
       },
     },
     {
+      id: 'etape-lieux',
+      label:
+        'étape 1 au titre qui ne nomme pas ses lieux : « Autun → Château-Chinon » sous la date',
+      layout: 'side',
+      render: () => {
+        const [first] = stages()
+        return (
+          <TripStageCard
+            stage={{ ...first, name: 'Par les lacs du Morvan' }}
+            index={0}
+            teamSlug={VCM_SLUG}
+            tripSlug={TRIP_SLUG}
+            weather={weatherSummary(false, 10)}
+            trackColor={routeColor(0)}
+          />
+        )
+      },
+    },
+    {
       id: 'etape-sans-parcours',
       label: 'étape 2 sans parcours ni allure',
       layout: 'side',

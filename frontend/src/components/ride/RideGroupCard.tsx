@@ -23,6 +23,8 @@ interface RideGroupCardProps {
   /** The ride's departure: the group's time shows only when `startAt` is another instant. */
   rideDateTime: string
   teamSlug: string
+  /** The team's name: the « Signaler / Bloquer » menu of the people in « Voir tout » (R13). */
+  teamName?: string
   rideSlug: string
   rideRouteSlug?: string
   /**
@@ -75,6 +77,7 @@ export function RideGroupCard({
   rideTimezone,
   rideDateTime,
   teamSlug,
+  teamName,
   rideSlug,
   rideRouteSlug,
   routesBySlug,
@@ -239,7 +242,7 @@ export function RideGroupCard({
         <ParticipantListModal
           isOpen={showParticipants}
           onClose={() => setShowParticipants(false)}
-          source={{ kind: 'ride', teamSlug, rideSlug, groupId: group.id }}
+          source={{ kind: 'ride', teamSlug, rideSlug, groupId: group.id, teamName }}
           count={group.countParticipants}
           groupName={group.name}
           leaderId={group.leader?.id}

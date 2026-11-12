@@ -326,6 +326,8 @@ export const agendaSection: GallerySection = {
               name: 'Tour du lac du Drennec',
               distance: 54_000,
               elevationGain: 610,
+              displayDistance: 54_000,
+              displayElevationGain: 610,
             }
           )}
         />

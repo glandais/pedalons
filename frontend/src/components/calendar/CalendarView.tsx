@@ -147,12 +147,16 @@ export function CalendarView({
 
   const eventMap = useMemo(() => new Map(events.map((e) => [String(e.id), e])), [events])
 
-  /** Metric line ("42 km · 850 m"), empty when the entity carries no route. */
+  /**
+   * Metric line ("42 km · 850 m"): the distance the server computes for the reader — their group's
+   * route, else the one every group rides, a stage's own (docs/LEDGER_*.md API-178, R3). Empty when
+   * it sends none.
+   */
   const buildMetrics = useCallback(
     (dto: CalendarEventDto): string =>
       [
-        dto.distance != null ? formatDistance(dto.distance) : null,
-        dto.elevationGain != null ? formatElevation(dto.elevationGain) : null,
+        dto.displayDistance != null ? formatDistance(dto.displayDistance) : null,
+        dto.displayElevationGain != null ? formatElevation(dto.displayElevationGain) : null,
       ]
         .filter(Boolean)
         .join(SEPARATOR),
@@ -160,18 +164,19 @@ export function CalendarView({
   )
 
   /**
-   * "team · time · start place" — the summary line required on every event. The time is a
-   * rendezvous, in the event's zone with the language's 12/24 h rule (docs/LEDGER_*.md API-60); the
-   * grid itself stays in the reader's zone `tz`.
+   * "time · team · group" — the cards' first line (docs/LEDGER_*.md WEB-167, R11), the group once the
+   * reader joined one; the place goes on its own line. The time is a rendezvous, in the event's
+   * zone with the language's 12/24 h rule (docs/LEDGER_*.md API-60); the grid itself stays in the
+   * reader's zone `tz`.
    */
   const buildSummary = useCallback(
     (dto: CalendarEventDto): string =>
       [
-        dto.teamName,
         dto.allDay
           ? t('calendar.schedule.allDay')
           : formatTime(dto.start, i18n.language, supportedZone(dto.timezone) || tz),
-        dto.startPlaceName ?? null,
+        dto.teamName,
+        dto.registered ? (dto.groupName ?? null) : null,
       ]
         .filter(Boolean)
         .join(SEPARATOR),
@@ -187,16 +192,9 @@ export function CalendarView({
     [t, tz, isPlaceholder, i18n.language]
   )
 
-  /** "J'y vais" / "J'y vais · Groupe A", empty when the user is not registered. */
+  /** "J'y vais", empty when the user is not registered — the group is in the summary (R11). */
   const buildRegistration = useCallback(
-    (dto: CalendarEventDto): string => {
-      if (!dto.registered) {
-        return ''
-      }
-      return dto.groupName
-        ? t('calendar.event.registeredInGroup', { group: dto.groupName })
-        : t('calendar.event.registered')
-    },
+    (dto: CalendarEventDto): string => (dto.registered ? t('calendar.event.registered') : ''),
     [t]
   )
 
@@ -210,7 +208,12 @@ export function CalendarView({
       if (!dto) {
         return event.title
       }
-      const details = [buildSummary(dto), buildMetrics(dto), buildRegistration(dto)]
+      const details = [
+        buildSummary(dto),
+        dto.startPlaceName ?? null,
+        buildMetrics(dto),
+        buildRegistration(dto),
+      ]
         .filter(Boolean)
         .join(SEPARATOR)
       return (
@@ -284,6 +287,11 @@ export function CalendarView({
               {mention.full}
             </Text>
           ) : null}
+          {dto.startPlaceName ? (
+            <Text size="xs" c="inherit">
+              {dto.startPlaceName}
+            </Text>
+          ) : null}
           {metrics ? (
             <Text size="xs" c="inherit">
               {metrics}
@@ -334,7 +342,7 @@ export function CalendarView({
    * The phone's month view lists the selected day's events, and ignores `renderEventBody`: its
    * own body is the title and "HH:mm – HH:mm" (or a hard-coded English "All day"), with neither the
    * team nor the registration — and no hover to show the tooltip. Its body is replaced here, and
-   * carries what the tooltip would, and the cards' one state (« Annulé », « Brouillon », « En
+   * carries what the tooltip would — the place, the distance and the climb included —, and the cards' one state (« Annulé », « Brouillon », « En
    * cours », « Terminée ») as the agenda's rows do.
    */
   const renderMobileEvent = useCallback<RenderEvent>(
@@ -345,6 +353,7 @@ export function CalendarView({
       }
       const registration = buildRegistration(dto)
       const mention = buildMention(dto)
+      const metrics = buildMetrics(dto)
       const body = (
         <Group gap="xs" wrap="nowrap" align="stretch">
           <Box
@@ -371,6 +380,17 @@ export function CalendarView({
                 {mention.full}
               </Text>
             ) : null}
+            {dto.startPlaceName ? (
+              <Text size="xs" c="dimmed">
+                {dto.startPlaceName}
+              </Text>
+            ) : null}
+            {/* The distance and the climb, as the tooltip (R3): the phone has no hover. */}
+            {metrics ? (
+              <Text size="xs" c="dimmed">
+                {metrics}
+              </Text>
+            ) : null}
             {registration ? (
               <Text size="xs" fw={500}>
                 {registration}
@@ -381,7 +401,7 @@ export function CalendarView({
       )
       return renderEvent(event, { ...props, children: body })
     },
-    [buildMention, buildRegistration, buildSummary, renderEvent]
+    [buildMention, buildMetrics, buildRegistration, buildSummary, renderEvent]
   )
 
   const handleEventClick = useCallback(

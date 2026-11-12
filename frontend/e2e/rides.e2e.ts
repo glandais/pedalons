@@ -500,7 +500,9 @@ test.describe('leaving a ride, seen from the home page and the calendar', () => 
     // The calendar and the « Je participe » feed are read once, so the leave has a cache to
     // refresh.
     await toCalendar(page, day)
-    await expect(calendarEvent(page, ride.name)).toContainText(`J'y vais · ${group}`)
+    // « time · team · group » then « J'y vais » (WEB-167, R11).
+    await expect(calendarEvent(page, ride.name)).toContainText(`${team.name} · ${group}`)
+    await expect(calendarEvent(page, ride.name)).toContainText("J'y vais")
     await page.goBack()
     await expect(nextRideCard(page)).toContainText(ride.name)
     await scope(page, 'Je participe')
@@ -543,7 +545,8 @@ test.describe('leaving a ride, seen from the home page and the calendar', () => 
     await expect(feedCard(page, ride.name)).toContainText("J'y vais")
     await toCalendar(page, day)
     const event = calendarEvent(page, ride.name)
-    await expect(event).toContainText(`J'y vais · ${group}`)
+    await expect(event).toContainText(`${team.name} · ${group}`)
+    await expect(event).toContainText("J'y vais")
 
     // --- From the calendar to the ride, and leave there.
     await hydrated(event)

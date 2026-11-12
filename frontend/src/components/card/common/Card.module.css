@@ -17,6 +17,21 @@
   }
 }
 
+/* The link fills the card above its footer row, which stays outside it. */
+.withFooter {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.footerLink {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+}
+
 /* A grid of one, so the link still fills the grid cell the wrapper now occupies. */
 .withActions {
   position: relative;

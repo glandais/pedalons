@@ -177,10 +177,58 @@ describe('NextRideCard', () => {
       })
     )
     expect(screen.getByTestId('avatar-cluster').textContent).toContain('KB')
+    // The group is named under the departure (R11), not in the count.
     expect(screen.getByTestId('group-count').textContent?.replace(/\u00a0/g, ' ')).toBe(
-      'Groupe A · 6/12 personnes'
+      '6/12 personnes'
     )
     expect(screen.getByTestId('group-places-bar')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Voir tout' })).toBeNull()
+  })
+
+  // docs/LEDGER_*.md WEB-167, R11: « Groupe A · Place de la Mairie » under « Départ 09:00 ».
+  it('says the group and the place on one line under the departure, the place by its name', () => {
+    renderCard(
+      ride({
+        startPlace: {
+          id: 'p1',
+          name: 'Place de la Mairie',
+          address: '1 place de la Mairie, Huelgoat',
+          startPlace: true,
+          endPlace: false,
+        },
+      })
+    )
+    const line = screen.getByTestId('group-place-line')
+    // « Groupe A » is the group's own name: not « Groupe Groupe A ».
+    expect(line.textContent).toBe('Groupe A · Place de la Mairie')
+    expect(screen.queryByText(/Huelgoat/)).toBeNull()
+    const departure = screen.getByTestId('departure-line')
+    expect(departure.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  // docs/LEDGER_*.md API-178, R3: the server's distance for the reader, shown as is.
+  it('shows the server’s distance and climb, and nothing without them', () => {
+    renderCard(
+      ride({
+        distance: 92_400,
+        elevationGain: 1_240,
+        displayDistance: 78_000,
+        displayElevationGain: 980,
+        registeredGroup: { ...ride().registeredGroup!, distance: 61_000 } as RideGroupDto,
+      })
+    )
+    const text = document.body.textContent?.replace(/[\u00a0\u202f]/g, ' ') ?? ''
+    expect(text).toContain('78,0 km')
+    expect(text).toContain('980 m')
+    expect(text).not.toContain('92,4 km')
+    expect(text).not.toContain('61,0 km')
+    cleanup()
+    renderCard(
+      ride({
+        distance: 92_400,
+        registeredGroup: { ...ride().registeredGroup!, distance: 61_000 } as RideGroupDto,
+      })
+    )
+    expect(screen.queryByText('Distance')).toBeNull()
   })
 })

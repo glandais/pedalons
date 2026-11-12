@@ -14,6 +14,8 @@ import {
   DEVICES,
   GRAVEL_TEAM,
   INVITATION,
+  MARKDOWN_COMMENTS,
+  MARKDOWN_COMMENTS_SLUG,
   PEOPLE,
   READER,
   ROUTE_USAGES,
@@ -66,8 +68,12 @@ const routes: Array<[method: string, path: RegExp, handler: Handler]> = [
   ],
   [
     'get',
-    /^\/api\/teams\/[^/]+\/rides\/[^/]+\/comments$/,
-    () => ({ items: COMMENTS, total: 3, itemTotal: COMMENTS.length, page: 0, size: 20 }),
+    /^\/api\/teams\/[^/]+\/rides\/([^/]+)\/comments$/,
+    (match) => {
+      const items = match[1] === MARKDOWN_COMMENTS_SLUG ? MARKDOWN_COMMENTS : COMMENTS
+      const total = items === COMMENTS ? 3 : items.length
+      return { items, total, itemTotal: items.length, page: 0, size: 20 }
+    },
   ],
   [
     'get',

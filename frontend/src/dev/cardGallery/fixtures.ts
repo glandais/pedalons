@@ -216,9 +216,11 @@ const MEMBER_PERMISSIONS: ContentPermissionsDto = {
   indexable: false,
 }
 
+/** The app's: the name alone on a card, the commune in the address (R11, MOB-136). */
 const START_PLACE: PlaceDetailDto = {
   id: 'pl-huelgoat',
-  name: 'Place de la Mairie, Huelgoat',
+  name: 'Place de la Mairie',
+  address: 'Huelgoat',
   startPlace: true,
   endPlace: false,
 }
@@ -509,6 +511,10 @@ export function ride(options: RideOptions = {}, overrides: Partial<RideDto> = {}
     groupSummaries: groups.map(summaryOf),
     distance: 92_400,
     elevationGain: 1_240,
+    // The server's, for the reader (API-178, R3): Camille's group B, 78,0 km and 980 m; nothing to
+    // someone in no group, the three groups riding three routes.
+    displayDistance: mine?.distance,
+    displayElevationGain: mine?.elevationGain,
     surfaceType: 'ROAD',
     startPlace: START_PLACE,
     topParticipants: [LEA, KARIM, JEANNE, MALO, NOE],
@@ -812,6 +818,10 @@ function event(overrides: Partial<CalendarEventDto>): CalendarEventDto {
     timezone: ZONE,
     finished: false,
     ...overrides,
+    // The server's distance for the reader (API-178): these rows' rides ride one route, or the
+    // reader's group's when they joined one — given as `distance` here.
+    displayDistance: overrides.displayDistance ?? overrides.distance ?? 92_400,
+    displayElevationGain: overrides.displayElevationGain ?? overrides.elevationGain ?? 1_240,
   }
 }
 
@@ -1035,7 +1045,14 @@ function template(overrides: Partial<RideTemplateDto>): RideTemplateDto {
   }
 }
 
-export const TEMPLATE = template({ id: 'tpl-dimanche', slug: 'sortie-du-dimanche' })
+/** The app's: a description on the published template, none on the draft (R12). */
+export const TEMPLATE = template({
+  id: 'tpl-dimanche',
+  slug: 'sortie-du-dimanche',
+  markdown:
+    'Trois allures au départ de la **place de la Mairie**, regroupement au sommet du Roc’h ' +
+    'Trévézel et café au retour. Le groupe C attend tout le monde dans les montées.',
+})
 export const TEMPLATE_DRAFT = template({
   id: 'tpl-hiver',
   slug: 'sortie-d-hiver',
@@ -1082,6 +1099,22 @@ export const COMMENTS: CommentDto[] = [
     deleted: true,
   },
 ]
+
+/** A comment typed with asterisks, shown as typed (R12, the app's `commentaire-markdown`). */
+export const MARKDOWN_COMMENTS: CommentDto[] = [
+  {
+    id: 'c-karim-markdown',
+    content: 'Je roule avec le B. On se retrouve au café **avant le départ** ?',
+    author: KARIM,
+    createdAt: hoursFromNow(-5),
+    replies: [],
+    replyCount: 0,
+    deleted: false,
+  },
+]
+
+/** The ride slug whose comments are {@link MARKDOWN_COMMENTS}. */
+export const MARKDOWN_COMMENTS_SLUG = 'boucle-commentaire-markdown'
 
 export const ROUTE_USAGES: RouteUsageDto[] = [
   {

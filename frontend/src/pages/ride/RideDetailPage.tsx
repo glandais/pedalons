@@ -264,6 +264,7 @@ export function RideDetailPage() {
                               rideDateTime={ride.dateTime}
                               showStartTime={someGroupLeavesAtOwnTime(ride.groups, ride.dateTime)}
                               teamSlug={teamSlug!}
+                              teamName={ride.team.name}
                               rideSlug={ride.slug}
                               rideRouteSlug={ride.routeSlug}
                               routesBySlug={groupRoutesBySlug}

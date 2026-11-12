@@ -659,6 +659,11 @@ test.describe('ride templates', () => {
     const templates = await readTemplates(organizer, team.slug)
     expect(templates.templates).toHaveLength(1)
     const [template] = templates.templates
+    // Its card offers « Créer une sortie », the ride form filled from it (WEB-167, R13).
+    await expect(main(page).getByRole('link', { name: 'Créer une sortie' })).toHaveAttribute(
+      'href',
+      `/equipes/${team.slug}/sorties/nouvelle?template=${template.slug}`
+    )
     expect(template.name).toBe(templateName)
     expect(template.markdown.trim()).toBe(description)
     expect(template.groups.map((g) => [g.name, g.maxParticipants])).toEqual([
@@ -881,6 +886,9 @@ test.describe('ride templates, edited and deleted', () => {
         .filter({ has: page.getByText(name, { exact: true }) })
     await expect(row(templateName)).toBeVisible()
     await expect(row(templateName).getByText('2 groupes')).toBeVisible()
+    // The groups on one line, with their pace when they have one (WEB-167, R12).
+    const paces = row(templateName).getByTestId('ride-template-paces')
+    await expect(paces).toHaveText(`${first} · ${second}`)
 
     // --- Edit: rename the first group, remove the second, add a third.
     const edit = row(templateName).getByRole('link', { name: 'Modifier' })
@@ -908,10 +916,7 @@ test.describe('ride templates, edited and deleted', () => {
 
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/admin/modeles-sortie$`))
     await expect(toasts(page).filter({ hasText: 'Modèle mis à jour avec succès' })).toBeVisible()
-    await expect(row(templateName).getByText(renamed, { exact: true })).toBeVisible()
-    await expect(row(templateName).getByText(added, { exact: true })).toBeVisible()
-    await expect(row(templateName).getByText(second, { exact: true })).toHaveCount(0)
-    await expect(row(templateName).getByText(first, { exact: true })).toHaveCount(0)
+    await expect(paces).toHaveText(`${renamed} · ${added}`)
     let template = (await readTemplates(organizer, team.slug)).templates.find(
       (t) => t.name === templateName
     )

@@ -15,12 +15,13 @@ import {
   Text,
   Title,
 } from '@mantine/core'
-import { IconCheck, IconMapPin, IconUsers } from '@tabler/icons-react'
+import { IconCheck, IconUsers } from '@tabler/icons-react'
 import type { RideDto } from '@/api/dto'
 import { Status } from '@/api/dto'
 import { useLeaveGroup } from '@/api/endpoints/rides/rides'
 import { CardDayOverlay, CardImage, CardTeamLink, Stat, cardBanner } from '../card/common'
 import { DepartureLine } from '../common/DepartureLine'
+import { GroupPlaceLine } from '../common/GroupPlaceLine'
 import { paths } from '@/config/paths'
 import { invalidateRegistration } from '@/lib/registration'
 import { useUnits } from '@/hooks/useUnits'
@@ -43,7 +44,8 @@ interface NextRideCardProps {
  * "Ma prochaine sortie" — the ride the user is registered for that comes next.
  *
  * Its group is `registeredGroup`, which list rows carry even though `groups` is empty there
- * (`view=COMPACT`); metrics and the route come from that group, then from the ride. No leader is
+ * (`view=COMPACT`); the route comes from that group, then from the ride, and the distance is the
+ * server's `displayDistance` (API-178). No leader is
  * shown: the leader belongs to the ride page, and is never the ride's creator.
  *
  * The heading and the ride's name share one parent (the e2e `ssr-session` spec reads the card
@@ -63,8 +65,10 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
   // The departure that concerns the reader is their group's (docs/LEDGER_*.md WEB-136): the day
   // box, the « Demain » pill and the departure line all read it (WEB-138).
   const start = startFor(ride, group)
-  const rideDistance = group?.distance
-  const rideElevation = group?.elevationGain
+  // The server's distance for the reader — their group's route, else the ride's (docs/LEDGER_*.md
+  // API-178, R3): the card shows it as is, and nothing when it is absent.
+  const rideDistance = ride.displayDistance
+  const rideElevation = ride.displayElevationGain
   const routeSlug = group?.routeSlug ?? ride.routeSlug
   const ridePath = paths.ride(ride.team.slug, ride.slug)
 
@@ -155,15 +159,17 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
             {/* The day box sits in the thumbnail, hidden from assistive tech: the line names the
                 day for them. */}
             <DepartureLine date={start} zone={ride.timezone} announceDay />
-            {ride.startPlace && <Stat icon={<IconMapPin size={16} />}>{ride.startPlace.name}</Stat>}
+            {/* « Groupe B · Place de la Mairie » under the departure (R11). */}
+            <GroupPlaceLine group={group?.name} place={ride.startPlace?.name} />
             <RideWeatherSummaryLine summary={ride.weather} timezone={ride.timezone} />
             {!group && (
               <Stat icon={<IconUsers size={16} />}>{participantsLabel(ride.participantCount)}</Stat>
             )}
           </Stack>
 
-          {/* Who goes in the reader's group: the cluster, « B · 11/12 personnes », the places bar —
-              the group card's row, without « Voir tout »: the card opens the ride (R5). */}
+          {/* Who goes in the reader's group: the cluster, « 11/12 personnes », the places bar — the
+              group card's row, without « Voir tout »: the card opens the ride (R5). The group is
+              named on the line under the departure (R11). */}
           {group && (
             <Box maw={420}>
               <GroupPeopleRow
@@ -173,9 +179,6 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
                 full={group.full}
                 leaderId={group.leader?.id}
                 canSeeParticipants={!!ride.permissions.canSeeParticipants}
-                formatLabel={(participants) =>
-                  t('home.nextRide.groupParticipants', { group: group.name, participants })
-                }
               />
             </Box>
           )}

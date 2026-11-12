@@ -24,8 +24,9 @@ interface UpcomingRideCardProps {
 }
 
 /**
- * A card of « Sorties à venir »: the ride's metrics (from its route, or else its first routed
- * group — `RideDto.distance`), then one line per group with its fill. Registration happens on the
+ * A card of « Sorties à venir »: the distance the server computes for the reader
+ * (`RideDto.displayDistance`: their group's route, else the one every group rides), then one line
+ * per group with its fill. Registration happens on the
  * ride page, where the groups can be compared: « S'inscrire » leads there — or a disabled
  * « Complet » when every group is full and the reader is in none.
  */
@@ -71,11 +72,12 @@ export function UpcomingRideCard({ ride }: UpcomingRideCardProps) {
         </div>
 
         <Group gap="md" wrap="wrap">
-          {ride.distance !== undefined && (
-            <Stat icon={<IconRoute size={16} />}>{distance(ride.distance)}</Stat>
+          {/* The server's distance for the reader (API-178, R3): nothing when it is absent. */}
+          {ride.displayDistance !== undefined && (
+            <Stat icon={<IconRoute size={16} />}>{distance(ride.displayDistance)}</Stat>
           )}
-          {ride.elevationGain !== undefined && (
-            <Stat icon={<IconMountain size={16} />}>{elevation(ride.elevationGain)}</Stat>
+          {ride.displayElevationGain !== undefined && (
+            <Stat icon={<IconMountain size={16} />}>{elevation(ride.displayElevationGain)}</Stat>
           )}
           {/* No counter at zero (R4): « 0 groupe », « 0 commentaire » tell nothing. */}
           {(groups.length || ride.groupCount) > 0 && (

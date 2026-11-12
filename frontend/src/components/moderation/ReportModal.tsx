@@ -70,7 +70,14 @@ export function ReportModal({
       {
         onSuccess: () => {
           void invalidateModeratedContent(queryClient)
-          notifications.show({ message: t('moderation.report.success'), color: 'green' })
+          // A member is not hidden by a report, unlike a piece of content.
+          notifications.show({
+            message:
+              targetType === 'MEMBER'
+                ? t('moderation.report.successMember')
+                : t('moderation.report.success'),
+            color: 'green',
+          })
           close()
           onReported?.()
         },

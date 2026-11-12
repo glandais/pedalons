@@ -13,10 +13,24 @@ interface CardProps {
    * not a child: a button inside an `<a>` is invalid HTML, and its clicks would open the card.
    */
   actions?: ReactNode
+  /**
+   * A row at the card's foot — the team card's « Rejoindre l'équipe ». Outside the link for the same
+   * reason as `actions`: its clicks act, they do not open the card.
+   */
+  footer?: ReactNode
 }
 
-export function Card({ to, children, actions }: CardProps) {
-  const link = (
+export function Card({ to, children, actions, footer }: CardProps) {
+  const link = footer ? (
+    <Paper withBorder radius="md" className={`${classes.card} ${classes.withFooter}`}>
+      <PrefetchLink to={to} className={classes.footerLink}>
+        {children}
+      </PrefetchLink>
+      <Box px="md" pb="md">
+        {footer}
+      </Box>
+    </Paper>
+  ) : (
     <Paper component={PrefetchLink} to={to} withBorder radius="md" className={classes.card}>
       {children}
     </Paper>

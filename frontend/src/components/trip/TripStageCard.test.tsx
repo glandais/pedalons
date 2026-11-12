@@ -78,12 +78,36 @@ describe('TripStageCard (WEB-155)', () => {
     expect(screen.getAllByRole('link')[0].querySelector('button')).toBeNull()
   })
 
-  it('gives its places and its facts, like a group card', () => {
+  // docs/LEDGER_*.md WEB-167, R11: one line « départ → arrivée », under the date.
+  it('gives its places on one line « départ → arrivée », and its facts, like a group card', () => {
     renderCard()
-    expect(screen.getByText('Gîte du Kalblin')).toBeTruthy()
-    expect(screen.getByText('Auberge du lac')).toBeTruthy()
+    expect(screen.getByTestId('stage-places').textContent).toBe('Gîte du Kalblin → Auberge du lac')
     expect(screen.getByText(/^72(,0)? km$/)).toBeTruthy()
     expect(screen.getByText(/^1[\s\u202f]?650 m$/)).toBeTruthy()
+  })
+
+  it('gives the name its whole line and the date under it, outside the link', () => {
+    renderCard()
+    const link = screen.getAllByRole('link')[0]
+    const departure = screen.getByTestId('departure-line')
+    expect(link.contains(departure)).toBe(false)
+    // The date follows the name in the reading order, the places follow the date.
+    const places = screen.getByTestId('stage-places')
+    expect(link.compareDocumentPosition(departure) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(
+      departure.compareDocumentPosition(places) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
+  it('does not repeat « départ → arrivée » when the name says it word for word', () => {
+    renderCard({
+      startPlace: { name: 'Munster' } as TripStageDto['startPlace'],
+      endPlace: { name: 'Gérardmer' } as TripStageDto['endPlace'],
+    })
+    expect(screen.queryByTestId('stage-places')).toBeNull()
+    cleanup()
+    renderCard({ endPlace: undefined })
+    expect(screen.getByTestId('stage-places').textContent).toBe('Gîte du Kalblin')
   })
 
   // R7 (docs/LEDGER_*.md WEB-167): « GPS » to a reader who takes part in the trip, nothing else.

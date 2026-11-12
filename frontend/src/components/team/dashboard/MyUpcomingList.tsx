@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { Anchor, Badge, Button, Group, Paper, Stack } from '@mantine/core'
-import { IconCheck, IconMapPin, IconRoute, IconStack2, IconUsers } from '@tabler/icons-react'
+import { IconCheck, IconMountain, IconRoute, IconStack2 } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { DayBox } from '@/components/common/DayBox'
 import { DepartureLine, PublicationDepartureLine } from '@/components/common/DepartureLine'
+import { GroupPlaceLine } from '@/components/common/GroupPlaceLine'
 import { Stat, TypeBadge } from '@/components/card/common'
 import type { PublicationDto, RideDto, TripDto } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
@@ -15,8 +16,8 @@ import { isOver } from '@/utils/publicationEnd'
 
 /**
  * « Vos prochaines sorties »: the team's rides and trips the user is registered to, soonest first.
- * A ride's group is `registeredGroup` — the list row carries it although `groups` is empty — with
- * its name and pace. No leader here: it belongs to the ride page.
+ * A ride's group is `registeredGroup` — the list row carries it although `groups` is empty — named
+ * under the departure with the place; the distance is the server's `displayDistance`. No leader here: it belongs to the ride page.
  */
 export function MyUpcomingList({ publications }: { publications: PublicationDto[] }) {
   return (
@@ -43,7 +44,7 @@ function RegisteredBadge() {
 
 function RideRow({ ride }: { ride: RideDto }) {
   const { t } = useTranslation()
-  const { speed } = useUnits()
+  const { distance, elevation } = useUnits()
   // Rendezvous in the ride's zone, the day box included (docs/LEDGER_*.md API-60). The departure
   // is the registered group's, which may not be the ride's (WEB-136).
   const group = ride.registeredGroup
@@ -62,19 +63,21 @@ function RideRow({ ride }: { ride: RideDto }) {
             <RegisteredBadge />
           </Group>
           <DepartureLine date={startAt} zone={ride.timezone} size="sm" />
-          <Group gap="md" wrap="wrap">
-            {ride.startPlace && <Stat icon={<IconMapPin size={16} />}>{ride.startPlace.name}</Stat>}
-            {group && (
-              <Stat icon={<IconUsers size={16} />}>
-                {group.averageSpeed
-                  ? t('teams.dashboard.groupPace', {
-                      group: group.name,
-                      pace: speed(group.averageSpeed),
-                    })
-                  : group.name}
-              </Stat>
-            )}
-          </Group>
+          {/* « Groupe B · Place de la Mairie » under the departure (docs/LEDGER_*.md WEB-167, R11). */}
+          <GroupPlaceLine group={group?.name} place={ride.startPlace?.name} />
+          {/* The server's distance for the reader, their group's route (API-178, R3). */}
+          {(ride.displayDistance !== undefined || ride.displayElevationGain !== undefined) && (
+            <Group gap="md" wrap="wrap">
+              {ride.displayDistance !== undefined && (
+                <Stat icon={<IconRoute size={16} />}>{distance(ride.displayDistance)}</Stat>
+              )}
+              {ride.displayElevationGain !== undefined && (
+                <Stat icon={<IconMountain size={16} />}>
+                  {elevation(ride.displayElevationGain)}
+                </Stat>
+              )}
+            </Group>
+          )}
         </Stack>
         <Group gap="xs">
           {/* « GPS »: the device, GPX and FIT, until the ride is over (docs/LEDGER_*.md WEB-167 R7). */}

@@ -53,13 +53,17 @@ const BRIEF: Record<string, string[]> = {
     'groupe-sans-parcours',
     'groupe-sans-meteo',
   ],
-  etapes: ['etapes', 'etape-inscrite', 'etape-sans-parcours', 'etape-alerte-pluie'],
+  // `etape-lieux`, `commentaire-markdown` and `equipe-decouverte-membre`: the app's cases for R11,
+  // R12 and R13, added after the brief; `equipe-sur-invitation`, the R13 board's second case.
+  etapes: ['etapes', 'etape-inscrite', 'etape-lieux', 'etape-sans-parcours', 'etape-alerte-pluie'],
   parcours: ['parcours', 'parcours-sans-vignette', 'parcours-supprime', 'parcours-ligne', 'usages'],
   annonces: ['annonce-vente', 'annonce-location', 'annonce-recherche', 'annonce-brouillon'],
   equipes: [
     'equipe',
     'equipe-admin',
     'equipe-decouverte',
+    'equipe-decouverte-membre',
+    'equipe-sur-invitation',
     'equipe-photo',
     'invitations',
     'membre',
@@ -85,6 +89,7 @@ const BRIEF: Record<string, string[]> = {
     'modele-brouillon',
     'appareils',
     'commentaires',
+    'commentaire-markdown',
   ],
 }
 
@@ -103,6 +108,10 @@ const CONTENT: Record<string, string> = {
   modele: 'Sortie du dimanche',
   'modele-brouillon': 'Sortie d’hiver',
   commentaires: 'café avant le départ',
+  'commentaire-markdown': 'café **avant le départ** ?',
+  'etape-lieux': 'Autun → Château-Chinon',
+  'equipe-decouverte': "Rejoindre l'équipe",
+  'equipe-sur-invitation': 'Sur invitation',
   'annonce-vente': 'Vélo de route carbone taille M',
 }
 

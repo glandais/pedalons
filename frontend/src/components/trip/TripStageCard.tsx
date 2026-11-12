@@ -1,5 +1,5 @@
 import { Badge, Box, Group, Text } from '@mantine/core'
-import { IconMapPin } from '@tabler/icons-react'
+import { IconRoute2 } from '@tabler/icons-react'
 import type { RideWeatherSummaryDto, TripStageDto } from '@/api/dto'
 import { RideWeatherSummaryLine } from '@/components/weather'
 import { GpsMenuButton } from '@/components/route/GpsMenuButton'
@@ -31,9 +31,17 @@ interface TripStageCardProps {
   trackColor?: string
 }
 
+/** « Autun → Château-Chinon », or the one place it has; undefined with neither. */
+function stageRouteLabel(stage: Pick<TripStageDto, 'startPlace' | 'endPlace'>) {
+  const names = [stage.startPlace?.name, stage.endPlace?.name]
+    .map((name) => name?.trim())
+    .filter(Boolean)
+  return names.length > 0 ? names.join(' → ') : undefined
+}
+
 /**
  * A stage in its trip's list: the shared `ChildCard` (docs/LEDGER_*.md WEB-155) — its number or
- * logo, its name linking to its page over the whole card, its departure on the right, its places,
+ * logo, its name linking to its page over the whole card, its departure and its places under it,
  * pace, distance and climb, its weather line, and — to a reader who rides it — its route's « GPS »
  * button. Its description is its page's, not the card's.
  */
@@ -48,7 +56,7 @@ export function TripStageCard({
   riding = false,
   trackColor,
 }: TripStageCardProps) {
-  const places = [stage.startPlace, stage.endPlace]
+  const route = stageRouteLabel(stage)
   return (
     <ChildCard
       href={paths.stage(teamSlug, tripSlug, stage.slug)}
@@ -74,8 +82,6 @@ export function TripStageCard({
           />
         )
       }
-      // « sam. 12 avr. · 09:00 » in 700, short enough not to squeeze the name (WEB-138).
-      corner={<DepartureLine date={stage.dateTime} zone={stage.timezone} size="sm" withDay />}
       highlighted={isHighlighted}
       onHover={(hovering) => onHover?.(hovering ? stage.id : null)}
       meta={
@@ -99,23 +105,18 @@ export function TripStageCard({
         )
       }
     >
-      {places.some(Boolean) && (
-        <Group mt="xs" gap="md" wrap="wrap">
-          {places.map(
-            (place, i) =>
-              place && (
-                <Group key={i} gap={4} wrap="nowrap">
-                  <IconMapPin
-                    size={14}
-                    aria-hidden
-                    color={
-                      i === 0 ? 'var(--mantine-color-green-text)' : 'var(--mantine-color-red-text)'
-                    }
-                  />
-                  <Text size="sm">{place.name}</Text>
-                </Group>
-              )
-          )}
+      {/* The name has the whole line; the date comes under it, « sam. 12 avr. · 09:00 » in 700,
+          then « Autun → Château-Chinon » — once: not when the name already says it word for word
+          (docs/LEDGER_*.md WEB-167, R11). */}
+      <Box mt={4}>
+        <DepartureLine date={stage.dateTime} zone={stage.timezone} size="sm" withDay />
+      </Box>
+      {route && route !== stage.name.trim() && (
+        <Group mt={4} gap={4} wrap="nowrap" data-testid="stage-places">
+          <IconRoute2 size={16} aria-hidden style={{ flexShrink: 0 }} />
+          <Text size="sm" c="dimmed" style={{ minWidth: 0 }}>
+            {route}
+          </Text>
         </Group>
       )}
     </ChildCard>

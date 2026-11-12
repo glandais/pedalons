@@ -211,7 +211,12 @@ export function TripDetailPage() {
 
           {trip.participantCount > 0 && (
             <ParticipantsSection
-              source={{ kind: 'trip', teamSlug: teamSlug!, tripSlug: trip.slug }}
+              source={{
+                kind: 'trip',
+                teamSlug: teamSlug!,
+                tripSlug: trip.slug,
+                teamName: trip.team.name,
+              }}
               count={trip.participantCount}
               titleId="trip-participants-title"
               canSeeParticipants={!!permissions.canSeeParticipants}

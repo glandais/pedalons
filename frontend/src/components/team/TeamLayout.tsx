@@ -6,11 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { Stack, Group, Button, Box } from '@mantine/core'
 import { getGetTeamQueryKey } from '@/api/endpoints/teams/teams'
-import {
-  useLeaveTeam,
-  useJoinTeam,
-  getGetMembersQueryKey,
-} from '@/api/endpoints/team-members/team-members'
+import { useLeaveTeam, getGetMembersQueryKey } from '@/api/endpoints/team-members/team-members'
 import { useAuth } from '../../hooks/useAuth'
 import { useFavicon } from '../../hooks/useFavicon'
 import { useTeamNavItems } from '@/hooks/useNavItems'
@@ -21,6 +17,7 @@ import { VisibilityBadge } from '../card/common'
 import { TeamAvatar } from './TeamAvatar'
 import { TeamSwitcher } from './TeamSwitcher'
 import { invalidateTeamSwitcher } from './teamSwitcherData'
+import { useJoinTeamAction } from './useJoinTeamAction'
 import type { TeamDetailDto } from '@/api/dto'
 import { paths } from '@/config/paths'
 import { useTeamAccess } from '@/lib/teamAccess'
@@ -68,22 +65,9 @@ export function TeamLayout({
   const joinBlockedByLimit = canJoin && isTeamFull(team) && !isPlatformAdmin
   const canLeave = isMember && team.role !== 'ADMIN'
 
-  const joinMutation = useJoinTeam()
+  // The same call and refresh as the team card's button (R13).
+  const joinAction = useJoinTeamAction(team.slug)
   const leaveMutation = useLeaveTeam()
-
-  const handleJoin = () => {
-    joinMutation.mutate(
-      { teamSlug: team.slug },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetTeamQueryKey(team.slug) })
-          queryClient.invalidateQueries({ queryKey: getGetMembersQueryKey(team.slug) })
-          invalidateTeamSwitcher(queryClient)
-          invalidateTeamDashboard(queryClient, team.slug)
-        },
-      }
-    )
-  }
 
   const handleLeave = () => {
     leaveMutation.mutate(
@@ -126,8 +110,8 @@ export function TeamLayout({
               )}
 
               {canJoin && !joinBlockedByLimit && (
-                <Button onClick={handleJoin} loading={joinMutation.isPending}>
-                  {joinMutation.isPending
+                <Button onClick={joinAction.join} loading={joinAction.isPending}>
+                  {joinAction.isPending
                     ? t('teams.detail.actions.joining')
                     : t('teams.detail.actions.join')}
                 </Button>

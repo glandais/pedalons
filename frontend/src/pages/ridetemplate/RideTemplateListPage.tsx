@@ -6,20 +6,8 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import { paths } from '../../config/paths'
-import { IconPlus, IconFiles, IconPencil, IconTrash, IconUsersGroup } from '@tabler/icons-react'
-import {
-  Box,
-  Button,
-  Group,
-  Stack,
-  Title,
-  Text,
-  Paper,
-  Center,
-  Badge,
-  ActionIcon,
-  Loader,
-} from '@mantine/core'
+import { IconPlus, IconFiles } from '@tabler/icons-react'
+import { Box, Button, Group, Stack, Title, Text, Paper, Center, Loader } from '@mantine/core'
 import { useGetTeam } from '@/api/endpoints/teams/teams'
 import {
   useDeleteTemplate,
@@ -33,12 +21,9 @@ import { useScrollToListTop } from '../../hooks/useScrollToListTop'
 import { useRideTemplateListData } from './rideTemplateListData'
 import { SearchInput } from '../../components/common/SearchInput'
 import { ConfirmDialog } from '../../components/common/ConfirmDialog'
-import { MarkdownDisplay } from '../../components/common/MarkdownDisplay'
 import type { RideTemplateDto } from '@/api/dto'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
-import { TemplateGroupBadge } from '@/components/ridetemplate/TemplateGroupBadge'
-import { VISIBILITY_COLORS } from '@/lib/badgeColors.generated'
-import { TagList } from '@/components/tag'
+import { RideTemplateCard } from '@/components/ridetemplate/RideTemplateCard'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
 
@@ -132,67 +117,12 @@ export function RideTemplateListPage() {
           <>
             <Stack ref={listTopRef}>
               {templatesData.templates.map((template) => (
-                <Paper key={template.id} withBorder p="md">
-                  <Group justify="space-between" align="flex-start" wrap="nowrap">
-                    <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
-                      <Text size="lg" fw={500}>
-                        {template.name}
-                      </Text>
-                      {template.markdown && (
-                        <Box>
-                          <MarkdownDisplay
-                            markdown={template.markdown}
-                            preview={true}
-                            maxLength={150}
-                          />
-                        </Box>
-                      )}
-                      <Group>
-                        <Group gap="xs">
-                          <IconUsersGroup size={16} />
-                          <Text size="sm" c="dimmed">
-                            {t('groups.groupCount', { count: template.groupCount })}
-                          </Text>
-                        </Group>
-                        <Badge variant="light" color={VISIBILITY_COLORS[template.visibility]}>
-                          {t(
-                            `visibility.${template.visibility.toLowerCase() as 'public' | 'public_unlisted' | 'team'}`
-                          )}
-                        </Badge>
-                      </Group>
-                      {template.groups && template.groups.length > 0 && (
-                        <Group gap="xs" mt="xs">
-                          {template.groups.map((group) => (
-                            <TemplateGroupBadge key={group.id} group={group} color="primary" />
-                          ))}
-                        </Group>
-                      )}
-                      {/* Copied onto each ride created from the template (plan D14). */}
-                      <TagList tags={template.tags} mt="xs" />
-                    </Stack>
-                    {canManage && (
-                      <Group gap="xs" ml="md">
-                        <ActionIcon
-                          component={PrefetchLink}
-                          to={paths.rideTemplateEdit(teamSlug!, template.slug)}
-                          variant="subtle"
-                          color="gray"
-                          title={t('actions.edit')}
-                        >
-                          <IconPencil size={20} />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          color="danger"
-                          onClick={() => handleDelete(template)}
-                          title={t('actions.delete')}
-                        >
-                          <IconTrash size={20} />
-                        </ActionIcon>
-                      </Group>
-                    )}
-                  </Group>
-                </Paper>
+                <RideTemplateCard
+                  key={template.id}
+                  template={template}
+                  canManage={canManage}
+                  onDelete={handleDelete}
+                />
               ))}
             </Stack>
 

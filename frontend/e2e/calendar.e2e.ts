@@ -96,7 +96,7 @@ test.describe('the personal calendar', () => {
     await expect(page.getByRole('heading', { level: 2, name: joined.name })).toBeVisible()
   })
 
-  test("each event of /calendrier names its team, and « J'y vais · Groupe A » where I am registered", async ({
+  test("each event of /calendrier names its team, its group and « J'y vais » where I am registered", async ({
     page,
   }) => {
     // Regression (b790fafb): the phone agenda (MobileMonthView, which ignores `renderEventBody`)
@@ -112,8 +112,10 @@ test.describe('the personal calendar', () => {
     await expect(registered).toBeVisible()
     await expect(notRegistered).toBeVisible()
 
-    await expect(registered).toContainText(mine.name)
-    await expect(registered).toContainText("J'y vais · Groupe A")
+    // « 08:00 · team · group », then « J'y vais » alone: the group is in the line (WEB-167, R11).
+    await expect(registered).toContainText(`${mine.name} · Groupe A`)
+    await expect(registered).toContainText("J'y vais")
+    await expect(registered).not.toContainText("J'y vais · Groupe A")
     await expect(notRegistered).toContainText(alsoMine.name)
     await expect(notRegistered).not.toContainText("J'y vais")
   })

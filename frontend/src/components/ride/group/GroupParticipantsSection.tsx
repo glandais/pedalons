@@ -25,7 +25,13 @@ export function GroupParticipantsSection({
 }) {
   return (
     <ParticipantsSection
-      source={{ kind: 'ride', teamSlug, rideSlug: ride.slug, groupId: group?.id }}
+      source={{
+        kind: 'ride',
+        teamSlug,
+        rideSlug: ride.slug,
+        groupId: group?.id,
+        teamName: ride.team.name,
+      }}
       count={group ? group.countParticipants : ride.participantCount}
       leaderId={group?.leader?.id}
       titleId={titleId}

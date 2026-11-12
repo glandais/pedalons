@@ -113,9 +113,24 @@ export const teamsSection: GallerySection = {
     },
     {
       id: 'equipe-decouverte',
-      label: 'Gravel Bretagne vue d’une personne non membre (même TeamCard, sans rôle)',
+      label:
+        'Gravel Bretagne, ouverte à l’adhésion, vue d’une personne non membre : « Rejoindre l’équipe »',
       layout: 'grid',
       render: () => <TeamCard team={{ ...GRAVEL_TEAM, role: undefined }} showRole />,
+    },
+    {
+      id: 'equipe-decouverte-membre',
+      label: 'Gravel Bretagne, Camille organisatrice : son rôle, aucun bouton',
+      layout: 'grid',
+      render: () => <TeamCard team={GRAVEL_TEAM} showRole />,
+    },
+    {
+      id: 'equipe-sur-invitation',
+      label: 'Gravel Bretagne fermée à l’adhésion, personne non membre : « Sur invitation »',
+      layout: 'grid',
+      render: () => (
+        <TeamCard team={{ ...GRAVEL_TEAM, role: undefined, joinable: false }} showRole />
+      ),
     },
     {
       id: 'equipe-photo',
@@ -178,7 +193,13 @@ export const teamsSection: GallerySection = {
       layout: 'side',
       render: () => (
         <ParticipantsSection
-          source={{ kind: 'ride', teamSlug: VCM_SLUG, rideSlug: RIDE_SLUG, groupId: 'g-a' }}
+          source={{
+            kind: 'ride',
+            teamSlug: VCM_SLUG,
+            rideSlug: RIDE_SLUG,
+            groupId: 'g-a',
+            teamName: VCM_TEAM.name,
+          }}
           count={PEOPLE.length}
           leaderId={LEA.id}
           titleId="gallery-participants"
