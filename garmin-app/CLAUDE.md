@@ -56,8 +56,8 @@ source/
 ├── PedalonsApp.mc                  # Main app entry, Device Code Flow orchestration
 ├── AuthManager.mc                  # Token storage (Toybox.Storage), expiry management, logout
 ├── ApiClient.mc                    # HTTP client, all API calls, token refresh
-├── LoginView.mc                    # Device code display: QR code, site and user code
-├── QrCode.mc                       # QR encoder (byte mode, level L, versions 3-4, mask 0)
+├── LoginView.mc                    # Device code display: QR code (firmware's, else QrCode.mc), site and user code
+├── QrCode.mc                       # QR encoder (byte mode, level L, versions 3-4, mask 0): the fallback
 ├── QrCodeTest.mc                   # (:test) QrCode vs python-qrcode, from scripts/qr-vectors.py
 ├── PedalonsView.mc                 # Loads registered groups, rides + routes, then opens the home menu
 ├── PedalonsDelegate.mc             # Loading/error view input (retry, refresh menu)
@@ -83,7 +83,9 @@ Uses Device Code Flow (RFC 8628) since Edge devices have no keyboard:
 2. App calls `/api/device/oauth/device` with `clientId=garmin`
 3. Displays a QR code of `verificationUriComplete` (`<site>/garmin?code=…`), then the host of
    `verificationUri` and the 6-char user code — kept in clear text because the web page asks to
-   compare it before pairing (ledger `SEC-2`). Over 78 bytes, no QR: host and code only
+   compare it before pairing (ledger `SEC-2`). The QR code is the firmware's where
+   `Toybox.ScanCode` exists (API 6.0.0: 540/840/1040 and later), `QrCode.mc`'s elsewhere or when
+   the firmware refuses; there, over 78 bytes, no QR: host and code only
 4. Polls `/api/device/oauth/token` until user authenticates on phone/computer
 5. Receives JWT tokens, stores via `AuthManager.saveTokens()`
 
