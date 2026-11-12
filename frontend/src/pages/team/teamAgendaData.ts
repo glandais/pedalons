@@ -1,6 +1,12 @@
 import { useCallback, useMemo } from 'react'
-import { useQuery, type QueryClient } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import { useGetTeam, prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
+import {
+  useListPublications,
+  listPublications,
+  getListPublicationsQueryKey,
+  prefetchListPublicationsQuery,
+} from '@/api/endpoints/publications/publications'
 import { usePaginatedQuery } from '@/hooks/usePaginatedQuery'
 import { useUrlFilters, readUrlFilters } from '@/hooks/useUrlFilters'
 import {
@@ -10,8 +16,7 @@ import {
   agendaTypeToPublicationType,
 } from '@/hooks/filters/agendaFilters'
 import { prefetchPageWindow, prefetchTeamTags } from '@/config/prefetchHelpers'
-import { LIST_QUERY } from '@/lib/listQuery'
-import { agendaListQuery } from './agendaUpcomingFirst'
+import { LIST_QUERY, LIST_REQUEST } from '@/lib/listQuery'
 
 /**
  * The one description of what the team's « Agenda » (`teamAgenda`) reads, consumed two ways:
@@ -19,7 +24,8 @@ import { agendaListQuery } from './agendaUpcomingFirst'
  * {@link prefetchTeamAgenda} — the same filters, read through the same schema and alias, projected
  * by the same {@link agendaApiParams}, so both land on the same query keys (docs/SSR-data-loading.md).
  * The default period, « Toutes les dates », lives in the schema: it reaches the page and the
- * prefetch alike. Each page is read through `agendaListQuery`, the one description of its query.
+ * prefetch alike. Every page is one `GET /api/teams/{slug}/publications`, with
+ * `when=UPCOMING_FIRST&dated=true` (API-185): its two sections and their counts come in the answer.
  */
 export const agendaFilterOptions = {
   schema: agendaFiltersSchema,
@@ -32,14 +38,16 @@ export function useTeamAgendaData(teamSlug?: string) {
   const team = useGetTeam(teamSlug!, { query: { enabled: !!teamSlug } })
 
   const apiParams = useMemo(() => agendaApiParams(filters), [filters])
-  const publications = useQuery({
-    ...agendaListQuery(teamSlug!, apiParams),
-    ...LIST_QUERY,
-    enabled: !!teamSlug,
+  const publications = useListPublications(teamSlug!, apiParams, {
+    query: { ...LIST_QUERY, enabled: !!teamSlug },
+    request: LIST_REQUEST,
   })
 
   const prefetchPage = useCallback(
-    (page: number) => agendaListQuery(teamSlug!, { ...apiParams, page }),
+    (page: number) => ({
+      queryKey: getListPublicationsQueryKey(teamSlug!, { ...apiParams, page }),
+      queryFn: () => listPublications(teamSlug!, { ...apiParams, page }, LIST_REQUEST),
+    }),
     [teamSlug, apiParams]
   )
 
@@ -65,7 +73,7 @@ export async function prefetchTeamAgenda(
   await Promise.all([
     prefetchGetTeamQuery(queryClient, teamSlug),
     prefetchPageWindow(agendaApiParams(filters), (p) =>
-      queryClient.prefetchQuery(agendaListQuery(teamSlug, p))
+      prefetchListPublicationsQuery(queryClient, teamSlug, p, { request: LIST_REQUEST })
     ),
     tagTarget ? prefetchTeamTags(queryClient, teamSlug, tagTarget) : undefined,
   ])

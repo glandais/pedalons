@@ -54,9 +54,11 @@ export const agendaFiltersAlias = {
  * Projects the agenda's filters onto `GET /api/teams/{slug}/publications` — the one place the page
  * and its route `prefetch` both go through, so their query keys match byte for byte.
  *
- * Always `when=UPCOMING_FIRST` (API-185): what is not over yet — a ride under way included —
- * soonest first, then what is over, latest first, and `upcomingTotal` says where the first section
- * ends. « Je participe » adds `participating`. No clock in the key. Tags only go with a kind: each
+ * Always `when=UPCOMING_FIRST&dated=true` (API-185): what is not over yet — a ride under way
+ * included — soonest first, then what is over, latest first, and `upcomingTotal` says where the
+ * first section ends. `dated=true` keeps the list to rides and trips whatever the kind — the
+ * team's posts never reach « Plus tôt » — and `total` and `upcomingTotal` count only them.
+ * « Je participe » adds `participating`. No clock in the key. Tags only go with a kind: each
  * kind has its own vocabulary (plan D3), and the API ignores them without `type`.
  */
 export function agendaApiParams(filters: AgendaFilters) {
@@ -67,20 +69,9 @@ export function agendaApiParams(filters: AgendaFilters) {
     size: filters.size,
     type,
     when: PublicationWhen.UPCOMING_FIRST,
+    dated: true,
     ...(filters.scope === 'me' ? { participating: true } : {}),
     ...(type && filters.tags ? { tags: filters.tags } : {}),
     view: ListViewMode.COMPACT,
   }
-}
-
-export type AgendaApiParams = ReturnType<typeof agendaApiParams>
-
-/**
- * Whether `when=UPCOMING_FIRST` alone keeps the agenda to rides and trips. It does with a kind, and
- * with « Je participe » (a post has no participants). « Tout » over « Toutes les dates » does not:
- * `UPCOMING_FIRST` puts the posts in « Plus tôt », and `type` takes one kind — that list is read
- * through `listRidesAndTripsUpcomingFirst` instead.
- */
-export function agendaKeepsPostsOut(params: AgendaApiParams): boolean {
-  return params.type !== undefined || params.participating === true
 }

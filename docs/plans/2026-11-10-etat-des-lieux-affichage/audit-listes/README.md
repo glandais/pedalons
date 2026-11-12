@@ -54,5 +54,5 @@ Sur le site, `TeamDirectoryPage.tsx` est l'annuaire des membres d'une équipe ; 
 | 2. Galeries de listes | Faites le 12 novembre 2026 : app `/dev/listes` (73 cas), site `dev/lists.html` (75 cas), captures dans `captures/`, [constat](constat-captures.md) |
 | 3. Planches avant / cible | Faites le 12 novembre 2026 : neuf planches `maquettes/project/cible-listes-rl*.dc.html`, page « Listes — cibles » de l'artifact |
 | 4. Décisions | Prises le 12 novembre 2026, toutes les options recommandées ; écrites dans `maquettes/KIT.md` §10 |
-| 5. Lots | À faire |
-| 6. Vérification contre la cible | À faire |
+| 5. Lots | Faits le 12 novembre 2026 : `API-185` (contrat 14.8.0), `MOB-143`, `MOB-140`, `WEB-175` |
+| 6. Vérification contre la cible | Tests et captures de galerie refaites, regardées par échantillon. Restent la recette complète (e2e) et l'écran réel : `MOB-146`, `WEB-176` |

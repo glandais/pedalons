@@ -17,6 +17,23 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
 ## MOB — Application mobile
 
 - `MOB-142` **La météo d'une sortie, d'un groupe et d'une étape ne dépend plus d'aucune date calculée par l'app** (12 novembre 2026, contrat inchangé) — pendant de `WEB-173`. Les pages sortie, groupe et étape ne demandaient plus la météo une fois l'arrivée estimée passée (`PublicationPhase.finished`) ; elles la demandent toujours, sauf annulation (`_asksWeather`), et retirent la section entière, titre compris, quand le serveur répond `OUT_OF_RANGE` (`weatherIsOutOfRange`, `shownRideWeather` dans `rides/domain/ride_weather_display.dart` ; par étape dans `stage_detail_page.dart`) — la seule règle de fin (`API-183`). Conséquence : une sortie ou un voyage en brouillon n'a plus le titre « Météo » et sa phrase « Aucune prévision… », qui restent pour `NO_LOCATION` et un statut inconnu. Tests qui couvrent : `ride_detail_page_test.dart`, `ride_group_page_test.dart`, `trip_weather_test.dart` (« OUT_OF_RANGE : plus de section », « … que le serveur prévoit encore la garde »). Pas vérifié sur appareil. **À ne pas défaire** : aucune règle de date côté client pour la météo ; les lignes météo des cartes (`MOB-139`) ne sont pas concernées.
+- `MOB-143` **Listes homogènes entre l'app et le site, côté app** (12 novembre 2026, contrat 14.8.0) — les quinze
+  règles de listes décidées sur planches (`plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md` §10, [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md)). Briques communes : `core/lists/list_states.dart` (erreur, refus,
+  vide filtré nommé, compteur), `list_scope.dart` (puce « Portée », feuille à coche), `list_toolbar.dart` (« Créer »,
+  contrôle de vue, en-tête de section), `PagedListFooter` (seul pied de liste). Explorer s'ouvre sur « Membre » ;
+  équipes triées selon la portée, membres par nom ; pastille de filtres qui compte ce que « Effacer les filtres » lève
+  (tout sauf le tri, portée comprise) ; recherche toujours visible ; puce « Prix » aux annonces ; un seul contrôle de
+  vue « Vignettes · Lignes · Carte / Calendrier », retenu par liste ; « Créer » dans la barre (agenda, parcours,
+  modèles) ; agenda « Toutes les dates / Je participe » et fil « Tout / Je participe » en deux sections « À venir » /
+  « Plus tôt » (`when=UPCOMING_FIRST`, `dated=true` pour l'agenda, `PagedListState.firstSectionTotal`).
+  `myTeamsProvider` lit toutes les pages ; l'en-tête d'équipe affiche le rôle réel. **À ne pas défaire** : la frontière
+  des sections se calcule sur la position globale (`page × size + i`), pas sur le nombre de lignes affichées ; l'app ne
+  crée ni annonce ni équipe (`MOB-144`). Tests : `list_states_test`, `paged_list_sections_test`, `team_agenda_test`,
+  `home_feed_bar_test`, `routes_list_states_test`, `publication_feed_dated_test`, galerie `list_gallery_test` (74 cas).
+  Vu sur captures de galerie seulement : recette `MOB-146`.
+- `MOB-140` **Vue en lignes de l'agenda dans l'app** (12 novembre 2026) — écart voulu le matin (V7 du tri des cartes),
+  décidé l'après-midi par la règle RL9 des listes : `PublicationRow` (`publication_card.dart`), mêmes calculs que la
+  carte (KIT §9). Livré avec `MOB-143`.
 - `MOB-145` **Listes : les défauts de l'audit, côté app** (12 novembre 2026) — DL1 à DL10 et DL20 du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §1.
   Les parcours ont un état vide simple (« Aucun parcours », « Ajouter un parcours » pour qui les gère) distinct du vide
   filtré ; au fil et à l'agenda, le type et « Je participe » comptent comme filtres ; le calendrier ne dit « Ce mois
@@ -1217,6 +1234,17 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
 
 ## WEB — Site web
 
+- `WEB-175` **Listes homogènes entre l'app et le site, côté site** (12 novembre 2026, contrat 14.8.0) — pendant de
+  `MOB-143`, mêmes quinze règles (`plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md` §10). Briques communes : `lib/listQuery.ts` (pas de notification sur une liste, liste
+  précédente estompée), `QueryStateBoundary` (serveur, réseau, refus), `FilteredEmptyState`, `ResultCount` (masqué à
+  zéro), `MembershipSelect` / `TeamScopeSelect` (un seul contrôle de portée), `FilterPanelToggle` (compteur de filtres),
+  `UpcomingFirstSections`. Commentaires du plus ancien au plus récent ; recherche et tri sortis des panneaux (celui de
+  l'agenda disparaît) ; « Ouvertes à l'adhésion » ; choix d'une équipe et mois vide au calendrier ; « Créer {un
+  objet} » ; agenda et fil en deux sections, en-tête répété en haut d'une page ouverte au milieu d'une section ;
+  anciens liens `?w=past` / `?w=upcoming` redirigés. La page des modèles ne demande plus la liste pour une personne
+  simplement membre. **À ne pas défaire** : l'agenda est un seul appel `when=UPCOMING_FIRST&dated=true`. Tests :
+  `listStates.test.tsx`, `teamAgendaData.test.tsx`, `upcomingFirst.test.ts`, `QueryStateBoundary.test.tsx`, galerie
+  `ListGallery.test.tsx` ; e2e adaptés, non lancés à cette date. Vu sur captures de galerie seulement : recette `WEB-176`.
 - `WEB-174` **Listes : les défauts de l'audit, côté site** (12 novembre 2026) — DL11 à DL20 du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §1. Une panne
   n'affiche plus jamais l'état vide : les neuf listes sans état d'erreur passent par `QueryStateBoundary`, avec
   « Réessayer » ; une erreur serveur sur l'équipe affiche `TeamUnavailable` au lieu de rediriger ; une page au-delà de
@@ -3178,6 +3206,14 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
 ## API — Contrat d'API et backend
 
 - [x] `API-183` **La météo se montre jusqu'à la fin du jour local de la fin estimée, plus jusqu'à l'arrivée estimée** (12 novembre 2026, contrat inchangé) — la fin stockée (`PublicationEndCalculator`) est une estimation, la longueur du parcours à la vitesse du groupe, sans aucune pause : sur une étape de 230 km, on roulait encore une heure après elle et la prévision avait disparu (`OUT_OF_RANGE`). `RideWeatherCalculator.shownUntil(end, zone)` donne le début du jour local suivant la fin, dans le fuseau de l'entité ; `RideWeatherService.isOutOfRange` (détail d'une sortie et ligne des cartes par `RideWeatherLookup`) et `TripWeatherPlans.StagePlan.end` (donc `TripWeatherService.isGone`, par étape dans son propre fuseau) le lisent. Rien d'autre ne bouge : les heures passées restent en cache un jour (`WeatherHousekeeping`), les cellules deux jours après la dernière demande, et le planificateur ne rafraîchit toujours que ce qui est devant — une prévision déjà roulée est jugée à l'heure du passage (`WeatherRefreshPolicy.isStale`). Tests qui couvrent : `RideWeatherCalculatorTest` (`shownUntil_isTheEndOfTheLocalDayOfTheEnd`, `aRide_keepsItsWeatherPastItsEstimatedEnd_toTheEndOfThatDay`, `aStage_isGoneOnlyOnceItsDayIsOver`, sur horloge fixe) ; `RideWeatherResourceTest` et `TripWeatherResourceTest` reculés de façon à tomber un autre jour quelle que soit l'heure — 96 tests verts sur optiplex avec `WeatherPlannerTest` et `PublicationQueryCountTest` (suite complète non lancée). **À ne pas défaire** : cette règle n'existe que côté serveur — les clients n'ont aucun calcul de date pour la météo, ils lisent `status` (`WEB-173`, `MOB-142`). Reste hors de cette règle : la ligne météo d'une carte de voyage (`TripWeatherLookup`, prochaine étape *à partir*) et un aperçu GPX daté (coupé à son départ).
+- `API-185` **Événements datés : « à venir » puis « plus tôt » dans une même liste paginée** (12 novembre 2026,
+  contrat 14.8.0) — règle RL15 (`plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md` §10). `when=UPCOMING_FIRST` sur `/api/publications`, `/api/teams/{slug}/publications`
+  et leurs `/count` : d'abord ce qui n'est pas fini (comme `UPCOMING`, une sortie en cours comprise), départ le plus
+  proche d'abord, puis le reste — sorties et voyages finis, et publications à leur date de parution — du plus récent
+  au plus ancien ; ordre total. La page porte `upcomingTotal`, la taille de la première section, pour placer les deux
+  en-têtes à n'importe quelle page. `dated=true` limite une liste aux sorties et aux voyages (l'agenda). Sans ces
+  paramètres, rien ne change. Une requête de comptage de plus par page, jamais par ligne. Tests :
+  `PublicationUpcomingFirstTest`, `PublicationQueryCountTest`. Limite : pas d'index pour ce tri.
 - `API-184` **Listes paginées : ordre total, et membres par nom** (12 novembre 2026, contrat 14.7.0) — DL21 et DL22 du
   [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §1. Chaque liste paginée par offset termine sa clé de tri par l'id, dans le même sens : publications, agenda,
   parcours, annonces, modèles, lieux, invitations, aperçus GPX, listes d'administration. Sans cela, deux éléments à clé

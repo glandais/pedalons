@@ -17,7 +17,6 @@ import {
   ADS,
   ADS_TOTAL,
   AGENDA,
-  AGENDA_PAST,
   ALL_ROUTES,
   GROUP_B_PEOPLE,
   MEMBERS,
@@ -82,11 +81,10 @@ const AT_REST = {
   tags: ok(teamTags('ROUTE')),
   posts: page('publications', POSTS, 47),
   /**
-   * The agenda's « À venir » (`when=UPCOMING`, and `UPCOMING_FIRST` with a kind) and its « Plus
-   * tôt » (`when=PAST`): « Tout » over « Toutes les dates » is read from both (RL15).
+   * The agenda (`when=UPCOMING_FIRST&dated=true`, RL15): one list, « À venir » its first 18 rows,
+   * « Plus tôt » the other 29 — the first page is all ahead.
    */
-  agenda: page('publications', AGENDA, 18, 12, 18),
-  agendaPast: page('publications', AGENDA_PAST, 29),
+  agenda: page('publications', AGENDA, 47, 12, 18),
   routes: page('routes', ROUTES, 47),
   routesBounds: ok({ minLat: 48.3, minLon: -4.0, maxLat: 48.5, maxLon: -3.7 }),
   allRoutes: page('routes', ALL_ROUTES, 47),
@@ -106,7 +104,13 @@ const AT_REST = {
 export type Endpoint = keyof typeof AT_REST
 export type Scenario = Partial<Record<Endpoint, Reply>>
 
-const routes: Array<[method: string, path: RegExp, endpoint: (params: Params) => Endpoint]> = [
+/**
+ * Each endpoint by method and path; `undefined` leaves a request unserved, as a call no fixture
+ * answers would be.
+ */
+const routes: Array<
+  [method: string, path: RegExp, endpoint: (params: Params) => Endpoint | undefined]
+> = [
   ['get', /^\/api\/config$/, () => 'config'],
   ['get', /^\/api\/users\/me$/, () => 'me'],
   ['get', /^\/api\/version$/, () => 'version'],
@@ -126,8 +130,9 @@ const routes: Array<[method: string, path: RegExp, endpoint: (params: Params) =>
   [
     'get',
     /^\/api\/teams\/[^/]+\/publications$/,
-    (params) =>
-      params.type === 'POST' ? 'posts' : params.when === 'PAST' ? 'agendaPast' : 'agenda',
+    // The team's posts (`type=POST`), or its agenda — always `dated=true` (API-185): an agenda
+    // call without it would list the posts in « Plus tôt », so it is left unserved.
+    (params) => (params.type === 'POST' ? 'posts' : params.dated === true ? 'agenda' : undefined),
   ],
   ['get', /^\/api\/teams\/[^/]+\/calendar\/events$/, () => 'teamCalendar'],
   ['get', /^\/api\/teams\/[^/]+\/routes\/bounds$/, () => 'routesBounds'],
@@ -169,6 +174,7 @@ const galleryAdapter: AxiosAdapter = async (config) => {
   for (const [verb, pattern, endpointOf] of routes) {
     if (verb !== method || !pattern.test(path)) continue
     const endpoint = endpointOf((config.params ?? {}) as Params)
+    if (endpoint === undefined) break
     const reply = scenario[endpoint] ?? AT_REST[endpoint]
     if (reply === 'pending') return new Promise<AxiosResponse>(() => {})
     if ('status' in reply) {

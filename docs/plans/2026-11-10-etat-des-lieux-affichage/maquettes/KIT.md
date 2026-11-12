@@ -349,7 +349,9 @@ site ; défilement infini contre numéros de page ; filtres en mémoire contre f
   liste paginée à deux sections** : « À venir », du plus proche au plus lointain (une sortie en cours y reste, jugée
   sur sa fin), puis « Plus tôt », du plus récent au plus ancien. Dans un fil mixte, les publications sont dans « Plus
   tôt », à leur date de parution. Le compteur est dans l'en-tête de chaque section ; sur le site, l'en-tête se répète
-  en haut d'une page qui s'ouvre au milieu d'une section. L'ordre est servi par l'API, page par page.
+  en haut d'une page qui s'ouvre au milieu d'une section. L'ordre est servi par l'API, page par page (`when=UPCOMING_FIRST`, `upcomingTotal` ; `dated=true` pour une liste
+  sans publications, comme l'agenda).
   - Agenda d'une équipe : la barre devient « Toutes les dates / Je participe » ; la période « Passées » disparaît,
     « Je participe » vaut pour les deux sections.
   - Fil d'accueil : « Tout / Je participe », des deux côtés ; plus de « À venir ».
+- **Mots communs** : l'option neutre d'un critère de type est « Tout » (jamais « Tous », « Tous les types »).

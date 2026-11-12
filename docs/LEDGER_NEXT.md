@@ -71,14 +71,11 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       son groupe, accueil, tableau de bord ; `TripStageDto.route` pour l'étape. Même
       vocabulaire d'état que l'interrupteur (`profile.gps.autoSync.*`). Pendant web : `WEB-163`.
 
-- [ ] `MOB-140` **Vue en lignes de l'agenda dans l'app (S à M)** — écart voulu le 12 novembre 2026 (V7 du tri des cartes), puis décidé le même jour par la règle RL9 des listes (`KIT.md` §10) : un seul contrôle de vue « Vignettes · Lignes · Calendrier », comme le site. Se fait avec `MOB-143`.
-- [ ] `MOB-143` **Listes homogènes entre l'app et le site, côté app : les règles (M)** — après les défauts (`MOB-145`),
-  il reste les quinze règles du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §2. Décidées le 12 novembre 2026 et à coder : Explorer › Parcours s'ouvre sur
-  « Membre » (RL1), équipes triées selon la portée (RL5), invites « Rechercher {un objet}… » (RL7), un seul pied de
-  liste (RL12). À décider sur planche : RL2, RL3, RL4, RL6, RL8, RL9, RL10, RL11, RL13, RL15. Restes des défauts :
-  `myTeamsProvider` (rôle, barres d'outils, sélecteur d'équipe) s'arrête toujours à 20 équipes ; en-têtes « N modèles »
-  et « N équipes » de Découvrir non formatés au-delà de 999 ; la section Annonces manque à une personne qui administre
-  la plateforme sans être membre (DL24). Même chantier côté site : `WEB-175`.
+- [ ] `MOB-146` **Listes homogènes : recette sur appareil de `MOB-143` (S)** — les quinze règles de listes (`plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md` §10)
+  sont codées et vérifiées par tests et par les captures de la galerie `/dev/listes`, pas sur une app qui tourne. À
+  regarder : mode sombre, texte agrandi (l'invite de recherche est coupée à côté de « Créer »), anglais, feuilles de
+  portée et de prix, défilement à travers la frontière « À venir » / « Plus tôt », vue en lignes de l'agenda, liens
+  profonds `?w=past`. Pendant côté site : `WEB-176`.
 - [ ] `MOB-141` **Cartes homogènes : recette sur appareil de `MOB-139` (S)** — les règles communes des cartes sont
       codées et vérifiées par tests et par captures de la galerie (`flutter test`, hors appareil), jamais sur simulateur
       ni sur appareil : mode sombre, texte agrandi, petit écran, anglais, impérial, feuilles (GPS, signaler / bloquer,
@@ -411,12 +408,10 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       l'espace fine insécable à moins de 2 px). Rustine en place (`WEB-167`) : une mini-police limitée à U+202F,
       `Pedalons Narrow Space` dans `index.css`. Charger Inter (sous-ensemble latin, quatre graisses, `font-display: swap`)
       change l'aspect de tout le site et demande une passe visuelle large ; la rustine se retire alors.
-- [ ] `WEB-175` **Listes homogènes entre l'app et le site, côté site : les règles (M)** — pendant de `MOB-143`. Décidées
-  le 12 novembre 2026 et à coder : commentaires du plus ancien au plus récent (RL5), équipes triées selon la portée
-  (RL5), invites « Rechercher {un objet}… » (RL7), « Afficher plus de commentaires » (RL12). À décider sur planche :
-  les mêmes règles que `MOB-143`. Reste des défauts : la page des modèles de sortie s'ouvre à une personne simplement
-  membre, à qui le serveur refuse la liste (DL23) ; un refus (403) sur une liste affiche « Chargement impossible »
-  (forme d'erreur : RL11).
+- [ ] `WEB-176` **Listes homogènes : recette en navigateur de `WEB-175` (S)** — même réserve que `MOB-146` : vérifié
+  par tests et par les captures de `dev/lists.html`. À regarder sur le site servi : barres à 390 px, sections
+  « À venir » / « Plus tôt » d'une page à l'autre, calendrier (mois vide, choix d'une équipe), erreur sans notification,
+  anciens liens `?w=past`.
 - [ ] `WEB-172` **Cartes homogènes : recette en navigateur de `WEB-167` (S)** — même réserve que `MOB-141` côté site :
       vérifié par tests unitaires et par captures de la galerie de développement, pas sur le site servi (SSR, hydratation,
       mode sombre, largeurs intermédiaires). La suite Playwright a tourné le 12 novembre 2026 sur la pile e2e : 1 981
@@ -648,11 +643,6 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 
 ## API — Contrat d'API et backend
 
-- [ ] `API-185` **Événements datés : « à venir » puis « passées » dans une même liste paginée (S)** — quand l'agenda ou
-  un fil affiche tout, la prochaine sortie est noyée : l'ordre est `dateTime desc`, la plus lointaine d'abord. Demande du
-  12 novembre 2026 (règle RL15 du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md)) : « À venir » du plus proche au plus lointain, puis « Passées » de la plus récente
-  à la plus ancienne. À servir par page (`AllPublicationRepository`, `TeamEntityRepository`), pour que les numéros de
-  page du site et le défilement de l'app restent une seule liste. Forme à trancher sur planche (`MOB-143`, `WEB-175`).
 
 - [ ] `API-173` **La ligne météo d'un voyage dans les listes s'arrête au départ de sa dernière étape (S)** — reste
       de `API-170` : la page du voyage et celle de l'étape gardent leur météo jusqu'à la fin estimée de l'étape,

@@ -1,11 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readUrlFilters } from '@/hooks/useUrlFilters'
-import {
-  agendaApiParams,
-  agendaFiltersAlias,
-  agendaFiltersSchema,
-  agendaKeepsPostsOut,
-} from './agendaFilters'
+import { agendaApiParams, agendaFiltersAlias, agendaFiltersSchema } from './agendaFilters'
 
 const read = (query: string) =>
   readUrlFilters(new URLSearchParams(query), {
@@ -14,9 +9,14 @@ const read = (query: string) =>
   })
 
 describe('agenda filters (WEB-68, RL15)', () => {
-  it('opens on « Toutes les dates »: when=UPCOMING_FIRST, no clock in the key', () => {
+  it('opens on « Toutes les dates »: when=UPCOMING_FIRST&dated=true, no clock in the key', () => {
     const params = agendaApiParams(read(''))
-    expect(params).toMatchObject({ when: 'UPCOMING_FIRST', view: 'COMPACT', page: 0 })
+    expect(params).toMatchObject({
+      when: 'UPCOMING_FIRST',
+      dated: true,
+      view: 'COMPACT',
+      page: 0,
+    })
     expect(params).not.toHaveProperty('from')
     expect(params).not.toHaveProperty('participating')
     expect(params.type).toBeUndefined()
@@ -37,10 +37,10 @@ describe('agenda filters (WEB-68, RL15)', () => {
     expect(agendaApiParams(read('type=trip')).type).toBe('TRIP')
   })
 
-  it('knows when UPCOMING_FIRST alone keeps the posts out: a kind, or « Je participe »', () => {
-    expect(agendaKeepsPostsOut(agendaApiParams(read('type=ride')))).toBe(true)
-    expect(agendaKeepsPostsOut(agendaApiParams(read('w=me')))).toBe(true)
-    expect(agendaKeepsPostsOut(agendaApiParams(read('')))).toBe(false)
+  it('always keeps the posts out with dated=true: with or without a kind, « Je participe » or not', () => {
+    for (const query of ['', 'type=ride', 'type=trip', 'w=me', 'type=ride&w=me']) {
+      expect(agendaApiParams(read(query))).toMatchObject({ when: 'UPCOMING_FIRST', dated: true })
+    }
   })
 
   it('keeps the view out of the API params', () => {

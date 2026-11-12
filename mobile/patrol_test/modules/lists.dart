@@ -101,7 +101,7 @@ final class Lists extends Module {
 
   bool adsHave(String adSlug) => isShown(keys.adsList.card(adSlug));
 
-  /// Taps an ad type chip (`AdType.json`); `null` is « Tous ».
+  /// Taps an ad type chip (`AdType.json`); `null` is « Tout ».
   Future<void> selectAdType(String? adType) async {
     await _chipInView(keys.adsList.typeChip(adType));
     await $(keys.adsList.typeChip(adType)).tap();

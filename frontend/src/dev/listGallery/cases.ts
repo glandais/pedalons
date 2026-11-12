@@ -197,8 +197,7 @@ const agenda: ListSection = {
       url: () => paths.teamAgenda(VCM_SLUG),
       api: {
         ...RIDE_TAGS,
-        agenda: page('publications', AGENDA.slice(0, 2), 2),
-        agendaPast: page('publications', AGENDA_PAST, 45),
+        agenda: page('publications', [...AGENDA.slice(0, 2), ...AGENDA_PAST], 47, 12, 2),
       },
     },
     {
@@ -217,7 +216,7 @@ const agenda: ListSection = {
       id: 'agenda-vide',
       label: 'rien à l’agenda',
       url: () => paths.teamAgenda(VCM_SLUG),
-      api: { ...RIDE_TAGS, agenda: EMPTY('publications'), agendaPast: EMPTY('publications') },
+      api: { ...RIDE_TAGS, agenda: EMPTY('publications') },
     },
     {
       id: 'agenda-vide-filtre',

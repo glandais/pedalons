@@ -87,7 +87,7 @@ test.describe('publication feeds', () => {
       main.getByRole('radiogroup', { name: 'Période' }).getByRole('radio', { name: label })
 
     // The agenda holds rides and trips, never posts, in two sections (RL15): « À venir », then
-    // « Plus tôt ». « Toutes les dates » by default (when=UPCOMING_FIRST).
+    // « Plus tôt ». « Toutes les dates » by default: one read, when=UPCOMING_FIRST&dated=true.
     const { markup, reads } = await openServerRendered(
       page,
       `/equipes/${team.slug}/agenda?type=ride`,
@@ -296,7 +296,7 @@ test('ads: search and type from the URL, server-rendered, then changed through t
   await expect(search).toHaveValue('Velo')
   await expect(typeRadio('Location')).toBeChecked()
 
-  await segment(page, 'Filtrer par type', 'Tous les types')
+  await segment(page, 'Filtrer par type', 'Tout')
   await expectQuery(page, { q: 'Velo' })
   await expect(titles).toHaveText([rental.name, sale.name])
   // The watch does see the browser's own reads: a filter nobody prefetched is one.

@@ -156,7 +156,7 @@ describe('the home feed reads in two sections when it holds rides or trips (RL15
       totalPages: 4,
     }) as never
 
-  it('« Tous »: « À venir » counts rides and trips, « Plus tôt » publications; no list count', async () => {
+  it('« Tout »: « À venir » counts rides and trips, « Plus tôt » publications; no list count', async () => {
     const { ride, post } = await import('@/dev/cardGallery/fixtures')
     renderIt(
       <HomeFeedSection

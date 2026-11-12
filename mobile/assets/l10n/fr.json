@@ -920,7 +920,7 @@
     "emptyHint": "Les annonces de vente, de location et de recherche de votre équipe apparaîtront ici.",
     "list": {
       "searchPlaceholder": "Rechercher une annonce…",
-      "allTypes": "Tous",
+      "allTypes": "Tout",
       "count": {
         "zero": "Aucune annonce",
         "one": "{} annonce",

@@ -163,7 +163,7 @@ void main() {
 
     expect(find.text('Plus récentes d\'abord'), findsOneWidget);
     for (final String label in <String>[
-      'Tous',
+      'Tout',
       'Vente',
       'Location',
       'Recherche',
