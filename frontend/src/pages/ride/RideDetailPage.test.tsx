@@ -65,6 +65,11 @@ vi.mock('@/components/ride/ParticipantList', () => ({
 vi.mock('@/components/ride/RideGroupRouteActions', () => ({
   RideGroupRouteActions: () => <div data-testid="route-actions" />,
 }))
+vi.mock('@/components/route/GpsMenuButton', () => ({
+  GpsMenuButton: ({ routeSlug }: { routeSlug: string }) => (
+    <div data-testid="gps-button" data-route={routeSlug} />
+  ),
+}))
 vi.mock('@/components/route/RoutesMapView', () => ({
   RoutesMapView: (props: { kmMarkers?: boolean }) => (
     <div data-testid="routes-map" data-km-markers={String(!!props.kmMarkers)} />
@@ -194,6 +199,28 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Rejoindre' }))
     expect(state.join).toHaveBeenCalledWith('g1')
+  })
+
+  // R6 and R7 (docs/LEDGER_*.md WEB-167): the group card's controls, on the solo panel too.
+  it('gives a rider « GPS » and the red « Quitter le groupe » at the foot, no button in the corner', () => {
+    state.ride = ride({
+      registered: true,
+      registeredGroupId: 'g1',
+      groups: [group({ registered: true })],
+    })
+    renderPage()
+    const panel = screen.getByTestId('solo-group')
+    expect(within(panel).getByTestId('gps-button').getAttribute('data-route')).toBe('boucle')
+    expect(within(panel).getByRole('button', { name: 'Quitter le groupe' })).toBeTruthy()
+    expect(within(panel).queryByRole('button', { name: 'Quitter' })).toBeNull()
+  })
+
+  it('says « Complet » with a disabled button, and offers no export to a non-rider', () => {
+    state.ride = ride({ groups: [group({ full: true, countParticipants: 12 })] })
+    renderPage()
+    const panel = screen.getByTestId('solo-group')
+    expect(within(panel).getByRole('button', { name: 'Complet' })).toBeDisabled()
+    expect(within(panel).queryByTestId('gps-button')).toBeNull()
   })
 
   it('shows no leader without one — never the ride creator', () => {
@@ -544,7 +571,7 @@ describe('RideDetailPage — « Changer pour » on the other groups', () => {
     })
     renderPage()
     expect(screen.queryByRole('button', { name: /Changer pour/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Quitter' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Quitter le groupe' })).toBeNull()
   })
 
   it('offers no switch to a full group', () => {
@@ -555,6 +582,6 @@ describe('RideDetailPage — « Changer pour » on the other groups', () => {
     })
     renderPage()
     expect(screen.queryByRole('button', { name: /Changer pour/ })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Quitter' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Quitter le groupe' })).toBeTruthy()
   })
 })

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { IconPencil, IconUsersGroup } from '@tabler/icons-react'
-import { Alert, Anchor, Badge, Button, Container, Stack, Text } from '@mantine/core'
+import { Alert, Anchor, Badge, Box, Button, Container, Stack, Text } from '@mantine/core'
 import { startFor } from '@/utils/groupStart'
 import { DepartureBlock } from '@/components/common/DepartureBlock'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
@@ -17,6 +17,7 @@ import { PlacesLine } from '@/components/publication/PlacesLine'
 import { CHILD_WEATHER_ANCHOR, useWeatherFocus } from '@/components/publication/useWeatherFocus'
 import { GroupJoinActions } from '@/components/ride/group/GroupJoinActions'
 import { GroupLeader } from '@/components/ride/group/GroupLeader'
+import { LeaveGroupLink } from '@/components/ride/group/LeaveGroupLink'
 import { GroupParticipantsSection } from '@/components/ride/group/GroupParticipantsSection'
 import { GroupPlaces } from '@/components/ride/group/GroupPlaces'
 import { RouteMapPanel } from '@/components/route/RouteMapPanel'
@@ -133,8 +134,9 @@ export function RideGroupPage() {
   const isMember = !!ride.permissions.canSeeParticipants
   const action = groupAction(ride, group)
   const groups = ride.groups ?? []
+  // Said whatever this group offers: « Complet » to a reader registered elsewhere too (R6).
   const otherGroup =
-    action === 'registeredElsewhere'
+    ride.registeredGroupId && ride.registeredGroupId !== group.id
       ? groups.find((g) => g.id === ride.registeredGroupId)
       : undefined
   const routeSlug = group.routeSlug ?? ride.routeSlug
@@ -167,16 +169,11 @@ export function RideGroupPage() {
       title={title}
       badges={
         <>
-          {group.registered ? (
+          {/* « Complet » is the disabled button of the actions, not a second badge (R6). */}
+          {group.registered && (
             <Badge color="primary" variant="light">
               {t('rides.detail.groups.joined')}
             </Badge>
-          ) : (
-            group.full && (
-              <Badge color="gray" variant="light">
-                {t('rides.detail.groups.full')}
-              </Badge>
-            )
           )}
           {/* Beside the title, not with the join actions: signed out there are none, and the
               button sat alone on its own line. */}
@@ -275,6 +272,17 @@ export function RideGroupPage() {
             group={group}
             canSeeParticipants={isMember}
           />
+
+          {/* « Quitter le groupe » under « Personnes inscrites », a red link as on the group's card
+              (KIT §8, docs/LEDGER_*.md WEB-167 R6) — never beside the title. */}
+          {action === 'leave' && (
+            <Box>
+              <LeaveGroupLink
+                onLeave={() => membership.leave(group.id)}
+                pending={membership.isPending}
+              />
+            </Box>
+          )}
 
           {/* What to do with the route, beside the map rather than under it: the map column fills
               the visible height (docs/LEDGER_*.md WEB-134) */}

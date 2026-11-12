@@ -20,6 +20,7 @@ import { Status } from '@/api/dto'
 import type { RouteParams } from '@/config/routes.types'
 import { paths } from '@/config/paths'
 import { hasWindForecast } from '@/lib/weatherOnRoute'
+import { isOver } from '@/utils/publicationEnd'
 import {
   leavesGroupPage,
   prefetchRideMap,
@@ -179,20 +180,29 @@ export function rideGroupMapDataRedirect(
  * What a rider can do on this group, from what the server enforces at join (`RideService.joinGroup`):
  * one group per ride, a second join is refused (409 `ALREADY_REGISTERED`) — moving goes through the
  * `switch` endpoint, offered on the ride's group cards ({@link canSwitchTo}) — so a reader registered
- * in another group is told so, never offered « Rejoindre ». « Quitter » stays on a past ride, as on
- * the ride's cards, but not on a cancelled one (KIT §8 and §9, ledger WEB-165): the ride no longer
- * takes place, the « J'y vais » badge alone stays. A full group offers nothing but its badge.
+ * in another group is told so, never offered « Rejoindre ».
+ *
+ * The app's rules (docs/LEDGER_*.md WEB-167, R6; `rideGroupAction` in the app): « Quitter le groupe »
+ * stays until the ride is over (`isOver`, its `endDateTime`), never on a cancelled ride, where the
+ * « J'y vais » badge alone stays (KIT §8 and §9, ledger WEB-165). A full group says « Complet » to
+ * whoever may register, even to a reader registered in another group. Nothing at all once the ride is
+ * over or cancelled.
  */
-export type GroupAction = 'join' | 'leave' | 'registeredElsewhere' | 'none'
+export type GroupAction = 'join' | 'leave' | 'registeredElsewhere' | 'full' | 'none'
 
-export function groupAction(ride: RideDto, group: RideGroupDto): GroupAction {
-  if (group.registered) return ride.status === Status.CANCELLED ? 'none' : 'leave'
-  if (ride.registeredGroupId && ride.registeredGroupId !== group.id) return 'registeredElsewhere'
-  if (group.full) return 'none'
+export function groupAction(
+  ride: RideDto,
+  group: RideGroupDto,
+  now: number = Date.now()
+): GroupAction {
+  if (ride.status === Status.CANCELLED || isOver(ride, now)) return 'none'
+  if (group.registered) return 'leave'
   // The backend's answer (docs/LEDGER_*.md WEB-166): a member, the ride published, not every group
-  // gone — exact on a detail, which is where this is called.
-  const canJoin = !!ride.permissions.canRegister && !ride.registered
-  return canJoin ? 'join' : 'none'
+  // gone — exact on a detail, which is where this is called. True for a registered reader too.
+  const canRegister = !!ride.permissions.canRegister
+  if (group.full) return canRegister ? 'full' : 'none'
+  if (ride.registeredGroupId && ride.registeredGroupId !== group.id) return 'registeredElsewhere'
+  return canRegister && !ride.registered ? 'join' : 'none'
 }
 
 /**

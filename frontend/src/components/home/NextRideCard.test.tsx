@@ -15,6 +15,13 @@ vi.mock('@/api/endpoints/rides/rides', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/api/endpoints/rides/rides')>()),
   useLeaveGroup: () => ({ mutate: leave.mutate, isPending: false }),
 }))
+vi.mock('@/components/route/GpsMenuButton', () => ({
+  GpsMenuButton: ({ routeSlug }: { routeSlug: string }) => (
+    <button type="button" data-testid="gps-button" data-route={routeSlug}>
+      GPS
+    </button>
+  ),
+}))
 vi.mock('react-i18next', async (importOriginal) => {
   const { frenchT } = await import('@/test/frenchT')
   return {
@@ -39,6 +46,7 @@ function ride(overrides: Partial<RideDto> = {}): RideDto {
     name: 'Sortie du samedi',
     media: MEDIA,
     dateTime: START,
+    endDateTime: '2026-04-11T11:00:00Z',
     timezone: 'Europe/Paris',
     status: 'PUBLISHED',
     finished: false,
@@ -107,5 +115,72 @@ describe('NextRideCard', () => {
     renderCard(ride({ finished: true }))
     expect(screen.getByTestId('day-box')).toBeTruthy()
     expect(screen.queryByTestId('day-pill')).toBeNull()
+  })
+
+  // R6 (docs/LEDGER_*.md WEB-167): « Se désinscrire » is the red link of « Quitter le groupe ».
+  it('offers « Se désinscrire » as the red leave link, until the ride is over', () => {
+    renderCard(ride())
+    expect(screen.getByRole('button', { name: 'Se désinscrire' }).dataset.testid).toBe(
+      'leave-group'
+    )
+    cleanup()
+    // Started an hour ago, not over: still offered.
+    vi.setSystemTime(new Date('2026-04-11T08:00:00Z'))
+    renderCard(ride({ finished: true }))
+    expect(screen.getByRole('button', { name: 'Se désinscrire' })).toBeTruthy()
+    cleanup()
+    vi.setSystemTime(new Date('2026-04-11T12:00:00Z'))
+    renderCard(ride({ finished: true }))
+    expect(screen.queryByRole('button', { name: 'Se désinscrire' })).toBeNull()
+  })
+
+  it('offers no leaving on a cancelled ride', () => {
+    renderCard(ride({ status: 'CANCELLED' }))
+    expect(screen.queryByRole('button', { name: 'Se désinscrire' })).toBeNull()
+  })
+
+  // R7: one « GPS » button for the group's route, until the ride is over.
+  it('offers « GPS » for the group’s route, not after the end', () => {
+    renderCard(
+      ride({
+        routeSlug: 'boucle',
+        registeredGroup: { ...ride().registeredGroup!, routeSlug: 'boucle-a' },
+      })
+    )
+    expect(screen.getByTestId('gps-button').getAttribute('data-route')).toBe('boucle-a')
+    expect(screen.queryByText('Envoyer vers l’appareil')).toBeNull()
+    cleanup()
+    vi.setSystemTime(new Date('2026-04-11T12:00:00Z'))
+    renderCard(ride({ routeSlug: 'boucle' }))
+    expect(screen.queryByTestId('gps-button')).toBeNull()
+  })
+
+  // R5: the group card's row — cluster, « Groupe A · 6/12 personnes », the places bar.
+  it('shows the group’s cluster, its count and its places bar', () => {
+    renderCard(
+      ride({
+        permissions: {
+          canEdit: false,
+          canDelete: false,
+          indexable: false,
+          canSeeParticipants: true,
+        },
+        registeredGroup: {
+          ...ride().registeredGroup!,
+          maxParticipants: 12,
+          full: false,
+          participants: [
+            { id: 'u1', displayName: 'Léa Martin' },
+            { id: 'u2', displayName: 'Karim Benali' },
+          ],
+        } as RideGroupDto,
+      })
+    )
+    expect(screen.getByTestId('avatar-cluster').textContent).toContain('KB')
+    expect(screen.getByTestId('group-count').textContent?.replace(/\u00a0/g, ' ')).toBe(
+      'Groupe A · 6/12 personnes'
+    )
+    expect(screen.getByTestId('group-places-bar')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Voir tout' })).toBeNull()
   })
 })

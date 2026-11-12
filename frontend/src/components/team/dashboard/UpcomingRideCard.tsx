@@ -141,7 +141,8 @@ export function UpcomingRideCard({ ride }: UpcomingRideCardProps) {
 /**
  * One group: a check on the reader's own, name, pace, its departure when the ride's groups do not
  * all leave at the header's time (WEB-136; the header carries the zone mention), and how full it is —
- * « Complet », « 11 / 16 », or a count when uncapped.
+ * « Complet », « 11/16 », or « 11 personnes » when uncapped — the cards' one form, the noun left
+ * out of this tight line (docs/LEDGER_*.md WEB-167, R5). Its bar is primary, red once full.
  */
 function GroupFill({
   group,
@@ -204,7 +205,7 @@ function GroupFill({
           <Text size="sm" c="dimmed" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
             {max
               ? t('teams.dashboard.ride.fill', { current: group.countParticipants, max })
-              : t('teams.dashboard.ride.registeredCount', { count: group.countParticipants })}
+              : t('rides.detail.groups.participantsNoMax', { count: group.countParticipants })}
           </Text>
         )}
       </Group>

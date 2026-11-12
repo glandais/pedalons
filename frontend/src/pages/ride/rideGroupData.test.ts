@@ -182,6 +182,38 @@ describe('groupAction and canSwitchTo', () => {
     ).toBe(false)
   })
 
+  // R6 (docs/LEDGER_*.md WEB-167): the app's rules.
+  it('says « Complet » on a full group, to a reader registered elsewhere too', () => {
+    expect(groupAction(ride(), group('g2', { full: true }))).toBe('full')
+    expect(
+      groupAction(
+        ride({ registered: false, registeredGroupId: undefined }),
+        group('g2', { full: true })
+      )
+    ).toBe('full')
+    // Not to whoever may not register: a non-member gets the count, no control.
+    expect(
+      groupAction(
+        ride({ permissions: { canRegister: false } } as Partial<RideDto>),
+        group('g2', { full: true })
+      )
+    ).toBe('none')
+  })
+
+  it('keeps « Quitter le groupe » after the start, until the ride is over', () => {
+    const timed = ride({
+      dateTime: '2026-10-11T07:00:00Z',
+      endDateTime: '2026-10-11T11:00:00Z',
+      finished: true,
+    } as Partial<RideDto>)
+    const mine = group('g1', { registered: true })
+    expect(groupAction(timed, mine, Date.parse('2026-10-11T09:00:00Z'))).toBe('leave')
+    expect(groupAction(timed, mine, Date.parse('2026-10-11T11:00:00Z'))).toBe('none')
+    expect(
+      groupAction(timed, group('g2', { full: true }), Date.parse('2026-10-11T12:00:00Z'))
+    ).toBe('none')
+  })
+
   it('drops « Quitter » on a cancelled ride, keeps it on a published one', () => {
     expect(groupAction(ride(), group('g1', { registered: true }))).toBe('leave')
     expect(groupAction(ride({ status: Status.CANCELLED }), group('g1', { registered: true }))).toBe(

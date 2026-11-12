@@ -17,6 +17,7 @@ import {
   PEOPLE,
   READER,
   ROUTE_USAGES,
+  routeDetails,
   TEMPLATE,
   TEMPLATE_DRAFT,
   VCM_TEAM,
@@ -49,6 +50,15 @@ const routes: Array<[method: string, path: RegExp, handler: Handler]> = [
     () => ({ teams: [VCM_TEAM, GRAVEL_TEAM], total: 2, page: 0, size: 20 }),
   ],
   ['get', /^\/api\/teams\/[^/]+\/routes\/[^/]+\/usages$/, () => ({ usages: ROUTE_USAGES })],
+  // The « GPS » menu of a card without its route (« Ma prochaine sortie »): its GPX and FIT links.
+  [
+    'get',
+    /^\/api\/teams\/[^/]+\/routes\/bulk$/,
+    (_match, params) => {
+      const slugs = ([] as unknown[]).concat(params.slug ?? [])
+      return { routes: [...routeDetails().values()].filter((r) => slugs.includes(r.slug)) }
+    },
+  ],
   [
     'get',
     /^\/api\/teams\/[^/]+\/rides\/[^/]+\/participants$/,

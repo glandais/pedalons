@@ -145,15 +145,15 @@ test.describe('registration', () => {
     await card.getByRole('button', { name: 'Rejoindre' }).click()
 
     await expect(card.getByText("J'y vais", { exact: true })).toBeVisible()
-    await expect(card.getByRole('button', { name: 'Quitter' })).toBeEnabled()
+    await expect(card.getByRole('button', { name: 'Quitter le groupe' })).toBeEnabled()
     await expect(card.getByText('1/5 personnes')).toBeVisible()
 
     // It is the server's state, not only the optimistic cache.
     await page.reload()
     await openRide(page, team.slug, ride)
     await expect(card.getByText("J'y vais", { exact: true })).toBeVisible()
-    await hydrated(card.getByRole('button', { name: 'Quitter' }))
-    await card.getByRole('button', { name: 'Quitter' }).click()
+    await hydrated(card.getByRole('button', { name: 'Quitter le groupe' }))
+    await card.getByRole('button', { name: 'Quitter le groupe' }).click()
 
     await expect(card.getByRole('button', { name: 'Rejoindre' })).toBeEnabled()
     await expect(card.getByText("J'y vais", { exact: true })).toHaveCount(0)
@@ -183,7 +183,7 @@ test.describe('registration', () => {
     await openRide(page, team.slug, ride)
 
     const fullCard = groupCard(page, full)
-    await expect(fullCard.getByText('Complet', { exact: true })).toBeVisible()
+    await expect(fullCard.getByRole('button', { name: 'Complet' })).toBeDisabled()
     await expect(fullCard.getByText('1/1 personne')).toBeVisible()
     await expect(fullCard.getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
     // The other group is still open — which also proves the page offers joining at all.
@@ -217,7 +217,7 @@ test.describe('registration', () => {
       card.getByRole('button', { name: 'Rejoindre' }),
       'precondition: a full group offers no join'
     ).toHaveCount(0)
-    await expect(card.getByText('Complet', { exact: true })).toBeVisible()
+    await expect(card.getByRole('button', { name: 'Complet' })).toBeDisabled()
   })
 
   test('a GROUP_FULL answer rolls back and is reported on that group', async ({ page }) => {
@@ -255,7 +255,7 @@ test.describe('registration', () => {
     await expect(groupCard(page, spare).getByText('Ce groupe est complet')).toHaveCount(0)
     // ...the optimistic registration is undone, and the refetched group says it is full.
     await expect(card.getByText("J'y vais", { exact: true })).toHaveCount(0)
-    await expect(card.getByText('Complet', { exact: true })).toBeVisible()
+    await expect(card.getByRole('button', { name: 'Complet' })).toBeDisabled()
     await expect(card.getByText('1/1 personne')).toBeVisible()
   })
 })
@@ -289,7 +289,7 @@ test.describe('a past ride', () => {
       const card = groupCard(page, name)
       await expect(card.getByText('0/10 personnes')).toBeVisible()
       await expect(card.getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
-      await expect(card.getByText('Complet', { exact: true })).toHaveCount(0)
+      await expect(card.getByRole('button', { name: 'Complet' })).toHaveCount(0)
     }
   })
 
@@ -346,7 +346,7 @@ test.describe('changing group', () => {
     const firstCard = groupCard(page, first)
     const secondCard = groupCard(page, second)
     await expect(firstCard.getByText("J'y vais", { exact: true })).toBeVisible()
-    await expect(firstCard.getByRole('button', { name: 'Quitter' })).toBeEnabled()
+    await expect(firstCard.getByRole('button', { name: 'Quitter le groupe' })).toBeEnabled()
     await expect(firstCard.getByText('1/10 personnes')).toBeVisible()
     await expect(secondCard.getByText('0/10 personnes')).toBeVisible()
     await expect(secondCard.getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
@@ -394,7 +394,7 @@ test.describe('changing group', () => {
     await expect(firstCard.getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
 
     // Leave B: A becomes joinable again, with « Rejoindre ».
-    const leave = secondCard.getByRole('button', { name: 'Quitter' })
+    const leave = secondCard.getByRole('button', { name: 'Quitter le groupe' })
     await hydrated(leave)
     await leave.click()
     await expect(secondCard.getByText("J'y vais", { exact: true })).toHaveCount(0)
@@ -550,7 +550,7 @@ test.describe('leaving a ride, seen from the home page and the calendar', () => 
     await event.click()
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/sorties/${ride.slug}$`))
     const card = groupCard(page, group)
-    const quit = card.getByRole('button', { name: 'Quitter' })
+    const quit = card.getByRole('button', { name: 'Quitter le groupe' })
     await hydrated(quit)
     await quit.click()
     await expect(card.getByRole('button', { name: 'Rejoindre' })).toBeEnabled()

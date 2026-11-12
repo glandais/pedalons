@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { paths } from '../../config/paths'
 import { Box, Button, Container, Stack, Title, Text } from '@mantine/core'
 import { useTripDetailData } from './tripDetailData'
-import { ReportTargetType } from '@/api/dto'
+import { ReportTargetType, Status } from '@/api/dto'
 import { useAuth } from '../../hooks/useAuth'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '../../components/common/DetailPageSkeleton'
@@ -195,6 +195,7 @@ export function TripDetailPage() {
                     onHover={hoverStage}
                     isHighlighted={litStageId === stage.id}
                     weather={weatherQuery.data?.stages.find((w) => w.stageId === stage.id)?.summary}
+                    riding={hasJoined && trip.status !== Status.CANCELLED}
                   />
                 ))}
               </Stack>

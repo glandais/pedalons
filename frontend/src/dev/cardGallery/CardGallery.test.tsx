@@ -43,10 +43,12 @@ const BRIEF: Record<string, string[]> = {
   groupes: [
     'groupes-inscrite-b',
     'groupes-non-inscrite',
+    'groupe-erreur',
+    'groupe-non-membre',
     'groupe-sans-parcours',
     'groupe-sans-meteo',
   ],
-  etapes: ['etapes', 'etape-sans-parcours', 'etape-alerte-pluie'],
+  etapes: ['etapes', 'etape-inscrite', 'etape-sans-parcours', 'etape-alerte-pluie'],
   parcours: ['parcours', 'parcours-sans-vignette', 'parcours-supprime', 'parcours-ligne', 'usages'],
   annonces: ['annonce-vente', 'annonce-location', 'annonce-recherche', 'annonce-brouillon'],
   equipes: [

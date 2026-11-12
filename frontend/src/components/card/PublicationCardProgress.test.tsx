@@ -6,8 +6,7 @@ import type { RideDto } from '@/api/dto'
 // Keys and their arguments, not wording.
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: { current?: number; max?: number }) =>
-      options?.max === undefined ? key : `${key}:${options.current}/${options.max}`,
+    t: (key: string) => key,
   }),
 }))
 
@@ -29,20 +28,28 @@ function renderProgress(ride: RideDto) {
 describe('PublicationCardProgress', () => {
   afterEach(cleanup)
 
-  it('renders participants against the ride capacity, though the row carries no groups', () => {
+  it('draws the ride against its capacity, though the row carries no groups', () => {
     renderProgress(listRow({ maxParticipants: 40 }))
-    expect(screen.getByText('spotsOf:12/40')).toBeTruthy()
-    expect(screen.getByRole('progressbar')).toBeTruthy()
+    const bar = screen.getByRole('progressbar')
+    expect(bar.getAttribute('aria-label')).toBe('rides.detail.groups.participants')
+    expect(bar.getAttribute('aria-valuenow')).toBe('30')
   })
 
-  it('says full when the server says so', () => {
+  // R5 (docs/LEDGER_*.md WEB-167): primary, red once full — no green, no yellow.
+  it('is primary while there is room, red once the server says full', () => {
+    renderProgress(listRow({ maxParticipants: 14 }))
+    expect(screen.getByRole('progressbar').getAttribute('style')).toContain(
+      '--progress-section-color: primary'
+    )
+    cleanup()
     renderProgress(listRow({ maxParticipants: 12, full: true }))
-    expect(screen.getByText('spotsFull')).toBeTruthy()
+    expect(screen.getByRole('progressbar').getAttribute('style')).toContain(
+      'var(--mantine-color-red-filled)'
+    )
   })
 
   it('draws nothing for a ride without an overall limit', () => {
     renderProgress(listRow({ maxParticipants: undefined }))
-    expect(screen.queryByText(/^spots/)).toBeNull()
     expect(screen.queryByRole('progressbar')).toBeNull()
   })
 })

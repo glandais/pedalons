@@ -2,11 +2,12 @@ import { Badge, Group, Text } from '@mantine/core'
 import { IconMapPin } from '@tabler/icons-react'
 import type { RideWeatherSummaryDto, TripStageDto } from '@/api/dto'
 import { RideWeatherSummaryLine } from '@/components/weather'
-import { RideGroupRouteActions } from '@/components/ride/RideGroupRouteActions'
+import { GpsMenuButton } from '@/components/route/GpsMenuButton'
 import { ChildCard, ChildFacts } from '@/components/publication/ChildCard'
 import { DepartureLine } from '../common/DepartureLine'
 import { EntityLogo } from '../common/EntityLogo'
 import { paths } from '@/config/paths'
+import { stageIsOver } from '@/utils/publicationEnd'
 
 interface TripStageCardProps {
   stage: TripStageDto
@@ -17,13 +18,18 @@ interface TripStageCardProps {
   isHighlighted?: boolean
   /** The stage's weather line, from `GET …/trips/{tripSlug}/weather` (docs/LEDGER_*.md API-76). */
   weather?: RideWeatherSummaryDto
+  /**
+   * The reader takes part in the trip, and it is not cancelled: the stage's « GPS » button, until
+   * the stage is over (docs/LEDGER_*.md WEB-167, R7). Anyone else exports from the route's page.
+   */
+  riding?: boolean
 }
 
 /**
  * A stage in its trip's list: the shared `ChildCard` (docs/LEDGER_*.md WEB-155) — its number or
  * logo, its name linking to its page over the whole card, its departure on the right, its places,
- * pace, distance and climb, its weather line, its route's files and devices. Its description is
- * its page's, not the card's.
+ * pace, distance and climb, its weather line, and — to a reader who rides it — its route's « GPS »
+ * button. Its description is its page's, not the card's.
  */
 export function TripStageCard({
   stage,
@@ -33,6 +39,7 @@ export function TripStageCard({
   onHover,
   isHighlighted = false,
   weather,
+  riding = false,
 }: TripStageCardProps) {
   const places = [stage.startPlace, stage.endPlace]
   return (
@@ -61,12 +68,14 @@ export function TripStageCard({
       }
       weather={weather && <RideWeatherSummaryLine summary={weather} timezone={stage.timezone} />}
       routeActions={
-        stage.route && (
-          <RideGroupRouteActions
+        riding &&
+        stage.route &&
+        !stageIsOver(stage) && (
+          <GpsMenuButton
             teamSlug={teamSlug}
             routeSlug={stage.route.slug}
             route={stage.route}
-            withViewLink={false}
+            subtitle={stage.name}
           />
         )
       }

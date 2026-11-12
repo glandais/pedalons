@@ -1,16 +1,20 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconShieldCheck, IconUsers } from '@tabler/icons-react'
-import { Badge, Box, Button, Group, Text, UnstyledButton } from '@mantine/core'
+import { IconShieldCheck } from '@tabler/icons-react'
+import { Badge, Box, Button, Group, Text } from '@mantine/core'
 import type { RideGroupDto, RouteDetailDto, WeatherLegDto } from '@/api/dto'
 import { DepartureLine } from '@/components/common/DepartureLine'
-import { UserAvatar, UserAvatarGroup } from '@/components/common/UserAvatar'
+import { UserAvatar } from '@/components/common/UserAvatar'
 import { AboveLink, ChildCard, ChildFacts } from '@/components/publication/ChildCard'
+import { GpsMenuButton } from '@/components/route/GpsMenuButton'
+import { GroupPeopleRow } from '@/components/ride/group/GroupPeopleRow'
+import { LeaveGroupLink } from '@/components/ride/group/LeaveGroupLink'
 import { GroupWeatherLine } from '@/components/weather'
 import { paths } from '@/config/paths'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
+import { useUnits } from '@/hooks/useUnits'
+import type { GroupAction } from '@/pages/ride/rideGroupData'
 import { ParticipantListModal } from './ParticipantListModal'
-import { RideGroupRouteActions } from './RideGroupRouteActions'
 
 interface RideGroupCardProps {
   group: RideGroupDto
@@ -39,12 +43,12 @@ interface RideGroupCardProps {
   weatherLeg?: WeatherLegDto
   /** Print the group's departure: its ride has groups leaving at different times. */
   showStartTime: boolean
-  canJoin?: boolean
   /**
-   * Whether the reader registered here may leave: not on a cancelled ride, where the « J'y vais »
-   * badge alone stays (KIT §8, ledger WEB-165). Defaults to true.
+   * What the card offers, `groupAction(ride, group)` (docs/LEDGER_*.md WEB-167, R6): « Rejoindre »
+   * or a disabled « Complet » in the corner; on the reader's own group, « Quitter le groupe » at the
+   * foot and the « GPS » button. Nothing on a cancelled or finished ride.
    */
-  canLeave?: boolean
+  action: GroupAction
   /**
    * « Changer pour {groupe} » at the foot of the card: the reader is registered in another group and
    * may move to this one (`canSwitchTo`). One call, no confirmation (ledger API-171, KIT §9).
@@ -77,8 +81,7 @@ export function RideGroupCard({
   trackColor,
   weatherLeg,
   showStartTime,
-  canJoin,
-  canLeave = true,
+  action,
   canSwitch = false,
   canSeeParticipants = true,
   onJoin,
@@ -90,45 +93,41 @@ export function RideGroupCard({
   error,
 }: RideGroupCardProps) {
   const { t } = useTranslation()
+  const { distance } = useUnits()
   const [showParticipants, setShowParticipants] = useState(false)
   const rendezvous = useRendezvousFormat(rideTimezone)
-  // `full` and `registered` are computed server-side (contract 1.3.0) — never recompute them here.
-  const isFull = group.full
+  // `registered` is computed server-side (contract 1.3.0) — never recompute it here.
   const isJoined = group.registered
+  // The reader rides here, the ride neither cancelled nor over: leave, and take the route along.
+  const isMine = action === 'leave'
 
   // The group's route, else the ride's. Distance and climb come from the group itself; the route
   // only gives the GPX/FIT links, fetched once for every group by the parent (`routesBySlug`).
   const effectiveRouteSlug = group.routeSlug || rideRouteSlug
   const route = effectiveRouteSlug ? routesBySlug.get(effectiveRouteSlug) : undefined
 
-  const participantsLabel = group.maxParticipants
-    ? t('rides.detail.groups.participants', {
-        current: group.countParticipants,
-        count: group.maxParticipants,
-      })
-    : t('rides.detail.groups.participantsNoMax', { count: group.countParticipants })
-
-  const corner = isJoined ? (
-    canLeave && (
-      <Button variant="outline" size="xs" onClick={onLeave} disabled={isLoading}>
-        {t('rides.detail.groups.leave')}
+  // The one filled control of the card, in its corner (R6): « Rejoindre », or « Complet » disabled
+  // in its place — to a reader registered in another group too. Never « Quitter » here.
+  const corner =
+    action === 'join' ? (
+      <Button size="xs" onClick={onJoin} disabled={isLoading}>
+        {t('rides.detail.groups.join')}
       </Button>
-    )
-  ) : canJoin && !isFull ? (
-    <Button size="xs" onClick={onJoin} disabled={isLoading}>
-      {t('rides.detail.groups.join')}
-    </Button>
-  ) : canJoin && isFull ? (
-    <Badge color="gray" variant="light">
-      {t('rides.detail.groups.full')}
-    </Badge>
-  ) : null
+    ) : action === 'full' ? (
+      <Button size="xs" variant="default" disabled data-testid="group-full">
+        {t('rides.detail.groups.full')}
+      </Button>
+    ) : null
   // Full width at the foot, never beside the name: there it cut the group's name short (KIT §8).
-  const footer = !isJoined && canSwitch && (
-    <Button fullWidth onClick={onSwitch} disabled={isLoading}>
-      {t('rides.detail.groups.switchTo', { group: group.name })}
-    </Button>
-  )
+  // The reader's own group: the red « Quitter le groupe » link, at the foot as in the app.
+  const footer =
+    !isJoined && canSwitch ? (
+      <Button fullWidth onClick={onSwitch} disabled={isLoading}>
+        {t('rides.detail.groups.switchTo', { group: group.name })}
+      </Button>
+    ) : isMine && onLeave ? (
+      <LeaveGroupLink onLeave={onLeave} pending={isLoading} />
+    ) : null
 
   return (
     <ChildCard
@@ -158,61 +157,41 @@ export function RideGroupCard({
       onHover={(hovering) => onHover?.(hovering ? group.id : null)}
       error={error}
       meta={
-        <>
-          <ChildFacts
-            averageSpeed={group.averageSpeed}
-            distance={group.distance}
-            elevationGain={group.distance !== undefined ? group.elevationGain : undefined}
+        <ChildFacts
+          averageSpeed={group.averageSpeed}
+          distance={group.distance}
+          elevationGain={group.distance !== undefined ? group.elevationGain : undefined}
+        />
+      }
+      people={
+        <AboveLink>
+          <GroupPeopleRow
+            participants={group.participants}
+            countParticipants={group.countParticipants}
+            maxParticipants={group.maxParticipants}
+            full={group.full}
+            leaderId={group.leader?.id}
+            canSeeParticipants={canSeeParticipants}
+            onViewAll={() => setShowParticipants(true)}
           />
-          {!canSeeParticipants ? (
-            <Group gap={4}>
-              <IconUsers size={16} aria-hidden />
-              <Text size="sm" c="dimmed">
-                {participantsLabel}
-              </Text>
-            </Group>
-          ) : (
-            <AboveLink>
-              <UnstyledButton
-                onClick={() => setShowParticipants(true)}
-                aria-label={t('rides.detail.groups.viewParticipants')}
-                style={{ borderRadius: 'var(--mantine-radius-sm)' }}
-              >
-                <Group gap="sm">
-                  {group.participants.length > 0 && (
-                    <UserAvatarGroup
-                      users={group.participants}
-                      total={group.countParticipants}
-                      max={5}
-                      size="sm"
-                    />
-                  )}
-                  <Group gap={4}>
-                    <IconUsers size={16} aria-hidden />
-                    <Text size="sm" c="dimmed">
-                      {participantsLabel}
-                    </Text>
-                  </Group>
-                  {group.countParticipants > 5 && (
-                    <Text size="xs" fw={500} c="var(--mantine-primary-color-filled)">
-                      {t('rides.detail.groups.viewAll')}
-                    </Text>
-                  )}
-                </Group>
-              </UnstyledButton>
-            </AboveLink>
-          )}
-        </>
+        </AboveLink>
       }
       weather={<GroupWeatherLine leg={weatherLeg} timezone={rideTimezone} />}
       footer={footer}
+      // « GPS » on the reader's own group only (R7): the other groups' routes leave from their
+      // pages, and the route's.
       routeActions={
+        isMine &&
         effectiveRouteSlug && (
-          <RideGroupRouteActions
+          <GpsMenuButton
             teamSlug={teamSlug}
             routeSlug={effectiveRouteSlug}
             route={route}
-            withViewLink={false}
+            subtitle={
+              group.distance !== undefined
+                ? `${group.name} · ${distance(group.distance)}`
+                : group.name
+            }
           />
         )
       }

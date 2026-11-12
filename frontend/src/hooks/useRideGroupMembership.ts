@@ -75,11 +75,27 @@ export function useRideGroupMembership(teamSlug: string, rideSlug: string) {
     return previous
   }
 
-  const describeGroupError = (cause: unknown) => {
+  /**
+   * What the card says when a call fails, the app's words (`rides.failure.inCard`, docs/LEDGER_*.md
+   * WEB-167 R6): what happened, then what can be done — in the card of the group acted on.
+   */
+  const describeGroupError = (cause: unknown, groupId: string) => {
     const code = cause instanceof ApiClientError ? cause.error.code : undefined
+    if (code === 'GROUP_FULL') return t('rides.detail.groups.failure.full')
+    if (code === 'ALREADY_REGISTERED') {
+      const group = queryClient
+        .getQueryData<RideDto>(rideQueryKey)
+        ?.groups?.find((g) => g.id === groupId)
+      return t('rides.detail.groups.failure.exclusive', { group: group?.name ?? '' })
+    }
+    if (code === 'FORBIDDEN') return t('rides.detail.groups.failure.notMember')
     // Codes are open-ended, so a generic fallback is mandatory rather than optional.
-    return code
-      ? t(`errors.api.${code}`, { defaultValue: t('rides.detail.groups.actionFailed') })
+    if (!code) return t('rides.detail.groups.actionFailed')
+    const message = t(`errors.api.${code}`, { defaultValue: '' })
+      .trim()
+      .replace(/[.!]+$/, '')
+    return message
+      ? t('rides.detail.groups.failure.generic', { message })
       : t('rides.detail.groups.actionFailed')
   }
 
@@ -106,7 +122,7 @@ export function useRideGroupMembership(teamSlug: string, rideSlug: string) {
         },
         onError: (cause) => {
           if (previous) queryClient.setQueryData(rideQueryKey, previous)
-          setError({ groupId, message: describeGroupError(cause) })
+          setError({ groupId, message: describeGroupError(cause, groupId) })
         },
         onSettled: () => {
           void queryClient.invalidateQueries({ queryKey: rideQueryKey })

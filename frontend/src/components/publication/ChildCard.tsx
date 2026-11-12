@@ -25,13 +25,19 @@ interface ChildCardProps {
   children?: ReactNode
   /** The facts row: distance, climb, speed, then whatever the card adds (a group's people). */
   meta?: ReactNode
+  /**
+   * Who goes, under the facts, the whole width: a group's cluster, its count, « Voir tout » and its
+   * places bar (docs/LEDGER_*.md WEB-167, R5).
+   */
+  people?: ReactNode
   /** The weather line. */
   weather?: ReactNode
-  /** The route's files and devices, lifted above the link. */
+  /** The route's « GPS » button, lifted above the link. */
   routeActions?: ReactNode
   /**
    * The card's last row, full width and lifted above the link: a group's « Changer pour {groupe} »,
-   * at the foot so that the group's name is never cut short beside the card's own.
+   * at the foot so that the group's name is never cut short beside the card's own, or the reader's
+   * « Quitter le groupe ».
    */
   footer?: ReactNode
   /** Why the last action on this card failed. */
@@ -46,7 +52,7 @@ interface ChildCardProps {
 /**
  * One card for a ride's group and a trip's stage (docs/LEDGER_*.md WEB-155, design « ChildCard »):
  * the marker, the name linking to the child's page over the whole card, the corner, the specific
- * rows, the facts, the weather line, the route's actions and the footer, in that order on both. Nothing of the
+ * rows, the facts, who goes, the weather line, the route's actions and the footer, in that order on both. Nothing of the
  * child's description: that is its page's.
  */
 export function ChildCard({
@@ -57,6 +63,7 @@ export function ChildCard({
   corner,
   children,
   meta,
+  people,
   weather,
   routeActions,
   footer,
@@ -114,6 +121,8 @@ export function ChildCard({
           {meta}
         </Group>
       )}
+
+      {people && <Box mt="xs">{people}</Box>}
 
       {weather && <Box mt="xs">{weather}</Box>}
 

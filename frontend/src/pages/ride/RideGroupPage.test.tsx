@@ -296,7 +296,8 @@ describe('RideGroupPage (WEB-77)', () => {
     expect(screen.queryByRole('button', { name: 'Quitter' })).toBeNull()
   })
 
-  it('offers « Quitter » to a rider of the group', () => {
+  // R6 (docs/LEDGER_*.md WEB-167): a red link under « Personnes inscrites », not a button.
+  it('offers « Quitter le groupe » to a rider of the group, under its participants', () => {
     state.ride = ride({
       registered: true,
       registeredGroupId: 'g1',
@@ -304,15 +305,16 @@ describe('RideGroupPage (WEB-77)', () => {
     })
     renderPage()
     expect(screen.getByText("J'y vais")).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Quitter' }))
+    expect(screen.queryByRole('button', { name: 'Quitter' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Quitter le groupe' }))
     expect(state.leave).toHaveBeenCalledWith('g1')
     expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
   })
 
-  it('offers nothing but its badge on a full group', () => {
+  it('says « Complet » with a disabled button on a full group', () => {
     state.ride = ride({ groups: [group({ full: true, countParticipants: 12 }), cool()] })
     renderPage()
-    expect(screen.getByText('Complet')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Complet' })).toBeDisabled()
     expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
     expect(plain(document.body.textContent)).toContain('Aucune place restante')
   })

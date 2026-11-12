@@ -204,6 +204,33 @@ describe('N21, N28: a trip in « Vos prochaines sorties »', () => {
   })
 })
 
+// R7 (docs/LEDGER_*.md WEB-167): « GPS » replaces « Envoyer vers l'appareil », until the end.
+describe('R7: a ride in « Vos prochaines sorties »', () => {
+  const mine = (overrides: Partial<RideDto> = {}) =>
+    ride({
+      registered: true,
+      routeSlug: 'boucle',
+      dateTime: '2099-11-16T08:00:00Z',
+      endDateTime: '2099-11-16T12:00:00Z',
+      ...overrides,
+    })
+
+  it('offers the one « GPS » button for its route', () => {
+    renderIn(<MyUpcomingList publications={[mine()]} />)
+    expect(screen.getByTestId('gps-button').textContent).toBe('GPS')
+    expect(screen.queryByText('Envoyer vers l’appareil')).toBeNull()
+    expect(screen.queryByText("Envoyer vers l'appareil")).toBeNull()
+  })
+
+  it('offers none once the ride is over, nor on a cancelled one', () => {
+    renderIn(<MyUpcomingList publications={[mine({ endDateTime: '2020-01-01T12:00:00Z' })]} />)
+    expect(screen.queryByTestId('gps-button')).toBeNull()
+    cleanup()
+    renderIn(<MyUpcomingList publications={[mine({ status: 'CANCELLED' })]} />)
+    expect(screen.queryByTestId('gps-button')).toBeNull()
+  })
+})
+
 describe('N22: a status beside a title', () => {
   it('never shrinks', () => {
     renderIn(<StatusBadge status="DRAFT">Brouillon</StatusBadge>)
@@ -245,6 +272,7 @@ describe('N14: a count never leaves its noun at a line end', () => {
     'memberCount',
     'home.teams.activity.rides',
     'teams.dashboard.ride.registeredCount',
+    'rides.detail.groups.participantsNoMax',
   ]
   it.each([
     ['fr', fr],

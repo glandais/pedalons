@@ -67,8 +67,12 @@ async function expectStageCard(card: Locator, index: number, name: string) {
   await expect(card.getByRole('link', { name, exact: true })).toBeVisible()
 }
 
-/** A stage with a route offers its files on its card — the card no longer links to the route. */
-const routeFiles = (card: Locator) => card.getByRole('link', { name: 'GPX', exact: true })
+/**
+ * A stage with a route gives its distance on its card. Its files are no longer there for anyone:
+ * the « GPS » button is offered only to a reader who takes part in the trip (docs/LEDGER_*.md
+ * WEB-167, R7), and none of these readers does — the route's page keeps the downloads.
+ */
+const routeFiles = (card: Locator) => card.getByText(/^[\d\s\u00a0\u202f,.]+[\s\u00a0]km$/)
 
 /** A team of its own, with a member the platform admin added. */
 async function tripTeamWithMember(label: string) {

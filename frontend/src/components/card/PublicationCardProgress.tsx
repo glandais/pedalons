@@ -1,11 +1,16 @@
 import { useTranslation } from 'react-i18next'
-import { Group, Progress, Text } from '@mantine/core'
+import { Progress } from '@mantine/core'
 import type { RideDto } from '@/api/dto'
 
 interface PublicationCardProgressProps {
   ride: RideDto
 }
 
+/**
+ * The places bar of a ride in the feed: primary, red once full — no green, no orange
+ * (docs/LEDGER_*.md WEB-167, R5). The count is the card's « 8/12 personnes », beside the groups;
+ * the bar repeats it to assistive tech only.
+ */
 export function PublicationCardProgress({ ride }: PublicationCardProgressProps) {
   const { t } = useTranslation()
 
@@ -18,18 +23,13 @@ export function PublicationCardProgress({ ride }: PublicationCardProgressProps) 
   }
 
   const current = ride.participantCount
-  const percentage = Math.min((current / totalMax) * 100, 100)
-  const isFull = ride.full
-
-  // Color based on fill percentage
-  const color = isFull ? 'red' : percentage >= 80 ? 'yellow' : 'green'
-
   return (
-    <Group gap="xs" wrap="nowrap">
-      <Progress value={percentage} color={color} size="sm" style={{ flex: 1 }} />
-      <Text size="xs" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
-        {isFull ? t('spotsFull') : t('spotsOf', { current, max: totalMax })}
-      </Text>
-    </Group>
+    <Progress
+      value={Math.min((current / totalMax) * 100, 100)}
+      color={ride.full ? 'red' : 'primary'}
+      size="sm"
+      style={{ flex: 1, minWidth: 60 }}
+      aria-label={t('rides.detail.groups.participants', { current, count: totalMax })}
+    />
   )
 }

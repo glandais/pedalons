@@ -115,7 +115,13 @@ export function PublicationCard({
             {/* A ride without groups takes no registration: no count. */}
             {ride.groupCount > 0 && (
               <Stat icon={participantsIcon}>
-                {t('participantCount', { count: ride.participantCount })}
+                {/* « 8/12 personnes » when the ride has a limit, the group card's form (R5). */}
+                {ride.maxParticipants
+                  ? t('rides.detail.groups.participants', {
+                      current: ride.participantCount,
+                      count: ride.maxParticipants,
+                    })
+                  : t('participantCount', { count: ride.participantCount })}
               </Stat>
             )}
             <Stat icon={groupsIcon}>{t('groups.groupCount', { count: ride.groupCount })}</Stat>
@@ -265,7 +271,6 @@ export function PublicationCard({
                   users={participants}
                   total={(publication as RideDto | TripDto).participantCount}
                   max={5}
-                  size="sm"
                 />
               )}
               {publication.type === 'RIDE' && (

@@ -145,11 +145,10 @@ export function RideDetailPage() {
   const canEdit = permissions.canEdit
   const canReadComments = !!permissions.canComment
   const canSeeParticipants = !!permissions.canSeeParticipants
-  // `canRegister` is exact on a detail: published, the reader a member, not every group gone. A
-  // member already registered moves group from the other cards instead (« Changer pour », API-171).
-  // `ride.full` is deliberately left out: each card already withholds its Join button when its own
-  // group is full, and gating the whole zone on it hid every « Complet » badge once all groups filled.
-  const canJoinRide = !!permissions.canRegister && !ride.registered
+  // What each group card offers is `groupAction(ride, group)`, from `canRegister` — exact on a
+  // detail: published, the reader a member, not every group gone. A member already registered moves
+  // group from the other cards (« Changer pour », API-171). `ride.full` is deliberately left out: each
+  // card says « Complet » for its own group (docs/LEDGER_*.md WEB-167, R6).
   // Who belongs (the join banner, the group action): the reader who may see the participants — a
   // member, or a platform admin moderating.
   const isMember = canSeeParticipants
@@ -274,8 +273,7 @@ export function RideDetailPage() {
                                   ? weather.data.legs.find((leg) => leg.groupId === group.id)
                                   : undefined
                               }
-                              canJoin={canJoinRide}
-                              canLeave={groupAction(ride, group) === 'leave'}
+                              action={groupAction(ride, group)}
                               canSwitch={canSwitchTo(ride, group)}
                               canSeeParticipants={canSeeParticipants}
                               onJoin={() => handleJoinGroup(group.id)}

@@ -14,8 +14,12 @@ vi.mock('react-i18next', async (importOriginal) => {
     useTranslation: () => ({ t: frenchT, i18n: { language: 'fr' } }),
   }
 })
-vi.mock('./RideGroupRouteActions', () => ({
-  RideGroupRouteActions: () => <div data-testid="route-actions" />,
+vi.mock('@/components/route/GpsMenuButton', () => ({
+  GpsMenuButton: ({ routeSlug }: { routeSlug: string }) => (
+    <button type="button" data-testid="gps-button" data-route={routeSlug}>
+      GPS
+    </button>
+  ),
 }))
 
 import type { ComponentProps } from 'react'
@@ -58,7 +62,7 @@ function renderCard(
             routesBySlug={new Map()}
             weatherLeg={weather}
             trackColor={trackColor}
-            canJoin
+            action="join"
             canSeeParticipants={canSeeParticipants}
             {...cardProps}
           />
@@ -129,7 +133,7 @@ describe('RideGroupCard (WEB-77)', () => {
 
     it('offers « Changer pour {groupe} » at the foot, full width, to a reader registered elsewhere', () => {
       const onSwitch = vi.fn()
-      at({}, { canJoin: false, canSwitch: true, onSwitch })
+      at({}, { action: 'registeredElsewhere', canSwitch: true, onSwitch })
       const button = screen.getByRole('button', { name: 'Changer pour Rapide' })
       expect(button.getAttribute('data-block')).toBe('true')
       expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
@@ -141,17 +145,57 @@ describe('RideGroupCard (WEB-77)', () => {
     })
 
     it('offers no switch when the page does not allow it (full, cancelled, closed)', () => {
-      at({}, { canJoin: false, canSwitch: false })
+      at({}, { action: 'registeredElsewhere', canSwitch: false })
       expect(screen.queryByRole('button', { name: /Changer pour/ })).toBeNull()
     })
 
-    it('keeps « J\u2019y vais » but drops « Quitter » on a cancelled ride', () => {
-      at({ registered: true }, { canLeave: false })
+    // R6 (docs/LEDGER_*.md WEB-167): « Quitter » leaves the corner for a red link at the foot.
+    it('puts « Quitter le groupe » at the foot of my group, never in its corner', () => {
+      const onLeave = vi.fn()
+      at({ registered: true }, { action: 'leave', onLeave })
       expect(screen.queryByRole('button', { name: 'Quitter' })).toBeNull()
+      const link = screen.getByRole('button', { name: 'Quitter le groupe' })
+      expect(link.closest('[data-testid="leave-group"]') ?? link).toBeTruthy()
+      // After the people and the « GPS » button: the card's last control.
+      const gps = screen.getByTestId('gps-button')
+      expect(gps.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
       expect(screen.getByText("J'y vais")).toBeTruthy()
+      fireEvent.click(link)
+      expect(onLeave).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps « J\u2019y vais » but offers no leaving on a cancelled or finished ride', () => {
+      at({ registered: true }, { action: 'none', onLeave: vi.fn() })
+      expect(screen.queryByRole('button', { name: 'Quitter le groupe' })).toBeNull()
+      expect(screen.getByText("J'y vais")).toBeTruthy()
+    })
+
+    it('says « Complet » with a disabled button in place of « Rejoindre »', () => {
+      at({ full: true, countParticipants: 12 }, { action: 'full' })
+      const full = screen.getByRole('button', { name: 'Complet' })
+      expect(full).toBeDisabled()
+      expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
+    })
+
+    it('shows the failure inside the card concerned', () => {
+      at({}, { action: 'join', error: 'Ce groupe est complet. Choisissez un autre groupe.' })
+      const alert = screen.getByRole('alert')
+      expect(alert.textContent).toContain('Ce groupe est complet. Choisissez un autre groupe.')
+      expect(alert.closest('.mantine-Paper-root')).toBeTruthy()
+    })
+
+    // R7: one « GPS » button, on the reader's own group only.
+    it('offers « GPS » on my group only, for its route', () => {
+      at({ registered: true, routeSlug: 'boucle-b' }, { action: 'leave', onLeave: vi.fn() })
+      expect(screen.getByTestId('gps-button').getAttribute('data-route')).toBe('boucle-b')
+      expect(screen.queryByText('GPX')).toBeNull()
+      expect(screen.queryByText('FIT')).toBeNull()
       cleanup()
-      at({ registered: true }, {})
-      expect(screen.getByRole('button', { name: 'Quitter' })).toBeTruthy()
+      at({}, { action: 'join' })
+      expect(screen.queryByTestId('gps-button')).toBeNull()
+      cleanup()
+      at({}, { action: 'registeredElsewhere', canSwitch: true })
+      expect(screen.queryByTestId('gps-button')).toBeNull()
     })
 
     it('gives its figures in the order distance · climb · speed', () => {
@@ -162,6 +206,72 @@ describe('RideGroupCard (WEB-77)', () => {
       expect(index(/km$/)).toBeGreaterThanOrEqual(0)
       expect(index(/km$/)).toBeLessThan(index(/^1.?240/))
       expect(index(/^1.?240/)).toBeLessThan(index(/km\/h/))
+    })
+  })
+
+  // R5 (docs/LEDGER_*.md WEB-167): one form of the count, the cluster kept, the bar under it.
+  describe('people', () => {
+    const faces = ['Léa Martin', 'Karim Benali', 'Noé Perrin', 'Inès Roche', 'Sacha Morel'].map(
+      (displayName, i) => ({ id: `u${i}`, displayName })
+    )
+
+    it('counts « 8/12 personnes », and « 8 personnes » without a maximum', () => {
+      renderCard(undefined, undefined, true, { countParticipants: 8 })
+      expect(plain(screen.getByTestId('group-count').textContent)).toBe('8/12 personnes')
+      cleanup()
+      renderCard(undefined, undefined, true, { countParticipants: 8, maxParticipants: undefined })
+      expect(plain(screen.getByTestId('group-count').textContent)).toBe('8 personnes')
+      expect(screen.queryByTestId('group-places-bar')).toBeNull()
+    })
+
+    it('leaves the leader out of the cluster, and offers « Voir tout » once it ends on « +N »', () => {
+      renderCard(undefined, undefined, true, {
+        participants: faces,
+        countParticipants: 8,
+        leader: faces[0],
+      })
+      const cluster = screen.getByTestId('avatar-cluster')
+      expect(cluster.querySelector('img[alt="Léa Martin"], [title="Léa Martin"]')).toBeNull()
+      expect(cluster.textContent).not.toContain('LM')
+      expect(cluster.textContent).toContain('KB')
+      // Four faces of the seven people besides the leader: « +3 ».
+      expect(cluster.textContent).toContain('+3')
+      expect(screen.getByRole('button', { name: 'Voir tout' })).toBeTruthy()
+    })
+
+    it('offers no « Voir tout » when the cluster shows everyone', () => {
+      renderCard(undefined, undefined, true, {
+        participants: faces.slice(1, 4),
+        countParticipants: 3,
+      })
+      expect(screen.queryByRole('button', { name: 'Voir tout' })).toBeNull()
+    })
+
+    it('keeps the cluster on a full group, over a red bar; a primary one otherwise', () => {
+      const { container } = renderCard(undefined, undefined, true, {
+        participants: faces,
+        countParticipants: 12,
+        full: true,
+      })
+      expect(screen.getByTestId('avatar-cluster')).toBeTruthy()
+      expect(plain(screen.getByTestId('group-count').textContent)).toBe('12/12 personnes')
+      const sectionColor = (root: HTMLElement) =>
+        root
+          .querySelector('[data-testid="group-places-bar"] [role="progressbar"]')!
+          .getAttribute('style')
+      expect(sectionColor(container)).toContain('var(--mantine-color-red-filled)')
+      cleanup()
+      // The test's theme has no `primary` palette: Mantine passes the name through.
+      const open = renderCard(undefined, undefined, true, { participants: faces })
+      expect(sectionColor(open.container)).toMatch(/--progress-section-color: primary/)
+    })
+
+    it('shows a non-member the count and the bar, never a face (API-144)', () => {
+      renderCard(undefined, undefined, false, { participants: faces, countParticipants: 8 })
+      expect(screen.queryByTestId('avatar-cluster')).toBeNull()
+      expect(screen.queryByText('KB')).toBeNull()
+      expect(plain(screen.getByTestId('group-count').textContent)).toBe('8/12 personnes')
+      expect(screen.getByTestId('group-places-bar')).toBeTruthy()
     })
   })
 

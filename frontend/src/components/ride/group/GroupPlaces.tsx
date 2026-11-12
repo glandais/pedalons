@@ -26,7 +26,8 @@ export function GroupPlaces({ group }: { group: RideGroupDto }) {
       </Group>
       <Progress
         value={Math.min(100, (group.countParticipants / max) * 100)}
-        color={left === 0 ? 'gray' : 'primary'}
+        // Primary, red once full — never grey, green or orange (docs/LEDGER_*.md WEB-167, R5).
+        color={group.full || left === 0 ? 'red' : 'primary'}
         aria-label={t('rides.detail.groups.participants', {
           current: group.countParticipants,
           count: max,

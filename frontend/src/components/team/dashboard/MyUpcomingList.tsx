@@ -9,7 +9,9 @@ import type { PublicationDto, RideDto, TripDto } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
 import { startFor } from '@/utils/groupStart'
 import { isTrip, publicationPath } from './dashboardHelpers'
-import { SendToDeviceMenu } from './SendToDeviceMenu'
+import { GpsMenuButton } from '@/components/route/GpsMenuButton'
+import { Status } from '@/api/dto'
+import { isOver } from '@/utils/publicationEnd'
 
 /**
  * « Vos prochaines sorties »: the team's rides and trips the user is registered to, soonest first.
@@ -75,7 +77,14 @@ function RideRow({ ride }: { ride: RideDto }) {
           </Group>
         </Stack>
         <Group gap="xs">
-          {routeSlug && <SendToDeviceMenu teamSlug={ride.team.slug} routeSlug={routeSlug} />}
+          {/* « GPS »: the device, GPX and FIT, until the ride is over (docs/LEDGER_*.md WEB-167 R7). */}
+          {routeSlug && ride.status !== Status.CANCELLED && !isOver(ride) && (
+            <GpsMenuButton
+              teamSlug={ride.team.slug}
+              routeSlug={routeSlug}
+              subtitle={group ? `${group.name} · ${ride.name}` : ride.name}
+            />
+          )}
           <Button component={PrefetchLink} to={publicationPath(ride)} variant="light" size="xs">
             {t('home.nextRide.view')}
           </Button>

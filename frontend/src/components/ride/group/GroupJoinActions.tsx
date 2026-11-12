@@ -1,27 +1,26 @@
 import { useTranslation } from 'react-i18next'
-import { Badge, Button } from '@mantine/core'
+import { Button } from '@mantine/core'
 import type { RideGroupDto } from '@/api/dto'
 import type { GroupAction } from '@/pages/ride/rideGroupData'
 
 /**
- * « Rejoindre » or « Quitter », as `groupAction` decides (the server's rules at join). `showFull`
- * adds the « Complet » badge where no title badge already says it (a solo ride's group panel).
+ * The filled control beside a group's name, as `groupAction` decides (the server's rules at join):
+ * « Rejoindre », or « Complet » disabled in its place — also to a reader registered in another group
+ * (docs/LEDGER_*.md WEB-167, R6). Never « Quitter »: the reader's own group says « J'y vais » and
+ * takes its red « Quitter le groupe » link at the foot (`LeaveGroupLink`).
  */
 export function GroupJoinActions({
   action,
   group,
   membership,
-  showFull = false,
   size,
 }: {
   action: GroupAction
   group: RideGroupDto
   membership: {
     join: (groupId: string) => void
-    leave: (groupId: string) => void
     isPending: boolean
   }
-  showFull?: boolean
   size?: 'xs' | 'sm'
 }) {
   const { t } = useTranslation()
@@ -32,23 +31,11 @@ export function GroupJoinActions({
       </Button>
     )
   }
-  if (action === 'leave') {
+  if (action === 'full') {
     return (
-      <Button
-        size={size}
-        variant="outline"
-        onClick={() => membership.leave(group.id)}
-        disabled={membership.isPending}
-      >
-        {t('rides.detail.groups.leave')}
-      </Button>
-    )
-  }
-  if (showFull && group.full) {
-    return (
-      <Badge color="gray" variant="light">
+      <Button size={size} variant="default" disabled data-testid="group-full">
         {t('rides.detail.groups.full')}
-      </Badge>
+      </Button>
     )
   }
   return null

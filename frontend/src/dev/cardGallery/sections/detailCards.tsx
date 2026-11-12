@@ -26,11 +26,14 @@ function GroupCards({
   ride: theRide,
   only,
   withWeather = true,
+  fullOn,
 }: {
   ride: RideDto
   /** A single card: the group of that name, as `only` reshapes it. */
   only?: { name: string; reshape?: (group: RideGroupDto) => RideGroupDto }
   withWeather?: boolean
+  /** « Rejoindre » just failed on the group of that name: it filled up meanwhile (R6). */
+  fullOn?: string
 }) {
   const { t } = useTranslation()
   const routesBySlug = useMemo(routeDetails, [])
@@ -42,7 +45,6 @@ function GroupCards({
     ? theRide.groups.filter((g) => g.name === only.name).map(only.reshape ?? ((g) => g))
     : groupsRegisteredFirst(theRide.groups, theRide.registeredGroupId)
   const isRegisteredInGroup = theRide.groups.some((g) => g.id === theRide.registeredGroupId)
-  const canJoinRide = !!theRide.permissions.canRegister && !theRide.registered
 
   return (
     <Stack gap="sm">
@@ -62,13 +64,13 @@ function GroupCards({
             routesBySlug={routesBySlug}
             trackColor={colorByGroupId.get(group.id)}
             weatherLeg={withWeather ? weatherLeg(group) : undefined}
-            canJoin={canJoinRide}
-            canLeave={groupAction(theRide, group) === 'leave'}
+            action={groupAction(theRide, group)}
             canSwitch={canSwitchTo(theRide, group)}
             canSeeParticipants={!!theRide.permissions.canSeeParticipants}
             onJoin={() => undefined}
             onLeave={() => undefined}
             onSwitch={() => undefined}
+            error={fullOn === group.name ? t('rides.detail.groups.failure.full') : undefined}
           />
         </Fragment>
       ))}
@@ -91,6 +93,45 @@ export const groupsSection: GallerySection = {
       label: 'les trois groupes à la même heure, Camille dans aucun',
       layout: 'side',
       render: () => <GroupCards ride={ride({ sameTime: true })} />,
+    },
+    {
+      id: 'groupe-erreur',
+      label: '« Rejoindre » sur B, la dernière place vient d’être prise : l’erreur dans sa carte',
+      layout: 'side',
+      render: () => {
+        const base = ride({ sameTime: true })
+        const failed = {
+          ...base,
+          groups: base.groups.map((g) =>
+            g.name === 'B' ? { ...g, countParticipants: 12, full: true } : g
+          ),
+        }
+        return <GroupCards ride={failed} fullOn="B" />
+      },
+    },
+    {
+      id: 'groupe-non-membre',
+      label: 'groupe A vu par une personne non membre : le compte, jamais de visage',
+      layout: 'side',
+      render: () => (
+        <GroupCards
+          ride={ride(
+            { sameTime: true },
+            {
+              permissions: {
+                ...ride().permissions,
+                canRegister: false,
+                canComment: false,
+                canSeeParticipants: false,
+              },
+            }
+          )}
+          only={{
+            name: 'A',
+            reshape: (group) => ({ ...group, participants: [], leader: undefined }),
+          }}
+        />
+      ),
     },
     {
       id: 'groupe-sans-parcours',
@@ -125,7 +166,15 @@ export const groupsSection: GallerySection = {
   ],
 }
 
-function StageCards({ list, weather }: { list: TripStageDto[]; weather?: boolean }) {
+function StageCards({
+  list,
+  weather,
+  riding = false,
+}: {
+  list: TripStageDto[]
+  weather?: boolean
+  riding?: boolean
+}) {
   return (
     <Stack gap="sm">
       {list.map((stage, index) => (
@@ -136,6 +185,7 @@ function StageCards({ list, weather }: { list: TripStageDto[]; weather?: boolean
           teamSlug={VCM_SLUG}
           tripSlug={TRIP_SLUG}
           weather={weather ? weatherSummary(false, 10 + index) : undefined}
+          riding={riding}
         />
       ))}
     </Stack>
@@ -151,6 +201,24 @@ export const stagesSection: GallerySection = {
       label: 'les trois étapes',
       layout: 'side',
       render: () => <StageCards list={stages()} weather />,
+    },
+    {
+      id: 'etape-inscrite',
+      label: 'étape 1, Camille participe au voyage : « GPS »',
+      layout: 'side',
+      render: () => {
+        const [first] = stages()
+        return (
+          <TripStageCard
+            stage={first}
+            index={0}
+            teamSlug={VCM_SLUG}
+            tripSlug={TRIP_SLUG}
+            weather={weatherSummary(false, 10)}
+            riding
+          />
+        )
+      },
     },
     {
       id: 'etape-sans-parcours',

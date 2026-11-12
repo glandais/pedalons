@@ -13,14 +13,17 @@ vi.mock('react-i18next', async (importOriginal) => {
     useTranslation: () => ({ t: frenchT, i18n: { language: 'fr' } }),
   }
 })
-vi.mock('@/components/ride/RideGroupRouteActions', () => ({
-  RideGroupRouteActions: () => <div data-testid="route-actions" />,
+vi.mock('@/components/route/GpsMenuButton', () => ({
+  GpsMenuButton: ({ routeSlug }: { routeSlug: string }) => (
+    <div data-testid="gps-button" data-route={routeSlug} />
+  ),
 }))
 vi.mock('../common/MediaDisplay', () => ({
   MediaDisplay: () => <div data-testid="media" />,
 }))
 
 import { TripStageCard } from './TripStageCard'
+import { stageIsOver } from '@/utils/publicationEnd'
 
 const stage = {
   id: 's2',
@@ -38,7 +41,7 @@ const stage = {
   stageCount: 3,
 } as unknown as TripStageDto
 
-function renderCard(overrides: Partial<TripStageDto> = {}) {
+function renderCard(overrides: Partial<TripStageDto> = {}, riding = false) {
   return render(
     <MantineProvider>
       <QueryClientProvider client={new QueryClient()}>
@@ -48,6 +51,7 @@ function renderCard(overrides: Partial<TripStageDto> = {}) {
             index={1}
             teamSlug="np"
             tripSlug="vosges"
+            riding={riding}
           />
         </MemoryRouter>
       </QueryClientProvider>
@@ -73,17 +77,42 @@ describe('TripStageCard (WEB-155)', () => {
     expect(screen.getAllByRole('link')[0].querySelector('button')).toBeNull()
   })
 
-  it('gives its places, its facts and the route actions, like a group card', () => {
+  it('gives its places and its facts, like a group card', () => {
     renderCard()
     expect(screen.getByText('Gîte du Kalblin')).toBeTruthy()
     expect(screen.getByText('Auberge du lac')).toBeTruthy()
     expect(screen.getByText(/^72(,0)? km$/)).toBeTruthy()
     expect(screen.getByText(/^1[\s\u202f]?650 m$/)).toBeTruthy()
-    expect(screen.getByTestId('route-actions')).toBeTruthy()
   })
 
-  it('offers no route actions for a stage without a route', () => {
-    renderCard({ route: undefined })
-    expect(screen.queryByTestId('route-actions')).toBeNull()
+  // R7 (docs/LEDGER_*.md WEB-167): « GPS » to a reader who takes part in the trip, nothing else.
+  it('offers « GPS » for its route to a reader who rides the trip, until the stage is over', () => {
+    renderCard({}, true)
+    expect(screen.getByTestId('gps-button').getAttribute('data-route')).toBe('schlucht')
+    expect(screen.queryByText('GPX')).toBeNull()
+    cleanup()
+    renderCard({ dateTime: '2020-05-15T06:30:00Z' }, true)
+    expect(screen.queryByTestId('gps-button')).toBeNull()
+  })
+
+  it('offers no export to a reader who does not take part, nor for a stage without a route', () => {
+    renderCard()
+    expect(screen.queryByTestId('gps-button')).toBeNull()
+    cleanup()
+    renderCard({ route: undefined }, true)
+    expect(screen.queryByTestId('gps-button')).toBeNull()
+  })
+
+  it('ends a stage at its estimated arrival, else three hours after its departure', () => {
+    const departure = Date.parse('2027-05-15T06:30:00Z')
+    const at = (hours: number) => departure + hours * 3_600_000
+    expect(stageIsOver({ dateTime: '2027-05-15T06:30:00Z' }, at(2.9))).toBe(false)
+    expect(stageIsOver({ dateTime: '2027-05-15T06:30:00Z' }, at(3))).toBe(true)
+    const withArrival = {
+      dateTime: '2027-05-15T06:30:00Z',
+      estimatedArrival: '2027-05-15T12:30:00Z',
+    }
+    expect(stageIsOver(withArrival, at(5))).toBe(false)
+    expect(stageIsOver(withArrival, at(6))).toBe(true)
   })
 })

@@ -9,15 +9,14 @@ import {
   Button,
   Flex,
   Group,
-  Menu,
   Paper,
   SimpleGrid,
   Stack,
   Text,
   Title,
 } from '@mantine/core'
-import { IconCheck, IconDeviceWatch, IconMapPin, IconUsers } from '@tabler/icons-react'
-import type { GpsServiceType, RideDto } from '@/api/dto'
+import { IconCheck, IconMapPin, IconUsers } from '@tabler/icons-react'
+import type { RideDto } from '@/api/dto'
 import { Status } from '@/api/dto'
 import { useLeaveGroup } from '@/api/endpoints/rides/rides'
 import { CardDayOverlay, CardImage, CardTeamLink, Stat } from '../card/common'
@@ -25,9 +24,13 @@ import { DepartureLine } from '../common/DepartureLine'
 import { paths } from '@/config/paths'
 import { invalidateRegistration } from '@/lib/registration'
 import { useUnits } from '@/hooks/useUnits'
-import { useGpsConnections } from '@/hooks/useGpsConnections'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { registeredGroupOf, startFor } from '@/utils/groupStart'
+import { isOver } from '@/utils/publicationEnd'
+import { GpsMenuButton } from '@/components/route/GpsMenuButton'
+import { GroupPeopleRow } from '@/components/ride/group/GroupPeopleRow'
+import { useParticipantsLabel } from '@/hooks/useParticipantsLabel'
+import { LeaveGroupLink } from '@/components/ride/group/LeaveGroupLink'
 import { RideWeatherSummaryLine } from '../weather/RideWeatherSummaryLine'
 
 interface NextRideCardProps {
@@ -54,7 +57,7 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
   const colorScheme = useResolvedColorScheme()
   const queryClient = useQueryClient()
   const leaveMutation = useLeaveGroup()
-  const { connectedServices, uploadRoute, isUploading } = useGpsConnections()
+  const participantsLabel = useParticipantsLabel()
 
   const group = registeredGroupOf(ride)
   // The departure that concerns the reader is their group's (docs/LEDGER_*.md WEB-136): the day
@@ -87,14 +90,9 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
     )
   }
 
-  const participants = group
-    ? group.maxParticipants
-      ? t('rides.detail.groups.participants', {
-          current: group.countParticipants,
-          count: group.maxParticipants,
-        })
-      : t('rides.detail.groups.participantsNoMax', { count: group.countParticipants })
-    : t('rides.detail.groups.participantsNoMax', { count: ride.participantCount })
+  // Until the ride is over — after its start too — and never on a cancelled one, as on the group's
+  // card: leaving and the route's « GPS » (docs/LEDGER_*.md WEB-167, R6 and R7).
+  const stillRiding = ride.status !== Status.CANCELLED && !isOver(ride)
 
   return (
     <Paper withBorder radius="md" style={{ overflow: 'hidden' }} h="100%">
@@ -154,15 +152,28 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
             <DepartureLine date={start} zone={ride.timezone} announceDay />
             {ride.startPlace && <Stat icon={<IconMapPin size={16} />}>{ride.startPlace.name}</Stat>}
             <RideWeatherSummaryLine summary={ride.weather} timezone={ride.timezone} />
-            <Stat icon={<IconUsers size={16} />}>
-              {group
-                ? t('home.nextRide.groupParticipants', {
-                    group: group.name,
-                    participants,
-                  })
-                : participants}
-            </Stat>
+            {!group && (
+              <Stat icon={<IconUsers size={16} />}>{participantsLabel(ride.participantCount)}</Stat>
+            )}
           </Stack>
+
+          {/* Who goes in the reader's group: the cluster, « B · 11/12 personnes », the places bar —
+              the group card's row, without « Voir tout »: the card opens the ride (R5). */}
+          {group && (
+            <Box maw={420}>
+              <GroupPeopleRow
+                participants={group.participants ?? []}
+                countParticipants={group.countParticipants}
+                maxParticipants={group.maxParticipants}
+                full={group.full}
+                leaderId={group.leader?.id}
+                canSeeParticipants={!!ride.permissions.canSeeParticipants}
+                formatLabel={(participants) =>
+                  t('home.nextRide.groupParticipants', { group: group.name, participants })
+                }
+              />
+            </Box>
+          )}
 
           {(rideDistance !== undefined || rideElevation !== undefined) && (
             <SimpleGrid cols={2} spacing="sm" maw={360}>
@@ -185,52 +196,30 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
             </SimpleGrid>
           )}
 
-          <Group gap="xs" mt="auto">
-            <Button component={PrefetchLink} to={ridePath}>
-              {t('home.nextRide.view')}
-            </Button>
-            {routeSlug && connectedServices.length > 0 && (
-              <Menu shadow="md" width={200}>
-                <Menu.Target>
-                  <Button
-                    variant="default"
-                    loading={isUploading}
-                    leftSection={<IconDeviceWatch size={16} />}
-                  >
-                    {t('routes.detail.sendToDevice')}
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  {connectedServices.map((service) => (
-                    <Menu.Item
-                      key={service.serviceType}
-                      onClick={() =>
-                        uploadRoute({
-                          serviceType: service.serviceType,
-                          teamSlug: ride.team.slug,
-                          routeSlug,
-                        })
-                      }
-                    >
-                      {t(
-                        `gps.services.${service.serviceType.toLowerCase() as Lowercase<GpsServiceType>}`
-                      )}
-                    </Menu.Item>
-                  ))}
-                </Menu.Dropdown>
-              </Menu>
-            )}
-            {ride.registeredGroupId && (
-              <Button
-                variant="subtle"
-                color="gray"
-                onClick={handleLeave}
-                loading={leaveMutation.isPending}
-              >
-                {t('home.nextRide.leave')}
+          <Stack gap={4} mt="auto" align="flex-start">
+            <Group gap="xs">
+              <Button component={PrefetchLink} to={ridePath}>
+                {t('home.nextRide.view')}
               </Button>
+              {/* « GPS »: the device, GPX and FIT, read from the route when the menu opens — the
+                  row carries only its slug (R7). */}
+              {routeSlug && stillRiding && (
+                <GpsMenuButton
+                  teamSlug={ride.team.slug}
+                  routeSlug={routeSlug}
+                  size="sm"
+                  subtitle={group ? `${group.name} · ${ride.name}` : ride.name}
+                />
+              )}
+            </Group>
+            {ride.registeredGroupId && stillRiding && (
+              <LeaveGroupLink
+                onLeave={handleLeave}
+                pending={leaveMutation.isPending}
+                label={t('home.nextRide.leave')}
+              />
             )}
-          </Group>
+          </Stack>
         </Stack>
       </Flex>
     </Paper>
