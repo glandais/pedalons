@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -53,6 +53,7 @@ vi.mock('@/components/calendar/CalendarView', () => ({
 }))
 vi.mock('@/components/route/RouteFilterPanel', () => ({ RouteFilterPanel: () => null }))
 vi.mock('@/components/route/RouteViewSwitch', () => ({ RouteViewSwitch: () => null }))
+vi.mock('@/components/route/RoutesTileMap', () => ({ RoutesTileMap: () => null }))
 
 /** What each mocked list or team query returns, set per test. */
 const state = vi.hoisted(() => ({
@@ -99,6 +100,23 @@ vi.mock('@/pages/route/routeListData', async () => {
       team: state.team,
       routes: state.list,
       totalPages: 1,
+    }),
+  }
+})
+vi.mock('@/pages/route/routesMapData', async () => {
+  const { teamRouteFiltersSchema } = await import('@/hooks/filters/routeFilters')
+  return {
+    useRoutesMapData: () => ({
+      filters: { ...teamRouteFiltersSchema.parse({}), ...state.filters },
+      setFilters: state.setFilters,
+      filtersOpen: false,
+      setFiltersOpen: () => {},
+      handleFiltersChange: () => {},
+      activeFilterCount: 0,
+      clearFilters: () => {},
+      team: state.team,
+      tilesUrl: '/api/teams/vc/routes/tiles/{z}/{x}/{y}.pbf',
+      bounds: { data: undefined, isLoading: false },
     }),
   }
 })
@@ -186,6 +204,8 @@ vi.mock('@/api/endpoints/moderation/moderation', async (importOriginal) => ({
 import { TeamPostsPage } from './team/TeamPostsPage'
 import { TeamAgendaPage } from './team/TeamAgendaPage'
 import { RouteListPage } from './route/RouteListPage'
+import { RoutesMapPage } from './route/RoutesMapPage'
+import { ApiClientError } from '@/lib/apiError'
 import { AdListPage } from './ad/AdListPage'
 import { RideTemplateListPage } from './ridetemplate/RideTemplateListPage'
 import { TeamMembersPage } from './team/TeamMembersPage'
@@ -564,5 +584,95 @@ describe('a criterion has one form on the site, a segmented control (RL6)', () =
     renderAt(<AdListPage />)
     const kinds = screen.getByRole('radiogroup', { name: 'Filtrer par type' })
     expect(kinds.textContent).toContain('Vente')
+  })
+})
+
+describe('the period « Plus tôt » (RL15, complement of 12 November 2026)', () => {
+  it('agenda: one list without section, its count the list’s, « Plus tôt » picked', async () => {
+    const { ride } = await import('@/dev/cardGallery/fixtures')
+    state.list = query({
+      data: {
+        publications: [ride({}, { id: 'b', name: 'Sortie finie' })],
+        total: 402,
+        page: 0,
+        size: 12,
+      },
+    })
+    state.filters = { scope: 'earlier' }
+    renderAt(<TeamAgendaPage />)
+    expect(screen.getByText('Sortie finie')).toBeTruthy()
+    expect(screen.getByText('402 sorties et voyages')).toBeTruthy()
+    expect(screen.queryByRole('region', { name: 'À venir' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Plus tôt' })).toBeNull()
+    const period = screen.getByRole('radiogroup', { name: 'Période' })
+    const radios = within(period).getAllByRole('radio')
+    expect(radios.map((radio) => radio.getAttribute('value'))).toEqual(['all', 'me', 'earlier'])
+    expect(within(period).getByRole('radio', { name: 'Plus tôt' })).toBeChecked()
+    fireEvent.click(within(period).getByRole('radio', { name: 'Toutes les dates' }))
+    expect(state.setFilters).toHaveBeenCalledWith({ scope: 'all' })
+  })
+
+  it('agenda: « Plus tôt » is a filter the dead end names and « Effacer les filtres » lifts', () => {
+    state.list = query({ data: { publications: [], total: 0 } })
+    state.filters = { scope: 'earlier', filter: 'ride' }
+    renderAt(<TeamAgendaPage />)
+    expect(screen.getByText('Rien ne correspond à : Plus tôt · Sorties.')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Effacer les filtres' }))
+    expect(state.setFilters).toHaveBeenCalledWith(expect.objectContaining({ scope: 'all' }))
+  })
+
+  it('team calendar: « Toutes les dates / Je participe », without « Plus tôt »', () => {
+    state.list = query({ data: { events: [] } })
+    renderAt(<TeamCalendarPage />)
+    const period = screen.getByRole('radiogroup', { name: 'Période' })
+    expect(within(period).getByRole('radio', { name: 'Toutes les dates' })).toBeTruthy()
+    expect(within(period).getByRole('radio', { name: 'Je participe' })).toBeTruthy()
+    expect(within(period).queryByRole('radio', { name: 'Tout' })).toBeNull()
+    expect(within(period).queryByRole('radio', { name: 'Plus tôt' })).toBeNull()
+  })
+})
+
+describe('the agenda’s search and tag fields share one line (production report, 12 November 2026)', () => {
+  it('top-aligned, so the hint under the disabled tag field does not lift it above the search', () => {
+    state.list = query({ data: { publications: [], total: 0 } })
+    renderAt(<TeamAgendaPage />)
+    expect(screen.getByText('Choisissez Sorties ou Voyages pour filtrer par tag.')).toBeTruthy()
+    const search = screen.getByRole('searchbox', { name: "Rechercher dans l'agenda" })
+    const row = search.closest<HTMLElement>('.mantine-Group-root')!
+    expect(row.style.getPropertyValue('--group-align')).toBe('flex-start')
+    // The tag field is in the same row.
+    expect(within(row).getAllByPlaceholderText('Tags').length).toBeGreaterThan(0)
+  })
+})
+
+describe('a refusal leads to « À propos de l’équipe » (RL11)', () => {
+  it('ads, for a non-member', () => {
+    state.team = query({ data: { ...TEAM, role: undefined } })
+    renderAt(<AdListPage />)
+    expect(screen.getByRole('link', { name: "À propos de l'équipe" })).toBeTruthy()
+  })
+
+  it('the member directory, refused by the server', () => {
+    state.list = query({
+      isError: true,
+      error: new ApiClientError(403, { code: 'FORBIDDEN' } as never),
+    })
+    renderAt(<TeamDirectoryPage />)
+    expect(screen.getByRole('link', { name: "À propos de l'équipe" })).toBeTruthy()
+  })
+})
+
+describe('the routes map heads its list like the list does (RL13)', () => {
+  it('« Importer GPX » and « Créer un parcours » for an organizer', () => {
+    renderAt(<RoutesMapPage />)
+    expect(screen.getByRole('link', { name: 'Créer un parcours' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Importer/ })).toBeTruthy()
+  })
+
+  it('neither for a plain member', () => {
+    state.team = query({ data: { ...TEAM, role: 'MEMBER' } })
+    renderAt(<RoutesMapPage />)
+    expect(screen.queryByRole('link', { name: 'Créer un parcours' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Importer/ })).toBeNull()
   })
 })

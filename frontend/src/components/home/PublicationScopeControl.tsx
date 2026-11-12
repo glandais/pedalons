@@ -9,17 +9,17 @@ interface PublicationScopeControlProps {
 }
 
 /**
- * « Tout / Je participe » over a publication feed (RL15): « Tout » is read in two sections,
- * « À venir » then « Plus tôt », so there is no « À venir » to pick any more.
+ * « Tout / Je participe / Plus tôt » over a publication feed (RL15): « Tout » is read in two
+ * sections, « À venir » then « Plus tôt », so there is no « À venir » to pick; « Plus tôt » is the
+ * second section alone, reached in one gesture however long the first one runs. Its label is the
+ * section's heading, the same word.
  *
- * Hidden from anonymous visitors: the contract states that `participating` yields nothing for
- * them, so « Je participe » would be a dead end, and « Tout » alone is no choice.
+ * « Je participe » is for a signed-in reader only: the contract states that `participating` yields
+ * nothing for an anonymous visitor, who gets « Tout / Plus tôt ».
  */
 export function PublicationScopeControl({ value, onChange }: PublicationScopeControlProps) {
   const { t } = useTranslation()
   const { isAuthenticated } = useAuth()
-
-  if (!isAuthenticated) return null
 
   return (
     <SegmentedControl
@@ -27,7 +27,8 @@ export function PublicationScopeControl({ value, onChange }: PublicationScopeCon
       onChange={(next) => onChange(next as PublicationScopeValue)}
       data={[
         { value: 'all', label: t('publications.scope.all') },
-        { value: 'me', label: t('publications.scope.me') },
+        ...(isAuthenticated ? [{ value: 'me', label: t('publications.scope.me') }] : []),
+        { value: 'earlier', label: t('list.sections.earlier') },
       ]}
       aria-label={t('publications.scope.label')}
     />

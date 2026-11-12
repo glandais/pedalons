@@ -12,8 +12,9 @@ import { paths } from '@/config/paths'
  * stays in the back stack. Each returns `undefined` when there is nothing to redirect.
  *
  * Filters carried over: the search (`q`) everywhere; the tags with a kind; « Je participe »
- * (`w=me`) on the agenda. `w=upcoming`, `w=all` and `w=past` all become « Toutes les dates », the
- * agenda's default (RL15), so they are dropped rather than written.
+ * (`w=me`) on the agenda. `w=past` becomes « Plus tôt » (`w=earlier`), its exact equivalent;
+ * `w=upcoming` and `w=all` become « Toutes les dates », the agenda's default (RL15), so they are
+ * dropped rather than written.
  */
 
 /** Builds `path?query`, without a dangling `?`. */
@@ -22,11 +23,13 @@ function withQuery(path: string, query: URLSearchParams): string {
   return qs ? `${path}?${qs}` : path
 }
 
-/** The agenda's own params, from a former feed URL: kind, « Je participe », search, tags. */
+/** The agenda's own params, from a former feed URL: kind, period, search, tags. */
 function agendaQuery(from: URLSearchParams, type: 'ride' | 'trip' | undefined): URLSearchParams {
   const query = new URLSearchParams()
   if (type) query.set('type', type)
-  if (from.get('w') === 'me') query.set('w', 'me')
+  const scope = from.get('w')
+  if (scope === 'me') query.set('w', 'me')
+  if (scope === 'past') query.set('w', 'earlier')
   const search = from.get('q')
   if (search) query.set('q', search)
   const tags = from.get('tags')
@@ -75,10 +78,16 @@ export function teamTripsRedirect(teamSlug: string, search: URLSearchParams): st
 
 /**
  * The agenda's own address carrying a period it no longer has (RL15): « À venir » (`w=upcoming`)
- * and « Passées » (`w=past`) are the two sections of « Toutes les dates », the default, so the
- * parameter is dropped and everything else kept. « Je participe » (`w=me`) stays.
+ * is the first section of « Toutes les dates », the default, so the parameter is dropped;
+ * « Passées » (`w=past`) is « Plus tôt » exactly, so it becomes `w=earlier`. Everything else is
+ * kept, « Je participe » (`w=me`) and « Plus tôt » (`w=earlier`) untouched.
  */
 export function teamAgendaRedirect(teamSlug: string, search: URLSearchParams): string | undefined {
+  if (search.get('w') === 'past') {
+    const query = new URLSearchParams(search)
+    query.set('w', 'earlier')
+    return withQuery(paths.teamAgenda(teamSlug), query)
+  }
   const query = withoutFormerPeriod(search)
   return query ? withQuery(paths.teamAgenda(teamSlug), query) : undefined
 }
@@ -92,10 +101,13 @@ export function homeFeedRedirect(search: URLSearchParams): string | undefined {
   return query ? withQuery(paths.home(), query) : undefined
 }
 
-/** `search` without its `w`, when it holds a period other than « Je participe »; else nothing. */
+/**
+ * `search` without its `w`, when it holds a period other than « Je participe » and « Plus tôt »;
+ * else nothing.
+ */
 function withoutFormerPeriod(search: URLSearchParams): URLSearchParams | undefined {
   const scope = search.get('w')
-  if (scope === null || scope === 'me') return undefined
+  if (scope === null || scope === 'me' || scope === 'earlier') return undefined
   const query = new URLSearchParams(search)
   query.delete('w')
   return query

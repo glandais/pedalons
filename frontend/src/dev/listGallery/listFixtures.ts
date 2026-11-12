@@ -167,6 +167,11 @@ export const AGENDA_PAST: PublicationDto[] = [
     }
   ),
 ]
+/**
+ * The home feed's « Plus tôt » (`when=EARLIER`): « Tout » without what is ahead — the rides and
+ * trips that are over and the posts, at their date, latest first, one list.
+ */
+export const FEED_EARLIER: PublicationDto[] = [post(), ...AGENDA_PAST]
 
 // --- Routes ---------------------------------------------------------------------------------
 

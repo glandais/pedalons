@@ -29,6 +29,18 @@ describe('agenda filters (WEB-68, RL15)', () => {
     })
   })
 
+  it('« Plus tôt » (?w=earlier) is when=PAST&dated=true, never participating, other filters kept', () => {
+    const params = agendaApiParams(read('w=earlier&type=ride&tags=0ab&q=col'))
+    expect(params).toMatchObject({
+      when: 'PAST',
+      dated: true,
+      type: 'RIDE',
+      tags: ['0ab'],
+      search: 'col',
+    })
+    expect(params).not.toHaveProperty('participating')
+  })
+
   it('reads the former periods as « Toutes les dates », and the former kinds without failing', () => {
     expect(read('w=past').scope).toBe('all')
     expect(read('w=upcoming').scope).toBe('all')

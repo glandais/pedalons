@@ -13,6 +13,7 @@ import {
   AGENDA_MINE,
   AGENDA_PAST,
   FEED,
+  FEED_EARLIER,
   ALL_ROUTES_ROAD,
   AULNE_TEAM,
   ALL_TEAMS,
@@ -88,6 +89,13 @@ const home: ListSection = {
       label: '« À venir » puis « Plus tôt » : deux sorties et voyages, puis une publication',
       url: paths.home,
       api: { feed: page('publications', FEED, 47, 12, 2) },
+      scrollTo: FEED_SECTION,
+    },
+    {
+      id: 'accueil-plus-tot',
+      label: '« Plus tôt » : ce qui est passé et les publications, une seule liste, 799 en tout',
+      url: () => q(paths.home(), { w: 'earlier' }),
+      api: { feed: page('publications', FEED_EARLIER, 799) },
       scrollTo: FEED_SECTION,
     },
     {
@@ -199,6 +207,12 @@ const agenda: ListSection = {
         ...RIDE_TAGS,
         agenda: page('publications', [...AGENDA.slice(0, 2), ...AGENDA_PAST], 47, 12, 2),
       },
+    },
+    {
+      id: 'agenda-plus-tot',
+      label: '« Plus tôt » : les sorties et voyages passés, une seule liste, 402 en tout',
+      url: () => q(paths.teamAgenda(VCM_SLUG), { w: 'earlier' }),
+      api: { ...RIDE_TAGS, agenda: page('publications', AGENDA_PAST, 402) },
     },
     {
       id: 'agenda-filtre',

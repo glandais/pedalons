@@ -1,8 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { paths } from '../../config/paths'
-import { IconPlus } from '@tabler/icons-react'
-import { Button, Group, Stack, Title } from '@mantine/core'
+import { Button, Group, Stack } from '@mantine/core'
 import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { TeamLayout } from '../../components/team/TeamLayout'
 import { TeamUnavailable } from '@/components/team/TeamUnavailable'
@@ -15,7 +14,7 @@ import { ResultCount } from '@/components/common/ResultCount'
 import { RouteDeadEnd } from '@/components/route/RouteDeadEnd'
 import { RouteViewSwitch } from '@/components/route/RouteViewSwitch'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
-import { UploadGpxFiles } from '../../components/route/UploadGpxFiles'
+import { RoutesListHeader } from '@/components/route/RoutesListHeader'
 import { TagFilter } from '../../components/tag'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
@@ -65,21 +64,7 @@ export function RouteListPage() {
   return (
     <TeamLayout team={team} currentTab="routes">
       <Stack py="lg">
-        <Group justify="space-between">
-          <Title order={2}>{t('routes.list.title')}</Title>
-          {canCreateRoute && (
-            <Group gap="sm">
-              <UploadGpxFiles team={team} />
-              <Button
-                component="a"
-                href={paths.routeNew(teamSlug!)}
-                leftSection={<IconPlus size={16} />}
-              >
-                {t('list.create.route')}
-              </Button>
-            </Group>
-          )}
-        </Group>
+        <RoutesListHeader team={team} />
 
         <RouteFilterPanel
           filters={filters}

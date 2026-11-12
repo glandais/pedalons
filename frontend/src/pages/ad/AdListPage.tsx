@@ -98,7 +98,7 @@ export function AdListPage() {
           message={t('ads.list.membersOnly.description')}
           action={
             <Button variant="default" component={PrefetchLink} to={paths.teamAbout(teamData.slug)}>
-              {t('teams.detail.tabs.about')}
+              {t('teams.detail.about.title')}
             </Button>
           }
         />

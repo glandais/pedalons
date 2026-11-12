@@ -44,7 +44,8 @@ interface HomeFeedSectionProps {
  * The publications feed of the home page, visitor and member alike: search, period and scope
  * (signed in), kind, the grid and its pagination. Every filter lives in the URL (`useUrlFilters`,
  * through `useHomeFeedData`). A feed that holds rides or trips reads in two sections, « À venir »
- * then « Plus tôt », each with its count (RL15); the posts alone have one count.
+ * then « Plus tôt », each with its count (RL15); the posts alone, and the period « Plus tôt » —
+ * the second section by itself — are one list with one count.
  *
  * Its own `region`, named by its heading: the member home's « Cette semaine » rows also link to
  * rides, and the e2e specs find a feed card inside this region.
@@ -90,15 +91,18 @@ export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps)
   const activeFilters = [
     ...(filters.search ? [searchFilter(t, filters.search)] : []),
     ...(filters.scope === 'me' ? [t('publications.scope.me')] : []),
+    ...(filters.scope === 'earlier' ? [t('list.sections.earlier')] : []),
     ...(filters.membership !== membershipDefault ? [membershipLabel(t, filters.membership)] : []),
     ...(filters.filter !== 'all'
       ? [t(`teams.publications.list.filter.${filters.filter satisfies 'ride' | 'post' | 'trip'}`)]
       : []),
   ]
 
-  // Two sections as soon as the feed holds rides or trips and the API said where the first ends.
+  // Two sections as soon as the feed holds rides or trips and the API said where the first ends;
+  // « Plus tôt » is the second alone.
   const sectioned =
-    publicationFeedHasSections(filters.filter) && publicationsData?.upcomingTotal != null
+    publicationFeedHasSections(filters.filter, filters.scope) &&
+    publicationsData?.upcomingTotal != null
   const renderGrid = (rows: PublicationDto[]) => (
     <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
       {rows.map((publication) => (
@@ -155,7 +159,12 @@ export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps)
         />
       </Group>
 
-      {!sectioned && <ResultCount total={publicationsData?.total} resource="publications" />}
+      {!sectioned && (
+        <ResultCount
+          total={publicationsData?.total}
+          resource={sectionCounts(filters.filter).earlier}
+        />
+      )}
 
       <QueryStateBoundary
         isLoading={isLoading}
@@ -221,7 +230,8 @@ export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps)
 
 /**
  * What each section's count names. « À venir » holds rides and trips only; « Plus tôt » mixes in
- * the posts, hence « publications », unless the kind narrows both.
+ * the posts, hence « publications », unless the kind narrows both. A list without sections — the
+ * posts, or the period « Plus tôt » — counts as « Plus tôt » does.
  */
 function sectionCounts(filter: PublicationFilterValue): {
   upcoming: CountedResource
@@ -229,5 +239,6 @@ function sectionCounts(filter: PublicationFilterValue): {
 } {
   if (filter === 'ride') return { upcoming: 'rides', earlier: 'rides' }
   if (filter === 'trip') return { upcoming: 'trips', earlier: 'trips' }
+  if (filter === 'post') return { upcoming: 'publications', earlier: 'publications' }
   return { upcoming: 'ridesAndTrips', earlier: 'publications' }
 }

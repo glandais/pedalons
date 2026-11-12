@@ -102,10 +102,14 @@ test.describe('publication feeds', () => {
     await expect(typeRadio('Sorties')).toBeChecked()
     await expect(periodRadio('Toutes les dates')).toBeChecked()
 
-    // A former « Passées » link opens « Toutes les dates », the kind kept.
+    // A former « Passées » link opens « Plus tôt », its exact equivalent, the kind kept: one list,
+    // what is over alone, no section.
     await page.goto(`/equipes/${team.slug}/agenda?type=ride&w=past`)
-    await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/agenda\\?type=ride$`))
-    await expect(periodRadio('Toutes les dates')).toBeChecked()
+    await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/agenda\\?type=ride&w=earlier$`))
+    await expect(periodRadio('Plus tôt')).toBeChecked()
+    await expect(entityCard(main, past.name)).toBeVisible()
+    await expect(entityCard(main, ride)).toHaveCount(0)
+    await expect(main.getByRole('region', { name: 'À venir' })).toHaveCount(0)
 
     // Nobody registered, no trip: the filtered dead end, « Je participe » among its filters.
     await segment(page, 'Période', 'Je participe')

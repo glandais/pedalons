@@ -11,7 +11,7 @@ import { searchFilter, type FilteredResource } from '@/components/common/filtere
 import { OutOfRangeState } from '@/components/common/OutOfRangeState'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { Pagination } from '@/components/common/Pagination'
-import type { CountedResource } from '@/components/common/ResultCount'
+import { ResultCount, type CountedResource } from '@/components/common/ResultCount'
 import { SearchInput } from '@/components/common/SearchInput'
 import { UpcomingFirstSections } from '@/components/common/UpcomingFirstSections'
 import { ListViewSwitch, type ListView } from '@/components/common/ListViewSwitch'
@@ -25,11 +25,7 @@ import { paths } from '@/config/paths'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
 import { useScrollToListTop } from '@/hooks/useScrollToListTop'
-import {
-  agendaTypeToPublicationType,
-  type AgendaFilters,
-  type AgendaScopeValue,
-} from '@/hooks/filters/agendaFilters'
+import { agendaTypeToPublicationType, type AgendaFilters } from '@/hooks/filters/agendaFilters'
 import { isDated, type DatedPublication } from '@/utils/publicationTiming'
 import type { TeamDetailDto } from '@/api/dto'
 import { useTeamAgendaData } from './teamAgendaData'
@@ -39,10 +35,11 @@ import { teamAccess } from '@/lib/teamAccess'
 /**
  * « Agenda » (`teamAgenda`, ledger `WEB-68`): the team's rides and trips, one list in two sections
  * (RL15) — « À venir », soonest first (a ride under way stays there, marked « En cours »), then
- * « Plus tôt », latest first — over « Toutes les dates » or « Je participe ». The search and the
+ * « Plus tôt », latest first — over « Toutes les dates » or « Je participe »; the period « Plus
+ * tôt » (`?w=earlier`) is the second section alone, one list with one count. The search and the
  * tags head the list, the period and the kind follow (RL6): there is no panel. Viewed as
- * « Vignettes » or « Lignes » (`?view=`), both in sections, or as a calendar — its own path,
- * `teamCalendar`, for a member only (plan 2026-10-06 §4 and §7).
+ * « Vignettes » or « Lignes » (`?view=`), or as a calendar — its own path, `teamCalendar`, for a
+ * member only (plan 2026-10-06 §4 and §7).
  */
 export function TeamAgendaPage() {
   const { t } = useTranslation()
@@ -120,17 +117,45 @@ export function TeamAgendaPage() {
     })
   }
 
-  // `isDated` narrows the type: `when=UPCOMING_FIRST` keeps the agenda to rides and trips.
+  // `isDated` narrows the type: `dated=true` keeps the agenda to rides and trips.
   const items = (publicationsData?.publications ?? []).filter(isDated)
-  // What the filtered empty state names (RL10): « Je participe » is a filter too.
+  // « Plus tôt » is the second section by itself: one list, one count (RL8).
+  const earlier = filters.scope === 'earlier'
+  const counted = sectionCounts(filters.filter)
+  // What the filtered empty state names (RL10): the period is a filter too.
   const activeFilters = [
     ...(filters.search ? [searchFilter(t, filters.search)] : []),
     ...(filters.scope === 'me' ? [t('publications.scope.me')] : []),
+    ...(earlier ? [t('list.sections.earlier')] : []),
     ...(filters.filter !== 'all'
       ? [t(`agenda.type.${filters.filter satisfies 'ride' | 'trip'}`)]
       : []),
     ...tagLabels,
   ]
+
+  const renderRows = (rows: DatedPublication[]) =>
+    density === 'row' ? (
+      <Stack gap="sm">
+        {rows.map((publication) => (
+          <AgendaRow
+            key={publication.id}
+            publication={publication}
+            actions={<PublicationCardActions publication={publication} />}
+          />
+        ))}
+      </Stack>
+    ) : (
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+        {rows.map((publication) => (
+          <PublicationCard
+            key={publication.id}
+            publication={publication}
+            showTeam={false}
+            actions={<PublicationCardActions publication={publication} />}
+          />
+        ))}
+      </SimpleGrid>
+    )
 
   return (
     <TeamLayout team={teamData} currentTab="agenda">
@@ -167,7 +192,10 @@ export function TeamAgendaPage() {
         </Group>
 
         <Stack gap="sm">
-          <Group gap="sm" align="flex-end" wrap="wrap">
+          {/* Top-aligned: the disabled tag field carries its hint *under* the input, so a bottom
+              alignment would lift that input above the search. Both inputs share a line, the hint
+              hangs below (and on a narrow screen the fields stack). */}
+          <Group gap="sm" align="flex-start" wrap="wrap">
             <SearchInput
               id="agenda-search"
               value={search}
@@ -205,12 +233,14 @@ export function TeamAgendaPage() {
               team={teamData}
               mode="list"
               scope={filters.scope}
-              onScopeChange={(scope) => setFilters({ scope: scope as AgendaScopeValue })}
+              onScopeChange={(scope) => setFilters({ scope })}
               type={filters.filter}
               // A ride tag means nothing to a trip: switching kind drops the selection.
               onTypeChange={(filter) => setFilters({ filter, tags: undefined })}
             />
-            {/* The counts are the sections' (RL15): this line keeps the view switch alone. */}
+            {/* In two sections the counts are theirs (RL15); « Plus tôt » is one list, its count
+                here, left of the view switch (RL8). */}
+            {earlier && <ResultCount total={publicationsData?.total} resource={counted.earlier} />}
             {/* Right-aligned even when a narrow screen wraps it under the criteria. */}
             <Box ml="auto">
               <ListViewSwitch views={views} value={density} onChange={onViewChange} />
@@ -235,39 +265,20 @@ export function TeamAgendaPage() {
           {items.length > 0 ? (
             <Stack gap="xl">
               <div ref={listTopRef}>
-                <UpcomingFirstSections
-                  items={items}
-                  page={filters.page}
-                  size={filters.size}
-                  total={publicationsData?.total ?? 0}
-                  upcomingTotal={publicationsData?.upcomingTotal ?? 0}
-                  counts={sectionCounts(filters.filter)}
-                >
-                  {(rows: DatedPublication[]) =>
-                    density === 'row' ? (
-                      <Stack gap="sm">
-                        {rows.map((publication) => (
-                          <AgendaRow
-                            key={publication.id}
-                            publication={publication}
-                            actions={<PublicationCardActions publication={publication} />}
-                          />
-                        ))}
-                      </Stack>
-                    ) : (
-                      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-                        {rows.map((publication) => (
-                          <PublicationCard
-                            key={publication.id}
-                            publication={publication}
-                            showTeam={false}
-                            actions={<PublicationCardActions publication={publication} />}
-                          />
-                        ))}
-                      </SimpleGrid>
-                    )
-                  }
-                </UpcomingFirstSections>
+                {earlier ? (
+                  renderRows(items)
+                ) : (
+                  <UpcomingFirstSections
+                    items={items}
+                    page={filters.page}
+                    size={filters.size}
+                    total={publicationsData?.total ?? 0}
+                    upcomingTotal={publicationsData?.upcomingTotal ?? 0}
+                    counts={counted}
+                  >
+                    {renderRows}
+                  </UpcomingFirstSections>
+                )}
               </div>
               <Pagination
                 currentPage={filters.page}

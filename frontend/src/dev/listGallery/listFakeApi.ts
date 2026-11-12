@@ -181,13 +181,35 @@ const galleryAdapter: AxiosAdapter = async (config) => {
       const res = response(config, 500, { code: 'INTERNAL_ERROR', message: 'galerie' })
       throw new AxiosError('galerie', AxiosError.ERR_BAD_RESPONSE, config, null, res)
     }
-    return response(config, 200, reply.data)
+    return response(config, 200, sortedTeams(endpoint, config.params as Params, reply.data))
   }
   const label = `${method.toUpperCase()} ${config.url}`
   unservedRequests.push(label)
   console.warn(`[galerie] requête non servie : ${label}`)
   const notFound = response(config, 404, { code: 'NOT_FOUND', message: 'galerie' })
   throw new AxiosError('galerie', AxiosError.ERR_BAD_REQUEST, config, null, notFound)
+}
+
+/**
+ * The team lists in the order they ask for (`sortBy`, `sortDir`), as the server serves them: the
+ * page says « triées par nom » or « par nombre de membres » beside the count, and shows the rows
+ * in the order they come. Every other answer is served as it is.
+ */
+function sortedTeams(endpoint: Endpoint, params: Params | undefined, data: unknown): unknown {
+  if (endpoint !== 'teamList' && endpoint !== 'myTeams') return data
+  const body = data as { teams?: Array<{ name: string; memberCount?: number }> }
+  const sortBy = params?.sortBy
+  if (!body.teams || (sortBy !== 'NAME' && sortBy !== 'MEMBER_COUNT')) return data
+  // The contract's default direction is DESC.
+  const sign = params?.sortDir === 'ASC' ? 1 : -1
+  const teams = [...body.teams].sort(
+    (a, b) =>
+      sign *
+      (sortBy === 'NAME'
+        ? a.name.localeCompare(b.name, 'fr')
+        : (a.memberCount ?? 0) - (b.memberCount ?? 0))
+  )
+  return { ...body, teams }
 }
 
 let installed = false

@@ -21,8 +21,8 @@ import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 
 /**
  * The agenda's calendar view, kept on its own path for the links already out there (ledger
- * `WEB-69`, plan 2026-10-06 §4). Browsed by month, so its period is « Tout / Je participe »
- * (`?w=me`) and its kind « Tout / Sorties / Voyages » (`?type=`), both applied to the events the
+ * `WEB-69`, plan 2026-10-06 §4). Browsed by month, so its period is « Toutes les dates / Je
+ * participe » (`?w=me`), as in the list but without « Plus tôt » and its kind « Tout / Sorties / Voyages » (`?type=`), both applied to the events the
  * window already holds (`calendarFilters.ts`).
  */
 export function TeamCalendarPage(): React.ReactElement {

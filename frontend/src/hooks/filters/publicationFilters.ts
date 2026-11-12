@@ -7,11 +7,13 @@ export const PUBLICATION_PAGE_SIZE = 12
 export type PublicationFilterValue = 'all' | 'ride' | 'post' | 'trip'
 
 /**
- * The feed's period, « Tout / Je participe » (RL15, docs/LEDGER_*.md WEB-175). `me` is
+ * The feed's period, « Tout / Je participe / Plus tôt » (RL15, docs/LEDGER_*.md WEB-175). `me` is
  * authenticated-only — the contract says `participating` "yields nothing for an anonymous visitor".
  * There is no « À venir » any more: « Tout » is ordered upcoming first, in two sections.
+ * « Plus tôt » (`earlier`) is « Tout » without what is ahead, one list latest first: the second
+ * section in one gesture, for a feed whose « À venir » runs over many pages.
  */
-export type PublicationScopeValue = 'all' | 'me'
+export type PublicationScopeValue = 'all' | 'me' | 'earlier'
 
 export const publicationFilterToType: Record<PublicationFilterValue, PublicationType | undefined> =
   {
@@ -22,25 +24,32 @@ export const publicationFilterToType: Record<PublicationFilterValue, Publication
   }
 
 /**
- * Whether a feed of this kind is read in two sections, « À venir » then « Plus tôt » (RL15): any
- * kind that holds rides or trips. The posts alone have nothing ahead, hence no sections.
+ * Whether the feed is read in two sections, « À venir » then « Plus tôt » (RL15): any kind that
+ * holds rides or trips, unless « Plus tôt » is picked — then it is the second section alone, one
+ * list with one count. The posts alone have nothing ahead, hence no sections.
  */
-export function publicationFeedHasSections(filter: PublicationFilterValue): boolean {
-  return filter !== 'post'
+export function publicationFeedHasSections(
+  filter: PublicationFilterValue,
+  scope: PublicationScopeValue
+): boolean {
+  return filter !== 'post' && scope !== 'earlier'
 }
 
 /**
  * Projects the period and the kind onto `when` / `participating`. A feed that holds rides or trips
  * is `when=UPCOMING_FIRST` (API-185): what is not over yet, soonest first — a ride under way
  * included — then everything else, latest first, the posts at their publication date. « Je
- * participe » is `participating`, over the same two sections.
+ * participe » is `participating`, over the same two sections. « Plus tôt » is `when=EARLIER`
+ * (contract 14.9.0), whatever the kind: the second section of UPCOMING_FIRST alone, posts
+ * included — under « Publications » the same list as « Tout ».
  */
 export function publicationScopeToParams(
   scope: PublicationScopeValue,
   filter: PublicationFilterValue
 ): { when?: PublicationWhen; participating?: boolean } {
+  if (scope === 'earlier') return { when: PublicationWhen.EARLIER }
   return {
-    ...(publicationFeedHasSections(filter) ? { when: PublicationWhen.UPCOMING_FIRST } : {}),
+    ...(publicationFeedHasSections(filter, scope) ? { when: PublicationWhen.UPCOMING_FIRST } : {}),
     ...(scope === 'me' ? { participating: true } : {}),
   }
 }
@@ -48,12 +57,12 @@ export function publicationScopeToParams(
 /**
  * `filter` holds the page's own value, not `PublicationType`, so the URL stays readable. A former
  * link keeps working: `?w=upcoming`, a period the feed no longer has, falls back to « Tout » — its
- * upcoming rides are the first section.
+ * upcoming rides are the first section. « Plus tôt » is `?w=earlier`.
  */
 export const publicationFiltersSchema = z.object({
   search: searchField,
   filter: z.enum(['all', 'ride', 'post', 'trip']).default('all').catch('all'),
-  scope: z.enum(['all', 'me']).default('all').catch('all'),
+  scope: z.enum(['all', 'me', 'earlier']).default('all').catch('all'),
   page: pageField,
   size: sizeField(PUBLICATION_PAGE_SIZE),
 })

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readUrlFilters } from '@/hooks/useUrlFilters'
 import {
   publicationApiParams,
+  publicationFeedHasSections,
   publicationFiltersAlias,
   publicationFiltersSchema,
 } from './publicationFilters'
@@ -35,6 +36,26 @@ describe('home feed filters — « Tout / Je participe » in two sections (RL15)
       participating: true,
       when: 'UPCOMING_FIRST',
     })
+  })
+
+  it('« Plus tôt » (?w=earlier) is when=EARLIER whatever the kind, never participating', () => {
+    for (const query of ['w=earlier', 'w=earlier&type=ride', 'w=earlier&type=post']) {
+      const params = publicationApiParams(read(query))
+      expect(params, query).toMatchObject({ when: 'EARLIER' })
+      expect(params, query).not.toHaveProperty('participating')
+    }
+    expect(publicationApiParams(read('w=earlier&type=trip&q=col'))).toMatchObject({
+      type: 'TRIP',
+      search: 'col',
+    })
+  })
+
+  it('« Plus tôt » is one list, without sections', () => {
+    expect(publicationFeedHasSections('all', 'earlier')).toBe(false)
+    expect(publicationFeedHasSections('ride', 'earlier')).toBe(false)
+    expect(publicationFeedHasSections('all', 'all')).toBe(true)
+    expect(publicationFeedHasSections('ride', 'me')).toBe(true)
+    expect(publicationFeedHasSections('post', 'all')).toBe(false)
   })
 
   it('reads a former « À venir » link as « Tout »', () => {

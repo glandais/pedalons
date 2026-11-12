@@ -1,12 +1,13 @@
 import { Navigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Group, Stack, Title } from '@mantine/core'
+import { Group, Stack } from '@mantine/core'
 import { paths } from '../../config/paths'
 import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { TeamLayout } from '../../components/team/TeamLayout'
 import { RouteFilterPanel } from '../../components/route/RouteFilterPanel'
 import { RoutesTileMap } from '../../components/route/RoutesTileMap'
 import { RouteViewSwitch } from '@/components/route/RouteViewSwitch'
+import { RoutesListHeader } from '@/components/route/RoutesListHeader'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useRoutesMapData } from './routesMapData'
 import { TagFilter } from '../../components/tag'
@@ -41,7 +42,8 @@ export function RoutesMapPage() {
   return (
     <TeamLayout team={team} currentTab="routes">
       <Stack py="lg">
-        <Title order={2}>{t('routes.list.title')}</Title>
+        {/* The list's head, creation included (RL13): the map is a view of the same list. */}
+        <RoutesListHeader team={team} />
 
         <RouteFilterPanel
           filters={filters}

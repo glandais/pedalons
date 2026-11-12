@@ -19,6 +19,7 @@ const BRIEF: Record<string, string[]> = {
   accueil: [
     'accueil-repos',
     'accueil-sections',
+    'accueil-plus-tot',
     'accueil-filtre',
     'accueil-criteres',
     'accueil-vide',
@@ -37,6 +38,7 @@ const BRIEF: Record<string, string[]> = {
   agenda: [
     'agenda-repos',
     'agenda-sections',
+    'agenda-plus-tot',
     'agenda-filtre',
     'agenda-criteres',
     'agenda-vide',
@@ -120,12 +122,15 @@ const OMITTED: string[] = ['agenda-criteres', 'annonces-criteres']
 const CONTENT: Record<string, string> = {
   'accueil-repos': 'Traversée du Morvan',
   'accueil-sections': 'Plus tôt',
+  'accueil-plus-tot': '799 publications',
   'accueil-filtre': 'Gravel du Menez-Hom',
   'accueil-vide-filtre': 'Rien ne correspond à : « monts » · Voyages.',
   'publications-repos': 'Assemblée générale de décembre',
   'publications-filtre': 'Les photos des Monts d’Arrée',
   'agenda-repos': 'Traversée du Morvan',
   'agenda-sections': 'Tour du lac du Drennec',
+  'agenda-plus-tot': '402 sorties et voyages',
+  'parcours-carte': 'Créer un parcours',
   'agenda-vide-filtre': 'Aucun voyage pour ces filtres',
   'publications-vide-filtre': 'Rien ne correspond à : « monts ».',
   'calendrier-repos': 'Sortie récupération',
@@ -152,6 +157,12 @@ const CONTENT: Record<string, string> = {
   'notifications-repos': 'Sortie récupération',
   'modeles-repos': 'Gravel du samedi',
   'modeles-filtre': 'Sortie du dimanche',
+}
+
+/** What a case shows in this order, first to last: the order its list says it is in. */
+const ORDER: Record<string, string[]> = {
+  'equipes-repos': ['Gravel Bretagne', 'Vélo Club des Monts'],
+  'equipes-decouvrir': ['Gravel Bretagne', 'Cyclos de l’Aulne', 'Vélo Club des Monts'],
 }
 
 let frenchI18n: I18nInstance
@@ -221,6 +232,21 @@ describe('list gallery', () => {
     expect(node!.textContent).not.toContain('Une erreur est survenue')
     const expected = CONTENT[caseId]
     if (expected) expect(node!.textContent, caseId).toContain(expected)
+    const order = ORDER[caseId]
+    if (order) {
+      const at = order.map((text) => node!.textContent!.indexOf(text))
+      expect(
+        at.every((i) => i >= 0),
+        caseId
+      ).toBe(true)
+      expect(at, caseId).toEqual([...at].sort((a, b) => a - b))
+    }
+    // « Plus tôt » is one list: no section heading, its count the list's.
+    if (caseId.endsWith('-plus-tot')) {
+      expect(within(node!).queryByRole('region', { name: 'À venir' }), caseId).toBeNull()
+      expect(within(node!).queryByRole('region', { name: 'Plus tôt' }), caseId).toBeNull()
+      expect(within(node!).getByRole('radio', { name: 'Plus tôt' }), caseId).toBeChecked()
+    }
     if (caseId.endsWith('-erreur')) {
       expect(node!.textContent).toContain('Chargement impossible')
       // The block says it once: no toast over it (RL11).

@@ -4,14 +4,16 @@ import type { TeamDetailDto } from '@/api/dto'
 import type { AgendaTypeValue } from '@/hooks/filters/agendaFilters'
 import { useAuth } from '@/hooks/useAuth'
 
-/** The period the bar offers: « Toutes les dates » or « Tout », and « Je participe ». */
-export type AgendaBarScope = 'all' | 'me'
+/** The period the bar offers: « Toutes les dates », « Je participe », and in the list « Plus tôt ». */
+export type AgendaBarScope = 'all' | 'me' | 'earlier'
 
 interface AgendaFilterBarProps {
   team: Pick<TeamDetailDto, 'enableRides' | 'enableTrips' | 'enableRoutes'>
   /**
-   * `list`: « Toutes les dates / Je participe » (RL15) — the list holds both sections, « À venir »
-   * then « Plus tôt ». `calendar`: « Tout / Je participe », browsed by month.
+   * `list`: « Toutes les dates / Je participe / Plus tôt » (RL15) — « Toutes les dates » holds both
+   * sections, « À venir » then « Plus tôt », and « Plus tôt » the second alone. `calendar`:
+   * « Toutes les dates / Je participe », browsed by month — a period « Plus tôt » means nothing
+   * there.
    */
   mode: 'list' | 'calendar'
   scope: AgendaBarScope
@@ -24,7 +26,8 @@ interface AgendaFilterBarProps {
  * The agenda's criteria, shared by its list (`TeamAgendaPage`) and its calendar view
  * (`TeamCalendarPage`): the period, then the kind — « Tout / Sorties / Voyages », each kind only
  * when the team has its module (a ride or a trip needs the routes too). « Je participe » is for a
- * signed-in reader only: `participating` yields nothing for an anonymous one.
+ * signed-in reader only: `participating` yields nothing for an anonymous one, who gets « Toutes
+ * les dates / Plus tôt » in the list and no period in the calendar.
  */
 export function AgendaFilterBar({
   team,
@@ -37,13 +40,10 @@ export function AgendaFilterBar({
   const { t } = useTranslation()
   const { isAuthenticated } = useAuth()
 
-  const me = isAuthenticated ? [{ value: 'me', label: t('publications.scope.me') }] : []
   const scopes = [
-    {
-      value: 'all',
-      label: mode === 'calendar' ? t('agenda.scope.all') : t('agenda.scope.allDates'),
-    },
-    ...me,
+    { value: 'all', label: t('agenda.scope.allDates') },
+    ...(isAuthenticated ? [{ value: 'me', label: t('publications.scope.me') }] : []),
+    ...(mode === 'list' ? [{ value: 'earlier', label: t('list.sections.earlier') }] : []),
   ]
 
   const rides = !!team.enableRides && !!team.enableRoutes
@@ -51,9 +51,8 @@ export function AgendaFilterBar({
 
   return (
     <Group gap="sm" wrap="wrap" align="center">
-      {/* Without « Je participe », a period with one value is no choice: an anonymous reader
-          gets none. */}
-      {isAuthenticated && (
+      {/* A period with one value is no choice: an anonymous reader of the calendar gets none. */}
+      {scopes.length > 1 && (
         <SegmentedControl
           value={scope}
           onChange={(next) => onScopeChange(next as AgendaBarScope)}

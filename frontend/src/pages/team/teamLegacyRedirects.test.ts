@@ -32,11 +32,12 @@ describe('former team feed addresses (WEB-68, plan §5)', () => {
     )
   })
 
-  it('maps the scopes: w=me to « Je participe », the others to « Toutes les dates »', () => {
+  it('maps the scopes: w=me to « Je participe », w=past to « Plus tôt », the others to « Toutes les dates »', () => {
     expect(teamHomeRedirect('vc', q('tab=publications&w=me'))).toBe(`${agenda}?w=me`)
     expect(teamHomeRedirect('vc', q('tab=publications&w=upcoming'))).toBe(agenda)
     expect(teamHomeRedirect('vc', q('w=all'))).toBe(agenda)
-    expect(teamHomeRedirect('vc', q('w=past'))).toBe(agenda)
+    expect(teamHomeRedirect('vc', q('w=past'))).toBe(`${agenda}?w=earlier`)
+    expect(teamHomeRedirect('vc', q('type=ride&w=past'))).toBe(`${agenda}?type=ride&w=earlier`)
   })
 
   it('sends ?tab=publications alone to the dashboard', () => {
@@ -51,23 +52,30 @@ describe('former team feed addresses (WEB-68, plan §5)', () => {
 })
 
 describe('former periods of the agenda and the home feed (RL15)', () => {
-  it('drops « À venir » and « Passées » from the agenda, keeping the rest', () => {
-    expect(teamAgendaRedirect('vc', q('w=past&type=trip'))).toBe(`${agenda}?type=trip`)
+  it('drops « À venir » from the agenda, keeping the rest', () => {
+    expect(teamAgendaRedirect('vc', q('w=upcoming&type=trip'))).toBe(`${agenda}?type=trip`)
     expect(teamAgendaRedirect('vc', q('w=upcoming'))).toBe(agenda)
+  })
+
+  it('turns « Passées » into « Plus tôt », its exact equivalent, keeping the rest', () => {
+    expect(teamAgendaRedirect('vc', q('w=past'))).toBe(`${agenda}?w=earlier`)
+    expect(teamAgendaRedirect('vc', q('w=past&type=trip'))).toBe(`${agenda}?w=earlier&type=trip`)
     expect(teamAgendaRedirect('vc', q('type=ride&w=past&view=row'))).toBe(
-      `${agenda}?type=ride&view=row`
+      `${agenda}?type=ride&w=earlier&view=row`
     )
   })
 
-  it('leaves « Je participe » and a bare agenda alone', () => {
+  it('leaves « Je participe », « Plus tôt » and a bare agenda alone', () => {
     expect(teamAgendaRedirect('vc', q('w=me'))).toBeUndefined()
+    expect(teamAgendaRedirect('vc', q('w=earlier&type=ride'))).toBeUndefined()
     expect(teamAgendaRedirect('vc', q('type=ride'))).toBeUndefined()
   })
 
-  it('drops « À venir » from the home feed', () => {
+  it('drops « À venir » from the home feed, keeps « Plus tôt »', () => {
     expect(homeFeedRedirect(q('w=upcoming&role=member'))).toBe(`${paths.home()}?role=member`)
     expect(homeFeedRedirect(q('w=upcoming'))).toBe(paths.home())
     expect(homeFeedRedirect(q('w=me'))).toBeUndefined()
+    expect(homeFeedRedirect(q('w=earlier&type=ride'))).toBeUndefined()
     expect(homeFeedRedirect(q(''))).toBeUndefined()
   })
 })

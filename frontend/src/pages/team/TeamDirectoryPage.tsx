@@ -99,7 +99,7 @@ export function TeamDirectoryPage() {
               message={t('teams.directory.forbidden.message')}
               action={
                 <Button variant="default" component={PrefetchLink} to={paths.teamAbout(team.slug)}>
-                  {t('teams.detail.tabs.about')}
+                  {t('teams.detail.about.title')}
                 </Button>
               }
             />
