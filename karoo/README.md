@@ -62,10 +62,10 @@ gprkey=YOUR_GITHUB_TOKEN
 ```bash
 ./gradlew installDebug       # build and install on the Karoo connected over ADB
 ./gradlew assembleDebug      # debug APK only
-bash check.sh                # local gate: format + assembleDebug
+bash check.sh                # local gate: format + assembleDebug + verifyRoborazziDebug
 ```
 
-The app talks to production (`https://www.pedalons.fr`, `BASE_URL` in `MainActivity.kt`), debug
+The app talks to production (`https://www.pedalons.fr`, `BuildConfig.PEDALONS_BASE_URL`, set by `buildConfigField` in `app/build.gradle.kts`), debug
 builds included.
 
 A local `assembleRelease` is signed only if `keystore.properties` exists (template:

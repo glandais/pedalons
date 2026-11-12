@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import fr.pedalons.karoo.api.TokenResponse
+import java.time.Clock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -15,11 +16,20 @@ import kotlinx.coroutines.flow.map
 private val Context.authDataStore: DataStore<Preferences> by
     preferencesDataStore(name = "pedalons_auth")
 
+private const val REFRESH_MARGIN_MS = 5 * 60 * 1000L
+
+/** An access token is usable while it has more than 5 minutes left. */
+internal fun isUsable(expiresAt: Long, nowMillis: Long): Boolean =
+    nowMillis < expiresAt - REFRESH_MARGIN_MS
+
 /**
- * Manages authentication tokens using DataStore. Tokens are stored locally and refreshed
- * automatically when needed.
+ * Keeps the authentication tokens in a DataStore: plain app-private storage, not encrypted. It only
+ * stores and reads them; refreshing an expired access token is [Session]'s job.
  */
-class AuthManager(private val context: Context) {
+class AuthManager(
+    private val context: Context,
+    private val clock: Clock = Clock.systemUTC(),
+) : TokenStore {
 
     private object Keys {
         val ACCESS_TOKEN = stringPreferencesKey("access_token")
@@ -34,7 +44,7 @@ class AuthManager(private val context: Context) {
      * raced another — keeps the stored token.
      */
     suspend fun saveTokens(tokenResponse: TokenResponse) {
-        val expiresAt = System.currentTimeMillis() + (tokenResponse.expiresIn * 1000L)
+        val expiresAt = clock.millis() + (tokenResponse.expiresIn * 1000L)
         context.authDataStore.edit { prefs ->
             prefs[Keys.ACCESS_TOKEN] = tokenResponse.accessToken
             tokenResponse.refreshToken?.let { prefs[Keys.REFRESH_TOKEN] = it }
@@ -51,18 +61,12 @@ class AuthManager(private val context: Context) {
         }
     }
 
-    /** Gets the current access token if not expired. */
+    /** Gets the current access token if it has more than 5 minutes left. */
     suspend fun getValidAccessToken(): String? {
         val prefs = context.authDataStore.data.first()
         val accessToken = prefs[Keys.ACCESS_TOKEN] ?: return null
         val expiresAt = prefs[Keys.EXPIRES_AT] ?: return null
-
-        // Token is valid if it has more than 5 minutes remaining
-        return if (System.currentTimeMillis() < expiresAt - 5 * 60 * 1000) {
-            accessToken
-        } else {
-            null
-        }
+        return if (isUsable(expiresAt, clock.millis())) accessToken else null
     }
 
     /** Gets the refresh token if available. */
@@ -71,7 +75,7 @@ class AuthManager(private val context: Context) {
     }
 
     /** Flow indicating whether the user is authenticated. */
-    val isAuthenticated: Flow<Boolean> =
+    override val isAuthenticated: Flow<Boolean> =
         context.authDataStore.data.map { prefs ->
             val hasAccessToken = prefs[Keys.ACCESS_TOKEN] != null
             val hasRefreshToken = prefs[Keys.REFRESH_TOKEN] != null
@@ -79,10 +83,17 @@ class AuthManager(private val context: Context) {
         }
 
     /** Checks if token needs refresh (expired or expiring soon). */
-    suspend fun needsRefresh(): Boolean {
+    override suspend fun needsRefresh(): Boolean {
         val prefs = context.authDataStore.data.first()
         val expiresAt = prefs[Keys.EXPIRES_AT] ?: return true
-        // Refresh if less than 5 minutes remaining
-        return System.currentTimeMillis() >= expiresAt - 5 * 60 * 1000
+        return !isUsable(expiresAt, clock.millis())
     }
+
+    override suspend fun validAccessToken(): String? = getValidAccessToken()
+
+    override suspend fun refreshToken(): String? = getRefreshToken()
+
+    override suspend fun save(t: TokenResponse) = saveTokens(t)
+
+    override suspend fun clear() = clearTokens()
 }

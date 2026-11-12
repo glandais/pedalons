@@ -1,54 +1,23 @@
 package fr.pedalons.karoo.auth
 
-import android.graphics.Bitmap
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.graphics.createBitmap
-import androidx.core.graphics.set
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.qrcode.QRCodeWriter
-import fr.pedalons.karoo.R
-import fr.pedalons.karoo.api.AuthorizationPendingException
-import fr.pedalons.karoo.api.DeviceCodeResponse
 import fr.pedalons.karoo.api.PedalonsApiClient
-import fr.pedalons.karoo.api.TokenExpiredException
+import fr.pedalons.karoo.data.DeviceAuthRepository
+import fr.pedalons.karoo.system.KarooConnection
 import fr.pedalons.karoo.ui.theme.PedalonsKarooTheme
-import io.hammerhead.karooext.KarooSystemService
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import java.time.Clock
 
 /**
  * Activity for device code authentication flow. Displays QR code and user code, polls for
@@ -63,15 +32,12 @@ class AuthActivity : ComponentActivity() {
         const val RESULT_ERROR = -1
     }
 
-    private var apiClient: PedalonsApiClient? = null
-    private lateinit var authManager: AuthManager
-    private lateinit var karooSystem: KarooSystemService
-    private var baseUrl: String? = null
+    private var connection: KarooConnection? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        baseUrl =
+        val baseUrl =
             intent.getStringExtra(EXTRA_BASE_URL)
                 ?: run {
                     setResult(RESULT_ERROR)
@@ -79,27 +45,16 @@ class AuthActivity : ComponentActivity() {
                     return
                 }
 
-        authManager = AuthManager(this)
-        karooSystem = KarooSystemService(applicationContext)
+        val connection = KarooConnection(this, baseUrl).also { this.connection = it }
 
         setContent {
-            var isConnected by remember { mutableStateOf(false) }
-
-            LaunchedEffect(Unit) {
-                karooSystem.connect {}
-                // Poll for connection status
-                while (!karooSystem.connected) {
-                    delay(100)
-                }
-                apiClient = PedalonsApiClient(baseUrl!!, karooSystem)
-                isConnected = true
-            }
+            val api by produceState<PedalonsApiClient?>(null) { value = connection.connect() }
 
             PedalonsKarooTheme {
-                if (isConnected && apiClient != null) {
+                val client = api
+                if (client != null) {
                     AuthScreen(
-                        apiClient = apiClient!!,
-                        authManager = authManager,
+                        api = client,
                         onSuccess = {
                             setResult(RESULT_SUCCESS)
                             finish()
@@ -111,21 +66,7 @@ class AuthActivity : ComponentActivity() {
                     )
                 } else {
                     // Show loading while connecting to Karoo System Service
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background,
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator()
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(stringResource(R.string.connecting))
-                            }
-                        }
-                    }
+                    ConnectingScreen()
                 }
             }
         }
@@ -133,321 +74,30 @@ class AuthActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        apiClient?.close()
-        if (::karooSystem.isInitialized) {
-            karooSystem.disconnect()
-        }
+        connection?.close()
     }
-}
 
-@Composable
-private fun AuthScreen(
-    apiClient: PedalonsApiClient,
-    authManager: AuthManager,
-    onSuccess: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    var state by remember { mutableStateOf<AuthState>(AuthState.Loading) }
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        // Request device code
-        apiClient
-            .requestDeviceCode()
-            .onSuccess { response ->
-                state = AuthState.ShowingCode(response)
-                // Start polling
-                scope.launch {
-                    pollForToken(apiClient, authManager, response, onSuccess) { newState ->
-                        state = newState
-                    }
-                }
+    @Composable
+    private fun AuthScreen(api: PedalonsApiClient, onSuccess: () -> Unit, onCancel: () -> Unit) {
+        val login =
+            remember(api) {
+                DeviceCodeLogin(DeviceAuthRepository(api), AuthManager(this), Clock.systemUTC())
             }
-            .onFailure { error ->
-                state = AuthState.Error(error.message ?: "Failed to start authentication")
-            }
-    }
+        // Started from the composition so that its delays follow the frame clock.
+        LaunchedEffect(login) { if (login.run()) onSuccess() }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
-    ) {
-        when (val currentState = state) {
-            is AuthState.Loading -> LoadingContent()
-            is AuthState.ShowingCode -> CodeContent(currentState.deviceCodeResponse)
-            is AuthState.Polling -> PollingContent(currentState.userCode)
-            is AuthState.Success -> SuccessContent()
-            is AuthState.Error -> ErrorContent(currentState.message, onCancel)
-            is AuthState.Expired -> ExpiredContent(onCancel)
-        }
-    }
-}
-
-@Composable
-private fun LoadingContent() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.loading),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
-}
-
-@Composable
-private fun CodeContent(deviceCode: DeviceCodeResponse) {
-    val qrBitmap =
-        remember(deviceCode.verificationUriComplete) {
-            generateQrCode(deviceCode.verificationUriComplete)
-        }
-
-    Column(
-        modifier = Modifier.fillMaxSize().padding(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceEvenly,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = stringResource(R.string.auth_connect_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-            )
-            // Both steps announced up front: the phone chains them (docs/LEDGER_*.md API-63).
-            Text(
-                text = stringResource(R.string.auth_steps),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-        }
-
-        // QR Code
-        qrBitmap?.let { bitmap ->
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = "QR Code",
-                modifier = Modifier.size(140.dp),
-            )
-        }
-
-        // Manual URL
-        Text(
-            text = stringResource(R.string.auth_url_label),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        // User code section
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = stringResource(R.string.auth_code_label),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = deviceCode.userCode,
-                style =
-                    MaterialTheme.typography.headlineMedium.copy(
-                        letterSpacing = 4.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                color = Color.White,
-            )
-        }
-
-        // Polling indicator
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
+        val state by login.state.collectAsState()
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background,
         ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(14.dp),
-                strokeWidth = 2.dp,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = stringResource(R.string.auth_waiting),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun PollingContent(userCode: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = userCode,
-                style =
-                    MaterialTheme.typography.displaySmall.copy(
-                        letterSpacing = 4.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.auth_waiting),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SuccessContent() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = stringResource(R.string.success_checkmark),
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.auth_success),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-    }
-}
-
-@Composable
-private fun ErrorContent(message: String, onRetry: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = stringResource(R.string.auth_error),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.error,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = onRetry) {
-                Text(stringResource(R.string.close))
+            when (val currentState = state) {
+                is AuthState.Loading -> LoadingContent()
+                is AuthState.ShowingCode -> CodeContent(currentState.deviceCodeResponse)
+                is AuthState.Success -> SuccessContent()
+                is AuthState.Error -> ErrorContent(currentState.message, onCancel)
+                is AuthState.Expired -> ExpiredContent(onCancel)
             }
         }
-    }
-}
-
-@Composable
-private fun ExpiredContent(onClose: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = stringResource(R.string.auth_expired),
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = onClose) {
-                Text(stringResource(R.string.close))
-            }
-        }
-    }
-}
-
-private sealed class AuthState {
-    data object Loading : AuthState()
-
-    data class ShowingCode(val deviceCodeResponse: DeviceCodeResponse) : AuthState()
-
-    data class Polling(val userCode: String) : AuthState()
-
-    data object Success : AuthState()
-
-    data class Error(val message: String) : AuthState()
-
-    data object Expired : AuthState()
-}
-
-private suspend fun pollForToken(
-    apiClient: PedalonsApiClient,
-    authManager: AuthManager,
-    deviceCode: DeviceCodeResponse,
-    onSuccess: () -> Unit,
-    updateState: (AuthState) -> Unit,
-) {
-    val intervalMs = (deviceCode.interval * 1000).toLong()
-    val expiresAt = System.currentTimeMillis() + (deviceCode.expiresIn * 1000)
-
-    while (System.currentTimeMillis() < expiresAt) {
-        delay(intervalMs)
-
-        apiClient
-            .pollForToken(deviceCode.deviceCode)
-            .onSuccess { tokenResponse ->
-                authManager.saveTokens(tokenResponse)
-                updateState(AuthState.Success)
-                delay(1000) // Show success briefly
-                onSuccess()
-                return
-            }
-            .onFailure { error ->
-                when (error) {
-                    is AuthorizationPendingException -> {
-                        // Continue polling
-                    }
-                    is TokenExpiredException -> {
-                        updateState(AuthState.Expired)
-                        return
-                    }
-                    else -> {
-                        updateState(AuthState.Error(error.message ?: "Unknown error"))
-                        return
-                    }
-                }
-            }
-    }
-
-    // Timeout
-    updateState(AuthState.Expired)
-}
-
-internal fun generateQrCode(content: String): Bitmap? {
-    return try {
-        val size = 140
-        val writer = QRCodeWriter()
-        val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, size, size)
-        val bitmap = createBitmap(size, size, Bitmap.Config.RGB_565)
-        for (x in 0 until size) {
-            for (y in 0 until size) {
-                bitmap[x, y] = if (bitMatrix[x, y]) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
-            }
-        }
-        bitmap
-    } catch (_: Exception) {
-        null
     }
 }

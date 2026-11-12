@@ -835,13 +835,66 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       n'apparaît pas dans l'agenda. Décider si une étape devient un événement horodaté (départ →
       arrivée estimée) ou reste en journée entière avec l'heure dans le titre ou la description.
 - [ ] `API-159` **Karoo et Garmin : date discrète, formats divergents (S)** — Karoo
-      (`karoo/…/MainActivity.kt`) : date en `bodySmall` gris partout, moins visible que distance et
-      dénivelé colorés, format « 07/11/2026 08:30 » (`formatDateTime`, l.1835-1853) sans jour de
+      (`karoo/…/browse/ui/`) : date en `bodySmall` gris partout, moins visible que distance et
+      dénivelé colorés, format « 07/11/2026 08:30 » (`ui/Formatters.kt`, `formatDateTime`) sans jour de
       semaine. Garmin : le menu des groupes d'une sortie (`RideListMenuDelegate.mc:50-58`) n'affiche
       pas l'heure de chaque groupe (Karoo l'affiche), `RouteDetailView.mc:97-103` met la date en
       `FONT_TINY`, `FormatUtils.mc:109-114` déduit DD/MM ou MM/DD du réglage 12/24 h (une montre
       française en 12 h passe en MM/DD) et garde le zéro initial en 12 h. Aucun des deux écrans
       d'accueil ne montre la prochaine sortie.
+
+### Extension Karoo : ce que le découpage de novembre 2026 a figé sans le corriger
+
+Le découpage de `MainActivity.kt` (`AUD-22`) a conservé le comportement tel quel, défauts compris :
+chacun est tenu par un test marqué `CHARACTERIZATION:` dans `karoo/app/src/test/`. En corriger un,
+c'est changer ce test exprès, dans le même commit.
+
+- [ ] `API-186` **Karoo : une synchro qui échoue ou réussit à tort (S)** — `PedalonsRepository.syncRoute`
+      prend le jeton d'accès courant sans le rafraîchir : s'il a expiré depuis le chargement des
+      parcours, l'écran affiche « Échec de la synchronisation » sans qu'aucune requête parte, et un 401 donne ce même échec
+      au lieu d'une déconnexion. À l'inverse une réponse 200 portant `success: false` s'affiche
+      « Parcours synchronisé ! » et marque le parcours comme déjà sur le Karoo. Une synchro n'est pas
+      annulée quand on quitte l'écran, et tant qu'une synchro tourne toute autre demande est ignorée,
+      quelle que soit la ligne. L'absence de Hammerhead est reconnue à la sous-chaîne
+      `GPS_SERVICE_NOT_CONNECTED` dans le corps brut de l'erreur (un seul endroit désormais), pas au
+      `code` d'`ErrorResponse`. Tests : `SyncTest`, `PedalonsRepositoryTest`.
+- [ ] `API-187` **Karoo : les touches agissent sous l'écran affiché (S)** — pendant le squelette de
+      rechargement, l'écran d'erreur ou l'écran de connexion, Suivant, Précédent, Sélection et Retour
+      continuent de piloter la navigation cachée dessous (`browse/BrowseState.kt`,
+      `MainViewModel.onKey`) : après un rechargement en échec, Sélection ouvre « Prochaines
+      sorties » sans rien montrer, une seconde peut lancer une synchro, et Retour dépile cet écran
+      caché au lieu de fermer l'app — alors que le bouton tactile Retour de ces mêmes écrans la ferme.
+      Avant la connexion au Karoo System Service, les touches sont avalées sans effet.
+- [ ] `API-188` **Karoo : erreurs de chargement traitées différemment selon le chemin (S)** — un 401
+      ou un rafraîchissement de jeton refusé déconnecte au premier chargement, mais affiche l'erreur
+      générique et garde les jetons sur « Réessayer » et sur le rechargement de l'accueil ; un échec
+      dont l'exception n'a pas de message n'est pas vu comme une erreur (écran « aucun parcours » au
+      premier chargement, ancien contenu gardé sans rien dire au rechargement) ; « Réessayer » ne
+      ramène pas à l'accueil alors que le rechargement le fait ; si `/api/device/me` échoue au
+      lancement, les parcours se chargent comme si Hammerhead était relié. Libellés : l'écran
+      d'erreur ignore le message reçu, son bouton et l'icône de rechargement sont libellés
+      « Chargement… », la description du QR (« QR Code ») n'est pas traduite, et une sortie sans
+      parcours ouvre une liste vide sans texte (`browse/ui/RideEntriesScreen.kt`). Tests :
+      `StartupAndAuthFlowTest`, `MainViewModelTest`.
+- [ ] `API-189` **Karoo : l'étape Hammerhead ne rend jamais la main (S)** — `HammerheadLinkWatcher`
+      relit `/api/device/me` toutes les 5 s sans limite de durée, et ne déconnecte ni sur un 401 ni
+      sur un rafraîchissement refusé : seule « Déconnexion » en sort. Ouverte par une synchro en
+      échec, l'étape une fois terminée ne relance ni la synchro ni le chargement (on reste sur
+      l'échec), et la quitter par Retour ferme toute l'app. À rapprocher d'`API-63` (recette de
+      l'onboarding) avant d'y toucher.
+- [ ] `API-190` **Karoo : finir le filet de tests (S)** — (1) le démarrage envoyait en double
+      rafraîchissements de jeton et chargements ; le `MainViewModel` les enchaîne désormais, mais les
+      tests ne tiennent encore que des plafonds et la cible exacte (un de chaque) reste `@Ignore` dans
+      `StartupAndAuthFlowTest` : l'activer. (2) `MainViewModelTest` attend en temps réel
+      (`Thread.sleep`) les fils du `MockEngine` : lui donner le dispatcher de test. (3) Les captures
+      de référence n'ont été enregistrées et comparées que sur un poste Linux en JDK 25 : vérifier au
+      premier passage de la CI (JDK 17) qu'elles s'y reproduisent au pixel. (4) Recette sur un Karoo
+      branché en adb, que la JVM ne remplace pas : vrai moteur `ktor-client-karoo`, vraies touches,
+      et à la fermeture de l'app le retrait du consommateur `UserProfile` avant `disconnect()`
+      (surveiller logcat). (5) Restes de relecture : `PollingContent` n'est atteint par aucun
+      chemin (gardé pour sa capture), `PedalonsApiClient.engineFactoryForTests` est un point d'entrée
+      de test dans le code livré, `karoo-ext-testing` (doublures du Karoo System Service) permettrait
+      de s'en passer mais a été écarté le 12 novembre 2026 (bibliothèque d'un mois, `0.1.1`).
 
 ### `API-63` Onboarding d'un Karoo refait de bout en bout (M, backend + web + mobile + Karoo)
 
@@ -1554,13 +1607,11 @@ dans « Délibérément dehors ».
 | `AUD-15` | Backend | B9, B11 | Important | `FetchType.EAGER` sur neuf `@ManyToOne` (`Ride`, `RideGroup`, `Trip`, `TripStage`, `UserTeam`) |
 | `AUD-20` | Mobile | M11 | Important | Lints Flutter par défaut seulement (`analysis_options.yaml`) |
 | `AUD-21` | Mobile | M13 | Mineur | Pas de hors-ligne — voir `API-22` à `API-25` |
-| `AUD-22` | Karoo | K1 | Critique | `MainActivity.kt` monolithique : 1 986 lignes en octobre 2026 (1 625 au constat de février), et il grossit à chaque fonctionnalité appareil |
-| `AUD-23` | Karoo | K2, K3 | Critique | Aucun test ; aucun `ViewModel` alors que la dépendance est déclarée |
-| `AUD-24` | Karoo | K7, K9 | Important | Refresh du jeton en trois endroits ; pas de `slow_down` (RFC 8628 — le backend n'en émet aucun à ce jour, voir `AUD-27`). K13 est livré sous `AUD-32` ; K10 est écarté sous `AUD-33` |
+| `AUD-24` | Karoo | K9 | Important | Pas de `slow_down` (RFC 8628 — le backend n'en émet aucun à ce jour, voir `AUD-27`) : `auth/DeviceCodeLogin.kt` termine la connexion en erreur sur tout code 400 autre que `AUTHORIZATION_PENDING` et `TOKEN_EXPIRED`, et un `interval` de 0 interroge en boucle serrée (figé par `DeviceCodeLoginTest`). K7 est livré sous `AUD-34`, K13 sous `AUD-32` ; K10 est écarté sous `AUD-33` |
 | `AUD-25` | Garmin | G1 | Critique | `BASE_URL` de production en dur (`ApiClient.mc`) : bloque le multi-tenant |
 | `AUD-26` | Garmin | G4, G5, G7, G10 | Important | `loadResource()` dans `onUpdate()` ; AM/PM en dur ; état comparé à une chaîne localisée ; `_tokenCallback` partagé entre refresh et polling |
 | `AUD-27` | Garmin | G8, G9 | Important | Pas de `slow_down` (le backend n'en émet aucun à ce jour — relevé le 30 septembre 2026 : `grep slow_down backend/` ne trouve rien ; `SEC-4` a limité `/complete` et `/verify`, pas `/token`, dont le `device_code` de 256 bits n'a rien à deviner : le point ne mordra que si `/token` est un jour freiné) ; offsets fixes dans les layouts. G6 est livré sous `AUD-31` |
-| `AUD-29` | Appareils | §9.2 | — | Le polling du device flow s'arrête à la **première erreur réseau** : toute erreur qui n'est ni « en attente » ni « expiré » le coupe, sur Karoo (`auth/AuthActivity.kt`, `pollForToken`, l.426) comme sur Garmin (`PedalonsApp.onPollResponse`, l.164). Un flow interrompu ne reprend pas : Karoo ne garde rien, Garmin enregistre le `device_code` (`AuthManager.saveDeviceCode`) mais `getDeviceCode()` n'a aucun appelant. À faire : relancer le polling après une erreur passagère, implémenter la reprise ou retirer le stockage ; comportement sur appareil à valider à la main |
+| `AUD-29` | Appareils | §9.2 | — | Le polling du device flow s'arrête à la **première erreur réseau** : toute erreur qui n'est ni « en attente » ni « expiré » le coupe, sur Karoo (`auth/DeviceCodeLogin.kt`, `run`) comme sur Garmin (`PedalonsApp.onPollResponse`, l.164). Un flow interrompu ne reprend pas : Karoo ne garde rien, Garmin enregistre le `device_code` (`AuthManager.saveDeviceCode`) mais `getDeviceCode()` n'a aucun appelant. À faire : relancer le polling après une erreur passagère, implémenter la reprise ou retirer le stockage ; comportement sur appareil à valider à la main |
 
 Suivis ailleurs : les lignes de sécurité S2 à S12 ont été versées dans l'audit de sécurité de septembre, donc sous
 `SEC` (H5 livré sous `SEC-4`, M7 = `SEC-27`, M8 = `SEC-25`, M9 = `SEC-11`, M10 = `SEC-28`, L12 et L13 livrés sous `SEC-22`, L14 sous `SEC-23` ; S8 et S12 y sont rangées comme

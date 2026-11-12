@@ -6,7 +6,7 @@
 > le code ce jour-là (backups, tests frontend et mobile, SSR, staging, déconnexion Garmin, image
 > frontend, BACKLOG_old, documentation Garmin, dépendances mobile…) ; les autres gardent leur statut
 > d'avril. Les comptages de fin de document sont recalculés à partir de ces statuts. Restent ouverts, entre autres : rate limiting de
-> `/api/device/oauth/complete`, URL Garmin en dur, `MainActivity.kt` Karoo,
+> `/api/device/oauth/complete`, URL Garmin en dur,
 > `forwardedHeaders.insecure`, pipeline CD, healthchecks. La sécurité applicative est désormais
 > suivie sous le préfixe `SEC` du ledger, ouvert par l'[audit de sécurité de septembre 2026](archive/2026-09-security-audit.md) ; ce document reste la
 > référence pour l'infrastructure, la CI/CD et la qualité des modules.
@@ -174,13 +174,13 @@ Extension Kotlin/Compose pour Hammerhead Karoo. Package `fr.pedalons.karoo`. 7 f
 
 | # | Probleme | Severite | Effort | Fichiers | Statut |
 |---|----------|----------|--------|----------|--------|
-| K1 | `MainActivity.kt` monolithique (1535 lignes ; 1625 au 29 septembre 2026) — toute l'UI + logique | Critique | M | `MainActivity.kt` | |
-| K2 | Aucun test, pas de repertoire test | Critique | M | Nouveau `src/test/` | |
-| K3 | Pas de ViewModel — tout l'etat dans `remember`, perdu a la recreation | Critique | L | `MainActivity.kt` | |
+| K1 | `MainActivity.kt` monolithique (1535 lignes ; 1625 au 29 septembre 2026) — toute l'UI + logique | Critique | M | `MainActivity.kt` | ✅ (106 lignes le 13 novembre 2026 : ledger `AUD-22`) |
+| K2 | Aucun test, pas de repertoire test | Critique | M | Nouveau `src/test/` | ✅ (ledger `AUD-23`) |
+| K3 | Pas de ViewModel — tout l'etat dans `remember`, perdu a la recreation | Critique | L | `MainActivity.kt` | ✅ (`MainViewModel` : ledger `AUD-23`) |
 | K4 | Compose BOM 2024.09.02 — plus d'un an de retard | Important | S | `libs.versions.toml` | ✅ |
 | K5 | ktor 3.0.3 vs 3.4.0 disponible | Important | M | `libs.versions.toml` | ✅ |
 | K6 | `startActivityForResult` deprece | Important | S | `MainActivity.kt` | ✅ (`registerForActivityResult`, 7e2d710f, juin 2026) |
-| K7 | Logique refresh token dupliquee dans 3 endroits | Important | S | `MainActivity.kt`, `GpsConnectActivity.kt` | |
+| K7 | Logique refresh token dupliquee dans 3 endroits | Important | S | `MainActivity.kt`, `GpsConnectActivity.kt` | ✅ (`auth/Session.kt` : ledger `AUD-34`) |
 | K8 | `generateQrCode` dupliquee entre 2 fichiers | Important | S | `AuthActivity.kt`, `GpsConnectActivity.kt` | ✅ |
 | K9 | Pas de gestion `slow_down` RFC 8628 | Important | S | `AuthActivity.kt` | |
 | K10 | Pas de pagination des routes — risque depassement 100KB | Important | M | `PedalonsApiClient.kt` | |
@@ -399,7 +399,7 @@ Les deux clients partagent des problemes communs :
 
 | # | Action | Composant | Statut |
 |---|--------|-----------|--------|
-| 26 | Refactorer `MainActivity.kt` Karoo (extraire screens, ajouter ViewModel) | Karoo |
+| 26 | Refactorer `MainActivity.kt` Karoo (extraire screens, ajouter ViewModel) | Karoo | ✅ (ledger `AUD-22`) |
 | 27 | Mettre a jour les dependances Karoo (core-ktx) | Karoo | ✅ (core-ktx 1.19.1, Compose BOM 2026.09.00, ktor 3.6.0) |
 | 28 | Rendre l'URL Garmin configurable (Properties Connect IQ) | Garmin |
 | 29 | Ajouter des titres de page dynamiques (frontend) | Frontend | ✅ |
@@ -413,7 +413,7 @@ Les deux clients partagent des problemes communs :
 | 37 | Generer un sitemap.xml dynamique | Frontend/Backend | ✅ |
 | 38 | Securiser imgproxy (KEY/SALT) | Infra |
 | 39 | Enrichir la config VCL Varnish | Infra |
-| 40 | Ajouter des tests Karoo (AuthManager, Models) | Karoo |
+| 40 | Ajouter des tests Karoo (AuthManager, Models) | Karoo | ✅ (ledger `AUD-23`) |
 | 41 | Adapter les layouts Garmin aux differentes resolutions | Garmin |
 | 42 | Cacher les `loadResource()` dans les constructeurs Garmin | Garmin |
 | 43 | Procedure de rotation des secrets | Infra |
@@ -437,23 +437,23 @@ Les deux clients partagent des problemes communs :
 
 ---
 
-## Comptage par sévérité (recalculé le 30 septembre 2026 à partir des statuts ci-dessus)
+## Comptage par sévérité (recalculé le 30 septembre 2026 à partir des statuts ci-dessus ; colonne Karoo le 13 novembre 2026)
 
 ### Problèmes restants ouverts ou partiels
 
 | Severite | Backend | Frontend | Mobile | Karoo | Garmin | Infra | Securite | Docs | Total |
 |----------|---------|----------|--------|-------|--------|-------|----------|------|-------|
-| Critique | 0 | 0 | 0 | 3 | 1 | 6 | 1 | 0 | **11** |
-| Important | 3 | 2 | 1 | 3 | 7 | 6 | 5 | 0 | **27** |
+| Critique | 0 | 0 | 0 | 0 | 1 | 6 | 1 | 0 | **8** |
+| Important | 3 | 2 | 1 | 2 | 7 | 6 | 5 | 0 | **26** |
 | Mineur | 0 | 0 | 2 | 2 | 0 | 0 | 6 | 0 | **10** |
-| **Total** | **3** | **2** | **3** | **8** | **8** | **12** | **12** | **0** | **48** |
+| **Total** | **3** | **2** | **3** | **4** | **8** | **12** | **12** | **0** | **44** |
 
 ### Points corrigés depuis l'audit initial
 
 | Composant | Corriges | Details |
 |-----------|----------|---------|
 | Backend | B1, B2, B3, B5, B6, B7, B8, B13, B14 | B1: `updateSlug()`. B2: Java 25. B3: hibernate-spatial BOM. B5: logs 4xx/5xx. B6: RuntimeException → exceptions metier. B7: GPX hors transaction unique. B8: OAuth state migre en DB. B13: code commente supprime. B14: cle S3 deduplication via `AssetService.getAssetKey()` |
-| Karoo | K4, K5, K8, K11 | Compose BOM 2026.03.00, ktor 3.4.2, generateQrCode partage, package documente |
+| Karoo | K1, K2, K3, K4, K5, K7, K8, K11 | Compose BOM 2026.03.00, ktor 3.4.2, generateQrCode partage, package documente ; `MainActivity.kt` decoupe, tests et `ViewModel`, rafraichissement du jeton unique (ledger `AUD-22`, `AUD-23`, `AUD-34`) |
 | Infrastructure | I1, I8, I16, I18 | CI sur develop, tests frontend actives, backend/.env dans .gitignore |
 | Securite | S1, S14 | @RolesAllowed sur /complete, Magika pour validation uploads |
 | Frontend | F4, F5, F6, F9, F10, F11, F15 | Cle i18n LoginPage, FullCalendar retire, titres de page, textes RideEditor traduits, pages CGU/confidentialite, cles `_many` |

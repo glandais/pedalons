@@ -248,12 +248,21 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Build Karoo extension
+      - name: Build and test Karoo extension
         working-directory: ./karoo
         env:
           USERNAME: ${{ secrets.GPR_USER }}
           TOKEN: ${{ secrets.GPR_KEY }}
-        run: ./gradlew assembleDebug
+        # Same as the end of karoo/check.sh: unit + behaviour tests and the screenshot goldens.
+        run: ./gradlew assembleDebug verifyRoborazziDebug
+
+      - name: Upload screenshot diffs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: karoo-screenshot-diffs
+          path: karoo/app/build/outputs/roborazzi
+          if-no-files-found: ignore
 
   # Garmin Connect IQ : exclu du CI
   # Le SDK Connect IQ nécessite un SDK Manager GUI et ne peut pas être

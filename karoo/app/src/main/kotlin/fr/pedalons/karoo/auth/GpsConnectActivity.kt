@@ -4,44 +4,16 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import fr.pedalons.karoo.R
 import fr.pedalons.karoo.api.PedalonsApiClient
-import fr.pedalons.karoo.api.UnauthorizedException
+import fr.pedalons.karoo.data.PedalonsRepository
+import fr.pedalons.karoo.system.KarooConnection
 import fr.pedalons.karoo.ui.theme.PedalonsKarooTheme
-import io.hammerhead.karooext.KarooSystemService
-import kotlinx.coroutines.delay
 
 /**
  * The mandatory last step of the onboarding (docs/LEDGER_*.md API-63, plan
@@ -63,15 +35,12 @@ class GpsConnectActivity : ComponentActivity() {
         const val POLL_INTERVAL_MS = 5_000L
     }
 
-    private var apiClient: PedalonsApiClient? = null
-    private lateinit var authManager: AuthManager
-    private lateinit var karooSystem: KarooSystemService
-    private var baseUrl: String? = null
+    private var connection: KarooConnection? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        baseUrl =
+        val baseUrl =
             intent.getStringExtra(EXTRA_BASE_URL)
                 ?: run {
                     setResult(RESULT_ERROR)
@@ -79,54 +48,18 @@ class GpsConnectActivity : ComponentActivity() {
                     return
                 }
 
-        authManager = AuthManager(this)
-        karooSystem = KarooSystemService(applicationContext)
+        val connection = KarooConnection(this, baseUrl).also { this.connection = it }
 
         setContent {
-            var isConnected by remember { mutableStateOf(false) }
-
-            LaunchedEffect(Unit) {
-                karooSystem.connect {}
-                // Poll for connection status
-                while (!karooSystem.connected) {
-                    delay(100)
-                }
-                apiClient = PedalonsApiClient(baseUrl!!, karooSystem)
-                isConnected = true
-            }
+            val api by produceState<PedalonsApiClient?>(null) { value = connection.connect() }
 
             PedalonsKarooTheme {
-                if (isConnected && apiClient != null) {
-                    GpsConnectScreen(
-                        apiClient = apiClient!!,
-                        authManager = authManager,
-                        resumeUrl = "$baseUrl/karoo/hammerhead",
-                        onSuccess = {
-                            setResult(RESULT_SUCCESS)
-                            finish()
-                        },
-                        onLogout = {
-                            setResult(RESULT_LOGOUT)
-                            finish()
-                        },
-                    )
+                val client = api
+                if (client != null) {
+                    GpsConnectScreen(client, "$baseUrl/karoo/hammerhead")
                 } else {
                     // Show loading while connecting to Karoo System Service
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background,
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator()
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(stringResource(R.string.connecting))
-                            }
-                        }
-                    }
+                    ConnectingScreen()
                 }
             }
         }
@@ -134,160 +67,36 @@ class GpsConnectActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        apiClient?.close()
-        if (::karooSystem.isInitialized) {
-            karooSystem.disconnect()
-        }
+        connection?.close()
     }
-}
 
-@Composable
-private fun GpsConnectScreen(
-    apiClient: PedalonsApiClient,
-    authManager: AuthManager,
-    resumeUrl: String,
-    onSuccess: () -> Unit,
-    onLogout: () -> Unit,
-) {
-    val context = LocalContext.current
-
-    val qrBitmap = remember(resumeUrl) { generateQrCode(resumeUrl) }
-
-    // Follows the account until Hammerhead shows up; a failed read (network, token) just waits for
-    // the next round.
-    LaunchedEffect(Unit) {
-        while (true) {
-            var connected = false
-            checkHammerheadConnection(
-                apiClient = apiClient,
-                authManager = authManager,
-                onSuccess = { connected = true },
-                onNotConnected = {},
-                onError = {},
-            )
-            if (connected) {
-                Toast.makeText(context, R.string.gps_connect_success, Toast.LENGTH_SHORT).show()
-                onSuccess()
-                return@LaunchedEffect
+    @Composable
+    private fun GpsConnectScreen(api: PedalonsApiClient, resumeUrl: String) {
+        val watcher =
+            remember(api) {
+                HammerheadLinkWatcher(PedalonsRepository(api, Session(AuthManager(this), api)))
             }
-            delay(GpsConnectActivity.POLL_INTERVAL_MS)
-        }
-    }
-
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = stringResource(R.string.gps_connect_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
+        // Follows the account until Hammerhead shows up; a failed read (network, token) just waits
+        // for the next round. Started from the composition so that its delays follow the frame
+        // clock.
+        LaunchedEffect(watcher) {
+            watcher.awaitLinked()
+            Toast.makeText(
+                    this@GpsConnectActivity,
+                    R.string.gps_connect_success,
+                    Toast.LENGTH_SHORT,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(R.string.gps_connect_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.gps_connect_waiting),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-
-            // Fallback for a phone whose page was closed.
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                qrBitmap?.let { bitmap ->
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "QR Code",
-                        modifier = Modifier.size(110.dp),
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.gps_connect_scan),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
-
-            OutlinedButton(
-                onClick = onLogout,
-                modifier = Modifier.fillMaxWidth(0.8f),
-                colors =
-                    ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-            ) {
-                Text(stringResource(R.string.disconnect))
-            }
+                .show()
+            setResult(RESULT_SUCCESS)
+            finish()
         }
+
+        GpsConnectContent(
+            resumeUrl = resumeUrl,
+            onLogout = {
+                setResult(RESULT_LOGOUT)
+                finish()
+            },
+        )
     }
-}
-
-private suspend fun checkHammerheadConnection(
-    apiClient: PedalonsApiClient,
-    authManager: AuthManager,
-    onSuccess: () -> Unit,
-    onNotConnected: () -> Unit,
-    onError: () -> Unit,
-) {
-    // Get access token, refresh if needed
-    var accessToken = authManager.getValidAccessToken()
-    if (accessToken == null && authManager.needsRefresh()) {
-        val refreshToken = authManager.getRefreshToken()
-        if (refreshToken != null) {
-            apiClient
-                .refreshToken(refreshToken)
-                .onSuccess { tokenResponse ->
-                    // The refresh token rotates: keep the new one (docs/LEDGER_*.md SEC-11).
-                    authManager.saveTokens(tokenResponse)
-                    accessToken = tokenResponse.accessToken
-                }
-                .onFailure {
-                    onError()
-                    return
-                }
-        }
-    }
-
-    if (accessToken == null) {
-        onError()
-        return
-    }
-
-    apiClient
-        .getUserStatus(accessToken)
-        .onSuccess { status ->
-            if (status.isHammerheadConnected()) {
-                onSuccess()
-            } else {
-                onNotConnected()
-            }
-        }
-        .onFailure { error ->
-            if (error is UnauthorizedException) {
-                onError()
-            } else {
-                onError()
-            }
-        }
 }

@@ -2,16 +2,10 @@ package fr.pedalons.karoo
 
 import io.hammerhead.karooext.extension.KarooExtension
 
-/** Pédalons Karoo Extension service. Provides integration with Pédalons for route syncing. */
-class PedalonsExtension : KarooExtension("pedalons", "1.0.0") {
-
-    override fun onCreate() {
-        super.onCreate()
-        // Extension created
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        // Extension destroyed
-    }
-}
+/**
+ * Pédalons Karoo extension service: what the Karoo lists and updates the app through (its
+ * `extension_info`, the manifest URL). It has no data field or effect of its own, the routes are
+ * browsed and synced from [MainActivity]. The version it reports is the one of the APK: the release
+ * tag in a release build, `1.0.0` locally.
+ */
+class PedalonsExtension : KarooExtension("pedalons", BuildConfig.VERSION_NAME)

@@ -3,7 +3,10 @@ package fr.pedalons.karoo.api
 import de.jonasfranz.ktor.client.karoo.Karoo
 import io.hammerhead.karooext.KarooSystemService
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.bearerAuth
@@ -22,17 +25,48 @@ import kotlinx.serialization.json.Json
  * HTTP client for Pédalons API using Ktor with Karoo engine. The Karoo engine routes HTTP requests
  * through the Karoo System Service, which handles network connectivity on Karoo devices.
  */
-class PedalonsApiClient(
+class PedalonsApiClient
+private constructor(
     private val baseUrl: String,
-    karooSystemService: KarooSystemService,
+    private val client: HttpClient,
 ) {
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+    constructor(
+        baseUrl: String,
+        karooSystemService: KarooSystemService,
+    ) : this(
+        baseUrl,
+        // Test seam: lets the JVM tests answer every request of every client the app builds.
+        // Null in production, which keeps the Karoo engine.
+        engineFactoryForTests?.invoke(karooSystemService)?.let { buildClient(it) }
+            ?: buildClient(Karoo(karooSystemService)),
+    )
 
-    private val client =
-        HttpClient(Karoo(karooSystemService)) {
+    /** Test seam: a client on any Ktor engine (e.g. ktor-client-mock). */
+    internal constructor(
+        baseUrl: String,
+        engine: HttpClientEngine,
+    ) : this(baseUrl, buildClient(engine))
+
+    companion object {
+        private val json = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
+
+        /**
+         * Test seam, null in production: when set, the public constructor builds its client on the
+         * engine this returns instead of the Karoo one.
+         */
+        @Volatile
+        internal var engineFactoryForTests: ((KarooSystemService) -> HttpClientEngine)? = null
+
+        private fun buildClient(engine: HttpClientEngine): HttpClient =
+            HttpClient(engine) { configure() }
+
+        private fun buildClient(factory: HttpClientEngineFactory<*>): HttpClient =
+            HttpClient(factory) { configure() }
+
+        private fun HttpClientConfig<*>.configure() {
             install(ContentNegotiation) {
                 json(json)
             }
@@ -40,6 +74,7 @@ class PedalonsApiClient(
                 contentType(ContentType.Application.Json)
             }
         }
+    }
 
     // === Device Code Flow ===
 
