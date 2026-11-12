@@ -285,3 +285,15 @@ inscription, export, image d'en-tête, lieu et groupe, champs propres, actions) 
 - **Commentaire** : texte brut, sans rendu Markdown.
 - **Actions d'une carte** : « Rejoindre l'équipe » sur la carte d'équipe ; « Créer une sortie » sur la carte d'un modèle ; menu ⋯
   « Signaler / Bloquer » sur une ligne de membre ou de personne inscrite.
+
+### Compléments du 2026-11-12, après la mise en œuvre
+
+- **Milliers** : espace insécable normale (U+00A0), jamais l'espace fine — « 1 240 m », « 1 200,00 € ». L'espace avant l'unité
+  est la même.
+- **Nom d'un groupe** : « Groupe » devant un nom de 1 ou 2 caractères (« B » → « Groupe B ») ; tout autre nom s'affiche tel
+  quel. Partout, lignes compactes comprises.
+- **Avatars** : onze teintes pour les autres ; l'indigo est réservé à la personne qui lit.
+- **Sortie annulée** : aucun contrôle sur sa carte, ni inscription ni « GPS ».
+- **Page d'un groupe** : « Quitter le groupe » y reste après la fin de la sortie ; pas sur les cartes.
+- **Commentaire** : texte brut ; une adresse complète est un lien, toujours visible en entier.
+- **Quitter une équipe** se confirme ; quitter un groupe de sortie, jamais.

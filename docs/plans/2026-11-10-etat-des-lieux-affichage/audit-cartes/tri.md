@@ -61,7 +61,20 @@ Les planches sont `maquettes/project/cible-cartes-r*.dc.html` ; l'état réel de
 | **R12** Commentaire | Texte brut des deux côtés ; l'app cesse de rendre le Markdown. |
 | **R13** Actions | Le site gagne « Rejoindre l'équipe » sur la carte d'équipe, « Créer une sortie » sur la carte d'un modèle, et un menu ⋯ « Signaler / Bloquer » sur les lignes de membre et de personne inscrite (menu ⋯ ajouté aussi dans l'app, où l'action existe sans être montrée). |
 
-Toutes les règles sont décidées. Restent ouverts, relevés par les planches : espace fine ou normale pour les milliers
+### Décisions complémentaires du 12 novembre 2026 (après la mise en œuvre)
+
+| Sujet | Décision |
+|---|---|
+| Espace des milliers | Espace insécable **normale** (U+00A0), plus l'espace fine : « 1 240 m », « 1 200,00 € ». La mini-police du site limitée à U+202F se retire. |
+| Page d'un groupe | Elle garde « Quitter le groupe » après la fin de la sortie (corriger qui est venu), sur les deux supports ; les cartes ne le proposent plus après la fin. |
+| Teintes d'avatar | L'indigo est réservé à la personne qui lit : onze teintes pour les autres. |
+| Sortie annulée | Aucun contrôle sur sa carte, « GPS » compris. |
+| Commentaire | Texte brut, mais une adresse complète (`https://…`) est un lien, sur les deux supports. |
+| « Vos prochaines sorties » | « Groupe B · lieu », sans l'allure. |
+| Nom d'un groupe | « Groupe » devant un nom de 1 ou 2 caractères seulement (« B » → « Groupe B ») ; tout autre nom tel quel (« Les Rapides », « Groupe 1 »). Même règle partout, lignes compactes comprises. |
+| Quitter une équipe | Garde sa confirmation : la règle « quitter ne se confirme jamais » ne vaut que pour un groupe de sortie. |
+
+Toutes les règles sont décidées. Restaient ouverts avant ces décisions, relevés par les planches : espace fine ou normale pour les milliers
 (lisibilité en gras) ; « Groupe B » ou « B » dans les lignes compactes ; répéter ou non départ → arrivée quand le titre de
 l'étape le dit déjà ; l'export depuis « Ma prochaine sortie » peut demander une donnée que son résumé n'a pas.
 

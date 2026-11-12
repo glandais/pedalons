@@ -32,7 +32,7 @@
     "input": 1240,
     "locale": "fr",
     "units": "metric",
-    "expected": "1\u202f240\u00a0m"
+    "expected": "1\u00a0240\u00a0m"
   },
   {
     "kind": "elevation",
@@ -105,7 +105,7 @@
     },
     "locale": "fr",
     "units": "metric",
-    "expected": "1\u202f200,00\u00a0€"
+    "expected": "1\u00a0200,00\u00a0€"
   },
   {
     "kind": "price",
