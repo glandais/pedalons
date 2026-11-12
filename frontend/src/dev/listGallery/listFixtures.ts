@@ -149,12 +149,6 @@ export const AGENDA_PAST: PublicationDto[] = [
     { offset: -2 },
     { id: 'r-passee-1', slug: 'boucle-des-monts-passee', commentCount: 5, weather: undefined }
   ),
-  trip(-16, {
-    id: 'tr-passe',
-    slug: 'traversee-du-morvan-2025',
-    finished: true,
-    endDateTime: day(-14, '16:00'),
-  }),
   ride(
     { offset: -9 },
     {
@@ -166,6 +160,12 @@ export const AGENDA_PAST: PublicationDto[] = [
       weather: undefined,
     }
   ),
+  trip(-16, {
+    id: 'tr-passe',
+    slug: 'traversee-du-morvan-2025',
+    finished: true,
+    endDateTime: day(-14, '16:00'),
+  }),
 ]
 /**
  * The home feed's « Plus tôt » (`when=EARLIER`): « Tout » without what is ahead — the rides and
