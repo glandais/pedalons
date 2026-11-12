@@ -60,11 +60,11 @@ describe('WeekAgenda', () => {
   it('names the events past the fifth row, with a link to the calendar', () => {
     renderAgenda(7)
     const more = screen.getByTestId('week-more')
-    expect(more.textContent).toBe('2 autres événements au calendrier')
+    expect(more.textContent).toBe('2\u00a0autres événements au calendrier')
     expect(more.getAttribute('href')).toBe(paths.calendar())
     cleanup()
     renderAgenda(6)
-    expect(screen.getByTestId('week-more').textContent).toBe('1 autre événement au calendrier')
+    expect(screen.getByTestId('week-more').textContent).toBe('1\u00a0autre événement au calendrier')
   })
 
   it('says nothing more when every event has its row', () => {

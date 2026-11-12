@@ -36,7 +36,7 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 import { MarkdownDisplay } from '../../components/common/MarkdownDisplay'
 import type { RideTemplateDto } from '@/api/dto'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
-import { useUnits } from '@/hooks/useUnits'
+import { TemplateGroupBadge } from '@/components/ridetemplate/TemplateGroupBadge'
 import { VISIBILITY_COLORS } from '@/lib/badgeColors.generated'
 import { TagList } from '@/components/tag'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
@@ -45,7 +45,6 @@ import { teamAccess } from '@/lib/teamAccess'
 export function RideTemplateListPage() {
   const { t } = useTranslation()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
-  const { speed } = useUnits()
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const queryClient = useQueryClient()
   const [templateToDelete, setTemplateToDelete] = useState<RideTemplateDto | null>(null)
@@ -164,14 +163,7 @@ export function RideTemplateListPage() {
                       {template.groups && template.groups.length > 0 && (
                         <Group gap="xs" mt="xs">
                           {template.groups.map((group) => (
-                            <Badge key={group.id} variant="light" color="primary" size="sm">
-                              {group.name}
-                              {group.averageSpeed && (
-                                <Text span ml={4} c="dimmed">
-                                  {speed(group.averageSpeed)}
-                                </Text>
-                              )}
-                            </Badge>
+                            <TemplateGroupBadge key={group.id} group={group} color="primary" />
                           ))}
                         </Group>
                       )}

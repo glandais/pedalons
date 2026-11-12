@@ -82,9 +82,20 @@ interface StatusBadgeProps {
   icon?: ReactNode
 }
 
+/**
+ * A status never shrinks beside a title on one line (« BROUI… », docs/LEDGER_*.md WEB-167 N22):
+ * the title gives way first.
+ */
 export function StatusBadge({ status, children, icon }: StatusBadgeProps) {
   return (
-    <MantineBadge color={STATUS_COLORS[status]} variant="light" size="sm" leftSection={icon}>
+    <MantineBadge
+      color={STATUS_COLORS[status]}
+      variant="light"
+      size="sm"
+      leftSection={icon}
+      style={{ flexShrink: 0 }}
+      data-testid="status-badge"
+    >
       {children}
     </MantineBadge>
   )

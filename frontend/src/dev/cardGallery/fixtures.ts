@@ -3,7 +3,11 @@
  * (`docs/plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/galerie.md`, « Données »), as DTOs
  * of the generated client. Every date is relative to the day the gallery is opened (J = today,
  * Europe/Paris), so a capture taken the same day as the app's reads the same « Demain », « En
- * cours » and « Terminée ».
+ * cours » and « Terminée »; the capture script pins the clock at J 12:00.
+ *
+ * Where the brief does not decide, the values are the app gallery's
+ * (`mobile/lib/dev/card_gallery/gallery_data.dart`, `gallery_sections.dart`): titles, excerpts,
+ * sectors, dates, people — so the two captures differ only by their cards.
  */
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz'
 import type {
@@ -84,8 +88,6 @@ export const MALO = person('u-malo', 'Malo Guérin')
 
 /** The eight people of the brief, in its order. */
 export const PEOPLE = [LEA, KARIM, CAMILLE, NOE, INES, SACHA, JEANNE, MALO]
-/** Everyone but the reader. */
-const OTHERS = PEOPLE.filter((p) => p.id !== CAMILLE.id)
 
 /** The reader: Camille Durand, metric, French, in Paris. */
 export const READER: UserDto = {
@@ -158,7 +160,7 @@ function team(ref: TeamPublicationDto, overrides: Partial<TeamDetailDto>): TeamD
     routeCount: 0,
     upcomingTripCount: 0,
     recentPostCount: 0,
-    createdAt: day(-900),
+    createdAt: '2021-03-01T10:00:00Z',
     timezone: ZONE,
     allowedContentVisibilities: {
       ride: ['TEAM', 'PUBLIC'],
@@ -177,24 +179,23 @@ function team(ref: TeamPublicationDto, overrides: Partial<TeamDetailDto>): TeamD
 
 /** Camille's team: private, 24 members, Camille a plain member. */
 export const VCM_TEAM = team(VCM_REF, {
-  excerpt: 'Le club des routes du centre Finistère : sorties le samedi, voyages au printemps.',
+  excerpt: 'Sorties route et gravel au départ de Huelgoat, toute l’année.',
   memberCount: 24,
-  upcomingRideCount: 3,
+  upcomingRideCount: 2,
   upcomingTripCount: 1,
-  recentPostCount: 2,
+  recentPostCount: 1,
   routeCount: 18,
   role: 'MEMBER',
 })
 
-/** The second team: public, 112 members. */
+/** The second team: public, 112 members, Camille organiser. */
 export const GRAVEL_TEAM = team(GRAVEL_REF, {
-  excerpt: 'Chemins, pistes et bonne humeur, de Brocéliande aux Monts d’Arrée.',
+  excerpt: 'Le gravel en Bretagne, des Monts d’Arrée aux Montagnes Noires.',
   visibility: 'PUBLIC',
   memberCount: 112,
-  upcomingRideCount: 5,
   routeCount: 64,
   joinable: true,
-  role: 'ADMIN',
+  role: 'ORGANIZER',
 })
 
 // --- Shared bits ----------------------------------------------------------------------------
@@ -315,7 +316,7 @@ export function route(overrides: Partial<RouteDto> = {}): RouteDto {
     id: 'rt-arree',
     slug: ROUTE_SLUG,
     team: VCM_REF,
-    name: "Boucle des Monts d'Arrée",
+    name: 'Boucle des Monts d’Arrée',
     media: media({
       thumbnailLight: {
         id: 'as-tl',
@@ -332,7 +333,7 @@ export function route(overrides: Partial<RouteDto> = {}): RouteDto {
         imageUrl: MAP_DARK_URL,
       },
     }),
-    excerpt: 'Par Léa Martin. Le Roc’h Trévézel, le lac du Drennec et la descente sur Huelgoat.',
+    excerpt: 'Par Léa Martin : le Roc’h Trévézel et le mont Saint-Michel.',
     thumbnailUrl: MAP_LIGHT_URL,
     distance: 92_400,
     elevationGain: 1_240,
@@ -340,7 +341,7 @@ export function route(overrides: Partial<RouteDto> = {}): RouteDto {
     elevationState: 'HD',
     surfaceType: 'ROAD',
     visibility: 'PUBLIC',
-    createdAt: day(-30),
+    createdAt: day(-20, '18:00'),
     deleted: false,
     commentCount: 0,
     tags: TAGS,
@@ -382,6 +383,8 @@ interface GroupSpec {
   distance: number
   elevationGain: number
   leader?: PublicUserDto
+  /** The faces of its cluster, the app's. */
+  faces: PublicUserDto[]
 }
 
 const GROUP_SPECS: GroupSpec[] = [
@@ -395,6 +398,7 @@ const GROUP_SPECS: GroupSpec[] = [
     distance: 92_400,
     elevationGain: 1_240,
     leader: LEA,
+    faces: [LEA, KARIM, NOE, INES, SACHA],
   },
   {
     id: 'g-b',
@@ -405,6 +409,7 @@ const GROUP_SPECS: GroupSpec[] = [
     routeSlug: ROUTE_B_SLUG,
     distance: 78_000,
     elevationGain: 980,
+    faces: [JEANNE, MALO, KARIM, NOE],
   },
   {
     id: 'g-c',
@@ -415,6 +420,7 @@ const GROUP_SPECS: GroupSpec[] = [
     routeSlug: ROUTE_C_SLUG,
     distance: 61_000,
     elevationGain: 720,
+    faces: [SACHA, INES, MALO, JEANNE, LEA],
   },
 ]
 
@@ -433,7 +439,6 @@ export function rideGroups(options: RideOptions = {}): RideGroupDto[] {
   const { offset = 4, registered = false, sameTime = false } = options
   return GROUP_SPECS.map((spec, index) => {
     const mine = registered && spec.id === 'g-b'
-    const pool = mine ? [CAMILLE, ...OTHERS] : OTHERS
     return {
       id: spec.id,
       name: spec.name,
@@ -443,7 +448,7 @@ export function rideGroups(options: RideOptions = {}): RideGroupDto[] {
       averageSpeed: spec.speed,
       maxParticipants: 12,
       countParticipants: spec.count,
-      participants: pool.slice(0, Math.min(spec.count, pool.length)),
+      participants: mine ? [CAMILLE, ...spec.faces] : spec.faces,
       sortOrder: index,
       registered: mine,
       full: spec.count >= 12,
@@ -473,7 +478,7 @@ export function summaryOf(group: RideGroupDto): RideGroupSummaryDto {
   }
 }
 
-/** « Boucle des Monts d'Arrée », J+4 at 09:00, three groups, 2 comments. */
+/** « Boucle des Monts d’Arrée », J+4 at 09:00, three groups, 2 comments. */
 export function ride(options: RideOptions = {}, overrides: Partial<RideDto> = {}): RideDto {
   const { offset = 4, rainAlert = false } = options
   const groups = rideGroups(options)
@@ -483,11 +488,11 @@ export function ride(options: RideOptions = {}, overrides: Partial<RideDto> = {}
     team: VCM_REF,
     id: 'r-arree',
     slug: RIDE_SLUG,
-    name: "Boucle des Monts d'Arrée",
+    name: 'Boucle des Monts d’Arrée',
     media: media(),
-    excerpt: 'Trois groupes, trois allures : café au retour à la boulangerie de la place.',
+    excerpt: 'Trois groupes, trois allures, un café à l’arrivée au Roc’h Trévézel.',
     dateTime: day(offset, '09:00'),
-    endDateTime: day(offset, '14:30'),
+    endDateTime: day(offset, '13:00'),
     timezone: ZONE,
     status: 'PUBLISHED',
     finished: offset < 0,
@@ -502,7 +507,7 @@ export function ride(options: RideOptions = {}, overrides: Partial<RideDto> = {}
     elevationGain: 1_240,
     surfaceType: 'ROAD',
     startPlace: START_PLACE,
-    topParticipants: OTHERS.slice(0, 5),
+    topParticipants: [LEA, KARIM, JEANNE, MALO, NOE],
     thumbnailLightUrl: MAP_LIGHT_URL,
     thumbnailDarkUrl: MAP_DARK_URL,
     deleted: false,
@@ -518,7 +523,7 @@ export function ride(options: RideOptions = {}, overrides: Partial<RideDto> = {}
   }
 }
 
-/** A ride under way: left an hour ago, back in four. */
+/** A ride under way: left an hour ago, back in three (J 11:00 → 15:00 once the clock is pinned). */
 export function rideUnderWay(): RideDto {
   const start = hoursFromNow(-1)
   const base = ride({ offset: 0 })
@@ -526,17 +531,21 @@ export function rideUnderWay(): RideDto {
   return {
     ...base,
     dateTime: start,
-    endDateTime: hoursFromNow(4),
+    endDateTime: hoursFromNow(3),
     groups,
     groupSummaries: groups.map(summaryOf),
   }
 }
 
-/** A ride with neither group nor route. */
+/** « Sortie libre du samedi »: neither group nor route, no comment. */
 export function rideWithoutGroups(): RideDto {
   return ride(
     {},
     {
+      id: 'r-sortie-sans-groupe',
+      slug: 'sortie-sans-groupe',
+      name: 'Sortie libre du samedi',
+      commentCount: 0,
       groups: [],
       groupSummaries: [],
       groupCount: 0,
@@ -547,7 +556,6 @@ export function rideWithoutGroups(): RideDto {
       thumbnailLightUrl: undefined,
       thumbnailDarkUrl: undefined,
       topParticipants: [],
-      excerpt: 'Rendez-vous libre : chaque personne roule à son allure, sans inscription.',
       permissions: { ...MEMBER_PERMISSIONS, canRegister: false },
     }
   )
@@ -651,9 +659,9 @@ export function trip(firstDay = 10, overrides: Partial<TripDto> = {}): TripDto {
     slug: TRIP_SLUG,
     name: 'Traversée du Morvan',
     media: media(),
-    excerpt: 'Trois jours, trois étapes, les bagages suivent en voiture.',
+    excerpt: 'Trois jours d’Autun à Avallon, par les lacs et les crêtes.',
     dateTime: day(firstDay, '08:30'),
-    endDateTime: day(firstDay + 2, '16:30'),
+    endDateTime: day(firstDay + 2, '16:00'),
     timezone: ZONE,
     status: 'PUBLISHED',
     finished: false,
@@ -664,7 +672,7 @@ export function trip(firstDay = 10, overrides: Partial<TripDto> = {}): TripDto {
     totalDistance: 201_000,
     totalElevationGain: 3_340,
     stages: list,
-    participants: OTHERS.slice(0, 5),
+    participants: [LEA, KARIM, SACHA, JEANNE],
     thumbnailLightUrl: MAP_LIGHT_URL,
     thumbnailDarkUrl: MAP_DARK_URL,
     deleted: false,
@@ -688,7 +696,7 @@ export function post(overrides: Partial<PostDto> = {}): PostDto {
     name: 'Bilan de la saison',
     media: media(),
     excerpt:
-      'Quarante-deux sorties, trois voyages et pas une seule crevaison dans le groupe C. Merci à toutes les personnes qui ont ouvert la route cette année ; rendez-vous à l’assemblée de décembre pour le programme 2027.',
+      'Quarante-deux sorties, trois voyages et un record de participation en juin. Merci à toutes les personnes qui ont mené un groupe cette année, et rendez-vous à l’assemblée de décembre.',
     thumbnailUrl: PHOTO_URL,
     dateTime: day(-2, '18:30'),
     timezone: ZONE,
@@ -703,6 +711,22 @@ export function post(overrides: Partial<PostDto> = {}): PostDto {
     permissions: MEMBER_PERMISSIONS,
     ...overrides,
   }
+}
+
+/** « Calendrier des sorties d’hiver », a draft by Karim Benali, J 08:00, no photo. */
+export function draftPost(): PostDto {
+  return post({
+    id: 'p-brouillon',
+    slug: 'calendrier-hiver',
+    name: 'Calendrier des sorties d’hiver',
+    excerpt: 'Les dates sont à confirmer.',
+    thumbnailUrl: undefined,
+    dateTime: day(0, '08:00'),
+    createdAt: day(0, '08:00'),
+    status: 'DRAFT',
+    commentCount: 0,
+    createdBy: KARIM,
+  })
 }
 
 // --- Ads ------------------------------------------------------------------------------------
@@ -734,7 +758,7 @@ export const AD_SALE = ad({
   id: 'ad-carbone',
   slug: 'velo-de-route-carbone-taille-m',
   name: 'Vélo de route carbone taille M',
-  excerpt: 'Cadre carbone, groupe 105 en 11 vitesses, 8 000 km, révisé en septembre.',
+  excerpt: 'Cadre carbone, groupe 105 en 2 × 11, très bon état, révisé en septembre.',
   thumbnailUrl: PHOTO_URL,
   adType: 'SALE',
   price: 1_200,
@@ -744,23 +768,21 @@ export const AD_RENTAL = ad({
   id: 'ad-remorque',
   slug: 'remorque-enfant',
   name: 'Remorque enfant',
-  excerpt: 'Deux places, attache universelle, housse de pluie fournie.',
+  excerpt: 'Deux places, attelage universel, housse de pluie fournie.',
   adType: 'RENTAL',
   price: 15,
   rentalPeriod: 'DAY',
-  createdAt: day(-3, '10:15'),
-  updatedAt: day(-3, '10:15'),
+  locationDescription: 'Morlaix',
 })
 
 export const AD_WANTED = ad({
   id: 'ad-roues',
   slug: 'roues-gravel-700',
   name: 'Roues gravel 700',
-  excerpt: 'Paire de roues 700C pour pneus de 40 mm, freins à disque.',
+  excerpt: 'Paire de roues 700, frein à disque, corps Shimano.',
   adType: 'WANTED',
   price: undefined,
-  createdAt: day(-1, '21:05'),
-  updatedAt: day(-1, '21:05'),
+  locationDescription: 'Carhaix',
 })
 
 export const AD_DRAFT: AdDto = { ...AD_SALE, id: 'ad-brouillon', status: 'DRAFT' }
@@ -770,9 +792,9 @@ export const AD_DRAFT: AdDto = { ...AD_SALE, id: 'ad-brouillon', status: 'DRAFT'
 function event(overrides: Partial<CalendarEventDto>): CalendarEventDto {
   return {
     id: 'ev',
-    title: "Boucle des Monts d'Arrée",
+    title: 'Boucle des Monts d’Arrée',
     start: day(4, '09:00'),
-    end: day(4, '14:30'),
+    end: day(4, '13:00'),
     allDay: false,
     type: 'RIDE',
     teamSlug: VCM_SLUG,
@@ -789,49 +811,60 @@ function event(overrides: Partial<CalendarEventDto>): CalendarEventDto {
   }
 }
 
-/** Five rows: a ride, a registered one, a cancelled one, a trip stage, a draft. */
+/**
+ * Five rows in date order, the app's: a ride, the one Camille joined, the single stage of a
+ * one-stage trip, a cancelled ride, a draft (the Traversée du Morvan is beyond the week).
+ */
 export const WEEK_EVENTS: CalendarEventDto[] = [
   event({
-    id: 'ev-1',
-    title: 'Sortie du mercredi',
-    entitySlug: 'sortie-du-mercredi',
+    id: 'ev-recup',
+    title: 'Sortie récupération',
+    entitySlug: 'sortie-recuperation',
     start: day(1, '18:30'),
-    end: day(1, '20:30'),
+    end: day(1, '22:30'),
+    distance: 35_000,
+    elevationGain: 280,
   }),
   event({
-    id: 'ev-2',
-    title: "Boucle des Monts d'Arrée",
+    id: 'ev-monts',
     registered: true,
     groupName: 'B',
     start: day(4, '09:30'),
+    end: day(4, '13:30'),
+    distance: 78_000,
+    elevationGain: 980,
   }),
   event({
-    id: 'ev-3',
-    title: 'Côtes de Crozon',
-    entitySlug: 'cotes-de-crozon',
+    id: 'ev-beuvray',
+    type: 'TRIP_STAGE',
+    title: 'Aller-retour au mont Beuvray',
+    entitySlug: 'aller-retour-au-mont-beuvray',
+    tripSlug: 'aller-retour-au-mont-beuvray',
+    start: day(5, '08:30'),
+    end: day(5, '12:30'),
+    startPlaceName: 'Autun',
+    distance: 96_000,
+    elevationGain: 1_650,
+  }),
+  event({
+    id: 'ev-drennec',
+    title: 'Tour du lac du Drennec',
+    entitySlug: 'tour-du-lac-du-drennec',
     status: 'CANCELLED',
     start: day(5, '09:00'),
     end: day(5, '13:00'),
+    distance: 54_000,
+    elevationGain: 610,
   }),
   event({
-    id: 'ev-4',
-    type: 'TRIP_STAGE',
-    title: 'Autun → Château-Chinon',
-    entitySlug: 'autun-chateau-chinon',
-    tripSlug: TRIP_SLUG,
-    start: day(6, '08:30'),
-    end: day(6, '16:00'),
-    startPlaceName: 'Autun',
-    distance: 74_000,
-    elevationGain: 1_380,
-  }),
-  event({
-    id: 'ev-5',
-    title: 'Reconnaissance du Ménez-Hom',
-    entitySlug: 'reco-menez-hom',
+    id: 'ev-decouverte',
+    title: 'Sortie découverte',
+    entitySlug: 'sortie-decouverte',
     status: 'DRAFT',
     start: day(6, '14:00'),
-    end: day(6, '17:00'),
+    end: day(6, '18:00'),
+    distance: 30_000,
+    elevationGain: 250,
   }),
 ]
 
@@ -844,29 +877,41 @@ export function member(user: PublicUserDto, role: MemberDto['role'], joinedAt: s
 export const INVITATION: MyInvitationDto = {
   id: 'inv-gravel',
   team: GRAVEL_REF,
-  inviterName: KARIM.displayName,
+  inviterName: INES.displayName,
   role: 'MEMBER',
-  expiresAt: day(12),
+  expiresAt: day(7, '23:59'),
 }
 
 // --- Dashboard ------------------------------------------------------------------------------
 
+/** « Sortie découverte », a draft for J+6 at 14:00. */
 export function draftRide(): RideDto {
+  const groups = rideGroups({ offset: 6 }).map((g) => ({ ...g, startAt: day(6, '14:00') }))
   return ride(
-    { offset: 8 },
+    { offset: 6 },
     {
-      id: 'r-menez-hom',
-      slug: 'reco-menez-hom',
-      name: 'Reconnaissance du Ménez-Hom',
+      id: 'r-sortie-decouverte',
+      slug: 'sortie-decouverte',
+      name: 'Sortie découverte',
       status: 'DRAFT',
+      dateTime: day(6, '14:00'),
+      endDateTime: day(6, '18:00'),
+      groups,
+      groupSummaries: groups.map(summaryOf),
       weather: undefined,
     }
   )
 }
 
+/**
+ * « Sortie récupération », J+1 at 18:30, its three groups without a route. Every group leaves at the
+ * ride's time: the app's groups keep their morning hours on J+4, which this ride cannot.
+ */
 export function rideWithoutRoute(): RideDto {
-  const groups = rideGroups({ offset: 6 }).map((g) => ({
+  const groups = rideGroups({ offset: 1 }).map((g) => ({
     ...g,
+    time: '18:30:00',
+    startAt: day(1, '18:30'),
     routeSlug: undefined,
     distance: undefined,
     elevationGain: undefined,
@@ -874,15 +919,16 @@ export function rideWithoutRoute(): RideDto {
     thumbnailDarkUrl: undefined,
   }))
   return ride(
-    { offset: 6 },
+    { offset: 1 },
     {
-      id: 'r-crozon',
-      slug: 'cotes-de-crozon',
-      name: 'Côtes de Crozon',
+      id: 'r-sortie-recuperation',
+      slug: 'sortie-recuperation',
+      name: 'Sortie récupération',
+      dateTime: day(1, '18:30'),
+      endDateTime: day(1, '22:30'),
       routeSlug: undefined,
       distance: undefined,
       elevationGain: undefined,
-      surfaceType: undefined,
       thumbnailLightUrl: undefined,
       thumbnailDarkUrl: undefined,
       groups,
@@ -897,7 +943,6 @@ export function fullRide(): RideDto {
   const groups = rideGroups().map((g) => ({
     ...g,
     countParticipants: 12,
-    participants: OTHERS,
     full: true,
   }))
   return ride(
@@ -925,7 +970,7 @@ function notification(overrides: Partial<NotificationDto>): NotificationDto {
     teamName: VCM_REF.name,
     subjectType: 'RIDE',
     subjectSlug: RIDE_SLUG,
-    subjectName: "Boucle des Monts d'Arrée",
+    subjectName: 'Boucle des Monts d’Arrée',
     subjectDateTime: day(4, '09:00'),
     subjectTimezone: ZONE,
     changes: [],
@@ -933,74 +978,87 @@ function notification(overrides: Partial<NotificationDto>): NotificationDto {
   }
 }
 
-export const NOTIFICATION_UNREAD = notification({ id: 'n-1' })
+/** « Nouvelle sortie » by Léa Martin, two hours ago. */
+export const NOTIFICATION_UNREAD = notification({
+  id: 'n-publiee',
+  subjectDateTime: undefined,
+  subjectTimezone: undefined,
+})
+/** A reminder of « Sortie récupération », read, twenty hours ago. */
 export const NOTIFICATION_READ = notification({
-  id: 'n-2',
-  type: 'RIDE_JOINED',
+  id: 'n-rappel',
+  type: 'RIDE_REMINDER',
   read: true,
-  actorName: KARIM.displayName,
-  createdAt: hoursFromNow(-26),
+  actorName: undefined,
+  createdAt: hoursFromNow(-20),
+  subjectSlug: 'sortie-recuperation',
+  subjectName: 'Sortie récupération',
+  subjectDateTime: day(1, '18:30'),
 })
+/** The ride's date changed, by Karim Benali, 35 minutes ago. */
 export const NOTIFICATION_UPDATED = notification({
-  id: 'n-3',
+  id: 'n-modifiee',
   type: 'RIDE_UPDATED',
-  createdAt: hoursFromNow(-0.5),
-  changes: ['DATE_TIME', 'START_PLACE'],
+  actorName: KARIM.displayName,
+  createdAt: hoursFromNow(-35 / 60),
+  changes: ['DATE_TIME'],
 })
+
+function templateGroup(id: string, name: string, time: string, averageSpeed: number) {
+  return { id, name, time, averageSpeed, maxParticipants: 12, sortOrder: name.charCodeAt(0) - 65 }
+}
 
 function template(overrides: Partial<RideTemplateDto>): RideTemplateDto {
   return {
     team: VCM_REF,
     id: 'tpl',
     slug: 'tpl',
-    name: 'Sortie du samedi',
-    markdown: 'Départ de la place de la Mairie, trois allures. **Café au retour.**',
+    name: 'Sortie du dimanche',
+    markdown: '',
     visibility: 'TEAM',
     status: 'PUBLISHED',
-    createdAt: day(-200),
-    updatedAt: day(-15),
+    createdAt: '2025-09-01T10:00:00Z',
+    updatedAt: day(-3, '20:00'),
     groupCount: 3,
-    groups: GROUP_SPECS.map((spec, index) => ({
-      id: `tg-${spec.id}`,
-      name: spec.name,
-      time: `${spec.time}:00`,
-      averageSpeed: spec.speed,
-      maxParticipants: 12,
-      sortOrder: index,
-    })),
-    tags: TAGS.slice(0, 1),
+    groups: [
+      templateGroup('tg-a', 'A', '09:00:00', 28),
+      templateGroup('tg-b', 'B', '09:30:00', 25),
+      templateGroup('tg-c', 'C', '10:00:00', 22),
+    ],
+    nextNumber: 12,
+    tags: [],
     ...overrides,
   }
 }
 
-export const TEMPLATE = template({ id: 'tpl-samedi', slug: 'sortie-du-samedi' })
+export const TEMPLATE = template({ id: 'tpl-dimanche', slug: 'sortie-du-dimanche' })
 export const TEMPLATE_DRAFT = template({
-  id: 'tpl-nocturne',
-  slug: 'nocturne-d-ete',
-  name: 'Nocturne d’été',
+  id: 'tpl-hiver',
+  slug: 'sortie-d-hiver',
+  name: 'Sortie d’hiver',
   status: 'DRAFT',
   groupCount: 1,
-  groups: [{ id: 'tg-n', name: 'Tous', time: '20:00:00', averageSpeed: 24, sortOrder: 0 }],
-  tags: [],
+  groups: [templateGroup('tg-a', 'A', '09:00:00', 28)],
+  nextNumber: undefined,
 })
 
 export const DEVICES: PairedDeviceDto[] = [
-  { id: 'dev-karoo', type: 'KAROO', pairedAt: day(-60), lastUsedAt: hoursFromNow(-20) },
-  { id: 'dev-garmin', type: 'GARMIN', pairedAt: day(-200) },
+  { id: 'dev-karoo', type: 'KAROO', pairedAt: day(-30, '19:00'), lastUsedAt: day(-1, '09:00') },
+  { id: 'dev-garmin', type: 'GARMIN', pairedAt: day(-90, '21:00') },
 ]
 
 export const COMMENTS: CommentDto[] = [
   {
     id: 'c-1',
-    content: 'Je prends la voiture-balai pour le groupe C si personne ne s’est proposé.',
+    content: 'Je roule avec le B. On se retrouve au café avant le départ ?',
     author: KARIM,
     createdAt: hoursFromNow(-5),
     replies: [
       {
         id: 'c-1-1',
-        content: 'Merci Karim ! Je te passe la trousse de réparation samedi.',
+        content: 'Oui, 8 h 45 au café de la place, je prends les clés.',
         author: LEA,
-        createdAt: hoursFromNow(-3),
+        createdAt: hoursFromNow(-4),
         parentId: 'c-1',
         replies: [],
         replyCount: 0,
@@ -1013,8 +1071,8 @@ export const COMMENTS: CommentDto[] = [
   {
     id: 'c-2',
     content: '',
-    author: { id: 'u-deleted', displayName: '' },
-    createdAt: hoursFromNow(-30),
+    author: INES,
+    createdAt: hoursFromNow(-3),
     replies: [],
     replyCount: 0,
     deleted: true,
@@ -1025,12 +1083,12 @@ export const ROUTE_USAGES: RouteUsageDto[] = [
   {
     type: 'RIDE',
     slug: RIDE_SLUG,
-    name: "Boucle des Monts d'Arrée",
+    name: 'Boucle des Monts d’Arrée',
     dateTime: day(4, '09:00'),
     timezone: ZONE,
     teamSlug: VCM_SLUG,
-    referencedDirectly: true,
-    viaChildNames: [],
+    referencedDirectly: false,
+    viaChildNames: ['A'],
   },
   {
     type: 'TRIP',
@@ -1038,7 +1096,7 @@ export const ROUTE_USAGES: RouteUsageDto[] = [
     name: 'Traversée du Morvan',
     dateTime: day(10, '08:30'),
     timezone: ZONE,
-    endDate: day(12, '16:30'),
+    endDate: day(12, '09:00'),
     teamSlug: VCM_SLUG,
     referencedDirectly: false,
     viaChildNames: ['Autun → Château-Chinon'],

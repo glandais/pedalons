@@ -25,7 +25,8 @@ interface UpcomingRideCardProps {
 /**
  * A card of « Sorties à venir »: the ride's metrics (from its route, or else its first routed
  * group — `RideDto.distance`), then one line per group with its fill. Registration happens on the
- * ride page, where the groups can be compared: « S'inscrire » leads there.
+ * ride page, where the groups can be compared: « S'inscrire » leads there — or a disabled
+ * « Complet » when every group is full and the reader is in none.
  */
 export function UpcomingRideCard({ ride }: UpcomingRideCardProps) {
   const { t } = useTranslation()
@@ -35,6 +36,8 @@ export function UpcomingRideCard({ ride }: UpcomingRideCardProps) {
   // The departure that concerns the reader (docs/LEDGER_*.md WEB-136): their group's when they
   // joined one, else the ride's. The group lines are read against it.
   const start = startFor(ride)
+  // Not registered and every group full: there is no « S'inscrire » to offer.
+  const allFull = !ride.registered && groups.length > 0 && groups.every((group) => group.full)
 
   return (
     <Paper withBorder radius="md" p="md" data-testid="dashboard-ride-card">
@@ -103,14 +106,22 @@ export function UpcomingRideCard({ ride }: UpcomingRideCardProps) {
         )}
 
         <Group gap="xs" mt="auto">
-          <Button
-            component={PrefetchLink}
-            to={ridePath}
-            size="xs"
-            variant={ride.registered ? 'light' : 'filled'}
-          >
-            {ride.registered ? t('home.nextRide.view') : t('teams.dashboard.ride.register')}
-          </Button>
+          {allFull ? (
+            // Nowhere left to join: « Complet », not an « S'inscrire » that leads to full groups
+            // (docs/LEDGER_*.md WEB-167 N4).
+            <Button size="xs" variant="filled" disabled data-testid="dashboard-ride-full">
+              {t('rides.detail.groups.full')}
+            </Button>
+          ) : (
+            <Button
+              component={PrefetchLink}
+              to={ridePath}
+              size="xs"
+              variant={ride.registered ? 'light' : 'filled'}
+            >
+              {ride.registered ? t('home.nextRide.view') : t('teams.dashboard.ride.register')}
+            </Button>
+          )}
           {ride.permissions.canEdit && (
             <Button
               component={PrefetchLink}
@@ -153,8 +164,11 @@ function GroupFill({
 
   return (
     <Stack gap={2}>
-      <Group justify="space-between" gap="xs" wrap="nowrap">
-        <Text size="sm" fw={500} truncate>
+      {/* The card can be 260 px wide (three columns of `minmax(240px, 1fr)` beside the aside): the
+          group's line wraps, a departure time stays whole and the fill never shrinks (« COMP… »,
+          « départ 1… » were cut, docs/LEDGER_*.md WEB-167 N23). */}
+      <Group justify="space-between" gap="xs" wrap="nowrap" align="flex-start">
+        <Text size="sm" fw={500} style={{ minWidth: 0 }}>
           {mine ? (
             <IconCheck
               size={14}
@@ -168,22 +182,26 @@ function GroupFill({
           {group.averageSpeed ? (
             <Text span size="sm" c="dimmed">
               {' '}
-              {speed(group.averageSpeed)}
+              <span style={{ whiteSpace: 'nowrap' }}>{speed(group.averageSpeed)}</span>
             </Text>
           ) : null}
           {showStartTime ? (
             <Text span size="sm" c="dimmed" suppressHydrationWarning={departure.isGuessedText}>
               {' · '}
-              {t('teams.dashboard.ride.groupStart', { time: departure.formatTime(group.startAt) })}
+              <span style={{ whiteSpace: 'nowrap' }}>
+                {t('teams.dashboard.ride.groupStart', {
+                  time: departure.formatTime(group.startAt),
+                })}
+              </span>
             </Text>
           ) : null}
         </Text>
         {group.full ? (
-          <Badge color="danger" variant="light" size="sm">
+          <Badge color="danger" variant="light" size="sm" style={{ flexShrink: 0 }}>
             {t('rides.detail.groups.full')}
           </Badge>
         ) : (
-          <Text size="sm" c="dimmed" style={{ whiteSpace: 'nowrap' }}>
+          <Text size="sm" c="dimmed" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
             {max
               ? t('teams.dashboard.ride.fill', { current: group.countParticipants, max })
               : t('teams.dashboard.ride.registeredCount', { count: group.countParticipants })}

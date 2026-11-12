@@ -6,6 +6,10 @@
  *   pnpm dev                                    # in another terminal: the gallery is dev-only
  *   node scripts/capture-card-gallery.mjs <dir> [--base https://localhost:5173]
  *
+ * The page's clock is pinned at today 12:00, Paris time (Playwright `clock.setFixedTime`: `Date`
+ * stands still, timers run), as the brief asks: « en cours », « demain » and « il y a 2 heures »
+ * read the same whatever the hour of the capture. The gallery's data is relative to that « now ».
+ *
  * Files: <dir>/<section>-1280.png and <dir>/<section>-390.png. The sections are read from the
  * gallery's own table of contents, so this script never lists them twice. The base URL defaults to
  * https://localhost:5173 (the dev server with the mkcert certificates), falling back to http.
@@ -16,6 +20,37 @@ import { chromium } from 'playwright'
 
 const WIDTHS = [1280, 390]
 const GALLERY_PATH = '/dev/cards.html'
+const ZONE = 'Europe/Paris'
+
+/** The wall clock of `date` in Paris, field by field. */
+function wallClock(date) {
+  return Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(date)
+      .map((p) => [p.type, Number(p.value)])
+  )
+}
+
+/** Paris's offset from UTC at `date`, in milliseconds. */
+function offsetAt(date) {
+  const w = wallClock(date)
+  return Date.UTC(w.year, w.month - 1, w.day, w.hour, w.minute) - Math.floor(date / 60_000) * 60_000
+}
+
+/** Today at 12:00 in Paris, as an instant (the offset read at noon itself, DST included). */
+function noonToday() {
+  const { year, month, day } = wallClock(new Date())
+  const noonAsUtc = Date.UTC(year, month - 1, day, 12)
+  return new Date(noonAsUtc - offsetAt(new Date(noonAsUtc - offsetAt(new Date()))))
+}
 
 function parseArgs(argv) {
   const args = { out: undefined, base: undefined }
@@ -51,10 +86,13 @@ async function main() {
     ignoreHTTPSErrors: true,
     colorScheme: 'light',
     locale: 'fr-FR',
-    timezoneId: 'Europe/Paris',
+    timezoneId: ZONE,
     deviceScaleFactor: 2,
     viewport: { width: WIDTHS[0], height: 900 },
   })
+  const noon = noonToday()
+  await context.clock.setFixedTime(noon)
+  console.log(`Clock pinned at ${noon.toISOString()}`)
   const page = await context.newPage()
   page.on('console', (message) => {
     if (message.text().includes('[galerie]') || message.type() === 'error') {

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Anchor, Badge, Button, Group, Paper, Stack } from '@mantine/core'
-import { IconCheck, IconMapPin, IconUsers, IconRoute } from '@tabler/icons-react'
+import { IconCheck, IconMapPin, IconRoute, IconStack2, IconUsers } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { DayBox } from '@/components/common/DayBox'
 import { DepartureLine, PublicationDepartureLine } from '@/components/common/DepartureLine'
@@ -104,7 +104,9 @@ function TripRow({ trip }: { trip: TripDto }) {
           {/* « ven. 16 → dim. 18 oct. », the last day in the last stage's zone (API-60). */}
           <PublicationDepartureLine publication={trip} size="sm" />
           <Group gap="md" wrap="wrap">
-            <Stat icon={<IconRoute size={16} />}>
+            {/* The stages take the feed's icon for them (`PublicationCard`), the distance its own
+                (docs/LEDGER_*.md WEB-167 N28). */}
+            <Stat icon={<IconStack2 size={16} />}>
               {t('trips.card.stageCount', { count: trip.stageCount })}
             </Stat>
             {trip.totalDistance !== undefined && (

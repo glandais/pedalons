@@ -19,7 +19,6 @@ import {
   ROUTE_SLUG,
   VCM_SLUG,
   VCM_TEAM,
-  day,
   media,
   member,
   route,
@@ -107,9 +106,9 @@ export const teamsSection: GallerySection = {
     },
     {
       id: 'equipe-admin',
-      label: 'Gravel Bretagne, Camille administratrice',
+      label: 'Vélo Club des Monts, Camille administratrice',
       layout: 'grid',
-      render: () => <TeamCard team={GRAVEL_TEAM} showRole />,
+      render: () => <TeamCard team={{ ...VCM_TEAM, role: 'ADMIN' }} showRole />,
     },
     {
       id: 'equipe-decouverte',
@@ -129,7 +128,7 @@ export const teamsSection: GallerySection = {
       layout: 'full',
       render: () => (
         <TeamMemberList
-          members={[member(NOE, 'MEMBER', day(-300))]}
+          members={[member(NOE, 'MEMBER', '2024-03-03T10:00:00Z')]}
           currentUserRole={null}
           currentUserId={CAMILLE.id}
         />
@@ -141,7 +140,7 @@ export const teamsSection: GallerySection = {
       layout: 'full',
       render: () => (
         <TeamMemberList
-          members={[member(LEA, 'ADMIN', day(-800))]}
+          members={[member(LEA, 'ADMIN', '2021-03-01T10:00:00Z')]}
           currentUserRole={null}
           currentUserId={CAMILLE.id}
         />

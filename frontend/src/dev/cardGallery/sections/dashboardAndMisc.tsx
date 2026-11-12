@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Route, Routes } from 'react-router-dom'
 import { Box, Paper, Stack } from '@mantine/core'
-import type { NotificationDto, RideDto } from '@/api/dto'
+import type { NotificationDto, PublicationDto, RideDto } from '@/api/dto'
 import { DashboardSection } from '@/components/team/dashboard/DashboardSection'
 import { TodoBand } from '@/components/team/dashboard/TodoBand'
 import { MyUpcomingList } from '@/components/team/dashboard/MyUpcomingList'
@@ -29,7 +29,7 @@ import {
   RIDE_SLUG,
   VCM_REF,
   VCM_SLUG,
-  day,
+  draftPost,
   draftRide,
   fullRide,
   hoursFromNow,
@@ -74,19 +74,7 @@ function UpcomingRide({ ride: theRide }: { ride: RideDto }) {
 
 function PostsSection() {
   const { t } = useTranslation()
-  const posts = [
-    post(),
-    post({
-      id: 'p-trevezel',
-      slug: 'compte-rendu-roch-trevezel',
-      name: 'Compte rendu : montée du Roc’h Trévézel',
-      excerpt: 'Vent de face sur la crête, mais le soleil est revenu pour la descente.',
-      thumbnailUrl: undefined,
-      dateTime: day(-6, '20:10'),
-      commentCount: 0,
-      createdBy: undefined,
-    }),
-  ]
+  const posts = [post()]
   return (
     <DashboardSection
       id="dashboard-posts"
@@ -105,12 +93,12 @@ function RoutesSection() {
   const routes = [
     route(),
     route({
-      id: 'rt-drennec',
-      slug: 'tour-du-lac-du-drennec',
-      name: 'Tour du lac du Drennec',
-      distance: 38_600,
-      elevationGain: 410,
-      surfaceType: 'GRAVEL',
+      id: 'rt-monts-d-arree-b',
+      slug: 'monts-d-arree-b',
+      name: 'Monts d’Arrée, parcours B',
+      distance: 78_000,
+      elevationGain: 980,
+      elevationLoss: 980,
       tags: [],
     }),
   ]
@@ -146,21 +134,21 @@ function AdsSection() {
 }
 
 function todoOrganizer() {
-  const page = (publications: RideDto[]) => ({
+  const page = (publications: PublicationDto[]) => ({
     publications,
     total: publications.length,
     page: 0,
     size: 10,
   })
   return {
-    drafts: page([draftRide()]),
+    drafts: page([draftRide(), draftPost()]),
     ridesWithoutRoute: page([rideWithoutRoute()]),
     ridesWithFullGroup: page([ride()]),
     reports: {
-      openCount: 2,
+      openCount: 1,
       latestReason: 'SPAM' as const,
       latestTargetType: 'COMMENT' as const,
-      latestExcerpt: 'Vends maillots du club à prix cassés, écrivez-moi en privé',
+      latestExcerpt: 'Promo sur les pneus, lien en bio',
       latestReportedAt: hoursFromNow(-6),
     },
   }
@@ -208,7 +196,7 @@ export const dashboardSection: GallerySection = {
     },
     {
       id: 'dernieres-publications',
-      label: 'deux publications, l’une avec photo',
+      label: 'une publication, avec photo',
       layout: 'dashMain',
       render: () => <PostsSection />,
     },
@@ -259,13 +247,13 @@ export const miscSection: GallerySection = {
     },
     {
       id: 'notification-lue',
-      label: 'Karim Benali a rejoint, lue',
+      label: 'rappel de la sortie de demain, lue',
       layout: 'full',
       render: () => <Inbox notification={NOTIFICATION_READ} />,
     },
     {
       id: 'notification-modification',
-      label: 'sortie modifiée : date et lieu de départ',
+      label: 'sortie modifiée : sa date',
       layout: 'full',
       render: () => <Inbox notification={NOTIFICATION_UPDATED} />,
     },

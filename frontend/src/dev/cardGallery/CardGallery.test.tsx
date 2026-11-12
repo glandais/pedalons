@@ -85,16 +85,16 @@ const OMITTED = ['agenda-etape']
 
 /** What a case shows once its data — fixtures, or the fake API — has arrived. */
 const CONTENT: Record<string, string> = {
-  'fil-sortie': "Boucle des Monts d'Arrée",
+  'fil-sortie': 'Boucle des Monts d’Arrée',
   'fil-publication': 'Bilan de la saison',
   'prochaine-sortie-vide': 'Mes équipes',
   'mes-equipes': 'Gravel Bretagne',
   usages: 'Traversée du Morvan',
-  invitations: 'Karim Benali',
+  invitations: 'Inès Roche',
   inscrits: 'Malo Guérin',
-  modele: 'Sortie du samedi',
-  'modele-brouillon': 'Nocturne d’été',
-  commentaires: 'voiture-balai',
+  modele: 'Sortie du dimanche',
+  'modele-brouillon': 'Sortie d’hiver',
+  commentaires: 'café avant le départ',
   'annonce-vente': 'Vélo de route carbone taille M',
 }
 

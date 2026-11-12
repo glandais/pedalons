@@ -117,7 +117,13 @@ export function PublicationDepartureLine({
   if (publication.type === 'TRIP') {
     // « Départ 09:00 » then the span, dimmed — the app's trip card (KIT §9, docs/LEDGER_*.md
     // WEB-167).
-    const span = formatPublicationSpan(publication, 'full', i18n.language, t, readerZone)
+    // The span never splits: it goes to the next line whole rather than leave « nov. » alone on a
+    // third one (docs/LEDGER_*.md WEB-167 N21).
+    const span = (
+      <span style={{ whiteSpace: 'nowrap' }} data-testid="trip-span">
+        {formatPublicationSpan(publication, 'full', i18n.language, t, readerZone)}
+      </span>
+    )
     return (
       <DepartureLine
         date={publication.dateTime}

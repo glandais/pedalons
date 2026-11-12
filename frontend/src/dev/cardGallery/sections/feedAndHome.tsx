@@ -11,6 +11,7 @@ import {
   GRAVEL_TEAM,
   VCM_TEAM,
   WEEK_EVENTS,
+  draftPost,
   post,
   ride,
   rideUnderWay,
@@ -108,7 +109,7 @@ export const feedSection: GallerySection = {
         <PublicationCard
           publication={trip(-1, {
             registered: true,
-            participants: [CAMILLE, ...trip().participants.slice(0, 4)],
+            participants: [CAMILLE, ...trip().participants],
           })}
           showTeam={false}
         />
@@ -130,12 +131,7 @@ export const feedSection: GallerySection = {
       id: 'fil-publication-brouillon',
       label: 'brouillon, sans photo',
       layout: 'grid',
-      render: () => (
-        <PublicationCard
-          publication={post({ status: 'DRAFT', thumbnailUrl: undefined })}
-          showTeam={false}
-        />
-      ),
+      render: () => <PublicationCard publication={draftPost()} showTeam={false} />,
     },
     {
       id: 'fil-supprime',
@@ -182,7 +178,7 @@ export const homeSection: GallerySection = {
     },
     {
       id: 'semaine',
-      label: '5 lignes : sortie, inscrite, annulée, étape, brouillon',
+      label: '5 lignes : sortie, inscrite, étape d’un voyage d’une étape, annulée, brouillon',
       layout: 'homeAside',
       render: () => (
         <WeekAgenda nowIso={hourAlignedNowIso()} events={WEEK_EVENTS} isLoading={false} />
@@ -229,7 +225,21 @@ export const agendaSection: GallerySection = {
       id: 'agenda-annulee',
       label: 'annulée',
       layout: 'full',
-      render: () => <AgendaRow publication={ride({}, cancelled)} />,
+      render: () => (
+        <AgendaRow
+          publication={ride(
+            { offset: 5 },
+            {
+              ...cancelled,
+              id: 'r-drennec',
+              slug: 'tour-du-lac-du-drennec',
+              name: 'Tour du lac du Drennec',
+              distance: 54_000,
+              elevationGain: 610,
+            }
+          )}
+        />
+      ),
     },
     {
       id: 'agenda-etape',

@@ -28,7 +28,8 @@ function GroupCards({
   withWeather = true,
 }: {
   ride: RideDto
-  only?: (group: RideGroupDto) => RideGroupDto
+  /** A single card: the group of that name, as `only` reshapes it. */
+  only?: { name: string; reshape?: (group: RideGroupDto) => RideGroupDto }
   withWeather?: boolean
 }) {
   const { t } = useTranslation()
@@ -38,7 +39,7 @@ function GroupCards({
     [theRide, t]
   )
   const groups = only
-    ? [only(theRide.groups[0])]
+    ? theRide.groups.filter((g) => g.name === only.name).map(only.reshape ?? ((g) => g))
     : groupsRegisteredFirst(theRide.groups, theRide.registeredGroupId)
   const isRegisteredInGroup = theRide.groups.some((g) => g.id === theRide.registeredGroupId)
   const canJoinRide = !!theRide.permissions.canRegister && !theRide.registered
@@ -93,28 +94,33 @@ export const groupsSection: GallerySection = {
     },
     {
       id: 'groupe-sans-parcours',
-      label: 'groupe A sans parcours',
+      label: 'groupe B sans parcours, même heure, Camille dans aucun',
       layout: 'side',
       render: () => (
         <GroupCards
-          ride={ride({}, { routeSlug: undefined })}
+          ride={ride({ sameTime: true }, { routeSlug: undefined })}
           withWeather={false}
-          only={(group) => ({
-            ...group,
-            routeSlug: undefined,
-            distance: undefined,
-            elevationGain: undefined,
-            thumbnailLightUrl: undefined,
-            thumbnailDarkUrl: undefined,
-          })}
+          only={{
+            name: 'B',
+            reshape: (group) => ({
+              ...group,
+              routeSlug: undefined,
+              distance: undefined,
+              elevationGain: undefined,
+              thumbnailLightUrl: undefined,
+              thumbnailDarkUrl: undefined,
+            }),
+          }}
         />
       ),
     },
     {
       id: 'groupe-sans-meteo',
-      label: 'groupe A sans météo (aucune prévision pour lui)',
+      label: 'groupe A sans météo (aucune prévision pour lui), même heure',
       layout: 'side',
-      render: () => <GroupCards ride={ride()} withWeather={false} only={(group) => group} />,
+      render: () => (
+        <GroupCards ride={ride({ sameTime: true })} withWeather={false} only={{ name: 'A' }} />
+      ),
     },
   ],
 }
@@ -148,9 +154,16 @@ export const stagesSection: GallerySection = {
     },
     {
       id: 'etape-sans-parcours',
-      label: 'étape 1 sans parcours',
+      label: 'étape 2 sans parcours ni allure',
       layout: 'side',
-      render: () => <StageCards list={stages(10, { withRoute: false }).slice(0, 1)} />,
+      render: () => (
+        <TripStageCard
+          stage={stages(10, { withRoute: false })[1]}
+          index={1}
+          teamSlug={VCM_SLUG}
+          tripSlug={TRIP_SLUG}
+        />
+      ),
     },
     {
       id: 'etape-alerte-pluie',

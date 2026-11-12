@@ -111,7 +111,9 @@ export function TeamMemberList({
                   />
                   <Box style={{ minWidth: 0 }}>
                     <Group gap="xs">
-                      <Text size="sm" fw={500} truncate>
+                      {/* The name wraps, the role beside it stays whole (« ADMINISTRA… » at
+                          390 px, docs/LEDGER_*.md WEB-167 N24). */}
+                      <Text size="sm" fw={500} style={{ overflowWrap: 'anywhere' }}>
                         {member.user.displayName}
                       </Text>
                       {isCurrentUser && (
@@ -131,7 +133,7 @@ export function TeamMemberList({
                   </Box>
                 </Group>
 
-                <Group gap="xs" wrap="nowrap">
+                <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
                   {editingMemberId === member.id ? (
                     <>
                       <Select
@@ -167,7 +169,11 @@ export function TeamMemberList({
                   ) : (
                     <>
                       {memberRole && (
-                        <Badge color={roleBadgeColors[memberRole]} variant="light">
+                        <Badge
+                          color={roleBadgeColors[memberRole]}
+                          variant="light"
+                          data-testid="member-role-badge"
+                        >
                           {t(`roles.${memberRole satisfies 'ADMIN' | 'ORGANIZER' | 'MEMBER'}`)}
                         </Badge>
                       )}

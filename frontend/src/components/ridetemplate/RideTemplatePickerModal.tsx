@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { keepPreviousData } from '@tanstack/react-query'
 import { IconCopy, IconUsers } from '@tabler/icons-react'
 import {
-  Badge,
   Box,
   Button,
   Center,
@@ -20,7 +19,7 @@ import { MarkdownDisplay } from '../common/MarkdownDisplay'
 import { Pagination } from '../common/Pagination'
 import { useScrollToListTopWithinContainer } from '@/hooks/useScrollToListTop'
 import { SearchInput } from '../common/SearchInput'
-import { useUnits } from '@/hooks/useUnits'
+import { TemplateGroupBadge } from './TemplateGroupBadge'
 
 interface RideTemplatePickerModalProps {
   isOpen: boolean
@@ -38,7 +37,6 @@ export function RideTemplatePickerModal({
   title,
 }: RideTemplatePickerModalProps) {
   const { t } = useTranslation()
-  const { speed } = useUnits()
   const [page, setPage] = useState(0)
   const { listTopRef, scrollToListTop } = useScrollToListTopWithinContainer()
   const [search, setSearch] = useState('')
@@ -158,14 +156,7 @@ export function RideTemplatePickerModal({
                 {template.groups && template.groups.length > 0 && (
                   <Group gap="xs" mt="sm" wrap="wrap">
                     {template.groups.map((group) => (
-                      <Badge key={group.id} variant="light" color="gray" size="sm">
-                        {group.name}
-                        {group.averageSpeed && (
-                          <Text component="span" ml={4} c="dimmed">
-                            {speed(group.averageSpeed)}
-                          </Text>
-                        )}
-                      </Badge>
+                      <TemplateGroupBadge key={group.id} group={group} color="gray" />
                     ))}
                   </Group>
                 )}
