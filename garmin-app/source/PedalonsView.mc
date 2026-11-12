@@ -145,7 +145,7 @@ class PedalonsView extends WatchUi.View {
 
     function onUpdate(dc) {
         // Clear screen
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
+        dc.setColor(Theme.text(), Theme.background());
         dc.clear();
 
         var width = dc.getWidth();
@@ -155,7 +155,7 @@ class PedalonsView extends WatchUi.View {
 
         if (_isLoading) {
             // Show loading message
-            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.setColor(Theme.text(), Graphics.COLOR_TRANSPARENT);
             dc.drawText(
                 centerX,
                 centerY,
@@ -168,7 +168,7 @@ class PedalonsView extends WatchUi.View {
 
         if (_error != null) {
             // Show error
-            dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
+            dc.setColor(Theme.danger(), Graphics.COLOR_TRANSPARENT);
             dc.drawText(
                 centerX,
                 centerY,

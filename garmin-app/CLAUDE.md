@@ -70,6 +70,7 @@ source/
 ├── RouteDetailDelegate.mc          # Route detail input + download
 ├── FormatUtils.mc                  # Distance / elevation / date formatting
 ├── VerticalLayout.mc               # Line-by-line drawing helper
+├── Theme.mc                        # Colours of the drawn views, light or dark like the Edge (night mode, API 4.1.2+)
 └── ErrorView.mc                    # Error display
 ```
 

@@ -11,7 +11,7 @@
     <string id="NoRoutes">No routes available</string>
     <string id="Download">Download</string>
     <string id="Downloading">Downloading...</string>
-    <string id="DownloadComplete">Download complete!</string>
+    <string id="DownloadComplete">Download complete</string>
     <string id="DownloadFailed">Download failed</string>
     <string id="DownloadBusy">Another download in progress</string>
     <string id="ConnectionError">Connection error</string>
@@ -43,7 +43,7 @@
     <string id="RouteOne">route</string>
     <string id="RouteMany">routes</string>
     <string id="NoRides">No upcoming rides</string>
-    <string id="Logout">Log out</string>
+    <string id="Logout">Logout</string>
     <string id="SyncSent">In Garmin Connect</string>
     <string id="SyncOutdated">Old version in Connect</string>
     <string id="SyncPending">Update pending</string>

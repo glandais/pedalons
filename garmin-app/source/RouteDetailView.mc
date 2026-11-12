@@ -55,7 +55,7 @@ class RouteDetailView extends WatchUi.View {
     function onLayout(dc) {}
 
     function onUpdate(dc) {
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
+        dc.setColor(Theme.text(), Theme.background());
         dc.clear();
 
         var centerX = dc.getWidth() / 2;
@@ -72,12 +72,12 @@ class RouteDetailView extends WatchUi.View {
 
         // 2. Ride name (if defined)
         if (rideName != null && rideName.length() > 0) {
-            layout.draw(dc, centerX, Graphics.FONT_SMALL, rideName, null, Graphics.COLOR_WHITE);
+            layout.draw(dc, centerX, Graphics.FONT_SMALL, rideName, null, Theme.text());
         }
 
         // 3. Group name (if defined)
         if (groupName != null && groupName.length() > 0) {
-            layout.draw(dc, centerX, Graphics.FONT_SMALL, groupName, null, Graphics.COLOR_LT_GRAY);
+            layout.draw(dc, centerX, Graphics.FONT_SMALL, groupName, null, Theme.muted());
         }
 
         // 1. Route name (always shown)
@@ -85,20 +85,13 @@ class RouteDetailView extends WatchUi.View {
             routeName != null && routeName.length() > 0
                 ? routeName
                 : WatchUi.loadResource(Rez.Strings.Unknown);
-        layout.draw(
-            dc,
-            centerX,
-            Graphics.FONT_SMALL,
-            displayRouteName,
-            null,
-            Graphics.COLOR_LT_GRAY
-        );
+        layout.draw(dc, centerX, Graphics.FONT_SMALL, displayRouteName, null, Theme.muted());
 
         // 4. Date/time (if Ride exists)
         if (startDateTime != null && startDateTime.length() > 0) {
             var dateStr = _formatUtils.formatDateTime(startDateTime);
             if (dateStr.length() > 0) {
-                layout.draw(dc, centerX, Graphics.FONT_TINY, dateStr, null, Graphics.COLOR_WHITE);
+                layout.draw(dc, centerX, Graphics.FONT_TINY, dateStr, null, Theme.text());
             }
         }
 
@@ -112,7 +105,7 @@ class RouteDetailView extends WatchUi.View {
                     ": " +
                     _formatUtils.formatDistance(distance),
                 null,
-                Graphics.COLOR_WHITE
+                Theme.text()
             );
         }
         if (elevationGain != null) {
@@ -124,7 +117,7 @@ class RouteDetailView extends WatchUi.View {
                     ": " +
                     _formatUtils.formatElevation(elevationGain),
                 null,
-                Graphics.COLOR_WHITE
+                Theme.text()
             );
         }
 
@@ -134,7 +127,7 @@ class RouteDetailView extends WatchUi.View {
 
     private function drawDownloadStatus(dc, centerX, y) {
         if (_isDownloading) {
-            dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
+            dc.setColor(Theme.pending(), Graphics.COLOR_TRANSPARENT);
             dc.drawText(
                 centerX,
                 y,
@@ -144,8 +137,8 @@ class RouteDetailView extends WatchUi.View {
             );
         } else if (_downloadStatus != null) {
             var color = _downloadStatus.equals(WatchUi.loadResource(Rez.Strings.DownloadComplete))
-                ? Graphics.COLOR_GREEN
-                : Graphics.COLOR_RED;
+                ? Theme.success()
+                : Theme.danger();
             dc.setColor(color, Graphics.COLOR_TRANSPARENT);
             dc.drawText(
                 centerX,
@@ -155,7 +148,7 @@ class RouteDetailView extends WatchUi.View {
                 Graphics.TEXT_JUSTIFY_CENTER
             );
         } else {
-            dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
+            dc.setColor(Theme.accent(), Graphics.COLOR_TRANSPARENT);
             dc.drawText(
                 centerX,
                 y,
@@ -163,7 +156,7 @@ class RouteDetailView extends WatchUi.View {
                 WatchUi.loadResource(Rez.Strings.Download),
                 Graphics.TEXT_JUSTIFY_CENTER
             );
-            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.setColor(Theme.muted(), Graphics.COLOR_TRANSPARENT);
             dc.drawText(
                 centerX,
                 y + 25,

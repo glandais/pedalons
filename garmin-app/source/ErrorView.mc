@@ -16,21 +16,21 @@ class ErrorView extends WatchUi.View {
     function onLayout(dc) {}
 
     function onUpdate(dc) {
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
+        dc.setColor(Theme.text(), Theme.background());
         dc.clear();
 
         var centerX = dc.getWidth() / 2;
         var centerY = dc.getHeight() / 2;
         var layout = new VerticalLayout(centerY - 30, 8);
 
-        layout.draw(dc, centerX, Graphics.FONT_SMALL, _message, null, Graphics.COLOR_RED);
+        layout.draw(dc, centerX, Graphics.FONT_SMALL, _message, null, Theme.danger());
         layout.draw(
             dc,
             centerX,
             Graphics.FONT_TINY,
             WatchUi.loadResource(Rez.Strings.Retry) + WatchUi.loadResource(Rez.Strings.SelectHint),
             null,
-            Graphics.COLOR_LT_GRAY
+            Theme.muted()
         );
     }
 }

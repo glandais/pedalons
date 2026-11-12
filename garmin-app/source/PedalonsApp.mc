@@ -36,6 +36,11 @@ class PedalonsApp extends Application.AppBase {
         }
     }
 
+    // The Edge went to or from night mode: the drawn views follow (Theme.mc)
+    function onNightModeChanged() {
+        WatchUi.requestUpdate();
+    }
+
     function getInitialView() {
         // Check if we have a valid token
         if (_authManager.hasValidToken()) {

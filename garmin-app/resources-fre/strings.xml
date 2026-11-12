@@ -11,7 +11,7 @@
     <string id="NoRoutes">Aucun parcours disponible</string>
     <string id="Download">Télécharger</string>
     <string id="Downloading">Téléchargement...</string>
-    <string id="DownloadComplete">Téléchargement terminé !</string>
+    <string id="DownloadComplete">Téléchargement terminé</string>
     <string id="DownloadFailed">Échec du téléchargement</string>
     <string id="DownloadBusy">Autre téléchargement en cours</string>
     <string id="ConnectionError">Erreur de connexion</string>
