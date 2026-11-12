@@ -608,6 +608,18 @@ export const ListAllPublicationsResponse = zod
                   .describe(
                     'Surface type, from the same route as distance. Null when no route is set anywhere.'
                   ),
+                displayDistance: zod
+                  .number()
+                  .optional()
+                  .describe(
+                    "The distance in meters a card shows to the caller, computed by the server: the route of the group they joined when they are registered (its own, else the ride's); otherwise the route every group of the ride rides (the ride's own when it has no group); otherwise null — groups on different routes and caller not registered, or no route at all. Anonymous and non-member callers get the not-registered answer. Same value on list rows and on the detail; clients show it as is instead of choosing between distance, registeredGroup.distance and the groups'."
+                  ),
+                displayElevationGain: zod
+                  .number()
+                  .optional()
+                  .describe(
+                    'The elevation gain in meters a card shows to the caller, from the same route as displayDistance. Null whenever displayDistance is.'
+                  ),
                 startPlace: zod
                   .object({
                     id: zod.string().describe('Place ID (TSID)'),
@@ -3613,6 +3625,18 @@ export const ListPublicationsResponse = zod
                   .optional()
                   .describe(
                     'Surface type, from the same route as distance. Null when no route is set anywhere.'
+                  ),
+                displayDistance: zod
+                  .number()
+                  .optional()
+                  .describe(
+                    "The distance in meters a card shows to the caller, computed by the server: the route of the group they joined when they are registered (its own, else the ride's); otherwise the route every group of the ride rides (the ride's own when it has no group); otherwise null — groups on different routes and caller not registered, or no route at all. Anonymous and non-member callers get the not-registered answer. Same value on list rows and on the detail; clients show it as is instead of choosing between distance, registeredGroup.distance and the groups'."
+                  ),
+                displayElevationGain: zod
+                  .number()
+                  .optional()
+                  .describe(
+                    'The elevation gain in meters a card shows to the caller, from the same route as displayDistance. Null whenever displayDistance is.'
                   ),
                 startPlace: zod
                   .object({

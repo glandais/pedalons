@@ -29,35 +29,37 @@ PublicationDtoRide _$PublicationDtoRideFromJson(
   groupSummaries: (json['groupSummaries'] as List<dynamic>)
       .map((e) => RideGroupSummaryDto.fromJson(e as Map<String, dynamic>))
       .toList(),
+  topParticipants: (json['topParticipants'] as List<dynamic>)
+      .map((e) => PublicUserDto.fromJson(e as Map<String, dynamic>))
+      .toList(),
   tags: (json['tags'] as List<dynamic>)
       .map((e) => TagDto.fromJson(e as Map<String, dynamic>))
       .toList(),
-  deleted: json['deleted'] as bool,
   registered: json['registered'] as bool,
   permissions: ContentPermissionsDto.fromJson(
     json['permissions'] as Map<String, dynamic>,
   ),
-  topParticipants: (json['topParticipants'] as List<dynamic>)
-      .map((e) => PublicUserDto.fromJson(e as Map<String, dynamic>))
-      .toList(),
+  deleted: json['deleted'] as bool,
   surfaceType: json['surfaceType'] as String?,
+  displayDistance: (json['displayDistance'] as num?)?.toDouble(),
+  displayElevationGain: (json['displayElevationGain'] as num?)?.toDouble(),
   startPlace: json['startPlace'] == null
       ? null
       : PlaceDetailDto.fromJson(json['startPlace'] as Map<String, dynamic>),
   endPlace: json['endPlace'] == null
       ? null
       : PlaceDetailDto.fromJson(json['endPlace'] as Map<String, dynamic>),
-  elevationGain: (json['elevationGain'] as num?)?.toDouble(),
-  createdAt: json['createdAt'] as String?,
+  distance: (json['distance'] as num?)?.toDouble(),
+  thumbnailLightUrl: json['thumbnailLightUrl'] as String?,
   thumbnailDarkUrl: json['thumbnailDarkUrl'] as String?,
   thumbnailUrl: json['thumbnailUrl'] as String?,
-  routeSlug: json['routeSlug'] as String?,
+  createdAt: json['createdAt'] as String?,
   publishAt: json['publishAt'] as String?,
   registeredGroupId: json['registeredGroupId'] as String?,
   registeredGroup: json['registeredGroup'] == null
       ? null
       : RideGroupDto.fromJson(json['registeredGroup'] as Map<String, dynamic>),
-  thumbnailLightUrl: json['thumbnailLightUrl'] as String?,
+  routeSlug: json['routeSlug'] as String?,
   maxParticipants: (json['maxParticipants'] as num?)?.toInt(),
   commentCount: (json['commentCount'] as num?)?.toInt(),
   excerpt: json['excerpt'] as String?,
@@ -67,7 +69,7 @@ PublicationDtoRide _$PublicationDtoRideFromJson(
   gpsSyncStatuses: (json['gpsSyncStatuses'] as List<dynamic>?)
       ?.map((e) => RouteGpsSyncStatusDto.fromJson(e as Map<String, dynamic>))
       .toList(),
-  distance: (json['distance'] as num?)?.toDouble(),
+  elevationGain: (json['elevationGain'] as num?)?.toDouble(),
   $type: json['type'] as String?,
 );
 
@@ -90,29 +92,31 @@ Map<String, dynamic> _$PublicationDtoRideToJson(
   'groupCount': instance.groupCount,
   'groups': instance.groups.map((e) => e.toJson()).toList(),
   'groupSummaries': instance.groupSummaries.map((e) => e.toJson()).toList(),
+  'topParticipants': instance.topParticipants.map((e) => e.toJson()).toList(),
   'tags': instance.tags.map((e) => e.toJson()).toList(),
-  'deleted': instance.deleted,
   'registered': instance.registered,
   'permissions': instance.permissions.toJson(),
-  'topParticipants': instance.topParticipants.map((e) => e.toJson()).toList(),
+  'deleted': instance.deleted,
   'surfaceType': instance.surfaceType,
+  'displayDistance': instance.displayDistance,
+  'displayElevationGain': instance.displayElevationGain,
   'startPlace': instance.startPlace?.toJson(),
   'endPlace': instance.endPlace?.toJson(),
-  'elevationGain': instance.elevationGain,
-  'createdAt': instance.createdAt,
+  'distance': instance.distance,
+  'thumbnailLightUrl': instance.thumbnailLightUrl,
   'thumbnailDarkUrl': instance.thumbnailDarkUrl,
   'thumbnailUrl': instance.thumbnailUrl,
-  'routeSlug': instance.routeSlug,
+  'createdAt': instance.createdAt,
   'publishAt': instance.publishAt,
   'registeredGroupId': instance.registeredGroupId,
   'registeredGroup': instance.registeredGroup?.toJson(),
-  'thumbnailLightUrl': instance.thumbnailLightUrl,
+  'routeSlug': instance.routeSlug,
   'maxParticipants': instance.maxParticipants,
   'commentCount': instance.commentCount,
   'excerpt': instance.excerpt,
   'weather': instance.weather?.toJson(),
   'gpsSyncStatuses': instance.gpsSyncStatuses?.map((e) => e.toJson()).toList(),
-  'distance': instance.distance,
+  'elevationGain': instance.elevationGain,
   'type': instance.$type,
 };
 

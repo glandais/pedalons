@@ -28,8 +28,8 @@ part 'ride_dto.g.dart';
 @Freezed()
 abstract class RideDto with _$RideDto {
   const factory RideDto({
-    /// Whether every group of the ride has reached its capacity. False when the ride has no group, or when at least one group has no maxParticipants.
-    required bool full,
+    /// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
+    required List<PublicUserDto> topParticipants,
 
     /// Team
     required TeamPublicationDto team,
@@ -45,9 +45,6 @@ abstract class RideDto with _$RideDto {
 
     /// Publication media
     required MediaDto media,
-
-    /// Every group of the ride in sort order, as a card shows it: name, pace, start time and fill (countParticipants against maxParticipants). Filled on list rows too, where groups is empty — a card draws its per-group fill bars without opening the ride. Carries no leader nor participants: those are on groups, in the detail.
-    required List<RideGroupSummaryDto> groupSummaries,
 
     /// When the ride starts: its own departure, which a group without a time of its own leaves at (RideGroupDto.startAt holds each group's). Not the publication date — that is publishAt for a scheduled one.
     required String dateTime,
@@ -79,14 +76,17 @@ abstract class RideDto with _$RideDto {
     /// Ride groups
     required List<RideGroupDto> groups,
 
-    /// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
-    required List<PublicUserDto> topParticipants,
+    /// Every group of the ride in sort order, as a card shows it: name, pace, start time and fill (countParticipants against maxParticipants). Filled on list rows too, where groups is empty — a card draws its per-group fill bars without opening the ride. Carries no leader nor participants: those are on groups, in the detail.
+    required List<RideGroupSummaryDto> groupSummaries,
 
-    /// The team's RIDE tags the ride carries, sorted by label. Empty when it carries none.
-    required List<TagDto> tags,
+    /// Whether every group of the ride has reached its capacity. False when the ride has no group, or when at least one group has no maxParticipants.
+    required bool full,
 
     /// Whether the current user is registered in one of this ride's groups. False if anonymous.
     required bool registered,
+
+    /// The team's RIDE tags the ride carries, sorted by label. Empty when it carries none.
+    required List<TagDto> tags,
 
     /// Whether the ride is soft-deleted
     required bool deleted,
@@ -96,6 +96,12 @@ abstract class RideDto with _$RideDto {
 
     /// Surface type, from the same route as distance. Null when no route is set anywhere.
     String? surfaceType,
+
+    /// The distance in meters a card shows to the caller, computed by the server: the route of the group they joined when they are registered (its own, else the ride's); otherwise the route every group of the ride rides (the ride's own when it has no group); otherwise null — groups on different routes and caller not registered, or no route at all. Anonymous and non-member callers get the not-registered answer. Same value on list rows and on the detail; clients show it as is instead of choosing between distance, registeredGroup.distance and the groups'.
+    double? displayDistance,
+
+    /// The elevation gain in meters a card shows to the caller, from the same route as displayDistance. Null whenever displayDistance is.
+    double? displayElevationGain,
 
     /// Start place
     PlaceDetailDto? startPlace,
@@ -115,8 +121,8 @@ abstract class RideDto with _$RideDto {
     /// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailUrl,
 
-    /// Distance in meters of the ride's route — or, when the ride itself has none, of the route of its first group (in sort order) that has one. Null when no route is set anywhere.
-    double? distance,
+    /// Publication timestamp
+    String? publishAt,
 
     /// Route slug
     String? routeSlug,
@@ -127,8 +133,8 @@ abstract class RideDto with _$RideDto {
     /// The group the current user joined, in full — the same object as the matching entry of groups. Null if not registered or anonymous. Set on list rows too, where groups is empty: a client rendering "my next ride" needs no second request for its group. Its leader is the group's own, null when none was designated.
     RideGroupDto? registeredGroup,
 
-    /// Publication timestamp
-    String? publishAt,
+    /// Creation timestamp
+    String? createdAt,
 
     /// Capacity of the whole ride: the sum of its groups' maxParticipants, to render participantCount against it ("12/40"). Null when the ride has no group, or when at least one group has no maxParticipants — the ride then has no overall limit, and is never full. Set on list rows too, where groups is empty.
     int? maxParticipants,
@@ -136,8 +142,8 @@ abstract class RideDto with _$RideDto {
     /// Number of comments, replies included. Absent when the caller may not read the comments of this ride — comments are members-only, so an outsider is told nothing, not even zero.
     int? commentCount,
 
-    /// Creation timestamp
-    String? createdAt,
+    /// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
+    String? excerpt,
 
     /// The weather line of a card: the meeting point, over the window from the departure to the estimated arrival of the last group. Absent when there is nothing to show — finished or cancelled ride, no place, forecast not in cache yet; present only with status OK, STALE or NOT_YET_AVAILABLE. The full forecast is getRideWeather.
     RideWeatherSummaryDto? weather,
@@ -145,8 +151,8 @@ abstract class RideDto with _$RideDto {
     /// Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route.
     List<RouteGpsSyncStatusDto>? gpsSyncStatuses,
 
-    /// Plain-text opening of the markdown body, flattened (links become their label) and cut on a word boundary at about 200 characters. Null when the body holds no text. Lets a list row render its two lines without the body being sent at all — see the 'view' parameter.
-    String? excerpt,
+    /// Distance in meters of the ride's route — or, when the ride itself has none, of the route of its first group (in sort order) that has one. Null when no route is set anywhere.
+    double? distance,
   }) = _RideDto;
 
   factory RideDto.fromJson(Map<String, Object?> json) =>

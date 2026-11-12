@@ -37,7 +37,9 @@ mixin _$CalendarEventDto {
  String? get thumbnailUrl;/// Light-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a dark variant. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailLightUrl;/// Dark-scheme thumbnail image URL template (contains a {size} placeholder). Null when the event's picture exists only in a light variant. Opaque URL: may carry a query string; substitute {size} only.
  String? get thumbnailDarkUrl;/// Name of the ride group the current user joined. Null when not registered, and always null for trip stages, which have no groups.
- String? get groupName;
+ String? get groupName;/// The distance in meters an agenda card shows to the caller, as RideDto.displayDistance: for a ride, the route of the group they joined when registered, else the route every group rides, else null (groups on different routes, or no route); for a trip stage, the stage's route. Unlike distance, which is only the ride's own route.
+ double? get displayDistance;/// The elevation gain in meters an agenda card shows to the caller, from the same route as displayDistance. Null whenever displayDistance is.
+ double? get displayElevationGain;
 /// Create a copy of CalendarEventDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -51,20 +53,20 @@ $CalendarEventDtoCopyWith<CalendarEventDto> get copyWith => _$CalendarEventDtoCo
 @override
 bool operator ==(Object other) {
   final _this = this as CalendarEventDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CalendarEventDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.start, _this.start) || other.start == _this.start)&&(identical(other.allDay, _this.allDay) || other.allDay == _this.allDay)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.teamSlug, _this.teamSlug) || other.teamSlug == _this.teamSlug)&&(identical(other.teamName, _this.teamName) || other.teamName == _this.teamName)&&(identical(other.entitySlug, _this.entitySlug) || other.entitySlug == _this.entitySlug)&&(identical(other.registered, _this.registered) || other.registered == _this.registered)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.timezone, _this.timezone) || other.timezone == _this.timezone)&&(identical(other.finished, _this.finished) || other.finished == _this.finished)&&(identical(other.end, _this.end) || other.end == _this.end)&&(identical(other.tripSlug, _this.tripSlug) || other.tripSlug == _this.tripSlug)&&(identical(other.startPlaceName, _this.startPlaceName) || other.startPlaceName == _this.startPlaceName)&&(identical(other.distance, _this.distance) || other.distance == _this.distance)&&(identical(other.elevationGain, _this.elevationGain) || other.elevationGain == _this.elevationGain)&&(identical(other.thumbnailUrl, _this.thumbnailUrl) || other.thumbnailUrl == _this.thumbnailUrl)&&(identical(other.thumbnailLightUrl, _this.thumbnailLightUrl) || other.thumbnailLightUrl == _this.thumbnailLightUrl)&&(identical(other.thumbnailDarkUrl, _this.thumbnailDarkUrl) || other.thumbnailDarkUrl == _this.thumbnailDarkUrl)&&(identical(other.groupName, _this.groupName) || other.groupName == _this.groupName));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CalendarEventDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.start, _this.start) || other.start == _this.start)&&(identical(other.allDay, _this.allDay) || other.allDay == _this.allDay)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.teamSlug, _this.teamSlug) || other.teamSlug == _this.teamSlug)&&(identical(other.teamName, _this.teamName) || other.teamName == _this.teamName)&&(identical(other.entitySlug, _this.entitySlug) || other.entitySlug == _this.entitySlug)&&(identical(other.registered, _this.registered) || other.registered == _this.registered)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.timezone, _this.timezone) || other.timezone == _this.timezone)&&(identical(other.finished, _this.finished) || other.finished == _this.finished)&&(identical(other.end, _this.end) || other.end == _this.end)&&(identical(other.tripSlug, _this.tripSlug) || other.tripSlug == _this.tripSlug)&&(identical(other.startPlaceName, _this.startPlaceName) || other.startPlaceName == _this.startPlaceName)&&(identical(other.distance, _this.distance) || other.distance == _this.distance)&&(identical(other.elevationGain, _this.elevationGain) || other.elevationGain == _this.elevationGain)&&(identical(other.thumbnailUrl, _this.thumbnailUrl) || other.thumbnailUrl == _this.thumbnailUrl)&&(identical(other.thumbnailLightUrl, _this.thumbnailLightUrl) || other.thumbnailLightUrl == _this.thumbnailLightUrl)&&(identical(other.thumbnailDarkUrl, _this.thumbnailDarkUrl) || other.thumbnailDarkUrl == _this.thumbnailDarkUrl)&&(identical(other.groupName, _this.groupName) || other.groupName == _this.groupName)&&(identical(other.displayDistance, _this.displayDistance) || other.displayDistance == _this.displayDistance)&&(identical(other.displayElevationGain, _this.displayElevationGain) || other.displayElevationGain == _this.displayElevationGain));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as CalendarEventDto;
-  return Object.hashAll([runtimeType,_this.id,_this.title,_this.start,_this.allDay,_this.type,_this.teamSlug,_this.teamName,_this.entitySlug,_this.registered,_this.status,_this.timezone,_this.finished,_this.end,_this.tripSlug,_this.startPlaceName,_this.distance,_this.elevationGain,_this.thumbnailUrl,_this.thumbnailLightUrl,_this.thumbnailDarkUrl,_this.groupName]);
+  return Object.hashAll([runtimeType,_this.id,_this.title,_this.start,_this.allDay,_this.type,_this.teamSlug,_this.teamName,_this.entitySlug,_this.registered,_this.status,_this.timezone,_this.finished,_this.end,_this.tripSlug,_this.startPlaceName,_this.distance,_this.elevationGain,_this.thumbnailUrl,_this.thumbnailLightUrl,_this.thumbnailDarkUrl,_this.groupName,_this.displayDistance,_this.displayElevationGain]);
 }
 
 @override
 String toString() {
   final _this = this as CalendarEventDto;
-  return 'CalendarEventDto(id: ${_this.id}, title: ${_this.title}, start: ${_this.start}, allDay: ${_this.allDay}, type: ${_this.type}, teamSlug: ${_this.teamSlug}, teamName: ${_this.teamName}, entitySlug: ${_this.entitySlug}, registered: ${_this.registered}, status: ${_this.status}, timezone: ${_this.timezone}, finished: ${_this.finished}, end: ${_this.end}, tripSlug: ${_this.tripSlug}, startPlaceName: ${_this.startPlaceName}, distance: ${_this.distance}, elevationGain: ${_this.elevationGain}, thumbnailUrl: ${_this.thumbnailUrl}, thumbnailLightUrl: ${_this.thumbnailLightUrl}, thumbnailDarkUrl: ${_this.thumbnailDarkUrl}, groupName: ${_this.groupName})';
+  return 'CalendarEventDto(id: ${_this.id}, title: ${_this.title}, start: ${_this.start}, allDay: ${_this.allDay}, type: ${_this.type}, teamSlug: ${_this.teamSlug}, teamName: ${_this.teamName}, entitySlug: ${_this.entitySlug}, registered: ${_this.registered}, status: ${_this.status}, timezone: ${_this.timezone}, finished: ${_this.finished}, end: ${_this.end}, tripSlug: ${_this.tripSlug}, startPlaceName: ${_this.startPlaceName}, distance: ${_this.distance}, elevationGain: ${_this.elevationGain}, thumbnailUrl: ${_this.thumbnailUrl}, thumbnailLightUrl: ${_this.thumbnailLightUrl}, thumbnailDarkUrl: ${_this.thumbnailDarkUrl}, groupName: ${_this.groupName}, displayDistance: ${_this.displayDistance}, displayElevationGain: ${_this.displayElevationGain})';
 }
 
 
@@ -75,7 +77,7 @@ abstract mixin class $CalendarEventDtoCopyWith<$Res>  {
   factory $CalendarEventDtoCopyWith(CalendarEventDto value, $Res Function(CalendarEventDto) _then) = _$CalendarEventDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String title, String start, bool allDay, String type, String teamSlug, String teamName, String entitySlug, bool registered, String status, String timezone, bool finished, String? end, String? tripSlug, String? startPlaceName, double? distance, double? elevationGain, String? thumbnailUrl, String? thumbnailLightUrl, String? thumbnailDarkUrl, String? groupName
+ String id, String title, String start, bool allDay, String type, String teamSlug, String teamName, String entitySlug, bool registered, String status, String timezone, bool finished, String? end, String? tripSlug, String? startPlaceName, double? distance, double? elevationGain, String? thumbnailUrl, String? thumbnailLightUrl, String? thumbnailDarkUrl, String? groupName, double? displayDistance, double? displayElevationGain
 });
 
 
@@ -92,7 +94,7 @@ class _$CalendarEventDtoCopyWithImpl<$Res>
 
 /// Create a copy of CalendarEventDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? start = null,Object? allDay = null,Object? type = null,Object? teamSlug = null,Object? teamName = null,Object? entitySlug = null,Object? registered = null,Object? status = null,Object? timezone = null,Object? finished = null,Object? end = freezed,Object? tripSlug = freezed,Object? startPlaceName = freezed,Object? distance = freezed,Object? elevationGain = freezed,Object? thumbnailUrl = freezed,Object? thumbnailLightUrl = freezed,Object? thumbnailDarkUrl = freezed,Object? groupName = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? start = null,Object? allDay = null,Object? type = null,Object? teamSlug = null,Object? teamName = null,Object? entitySlug = null,Object? registered = null,Object? status = null,Object? timezone = null,Object? finished = null,Object? end = freezed,Object? tripSlug = freezed,Object? startPlaceName = freezed,Object? distance = freezed,Object? elevationGain = freezed,Object? thumbnailUrl = freezed,Object? thumbnailLightUrl = freezed,Object? thumbnailDarkUrl = freezed,Object? groupName = freezed,Object? displayDistance = freezed,Object? displayElevationGain = freezed,}) {
   return _then(CalendarEventDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -115,7 +117,9 @@ as double?,thumbnailUrl: freezed == thumbnailUrl ? _self.thumbnailUrl : thumbnai
 as String?,thumbnailLightUrl: freezed == thumbnailLightUrl ? _self.thumbnailLightUrl : thumbnailLightUrl // ignore: cast_nullable_to_non_nullable
 as String?,thumbnailDarkUrl: freezed == thumbnailDarkUrl ? _self.thumbnailDarkUrl : thumbnailDarkUrl // ignore: cast_nullable_to_non_nullable
 as String?,groupName: freezed == groupName ? _self.groupName : groupName // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,displayDistance: freezed == displayDistance ? _self.displayDistance : displayDistance // ignore: cast_nullable_to_non_nullable
+as double?,displayElevationGain: freezed == displayElevationGain ? _self.displayElevationGain : displayElevationGain // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 
@@ -200,10 +204,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  String start,  bool allDay,  String type,  String teamSlug,  String teamName,  String entitySlug,  bool registered,  String status,  String timezone,  bool finished,  String? end,  String? tripSlug,  String? startPlaceName,  double? distance,  double? elevationGain,  String? thumbnailUrl,  String? thumbnailLightUrl,  String? thumbnailDarkUrl,  String? groupName)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  String start,  bool allDay,  String type,  String teamSlug,  String teamName,  String entitySlug,  bool registered,  String status,  String timezone,  bool finished,  String? end,  String? tripSlug,  String? startPlaceName,  double? distance,  double? elevationGain,  String? thumbnailUrl,  String? thumbnailLightUrl,  String? thumbnailDarkUrl,  String? groupName,  double? displayDistance,  double? displayElevationGain)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CalendarEventDto() when $default != null:
-return $default(_that.id,_that.title,_that.start,_that.allDay,_that.type,_that.teamSlug,_that.teamName,_that.entitySlug,_that.registered,_that.status,_that.timezone,_that.finished,_that.end,_that.tripSlug,_that.startPlaceName,_that.distance,_that.elevationGain,_that.thumbnailUrl,_that.thumbnailLightUrl,_that.thumbnailDarkUrl,_that.groupName);case _:
+return $default(_that.id,_that.title,_that.start,_that.allDay,_that.type,_that.teamSlug,_that.teamName,_that.entitySlug,_that.registered,_that.status,_that.timezone,_that.finished,_that.end,_that.tripSlug,_that.startPlaceName,_that.distance,_that.elevationGain,_that.thumbnailUrl,_that.thumbnailLightUrl,_that.thumbnailDarkUrl,_that.groupName,_that.displayDistance,_that.displayElevationGain);case _:
   return orElse();
 
 }
@@ -221,10 +225,10 @@ return $default(_that.id,_that.title,_that.start,_that.allDay,_that.type,_that.t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  String start,  bool allDay,  String type,  String teamSlug,  String teamName,  String entitySlug,  bool registered,  String status,  String timezone,  bool finished,  String? end,  String? tripSlug,  String? startPlaceName,  double? distance,  double? elevationGain,  String? thumbnailUrl,  String? thumbnailLightUrl,  String? thumbnailDarkUrl,  String? groupName)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  String start,  bool allDay,  String type,  String teamSlug,  String teamName,  String entitySlug,  bool registered,  String status,  String timezone,  bool finished,  String? end,  String? tripSlug,  String? startPlaceName,  double? distance,  double? elevationGain,  String? thumbnailUrl,  String? thumbnailLightUrl,  String? thumbnailDarkUrl,  String? groupName,  double? displayDistance,  double? displayElevationGain)  $default,) {final _that = this;
 switch (_that) {
 case _CalendarEventDto():
-return $default(_that.id,_that.title,_that.start,_that.allDay,_that.type,_that.teamSlug,_that.teamName,_that.entitySlug,_that.registered,_that.status,_that.timezone,_that.finished,_that.end,_that.tripSlug,_that.startPlaceName,_that.distance,_that.elevationGain,_that.thumbnailUrl,_that.thumbnailLightUrl,_that.thumbnailDarkUrl,_that.groupName);case _:
+return $default(_that.id,_that.title,_that.start,_that.allDay,_that.type,_that.teamSlug,_that.teamName,_that.entitySlug,_that.registered,_that.status,_that.timezone,_that.finished,_that.end,_that.tripSlug,_that.startPlaceName,_that.distance,_that.elevationGain,_that.thumbnailUrl,_that.thumbnailLightUrl,_that.thumbnailDarkUrl,_that.groupName,_that.displayDistance,_that.displayElevationGain);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -241,10 +245,10 @@ return $default(_that.id,_that.title,_that.start,_that.allDay,_that.type,_that.t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  String start,  bool allDay,  String type,  String teamSlug,  String teamName,  String entitySlug,  bool registered,  String status,  String timezone,  bool finished,  String? end,  String? tripSlug,  String? startPlaceName,  double? distance,  double? elevationGain,  String? thumbnailUrl,  String? thumbnailLightUrl,  String? thumbnailDarkUrl,  String? groupName)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  String start,  bool allDay,  String type,  String teamSlug,  String teamName,  String entitySlug,  bool registered,  String status,  String timezone,  bool finished,  String? end,  String? tripSlug,  String? startPlaceName,  double? distance,  double? elevationGain,  String? thumbnailUrl,  String? thumbnailLightUrl,  String? thumbnailDarkUrl,  String? groupName,  double? displayDistance,  double? displayElevationGain)?  $default,) {final _that = this;
 switch (_that) {
 case _CalendarEventDto() when $default != null:
-return $default(_that.id,_that.title,_that.start,_that.allDay,_that.type,_that.teamSlug,_that.teamName,_that.entitySlug,_that.registered,_that.status,_that.timezone,_that.finished,_that.end,_that.tripSlug,_that.startPlaceName,_that.distance,_that.elevationGain,_that.thumbnailUrl,_that.thumbnailLightUrl,_that.thumbnailDarkUrl,_that.groupName);case _:
+return $default(_that.id,_that.title,_that.start,_that.allDay,_that.type,_that.teamSlug,_that.teamName,_that.entitySlug,_that.registered,_that.status,_that.timezone,_that.finished,_that.end,_that.tripSlug,_that.startPlaceName,_that.distance,_that.elevationGain,_that.thumbnailUrl,_that.thumbnailLightUrl,_that.thumbnailDarkUrl,_that.groupName,_that.displayDistance,_that.displayElevationGain);case _:
   return null;
 
 }
@@ -256,7 +260,7 @@ return $default(_that.id,_that.title,_that.start,_that.allDay,_that.type,_that.t
 @JsonSerializable()
 
 class _CalendarEventDto implements CalendarEventDto {
-  const _CalendarEventDto({required this.id, required this.title, required this.start, required this.allDay, required this.type, required this.teamSlug, required this.teamName, required this.entitySlug, required this.registered, required this.status, required this.timezone, required this.finished, this.end, this.tripSlug, this.startPlaceName, this.distance, this.elevationGain, this.thumbnailUrl, this.thumbnailLightUrl, this.thumbnailDarkUrl, this.groupName});
+  const _CalendarEventDto({required this.id, required this.title, required this.start, required this.allDay, required this.type, required this.teamSlug, required this.teamName, required this.entitySlug, required this.registered, required this.status, required this.timezone, required this.finished, this.end, this.tripSlug, this.startPlaceName, this.distance, this.elevationGain, this.thumbnailUrl, this.thumbnailLightUrl, this.thumbnailDarkUrl, this.groupName, this.displayDistance, this.displayElevationGain});
   factory _CalendarEventDto.fromJson(Map<String, dynamic> json) => _$CalendarEventDtoFromJson(json);
 
 /// Event ID (TSID)
@@ -301,6 +305,10 @@ class _CalendarEventDto implements CalendarEventDto {
 @override final  String? thumbnailDarkUrl;
 /// Name of the ride group the current user joined. Null when not registered, and always null for trip stages, which have no groups.
 @override final  String? groupName;
+/// The distance in meters an agenda card shows to the caller, as RideDto.displayDistance: for a ride, the route of the group they joined when registered, else the route every group rides, else null (groups on different routes, or no route); for a trip stage, the stage's route. Unlike distance, which is only the ride's own route.
+@override final  double? displayDistance;
+/// The elevation gain in meters an agenda card shows to the caller, from the same route as displayDistance. Null whenever displayDistance is.
+@override final  double? displayElevationGain;
 
 /// Create a copy of CalendarEventDto
 /// with the given fields replaced by the non-null parameter values.
@@ -315,18 +323,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CalendarEventDto&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.start, start) || other.start == start)&&(identical(other.allDay, allDay) || other.allDay == allDay)&&(identical(other.type, type) || other.type == type)&&(identical(other.teamSlug, teamSlug) || other.teamSlug == teamSlug)&&(identical(other.teamName, teamName) || other.teamName == teamName)&&(identical(other.entitySlug, entitySlug) || other.entitySlug == entitySlug)&&(identical(other.registered, registered) || other.registered == registered)&&(identical(other.status, status) || other.status == status)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.finished, finished) || other.finished == finished)&&(identical(other.end, end) || other.end == end)&&(identical(other.tripSlug, tripSlug) || other.tripSlug == tripSlug)&&(identical(other.startPlaceName, startPlaceName) || other.startPlaceName == startPlaceName)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.elevationGain, elevationGain) || other.elevationGain == elevationGain)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&(identical(other.thumbnailLightUrl, thumbnailLightUrl) || other.thumbnailLightUrl == thumbnailLightUrl)&&(identical(other.thumbnailDarkUrl, thumbnailDarkUrl) || other.thumbnailDarkUrl == thumbnailDarkUrl)&&(identical(other.groupName, groupName) || other.groupName == groupName));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CalendarEventDto&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.start, start) || other.start == start)&&(identical(other.allDay, allDay) || other.allDay == allDay)&&(identical(other.type, type) || other.type == type)&&(identical(other.teamSlug, teamSlug) || other.teamSlug == teamSlug)&&(identical(other.teamName, teamName) || other.teamName == teamName)&&(identical(other.entitySlug, entitySlug) || other.entitySlug == entitySlug)&&(identical(other.registered, registered) || other.registered == registered)&&(identical(other.status, status) || other.status == status)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.finished, finished) || other.finished == finished)&&(identical(other.end, end) || other.end == end)&&(identical(other.tripSlug, tripSlug) || other.tripSlug == tripSlug)&&(identical(other.startPlaceName, startPlaceName) || other.startPlaceName == startPlaceName)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.elevationGain, elevationGain) || other.elevationGain == elevationGain)&&(identical(other.thumbnailUrl, thumbnailUrl) || other.thumbnailUrl == thumbnailUrl)&&(identical(other.thumbnailLightUrl, thumbnailLightUrl) || other.thumbnailLightUrl == thumbnailLightUrl)&&(identical(other.thumbnailDarkUrl, thumbnailDarkUrl) || other.thumbnailDarkUrl == thumbnailDarkUrl)&&(identical(other.groupName, groupName) || other.groupName == groupName)&&(identical(other.displayDistance, displayDistance) || other.displayDistance == displayDistance)&&(identical(other.displayElevationGain, displayElevationGain) || other.displayElevationGain == displayElevationGain));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,id,title,start,allDay,type,teamSlug,teamName,entitySlug,registered,status,timezone,finished,end,tripSlug,startPlaceName,distance,elevationGain,thumbnailUrl,thumbnailLightUrl,thumbnailDarkUrl,groupName]);
+    return Object.hashAll([runtimeType,id,title,start,allDay,type,teamSlug,teamName,entitySlug,registered,status,timezone,finished,end,tripSlug,startPlaceName,distance,elevationGain,thumbnailUrl,thumbnailLightUrl,thumbnailDarkUrl,groupName,displayDistance,displayElevationGain]);
 }
 
 @override
 String toString() {
-    return 'CalendarEventDto(id: $id, title: $title, start: $start, allDay: $allDay, type: $type, teamSlug: $teamSlug, teamName: $teamName, entitySlug: $entitySlug, registered: $registered, status: $status, timezone: $timezone, finished: $finished, end: $end, tripSlug: $tripSlug, startPlaceName: $startPlaceName, distance: $distance, elevationGain: $elevationGain, thumbnailUrl: $thumbnailUrl, thumbnailLightUrl: $thumbnailLightUrl, thumbnailDarkUrl: $thumbnailDarkUrl, groupName: $groupName)';
+    return 'CalendarEventDto(id: $id, title: $title, start: $start, allDay: $allDay, type: $type, teamSlug: $teamSlug, teamName: $teamName, entitySlug: $entitySlug, registered: $registered, status: $status, timezone: $timezone, finished: $finished, end: $end, tripSlug: $tripSlug, startPlaceName: $startPlaceName, distance: $distance, elevationGain: $elevationGain, thumbnailUrl: $thumbnailUrl, thumbnailLightUrl: $thumbnailLightUrl, thumbnailDarkUrl: $thumbnailDarkUrl, groupName: $groupName, displayDistance: $displayDistance, displayElevationGain: $displayElevationGain)';
 }
 
 
@@ -337,7 +345,7 @@ abstract mixin class _$CalendarEventDtoCopyWith<$Res> implements $CalendarEventD
   factory _$CalendarEventDtoCopyWith(_CalendarEventDto value, $Res Function(_CalendarEventDto) _then) = __$CalendarEventDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String title, String start, bool allDay, String type, String teamSlug, String teamName, String entitySlug, bool registered, String status, String timezone, bool finished, String? end, String? tripSlug, String? startPlaceName, double? distance, double? elevationGain, String? thumbnailUrl, String? thumbnailLightUrl, String? thumbnailDarkUrl, String? groupName
+ String id, String title, String start, bool allDay, String type, String teamSlug, String teamName, String entitySlug, bool registered, String status, String timezone, bool finished, String? end, String? tripSlug, String? startPlaceName, double? distance, double? elevationGain, String? thumbnailUrl, String? thumbnailLightUrl, String? thumbnailDarkUrl, String? groupName, double? displayDistance, double? displayElevationGain
 });
 
 
@@ -354,7 +362,7 @@ class __$CalendarEventDtoCopyWithImpl<$Res>
 
 /// Create a copy of CalendarEventDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? start = null,Object? allDay = null,Object? type = null,Object? teamSlug = null,Object? teamName = null,Object? entitySlug = null,Object? registered = null,Object? status = null,Object? timezone = null,Object? finished = null,Object? end = freezed,Object? tripSlug = freezed,Object? startPlaceName = freezed,Object? distance = freezed,Object? elevationGain = freezed,Object? thumbnailUrl = freezed,Object? thumbnailLightUrl = freezed,Object? thumbnailDarkUrl = freezed,Object? groupName = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? start = null,Object? allDay = null,Object? type = null,Object? teamSlug = null,Object? teamName = null,Object? entitySlug = null,Object? registered = null,Object? status = null,Object? timezone = null,Object? finished = null,Object? end = freezed,Object? tripSlug = freezed,Object? startPlaceName = freezed,Object? distance = freezed,Object? elevationGain = freezed,Object? thumbnailUrl = freezed,Object? thumbnailLightUrl = freezed,Object? thumbnailDarkUrl = freezed,Object? groupName = freezed,Object? displayDistance = freezed,Object? displayElevationGain = freezed,}) {
   return _then(_CalendarEventDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -377,7 +385,9 @@ as double?,thumbnailUrl: freezed == thumbnailUrl ? _self.thumbnailUrl : thumbnai
 as String?,thumbnailLightUrl: freezed == thumbnailLightUrl ? _self.thumbnailLightUrl : thumbnailLightUrl // ignore: cast_nullable_to_non_nullable
 as String?,thumbnailDarkUrl: freezed == thumbnailDarkUrl ? _self.thumbnailDarkUrl : thumbnailDarkUrl // ignore: cast_nullable_to_non_nullable
 as String?,groupName: freezed == groupName ? _self.groupName : groupName // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,displayDistance: freezed == displayDistance ? _self.displayDistance : displayDistance // ignore: cast_nullable_to_non_nullable
+as double?,displayElevationGain: freezed == displayElevationGain ? _self.displayElevationGain : displayElevationGain // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 

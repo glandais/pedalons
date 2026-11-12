@@ -459,10 +459,7 @@ void main() {
       ),
       findsOne,
     );
-    expect(badges(tester, 'fil-voyage-termine'), <String>[
-      'Voyage',
-      'Terminé',
-    ]);
+    expect(badges(tester, 'fil-voyage-termine'), <String>['Voyage', 'Terminé']);
   });
 
   testWidgets('R1 — la visibilité ne se badge que si elle diffère de celle de '

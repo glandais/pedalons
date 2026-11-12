@@ -29,6 +29,8 @@ _CalendarEventDto _$CalendarEventDtoFromJson(Map<String, dynamic> json) =>
       thumbnailLightUrl: json['thumbnailLightUrl'] as String?,
       thumbnailDarkUrl: json['thumbnailDarkUrl'] as String?,
       groupName: json['groupName'] as String?,
+      displayDistance: (json['displayDistance'] as num?)?.toDouble(),
+      displayElevationGain: (json['displayElevationGain'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$CalendarEventDtoToJson(_CalendarEventDto instance) =>
@@ -54,4 +56,6 @@ Map<String, dynamic> _$CalendarEventDtoToJson(_CalendarEventDto instance) =>
       'thumbnailLightUrl': instance.thumbnailLightUrl,
       'thumbnailDarkUrl': instance.thumbnailDarkUrl,
       'groupName': instance.groupName,
+      'displayDistance': instance.displayDistance,
+      'displayElevationGain': instance.displayElevationGain,
     };

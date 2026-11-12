@@ -1148,6 +1148,16 @@
             "description" : "IANA zone of the ride or stage, as RideDto.timezone / TripStageDto.timezone: start and end are rendezvous in it. The calendar grid itself stays in the reader's zone.",
             "examples" : [ "Europe/Paris" ]
           },
+          "displayDistance" : {
+            "type" : "number",
+            "format" : "float",
+            "description" : "The distance in meters an agenda card shows to the caller, as RideDto.displayDistance: for a ride, the route of the group they joined when registered, else the route every group rides, else null (groups on different routes, or no route); for a trip stage, the stage's route. Unlike distance, which is only the ride's own route."
+          },
+          "displayElevationGain" : {
+            "type" : "number",
+            "format" : "float",
+            "description" : "The elevation gain in meters an agenda card shows to the caller, from the same route as displayDistance. Null whenever displayDistance is."
+          },
           "finished" : {
             "type" : "boolean",
             "description" : "Whether the ride or stage is over, computed by the server when the response is built: its end (or its start, when it has no end) has passed. Independent of status."
@@ -5020,6 +5030,16 @@
             "description" : "Surface type, from the same route as distance. Null when no route is set anywhere.",
             "type" : "string",
             "$ref" : "#/components/schemas/SurfaceType"
+          },
+          "displayDistance" : {
+            "type" : "number",
+            "format" : "float",
+            "description" : "The distance in meters a card shows to the caller, computed by the server: the route of the group they joined when they are registered (its own, else the ride's); otherwise the route every group of the ride rides (the ride's own when it has no group); otherwise null — groups on different routes and caller not registered, or no route at all. Anonymous and non-member callers get the not-registered answer. Same value on list rows and on the detail; clients show it as is instead of choosing between distance, registeredGroup.distance and the groups'."
+          },
+          "displayElevationGain" : {
+            "type" : "number",
+            "format" : "float",
+            "description" : "The elevation gain in meters a card shows to the caller, from the same route as displayDistance. Null whenever displayDistance is."
           },
           "startPlace" : {
             "description" : "Start place",
@@ -25711,7 +25731,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "14.5.0",
+    "version" : "14.6.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

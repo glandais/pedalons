@@ -80,11 +80,11 @@ sealed class PublicationDto with _$PublicationDto {
     /// Every group of the ride in sort order, as a card shows it: name, pace, start time and fill (countParticipants against maxParticipants). Filled on list rows too, where groups is empty — a card draws its per-group fill bars without opening the ride. Carries no leader nor participants: those are on groups, in the detail.
     required List<RideGroupSummaryDto> groupSummaries,
 
+    /// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
+    required List<PublicUserDto> topParticipants,
+
     /// The team's RIDE tags the ride carries, sorted by label. Empty when it carries none.
     required List<TagDto> tags,
-
-    /// Whether the ride is soft-deleted
-    required bool deleted,
 
     /// Whether the current user is registered in one of this ride's groups. False if anonymous.
     required bool registered,
@@ -92,11 +92,17 @@ sealed class PublicationDto with _$PublicationDto {
     /// What the caller may do with the ride: edit, delete, register, comment, see who rides. allowedVisibilities is only on the detail.
     required ContentPermissionsDto permissions,
 
-    /// Preview of first participants (max 5). Always empty for a caller who is not a member of the team (member names are never sent to anyone else): the count stays.
-    required List<PublicUserDto> topParticipants,
+    /// Whether the ride is soft-deleted
+    required bool deleted,
 
     /// Surface type, from the same route as distance. Null when no route is set anywhere.
     String? surfaceType,
+
+    /// The distance in meters a card shows to the caller, computed by the server: the route of the group they joined when they are registered (its own, else the ride's); otherwise the route every group of the ride rides (the ride's own when it has no group); otherwise null — groups on different routes and caller not registered, or no route at all. Anonymous and non-member callers get the not-registered answer. Same value on list rows and on the detail; clients show it as is instead of choosing between distance, registeredGroup.distance and the groups'.
+    double? displayDistance,
+
+    /// The elevation gain in meters a card shows to the caller, from the same route as displayDistance. Null whenever displayDistance is.
+    double? displayElevationGain,
 
     /// Start place
     PlaceDetailDto? startPlace,
@@ -104,11 +110,11 @@ sealed class PublicationDto with _$PublicationDto {
     /// End place
     PlaceDetailDto? endPlace,
 
-    /// Total elevation gain in meters, from the same route as distance. Null when no route is set anywhere.
-    double? elevationGain,
+    /// Distance in meters of the ride's route — or, when the ride itself has none, of the route of its first group (in sort order) that has one. Null when no route is set anywhere.
+    double? distance,
 
-    /// Creation timestamp
-    String? createdAt,
+    /// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
+    String? thumbnailLightUrl,
 
     /// Thumbnail URL (dark). Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailDarkUrl,
@@ -116,8 +122,8 @@ sealed class PublicationDto with _$PublicationDto {
     /// The one thumbnail to show when the client does not theme its cards: the light variant if there is one, else the dark one. Saves a compact row from carrying media.assets just to find a picture. Opaque URL: may carry a query string; substitute {size} only.
     String? thumbnailUrl,
 
-    /// Route slug
-    String? routeSlug,
+    /// Creation timestamp
+    String? createdAt,
 
     /// Publication timestamp
     String? publishAt,
@@ -128,8 +134,8 @@ sealed class PublicationDto with _$PublicationDto {
     /// The group the current user joined, in full — the same object as the matching entry of groups. Null if not registered or anonymous. Set on list rows too, where groups is empty: a client rendering "my next ride" needs no second request for its group. Its leader is the group's own, null when none was designated.
     RideGroupDto? registeredGroup,
 
-    /// Thumbnail URL (light). Opaque URL: may carry a query string; substitute {size} only.
-    String? thumbnailLightUrl,
+    /// Route slug
+    String? routeSlug,
 
     /// Capacity of the whole ride: the sum of its groups' maxParticipants, to render participantCount against it ("12/40"). Null when the ride has no group, or when at least one group has no maxParticipants — the ride then has no overall limit, and is never full. Set on list rows too, where groups is empty.
     int? maxParticipants,
@@ -146,8 +152,8 @@ sealed class PublicationDto with _$PublicationDto {
     /// Where the ride's own route (the one of routeSlug) stands at each of the caller's GPS services whose automatic sync is on and which hold it, sorted by service — each group's route is on the group. Only ever about the caller's own connections. Absent when there is none: anonymous caller, no such service, no route.
     List<RouteGpsSyncStatusDto>? gpsSyncStatuses,
 
-    /// Distance in meters of the ride's route — or, when the ride itself has none, of the route of its first group (in sort order) that has one. Null when no route is set anywhere.
-    double? distance,
+    /// Total elevation gain in meters, from the same route as distance. Null when no route is set anywhere.
+    double? elevationGain,
   }) = PublicationDtoRide;
 
   @FreezedUnionValue('POST')

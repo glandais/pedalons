@@ -87,6 +87,18 @@ export const GetEventsResponse = zod
               .describe(
                 "IANA zone of the ride or stage, as RideDto.timezone / TripStageDto.timezone: start and end are rendezvous in it. The calendar grid itself stays in the reader's zone."
               ),
+            displayDistance: zod
+              .number()
+              .optional()
+              .describe(
+                "The distance in meters an agenda card shows to the caller, as RideDto.displayDistance: for a ride, the route of the group they joined when registered, else the route every group rides, else null (groups on different routes, or no route); for a trip stage, the stage's route. Unlike distance, which is only the ride's own route."
+              ),
+            displayElevationGain: zod
+              .number()
+              .optional()
+              .describe(
+                'The elevation gain in meters an agenda card shows to the caller, from the same route as displayDistance. Null whenever displayDistance is.'
+              ),
             finished: zod
               .boolean()
               .describe(
@@ -223,6 +235,18 @@ export const GetTeamEventsResponse = zod
               .string()
               .describe(
                 "IANA zone of the ride or stage, as RideDto.timezone / TripStageDto.timezone: start and end are rendezvous in it. The calendar grid itself stays in the reader's zone."
+              ),
+            displayDistance: zod
+              .number()
+              .optional()
+              .describe(
+                "The distance in meters an agenda card shows to the caller, as RideDto.displayDistance: for a ride, the route of the group they joined when registered, else the route every group rides, else null (groups on different routes, or no route); for a trip stage, the stage's route. Unlike distance, which is only the ride's own route."
+              ),
+            displayElevationGain: zod
+              .number()
+              .optional()
+              .describe(
+                'The elevation gain in meters an agenda card shows to the caller, from the same route as displayDistance. Null whenever displayDistance is.'
               ),
             finished: zod
               .boolean()

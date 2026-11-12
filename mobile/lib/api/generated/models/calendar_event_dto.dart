@@ -77,6 +77,12 @@ abstract class CalendarEventDto with _$CalendarEventDto {
 
     /// Name of the ride group the current user joined. Null when not registered, and always null for trip stages, which have no groups.
     String? groupName,
+
+    /// The distance in meters an agenda card shows to the caller, as RideDto.displayDistance: for a ride, the route of the group they joined when registered, else the route every group rides, else null (groups on different routes, or no route); for a trip stage, the stage's route. Unlike distance, which is only the ride's own route.
+    double? displayDistance,
+
+    /// The elevation gain in meters an agenda card shows to the caller, from the same route as displayDistance. Null whenever displayDistance is.
+    double? displayElevationGain,
   }) = _CalendarEventDto;
 
   factory CalendarEventDto.fromJson(Map<String, Object?> json) =>

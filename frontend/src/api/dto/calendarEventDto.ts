@@ -46,6 +46,10 @@ export interface CalendarEventDto {
   status: Status
   /** IANA zone of the ride or stage, as RideDto.timezone / TripStageDto.timezone: start and end are rendezvous in it. The calendar grid itself stays in the reader's zone. */
   timezone: string
+  /** The distance in meters an agenda card shows to the caller, as RideDto.displayDistance: for a ride, the route of the group they joined when registered, else the route every group rides, else null (groups on different routes, or no route); for a trip stage, the stage's route. Unlike distance, which is only the ride's own route. */
+  displayDistance?: number
+  /** The elevation gain in meters an agenda card shows to the caller, from the same route as displayDistance. Null whenever displayDistance is. */
+  displayElevationGain?: number
   /** Whether the ride or stage is over, computed by the server when the response is built: its end (or its start, when it has no end) has passed. Independent of status. */
   finished: boolean
 }
