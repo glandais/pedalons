@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/lists/list_states.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
@@ -174,8 +175,17 @@ class _TeamAgendaPageState extends State<TeamAgendaPage> {
             ? PublicationWhen.past
             : PublicationWhen.upcoming,
         participating: _scope == AgendaScope.participating,
-        onClearParticipating: () =>
-            setState(() => _scope = AgendaScope.upcoming),
+        // « Je participe » et « Passées » sont des filtres : le vide filtré
+        // les nomme, et « Effacer les filtres » ramène à « À venir » (règle
+        // RL10).
+        periodFilterLabel: switch (_scope) {
+          AgendaScope.upcoming => null,
+          AgendaScope.participating => 'teams.agenda.scope.participating'.tr(),
+          AgendaScope.past => 'teams.agenda.scope.past'.tr(),
+        },
+        onClearPeriod: () => setState(() => _scope = AgendaScope.upcoming),
+        filteredTitleKey: 'lists.emptyFiltered.agenda',
+        itemNounKey: 'lists.noun.agenda',
         searchHint: 'teams.agenda.searchPlaceholder'.tr(),
         countLabel: (int total) => agendaCountLabel(_scope, _type, total),
         emptyMessage: 'teams.agenda.empty.title'.tr(),
@@ -281,7 +291,8 @@ class _TeamAgendaPageState extends State<TeamAgendaPage> {
 }
 
 /// « 5 sorties et voyages à venir », selon la période et le type — les mêmes
-/// neuf tournures qu'au site (`list.count.agenda*`).
+/// neuf tournures qu'au site (`list.count.agenda*`), le nombre formaté
+/// (règle RL8).
 String agendaCountLabel(AgendaScope scope, PublicationType? type, int total) {
   final String period = switch (scope) {
     AgendaScope.upcoming => 'upcoming',
@@ -293,5 +304,5 @@ String agendaCountLabel(AgendaScope scope, PublicationType? type, int total) {
     PublicationType.trip => 'trips',
     _ => 'all',
   };
-  return 'teams.agenda.count.$period.$kind'.plural(total);
+  return listCountLabel('teams.agenda.count.$period.$kind', total);
 }

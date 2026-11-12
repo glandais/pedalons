@@ -41,6 +41,10 @@ class CommentThreadNotifier extends PagedListNotifier<CommentDto> {
       _target,
       page: page,
       size: pageSize,
+      // Du plus ancien au plus récent, comme le site (règle RL5 des listes) :
+      // une conversation se lit dans l'ordre. C'est le défaut du serveur,
+      // demandé quand même pour ne pas en dépendre.
+      sort: SortDirection.asc,
     );
     return PageResult<CommentDto>(
       items: response.items,

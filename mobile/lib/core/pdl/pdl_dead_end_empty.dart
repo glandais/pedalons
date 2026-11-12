@@ -34,6 +34,7 @@ class PdlDeadEndEmpty extends StatelessWidget {
     required this.resetAllLabel,
     required this.onResetAll,
     this.icon = PdlIcons.emptySearch,
+    this.resetAllKey,
     this.removeFilterLabel,
     this.onRemoveFilter,
     this.previewTitle,
@@ -54,6 +55,9 @@ class PdlDeadEndEmpty extends StatelessWidget {
 
   final String resetAllLabel;
   final VoidCallback onResetAll;
+
+  /// La clé du bouton de [resetAllLabel], pour les tests qui le touchent.
+  final Key? resetAllKey;
 
   final IconData icon;
 
@@ -119,6 +123,7 @@ class PdlDeadEndEmpty extends StatelessWidget {
                   onPressed: onRemoveFilter,
                 ),
               PdlButton(
+                key: resetAllKey,
                 label: resetAllLabel,
                 variant: PdlButtonVariant.outline,
                 onPressed: onResetAll,

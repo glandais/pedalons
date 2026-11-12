@@ -7,7 +7,7 @@ import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
-import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/lists/list_states.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
@@ -117,18 +117,9 @@ class _ParticipantListViewState extends ConsumerState<ParticipantListView> {
             child: Center(child: CircularProgressIndicator.adaptive()),
           )
         else if (state.initialError != null)
-          PdlEmptyState(
-            variant: PdlEmptyVariant.error,
-            title: 'common.loadError'.tr(),
-            message: getErrorMessage(state.initialError!),
-            actions: <Widget>[
-              PdlButton(
-                label: 'common.retry'.tr(),
-                variant: PdlButtonVariant.outline,
-                size: PdlButtonSize.sm,
-                onPressed: notifier.loadFirstPage,
-              ),
-            ],
+          ListLoadError(
+            error: state.initialError!,
+            onRetry: notifier.loadFirstPage,
           )
         else if (state.items.isEmpty && _search.isEmpty)
           PdlEmptyState(
@@ -137,19 +128,10 @@ class _ParticipantListViewState extends ConsumerState<ParticipantListView> {
             message: widget.emptyMessageKey.tr(),
           )
         else if (state.items.isEmpty)
-          PdlEmptyState(
-            variant: PdlEmptyVariant.filtered,
-            title: 'participants.noMatchTitle'.tr(),
-            message: 'participants.noMatchMessage'.tr(
-              namedArgs: <String, String>{'search': _search},
-            ),
-            actions: <Widget>[
-              PdlButton(
-                label: 'common.clearSearch'.tr(),
-                variant: PdlButtonVariant.outline,
-                onPressed: () => setState(() => _search = ''),
-              ),
-            ],
+          ListFilteredEmpty(
+            title: 'lists.emptyFiltered.participants'.tr(),
+            filters: <String>[quotedSearch(_search)],
+            onClear: () => setState(() => _search = ''),
           )
         else ...<Widget>[
           for (final PublicUserDto person in state.items)

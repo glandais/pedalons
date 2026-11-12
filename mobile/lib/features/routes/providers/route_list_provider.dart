@@ -6,6 +6,7 @@ import '../../../api/generated/export.dart';
 import '../../../core/pagination/pagination.dart';
 import '../../../core/pdl/map/pdl_map_controller.dart';
 import '../../../core/preferences/user_preferences_provider.dart';
+import '../../teams/providers/team_providers.dart';
 import '../data/route_repository.dart';
 import '../domain/route_filters.dart';
 
@@ -17,9 +18,20 @@ import '../domain/route_filters.dart';
 /// équipe. La portée *choisie*, elle, vit dans `RouteFilters.teamSlug`, ce qui
 /// la fait participer à la clé de liste — changer d'équipe crée un jeu de
 /// résultats neuf, comme n'importe quel autre filtre.
+///
+/// **Explorer s'ouvre sur « Membre »** — mes équipes —, ou sur toutes les
+/// équipes pour qui n'en a aucune, comme le fil d'accueil et le site (règle
+/// RL1 des listes, KIT §10) : sans rôle, `GET /api/routes` rend aussi le
+/// contenu public des équipes publiques. La section d'une équipe n'a pas de
+/// portée à choisir.
 final routeFiltersProvider = StateProvider.autoDispose
     .family<RouteFilters, String?>(
-      (ref, teamSlug) => RouteFilters(teamSlug: teamSlug),
+      (ref, teamSlug) => RouteFilters(
+        teamSlug: teamSlug,
+        minRole: teamSlug == null
+            ? ref.watch(membershipDefaultScopeProvider)
+            : null,
+      ),
     );
 
 /// The paginated route list for one filter set.

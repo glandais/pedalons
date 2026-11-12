@@ -9,13 +9,13 @@ import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
-import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/lists/list_states.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../providers/my_teams_list_provider.dart';
 import '../../providers/team_providers.dart';
 import '../widgets/pending_invitations_card.dart';
 import '../widgets/team_discovery_card.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
+import '../team_list_labels.dart';
 import '../../../../keys.dart';
 
 /// The teams the user belongs to.
@@ -145,18 +145,10 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
       // (« Équipe indisponible ») : c'est la liste qui n'a pas chargé.
       return Center(
         child: SingleChildScrollView(
-          child: PdlEmptyState(
+          child: ListLoadError(
             key: keys.teams.loadError,
-            variant: PdlEmptyVariant.error,
-            title: 'common.loadError'.tr(),
-            message: getErrorMessage(error),
-            actions: [
-              PdlButton(
-                label: 'common.retry'.tr(),
-                onPressed: notifier.loadFirstPage,
-              ),
-              ReportProblemButton(error: error),
-            ],
+            error: error,
+            onRetry: notifier.loadFirstPage,
           ),
         ),
       );
@@ -170,36 +162,31 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
     if (state.isEmpty) {
       return PdlRefresh(
         onRefresh: () => _refresh(notifier),
-        child: ListView(
-          children: [
-            if (_query == null)
-              PdlEmptyState(
-                variant: PdlEmptyVariant.empty,
-                icon: PdlIcons.team,
-                title: 'teams.empty'.tr(),
-                message: 'teams.joinPrompt'.tr(),
-                actions: [
-                  PdlButton(
-                    label: 'teams.discover'.tr(),
-                    icon: PdlIcons.search,
-                    onPressed: _openDiscover,
-                  ),
-                ],
-              )
-            else
-              PdlEmptyState(
-                variant: PdlEmptyVariant.filtered,
-                title: 'teams.searchEmpty.title'.tr(),
-                message: 'teams.searchEmpty.message'.tr(
-                  namedArgs: {'search': _query ?? ''},
-                ),
-                actions: [
-                  PdlButton(
-                    label: 'teams.search.clear'.tr(),
-                    onPressed: _clearSearch,
-                  ),
-                ],
-              ),
+        child: CustomScrollView(
+          slivers: <Widget>[
+            ListStateSliver(
+              child: _query == null
+                  ? PdlEmptyState(
+                      variant: PdlEmptyVariant.empty,
+                      icon: PdlIcons.team,
+                      title: 'teams.empty'.tr(),
+                      message: 'teams.joinPrompt'.tr(),
+                      actions: [
+                        PdlButton(
+                          label: 'teams.discover'.tr(),
+                          icon: PdlIcons.search,
+                          variant: PdlButtonVariant.outline,
+                          size: PdlButtonSize.sm,
+                          onPressed: _openDiscover,
+                        ),
+                      ],
+                    )
+                  : ListFilteredEmpty(
+                      title: 'lists.emptyFiltered.teams'.tr(),
+                      filters: <String>[quotedSearch(_query!)],
+                      onClear: _clearSearch,
+                    ),
+            ),
           ],
         ),
       );
@@ -211,41 +198,47 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
     // R12, KIT §9) : bandeau, extrait sur deux lignes, membres et rôle réel.
     // Toucher la carte ouvre l'équipe ; une équipe dont on est membre n'a
     // pas d'autre action.
-    // Paginée comme Découvrir : au-delà de la première page, le pied dit
-    // « 20 équipes sur 34 » et la suite se charge au défilement.
+    // Paginée comme Découvrir : le compteur dit le total et l'ordre
+    // (« 5 équipes · triées par nom », règles RL5 et RL8), le pied « 20
+    // équipes sur 34 », et la suite se charge au défilement.
     return PdlRefresh(
       onRefresh: () => _refresh(notifier),
       child: ListView.separated(
-        padding: const EdgeInsets.all(PdlSpacing.section),
-        itemCount: visible.length + 1,
-        separatorBuilder: (_, _) =>
-            const SizedBox(height: PdlSpacing.teamCardGap),
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, PdlSpacing.section),
+        itemCount: visible.length + 2,
+        separatorBuilder: (_, int index) => SizedBox(
+          height: index == 0 ? PdlSpacing.chipGap : PdlSpacing.teamCardGap,
+        ),
         itemBuilder: (BuildContext context, int index) {
-          if (index == visible.length) {
-            return PdlPagedListFooter(
-              isLoadingNext: state.isLoadingNext,
-              hasMore: state.hasMore,
-              isEmpty: visible.isEmpty,
-              hasError: state.nextError != null,
-              onRetry: notifier.retryNextPage,
-              progressLabel: pagedProgressNamed(
-                'teams.discovery.noun',
-                visible.length,
-                total,
-              ),
-              loadingLabel: 'pagination.loadingMore'.tr(),
-              endLabel: 'pagination.endOfList'.tr(),
-              errorLabel: 'pagination.nextPageError'.tr(),
-              retryLabel: 'common.retry'.tr(),
+          if (index == 0) {
+            return ListResultCount(
+              teamListCountLabel(total, TeamSortBy.name),
+              textKey: keys.teams.resultCount,
             );
           }
-          notifier.onItemBuilt(index);
-          final TeamDetailDto team = visible[index];
-          return TeamDiscoveryCard(
-            key: keys.teams.teamCard(team.slug),
-            team: team,
-            visibilityKey: keys.teams.teamCardVisibility(team.slug),
-            roleKey: keys.teams.teamCardRole(team.slug),
+          final int i = index - 1;
+          if (i == visible.length) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: PdlSpacing.section,
+              ),
+              child: PagedListFooter(
+                state: state,
+                onRetry: notifier.retryNextPage,
+                itemNounKey: 'teams.discovery.noun',
+              ),
+            );
+          }
+          notifier.onItemBuilt(i);
+          final TeamDetailDto team = visible[i];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
+            child: TeamDiscoveryCard(
+              key: keys.teams.teamCard(team.slug),
+              team: team,
+              visibilityKey: keys.teams.teamCardVisibility(team.slug),
+              roleKey: keys.teams.teamCardRole(team.slug),
+            ),
           );
         },
       ),

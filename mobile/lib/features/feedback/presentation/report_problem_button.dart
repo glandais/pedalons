@@ -6,7 +6,9 @@ import '../../../core/logging/client_error.dart';
 import '../../../core/pdl/pdl.dart';
 import 'feedback_sheet.dart';
 
-/// « Signaler ce problème », sous le « Réessayer » d'un écran d'erreur.
+/// « Signaler un problème », sous le « Réessayer » d'un écran d'erreur — le
+/// même libellé que l'entrée du profil et que la feuille qu'il ouvre (règle
+/// RL11 des listes).
 ///
 /// La feuille s'ouvre avec l'erreur jointe. **Rien quand on est hors ligne**
 /// ou quand l'objet n'existe pas : le premier ne se signale pas (et le
@@ -25,7 +27,7 @@ class ReportProblemButton extends StatelessWidget {
     final Object? error = this.error;
     if (error != null && !isReportable(error)) return const SizedBox.shrink();
     return PdlButton(
-      label: 'feedback.reportThis'.tr(),
+      label: 'feedback.reportProblem'.tr(),
       variant: PdlButtonVariant.text,
       onPressed: () => showFeedbackSheet(
         context,

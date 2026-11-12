@@ -5,16 +5,18 @@ import '../pdl/pdl_paged_list_footer.dart';
 import '../utils/formatters.dart';
 import 'paged_list_state.dart';
 
-/// Foot of an infinitely scrolled list.
+/// Foot of an infinitely scrolled list — **the only one** of the app (règle
+/// RL12 des listes, KIT §10) : « 20 annonces sur 2 585 · chargement de la
+/// suite… », puis « 47 annonces sur 47 · Vous avez tout vu ».
 ///
 /// Façade **traduite** au-dessus de [PdlPagedListFooter] (B9) : le rendu, lui,
 /// vit dans `core/pdl`, qui ne traduit rien. Ce qui reste ici est la lecture du
 /// [PagedListState] et les clés de localisation.
 ///
-/// Le compteur porte **toujours le total** (« 8 participants sur 40 ») : un
-/// « Chargement… » nu ne dit ni où on en est, ni combien il reste. Le total
-/// vient de [PagedListState.total], renvoyé par le serveur avec la première
-/// page ; tant qu'il manque, seul le nombre chargé est affiché.
+/// Le compteur porte **toujours le total et le nom** de ce qui est compté
+/// ([itemNounKey]) : un « Chargement… » nu ne dit ni où on en est, ni combien
+/// il reste, et un « 8 sur 40 » sans nom ne dit pas de quoi. Le total vient de
+/// [PagedListState.total], renvoyé par le serveur avec la première page.
 class PagedListFooter extends StatelessWidget {
   final PagedListState<Object?> state;
   final VoidCallback onRetry;
@@ -25,40 +27,20 @@ class PagedListFooter extends StatelessWidget {
 
   /// Clé de traduction du nom de ce qui est compté, à formes `one`/`other` —
   /// accordé au nombre chargé : « 1 personne sur 1 », « 8 personnes sur 40 »
-  /// (docs/LEDGER_*.md MOB-139, N7). Absent, le compteur reste « 8 sur 40 ».
-  final String? itemNounKey;
+  /// (docs/LEDGER_*.md MOB-139, N7).
+  final String itemNounKey;
 
   const PagedListFooter({
     super.key,
     required this.state,
     required this.onRetry,
+    required this.itemNounKey,
     this.skeleton,
-    this.itemNounKey,
   });
-
-  String _progressLabel() {
-    final int loaded = state.items.length;
-    final int? total = state.total;
-    if (total == null) {
-      return 'pagination.loaded'.tr(
-        namedArgs: <String, String>{
-          'loaded': AppFormatters.formatNumber(loaded),
-        },
-      );
-    }
-    if (itemNounKey == null) {
-      return 'pagination.progress'.tr(
-        namedArgs: <String, String>{
-          'loaded': AppFormatters.formatNumber(loaded),
-          'total': AppFormatters.formatNumber(total),
-        },
-      );
-    }
-    return pagedProgressNamed(itemNounKey!, loaded, total);
-  }
 
   @override
   Widget build(BuildContext context) {
+    final int loaded = state.items.length;
     return PdlPagedListFooter(
       isLoadingNext: state.isLoadingNext,
       hasMore: state.hasMore,
@@ -66,7 +48,11 @@ class PagedListFooter extends StatelessWidget {
       hasError: state.nextError != null,
       onRetry: onRetry,
       skeleton: skeleton,
-      progressLabel: _progressLabel(),
+      progressLabel: pagedProgressNamed(
+        itemNounKey,
+        loaded,
+        state.total ?? loaded,
+      ),
       loadingLabel: 'pagination.loadingMore'.tr(),
       endLabel: 'pagination.endOfList'.tr(),
       errorLabel: 'pagination.nextPageError'.tr(),

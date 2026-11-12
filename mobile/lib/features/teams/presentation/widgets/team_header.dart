@@ -13,6 +13,7 @@ import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/share_link.dart';
 import '../../providers/team_membership_controller.dart';
 import '../../providers/team_providers.dart';
@@ -251,12 +252,16 @@ class _Identity extends StatelessWidget {
                           _ => PdlIcons.visibilityTeam,
                         },
                       ),
-                      if (team.role != null) ...<Widget>[
+                      // Le rôle réel (« Organisateur »), comme les cartes de
+                      // « Mes équipes » et l'en-tête du site — pas un
+                      // « Membre » générique, faux pour une organisatrice.
+                      if (team.role case final String role) ...<Widget>[
                         const SizedBox(width: PdlSpacing.badgeGap),
                         Flexible(
                           child: PdlBadge(
-                            label: 'teams.discovery.memberBadge'.tr(),
-                            tone: PdlDerivedTones.registered(c),
+                            key: keys.team.headerRole,
+                            label: AppFormatters.roleName(role),
+                            tone: TeamRole.fromJson(role).tone(c),
                           ),
                         ),
                       ],

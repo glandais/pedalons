@@ -177,8 +177,10 @@ void main() {
       filters: const AdFilters(teamSlug: 'n-peloton', search: 'gravel'),
     );
 
-    expect(find.textContaining('gravel'), findsWidgets);
-    expect(find.text('Tout réinitialiser'), findsOneWidget);
+    // RL10 : le titre nomme ce qui manque, le message nomme les filtres.
+    expect(find.text('Aucune annonce pour ces filtres'), findsOneWidget);
+    expect(find.text('Rien ne correspond à : « gravel ».'), findsOneWidget);
+    expect(find.text('Effacer les filtres'), findsOneWidget);
     // La suggestion « Retirer le filtre X » exigerait un compte par filtre
     // levé à chaque frappe, que l'app ne demande pas : elle est absente.
     expect(find.textContaining('Retirer le filtre'), findsNothing);
@@ -190,7 +192,7 @@ void main() {
     await openAds(tester, repository: _StubAdRepository(total: 0));
 
     expect(find.text('Aucune annonce'), findsOneWidget);
-    expect(find.text('Tout réinitialiser'), findsNothing);
+    expect(find.text('Effacer les filtres'), findsNothing);
   });
 
   testWidgets('le mode sombre rend le même écran', (WidgetTester tester) async {
@@ -252,8 +254,10 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Erreur de chargement'), findsNothing);
+    expect(find.text('Chargement impossible'), findsNothing);
     expect(find.text('Réessayer'), findsNothing);
+    // RL11 : un refus a une issue.
+    expect(find.text('À propos de l\'équipe'), findsOneWidget);
   });
 
   testWidgets('une panne reste une erreur, avec « Réessayer »', (
@@ -271,8 +275,44 @@ void main() {
       ),
     );
 
-    expect(find.text('Erreur de chargement'), findsOneWidget);
+    // RL11 : la forme commune d'une panne du serveur.
+    expect(find.text('Chargement impossible'), findsOneWidget);
+    expect(
+      find.text('Le serveur n\'a pas pu répondre. Réessayez dans un instant.'),
+      findsOneWidget,
+    );
     expect(find.text('Réessayer'), findsOneWidget);
+    expect(find.text('Signaler un problème'), findsOneWidget);
     expect(find.text('Réservées aux membres'), findsNothing);
+  });
+
+  testWidgets('RL11 — une coupure dit « Pas de connexion », sans rubrique '
+      'désactivée ni signalement', (WidgetTester tester) async {
+    await openAds(
+      tester,
+      repository: _StubAdRepository(
+        error: DioException(
+          requestOptions: RequestOptions(path: '/api/classifieds'),
+          type: DioExceptionType.connectionError,
+        ),
+      ),
+    );
+
+    expect(find.text('Pas de connexion'), findsOneWidget);
+    expect(
+      find.text('Vérifiez votre connexion internet, puis réessayez.'),
+      findsOneWidget,
+    );
+    expect(find.text('Réessayer'), findsOneWidget);
+    expect(find.text('Signaler un problème'), findsNothing);
+    expect(find.textContaining('rubrique'), findsNothing);
+  });
+
+  testWidgets('RL7 — l\'invite de recherche finit par « … »', (
+    WidgetTester tester,
+  ) async {
+    await openAds(tester, repository: _StubAdRepository());
+
+    expect(find.text('Rechercher une annonce…'), findsOneWidget);
   });
 }

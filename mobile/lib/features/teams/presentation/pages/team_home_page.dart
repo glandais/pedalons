@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/lists/list_states.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_tokens.dart';
@@ -259,6 +260,9 @@ class _TeamSectionScaffold extends ConsumerWidget {
           typeOptions: const <PublicationType?>[],
           selectedType: PublicationType.post,
           searchHint: 'teams.posts.searchPlaceholder'.tr(),
+          // Un compteur sur chaque liste paginée (règle RL8).
+          countLabel: (int total) =>
+              listCountLabel('home.publicationCount', total),
           emptyMessage: 'teams.posts.empty'.tr(),
           emptyHint: 'teams.posts.emptyHint'.tr(),
         ),
@@ -301,6 +305,7 @@ class _TeamSectionScaffold extends ConsumerWidget {
                 team.role == 'ADMIN' ||
                 platformAdmin ||
                 team.enableMemberDirectory,
+            searchesEmail: team.role == 'ADMIN' || platformAdmin,
           ),
         ),
       ),

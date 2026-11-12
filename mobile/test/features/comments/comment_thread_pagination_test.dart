@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/auth/data/auth_repository.dart';
 import 'package:pedalons/features/auth/data/secure_storage.dart';
 import 'package:pedalons/features/auth/domain/auth_state.dart';
@@ -39,6 +40,7 @@ class _StubCommentRepository implements CommentRepository {
 
   final int count;
   final List<int> pagesAsked = <int>[];
+  final List<SortDirection?> sortsAsked = <SortDirection?>[];
 
   @override
   Future<CommentListResponse> list(
@@ -49,6 +51,7 @@ class _StubCommentRepository implements CommentRepository {
     SortDirection? sort,
   }) async {
     pagesAsked.add(page);
+    sortsAsked.add(sort);
     final int start = page * size;
     final int end = (start + size).clamp(0, count);
     return CommentListResponse(
@@ -198,5 +201,49 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(repository.pagesAsked, <int>[0, 1, 2]);
+  });
+
+  // Règle RL5 des listes : une conversation se lit dans l'ordre. Le fil
+  // demande le plus ancien d'abord et le rend dans l'ordre servi.
+  testWidgets('le fil demande le plus ancien d\'abord, et le rend ainsi', (
+    WidgetTester tester,
+  ) async {
+    final _StubCommentRepository repository = await openThread(
+      tester,
+      count: 3,
+    );
+
+    expect(repository.sortsAsked, <SortDirection?>[SortDirection.asc]);
+    final double first = tester
+        .getTopLeft(
+          find.byKey(keys.comments.comment('c0'), skipOffstage: false),
+        )
+        .dy;
+    final double last = tester
+        .getTopLeft(
+          find.byKey(keys.comments.comment('c2'), skipOffstage: false),
+        )
+        .dy;
+    expect(first, lessThan(last));
+  });
+
+  // Règle RL12 : « Afficher plus de commentaires », le même libellé que le
+  // site, et le compte formaté.
+  testWidgets('« Afficher plus de commentaires », compte formaté', (
+    WidgetTester tester,
+  ) async {
+    await openThread(tester, count: 1200);
+
+    expect(
+      find.text('Afficher plus de commentaires', skipOffstage: false),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(
+        '${AppFormatters.formatNumber(1200)}\u00a0commentaires',
+        skipOffstage: false,
+      ),
+      findsOneWidget,
+    );
   });
 }

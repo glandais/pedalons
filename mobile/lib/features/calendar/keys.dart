@@ -28,6 +28,9 @@ class CalendarKeys {
 
   final nextMonthButton = const _CalendarKey('nextMonthButton');
 
+  /// « Aucun événement pour ces filtres », quand le mois en a (règle RL10).
+  final filteredEmptyState = const _CalendarKey('filteredEmptyState');
+
   /// Le bloc d'abonnement : copier, régénérer, et le bandeau d'issue.
   final subscriptionCopyButton = const _CalendarKey('subscriptionCopyButton');
   final subscriptionNotice = const _CalendarKey('subscriptionNotice');

@@ -667,9 +667,16 @@ void main() {
         sections.map((TeamSection s) => s.kind),
         contains(TeamSectionKind.members),
       );
-      // Les annonces restent aux membres.
+      // Les annonces aussi, comme au site : la plateforme modère (DL24 de
+      // l'audit des listes, ledger `MOB-143`). Ce test codait l'inverse.
       expect(
         sections.map((TeamSection s) => s.kind),
+        contains(TeamSectionKind.ads),
+      );
+      // Une personne ni membre ni administratrice de la plateforme ne les a
+      // pas.
+      expect(
+        buildTeamSections(fixtureTeam()).map((TeamSection s) => s.kind),
         isNot(contains(TeamSectionKind.ads)),
       );
     });

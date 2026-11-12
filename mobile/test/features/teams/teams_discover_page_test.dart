@@ -136,13 +136,32 @@ void main() {
     );
 
     expect(find.byType(TeamDiscoveryCard), findsNWidgets(3));
-    // API-13 : le dépôt demande `sortBy=MEMBER_COUNT` (`kTeamDiscoverySort`),
-    // l'écran peut donc l'annoncer.
-    expect(kTeamDiscoverySort, TeamSortBy.memberCount);
+    // API-13 : le dépôt demande `sortBy=MEMBER_COUNT`
+    // (`TeamDiscoveryFilters.sortBy`), l'écran peut donc l'annoncer.
+    expect(const TeamDiscoveryFilters().sortBy, TeamSortBy.memberCount);
     expect(
       find.text('3 équipes · triées par nombre de membres'),
       findsOneWidget,
     );
+    // RL7 : l'invite finit par « … ».
+    expect(find.text('Rechercher une équipe…'), findsOneWidget);
+  });
+
+  // Règle RL5 : sous « Mes équipes », la liste est un carnet d'adresses,
+  // triée — et annoncée — par nom.
+  testWidgets('sous « Mes équipes », l\'ordre annoncé est le nom', (
+    WidgetTester tester,
+  ) async {
+    await openDiscover(
+      tester,
+      repository: _StubTeamRepository(teams: fixtureTeams(3)),
+    );
+    await tester.tap(find.text('Mes équipes'));
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+
+    expect(find.text('3 équipes · triées par nom'), findsOneWidget);
   });
 
   // Ledger `MOB-139`, D3 : « 1 membre », jamais « 1 membres ».

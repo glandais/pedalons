@@ -8,12 +8,13 @@ import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_typography.dart';
-import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/lists/list_states.dart';
 import '../../../../keys.dart';
 import '../../../posts/domain/post_neighbours.dart';
 import '../../../tags/presentation/tag_filter.dart';
 import '../../../tags/providers/team_tags_provider.dart';
 import '../../../teams/presentation/widgets/publication_card.dart';
+import '../../../teams/providers/team_providers.dart';
 import '../../providers/publication_feed_provider.dart';
 
 /// A publication feed: search, type chips, infinite scroll, pull-to-refresh
@@ -90,9 +91,22 @@ class PublicationFeedView extends ConsumerStatefulWidget {
   /// inscrit.
   final bool participating;
 
-  /// Lève « Je participe » depuis l'état vide filtré : la période est tenue
+  /// La période de l'Agenda **quand elle s'écarte de son défaut** (« Je
+  /// participe », « Passées ») : c'est un filtre, que le vide filtré nomme
+  /// (règle RL10). `null` à « À venir », et hors de l'Agenda.
+  final String? periodFilterLabel;
+
+  /// Remet la période à son défaut depuis l'état vide filtré : elle est tenue
   /// par l'appelant, comme le type piloté.
-  final VoidCallback? onClearParticipating;
+  final VoidCallback? onClearPeriod;
+
+  /// Le titre du vide filtré sous le type « Tout » : « Aucune publication pour
+  /// ces filtres » par défaut, « Aucune sortie ni aucun voyage… » à l'Agenda.
+  final String filteredTitleKey;
+
+  /// Le nom de ce que la liste compte sous le type « Tout », dans son pied
+  /// (« 20 publications sur 1 248 »).
+  final String itemNounKey;
 
   const PublicationFeedView({
     super.key,
@@ -112,7 +126,10 @@ class PublicationFeedView extends ConsumerStatefulWidget {
     this.onTypeChanged,
     this.when,
     this.participating = false,
-    this.onClearParticipating,
+    this.periodFilterLabel,
+    this.onClearPeriod,
+    this.filteredTitleKey = 'lists.emptyFiltered.publications',
+    this.itemNounKey = 'lists.noun.publication',
   });
 
   @override
@@ -208,11 +225,14 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
     final PublicationFeedScopeChoice? scopeChoice = widget.teamSlug == null
         ? ref.watch(publicationFeedScopeProvider(_scope))
         : null;
+    final MinRole? defaultScope = widget.teamSlug == null
+        ? ref.watch(membershipDefaultScopeProvider)
+        : null;
     final MinRole? minRole = widget.teamSlug != null
         ? null
         : scopeChoice != null
         ? scopeChoice.minRole
-        : ref.watch(homeFeedDefaultScopeProvider);
+        : defaultScope;
     // Le filtre par tag n'existe que sur un fil d'équipe filtré par type —
     // la liste dédiée de ce type (D13) — et que si l'équipe a des tags pour
     // ce type : sans eux, pas de chip.
@@ -291,11 +311,14 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 child: PdlSectionHeader(
                   title: 'home.latestPublications'.tr(),
+                  // Formaté, accordé, et tu à zéro : l'état vide parle
+                  // (règle RL8).
                   count: ref
                       .watch(publicationFeedCountProvider(key))
                       .maybeWhen(
-                        data: (int total) =>
-                            'home.publicationCount'.plural(total),
+                        data: (int total) => total == 0
+                            ? null
+                            : listCountLabel('home.publicationCount', total),
                         orElse: () => null,
                       ),
                   padding: EdgeInsets.zero,
@@ -317,11 +340,16 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
             context,
             state,
             notifier,
-            search,
-            tagIds,
+            search: search,
+            tagIds: tagIds,
+            tagVocabulary: tagVocabulary,
             // Le type ne filtre que là où il se choisit : dans les
             // Publications, il *est* la liste.
-            widget.typeOptions.isNotEmpty ? type : null,
+            chosenType: widget.typeOptions.isNotEmpty ? type : null,
+            // La portée ne filtre que si elle s'écarte de son défaut.
+            scopeFilter: widget.teamSlug == null && minRole != defaultScope
+                ? minRole
+                : _noScopeFilter,
           ),
           const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
         ],
@@ -337,14 +365,20 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
     _ => null,
   };
 
+  /// Le marqueur « la portée n'est pas un filtre » : `null` est une portée,
+  /// « Toutes les équipes ».
+  static const Object _noScopeFilter = Object();
+
   List<Widget> _buildContentSlivers(
     BuildContext context,
     PagedListState<PublicationDto> state,
-    PublicationFeedNotifier notifier,
-    String? search,
-    List<String> tagIds,
-    PublicationType? chosenType,
-  ) {
+    PublicationFeedNotifier notifier, {
+    required String? search,
+    required List<String> tagIds,
+    required List<TagWithUsageDto> tagVocabulary,
+    required PublicationType? chosenType,
+    required Object? scopeFilter,
+  }) {
     if (state.showsSkeletons) {
       return [
         SliverPadding(
@@ -360,24 +394,17 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
       ];
     }
 
+    // §1.3.4 : un échec est un état, pas un événement. La forme commune des
+    // listes (règle RL11) — « Chargement impossible » ou « Pas de connexion »,
+    // « Réessayer », « Signaler un problème » —, là où le fil avait un
+    // bandeau « Fil indisponible. » à lui.
     if (state.initialError != null) {
       return [
-        SliverToBoxAdapter(
+        ListStateSliver(
           child: ContentWidthConstraint(
-            padding: const EdgeInsets.all(16),
-            // §1.3.4 : un échec est un état, pas un événement. Il reste à
-            // l'écran, dans le flux, et il nomme ce qui a échoué — là où un
-            // `SnackBar` de 4 s passait derrière la barre d'onglets.
-            child: PdlBanner(
-              tone: PdlBannerTone.danger,
-              title: 'home.feed.errorTitle'.tr(),
-              message: getErrorMessage(state.initialError!),
-              action: PdlButton(
-                label: 'common.retry'.tr(),
-                variant: PdlButtonVariant.text,
-                size: PdlButtonSize.sm,
-                onPressed: notifier.loadFirstPage,
-              ),
+            child: ListLoadError(
+              error: state.initialError!,
+              onRetry: notifier.loadFirstPage,
             ),
           ),
         ),
@@ -386,30 +413,27 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
 
     if (state.isEmpty) {
       // F-DE-9 : « rien ici » et « rien qui corresponde » ne disent pas la
-      // même chose et n'appellent pas la même action. Le vide filtré offre la
-      // sortie ; le vide absolu n'a rien à proposer et ne fait pas semblant.
+      // même chose et n'appellent pas la même action. Le vide filtré nomme
+      // ce qui filtre et offre la sortie ; le vide absolu dit ce qui
+      // apparaîtra ici.
       //
-      // **Tout critère écarté de son défaut filtre** : la recherche, les tags,
-      // mais aussi le type choisi et « Je participe ». Sans quoi « Sorties »
-      // sans résultat disait « Rien à l'agenda pour le moment », et la même
-      // chip « Je participe » donnait deux vides différents en Liste et en
-      // Calendrier. La période (« Passées ») n'en est pas, en attendant sa
-      // règle (RL10 du tri de l'audit des listes).
+      // **Tout critère écarté de son défaut filtre** (règle RL10) : la
+      // recherche, la période (« Je participe », « Passées »), le type, les
+      // tags, la portée.
       final bool searched = search != null && search.isNotEmpty;
-      final bool tagged = tagIds.isNotEmpty;
-      final bool typed = chosenType != null;
-      final bool participating = widget.participating;
-      final int criteria = <bool>[
-        searched,
-        tagged,
-        typed,
-        participating,
-      ].where((bool on) => on).length;
+      final bool scoped = !identical(scopeFilter, _noScopeFilter);
+      final String? period = widget.periodFilterLabel;
+      final List<String> filters = <String>[
+        if (searched) quotedSearch(search),
+        if (scoped) _FilterChips.scopeLabel(scopeFilter as MinRole?),
+        ?period,
+        if (chosenType != null) _FilterChips.typeLabel(chosenType),
+        ...tagNames(tagVocabulary, tagIds),
+      ];
       return [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: criteria == 0
+        ListStateSliver(
+          child: ContentWidthConstraint(
+            child: filters.isEmpty
                 ? PdlEmptyState(
                     key: keys.feed.emptyState,
                     variant: PdlEmptyVariant.empty,
@@ -418,62 +442,38 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
                     message: widget.emptyHint ?? 'home.feed.emptyHint'.tr(),
                     actions: widget.emptyActions,
                   )
-                : criteria == 1 && tagged
-                // Seuls les tags filtrent : la sortie est de les lever.
-                ? PdlEmptyState(
-                    variant: PdlEmptyVariant.filtered,
-                    icon: Icons.dynamic_feed,
-                    title: 'home.feed.emptyFiltered.title'.tr(),
-                    message: 'tags.emptyFiltered'.tr(),
-                    actions: [
-                      PdlButton(
-                        label: 'tags.clearFilter'.tr(),
-                        variant: PdlButtonVariant.outline,
-                        size: PdlButtonSize.sm,
-                        onPressed: () => _setTags(const <String>[]),
-                      ),
-                    ],
-                  )
-                : PdlEmptyState(
+                : ListFilteredEmpty(
                     key: keys.feed.filteredEmptyState,
-                    variant: PdlEmptyVariant.filtered,
-                    icon: Icons.dynamic_feed,
-                    title: 'home.feed.emptyFiltered.title'.tr(),
-                    message: searched
-                        ? 'home.feed.emptyFiltered.message'.tr(
-                            namedArgs: {'search': search},
-                          )
-                        : 'home.feed.emptyFiltered.messageFilters'.tr(),
-                    actions: [
-                      // Seule la recherche filtre : on l'efface. Sinon, tout
-                      // ce qui filtre s'efface d'un geste.
-                      if (criteria == 1 && searched)
-                        PdlButton(
-                          label: 'common.clearSearch'.tr(),
-                          variant: PdlButtonVariant.outline,
-                          size: PdlButtonSize.sm,
-                          onPressed: () => _setSearch(null),
-                        )
-                      else
-                        PdlButton(
-                          key: keys.feed.clearFiltersButton,
-                          label: 'common.clearFilters'.tr(),
-                          variant: PdlButtonVariant.outline,
-                          size: PdlButtonSize.sm,
-                          onPressed: () {
-                            if (searched) _setSearch(null);
-                            if (typed) {
-                              // Lever le type lève aussi ses tags.
-                              _setType(null);
-                            } else if (tagged) {
-                              _setTags(const <String>[]);
-                            }
-                            if (participating) {
-                              widget.onClearParticipating?.call();
-                            }
-                          },
-                        ),
-                    ],
+                    clearKey: keys.feed.clearFiltersButton,
+                    title: switch (chosenType) {
+                      PublicationType.ride => 'lists.emptyFiltered.rides',
+                      PublicationType.trip => 'lists.emptyFiltered.trips',
+                      PublicationType.post =>
+                        'lists.emptyFiltered.publications',
+                      _ => widget.filteredTitleKey,
+                    }.tr(),
+                    filters: filters,
+                    // Un seul geste lève tout ce qui est nommé : la
+                    // recherche, le type et ses tags, la période et la
+                    // portée, remises à leur défaut.
+                    onClear: () {
+                      if (searched) _setSearch(null);
+                      if (chosenType != null) {
+                        // Lever le type lève aussi ses tags.
+                        _setType(null);
+                      } else if (tagIds.isNotEmpty) {
+                        _setTags(const <String>[]);
+                      }
+                      if (scoped) {
+                        ref
+                                .read(
+                                  publicationFeedScopeProvider(_scope).notifier,
+                                )
+                                .state =
+                            null;
+                      }
+                      if (period != null) widget.onClearPeriod?.call();
+                    },
                   ),
           ),
         ),
@@ -506,6 +506,12 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
               state: state,
               onRetry: notifier.retryNextPage,
               skeleton: const PdlSkeletonCard(),
+              itemNounKey: switch (chosenType) {
+                PublicationType.ride => 'lists.noun.ride',
+                PublicationType.trip => 'lists.noun.trip',
+                PublicationType.post => 'lists.noun.publication',
+                _ => widget.itemNounKey,
+              },
             ),
           ),
         ),
@@ -644,14 +650,14 @@ class _FilterChips extends StatelessWidget {
         // avant que le type ne décide *de quel type*.
         if (showScope)
           PdlChip(
-            label: _scopeLabel(selectedScope),
+            label: scopeLabel(selectedScope),
             icon: Icons.tune,
             sortStyle: true,
             selected: selectedScope != null,
             onTap: () => _openScopeSheet(context),
           ),
         for (final PublicationType? type in typeOptions)
-          _chip(label: _typeLabel(type), icon: _typeIcon(type), value: type),
+          _chip(label: typeLabel(type), icon: _typeIcon(type), value: type),
         // Après les types : elle affine celui qui est choisi.
         if (tagVocabulary.isNotEmpty && onTagsChanged != null)
           TagFilterChip(
@@ -663,7 +669,7 @@ class _FilterChips extends StatelessWidget {
     );
   }
 
-  static String _typeLabel(PublicationType? type) => switch (type) {
+  static String typeLabel(PublicationType? type) => switch (type) {
     PublicationType.ride => 'rides.title'.tr(),
     PublicationType.post => 'posts.title'.tr(),
     PublicationType.trip => 'trips.title'.tr(),
@@ -679,7 +685,7 @@ class _FilterChips extends StatelessWidget {
 
   /// Le libellé de la chip de portée : le rôle minimum, ou « Toutes les
   /// équipes » sans rôle.
-  String _scopeLabel(MinRole? scope) => switch (scope) {
+  static String scopeLabel(MinRole? scope) => switch (scope) {
     MinRole.member => 'roles.member'.tr(),
     MinRole.organizer => 'roles.organizer'.tr(),
     MinRole.admin => 'roles.admin'.tr(),
@@ -704,7 +710,7 @@ class _FilterChips extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: PdlSettingRow(
-                title: _scopeLabel(options[i]),
+                title: scopeLabel(options[i]),
                 trailing: options[i] == selectedScope
                     ? Icon(Icons.check, color: context.pdl.primary)
                     : null,

@@ -8,13 +8,13 @@ import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
-import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/lists/list_states.dart';
+import '../../../../keys.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../providers/calendar_month_provider.dart';
 import '../widgets/agenda_card.dart';
 import '../widgets/calendar_subscription_card.dart';
 import '../widgets/calendar_toolbar.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
 
 /// Hauteur maximale de la grille de mois, légende comprise. Elle se compresse
 /// au défilement jusqu'à disparaître : sans cela, deux cartes d'agenda
@@ -124,20 +124,13 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             ),
             loading: _skeletons,
             error: (Object error, StackTrace stack) => Center(
-              child: PdlEmptyState(
-                variant: PdlEmptyVariant.error,
-                title: 'common.loadError'.tr(),
-                message: getErrorMessage(error),
-                actions: <Widget>[
-                  PdlButton(
-                    label: 'common.retry'.tr(),
-                    variant: PdlButtonVariant.outline,
-                    size: PdlButtonSize.sm,
-                    onPressed: () =>
-                        ref.invalidate(calendarMonthProvider(monthKey)),
-                  ),
-                  ReportProblemButton(error: error, stackTrace: stack),
-                ],
+              child: SingleChildScrollView(
+                child: ListLoadError(
+                  error: error,
+                  stackTrace: stack,
+                  onRetry: () =>
+                      ref.invalidate(calendarMonthProvider(monthKey)),
+                ),
               ),
             ),
           ),
@@ -366,34 +359,25 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     bool monthHasEvents,
   ) {
     // Deux vides bien distincts : « rien ce mois-ci » et « rien *avec ces
-    // filtres* ». Le second se résout en effaçant les filtres, jamais en
-    // changeant de mois — et il ne se dit que si le mois a bien des
-    // événements, sans quoi sa phrase (« Ce mois contient des événements… »)
-    // serait fausse : un mois vide reste le vide du mois, filtre ou non.
-    final bool filtered =
-        type != CalendarTypeFilter.all || widget.registeredOnly;
-    if (filtered && monthHasEvents) {
-      return Padding(
-        padding: const EdgeInsets.all(PdlSpacing.section),
-        child: PdlEmptyState(
-          variant: PdlEmptyVariant.filtered,
-          icon: PdlIcons.dateBusy,
-          title: 'calendar.noEventsFiltered.title'.tr(),
-          message: 'calendar.noEventsFiltered.message'.tr(),
-          actions: <Widget>[
-            PdlButton(
-              label: 'common.clearFilters'.tr(),
-              variant: PdlButtonVariant.outline,
-              size: PdlButtonSize.sm,
-              onPressed: () {
-                _setType(CalendarTypeFilter.all);
-                if (widget.registeredOnly) {
-                  widget.onClearRegisteredOnly?.call();
-                }
-              },
-            ),
-          ],
-        ),
+    // filtres* », qui nomme ce qui filtre (règle RL10). Le second se résout en
+    // effaçant les filtres, jamais en changeant de mois — et il ne se dit que
+    // si le mois a bien des événements : un mois vide reste le vide du mois,
+    // filtre ou non, avec son « Aller au prochain mois avec une sortie ».
+    final List<String> filters = <String>[
+      if (widget.registeredOnly) 'teams.agenda.scope.participating'.tr(),
+      if (type != CalendarTypeFilter.all) 'calendar.filters.${type.name}'.tr(),
+    ];
+    if (filters.isNotEmpty && monthHasEvents) {
+      return ListFilteredEmpty(
+        key: keys.calendar.filteredEmptyState,
+        title: 'lists.emptyFiltered.events'.tr(),
+        filters: filters,
+        onClear: () {
+          _setType(CalendarTypeFilter.all);
+          if (widget.registeredOnly) {
+            widget.onClearRegisteredOnly?.call();
+          }
+        },
       );
     }
 
@@ -416,7 +400,11 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                         : 'calendar.noEventsInTeam')
                     .tr(
                       namedArgs: <String, String>{
-                        'month': AppFormatters.formatMonthYear(monthKey.start),
+                        // Au fil de la phrase, le mois en minuscule :
+                        // « en novembre 2026 » (règle RL10).
+                        'month': AppFormatters.formatMonthAndYear(
+                          monthKey.start,
+                        ),
                       },
                     ),
             actions: <Widget>[

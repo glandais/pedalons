@@ -32,6 +32,17 @@ String tagFilterLabel(List<TagWithUsageDto> vocabulary, List<String> selected) {
   return 'tags.filterCount'.plural(chosen.length);
 }
 
+/// Les libellés des tags choisis, dans l'ordre du vocabulaire : ce qu'un vide
+/// filtré nomme (« Rien ne correspond à : vallonné », règle RL10 des listes).
+/// Un id qui n'est plus au vocabulaire n'est pas nommé — le serveur l'ignore.
+List<String> tagNames(
+  List<TagWithUsageDto> vocabulary,
+  List<String> selected,
+) => <String>[
+  for (final TagWithUsageDto tag in vocabulary)
+    if (selected.contains(tag.id)) tag.label,
+];
+
 /// La puce « Tags » d'une barre de filtres d'équipe (ledger `MOB-39`).
 ///
 /// Elle ouvre [showTagPickerSheet] ; le filtre est un **OU** (D6), ce que la

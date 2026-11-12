@@ -207,7 +207,9 @@ List<TeamSection> buildTeamSections(
         label: 'teams.tabs.routes',
       ),
     // Ads — members only, and only if classifieds are enabled (`IconTag`).
-    if (isMember && team.enableAds)
+    // A platform admin reads them too, as on the site: the platform moderates
+    // (DL24 of the lists audit).
+    if ((isMember || platformAdmin) && team.enableAds)
       TeamSection(
         kind: TeamSectionKind.ads,
         paths: PathVariants.teamAds(slug),

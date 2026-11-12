@@ -225,7 +225,11 @@ void main() {
     WidgetTester tester,
   ) async {
     await pumpSection(tester, 'equipes');
-    expect(inCase('membre', find.text('1 membre sur 1')), findsOne);
+    // Le pied unique : « 1 membre sur 1 · Vous avez tout vu » (règle RL12).
+    expect(
+      inCase('membre', find.text('1 membre sur 1 · Vous avez tout vu')),
+      findsOne,
+    );
     expect(inCase('membre', find.textContaining('membres sur')), findsNothing);
   });
 

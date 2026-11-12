@@ -9,6 +9,7 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/config/router.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/link_launcher.dart';
 import 'package:pedalons/features/calendar/presentation/pages/calendar_page.dart';
@@ -239,6 +240,7 @@ void main() {
       AgendaScope initialScope = AgendaScope.upcoming,
       TeamDetailDto? team,
       bool emptyFeed = false,
+      bool failingFeed = false,
     }) async {
       final TeamDetailDto shown =
           team ?? fixtureTeam(slug: 'velo-club', role: role);
@@ -253,6 +255,7 @@ void main() {
           ),
           publicationFeedProvider.overrideWith((ref, key) {
             requested.add(key);
+            if (failingFeed) return _FailingFeedNotifier(key);
             return emptyFeed
                 ? _EmptyFeedNotifier(key)
                 : _StuckFeedNotifier(key);
@@ -460,6 +463,22 @@ void main() {
       });
     });
 
+    // Règle RL11 : le fil prend la forme d'erreur des autres listes, plus le
+    // bandeau « Fil indisponible. » à lui.
+    testWidgets('RL11 — une panne du fil : « Chargement impossible », '
+        '« Réessayer », « Signaler un problème »', (WidgetTester tester) async {
+      await pumpAgenda(tester, failingFeed: true);
+      await tester.pump();
+
+      expect(find.text('Chargement impossible'), findsOneWidget);
+      expect(find.text('Réessayer'), findsOneWidget);
+      expect(find.text('Signaler un problème'), findsOneWidget);
+      expect(find.text('Fil indisponible.'), findsNothing);
+      expect(find.byType(PdlBanner), findsNothing);
+
+      await tearDownFeed(tester);
+    });
+
     group('DL2 — le type et « Je participe » comptent comme filtre', () {
       testWidgets('sans filtre, le vide absolu de l\'Agenda', (
         WidgetTester tester,
@@ -482,10 +501,9 @@ void main() {
 
         expect(find.byKey(keys.feed.filteredEmptyState), findsOneWidget);
         expect(find.text("Rien à l'agenda pour le moment"), findsNothing);
-        expect(
-          find.text('Rien ne correspond aux filtres choisis.'),
-          findsOneWidget,
-        );
+        // RL10 : le titre nomme l'objet, le message nomme le filtre.
+        expect(find.text('Aucune sortie pour ces filtres'), findsOneWidget);
+        expect(find.text('Rien ne correspond à : Sorties.'), findsOneWidget);
 
         await tester.tap(find.byKey(keys.feed.clearFiltersButton));
         await tester.pump();
@@ -507,6 +525,14 @@ void main() {
           );
 
           expect(find.byKey(keys.feed.filteredEmptyState), findsOneWidget);
+          expect(
+            find.text('Aucune sortie ni aucun voyage pour ces filtres'),
+            findsOneWidget,
+          );
+          expect(
+            find.text('Rien ne correspond à : Je participe.'),
+            findsOneWidget,
+          );
 
           await tester.tap(find.byKey(keys.feed.clearFiltersButton));
           await tester.pump();
@@ -519,15 +545,28 @@ void main() {
         },
       );
 
-      testWidgets('« Passées » reste le vide absolu (règle à décider)', (
-        WidgetTester tester,
-      ) async {
+      // RL10 (KIT §10) : « Passées » est un filtre — l'app cessait d'annoncer
+      // « pour le moment » un passé vide. Ce test codait l'ancien vide absolu.
+      testWidgets('« Passées » sans résultat : le vide filtré, qui revient à '
+          '« À venir »', (WidgetTester tester) async {
         await pumpAgenda(
           tester,
           emptyFeed: true,
           initialScope: AgendaScope.past,
         );
 
+        expect(find.byKey(keys.feed.filteredEmptyState), findsOneWidget);
+        expect(find.byKey(keys.feed.emptyState), findsNothing);
+        expect(
+          find.text('Aucune sortie ni aucun voyage pour ces filtres'),
+          findsOneWidget,
+        );
+        expect(find.text('Rien ne correspond à : Passées.'), findsOneWidget);
+
+        await tester.tap(find.byKey(keys.feed.clearFiltersButton));
+        await tester.pump();
+        await tester.pump();
+        expect(requested.last.when, PublicationWhen.upcoming);
         expect(find.byKey(keys.feed.emptyState), findsOneWidget);
 
         await tearDownFeed(tester);
@@ -565,4 +604,20 @@ class _EmptyFeedNotifier extends PublicationFeedNotifier {
   @override
   Future<PageResult<PublicationDto>> fetchPage(int page) async =>
       const PageResult<PublicationDto>(items: <PublicationDto>[], total: 0);
+}
+
+/// Échoue sur une panne du serveur : l'état d'erreur du fil.
+class _FailingFeedNotifier extends PublicationFeedNotifier {
+  _FailingFeedNotifier(PublicationFeedKey key)
+    : super(PublicationsClient(Dio()), key);
+
+  @override
+  Future<PageResult<PublicationDto>> fetchPage(int page) async {
+    final RequestOptions request = RequestOptions(path: '/api/publications');
+    throw DioException(
+      requestOptions: request,
+      type: DioExceptionType.badResponse,
+      response: Response<Object?>(requestOptions: request, statusCode: 500),
+    );
+  }
 }

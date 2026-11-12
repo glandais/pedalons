@@ -30,6 +30,9 @@ class RoutesKeys {
   /// L'état vide sans filtre : « Aucun parcours ».
   final noneState = const _RoutesKey('noneState');
 
+  /// Le compteur sous la barre (« 47 parcours », règle RL8).
+  final resultCount = const _RoutesKey('resultCount');
+
   /// « Ajouter un parcours » de cet état vide, pour qui gère les parcours.
   final emptyAddButton = const _RoutesKey('emptyAddButton');
 

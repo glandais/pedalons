@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../../../api/generated/export.dart';
 import '../../../api/pedalons_api_client.dart';
 import '../../../core/pagination/pagination.dart';
-import '../../teams/providers/team_providers.dart';
 
 /// Ce qui identifie un jeu de résultats du fil : une portée et ses filtres.
 ///
@@ -78,20 +77,11 @@ typedef PublicationFeedScopeChoice = ({MinRole? minRole});
 /// celles où je tiens au moins tel rôle.
 ///
 /// `null` signifie « pas encore choisi » — le fil suit alors
-/// [homeFeedDefaultScopeProvider] —, à distinguer du choix explicite de
+/// `membershipDefaultScopeProvider` —, à distinguer du choix explicite de
 /// « toutes », qui doit survivre au chargement de mes équipes. Sans objet sur
 /// un fil d'équipe, où la portée est l'écran lui-même.
 final publicationFeedScopeProvider = StateProvider.autoDispose
     .family<PublicationFeedScopeChoice?, String?>((ref, teamSlug) => null);
-
-/// La portée de départ du fil d'accueil, la même que sur le web
-/// (`useMembershipDefault`) : « Membre », sauf pour qui n'a aucune équipe, à
-/// qui elle ne montrerait qu'un fil vide. Optimiste pendant le chargement : la
-/// plupart des personnes ont une équipe.
-final homeFeedDefaultScopeProvider = Provider.autoDispose<MinRole?>((ref) {
-  final List<TeamDetailDto>? teams = ref.watch(myTeamsProvider).value;
-  return teams != null && teams.isEmpty ? null : MinRole.member;
-});
 
 /// Le fil paginé d'une portée et de ses filtres.
 final publicationFeedProvider = StateNotifierProvider.autoDispose

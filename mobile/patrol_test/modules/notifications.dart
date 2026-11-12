@@ -128,7 +128,7 @@ final class Notifications extends Module {
         .waitUntilVisible(timeout: timeout);
   }
 
-  /// The empty state's way out: « Toutes ».
+  /// The empty state's way out: « Effacer les filtres », back to « Toutes ».
   Future<void> tapShowAllFromEmptyState() async {
     await $(keys.notifications.showAllButton).tap();
   }

@@ -213,19 +213,12 @@
       "all": "All",
       "empty": "No publications",
       "emptyHint": "Your teams' rides, posts and trips will show up here.",
-      "searchPlaceholder": "Search publications…",
-      "errorTitle": "Feed unavailable.",
-      "emptyFiltered": {
-        "title": "No results",
-        "message": "No publication matches “{search}”.",
-        "messageFilters": "Nothing matches the chosen filters."
-      }
+      "searchPlaceholder": "Search publications…"
     },
     "nextRide": "My next ride",
     "viewRide": "View ride",
     "explore": "Explore",
     "latestPublications": "Latest publications",
-    "searchPlaceholder": "Search by title or description...",
     "scopeAllTeams": "All teams",
     "typeAll": "All",
     "scope": "Scope",
@@ -271,7 +264,7 @@
       "open": "Switch team"
     },
     "empty": "No teams",
-    "joinPrompt": "Join a team to get started",
+    "joinPrompt": "Join a team to get started.",
     "discover": "Discover teams",
     "about": "About",
     "tabs": {
@@ -297,11 +290,7 @@
       "open": "Search a team",
       "close": "Close search",
       "clear": "Clear search",
-      "hint": "Search a team…"
-    },
-    "searchEmpty": {
-      "title": "No team for this search",
-      "message": "None of your teams contains “{search}”."
+      "hint": "Search teams…"
     },
     "viewTeam": "View team",
     "membersList": {
@@ -314,7 +303,7 @@
         "one": "{} member",
         "other": "{} members"
       },
-      "searchPlaceholder": "Search a member",
+      "searchPlaceholder": "Search members…",
       "allRoles": "All",
       "since": "Member since {date}",
       "none": "No member",
@@ -323,11 +312,7 @@
         "title": "Member list not shared",
         "message": "This team does not share its member list with you."
       },
-      "empty": {
-        "title": "No member for these filters",
-        "description": "No member matches this search or this role.",
-        "resetAll": "Reset everything"
-      }
+      "searchPlaceholderAdmin": "Search by name or e-mail…"
     },
     "discovery": {
       "title": "Discover teams",
@@ -341,7 +326,7 @@
         "other": "{} teams"
       },
       "countSortedByMembers": "{count} · sorted by member count",
-      "searchPlaceholder": "Search a team",
+      "searchPlaceholder": "Search teams…",
       "scope": {
         "all": "All",
         "joinable": "Open to join",
@@ -349,16 +334,11 @@
       },
       "join": "Join the team",
       "joining": "Joining…",
-      "memberBadge": "Member",
       "inviteOnly": "Invitation only",
       "joinFailed": "Could not join {team}.",
       "none": "No team to discover",
       "noneHint": "The public teams of this domain will show up here.",
-      "empty": {
-        "title": "No team for these filters",
-        "description": "No team matches this search or this scope.",
-        "resetAll": "Reset everything"
-      }
+      "countSortedByName": "{count} · sorted by name"
     },
     "membership": {
       "join": "Join",
@@ -601,7 +581,8 @@
       "empty": "No posts yet",
       "emptyHint": "The team's posts will show up here once published.",
       "searchPlaceholder": "Search posts…"
-    }
+    },
+    "aboutTeam": "About the team"
   },
   "rides": {
     "title": "Rides",
@@ -922,7 +903,6 @@
       },
       "emptyTitle": "No template",
       "emptyMessage": "Create templates to set up rides faster.",
-      "noResults": "No template matches this search",
       "more": "Actions for template {name}",
       "nextShort": "next #{number}",
       "nextLong": "next ride #{number}",
@@ -1009,7 +989,7 @@
     },
     "emptyHint": "Your team's items for sale, for rent and wanted will appear here.",
     "list": {
-      "searchPlaceholder": "Search classifieds",
+      "searchPlaceholder": "Search classifieds…",
       "allTypes": "All",
       "count": {
         "zero": "No classified",
@@ -1020,16 +1000,9 @@
         "one": "ad",
         "other": "ads"
       },
-      "loadError": "Classifieds are not enabled on this team, or the network is unavailable.",
       "membersOnly": {
         "title": "Members only",
         "message": "The team's ads are only visible to its members."
-      },
-      "empty": {
-        "title": "No classified for these filters",
-        "description": "No classified matches this combination of filters.",
-        "descriptionSearch": "No classified matches “{search}” with these filters.",
-        "resetAll": "Reset everything"
       }
     },
     "sort": {
@@ -1141,14 +1114,9 @@
         "other": "routes"
       },
       "empty": {
-        "title": "No routes for these filters",
-        "description": "No route matches this combination of filters.",
-        "descriptionSearch": "No route matches “{search}” with these filters.",
         "removeFilter": "Remove the {filter} filter",
-        "resetAll": "Reset everything",
         "withoutFilter": "Without the {filter} filter"
       },
-      "countOf": "{shown} of {total} routes",
       "none": "No routes",
       "noneHint": "No routes are available at the moment.",
       "densitySwitched": "Past {threshold} results the list switches to the compact layout. You can go back to thumbnails at any time."
@@ -1402,9 +1370,7 @@
     "pickerTitle": "Filter by tag",
     "pickerHint": "An item shows up when it carries at least one of the chosen tags.",
     "apply": "Apply",
-    "clear": "Clear",
-    "emptyFiltered": "Nothing carries these tags.",
-    "clearFilter": "Remove the tag filter"
+    "clear": "Clear"
   },
   "calendar": {
     "title": "Calendar",
@@ -1440,10 +1406,6 @@
     "legend": {
       "ride": "Ride",
       "stage": "Trip stage"
-    },
-    "noEventsFiltered": {
-      "title": "Nothing with these filters",
-      "message": "This month has events, but none match the chosen filter."
     },
     "subscription": {
       "title": "Calendar subscription",
@@ -1677,9 +1639,7 @@
     },
     "empty": {
       "title": "No notifications",
-      "hint": "Your teams' rides, trips and posts will show up here.",
-      "unreadTitle": "No unread notifications",
-      "unreadHint": "Everything is read. Go back to “All” to see earlier ones."
+      "hint": "Your teams' rides, trips and posts will show up here."
     },
     "type": {
       "RIDE_PUBLISHED": "{actor} published a ride",
@@ -1852,7 +1812,7 @@
   "errors": {
     "offline": {
       "title": "No connection",
-      "message": "Check your internet connection and try again."
+      "message": "Check your internet connection, then try again."
     },
     "api": {
       "ALREADY_REGISTERED": "You are already registered for this ride",
@@ -1943,8 +1903,6 @@
     "loadingMore": "loading more…",
     "nextPageError": "Could not load more.\nCheck your connection.",
     "endOfList": "You have seen everything",
-    "loaded": "{loaded} loaded",
-    "progress": "{loaded} of {total}",
     "progressNamed": "{loaded} {noun} of {total}"
   },
   "location": {
@@ -1996,7 +1954,7 @@
       "other": "{} comments"
     },
     "emptyTitle": "No comment",
-    "loadMore": "Load more comments",
+    "loadMore": "Show more comments",
     "emptyMessage": "Be the first to comment.",
     "placeholder": "Write a comment...",
     "send": "Post",
@@ -2008,7 +1966,6 @@
       "one": "View the reply",
       "other": "View the {} replies"
     },
-    "progress": "{loaded} comments out of {total}",
     "confirmDelete": {
       "title": "Delete the comment?",
       "message": "Do you really want to delete this comment? This cannot be undone."
@@ -2019,8 +1976,6 @@
     "search": "Search a participant…",
     "emptyTitle": "No participant",
     "emptyMessage": "Nobody has joined this group yet.",
-    "noMatchTitle": "No participant found",
-    "noMatchMessage": "No name matches “{search}”.",
     "groupOrganizer": "Group organizer",
     "emptyTripMessage": "Nobody has joined this trip yet.",
     "loadMore": "Show more",
@@ -2141,7 +2096,6 @@
   },
   "feedback": {
     "reportProblem": "Report a problem",
-    "reportThis": "Report this problem",
     "title": "Report a problem",
     "kind": {
       "bug": "Bug",
@@ -2179,6 +2133,50 @@
       "message": "The app hit a problem last time. Report it?",
       "report": "Report",
       "dismiss": "Dismiss"
+    }
+  },
+  "lists": {
+    "error": {
+      "title": "Could not load",
+      "serverMessage": "The server could not respond. Try again in a moment."
+    },
+    "emptyFiltered": {
+      "message": "Nothing matches: {filters}.",
+      "search": "“{search}”",
+      "publications": "No publication for these filters",
+      "rides": "No ride for these filters",
+      "trips": "No trip for these filters",
+      "agenda": "No ride or trip for these filters",
+      "events": "No event for these filters",
+      "routes": "No route for these filters",
+      "ads": "No classified for these filters",
+      "teams": "No team for these filters",
+      "members": "No member for these filters",
+      "participants": "No one for these filters",
+      "notifications": "No notification for these filters",
+      "templates": "No template for these filters"
+    },
+    "noun": {
+      "publication": {
+        "one": "publication",
+        "other": "publications"
+      },
+      "ride": {
+        "one": "ride",
+        "other": "rides"
+      },
+      "trip": {
+        "one": "trip",
+        "other": "trips"
+      },
+      "agenda": {
+        "one": "ride or trip",
+        "other": "rides and trips"
+      },
+      "comment": {
+        "one": "comment",
+        "other": "comments"
+      }
     }
   }
 }

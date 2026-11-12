@@ -213,19 +213,12 @@
       "all": "Tout",
       "empty": "Aucune publication",
       "emptyHint": "Les sorties, publications et voyages de vos équipes s'afficheront ici.",
-      "searchPlaceholder": "Rechercher une publication…",
-      "errorTitle": "Fil indisponible.",
-      "emptyFiltered": {
-        "title": "Aucun résultat",
-        "message": "Aucune publication ne correspond à « {search} ».",
-        "messageFilters": "Rien ne correspond aux filtres choisis."
-      }
+      "searchPlaceholder": "Rechercher une publication…"
     },
     "nextRide": "Ma prochaine sortie",
     "viewRide": "Voir la sortie",
     "explore": "Explorer",
     "latestPublications": "Dernières publications",
-    "searchPlaceholder": "Rechercher par titre ou description...",
     "scopeAllTeams": "Toutes les équipes",
     "typeAll": "Tout",
     "scope": "Portée",
@@ -271,7 +264,7 @@
       "open": "Changer d'équipe"
     },
     "empty": "Aucune équipe",
-    "joinPrompt": "Rejoignez une équipe pour commencer",
+    "joinPrompt": "Rejoignez une équipe pour commencer.",
     "discover": "Découvrir des équipes",
     "about": "À propos",
     "tabs": {
@@ -299,10 +292,6 @@
       "clear": "Effacer la recherche",
       "hint": "Rechercher une équipe…"
     },
-    "searchEmpty": {
-      "title": "Aucune équipe pour cette recherche",
-      "message": "Aucune de vos équipes ne contient « {search} »."
-    },
     "viewTeam": "Voir l'équipe",
     "membersList": {
       "noun": {
@@ -314,7 +303,7 @@
         "one": "{} membre",
         "other": "{} membres"
       },
-      "searchPlaceholder": "Rechercher un membre",
+      "searchPlaceholder": "Rechercher un membre…",
       "allRoles": "Tous",
       "since": "Membre depuis {date}",
       "none": "Aucun membre",
@@ -323,11 +312,7 @@
         "title": "Liste des membres non partagée",
         "message": "Cette équipe ne partage pas la liste de ses membres avec vous."
       },
-      "empty": {
-        "title": "Aucun membre pour ces filtres",
-        "description": "Aucun membre ne correspond à cette recherche ni à ce rôle.",
-        "resetAll": "Tout réinitialiser"
-      }
+      "searchPlaceholderAdmin": "Rechercher par nom ou e-mail…"
     },
     "discovery": {
       "title": "Découvrir des équipes",
@@ -341,7 +326,7 @@
         "other": "{} équipes"
       },
       "countSortedByMembers": "{count} · triées par nombre de membres",
-      "searchPlaceholder": "Rechercher une équipe",
+      "searchPlaceholder": "Rechercher une équipe…",
       "scope": {
         "all": "Toutes",
         "joinable": "Ouvertes à l'adhésion",
@@ -349,16 +334,11 @@
       },
       "join": "Rejoindre l'équipe",
       "joining": "Adhésion…",
-      "memberBadge": "Membre",
       "inviteOnly": "Sur invitation",
       "joinFailed": "Impossible de rejoindre {team}.",
       "none": "Aucune équipe à découvrir",
       "noneHint": "Les équipes publiques de ce domaine apparaîtront ici.",
-      "empty": {
-        "title": "Aucune équipe pour ces filtres",
-        "description": "Aucune équipe ne correspond à cette recherche ni à cette portée.",
-        "resetAll": "Tout réinitialiser"
-      }
+      "countSortedByName": "{count} · triées par nom"
     },
     "membership": {
       "join": "Rejoindre",
@@ -601,7 +581,8 @@
       "empty": "Aucune publication pour le moment",
       "emptyHint": "Les publications de l'équipe apparaîtront ici une fois publiées.",
       "searchPlaceholder": "Rechercher une publication…"
-    }
+    },
+    "aboutTeam": "À propos de l'équipe"
   },
   "rides": {
     "title": "Sorties",
@@ -922,7 +903,6 @@
       },
       "emptyTitle": "Aucun modèle",
       "emptyMessage": "Créez des modèles pour accélérer la création de sorties.",
-      "noResults": "Aucun modèle ne correspond à cette recherche",
       "more": "Actions du modèle {name}",
       "nextShort": "prochaine #{number}",
       "nextLong": "prochaine sortie #{number}",
@@ -1009,7 +989,7 @@
     },
     "emptyHint": "Les annonces de vente, de location et de recherche de votre équipe apparaîtront ici.",
     "list": {
-      "searchPlaceholder": "Rechercher une annonce",
+      "searchPlaceholder": "Rechercher une annonce…",
       "allTypes": "Tous",
       "count": {
         "zero": "Aucune annonce",
@@ -1020,16 +1000,9 @@
         "one": "annonce",
         "other": "annonces"
       },
-      "loadError": "La rubrique Annonces n'est pas activée sur cette équipe, ou le réseau est indisponible.",
       "membersOnly": {
         "title": "Réservées aux membres",
         "message": "Les annonces de l'équipe ne sont visibles que par ses membres."
-      },
-      "empty": {
-        "title": "Aucune annonce pour ces filtres",
-        "description": "Aucune annonce ne correspond à cette combinaison de filtres.",
-        "descriptionSearch": "Aucune annonce ne correspond à « {search} » avec ces filtres.",
-        "resetAll": "Tout réinitialiser"
       }
     },
     "sort": {
@@ -1141,14 +1114,9 @@
         "other": "parcours"
       },
       "empty": {
-        "title": "Aucun parcours pour ces filtres",
-        "description": "Aucun parcours ne correspond à cette combinaison de filtres.",
-        "descriptionSearch": "Aucun parcours ne correspond à « {search} » avec ces filtres.",
         "removeFilter": "Retirer le filtre {filter}",
-        "resetAll": "Tout réinitialiser",
         "withoutFilter": "Sans le filtre {filter}"
       },
-      "countOf": "{shown} parcours sur {total}",
       "none": "Aucun parcours",
       "noneHint": "Aucun parcours n'est disponible pour le moment.",
       "densitySwitched": "Au-delà de {threshold} résultats, la liste passe en affichage compact. Vous pouvez revenir aux vignettes à tout moment."
@@ -1402,9 +1370,7 @@
     "pickerTitle": "Filtrer par tag",
     "pickerHint": "Un contenu apparaît s'il porte au moins un des tags choisis.",
     "apply": "Appliquer",
-    "clear": "Effacer",
-    "emptyFiltered": "Aucun contenu ne porte ces tags.",
-    "clearFilter": "Retirer le filtre par tag"
+    "clear": "Effacer"
   },
   "calendar": {
     "title": "Calendrier",
@@ -1440,10 +1406,6 @@
     "legend": {
       "ride": "Sortie",
       "stage": "Étape de voyage"
-    },
-    "noEventsFiltered": {
-      "title": "Rien avec ces filtres",
-      "message": "Ce mois contient des événements, mais aucun ne correspond au filtre choisi."
     },
     "subscription": {
       "title": "Abonnement calendrier",
@@ -1677,9 +1639,7 @@
     },
     "empty": {
       "title": "Aucune notification",
-      "hint": "Les sorties, voyages et publications de vos équipes apparaîtront ici.",
-      "unreadTitle": "Aucune notification non lue",
-      "unreadHint": "Tout est lu. Revenez à « Toutes » pour revoir les précédentes."
+      "hint": "Les sorties, voyages et publications de vos équipes apparaîtront ici."
     },
     "type": {
       "RIDE_PUBLISHED": "{actor} a publié une sortie",
@@ -1943,8 +1903,6 @@
     "loadingMore": "chargement de la suite…",
     "nextPageError": "Impossible de charger la suite.\nVérifiez votre connexion.",
     "endOfList": "Vous avez tout vu",
-    "loaded": "{loaded} chargés",
-    "progress": "{loaded} sur {total}",
     "progressNamed": "{loaded} {noun} sur {total}"
   },
   "location": {
@@ -1996,7 +1954,7 @@
       "other": "{} commentaires"
     },
     "emptyTitle": "Aucun commentaire",
-    "loadMore": "Voir plus de commentaires",
+    "loadMore": "Afficher plus de commentaires",
     "emptyMessage": "Lancez la discussion.",
     "placeholder": "Écrire un commentaire...",
     "send": "Publier",
@@ -2008,7 +1966,6 @@
       "one": "Voir la réponse",
       "other": "Voir les {} réponses"
     },
-    "progress": "{loaded} commentaires sur {total}",
     "confirmDelete": {
       "title": "Supprimer le commentaire ?",
       "message": "Voulez-vous vraiment supprimer ce commentaire ? Cette action est irréversible."
@@ -2019,8 +1976,6 @@
     "search": "Rechercher une personne…",
     "emptyTitle": "Aucune inscription",
     "emptyMessage": "Aucune inscription dans ce groupe pour le moment.",
-    "noMatchTitle": "Personne ne correspond",
-    "noMatchMessage": "Aucun nom ne correspond à « {search} ».",
     "groupOrganizer": "Capitaine",
     "emptyTripMessage": "Aucune inscription à ce voyage pour le moment.",
     "loadMore": "Afficher plus",
@@ -2141,7 +2096,6 @@
   },
   "feedback": {
     "reportProblem": "Signaler un problème",
-    "reportThis": "Signaler ce problème",
     "title": "Signaler un problème",
     "kind": {
       "bug": "Bug",
@@ -2179,6 +2133,50 @@
       "message": "L'app a rencontré un problème lors de sa dernière utilisation. Voulez-vous le signaler ?",
       "report": "Signaler",
       "dismiss": "Ignorer"
+    }
+  },
+  "lists": {
+    "error": {
+      "title": "Chargement impossible",
+      "serverMessage": "Le serveur n'a pas pu répondre. Réessayez dans un instant."
+    },
+    "emptyFiltered": {
+      "message": "Rien ne correspond à : {filters}.",
+      "search": "« {search} »",
+      "publications": "Aucune publication pour ces filtres",
+      "rides": "Aucune sortie pour ces filtres",
+      "trips": "Aucun voyage pour ces filtres",
+      "agenda": "Aucune sortie ni aucun voyage pour ces filtres",
+      "events": "Aucun événement pour ces filtres",
+      "routes": "Aucun parcours pour ces filtres",
+      "ads": "Aucune annonce pour ces filtres",
+      "teams": "Aucune équipe pour ces filtres",
+      "members": "Aucun membre pour ces filtres",
+      "participants": "Aucune personne pour ces filtres",
+      "notifications": "Aucune notification pour ces filtres",
+      "templates": "Aucun modèle pour ces filtres"
+    },
+    "noun": {
+      "publication": {
+        "one": "publication",
+        "other": "publications"
+      },
+      "ride": {
+        "one": "sortie",
+        "other": "sorties"
+      },
+      "trip": {
+        "one": "voyage",
+        "other": "voyages"
+      },
+      "agenda": {
+        "one": "sortie ou voyage",
+        "other": "sorties et voyages"
+      },
+      "comment": {
+        "one": "commentaire",
+        "other": "commentaires"
+      }
     }
   }
 }

@@ -1,15 +1,16 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../config/paths.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
-import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
-import '../../../../core/theme/pdl_typography.dart';
+import '../../../../core/lists/list_states.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../keys.dart';
@@ -18,7 +19,6 @@ import '../../../auth/providers/auth_provider.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../domain/member_filters.dart';
 import '../../providers/team_members_provider.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
 
 /// Le trombinoscope d'une équipe.
 ///
@@ -45,10 +45,16 @@ class TeamMembersPage extends ConsumerStatefulWidget {
   /// plateforme les voit toujours.
   final bool rolesShown;
 
+  /// Si la recherche trouve aussi l'adresse e-mail : pour qui administre les
+  /// membres (admin de l'équipe ou de la plateforme), comme le serveur. L'invite
+  /// le dit alors, « Rechercher par nom ou e-mail… » (règle RL7).
+  final bool searchesEmail;
+
   const TeamMembersPage({
     super.key,
     required this.teamSlug,
     required this.rolesShown,
+    this.searchesEmail = false,
   });
 
   @override
@@ -119,6 +125,7 @@ class _TeamMembersPageState extends ConsumerState<TeamMembersPage> {
               filters: filters,
               onChanged: _setFilters,
               showRoles: widget.rolesShown || platformAdmin,
+              searchesEmail: widget.searchesEmail || platformAdmin,
             ),
           ),
           ..._contentSlivers(state, notifier, filters),
@@ -157,19 +164,16 @@ class _TeamMembersPageState extends ConsumerState<TeamMembersPage> {
 
     // Un refus n'est pas une panne : l'équipe ne partage pas sa liste avec ce
     // lecteur (lien direct, la chip de section étant masquée). On le dit,
-    // comme au site, sans « Réessayer » qui rendrait le même 403.
+    // comme au site, sans « Réessayer » qui rendrait le même 403, avec une
+    // issue : la page « À propos » de l'équipe (règle RL11).
     if (state.initialError != null && isForbiddenError(state.initialError!)) {
       return <Widget>[
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: PdlEmptyState(
-              key: keys.team.membersForbiddenState,
-              variant: PdlEmptyVariant.empty,
-              icon: PdlIcons.visibilityTeam,
-              title: 'teams.membersList.forbidden.title'.tr(),
-              message: 'teams.membersList.forbidden.message'.tr(),
-            ),
+        ListStateSliver(
+          child: ListAccessRefused(
+            key: keys.team.membersForbiddenState,
+            title: 'teams.membersList.forbidden.title'.tr(),
+            message: 'teams.membersList.forbidden.message'.tr(),
+            onAbout: () => context.go(Paths.teamAbout(widget.teamSlug)),
           ),
         ),
       ];
@@ -177,46 +181,36 @@ class _TeamMembersPageState extends ConsumerState<TeamMembersPage> {
 
     if (state.initialError != null) {
       return <Widget>[
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: PdlEmptyState(
-              variant: PdlEmptyVariant.error,
-              title: 'common.loadError'.tr(),
-              message: getErrorMessage(state.initialError!),
-              actions: <Widget>[
-                PdlButton(
-                  label: 'common.retry'.tr(),
-                  variant: PdlButtonVariant.outline,
-                  size: PdlButtonSize.sm,
-                  onPressed: notifier.loadFirstPage,
-                ),
-                ReportProblemButton(error: state.initialError!),
-              ],
-            ),
+        ListStateSliver(
+          child: ListLoadError(
+            error: state.initialError!,
+            onRetry: notifier.loadFirstPage,
           ),
         ),
       ];
     }
 
     if (state.isEmpty) {
+      final String? search = filters.search?.trim();
       return <Widget>[
-        SliverToBoxAdapter(
+        ListStateSliver(
           child: filters.isFiltered
-              ? PdlDeadEndEmpty(
-                  title: 'teams.membersList.empty.title'.tr(),
-                  message: 'teams.membersList.empty.description'.tr(),
-                  resetAllLabel: 'teams.membersList.empty.resetAll'.tr(),
-                  onResetAll: () => _setFilters(filters.cleared),
+              ? ListFilteredEmpty(
+                  key: keys.team.membersFilteredEmptyState,
+                  title: 'lists.emptyFiltered.members'.tr(),
+                  filters: <String>[
+                    if (search != null && search.isNotEmpty)
+                      quotedSearch(search),
+                    if (filters.role != null)
+                      AppFormatters.roleName(filters.role!.json ?? ''),
+                  ],
+                  onClear: () => _setFilters(filters.cleared),
                 )
-              : Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: PdlEmptyState(
-                    variant: PdlEmptyVariant.empty,
-                    icon: Icons.people_outline,
-                    title: 'teams.membersList.none'.tr(),
-                    message: 'teams.membersList.noneHint'.tr(),
-                  ),
+              : PdlEmptyState(
+                  variant: PdlEmptyVariant.empty,
+                  icon: Icons.people_outline,
+                  title: 'teams.membersList.none'.tr(),
+                  message: 'teams.membersList.noneHint'.tr(),
                 ),
         ),
       ];
@@ -226,17 +220,8 @@ class _TeamMembersPageState extends ConsumerState<TeamMembersPage> {
 
     return <Widget>[
       SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            PdlSpacing.section,
-            PdlSpacing.chipGap,
-            PdlSpacing.section,
-            4,
-          ),
-          child: Text(
-            'teams.membersList.count'.plural(total),
-            style: context.pdlText.count,
-          ),
+        child: ListResultCount(
+          listCountLabel('teams.membersList.count', total),
         ),
       ),
       SliverPadding(
@@ -260,23 +245,12 @@ class _TeamMembersPageState extends ConsumerState<TeamMembersPage> {
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
         sliver: SliverToBoxAdapter(
-          child: PdlPagedListFooter(
-            isLoadingNext: state.isLoadingNext,
-            hasMore: state.hasMore,
-            isEmpty: state.items.isEmpty,
-            hasError: state.nextError != null,
+          // « 60 membres sur 1 999 » : l'exemple de référence du pied
+          // paginé, et il ne coûte aucun endpoint `count`.
+          child: PagedListFooter(
+            state: state,
             onRetry: notifier.retryNextPage,
-            // « 60 membres sur 1 999 » : l'exemple de référence du pied
-            // paginé, et il ne coûte aucun endpoint `count`.
-            progressLabel: pagedProgressNamed(
-              'teams.membersList.noun',
-              state.items.length,
-              total,
-            ),
-            loadingLabel: 'pagination.loadingMore'.tr(),
-            endLabel: 'pagination.endOfList'.tr(),
-            errorLabel: 'pagination.nextPageError'.tr(),
-            retryLabel: 'common.retry'.tr(),
+            itemNounKey: 'teams.membersList.noun',
           ),
         ),
       ),
@@ -291,11 +265,13 @@ class _MembersToolbar extends StatelessWidget {
     required this.filters,
     required this.onChanged,
     required this.showRoles,
+    required this.searchesEmail,
   });
 
   final MemberFilters filters;
   final ValueChanged<MemberFilters> onChanged;
   final bool showRoles;
+  final bool searchesEmail;
 
   @override
   Widget build(BuildContext context) {
@@ -308,7 +284,9 @@ class _MembersToolbar extends StatelessWidget {
           child: PdlSearchField(
             key: keys.team.membersSearchField,
             value: filters.search,
-            hintText: 'teams.membersList.searchPlaceholder'.tr(),
+            hintText: searchesEmail
+                ? 'teams.membersList.searchPlaceholderAdmin'.tr()
+                : 'teams.membersList.searchPlaceholder'.tr(),
             clearTooltip: 'common.clearSearch'.tr(),
             onChanged: (String? value) => onChanged(
               value == null

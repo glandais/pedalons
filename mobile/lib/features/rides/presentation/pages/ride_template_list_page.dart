@@ -5,12 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/lists/list_states.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
-import '../../../../core/theme/pdl_typography.dart';
-import '../../../../core/utils/api_error_handler.dart';
 import '../../../../keys.dart';
 import '../../providers/ride_template_providers.dart';
 import '../widgets/templates/ride_template_card.dart';
@@ -135,22 +134,10 @@ class _RideTemplateList extends ConsumerWidget {
     final Object? initialError = state.initialError;
     if (initialError != null) {
       return <Widget>[
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: PdlEmptyState(
-              variant: PdlEmptyVariant.error,
-              title: 'common.loadError'.tr(),
-              message: getErrorMessage(initialError),
-              actions: <Widget>[
-                PdlButton(
-                  label: 'common.retry'.tr(),
-                  variant: PdlButtonVariant.outline,
-                  size: PdlButtonSize.sm,
-                  onPressed: notifier.loadFirstPage,
-                ),
-              ],
-            ),
+        ListStateSliver(
+          child: ListLoadError(
+            error: initialError,
+            onRetry: notifier.loadFirstPage,
           ),
         ),
       ];
@@ -158,7 +145,7 @@ class _RideTemplateList extends ConsumerWidget {
 
     if (state.isEmpty) {
       return <Widget>[
-        SliverToBoxAdapter(
+        ListStateSliver(
           child: search == null
               ? PdlEmptyState(
                   key: keys.rideTemplates.empty,
@@ -174,21 +161,14 @@ class _RideTemplateList extends ConsumerWidget {
                     ),
                   ],
                 )
-              // Un vide filtré a toujours sa sortie : effacer la recherche,
-              // seul filtre de la liste.
-              : PdlEmptyState(
+              // Un vide filtré a toujours sa sortie : effacer les filtres —
+              // ici la recherche, seul filtre de la liste.
+              : ListFilteredEmpty(
                   key: keys.rideTemplates.noResults,
-                  variant: PdlEmptyVariant.filtered,
-                  title: 'rides.templates.noResults'.tr(),
-                  actions: <Widget>[
-                    PdlButton(
-                      key: keys.rideTemplates.clearSearchButton,
-                      label: 'common.clearSearch'.tr(),
-                      variant: PdlButtonVariant.outline,
-                      size: PdlButtonSize.sm,
-                      onPressed: () => onSearch(null),
-                    ),
-                  ],
+                  clearKey: keys.rideTemplates.clearSearchButton,
+                  title: 'lists.emptyFiltered.templates'.tr(),
+                  filters: <String>[quotedSearch(search!)],
+                  onClear: () => onSearch(null),
                 ),
         ),
       ];
@@ -197,18 +177,9 @@ class _RideTemplateList extends ConsumerWidget {
     final int total = state.total ?? state.items.length;
     return <Widget>[
       SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            PdlSpacing.section,
-            PdlSpacing.chipGap,
-            PdlSpacing.section,
-            PdlSpacing.badgeGap,
-          ),
-          child: Text(
-            'rides.templates.count'.plural(total),
-            key: keys.rideTemplates.count,
-            style: context.pdlText.count,
-          ),
+        child: ListResultCount(
+          listCountLabel('rides.templates.count', total),
+          textKey: keys.rideTemplates.count,
         ),
       ),
       SliverPadding(
@@ -238,21 +209,10 @@ class _RideTemplateList extends ConsumerWidget {
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
         sliver: SliverToBoxAdapter(
-          child: PdlPagedListFooter(
-            isLoadingNext: state.isLoadingNext,
-            hasMore: state.hasMore,
-            isEmpty: state.items.isEmpty,
-            hasError: state.nextError != null,
+          child: PagedListFooter(
+            state: state,
             onRetry: notifier.retryNextPage,
-            progressLabel: pagedProgressNamed(
-              'rides.templates.noun',
-              state.items.length,
-              total,
-            ),
-            loadingLabel: 'pagination.loadingMore'.tr(),
-            endLabel: 'pagination.endOfList'.tr(),
-            errorLabel: 'pagination.nextPageError'.tr(),
-            retryLabel: 'common.retry'.tr(),
+            itemNounKey: 'rides.templates.noun',
           ),
         ),
       ),

@@ -137,9 +137,55 @@ void main() {
       );
 
       expect(find.byKey(keys.routes.emptyState), findsOneWidget);
-      expect(find.text('Tout réinitialiser'), findsOneWidget);
+      // RL10 : le titre commun, les filtres nommés, « Effacer les filtres ».
+      expect(find.text('Aucun parcours pour ces filtres'), findsOneWidget);
+      expect(find.text('Rien ne correspond à : « col ».'), findsOneWidget);
+      expect(find.text('Effacer les filtres'), findsOneWidget);
       expect(find.byKey(keys.routes.noneState), findsNothing);
     });
+
+    testWidgets('RL10 — les filtres sont nommés par leur valeur', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        teamSlug: 'n-peloton',
+        filters: const RouteFilters(
+          teamSlug: 'n-peloton',
+          search: 'col',
+          minDistance: 50000,
+          maxDistance: 100000,
+          surfaceType: SurfaceType.gravel,
+        ),
+      );
+
+      expect(
+        find.textContaining(RegExp(r'^Rien ne correspond à : « col » · .*50')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Gravel'), findsWidgets);
+    });
+  });
+
+  testWidgets('RL8 — sous un filtre, le total filtré seul', (
+    WidgetTester tester,
+  ) async {
+    final RouteDto route = GalleryData(images: false).route();
+    await open(
+      tester,
+      teamSlug: 'n-peloton',
+      routes: <RouteDto>[
+        route,
+        route.copyWith(id: 'r2', slug: 'r2'),
+      ],
+      total: 2,
+      filters: const RouteFilters(teamSlug: 'n-peloton', search: 'monts'),
+    );
+
+    expect(
+      tester.widget<Text>(find.byKey(keys.routes.resultCount)).data,
+      '2 parcours',
+    );
   });
 
   testWidgets('DL6 — Explorer nomme sa portée « Toutes les équipes »', (

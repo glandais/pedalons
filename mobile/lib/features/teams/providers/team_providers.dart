@@ -27,9 +27,26 @@ final teamDetailProvider = FutureProvider.family<TeamDetailDto, String>((
 /// sous une entité (`teamAccessProbeProvider`). Les écrans de détail, eux, ne
 /// la lisent plus pour leurs bandeaux et leurs gestes : le bloc `permissions`
 /// de l'entité le dit (docs/LEDGER_*.md MOB-137, décision D7).
+///
+/// **Toutes** les équipes, page après page (`TeamRepository.getMyTeams`) : le
+/// rôle, les barres d'outils et le sélecteur d'équipe ne s'arrêtent plus aux
+/// vingt premières.
 final myTeamsProvider = FutureProvider<List<TeamDetailDto>>((ref) async {
   final repository = ref.watch(teamRepositoryProvider);
   return repository.getMyTeams();
+});
+
+/// La portée d'ouverture d'une liste inter-équipes — fil d'accueil, Explorer
+/// (règle RL1 des listes, KIT §10), la même que sur le web
+/// (`useMembershipDefault`) : « Membre », sauf pour qui n'a aucune équipe, à
+/// qui elle ne montrerait qu'une liste vide. Optimiste pendant le chargement :
+/// la plupart des personnes ont une équipe.
+///
+/// Elle ne change que quand ce « aucune équipe » bascule : une liste qui
+/// l'observe n'est donc pas remise à zéro par un simple rechargement.
+final membershipDefaultScopeProvider = Provider.autoDispose<MinRole?>((ref) {
+  final List<TeamDetailDto>? teams = ref.watch(myTeamsProvider).value;
+  return teams != null && teams.isEmpty ? null : MinRole.member;
 });
 
 /// Mon rôle dans [teamSlug], lu dans « Mes équipes » — aucun appel de plus.

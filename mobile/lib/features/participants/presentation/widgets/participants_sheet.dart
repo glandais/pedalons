@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../core/pdl/pdl.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_typography.dart';
@@ -144,7 +145,7 @@ class _ParticipantsSheetState extends ConsumerState<ParticipantsSheet> {
           ),
           PdlBadge(
             key: keys.participants.count,
-            label: '${widget.count}',
+            label: AppFormatters.formatNumber(widget.count),
             tone: PdlDerivedTones.registered(c),
             size: PdlBadgeSize.lg,
           ),

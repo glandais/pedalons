@@ -17,8 +17,9 @@ import 'pdl_card.dart';
 /// [progressLabel] qui porte « 8 participants sur 40 » — `core/pdl` ne traduit
 /// rien et ne connaît ni le nom de ce qui est compté, ni son pluriel.
 ///
-/// En fin de liste, « Vous avez tout vu » ferme la lecture : sans lui, une
-/// liste terminée se confond avec une liste qui n'a pas fini de charger.
+/// En fin de liste, « Vous avez tout vu » ferme la lecture, sur la ligne du
+/// compteur : sans lui, une liste terminée se confond avec une liste qui n'a
+/// pas fini de charger.
 class PdlPagedListFooter extends StatelessWidget {
   const PdlPagedListFooter({
     super.key,
@@ -125,15 +126,15 @@ class PdlPagedListFooter extends StatelessWidget {
       );
     }
 
+    // Un seul pied, une seule ligne : « 47 annonces sur 47 · Vous avez tout
+    // vu » (règle RL12 des listes, KIT §10).
     if (!hasMore && !isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          children: <Widget>[
-            Text(progressLabel, textAlign: TextAlign.center, style: t.xs),
-            const SizedBox(height: 2),
-            Text(endLabel, textAlign: TextAlign.center, style: t.xs),
-          ],
+        child: Text(
+          '$progressLabel · $endLabel',
+          textAlign: TextAlign.center,
+          style: t.xs,
         ),
       );
     }

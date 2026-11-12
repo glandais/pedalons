@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/lists/list_states.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -101,7 +102,7 @@ class _CommentThreadState extends ConsumerState<CommentThread> {
           title: 'rides.comments'.tr(),
           count: state.total == null
               ? null
-              : 'comments.count'.plural(state.total!),
+              : listCountLabel('comments.count', state.total!),
           countAtEnd: widget.countAtEnd,
           padding: const EdgeInsets.only(bottom: 10),
         ),
@@ -121,17 +122,9 @@ class _CommentThreadState extends ConsumerState<CommentThread> {
         if (state.isLoadingInitial)
           const PdlSkeletonCard(variant: PdlSkeletonCardVariant.person)
         else if (state.initialError != null)
-          PdlEmptyState(
-            variant: PdlEmptyVariant.error,
-            title: 'common.loadError'.tr(),
-            message: getErrorMessage(state.initialError!),
-            actions: <Widget>[
-              PdlButton(
-                label: 'common.retry'.tr(),
-                variant: PdlButtonVariant.outline,
-                onPressed: _notifier.loadFirstPage,
-              ),
-            ],
+          ListLoadError(
+            error: state.initialError!,
+            onRetry: _notifier.loadFirstPage,
           )
         else if (state.items.isEmpty)
           PdlEmptyState(
@@ -171,22 +164,10 @@ class _CommentThreadState extends ConsumerState<CommentThread> {
             ),
           )
         else if (state.hasMore || state.nextError != null)
-          PdlPagedListFooter(
-            isLoadingNext: state.isLoadingNext,
-            hasMore: state.hasMore,
-            isEmpty: state.items.isEmpty,
-            hasError: state.nextError != null,
-            progressLabel: 'comments.progress'.tr(
-              namedArgs: <String, String>{
-                'loaded': '${state.items.length}',
-                'total': '${state.total ?? state.items.length}',
-              },
-            ),
-            loadingLabel: 'pagination.loadingMore'.tr(),
-            endLabel: 'pagination.endOfList'.tr(),
-            errorLabel: 'pagination.nextPageError'.tr(),
-            retryLabel: 'common.retry'.tr(),
+          PagedListFooter(
+            state: state,
             onRetry: _notifier.loadNextPage,
+            itemNounKey: 'lists.noun.comment',
           ),
       ],
     );

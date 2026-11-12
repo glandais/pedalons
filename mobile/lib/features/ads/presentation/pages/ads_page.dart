@@ -1,21 +1,22 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../config/paths.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../keys.dart';
-import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
-import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
-import '../../../../core/utils/formatters.dart';
+import '../../../../core/lists/list_states.dart';
+import '../../../tags/presentation/tag_filter.dart';
+import '../../../tags/providers/team_tags_provider.dart';
 import '../../domain/ad_filters.dart';
 import '../../providers/ad_list_provider.dart';
 import '../widgets/ad_card.dart';
 import '../widgets/ads_toolbar.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
 
 /// La rubrique Annonces d'une équipe.
 ///
@@ -111,48 +112,29 @@ class _AdsPageState extends ConsumerState<AdsPage> {
 
     // Un refus n'est pas une panne : un lien vers les annonces d'une équipe
     // dont on n'est pas membre lit « Réservées aux membres », comme au site,
-    // pas « rubrique non activée, ou réseau indisponible » — ni « Réessayer »,
-    // qui rendrait le même 403.
+    // pas une erreur — ni « Réessayer », qui rendrait le même 403. L'issue est
+    // la page « À propos » de l'équipe (règle RL11).
     if (state.initialError != null && isForbiddenError(state.initialError!)) {
       return <Widget>[
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: PdlEmptyState(
-              key: keys.adsList.membersOnlyState,
-              variant: PdlEmptyVariant.empty,
-              icon: PdlIcons.visibilityTeam,
-              title: 'ads.list.membersOnly.title'.tr(),
-              message: 'ads.list.membersOnly.message'.tr(),
-            ),
+        ListStateSliver(
+          child: ListAccessRefused(
+            key: keys.adsList.membersOnlyState,
+            title: 'ads.list.membersOnly.title'.tr(),
+            message: 'ads.list.membersOnly.message'.tr(),
+            onAbout: () => context.go(Paths.teamAbout(widget.teamSlug)),
           ),
         ),
       ];
     }
 
+    // Une coupure n'est plus lue comme une rubrique désactivée : la forme
+    // commune des erreurs de liste distingue le réseau du serveur.
     if (state.initialError != null) {
       return <Widget>[
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: PdlEmptyState(
-              variant: PdlEmptyVariant.error,
-              title: 'common.loadError'.tr(),
-              // L'échec a **deux** causes plausibles et l'API ne les distingue
-              // pas : la rubrique désactivée sur l'équipe rend le même 404
-              // qu'un réseau absent rend un échec. Les nommer toutes les deux
-              // vaut mieux qu'en choisir une au hasard.
-              message: 'ads.list.loadError'.tr(),
-              actions: <Widget>[
-                PdlButton(
-                  label: 'common.retry'.tr(),
-                  variant: PdlButtonVariant.outline,
-                  size: PdlButtonSize.sm,
-                  onPressed: notifier.loadFirstPage,
-                ),
-                ReportProblemButton(error: state.initialError!),
-              ],
-            ),
+        ListStateSliver(
+          child: ListLoadError(
+            error: state.initialError!,
+            onRetry: notifier.loadFirstPage,
           ),
         ),
       ];
@@ -160,17 +142,14 @@ class _AdsPageState extends ConsumerState<AdsPage> {
 
     if (state.isEmpty) {
       return <Widget>[
-        SliverToBoxAdapter(
+        ListStateSliver(
           child: filters.isFiltered
               ? _AdsDeadEnd(filters: filters, onChanged: _setFilters)
-              : Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: PdlEmptyState(
-                    variant: PdlEmptyVariant.empty,
-                    icon: Icons.sell,
-                    title: 'ads.empty'.tr(),
-                    message: 'ads.emptyHint'.tr(),
-                  ),
+              : PdlEmptyState(
+                  variant: PdlEmptyVariant.empty,
+                  icon: Icons.sell,
+                  title: 'ads.empty'.tr(),
+                  message: 'ads.emptyHint'.tr(),
                 ),
         ),
       ];
@@ -180,21 +159,7 @@ class _AdsPageState extends ConsumerState<AdsPage> {
 
     return <Widget>[
       SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            PdlSpacing.section,
-            PdlSpacing.chipGap,
-            PdlSpacing.section,
-            4,
-          ),
-          child: Text(
-            'ads.list.count'.plural(
-              total,
-              args: <String>[AppFormatters.formatNumber(total)],
-            ),
-            style: context.pdlText.count,
-          ),
-        ),
+        child: ListResultCount(listCountLabel('ads.list.count', total)),
       ),
       SliverPadding(
         padding: padding,
@@ -212,23 +177,12 @@ class _AdsPageState extends ConsumerState<AdsPage> {
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
         sliver: SliverToBoxAdapter(
-          child: PdlPagedListFooter(
-            isLoadingNext: state.isLoadingNext,
-            hasMore: state.hasMore,
-            isEmpty: state.items.isEmpty,
-            hasError: state.nextError != null,
+          // « N annonces sur M » : le seul endroit qui dise ce que la liste
+          // cache encore, et il ne coûte aucun appel supplémentaire.
+          child: PagedListFooter(
+            state: state,
             onRetry: notifier.retryNextPage,
-            // « N annonces sur M » : le seul endroit qui dise ce que la liste
-            // cache encore, et il ne coûte aucun appel supplémentaire.
-            progressLabel: pagedProgressNamed(
-              'ads.list.noun',
-              state.items.length,
-              total,
-            ),
-            loadingLabel: 'pagination.loadingMore'.tr(),
-            endLabel: 'pagination.endOfList'.tr(),
-            errorLabel: 'pagination.nextPageError'.tr(),
-            retryLabel: 'common.retry'.tr(),
+            itemNounKey: 'ads.list.noun',
           ),
         ),
       ),
@@ -238,32 +192,35 @@ class _AdsPageState extends ConsumerState<AdsPage> {
 
 /// Cul-de-sac : les filtres ne laissent rien passer.
 ///
-/// [PdlDeadEndEmpty] est réutilisé **tel quel**, avec `suggestedFilter: null`
-/// — c'est-à-dire sans « Retirer le filtre X » ni aperçu. La règle de S21-8
-/// veut qu'un filtre proposé soit celui qui, une fois levé, maximise le compte
-/// serveur : `GET …/classifieds/count` le permettrait, au prix d'un appel par
+/// La forme commune du vide filtré (règle RL10) : les filtres nommés — la
+/// recherche, le type, les tags —, et « Effacer les filtres », qui garde le
+/// tri. Pas de « Retirer le filtre X » : il faudrait un appel `count` par
 /// filtre posé à chaque frappe, que l'app ne fait pas pour une suggestion
-/// secondaire. « Tout réinitialiser » suffit à sortir du cul-de-sac.
-class _AdsDeadEnd extends StatelessWidget {
+/// secondaire.
+class _AdsDeadEnd extends ConsumerWidget {
   const _AdsDeadEnd({required this.filters, required this.onChanged});
 
   final AdFilters filters;
   final ValueChanged<AdFilters> onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final String? search = filters.search?.trim();
+    final List<TagWithUsageDto> vocabulary = teamTagsOrEmpty(ref, (
+      teamSlug: filters.teamSlug,
+      type: TagTarget.ad,
+    ));
 
-    return PdlDeadEndEmpty(
+    return ListFilteredEmpty(
       key: keys.adsList.filteredEmptyState,
-      title: 'ads.list.empty.title'.tr(),
-      message: search == null || search.isEmpty
-          ? 'ads.list.empty.description'.tr()
-          : 'ads.list.empty.descriptionSearch'.tr(
-              namedArgs: <String, String>{'search': search},
-            ),
-      resetAllLabel: 'ads.list.empty.resetAll'.tr(),
-      onResetAll: () => onChanged(filters.cleared),
+      title: 'lists.emptyFiltered.ads'.tr(),
+      filters: <String>[
+        if (search != null && search.isNotEmpty) quotedSearch(search),
+        if (filters.adType case final AdType type)
+          'ads.adType.${type.json}'.tr(),
+        ...tagNames(vocabulary, filters.tagIds),
+      ],
+      onClear: () => onChanged(filters.cleared),
     );
   }
 }

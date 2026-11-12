@@ -18,14 +18,21 @@ enum TeamDiscoveryScope {
   mine,
 }
 
-/// L'ordre de l'annuaire : les équipes les plus peuplées d'abord
-/// (`sortBy=MEMBER_COUNT`, `docs/LEDGER_*.md API-13`), le serveur départageant
-/// les ex æquo par identifiant.
+/// L'ordre d'une liste d'équipes **selon sa portée** (règle RL5 des listes,
+/// KIT §10) : « Mes équipes » par le nom, de A à Z — un carnet d'adresses —,
+/// toutes les équipes par nombre de membres, les plus peuplées d'abord — une
+/// découverte (`sortBy=MEMBER_COUNT`, `docs/LEDGER_*.md API-13`). Le serveur
+/// départage les ex æquo par identifiant.
 ///
-/// **Une seule constante** pour la requête (`TeamRepository.fetchTeams`) et
-/// pour la mention « triées par nombre de membres » de l'écran : l'écran
-/// n'annonce un tri que parce que c'est celui qu'il demande.
-const TeamSortBy kTeamDiscoverySort = TeamSortBy.memberCount;
+/// **Une seule source** pour la requête (`TeamRepository.fetchTeams`) et pour
+/// la mention « triées par … » de l'écran : l'écran n'annonce un tri que parce
+/// que c'est celui qu'il demande.
+TeamSortBy teamSortFor(TeamDiscoveryScope scope) =>
+    scope == TeamDiscoveryScope.mine ? TeamSortBy.name : TeamSortBy.memberCount;
+
+/// Le sens de [sort] : A à Z pour le nom, décroissant pour le nombre.
+SortDirection teamSortDirection(TeamSortBy sort) =>
+    sort == TeamSortBy.name ? SortDirection.asc : SortDirection.desc;
 
 /// Ce qui identifie un jeu de résultats de la découverte.
 @immutable
@@ -37,6 +44,9 @@ class TeamDiscoveryFilters {
 
   final TeamDiscoveryScope scope;
   final String? search;
+
+  /// L'ordre demandé, celui que l'écran annonce.
+  TeamSortBy get sortBy => teamSortFor(scope);
 
   bool get isFiltered =>
       (search?.trim().isNotEmpty ?? false) || scope != TeamDiscoveryScope.all;

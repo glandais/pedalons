@@ -28,6 +28,9 @@ class TeamsPageKeys {
 
   /// L'état d'erreur de la liste.
   final loadError = const _TeamsPageKey('loadError');
+
+  /// « 5 équipes · triées par nom », sous la barre (règles RL5 et RL8).
+  final resultCount = const _TeamsPageKey('resultCount');
 }
 
 class _TeamsDiscoverKey extends ValueKey<String> {
@@ -101,6 +104,14 @@ class TeamPageKeys {
 
   /// « Liste des membres non partagée » : le serveur a refusé la liste (403).
   final membersForbiddenState = const _TeamPageKey('membersForbiddenState');
+
+  /// Le rôle de la personne sous le nom de l'équipe, dans son en-tête.
+  final headerRole = const _TeamPageKey('headerRole');
+
+  /// « Aucun membre pour ces filtres » (règle RL10).
+  final membersFilteredEmptyState = const _TeamPageKey(
+    'membersFilteredEmptyState',
+  );
 }
 
 class _TeamDashboardKey extends ValueKey<String> {

@@ -113,8 +113,11 @@ void main() {
         retryLabel: 'Réessayer',
       ),
     );
-    expect(find.text('Vous avez tout vu'), findsOneWidget);
-    expect(find.text('40 participants sur 40'), findsOneWidget);
+    // Un seul pied, une seule ligne (règle RL12 des listes).
+    expect(
+      find.text('40 participants sur 40 · Vous avez tout vu'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('PdlPersonRow ne rend rien quand organizerFlag est faux', (

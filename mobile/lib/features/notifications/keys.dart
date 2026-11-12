@@ -13,7 +13,8 @@ class NotificationsKeys {
   final filterAll = const _NotificationsKey('filterAll');
   final filterUnread = const _NotificationsKey('filterUnread');
 
-  /// La boîte vide sous le filtre « Non lues », et sa sortie « Toutes ».
+  /// La boîte vide sous le filtre « Non lues », et sa sortie « Effacer les
+  /// filtres », qui ramène à « Toutes ».
   final unreadEmptyState = const _NotificationsKey('unreadEmptyState');
   final showAllButton = const _NotificationsKey('showAllButton');
 

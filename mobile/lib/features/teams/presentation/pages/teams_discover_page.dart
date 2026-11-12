@@ -7,12 +7,11 @@ import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_tokens.dart';
-import '../../../../core/theme/pdl_typography.dart';
-import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/lists/list_states.dart';
 import '../../domain/team_discovery_filters.dart';
 import '../../providers/team_discovery_provider.dart';
 import '../widgets/team_discovery_card.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
+import '../team_list_labels.dart';
 import '../../../../keys.dart';
 
 /// L'annuaire public : rejoindre une équipe dont on n'est pas membre.
@@ -20,9 +19,10 @@ import '../../../../keys.dart';
 /// C'était l'un des deux cul-de-sacs de l'application — la loupe de « Mes
 /// équipes » et le bouton de son état vide menaient à un écran « à venir ».
 ///
-/// Le compteur annonce le tri, « triées par nombre de membres » comme la
-/// maquette, **parce que** la requête le demande (`kTeamDiscoverySort`,
-/// `docs/LEDGER_*.md API-13`) : un tri qu'on ne demande pas ne s'annonce pas.
+/// Le compteur annonce le tri — « triées par nombre de membres », ou « par
+/// nom » sous « Mes équipes » (règle RL5) — **parce que** la requête le demande
+/// (`TeamDiscoveryFilters.sortBy`, `docs/LEDGER_*.md API-13`) : un tri qu'on
+/// ne demande pas ne s'annonce pas.
 class TeamsDiscoverPage extends ConsumerStatefulWidget {
   const TeamsDiscoverPage({super.key});
 
@@ -142,23 +142,10 @@ class _TeamsDiscoverPageState extends ConsumerState<TeamsDiscoverPage> {
 
     if (state.initialError != null) {
       return <Widget>[
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: PdlEmptyState(
-              variant: PdlEmptyVariant.error,
-              title: 'common.loadError'.tr(),
-              message: getErrorMessage(state.initialError!),
-              actions: <Widget>[
-                PdlButton(
-                  label: 'common.retry'.tr(),
-                  variant: PdlButtonVariant.outline,
-                  size: PdlButtonSize.sm,
-                  onPressed: notifier.loadFirstPage,
-                ),
-                ReportProblemButton(error: state.initialError!),
-              ],
-            ),
+        ListStateSliver(
+          child: ListLoadError(
+            error: state.initialError!,
+            onRetry: notifier.loadFirstPage,
           ),
         ),
       ];
@@ -166,22 +153,23 @@ class _TeamsDiscoverPageState extends ConsumerState<TeamsDiscoverPage> {
 
     if (state.isEmpty) {
       return <Widget>[
-        SliverToBoxAdapter(
+        ListStateSliver(
           child: filters.isFiltered
-              ? PdlDeadEndEmpty(
-                  title: 'teams.discovery.empty.title'.tr(),
-                  message: 'teams.discovery.empty.description'.tr(),
-                  resetAllLabel: 'teams.discovery.empty.resetAll'.tr(),
-                  onResetAll: () => _setFilters(filters.cleared),
+              ? ListFilteredEmpty(
+                  title: 'lists.emptyFiltered.teams'.tr(),
+                  filters: <String>[
+                    if (filters.search?.trim().isNotEmpty ?? false)
+                      quotedSearch(filters.search!),
+                    if (filters.scope != TeamDiscoveryScope.all)
+                      'teams.discovery.scope.${filters.scope.name}'.tr(),
+                  ],
+                  onClear: () => _setFilters(filters.cleared),
                 )
-              : Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: PdlEmptyState(
-                    variant: PdlEmptyVariant.empty,
-                    icon: Icons.travel_explore_outlined,
-                    title: 'teams.discovery.none'.tr(),
-                    message: 'teams.discovery.noneHint'.tr(),
-                  ),
+              : PdlEmptyState(
+                  variant: PdlEmptyVariant.empty,
+                  icon: Icons.travel_explore_outlined,
+                  title: 'teams.discovery.none'.tr(),
+                  message: 'teams.discovery.noneHint'.tr(),
                 ),
         ),
       ];
@@ -191,24 +179,7 @@ class _TeamsDiscoverPageState extends ConsumerState<TeamsDiscoverPage> {
 
     return <Widget>[
       SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            PdlSpacing.section,
-            PdlSpacing.chipGap,
-            PdlSpacing.section,
-            4,
-          ),
-          child: Text(
-            kTeamDiscoverySort == TeamSortBy.memberCount
-                ? 'teams.discovery.countSortedByMembers'.tr(
-                    namedArgs: <String, String>{
-                      'count': 'teams.discovery.count'.plural(total),
-                    },
-                  )
-                : 'teams.discovery.count'.plural(total),
-            style: context.pdlText.count,
-          ),
-        ),
+        child: ListResultCount(teamListCountLabel(total, filters.sortBy)),
       ),
       SliverPadding(
         padding: padding,
@@ -234,21 +205,10 @@ class _TeamsDiscoverPageState extends ConsumerState<TeamsDiscoverPage> {
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
         sliver: SliverToBoxAdapter(
-          child: PdlPagedListFooter(
-            isLoadingNext: state.isLoadingNext,
-            hasMore: state.hasMore,
-            isEmpty: state.items.isEmpty,
-            hasError: state.nextError != null,
+          child: PagedListFooter(
+            state: state,
             onRetry: notifier.retryNextPage,
-            progressLabel: pagedProgressNamed(
-              'teams.discovery.noun',
-              state.items.length,
-              total,
-            ),
-            loadingLabel: 'pagination.loadingMore'.tr(),
-            endLabel: 'pagination.endOfList'.tr(),
-            errorLabel: 'pagination.nextPageError'.tr(),
-            retryLabel: 'common.retry'.tr(),
+            itemNounKey: 'teams.discovery.noun',
           ),
         ),
       ),

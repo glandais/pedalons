@@ -5,21 +5,19 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/lists/list_states.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
-import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/link_launcher.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../providers/notifications_provider.dart';
 import '../notification_display.dart';
 import '../widgets/notification_tile.dart';
 import '../widgets/push_activation_banner.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../../keys.dart';
 
 /// La boîte de réception : la liste paginée, et un filtre « non lues ».
@@ -209,23 +207,10 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
 
     if (state.initialError != null) {
       return <Widget>[
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: PdlEmptyState(
-              variant: PdlEmptyVariant.error,
-              title: 'common.loadError'.tr(),
-              message: getErrorMessage(state.initialError!),
-              actions: <Widget>[
-                PdlButton(
-                  label: 'common.retry'.tr(),
-                  variant: PdlButtonVariant.outline,
-                  size: PdlButtonSize.sm,
-                  onPressed: notifier.loadFirstPage,
-                ),
-                ReportProblemButton(error: state.initialError!),
-              ],
-            ),
+        ListStateSliver(
+          child: ListLoadError(
+            error: state.initialError!,
+            onRetry: notifier.loadFirstPage,
           ),
         ),
       ];
@@ -233,34 +218,24 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
 
     if (state.isEmpty) {
       // Une boîte vide et une boîte filtrée ne disent pas la même chose, et la
-      // seconde doit offrir la sortie — sans quoi c'est un cul-de-sac.
+      // seconde doit offrir la sortie — sans quoi c'est un cul-de-sac. « Non
+      // lues » est un filtre comme un autre (règle RL10).
       return <Widget>[
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 40),
-            child: PdlEmptyState(
-              key: _unreadOnly ? keys.notifications.unreadEmptyState : null,
-              variant: PdlEmptyVariant.empty,
-              icon: PdlIcons.notificationsOff,
-              title: _unreadOnly
-                  ? 'notifications.empty.unreadTitle'.tr()
-                  : 'notifications.empty.title'.tr(),
-              message: _unreadOnly
-                  ? 'notifications.empty.unreadHint'.tr()
-                  : 'notifications.empty.hint'.tr(),
-              actions: _unreadOnly
-                  ? <Widget>[
-                      PdlButton(
-                        key: keys.notifications.showAllButton,
-                        label: 'notifications.filter.all'.tr(),
-                        variant: PdlButtonVariant.outline,
-                        size: PdlButtonSize.sm,
-                        onPressed: () => setState(() => _unreadOnly = false),
-                      ),
-                    ]
-                  : const <Widget>[],
-            ),
-          ),
+        ListStateSliver(
+          child: _unreadOnly
+              ? ListFilteredEmpty(
+                  key: keys.notifications.unreadEmptyState,
+                  clearKey: keys.notifications.showAllButton,
+                  title: 'lists.emptyFiltered.notifications'.tr(),
+                  filters: <String>['notifications.filter.unread'.tr()],
+                  onClear: () => setState(() => _unreadOnly = false),
+                )
+              : PdlEmptyState(
+                  variant: PdlEmptyVariant.empty,
+                  icon: PdlIcons.notificationsOff,
+                  title: 'notifications.empty.title'.tr(),
+                  message: 'notifications.empty.hint'.tr(),
+                ),
         ),
       ];
     }
@@ -269,21 +244,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
 
     return <Widget>[
       SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            PdlSpacing.section,
-            PdlSpacing.chipGap,
-            PdlSpacing.section,
-            4,
-          ),
-          child: Text(
-            'notifications.count'.plural(
-              total,
-              args: <String>[AppFormatters.formatNumber(total)],
-            ),
-            style: context.pdlText.count,
-          ),
-        ),
+        child: ListResultCount(listCountLabel('notifications.count', total)),
       ),
       SliverList.separated(
         itemCount: state.items.length,
@@ -304,21 +265,10 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
         sliver: SliverToBoxAdapter(
-          child: PdlPagedListFooter(
-            isLoadingNext: state.isLoadingNext,
-            hasMore: state.hasMore,
-            isEmpty: state.items.isEmpty,
-            hasError: state.nextError != null,
+          child: PagedListFooter(
+            state: state,
             onRetry: notifier.retryNextPage,
-            progressLabel: pagedProgressNamed(
-              'notifications.noun',
-              state.items.length,
-              total,
-            ),
-            loadingLabel: 'pagination.loadingMore'.tr(),
-            endLabel: 'pagination.endOfList'.tr(),
-            errorLabel: 'pagination.nextPageError'.tr(),
-            retryLabel: 'common.retry'.tr(),
+            itemNounKey: 'notifications.noun',
           ),
         ),
       ),

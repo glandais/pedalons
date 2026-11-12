@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/lists/list_states.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../keys.dart';
@@ -13,8 +14,6 @@ import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
-import '../../../../core/utils/api_error_handler.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../domain/route_filter_labels.dart';
 import '../../domain/route_filters.dart';
 import '../../providers/route_count_provider.dart';
@@ -25,7 +24,8 @@ import '../widgets/route_card.dart';
 import '../widgets/route_filter_sheet.dart';
 import '../widgets/routes_map_view.dart';
 import '../widgets/routes_toolbar.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
+import '../../../tags/presentation/tag_filter.dart';
+import '../../providers/route_tags_provider.dart';
 
 /// La parcothèque : une coquille, un jeu de filtres, deux vues.
 ///
@@ -222,23 +222,10 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
 
     if (state.initialError != null) {
       return <Widget>[
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: PdlEmptyState(
-              variant: PdlEmptyVariant.error,
-              title: 'common.loadError'.tr(),
-              message: getErrorMessage(state.initialError!),
-              actions: <Widget>[
-                PdlButton(
-                  label: 'common.retry'.tr(),
-                  variant: PdlButtonVariant.outline,
-                  size: PdlButtonSize.sm,
-                  onPressed: notifier.loadFirstPage,
-                ),
-                ReportProblemButton(error: state.initialError!),
-              ],
-            ),
+        ListStateSliver(
+          child: ListLoadError(
+            error: state.initialError!,
+            onRetry: notifier.loadFirstPage,
           ),
         ),
       ];
@@ -246,31 +233,28 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
 
     if (state.isEmpty) {
       // Les filtres d'abord : sans eux, « Aucun parcours pour ces filtres » et
-      // son « Tout réinitialiser » sans effet décrivaient faussement une
+      // son « Effacer les filtres » sans effet décrivaient faussement une
       // équipe qui n'a simplement pas de parcours. La portée n'en est pas un
-      // — « Tout réinitialiser » la garde —, comme dans [RouteFilters.cleared].
+      // — « Effacer les filtres » la garde —, comme dans [RouteFilters.cleared].
       return <Widget>[
-        SliverToBoxAdapter(
+        ListStateSliver(
           child: filters.activeFields.isNotEmpty
               ? RoutesEmptyState(filters: filters, onChanged: _setFilters)
-              : Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: PdlEmptyState(
-                    key: keys.routes.noneState,
-                    variant: PdlEmptyVariant.empty,
-                    icon: PdlIcons.route,
-                    title: 'routes.list.none'.tr(),
-                    message: 'routes.list.noneHint'.tr(),
-                    actions: <Widget>[
-                      if (_canAdd)
-                        PdlButton(
-                          key: keys.routes.emptyAddButton,
-                          label: 'routes.editor.addSemantic'.tr(),
-                          icon: PdlIcons.add,
-                          onPressed: _openNew,
-                        ),
-                    ],
-                  ),
+              : PdlEmptyState(
+                  key: keys.routes.noneState,
+                  variant: PdlEmptyVariant.empty,
+                  icon: PdlIcons.route,
+                  title: 'routes.list.none'.tr(),
+                  message: 'routes.list.noneHint'.tr(),
+                  actions: <Widget>[
+                    if (_canAdd)
+                      PdlButton(
+                        key: keys.routes.emptyAddButton,
+                        label: 'routes.editor.addSemantic'.tr(),
+                        icon: PdlIcons.add,
+                        onPressed: _openNew,
+                      ),
+                  ],
                 ),
         ),
       ];
@@ -293,7 +277,6 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
             4,
           ),
           child: _CountAndDensityRow(
-            filters: filters,
             shown: total ?? state.items.length,
             density: density,
           ),
@@ -338,21 +321,10 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
         sliver: SliverToBoxAdapter(
-          child: PdlPagedListFooter(
-            isLoadingNext: state.isLoadingNext,
-            hasMore: state.hasMore,
-            isEmpty: state.items.isEmpty,
-            hasError: state.nextError != null,
+          child: PagedListFooter(
+            state: state,
             onRetry: notifier.retryNextPage,
-            progressLabel: pagedProgressNamed(
-              'routes.list.noun',
-              state.items.length,
-              total ?? state.items.length,
-            ),
-            loadingLabel: 'pagination.loadingMore'.tr(),
-            endLabel: 'pagination.endOfList'.tr(),
-            errorLabel: 'pagination.nextPageError'.tr(),
-            retryLabel: 'common.retry'.tr(),
+            itemNounKey: 'routes.list.noun',
           ),
         ),
       ),
@@ -431,43 +403,31 @@ class _MapBody extends StatelessWidget {
   }
 }
 
-/// « 412 parcours sur 2 585 » et le segmenté de densité.
+/// « 412 parcours » et le segmenté de densité.
 ///
-/// Les deux nombres viennent du **même** endpoint `count`, l'un sur les
-/// filtres courants, l'autre sur la portée seule : ils ne peuvent donc pas
-/// raconter deux histoires différentes.
+/// Le compteur dit le total **du jeu affiché** : sous un filtre, le total
+/// filtré seul, sans « sur 2 585 » (règle RL8 des listes, KIT §10) — le même
+/// texte que le site, et un seul appel. Il ne se pose pas à zéro : la liste
+/// vide a son propre état.
 class _CountAndDensityRow extends ConsumerWidget {
-  const _CountAndDensityRow({
-    required this.filters,
-    required this.shown,
-    required this.density,
-  });
+  const _CountAndDensityRow({required this.shown, required this.density});
 
-  final RouteFilters filters;
   final int shown;
   final RouteListDensity density;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final PdlTypography t = context.pdlText;
-    final int? total = ref.watch(routeTotalCountProvider(filters)).value;
-    final bool filtered = filters.activeFields.isNotEmpty;
-
-    final String label = (filtered && total != null && total != shown)
-        ? 'routes.list.countOf'.tr(
-            namedArgs: <String, String>{
-              'shown': AppFormatters.formatNumber(shown),
-              'total': AppFormatters.formatNumber(total),
-            },
-          )
-        : 'routes.list.count'.plural(
-            shown,
-            args: <String>[AppFormatters.formatNumber(shown)],
-          );
 
     return Row(
       children: <Widget>[
-        Expanded(child: Text(label, style: t.count)),
+        Expanded(
+          child: Text(
+            listCountLabel('routes.list.count', shown),
+            key: keys.routes.resultCount,
+            style: t.count,
+          ),
+        ),
         SizedBox(
           width: 176,
           child: PdlSegmented<RouteListDensity>(
@@ -517,16 +477,25 @@ class RoutesEmptyState extends ConsumerWidget {
     final RouteFilterField? culprit = ref.watch(
       routeDeadEndSuggestionProvider(filters),
     );
-    final String? search = filters.search?.trim();
+    final UnitSystem units = ref.watch(unitSystemProvider);
+    final List<TagWithUsageDto> vocabulary = routeTagVocabulary(ref, filters);
 
-    return PdlDeadEndEmpty(
+    // Les filtres posés, **nommés par leur valeur**, comme leurs puces :
+    // « 50 km – 100 km · vallonné » (règle RL10).
+    final List<String> named = <String>[
+      for (final RouteFilterField field in filters.activeFields)
+        ...switch (field) {
+          RouteFilterField.search => <String>[quotedSearch(filters.search!)],
+          RouteFilterField.tags => tagNames(vocabulary, filters.tagIds),
+          _ => <String>[?RouteFilterLabels.filterChip(filters, field, units)],
+        },
+    ];
+
+    return ListFilteredEmpty(
       key: keys.routes.emptyState,
-      title: 'routes.list.empty.title'.tr(),
-      message: search == null || search.isEmpty
-          ? 'routes.list.empty.description'.tr()
-          : 'routes.list.empty.descriptionSearch'.tr(
-              namedArgs: <String, String>{'search': search},
-            ),
+      title: 'lists.emptyFiltered.routes'.tr(),
+      filters: named,
+      onClear: () => onChanged(filters.cleared),
       removeFilterLabel: culprit == null
           ? null
           : 'routes.list.empty.removeFilter'.tr(
@@ -537,8 +506,6 @@ class RoutesEmptyState extends ConsumerWidget {
       onRemoveFilter: culprit == null
           ? null
           : () => onChanged(filters.without(culprit)),
-      resetAllLabel: 'routes.list.empty.resetAll'.tr(),
-      onResetAll: () => onChanged(filters.cleared),
       previewChild: culprit == null
           ? null
           : _WithoutFilterPreview(filters: filters, field: culprit),

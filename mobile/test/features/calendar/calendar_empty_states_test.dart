@@ -94,7 +94,7 @@ void main() {
     }
   }
 
-  const String filteredTitle = 'Rien avec ces filtres';
+  const String filteredTitle = 'Aucun événement pour ces filtres';
   const String monthEmptyTitle = 'Aucun événement ce mois-ci';
 
   group('DL3 — vide filtré seulement si le mois a des événements', () {
@@ -108,8 +108,27 @@ void main() {
       );
 
       expect(find.text(filteredTitle), findsOneWidget);
+      // RL10 : le message nomme les filtres posés.
+      expect(find.text('Rien ne correspond à : Sorties.'), findsOneWidget);
       expect(find.text('Effacer les filtres'), findsOneWidget);
       expect(find.text(monthEmptyTitle), findsNothing);
+    });
+
+    testWidgets('RL10 — « Je participe » est nommé avec le type', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        teamSlug: 'n-peloton',
+        events: <CalendarEventDto>[stageThisMonth()],
+        type: CalendarTypeFilter.rides,
+        registeredOnly: true,
+      );
+
+      expect(
+        find.text('Rien ne correspond à : Je participe · Sorties.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('un mois vide, filtre posé : le vide du mois', (
@@ -153,5 +172,22 @@ void main() {
 
       expect(find.textContaining("Vos équipes n'ont publié"), findsOneWidget);
     });
+  });
+
+  testWidgets('RL10 — le mois s\'écrit en minuscule dans la phrase', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, teamSlug: null, events: const <CalendarEventDto>[]);
+
+    final String month = AppFormatters.formatMonthAndYear(
+      AppFormatters.displayNow(),
+    );
+    expect(month, month.toLowerCase());
+    expect(
+      find.text(
+        "Vos équipes n'ont publié aucune sortie ni étape de voyage en $month.",
+      ),
+      findsOneWidget,
+    );
   });
 }

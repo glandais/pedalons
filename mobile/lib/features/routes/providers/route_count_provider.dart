@@ -11,13 +11,11 @@ const Duration kRouteCountDebounce = Duration(milliseconds: 350);
 
 /// Combien de parcours ce jeu de filtres rendrait.
 ///
-/// Une seule famille, trois usages, et c'est le point : **le compte et la
+/// Une seule famille, deux usages, et c'est le point : **le compte et la
 /// liste ne peuvent pas diverger** puisqu'ils partent des mêmes
-/// [RouteFilters].
+/// [RouteFilters]. (Le compteur de la liste, lui, lit le total de la page :
+/// sous un filtre, il dit le total filtré seul, « 2 parcours » — règle RL8.)
 ///
-/// * « 412 parcours sur 2 585 » — deux lectures, l'une sur les filtres
-///   courants, l'autre sur [RouteFilters.cleared] (la portée survit, sans quoi
-///   le second nombre parlerait d'autre chose que le premier) ;
 /// * le CTA de la feuille de filtres, sur le brouillon en cours d'édition ;
 /// * la règle de suggestion du « cul-de-sac », sur chaque filtre levé.
 ///
@@ -37,13 +35,6 @@ final routeCountProvider = FutureProvider.autoDispose.family<int, RouteFilters>(
     return ref.watch(routeRepositoryProvider).countRoutes(filters);
   },
 );
-
-/// Combien de parcours la portée courante contient, tous filtres levés — le
-/// « sur 2 585 » de la ligne de compteur.
-final routeTotalCountProvider = Provider.autoDispose
-    .family<AsyncValue<int>, RouteFilters>(
-      (ref, filters) => ref.watch(routeCountProvider(filters.cleared)),
-    );
 
 /// Le filtre à proposer de retirer dans l'état « cul-de-sac ».
 ///

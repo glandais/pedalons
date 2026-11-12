@@ -192,6 +192,7 @@ void main() {
 
     expect(find.text('Aucune notification'), findsOneWidget);
     expect(find.text('Toutes'), findsOneWidget); // le segmenté, pas un bouton
+    expect(find.text('Effacer les filtres'), findsNothing);
   });
 
   testWidgets('« Tout marquer lu » n\'apparaît qu\'avec des non lues', (
@@ -460,7 +461,10 @@ void main() {
 
     expect(repository.markedAll, isTrue);
     expect(find.text('Sortie A'), findsNothing);
-    expect(find.text('Aucune notification non lue'), findsOneWidget);
+    // RL10 : « Non lues » est un filtre, que le vide filtré nomme.
+    expect(find.text('Aucune notification pour ces filtres'), findsOneWidget);
+    expect(find.text('Rien ne correspond à : Non lues.'), findsOneWidget);
+    expect(find.text('Effacer les filtres'), findsOneWidget);
     expect(find.bySemanticsLabel('Tout marquer lu'), findsNothing);
   });
 }

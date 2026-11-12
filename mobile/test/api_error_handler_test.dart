@@ -69,7 +69,10 @@ void main() {
       _loadLocale('en');
       final resolved = resolveApiError(_dio(DioExceptionType.connectionError));
       expect(resolved.title, 'No connection');
-      expect(resolved.message, 'Check your internet connection and try again.');
+      expect(
+        resolved.message,
+        'Check your internet connection, then try again.',
+      );
     });
 
     test('a business code maps to its translation', () {

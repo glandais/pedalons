@@ -6,6 +6,7 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/auth/data/auth_repository.dart';
 import 'package:pedalons/features/auth/data/secure_storage.dart';
 import 'package:pedalons/features/auth/domain/auth_state.dart';
@@ -80,6 +81,7 @@ void main() {
     MemberFilters? filters,
     Brightness brightness = Brightness.light,
     bool rolesShown = true,
+    bool searchesEmail = false,
     bool signedInAsU1 = false,
   }) async {
     await tester.pumpWidget(
@@ -96,6 +98,7 @@ void main() {
             body: TeamMembersPage(
               teamSlug: 'n-peloton',
               rolesShown: rolesShown,
+              searchesEmail: searchesEmail,
             ),
           ),
         ),
@@ -115,7 +118,12 @@ void main() {
     expect(repository.calls.single['page'], 0);
     expect(repository.calls.single['size'], kDefaultPageSize);
     // 20 lignes chargées, 1 999 annoncées : la troncature n'est plus muette.
-    expect(find.text('1999\u00a0membres'), findsOneWidget);
+    // Le nombre est formaté (règle RL8).
+    expect(
+      find.text('${AppFormatters.formatNumber(1999)}\u00a0membres'),
+      findsOneWidget,
+    );
+    expect(find.text('1999\u00a0membres'), findsNothing);
   });
 
   testWidgets(
@@ -196,7 +204,25 @@ void main() {
       filters: const MemberFilters(teamSlug: 'n-peloton', search: 'zzz'),
     );
 
-    expect(find.text('Tout réinitialiser'), findsOneWidget);
+    // RL10 : les filtres nommés, un seul geste pour sortir.
+    expect(find.text('Aucun membre pour ces filtres'), findsOneWidget);
+    expect(find.text('Rien ne correspond à : « zzz ».'), findsOneWidget);
+    expect(find.text('Effacer les filtres'), findsOneWidget);
+  });
+
+  testWidgets('RL7 — l\'invite dit l\'e-mail à qui administre les membres', (
+    WidgetTester tester,
+  ) async {
+    await openMembers(tester, repository: _StubTeamRepository(total: 3));
+    expect(find.text('Rechercher un membre…'), findsOneWidget);
+
+    await openMembers(
+      tester,
+      repository: _StubTeamRepository(total: 3),
+      searchesEmail: true,
+    );
+    expect(find.text('Rechercher par nom ou e-mail…'), findsOneWidget);
+    expect(find.text('Rechercher un membre…'), findsNothing);
   });
 
   DioException httpError(int status) {
@@ -223,8 +249,10 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Erreur de chargement'), findsNothing);
+    expect(find.text('Chargement impossible'), findsNothing);
     expect(find.text('Réessayer'), findsNothing);
+    // RL11 : un refus a une issue.
+    expect(find.text('À propos de l\'équipe'), findsOneWidget);
   });
 
   testWidgets('une panne reste une erreur, avec « Réessayer »', (
@@ -235,8 +263,9 @@ void main() {
       repository: _StubTeamRepository(error: httpError(500)),
     );
 
-    expect(find.text('Erreur de chargement'), findsOneWidget);
+    expect(find.text('Chargement impossible'), findsOneWidget);
     expect(find.text('Réessayer'), findsOneWidget);
+    expect(find.text('Signaler un problème'), findsOneWidget);
     expect(find.byKey(keys.team.membersForbiddenState), findsNothing);
   });
 

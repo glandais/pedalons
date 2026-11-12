@@ -170,7 +170,35 @@ void main() {
       find.byType(PdlPagedListFooter),
     );
     expect(footer.progressLabel, '25 équipes sur 25');
-    expect(find.text('25 équipes sur 25'), findsOneWidget);
+    // Un seul pied (règle RL12).
+    expect(find.text('25 équipes sur 25 · Vous avez tout vu'), findsOneWidget);
+    // RL5 et RL8 : le compteur, et l'ordre à côté.
+    expect(
+      tester.widget<Text>(find.byKey(keys.teams.resultCount)).data,
+      '25 équipes · triées par nom',
+    );
+  });
+
+  testWidgets('RL10 — une recherche sans résultat est un vide filtré nommé', (
+    WidgetTester tester,
+  ) async {
+    final _StubTeamRepository repository = _StubTeamRepository(fixtureTeams(3));
+    await openWith(tester, repository);
+    await tester.tap(find.byTooltip('Rechercher une équipe'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(EditableText), 'zzz');
+    // L'icône de l'état vide flotte sans fin : pas de `pumpAndSettle`.
+    for (int i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(find.text('Aucune équipe pour ces filtres'), findsOneWidget);
+    expect(find.text('Rien ne correspond à : « zzz ».'), findsOneWidget);
+    await tester.tap(find.text('Effacer les filtres'));
+    for (int i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byKey(keys.teams.teamCard('equipe-1')), findsOneWidget);
   });
 
   testWidgets('DL5 — la recherche part au serveur', (
@@ -222,7 +250,8 @@ void main() {
     );
 
     expect(find.byKey(keys.teams.loadError), findsOneWidget);
-    expect(find.text('Erreur de chargement'), findsOneWidget);
+    // La forme commune des erreurs de liste (règle RL11).
+    expect(find.text('Chargement impossible'), findsOneWidget);
     expect(find.text('Équipe indisponible'), findsNothing);
   });
 }
