@@ -30,6 +30,13 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
   des sections se calcule sur la position globale (`page × size + i`), pas sur le nombre de lignes affichées ; l'app ne
   crée ni annonce ni équipe (`MOB-144`). Tests : `list_states_test`, `paged_list_sections_test`, `team_agenda_test`,
   `home_feed_bar_test`, `routes_list_states_test`, `publication_feed_dated_test`, galerie `list_gallery_test` (74 cas).
+  **Complément, contrat 14.9.0** (même jour) — troisième choix de période « Plus tôt » : fil « Tout / Je participe /
+  Plus tôt » (`when=EARLIER`, `publicationFeedPeriodProvider`), agenda « Toutes les dates / Je participe / Plus tôt »
+  (`AgendaScope.earlier`, `when=PAST` avec `dated=true`). Liste simple, sans section, avec son compteur ; « Plus tôt »
+  compte comme un filtre ; absent de la vue calendrier. `PdlSegmented` resserre ses marges à trois choix (`dense`)
+  sans réduire le texte. Les liens `?w=past` et `?w=earlier` ouvrent l'agenda sur « Plus tôt ». Tests :
+  `feed_period_control_test`, `team_agenda_test`, `home_feed_bar_test` ; cas de galerie `accueil-plus-tot`,
+  `agenda-plus-tot`.
   Vu sur captures de galerie seulement : recette `MOB-146`.
 - `MOB-140` **Vue en lignes de l'agenda dans l'app** (12 novembre 2026) — écart voulu le matin (V7 du tri des cartes),
   décidé l'après-midi par la règle RL9 des listes : `PublicationRow` (`publication_card.dart`), mêmes calculs que la
@@ -1244,7 +1251,15 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   anciens liens `?w=past` / `?w=upcoming` redirigés. La page des modèles ne demande plus la liste pour une personne
   simplement membre. **À ne pas défaire** : l'agenda est un seul appel `when=UPCOMING_FIRST&dated=true`. Tests :
   `listStates.test.tsx`, `teamAgendaData.test.tsx`, `upcomingFirst.test.ts`, `QueryStateBoundary.test.tsx`, galerie
-  `ListGallery.test.tsx` ; e2e adaptés, non lancés à cette date. Vu sur captures de galerie seulement : recette `WEB-176`.
+  `ListGallery.test.tsx` ; e2e adaptés, non lancés à cette date.
+  **Complément, contrat 14.9.0** (même jour) — troisième choix de période « Plus tôt », comme l'app : fil
+  (`when=EARLIER`) et agenda (`when=PAST` avec `dated=true`), `?w=earlier` dans l'adresse, liste simple avec son
+  compteur ; les anciens liens `?w=past` y mènent. Une personne non connectée voit « Tout / Plus tôt » et « Toutes les
+  dates / Plus tôt ». À l'agenda, le champ de recherche et celui des tags s'alignent par le haut (le texte d'aide des
+  tags décalait la ligne) ; le refus d'accès propose « À propos de l'équipe » ; la carte des parcours reprend
+  l'en-tête de la liste (`RoutesListHeader`, « Créer un parcours »). Tests : `PublicationScopeControl.test.tsx`,
+  `publicationFilters.test.ts`, `agendaFilters.test.ts`, `teamLegacyRedirects.test.ts`, `listStates.test.tsx`.
+  Vu sur captures de galerie seulement, et pas pour ce complément : recette `WEB-176`.
 - `WEB-174` **Listes : les défauts de l'audit, côté site** (12 novembre 2026) — DL11 à DL20 du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §1. Une panne
   n'affiche plus jamais l'état vide : les neuf listes sans état d'erreur passent par `QueryStateBoundary`, avec
   « Réessayer » ; une erreur serveur sur l'équipe affiche `TeamUnavailable` au lieu de rediriger ; une page au-delà de
@@ -3214,6 +3229,12 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
   en-têtes à n'importe quelle page. `dated=true` limite une liste aux sorties et aux voyages (l'agenda). Sans ces
   paramètres, rien ne change. Une requête de comptage de plus par page, jamais par ligne. Tests :
   `PublicationUpcomingFirstTest`, `PublicationQueryCountTest`. Limite : pas d'index pour ce tri.
+  **Complément, contrat 14.9.0** (même jour, après l'essai en production : une équipe qui planifie jusqu'en 2028
+  repoussait « Plus tôt » à la page 17) — `when=EARLIER` renvoie la seconde section seule : tout sauf l'à-venir,
+  publications comprises, du plus récent au plus ancien ; `sortDir` est ignoré et la page ne porte pas
+  `upcomingTotal`. `PAST` ne convenait pas au fil : il écarte les publications. **À ne pas défaire** : `EARLIER` et la
+  seconde section de `UPCOMING_FIRST` sont la même liste, dans le même ordre. Tests ajoutés à
+  `PublicationUpcomingFirstTest`, non lancés à cette date.
 - `API-184` **Listes paginées : ordre total, et membres par nom** (12 novembre 2026, contrat 14.7.0) — DL21 et DL22 du
   [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §1. Chaque liste paginée par offset termine sa clé de tri par l'id, dans le même sens : publications, agenda,
   parcours, annonces, modèles, lieux, invitations, aperçus GPX, listes d'administration. Sans cela, deux éléments à clé
