@@ -18,6 +18,7 @@ import {
 } from '@/hooks/filters/teamFilters'
 import { prefetchPageWindow, resolveMembershipDefault } from '@/config/prefetchHelpers'
 import { useAuthStore } from '@/store/authStore'
+import { LIST_QUERY, LIST_REQUEST } from '@/lib/listQuery'
 
 /**
  * The one description of what the team list screen reads, consumed two ways: `TeamListPage` calls
@@ -57,13 +58,13 @@ export function useTeamListData() {
   })
 
   const apiParams = useMemo(() => teamApiParams(filters), [filters])
-  const teams = useListTeams(apiParams)
+  const teams = useListTeams(apiParams, { query: LIST_QUERY, request: LIST_REQUEST })
 
   // The neighbouring pages, on the same key `prefetchPageWindow` primes server-side.
   const prefetchPage = useCallback(
     (page: number) => ({
       queryKey: getListTeamsQueryKey({ ...apiParams, page }),
-      queryFn: () => listTeams({ ...apiParams, page }),
+      queryFn: () => listTeams({ ...apiParams, page }, LIST_REQUEST),
     }),
     [apiParams]
   )
@@ -91,5 +92,7 @@ export async function prefetchTeamList(queryClient: QueryClient, url: URL): Prom
     schema: makeTeamFiltersSchema(await resolveMembershipDefault(queryClient)),
     alias: teamFiltersAlias,
   })
-  await prefetchPageWindow(teamApiParams(filters), (p) => prefetchListTeamsQuery(queryClient, p))
+  await prefetchPageWindow(teamApiParams(filters), (p) =>
+    prefetchListTeamsQuery(queryClient, p, { request: LIST_REQUEST })
+  )
 }

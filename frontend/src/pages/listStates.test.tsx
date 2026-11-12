@@ -36,7 +36,11 @@ vi.mock('@/components/team/TeamAdminLayout', () => ({
   TeamAdminLayout: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }))
 vi.mock('@/components/team/TeamInvitationList', () => ({ TeamInvitationList: () => null }))
-vi.mock('@/components/tag', () => ({ TagFilter: () => null, TagPicker: () => null }))
+vi.mock('@/components/tag', () => ({
+  TagFilter: () => null,
+  TagPicker: () => null,
+  useTagLabels: () => [],
+}))
 vi.mock('@/components/calendar/IcsFeedSettings', () => ({ IcsFeedSettings: () => null }))
 vi.mock('@/components/calendar/CalendarView', () => ({
   CalendarView: ({ events }: { events: CalendarEventDto[] }) => (
@@ -56,6 +60,7 @@ const state = vi.hoisted(() => ({
   list: {} as Record<string, unknown>,
   filters: {} as Record<string, unknown>,
   setFilters: (() => {}) as (patch: Record<string, unknown>) => void,
+  templatesAsked: [] as boolean[],
 }))
 
 vi.mock('@/pages/team/teamPostsData', () => ({
@@ -112,12 +117,15 @@ vi.mock('@/pages/ad/adListData', async () => {
 vi.mock('@/pages/ridetemplate/rideTemplateListData', async () => {
   const { rideTemplateFiltersSchema } = await import('@/hooks/filters/rideTemplateFilters')
   return {
-    useRideTemplateListData: () => ({
-      filters: { ...rideTemplateFiltersSchema.parse({}), ...state.filters },
-      setFilters: state.setFilters,
-      templates: state.list,
-      totalPages: 1,
-    }),
+    useRideTemplateListData: (_slug: string, canRead: boolean) => {
+      state.templatesAsked.push(canRead)
+      return {
+        filters: { ...rideTemplateFiltersSchema.parse({}), ...state.filters },
+        setFilters: state.setFilters,
+        templates: state.list,
+        totalPages: 1,
+      }
+    },
   }
 })
 vi.mock('@/pages/team/teamMembersData', async () => {
@@ -135,6 +143,7 @@ vi.mock('@/pages/calendar/teamCalendarData', () => ({
   useTeamCalendarData: () => ({
     team: state.team,
     events: state.list,
+    dateRange: { from: '2026-10-01T00:00:00.000Z', to: '2027-06-01T00:00:00.000Z' },
     handleDateRangeChange: () => {},
   }),
 }))
@@ -315,15 +324,14 @@ describe('a page past the last one says so (DL15)', () => {
     })
 })
 
-describe('a filtered empty list has its way out (DL20)', () => {
-  it('ride templates: « Effacer la recherche »', () => {
+describe('a filtered empty list has its way out (DL20, RL10)', () => {
+  it('ride templates: names the search, « Effacer les filtres »', () => {
     state.list = query({ data: { templates: [], total: 0 } })
     state.filters = { search: 'col' }
     renderAt(<RideTemplateListPage />)
-    expect(screen.getByText('Aucun modèle trouvé')).toBeTruthy()
-    // The field's own cross bears the same name (DL19): the empty state's button is the last one.
-    const buttons = screen.getAllByRole('button', { name: 'Effacer la recherche' })
-    fireEvent.click(buttons[buttons.length - 1])
+    expect(screen.getByRole('heading', { name: 'Aucun modèle pour ces filtres' })).toBeTruthy()
+    expect(screen.getByText('Rien ne correspond à : « col ».')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Effacer les filtres' }))
     expect(state.setFilters).toHaveBeenCalledWith({ search: undefined, page: 0 })
   })
 
@@ -365,5 +373,86 @@ describe('the personal calendar filters its kind (DL18)', () => {
     )
     expect(screen.queryByText('Sortie du mardi')).toBeNull()
     expect(screen.getByText('Étape 1')).toBeTruthy()
+  })
+})
+
+describe('a count under every paginated list, masked at zero (RL8, RL5)', () => {
+  const lists: [string, ReactNode, unknown, string][] = [
+    ['teams, mine by name', <TeamListPage />, { teams: [], total: 0 }, ''],
+    ['ride templates', <RideTemplateListPage />, { templates: [], total: 47 }, '47 modèles'],
+    ['members admin', <TeamMembersPage />, { members: [], total: 24 }, '24 membres'],
+    ['directory', <TeamDirectoryPage />, { members: [], total: 24 }, '24 membres'],
+  ]
+  for (const [name, element, data, count] of lists)
+    it(name, () => {
+      state.list = query({ data })
+      state.filters = { page: 4 }
+      renderAt(element)
+      if (count) expect(screen.getByText(count)).toBeTruthy()
+      else expect(screen.queryByText(/^0 équipe/)).toBeNull()
+    })
+
+  it('teams: the order follows the scope, said beside the count', () => {
+    state.list = query({ data: { teams: [], total: 2 } })
+    state.filters = { page: 4, membership: 'member' }
+    const { unmount } = renderAt(<TeamListPage />)
+    expect(screen.getByText('2 équipes · triées par nom')).toBeTruthy()
+    unmount()
+    state.filters = { page: 4, membership: 'all' }
+    renderAt(<TeamListPage />)
+    expect(screen.getByText('2 équipes · triées par nombre de membres')).toBeTruthy()
+  })
+})
+
+describe('the agenda’s filtered empty state names its filters (RL10)', () => {
+  it('« Passées » is a filter; one gesture lifts everything', () => {
+    state.list = query({ data: { publications: [], total: 0 } })
+    state.filters = { scope: 'past', filter: 'trip', search: 'monts' }
+    renderAt(<TeamAgendaPage />)
+    expect(screen.getByRole('heading', { name: 'Aucun voyage pour ces filtres' })).toBeTruthy()
+    expect(screen.getByText('Rien ne correspond à : « monts » · Passées · Voyages.')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Effacer les filtres' }))
+    expect(state.setFilters).toHaveBeenCalledWith({
+      search: undefined,
+      filter: 'all',
+      scope: 'upcoming',
+      tags: undefined,
+      page: 0,
+    })
+  })
+
+  it('the absolute empty state offers to create, for whoever may', () => {
+    state.list = query({ data: { publications: [], total: 0 } })
+    renderAt(<TeamAgendaPage />)
+    expect(screen.getByRole('heading', { name: "Rien à l'agenda pour le moment" })).toBeTruthy()
+    expect(screen.getAllByRole('link', { name: 'Créer une sortie' })).toHaveLength(2)
+  })
+})
+
+describe('the ride templates are not asked for a plain member (DL23)', () => {
+  it('asks once the reader organizes, never before nor for a member', () => {
+    state.templatesAsked = []
+    state.team = query({ data: { ...TEAM, role: 'MEMBER' } })
+    const { unmount } = renderAt(<RideTemplateListPage />)
+    expect(state.templatesAsked.every((asked) => !asked)).toBe(true)
+    unmount()
+
+    state.templatesAsked = []
+    state.team = query({ data: TEAM })
+    renderAt(<RideTemplateListPage />)
+    expect(state.templatesAsked).toContain(true)
+  })
+})
+
+describe('a list being replaced stays, dimmed (RL11)', () => {
+  it('ads: the previous page under a busy veil', () => {
+    state.list = query({
+      data: { ads: [], total: 0 },
+      isPlaceholderData: true,
+    })
+    state.filters = { search: 'vélo' }
+    renderAt(<AdListPage />)
+    const heading = screen.getByRole('heading', { name: 'Aucune annonce pour ces filtres' })
+    expect(heading.closest('[aria-busy="true"]')).not.toBeNull()
   })
 })

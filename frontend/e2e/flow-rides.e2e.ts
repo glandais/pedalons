@@ -74,14 +74,22 @@ async function ridingTeam(label: string) {
 const main = (page: Page) => page.getByRole('main')
 
 /**
- * The team agenda (WEB-68), loaded: its heading and its count are there before any presence or
- * absence check.
+ * The team agenda (WEB-68), loaded: its heading and its count — or, at zero, its empty state, the
+ * count being masked then (RL8) — are there before any presence or absence check.
  */
 async function openFeed(page: Page, teamSlug: string) {
   await page.goto(`/equipes/${teamSlug}/agenda`)
   await expect(main(page).getByRole('heading', { name: 'Agenda', level: 2 })).toBeVisible()
-  await expect(main(page).getByText(/^\d+ sorties? (et|ou) voyages? à venir$/)).toBeVisible()
+  await expect(
+    main(page)
+      .getByText(/^\d+ sorties? (et|ou) voyages? à venir$/)
+      .or(emptyAgenda(page))
+  ).toBeVisible()
 }
+
+/** The agenda with nothing to come — its count masked at zero (RL8). */
+const emptyAgenda = (page: Page) =>
+  main(page).getByRole('heading', { name: "Rien à l'agenda pour le moment" })
 
 const feedCard = (page: Page, name: string) => entityCard(main(page), name)
 
@@ -199,9 +207,7 @@ test.describe('ride journey', () => {
     const { context: memberContext, page: memberPage } = await pageAs(browser, member)
     try {
       await openFeed(memberPage, team.slug)
-      await expect(
-        main(memberPage).getByText('0 sortie ou voyage à venir', { exact: true })
-      ).toBeVisible()
+      await expect(emptyAgenda(memberPage)).toBeVisible()
       await expect(feedCard(memberPage, rideName)).toHaveCount(0)
       expect(await findRide(member, team.slug, rideSlug), 'a draft is 404 to a member').toBeNull()
 
@@ -289,16 +295,12 @@ test.describe('ride journey', () => {
       await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/agenda$`))
       await expect(main(page).getByRole('heading', { name: 'Agenda', level: 2 })).toBeVisible()
       // An organizer is not a team admin: deleted rides are not listed back to them.
-      await expect(
-        main(page).getByText('0 sortie ou voyage à venir', { exact: true })
-      ).toBeVisible()
+      await expect(emptyAgenda(page)).toBeVisible()
       await expect(feedCard(page, rideName)).toHaveCount(0)
 
       expect(await findRide(member, team.slug, rideSlug), 'the API answers 404').toBeNull()
       await openFeed(memberPage, team.slug)
-      await expect(
-        main(memberPage).getByText('0 sortie ou voyage à venir', { exact: true })
-      ).toBeVisible()
+      await expect(emptyAgenda(memberPage)).toBeVisible()
       await expect(feedCard(memberPage, rideName)).toHaveCount(0)
       // The calendar's events come with the page, prefetched by the server: another ride of the
       // same day, shown, is what says they are in (see support/calendar.ts).
@@ -425,9 +427,7 @@ test.describe('publication states', () => {
       // Members see nothing of it yet.
       expect(await findRide(member, team.slug, rideSlug), 'a draft is 404 to a member').toBeNull()
       await openFeed(memberPage, team.slug)
-      await expect(
-        main(memberPage).getByText('0 sortie ou voyage à venir', { exact: true })
-      ).toBeVisible()
+      await expect(emptyAgenda(memberPage)).toBeVisible()
       await expect(feedCard(memberPage, rideName)).toHaveCount(0)
 
       // --- The date comes. The stack's clock cannot be moved, but the backend takes a scheduled

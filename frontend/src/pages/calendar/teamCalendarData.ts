@@ -8,6 +8,7 @@ import {
 import { useCalendarDateRange, getInitialCalendarRange } from '@/hooks/useCalendarDateRange'
 import { useAuthStore } from '@/store/authStore'
 import { readsMemberContent } from '@/config/prefetchHelpers'
+import { LIST_REQUEST } from '@/lib/listQuery'
 
 /**
  * Server/client counterpart of `TeamCalendarPage`: the team, its first events window, and the ICS
@@ -38,7 +39,10 @@ export function useTeamCalendarData(teamSlug?: string) {
   const events = useGetTeamEvents(
     teamSlug!,
     { from: dateRange.from, to: dateRange.to },
-    { query: { enabled: !!teamSlug, staleTime: 1000 * 60 * 5, placeholderData: keepPreviousData } }
+    {
+      query: { enabled: !!teamSlug, staleTime: 1000 * 60 * 5, placeholderData: keepPreviousData },
+      request: LIST_REQUEST,
+    }
   )
 
   return { team, events, dateRange, handleDateRangeChange }
@@ -54,7 +58,9 @@ export async function prefetchTeamCalendar(
 
   await Promise.all([
     readsMemberContent(queryClient, teamSlug)
-      ? prefetchGetTeamEventsQuery(queryClient, teamSlug, getInitialCalendarRange())
+      ? prefetchGetTeamEventsQuery(queryClient, teamSlug, getInitialCalendarRange(), {
+          request: LIST_REQUEST,
+        })
       : Promise.resolve(queryClient),
     prefetchGetTokenQuery(queryClient),
   ])

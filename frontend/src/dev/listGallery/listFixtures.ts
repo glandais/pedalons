@@ -259,3 +259,10 @@ export const TEMPLATES: RideTemplateDto[] = [
 /** The month: the five events of the week (a ride, Camille's, a stage, a cancelled one, a draft). */
 export const MONTH_EVENTS: CalendarEventDto[] = WEEK_EVENTS
 export const MONTH_RIDES_ONLY = WEEK_EVENTS.filter((e) => e.type === 'RIDE')
+/**
+ * Nothing this month, a ride some forty days on: the empty month offers « Aller au prochain mois
+ * avec une sortie » (RL10), found in the loaded window without another read.
+ */
+export const LATER_EVENTS: CalendarEventDto[] = [
+  { ...WEEK_EVENTS[0], id: 'ev-later', start: day(40, '09:30'), end: day(40, '13:30') },
+]

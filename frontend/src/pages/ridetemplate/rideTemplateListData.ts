@@ -12,7 +12,9 @@ import {
   rideTemplateFiltersSchema,
   rideTemplateFiltersAlias,
 } from '@/hooks/filters/rideTemplateFilters'
-import { prefetchPageWindow } from '@/config/prefetchHelpers'
+import { prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
+import { organizesTeam, prefetchPageWindow } from '@/config/prefetchHelpers'
+import { LIST_QUERY, LIST_REQUEST } from '@/lib/listQuery'
 
 /**
  * The one description of what the team's ride-template list reads, consumed two ways:
@@ -41,18 +43,25 @@ export const rideTemplateListFilterOptions = {
  * The team's ride-template list: the filtered page the URL asks for, plus the neighbouring pages
  * `usePaginatedQuery` fetches ahead. Returns the filter state as `useUrlFilters` gives it (the page
  * needs `setFilters` for the search box and pagination) plus the raw query results.
+ *
+ * `canRead`: the server lists the templates to an organizer only (`RideTemplateAccessChecker`) — a
+ * plain member is refused. The page knows the reader's role once the team is read, and asks for
+ * nothing before (docs/LEDGER_*.md WEB-175, DL23).
  */
-export function useRideTemplateListData(teamSlug?: string) {
+export function useRideTemplateListData(teamSlug: string | undefined, canRead: boolean) {
   const filterState = useUrlFilters(rideTemplateListFilterOptions)
   const { filters } = filterState
 
-  const templates = useListTemplates(teamSlug!, filters)
+  const templates = useListTemplates(teamSlug!, filters, {
+    query: { ...LIST_QUERY, enabled: !!teamSlug && canRead },
+    request: LIST_REQUEST,
+  })
 
   // The neighbouring pages, on the same key `prefetchPageWindow` primes server-side.
   const prefetchPage = useCallback(
     (page: number) => ({
       queryKey: getListTemplatesQueryKey(teamSlug!, { ...filters, page }),
-      queryFn: () => listTemplates(teamSlug!, { ...filters, page }),
+      queryFn: () => listTemplates(teamSlug!, { ...filters, page }, LIST_REQUEST),
     }),
     [teamSlug, filters]
   )
@@ -76,5 +85,10 @@ export async function prefetchRideTemplateList(
   url: URL
 ): Promise<void> {
   const filters = readUrlFilters(url.searchParams, rideTemplateListFilterOptions)
-  await prefetchPageWindow(filters, (p) => prefetchListTemplatesQuery(queryClient, teamSlug, p))
+  // Same gate as the page: the reader's role comes with the team.
+  await prefetchGetTeamQuery(queryClient, teamSlug)
+  if (!organizesTeam(queryClient, teamSlug)) return
+  await prefetchPageWindow(filters, (p) =>
+    prefetchListTemplatesQuery(queryClient, teamSlug, p, { request: LIST_REQUEST })
+  )
 }

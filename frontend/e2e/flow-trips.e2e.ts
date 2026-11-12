@@ -82,14 +82,23 @@ async function tripTeamWithMember(label: string) {
   return { teamAdmin, team, member }
 }
 
-/** The team agenda (WEB-68), loaded — its count shown — before any presence or absence check. */
+/**
+ * The team agenda (WEB-68), loaded — its count shown, or at zero its empty state, the count being
+ * masked then (RL8) — before any presence or absence check.
+ */
 async function openFeed(page: Page, teamSlug: string) {
   await page.goto(`/equipes/${teamSlug}/agenda`)
   const main = page.getByRole('main')
   await expect(main.getByRole('heading', { name: 'Agenda', level: 2 })).toBeVisible()
-  await expect(main.getByText(/^\d+ sorties? (et|ou) voyages? à venir$/)).toBeVisible()
+  await expect(
+    main.getByText(/^\d+ sorties? (et|ou) voyages? à venir$/).or(emptyAgenda(main))
+  ).toBeVisible()
   return main
 }
+
+/** The agenda with nothing to come — its count masked at zero (RL8). */
+const emptyAgenda = (main: Locator) =>
+  main.getByRole('heading', { name: "Rien à l'agenda pour le moment" })
 
 /** Opens the trip page and waits for its title and its stage list. */
 async function openTrip(page: Page, teamSlug: string, tripSlug: string, name: string) {
@@ -401,9 +410,7 @@ test.describe('publication states', () => {
       // --- A draft: members see nothing of it.
       expect(await fetchTrip(member, team.slug, tripSlug), 'a draft is 404 to a member').toBeNull()
       let memberMain = await openFeed(reader.page, team.slug)
-      await expect(
-        memberMain.getByText('0 sortie ou voyage à venir', { exact: true })
-      ).toBeVisible()
+      await expect(emptyAgenda(memberMain)).toBeVisible()
       await expect(entityCard(memberMain, tripName)).toHaveCount(0)
 
       // --- Published from the trip page's menu.
@@ -563,9 +570,7 @@ test.describe('publication states', () => {
       // Gone for the member.
       expect(await fetchTrip(member, team.slug, trip.slug), 'a draft is 404 to a member').toBeNull()
       memberMain = await openFeed(reader.page, team.slug)
-      await expect(
-        memberMain.getByText('0 sortie ou voyage à venir', { exact: true })
-      ).toBeVisible()
+      await expect(emptyAgenda(memberMain)).toBeVisible()
       await expect(entityCard(memberMain, trip.name)).toHaveCount(0)
     } finally {
       await reader.context.close()

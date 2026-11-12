@@ -3,12 +3,15 @@ import { OutOfRangeState } from '@/components/common/OutOfRangeState'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
 import { paths } from '../../config/paths'
-import { IconPlus, IconSearchOff, IconUsersGroup } from '@tabler/icons-react'
+import { IconPlus, IconUsersGroup } from '@tabler/icons-react'
 import { useAuth } from '../../hooks/useAuth'
 import { getAppConfig } from '../../config/appConfig'
 import { useDebouncedSearch } from '../../hooks/useDebouncedSearch'
 import { useScrollToListTop } from '../../hooks/useScrollToListTop'
 import type { MembershipFilterValue } from '../../hooks/filters/membership'
+import { FilteredEmptyState } from '../../components/common/FilteredEmptyState'
+import { searchFilter } from '../../components/common/filteredEmpty'
+import { ResultCount } from '../../components/common/ResultCount'
 import { TeamCard, TeamCardSkeleton } from '../../components/card'
 import { EmptyState } from '../../components/common/EmptyState'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
@@ -37,13 +40,23 @@ export function TeamListPage() {
   const [search, setSearch] = useDebouncedSearch(filters.search ?? '', commitSearch)
   const { listTopRef, scrollToListTop } = useScrollToListTop()
 
-  const { data: teamsData, isLoading, isError, error, refetch } = teamsQuery
+  const { data: teamsData, isLoading, isError, error, refetch, isPlaceholderData } = teamsQuery
 
   const teams = teamsData?.teams
   const hasTeams = (teamsData?.total ?? 0) > 0
   const canCreateTeam = isAuthenticated && (!config?.singleTeam || !hasTeams)
 
   const hasFiltersOrSearch = !!filters.search || filters.membership !== membershipDefault
+  const membershipLabels: Record<MembershipFilterValue, string> = {
+    all: t('teams.list.filter.all'),
+    member: t('roles.MEMBER'),
+    organizer: t('roles.ORGANIZER'),
+    admin: t('roles.ADMIN'),
+  }
+  const activeFilters = [
+    ...(filters.search ? [searchFilter(t, filters.search)] : []),
+    ...(filters.membership !== membershipDefault ? [membershipLabels[filters.membership]] : []),
+  ]
   const clearFilters = () => {
     setSearch('')
     setFilters({ search: undefined, membership: membershipDefault, page: 0 })
@@ -81,18 +94,25 @@ export function TeamListPage() {
           <Select
             value={filters.membership}
             onChange={(value) => setFilters({ membership: value as MembershipFilterValue })}
-            data={[
-              { value: 'all', label: t('teams.list.filter.all') },
-              { value: 'member', label: t('roles.MEMBER') },
-              { value: 'organizer', label: t('roles.ORGANIZER') },
-              { value: 'admin', label: t('roles.ADMIN') },
-            ]}
+            data={(['all', 'member', 'organizer', 'admin'] as const).map((value) => ({
+              value,
+              label: membershipLabels[value],
+            }))}
             aria-label={t('teams.list.filter.label')}
             allowDeselect={false}
             w={{ base: '100%', sm: 160 }}
           />
         )}
       </Group>
+
+      {/* The order follows the scope (RL5), and is said beside the count. */}
+      <ResultCount
+        total={teamsData?.total}
+        resource="teams"
+        order={
+          filters.membership === 'all' ? t('teams.list.order.members') : t('teams.list.order.name')
+        }
+      />
 
       {/* A failure shows the error alone: the empty state under it (« Aucune équipe n'a encore été
           créée ») would contradict it. */}
@@ -101,6 +121,7 @@ export function TeamListPage() {
         isError={isError}
         error={error}
         onRetry={() => void refetch()}
+        isRefreshing={isPlaceholderData}
         skeleton={
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
             <TeamCardSkeleton count={6} />
@@ -128,28 +149,14 @@ export function TeamListPage() {
           </Stack>
         ) : filters.page > 0 ? (
           <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+        ) : hasFiltersOrSearch ? (
+          <FilteredEmptyState resource="teams" filters={activeFilters} onClear={clearFilters} />
         ) : (
           <EmptyState
-            variant={hasFiltersOrSearch ? 'filtered' : 'absolute'}
-            icon={hasFiltersOrSearch ? <IconSearchOff size={48} /> : <IconUsersGroup size={48} />}
-            title={
-              hasFiltersOrSearch ? t('teams.list.empty.title') : t('teams.list.empty.noTeamsTitle')
-            }
-            description={
-              hasFiltersOrSearch
-                ? t('teams.list.empty.publicTeams')
-                : t('teams.list.empty.noTeamsDescription')
-            }
-            actions={
-              <>
-                {hasFiltersOrSearch && (
-                  <Button variant="light" onClick={clearFilters}>
-                    {t('common.clearFilters')}
-                  </Button>
-                )}
-                {createTeamButton}
-              </>
-            }
+            icon={<IconUsersGroup size={48} />}
+            title={t('teams.list.empty.noTeamsTitle')}
+            description={t('teams.list.empty.noTeamsDescription')}
+            actions={createTeamButton}
           />
         )}
       </QueryStateBoundary>

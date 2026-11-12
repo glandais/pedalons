@@ -16,6 +16,7 @@ import {
   agendaTypeToPublicationType,
 } from '@/hooks/filters/agendaFilters'
 import { prefetchPageWindow, prefetchTeamTags } from '@/config/prefetchHelpers'
+import { LIST_QUERY, LIST_REQUEST } from '@/lib/listQuery'
 
 /**
  * The one description of what the team's « Agenda » (`teamAgenda`) reads, consumed two ways:
@@ -36,13 +37,14 @@ export function useTeamAgendaData(teamSlug?: string) {
 
   const apiParams = useMemo(() => agendaApiParams(filters), [filters])
   const publications = useListPublications(teamSlug!, apiParams, {
-    query: { enabled: !!teamSlug },
+    query: { ...LIST_QUERY, enabled: !!teamSlug },
+    request: LIST_REQUEST,
   })
 
   const prefetchPage = useCallback(
     (page: number) => ({
       queryKey: getListPublicationsQueryKey(teamSlug!, { ...apiParams, page }),
-      queryFn: () => listPublications(teamSlug!, { ...apiParams, page }),
+      queryFn: () => listPublications(teamSlug!, { ...apiParams, page }, LIST_REQUEST),
     }),
     [teamSlug, apiParams]
   )
@@ -69,7 +71,7 @@ export async function prefetchTeamAgenda(
   await Promise.all([
     prefetchGetTeamQuery(queryClient, teamSlug),
     prefetchPageWindow(agendaApiParams(filters), (p) =>
-      prefetchListPublicationsQuery(queryClient, teamSlug, p)
+      prefetchListPublicationsQuery(queryClient, teamSlug, p, { request: LIST_REQUEST })
     ),
     tagTarget ? prefetchTeamTags(queryClient, teamSlug, tagTarget) : undefined,
   ])

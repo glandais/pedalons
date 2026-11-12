@@ -1,3 +1,4 @@
+import { LIST_REQUEST } from '@/lib/listQuery'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   prefetchGetLatestExportQuery,
@@ -72,5 +73,5 @@ export async function prefetchProfilePrivacy(queryClient: QueryClient): Promise<
 /** `BlockedUsers`'s `useListMyBlockedUsers()`. */
 export async function prefetchBlockedUsers(queryClient: QueryClient): Promise<void> {
   if (!signedIn()) return
-  await prefetchListMyBlockedUsersQuery(queryClient)
+  await prefetchListMyBlockedUsersQuery(queryClient, { request: LIST_REQUEST })
 }

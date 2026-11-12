@@ -12,6 +12,7 @@ import type { PublicUserDto } from '@/api/dto'
 import { UserAvatar } from '../common/UserAvatar'
 import { QueryStateBoundary } from '../common/QueryStateBoundary'
 import { invalidateModeratedContent } from '@/lib/moderationCacheInvalidation'
+import { LIST_REQUEST } from '@/lib/listQuery'
 
 /**
  * « Personnes bloquées », its own page under « Confidentialité » — the one place a block can be undone. Unblocking needs no
@@ -20,7 +21,7 @@ import { invalidateModeratedContent } from '@/lib/moderationCacheInvalidation'
 export function BlockedUsers() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const blocked = useListMyBlockedUsers()
+  const blocked = useListMyBlockedUsers({ request: LIST_REQUEST })
   const { data, isLoading } = blocked
   const unblockMutation = useUnblockUser()
   const [pendingId, setPendingId] = useState<string | null>(null)

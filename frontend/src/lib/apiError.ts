@@ -46,6 +46,16 @@ export function apiErrorStatus(error: unknown): number | undefined {
 }
 
 /**
+ * A call that never got an answer — the network is down, or the browser says it is offline — as
+ * opposed to a server that answered with a failure. A list says « Pas de connexion » for the first,
+ * « Chargement impossible » for the second (docs/LEDGER_*.md WEB-175, RL11).
+ */
+export function isNetworkError(error: unknown): boolean {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return true
+  return Axios.isAxiosError(error) && !Axios.isCancel(error) && !error.response
+}
+
+/**
  * The codes whose refusal the screen that made the call renders itself — a dialog that lists what
  * is in the way — so the mutator's generic toast stays quiet for them (`axiosMutator`). Every call
  * that can receive one must handle it: the ride and trip editors and their status actions, the

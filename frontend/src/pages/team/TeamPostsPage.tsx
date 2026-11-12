@@ -2,10 +2,12 @@ import { useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Box, Button, Group, SimpleGrid, Stack, Title } from '@mantine/core'
-import { IconArticle, IconPlus, IconSearchOff } from '@tabler/icons-react'
+import { IconArticle, IconPlus } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
+import { FilteredEmptyState } from '@/components/common/FilteredEmptyState'
+import { searchFilter } from '@/components/common/filteredEmpty'
 import { OutOfRangeState } from '@/components/common/OutOfRangeState'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { Pagination } from '@/components/common/Pagination'
@@ -14,7 +16,7 @@ import { SearchInput } from '@/components/common/SearchInput'
 import { PublicationCard, PublicationCardActions, PublicationCardSkeleton } from '@/components/card'
 import { TeamLayout } from '@/components/team/TeamLayout'
 import { TeamUnavailable } from '@/components/team/TeamUnavailable'
-import { TagFilter } from '@/components/tag'
+import { TagFilter, useTagLabels } from '@/components/tag'
 import { PublicationType } from '@/api/dto'
 import { paths } from '@/config/paths'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
@@ -44,6 +46,7 @@ export function TeamPostsPage() {
 
   const { data: teamData, isLoading: isLoadingTeam } = team
   const { data: publicationsData, isLoading: isLoadingPublications } = publications
+  const tagLabels = useTagLabels(teamSlug ?? '', PublicationType.POST, filters.tags)
 
   useCanonicalPath(teamData ? paths.teamPosts(teamData.slug) : undefined)
 
@@ -63,7 +66,8 @@ export function TeamPostsPage() {
 
   const canCreate = teamAccess(teamData, isPlatformAdmin).isOrganizer && !!teamData.enablePosts
   const hasTagFilter = !!filters.tags?.length
-  const hasFilters = !!search || hasTagFilter
+  const hasFilters = !!filters.search || hasTagFilter
+  const activeFilters = [...(filters.search ? [searchFilter(t, filters.search)] : []), ...tagLabels]
   const clearFilters = () => {
     setSearch('')
     setFilters({ search: undefined, tags: undefined, page: 0 })
@@ -111,6 +115,7 @@ export function TeamPostsPage() {
           isError={publications.isError}
           error={publications.error}
           onRetry={() => void publications.refetch()}
+          isRefreshing={publications.isPlaceholderData}
           skeleton={
             <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
               {[...Array(6)].map((_, i) => (
@@ -145,20 +150,25 @@ export function TeamPostsPage() {
             </Stack>
           ) : filters.page > 0 ? (
             <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+          ) : hasFilters ? (
+            <FilteredEmptyState
+              resource="publications"
+              filters={activeFilters}
+              onClear={clearFilters}
+            />
           ) : (
             <EmptyState
-              variant={hasFilters ? 'filtered' : 'absolute'}
-              icon={hasFilters ? <IconSearchOff size={48} /> : <IconArticle size={48} />}
-              title={hasFilters ? t('noResults') : t('teams.posts.empty')}
-              description={
-                hasFilters
-                  ? t('teams.posts.search.noResultsDescription')
-                  : t('teams.posts.emptyDescription')
-              }
+              icon={<IconArticle size={48} />}
+              title={t('teams.posts.empty')}
+              description={t('teams.posts.emptyDescription')}
               actions={
-                hasFilters ? (
-                  <Button variant="light" onClick={clearFilters}>
-                    {hasTagFilter ? t('common.clearFilters') : t('common.clearSearch')}
+                canCreate ? (
+                  <Button
+                    component={PrefetchLink}
+                    to={paths.postNew(teamData.slug)}
+                    variant="light"
+                  >
+                    {t('posts.create.title')}
                   </Button>
                 ) : undefined
               }

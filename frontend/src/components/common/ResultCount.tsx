@@ -25,28 +25,34 @@ export type CountedResource =
   | 'participations'
   | 'notifications'
   | 'members'
+  | 'templates'
 
 interface ResultCountProps {
   /** `total` of the list response, or a `CountResponse.total`. Undefined while loading. */
   total: number | undefined
   resource: CountedResource
+  /** The order the list is in, said beside the count — « triées par nom » (RL5). */
+  order?: string
 }
 
 /**
- * The total above a list — "2 585 parcours". Renders nothing until the count is
- * known, so the header does not flicker between a wrong number and the right one.
+ * The total under a list's bar, left of its view switch — "2 585 parcours" (RL8). Under a filter it
+ * is the filtered total alone. Renders nothing until the count is known, so the header does not
+ * flicker between a wrong number and the right one, and nothing at zero either: the empty state
+ * below says it (docs/LEDGER_*.md WEB-175).
  */
-export function ResultCount({ total, resource }: ResultCountProps) {
+export function ResultCount({ total, resource, order }: ResultCountProps) {
   const { t, i18n } = useTranslation()
 
-  if (total === undefined) return null
+  if (total === undefined || total === 0) return null
 
+  const count = t(`list.count.${resource satisfies CountedResource}`, {
+    count: total,
+    formatted: formatNumber(total, i18n.language),
+  })
   return (
     <Text size="sm" c="dimmed">
-      {t(`list.count.${resource satisfies CountedResource}`, {
-        count: total,
-        formatted: formatNumber(total, i18n.language),
-      })}
+      {order ? `${count} · ${order}` : count}
     </Text>
   )
 }

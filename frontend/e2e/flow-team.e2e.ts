@@ -462,7 +462,9 @@ async function expectListed(
       await expect(teamCard(page, name)).toBeVisible()
     } else {
       // The filtered empty state is the list having answered, with nothing.
-      await expect(main(page).getByText('Aucune équipe trouvée', { exact: true })).toBeVisible()
+      await expect(
+        main(page).getByRole('heading', { name: 'Aucune équipe pour ces filtres' })
+      ).toBeVisible()
       await expect(teamCard(page, name)).toHaveCount(0)
     }
   } finally {

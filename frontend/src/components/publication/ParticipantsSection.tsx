@@ -66,8 +66,6 @@ export function ParticipantsSection({
             searchInput={searchInput}
             onSearchInputChange={setSearchInput}
             onPageChange={(page) => setFilters({ page })}
-            searchPlaceholder={t('participants.searchByName')}
-            noMatch={t('participants.noMatchGeneric')}
           />
         )}
       </Stack>

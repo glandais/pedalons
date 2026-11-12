@@ -16,6 +16,7 @@ import {
   teamPostFiltersSchema,
 } from '@/hooks/filters/teamPostFilters'
 import { prefetchPageWindow, prefetchTeamTags } from '@/config/prefetchHelpers'
+import { LIST_QUERY, LIST_REQUEST } from '@/lib/listQuery'
 
 /**
  * The one description of what the team's « Publications » (`teamPosts`) reads: the page through
@@ -34,13 +35,14 @@ export function useTeamPostsData(teamSlug?: string) {
 
   const apiParams = useMemo(() => teamPostApiParams(filters), [filters])
   const publications = useListPublications(teamSlug!, apiParams, {
-    query: { enabled: !!teamSlug },
+    query: { ...LIST_QUERY, enabled: !!teamSlug },
+    request: LIST_REQUEST,
   })
 
   const prefetchPage = useCallback(
     (page: number) => ({
       queryKey: getListPublicationsQueryKey(teamSlug!, { ...apiParams, page }),
-      queryFn: () => listPublications(teamSlug!, { ...apiParams, page }),
+      queryFn: () => listPublications(teamSlug!, { ...apiParams, page }, LIST_REQUEST),
     }),
     [teamSlug, apiParams]
   )
@@ -65,7 +67,7 @@ export async function prefetchTeamPosts(
   await Promise.all([
     prefetchGetTeamQuery(queryClient, teamSlug),
     prefetchPageWindow(teamPostApiParams(filters), (p) =>
-      prefetchListPublicationsQuery(queryClient, teamSlug, p)
+      prefetchListPublicationsQuery(queryClient, teamSlug, p, { request: LIST_REQUEST })
     ),
     prefetchTeamTags(queryClient, teamSlug, PublicationType.POST),
   ])

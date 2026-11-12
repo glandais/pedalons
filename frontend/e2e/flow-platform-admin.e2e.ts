@@ -369,7 +369,9 @@ async function expectUnlisted(browser: import('@playwright/test').Browser, team:
       // role=all: a signed-in visitor's list defaults to their own teams.
       await page.goto(`/equipes?q=${encodeURIComponent(team.name)}${who ? '&role=all' : ''}`)
       await expect(page.getByRole('heading', { level: 2, name: 'Équipes' })).toBeVisible()
-      await expect(main(page).getByText('Aucune équipe trouvée', { exact: true })).toBeVisible()
+      await expect(
+        main(page).getByRole('heading', { name: 'Aucune équipe pour ces filtres' })
+      ).toBeVisible()
       await expect(main(page).getByRole('link').filter({ hasText: team.name })).toHaveCount(0)
 
       const response = await page.goto(`/equipes/${team.slug}`)

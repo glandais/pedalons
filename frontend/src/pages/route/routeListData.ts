@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react'
-import { keepPreviousData } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import { useGetTeam, prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
 import {
@@ -17,6 +16,7 @@ import {
   routeApiParams,
 } from '@/hooks/filters/routeFilters'
 import { prefetchPageWindow, prefetchTeamTags } from '@/config/prefetchHelpers'
+import { LIST_QUERY, LIST_REQUEST } from '@/lib/listQuery'
 
 /**
  * The one description of what the team route list reads, consumed two ways: `RouteListPage` calls
@@ -51,14 +51,15 @@ export function useRouteListData(teamSlug?: string) {
 
   const apiParams = useMemo(() => routeApiParams(filters), [filters])
   const routes = useListRoutes(teamSlug!, apiParams, {
-    query: { enabled: !!teamSlug, placeholderData: keepPreviousData },
+    query: { ...LIST_QUERY, enabled: !!teamSlug },
+    request: LIST_REQUEST,
   })
 
   // The neighbouring pages, on the same key `prefetchPageWindow` primes server-side.
   const prefetchPage = useCallback(
     (page: number) => ({
       queryKey: getListRoutesQueryKey(teamSlug!, { ...apiParams, page }),
-      queryFn: () => listRoutes(teamSlug!, { ...apiParams, page }),
+      queryFn: () => listRoutes(teamSlug!, { ...apiParams, page }, LIST_REQUEST),
     }),
     [teamSlug, apiParams]
   )
@@ -88,7 +89,7 @@ export async function prefetchRouteList(
   await Promise.all([
     prefetchGetTeamQuery(queryClient, teamSlug),
     prefetchPageWindow(routeApiParams(filters), (p) =>
-      prefetchListRoutesQuery(queryClient, teamSlug, p)
+      prefetchListRoutesQuery(queryClient, teamSlug, p, { request: LIST_REQUEST })
     ),
     prefetchTeamTags(queryClient, teamSlug, 'ROUTE'),
   ])

@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { notifications } from '@mantine/notifications'
 import type { i18n as I18nInstance } from 'i18next'
 import i18n, { createServerI18n, i18nReady } from '@/i18n'
 import { GalleryRoot } from '../cardGallery/GalleryRoot'
@@ -118,19 +119,31 @@ const OMITTED: string[] = []
 const CONTENT: Record<string, string> = {
   'accueil-repos': 'Bilan de la saison',
   'accueil-filtre': 'Gravel du Menez-Hom',
-  'accueil-vide-filtre': 'Effacer les filtres',
+  'accueil-vide-filtre': 'Rien ne correspond à : « monts » · Voyages.',
   'publications-repos': 'Assemblée générale de décembre',
   'publications-filtre': 'Les photos des Monts d’Arrée',
   'agenda-repos': 'Traversée du Morvan',
   'agenda-passees': 'Tour du lac du Drennec',
+  'agenda-vide-filtre': 'Aucun voyage pour ces filtres',
+  'publications-vide-filtre': 'Rien ne correspond à : « monts ».',
   'calendrier-repos': 'Sortie récupération',
   'calendrier-equipe': 'Vélo Club des Monts',
+  'calendrier-vide': 'Aller au prochain mois avec une sortie',
+  'calendrier-vide-filtre': 'Aucun événement pour ces filtres',
+  'parcours-vide-filtre': 'Aucun parcours pour ces filtres',
+  'explorer-vide-filtre': 'Aucun parcours pour ces filtres',
+  'annonces-vide-filtre': 'Aucune annonce pour ces filtres',
+  'equipes-vide-filtre': 'Aucune équipe pour ces filtres',
+  'membres-vide-filtre': 'Aucun membre pour ces filtres',
+  'inscrits-vide-filtre': 'Aucune personne pour ces filtres',
+  'notifications-vide-filtre': 'Aucune notification pour ces filtres',
+  'modeles-vide-filtre': 'Aucun modèle pour ces filtres',
   'parcours-repos': 'Boucle des Monts d’Arrée — groupe C',
   'parcours-lignes': 'Boucle des Monts d’Arrée — groupe B',
   'explorer-repos': 'Gravel du Menez-Hom',
   'annonces-repos': 'Remorque enfant',
-  'equipes-repos': 'Gravel Bretagne',
-  'equipes-decouvrir': 'Cyclos de l’Aulne',
+  'equipes-repos': 'triées par nom',
+  'equipes-decouvrir': 'triées par nombre de membres',
   'membres-repos': 'Karim Benali',
   'inscrits-repos': 'Malo Guérin',
   'inscrits-filtre': 'Léa Martin',
@@ -179,6 +192,7 @@ describe('list gallery', () => {
     const { entry } = findCase(sectionId, caseId)
     seedListGallery(entry && !isOmittedCase(entry) ? entry : undefined)
     unservedRequests.length = 0
+    notifications.clean()
     const { container } = render(
       <GalleryRoot i18n={frenchI18n}>
         <ListGallery sectionId={sectionId} caseId={caseId} />
@@ -205,7 +219,11 @@ describe('list gallery', () => {
     expect(node!.textContent).not.toContain('Une erreur est survenue')
     const expected = CONTENT[caseId]
     if (expected) expect(node!.textContent, caseId).toContain(expected)
-    if (caseId.endsWith('-erreur')) expect(node!.textContent).toContain('Chargement impossible')
+    if (caseId.endsWith('-erreur')) {
+      expect(node!.textContent).toContain('Chargement impossible')
+      // The block says it once: no toast over it (RL11).
+      expect(document.body.textContent).not.toContain('Erreur interne du serveur')
+    }
     for (const step of (entry as ListCase).clicks ?? []) {
       fireEvent.click(clickTarget(node!, step))
       await settle()

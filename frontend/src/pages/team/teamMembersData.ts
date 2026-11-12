@@ -12,6 +12,7 @@ import { teamMemberFiltersSchema, teamMemberFiltersAlias } from '@/hooks/filters
 import { useUrlFilters, readUrlFilters } from '@/hooks/useUrlFilters'
 import { usePaginatedQuery } from '@/hooks/usePaginatedQuery'
 import { prefetchPageWindow } from '@/config/prefetchHelpers'
+import { LIST_QUERY, LIST_REQUEST } from '@/lib/listQuery'
 
 /**
  * `team-members` admin screen: the member list the page owns, plus the pending-invitations query
@@ -39,13 +40,16 @@ export const pendingInvitationsParams = { status: InvitationStatus.PENDING } as 
 export function useTeamMembersData(teamSlug?: string) {
   const { filters, setFilters } = useUrlFilters(teamMemberFilterOptions)
 
-  const members = useGetMembers(teamSlug!, filters, { query: { enabled: !!teamSlug } })
+  const members = useGetMembers(teamSlug!, filters, {
+    query: { ...LIST_QUERY, enabled: !!teamSlug },
+    request: LIST_REQUEST,
+  })
 
   // The neighbouring pages, on the same key `prefetchPage`/`usePaginatedQuery` primes client-side.
   const prefetchPage = useCallback(
     (page: number) => ({
       queryKey: getGetMembersQueryKey(teamSlug!, { ...filters, page }),
-      queryFn: () => getMembers(teamSlug!, { ...filters, page }),
+      queryFn: () => getMembers(teamSlug!, { ...filters, page }, LIST_REQUEST),
     }),
     [teamSlug, filters]
   )
@@ -69,7 +73,9 @@ export async function prefetchTeamDirectory(
   url: URL
 ): Promise<void> {
   const filters = readUrlFilters(url.searchParams, teamMemberFilterOptions)
-  await prefetchPageWindow(filters, (p) => prefetchGetMembersQuery(queryClient, teamSlug, p))
+  await prefetchPageWindow(filters, (p) =>
+    prefetchGetMembersQuery(queryClient, teamSlug, p, { request: LIST_REQUEST })
+  )
 }
 
 export async function prefetchTeamMembers(

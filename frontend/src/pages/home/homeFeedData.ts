@@ -26,6 +26,7 @@ import { membershipToMinRole, type MembershipFilterValue } from '@/hooks/filters
 import { prefetchPageWindow, resolveMembershipDefault } from '@/config/prefetchHelpers'
 import { useAuthStore } from '@/store/authStore'
 import { hourAlignedNowIso } from '@/utils/nowIso'
+import { LIST_QUERY, LIST_REQUEST } from '@/lib/listQuery'
 import { NEXT_RIDE_PARAMS } from './nextRideParams'
 
 /**
@@ -110,12 +111,15 @@ export function useHomeFeedData() {
     [filters]
   )
 
-  const publications = useListAllPublications(apiParams)
+  const publications = useListAllPublications(apiParams, {
+    query: LIST_QUERY,
+    request: LIST_REQUEST,
+  })
 
   const prefetchPage = useCallback(
     (page: number) => ({
       queryKey: getListAllPublicationsQueryKey({ ...apiParams, page }),
-      queryFn: () => listAllPublications({ ...apiParams, page }),
+      queryFn: () => listAllPublications({ ...apiParams, page }, LIST_REQUEST),
     }),
     [apiParams]
   )
@@ -167,5 +171,7 @@ export async function prefetchHomeFeed(queryClient: QueryClient, url: URL): Prom
     ...publicationApiParams(filters),
     minRole: membershipToMinRole[filters.membership],
   }
-  await prefetchPageWindow(feedParams, (p) => prefetchListAllPublicationsQuery(queryClient, p))
+  await prefetchPageWindow(feedParams, (p) =>
+    prefetchListAllPublicationsQuery(queryClient, p, { request: LIST_REQUEST })
+  )
 }

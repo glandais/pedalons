@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react'
-import { keepPreviousData } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import { useGetTeam, prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
 import {
@@ -12,6 +11,7 @@ import { usePaginatedQuery } from '@/hooks/usePaginatedQuery'
 import { useUrlFilters, readUrlFilters } from '@/hooks/useUrlFilters'
 import { adFiltersSchema, adFiltersAlias, adApiParams } from '@/hooks/filters/adFilters'
 import { prefetchPageWindow, prefetchTeamTags } from '@/config/prefetchHelpers'
+import { LIST_QUERY, LIST_REQUEST } from '@/lib/listQuery'
 
 /**
  * The one description of what the team ad list reads, consumed two ways: `AdListPage` calls
@@ -48,14 +48,15 @@ export function useAdListData(teamSlug?: string) {
   const apiParams = useMemo(() => adApiParams(filters), [filters])
 
   const ads = useListAds(teamSlug!, apiParams, {
-    query: { enabled: !!teamSlug, placeholderData: keepPreviousData },
+    query: { ...LIST_QUERY, enabled: !!teamSlug },
+    request: LIST_REQUEST,
   })
 
   // The neighbouring pages, on the same key `prefetchPageWindow` primes server-side.
   const prefetchPage = useCallback(
     (page: number) => ({
       queryKey: getListAdsQueryKey(teamSlug!, { ...apiParams, page }),
-      queryFn: () => listAds(teamSlug!, { ...apiParams, page }),
+      queryFn: () => listAds(teamSlug!, { ...apiParams, page }, LIST_REQUEST),
     }),
     [teamSlug, apiParams]
   )
@@ -82,7 +83,9 @@ export async function prefetchAdList(
   const filters = readUrlFilters(url.searchParams, adListFilterOptions)
   await Promise.all([
     prefetchGetTeamQuery(queryClient, teamSlug),
-    prefetchPageWindow(adApiParams(filters), (p) => prefetchListAdsQuery(queryClient, teamSlug, p)),
+    prefetchPageWindow(adApiParams(filters), (p) =>
+      prefetchListAdsQuery(queryClient, teamSlug, p, { request: LIST_REQUEST })
+    ),
     prefetchTeamTags(queryClient, teamSlug, 'AD'),
   ])
 }

@@ -1,3 +1,4 @@
+import { LIST_REQUEST } from '@/lib/listQuery'
 import type { QueryClient } from '@tanstack/react-query'
 import { prefetchEntityTeam } from '@/lib/entityTeam'
 import {
@@ -85,7 +86,8 @@ export async function prefetchRideGroup(
           queryClient,
           teamSlug,
           rideSlug,
-          groupParticipantsParams(groupId, filters)
+          groupParticipantsParams(groupId, filters),
+          { request: LIST_REQUEST }
         )
       : Promise.resolve(queryClient),
     useAuthStore.getState().isAuthenticated

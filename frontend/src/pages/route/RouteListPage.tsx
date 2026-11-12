@@ -116,6 +116,7 @@ export function RouteListPage() {
           }
           routes={routesData?.routes}
           isLoading={isLoadingRoutes}
+          isRefreshing={routes.isPlaceholderData}
           isError={routes.isError}
           error={routes.error}
           onRetry={() => void routes.refetch()}
@@ -124,10 +125,9 @@ export function RouteListPage() {
           currentPage={filters.page}
           totalPages={totalPages}
           onPageChange={handlePageChange}
-          onClearFilters={clearFilters}
           emptyAction={
             canCreateRoute && !hasFiltersOrSearch ? (
-              <Button component="a" href={paths.routeNew(teamSlug!)} mt="sm">
+              <Button component="a" href={paths.routeNew(teamSlug!)} variant="light">
                 {t('routes.create.title')}
               </Button>
             ) : undefined

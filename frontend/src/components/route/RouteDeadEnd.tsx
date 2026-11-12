@@ -1,16 +1,17 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueries } from '@tanstack/react-query'
-import { Button, Divider, Paper, Stack, Text } from '@mantine/core'
-import { IconSearchOff } from '@tabler/icons-react'
+import { Button, Paper, Stack, Text } from '@mantine/core'
 import {
   getCountAllRoutesQueryOptions,
   getCountRoutesQueryOptions,
   getListAllRoutesQueryOptions,
   getListRoutesQueryOptions,
 } from '@/api/endpoints/routes/routes'
-import { EmptyState } from '../common/EmptyState'
+import { FilteredEmptyState } from '../common/FilteredEmptyState'
+import { searchFilter } from '../common/filteredEmpty'
 import { RouteRow } from './RouteRow'
+import { LIST_REQUEST } from '@/lib/listQuery'
 import type { RouteFilters } from '@/hooks/filters/routeFilters'
 
 /**
@@ -42,10 +43,11 @@ interface RouteDeadEndProps {
 }
 
 /**
- * The "cul-de-sac": a search plus filters that return nothing.
+ * The "cul-de-sac": a search plus filters that return nothing — the routes' filtered empty state.
  *
- * Rather than a bare "no results", it names the term and the filters at fault, works out
- * which single filter brings back the most routes if lifted, and previews three of them.
+ * The one every list has (`FilteredEmptyState`: « Aucun parcours pour ces filtres », the term and
+ * the filters named, « Effacer les filtres », RL10), plus what only the routes can say: which single
+ * filter brings back the most routes if lifted, and a preview of three of them.
  */
 export function RouteDeadEnd({
   filters,
@@ -75,8 +77,8 @@ export function RouteDeadEnd({
     queries: active.map((entry) => {
       const params = cleared(entry)
       return teamSlug
-        ? getCountRoutesQueryOptions(teamSlug, params)
-        : getCountAllRoutesQueryOptions(params)
+        ? getCountRoutesQueryOptions(teamSlug, params, { request: LIST_REQUEST })
+        : getCountAllRoutesQueryOptions(params, { request: LIST_REQUEST })
     }),
   })
 
@@ -100,27 +102,17 @@ export function RouteDeadEnd({
     queries: (best ? [best] : []).map((b) => {
       const params = { ...cleared(b.entry), size: 3 }
       return teamSlug
-        ? getListRoutesQueryOptions(teamSlug, params)
-        : getListAllRoutesQueryOptions(params)
+        ? getListRoutesQueryOptions(teamSlug, params, { request: LIST_REQUEST })
+        : getListAllRoutesQueryOptions(params, { request: LIST_REQUEST })
     }),
   })
   const preview = previewQueries[0]?.data?.routes ?? []
 
-  const activeLabels = active
-    .filter((entry) => entry.key !== 'search')
-    .map((entry) =>
-      t(`routes.list.filters.${entry.key as LiftableKey satisfies LiftableKey}.label`)
-    )
-
-  const description = filters.search
-    ? t('routes.deadEnd.descriptionWithSearch', {
-        search: filters.search,
-        filters: activeLabels.join(t('routes.deadEnd.filterSeparator')),
-        count: activeLabels.length,
-      })
-    : t('routes.deadEnd.description', {
-        filters: activeLabels.join(t('routes.deadEnd.filterSeparator')),
-      })
+  const activeLabels = active.map((entry) =>
+    entry.key === 'search'
+      ? searchFilter(t, filters.search ?? '')
+      : t(`routes.list.filters.${entry.key satisfies LiftableKey}.label`)
+  )
 
   const bestLabel = best
     ? best.entry.key === 'search'
@@ -129,40 +121,32 @@ export function RouteDeadEnd({
     : ''
 
   return (
-    <Paper withBorder radius="md">
-      <EmptyState
-        variant="filtered"
-        icon={<IconSearchOff size={48} />}
-        title={t('routes.deadEnd.title')}
-        description={description}
-        actions={
-          <>
-            {best && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  onSetFilters(
-                    Object.fromEntries([
-                      ...best!.entry.clears.map((k) => [k, undefined]),
-                      ['page', 0],
-                    ])
-                  )
-                }
-              >
-                {t('routes.deadEnd.removeFilter', { filter: bestLabel })}
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={onClearFilters}>
-              {t('routes.deadEnd.reset')}
+    <Stack gap="md">
+      <FilteredEmptyState
+        resource="routes"
+        filters={activeLabels}
+        onClear={onClearFilters}
+        extraActions={
+          best && (
+            <Button
+              variant="default"
+              onClick={() =>
+                onSetFilters(
+                  Object.fromEntries([
+                    ...best!.entry.clears.map((k) => [k, undefined]),
+                    ['page', 0],
+                  ])
+                )
+              }
+            >
+              {t('routes.deadEnd.removeFilter', { filter: bestLabel })}
             </Button>
-          </>
+          )
         }
       />
 
       {best && preview.length > 0 && (
-        <>
-          <Divider />
+        <Paper withBorder radius="md">
           <Stack gap="xs" p="md">
             <Text size="xs" fw={600}>
               {t('routes.deadEnd.previewHeading', { filter: bestLabel, count: best.total })}
@@ -171,8 +155,8 @@ export function RouteDeadEnd({
               <RouteRow key={route.id} route={route} compact />
             ))}
           </Stack>
-        </>
+        </Paper>
       )}
-    </Paper>
+    </Stack>
   )
 }

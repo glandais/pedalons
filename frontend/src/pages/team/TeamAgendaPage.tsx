@@ -19,12 +19,13 @@ import {
   IconChevronUp,
   IconFilter,
   IconPlus,
-  IconSearchOff,
   IconTags,
 } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
+import { FilteredEmptyState } from '@/components/common/FilteredEmptyState'
+import { searchFilter, type FilteredResource } from '@/components/common/filteredEmpty'
 import { OutOfRangeState } from '@/components/common/OutOfRangeState'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { Pagination } from '@/components/common/Pagination'
@@ -36,7 +37,7 @@ import { TeamLayout } from '@/components/team/TeamLayout'
 import { TeamUnavailable } from '@/components/team/TeamUnavailable'
 import { AgendaFilterBar } from '@/components/agenda/AgendaFilterBar'
 import { AgendaRow } from '@/components/agenda/AgendaRow'
-import { TagFilter } from '@/components/tag'
+import { TagFilter, useTagLabels } from '@/components/tag'
 import { paths } from '@/config/paths'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
@@ -77,6 +78,8 @@ export function TeamAgendaPage() {
 
   const { data: teamData, isLoading: isLoadingTeam } = team
   const { data: publicationsData, isLoading: isLoadingPublications } = publications
+  const tagTarget = agendaTypeToPublicationType[filters.filter]
+  const tagLabels = useTagLabels(teamSlug ?? '', tagTarget, tagTarget ? filters.tags : undefined)
 
   useCanonicalPath(teamData ? paths.teamAgenda(teamData.slug) : undefined)
 
@@ -118,7 +121,6 @@ export function TeamAgendaPage() {
     }
   }
 
-  const tagTarget = agendaTypeToPublicationType[filters.filter]
   const hasPanelFilters = !!filters.search || (!!tagTarget && !!filters.tags?.length)
   const hasFilters = hasPanelFilters || filters.filter !== 'all' || filters.scope !== 'upcoming'
   const clearFilters = () => {
@@ -133,6 +135,16 @@ export function TeamAgendaPage() {
   }
 
   const items = (publicationsData?.publications ?? []).filter(isDated)
+  // What the filtered empty state names (RL10): « Passées » and « Je participe » are filters too.
+  const activeFilters = [
+    ...(filters.search ? [searchFilter(t, filters.search)] : []),
+    ...(filters.scope === 'me' ? [t('publications.scope.me')] : []),
+    ...(filters.scope === 'past' ? [t('agenda.scope.past')] : []),
+    ...(filters.filter !== 'all'
+      ? [t(`agenda.type.${filters.filter satisfies 'ride' | 'trip'}`)]
+      : []),
+    ...tagLabels,
+  ]
 
   return (
     <TeamLayout team={teamData} currentTab="agenda">
@@ -241,6 +253,7 @@ export function TeamAgendaPage() {
           isError={publications.isError}
           error={publications.error}
           onRetry={() => void publications.refetch()}
+          isRefreshing={publications.isPlaceholderData}
           skeleton={
             <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
               {[...Array(6)].map((_, i) => (
@@ -287,18 +300,10 @@ export function TeamAgendaPage() {
           ) : filters.page > 0 ? (
             <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
           ) : hasFilters ? (
-            <EmptyState
-              variant="filtered"
-              icon={<IconSearchOff size={48} />}
-              title={t('noResults')}
-              description={t('agenda.empty.filteredDescription')}
-              actions={
-                <Button variant="light" onClick={clearFilters}>
-                  {hasPanelFilters && filters.filter === 'all' && filters.scope === 'upcoming'
-                    ? t('common.clearSearch')
-                    : t('common.clearFilters')}
-                </Button>
-              }
+            <FilteredEmptyState
+              resource={filteredResource(filters.filter)}
+              filters={activeFilters}
+              onClear={clearFilters}
             />
           ) : (
             <EmptyState
@@ -306,9 +311,16 @@ export function TeamAgendaPage() {
               title={t('agenda.empty.title')}
               description={t('agenda.empty.description')}
               actions={
-                <Button variant="light" onClick={() => setFilters({ scope: 'past' })}>
-                  {t('agenda.empty.seePast')}
-                </Button>
+                <>
+                  {canCreate && createItems.length > 0 && (
+                    <Button component={PrefetchLink} to={createItems[0].path} variant="light">
+                      {createItems[0].label}
+                    </Button>
+                  )}
+                  <Button variant="light" onClick={() => setFilters({ scope: 'past' })}>
+                    {t('agenda.empty.seePast')}
+                  </Button>
+                </>
               }
             />
           )}
@@ -316,6 +328,11 @@ export function TeamAgendaPage() {
       </Stack>
     </TeamLayout>
   )
+}
+
+/** « Aucune sortie pour ces filtres »: the filtered empty state names what the kind keeps. */
+function filteredResource(filter: AgendaFilters['filter']): FilteredResource {
+  return filter === 'ride' ? 'agendaRides' : filter === 'trip' ? 'agendaTrips' : 'agenda'
 }
 
 /** « 5 sorties et voyages à venir »: the count says what the list holds, by period and kind. */

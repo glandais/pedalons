@@ -62,17 +62,17 @@ test.describe('comments', () => {
     await expect(page.getByRole('heading', { name: 'Commentaires (25)' })).toBeVisible()
     const rendered = page.getByText(/^Commentaire e2e n°\d{2}$/)
     await expect(rendered).toHaveCount(20)
-    // Newest first: the five oldest are the ones left out.
-    await expect(page.getByText('Commentaire e2e n°25', { exact: true })).toBeVisible()
-    await expect(page.getByText('Commentaire e2e n°06', { exact: true })).toBeVisible()
-    await expect(page.getByText('Commentaire e2e n°05', { exact: true })).toHaveCount(0)
+    // Oldest first, as a conversation reads (RL5): the five latest are the ones left out.
+    await expect(page.getByText('Commentaire e2e n°01', { exact: true })).toBeVisible()
+    await expect(page.getByText('Commentaire e2e n°20', { exact: true })).toBeVisible()
+    await expect(page.getByText('Commentaire e2e n°21', { exact: true })).toHaveCount(0)
 
     // The rest is one click away, and then the button goes.
-    const loadMore = page.getByRole('button', { name: 'Charger plus de commentaires' })
+    const loadMore = page.getByRole('button', { name: 'Afficher plus de commentaires' })
     await hydrated(loadMore)
     await loadMore.click()
     await expect(rendered).toHaveCount(25)
-    await expect(page.getByText('Commentaire e2e n°01', { exact: true })).toBeVisible()
+    await expect(page.getByText('Commentaire e2e n°25', { exact: true })).toBeVisible()
     await expect(loadMore).toHaveCount(0)
   })
 })
@@ -523,7 +523,7 @@ test.describe('leaving a ride, seen from the home page and the calendar', () => 
     // « Je participe » no longer lists it...
     await expect(feedCard(page, ride.name)).toHaveCount(0)
     await expect(
-      page.getByRole('main').getByRole('heading', { name: 'Aucune publication trouvée' })
+      page.getByRole('main').getByRole('heading', { name: 'Aucune publication pour ces filtres' })
     ).toBeVisible()
     // ...« Tout » still does, without the badge...
     await scope(page, 'Tout')
@@ -574,7 +574,7 @@ test.describe('leaving a ride, seen from the home page and the calendar', () => 
     await expect(nextRideEmpty(page)).toBeVisible()
     await scope(page, 'Je participe')
     await expect(
-      page.getByRole('main').getByRole('heading', { name: 'Aucune publication trouvée' })
+      page.getByRole('main').getByRole('heading', { name: 'Aucune publication pour ces filtres' })
     ).toBeVisible()
     await expect(feedCard(page, ride.name)).toHaveCount(0)
   })

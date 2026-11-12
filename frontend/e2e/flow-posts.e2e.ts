@@ -409,13 +409,17 @@ test('a post saved as a draft is hidden from members until it is published from 
     await expect(
       memberMain.getByRole('heading', { level: 2, name: 'Publications', exact: true })
     ).toBeVisible()
-    await expect(memberMain.getByText(/^\d+ publications?$/)).toBeVisible()
+    // The count, or at zero the empty state: the count is masked then (RL8).
+    await expect(memberMain.getByText(/^\d+ publications?$/).or(noPublication)).toBeVisible()
   }
+  const noPublication = memberMain.getByRole('heading', {
+    name: 'Aucune publication pour le moment',
+  })
   try {
     // --- A draft: members see nothing of it.
     expect(await findPost(member, team.slug, postSlug), 'a draft is 404 to a member').toBeNull()
     await openMemberFeed()
-    await expect(memberMain.getByText('0 publication', { exact: true })).toBeVisible()
+    await expect(noPublication).toBeVisible()
     await expect(entityCard(memberMain, title)).toHaveCount(0)
 
     // --- Published from the post page's menu.

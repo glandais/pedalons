@@ -1,3 +1,4 @@
+import { LIST_REQUEST } from '@/lib/listQuery'
 import { useMemo } from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import { prefetchEntityTeam, useEntityTeam } from '@/lib/entityTeam'
@@ -190,7 +191,8 @@ export async function prefetchRideDetail(
           rideSlug,
           solo
             ? groupParticipantsParams(solo.id, filters)
-            : participantsPageParams(filters.search, filters.page)
+            : participantsPageParams(filters.search, filters.page),
+          { request: LIST_REQUEST }
         )
       : Promise.resolve(queryClient),
   ])

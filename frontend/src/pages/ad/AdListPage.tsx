@@ -1,10 +1,13 @@
 import { useCallback } from 'react'
 import { OutOfRangeState } from '@/components/common/OutOfRangeState'
-import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
+import { AccessRefusedState, QueryStateBoundary } from '@/components/common/QueryStateBoundary'
+import { FilteredEmptyState } from '@/components/common/FilteredEmptyState'
+import { searchFilter } from '@/components/common/filteredEmpty'
+import { formatNumber } from '@/utils/unitFormat'
 import { Navigate, useParams } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
-import { IconLock, IconPlus, IconSearchOff, IconTag } from '@tabler/icons-react'
+import { IconPlus, IconTag } from '@tabler/icons-react'
 import {
   Button,
   NumberInput,
@@ -35,20 +38,21 @@ import { ResultCount } from '../../components/common/ResultCount'
 import { SearchInput } from '../../components/common/SearchInput'
 import { TeamLayout } from '../../components/team/TeamLayout'
 import { TeamUnavailable } from '../../components/team/TeamUnavailable'
-import { TagFilter } from '../../components/tag'
+import { TagFilter, useTagLabels } from '../../components/tag'
 import { paths } from '@/config/paths'
 import { AdType } from '../../api/dto'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 
 export function AdListPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const { teamSlug } = useParams<{ teamSlug: string }>()
 
   const { filters, setFilters, team, ads, totalPages } = useAdListData(teamSlug)
   const { data: teamData, isLoading: isLoadingTeam } = team
-  const { data: adsResponse, isLoading: isLoadingAds, isFetching } = ads
+  const { data: adsResponse, isLoading: isLoadingAds } = ads
+  const tagLabels = useTagLabels(teamSlug ?? '', 'AD', filters.tags)
 
   const commitSearch = useCallback(
     (value: string) => setFilters({ search: value || undefined }),
@@ -88,10 +92,14 @@ export function AdListPage() {
       <TeamLayout team={teamData} currentTab="ads">
         <Title order={2}>{t('ads.title')}</Title>
         <Space h="md" />
-        <EmptyState
-          icon={<IconLock size={48} />}
+        <AccessRefusedState
           title={t('ads.list.membersOnly.title')}
-          description={t('ads.list.membersOnly.description')}
+          message={t('ads.list.membersOnly.description')}
+          action={
+            <Button variant="default" component={PrefetchLink} to={paths.teamAbout(teamData.slug)}>
+              {t('teams.detail.tabs.about')}
+            </Button>
+          }
         />
       </TeamLayout>
     )
@@ -99,6 +107,18 @@ export function AdListPage() {
 
   const adsList = adsResponse?.ads || []
   const hasFiltersOrSearch = isAdFiltered(filters)
+  const price = (value: number) => formatNumber(value, i18n.language)
+  const activeFilters = [
+    ...(filters.search ? [searchFilter(t, filters.search)] : []),
+    ...(filters.adType ? [t(`ads.adType.${filters.adType}`)] : []),
+    ...(filters.minPrice !== undefined
+      ? [t('ads.list.filters.minPriceActive', { price: price(filters.minPrice) })]
+      : []),
+    ...(filters.maxPrice !== undefined
+      ? [t('ads.list.filters.maxPriceActive', { price: price(filters.maxPrice) })]
+      : []),
+    ...tagLabels,
+  ]
   // The sort survives: clearing brings the list back into view, it does not reorder what the
   // reader chose to read.
   const clearFilters = () => {
@@ -224,6 +244,7 @@ export function AdListPage() {
         isError={ads.isError}
         error={ads.error}
         onRetry={() => void ads.refetch()}
+        isRefreshing={ads.isPlaceholderData}
         skeleton={
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -235,18 +256,17 @@ export function AdListPage() {
         {adsList.length === 0 ? (
           filters.page > 0 ? (
             <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+          ) : hasFiltersOrSearch ? (
+            <FilteredEmptyState resource="ads" filters={activeFilters} onClear={clearFilters} />
           ) : (
             <EmptyState
-              variant={hasFiltersOrSearch ? 'filtered' : 'absolute'}
-              icon={hasFiltersOrSearch ? <IconSearchOff size={48} /> : <IconTag size={48} />}
-              title={hasFiltersOrSearch ? t('ads.list.noResultsTitle') : t('ads.list.empty.title')}
-              description={
-                hasFiltersOrSearch ? t('ads.list.noResults') : t('ads.list.empty.member')
-              }
+              icon={<IconTag size={48} />}
+              title={t('ads.list.empty.title')}
+              description={t('ads.list.empty.member')}
               actions={
-                hasFiltersOrSearch ? (
-                  <Button variant="light" onClick={clearFilters}>
-                    {t('common.clearFilters')}
+                isMember ? (
+                  <Button component={PrefetchLink} to={paths.adNew(teamData.slug)} variant="light">
+                    {t('ads.list.createAd')}
                   </Button>
                 ) : undefined
               }
@@ -254,12 +274,7 @@ export function AdListPage() {
           )
         ) : (
           <Stack>
-            <SimpleGrid
-              ref={listTopRef}
-              cols={{ base: 1, sm: 2, lg: 3 }}
-              spacing="lg"
-              style={{ opacity: isFetching ? 0.5 : 1 }}
-            >
+            <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
               {adsList.map((ad) => (
                 <AdCard key={ad.id} ad={ad} actions={<AdCardActions ad={ad} />} />
               ))}

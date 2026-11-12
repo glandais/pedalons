@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react'
-import { keepPreviousData } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   getListMyNotificationsQueryKey,
@@ -8,6 +7,7 @@ import {
   useListMyNotifications,
 } from '@/api/endpoints/notifications/notifications'
 import { prefetchPageWindow } from '@/config/prefetchHelpers'
+import { LIST_QUERY, LIST_REQUEST } from '@/lib/listQuery'
 import { usePaginatedQuery } from '@/hooks/usePaginatedQuery'
 import { readUrlFilters, useUrlFilters } from '@/hooks/useUrlFilters'
 import {
@@ -34,13 +34,14 @@ export function useNotificationListData() {
   const apiParams = useMemo(() => notificationApiParams(filters), [filters])
 
   const notifications = useListMyNotifications(apiParams, {
-    query: { placeholderData: keepPreviousData },
+    query: LIST_QUERY,
+    request: LIST_REQUEST,
   })
 
   const prefetchPage = useCallback(
     (page: number) => ({
       queryKey: getListMyNotificationsQueryKey({ ...apiParams, page }),
-      queryFn: () => listMyNotifications({ ...apiParams, page }),
+      queryFn: () => listMyNotifications({ ...apiParams, page }, LIST_REQUEST),
     }),
     [apiParams]
   )
@@ -60,6 +61,6 @@ export async function prefetchNotificationList(queryClient: QueryClient, url: UR
   if (!useAuthStore.getState().isAuthenticated) return
   const filters = readUrlFilters(url.searchParams, notificationListFilterOptions)
   await prefetchPageWindow(notificationApiParams(filters), (p) =>
-    prefetchListMyNotificationsQuery(queryClient, p)
+    prefetchListMyNotificationsQuery(queryClient, p, { request: LIST_REQUEST })
   )
 }

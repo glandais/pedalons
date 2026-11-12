@@ -369,7 +369,9 @@ test.describe('ad list', () => {
 
     // Nothing costs more than 5000: the filtered dead end, whose way out is the clear button.
     await page.goto(`${listPath(team.slug)}?sort=PRICE&dir=ASC&pmin=5000`)
-    await expect(page.getByRole('heading', { name: 'Aucune annonce trouvée' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Aucune annonce pour ces filtres' })
+    ).toBeVisible()
     await expectControls(page, { sort: 'Prix croissant', min: '5000 €', max: '' })
 
     const clear = page.getByRole('button', { name: 'Effacer les filtres' })

@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import { paths } from '../../config/paths'
-import { IconPlus, IconFiles, IconSearchOff } from '@tabler/icons-react'
+import { IconPlus, IconFiles } from '@tabler/icons-react'
 import { Box, Button, Group, Stack, Title, Center, Loader } from '@mantine/core'
 import { useGetTeam } from '@/api/endpoints/teams/teams'
 import {
@@ -19,6 +19,9 @@ import { TeamUnavailable } from '../../components/team/TeamUnavailable'
 import { EmptyState } from '../../components/common/EmptyState'
 import { OutOfRangeState } from '../../components/common/OutOfRangeState'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
+import { FilteredEmptyState } from '../../components/common/FilteredEmptyState'
+import { searchFilter } from '../../components/common/filteredEmpty'
+import { ResultCount } from '../../components/common/ResultCount'
 import { Pagination } from '../../components/common/Pagination'
 import { useDebouncedSearch } from '../../hooks/useDebouncedSearch'
 import { useScrollToListTop } from '../../hooks/useScrollToListTop'
@@ -38,7 +41,18 @@ export function RideTemplateListPage() {
   const queryClient = useQueryClient()
   const [templateToDelete, setTemplateToDelete] = useState<RideTemplateDto | null>(null)
 
-  const { filters, setFilters, templates, totalPages } = useRideTemplateListData(teamSlug)
+  const teamQuery = useGetTeam(teamSlug!, {
+    query: { enabled: !!teamSlug },
+  })
+  const { data: team, isLoading: isLoadingTeam } = teamQuery
+  // The server lists the templates to an organizer only: nothing is asked before the role is known,
+  // nor for a plain member, whom `TeamAdminLayout` sends back to the team (DL23).
+  const canManage = teamAccess(team, isPlatformAdmin).isOrganizer
+
+  const { filters, setFilters, templates, totalPages } = useRideTemplateListData(
+    teamSlug,
+    !!team && canManage
+  )
   const { data: templatesData, isLoading: isLoadingTemplates } = templates
   const commitSearch = useCallback(
     (value: string) => setFilters({ search: value || undefined }),
@@ -47,10 +61,6 @@ export function RideTemplateListPage() {
   const [search, setSearch] = useDebouncedSearch(filters.search ?? '', commitSearch)
   const { listTopRef, scrollToListTop } = useScrollToListTop()
 
-  const teamQuery = useGetTeam(teamSlug!, {
-    query: { enabled: !!teamSlug },
-  })
-  const { data: team, isLoading: isLoadingTeam } = teamQuery
   const deleteMutation = useDeleteTemplate()
 
   useCanonicalPath(team ? paths.rideTemplates(team.slug) : undefined)
@@ -69,7 +79,6 @@ export function RideTemplateListPage() {
     )
   }
 
-  const canManage = teamAccess(team, isPlatformAdmin).isOrganizer
   const clearSearch = () => {
     setSearch('')
     setFilters({ search: undefined, page: 0 })
@@ -123,12 +132,15 @@ export function RideTemplateListPage() {
           label={t('rideTemplates.list.search.label')}
         />
 
+        <ResultCount total={templatesData?.total} resource="templates" />
+
         {/* Templates List */}
         <QueryStateBoundary
           isLoading={isLoadingTemplates}
           isError={templates.isError}
           error={templates.error}
           onRetry={() => void templates.refetch()}
+          isRefreshing={templates.isPlaceholderData}
           skeleton={
             <Center py="xl">
               <Loader />
@@ -161,16 +173,11 @@ export function RideTemplateListPage() {
             </>
           ) : filters.page > 0 ? (
             <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
-          ) : search ? (
-            <EmptyState
-              variant="filtered"
-              icon={<IconSearchOff size={48} />}
-              title={t('rideTemplates.list.noResults')}
-              actions={
-                <Button variant="light" onClick={clearSearch}>
-                  {t('common.clearSearch')}
-                </Button>
-              }
+          ) : filters.search ? (
+            <FilteredEmptyState
+              resource="templates"
+              filters={[searchFilter(t, filters.search)]}
+              onClear={clearSearch}
             />
           ) : (
             <EmptyState
@@ -183,7 +190,11 @@ export function RideTemplateListPage() {
               }
               actions={
                 canManage ? (
-                  <Button component={PrefetchLink} to={paths.rideTemplateNew(teamSlug!)}>
+                  <Button
+                    component={PrefetchLink}
+                    to={paths.rideTemplateNew(teamSlug!)}
+                    variant="light"
+                  >
                     {t('rideTemplates.create.title')}
                   </Button>
                 ) : undefined

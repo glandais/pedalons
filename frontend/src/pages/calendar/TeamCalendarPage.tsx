@@ -3,6 +3,8 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Group, Stack, Title } from '@mantine/core'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
+import { getTeamEvents } from '@/api/endpoints/calendar/calendar'
+import { LIST_REQUEST } from '@/lib/listQuery'
 import { ListViewSwitch, type ListView } from '@/components/common/ListViewSwitch'
 import { CalendarView } from '@/components/calendar/CalendarView'
 import { IcsFeedSettings } from '@/components/calendar/IcsFeedSettings'
@@ -30,9 +32,9 @@ export function TeamCalendarPage(): React.ReactElement {
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const { filters, setFilters } = useUrlFilters(teamCalendarFilterOptions)
 
-  const { team, events, handleDateRangeChange } = useTeamCalendarData(teamSlug)
+  const { team, events, dateRange, handleDateRangeChange } = useTeamCalendarData(teamSlug)
   const { data: teamData, isLoading: isLoadingTeam } = team
-  const { data: eventsData, isFetching: isFetchingEvents } = events
+  const { data: eventsData } = events
 
   const shown = useMemo(
     () => (eventsData?.events ?? []).filter((event) => keepCalendarEvent(event, filters)),
@@ -101,8 +103,24 @@ export function TeamCalendarPage(): React.ReactElement {
         >
           <CalendarView
             events={shown}
-            isLoading={isFetchingEvents}
+            isLoading={events.isLoading}
+            isRefreshing={events.isPlaceholderData}
             onDateRangeChange={handleDateRangeChange}
+            monthEmpty={{
+              allEvents: eventsData?.events ?? [],
+              keep: (event) => keepCalendarEvent(event, filters),
+              activeFilters: [
+                ...(filters.scope === 'me' ? [t('publications.scope.me')] : []),
+                ...(filters.filter === 'all'
+                  ? []
+                  : [t(`agenda.type.${filters.filter satisfies 'ride' | 'trip'}`)]),
+              ],
+              onClearFilters: () => setFilters({ filter: 'all', scope: 'all' }),
+              scope: 'team',
+              loadedTo: dateRange.to,
+              probeKey: teamData.slug,
+              probe: (from, to) => getTeamEvents(teamData.slug, { from, to }, LIST_REQUEST),
+            }}
           />
         </QueryStateBoundary>
 

@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import i18next from 'i18next'
 import { paths } from '../../config/paths'
-import { IconPlus, IconSearchOff, IconSend, IconUsers } from '@tabler/icons-react'
+import { IconPlus, IconSend, IconUsers } from '@tabler/icons-react'
 import {
   Alert,
   Box,
@@ -39,6 +39,9 @@ import { TeamUnavailable } from '../../components/team/TeamUnavailable'
 import { EmptyState } from '../../components/common/EmptyState'
 import { OutOfRangeState } from '../../components/common/OutOfRangeState'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
+import { FilteredEmptyState } from '../../components/common/FilteredEmptyState'
+import { searchFilter } from '../../components/common/filteredEmpty'
+import { ResultCount } from '../../components/common/ResultCount'
 import { TeamInvitationList } from '../../components/team/TeamInvitationList'
 import { SearchInput } from '../../components/common/SearchInput'
 import { TeamRole } from '@/api/dto'
@@ -214,8 +217,9 @@ export function TeamMembersPage() {
             placeholder={t('teams.detail.members.search.placeholder')}
             label={t('teams.detail.members.search.label')}
           />
+          {/* No visible label, like the search beside it: the two fields line up (C6). */}
           <Select
-            label={t('teams.detail.members.filterRole')}
+            aria-label={t('teams.detail.members.filterRole')}
             value={filters.role ?? null}
             onChange={(value) => setFilters({ role: (value as TeamRole | null) ?? undefined })}
             data={[
@@ -229,11 +233,16 @@ export function TeamMembersPage() {
           />
         </Group>
 
+        <Box mb="sm">
+          <ResultCount total={membersData?.total} resource="members" />
+        </Box>
+
         <QueryStateBoundary
           isLoading={isLoadingMembers}
           isError={members.isError}
           error={members.error}
           onRetry={() => void members.refetch()}
+          isRefreshing={members.isPlaceholderData}
           skeleton={<TeamMemberListSkeleton count={5} />}
         >
           {membersData?.members && membersData.members.length > 0 ? (
@@ -264,22 +273,17 @@ export function TeamMembersPage() {
             </>
           ) : filters.page > 0 ? (
             <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
-          ) : search || filters.role ? (
-            <EmptyState
-              variant="filtered"
-              icon={<IconSearchOff size={48} />}
-              title={t('teams.detail.members.noResults')}
-              actions={
-                <Button
-                  variant="default"
-                  onClick={() => {
-                    setSearch('')
-                    setFilters({ search: undefined, role: undefined, page: 0 })
-                  }}
-                >
-                  {t('common.clearFilters')}
-                </Button>
-              }
+          ) : filters.search || filters.role ? (
+            <FilteredEmptyState
+              resource="members"
+              filters={[
+                ...(filters.search ? [searchFilter(t, filters.search)] : []),
+                ...(filters.role ? [t(`roles.${filters.role}`)] : []),
+              ]}
+              onClear={() => {
+                setSearch('')
+                setFilters({ search: undefined, role: undefined, page: 0 })
+              }}
             />
           ) : (
             <EmptyState icon={<IconUsers size={48} />} title={t('teams.detail.members.empty')} />

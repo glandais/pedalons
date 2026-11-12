@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Box, Button, Group, Select, Stack, Title } from '@mantine/core'
-import { IconLock, IconSearchOff, IconUsers } from '@tabler/icons-react'
+import { IconUsers } from '@tabler/icons-react'
 import { useGetTeam } from '@/api/endpoints/teams/teams'
 import { PlatformRole, TeamRole } from '@/api/dto'
 import { apiErrorStatus } from '@/lib/apiError'
@@ -13,7 +13,9 @@ import { useAuth } from '../../hooks/useAuth'
 import { useDebouncedSearch } from '../../hooks/useDebouncedSearch'
 import { useScrollToListTop } from '../../hooks/useScrollToListTop'
 import { LoadingPage } from '../../components/common/LoadingSpinner'
-import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
+import { AccessRefusedState, QueryStateBoundary } from '../../components/common/QueryStateBoundary'
+import { FilteredEmptyState } from '../../components/common/FilteredEmptyState'
+import { searchFilter } from '../../components/common/filteredEmpty'
 import { EmptyState } from '../../components/common/EmptyState'
 import { OutOfRangeState } from '../../components/common/OutOfRangeState'
 import { ResultCount } from '../../components/common/ResultCount'
@@ -79,23 +81,23 @@ export function TeamDirectoryPage() {
 
   const refused = members.isError && apiErrorStatus(members.error) === 403
   const isFiltered = !!filters.search || !!filters.role
+  const activeFilters = [
+    ...(filters.search ? [searchFilter(t, filters.search)] : []),
+    ...(filters.role ? [t(`roles.${filters.role}`)] : []),
+  ]
   const list = members.data?.members ?? []
 
   return (
     <TeamLayout team={team} currentTab="members">
       <Box py="md">
         <Stack gap="lg">
-          <Group justify="space-between" align="baseline">
-            <Title order={2}>{t('teams.detail.members.title')}</Title>
-            <ResultCount total={members.data?.total} resource="members" />
-          </Group>
+          <Title order={2}>{t('teams.detail.members.title')}</Title>
 
           {refused ? (
-            <EmptyState
-              icon={<IconLock size={48} />}
+            <AccessRefusedState
               title={t('teams.directory.forbidden.title')}
-              description={t('teams.directory.forbidden.message')}
-              actions={
+              message={t('teams.directory.forbidden.message')}
+              action={
                 <Button variant="default" component={PrefetchLink} to={paths.teamAbout(team.slug)}>
                   {t('teams.detail.tabs.about')}
                 </Button>
@@ -112,8 +114,9 @@ export function TeamDirectoryPage() {
                   label={t('teams.detail.members.search.label')}
                 />
                 {rolesShown && (
+                  // No visible label, like the search beside it: the two fields line up (C6).
                   <Select
-                    label={t('teams.detail.members.filterRole')}
+                    aria-label={t('teams.detail.members.filterRole')}
                     value={filters.role ?? null}
                     onChange={(value) =>
                       setFilters({ role: (value as TeamRole | null) ?? undefined })
@@ -130,29 +133,27 @@ export function TeamDirectoryPage() {
                 )}
               </Group>
 
+              <ResultCount total={members.data?.total} resource="members" />
+
               <QueryStateBoundary
                 isLoading={members.isLoading}
                 isError={members.isError}
                 error={members.error}
                 onRetry={() => members.refetch()}
+                isRefreshing={members.isPlaceholderData}
                 isEmpty={list.length === 0}
                 skeleton={<TeamMemberListSkeleton count={5} />}
                 empty={
                   filters.page > 0 ? (
                     <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
                   ) : isFiltered ? (
-                    <EmptyState
-                      variant="filtered"
-                      icon={<IconSearchOff size={48} />}
-                      title={t('teams.detail.members.noResults')}
-                      actions={
-                        <Button
-                          variant="default"
-                          onClick={() => setFilters({ search: undefined, role: undefined })}
-                        >
-                          {t('common.clearFilters')}
-                        </Button>
-                      }
+                    <FilteredEmptyState
+                      resource="members"
+                      filters={activeFilters}
+                      onClear={() => {
+                        setSearch('')
+                        setFilters({ search: undefined, role: undefined, page: 0 })
+                      }}
                     />
                   ) : (
                     <EmptyState

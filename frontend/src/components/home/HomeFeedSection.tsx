@@ -1,10 +1,12 @@
 import { useCallback, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Box, Button, Chip, Group, Select, SimpleGrid, Stack, Text, Title } from '@mantine/core'
-import { IconNews, IconSearchOff } from '@tabler/icons-react'
+import { Box, Chip, Group, Select, SimpleGrid, Stack, Text, Title } from '@mantine/core'
+import { IconNews } from '@tabler/icons-react'
 import { isSingleTeam } from '@/config/appConfig'
 import { PublicationCard, PublicationCardSkeleton } from '@/components/card'
 import { EmptyState } from '@/components/common/EmptyState'
+import { FilteredEmptyState } from '@/components/common/FilteredEmptyState'
+import { searchFilter } from '@/components/common/filteredEmpty'
 import { OutOfRangeState } from '@/components/common/OutOfRangeState'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { Pagination } from '@/components/common/Pagination'
@@ -72,7 +74,32 @@ export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps)
     })
   }, [setSearch, setFilters, membershipDefault])
 
-  const { data: publicationsData, isLoading, isError, error, refetch } = publications
+  const {
+    data: publicationsData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isPlaceholderData,
+  } = publications
+
+  const membershipLabels: Record<MembershipFilterValue, string> = {
+    all: t('filters.membership.all'),
+    member: t('roles.MEMBER'),
+    organizer: t('roles.ORGANIZER'),
+    admin: t('roles.ADMIN'),
+  }
+  // What the filtered empty state names, in the bar's order (RL10).
+  const activeFilters = [
+    ...(filters.search ? [searchFilter(t, filters.search)] : []),
+    ...(filters.scope !== 'all'
+      ? [t(`publications.scope.${filters.scope satisfies 'upcoming' | 'me'}`)]
+      : []),
+    ...(filters.membership !== membershipDefault ? [membershipLabels[filters.membership]] : []),
+    ...(filters.filter !== 'all'
+      ? [t(`teams.publications.list.filter.${filters.filter satisfies 'ride' | 'post' | 'trip'}`)]
+      : []),
+  ]
 
   return (
     <Stack component="section" aria-labelledby="home-feed-title">
@@ -104,12 +131,10 @@ export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps)
           <Select
             value={filters.membership}
             onChange={(value) => setFilters({ membership: value as MembershipFilterValue })}
-            data={[
-              { value: 'all', label: t('filters.membership.all') },
-              { value: 'member', label: t('roles.MEMBER') },
-              { value: 'organizer', label: t('roles.ORGANIZER') },
-              { value: 'admin', label: t('roles.ADMIN') },
-            ]}
+            data={(['all', 'member', 'organizer', 'admin'] as const).map((value) => ({
+              value,
+              label: membershipLabels[value],
+            }))}
             aria-label={t('filters.membership.label')}
             allowDeselect={false}
             w={{ base: '100%', sm: 180 }}
@@ -133,56 +158,57 @@ export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps)
 
       <ResultCount total={publicationsData?.total} resource="publications" />
 
-      {isLoading ? (
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-          {[...Array(6)].map((_, i) => (
-            <PublicationCardSkeleton key={i} />
-          ))}
-        </SimpleGrid>
-      ) : isError ? (
-        <QueryStateBoundary isLoading={false} isError error={error} onRetry={() => void refetch()}>
-          {null}
-        </QueryStateBoundary>
-      ) : publicationsData?.publications && publicationsData.publications.length > 0 ? (
-        <Stack>
-          <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-            {publicationsData.publications.map((publication) => (
-              <PublicationCard
-                key={publication.id}
-                publication={publication}
-                showTeam={!isSingleTeam()}
-              />
+      <QueryStateBoundary
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        onRetry={() => void refetch()}
+        isRefreshing={isPlaceholderData}
+        skeleton={
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+            {[...Array(6)].map((_, i) => (
+              <PublicationCardSkeleton key={i} />
             ))}
           </SimpleGrid>
+        }
+      >
+        {publicationsData?.publications && publicationsData.publications.length > 0 ? (
+          <Stack>
+            <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+              {publicationsData.publications.map((publication) => (
+                <PublicationCard
+                  key={publication.id}
+                  publication={publication}
+                  showTeam={!isSingleTeam()}
+                />
+              ))}
+            </SimpleGrid>
 
-          <Pagination
-            currentPage={filters.page}
-            totalPages={totalPages}
-            onPageChange={(page) => {
-              setFilters({ page })
-              scrollToListTop()
-            }}
+            <Pagination
+              currentPage={filters.page}
+              totalPages={totalPages}
+              onPageChange={(page) => {
+                setFilters({ page })
+                scrollToListTop()
+              }}
+            />
+          </Stack>
+        ) : filters.page > 0 ? (
+          <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+        ) : hasFiltersOrSearch ? (
+          <FilteredEmptyState
+            resource="publications"
+            filters={activeFilters}
+            onClear={clearFilters}
           />
-        </Stack>
-      ) : filters.page > 0 ? (
-        <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
-      ) : (
-        <EmptyState
-          variant={hasFiltersOrSearch ? 'filtered' : 'absolute'}
-          icon={hasFiltersOrSearch ? <IconSearchOff size={48} /> : <IconNews size={48} />}
-          title={hasFiltersOrSearch ? t('home.feed.noResultsTitle') : t('home.feed.empty')}
-          description={
-            hasFiltersOrSearch ? t('home.feed.noResults') : t('home.feed.emptyDescription')
-          }
-          actions={
-            hasFiltersOrSearch ? (
-              <Button variant="light" onClick={clearFilters}>
-                {t('common.clearFilters')}
-              </Button>
-            ) : undefined
-          }
-        />
-      )}
+        ) : (
+          <EmptyState
+            icon={<IconNews size={48} />}
+            title={t('home.feed.empty')}
+            description={t('home.feed.emptyDescription')}
+          />
+        )}
+      </QueryStateBoundary>
     </Stack>
   )
 }

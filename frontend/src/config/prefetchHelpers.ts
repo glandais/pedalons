@@ -10,6 +10,7 @@ import { ROUTES_BULK_MAX_SLUGS } from '@/hooks/useRoutesBulk'
 import { COMMENT_LIST_OPTIONS } from '@/hooks/useComments'
 import type { MembershipFilterValue } from '@/hooks/filters/membership'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
+import { teamAccess } from '@/lib/teamAccess'
 import { MinRole } from '@/api/dto'
 import type {
   SortDirection,
@@ -33,6 +34,16 @@ import type {
 export function readsMemberContent(queryClient: QueryClient, teamSlug: string): boolean {
   const team = queryClient.getQueryData<TeamDetailDto>(getGetTeamQueryKey(teamSlug))
   return !!team?.role || selectIsPlatformAdmin(useAuthStore.getState())
+}
+
+/**
+ * Whether the reader acts as an organizer of the team — what the ride-template list asks
+ * (`RideTemplateAccessChecker`), read from the team prefetched just before, as `teamAccess` does
+ * on the page (docs/LEDGER_*.md WEB-175, DL23).
+ */
+export function organizesTeam(queryClient: QueryClient, teamSlug: string): boolean {
+  const team = queryClient.getQueryData<TeamDetailDto>(getGetTeamQueryKey(teamSlug))
+  return teamAccess(team, selectIsPlatformAdmin(useAuthStore.getState())).isOrganizer
 }
 
 /**

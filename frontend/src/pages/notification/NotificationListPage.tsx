@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { Box, Button, Group, Paper, Skeleton, Stack, Switch, Title } from '@mantine/core'
-import { IconBellOff, IconChecks, IconSearchOff, IconSettings } from '@tabler/icons-react'
+import { IconBellOff, IconChecks, IconSettings } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { paths } from '@/config/paths'
 import { EmptyState } from '@/components/common/EmptyState'
+import { FilteredEmptyState } from '@/components/common/FilteredEmptyState'
 import { Pagination } from '@/components/common/Pagination'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { OutOfRangeState } from '@/components/common/OutOfRangeState'
@@ -21,7 +22,7 @@ export function NotificationListPage() {
   const { markRead, markAllRead, isMarkingAllRead } = useNotificationActions()
   const { listTopRef, scrollToListTop } = useScrollToListTop()
 
-  const { data, isLoading, isError, error, refetch } = notifications
+  const { data, isLoading, isError, error, refetch, isPlaceholderData } = notifications
   const items = data?.items ?? []
   const unreadCount = data?.unreadCount ?? 0
 
@@ -52,14 +53,15 @@ export function NotificationListPage() {
         </Group>
       </Group>
 
-      <Group justify="space-between" align="center" wrap="wrap" mb="sm">
+      <Stack gap="sm" mb="sm">
         <Switch
           checked={filters.unreadOnly}
           onChange={(event) => setFilters({ unreadOnly: event.currentTarget.checked })}
           label={t('notifications.filter.unreadOnly')}
         />
+        {/* Under the bar, as on every list (RL8). */}
         <ResultCount total={data?.total} resource="notifications" />
-      </Group>
+      </Stack>
 
       <div ref={listTopRef} />
 
@@ -68,6 +70,7 @@ export function NotificationListPage() {
         isError={isError}
         error={error}
         onRetry={() => void refetch()}
+        isRefreshing={isPlaceholderData}
         isEmpty={items.length === 0}
         skeleton={
           <Stack gap="xs">
@@ -80,16 +83,10 @@ export function NotificationListPage() {
           filters.page > 0 ? (
             <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
           ) : isNotificationFiltered(filters) ? (
-            <EmptyState
-              variant="filtered"
-              icon={<IconSearchOff size={48} />}
-              title={t('notifications.empty.filtered.title')}
-              description={t('notifications.empty.filtered.description')}
-              actions={
-                <Button variant="default" onClick={() => setFilters({ unreadOnly: false })}>
-                  {t('notifications.empty.filtered.action')}
-                </Button>
-              }
+            <FilteredEmptyState
+              resource="notifications"
+              filters={[t('notifications.filter.unread')]}
+              onClear={() => setFilters({ unreadOnly: false })}
             />
           ) : (
             <EmptyState

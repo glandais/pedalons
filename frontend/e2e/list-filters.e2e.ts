@@ -107,7 +107,8 @@ test.describe('publication feeds', () => {
     // No past trip: the filtered dead end.
     await segment(page, 'Type', 'Voyages')
     await expectQuery(page, { type: 'trip', w: 'past' })
-    await expect(main.getByText('Aucun résultat ne correspond à votre recherche.')).toBeVisible()
+    await expect(main.getByRole('heading', { name: 'Aucun voyage pour ces filtres' })).toBeVisible()
+    await expect(main.getByText('Rien ne correspond à : Passées · Voyages.')).toBeVisible()
 
     await main.getByRole('button', { name: 'Effacer les filtres' }).click()
     await expectQuery(page, {})
@@ -166,7 +167,9 @@ test.describe('publication feeds', () => {
     // Nobody registered for the ride: « Je participe » empties the feed.
     await segment(page, 'Portée du fil', 'Je participe')
     await expectQuery(page, { role: 'member', type: 'ride', w: 'me' })
-    await expect(main.getByRole('heading', { name: 'Aucune publication trouvée' })).toBeVisible()
+    await expect(
+      main.getByRole('heading', { name: 'Aucune publication pour ces filtres' })
+    ).toBeVisible()
 
     // Back to the defaults — the membership spelled out, as always on this list.
     await main.getByRole('button', { name: 'Effacer les filtres' }).click()
@@ -303,7 +306,7 @@ test('ads: search and type from the URL, server-rendered, then changed through t
 
   await pick(page, typeSelect, 'Vente')
   await expectQuery(page, { q: 'Casque', type: 'SALE' })
-  await expect(page.getByRole('heading', { name: 'Aucune annonce trouvée' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Aucune annonce pour ces filtres' })).toBeVisible()
 })
 
 /**

@@ -193,14 +193,17 @@ test('the inbox filters unread entries from its URL, and "mark all read" empties
   await test.step('"mark all read" empties the filtered list, which says why', async () => {
     await hydrated(markAllRead)
     await markAllRead.click()
-    await expect(main.getByText('Aucune notification non lue', { exact: true })).toBeVisible()
+    await expect(
+      main.getByRole('heading', { name: 'Aucune notification pour ces filtres' })
+    ).toBeVisible()
+    await expect(main.getByText('Rien ne correspond à : Non lues.')).toBeVisible()
     await expect(entries).toHaveCount(0)
     await expect(markAllRead).toHaveCount(0)
     expect(await unreadCount(member)).toBe(0)
   })
 
   await test.step('the empty state lifts the filter, and everything is back, read', async () => {
-    await main.getByRole('button', { name: 'Voir toutes les notifications' }).click()
+    await main.getByRole('button', { name: 'Effacer les filtres' }).click()
     await expect(page).not.toHaveURL(/unread=/)
     await expect(unreadOnly).not.toBeChecked()
     await expect(entries).toHaveCount(2)

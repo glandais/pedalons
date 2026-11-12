@@ -22,6 +22,11 @@ import { rendezvousMention } from '@/utils/rendezvous'
 import { ZoneMentionIcon } from '@/components/common/Rendezvous'
 import { hourAlignedNow } from '@/utils/nowIso'
 import { getVisibleRange } from '@/components/calendar/calendarRange'
+import { monthBounds, overlaps } from '@/components/calendar/calendarMonth'
+import {
+  CalendarMonthEmpty,
+  type CalendarMonthEmptyConfig,
+} from '@/components/calendar/CalendarMonthEmpty'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { StateBadge } from '@/components/card/common'
 import { eventState } from '@/utils/cardState'
@@ -32,8 +37,16 @@ dayjs.extend(timezone)
 
 interface CalendarViewProps {
   events: CalendarEventDto[]
+  /** The first read, nothing to show yet: the grid under a loader. */
   isLoading: boolean
+  /**
+   * The previous window's events stand in while the next ones load (`isPlaceholderData`): the grid
+   * stays, dimmed, as every list of the site does during a change (RL11).
+   */
+  isRefreshing?: boolean
   onDateRangeChange: (start: Date, end: Date) => void
+  /** Says, under the grid, a month that shows nothing — and the way to the next one (RL10). */
+  monthEmpty?: CalendarMonthEmptyConfig
 }
 
 /**
@@ -74,7 +87,9 @@ function getPayloadDto(event: ScheduleEventData): CalendarEventDto | undefined {
 export function CalendarView({
   events,
   isLoading,
+  isRefreshing = false,
   onDateRangeChange,
+  monthEmpty,
 }: CalendarViewProps): React.ReactElement {
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
@@ -423,32 +438,55 @@ export function CalendarView({
     [eventMap, navigate]
   )
 
+  const month = useMemo(() => monthBounds(date, tz), [date, tz])
+  const monthIsEmpty =
+    view === 'month' &&
+    !isLoading &&
+    !isRefreshing &&
+    !!monthEmpty &&
+    !events.some((event) => overlaps(event, month.start, month.end))
+
   return (
-    <Box pos="relative">
-      <LoadingOverlay visible={isLoading} />
-      <Schedule
-        events={scheduleEvents}
-        view={view}
-        onViewChange={setView}
-        date={date}
-        onDateChange={setDate}
-        onEventClick={handleEventClick}
-        locale={i18n.language}
-        labels={labels}
-        renderEventBody={renderEventBody}
-        // Without this, `Schedule` renders `desktopContent` only and `mobileMonthViewProps` below
-        // is dead: a phone got the desktop month grid. The switch is pure CSS (both trees render,
-        // one is hidden), so it costs no media query and no hydration hazard.
-        layout="responsive"
-        monthViewProps={{ firstDayOfWeek: 1, renderEvent, highlightToday: mounted }}
-        weekViewProps={{ renderEvent }}
-        dayViewProps={{ renderEvent }}
-        mobileMonthViewProps={{
-          renderEvent: renderMobileEvent,
-          defaultSelectedDate: initialDate,
-          highlightToday: mounted,
-        }}
-      />
-    </Box>
+    <Stack gap="md">
+      <Box
+        pos="relative"
+        aria-busy={isLoading || isRefreshing}
+        style={{ opacity: isRefreshing ? 0.5 : 1, transition: 'opacity 150ms ease' }}
+      >
+        <LoadingOverlay visible={isLoading} />
+        <Schedule
+          events={scheduleEvents}
+          view={view}
+          onViewChange={setView}
+          date={date}
+          onDateChange={setDate}
+          onEventClick={handleEventClick}
+          locale={i18n.language}
+          labels={labels}
+          renderEventBody={renderEventBody}
+          // Without this, `Schedule` renders `desktopContent` only and `mobileMonthViewProps` below
+          // is dead: a phone got the desktop month grid. The switch is pure CSS (both trees render,
+          // one is hidden), so it costs no media query and no hydration hazard.
+          layout="responsive"
+          monthViewProps={{ firstDayOfWeek: 1, renderEvent, highlightToday: mounted }}
+          weekViewProps={{ renderEvent }}
+          dayViewProps={{ renderEvent }}
+          mobileMonthViewProps={{
+            renderEvent: renderMobileEvent,
+            defaultSelectedDate: initialDate,
+            highlightToday: mounted,
+          }}
+        />
+      </Box>
+      {monthIsEmpty && monthEmpty && (
+        <CalendarMonthEmpty
+          {...monthEmpty}
+          month={month}
+          tz={tz}
+          language={i18n.language}
+          onGoToMonth={setDate}
+        />
+      )}
+    </Stack>
   )
 }

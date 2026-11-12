@@ -1,4 +1,5 @@
 export { TagChip, TagDot, TagList } from './TagList'
 export { TagPicker, MAX_TAGS_PER_CONTENT } from './TagPicker'
 export { TagFilter } from './TagFilter'
+export { useTagLabels } from './useTagLabels'
 export { tagFamily } from './tagFamily'

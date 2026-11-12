@@ -1,4 +1,5 @@
-import { Group, Stack } from '@mantine/core'
+import { Group, Stack, Title } from '@mantine/core'
+import { useTranslation } from 'react-i18next'
 import { useAllRouteListData } from './allRouteListData'
 import { isSingleTeam } from '../../config/appConfig'
 import { MembershipSelect } from '../../components/common/MembershipSelect'
@@ -9,6 +10,7 @@ import { RouteDeadEnd } from '@/components/route/RouteDeadEnd'
 import { RouteViewSwitch } from '@/components/route/RouteViewSwitch'
 
 export function AllRoutesPage() {
+  const { t } = useTranslation()
   const {
     filters,
     setFilters,
@@ -23,10 +25,13 @@ export function AllRoutesPage() {
     totalPages,
   } = useAllRouteListData()
 
-  const { data: routesData, isLoading, isError, error, refetch } = routes
+  const { data: routesData, isLoading, isError, error, refetch, isPlaceholderData } = routes
 
   return (
     <Stack my="lg">
+      {/* Every list page has its title (constat C5). */}
+      <Title order={2}>{t('nav.explore')}</Title>
+
       <MembershipSelect
         value={filters.membership}
         onChange={(membership) => setFilters({ membership })}
@@ -50,15 +55,11 @@ export function AllRoutesPage() {
       <RouteListContent
         density={density}
         deadEnd={
-          <RouteDeadEnd
-            filters={filters}
-
-            onSetFilters={setFilters}
-            onClearFilters={clearFilters}
-          />
+          <RouteDeadEnd filters={filters} onSetFilters={setFilters} onClearFilters={clearFilters} />
         }
         routes={routesData?.routes}
         isLoading={isLoading}
+        isRefreshing={isPlaceholderData}
         isError={isError}
         error={error}
         onRetry={() => void refetch()}
@@ -67,7 +68,6 @@ export function AllRoutesPage() {
         currentPage={filters.page}
         totalPages={totalPages}
         onPageChange={handlePageChange}
-        onClearFilters={clearFilters}
       />
     </Stack>
   )

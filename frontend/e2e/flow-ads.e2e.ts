@@ -384,7 +384,9 @@ test.describe('ad journey', () => {
 
     await expect(page).toHaveURL(new RegExp(`${escapeRegExp(listPath(team.slug))}$`))
     await expect(page.getByRole('heading', { level: 2, name: 'Annonces' })).toBeVisible()
-    await expect(main.getByText("Aucune annonce n'est disponible pour le moment.")).toBeVisible()
+    await expect(
+      main.getByText("Les annonces des membres de l'équipe apparaîtront ici.")
+    ).toBeVisible()
     await expect(card(page, ad.name)).toHaveCount(0)
 
     expect(await listedNames(member, team.slug)).not.toContain(ad.name)

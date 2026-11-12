@@ -171,7 +171,8 @@ for (const target of TARGETS) {
 
       const main = page.getByRole('main')
       const alert = main.getByRole('alert').filter({ hasText: ERROR_TITLE })
-      await expect(alert).toContainText('Vérifiez votre connexion', { timeout: 30_000 })
+      // The server is named: a 500 is no lost connection (RL11).
+      await expect(alert).toContainText("Le serveur n'a pas pu répondre", { timeout: 30_000 })
       if (target.notFound)
         await expect(main.getByRole('heading', { name: target.notFound })).toHaveCount(0)
       // Retried: a 5xx is worth another try, unlike a 404 — one cycle, the loader's: 1 + 3 retries

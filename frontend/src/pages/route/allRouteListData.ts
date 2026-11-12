@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from 'react'
-import { keepPreviousData } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   useListAllRoutes,
@@ -23,6 +22,7 @@ import {
 import { membershipToMinRole, type MembershipFilterValue } from '@/hooks/filters/membership'
 import { allRoutesTilesUrl, toRouteTileFilters } from '@/components/map/mapConstants'
 import { prefetchPageWindow, resolveMembershipDefault } from '@/config/prefetchHelpers'
+import { LIST_QUERY, LIST_REQUEST } from '@/lib/listQuery'
 
 /**
  * The one description of what the cross-team routes screen reads, consumed four ways:
@@ -68,7 +68,8 @@ export function useAllRouteListData() {
   const apiParams = useMemo(() => allRouteApiParams(filters), [filters])
 
   const routes = useListAllRoutes(apiParams, {
-    query: { placeholderData: keepPreviousData },
+    query: LIST_QUERY,
+    request: LIST_REQUEST,
   })
 
   const density = resolveRouteDensity(filters.density, routes.data?.total)
@@ -77,7 +78,7 @@ export function useAllRouteListData() {
   const prefetchPage = useCallback(
     (page: number) => ({
       queryKey: getListAllRoutesQueryKey({ ...apiParams, page }),
-      queryFn: () => listAllRoutes({ ...apiParams, page }),
+      queryFn: () => listAllRoutes({ ...apiParams, page }, LIST_REQUEST),
     }),
     [apiParams]
   )
@@ -100,7 +101,7 @@ export async function prefetchAllRouteList(queryClient: QueryClient, url: URL): 
   const membershipDefault = await resolveMembershipDefault(queryClient)
   const filters = readUrlFilters(url.searchParams, allRouteFilterOptions(membershipDefault))
   await prefetchPageWindow(allRouteApiParams(filters), (p) =>
-    prefetchListAllRoutesQuery(queryClient, p)
+    prefetchListAllRoutesQuery(queryClient, p, { request: LIST_REQUEST })
   )
 }
 

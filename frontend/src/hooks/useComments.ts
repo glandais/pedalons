@@ -44,17 +44,20 @@ export type EntityType = 'rides' | 'posts' | 'trips' | 'routes' | 'stages'
 export const COMMENT_PAGE_SIZE = 20
 
 /**
- * The options `CommentSection` mounts with — and therefore the ones the route `prefetch`es in
- * `routes.config.ts` must reproduce, since both end up in the query key (`{ size, sort }`).
+ * The options `CommentSection` mounts with. Oldest first (docs/LEDGER_*.md WEB-175, RL5): a
+ * conversation reads in order, replies already follow that order, it is the API's default and the
+ * app's — « Afficher plus de commentaires » brings the later ones, under the earlier. The route
+ * `prefetch`es in `routes.config.ts` must reproduce them, since both end up in the query key
+ * (`{ size, sort }`).
  *
  * Exported so neither side can hold its own copy: the prefetch used to spell out
  * `{ size: COMMENT_PAGE_SIZE, sort: SortDirection.DESC }` in four places, and flipping the
- * section to ASC would have quietly turned all four into dead cache entries — the page refetching
+ * section to ASC (as RL5 did) would have quietly turned all four into dead cache entries — the page refetching
  * on hydration, with nothing failing.
  */
 export const COMMENT_LIST_OPTIONS = {
   size: COMMENT_PAGE_SIZE,
-  sort: SortDirection.DESC,
+  sort: SortDirection.ASC,
 } as const
 
 interface CommentPageParams {
@@ -100,7 +103,8 @@ function getQueryKey(teamSlug: string, entityType: EntityType, entitySlug: strin
 }
 
 /**
- * Top-level comments, one page at a time, most recent first.
+ * Top-level comments, one page at a time, in the order `options.sort` asks (oldest first on the
+ * pages, {@link COMMENT_LIST_OPTIONS}).
  *
  * This used to load the entire tree in one request whatever its size. The query key keeps the
  * generated key as its prefix, so the mutations below still invalidate it by prefix.

@@ -18,6 +18,7 @@ import {
   GRAVEL_MEMBER,
   GROUP_B_SEARCH,
   HILLY_TAG_ID,
+  LATER_EVENTS,
   MONTH_RIDES_ONLY,
   ORGANIZERS,
   POSTS,
@@ -244,9 +245,9 @@ const calendar: ListSection = {
     },
     {
       id: 'calendrier-vide',
-      label: 'mois sans rien',
+      label: 'mois sans rien, une sortie dans quarante jours',
       url: paths.calendar,
-      api: { calendar: ok({ events: [] }) },
+      api: { calendar: ok({ events: LATER_EVENTS }) },
     },
     {
       id: 'calendrier-vide-filtre',

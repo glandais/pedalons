@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { prefetchGetEventsQuery, prefetchGetTokenQuery } from '@/api/endpoints/calendar/calendar'
 import { getInitialCalendarRange } from '@/hooks/useCalendarDateRange'
 import { useAuthStore } from '@/store/authStore'
+import { LIST_REQUEST } from '@/lib/listQuery'
 
 /**
  * Server-side counterpart of `CalendarPage`'s first events query, keyed on the same
@@ -27,7 +28,7 @@ import { useAuthStore } from '@/store/authStore'
 export async function prefetchCalendar(queryClient: QueryClient): Promise<void> {
   if (!useAuthStore.getState().isAuthenticated) return
   await Promise.all([
-    prefetchGetEventsQuery(queryClient, getInitialCalendarRange()),
+    prefetchGetEventsQuery(queryClient, getInitialCalendarRange(), { request: LIST_REQUEST }),
     prefetchGetTokenQuery(queryClient),
   ])
 }

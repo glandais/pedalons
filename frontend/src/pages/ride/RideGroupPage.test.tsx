@@ -65,10 +65,9 @@ vi.mock('@/hooks/useRideGroupMembership', () => ({
   }),
 }))
 vi.mock('@/components/ride/ParticipantList', () => ({
-  ParticipantList: (props: { source: { groupId?: string }; searchPlaceholder?: string }) => (
-    <div data-testid="participant-list">
-      {props.source.groupId} {props.searchPlaceholder}
-    </div>
+  // No invite of its own: the list's « Rechercher une personne… », as everywhere (RL7).
+  ParticipantList: (props: { source: { groupId?: string } }) => (
+    <div data-testid="participant-list">{props.source.groupId}</div>
   ),
 }))
 // The map is lazy and pulls map vendors: a stand-in saying whether the wind colours the line,
@@ -230,7 +229,7 @@ describe('RideGroupPage (WEB-77)', () => {
     expect(text).toContain('28 km/h')
     expect(text).toContain('Dénivelé positif')
     expect(screen.getByRole('link', { name: /Retour à la sortie/ })).toBeTruthy()
-    expect(plain(screen.getByTestId('participant-list').textContent)).toBe('g1 Rechercher par nom…')
+    expect(plain(screen.getByTestId('participant-list').textContent)).toBe('g1')
   })
 
   it('leaves out a stat the group does not have', () => {

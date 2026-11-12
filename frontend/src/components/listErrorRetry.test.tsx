@@ -8,7 +8,7 @@ import type { ReactNode } from 'react'
 /**
  * The three lists whose error said « Erreur lors du chargement » or « Réessayez » with no button
  * (DL12) — the home feed, every route, the people taking part — now say « Chargement impossible »
- * with « Réessayer »; the people's search that finds nobody offers to clear it (DL20).
+ * with « Réessayer »; the people's search that finds nobody names it and offers to clear it (DL20, RL10).
  */
 
 vi.mock('react-i18next', async (importOriginal) => {
@@ -127,8 +127,8 @@ describe('an error a list can retry (DL12)', () => {
   })
 })
 
-describe('a search of the people that finds nobody (DL20)', () => {
-  it('offers « Effacer la recherche »', () => {
+describe('a search of the people that finds nobody (DL20, RL10)', () => {
+  it('names the search and offers « Effacer les filtres »', () => {
     state.list = query({ data: { participants: [], total: 0 } })
     const onSearchInputChange = vi.fn()
     renderIt(
@@ -137,14 +137,11 @@ describe('a search of the people that finds nobody (DL20)', () => {
         search="zoé"
         searchInput="zoé"
         onSearchInputChange={onSearchInputChange}
-        noMatch="Personne ne correspond à votre recherche."
       />
     )
-    expect(screen.getByText('Personne ne correspond à votre recherche.')).toBeTruthy()
-    // The field's cross bears the same name (DL19): the state's own button comes after it.
-    const buttons = screen.getAllByRole('button', { name: 'Effacer la recherche' })
-    expect(buttons).toHaveLength(2)
-    fireEvent.click(buttons[1])
+    expect(screen.getByRole('heading', { name: 'Aucune personne pour ces filtres' })).toBeTruthy()
+    expect(screen.getByText('Rien ne correspond à : « zoé ».')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Effacer les filtres' }))
     expect(onSearchInputChange).toHaveBeenCalledWith('')
   })
 })
