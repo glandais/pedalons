@@ -95,16 +95,24 @@ public class TeamInvitationRepository implements BaseRepository<TeamInvitation> 
    * The team's invitations still waiting for an answer, bar the one for {@code exceptEmail} — which
    * a new invitation to that address revokes and replaces, so it must not be counted twice. A
    * lapsed one the nightly sweep has not marked yet is not counted: its accept would be refused.
-   * What a new invitation adds to the member count under the free plan's cap (docs/LEDGER_*.md
-   * BILL-10).
+   * Nor is one whose invitee is already a member — they came in another way (the open door, an
+   * addition) and the invitation stays PENDING, but they are already in the member count. What a
+   * new invitation adds to the member count under the free plan's cap (docs/LEDGER_*.md BILL-10).
    */
   public long countPendingByTeam(Long teamId, String exceptEmail) {
-    return count(
-        "team.id = ?1 and status = ?2 and expiresAt > ?3 and email <> ?4",
-        teamId,
-        InvitationStatus.PENDING,
-        Instant.now(),
-        exceptEmail);
+    return getEntityManager()
+        .createQuery(
+            "select count(i) from TeamInvitation i"
+                + " where i.team.id = :teamId and i.status = :status and i.expiresAt > :now"
+                + " and i.email <> :exceptEmail"
+                + " and not exists (select 1 from UserTeam ut where ut.team.id = :teamId"
+                + " and ut.user.deleted = false and lower(ut.user.email) = i.email)",
+            Long.class)
+        .setParameter("teamId", teamId)
+        .setParameter("status", InvitationStatus.PENDING)
+        .setParameter("now", Instant.now())
+        .setParameter("exceptEmail", exceptEmail)
+        .getSingleResult();
   }
 
   /** Marks lapsed invitations, which is also what frees the (team, email) slot for a re-invite. */

@@ -10002,6 +10002,12 @@ paths:
           type: integer
           format: int32
           default: 20
+      - description: "Filter by tier: the free teams, to unlock one; the unlocked\
+          \ ones"
+        name: tier
+        in: query
+        schema:
+          $ref: "#/components/schemas/TeamTier"
       responses:
         "200":
           description: Teams retrieved successfully
@@ -21237,7 +21243,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 14.3.0
+  version: 14.4.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

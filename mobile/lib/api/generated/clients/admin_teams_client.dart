@@ -9,6 +9,7 @@ import 'package:retrofit/error_logger.dart';
 import '../models/admin_team_attributes_request.dart';
 import '../models/admin_team_dto.dart';
 import '../models/admin_team_list_response.dart';
+import '../models/team_tier.dart';
 
 part 'admin_teams_client.g.dart';
 
@@ -25,11 +26,14 @@ abstract class AdminTeamsClient {
   /// [page] - Page number (0-indexed).
   ///
   /// [size] - Page size.
+  ///
+  /// [tier] - Filter by tier: the free teams, to unlock one; the unlocked ones.
   @GET('/api/admin/teams')
   Future<AdminTeamListResponse> adminListTeams({
     @Query('page') int? page = 0,
     @Query('size') int? size = 20,
     @Query('domainId') String? domainId,
+    @Query('tier') TeamTier? tier,
   });
 
   /// Get team details.

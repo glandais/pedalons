@@ -2,6 +2,7 @@ import { createRef, useEffect, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const mounts = vi.fn()
 const unmounts = vi.fn()
@@ -57,6 +58,8 @@ const plannerState = vi.hoisted(() => ({
   routeLegsGeoJson: null,
   undo: () => undoMock(),
   redo: () => {},
+  quotaRefusal: null as Record<string, unknown> | null,
+  dismissQuotaRefusal: () => {},
 }))
 
 // The planner state is a plain object: no routing, no map. What is under test is where the view
@@ -70,6 +73,9 @@ vi.mock('@/hooks/useRoutePlanner', () => ({
     return plannerState
   },
 }))
+
+// The dialog is not what is under test here: only the refresh that comes with it.
+vi.mock('./PlannerQuotaModal', () => ({ PlannerQuotaModal: () => null }))
 
 vi.mock('@/hooks/useUnits', () => ({
   useUnits: () => ({
@@ -156,11 +162,15 @@ function setCoarse(coarse: boolean) {
 }
 
 function renderField(props: Partial<React.ComponentProps<typeof RoutePlannerField>> = {}) {
-  return render(
-    <MantineProvider>
-      <RoutePlannerField onPointsChange={onPointsChange} title="Ma sortie" {...props} />
-    </MantineProvider>
+  const queryClient = new QueryClient()
+  const view = render(
+    <QueryClientProvider client={queryClient}>
+      <MantineProvider>
+        <RoutePlannerField onPointsChange={onPointsChange} title="Ma sortie" {...props} />
+      </MantineProvider>
+    </QueryClientProvider>
   )
+  return { ...view, queryClient }
 }
 
 describe('RoutePlannerField', () => {
@@ -175,6 +185,7 @@ describe('RoutePlannerField', () => {
     plannerState.route = { points: [], dist: 0, ascend: 0 }
     plannerState.waypoints = []
     plannerState.placedWaypoints = []
+    plannerState.quotaRefusal = null
     Object.values(waypointOps).forEach((op) => op.mockReset())
     undoMock.mockReset()
     importGpxMock.mockReset()
@@ -184,6 +195,35 @@ describe('RoutePlannerField', () => {
   afterEach(() => {
     cleanup()
     window.history.replaceState(null, '', '/')
+  })
+
+  describe('a calculation refused at a spent quota (BILL-10)', () => {
+    const refusal = (scope: 'TEAM' | 'PERSONAL') => ({
+      type: 'PLANNER_QUOTA_REACHED',
+      scope,
+      limit: 5,
+      current: 5,
+      resetsOn: '2026-12-01',
+      teamName: 'Club',
+    })
+
+    it("refreshes the team's quota for a TEAM refusal, so the entry points close", () => {
+      setCoarse(false)
+      plannerState.quotaRefusal = refusal('TEAM')
+      const spy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+      renderField({ teamSlug: 'club' })
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['/api/teams/club'] })
+      spy.mockRestore()
+    })
+
+    it("refreshes the user's own quota for a PERSONAL refusal", () => {
+      setCoarse(false)
+      plannerState.quotaRefusal = refusal('PERSONAL')
+      const spy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+      renderField()
+      expect(spy).toHaveBeenCalledWith({ queryKey: ['/api/users/me'] })
+      spy.mockRestore()
+    })
   })
 
   it('reports an empty path to the form', () => {
@@ -624,12 +664,14 @@ describe('RoutePlannerField', () => {
     })
 
     it('opens on a gesture of the form, never on load', async () => {
-      const { rerender } = renderField({ openRequest: 0 })
+      const { rerender, queryClient } = renderField({ openRequest: 0 })
       expect(screen.queryByRole('dialog')).toBeNull()
       rerender(
-        <MantineProvider>
-          <RoutePlannerField onPointsChange={onPointsChange} openRequest={1} />
-        </MantineProvider>
+        <QueryClientProvider client={queryClient}>
+          <MantineProvider>
+            <RoutePlannerField onPointsChange={onPointsChange} openRequest={1} />
+          </MantineProvider>
+        </QueryClientProvider>
       )
       await screen.findByRole('dialog')
     })

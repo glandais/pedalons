@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../api/generated/export.dart';
@@ -12,6 +13,8 @@ import '../../../../../core/theme/pdl_tokens.dart';
 import '../../../../../core/theme/pdl_typography.dart';
 import '../../../../../core/utils/formatters.dart';
 import '../../../../../keys.dart';
+import '../../../../auth/domain/auth_state.dart';
+import '../../../../auth/providers/auth_provider.dart';
 import '../../../../rides/presentation/ride_editor_location.dart';
 import '../../../../rides/presentation/widgets/templates/ride_template_summary.dart';
 import '../../team_web_paths.dart';
@@ -83,22 +86,29 @@ class DashboardTemplates extends StatelessWidget {
 /// La répartition par rôle est `team.memberCountByRole` et les fonctionnalités
 /// sont les `enable*` de l'équipe : l'API ne les répète pas dans le bloc
 /// `admin`, l'écran les lit là où elles sont.
-class DashboardAdmin extends StatelessWidget {
+class DashboardAdmin extends ConsumerWidget {
   const DashboardAdmin({super.key, required this.team, required this.data});
 
   final TeamDetailDto team;
   final TeamDashboardAdminDto data;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
     final MemberCountByRoleDto? split = team.memberCountByRole;
     // Plafond de l'offre gratuite (docs/LEDGER_*.md BILL-10) : nul pour une
     // équipe débloquée. À la limite, l'invitation serait refusée — le bouton
-    // le dit d'avance, le texte dit pourquoi.
+    // le dit d'avance, le texte dit pourquoi. L'administration de la plateforme
+    // n'y est pas tenue : le serveur accepte son invitation.
+    final bool platformAdmin = ref.watch(
+      authProvider.select(
+        (AuthState s) => s.user?.platformRole == 'PLATFORM_ADMIN',
+      ),
+    );
     final int? limit = team.memberLimit;
-    final bool full = limit != null && team.memberCount >= limit;
+    final bool full =
+        limit != null && team.memberCount >= limit && !platformAdmin;
     final List<String> features = <String>[
       if (team.enableRides) 'rides',
       if (team.enableRoutes) 'routes',

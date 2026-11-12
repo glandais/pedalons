@@ -25,12 +25,14 @@ class _AdminTeamsClient implements AdminTeamsClient {
     int? page = 0,
     int? size = 20,
     String? domainId,
+    TeamTier? tier,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'page': page,
       r'size': size,
       r'domainId': domainId,
+      r'tier': tier?.toJson(),
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};

@@ -175,6 +175,21 @@ class TeamLimitsResourceTest extends AbstractResourceTest {
     invite(USER1, "newcomer@example.com").statusCode(201);
   }
 
+  /**
+   * An invitee who came in through the open door instead leaves their invitation PENDING: they are
+   * counted once, as a member, not a second time as a pending invitation.
+   */
+  @Test
+  void invite_aPendingInvitationWhoseInviteeJoinedAnotherWay_isNotCounted() {
+    fillTeam1To(LIMIT - 2);
+    dataService.createPendingInvitation(team1, user1, user4.getEmail());
+    join(USER4).statusCode(201);
+
+    // 24 members, user4's invitation stale: one place left, not none.
+    invite(USER1, "newcomer@example.com").statusCode(201);
+    assertLimitReached(invite(USER1, "another@example.com"), LIMIT);
+  }
+
   // ==================== Invitation accepted ====================
 
   /** Its own pending invitation does not count against the invitee. */

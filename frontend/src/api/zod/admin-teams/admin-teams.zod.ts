@@ -11,6 +11,10 @@ export const AdminListTeamsQueryParams = zod.object({
   domainId: zod.string().optional().describe('Filter by domain ID'),
   page: zod.int().default(adminListTeamsQueryPageDefault).describe('Page number (0-indexed)'),
   size: zod.int().default(adminListTeamsQuerySizeDefault).describe('Page size'),
+  tier: zod
+    .enum(['FREE', 'UNLOCKED'])
+    .optional()
+    .describe('Filter by tier: the free teams, to unlock one; the unlocked ones'),
 })
 
 export const AdminListTeamsResponse = zod

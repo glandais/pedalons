@@ -134,6 +134,7 @@
   "admin.teams.empty.description": "Aucune équipe n'a encore été créée.",
   "admin.teams.empty.title": "Aucune équipe",
   "admin.teams.filterByDomain": "Filtrer par domaine",
+  "admin.teams.filterByTier": "Filtrer par palier",
   "admin.teams.members": "Membres",
   "admin.teams.name": "Nom",
   "admin.teams.restore": "Restaurer l'équipe",

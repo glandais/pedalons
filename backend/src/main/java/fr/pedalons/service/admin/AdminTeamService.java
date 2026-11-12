@@ -7,12 +7,14 @@ import fr.pedalons.dto.admin.AdminTeamAttributesRequest;
 import fr.pedalons.dto.admin.AdminTeamDto;
 import fr.pedalons.dto.common.PedalonsPage;
 import fr.pedalons.dto.error.ErrorCode;
+import fr.pedalons.enums.TeamTier;
 import fr.pedalons.repository.team.TeamRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
 import fr.pedalons.service.security.annotation.Admin;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
@@ -29,15 +31,21 @@ public class AdminTeamService {
    * back.
    */
   @Admin
-  public PedalonsPage<AdminTeamDto> listTeams(@Nullable String domainId, int page, int size) {
-    String query = "1 = 1";
-    Object[] params = new Object[0];
-
+  public PedalonsPage<AdminTeamDto> listTeams(
+      @Nullable String domainId, @Nullable TeamTier tier, int page, int size) {
+    List<String> clauses = new ArrayList<>();
+    List<Object> values = new ArrayList<>();
     if (domainId != null) {
-      Long domainIdLong = TsidUtils.toLong(domainId);
-      query = "domain.id = ?1";
-      params = new Object[] {domainIdLong};
+      values.add(TsidUtils.toLong(domainId));
+      clauses.add("domain.id = ?" + values.size());
     }
+    // The free teams, to find the one to unlock (docs/LEDGER_*.md BILL-10).
+    if (tier != null) {
+      values.add(tier);
+      clauses.add("tier = ?" + values.size());
+    }
+    String query = clauses.isEmpty() ? "1 = 1" : String.join(" and ", clauses);
+    Object[] params = values.toArray();
 
     List<Team> teams =
         teamRepository.find(query + " order by createdAt desc", params).page(page, size).list();

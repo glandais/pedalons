@@ -55,6 +55,7 @@ void main() {
     Brightness brightness = Brightness.light,
     Size size = const Size(1000, 6000),
     bool routed = false,
+    UserDto? user,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -88,7 +89,7 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
-          authProvider.overrideWith((ref) => _StubAuthNotifier(ref)),
+          authProvider.overrideWith((ref) => _StubAuthNotifier(ref, user)),
         ],
         child: router == null
             ? MaterialApp(theme: PedalonsTheme.build(brightness), home: body)
@@ -400,6 +401,35 @@ void main() {
         isFalse,
       );
     });
+
+    testWidgets(
+      'à la limite, l\'administration de la plateforme invite encore',
+      (WidgetTester tester) async {
+        final TeamDashboardDto d = _dashboard(role: 'ADMIN');
+        await renderBody(
+          tester,
+          d.copyWith(team: d.team.copyWith(memberCount: 25, memberLimit: 25)),
+          user: const UserDto(
+            plannerQuota: PlannerQuotaDto(used: 0, resetsOn: '2026-12-01'),
+            id: 'u-padmin',
+            email: 'padmin@example.org',
+            displayName: 'Plateforme',
+            contactableByMembers: true,
+            emailVerified: true,
+            platformRole: 'PLATFORM_ADMIN',
+          ),
+        );
+
+        expect(find.text('25 / 25 membres'), findsOneWidget);
+        expect(find.byKey(keys.teamDashboard.memberLimitReached), findsNothing);
+        expect(
+          tester
+              .widget<PdlButton>(find.widgetWithText(PdlButton, 'Inviter'))
+              .enabled,
+          isTrue,
+        );
+      },
+    );
 
     testWidgets('se rend en mode sombre, à la largeur d\'un téléphone', (
       WidgetTester tester,
@@ -899,8 +929,8 @@ class _FakeSecureStorage implements SecureTokenStorage {
 }
 
 class _StubAuthNotifier extends AuthNotifier {
-  _StubAuthNotifier(Ref ref)
+  _StubAuthNotifier(Ref ref, [UserDto? user])
     : super(_FakeAuthRepository(), _FakeSecureStorage(), ref) {
-    state = const AuthState(isInitialized: true);
+    state = AuthState(isInitialized: true, user: user);
   }
 }

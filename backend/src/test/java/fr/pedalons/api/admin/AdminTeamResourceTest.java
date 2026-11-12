@@ -2,6 +2,8 @@ package fr.pedalons.api.admin;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -171,6 +173,39 @@ class AdminTeamResourceTest extends AbstractResourceTest {
         .statusCode(200)
         .body("tier", equalTo("FREE"))
         .body("tierNote", nullValue());
+  }
+
+  /** The free teams listed on their own, to find the one to unlock; and the unlocked ones. */
+  @Test
+  void listTeams_filteredByTier_returnsOnlyThatTier() {
+    dataService.setTeamTier(team1, TeamTier.UNLOCKED);
+    String unlockedId = TsidUtils.toString(team1.getId());
+    String freeId = TsidUtils.toString(team2.getId());
+
+    given()
+        .auth()
+        .oauth2(platformAdminToken())
+        .queryParam("tier", "FREE")
+        .queryParam("size", 100)
+        .when()
+        .get("/api/admin/teams")
+        .then()
+        .statusCode(200)
+        .body("teams.tier", everyItem(equalTo("FREE")))
+        .body("teams.id", hasItem(freeId))
+        .body("teams.id", not(hasItem(unlockedId)));
+
+    given()
+        .auth()
+        .oauth2(platformAdminToken())
+        .queryParam("tier", "UNLOCKED")
+        .queryParam("size", 100)
+        .when()
+        .get("/api/admin/teams")
+        .then()
+        .statusCode(200)
+        .body("teams.tier", everyItem(equalTo("UNLOCKED")))
+        .body("teams.id", hasItem(unlockedId));
   }
 
   @Test

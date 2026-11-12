@@ -26,7 +26,7 @@ import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { useScrollToListTop } from '@/hooks/useScrollToListTop'
 import { adminTeamFiltersSchema, adminTeamFiltersAlias } from '@/hooks/filters/adminFilters'
 import { useAdminTeamsData, ADMIN_DOMAIN_FILTER_PARAMS } from './adminTeamsData'
-import type { AdminTeamDto, Visibility } from '@/api/dto'
+import { TeamTier, type AdminTeamDto, type Visibility } from '@/api/dto'
 
 export function AdminTeamsPage() {
   const { t } = useTranslation()
@@ -67,6 +67,17 @@ export function AdminTeamsPage() {
             data={domainOptions}
             value={filters.domainId ?? null}
             onChange={(value) => setFilters({ domainId: value || undefined })}
+            clearable
+            w={200}
+          />
+          <Select
+            placeholder={t('admin.teams.filterByTier')}
+            data={Object.values(TeamTier).map((tier) => ({
+              value: tier,
+              label: t(`teams.tier.${tier}`),
+            }))}
+            value={filters.tier ?? null}
+            onChange={(value) => setFilters({ tier: (value as TeamTier | null) || undefined })}
             clearable
             w={200}
           />

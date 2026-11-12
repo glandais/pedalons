@@ -10,6 +10,7 @@ import {
   type Ref,
 } from 'react'
 import { createPortal } from 'react-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { IconAlertTriangle, IconArrowLeft, IconFileImport, IconTrash } from '@tabler/icons-react'
 import { ActionIcon, Alert, Box, Button, Group, Modal, Text } from '@mantine/core'
@@ -19,6 +20,7 @@ import { useHistoryOverlay } from '@/hooks/useHistoryOverlay'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { useRoutePlanner, type PlannerSnapshot } from '@/hooks/useRoutePlanner'
 import { PlannerQuotaModal } from './PlannerQuotaModal'
+import { invalidatePlannerQuota } from '@/lib/plannerQuota'
 import { useUnits } from '@/hooks/useUnits'
 import type { WaypointDto } from '@/api/dto'
 import {
@@ -128,6 +130,16 @@ export function RoutePlannerField({
   })
   const { snapshot } = planner
   useImperativeHandle(plannerRef, () => ({ snapshot }), [snapshot])
+  // A calculation refused at a spent quota: the quota the entry points read is stale (used < limit)
+  // and refreshed, as a refused save does (usePlannerQuotaRefusal) — else they stay enabled and
+  // every further attempt meets the same dialog (docs/LEDGER_*.md BILL-10).
+  const queryClient = useQueryClient()
+  const { quotaRefusal } = planner
+  useEffect(() => {
+    if (!quotaRefusal) return
+    if (quotaRefusal.scope === 'PERSONAL') invalidatePlannerQuota(queryClient)
+    else if (teamSlug) invalidatePlannerQuota(queryClient, teamSlug)
+  }, [quotaRefusal, queryClient, teamSlug])
   const { routeGeoJson, controlPoints, route, isLoading, error, directStats } = planner
   const { distance } = useUnits()
   const isCoarse = useMediaMatch('(pointer: coarse)')

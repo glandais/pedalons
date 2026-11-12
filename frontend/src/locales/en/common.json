@@ -134,6 +134,7 @@
   "admin.teams.empty.description": "No teams have been created yet.",
   "admin.teams.empty.title": "No teams",
   "admin.teams.filterByDomain": "Filter by domain",
+  "admin.teams.filterByTier": "Filter by plan",
   "admin.teams.members": "Members",
   "admin.teams.name": "Name",
   "admin.teams.restore": "Restore team",

@@ -5,6 +5,7 @@ import fr.pedalons.dto.admin.AdminTeamDto;
 import fr.pedalons.dto.admin.AdminTeamListResponse;
 import fr.pedalons.dto.common.PedalonsPage;
 import fr.pedalons.dto.error.ErrorResponse;
+import fr.pedalons.enums.TeamTier;
 import fr.pedalons.service.admin.AdminTeamService;
 import fr.pedalons.service.security.annotation.Admin;
 import jakarta.annotation.security.RolesAllowed;
@@ -50,11 +51,14 @@ public class AdminTeamResource {
   public Response listTeams(
       @Parameter(description = "Filter by domain ID") @QueryParam("domainId")
           @Nullable String domainId,
+      @Parameter(description = "Filter by tier: the free teams, to unlock one; the unlocked ones")
+          @QueryParam("tier")
+          @Nullable TeamTier tier,
       @Parameter(description = "Page number (0-indexed)") @QueryParam("page") @DefaultValue("0")
           int page,
       @Parameter(description = "Page size") @QueryParam("size") @DefaultValue("20") int size) {
 
-    PedalonsPage<AdminTeamDto> result = adminTeamService.listTeams(domainId, page, size);
+    PedalonsPage<AdminTeamDto> result = adminTeamService.listTeams(domainId, tier, page, size);
     AdminTeamListResponse response =
         new AdminTeamListResponse(result.items(), result.total(), page, size);
     return Response.ok(response).build();

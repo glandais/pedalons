@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { TeamTier } from '@/api/dto'
 import { COMMON_ALIAS, pageField, searchField, sizeField } from './common'
 
 export const ADMIN_PAGE_SIZE = 20
@@ -22,6 +23,8 @@ export const adminUserFiltersAlias = {
 
 export const adminTeamFiltersSchema = z.object({
   domainId: domainIdField,
+  // The free teams, to find the one to unlock (docs/LEDGER_*.md BILL-10).
+  tier: z.enum(TeamTier).optional().catch(undefined),
   page: pageField,
   size: sizeField(ADMIN_PAGE_SIZE),
 })
