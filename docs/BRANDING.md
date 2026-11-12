@@ -323,7 +323,8 @@ Ce que la table ne dit pas d'elle-même :
   40 km »), et le mode est exclusif de la pente et du revêtement : le gris du travers s'y confondrait
   avec l'asphalte. Les **conditions météo** (soleil, pluie…) n'ont pas de couleur : leur icône prend
   celle du texte. Leur en donner une passerait par le YAML, jamais par une table dans un client.
-- **Les états dérivés côté client** — « J'y vais » (indigo), « Terminée » (gris foncé), « Supprimé »
+- **Les états dérivés côté client** — « J'y vais » (indigo), « Terminée » / « Terminé » (gris
+  foncé ; « Terminé » pour un voyage), « Supprimé »
   (rouge **en aplat**, pour se distinguer de `CANCELLED`) — ne sont portés par aucune énumération :
   ils restent hors du YAML (`PdlDerivedTones` au mobile, `DeletedBadge` au web).
 - **Les dégradés de repli** (image d'une carte sans photo, 135°) sont des paires de nuances Mantine
@@ -518,8 +519,9 @@ la carte en colonne collante (`position: sticky` sous l'en-tête + 16 px), **90 
 fait occuper deux colonnes.
 
 **Densité** : moyenne. Cartes à padding 16 px, listes à 4 statistiques maximum sur une ligne (la 4ᵉ est le
-nombre de commentaires, masqué quand l'appelant n'y a pas accès),
-titres tronqués sur une ligne (`lineClamp`), descriptions coupées à **150 caractères**. Les listes
+nombre de commentaires, masqué quand l'appelant n'y a pas accès ; tout compteur à zéro est masqué,
+§7.1), titres tronqués sur une ligne (`lineClamp`), descriptions coupées à **150 caractères** (extrait
+sur 2 lignes sur les cartes d'équipe, de parcours et de modèle, §7.2 et §7.9). Les listes
 longues (l'équipe `n-peloton` compte 1999 membres) utilisent le défilement infini côté mobile et
 la pagination côté web — prévoir un état de squelette pour chaque type de carte.
 
@@ -551,7 +553,7 @@ Les maquettes doivent donc puiser dans le jeu Tabler.
 |---|---|
 | `IconCalendar` | Date et heure d'une sortie, d'une étape, du calendrier |
 | `IconUsers` | Participants, nombre de membres |
-| `IconMapPin` | Lieu de départ, lieu d'arrivée, point de rendez-vous |
+| `IconMapPin` | Lieu de départ, lieu d'arrivée, point de rendez-vous — **jamais sur une annonce**, dont le lieu est un secteur (§7.9) |
 | `IconMap` | Distance d'un parcours |
 | `IconArrowUp` / `IconArrowDown` | Dénivelé positif / négatif |
 | `IconRoute` | Parcours, voyage, vignette de repli |
@@ -560,8 +562,8 @@ Les maquettes doivent donc puiser dans le jeu Tabler.
 | `IconUsersGroup` | Équipe |
 | `IconTag` | Petite annonce |
 | `IconStack2` | Nombre de groupes d'une sortie, nombre d'étapes d'un voyage |
-| `IconDownload` | Téléchargement GPX / FIT |
-| `IconDeviceMobile` | Envoi vers l'appareil (Karoo, Garmin) |
+| `IconDownload` | Téléchargement d'une pièce jointe ; fichiers GPX / FIT dans le choix qu'ouvre « GPS » |
+| `IconDeviceMobile` | Bouton « GPS » (export du parcours : vers un appareil Karoo ou Garmin, GPX, FIT ; §7.7) |
 | `IconFilter`, `IconChevronDown` / `IconChevronUp`, `IconX` | Ouverture, repli et effacement des filtres |
 | `IconEye` / `IconEyeOff` / `IconUsers` | Visibilité publique / non listée / réservée à l'équipe |
 | `IconCheck` | Inscription confirmée |
@@ -617,32 +619,71 @@ quand l'icône est en `leftSection`.
 
 ## 7. Composants signature
 
+**Les cartes de l'app et du site suivent les mêmes règles.** Décidées les 11 et 12 novembre 2026
+après l'audit d'homogénéité des cartes, elles sont écrites dans
+[`KIT.md` §9](plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) (arbitrages et options
+écartées : [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md), R1 à R14) et
+mises en œuvre sous les ledgers `MOB-139` et `WEB-167`. Les sections qui suivent les reprennent ;
+quand une carte du site ou de l'app s'en écarte encore, c'est la carte qui est en retard.
+
 ### 7.1 Carte de sortie (`PublicationCard`, type `RIDE`)
 
 Structure de haut en bas, dans un `Paper withBorder radius="md"` entièrement cliquable :
 
 1. **Image d'en-tête, hauteur 160 px, sans marge, coins supérieurs arrondis à 8 px.**
    Priorité 1 : première photo de la publication, recadrée en `cover`, chargement paresseux.
-   Priorité 2 (le cas le plus fréquent) : dégradé 135° `#228be6 → #22b8cf` avec `IconBike` 48 px
-   en blanc à 80 % d'opacité, centrée.
+   Priorité 2 : la **carte du tracé** (`thumbnailLightUrl` / `thumbnailDarkUrl` selon le thème,
+   §7.6), recadrée en `cover`.
+   Priorité 3 : dégradé 135° `#228be6 → #22b8cf` avec `IconBike` 48 px en blanc à 80 % d'opacité,
+   centrée. Même règle pour le voyage (dégradé turquoise) et la publication (KIT §9, R10).
    **Sur l'image, en haut à gauche à 16 px : la boîte du jour** (§7.8, variante posée : fond blanc,
-   ombre `sm`). En haut à droite, seulement aujourd'hui ou demain : une pastille blanche à 95 %
-   « Aujourd'hui » / « Demain », 12 px/700, texte `primary-light-color`.
+   ombre `sm`). En haut à droite, seulement aujourd'hui ou demain, et jamais sur une sortie annulée
+   ou passée : une pastille blanche à 95 % « Aujourd'hui » / « Demain », 12 px/700, texte
+   `primary-light-color`.
 2. **Padding intérieur 16 px.**
 3. Lien d'équipe optionnel (petit, atténué) quand la carte apparaît hors du contexte d'une équipe.
 4. **Ligne titre** : logo carré de l'entité 32 px (rayon 8 px) à gauche s'il existe ; à droite,
    `CardTitle` en h4/700 ; juste en dessous, **la ligne de départ** : `IconClock` 18 px indigo
-   (`primary`), « Départ 09:00 » en 16 px/700 couleur texte ; un voyage y met sa plage, en 14 px
-   atténué, « ven. 16 → dim. 18 mai ». En dessous, aperçu Markdown de la
-   description tronqué à 150 caractères, 14 px, atténué. Tout à droite, **pile verticale de badges alignés à droite, écart 4 px** :
-   badge de type (Sortie, bleu), badge de statut (Publié / Brouillon / Annulé), badge de visibilité.
-5. **Ligne sociale** : groupe d'avatars circulaires des personnes inscrites (26 px, chevauchement, 5
-   maximum puis pastille grise `+N`), une barre de progression des places, et à droite la
-   **vignette du parcours en 160×160** (rayon 8 px, bordure 1 px `#ced4da` / `#424242`).
-6. **Barre de statistiques**, poussée en bas de la carte (`mt="auto"`), écart 16 px, chaque
+   (`primary`), « Départ 09:00 » en 16 px/700 couleur texte ; un voyage y met « Départ 09:00 »
+   puis sa plage, en 14 px atténué, « ven. 20 → dim. 22 nov. ». En dessous, aperçu Markdown de la
+   description tronqué à 150 caractères, 14 px, atténué. Tout à droite, **pile verticale de badges alignés à droite, écart 4 px**.
+   **Un badge signale une exception** (KIT §9, R1) ; dans l'ordre, et seulement ceux qui
+   s'appliquent :
+   - « Supprimé » (rouge en aplat, §3.6) ;
+   - le type (Sortie, bleu ; Voyage, Publication) ;
+   - **un seul** état : « Annulé », « En cours », « Terminée » / « Terminé » (le participe s'accorde
+     avec le contenu : « Terminée » pour une sortie, « Terminé » pour un voyage), « Brouillon » ;
+   - « J'y vais ».
+
+   **Jamais « Publié »** : c'est l'état normal d'une carte, il ne se signale pas. **La visibilité
+   seulement quand elle diffère de celle de l'équipe** : une sortie « Équipe uniquement » d'une
+   équipe privée n'a pas de badge de visibilité ; la même sortie lisible par lien porte « Public »,
+   parce qu'elle sort du cercle de l'équipe. Une annonce, toujours « Équipe uniquement » par règle
+   de l'API, n'en porte jamais. La carte d'une **équipe** privée, elle, porte « Équipe uniquement »
+   (§7.9) ; une équipe publique, rien.
+5. **Ligne sociale** : grappe d'avatars des personnes inscrites (§7.5 : 26 px, recouvrement 4 px,
+   5 visibles puis pastille grise `+N`), et à droite la **vignette du parcours en 160×160** (rayon
+   8 px, bordure 1 px `#ced4da` / `#424242`) — **sauf quand le bandeau est déjà la carte du
+   tracé** : le même tracé ne se montre pas deux fois. Une sortie n'a pas de maximum de places :
+   la carte du fil dit « 31 personnes », **sans barre de places** (la barre est sur la carte de
+   groupe et sur « Ma prochaine sortie », §7.7). Pour une personne non membre de l'équipe, le
+   compte seul : ni grappe, ni nom, ni avatar (invariant `API-144`).
+6. **Ligne météo**, quand la sortie a une prévision (même ligne sur la carte de groupe, d'étape et
+   de voyage, sur les deux supports ; KIT §9, R2) : plage de température, vent avec sa flèche
+   orientée, probabilité de pluie — « 9–13 °C · ↗ 18 km/h · Pluie 20 % ». En alerte, la pluie dit
+   son heure : « Pluie 60 % vers 11:00 ». Avant l'ouverture des prévisions : « Météo dès le
+   15 novembre » (l'année hors de l'année en cours). **Ni condition nommée** (« Averses »,
+   « Ensoleillé ») **ni badges Face / Dos** sur une carte : le vent relatif et les conditions sont
+   sur la page de détail.
+7. **Barre de statistiques**, poussée en bas de la carte (`mt="auto"`), écart 16 px, chaque
    statistique = icône 16 px + texte 14 px atténué :
-   `👥 12 personnes` · `🗂 3 groupes` · `💬 2 commentaires`. **La date n'y est plus** (ledger
-   `BRAND-8`, 7 novembre 2026) : elle est la boîte du jour et la ligne de départ, en haut.
+   `👥 31 personnes` · `🗂 3 groupes` · `💬 2 commentaires`. **Un compteur à zéro ne s'affiche
+   pas** (KIT §9, R4) : pas de « 0 groupe » ni de « 0 commentaire ». Un voyage montre
+   étapes · distance · D+ · personnes, puis les commentaires s'il y en a. Une distance de sortie
+   sur une carte de liste est **une seule**, calculée par l'API pour la personne qui lit (celle de
+   son groupe si elle est inscrite, sinon celle du parcours commun, sinon rien ; ledger `API-178`) :
+   aucune carte ne la recalcule. **La date n'y est plus** (ledger `BRAND-8`, 7 novembre 2026) : elle
+   est la boîte du jour et la ligne de départ, en haut.
 
 Au survol : ombre `md`, rien d'autre — aucun soulèvement, aucun agrandissement. Elle est portée
 par une classe CSS (`Card.module.css`, mixin `hover` de `postcss-preset-mantine`, donc sans effet
@@ -656,11 +697,15 @@ Plus simple et plus horizontale :
 1. **Vignette cartographique en pleine largeur** (hauteur naturelle ≈ 200 px), demandée en 400 px
    de large — **la version claire ou sombre selon le thème actif**.
 2. Padding 16 px, lien d'équipe optionnel.
-3. Logo d'entité 40 px + titre h4 + description tronquée.
-4. **Deux statistiques, plus le nombre de commentaires quand il est visible** : `IconMap` +
+3. Logo d'entité 40 px + titre h4 + extrait sur 2 lignes (app et site, KIT §9, R12).
+4. **Deux statistiques, plus le nombre de commentaires quand il est visible et non nul** : `IconMap` +
    distance (`68 km`), `IconArrowUp` + dénivelé (`1 240 m`), `IconMessageCircle` + commentaires. Les unités suivent la préférence de l'utilisateur (métrique / impérial).
 5. **Rangée de badges en bas**, écart 10 px : badge de revêtement (Route / Gravel / VTT / Mixte)
-   + badge de visibilité.
+   + badge de visibilité, seulement quand elle diffère de celle de l'équipe (§7.1).
+
+Sans vignette, la carte de parcours prend le dégradé de repli et l'icône du type, comme la carte
+de sortie (§7.1, priorité 3). Dans « Utilisé dans » (les sorties et voyages qui reprennent un
+parcours), la plage d'un voyage s'écrit comme sur la carte du fil, « ven. 20 → dim. 22 nov. ».
 
 ### 7.3 Chip de filtre
 
@@ -690,11 +735,15 @@ hauteur **18 px**, texte **10 px / 700 / CAPITALES / interlettrage 0,25 px**, pa
 **8 px**, **rayon pilule**, fond = nuance 1 de la couleur en clair / teinte sombre dédiée en
 sombre, texte = nuance 9 en clair / nuance 0 en sombre.
 
-Exemples rendus : `PUBLIÉ` sur `#d3f9d8` texte `#2b8a3e` · `BROUILLON` sur `#f1f3f5` texte
-`#212529` · `ANNULÉ` sur `#ffe3e3` texte `#c92a2a`.
+Exemples rendus : `BROUILLON` sur `#f1f3f5` texte `#212529` · `ANNULÉ` sur `#ffe3e3` texte
+`#c92a2a`. `PUBLIÉ` garde sa couleur (vert doux, `#d3f9d8` texte `#2b8a3e`) là où un statut se
+choisit ou se filtre, mais **ne s'affiche jamais sur une carte** : sur une carte, un badge signale une exception, dans
+l'ordre fixé au §7.1 (KIT §9, R1).
 Une icône optionnelle de 12 px peut être placée en section gauche.
 
-### 7.5 Avatar d'équipe (`TeamAvatar`)
+### 7.5 Avatars (`TeamAvatar`, avatar d'une personne)
+
+**Avatar d'équipe** (`TeamAvatar`) :
 
 - **Cercle** (`radius="xl"`), tailles 16 / 26 / 38 / 56 / 84 px (xs → xl).
 - Avec logo : image recadrée `cover`, demandée en 128 px.
@@ -704,8 +753,34 @@ Une icône optionnelle de 12 px peut être placée en section gauche.
   `red, orange, yellow, lime, green, teal, cyan, blue, indigo, violet, grape, pink`.
 - Info-bulle avec flèche au survol, contenant le nom complet de l'équipe.
 
-L'avatar utilisateur suit la même mécanique mais **toujours en indigo primaire**, avec deux
-initiales maximum. En groupe : chevauchement, 5 visibles, puis une pastille grise `+N`.
+**Avatar d'une personne** (décidé le 12 novembre 2026, KIT §9, R5) — **une couleur par personne,
+la même sur les deux supports**. Sans photo : deux initiales au plus (premier mot, deuxième mot),
+en blanc, sur une teinte tirée de son nom affiché : hachage `hash × 31 + unité`, gardé sur 31 bits,
+sur les unités UTF-16 du nom, modulo 12. Les douze teintes sont **foncées et identiques en clair et
+en sombre**, pour que les initiales blanches restent lisibles ; dans cet ordre :
+
+| # | Teinte | Valeur | | # | Teinte | Valeur |
+|---|---|---|---|---|---|---|
+| 0 | turquoise 9 | `#087f5b` | | 6 | rose 8 | `#c2255c` |
+| 1 | violet 8 | `#6741d9` | | 7 | ocre (hors palette : le jaune 9 n'atteint pas 3:1 sur blanc) | `#a16207` |
+| 2 | cyan 9 | `#0b7285` | | 8 | rouge 9 | `#c92a2a` |
+| 3 | bleu 8 | `#1971c2` | | 9 | indigo 8 | `#3b5bdb` |
+| 4 | citron 9 | `#5c940d` | | 10 | vert 8 | `#2f9e44` |
+| 5 | raisin 7 | `#ae3ec9` | | 11 | orange 8 | `#e8590c` |
+
+**La personne qui lit est toujours en couleur primaire** (aplat `primary`), quelle que soit la
+teinte de son nom. La table et le hachage vivent en deux endroits qui doivent rester identiques,
+valeur pour valeur et dans le même ordre : `_avatarTints` / `avatarAccents` de
+[`pdl_colors.dart`](../mobile/lib/core/theme/pdl_colors.dart) (lu par `PdlAvatar.tintFor`) et
+`AVATAR_ACCENTS` de [`avatarTint.ts`](../frontend/src/lib/avatarTint.ts) — en changer un, c'est
+changer l'autre.
+
+**En grappe** (cartes de sortie, de groupe, de voyage, « Ma prochaine sortie ») : pastilles de
+**26 px**, **recouvrement de 4 px**, 5 visibles puis une pastille grise `+N`, « Voir tout » dès que
+la grappe affiche `+N`. La grappe reste même quand le groupe est plein. **La personne capitaine n'y
+figure pas quand une ligne de la carte la nomme** (carte de groupe) ; sur la carte du fil, qu'aucune
+ligne de capitaine n'accompagne, elle reste dans la grappe. Une personne non membre ne voit pas de
+grappe : le compte seul (invariant `API-144`).
 
 ### 7.6 Vignette de carte GPX (`RouteThumbnail`)
 
@@ -729,12 +804,45 @@ de 1440 px, avec les superpositions (info-bulles, profil altimétrique) posées 
 
 ### 7.7 Groupe de sortie (inscription)
 
-Bloc listé sous la sortie, avec pour chaque groupe : nom, capitaine du groupe, compteur
-`{{current}}/{{max}} personnes`, lien vers le parcours, boutons `GPX` / `FIT`. L'action varie
-selon l'état : **« Rejoindre »** (bouton plein indigo), **« J'y vais »** (badge indigo doux et
-contour indigo sur le groupe, avec « Quitter » en bouton `outline`), **« Complet »** (badge gris
-doux, sans bouton). C'est le principal appel à
-l'action du parcours membre : il doit être le seul élément plein et coloré de la zone.
+Bloc listé sous la sortie, une carte par groupe. Règles décidées le 12 novembre 2026 (KIT §9, R5
+à R8), les mêmes sur les deux supports.
+
+**Contenu d'une carte de groupe** : nom, capitaine quand le groupe en a une (`RideGroupDto.leader`,
+nul le plus souvent : rien alors), chiffres dans l'ordre distance · D+ · vitesse, ligne météo
+(§7.1), lien vers le parcours, puis les personnes inscrites :
+
+- **Compte** « 11/12 personnes » (« 11 personnes » sans maximum), en 14 px couleur texte ;
+- **grappe** d'avatars (§7.5), gardée même quand le groupe est plein, sans la capitaine ;
+- **barre de places** sous la grappe, **indigo (`primary`), rouge (`danger`) quand le groupe est
+  plein** — plus de vert ni d'orange ; pas de barre sans maximum.
+
+Une personne non membre voit le compte, jamais les noms.
+
+**Contrôles d'inscription** :
+
+| État de la carte, pour la personne qui lit | Contrôle |
+|---|---|
+| Aucune inscription à cette sortie | **« Rejoindre »**, bouton plein indigo ; pendant l'appel, « Inscription… » |
+| Son groupe | **« J'y vais »** (badge indigo doux) **en haut de la carte**, contour indigo sur la carte ; **lien rouge « Quitter le groupe » au pied** |
+| Un autre groupe, avec une inscription ailleurs | **« Changer pour {groupe} »**, bouton plein au pied de la carte, en un seul appel |
+| Groupe plein | **« Complet »**, bouton désactivé — **même avec une inscription ailleurs** |
+| Sortie annulée | **Aucun contrôle** ; le badge « J'y vais » reste sur son groupe |
+
+- **Jamais de confirmation** pour rejoindre, changer ou quitter : ce sont des actions réversibles
+  (§8.3). Supprimer, à l'inverse, se confirme toujours.
+- **Quitter reste possible jusqu'à la fin de la sortie**, départ passé compris.
+- **Une erreur s'affiche dans la carte concernée**, pas en bandeau de section.
+- **Un seul bouton plein par carte** : c'est l'appel à l'action du parcours membre.
+
+**Export du parcours** : **un seul bouton « GPS »** (contour, icône d'appareil), qui ouvre le choix
+« Vers un appareil » / « Fichier GPX » / « Fichier FIT » — plus de boutons `GPX`, `FIT` ou
+« Envoyer vers l'appareil » côte à côte sur une carte. Il est **sur la carte de son groupe**, sur
+« Ma prochaine sortie » et sur les étapes d'un voyage auquel la personne qui lit participe ; nulle
+part ailleurs sur une carte. **Il reste visible jusqu'à la fin de la sortie.**
+
+**« Ma prochaine sortie »** (accueil) : mêmes règles. Compte, grappe et barre de places de son
+groupe (le site garde le groupe devant le compte : « B · 11/12 personnes ») ; « GPS » ;
+« **Se désinscrire** » en **lien rouge**, sans confirmation.
 
 ### 7.8 Départ : boîte du jour et bloc de départ
 
@@ -753,7 +861,14 @@ le détail d'une sortie, qui donne l'heure de la sortie et, à côté, « Votre 
   Variante **à plat** (listes, agenda, bloc de départ) : fond `primary` doux (`#dbe4ff`) ; un voyage
   prend le turquoise doux. Variante **posée** (sur une image de carte) : fond blanc, ombre `sm`.
 - **Ligne de départ** (cartes) : `IconClock` indigo + « Départ 09:00 » en 16 px/700 (20 px/700 sur
-  la carte « Ma prochaine sortie » mobile), sous le titre.
+  la carte « Ma prochaine sortie » mobile), sous le titre. Un voyage : « Départ 09:00 » puis sa
+  plage, « ven. 20 → dim. 22 nov. ».
+- **Lieu et groupe** (cartes et lignes de liste, KIT §9, R11) : une ligne compacte (« Les 7
+  prochains jours », calendrier, agenda) commence par **heure · équipe · groupe** — « 09:30 · Vélo
+  Club des Monts · Groupe B » ; le **lieu de départ va sur sa propre ligne, nom seul**, sans
+  adresse (comme sur les écrans de détail, `MOB-136`). Sur « Ma prochaine sortie », sous
+  « Départ 09:30 » : « Groupe B · Place de la Mairie ». La **carte d'étape** donne son titre, la
+  date dessous, puis départ → arrivée ; un trait de la couleur de son tracé suit le titre.
 - **Bloc de départ** (détail d'une sortie, web et mobile) : **juste sous le titre et les badges,
   avant la description**. Surface alternée (`gray-0`) bordée, rayon 8 px (12 px sur mobile) ; à
   gauche la boîte du jour à plat ; au centre « Départ 09:00 » en 24 px/700 (22 px sur mobile), la
@@ -766,6 +881,28 @@ le détail d'une sortie, qui donne l'heure de la sortie et, à côté, « Votre 
   « light », sur lequel le gris atténué tombe sous 4,5:1), rayon 8 px, contenant la ligne de départ
   « Départ 20:30 » en 16 px/700. Dès qu'un groupe part à une autre heure que la sortie, **chaque**
   groupe affiche la sienne ; rien quand tous partent avec la sortie.
+
+### 7.9 Cartes d'équipe, de modèle de sortie, d'annonce, de commentaire
+
+Mêmes règles sur l'app et le site (KIT §9, R12 et R13 ; décidé le 12 novembre 2026).
+
+- **Carte d'équipe** : une seule forme dans l'app, celle de la découverte, pareille à celle du
+  site — bandeau (la photo de l'équipe, sinon le dégradé violet), extrait sur
+  2 lignes, **le rôle réel** de la personne qui lit (« Membre », « Organisateur »,
+  « Administrateur »), le nombre de membres (« 24 membres », pluralisé). Une équipe privée porte
+  « Équipe uniquement » ; une équipe publique, aucun badge de visibilité. Hors de l'équipe :
+  **« Rejoindre l'équipe »** sur la carte même.
+- **Carte de modèle de sortie** : nom et statut ; « 3 groupes · prochaine sortie #12 » ; les
+  groupes avec leur vitesse, « A 28 km/h · B 25 km/h » ; la description sur 2 lignes si elle
+  existe. Ni visibilité ni tags. Action **« Créer une sortie »** sur la carte.
+- **Carte d'annonce** : le lieu s'écrit « **Secteur {lieu}** », **sans icône d'épingle** : la
+  position est floutée à ~1 km, une épingle prétendrait une précision qu'elle n'a pas (invariant
+  `API-31`). La date de publication, courte avec l'heure (§8.3). Badges : le type, puis
+  « Brouillon » si elle n'est pas publiée ; jamais de visibilité.
+- **Commentaire** : **texte brut**, sans rendu Markdown, sur les deux supports. Date relative
+  (§8.3). Supprimer un commentaire se confirme.
+- **Ligne de membre, ligne de personne inscrite** : un menu ⋯ « Signaler / Bloquer ». Ancienneté :
+  « Membre depuis mars 2024 ». Pas de chevron si la ligne ne s'ouvre pas.
 
 ---
 
@@ -784,7 +921,7 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 | Ride | **sortie** | « ride », « run », « balade » |
 | Route | **parcours** | « itinéraire », « trace » |
 | Routes of every team (global page) | **Explorer** (entrée de navigation et titre ; elle ouvre la carte). « Parcours » reste la section d'une équipe (`WEB-114`) | « Parcours » pour la page globale |
-| Post | **publication** | « article », « news » |
+| Post | **publication**, notifications comprises | « article », « news », « post » |
 | Trip | **voyage** ; ses composants sont des **étapes** | « séjour », « tour » |
 | Rides + trips of a team | **Agenda** (section : sorties et voyages ; filtres « À venir », « Je participe », « Passées ») ; état vide « Rien à l'agenda pour le moment » | « événements », « programme », « activités » |
 | Ride or trip under way | **En cours** (badge dérivé, comme « J'y vais ») | « en direct », « live » |
@@ -800,6 +937,19 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 | Group leader | **capitaine** | « meneur », « leader » |
 | Registered people | **personnes inscrites** ; compteur « 12 personnes », « 3 inscriptions » | « participants », « inscrits » |
 | Registered (badge) | **J'y vais** | « Inscrit » |
+| Ride or trip over (badge) | **Terminée** (sortie), **Terminé** (voyage) — l'accord porte sur le contenu | « Passée », « Fini » |
+| Join a ride group (pending state) | **Inscription…** | « Adhésion… », qui est le mot d'une équipe |
+| Leave a ride group | **Quitter le groupe** (lien rouge) ; sur « Ma prochaine sortie », **Se désinscrire** | « Quitter » seul sur une carte de groupe |
+| Move to another group | **Changer pour {groupe}** | « Changer de groupe », « Rejoindre B » |
+| Full group | **Complet** (bouton désactivé) | « Plein », « Liste d'attente » |
+| Route export | **GPS** — un seul bouton sur une carte ; il ouvre « Vers un appareil », « Fichier GPX », « Fichier FIT » | « Envoyer vers l'appareil », « Télécharger GPX » en boutons de carte |
+| Team-only visibility | **Équipe uniquement** | « Équipe » seul, « Privé » |
+| Role `ADMIN` | **Administrateur** | « Admin » |
+| Member since | **Membre depuis mars 2024** (mois et année) | « A rejoint le 3 mars 2024 » |
+| Rides and trips using a route | **Utilisé dans** (le sujet est le parcours) | « Utilisée dans » |
+| Someone registered (notification) | **{nom} a rejoint votre sortie** | « a rejoint une sortie », « s'est inscrit » |
+| Ride changed (notification) | le titre dit ce qui change : **Une sortie change de date** | « Sortie modifiée » |
+| Webhook state | un seul badge **Actif** / **Échec** / **Désactivé** ; dernier envoi **Réussi** ; format **JSON** | « Inactif », « Envoyé », « générique » |
 | Ad author | **la personne qui a publié l'annonce** ; libellé « Publiée par » ; bouton « Répondre à l'annonce » | « vendeur », « annonceur » |
 | Headwind / crosswind / tailwind | **vent de face** / **de travers** / **dans le dos** (court : Face, Travers, Dos) | « vent contraire », « vent latéral » |
 | Stale forecast | **prévision ancienne** | « météo périmée », « obsolète » |
@@ -809,10 +959,12 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 - **Titres de page et de section : nom sans article**, capitale initiale seule.
   → « Parcours », « Annonces », « Groupes », « Cols et montées », « À propos de l'équipe ».
 - **Boutons : verbe à l'infinitif**, court.
-  → « Rejoindre », « Quitter », « Enregistrer », « Annuler », « Retour », « Filtres », « Effacer »,
-  « Télécharger GPX », « Envoyer vers l'appareil », « S'abonner ».
+  → « Rejoindre », « Quitter le groupe », « Changer pour B », « Enregistrer », « Annuler »,
+  « Retour », « Filtres », « Effacer », « S'abonner ». L'export d'un parcours n'a qu'un bouton,
+  « GPS » (§7.7) : un nom d'outil, pas un verbe.
 - **États en cours : verbe substantivé + points de suspension.**
-  → « Création... », « Enregistrement... », « Adhésion... », « Préparation en cours ».
+  → « Création... », « Enregistrement... », « Adhésion... » (une équipe), « Inscription… » (un
+  groupe de sortie, un voyage), « Préparation en cours ».
 - **États vides : un titre nominal + une phrase explicative.**
   → « Aucun parcours » / « Aucun parcours n'est disponible pour le moment. »
   → « Aucune publication pour le moment »
@@ -825,12 +977,22 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 - **Confirmations : question fermée + conséquence.**
   → « Voulez-vous vraiment quitter cette équipe ? »
   → « Voulez-vous vraiment supprimer cette annonce ? Cette action est irréversible. »
+  **Supprimer se confirme toujours** (une annonce, un commentaire, un modèle…) ; **rejoindre,
+  changer de groupe ou quitter un groupe de sortie ne se confirme jamais** (« Se désinscrire » de
+  « Ma prochaine sortie » compris) : l'action est réversible d'un geste (KIT §9, R8).
 - **Notifications de succès : nom + participe passé + « avec succès ».**
   → « Annonce créée avec succès », « Annonce mise à jour avec succès ».
 - **Erreurs : constat neutre, puis action possible.** Jamais de blâme.
   → « Email ou mot de passe incorrect », « Échec de l'ajout du membre. Veuillez réessayer. »
 - **Compteurs : toujours pluralisés** (`_one` / `_many` / `_other`).
-  → « 1 groupe » / « 3 groupes », « 1 étape » / « 4 étapes », « 12 personnes ».
+  → « 1 groupe » / « 3 groupes », « 1 étape » / « 4 étapes », « 12 personnes », « 1 membre ».
+  **Sur une carte, un compteur à zéro ne s'écrit pas** (ni « 0 groupe » ni « 0 commentaire » ;
+  KIT §9, R4). Le compte des personnes d'un groupe s'écrit « 11/12 personnes », « 11 personnes »
+  sans maximum — jamais « 11/12 » nu ni « 8/12 places ».
+- **Ligne météo d'une carte** : « 9–13 °C · ↗ 18 km/h · Pluie 20 % » (plage avec un tiret
+  demi-cadratin, vent précédé de sa flèche, pluie toujours) ; en alerte « Pluie 60 % vers 11:00 » ;
+  avant l'ouverture des prévisions « Météo dès le 15 novembre ». Pas de condition nommée sur une
+  carte (§7.1).
 - **Départ (format unique, ledger `BRAND-8`)** : heure avec deux-points (« 09:00 », jamais « 09h00 »),
   sur 24 h sur le web en français (l'anglais suit sa langue : « 9:00 AM »), au réglage
   12 h / 24 h du téléphone sur mobile ; jour de semaine et mois abrégés, séparés de l'heure par « · » :
@@ -840,8 +1002,15 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
   « Demain 09:00 : Boucle de la vallée ». §7.8 pour la mise en forme.
 - **Dates** : format français long abrégé, heure sur 24 h — sur le web, qui suit la langue ; le
   mobile suit le réglage 12 h / 24 h du téléphone (ledger `API-60`). Un rendez-vous lu d'un autre
-  fuseau porte la mention « heure de Tokyo (ven. 01:00 chez vous) ». Le calendrier propose
-  « Jour / Semaine / Mois », « Toute la journée », « +{{count}} autres ».
+  fuseau porte la mention « heure de Tokyo (ven. 01:00 chez vous) » — même texte, deux formes : une
+  ligne visible dans l'app, une infobulle sur une icône au site (ledger `WEB-171`). Le calendrier
+  propose « Jour / Semaine / Mois », « Toute la journée », « +{{count}} autres ».
+  Sur une carte (KIT §9, R9) :
+  - **date d'une publication ou d'une annonce** : courte, avec l'heure, « dim. 8 nov. · 18:30 » ;
+    l'année seulement hors de l'année en cours ;
+  - **date relative** (commentaire, notification) : « il y a 2 heures », **sans « environ »** ;
+    au-delà de 7 jours, la date, « 3 novembre 2026 » ;
+  - **ancienneté d'un membre** : « Membre depuis mars 2024 ».
 - **Unités** : `km` / `m` en métrique, `mi` / `ft` en impérial — l'utilisateur choisit dans ses
   préférences. Espace insécable entre le nombre et l'unité, séparateur de milliers = espace fine
   (`1 240 m`).
@@ -869,12 +1038,16 @@ au cas par cas : **on reformule de façon épicène**, sans point médian. Le po
   *capitaine*, *inscription(s)*, *tout le monde* (pas « tous »), « qui organise {équipe} »,
   « l'administration de la plateforme », « Confiez l'administration à un autre membre ».
 - **Les rôles gardent leur nom.** `ADMIN` et `ORGANIZER` s'affichent « Administrateur » et
-  « Organisateur » (filtres, badges, compteurs « 3 administrateurs ») : ce sont des noms de
+  « Organisateur » (filtres, badges, compteurs « 3 administrateurs »), jamais abrégés
+  (« Admin ») : ce sont des noms de
   fonction, partagés par le web, le mobile et la documentation. Dans une phrase qui décrit un
   droit, on cite le rôle plutôt que les personnes : « Le rôle Organisateur peut créer des
   sorties », « Visible des rôles Organisateur et Administrateur ».
 - **Exceptions tolérées** : les formules figées (« © contributeurs OpenStreetMap », « Tous droits
-  réservés ») et les accords qui portent sur une chose (« service connecté », « export prêt »).
+  réservés ») et les accords qui portent sur une chose (« service connecté », « export prêt »,
+  le badge « Terminée » d'une sortie et « Terminé » d'un voyage, « Utilisé dans » d'un parcours).
+- **Ancienneté, inscription** : « Membre depuis mars 2024 » (pas « Inscrit depuis »), « Vous
+  participez », « Votre inscription est dans le groupe B ».
 
 ### 8.5 Micro-copie de référence (extraits réels)
 
@@ -882,6 +1055,8 @@ au cas par cas : **on reformule de façon épicène**, sans point médian. Le po
 > « Dernières publications »
 > « Parcourez les équipes cyclistes ou créez la vôtre »
 > « Rejoindre l'équipe » · « Quitter l'équipe » · « Complet » · « J'y vais »
+> « Quitter le groupe » · « Changer pour B » · « Inscription… » · « GPS » · « Équipe uniquement »
+> « 11/12 personnes » · « Pluie 60 % vers 11:00 » · « Météo dès le 15 novembre » · « Secteur Brest »
 > « Voir le parcours » · « Voir toutes les personnes inscrites » · « Voir tout »
 > « Masquer les filtres » · « Tous les niveaux » · « Prix à négocier »
 > « Aucun groupe défini pour cette sortie. »

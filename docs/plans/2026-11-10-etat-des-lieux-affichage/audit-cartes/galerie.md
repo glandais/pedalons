@@ -42,16 +42,22 @@ ce cahier.
 
 | Section | Cas (identifiant → ce qu'il montre) |
 |---|---|
-| **fil** | `fil-sortie` nominale, non inscrite · `fil-sortie-inscrite` (groupe B, 09:30) · `fil-sortie-demain` (J+1) · `fil-sortie-en-cours` (partie il y a 1 h) · `fil-sortie-terminee` (J−2) · `fil-sortie-annulee` · `fil-sortie-brouillon` · `fil-sortie-sans-groupe` (ni groupe ni parcours) · `fil-sortie-alerte-pluie` · `fil-voyage` · `fil-voyage-inscrit-en-cours` · `fil-voyage-annule` · `fil-publication` (avec photo) · `fil-publication-brouillon` (sans photo) · `fil-supprime` |
+| **fil** | `fil-sortie` nominale, non inscrite · `fil-sortie-inscrite` (groupe B, 09:30) · `fil-sortie-demain` (J+1) · `fil-sortie-en-cours` (partie il y a 1 h) · `fil-sortie-terminee` (J−2) · `fil-sortie-annulee` · `fil-sortie-brouillon` · `fil-sortie-sans-groupe` (ni groupe ni parcours) · `fil-sortie-alerte-pluie` · `fil-sortie-meteo-a-venir` (J+10, la prévision ouvre à J+3 : « Météo dès le … ») · `fil-sortie-photo` (photo en bandeau, carte du tracé en vignette) · `fil-sortie-lien` (lisible par lien dans l'équipe privée : badge « Public ») · `fil-voyage` · `fil-voyage-termine` (J−16 → J−14, « Terminé ») · `fil-voyage-non-membre` (Gravel Bretagne, vu d'une personne non membre : le compte, pas les noms) · `fil-voyage-inscrit-en-cours` · `fil-voyage-annule` · `fil-publication` (avec photo) · `fil-publication-brouillon` (sans photo) · `fil-supprime` |
 | **accueil** | `prochaine-sortie` (inscrite au B) · `prochaine-sortie-sans-maximum` · `prochaine-sortie-vide` · `semaine` (5 lignes : sortie, inscrite, annulée, étape, brouillon) · `semaine-vide` · `mes-equipes` (2 équipes, rôles différents) · `mes-equipes-vide` |
 | **agenda** | `agenda-sortie` · `agenda-inscrite` · `agenda-annulee` · `agenda-etape` · `agenda-passee` |
-| **groupes** | `groupes-inscrite-b` (les trois cartes, heures différentes, Camille dans le B) · `groupes-non-inscrite` (même heure) · `groupe-sans-parcours` · `groupe-sans-meteo` |
-| **etapes** | `etapes` (les trois) · `etape-sans-parcours` · `etape-alerte-pluie` |
+| **groupes** | `groupes-inscrite-b` (les trois cartes, heures différentes, Camille dans le B) · `groupes-non-inscrite` (même heure) · `groupe-erreur` (« Rejoindre » sur B, la dernière place vient d'être prise : l'erreur dans sa carte) · `groupe-non-membre` (groupe A vu d'une personne non membre : le compte, jamais de visage) · `groupe-sans-parcours` · `groupe-sans-meteo` |
+| **etapes** | `etapes` (les trois) · `etape-inscrite` (étape 1, Camille participe au voyage : « GPS ») · `etape-sans-parcours` · `etape-alerte-pluie` |
 | **parcours** | `parcours` · `parcours-sans-vignette` · `parcours-supprime` · `parcours-ligne` (densité compacte) · `usages` (« Utilisé dans » : une sortie, un voyage) |
 | **annonces** | `annonce-vente` · `annonce-location` · `annonce-recherche` · `annonce-brouillon` |
-| **equipes** | `equipe` (membre) · `equipe-admin` · `equipe-decouverte` (non membre, si la carte existe) · `invitations` (une invitation) · `membre` · `membre-admin` · `inscrits` (8 personnes, capitaine) |
+| **equipes** | `equipe` (membre) · `equipe-admin` · `equipe-decouverte` (non membre, si la carte existe) · `equipe-photo` (Gravel Bretagne, sa photo en bandeau) · `invitations` (une invitation) · `membre` · `membre-admin` · `inscrits` (8 personnes, capitaine) |
 | **tableau** | `a-traiter` (les quatre tuiles) · `mes-sorties` (sortie, voyage) · `sortie-a-venir` · `sortie-a-venir-inscrite` · `sortie-a-venir-complet` · `sortie-a-venir-sans-parcours` · `dernieres-publications` · `nouveaux-parcours` · `annonces-tableau` |
 | **divers** | `notification-non-lue` · `notification-lue` · `notification-modification` · `modele` · `modele-brouillon` · `appareils` · `commentaires` (un commentaire, une réponse, un supprimé) |
+
+Le tableau est recopié tel quel par les deux tests de galerie (`mobile/test/dev/card_gallery_test.dart`,
+`frontend/src/dev/cardGallery/CardGallery.test.tsx`), qui échouent si un cas disparaît : un cas ajouté ici s'ajoute aux
+deux listes. Au 12 novembre 2026, les deux galeries montent les mêmes 75 cas, dans le même ordre. Seule exception :
+`agenda-etape` est omis sur le site, avec sa raison (la vue « Lignes » de l'agenda liste le voyage entier ; une étape
+n'apparaît que dans la grille du calendrier).
 
 ## Capture
 

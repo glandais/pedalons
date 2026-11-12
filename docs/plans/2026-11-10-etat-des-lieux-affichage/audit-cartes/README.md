@@ -1,5 +1,12 @@
 # Audit d'homogénéité des cartes — app mobile ↔ site web (2026-11-11)
 
+> **État au 12 novembre 2026.** Fait : l'audit (ce fichier et ses quatre axes), le [tri](tri.md) en défauts,
+> décisions et écarts voulus, les deux galeries de cartes et leur cahier commun ([galerie.md](galerie.md)), le
+> [constat sur captures](constat-captures.md), les planches « Cartes — cibles » et les décisions sur les quatorze règles
+> (R1 à R14), écrites dans [`KIT.md` §9](../maquettes/KIT.md) et reportées dans `docs/BRANDING.md` §7 et §8. En cours :
+> la mise en œuvre, par lots, selon la [méthode](METHODE.md) — ledgers `MOB-139` (app) et `WEB-167` (site), `API-178`
+> pour la distance d'affichage. Les écarts voulus sans source sont au ledger (`WEB-171`, `MOB-140`).
+
 Les cartes et lignes de liste (sortie, voyage, publication, groupe, étape, parcours, annonce, équipe, membre, tableau
 de bord, notification, modèle de sortie, appareil, commentaire) comparées entre l'app et le site, et à l'intérieur de
 chaque support. Branche `feat/mobile-review`, après la refonte `MOB-134`. Les planches correspondantes sont sur la page
