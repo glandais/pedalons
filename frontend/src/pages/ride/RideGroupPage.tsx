@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import { IconPencil, IconUsersGroup } from '@tabler/icons-react'
 import { Alert, Anchor, Badge, Box, Button, Container, Stack, Text } from '@mantine/core'
 import { startFor } from '@/utils/groupStart'
@@ -31,7 +32,7 @@ import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import { useRideGroupMembership } from '@/hooks/useRideGroupMembership'
 import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
 import { leavesGroupPage } from './rideDetailData'
-import { groupAction, groupWindLeg, useRideGroupData } from './rideGroupData'
+import { canLeaveFromGroupPage, groupAction, groupWindLeg, useRideGroupData } from './rideGroupData'
 
 /**
  * One group of a ride, on a page of its own (ledger WEB-77): who leads it, when it leaves and at
@@ -150,13 +151,13 @@ export function RideGroupPage() {
     href: paths.rideGroup(team.slug, ride.slug, g.id),
     label: g.maxParticipants
       ? t('rides.group.option', {
-          name: g.name,
+          name: groupTitle(g.name, t),
           current: g.countParticipants,
           max: g.maxParticipants,
         })
-      : t('rides.group.optionNoMax', { name: g.name, current: g.countParticipants }),
+      : t('rides.group.optionNoMax', { name: groupTitle(g.name, t), current: g.countParticipants }),
   }))
-  const title = t('rides.group.title', { name: group.name })
+  const title = groupTitle(group.name, t)
 
   return (
     <ChildDetailShell
@@ -274,8 +275,9 @@ export function RideGroupPage() {
           />
 
           {/* « Quitter le groupe » under « Personnes inscrites », a red link as on the group's card
-              (KIT §8, docs/LEDGER_*.md WEB-167 R6) — never beside the title. */}
-          {action === 'leave' && (
+              (KIT §8, docs/LEDGER_*.md WEB-167 R6) — never beside the title. Here it stays after the
+              end, to correct who came; never on a cancelled ride (KIT §9). */}
+          {canLeaveFromGroupPage(ride, group) && (
             <Box>
               <LeaveGroupLink
                 onLeave={() => membership.leave(group.id)}

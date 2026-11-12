@@ -130,10 +130,10 @@ describe('RideGroupFullscreenMapPage (WEB-117)', () => {
     renderPage()
     expect(screen.getByTestId('fullscreen-view')).toBeTruthy()
     expect(state.view.route).toBe(boucle)
-    expect(state.view.title).toBe('Sortie du samedi · Groupe Rapide')
+    expect(state.view.title).toBe('Sortie du samedi · Rapide')
     expect(state.view.backTo).toBe(paths.rideGroup('np', 'sortie', 'g1'))
     expect(state.view.timezone).toBe('Europe/Paris')
-    expect(document.title).toBe('Sortie du samedi · Groupe Rapide — Pédalons')
+    expect(document.title).toBe('Sortie du samedi · Rapide — Pédalons')
   })
 
   it("puts the group's own departure under the title, not the ride's (BRAND-8)", () => {

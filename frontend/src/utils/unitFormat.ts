@@ -38,11 +38,21 @@ export function getUnitConfig(unitSystem: UnitSystem): UnitConfig {
 /** No-break space (U+00A0), between a value and its unit (docs/BRANDING.md §8.3). */
 export const NBSP = '\u00a0'
 
+/**
+ * Intl's output with its narrow no-break spaces (U+202F, the French thousands separator CLDR
+ * writes) turned into ordinary no-break spaces (U+00A0): « 1 240 m », « 1 200,00 € » — the decision
+ * of 2026-11-12 (KIT §9), shared with the app. A narrow space reads « 1240 » in bold with the
+ * system fonts. Only for numbers: an English time keeps CLDR's space before « AM ».
+ */
+export function normalGroupSpaces(formatted: string): string {
+  return formatted.replace(/\u202f/g, NBSP)
+}
+
 const decimalFormats = new Map<string, Intl.NumberFormat>()
 
 /**
  * A number in the language of the interface, to a fixed number of decimals: « 92,4 » and « 1 240 »
- * (narrow no-break space, U+202F, as Intl writes it) in French, « 92.4 » and « 1,240 » in English
+ * (no-break space, U+00A0, `normalGroupSpaces`) in French, « 92.4 » and « 1,240 » in English
  * (docs/LEDGER_*.md WEB-167, D13). Cached per language: a chart formats hundreds of labels.
  */
 export function formatNumber(value: number, locale: string, fractionDigits: number = 0): string {
@@ -56,7 +66,7 @@ export function formatNumber(value: number, locale: string, fractionDigits: numb
     decimalFormats.set(key, format)
   }
   // `+ 0` folds -0 into 0: « -0 m » reads as a bug.
-  return format.format((fractionDigits === 0 ? Math.round(value) : value) + 0)
+  return normalGroupSpaces(format.format((fractionDigits === 0 ? Math.round(value) : value) + 0))
 }
 
 /** A value and its unit, bound by a no-break space: « 92,4 km » never splits at a line end. */
@@ -155,10 +165,12 @@ const MM_PER_INCH = 25.4
 export function formatPrecipitation(mm: number, unitSystem: UnitSystem, locale?: string): string {
   const imperial = unitSystem === 'IMPERIAL'
   const digits = imperial ? 2 : 1
-  return new Intl.NumberFormat(locale, {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(imperial ? mm / MM_PER_INCH : mm)
+  return normalGroupSpaces(
+    new Intl.NumberFormat(locale, {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    }).format(imperial ? mm / MM_PER_INCH : mm)
+  )
 }
 
 // Round to avoid floating-point precision issues (e.g., 25.000000000000004)
@@ -250,11 +262,13 @@ export function formatFileSize(bytes: number, locale: string): string {
     unit++
   }
   const fractionDigits = unit === 0 || value >= 9.95 ? 0 : 1
-  return new Intl.NumberFormat(locale, {
-    style: 'unit',
-    unit: FILE_SIZE_UNITS[unit],
-    unitDisplay: 'short',
-    maximumFractionDigits: fractionDigits,
-    minimumFractionDigits: 0,
-  }).format(value)
+  return normalGroupSpaces(
+    new Intl.NumberFormat(locale, {
+      style: 'unit',
+      unit: FILE_SIZE_UNITS[unit],
+      unitDisplay: 'short',
+      maximumFractionDigits: fractionDigits,
+      minimumFractionDigits: 0,
+    }).format(value)
+  )
 }

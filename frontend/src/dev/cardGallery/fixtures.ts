@@ -1111,6 +1111,16 @@ export const MARKDOWN_COMMENTS: CommentDto[] = [
     replyCount: 0,
     deleted: false,
   },
+  {
+    // KIT §9 (2026-11-12): raw text, but a full address is a link, shown whole.
+    id: 'c-noe-link',
+    content: 'La trace est là : https://www.openstreetmap.org/#map=12/48.4/-3.9. À dimanche !',
+    author: NOE,
+    createdAt: hoursFromNow(-3),
+    replies: [],
+    replyCount: 0,
+    deleted: false,
+  },
 ]
 
 /** The ride slug whose comments are {@link MARKDOWN_COMMENTS}. */

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import { useGetTeam } from '../api/endpoints/teams/teams'
 import { useGetRide } from '../api/endpoints/rides/rides'
 import { useGetTrip } from '../api/endpoints/trips/trips'
@@ -116,7 +117,7 @@ export function useBreadcrumbData(params: RouteParams): BreadcrumbData {
     teamClosed,
     ride: { name: ride?.name, isLoading: isLoadingRide },
     rideGroup: {
-      name: group && t('rides.group.title', { name: group.name }),
+      name: group && groupTitle(group.name, t),
       isLoading: isLoadingRide,
     },
     post: { name: post?.name, isLoading: isLoadingPost },

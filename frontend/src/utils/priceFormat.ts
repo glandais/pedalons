@@ -1,5 +1,6 @@
 import type { TFunction } from 'i18next'
 import type { AdType, RentalPeriod } from '@/api/dto'
+import { normalGroupSpaces } from './unitFormat'
 
 const currencyFormats = new Map<string, Intl.NumberFormat>()
 
@@ -19,7 +20,8 @@ export function formatAmount(price: number, language: string): string {
     })
     currencyFormats.set(language, format)
   }
-  return format.format(price)
+  // « 1 200,00 € »: an ordinary no-break space between thousands, as everywhere (KIT §9).
+  return normalGroupSpaces(format.format(price))
 }
 
 /**

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import { Schedule } from '@mantine/schedule'
 import type {
   RenderEventBody,
@@ -176,7 +177,7 @@ export function CalendarView({
           ? t('calendar.schedule.allDay')
           : formatTime(dto.start, i18n.language, supportedZone(dto.timezone) || tz),
         dto.teamName,
-        dto.registered ? (dto.groupName ?? null) : null,
+        dto.registered && dto.groupName ? groupTitle(dto.groupName, t) : null,
       ]
         .filter(Boolean)
         .join(SEPARATOR),

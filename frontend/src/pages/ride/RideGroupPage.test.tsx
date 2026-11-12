@@ -220,7 +220,7 @@ describe('RideGroupPage (WEB-77)', () => {
 
   it('titles the group under its ride, with its places, stats and participants', () => {
     renderPage()
-    expect(screen.getByRole('heading', { level: 1, name: 'Groupe Rapide' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Rapide' })).toBeTruthy()
     const text = plain(document.body.textContent)
     expect(text).toContain('Sortie du samedi')
     expect(text).toContain('11/12 personnes')
@@ -309,6 +309,28 @@ describe('RideGroupPage (WEB-77)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Quitter le groupe' }))
     expect(state.leave).toHaveBeenCalledWith('g1')
     expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
+  })
+
+  // KIT §9 (2026-11-12): the page keeps the link after the end, to correct who came; not when
+  // the ride is cancelled. The cards drop it at the end (RideDetailPage.test).
+  it('keeps « Quitter le groupe » after the end, never on a cancelled ride', () => {
+    const mine = {
+      registered: true,
+      registeredGroupId: 'g1',
+      groups: [group({ registered: true }), cool()],
+    }
+    state.ride = ride({ ...mine, finished: true })
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Quitter le groupe' }))
+    expect(state.leave).toHaveBeenCalledWith('g1')
+    cleanup()
+    state.ride = ride({ ...mine, status: Status.CANCELLED })
+    renderPage()
+    expect(screen.queryByRole('button', { name: 'Quitter le groupe' })).toBeNull()
+    cleanup()
+    state.ride = ride({ ...mine, status: Status.CANCELLED, finished: true })
+    renderPage()
+    expect(screen.queryByRole('button', { name: 'Quitter le groupe' })).toBeNull()
   })
 
   it('says « Complet » with a disabled button on a full group', () => {
@@ -467,7 +489,7 @@ describe('RideGroupPage (WEB-77)', () => {
     renderPage()
     expect(screen.getByText('Cool · 4/12')).toBeTruthy()
     fireEvent.click(screen.getByText('Cool · 4/12'))
-    expect(screen.getByRole('heading', { level: 1, name: 'Groupe Cool' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Cool' })).toBeTruthy()
   })
 
   it('says a group the ride no longer has is gone, with a way back to the ride', () => {
@@ -487,7 +509,7 @@ describe('RideGroupPage (WEB-77)', () => {
     it('never shows the group page meanwhile', () => {
       state.ride = ride({ groups: [group()] })
       renderPage()
-      expect(screen.queryByRole('heading', { level: 1, name: 'Groupe Rapide' })).toBeNull()
+      expect(screen.queryByRole('heading', { level: 1, name: 'Rapide' })).toBeNull()
       expect(screen.queryByText("Ce groupe n'existe plus")).toBeNull()
     })
 
@@ -503,7 +525,7 @@ describe('RideGroupPage (WEB-77)', () => {
 
     it('still leaves when the ride, first read with two groups, comes back with one', async () => {
       const { rerender } = renderPage()
-      expect(screen.getByRole('heading', { level: 1, name: 'Groupe Rapide' })).toBeTruthy()
+      expect(screen.getByRole('heading', { level: 1, name: 'Rapide' })).toBeTruthy()
       state.ride = ride({ groups: [group()] })
       rerender(pageTree())
       expect((await screen.findByTestId('ride-page')).textContent).toBe(paths.ride('np', 'sortie'))

@@ -562,7 +562,12 @@ describe('RideDetailPage — « Changer pour » on the other groups', () => {
     expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
   })
 
-  it('offers neither « Changer pour » nor « Quitter » on a cancelled ride', () => {
+  // KIT §9 (2026-11-12): no control at all on a cancelled ride's group card, « GPS » included.
+  it('offers neither « Changer pour », « Quitter » nor « GPS » on a cancelled ride', () => {
+    state.ride = ride({ groups: two(), registered: true, registeredGroupId: 'g2' })
+    renderPage()
+    expect(screen.getByTestId('gps-button')).toBeTruthy()
+    cleanup()
     state.ride = ride({
       groups: two(),
       registered: true,
@@ -572,6 +577,7 @@ describe('RideDetailPage — « Changer pour » on the other groups', () => {
     renderPage()
     expect(screen.queryByRole('button', { name: /Changer pour/ })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Quitter le groupe' })).toBeNull()
+    expect(screen.queryByTestId('gps-button')).toBeNull()
   })
 
   it('offers no switch to a full group', () => {

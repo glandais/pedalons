@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import {
@@ -86,7 +87,9 @@ export function useRideGroupMembership(teamSlug: string, rideSlug: string) {
       const group = queryClient
         .getQueryData<RideDto>(rideQueryKey)
         ?.groups?.find((g) => g.id === groupId)
-      return t('rides.detail.groups.failure.exclusive', { group: group?.name ?? '' })
+      return t('rides.detail.groups.failure.exclusive', {
+        group: group ? groupTitle(group.name, t) : '',
+      })
     }
     if (code === 'FORBIDDEN') return t('rides.detail.groups.failure.notMember')
     // Codes are open-ended, so a generic fallback is mandatory rather than optional.

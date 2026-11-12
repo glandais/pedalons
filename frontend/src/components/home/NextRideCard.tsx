@@ -1,5 +1,6 @@
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import {
@@ -125,6 +126,7 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
             thumbnailUrl={thumbnailUrl}
             sizes="(min-width: 48em) 260px, 100vw"
             priority
+            kind={banner.kind === 'map' ? 'map' : 'photo'}
           />
           {/* The day box posed on the picture and, today or tomorrow only, the pill — no more
               « dans 3 jours » (docs/BRANDING.md §7.1 and §8.3). */}
@@ -216,7 +218,7 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
                   teamSlug={ride.team.slug}
                   routeSlug={routeSlug}
                   size="sm"
-                  subtitle={group ? `${group.name} · ${ride.name}` : ride.name}
+                  subtitle={group ? `${groupTitle(group.name, t)} · ${ride.name}` : ride.name}
                 />
               )}
             </Group>

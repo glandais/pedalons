@@ -4,7 +4,12 @@ import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
+  // The key, but « Group B » for the group's title, so the compact line can be read (KIT §9).
+  useTranslation: () => ({
+    t: (key: string, params?: { name?: string }) =>
+      key === 'rides.group.title' ? `Group ${params?.name}` : key,
+    i18n: { language: 'en' },
+  }),
 }))
 
 import { CalendarView } from './CalendarView'
@@ -107,7 +112,8 @@ describe('CalendarView server render', () => {
     const agenda = html
       .slice(html.indexOf('mobileMonthViewEventsHeader'))
       .replace(/&nbsp;|\u00a0|\u202f/g, ' ')
-    expect(agenda).toMatch(/>9:00 AM · N Peloton · B</)
+    // « Group B »: a one-letter name takes the word « Group » (KIT §9), compact lines included.
+    expect(agenda).toMatch(/>9:00 AM · N Peloton · Group B</)
     expect(agenda).toContain('>Place de la Mairie<')
     expect(agenda).toContain('78.0 km · 980 m')
     expect(agenda).not.toContain('92.4')

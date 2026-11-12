@@ -206,6 +206,15 @@ export function groupAction(
 }
 
 /**
+ * Whether the group's own page offers « Quitter le groupe »: to a reader in it, after the end too —
+ * to correct who came —, never on a cancelled ride (decision of 2026-11-12, KIT §9; the app's group
+ * page does the same). The cards stop at the end ({@link groupAction}).
+ */
+export function canLeaveFromGroupPage(ride: RideDto, group: RideGroupDto): boolean {
+  return !!group.registered && ride.status !== Status.CANCELLED
+}
+
+/**
  * Whether a group card offers « Changer pour {groupe} » (KIT §8, ledger WEB-165): the reader is
  * registered in another group of the ride, this one is not full, the ride is not cancelled and the
  * server still takes registrations (`canRegister`, false once every group has left). One call to the

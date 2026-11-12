@@ -121,9 +121,14 @@ const RENNES = {
   lon: -1.6800198,
 } satisfies GeocodeResultDto
 
-/** « 350,00 € » as Intl formats it in fr-FR (narrow no-break space before the sign). */
+/**
+ * « 350,00 € », « 1 200,00 € » as the site writes it: Intl's fr-FR, its thousands separator (a
+ * narrow no-break space) made an ordinary no-break space (KIT §9, `formatAmount`).
+ */
 const euros = (amount: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount)
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' })
+    .format(amount)
+    .replace(/\u202f/g, '\u00a0')
 
 test.describe('ad journey', () => {
   test('a member publishes a sale ad with two photos and a place, shown as a sector', async ({

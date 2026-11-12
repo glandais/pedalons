@@ -153,3 +153,26 @@ describe('TripDetailPage — the weather of a trip of one stage (WEB-155)', () =
     expect(screen.queryByTestId('route-weather')).toBeNull()
   })
 })
+
+// KIT §9 (2026-11-12): a cancelled trip's stage cards carry no control, « GPS » included.
+describe('TripDetailPage — the stages of a cancelled trip', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-20T08:00:00Z'))
+  })
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+  })
+
+  it('offers « GPS » on a stage to a member riding it, never once the trip is cancelled', () => {
+    state.weather = undefined
+    state.trip = { ...trip(['s1', 's2']), registered: true }
+    renderPage()
+    expect(screen.getAllByTestId('gps-button')).toHaveLength(2)
+    cleanup()
+    state.trip = { ...trip(['s1', 's2']), registered: true, status: Status.CANCELLED }
+    renderPage()
+    expect(screen.queryByTestId('gps-button')).toBeNull()
+  })
+})

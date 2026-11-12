@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
+import { renderToString } from 'react-dom/server'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { UserDto } from '@/api/dto'
 import { plain } from '@/test/weatherFixtures'
@@ -53,6 +54,7 @@ import { TeamCard } from './TeamCard'
 import { PublicationCard } from './PublicationCard'
 import { AgendaRow } from '../agenda/AgendaRow'
 import { MyUpcomingList } from '../team/dashboard/MyUpcomingList'
+import { TodoBand } from '../team/dashboard/TodoBand'
 import { RideTemplateCard } from '../ridetemplate/RideTemplateCard'
 import { TeamMemberList } from '../team/TeamMemberList'
 import { ParticipantList } from '../ride/ParticipantList'
@@ -66,6 +68,7 @@ import {
   TEMPLATE,
   TEMPLATE_DRAFT,
   VCM_REF,
+  media,
   member,
   ride,
 } from '@/dev/cardGallery/fixtures'
@@ -133,6 +136,72 @@ describe('R11 — lieu et groupe (docs/LEDGER_*.md WEB-167)', () => {
     expect(screen.queryByTestId('group-place-line')).toBeNull()
   })
 
+  // KIT §9 (2026-11-12): « Groupe C » for a one-letter group, on the organiser's to-do tile too.
+  it('to-do tile: names a full one-letter group « Groupe C »', () => {
+    const page = { publications: [ride()], total: 1, page: 0, size: 10 }
+    const empty = { ...page, publications: [], total: 0 }
+    wrap(
+      <TodoBand
+        teamSlug="vcm"
+        organizer={{
+          drafts: empty,
+          ridesWithoutRoute: empty,
+          ridesWithFullGroup: page,
+          reports: { openCount: 0 },
+        }}
+      />
+    )
+    expect(text()).toMatch(/Groupe [A-Z] de « Boucle des Monts d’Arrée »/)
+  })
+
+  // KIT §9 (2026-11-12): a map banner shows the whole trace (contain over its blurred copy); a photo
+  // still fills the banner.
+  it('feed card: a map banner is shown whole, a photo fills the banner', () => {
+    wrap(<PublicationCard publication={ride()} showTeam={false} />)
+    const map = screen.getByTestId('card-image-map')
+    const shown = within(map).getByRole('img')
+    expect(shown.getAttribute('alt')).toBe('Boucle des Monts d’Arrée')
+    expect(shown.getAttribute('style')).toContain('--image-object-fit: contain')
+    cleanup()
+    const photo = { id: 'p', imageUrl: 'https://x/p.jpg', url: 'https://x/p.jpg' }
+    wrap(
+      <PublicationCard
+        publication={ride({}, { media: media({ images: [photo] as never }) })}
+        showTeam={false}
+      />
+    )
+    expect(screen.queryByTestId('card-image-map')).toBeNull()
+  })
+
+  // API-178, R3: the distance and climb the server picks for the reader, first among the figures.
+  it.each([
+    ['team agenda row', (r: ReturnType<typeof ride>) => <AgendaRow publication={r} />],
+    [
+      'feed card',
+      (r: ReturnType<typeof ride>) => <PublicationCard publication={r} showTeam={false} />,
+    ],
+  ])('%s: the server’s distance and climb first, nothing without them', (_, card) => {
+    wrap(card(ride({}, { displayDistance: 78_000, displayElevationGain: 980 })))
+    const shown = text()
+    expect(shown).toContain('78,0 km')
+    expect(shown).toContain('980 m')
+    expect(shown).not.toContain('92,4')
+    expect(shown.indexOf('78,0 km')).toBeLessThan(shown.indexOf('980 m'))
+    expect(shown.indexOf('980 m')).toBeLessThan(shown.indexOf('3 groupes'))
+    cleanup()
+    // No weather line: its wind reads « km/h ».
+    wrap(
+      card(
+        ride(
+          {},
+          { displayDistance: undefined, displayElevationGain: undefined, weather: undefined }
+        )
+      )
+    )
+    expect(text()).not.toMatch(/\d km|\d m\b/)
+    expect(text()).toContain('3 groupes')
+  })
+
   it('« Vos prochaines sorties »: the group and the place, then the server’s distance (R3)', () => {
     wrap(<MyUpcomingList publications={[ride({ registered: true })]} />)
     expect(screen.getByTestId('group-place-line').textContent).toBe('Groupe B · Place de la Mairie')
@@ -179,6 +248,42 @@ describe('R12 — modèle de sortie', () => {
     expect(body.textContent).toContain('**avant le départ**')
     expect(body.querySelector('strong')).toBeNull()
     expect(body.style.whiteSpace).toBe('pre-wrap')
+  })
+
+  // KIT §9 (2026-11-12): a full address is a link, whole, in a new tab; the server says the same.
+  it('links a full address of a comment, shown whole, the same on the server', () => {
+    const comment = MARKDOWN_COMMENTS[1]
+    const item = (
+      <CommentItem
+        comment={comment}
+        canDeleteComment={() => false}
+        onDeleteComment={vi.fn()}
+        replyingTo={null}
+        isDeleting={false}
+        isReplying={false}
+      />
+    )
+    const href = 'https://www.openstreetmap.org/#map=12/48.4/-3.9'
+    wrap(item)
+    const link = screen.getByRole('link', { name: href })
+    expect(link.getAttribute('href')).toBe(href)
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer nofollow')
+    expect(link.parentElement!.textContent).toBe(`La trace est là : ${href}. À dimanche !`)
+    const body = link.parentElement!.outerHTML
+    cleanup()
+    const server = renderToString(
+      <MantineProvider>
+        <QueryClientProvider client={new QueryClient()}>
+          <MemoryRouter>{item}</MemoryRouter>
+        </QueryClientProvider>
+      </MantineProvider>
+    )
+    const parsed = document.createElement('div')
+    parsed.innerHTML = server
+    // Same markup; React writes `style` without spaces on the server, jsdom with.
+    const css = (html: string) => html.replace(/style="[^"]*"/g, (m) => m.replace(/[\s;]/g, ''))
+    expect(css(parsed.querySelector(`a[href="${href}"]`)!.parentElement!.outerHTML)).toBe(css(body))
   })
 })
 

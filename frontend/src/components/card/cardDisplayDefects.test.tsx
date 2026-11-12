@@ -10,9 +10,6 @@ import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import type { MemberDto, RideDto, RideGroupSummaryDto, TripDto } from '@/api/dto'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { theme } from '@/lib/theme'
 import fr from '@/locales/fr/common.json'
 import en from '@/locales/en/common.json'
 
@@ -32,8 +29,6 @@ import { TeamMemberList } from '@/components/team/TeamMemberList'
 import { TemplateGroupBadge } from '@/components/ridetemplate/TemplateGroupBadge'
 import { StatusBadge } from './common'
 
-const indexCss = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')
-const NNBSP = '\u202f'
 const NBSP = '\u00a0'
 const TEAM_REF = {
   id: 't1',
@@ -133,12 +128,12 @@ function renderIn(node: ReactNode) {
 afterEach(cleanup)
 
 describe('D13: thousands are grouped on a card, and the gap shows', () => {
-  it('renders « 1 240 m » (narrow no-break space) on a dashboard card, never « 1240 »', () => {
+  it('renders « 1 240 m » (no-break space, U+00A0) on a dashboard card, never « 1240 »', () => {
     const { container } = renderIn(
       <UpcomingRideCard ride={ride({ displayDistance: 92_400, displayElevationGain: 1_240 })} />
     )
     const text = container.textContent ?? ''
-    expect(text).toContain(`1${NNBSP}240${NBSP}m`)
+    expect(text).toContain(`1${NBSP}240${NBSP}m`)
     expect(text).toContain(`92,4${NBSP}km`)
     expect(text).not.toMatch(/1240/)
   })
@@ -155,20 +150,18 @@ describe('D13: thousands are grouped on a card, and the gap shows', () => {
     )
     expect(again.container.textContent).toContain(`78,0${NBSP}km`)
   })
-
-  it('draws U+202F with a face that has a visible width: first in both font stacks', () => {
-    // The DOM was right all along: the fallback system fonts draw U+202F at 0.13 em, which reads
-    // « 1240 m » on screen. The face covering it is declared, limited to that code point, and first.
-    const face = indexCss.match(/@font-face\s*{[^}]*'Pedalons Narrow Space'[^}]*}/)?.[0]
-    expect(face).toBeDefined()
-    expect(face).toMatch(/unicode-range:\s*U\+202F;/)
-    expect(face).toMatch(/inter-narrow-nbsp\.woff/)
-    expect(theme.fontFamily?.startsWith("'Pedalons Narrow Space',")).toBe(true)
-    expect(indexCss).toMatch(/font-family:\s*'Pedalons Narrow Space', Inter,/)
-  })
 })
 
 describe('N4: every group full', () => {
+  // KIT §9 (2026-11-12): a cancelled ride's card offers nothing to do, only « Voir la sortie ».
+  it('offers neither « S’inscrire » nor « Complet » on a cancelled ride', () => {
+    const groupSummaries = ride().groupSummaries.map((g) => ({ ...g, full: true }))
+    renderIn(<UpcomingRideCard ride={ride({ status: 'CANCELLED', groupSummaries })} />)
+    expect(screen.queryByText("S'inscrire")).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Complet' })).toBeNull()
+    expect(screen.getByText('Voir la sortie')).toBeTruthy()
+  })
+
   it('offers a disabled « Complet » instead of « S’inscrire »', () => {
     const groupSummaries = ride().groupSummaries.map((g) => ({
       ...g,

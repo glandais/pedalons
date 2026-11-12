@@ -475,12 +475,12 @@ const screens: Record<string, Screen> = {
     guards: titled('Créer une sortie'),
   },
   ride: { roles: EVERYONE, sees: (main, d) => heading(d.ride.name)(main) },
-  rideGroup: { roles: EVERYONE, sees: heading('Groupe Groupe A') },
+  rideGroup: { roles: EVERYONE, sees: heading('Groupe A') },
   // Groupe A has a route of its own (`otherRoute`), so its map draws instead of sending back.
   rideGroupMap: {
     roles: EVERYONE,
     bare: true,
-    sees: fullscreenMap((d) => `${d.ride.name} · Groupe Groupe A`, pathTo('rideGroup')),
+    sees: fullscreenMap((d) => `${d.ride.name} · Groupe A`, pathTo('rideGroup')),
   },
   // A solo ride's map (WEB-118), on the dataset's ride of a single group: the shared `rideSlug`
   // names a ride of two groups, which has no such map — that redirect is tested on its own, below.

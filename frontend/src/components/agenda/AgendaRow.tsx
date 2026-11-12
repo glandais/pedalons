@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Anchor, Group, Paper, Stack } from '@mantine/core'
-import { IconStack2, IconUsers } from '@tabler/icons-react'
+import { IconMountain, IconRoute, IconStack2, IconUsers } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { DayBox } from '@/components/common/DayBox'
 import { PublicationDepartureLine } from '@/components/common/DepartureLine'
@@ -17,6 +17,7 @@ import { publicationPath } from '@/components/team/dashboard/dashboardHelpers'
 import { spanStart, type DatedPublication } from '@/utils/publicationTiming'
 import { cardState } from '@/utils/cardState'
 import { visibilityIsException } from '@/utils/visibilityException'
+import { useUnits } from '@/hooks/useUnits'
 
 interface AgendaRowProps {
   publication: DatedPublication
@@ -29,11 +30,15 @@ interface AgendaRowProps {
  * title and its badges, the departure line « Départ 08:30 » (a trip: its span), under it
  * « Groupe B · Place de la Mairie », then the groups or the stages and who is registered. Denser than a card: no picture, no excerpt.
  * The departure is the reader's group's (`spanStart`, WEB-136) and never one of the statistics
- * (docs/LEDGER_*.md WEB-138).
+ * (docs/LEDGER_*.md WEB-138); the statistics open on the ride's display distance and climb.
  */
 export function AgendaRow({ publication, actions }: AgendaRowProps) {
   const { t } = useTranslation()
+  const { distance, elevation } = useUnits()
   const isTrip = publication.type === 'TRIP'
+  // The distance and climb the server picks for this reader (API-178, R3), first as on the other
+  // cards; nothing when it sends none. A trip carries none.
+  const shown = publication.type === 'RIDE' ? publication : undefined
   const path = publicationPath(publication)
 
   return (
@@ -75,6 +80,12 @@ export function AgendaRow({ publication, actions }: AgendaRowProps) {
             />
           )}
           <Group gap="md" wrap="wrap">
+            {shown?.displayDistance !== undefined && (
+              <Stat icon={<IconRoute size={16} />}>{distance(shown.displayDistance)}</Stat>
+            )}
+            {shown?.displayElevationGain !== undefined && (
+              <Stat icon={<IconMountain size={16} />}>{elevation(shown.displayElevationGain)}</Stat>
+            )}
             {/* No counter at zero (R4). A trip registers on itself; a ride through its groups. */}
             {(publication.type === 'TRIP' ? publication.stageCount : publication.groupCount) >
               0 && (

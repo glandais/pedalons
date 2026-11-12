@@ -26,6 +26,13 @@ interface CardImageProps {
   priority?: boolean
   /** The gradient's icon, when it is not the type's: a route on the ride's gradient (R10). */
   icon?: typeof IconBike
+  /**
+   * `map`: the picture is a route's map (square, 512 px, the trace framed with a margin), shown
+   * whole — `object-fit: contain` — over a blurred, cropped copy of itself that stands for the
+   * basemap around it. Cropped to the banner, a north–south route lost its two ends (KIT §9,
+   * 2026-11-12); the app shows the whole trace too. A photo keeps `cover`.
+   */
+  kind?: 'photo' | 'map'
 }
 
 const typeIcons: Record<CardType, typeof IconBike> = {
@@ -45,6 +52,7 @@ export function CardImage({
   sizes = CARD_GRID_SIZES,
   priority = false,
   icon,
+  kind = 'photo',
 }: CardImageProps) {
   const { assets } = media
 
@@ -52,6 +60,43 @@ export function CardImage({
   // (actual photos). Both are `{size}`-templated: `src` asks for ×2 the height for HiDPI, and the
   // `srcSet` lets the browser pick by the card's rendered width.
   const imageUrl = thumbnailUrl ?? assets.images?.[0]?.imageUrl
+  if (imageUrl && kind === 'map') {
+    const src = sizedUrl(imageUrl, height * 2)
+    return (
+      <Box
+        h={height}
+        pos="relative"
+        data-testid="card-image-map"
+        style={{ overflow: 'hidden', backgroundColor: 'var(--mantine-color-default-hover)' }}
+      >
+        <Image
+          src={src}
+          alt=""
+          aria-hidden
+          h="100%"
+          fit="cover"
+          loading={priority ? 'eager' : 'lazy'}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            // Blurred and greyed enough that the trace, magnified here, does not show twice.
+            filter: 'blur(32px) saturate(0.2)',
+            transform: 'scale(1.3)',
+            opacity: 0.8,
+          }}
+        />
+        <Image
+          src={src}
+          alt={alt}
+          h="100%"
+          fit="contain"
+          pos="relative"
+          loading={priority ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : undefined}
+        />
+      </Box>
+    )
+  }
   if (imageUrl) {
     return (
       <Image

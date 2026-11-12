@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import {
   Anchor,
   Badge,
@@ -175,7 +176,9 @@ export function WeekAgenda({ nowIso, events, isLoading, isError, nextRide }: Wee
                       </Badge>
                     )}
                   </Group>
-                  <Text size="sm" c="dimmed" truncate>
+                  {/* Two lines at most: cut at one, the narrow column lost the group, the last
+                      word of « 09:30 · Vélo Club des Monts · Groupe B » (KIT §9). */}
+                  <Text size="sm" c="dimmed" lineClamp={2}>
                     {!event.allDay && (
                       <>
                         {/* The departure in 700, not a dimmed aside (BRAND-8). */}
@@ -198,7 +201,9 @@ export function WeekAgenda({ nowIso, events, isLoading, isError, nextRide }: Wee
                         {' · '}
                       </>
                     )}
-                    {[event.teamName, event.groupName].filter(Boolean).join(' · ')}
+                    {[event.teamName, event.groupName ? groupTitle(event.groupName, t) : null]
+                      .filter(Boolean)
+                      .join(' · ')}
                   </Text>
                 </Box>
                 <IconChevronRight size={16} color="var(--mantine-color-dimmed)" />

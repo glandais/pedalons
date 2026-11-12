@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { formatAmount } from './priceFormat'
 import {
   formatFileSize,
+  formatNumber,
   formatPrecipitation,
   formatTemperature,
   formatTemperatureRange,
@@ -68,5 +70,20 @@ describe('formatTemperatureRange', () => {
   it('gives one value when both ends round alike, in the reader’s units', () => {
     expect(formatTemperatureRange(12.2, 12.4, 'METRIC')).toBe('12')
     expect(formatTemperatureRange(8.2, 14.4, 'IMPERIAL')).toBe('47\u201358')
+  })
+})
+
+// Decision of 2026-11-12 (KIT §9): an ordinary no-break space between thousands, never Intl's
+// narrow one (U+202F), which the system fonts draw too thin to read in bold.
+describe('thousands separator', () => {
+  it('is U+00A0 in a French number and price, never U+202F', () => {
+    expect(formatNumber(1240, 'fr')).toBe('1\u00a0240')
+    expect(formatNumber(1234567.8, 'fr', 1)).toBe('1\u00a0234\u00a0567,8')
+    expect(formatAmount(1200, 'fr')).toBe('1\u00a0200,00\u00a0€')
+    expect(formatNumber(1240, 'fr')).not.toContain('\u202f')
+  })
+
+  it('stays a comma in English', () => {
+    expect(formatNumber(1240, 'en')).toBe('1,240')
   })
 })

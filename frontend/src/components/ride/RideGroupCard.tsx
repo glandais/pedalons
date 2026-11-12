@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import { IconShieldCheck } from '@tabler/icons-react'
 import { Badge, Box, Button, Group, Text } from '@mantine/core'
 import type { RideGroupDto, RouteDetailDto, WeatherLegDto } from '@/api/dto'
@@ -99,6 +100,8 @@ export function RideGroupCard({
   const { distance } = useUnits()
   const [showParticipants, setShowParticipants] = useState(false)
   const rendezvous = useRendezvousFormat(rideTimezone)
+  // « Groupe B », « Les Rapides » (KIT §9): the card's title, its switch button and its menus.
+  const title = groupTitle(group.name, t)
   // `registered` is computed server-side (contract 1.3.0) — never recompute it here.
   const isJoined = group.registered
   // The reader rides here, the ride neither cancelled nor over: leave, and take the route along.
@@ -126,7 +129,7 @@ export function RideGroupCard({
   const footer =
     !isJoined && canSwitch ? (
       <Button fullWidth onClick={onSwitch} disabled={isLoading}>
-        {t('rides.detail.groups.switchTo', { group: group.name })}
+        {t('rides.detail.groups.switchTo', { group: title })}
       </Button>
     ) : isMine && onLeave ? (
       <LeaveGroupLink onLeave={onLeave} pending={isLoading} />
@@ -135,7 +138,7 @@ export function RideGroupCard({
   return (
     <ChildCard
       href={paths.rideGroup(teamSlug, rideSlug, group.id)}
-      name={group.name}
+      name={title}
       marker={
         trackColor && (
           <Box
@@ -191,9 +194,7 @@ export function RideGroupCard({
             routeSlug={effectiveRouteSlug}
             route={route}
             subtitle={
-              group.distance !== undefined
-                ? `${group.name} · ${distance(group.distance)}`
-                : group.name
+              group.distance !== undefined ? `${title} · ${distance(group.distance)}` : title
             }
           />
         )
@@ -244,7 +245,7 @@ export function RideGroupCard({
           onClose={() => setShowParticipants(false)}
           source={{ kind: 'ride', teamSlug, rideSlug, groupId: group.id, teamName }}
           count={group.countParticipants}
-          groupName={group.name}
+          groupName={title}
           leaderId={group.leader?.id}
         />
       )}

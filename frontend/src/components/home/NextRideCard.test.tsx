@@ -139,6 +139,19 @@ describe('NextRideCard', () => {
     expect(screen.queryByRole('button', { name: 'Se désinscrire' })).toBeNull()
   })
 
+  // KIT §9 (2026-11-12): the route's map, as the banner, is shown whole, as on the feed's card.
+  it('shows the route’s map whole in its banner', () => {
+    renderCard(ride({ thumbnailLightUrl: 'https://x/map-light.png' }))
+    expect(screen.getByTestId('card-image-map')).toBeTruthy()
+  })
+
+  // KIT §9 (2026-11-12): no control at all on a cancelled ride's card, « GPS » included.
+  it('offers no « GPS » on a cancelled ride', () => {
+    renderCard(ride({ routeSlug: 'boucle', status: 'CANCELLED' }))
+    expect(screen.queryByTestId('gps-button')).toBeNull()
+    expect(screen.queryByText('Quitter le groupe')).toBeNull()
+  })
+
   // R7: one « GPS » button for the group's route, until the ride is over.
   it('offers « GPS » for the group’s route, not after the end', () => {
     renderCard(

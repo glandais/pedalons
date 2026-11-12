@@ -81,4 +81,14 @@ describe('WeekAgenda', () => {
     renderAgenda(1)
     expect(screen.getByText('Sortie 0').parentElement!.textContent).toBe('Sortie 0')
   })
+
+  // KIT §9 (2026-11-12): « Groupe » before a name of one or two characters, compact lines included.
+  it('names a one-letter group « Groupe B », and a longer name as it is', () => {
+    renderAgenda(1, (e) => ({ ...e, registered: true, groupName: 'B' }))
+    expect(document.body.textContent).toContain('Nantes Pédale · Groupe B')
+    cleanup()
+    renderAgenda(1, (e) => ({ ...e, registered: true, groupName: 'Les Rapides' }))
+    expect(document.body.textContent).toContain('Nantes Pédale · Les Rapides')
+    expect(document.body.textContent).not.toContain('Groupe Les Rapides')
+  })
 })

@@ -17,6 +17,7 @@ import type {
 import type { Instant, Visibility } from '@/api/dto'
 import type { Locale } from '@/config/paths'
 import type { RouteConfig } from '@/config/routes.types'
+import { groupTitle } from '@/utils/groupTitle'
 import {
   buildMetaTags as _buildMetaTags,
   defaultImage,
@@ -372,7 +373,7 @@ export const rideGroupMeta: RouteMetaFn = (ctx) => {
   if (!ride || !group) return rideMeta(ctx)
   const team = ctx.queryClient.getQueryData<TeamDetailDto>(getGetTeamQueryKey(ctx.params.teamSlug!))
   const teamName = ride.team?.name ?? appNameOf(ctx)
-  const groupTitle = ctx.t('rides.group.title', { name: group.name })
+  const title = groupTitle(group.name, ctx.t)
 
   const description = joinFacets([
     formatDate(group.startAt ?? ride.dateTime, ctx.locale, ride.timezone),
@@ -385,7 +386,7 @@ export const rideGroupMeta: RouteMetaFn = (ctx) => {
   )
   return {
     type: 'article',
-    title: truncate(`${groupTitle} · ${ride.name}`, 65),
+    title: truncate(`${title} · ${ride.name}`, 65),
     description,
     image:
       imgFromTemplate(ctx.origin, ride.thumbnailLightUrl, alt) ??

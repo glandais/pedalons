@@ -464,22 +464,8 @@
   outline: none;
 }
 
-/* The French thousands separator, and nothing else: a narrow no-break space (U+202F) taken from Inter,
-   0.18 em wide. The numbers are right in the DOM (« 1 240 m », « 1 200,00 € », Intl writes U+202F),
-   but the site does not ship Inter, and the fallback system fonts draw U+202F at 0.13 em (San
-   Francisco: 1.8 px at 14 px) — on screen « 1240 m ». This face is first in every stack, covers
-   only that one code point (`unicode-range`), and is a 0.9 kB subset of the app's
-   `mobile/assets/fonts/inter/Inter-Regular.ttf` (OFL), inlined by Vite: the gap is the app's on
-   every platform. docs/LEDGER_*.md WEB-167, D13. */
-@font-face {
-  font-family: 'Pedalons Narrow Space';
-  src: url('./assets/fonts/inter-narrow-nbsp.woff') format('woff');
-  unicode-range: U+202F;
-  font-display: block;
-}
-
 :root {
-  font-family: 'Pedalons Narrow Space', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

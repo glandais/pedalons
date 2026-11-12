@@ -15,9 +15,7 @@ export function mapThemePreference(theme: ThemePreference | null | undefined): M
 
 export const theme = createTheme({
   primaryColor: 'primary',
-  // 'Pedalons Narrow Space' covers U+202F only, the French thousands separator (« 1 240 m »):
-  // see its @font-face in index.css (docs/LEDGER_*.md WEB-167, D13).
-  fontFamily: "'Pedalons Narrow Space', Inter, system-ui, sans-serif",
+  fontFamily: 'Inter, system-ui, sans-serif',
   defaultRadius: 'md',
   autoContrast: true,
   luminanceThreshold: 0.3,

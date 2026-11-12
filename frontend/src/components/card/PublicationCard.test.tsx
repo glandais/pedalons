@@ -343,8 +343,14 @@ describe('PublicationCard: header image (R10)', () => {
 
   it('opens on the route’s map, and drops the thumbnail that repeated it', () => {
     renderCard(ride(mapped))
-    const images = [...document.querySelectorAll('img')].map((i) => i.getAttribute('src'))
+    // The map shown whole, over a blurred copy of itself hidden from assistive tech (KIT §9).
+    const images = [...document.querySelectorAll('img:not([aria-hidden])')].map((i) =>
+      i.getAttribute('src')
+    )
     expect(images).toEqual(['https://img.test/map-light/320'])
+    expect(document.querySelector('img[aria-hidden]')?.getAttribute('src')).toBe(
+      'https://img.test/map-light/320'
+    )
     expect(screen.queryByRole('img', { name: 'Aperçu du parcours' })).toBeNull()
   })
 

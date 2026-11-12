@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import {
   Anchor,
   Button,
@@ -139,7 +140,7 @@ export function TodoBand({ teamSlug, organizer }: TodoBandProps) {
               detail={
                 firstFull && fullGroup
                   ? t('teams.dashboard.todo.fullGroupDetail', {
-                      group: fullGroup.name,
+                      group: groupTitle(fullGroup.name, t),
                       ride: firstFull.name,
                       count: fullGroup.countParticipants,
                       max: fullGroup.maxParticipants ?? fullGroup.countParticipants,

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import { IconAlertTriangle } from '@tabler/icons-react'
 import { Alert, Badge, Box, Group, Paper, Stack, Text, Title } from '@mantine/core'
 import type { RideDto, RideGroupDto, RouteDetailDto } from '@/api/dto'
@@ -84,7 +85,7 @@ export function RideSoloGroupPanel({
                 />
               )}
               <Title order={3} size="h4" style={{ minWidth: 0 }} lineClamp={1}>
-                {group.name}
+                {groupTitle(group.name, t)}
               </Title>
               {group.registered && (
                 <Badge size="sm" color="primary" variant="light" style={{ flexShrink: 0 }}>

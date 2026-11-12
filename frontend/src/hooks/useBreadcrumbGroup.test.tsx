@@ -30,7 +30,8 @@ describe('the ride group crumb', () => {
       useBreadcrumbData({ teamSlug: 'np', rideSlug: 'sortie', groupId: 'g1' })
     )
     expect(result.current.ride.name).toBe('Sortie du samedi')
-    expect(result.current.rideGroup.name).toBe('Groupe Rapide')
+    // « Groupe » only before a name of one or two characters (KIT §9).
+    expect(result.current.rideGroup.name).toBe('Rapide')
   })
 
   it('has no name for a group the ride no longer has', () => {

@@ -1,5 +1,6 @@
 import { Text } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
+import { formatNumber } from '@/utils/unitFormat'
 
 /**
  * Resources whose list pages show a total. One plural key pair per entry. The agenda's say what
@@ -44,7 +45,7 @@ export function ResultCount({ total, resource }: ResultCountProps) {
     <Text size="sm" c="dimmed">
       {t(`list.count.${resource satisfies CountedResource}`, {
         count: total,
-        formatted: total.toLocaleString(i18n.language),
+        formatted: formatNumber(total, i18n.language),
       })}
     </Text>
   )

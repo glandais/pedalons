@@ -237,6 +237,7 @@ export function PublicationCard({
           type={publication.type}
           height={160}
           priority={priority}
+          kind={banner?.kind === 'map' ? 'map' : 'photo'}
         />
         {isDated(publication) && (
           <CardDayOverlay

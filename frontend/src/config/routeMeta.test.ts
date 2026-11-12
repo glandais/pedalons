@@ -204,7 +204,8 @@ describe('ride group link preview (WEB-77)', () => {
 
   it('titles the group within its ride and describes its departure, pace and distance', () => {
     const meta = rideGroupMeta(groupContext('g1'))
-    expect(meta?.title).toBe('rides.group.title · Sortie du dimanche')
+    // « Rapide » has more than two characters: shown as it is (KIT §9).
+    expect(meta?.title).toBe('Rapide · Sortie du dimanche')
     expect(meta?.description).toContain('11 octobre 2026')
     expect(meta?.description).toContain('seo.rideGroup.departure')
     expect(meta?.description).toContain('82 km')

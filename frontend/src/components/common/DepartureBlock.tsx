@@ -1,6 +1,7 @@
 import { Badge, Box, Group, Text } from '@mantine/core'
 import { IconMapPin } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
 import { DayBox, type DayBoxTone } from './DayBox'
 import { ZoneMentionText } from './Rendezvous'
@@ -106,7 +107,7 @@ export function DepartureBlock({
             </Text>
             <Text fw={700} suppressHydrationWarning={start.isGuessedText}>
               {t('departure.block.group', {
-                name: group.name,
+                name: groupTitle(group.name, t),
                 time: start.formatTime(group.startAt),
               })}
             </Text>

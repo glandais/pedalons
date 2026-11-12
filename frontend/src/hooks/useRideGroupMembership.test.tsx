@@ -62,7 +62,7 @@ describe('useRideGroupMembership — the failure of a card', () => {
 
   it('points a reader registered elsewhere at « Changer pour »', () => {
     expect(failedMessage('ALREADY_REGISTERED')?.message).toBe(
-      'Vous participez déjà à cette sortie, dans un autre groupe. Changez de groupe avec « Changer pour B ».'
+      'Vous participez déjà à cette sortie, dans un autre groupe. Changez de groupe avec « Changer pour Groupe B ».'
     )
   })
 

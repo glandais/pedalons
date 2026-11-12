@@ -1,7 +1,7 @@
 /**
  * The colour of a person's avatar, the one rule of the site (docs/LEDGER_*.md WEB-167, R5 of
  * `docs/plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md`): a stable hash of the
- * displayed name picks one of twelve accents, the reader is always the primary colour. The app does
+ * displayed name picks one of eleven accents, the reader is always the primary colour. The app does
  * exactly the same (`PdlAvatar.tintFor`, `PdlColors.avatarAccents` in
  * `mobile/lib/core/theme/pdl_colors.dart`) — same hash, same accents in the same order — so a person
  * wears the same colour on both. Change one, change the other.
@@ -11,7 +11,8 @@
  * The app's `avatarAccents`, value for value and in its order: dark tints, the same in both colour
  * schemes, so that white initials stay readable (KIT §8 and §9 — the four of KIT §8 are orange
  * `#e8590c`, blue `#1971c2`, green `#2f9e44`, grape `#ae3ec9`). The families keep the app's former
- * order: blue, teal, grape, lime, orange, violet, cyan, pink, green, yellow, red, indigo.
+ * order: blue, teal, grape, lime, orange, violet, cyan, pink, green, yellow, red. Indigo, close to
+ * the primary colour, is the reader's alone (decision of 2026-11-12, KIT §9): eleven for the others.
  */
 export const AVATAR_ACCENTS = [
   '#087f5b', // teal 9
@@ -23,7 +24,6 @@ export const AVATAR_ACCENTS = [
   '#c2255c', // pink 8
   '#a16207', // ochre (darker than Mantine's yellow 9, which misses 3:1 on white)
   '#c92a2a', // red 9
-  '#3b5bdb', // indigo 8
   '#2f9e44', // green 8
   '#e8590c', // orange 8
 ] as const

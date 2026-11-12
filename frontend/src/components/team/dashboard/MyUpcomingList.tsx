@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import { Anchor, Badge, Button, Group, Paper, Stack } from '@mantine/core'
 import { IconCheck, IconMountain, IconRoute, IconStack2 } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
@@ -85,7 +86,7 @@ function RideRow({ ride }: { ride: RideDto }) {
             <GpsMenuButton
               teamSlug={ride.team.slug}
               routeSlug={routeSlug}
-              subtitle={group ? `${group.name} · ${ride.name}` : ride.name}
+              subtitle={group ? `${groupTitle(group.name, t)} · ${ride.name}` : ride.name}
             />
           )}
           <Button component={PrefetchLink} to={publicationPath(ride)} variant="light" size="xs">

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import { Anchor, Badge, Button, Group, Paper, Progress, Stack, Text } from '@mantine/core'
 import {
   IconCheck,
@@ -40,6 +41,8 @@ export function UpcomingRideCard({ ride }: UpcomingRideCardProps) {
   const start = startFor(ride)
   // Not registered and every group full: there is no « S'inscrire » to offer.
   const allFull = !ride.registered && groups.length > 0 && groups.every((group) => group.full)
+  // A cancelled ride offers nothing to do (KIT §9, 2026-11-12): « Voir », never « S'inscrire ».
+  const cancelled = ride.status === 'CANCELLED'
 
   return (
     <Paper withBorder radius="md" p="md" data-testid="dashboard-ride-card">
@@ -116,7 +119,7 @@ export function UpcomingRideCard({ ride }: UpcomingRideCardProps) {
         )}
 
         <Group gap="xs" mt="auto">
-          {allFull ? (
+          {allFull && !cancelled ? (
             // Nowhere left to join: « Complet », not an « S'inscrire » that leads to full groups
             // (docs/LEDGER_*.md WEB-167 N4).
             <Button size="xs" variant="filled" disabled data-testid="dashboard-ride-full">
@@ -127,9 +130,11 @@ export function UpcomingRideCard({ ride }: UpcomingRideCardProps) {
               component={PrefetchLink}
               to={ridePath}
               size="xs"
-              variant={ride.registered ? 'light' : 'filled'}
+              variant={ride.registered || cancelled ? 'light' : 'filled'}
             >
-              {ride.registered ? t('home.nextRide.view') : t('teams.dashboard.ride.register')}
+              {ride.registered || cancelled
+                ? t('home.nextRide.view')
+                : t('teams.dashboard.ride.register')}
             </Button>
           )}
           {ride.permissions.canEdit && (
@@ -189,7 +194,7 @@ function GroupFill({
               style={{ verticalAlign: 'middle', marginInlineEnd: 4 }}
             />
           ) : null}
-          {group.name}
+          {groupTitle(group.name, t)}
           {group.averageSpeed ? (
             <Text span size="sm" c="dimmed">
               {' '}

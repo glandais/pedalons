@@ -16,18 +16,21 @@ describe('avatarTint', () => {
     expect(stableHash('Jeanne Colin')).toBe(2028330404)
   })
 
+  // Eleven accents, indigo kept for the reader (KIT §9, 2026-11-12): hash % 11 indexes the table.
   it('picks the app’s accent for that hash, in the app’s order', () => {
-    expect(AVATAR_ACCENTS).toHaveLength(12)
-    expect(avatarAccent('Léa Martin')).toBe('#e8590c')
-    expect(avatarAccent('Karim Benali')).toBe('#1971c2')
-    expect(avatarAccent('Noé Perrin')).toBe('#2f9e44')
-    expect(avatarAccent('Sacha Morel')).toBe('#6741d9')
-    expect(avatarAccent('Jeanne Colin')).toBe('#c92a2a')
+    expect(AVATAR_ACCENTS).toHaveLength(11)
+    expect(AVATAR_ACCENTS).not.toContain('#3b5bdb')
+    expect(avatarAccent('Léa Martin')).toBe(AVATAR_ACCENTS[2049026135 % 11])
+    expect(avatarAccent('Léa Martin')).toBe('#0b7285')
+    expect(avatarAccent('Karim Benali')).toBe('#6741d9')
+    expect(avatarAccent('Noé Perrin')).toBe('#ae3ec9')
+    expect(avatarAccent('Sacha Morel')).toBe('#c2255c')
+    expect(avatarAccent('Jeanne Colin')).toBe('#6741d9')
   })
 
   it('draws the reader in the primary colour, whatever their name', () => {
     expect(avatarBackground('Karim Benali', true)).toBe('var(--mantine-primary-color-filled)')
-    expect(avatarBackground('Karim Benali')).toBe('#1971c2')
+    expect(avatarBackground('Karim Benali')).toBe('#6741d9')
   })
 
   it('takes two initials from the first two words', () => {

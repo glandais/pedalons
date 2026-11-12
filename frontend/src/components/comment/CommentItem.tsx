@@ -10,6 +10,7 @@ import type { CommentDto } from '@/api/dto'
 import { ReportTargetType } from '@/api/dto'
 import { useCommentReplies, type EntityType } from '../../hooks/useComments'
 import { ContentActionsMenu } from '../moderation/ContentActionsMenu'
+import { PlainTextWithLinks } from '../common/PlainTextWithLinks'
 
 /** Where a report of this comment goes: the team the commented content belongs to. */
 export interface CommentReportContext {
@@ -109,7 +110,7 @@ export function CommentItem({
               )}
             </Group>
             <Text style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-              {comment.content}
+              <PlainTextWithLinks text={comment.content} />
             </Text>
 
             <Group mt={4}>

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, useLocation, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { groupTitle } from '@/utils/groupTitle'
 import { MapColorFullscreenView } from '@/components/route/MapColorFullscreenView'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { paths } from '@/config/paths'
@@ -60,7 +61,9 @@ export function RideGroupFullscreenMapPage() {
   )
 
   const title =
-    ride && group ? t('rides.group.mapTitle', { ride: ride.name, name: group.name }) : ''
+    ride && group
+      ? t('rides.group.mapTitle', { ride: ride.name, name: groupTitle(group.name, t) })
+      : ''
   useEffect(() => {
     if (title) {
       document.title = appName ? `${title} — ${appName}` : title

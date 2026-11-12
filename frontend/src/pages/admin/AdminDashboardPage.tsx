@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { formatNumber } from '@/utils/unitFormat'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { Stack, SimpleGrid, Paper, Text, Group, ThemeIcon, Skeleton, Anchor } from '@mantine/core'
 import { IconWorld, IconBuildingCommunity, IconUsers, IconArrowRight } from '@tabler/icons-react'
@@ -30,7 +31,7 @@ function StatCard({ title, value, icon, link, linkLabel, isLoading }: StatCardPr
             <Skeleton height={32} width={60} mt="xs" />
           ) : (
             <Text size="xl" fw={700} mt="xs">
-              {(value ?? 0).toLocaleString(i18n.language)}
+              {formatNumber(value ?? 0, i18n.language)}
             </Text>
           )}
         </div>
