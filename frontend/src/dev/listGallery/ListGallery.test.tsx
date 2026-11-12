@@ -18,6 +18,7 @@ import { unservedRequests } from './listFakeApi'
 const BRIEF: Record<string, string[]> = {
   accueil: [
     'accueil-repos',
+    'accueil-sections',
     'accueil-filtre',
     'accueil-criteres',
     'accueil-vide',
@@ -35,9 +36,9 @@ const BRIEF: Record<string, string[]> = {
   ],
   agenda: [
     'agenda-repos',
+    'agenda-sections',
     'agenda-filtre',
     'agenda-criteres',
-    'agenda-passees',
     'agenda-vide',
     'agenda-vide-filtre',
     'agenda-erreur',
@@ -113,17 +114,18 @@ const BRIEF: Record<string, string[]> = {
 }
 
 /** Cases of the brief the site cannot show, each listed in the gallery with its reason. */
-const OMITTED: string[] = []
+const OMITTED: string[] = ['agenda-criteres', 'annonces-criteres']
 
 /** What a case shows once its answers have arrived: proof the state is the announced one. */
 const CONTENT: Record<string, string> = {
-  'accueil-repos': 'Bilan de la saison',
+  'accueil-repos': 'Traversée du Morvan',
+  'accueil-sections': 'Plus tôt',
   'accueil-filtre': 'Gravel du Menez-Hom',
   'accueil-vide-filtre': 'Rien ne correspond à : « monts » · Voyages.',
   'publications-repos': 'Assemblée générale de décembre',
   'publications-filtre': 'Les photos des Monts d’Arrée',
   'agenda-repos': 'Traversée du Morvan',
-  'agenda-passees': 'Tour du lac du Drennec',
+  'agenda-sections': 'Tour du lac du Drennec',
   'agenda-vide-filtre': 'Aucun voyage pour ces filtres',
   'publications-vide-filtre': 'Rien ne correspond à : « monts ».',
   'calendrier-repos': 'Sortie récupération',

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { z } from 'zod'
 import { useUrlFilters, type UseUrlFiltersOptions } from './useUrlFilters'
 import type { RouteFilters } from './filters/routeFilters'
+import type { MembershipFilterValue } from './filters/membership'
 
 /**
  * Shared by the team route list and the cross-team one, whose schema also carries a membership
@@ -11,26 +12,19 @@ export function useRouteFilters<S extends z.ZodObject<z.ZodRawShape>>(
   options: UseUrlFiltersOptions<S>
 ) {
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const { filters, setFilters, replaceFilters } = useUrlFilters(options)
+  const { filters, setFilters, replaceFilters, defaults } = useUrlFilters(options)
   // The generic schema hides the route shape from the type system, but every caller passes one.
-  const routeFilters = filters as RouteFilters & { tags?: string[] }
-  const patchRouteFilters = setFilters as unknown as (
-    patch: Partial<RouteFilters & { tags?: string[] }>
-  ) => void
+  type Owned = RouteFilters & { tags?: string[]; membership?: MembershipFilterValue }
+  const routeFilters = filters as Owned
+  const defaultMembership = (defaults as Owned).membership
+  const patchRouteFilters = setFilters as unknown as (patch: Partial<Owned>) => void
 
-  const hasFiltersOrSearch: boolean =
-    (routeFilters.search ? true : false) ||
-    routeFilters.minDistance !== undefined ||
-    routeFilters.maxDistance !== undefined ||
-    routeFilters.minElevationGain !== undefined ||
-    routeFilters.maxElevationGain !== undefined ||
-    routeFilters.hilliness !== undefined ||
-    routeFilters.surfaceType !== undefined ||
-    routeFilters.windDirection !== undefined ||
-    !!routeFilters.tags?.length
+  const activeFilterCount = countRouteFilters(routeFilters, defaultMembership)
+  const hasFiltersOrSearch = activeFilterCount > 0
 
-  // Resets every key `hasFiltersOrSearch` looks at, by name rather than by omission, so the
-  // filters this hook does not own — membership, sort, density — survive the reset.
+  // « Effacer les filtres » (RL4): resets every key the count looks at, by name rather than by
+  // omission — the membership back to its default on the cross-team list — so the sort and the
+  // density, which are no filters, survive the reset.
   const clearFilters = () =>
     patchRouteFilters({
       search: undefined,
@@ -41,8 +35,10 @@ export function useRouteFilters<S extends z.ZodObject<z.ZodRawShape>>(
       hilliness: undefined,
       surfaceType: undefined,
       windDirection: undefined,
-      // Only a team's own list has tags; elsewhere the key is outside the schema and ignored.
+      // Only a team's own list has tags, only the cross-team one a membership; elsewhere the key
+      // is outside the schema and ignored.
       tags: undefined,
+      membership: defaultMembership,
       page: 0,
     })
 
@@ -57,6 +53,28 @@ export function useRouteFilters<S extends z.ZodObject<z.ZodRawShape>>(
     filtersOpen,
     setFiltersOpen,
     hasFiltersOrSearch,
+    activeFilterCount,
+    defaultMembership,
     pageSize: routeFilters.size,
   }
+}
+
+/**
+ * What « Effacer les filtres » lifts, counted for the « Filtres » button (RL4): the search, each
+ * criterion (a range counts once), the tags, the membership off its default. Never the sort.
+ */
+export function countRouteFilters(
+  filters: RouteFilters & { tags?: string[]; membership?: MembershipFilterValue },
+  defaultMembership: MembershipFilterValue | undefined
+): number {
+  return [
+    !!filters.search,
+    filters.minDistance !== undefined || filters.maxDistance !== undefined,
+    filters.minElevationGain !== undefined || filters.maxElevationGain !== undefined,
+    filters.hilliness !== undefined,
+    filters.surfaceType !== undefined,
+    filters.windDirection !== undefined,
+    !!filters.tags?.length,
+    filters.membership !== defaultMembership,
+  ].filter(Boolean).length
 }

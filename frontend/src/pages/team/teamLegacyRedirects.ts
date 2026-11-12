@@ -12,8 +12,8 @@ import { paths } from '@/config/paths'
  * stays in the back stack. Each returns `undefined` when there is nothing to redirect.
  *
  * Filters carried over: the search (`q`) everywhere; the tags with a kind; « Je participe »
- * (`w=me`) on the agenda. `w=upcoming` and `w=all` both become « À venir », the agenda's default,
- * so they are dropped rather than written.
+ * (`w=me`) on the agenda. `w=upcoming`, `w=all` and `w=past` all become « Toutes les dates », the
+ * agenda's default (RL15), so they are dropped rather than written.
  */
 
 /** Builds `path?query`, without a dangling `?`. */
@@ -56,7 +56,7 @@ export function teamHomeRedirect(teamSlug: string, search: URLSearchParams): str
     return withQuery(paths.teamAgenda(teamSlug), agendaQuery(search, type))
   }
   // A scope with no kind: the agenda as a whole, « Je participe » kept.
-  if (scope === 'me' || scope === 'upcoming' || scope === 'all') {
+  if (scope === 'me' || scope === 'upcoming' || scope === 'all' || scope === 'past') {
     return withQuery(paths.teamAgenda(teamSlug), agendaQuery(search, undefined))
   }
   // `?tab=publications` alone: the feed is gone, the team page is the dashboard.
@@ -71,4 +71,32 @@ export function teamRidesRedirect(teamSlug: string, search: URLSearchParams): st
 /** The former « Voyages » tab (`teamTrips`): the agenda narrowed to trips. */
 export function teamTripsRedirect(teamSlug: string, search: URLSearchParams): string {
   return withQuery(paths.teamAgenda(teamSlug), agendaQuery(search, 'trip'))
+}
+
+/**
+ * The agenda's own address carrying a period it no longer has (RL15): « À venir » (`w=upcoming`)
+ * and « Passées » (`w=past`) are the two sections of « Toutes les dates », the default, so the
+ * parameter is dropped and everything else kept. « Je participe » (`w=me`) stays.
+ */
+export function teamAgendaRedirect(teamSlug: string, search: URLSearchParams): string | undefined {
+  const query = withoutFormerPeriod(search)
+  return query ? withQuery(paths.teamAgenda(teamSlug), query) : undefined
+}
+
+/**
+ * The home feed's address carrying « À venir » (`w=upcoming`), which RL15 folded into « Tout »:
+ * its upcoming rides are the first section. The parameter is dropped, the rest kept.
+ */
+export function homeFeedRedirect(search: URLSearchParams): string | undefined {
+  const query = withoutFormerPeriod(search)
+  return query ? withQuery(paths.home(), query) : undefined
+}
+
+/** `search` without its `w`, when it holds a period other than « Je participe »; else nothing. */
+function withoutFormerPeriod(search: URLSearchParams): URLSearchParams | undefined {
+  const scope = search.get('w')
+  if (scope === null || scope === 'me') return undefined
+  const query = new URLSearchParams(search)
+  query.delete('w')
+  return query
 }

@@ -40,6 +40,8 @@ interface RouteDeadEndProps {
   teamSlug?: string
   onSetFilters: (patch: Partial<DeadEndFilters>) => void
   onClearFilters: () => void
+  /** The cross-team list's scope, when off its default: a filter too (RL4, RL10), never lifted alone. */
+  scopeLabel?: string
 }
 
 /**
@@ -54,6 +56,7 @@ export function RouteDeadEnd({
   teamSlug,
   onSetFilters,
   onClearFilters,
+  scopeLabel,
 }: RouteDeadEndProps) {
   const { t } = useTranslation()
 
@@ -108,11 +111,14 @@ export function RouteDeadEnd({
   })
   const preview = previewQueries[0]?.data?.routes ?? []
 
-  const activeLabels = active.map((entry) =>
-    entry.key === 'search'
-      ? searchFilter(t, filters.search ?? '')
-      : t(`routes.list.filters.${entry.key satisfies LiftableKey}.label`)
-  )
+  const activeLabels = [
+    ...active.map((entry) =>
+      entry.key === 'search'
+        ? searchFilter(t, filters.search ?? '')
+        : t(`routes.list.filters.${entry.key satisfies LiftableKey}.label`)
+    ),
+    ...(scopeLabel ? [scopeLabel] : []),
+  ]
 
   const bestLabel = best
     ? best.entry.key === 'search'

@@ -33,6 +33,7 @@ export function RouteListPage() {
     handleFiltersChange,
     handlePageChange,
     hasFiltersOrSearch,
+    activeFilterCount,
     clearFilters,
     team: teamQuery,
     routes,
@@ -74,7 +75,7 @@ export function RouteListPage() {
                 href={paths.routeNew(teamSlug!)}
                 leftSection={<IconPlus size={16} />}
               >
-                {t('routes.create.title')}
+                {t('list.create.route')}
               </Button>
             </Group>
           )}
@@ -85,6 +86,8 @@ export function RouteListPage() {
           onFiltersChange={handleFiltersChange}
           isOpen={filtersOpen}
           onOpenChange={setFiltersOpen}
+          activeCount={activeFilterCount}
+          onClear={clearFilters}
         />
 
         <TagFilter
@@ -128,7 +131,7 @@ export function RouteListPage() {
           emptyAction={
             canCreateRoute && !hasFiltersOrSearch ? (
               <Button component="a" href={paths.routeNew(teamSlug!)} variant="light">
-                {t('routes.create.title')}
+                {t('list.create.route')}
               </Button>
             ) : undefined
           }

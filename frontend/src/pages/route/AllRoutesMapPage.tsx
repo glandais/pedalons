@@ -12,23 +12,28 @@ export function AllRoutesMapPage() {
     filtersOpen,
     setFiltersOpen,
     handleFiltersChange,
+    activeFilterCount,
+    clearFilters,
     tilesUrl,
     bounds,
   } = useAllRoutesMapData()
 
   return (
     <Stack my="lg">
-      <MembershipSelect
-        value={filters.membership}
-        onChange={(membership) => setFilters({ membership })}
-      />
-
       <RouteFilterPanel
         filters={filters}
         onFiltersChange={handleFiltersChange}
         isOpen={filtersOpen}
         onOpenChange={setFiltersOpen}
+        activeCount={activeFilterCount}
+        onClear={clearFilters}
         showSort={false}
+        scope={
+          <MembershipSelect
+            value={filters.membership}
+            onChange={(membership) => setFilters({ membership })}
+          />
+        }
       />
 
       <Group justify="flex-end">

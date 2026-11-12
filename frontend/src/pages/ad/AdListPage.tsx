@@ -11,6 +11,7 @@ import { IconPlus, IconTag } from '@tabler/icons-react'
 import {
   Button,
   NumberInput,
+  SegmentedControl,
   Select,
   Stack,
   Group,
@@ -144,7 +145,7 @@ export function AdListPage() {
             to={paths.adNew(teamSlug!)}
             leftSection={<IconPlus size={20} />}
           >
-            {t('ads.list.createAd')}
+            {t('list.create.ad')}
           </Button>
         )}
       </Group>
@@ -160,13 +161,13 @@ export function AdListPage() {
           label={t('ads.list.search.label')}
           style={{ flex: 1, minWidth: 200 }}
         />
-        <Select
-          w={{ base: '100%', sm: 180 }}
+        {/* A kind is a segmented control on the site, wherever it is (RL6). */}
+        <SegmentedControl
           value={filters.adType ?? 'ALL'}
-          onChange={(value: string | null) =>
-            setFilters({ adType: value && value !== 'ALL' ? (value as AdType) : undefined })
+          onChange={(value) =>
+            setFilters({ adType: value !== 'ALL' ? (value as AdType) : undefined })
           }
-          placeholder={t('ads.list.filterByType')}
+          aria-label={t('ads.list.filterByType')}
           data={[
             { value: 'ALL', label: t('ads.list.allTypes') },
             { value: AdType.SALE, label: t('ads.adType.SALE') },
@@ -266,7 +267,7 @@ export function AdListPage() {
               actions={
                 isMember ? (
                   <Button component={PrefetchLink} to={paths.adNew(teamData.slug)} variant="light">
-                    {t('ads.list.createAd')}
+                    {t('list.create.ad')}
                   </Button>
                 ) : undefined
               }

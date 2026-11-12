@@ -118,7 +118,7 @@ export function RideTemplateListPage() {
               to={paths.rideTemplateNew(teamSlug!)}
               leftSection={<IconPlus size={16} />}
             >
-              {t('rideTemplates.create.title')}
+              {t('list.create.template')}
             </Button>
           )}
         </Group>
@@ -195,7 +195,7 @@ export function RideTemplateListPage() {
                     to={paths.rideTemplateNew(teamSlug!)}
                     variant="light"
                   >
-                    {t('rideTemplates.create.title')}
+                    {t('list.create.template')}
                   </Button>
                 ) : undefined
               }

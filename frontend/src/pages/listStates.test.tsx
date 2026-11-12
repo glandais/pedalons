@@ -147,7 +147,13 @@ vi.mock('@/pages/calendar/teamCalendarData', () => ({
     handleDateRangeChange: () => {},
   }),
 }))
-vi.mock('@/api/endpoints/calendar/calendar', () => ({ useGetEvents: () => state.list }))
+vi.mock('@/api/endpoints/calendar/calendar', () => ({
+  useGetEvents: () => state.list,
+  useGetTeamEvents: () => state.list,
+}))
+vi.mock('@/components/team/teamSwitcherData', () => ({
+  useTeamSwitcherTeams: () => ({ data: undefined }),
+}))
 vi.mock('@/api/endpoints/teams/teams', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/api/endpoints/teams/teams')>()),
   useGetTeam: () => state.team,
@@ -405,17 +411,19 @@ describe('a count under every paginated list, masked at zero (RL8, RL5)', () => 
 })
 
 describe('the agenda’s filtered empty state names its filters (RL10)', () => {
-  it('« Passées » is a filter; one gesture lifts everything', () => {
-    state.list = query({ data: { publications: [], total: 0 } })
-    state.filters = { scope: 'past', filter: 'trip', search: 'monts' }
+  it('« Je participe » is a filter; one gesture lifts everything', () => {
+    state.list = query({ data: { publications: [], total: 0, upcomingTotal: 0 } })
+    state.filters = { scope: 'me', filter: 'trip', search: 'monts' }
     renderAt(<TeamAgendaPage />)
     expect(screen.getByRole('heading', { name: 'Aucun voyage pour ces filtres' })).toBeTruthy()
-    expect(screen.getByText('Rien ne correspond à : « monts » · Passées · Voyages.')).toBeTruthy()
+    expect(
+      screen.getByText('Rien ne correspond à : « monts » · Je participe · Voyages.')
+    ).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Effacer les filtres' }))
     expect(state.setFilters).toHaveBeenCalledWith({
       search: undefined,
       filter: 'all',
-      scope: 'upcoming',
+      scope: 'all',
       tags: undefined,
       page: 0,
     })
@@ -454,5 +462,107 @@ describe('a list being replaced stays, dimmed (RL11)', () => {
     renderAt(<AdListPage />)
     const heading = screen.getByRole('heading', { name: 'Aucune annonce pour ces filtres' })
     expect(heading.closest('[aria-busy="true"]')).not.toBeNull()
+  })
+})
+
+describe('the agenda reads in two sections, « À venir » then « Plus tôt » (RL15)', () => {
+  it('each section under its heading with its count; no list count, no period « Passées »', async () => {
+    const { ride } = await import('@/dev/cardGallery/fixtures')
+    state.list = query({
+      data: {
+        publications: [
+          ride({}, { id: 'a', name: 'Sortie à venir' }),
+          ride({}, { id: 'b', name: 'Sortie finie' }),
+        ],
+        total: 30,
+        upcomingTotal: 1,
+        page: 0,
+        size: 12,
+      },
+    })
+    renderAt(<TeamAgendaPage />)
+    const upcoming = screen.getByRole('region', { name: 'À venir' })
+    expect(upcoming.textContent).toContain('1 sortie ou voyage')
+    expect(upcoming.textContent).toContain('Sortie à venir')
+    const earlier = screen.getByRole('region', { name: 'Plus tôt' })
+    expect(earlier.textContent).toContain('29 sorties et voyages')
+    expect(earlier.textContent).toContain('Sortie finie')
+    expect(screen.queryByText(/sorties et voyages à venir/)).toBeNull()
+    // The bar: « Toutes les dates / Je participe », the search in sight, no panel (RL6).
+    expect(screen.getByRole('radio', { name: 'Toutes les dates' })).toBeTruthy()
+    expect(screen.getByRole('radio', { name: 'Je participe' })).toBeTruthy()
+    expect(screen.queryByRole('radio', { name: 'Passées' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Filtres/ })).toBeNull()
+    expect(screen.getByRole('searchbox', { name: "Rechercher dans l'agenda" })).toBeTruthy()
+  })
+
+  it('a page that opens past « À venir » repeats the heading of « Plus tôt » alone', async () => {
+    const { ride } = await import('@/dev/cardGallery/fixtures')
+    state.list = query({
+      data: {
+        publications: [ride({}, { id: 'c' })],
+        total: 40,
+        upcomingTotal: 5,
+        page: 2,
+        size: 12,
+      },
+    })
+    state.filters = { page: 2 }
+    renderAt(<TeamAgendaPage />)
+    expect(screen.queryByRole('region', { name: 'À venir' })).toBeNull()
+    expect(screen.getByRole('region', { name: 'Plus tôt' }).textContent).toContain(
+      '35 sorties et voyages'
+    )
+  })
+
+  it('the absolute empty state no longer sends to « Voir les passées »', () => {
+    state.list = query({ data: { publications: [], total: 0, upcomingTotal: 0 } })
+    renderAt(<TeamAgendaPage />)
+    expect(screen.queryByRole('button', { name: 'Voir les passées' })).toBeNull()
+  })
+})
+
+describe('the teams offer « Ouvertes à l’adhésion » under « Toutes les équipes » (RL3)', () => {
+  it('shown under « Toutes les équipes », hidden under « Membre »', () => {
+    state.list = query({ data: { teams: [], total: 0 } })
+    state.filters = { membership: 'all' }
+    const { unmount } = renderAt(<TeamListPage />)
+    fireEvent.click(screen.getByRole('checkbox', { name: "Ouvertes à l'adhésion" }))
+    expect(state.setFilters).toHaveBeenCalledWith({ joinable: true })
+    unmount()
+    state.filters = { membership: 'member' }
+    renderAt(<TeamListPage />)
+    expect(screen.queryByRole('checkbox', { name: "Ouvertes à l'adhésion" })).toBeNull()
+  })
+
+  it('is a filter « Effacer les filtres » lifts', () => {
+    state.list = query({ data: { teams: [], total: 0 } })
+    state.filters = { membership: 'all', joinable: true }
+    renderAt(<TeamListPage />)
+    expect(screen.getByText("Rien ne correspond à : Ouvertes à l'adhésion.")).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Effacer les filtres' }))
+    expect(state.setFilters).toHaveBeenCalledWith({
+      search: undefined,
+      membership: 'all',
+      joinable: false,
+      page: 0,
+    })
+  })
+})
+
+describe('a criterion has one form on the site, a segmented control (RL6)', () => {
+  it('notifications: « Toutes / Non lues »', () => {
+    state.list = query({ data: { items: [], total: 0, unreadCount: 0 } })
+    renderAt(<NotificationListPage />)
+    expect(screen.getByRole('radio', { name: 'Toutes' })).toBeTruthy()
+    expect(screen.getByRole('radio', { name: 'Non lues' })).toBeTruthy()
+    expect(screen.queryByRole('switch')).toBeNull()
+  })
+
+  it('ads: the kind', () => {
+    state.list = query({ data: { ads: [], total: 0 } })
+    renderAt(<AdListPage />)
+    const kinds = screen.getByRole('radiogroup', { name: 'Filtrer par type' })
+    expect(kinds.textContent).toContain('Vente')
   })
 })

@@ -41,7 +41,7 @@ export function QuickActions({ teams }: QuickActionsProps) {
   const actions: Action[] = [
     {
       key: 'ride',
-      label: t('home.actions.createRide'),
+      label: t('list.create.ride'),
       icon: IconPlus,
       primary: true,
       teams: organized.filter((team) => team.enableRides && team.enableRoutes),
@@ -49,14 +49,14 @@ export function QuickActions({ teams }: QuickActionsProps) {
     },
     {
       key: 'route',
-      label: t('home.actions.addRoute'),
+      label: t('list.create.route'),
       icon: IconRoute,
       teams: organized.filter((team) => team.enableRoutes),
       path: paths.routeNew,
     },
     {
       key: 'post',
-      label: t('home.actions.writePost'),
+      label: t('list.create.post'),
       icon: IconPencil,
       teams: organized.filter((team) => team.enablePosts),
       path: paths.postNew,

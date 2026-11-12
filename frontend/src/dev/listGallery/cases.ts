@@ -9,8 +9,10 @@
 import { paths } from '@/config/paths'
 import { PENDING, SERVER_ERROR, ok, page, type Scenario } from './listFakeApi'
 import {
+  AGENDA,
   AGENDA_MINE,
   AGENDA_PAST,
+  FEED,
   ALL_ROUTES_ROAD,
   AULNE_TEAM,
   ALL_TEAMS,
@@ -82,17 +84,24 @@ const home: ListSection = {
       scrollTo: FEED_SECTION,
     },
     {
+      id: 'accueil-sections',
+      label: '« À venir » puis « Plus tôt » : deux sorties et voyages, puis une publication',
+      url: paths.home,
+      api: { feed: page('publications', FEED, 47, 12, 2) },
+      scrollTo: FEED_SECTION,
+    },
+    {
       id: 'accueil-filtre',
       label: 'portée « Toutes les équipes », type « Sorties »',
       url: () => q(paths.home(), { role: 'all', type: 'ride' }),
-      api: { feed: page('publications', FEED_RIDES) },
+      api: { feed: page('publications', FEED_RIDES, 2, 12, 2) },
       scrollTo: FEED_SECTION,
     },
     {
       id: 'accueil-criteres',
       label: 'contrôle de portée ouvert',
       url: paths.home,
-      clicks: [{ role: 'combobox', name: 'Équipes' }],
+      clicks: [{ role: 'combobox', name: 'Portée' }],
       scrollTo: FEED_SECTION,
     },
     {
@@ -183,29 +192,32 @@ const agenda: ListSection = {
       api: RIDE_TAGS,
     },
     {
+      id: 'agenda-sections',
+      label: '« À venir » (deux) puis « Plus tôt » (45) sur une même page',
+      url: () => paths.teamAgenda(VCM_SLUG),
+      api: {
+        ...RIDE_TAGS,
+        agenda: page('publications', AGENDA.slice(0, 2), 2),
+        agendaPast: page('publications', AGENDA_PAST, 45),
+      },
+    },
+    {
       id: 'agenda-filtre',
       label: '« Sorties », « Je participe »',
       url: () => q(paths.teamAgenda(VCM_SLUG), { type: 'ride', w: 'me' }),
-      api: { ...RIDE_TAGS, agenda: page('publications', AGENDA_MINE) },
+      api: { ...RIDE_TAGS, agenda: page('publications', AGENDA_MINE, 1, 12, 1) },
     },
     {
       id: 'agenda-criteres',
       label: 'panneau des filtres ouvert',
-      url: () => paths.teamAgenda(VCM_SLUG),
-      api: RIDE_TAGS,
-      clicks: [{ role: 'button', name: 'Filtres' }],
-    },
-    {
-      id: 'agenda-passees',
-      label: 'période « Passées »',
-      url: () => q(paths.teamAgenda(VCM_SLUG), { w: 'past' }),
-      api: { ...RIDE_TAGS, agenda: page('publications', AGENDA_PAST, 47) },
+      omitted:
+        'le site n’a plus de panneau à l’agenda (RL6) : recherche et tags sont en tête de liste, période et type en dessous, toujours visibles (agenda-repos)',
     },
     {
       id: 'agenda-vide',
       label: 'rien à l’agenda',
       url: () => paths.teamAgenda(VCM_SLUG),
-      api: { ...RIDE_TAGS, agenda: EMPTY('publications') },
+      api: { ...RIDE_TAGS, agenda: EMPTY('publications'), agendaPast: EMPTY('publications') },
     },
     {
       id: 'agenda-vide-filtre',
@@ -305,9 +317,9 @@ const routes: ListSection = {
     },
     {
       id: 'parcours-tri',
-      label: 'liste de tri ouverte',
+      label: 'liste de tri ouverte (hors du panneau, RL6)',
       url: () => paths.routes(VCM_SLUG),
-      clicks: [FILTERS_BUTTON, { role: 'combobox', name: 'Trier par' }],
+      clicks: [{ role: 'combobox', name: 'Trier par' }],
     },
     {
       id: 'parcours-vide',
@@ -388,10 +400,9 @@ const ads: ListSection = {
     },
     {
       id: 'annonces-criteres',
-      label: 'liste des types ouverte (le site n’a pas de panneau)',
-      url: () => paths.ads(VCM_SLUG),
-      api: AD_TAGS,
-      clicks: [{ placeholder: 'Filtrer par type' }],
+      label: 'panneau des filtres ouvert',
+      omitted:
+        'le site n’a pas de panneau aux annonces : type (segmenté, RL6), prix et tags sont dans la barre, toujours visibles (annonces-repos)',
     },
     {
       id: 'annonces-tri',

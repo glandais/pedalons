@@ -17,8 +17,8 @@ import {
   ADS,
   ADS_TOTAL,
   AGENDA,
+  AGENDA_PAST,
   ALL_ROUTES,
-  FEED,
   GROUP_B_PEOPLE,
   MEMBERS,
   MONTH_EVENTS,
@@ -40,9 +40,18 @@ export const ok = (data: unknown): Reply => ({ data })
 export const SERVER_ERROR: Reply = { status: 500 }
 export const PENDING: Reply = 'pending'
 
-/** A page of a list response, its items under `key`. */
-export function page(key: string, items: unknown[], total = items.length, size = 12): Reply {
-  return { data: { [key]: items, total, page: 0, size } }
+/**
+ * A page of a list response, its items under `key`. `upcomingTotal`: what a `when=UPCOMING_FIRST`
+ * list says of its first section, « À venir » (RL15).
+ */
+export function page(
+  key: string,
+  items: unknown[],
+  total = items.length,
+  size = 12,
+  upcomingTotal?: number
+): Reply {
+  return { data: { [key]: items, total, page: 0, size, upcomingTotal } }
 }
 
 /** Every endpoint the gallery's pages read, with its answer at rest. */
@@ -55,7 +64,8 @@ const AT_REST = {
   myInvitations: ok({ invitations: [] }),
   /** « Ma prochaine sortie »: nothing booked, so the feed comes right after. */
   myParticipations: page('publications', []),
-  feed: page('publications', FEED, 47),
+  /** « À venir » holds 12 of the 47: the first page is all ahead. */
+  feed: page('publications', AGENDA, 47, 12, 12),
   /** The member home's week and the calendars. */
   calendar: ok({ events: MONTH_EVENTS }),
   teamCalendar: ok({ events: MONTH_EVENTS }),
@@ -71,7 +81,12 @@ const AT_REST = {
   team: ok(VCM_ORGANIZER),
   tags: ok(teamTags('ROUTE')),
   posts: page('publications', POSTS, 47),
-  agenda: page('publications', AGENDA, 47),
+  /**
+   * The agenda's « À venir » (`when=UPCOMING`, and `UPCOMING_FIRST` with a kind) and its « Plus
+   * tôt » (`when=PAST`): « Tout » over « Toutes les dates » is read from both (RL15).
+   */
+  agenda: page('publications', AGENDA, 18, 12, 18),
+  agendaPast: page('publications', AGENDA_PAST, 29),
   routes: page('routes', ROUTES, 47),
   routesBounds: ok({ minLat: 48.3, minLon: -4.0, maxLat: 48.5, maxLon: -3.7 }),
   allRoutes: page('routes', ALL_ROUTES, 47),
@@ -111,7 +126,8 @@ const routes: Array<[method: string, path: RegExp, endpoint: (params: Params) =>
   [
     'get',
     /^\/api\/teams\/[^/]+\/publications$/,
-    (params) => (params.type === 'POST' ? 'posts' : 'agenda'),
+    (params) =>
+      params.type === 'POST' ? 'posts' : params.when === 'PAST' ? 'agendaPast' : 'agenda',
   ],
   ['get', /^\/api\/teams\/[^/]+\/calendar\/events$/, () => 'teamCalendar'],
   ['get', /^\/api\/teams\/[^/]+\/routes\/bounds$/, () => 'routesBounds'],

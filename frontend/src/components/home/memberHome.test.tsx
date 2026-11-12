@@ -147,11 +147,11 @@ describe('QuickActions', () => {
     renderIn(
       <QuickActions teams={[team({ role: 'ORGANIZER' }), team({ id: 't2', role: 'MEMBER' })]} />
     )
-    expect(
-      screen.getByRole('link', { name: 'home.actions.createRide' }).getAttribute('href')
-    ).toMatch(/\/vc-craponne\//)
-    expect(screen.getByRole('link', { name: 'home.actions.addRoute' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'home.actions.writePost' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'list.create.ride' }).getAttribute('href')).toMatch(
+      /\/vc-craponne\//
+    )
+    expect(screen.getByRole('link', { name: 'list.create.route' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'list.create.post' })).toBeTruthy()
   })
 
   it('a module turned off drops its action; a ride needs the routes module too', () => {
@@ -170,7 +170,7 @@ describe('QuickActions', () => {
         ]}
       />
     )
-    fireEvent.click(screen.getByRole('button', { name: 'home.actions.createRide' }))
+    fireEvent.click(screen.getByRole('button', { name: 'list.create.ride' }))
     // The dropdown lives in a portal jsdom does not lay out: query it with `hidden`.
     const menu = await screen.findByRole('menu', { hidden: true })
     expect(menu.textContent).toContain('home.actions.pickTeam')

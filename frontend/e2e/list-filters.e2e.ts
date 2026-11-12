@@ -69,7 +69,7 @@ const noReadsAfterHydration = (reads: URLSearchParams[]) =>
   expect(readsOf(reads), 'list reads sent by the browser after the server render').toEqual([])
 
 test.describe('publication feeds', () => {
-  test('team agenda: kind and period from the URL, server-rendered, then « Effacer les filtres »', async ({
+  test('team agenda: kind and period from the URL, server-rendered, in two sections, then « Effacer les filtres »', async ({
     page,
     context,
   }) => {
@@ -86,34 +86,38 @@ test.describe('publication feeds', () => {
     const periodRadio = (label: string) =>
       main.getByRole('radiogroup', { name: 'Période' }).getByRole('radio', { name: label })
 
-    // The agenda holds rides and trips, never posts; « À venir » by default (when=UPCOMING).
+    // The agenda holds rides and trips, never posts, in two sections (RL15): « À venir », then
+    // « Plus tôt ». « Toutes les dates » by default (when=UPCOMING_FIRST).
     const { markup, reads } = await openServerRendered(
       page,
       `/equipes/${team.slug}/agenda?type=ride`,
       `/api/teams/${team.slug}/publications`
     )
-    expectInMarkup(markup, [ride], [post, past.name])
+    expectInMarkup(markup, [ride, past.name], [post])
     noReadsAfterHydration(reads)
-    await expect(entityCard(main, ride)).toBeVisible()
-    await expect(entityCard(main, past.name)).toHaveCount(0)
+    await expect(entityCard(main.getByRole('region', { name: 'À venir' }), ride)).toBeVisible()
+    await expect(
+      entityCard(main.getByRole('region', { name: 'Plus tôt' }), past.name)
+    ).toBeVisible()
     await expect(typeRadio('Sorties')).toBeChecked()
-    await expect(periodRadio('À venir')).toBeChecked()
+    await expect(periodRadio('Toutes les dates')).toBeChecked()
 
-    await segment(page, 'Période', 'Passées')
-    await expectQuery(page, { type: 'ride', w: 'past' })
-    await expect(entityCard(main, past.name)).toBeVisible()
-    await expect(entityCard(main, ride)).toHaveCount(0)
+    // A former « Passées » link opens « Toutes les dates », the kind kept.
+    await page.goto(`/equipes/${team.slug}/agenda?type=ride&w=past`)
+    await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/agenda\\?type=ride$`))
+    await expect(periodRadio('Toutes les dates')).toBeChecked()
 
-    // No past trip: the filtered dead end.
+    // Nobody registered, no trip: the filtered dead end, « Je participe » among its filters.
+    await segment(page, 'Période', 'Je participe')
     await segment(page, 'Type', 'Voyages')
-    await expectQuery(page, { type: 'trip', w: 'past' })
+    await expectQuery(page, { type: 'trip', w: 'me' })
     await expect(main.getByRole('heading', { name: 'Aucun voyage pour ces filtres' })).toBeVisible()
-    await expect(main.getByText('Rien ne correspond à : Passées · Voyages.')).toBeVisible()
+    await expect(main.getByText('Rien ne correspond à : Je participe · Voyages.')).toBeVisible()
 
     await main.getByRole('button', { name: 'Effacer les filtres' }).click()
     await expectQuery(page, {})
     await expect(entityCard(main, ride)).toBeVisible()
-    await expect(entityCard(main, past.name)).toHaveCount(0)
+    await expect(entityCard(main, past.name)).toBeVisible()
     await expect(entityCard(main, post)).toHaveCount(0)
     await expect(typeRadio('Tout')).toBeChecked()
   })
@@ -146,7 +150,7 @@ test.describe('publication feeds', () => {
     const main = page.getByRole('main')
     // The member home's « Cette semaine » also links to the ride: its card is looked for in the feed.
     const feed = homeFeed(page)
-    // The home feed's type filter is a row of chips (radios), not a Select.
+    // The home feed's type filter is a segmented control (radios), as everywhere on the site (RL6).
     const typeChip = (label: string) =>
       main
         .getByRole('radiogroup', { name: 'Type', exact: true })
@@ -162,7 +166,7 @@ test.describe('publication feeds', () => {
     await expect(entityCard(feed, ride)).toBeVisible()
     await expect(entityCard(feed, post)).toHaveCount(0)
     await expect(typeChip('Sorties')).toBeChecked()
-    await expect(page.getByRole('combobox', { name: 'Équipes', exact: true })).toHaveValue('Membre')
+    await expect(page.getByRole('combobox', { name: 'Portée', exact: true })).toHaveValue('Membre')
 
     // Nobody registered for the ride: « Je participe » empties the feed.
     await segment(page, 'Portée du fil', 'Je participe')
@@ -179,7 +183,7 @@ test.describe('publication feeds', () => {
   })
 })
 
-test('team routes: distance, surface, sort and density from the URL, server-rendered, then « Effacer »', async ({
+test('team routes: distance, surface, sort and density from the URL, server-rendered, then « Effacer les filtres »', async ({
   page,
   context,
 }) => {
@@ -228,39 +232,37 @@ test('team routes: distance, surface, sort and density from the URL, server-rend
   await expectNames([mid, long])
   await expect(page.getByRole('radio', { name: 'Lignes' })).toBeChecked()
 
-  // The panel shows what the URL says.
-  const toggle = main.getByRole('button', { name: 'Filtres', exact: true })
+  // The sort is in sight, out of the panel (RL6); the folded panel's button counts the two
+  // criteria it hides (RL4).
+  await expect(main.getByRole('combobox', { name: 'Trier par', exact: true })).toHaveValue(
+    'Distance'
+  )
+  const toggle = main.getByRole('button', { name: 'Filtres, 2 actifs', exact: true })
   await hydrated(toggle)
   await toggle.click()
   await expect(main.getByRole('textbox', { name: 'Min' }).first()).toHaveValue(String(minKm))
   await expect(main.getByRole('combobox', { name: 'Type de revêtement', exact: true })).toHaveValue(
     'Gravel'
   )
-  await expect(main.getByRole('combobox', { name: 'Trier par', exact: true })).toHaveValue(
-    'Distance'
-  )
 
   // Descending is the default direction: it leaves the URL.
   const ascending = main.getByRole('button', { name: 'Croissant', exact: true })
-  // The panel opens over 200 ms, its height animated under `overflow: hidden` (Mantine's Collapse):
-  // until it ends, a control at its bottom — this one, on a phone's single column — is clipped and
-  // a click on it lands on what lies below. The inline height goes once the transition is over.
-  await expect(
-    ascending.locator('xpath=ancestor::div[@aria-hidden="false"][1]')
-  ).not.toHaveAttribute('style', /height/)
+  await hydrated(ascending)
   await ascending.click()
   await expectQuery(page, { surf: 'GRAVEL', dmin: filtered.dmin, sort: 'DISTANCE', view: 'row' })
   await expectNames([long, mid])
 
-  // « Effacer » drops the filters and the sort, and keeps the density (not a filter).
-  await main.getByRole('button', { name: 'Effacer', exact: true }).click()
-  await expectQuery(page, { view: 'row' })
-  await expectNames([road, long, mid, short])
+  // « Effacer les filtres » drops the filters and keeps the sort and the density (RL4): neither
+  // is a filter.
+  await main.getByRole('button', { name: 'Effacer les filtres', exact: true }).click()
+  await expectQuery(page, { sort: 'DISTANCE', view: 'row' })
+  await expectNames([long, road, mid, short])
   await expect(page.getByRole('radio', { name: 'Lignes' })).toBeChecked()
+  await expect(main.getByRole('button', { name: 'Filtres', exact: true })).toBeVisible()
 
   await segment(page, 'Affichage', 'Vignettes')
-  await expectQuery(page, { view: 'card' })
-  await expectNames([road, long, mid, short])
+  await expectQuery(page, { sort: 'DISTANCE', view: 'card' })
+  await expectNames([long, road, mid, short])
 })
 
 test('ads: search and type from the URL, server-rendered, then changed through the controls', async ({
@@ -279,7 +281,9 @@ test('ads: search and type from the URL, server-rendered, then changed through t
   await signIn(context, owner)
   const titles = page.getByRole('heading', { level: 4, name: new RegExp(escapeRegExp(tag)) })
   const search = page.getByRole('searchbox', { name: 'Rechercher des annonces' })
-  const typeSelect = page.getByRole('combobox', { name: 'Filtrer par type' })
+  // The kind is a segmented control (RL6).
+  const typeRadio = (label: string) =>
+    page.getByRole('radiogroup', { name: 'Filtrer par type' }).getByRole('radio', { name: label })
 
   const { markup, reads } = await openServerRendered(
     page,
@@ -290,9 +294,9 @@ test('ads: search and type from the URL, server-rendered, then changed through t
   noReadsAfterHydration(reads)
   await expect(titles).toHaveText([rental.name])
   await expect(search).toHaveValue('Velo')
-  await expect(typeSelect).toHaveValue('Location')
+  await expect(typeRadio('Location')).toBeChecked()
 
-  await pick(page, typeSelect, 'Tous les types')
+  await segment(page, 'Filtrer par type', 'Tous les types')
   await expectQuery(page, { q: 'Velo' })
   await expect(titles).toHaveText([rental.name, sale.name])
   // The watch does see the browser's own reads: a filter nobody prefetched is one.
@@ -304,7 +308,7 @@ test('ads: search and type from the URL, server-rendered, then changed through t
   await expectQuery(page, { q: 'Casque' })
   await expect(titles).toHaveText([wanted.name])
 
-  await pick(page, typeSelect, 'Vente')
+  await segment(page, 'Filtrer par type', 'Vente')
   await expectQuery(page, { q: 'Casque', type: 'SALE' })
   await expect(page.getByRole('heading', { name: 'Aucune annonce pour ces filtres' })).toBeVisible()
 })
@@ -338,7 +342,7 @@ test('team list: search and membership from the URL, server-rendered, then chang
   await signIn(context, visitor)
   const main = page.getByRole('main')
   const search = page.getByRole('searchbox', { name: 'Rechercher des équipes' })
-  const membership = page.getByRole('combobox', { name: 'Filtre', exact: true })
+  const membership = page.getByRole('combobox', { name: 'Portée', exact: true })
   /** The scene's team cards on screen: exactly `shown`. */
   const expectCards = async (shown: { name: string }[]) => {
     for (const team of [own, joined, open, closed, elsewhere])
@@ -352,7 +356,7 @@ test('team list: search and membership from the URL, server-rendered, then chang
   noReadsAfterHydration(all.reads)
   await expectCards([own, joined, open])
   await expect(search).toHaveValue(tag)
-  await expect(membership).toHaveValue('Toutes')
+  await expect(membership).toHaveValue('Toutes les équipes')
 
   // A shared link narrowed to the teams one belongs to.
   const member = await openServerRendered(page, `/equipes?q=${tag}&role=member`, '/api/teams')
@@ -367,7 +371,7 @@ test('team list: search and membership from the URL, server-rendered, then chang
   await expectQuery(page, { q: tag, role: 'admin' })
   await expectCards([own])
 
-  await pick(page, membership, 'Toutes')
+  await pick(page, membership, 'Toutes les équipes')
   await expectQuery(page, { q: tag, role: 'all' })
   await expectCards([own, joined, open])
 

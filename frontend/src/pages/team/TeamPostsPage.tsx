@@ -85,7 +85,7 @@ export function TeamPostsPage() {
               to={paths.postNew(teamData.slug)}
               leftSection={<IconPlus size={16} />}
             >
-              {t('posts.create.title')}
+              {t('list.create.post')}
             </Button>
           )}
         </Group>
@@ -168,7 +168,7 @@ export function TeamPostsPage() {
                     to={paths.postNew(teamData.slug)}
                     variant="light"
                   >
-                    {t('posts.create.title')}
+                    {t('list.create.post')}
                   </Button>
                 ) : undefined
               }

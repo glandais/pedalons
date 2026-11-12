@@ -1,8 +1,52 @@
-import type { QueryClient } from '@tanstack/react-query'
-import { prefetchGetEventsQuery, prefetchGetTokenQuery } from '@/api/endpoints/calendar/calendar'
-import { getInitialCalendarRange } from '@/hooks/useCalendarDateRange'
+import { keepPreviousData, type QueryClient } from '@tanstack/react-query'
+import {
+  prefetchGetEventsQuery,
+  prefetchGetTeamEventsQuery,
+  prefetchGetTokenQuery,
+  useGetEvents,
+  useGetTeamEvents,
+} from '@/api/endpoints/calendar/calendar'
+import { prefetchTeamSwitcher, useTeamSwitcherTeams } from '@/components/team/teamSwitcherData'
+import { calendarFilterOptions } from '@/hooks/filters/calendarFilters'
+import { getInitialCalendarRange, useCalendarDateRange } from '@/hooks/useCalendarDateRange'
+import { readUrlFilters, useUrlFilters } from '@/hooks/useUrlFilters'
 import { useAuthStore } from '@/store/authStore'
 import { LIST_REQUEST } from '@/lib/listQuery'
+
+const EVENTS_QUERY = { staleTime: 1000 * 60 * 5, placeholderData: keepPreviousData } as const
+
+/**
+ * What `CalendarPage` reads: its filters, the reader's teams (the team selector's choices — the
+ * team switcher's listing, one query key), and the events of the window, all teams' or the one
+ * team's (`?team=`, read through the team's endpoint).
+ *
+ * `keepPreviousData` + `isFetching`: leaving the loaded window (a year view, a distant jump)
+ * re-keys the query, and without it `events` would fall back to `[]` and empty the grid under the
+ * overlay. The previous month's events stay on screen, dimmed by the overlay, until the new ones
+ * arrive.
+ */
+export function useCalendarData() {
+  const { dateRange, handleDateRangeChange } = useCalendarDateRange()
+  const { filters, setFilters } = useUrlFilters(calendarFilterOptions)
+  const teams = useTeamSwitcherTeams().data?.teams ?? []
+  const range = { from: dateRange.from, to: dateRange.to }
+  const mine = useGetEvents(range, {
+    query: { ...EVENTS_QUERY, enabled: !filters.team },
+    request: LIST_REQUEST,
+  })
+  const team = useGetTeamEvents(filters.team ?? '', range, {
+    query: { ...EVENTS_QUERY, enabled: !!filters.team },
+    request: LIST_REQUEST,
+  })
+  return {
+    filters,
+    setFilters,
+    teams,
+    events: filters.team ? team : mine,
+    dateRange,
+    handleDateRangeChange,
+  }
+}
 
 /**
  * Server-side counterpart of `CalendarPage`'s first events query, keyed on the same
@@ -25,10 +69,16 @@ import { LIST_REQUEST } from '@/lib/listQuery'
  * (`useGetTeamEvents`) through the same `useCalendarDateRange` hook; its own prefetch lives in
  * `teamCalendarData.ts`, which has to gate on team membership as well as on a session.
  */
-export async function prefetchCalendar(queryClient: QueryClient): Promise<void> {
+export async function prefetchCalendar(queryClient: QueryClient, url: URL): Promise<void> {
   if (!useAuthStore.getState().isAuthenticated) return
+  const { team } = readUrlFilters(url.searchParams, calendarFilterOptions)
   await Promise.all([
-    prefetchGetEventsQuery(queryClient, getInitialCalendarRange(), { request: LIST_REQUEST }),
+    team
+      ? prefetchGetTeamEventsQuery(queryClient, team, getInitialCalendarRange(), {
+          request: LIST_REQUEST,
+        })
+      : prefetchGetEventsQuery(queryClient, getInitialCalendarRange(), { request: LIST_REQUEST }),
     prefetchGetTokenQuery(queryClient),
+    prefetchTeamSwitcher(queryClient),
   ])
 }

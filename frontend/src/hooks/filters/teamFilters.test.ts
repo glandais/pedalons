@@ -18,3 +18,21 @@ describe('teamApiParams — the order', () => {
     })
   })
 })
+
+/** « Ouvertes à l'adhésion » (RL3): `joinable=true`, under « Toutes les équipes » only. */
+describe('teamApiParams — « Ouvertes à l’adhésion »', () => {
+  const schema = makeTeamFiltersSchema('member')
+
+  it('sends joinable=true under « Toutes les équipes »', () => {
+    expect(teamApiParams(schema.parse({ membership: 'all', joinable: 'true' }))).toMatchObject({
+      joinable: true,
+    })
+  })
+
+  it('sends nothing under « Membre », nor when it is off', () => {
+    expect(
+      teamApiParams(schema.parse({ membership: 'member', joinable: 'true' }))
+    ).not.toHaveProperty('joinable')
+    expect(teamApiParams(schema.parse({ membership: 'all' }))).not.toHaveProperty('joinable')
+  })
+})

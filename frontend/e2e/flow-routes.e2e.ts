@@ -294,11 +294,9 @@ test("the team's list shows its routes, and the search finds one by name", async
   await expect(routeCard(main, wanted)).toBeVisible()
   await expect(routeCard(main, other)).toBeVisible()
 
-  // The search lives in the filter panel.
-  const filters = main.getByRole('button', { name: 'Filtres' })
-  await hydrated(filters)
-  await filters.click()
+  // The search heads the list, always in sight (RL6).
   const search = main.getByRole('searchbox', { name: 'Rechercher des parcours' })
+  await hydrated(search)
   await expect(search).toBeVisible()
   await search.fill('Col de Porte')
   // The search goes into the URL (`q`), like every list filter.
@@ -522,10 +520,9 @@ test.describe('the platform-wide list (/parcours)', () => {
     // A card of the cross-team list names its team.
     await expect(routeCard(main, wanted)).toContainText(team.name)
 
-    const filters = main.getByRole('button', { name: 'Filtres' })
-    await hydrated(filters)
-    await filters.click()
+    // The search heads the list, always in sight (RL6).
     const search = main.getByRole('searchbox', { name: 'Rechercher des parcours' })
+    await hydrated(search)
     await expect(search).toBeVisible()
     await search.fill(wanted)
     await expect(page).toHaveURL(/[?&]q=/)

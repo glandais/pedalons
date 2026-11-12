@@ -21,6 +21,8 @@ export function RoutesMapPage() {
     filtersOpen,
     setFiltersOpen,
     handleFiltersChange,
+    activeFilterCount,
+    clearFilters,
     team: { data: team, isLoading },
     tilesUrl,
     bounds,
@@ -46,6 +48,8 @@ export function RoutesMapPage() {
           onFiltersChange={handleFiltersChange}
           isOpen={filtersOpen}
           onOpenChange={setFiltersOpen}
+          activeCount={activeFilterCount}
+          onClear={clearFilters}
           showSort={false}
         />
 

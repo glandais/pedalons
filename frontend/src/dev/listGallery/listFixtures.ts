@@ -92,7 +92,10 @@ const RIDE_MONTS = ride()
 const RIDE_RECUP = rideWithoutRoute()
 const TRIP_MORVAN = trip()
 
-/** The home feed at rest: a ride, a trip, a post — newest first, as the feed sorts. */
+/**
+ * The home feed where its two sections meet (RL15): a ride and a trip ahead, then a post, in
+ * « Plus tôt ».
+ */
 export const FEED: PublicationDto[] = [RIDE_MONTS, TRIP_MORVAN, post()]
 /** « Toutes les équipes », « Sorties »: two rides, one of them Gravel Bretagne's. */
 export const FEED_RIDES: PublicationDto[] = [
@@ -140,7 +143,7 @@ export const POSTS: PostDto[] = [
 export const AGENDA: PublicationDto[] = [RIDE_RECUP, RIDE_MONTS, TRIP_MORVAN]
 /** « Sorties », « Je participe ». */
 export const AGENDA_MINE: PublicationDto[] = [ride({ registered: true })]
-/** « Passées »: latest first. */
+/** « Plus tôt », the agenda's second section: latest first. */
 export const AGENDA_PAST: PublicationDto[] = [
   ride(
     { offset: -2 },

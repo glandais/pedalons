@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Box, Button, Group, Paper, Skeleton, Stack, Switch, Title } from '@mantine/core'
+import { Box, Button, Group, Paper, SegmentedControl, Skeleton, Stack, Title } from '@mantine/core'
 import { IconBellOff, IconChecks, IconSettings } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { paths } from '@/config/paths'
@@ -54,10 +54,16 @@ export function NotificationListPage() {
       </Group>
 
       <Stack gap="sm" mb="sm">
-        <Switch
-          checked={filters.unreadOnly}
-          onChange={(event) => setFilters({ unreadOnly: event.currentTarget.checked })}
-          label={t('notifications.filter.unreadOnly')}
+        {/* One form for a criterion on the site, one word with the app: « Toutes / Non lues » (RL6). */}
+        <SegmentedControl
+          value={filters.unreadOnly ? 'unread' : 'all'}
+          onChange={(value) => setFilters({ unreadOnly: value === 'unread' })}
+          data={[
+            { value: 'all', label: t('notifications.filter.all') },
+            { value: 'unread', label: t('notifications.filter.unread') },
+          ]}
+          aria-label={t('notifications.filter.label')}
+          style={{ alignSelf: 'flex-start' }}
         />
         {/* Under the bar, as on every list (RL8). */}
         <ResultCount total={data?.total} resource="notifications" />

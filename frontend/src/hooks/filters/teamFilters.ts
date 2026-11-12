@@ -15,11 +15,20 @@ export const makeTeamFiltersSchema = (defaultMembership: MembershipFilterValue) 
   z.object({
     search: searchField,
     membership: membershipField(defaultMembership),
+    /**
+     * « Ouvertes à l'adhésion » (RL3, `joinable=true`): offered, and sent, under « Toutes les
+     * équipes » only — one's own teams have nothing to join.
+     */
+    joinable: z
+      .union([z.literal('true'), z.literal('false')])
+      .transform((value) => value === 'true')
+      .default(false)
+      .catch(false),
     page: pageField,
     size: sizeField(TEAM_PAGE_SIZE),
   })
 
-export const teamFiltersAlias = { ...COMMON_ALIAS, ...MEMBERSHIP_ALIAS } as const
+export const teamFiltersAlias = { ...COMMON_ALIAS, ...MEMBERSHIP_ALIAS, joinable: 'open' } as const
 
 export const teamFiltersAlwaysSerialize = MEMBERSHIP_ALWAYS_SERIALIZE
 
@@ -46,6 +55,12 @@ export function teamApiParams(filters: TeamFilters) {
     page: filters.page,
     size: filters.size,
     minRole: membershipToMinRole[filters.membership],
+    ...(isJoinableFilterOn(filters) ? { joinable: true } : {}),
     ...teamListOrder(filters.membership),
   }
+}
+
+/** « Ouvertes à l'adhésion » counts, and is sent, under « Toutes les équipes » only (RL3). */
+export function isJoinableFilterOn(filters: TeamFilters): boolean {
+  return filters.membership === 'all' && filters.joinable
 }

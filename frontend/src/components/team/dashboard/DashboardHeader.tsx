@@ -45,7 +45,7 @@ export function DashboardHeaderActions({ team, role }: { team: TeamDetailDto; ro
       {isOrganizer && team.enablePosts && (
         <HeaderLinkAction
           to={paths.postNew(team.slug)}
-          label={t('posts.create.title')}
+          label={t('list.create.post')}
           icon={IconPencilPlus}
           variant="default"
           compact={isMobile}
@@ -54,7 +54,7 @@ export function DashboardHeaderActions({ team, role }: { team: TeamDetailDto; ro
       {isOrganizer && team.enableRides && team.enableRoutes && (
         <HeaderLinkAction
           to={paths.rideNew(team.slug)}
-          label={t('rides.create.title')}
+          label={t('list.create.ride')}
           icon={IconPlus}
           variant="filled"
           compact={isMobile}

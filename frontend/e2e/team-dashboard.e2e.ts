@@ -203,7 +203,7 @@ test.describe('the dashboard page', () => {
       'page'
     )
     await expect(page.getByRole('heading', { level: 2, name: 'Agenda', exact: true })).toBeVisible()
-    await expect(page.getByRole('radio', { name: 'À venir' })).toBeChecked()
+    await expect(page.getByRole('radio', { name: 'Toutes les dates' })).toBeChecked()
     await expect(page.getByText(world.fullRide.name).first()).toBeVisible()
     await expect(page.getByText(world.post.name)).toHaveCount(0)
   })

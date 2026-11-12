@@ -1,26 +1,8 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import {
-  Box,
-  Button,
-  Collapse,
-  Group,
-  Menu,
-  MultiSelect,
-  Paper,
-  SimpleGrid,
-  Stack,
-  Title,
-} from '@mantine/core'
-import {
-  IconCalendarEvent,
-  IconChevronDown,
-  IconChevronUp,
-  IconFilter,
-  IconPlus,
-  IconTags,
-} from '@tabler/icons-react'
+import { Box, Button, Group, Menu, MultiSelect, SimpleGrid, Stack, Title } from '@mantine/core'
+import { IconCalendarEvent, IconChevronDown, IconPlus, IconTags } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -29,8 +11,9 @@ import { searchFilter, type FilteredResource } from '@/components/common/filtere
 import { OutOfRangeState } from '@/components/common/OutOfRangeState'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { Pagination } from '@/components/common/Pagination'
-import { ResultCount, type CountedResource } from '@/components/common/ResultCount'
+import type { CountedResource } from '@/components/common/ResultCount'
 import { SearchInput } from '@/components/common/SearchInput'
+import { UpcomingFirstSections } from '@/components/common/UpcomingFirstSections'
 import { ListViewSwitch, type ListView } from '@/components/common/ListViewSwitch'
 import { PublicationCard, PublicationCardActions, PublicationCardSkeleton } from '@/components/card'
 import { TeamLayout } from '@/components/team/TeamLayout'
@@ -47,18 +30,19 @@ import {
   type AgendaFilters,
   type AgendaScopeValue,
 } from '@/hooks/filters/agendaFilters'
-import { isDated } from '@/utils/publicationTiming'
+import { isDated, type DatedPublication } from '@/utils/publicationTiming'
 import type { TeamDetailDto } from '@/api/dto'
 import { useTeamAgendaData } from './teamAgendaData'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
 
 /**
- * « Agenda » (`teamAgenda`, ledger `WEB-68`): the team's rides and trips, by time — « À venir »
- * (the default; a ride under way stays there, marked « En cours »), « Je participe », « Passées ».
- * The server sorts by `when` (API-85): soonest first, latest first for the past. Viewed as
- * « Vignettes » or « Lignes » (`?view=`), or as a calendar — its own path, `teamCalendar`, for a
- * member only (plan 2026-10-06 §4 and §7).
+ * « Agenda » (`teamAgenda`, ledger `WEB-68`): the team's rides and trips, one list in two sections
+ * (RL15) — « À venir », soonest first (a ride under way stays there, marked « En cours »), then
+ * « Plus tôt », latest first — over « Toutes les dates » or « Je participe ». The search and the
+ * tags head the list, the period and the kind follow (RL6): there is no panel. Viewed as
+ * « Vignettes » or « Lignes » (`?view=`), both in sections, or as a calendar — its own path,
+ * `teamCalendar`, for a member only (plan 2026-10-06 §4 and §7).
  */
 export function TeamAgendaPage() {
   const { t } = useTranslation()
@@ -73,8 +57,6 @@ export function TeamAgendaPage() {
   )
   const [search, setSearch] = useDebouncedSearch(filters.search ?? '', commitSearch)
   const { listTopRef, scrollToListTop } = useScrollToListTop()
-  // Open from the start when the URL already narrows the list by what the panel holds.
-  const [filtersOpen, setFiltersOpen] = useState(() => !!filters.search || !!filters.tags)
 
   const { data: teamData, isLoading: isLoadingTeam } = team
   const { data: publicationsData, isLoading: isLoadingPublications } = publications
@@ -100,10 +82,10 @@ export function TeamAgendaPage() {
   const canCreate = teamAccess(teamData, isPlatformAdmin).isOrganizer
   const createItems = [
     ...(teamData.enableRides && teamData.enableRoutes
-      ? [{ path: paths.rideNew(teamData.slug), label: t('rides.create.title') }]
+      ? [{ path: paths.rideNew(teamData.slug), label: t('list.create.ride') }]
       : []),
     ...(teamData.enableTrips && teamData.enableRoutes
-      ? [{ path: paths.tripNew(teamData.slug), label: t('trips.create.title') }]
+      ? [{ path: paths.tripNew(teamData.slug), label: t('list.create.trip') }]
       : []),
   ]
 
@@ -121,25 +103,29 @@ export function TeamAgendaPage() {
     }
   }
 
-  const hasPanelFilters = !!filters.search || (!!tagTarget && !!filters.tags?.length)
-  const hasFilters = hasPanelFilters || filters.filter !== 'all' || filters.scope !== 'upcoming'
+  const hasFilters =
+    !!filters.search ||
+    (!!tagTarget && !!filters.tags?.length) ||
+    filters.filter !== 'all' ||
+    filters.scope !== 'all'
+  // RL4: the search, the kind and the tags lifted, the period back to its default.
   const clearFilters = () => {
     setSearch('')
     setFilters({
       search: undefined,
       filter: 'all',
-      scope: 'upcoming',
+      scope: 'all',
       tags: undefined,
       page: 0,
     })
   }
 
+  // `isDated` narrows the type: `when=UPCOMING_FIRST` keeps the agenda to rides and trips.
   const items = (publicationsData?.publications ?? []).filter(isDated)
-  // What the filtered empty state names (RL10): « Passées » and « Je participe » are filters too.
+  // What the filtered empty state names (RL10): « Je participe » is a filter too.
   const activeFilters = [
     ...(filters.search ? [searchFilter(t, filters.search)] : []),
     ...(filters.scope === 'me' ? [t('publications.scope.me')] : []),
-    ...(filters.scope === 'past' ? [t('agenda.scope.past')] : []),
     ...(filters.filter !== 'all'
       ? [t(`agenda.type.${filters.filter satisfies 'ride' | 'trip'}`)]
       : []),
@@ -181,72 +167,56 @@ export function TeamAgendaPage() {
         </Group>
 
         <Stack gap="sm">
-          <AgendaFilterBar
-            team={teamData}
-            mode="list"
-            scope={filters.scope}
-            onScopeChange={(scope) => setFilters({ scope: scope as AgendaScopeValue })}
-            type={filters.filter}
-            // A ride tag means nothing to a trip: switching kind drops the selection.
-            onTypeChange={(filter) => setFilters({ filter, tags: undefined })}
-          >
-            <Button
-              variant={hasPanelFilters ? 'light' : 'default'}
-              leftSection={<IconFilter size={16} />}
-              rightSection={
-                filtersOpen ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />
-              }
-              onClick={() => setFiltersOpen((open) => !open)}
-              aria-expanded={filtersOpen}
-              aria-controls="agenda-filters"
-            >
-              {t('agenda.filters')}
-            </Button>
-          </AgendaFilterBar>
+          <Group gap="sm" align="flex-end" wrap="wrap">
+            <SearchInput
+              id="agenda-search"
+              value={search}
+              onChange={setSearch}
+              label={t('agenda.search.label')}
+              placeholder={t('agenda.search.placeholder')}
+              style={{ flex: '1 1 260px' }}
+              fullWidth
+            />
+            {tagTarget ? (
+              <TagFilter
+                teamSlug={teamData.slug}
+                type={tagTarget}
+                value={filters.tags}
+                onChange={(tags) => setFilters({ tags })}
+                style={{ flex: '1 1 220px' }}
+              />
+            ) : (
+              // Tags belong to one kind (plan D3): pick it first.
+              <MultiSelect
+                disabled
+                data={[]}
+                aria-label={t('tags.filter.label')}
+                placeholder={t('tags.filter.placeholder')}
+                leftSection={<IconTags size={16} />}
+                description={t('agenda.tags.pickKind')}
+                inputWrapperOrder={['input', 'description']}
+                style={{ flex: '1 1 220px' }}
+              />
+            )}
+          </Group>
 
-          <Collapse expanded={filtersOpen} id="agenda-filters">
-            <Paper withBorder p="md">
-              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-                <SearchInput
-                  id="agenda-search"
-                  value={search}
-                  onChange={setSearch}
-                  label={t('agenda.search.label')}
-                  placeholder={t('agenda.search.placeholder')}
-                  fullWidth
-                />
-                {tagTarget ? (
-                  <TagFilter
-                    teamSlug={teamData.slug}
-                    type={tagTarget}
-                    value={filters.tags}
-                    onChange={(tags) => setFilters({ tags })}
-                    style={{ alignSelf: 'end' }}
-                  />
-                ) : (
-                  // Tags belong to one kind (plan D3): pick it first.
-                  <MultiSelect
-                    disabled
-                    data={[]}
-                    aria-label={t('tags.filter.label')}
-                    placeholder={t('tags.filter.placeholder')}
-                    leftSection={<IconTags size={16} />}
-                    description={t('agenda.tags.pickKind')}
-                    inputWrapperOrder={['input', 'description']}
-                  />
-                )}
-              </SimpleGrid>
-            </Paper>
-          </Collapse>
+          <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+            <AgendaFilterBar
+              team={teamData}
+              mode="list"
+              scope={filters.scope}
+              onScopeChange={(scope) => setFilters({ scope: scope as AgendaScopeValue })}
+              type={filters.filter}
+              // A ride tag means nothing to a trip: switching kind drops the selection.
+              onTypeChange={(filter) => setFilters({ filter, tags: undefined })}
+            />
+            {/* The counts are the sections' (RL15): this line keeps the view switch alone. */}
+            {/* Right-aligned even when a narrow screen wraps it under the criteria. */}
+            <Box ml="auto">
+              <ListViewSwitch views={views} value={density} onChange={onViewChange} />
+            </Box>
+          </Group>
         </Stack>
-
-        <Group justify="space-between" align="center" wrap="wrap">
-          <ResultCount
-            total={publicationsData?.total}
-            resource={countResource(filters.scope, filters.filter)}
-          />
-          <ListViewSwitch views={views} value={density} onChange={onViewChange} />
-        </Group>
 
         <QueryStateBoundary
           isLoading={isLoadingPublications}
@@ -264,38 +234,49 @@ export function TeamAgendaPage() {
         >
           {items.length > 0 ? (
             <Stack gap="xl">
-              {density === 'row' ? (
-                <Stack ref={listTopRef} gap="sm">
-                  {items.map((publication) => (
-                    <AgendaRow
-                      key={publication.id}
-                      publication={publication}
-                      actions={<PublicationCardActions publication={publication} />}
-                    />
-                  ))}
-                </Stack>
-              ) : (
-                <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-                  {items.map((publication) => (
-                    <PublicationCard
-                      key={publication.id}
-                      publication={publication}
-                      showTeam={false}
-                      actions={<PublicationCardActions publication={publication} />}
-                    />
-                  ))}
-                </SimpleGrid>
-              )}
-              <Box>
-                <Pagination
-                  currentPage={filters.page}
-                  totalPages={totalPages}
-                  onPageChange={(page) => {
-                    setFilters({ page })
-                    scrollToListTop()
-                  }}
-                />
-              </Box>
+              <div ref={listTopRef}>
+                <UpcomingFirstSections
+                  items={items}
+                  page={filters.page}
+                  size={filters.size}
+                  total={publicationsData?.total ?? 0}
+                  upcomingTotal={publicationsData?.upcomingTotal ?? 0}
+                  counts={sectionCounts(filters.filter)}
+                >
+                  {(rows: DatedPublication[]) =>
+                    density === 'row' ? (
+                      <Stack gap="sm">
+                        {rows.map((publication) => (
+                          <AgendaRow
+                            key={publication.id}
+                            publication={publication}
+                            actions={<PublicationCardActions publication={publication} />}
+                          />
+                        ))}
+                      </Stack>
+                    ) : (
+                      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+                        {rows.map((publication) => (
+                          <PublicationCard
+                            key={publication.id}
+                            publication={publication}
+                            showTeam={false}
+                            actions={<PublicationCardActions publication={publication} />}
+                          />
+                        ))}
+                      </SimpleGrid>
+                    )
+                  }
+                </UpcomingFirstSections>
+              </div>
+              <Pagination
+                currentPage={filters.page}
+                totalPages={totalPages}
+                onPageChange={(page) => {
+                  setFilters({ page })
+                  scrollToListTop()
+                }}
+              />
             </Stack>
           ) : filters.page > 0 ? (
             <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
@@ -311,16 +292,11 @@ export function TeamAgendaPage() {
               title={t('agenda.empty.title')}
               description={t('agenda.empty.description')}
               actions={
-                <>
-                  {canCreate && createItems.length > 0 && (
-                    <Button component={PrefetchLink} to={createItems[0].path} variant="light">
-                      {createItems[0].label}
-                    </Button>
-                  )}
-                  <Button variant="light" onClick={() => setFilters({ scope: 'past' })}>
-                    {t('agenda.empty.seePast')}
+                canCreate && createItems.length > 0 ? (
+                  <Button component={PrefetchLink} to={createItems[0].path} variant="light">
+                    {createItems[0].label}
                   </Button>
-                </>
+                ) : undefined
               }
             />
           )}
@@ -335,11 +311,14 @@ function filteredResource(filter: AgendaFilters['filter']): FilteredResource {
   return filter === 'ride' ? 'agendaRides' : filter === 'trip' ? 'agendaTrips' : 'agenda'
 }
 
-/** « 5 sorties et voyages à venir »: the count says what the list holds, by period and kind. */
-function countResource(scope: AgendaScopeValue, filter: AgendaFilters['filter']): CountedResource {
-  const kind = filter === 'ride' ? 'Rides' : filter === 'trip' ? 'Trips' : ''
-  const period = scope === 'past' ? 'Past' : scope === 'me' ? 'Mine' : 'Upcoming'
-  return `agenda${period}${kind}` as CountedResource
+/** What each section's count names, by kind: « 18 sorties et voyages », « 5 sorties ». */
+function sectionCounts(filter: AgendaFilters['filter']): {
+  upcoming: CountedResource
+  earlier: CountedResource
+} {
+  const resource: CountedResource =
+    filter === 'ride' ? 'rides' : filter === 'trip' ? 'trips' : 'ridesAndTrips'
+  return { upcoming: resource, earlier: resource }
 }
 
 /**

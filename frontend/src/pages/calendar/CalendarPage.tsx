@@ -1,39 +1,28 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { keepPreviousData } from '@tanstack/react-query'
 import { Title, Group, Stack } from '@mantine/core'
-import { getEvents, useGetEvents } from '@/api/endpoints/calendar/calendar'
+import { getEvents, getTeamEvents } from '@/api/endpoints/calendar/calendar'
 import { LIST_REQUEST } from '@/lib/listQuery'
 import { AgendaTypeControl } from '@/components/agenda/AgendaFilterBar'
 import { CalendarView } from '@/components/calendar/CalendarView'
 import { IcsFeedSettings } from '@/components/calendar/IcsFeedSettings'
+import { TeamScopeSelect } from '@/components/common/MembershipSelect'
+import { ALL_MY_TEAMS } from '@/components/common/membershipLabel'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
-import { keepCalendarEvent, calendarTypeFilterOptions } from '@/hooks/filters/calendarFilters'
-import { useCalendarDateRange } from '@/hooks/useCalendarDateRange'
-import { useUrlFilters } from '@/hooks/useUrlFilters'
+import { keepCalendarEvent } from '@/hooks/filters/calendarFilters'
+import { useCalendarData } from './calendarData'
 
 /**
- * The personal calendar: every team's rides and trip stages. Its kind « Tout / Sorties / Voyages »
+ * The personal calendar: every team's rides and trip stages, or one team's (`?team=`, RL2 and RL3)
+ * — read through that team's own endpoint, as the app does. Its kind « Tout / Sorties / Voyages »
  * (`?type=`) filters the loaded window client-side, as the team calendar does — the API takes
  * `from`/`to` only, and the query key does not depend on the kind.
  */
 export function CalendarPage(): React.ReactElement {
   const { t } = useTranslation()
-  const { dateRange, handleDateRangeChange } = useCalendarDateRange()
-  const { filters, setFilters } = useUrlFilters(calendarTypeFilterOptions)
-
-  // `keepPreviousData` + `isFetching`: leaving the loaded window (a year view, a distant jump)
-  // re-keys the query, and without it `events` would fall back to `[]` and empty the grid under
-  // the overlay. The previous month's events stay on screen, dimmed by the overlay, until the new
-  // ones arrive.
-  const events = useGetEvents(
-    { from: dateRange.from, to: dateRange.to },
-    {
-      query: { staleTime: 1000 * 60 * 5, placeholderData: keepPreviousData },
-      request: LIST_REQUEST,
-    }
-  )
+  const { filters, setFilters, teams, events, dateRange, handleDateRangeChange } = useCalendarData()
   const { data: eventsData } = events
+  const team = teams.find((candidate) => candidate.slug === filters.team)
 
   const shown = useMemo(
     () => (eventsData?.events ?? []).filter((event) => keepCalendarEvent(event, filters)),
@@ -53,6 +42,13 @@ export function CalendarPage(): React.ReactElement {
           value={filters.filter}
           onChange={(filter) => setFilters({ filter })}
         />
+        {teams.length > 1 && (
+          <TeamScopeSelect
+            teams={teams}
+            value={filters.team ?? ALL_MY_TEAMS}
+            onChange={(slug) => setFilters({ team: slug === ALL_MY_TEAMS ? undefined : slug })}
+          />
+        )}
       </Group>
 
       <QueryStateBoundary
@@ -69,15 +65,21 @@ export function CalendarPage(): React.ReactElement {
           monthEmpty={{
             allEvents: eventsData?.events ?? [],
             keep: (event) => keepCalendarEvent(event, filters),
-            activeFilters:
-              filters.filter === 'all'
+            activeFilters: [
+              ...(filters.filter === 'all'
                 ? []
-                : [t(`agenda.type.${filters.filter satisfies 'ride' | 'trip'}`)],
-            onClearFilters: () => setFilters({ filter: 'all' }),
-            scope: 'mine',
+                : [t(`agenda.type.${filters.filter satisfies 'ride' | 'trip'}`)]),
+              ...(team ? [team.name] : []),
+            ],
+            // RL4: the kind lifted, the scope back to « Toutes mes équipes ».
+            onClearFilters: () => setFilters({ filter: 'all', team: undefined }),
+            scope: filters.team ? 'team' : 'mine',
             loadedTo: dateRange.to,
-            probeKey: 'mine',
-            probe: (from, to) => getEvents({ from, to }, LIST_REQUEST),
+            probeKey: filters.team ?? 'mine',
+            probe: (from, to) =>
+              filters.team
+                ? getTeamEvents(filters.team, { from, to }, LIST_REQUEST)
+                : getEvents({ from, to }, LIST_REQUEST),
           }}
         />
       </QueryStateBoundary>

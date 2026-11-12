@@ -9,8 +9,16 @@ import type { CalendarEventDto } from '@/api/dto'
  */
 const calendarTypeField = z.enum(['all', 'ride', 'trip']).default('all').catch('all')
 
-export const calendarTypeFilterOptions = {
-  schema: z.object({ filter: calendarTypeField }),
+/**
+ * The personal calendar adds the choice of one of the reader's teams (`?team=<slug>`, RL2 and RL3):
+ * « Toutes mes équipes » is no param. A team is read through the team's own endpoint, so the
+ * query key — and the route's prefetch — do depend on it.
+ */
+export const calendarFilterOptions = {
+  schema: z.object({
+    filter: calendarTypeField,
+    team: z.string().min(1).optional().catch(undefined),
+  }),
   alias: { filter: 'type' },
 } as const
 

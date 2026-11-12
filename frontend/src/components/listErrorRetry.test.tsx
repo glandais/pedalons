@@ -145,3 +145,49 @@ describe('a search of the people that finds nobody (DL20, RL10)', () => {
     expect(onSearchInputChange).toHaveBeenCalledWith('')
   })
 })
+
+describe('the home feed reads in two sections when it holds rides or trips (RL15)', () => {
+  const feedOf = (filter: string, data: Record<string, unknown>) =>
+    ({
+      membershipDefault: 'all',
+      filters: { page: 0, size: 12, filter, scope: 'all', membership: 'all' },
+      setFilters: () => {},
+      publications: query({ data }),
+      totalPages: 4,
+    }) as never
+
+  it('« Tous »: « À venir » counts rides and trips, « Plus tôt » publications; no list count', async () => {
+    const { ride, post } = await import('@/dev/cardGallery/fixtures')
+    renderIt(
+      <HomeFeedSection
+        feed={feedOf('all', {
+          publications: [ride({}, { id: 'r' }), post({ id: 'p', name: 'Bilan' })],
+          total: 47,
+          upcomingTotal: 1,
+          page: 0,
+          size: 12,
+        })}
+        title="Fil"
+      />
+    )
+    expect(screen.getByRole('region', { name: 'À venir' }).textContent).toContain(
+      '1 sortie ou voyage'
+    )
+    const earlier = screen.getByRole('region', { name: 'Plus tôt' })
+    expect(earlier.textContent).toContain('46 publications')
+    expect(earlier.textContent).toContain('Bilan')
+    expect(screen.queryByText('47 publications')).toBeNull()
+  })
+
+  it('« Publications » alone: no sections, the list count', async () => {
+    const { post } = await import('@/dev/cardGallery/fixtures')
+    renderIt(
+      <HomeFeedSection
+        feed={feedOf('post', { publications: [post({ id: 'p' })], total: 47, page: 0, size: 12 })}
+        title="Fil"
+      />
+    )
+    expect(screen.queryByRole('region', { name: 'À venir' })).toBeNull()
+    expect(screen.getByText('47 publications')).toBeTruthy()
+  })
+})

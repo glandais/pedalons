@@ -3,22 +3,14 @@ import { useTranslation } from 'react-i18next'
 import { formatNumber } from '@/utils/unitFormat'
 
 /**
- * Resources whose list pages show a total. One plural key pair per entry. The agenda's say what
- * the list holds, by period and kind — « 5 sorties et voyages à venir » (ledger `WEB-68`).
+ * Resources whose list pages show a total. One plural key pair per entry. `ridesAndTrips` counts
+ * an agenda's section — « 18 sorties et voyages » (RL15).
  */
 export type CountedResource =
-  | 'agendaUpcoming'
-  | 'agendaUpcomingRides'
-  | 'agendaUpcomingTrips'
-  | 'agendaMine'
-  | 'agendaMineRides'
-  | 'agendaMineTrips'
-  | 'agendaPast'
-  | 'agendaPastRides'
-  | 'agendaPastTrips'
   | 'publications'
   | 'rides'
   | 'trips'
+  | 'ridesAndTrips'
   | 'routes'
   | 'ads'
   | 'teams'

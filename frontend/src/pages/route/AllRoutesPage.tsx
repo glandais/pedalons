@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useAllRouteListData } from './allRouteListData'
 import { isSingleTeam } from '../../config/appConfig'
 import { MembershipSelect } from '../../components/common/MembershipSelect'
+import { membershipLabel } from '../../components/common/membershipLabel'
 import { RouteFilterPanel } from '../../components/route/RouteFilterPanel'
 import { RouteListContent } from '../../components/route/RouteListContent'
 import { ResultCount } from '@/components/common/ResultCount'
@@ -19,6 +20,8 @@ export function AllRoutesPage() {
     handleFiltersChange,
     handlePageChange,
     hasFiltersOrSearch,
+    activeFilterCount,
+    defaultMembership,
     clearFilters,
     routes,
     density,
@@ -32,16 +35,19 @@ export function AllRoutesPage() {
       {/* Every list page has its title (constat C5). */}
       <Title order={2}>{t('nav.explore')}</Title>
 
-      <MembershipSelect
-        value={filters.membership}
-        onChange={(membership) => setFilters({ membership })}
-      />
-
       <RouteFilterPanel
         filters={filters}
         onFiltersChange={handleFiltersChange}
         isOpen={filtersOpen}
         onOpenChange={setFiltersOpen}
+        activeCount={activeFilterCount}
+        onClear={clearFilters}
+        scope={
+          <MembershipSelect
+            value={filters.membership}
+            onChange={(membership) => setFilters({ membership })}
+          />
+        }
       />
 
       <Group justify="space-between" align="center" wrap="wrap">
@@ -55,7 +61,16 @@ export function AllRoutesPage() {
       <RouteListContent
         density={density}
         deadEnd={
-          <RouteDeadEnd filters={filters} onSetFilters={setFilters} onClearFilters={clearFilters} />
+          <RouteDeadEnd
+            filters={filters}
+            onSetFilters={setFilters}
+            onClearFilters={clearFilters}
+            scopeLabel={
+              filters.membership !== defaultMembership
+                ? membershipLabel(t, filters.membership)
+                : undefined
+            }
+          />
         }
         routes={routesData?.routes}
         isLoading={isLoading}

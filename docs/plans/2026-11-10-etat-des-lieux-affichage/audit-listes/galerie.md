@@ -42,12 +42,13 @@ Chaque section décline les mêmes états, quand la liste les a :
 | `-erreur` | Le chargement a échoué (erreur serveur) |
 | `-chargement` | Chargement initial |
 | `-lecture` | La même liste vue par une personne simplement membre (pas d'action de création), quand cela change la page |
+| `-sections` | Une liste d'événements datés en deux sections (RL15) : une page où la frontière entre « À venir » et « Plus tôt » est visible |
 
 | Section | Liste | Cas |
 |---|---|---|
-| **accueil** | Fil d'accueil | `-repos` · `-filtre` (portée « Toutes les équipes », type « Sorties ») · `-criteres` (contrôle de portée ouvert) · `-vide` · `-vide-filtre` · `-erreur` · `-chargement` |
+| **accueil** | Fil d'accueil | `-repos` · `-sections` (« À venir » puis « Plus tôt » sur une même page, RL15) · `-filtre` (portée « Toutes les équipes », type « Sorties ») · `-criteres` (contrôle de portée ouvert) · `-vide` · `-vide-filtre` · `-erreur` · `-chargement` |
 | **publications** | Publications d'une équipe | `-repos` · `-filtre` (recherche et un tag) · `-vide` · `-vide-filtre` · `-erreur` · `-lecture` |
-| **agenda** | Agenda d'une équipe | `-repos` · `-filtre` (« Sorties », « Je participe ») · `-criteres` · `-passees` (période « Passées ») · `-vide` · `-vide-filtre` · `-erreur` · `-lecture` |
+| **agenda** | Agenda d'une équipe | `-repos` · `-sections` (« À venir » puis « Plus tôt » sur une même page, RL15) · `-filtre` (« Sorties », « Je participe ») · `-criteres` · `-vide` · `-vide-filtre` · `-erreur` · `-lecture` |
 | **calendrier** | Calendrier global, calendrier d'une équipe | `-repos` (mois avec cinq événements) · `-filtre` (type « Sorties ») · `-equipe` (calendrier d'une équipe) · `-vide` (mois sans rien) · `-vide-filtre` · `-erreur` · `-chargement` |
 | **parcours** | Parcours d'une équipe | `-repos` (vignettes) · `-lignes` (vue compacte) · `-carte` (vue carte : la barre seule compte) · `-filtre` (distance 50–100 km, tag « vallonné ») · `-criteres` · `-tri` · `-vide` · `-vide-filtre` · `-erreur` · `-lecture` |
 | **explorer** | Tous les parcours | `-repos` · `-filtre` (portée, pratique « Route ») · `-criteres` · `-vide-filtre` · `-erreur` |

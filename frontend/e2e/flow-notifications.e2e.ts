@@ -144,7 +144,13 @@ test('the inbox filters unread entries from its URL, and "mark all read" empties
   const { author, member, team } = await teamWithMember('Boîte de réception')
   await signIn(context, member)
   const main = page.getByRole('main')
-  const unreadOnly = main.getByRole('switch', { name: 'Non lues uniquement' })
+  // « Toutes / Non lues », a segmented control (RL6): its radios are visually hidden inputs, a
+  // person clicks the segment's label.
+  const unreadOnly = main.getByRole('radio', { name: 'Non lues' })
+  const unreadSegment = main
+    .getByRole('radiogroup', { name: 'État de lecture' })
+    .locator('label')
+    .filter({ hasText: /^Non lues$/ })
   const markAllRead = main.getByRole('button', { name: 'Tout marquer lu' })
   const entries = main.getByRole('link').filter({ hasText: `Nouvelle publication de ${team.name}` })
 
@@ -175,9 +181,9 @@ test('the inbox filters unread entries from its URL, and "mark all read" empties
 
   await test.step('"unread only" lands in the URL and survives a reload', async () => {
     await hydrated(unreadOnly)
-    // A click, not check(): the switch is controlled by the URL, which the router updates after
-    // the click returns — check() would read the state back too early.
-    await unreadOnly.click()
+    // A click, not check(): the control follows the URL, which the router updates after the
+    // click returns — check() would read the state back too early.
+    await unreadSegment.click()
     await expect(unreadOnly).toBeChecked()
     await expect(page).toHaveURL(/[?&]unread=true(&|$)/)
     await expect(entries).toHaveCount(1)

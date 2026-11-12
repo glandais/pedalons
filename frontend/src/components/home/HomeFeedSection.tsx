@@ -1,6 +1,6 @@
 import { useCallback, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Box, Chip, Group, Select, SimpleGrid, Stack, Text, Title } from '@mantine/core'
+import { Box, Group, SegmentedControl, SimpleGrid, Stack, Text, Title } from '@mantine/core'
 import { IconNews } from '@tabler/icons-react'
 import { isSingleTeam } from '@/config/appConfig'
 import { PublicationCard, PublicationCardSkeleton } from '@/components/card'
@@ -8,20 +8,23 @@ import { EmptyState } from '@/components/common/EmptyState'
 import { FilteredEmptyState } from '@/components/common/FilteredEmptyState'
 import { searchFilter } from '@/components/common/filteredEmpty'
 import { OutOfRangeState } from '@/components/common/OutOfRangeState'
+import { MembershipSelect } from '@/components/common/MembershipSelect'
+import { membershipLabel } from '@/components/common/membershipLabel'
 import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { Pagination } from '@/components/common/Pagination'
-import { ResultCount } from '@/components/common/ResultCount'
+import { ResultCount, type CountedResource } from '@/components/common/ResultCount'
 import { SearchInput } from '@/components/common/SearchInput'
+import { UpcomingFirstSections } from '@/components/common/UpcomingFirstSections'
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
 import { useScrollToListTop } from '@/hooks/useScrollToListTop'
-import { useAuth } from '@/hooks/useAuth'
-import type {
-  PublicationFilterValue,
-  PublicationScopeValue,
+import {
+  publicationFeedHasSections,
+  type PublicationFilterValue,
+  type PublicationScopeValue,
 } from '@/hooks/filters/publicationFilters'
-import type { MembershipFilterValue } from '@/hooks/filters/membership'
 import { PublicationScopeControl } from './PublicationScopeControl'
 import type { useHomeFeedData } from '@/pages/home/homeFeedData'
+import type { PublicationDto } from '@/api/dto'
 
 const TYPE_FILTERS = [
   'all',
@@ -38,16 +41,16 @@ interface HomeFeedSectionProps {
 }
 
 /**
- * The publications feed of the home page, visitor and member alike: search, type chips, scope,
- * membership (signed in), the grid and its pagination. Every filter lives in the URL
- * (`useUrlFilters`, through `useHomeFeedData`).
+ * The publications feed of the home page, visitor and member alike: search, period and scope
+ * (signed in), kind, the grid and its pagination. Every filter lives in the URL (`useUrlFilters`,
+ * through `useHomeFeedData`). A feed that holds rides or trips reads in two sections, « À venir »
+ * then « Plus tôt », each with its count (RL15); the posts alone have one count.
  *
  * Its own `region`, named by its heading: the member home's « Cette semaine » rows also link to
  * rides, and the e2e specs find a feed card inside this region.
  */
 export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps) {
   const { t } = useTranslation()
-  const { isAuthenticated } = useAuth()
   const { listTopRef, scrollToListTop } = useScrollToListTop()
   const { membershipDefault, filters, setFilters, publications, totalPages } = feed
 
@@ -83,23 +86,30 @@ export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps)
     isPlaceholderData,
   } = publications
 
-  const membershipLabels: Record<MembershipFilterValue, string> = {
-    all: t('filters.membership.all'),
-    member: t('roles.MEMBER'),
-    organizer: t('roles.ORGANIZER'),
-    admin: t('roles.ADMIN'),
-  }
   // What the filtered empty state names, in the bar's order (RL10).
   const activeFilters = [
     ...(filters.search ? [searchFilter(t, filters.search)] : []),
-    ...(filters.scope !== 'all'
-      ? [t(`publications.scope.${filters.scope satisfies 'upcoming' | 'me'}`)]
-      : []),
-    ...(filters.membership !== membershipDefault ? [membershipLabels[filters.membership]] : []),
+    ...(filters.scope === 'me' ? [t('publications.scope.me')] : []),
+    ...(filters.membership !== membershipDefault ? [membershipLabel(t, filters.membership)] : []),
     ...(filters.filter !== 'all'
       ? [t(`teams.publications.list.filter.${filters.filter satisfies 'ride' | 'post' | 'trip'}`)]
       : []),
   ]
+
+  // Two sections as soon as the feed holds rides or trips and the API said where the first ends.
+  const sectioned =
+    publicationFeedHasSections(filters.filter) && publicationsData?.upcomingTotal != null
+  const renderGrid = (rows: PublicationDto[]) => (
+    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+      {rows.map((publication) => (
+        <PublicationCard
+          key={publication.id}
+          publication={publication}
+          showTeam={!isSingleTeam()}
+        />
+      ))}
+    </SimpleGrid>
+  )
 
   return (
     <Stack component="section" aria-labelledby="home-feed-title">
@@ -123,40 +133,29 @@ export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps)
           label={t('home.feed.search.label')}
           style={{ flex: 1, minWidth: 200 }}
         />
+        <MembershipSelect
+          value={filters.membership}
+          onChange={(membership) => setFilters({ membership })}
+        />
+      </Group>
+
+      <Group gap="sm" wrap="wrap">
         <PublicationScopeControl
           value={filters.scope}
           onChange={(scope: PublicationScopeValue) => setFilters({ scope, page: 0 })}
         />
-        {isAuthenticated && (
-          <Select
-            value={filters.membership}
-            onChange={(value) => setFilters({ membership: value as MembershipFilterValue })}
-            data={(['all', 'member', 'organizer', 'admin'] as const).map((value) => ({
-              value,
-              label: membershipLabels[value],
-            }))}
-            aria-label={t('filters.membership.label')}
-            allowDeselect={false}
-            w={{ base: '100%', sm: 180 }}
-          />
-        )}
+        <SegmentedControl
+          value={filters.filter}
+          onChange={(value) => setFilters({ filter: value as PublicationFilterValue })}
+          data={TYPE_FILTERS.map((value) => ({
+            value,
+            label: t(`teams.publications.list.filter.${value}`),
+          }))}
+          aria-label={t('teams.publications.list.filter.label')}
+        />
       </Group>
 
-      <Chip.Group
-        multiple={false}
-        value={filters.filter}
-        onChange={(value) => setFilters({ filter: value as PublicationFilterValue })}
-      >
-        <Group gap="xs" role="radiogroup" aria-label={t('teams.publications.list.filter.label')}>
-          {TYPE_FILTERS.map((value) => (
-            <Chip key={value} value={value} variant="light">
-              {t(`teams.publications.list.filter.${value}`)}
-            </Chip>
-          ))}
-        </Group>
-      </Chip.Group>
-
-      <ResultCount total={publicationsData?.total} resource="publications" />
+      {!sectioned && <ResultCount total={publicationsData?.total} resource="publications" />}
 
       <QueryStateBoundary
         isLoading={isLoading}
@@ -174,15 +173,22 @@ export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps)
       >
         {publicationsData?.publications && publicationsData.publications.length > 0 ? (
           <Stack>
-            <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-              {publicationsData.publications.map((publication) => (
-                <PublicationCard
-                  key={publication.id}
-                  publication={publication}
-                  showTeam={!isSingleTeam()}
-                />
-              ))}
-            </SimpleGrid>
+            <Box ref={listTopRef}>
+              {sectioned ? (
+                <UpcomingFirstSections
+                  items={publicationsData.publications}
+                  page={filters.page}
+                  size={filters.size}
+                  total={publicationsData.total}
+                  upcomingTotal={publicationsData.upcomingTotal ?? 0}
+                  counts={sectionCounts(filters.filter)}
+                >
+                  {renderGrid}
+                </UpcomingFirstSections>
+              ) : (
+                renderGrid(publicationsData.publications)
+              )}
+            </Box>
 
             <Pagination
               currentPage={filters.page}
@@ -211,4 +217,17 @@ export function HomeFeedSection({ feed, title, subtitle }: HomeFeedSectionProps)
       </QueryStateBoundary>
     </Stack>
   )
+}
+
+/**
+ * What each section's count names. « À venir » holds rides and trips only; « Plus tôt » mixes in
+ * the posts, hence « publications », unless the kind narrows both.
+ */
+function sectionCounts(filter: PublicationFilterValue): {
+  upcoming: CountedResource
+  earlier: CountedResource
+} {
+  if (filter === 'ride') return { upcoming: 'rides', earlier: 'rides' }
+  if (filter === 'trip') return { upcoming: 'trips', earlier: 'trips' }
+  return { upcoming: 'ridesAndTrips', earlier: 'publications' }
 }

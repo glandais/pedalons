@@ -70,6 +70,8 @@ import { prefetchTeamHome } from '@/pages/team/teamHomeData'
 import { prefetchTeamAgenda } from '@/pages/team/teamAgendaData'
 import { prefetchTeamPosts } from '@/pages/team/teamPostsData'
 import {
+  homeFeedRedirect,
+  teamAgendaRedirect,
   teamHomeRedirect,
   teamRidesRedirect,
   teamTripsRedirect,
@@ -141,6 +143,8 @@ export const routesConfig: RoutesConfig = [
     index: true,
     navGroup: 'home',
     breadcrumb: { type: 'static', i18nKey: tRegister('home.tabs.feed') },
+    // A former « À venir » link (`?w=upcoming`, RL15) loses its period: « Tout » holds it.
+    redirect: (_params, url) => homeFeedRedirect(url.searchParams),
     // Resolves the feed the URL actually asks for, filters and page included, the same way
     // HomePage does: the membership probe of `useMembershipDefault` feeds the schema's default,
     // the query string overrides it, and `publicationApiParams` projects the result.
@@ -502,7 +506,7 @@ export const routesConfig: RoutesConfig = [
     // CalendarPage's first events query, keyed on the same `getInitialCalendarRange()` the hook
     // seeds its state with. The window is wider than any single view on purpose, so the visible
     // grid `CalendarView` reports on mount — and every step within six months — is served from it.
-    prefetch: (queryClient) => prefetchCalendar(queryClient),
+    prefetch: (queryClient, _params, url) => prefetchCalendar(queryClient, url),
   },
 
   // === Team Routes ===
@@ -563,6 +567,8 @@ export const routesConfig: RoutesConfig = [
     auth: 'public',
     parentId: 'team-detail',
     breadcrumb: { type: 'static', i18nKey: tRegister('teams.detail.tabs.agenda') },
+    // « À venir » and « Passées » are gone (RL15): their links open « Toutes les dates ».
+    redirect: (params, url) => teamAgendaRedirect(params.teamSlug!, url.searchParams),
     prefetch: (queryClient, params, url) =>
       withTeamSwitcher(queryClient, prefetchTeamAgenda(queryClient, params.teamSlug!, url)),
   },

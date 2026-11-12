@@ -8,7 +8,9 @@ import { useAuth } from '../../hooks/useAuth'
 import { getAppConfig } from '../../config/appConfig'
 import { useDebouncedSearch } from '../../hooks/useDebouncedSearch'
 import { useScrollToListTop } from '../../hooks/useScrollToListTop'
-import type { MembershipFilterValue } from '../../hooks/filters/membership'
+import { isJoinableFilterOn } from '../../hooks/filters/teamFilters'
+import { MembershipSelect } from '../../components/common/MembershipSelect'
+import { membershipLabel } from '../../components/common/membershipLabel'
 import { FilteredEmptyState } from '../../components/common/FilteredEmptyState'
 import { searchFilter } from '../../components/common/filteredEmpty'
 import { ResultCount } from '../../components/common/ResultCount'
@@ -18,7 +20,7 @@ import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { Pagination } from '../../components/common/Pagination'
 import { SearchInput } from '../../components/common/SearchInput'
 import { PendingInvitationsBanner } from '../../components/team/PendingInvitationsBanner'
-import { Select, Box, Group, Title, Text, Stack, Button, SimpleGrid } from '@mantine/core'
+import { Box, Chip, Group, Title, Text, Stack, Button, SimpleGrid } from '@mantine/core'
 import { useTeamListData } from './teamListData'
 
 export function TeamListPage() {
@@ -46,25 +48,22 @@ export function TeamListPage() {
   const hasTeams = (teamsData?.total ?? 0) > 0
   const canCreateTeam = isAuthenticated && (!config?.singleTeam || !hasTeams)
 
-  const hasFiltersOrSearch = !!filters.search || filters.membership !== membershipDefault
-  const membershipLabels: Record<MembershipFilterValue, string> = {
-    all: t('teams.list.filter.all'),
-    member: t('roles.MEMBER'),
-    organizer: t('roles.ORGANIZER'),
-    admin: t('roles.ADMIN'),
-  }
+  const joinable = isJoinableFilterOn(filters)
+  const hasFiltersOrSearch =
+    !!filters.search || filters.membership !== membershipDefault || joinable
   const activeFilters = [
     ...(filters.search ? [searchFilter(t, filters.search)] : []),
-    ...(filters.membership !== membershipDefault ? [membershipLabels[filters.membership]] : []),
+    ...(joinable ? [t('teams.list.filter.joinable')] : []),
+    ...(filters.membership !== membershipDefault ? [membershipLabel(t, filters.membership)] : []),
   ]
   const clearFilters = () => {
     setSearch('')
-    setFilters({ search: undefined, membership: membershipDefault, page: 0 })
+    setFilters({ search: undefined, membership: membershipDefault, joinable: false, page: 0 })
   }
 
   const createTeamButton = canCreateTeam ? (
     <Button component={PrefetchLink} to={paths.teamsNew()} leftSection={<IconPlus size={20} />}>
-      {t('teams.create.title')}
+      {t('list.create.team')}
     </Button>
   ) : null
 
@@ -90,19 +89,22 @@ export function TeamListPage() {
           label={t('teams.list.search.label')}
           style={{ flex: 1, minWidth: 200 }}
         />
-        {isAuthenticated && (
-          <Select
-            value={filters.membership}
-            onChange={(value) => setFilters({ membership: value as MembershipFilterValue })}
-            data={(['all', 'member', 'organizer', 'admin'] as const).map((value) => ({
-              value,
-              label: membershipLabels[value],
-            }))}
-            aria-label={t('teams.list.filter.label')}
-            allowDeselect={false}
-            w={{ base: '100%', sm: 160 }}
-          />
+        {/* « Ouvertes à l'adhésion » (RL3): only under « Toutes les équipes », where there is
+            something to join — a visitor's scope. */}
+        {filters.membership === 'all' && (
+          <Chip
+            checked={filters.joinable}
+            onChange={(checked) => setFilters({ joinable: checked })}
+            variant="light"
+            mb={6}
+          >
+            {t('teams.list.filter.joinable')}
+          </Chip>
         )}
+        <MembershipSelect
+          value={filters.membership}
+          onChange={(membership) => setFilters({ membership })}
+        />
       </Group>
 
       {/* The order follows the scope (RL5), and is said beside the count. */}
