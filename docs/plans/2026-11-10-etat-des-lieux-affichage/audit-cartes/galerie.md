@@ -14,6 +14,7 @@ ce cahier.
   données par des valeurs fixes ; elle ne modifie pas la carte.
 - **Un cas = une légende + une carte.** La légende porte l'identifiant du cas (`fil-sortie-inscrite`), en petit, au-dessus.
 - **Même ordre** de sections et de cas des deux côtés. Un cas sans objet sur un support est omis, pas remplacé.
+- **Horloge figée à J 12:00 pendant la capture**, pour que « En cours » et les dates ne dépendent pas de l'heure.
 - **Dates relatives au jour de la capture** (J = aujourd'hui) : les cartes calculent « Demain », « En cours »,
   « Terminée » d'après l'horloge. Les deux galeries capturées le même jour montrent donc les mêmes dates.
 - Lecteur : **Camille Durand**, membre de l'équipe, fuseau des sorties (pas de mention de fuseau), unités métriques,
@@ -31,6 +32,8 @@ ce cahier.
 - Voyage **Traversée du Morvan** : J+10 → J+12, départ 08:30, 12 personnes, 201 km, 3 340 m D+.
   Étapes : « Autun → Château-Chinon » (J+10 08:30, 74 km, 1 380 m, 22 km/h) · « Château-Chinon → Saulieu » (J+11 09:00, 68 km,
   1 120 m) · « Saulieu → Avallon » (J+12 09:00, 59 km, 840 m).
+- Voyage d'une étape **Aller-retour au mont Beuvray** : J+5 à 08:30, 96 km, 1 650 m D+. C'est son étape qui figure dans
+  « Les 7 prochains jours » (la Traversée du Morvan est au-delà de la semaine).
 - Publication **Bilan de la saison** : publiée J−2 à 18:30 par Léa Martin, 4 commentaires, extrait de deux lignes.
 - Annonce **Vélo de route carbone taille M** : vente, 1 200 €, secteur « Brest », publiée J−5 ; **Remorque enfant** : location,
   15 € par jour ; **Roues gravel 700** : recherche, prix à négocier.
