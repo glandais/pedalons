@@ -117,11 +117,26 @@ public class AllPublicationRepository
         + "Start)))";
   }
 
+  /** The two parameters of {@link #endClause}: the instant, and the instant minus the default. */
+  private static Map<String, @Nullable Object> endParams(String param, Instant at) {
+    return Map.of(param, at, param + "Start", at.minus(PublicationEndCalculator.DEFAULT_DURATION));
+  }
+
   private static PedalonsQuery andEnd(
       PedalonsQuery pedalonsQuery, String operator, String param, Instant at) {
-    return pedalonsQuery.and(
-        endClause(operator, param),
-        Map.of(param, at, param + "Start", at.minus(PublicationEndCalculator.DEFAULT_DURATION)));
+    return pedalonsQuery.and(endClause(operator, param), endParams(param, at));
+  }
+
+  /**
+   * The section a row falls in, 0 for « À venir », 1 for everything else — the one expression that
+   * ranks a row in {@link #orderUpcomingFirst} and that {@code notUpcomingAt} filters on, so the
+   * {@code when=EARLIER} list and the second section of {@code when=UPCOMING_FIRST} can never
+   * disagree. A {@code case} rather than a negated {@link #endClause}: a ride with no stored end
+   * makes {@code te.endDateTime >= :x} unknown, and {@code not} of an unknown would drop a row that
+   * the {@code case} ranks second.
+   */
+  private static String sectionRank(String param) {
+    return "case when " + endClause(">=", param) + " then 0 else 1 end";
   }
 
   @Override
@@ -170,6 +185,13 @@ public class AllPublicationRepository
     if (endedBefore != null) {
       pedalonsQuery = andEnd(pedalonsQuery, "<", "endedBefore", endedBefore);
     }
+    Instant notUpcomingAt = query.notUpcomingAt();
+    if (notUpcomingAt != null) {
+      pedalonsQuery =
+          pedalonsQuery.and(
+              "(" + sectionRank("notUpcomingAt") + ") = 1",
+              endParams("notUpcomingAt", notUpcomingAt));
+    }
     Instant upcomingFirstAt = query.upcomingFirstAt();
     if (upcomingFirstAt != null) {
       pedalonsQuery = orderUpcomingFirst(pedalonsQuery, upcomingFirstAt);
@@ -195,18 +217,13 @@ public class AllPublicationRepository
   private static PedalonsQuery orderUpcomingFirst(PedalonsQuery pedalonsQuery, Instant at) {
     String upcoming = endClause(">=", "upcomingFirstAt");
     return pedalonsQuery.order(
-        "case when "
-            + upcoming
-            + " then 0 else 1 end asc, case when "
+        sectionRank("upcomingFirstAt")
+            + " asc, case when "
             + upcoming
             + " then te.dateTime end asc, te.dateTime desc, case when "
             + upcoming
             + " then te.id end asc, te.id desc",
-        Map.of(
-            "upcomingFirstAt",
-            at,
-            "upcomingFirstAtStart",
-            at.minus(PublicationEndCalculator.DEFAULT_DURATION)));
+        endParams("upcomingFirstAt", at));
   }
 
   @Override

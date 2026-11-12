@@ -95,7 +95,7 @@ public class TeamPublicationResource {
                   "Order of the publication date. Omitted, or DESC, is newest first (the feed);"
                       + " ASC is soonest first — what a window of upcoming outings needs, so a"
                       + " page keeps the nearest ones. Given, it overrides the order set by when,"
-                      + " except with when=UPCOMING_FIRST, which ignores it.")
+                      + " except with when=UPCOMING_FIRST or EARLIER, which ignore it.")
           @QueryParam("sortDir")
           @Nullable SortDirection sortDir,
       @Parameter(description = PublicationResource.WHEN_PARAM_DESCRIPTION) @QueryParam("when")

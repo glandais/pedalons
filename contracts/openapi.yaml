@@ -4841,6 +4841,7 @@ components:
       - UPCOMING
       - PAST
       - UPCOMING_FIRST
+      - EARLIER
     PushDeviceRegistration:
       description: A device to receive push notifications on
       type: object
@@ -12769,7 +12770,7 @@ paths:
       - description: "Order of the publication date. Omitted, or DESC, is newest first\
           \ (the feed); ASC is soonest first — what a window of upcoming outings needs,\
           \ so a page keeps the nearest ones. Given, it overrides the order set by\
-          \ when, except with when=UPCOMING_FIRST, which ignores it."
+          \ when, except with when=UPCOMING_FIRST or EARLIER, which ignore it."
         name: sortDir
         in: query
         schema:
@@ -12811,8 +12812,12 @@ paths:
           \ unless dated=true, the posts — latest first; the id ends each section's\
           \ key, so the order is total. The listing then fills upcomingTotal, the\
           \ size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST\
-          \ counts the whole list, as omitting when does. Omitted: no such filter,\
-          \ newest first."
+          \ counts the whole list, as omitting when does. EARLIER (« Plus tôt ») is\
+          \ exactly the second section of UPCOMING_FIRST: everything UPCOMING leaves\
+          \ out — the rides and trips over and, unless dated=true, the posts — in\
+          \ that section's order, latest first, the id ending the key; with dated=true\
+          \ it lists what PAST lists. No upcomingTotal, sortDir ignored; on a count\
+          \ endpoint it counts that section. Omitted: no such filter, newest first."
         name: when
         in: query
         schema:
@@ -12895,8 +12900,12 @@ paths:
           \ unless dated=true, the posts — latest first; the id ends each section's\
           \ key, so the order is total. The listing then fills upcomingTotal, the\
           \ size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST\
-          \ counts the whole list, as omitting when does. Omitted: no such filter,\
-          \ newest first."
+          \ counts the whole list, as omitting when does. EARLIER (« Plus tôt ») is\
+          \ exactly the second section of UPCOMING_FIRST: everything UPCOMING leaves\
+          \ out — the rides and trips over and, unless dated=true, the posts — in\
+          \ that section's order, latest first, the id ending the key; with dated=true\
+          \ it lists what PAST lists. No upcomingTotal, sortDir ignored; on a count\
+          \ endpoint it counts that section. Omitted: no such filter, newest first."
         name: when
         in: query
         schema:
@@ -16534,7 +16543,7 @@ paths:
       - description: "Order of the publication date. Omitted, or DESC, is newest first\
           \ (the feed); ASC is soonest first — what a window of upcoming outings needs,\
           \ so a page keeps the nearest ones. Given, it overrides the order set by\
-          \ when, except with when=UPCOMING_FIRST, which ignores it."
+          \ when, except with when=UPCOMING_FIRST or EARLIER, which ignore it."
         name: sortDir
         in: query
         schema:
@@ -16586,8 +16595,12 @@ paths:
           \ unless dated=true, the posts — latest first; the id ends each section's\
           \ key, so the order is total. The listing then fills upcomingTotal, the\
           \ size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST\
-          \ counts the whole list, as omitting when does. Omitted: no such filter,\
-          \ newest first."
+          \ counts the whole list, as omitting when does. EARLIER (« Plus tôt ») is\
+          \ exactly the second section of UPCOMING_FIRST: everything UPCOMING leaves\
+          \ out — the rides and trips over and, unless dated=true, the posts — in\
+          \ that section's order, latest first, the id ending the key; with dated=true\
+          \ it lists what PAST lists. No upcomingTotal, sortDir ignored; on a count\
+          \ endpoint it counts that section. Omitted: no such filter, newest first."
         name: when
         in: query
         schema:
@@ -16700,8 +16713,12 @@ paths:
           \ unless dated=true, the posts — latest first; the id ends each section's\
           \ key, so the order is total. The listing then fills upcomingTotal, the\
           \ size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST\
-          \ counts the whole list, as omitting when does. Omitted: no such filter,\
-          \ newest first."
+          \ counts the whole list, as omitting when does. EARLIER (« Plus tôt ») is\
+          \ exactly the second section of UPCOMING_FIRST: everything UPCOMING leaves\
+          \ out — the rides and trips over and, unless dated=true, the posts — in\
+          \ that section's order, latest first, the id ending the key; with dated=true\
+          \ it lists what PAST lists. No upcomingTotal, sortDir ignored; on a count\
+          \ endpoint it counts that section. Omitted: no such filter, newest first."
         name: when
         in: query
         schema:
@@ -21359,7 +21376,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 14.8.0
+  version: 14.9.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

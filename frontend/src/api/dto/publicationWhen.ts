@@ -4,4 +4,5 @@ export const PublicationWhen = {
   UPCOMING: 'UPCOMING',
   PAST: 'PAST',
   UPCOMING_FIRST: 'UPCOMING_FIRST',
+  EARLIER: 'EARLIER',
 } as const

@@ -32,6 +32,10 @@ import org.jspecify.annotations.Nullable;
  *     API-185): first the rides and trips {@link #notEndedAt()} would keep, soonest departure
  *     first, then every other row — the ones over and the posts — latest first. Filters nothing,
  *     and wins over {@link #ascending()}.
+ * @param notUpcomingAt keep only the second section of {@link #upcomingFirstAt()} at this instant
+ *     (docs/LEDGER_*.md API-185): every row that section would rank second — the rides and trips
+ *     over, and the posts — by the very expression that ranks it. Orders nothing by itself: the
+ *     default order, latest first, is that section's.
  * @param dated keep only the rides and trips — the types that have a departure — whatever the other
  *     filters, {@link #upcomingFirstAt()} included: a team's agenda in one call (docs/LEDGER_*.md
  *     API-185). Drops every other type of publication; with a {@link #type()} of another type the
@@ -52,6 +56,7 @@ public record PublicationQuery(
     @Nullable Instant notEndedAt,
     @Nullable Instant endedBefore,
     @Nullable Instant upcomingFirstAt,
+    @Nullable Instant notUpcomingAt,
     @Nullable MinRole minRole,
     @Nullable Status status,
     @Nullable Set<Long> tagIds,

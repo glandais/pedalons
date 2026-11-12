@@ -36,7 +36,7 @@ export const ListAllPublicationsQueryParams = zod.object({
     .enum(['ASC', 'DESC'])
     .optional()
     .describe(
-      'Order of the publication date. Omitted, or DESC, is newest first (the feed); ASC is soonest first — what a window of upcoming outings needs, so a page keeps the nearest ones. Given, it overrides the order set by when, except with when=UPCOMING_FIRST, which ignores it.'
+      'Order of the publication date. Omitted, or DESC, is newest first (the feed); ASC is soonest first — what a window of upcoming outings needs, so a page keeps the nearest ones. Given, it overrides the order set by when, except with when=UPCOMING_FIRST or EARLIER, which ignore it.'
     ),
   status: zod
     .enum(['DRAFT', 'PUBLISHED', 'CANCELLED'])
@@ -53,10 +53,10 @@ export const ListAllPublicationsQueryParams = zod.object({
       "How much of each row to send. COMPACT (case-insensitive) returns media.markdown empty and media.assets trimmed to the logo, the first image and the themed thumbnails — read 'excerpt' and 'thumbnailUrl' instead, both of which are present either way. The markdown body, the attachments, the GPX and FIT files and every image past the first are dropped. Omitted, or FULL, is the previous behaviour, byte for byte."
     ),
   when: zod
-    .enum(['UPCOMING', 'PAST', 'UPCOMING_FIRST'])
+    .enum(['UPCOMING', 'PAST', 'UPCOMING_FIRST', 'EARLIER'])
     .optional()
     .describe(
-      "Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and, unless dated=true, the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first."
+      "Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and, unless dated=true, the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. EARLIER (« Plus tôt ») is exactly the second section of UPCOMING_FIRST: everything UPCOMING leaves out — the rides and trips over and, unless dated=true, the posts — in that section's order, latest first, the id ending the key; with dated=true it lists what PAST lists. No upcomingTotal, sortDir ignored; on a count endpoint it counts that section. Omitted: no such filter, newest first."
     ),
 })
 
@@ -3007,10 +3007,10 @@ export const CountAllPublicationsQueryParams = zod.object({
   to: zod.string().optional().describe('End date filter (ISO format)'),
   type: zod.enum(['RIDE', 'POST', 'TRIP']).optional().describe('Types'),
   when: zod
-    .enum(['UPCOMING', 'PAST', 'UPCOMING_FIRST'])
+    .enum(['UPCOMING', 'PAST', 'UPCOMING_FIRST', 'EARLIER'])
     .optional()
     .describe(
-      "Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and, unless dated=true, the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first."
+      "Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and, unless dated=true, the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. EARLIER (« Plus tôt ») is exactly the second section of UPCOMING_FIRST: everything UPCOMING leaves out — the rides and trips over and, unless dated=true, the posts — in that section's order, latest first, the id ending the key; with dated=true it lists what PAST lists. No upcomingTotal, sortDir ignored; on a count endpoint it counts that section. Omitted: no such filter, newest first."
     ),
 })
 
@@ -3056,7 +3056,7 @@ export const ListPublicationsQueryParams = zod.object({
     .enum(['ASC', 'DESC'])
     .optional()
     .describe(
-      'Order of the publication date. Omitted, or DESC, is newest first (the feed); ASC is soonest first — what a window of upcoming outings needs, so a page keeps the nearest ones. Given, it overrides the order set by when, except with when=UPCOMING_FIRST, which ignores it.'
+      'Order of the publication date. Omitted, or DESC, is newest first (the feed); ASC is soonest first — what a window of upcoming outings needs, so a page keeps the nearest ones. Given, it overrides the order set by when, except with when=UPCOMING_FIRST or EARLIER, which ignore it.'
     ),
   status: zod
     .enum(['DRAFT', 'PUBLISHED', 'CANCELLED'])
@@ -3079,10 +3079,10 @@ export const ListPublicationsQueryParams = zod.object({
       "How much of each row to send. COMPACT (case-insensitive) returns media.markdown empty and media.assets trimmed to the logo, the first image and the themed thumbnails — read 'excerpt' and 'thumbnailUrl' instead, both of which are present either way. The markdown body, the attachments, the GPX and FIT files and every image past the first are dropped. Omitted, or FULL, is the previous behaviour, byte for byte."
     ),
   when: zod
-    .enum(['UPCOMING', 'PAST', 'UPCOMING_FIRST'])
+    .enum(['UPCOMING', 'PAST', 'UPCOMING_FIRST', 'EARLIER'])
     .optional()
     .describe(
-      "Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and, unless dated=true, the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first."
+      "Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and, unless dated=true, the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. EARLIER (« Plus tôt ») is exactly the second section of UPCOMING_FIRST: everything UPCOMING leaves out — the rides and trips over and, unless dated=true, the posts — in that section's order, latest first, the id ending the key; with dated=true it lists what PAST lists. No upcomingTotal, sortDir ignored; on a count endpoint it counts that section. Omitted: no such filter, newest first."
     ),
   withFullGroup: zod
     .boolean()
@@ -6051,10 +6051,10 @@ export const CountPublicationsQueryParams = zod.object({
   to: zod.string().optional().describe('End date filter (ISO format)'),
   type: zod.enum(['RIDE', 'POST', 'TRIP']).optional().describe('Type'),
   when: zod
-    .enum(['UPCOMING', 'PAST', 'UPCOMING_FIRST'])
+    .enum(['UPCOMING', 'PAST', 'UPCOMING_FIRST', 'EARLIER'])
     .optional()
     .describe(
-      "Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and, unless dated=true, the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first."
+      "Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and, unless dated=true, the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. EARLIER (« Plus tôt ») is exactly the second section of UPCOMING_FIRST: everything UPCOMING leaves out — the rides and trips over and, unless dated=true, the posts — in that section's order, latest first, the id ending the key; with dated=true it lists what PAST lists. No upcomingTotal, sortDir ignored; on a count endpoint it counts that section. Omitted: no such filter, newest first."
     ),
   withFullGroup: zod
     .boolean()

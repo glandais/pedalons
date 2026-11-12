@@ -20,5 +20,13 @@ public enum PublicationWhen {
    * {@code upcomingTotal}, the size of the first section, so a client places the boundary on any
    * page.
    */
-  UPCOMING_FIRST
+  UPCOMING_FIRST,
+
+  /**
+   * « Plus tôt »: exactly the second section of {@link #UPCOMING_FIRST} — everything {@link
+   * #UPCOMING} leaves out, the rides and trips over and the posts — in the same order, latest date
+   * first, the id descending to end the key. « Tout » without what is ahead; with {@code
+   * dated=true}, the same rows as {@link #PAST}. No sections, so no {@code upcomingTotal}.
+   */
+  EARLIER
 }

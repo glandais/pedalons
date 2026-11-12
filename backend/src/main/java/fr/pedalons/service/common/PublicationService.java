@@ -196,7 +196,8 @@ public class PublicationService {
    * @param when {@link PublicationWhen#UPCOMING}: the rides and trips not over yet, soonest first;
    *     {@link PublicationWhen#PAST}: those over, latest first; {@link
    *     PublicationWhen#UPCOMING_FIRST}: no filter, the first ones then everything else, posts
-   *     included (docs/LEDGER_*.md API-185); null: no such filter. Judged by the end, not the
+   *     included (docs/LEDGER_*.md API-185); {@link PublicationWhen#EARLIER}: the second section of
+   *     that list alone; null: no such filter. Judged by the end, not the
    *     start (docs/LEDGER_*.md API-85). Posts are never in the first two.
    * @param sortDir order of {@code dateTime}; given, it overrides the order {@code when} sets
    */
@@ -274,7 +275,8 @@ public class PublicationService {
    * soonest departure first for what is ahead, latest first for what is over. An explicit {@code
    * sortDir} wins over that order, except with {@link PublicationWhen#UPCOMING_FIRST}: there the
    * order is the whole point (two sections, docs/LEDGER_*.md API-185), and {@code sortDir} is
-   * ignored.
+   * ignored; and with {@link PublicationWhen#EARLIER}, which is that list's second section, in that
+   * section's order — the default one, latest first.
    */
   static PublicationQuery.PublicationQueryBuilder withWhen(
       PublicationQuery.PublicationQueryBuilder query,
@@ -283,6 +285,9 @@ public class PublicationService {
     Instant now = Instant.now();
     if (when == PublicationWhen.UPCOMING_FIRST) {
       return query.upcomingFirstAt(now).ascending(false);
+    }
+    if (when == PublicationWhen.EARLIER) {
+      return query.notUpcomingAt(now).ascending(false);
     }
     if (when == PublicationWhen.UPCOMING) {
       query.notEndedAt(now);
