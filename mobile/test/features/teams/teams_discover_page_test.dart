@@ -156,8 +156,8 @@ void main() {
       ),
     );
 
-    expect(find.text('1 membre'), findsOneWidget);
-    expect(find.text('40 membres'), findsOneWidget);
+    expect(find.text('1\u00a0membre'), findsOneWidget);
+    expect(find.text('40\u00a0membres'), findsOneWidget);
   });
 
   testWidgets('la chip « Ouvertes à l\'adhésion » part bien au serveur', (

@@ -215,8 +215,8 @@ void main() {
         findsOneWidget,
       );
       // Les groupes n'ont pas le même horaire : chacun dit le sien.
-      expect(inCard('Groupe A · départ 21:30'), findsOneWidget);
-      expect(inCard('Groupe B · départ 22:30'), findsOneWidget);
+      expect(inCard('départ\u00a021:30'), findsOneWidget);
+      expect(inCard('départ\u00a022:30'), findsOneWidget);
     });
 
     testWidgets('désinscrit depuis le chargement : l’heure de la sortie', (
@@ -230,16 +230,16 @@ void main() {
         ),
         overrides: <String, bool>{'r1': false},
       );
-      expect(inCard('Groupe B · départ 22:30'), findsOneWidget);
-      expect(inCard('Groupe A · départ 21:30'), findsOneWidget);
+      expect(inCard('départ\u00a022:30'), findsOneWidget);
+      expect(inCard('départ\u00a021:30'), findsOneWidget);
     });
 
     testWidgets('sans inscription : l’heure de la sortie, et chaque groupe '
         'dit la sienne, lecteur d’écran compris', (WidgetTester tester) async {
       final SemanticsHandle semantics = tester.ensureSemantics();
       await pump(tester, DashboardRideCard(ride: row(), canEdit: false));
-      expect(inCard('Groupe A · départ 21:30'), findsOneWidget);
-      expect(inCard('Groupe B · départ 22:30'), findsOneWidget);
+      expect(inCard('départ\u00a021:30'), findsOneWidget);
+      expect(inCard('départ\u00a022:30'), findsOneWidget);
       expect(
         find.bySemanticsLabel(RegExp('Groupe B · départ 22:30')),
         findsOneWidget,

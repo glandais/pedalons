@@ -252,13 +252,13 @@ void main() {
             recentPostCount: 1,
           ),
         ),
-        '2 sorties à venir · 1 nouvelle publication',
+        '2\u00a0sorties à venir · 1\u00a0nouvelle publication',
       );
       expect(
         teamActivityLine(
           fixtureTeam(upcomingRideCount: 0, upcomingTripCount: 1),
         ),
-        '1 voyage à venir',
+        '1\u00a0voyage à venir',
       );
     });
 
@@ -274,7 +274,7 @@ void main() {
       // Accordé : « 1 membre », jamais « 1 membres » (BRANDING §8.3).
       expect(
         teamActivityLine(fixtureTeam(upcomingRideCount: 0, memberCount: 1)),
-        '1 membre',
+        '1\u00a0membre',
       );
     });
 
@@ -308,10 +308,10 @@ void main() {
       expect(find.text('ORGANISATEUR'), findsOneWidget);
       expect(find.text('MEMBRE'), findsOneWidget);
       expect(
-        find.text('2 sorties à venir · 1 nouvelle publication'),
+        find.text('2\u00a0sorties à venir · 1\u00a0nouvelle publication'),
         findsOneWidget,
       );
-      expect(find.text('1 voyage à venir'), findsOneWidget);
+      expect(find.text('1\u00a0voyage à venir'), findsOneWidget);
       // « Trouver une équipe » en tête de section, comme « Calendrier ».
       expect(find.byKey(keys.home.findTeamButton), findsOneWidget);
     });

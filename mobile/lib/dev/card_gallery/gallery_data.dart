@@ -60,6 +60,22 @@ class GalleryData {
   /// Dans [d].
   String later(Duration d) => nowUtc.add(d).toIso8601String();
 
+  /// Le départ d'une sortie en cours : il y a une heure, mais jamais avant
+  /// minuit, pour qu'elle porte la date du jour à toute heure de capture.
+  ///
+  /// Les cartes lisent l'horloge elles-mêmes (`DateTime.now()` dans
+  /// `AppFormatters` et `publication_timing`, sans fournisseur à remplacer) :
+  /// la galerie ne peut pas leur imposer midi, elle choisit donc des dates
+  /// qui disent la même chose à toute heure (docs/LEDGER_*.md MOB-139).
+  String startedToday() {
+    final DateTime midnight = AppFormatters.zoneWallClockToUtc(
+      DateTime(_today.year, _today.month, _today.day),
+      kGalleryZone,
+    ).toUtc();
+    final DateTime hourAgo = nowUtc.subtract(const Duration(hours: 1));
+    return (hourAgo.isBefore(midnight) ? midnight : hourAgo).toIso8601String();
+  }
+
   // ───────────────────────────────────────────────────────────── personnes
 
   static const PublicUserDto lea = PublicUserDto(
@@ -116,7 +132,19 @@ class GalleryData {
     timezone: kGalleryZone,
     unitSystem: 'METRIC',
     language: 'fr',
-    connectedServices: <GpsServiceConnectionDto>[],
+    // Un service connecté : sans lui, le bouton « GPS » de la carte de son
+    // groupe et de « Ma prochaine sortie » ne s'affiche pas
+    // (docs/LEDGER_*.md MOB-139, N20).
+    connectedServices: <GpsServiceConnectionDto>[
+      GpsServiceConnectionDto(
+        serviceType: 'GARMIN',
+        displayName: 'Garmin Connect',
+        connectedAt: '2026-09-01T10:00:00Z',
+        autoSync: false,
+        autoSyncState: 'OFF',
+        autoSyncRouteCount: 0,
+      ),
+    ],
   );
 
   ConfigDto get config => const ConfigDto(
@@ -746,8 +774,8 @@ class GalleryData {
   );
 
   /// Les cinq lignes de « Cette semaine » : une sortie, la sortie où Camille
-  /// est inscrite, une annulée, un brouillon et une étape, dans l'ordre des
-  /// dates.
+  /// est inscrite, l'étape unique d'un voyage d'une étape, une annulée et un
+  /// brouillon, dans l'ordre des dates — toutes dans les sept jours.
   List<CalendarEventDto> get weekEvents => <CalendarEventDto>[
     event(
       id: 'e-recup',
@@ -767,6 +795,17 @@ class GalleryData {
       elevationGain: 980,
     ),
     event(
+      id: 'e-beuvray',
+      title: 'Aller-retour au mont Beuvray',
+      start: at(5, 8, 30),
+      type: 'TRIP_STAGE',
+      entitySlug: 'aller-retour-au-mont-beuvray',
+      tripSlug: 'aller-retour-au-mont-beuvray',
+      distance: 96000,
+      elevationGain: 1650,
+      place: 'Autun',
+    ),
+    event(
       id: 'e-drennec',
       title: 'Tour du lac du Drennec',
       start: at(5, 9),
@@ -784,7 +823,6 @@ class GalleryData {
       distance: 30000,
       elevationGain: 250,
     ),
-    stageEvent(),
   ];
 
   CalendarEventDto stageEvent() => event(

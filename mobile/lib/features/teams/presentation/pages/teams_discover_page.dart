@@ -240,12 +240,10 @@ class _TeamsDiscoverPageState extends ConsumerState<TeamsDiscoverPage> {
             isEmpty: state.items.isEmpty,
             hasError: state.nextError != null,
             onRetry: notifier.retryNextPage,
-            progressLabel: 'pagination.progressNamed'.tr(
-              namedArgs: <String, String>{
-                'loaded': '${state.items.length}',
-                'noun': 'teams.discovery.noun'.tr(),
-                'total': '$total',
-              },
+            progressLabel: pagedProgressNamed(
+              'teams.discovery.noun',
+              state.items.length,
+              total,
             ),
             loadingLabel: 'pagination.loadingMore'.tr(),
             endLabel: 'pagination.endOfList'.tr(),

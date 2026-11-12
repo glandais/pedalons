@@ -229,8 +229,8 @@
     "scope": "Scope",
     "publicationCount": {
       "zero": "No publication",
-      "one": "{} publication",
-      "other": "{} publications"
+      "one": "{} publication",
+      "other": "{} publications"
     },
     "week": {
       "title": "Next 7 days",
@@ -248,16 +248,16 @@
       "empty": "You are not a member of any team.",
       "find": "Find a team",
       "upcomingRides": {
-        "one": "{} upcoming ride",
-        "other": "{} upcoming rides"
+        "one": "{} upcoming ride",
+        "other": "{} upcoming rides"
       },
       "upcomingTrips": {
-        "one": "{} upcoming trip",
-        "other": "{} upcoming trips"
+        "one": "{} upcoming trip",
+        "other": "{} upcoming trips"
       },
       "recentPosts": {
-        "one": "{} new post",
-        "other": "{} new posts"
+        "one": "{} new post",
+        "other": "{} new posts"
       }
     }
   },
@@ -303,11 +303,14 @@
     },
     "viewTeam": "View team",
     "membersList": {
-      "noun": "members",
+      "noun": {
+        "one": "member",
+        "other": "members"
+      },
       "count": {
         "zero": "No member",
-        "one": "{} member",
-        "other": "{} members"
+        "one": "{} member",
+        "other": "{} members"
       },
       "searchPlaceholder": "Search a member",
       "allRoles": "All",
@@ -322,7 +325,10 @@
     },
     "discovery": {
       "title": "Discover teams",
-      "noun": "teams",
+      "noun": {
+        "one": "team",
+        "other": "teams"
+      },
       "count": {
         "zero": "No team",
         "one": "{} team",
@@ -427,8 +433,8 @@
         "groupStart": "leaves at {time}",
         "registeredCount": {
           "zero": "Nobody registered",
-          "one": "{} registered",
-          "other": "{} registered"
+          "one": "{} registered",
+          "other": "{} registered"
         },
         "groupFill": {
           "zero": "{} registered out of {max}",
@@ -595,8 +601,8 @@
     "title": "Rides",
     "noUpcoming": "No upcoming rides",
     "participants": {
-      "one": "{count} participant",
-      "other": "{count} participants"
+      "one": "{count} participant",
+      "other": "{count} participants"
     },
     "groups": "Groups",
     "leave": "Leave",
@@ -610,8 +616,8 @@
     "leaving": "Leaving...",
     "leaderIs": "Leader: {name}",
     "participantsOf": {
-      "one": "{count}/{max} participant",
-      "other": "{count}/{max} participants"
+      "one": "{count}/{max} participant",
+      "other": "{count}/{max} participants"
     },
     "otherGroupsLabel": "Other groups",
     "otherGroups": {
@@ -620,8 +626,8 @@
     },
     "groupCount": {
       "zero": "No group",
-      "one": "{} group",
-      "other": "{} groups"
+      "one": "{} group",
+      "other": "{} groups"
     },
     "mainRoute": "Main route",
     "selectedGroupProfile": "Selected group profile",
@@ -898,7 +904,10 @@
         "one": "{} template",
         "other": "{} templates"
       },
-      "noun": "templates",
+      "noun": {
+        "one": "template",
+        "other": "templates"
+      },
       "emptyTitle": "No template",
       "emptyMessage": "Create templates to set up rides faster.",
       "noResults": "No template matches this search",
@@ -1041,8 +1050,8 @@
   "trips": {
     "title": "Trips",
     "participants": {
-      "one": "{count} participant",
-      "other": "{count} participants"
+      "one": "{count} participant",
+      "other": "{count} participants"
     },
     "stages": "Stages",
     "mapColorBy": "Colour the route by",
@@ -1059,8 +1068,8 @@
     },
     "stageCount": {
       "zero": "No stage",
-      "one": "{} stage",
-      "other": "{} stages"
+      "one": "{} stage",
+      "other": "{} stages"
     },
     "finished": "Finished",
     "addToCalendar": "Add to my calendar",
@@ -1192,7 +1201,10 @@
     "gradeAverage": "avg.",
     "gradeMax": "max.",
     "usedIn": "Used in",
-    "viaGroups": "via groups: {names}",
+    "viaGroups": {
+      "one": "via group {names}",
+      "other": "via groups: {names}"
+    },
     "viaStage": {
       "one": "via stage {names}",
       "other": "via stages: {names}"
@@ -1949,8 +1961,8 @@
   "comments": {
     "count": {
       "zero": "No comment",
-      "one": "{} comment",
-      "other": "{} comments"
+      "one": "{} comment",
+      "other": "{} comments"
     },
     "emptyTitle": "No comment",
     "loadMore": "Load more comments",
@@ -1981,7 +1993,10 @@
     "groupOrganizer": "Group organizer",
     "emptyTripMessage": "Nobody has joined this trip yet.",
     "loadMore": "Show more",
-    "noun": "participants"
+    "noun": {
+      "one": "participant",
+      "other": "participants"
+    }
   },
   "status": {
     "draft": "Draft",

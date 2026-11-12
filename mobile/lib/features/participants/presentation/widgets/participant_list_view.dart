@@ -184,12 +184,10 @@ class _ParticipantListViewState extends ConsumerState<ParticipantListView> {
                   // Le pied commun se tait entre deux pages ; ici la liste
                   // attend un geste, elle doit dire où on en est.
                   Text(
-                    'pagination.progressNamed'.tr(
-                      namedArgs: <String, String>{
-                        'loaded': '${state.items.length}',
-                        'noun': 'participants.noun'.tr(),
-                        'total': '${state.total ?? widget.count}',
-                      },
+                    pagedProgressNamed(
+                      'participants.noun',
+                      state.items.length,
+                      state.total ?? widget.count,
                     ),
                     key: keys.participants.progress,
                     textAlign: TextAlign.center,
@@ -210,7 +208,7 @@ class _ParticipantListViewState extends ConsumerState<ParticipantListView> {
             key: keys.participants.footer,
             state: state,
             onRetry: notifier.retryNextPage,
-            itemNoun: 'participants.noun'.tr(),
+            itemNounKey: 'participants.noun',
           ),
         ],
       ],

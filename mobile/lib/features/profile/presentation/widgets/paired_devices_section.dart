@@ -74,11 +74,13 @@ class _PairedDevicesCardState extends ConsumerState<PairedDevicesCard> {
     final DateTime? last = device.lastUsedAt == null
         ? null
         : AppFormatters.tryParseDisplayTime(device.lastUsedAt!);
+    // « Appairé le 13 octobre 2026 », sans le jour de la semaine, comme le
+    // site (KIT §8, docs/LEDGER_*.md MOB-139, N15).
     final String pairedOn = paired == null
         ? ''
         : 'profile.devices.pairedOn'.tr(
             namedArgs: <String, String>{
-              'date': AppFormatters.formatLongDate(paired),
+              'date': AppFormatters.formatLongDateWithoutWeekday(paired),
             },
           );
     if (last == null) return pairedOn;

@@ -338,9 +338,14 @@ class NextRideCard extends ConsumerWidget {
             trend: PdlStatTrend.up,
           ),
         PdlStat(
-          value: g?.maxParticipants == null
+          // Le compte du groupe rejoint, avec ou sans maximum ; celui de la
+          // sortie seulement sans groupe (docs/LEDGER_*.md MOB-139, N13 —
+          // « 31 » pour un groupe de 11).
+          value: g == null
               ? '${ride.participantCount}'
-              : '${g!.countParticipants}/${g.maxParticipants}',
+              : g.maxParticipants == null
+              ? '${g.countParticipants}'
+              : '${g.countParticipants}/${g.maxParticipants}',
           icon: PdlIcons.people,
         ),
       ],
@@ -452,26 +457,31 @@ class _NextRideActionsState extends ConsumerState<_NextRideActions>
                     .leave(ride, joined),
               ),
             ],
-            if (canSend) ...<Widget>[
-              const SizedBox(width: PdlSpacing.chipGap),
-              GpsButton(
-                key: keys.home.nextRideGps,
-                loading: gpsExporting,
-                onPressed: (BuildContext button) => openGpsSheet(
-                  GpsExportTarget(
-                    subtitle: joined == null
-                        ? ride.name
-                        : '${groupTitle(joined.name, 'rides.groupPage.title'.tr())}'
-                              ' · ${ride.name}',
-                    teamSlug: ride.team.slug,
-                    routeSlug: routeSlug,
-                  ),
-                  button,
-                ),
-              ),
-            ],
           ],
         ),
+        // Sur sa propre ligne : à trois boutons, « Voir la sortie » se
+        // coupait (« Voir … ») à la largeur d'un téléphone.
+        if (canSend) ...<Widget>[
+          const SizedBox(height: PdlSpacing.chipGap),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: GpsButton(
+              key: keys.home.nextRideGps,
+              loading: gpsExporting,
+              onPressed: (BuildContext button) => openGpsSheet(
+                GpsExportTarget(
+                  subtitle: joined == null
+                      ? ride.name
+                      : '${groupTitle(joined.name, 'rides.groupPage.title'.tr())}'
+                            ' · ${ride.name}',
+                  teamSlug: ride.team.slug,
+                  routeSlug: routeSlug,
+                ),
+                button,
+              ),
+            ),
+          ),
+        ],
         ...gpsExportBanners(gap: PdlSpacing.chipGap, gapBefore: true),
       ],
     );

@@ -121,6 +121,16 @@ class TeamDashboardKeys {
   ValueKey<String> rideEditButton(String rideSlug) =>
       _TeamDashboardKey('rideEdit_$rideSlug');
 
+  /// « Complet » désactivé, à la place de « S'inscrire », sur la carte d'une
+  /// sortie à venir dont tous les groupes sont pleins.
+  ValueKey<String> rideFullButton(String rideSlug) =>
+      _TeamDashboardKey('rideFull_$rideSlug');
+
+  /// L'heure « départ 09:00 » d'une ligne de groupe de la carte d'une sortie
+  /// à venir.
+  ValueKey<String> groupFillDeparture(String groupId) =>
+      _TeamDashboardKey('groupFillDeparture_$groupId');
+
   /// La ligne d'un modèle de « Créer depuis un modèle », par son slug.
   ValueKey<String> templateRow(String slug) =>
       _TeamDashboardKey('templateRow_$slug');

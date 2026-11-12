@@ -658,7 +658,7 @@ void main() {
         tester.getTopLeft(inTiles('Durée')).dy,
         greaterThan(tester.getTopLeft(inTiles('Distance totale')).dy),
       );
-      expect(find.text('3 étapes'), findsOneWidget);
+      expect(find.text('3\u00a0étapes'), findsOneWidget);
       // Les cartes d'étape : la ligne météo, ni vignette ni nom de parcours.
       expect(
         find.descendant(
@@ -706,7 +706,7 @@ void main() {
       expect(inBlock(find.byKey(keys.trip.startPlaceLink)), findsOneWidget);
       expect(inTiles('1 jour'), findsOneWidget);
       expect(inTiles('1'), findsOneWidget);
-      expect(find.text('1 étape'), findsOneWidget);
+      expect(find.text('1\u00a0étape'), findsOneWidget);
       expect(
         find.descendant(
           of: find.byKey(keys.trip.stageCard('j1')),

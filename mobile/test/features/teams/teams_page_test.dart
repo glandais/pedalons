@@ -44,9 +44,9 @@ void main() {
       fixtureTeam(slug: 'club', name: 'Club', memberCount: 40),
     ]);
 
-    expect(find.text('1 membre'), findsOneWidget);
-    expect(find.text('40 membres'), findsOneWidget);
-    expect(find.textContaining('1 membres'), findsNothing);
+    expect(find.text('1\u00a0membre'), findsOneWidget);
+    expect(find.text('40\u00a0membres'), findsOneWidget);
+    expect(find.textContaining('1\u00a0membres'), findsNothing);
     final PdlBadge role = tester.widget<PdlBadge>(
       find.descendant(
         of: find.byKey(keys.teams.teamCard('solo')),

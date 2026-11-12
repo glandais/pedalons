@@ -141,7 +141,7 @@ final GallerySection _feed = GallerySection(
         d,
         d.feedRide(
           slug: 'boucle-en-cours',
-          dateTime: d.ago(const Duration(hours: 1)),
+          dateTime: d.startedToday(),
           endDateTime: d.later(const Duration(hours: 3)),
           // Terminée dès le départ passé, au sens du serveur (`API-16`).
           finished: true,

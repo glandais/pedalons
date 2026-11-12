@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +10,8 @@ import 'package:pedalons/features/participants/data/participant_repository.dart'
 import 'package:pedalons/features/participants/domain/participant_query.dart';
 import 'package:pedalons/features/participants/presentation/widgets/participants_sheet.dart';
 import 'package:pedalons/keys.dart';
+
+import '../../support/localization.dart';
 
 /// Un serveur en mémoire : pagine et cherche comme `…/participants`, et
 /// retient ce qu'on lui a demandé.
@@ -46,7 +49,10 @@ class _FakeParticipantRepository implements ParticipantRepository {
 /// — surtout pas un repli sur `createdBy`, qui serait le créateur de la
 /// sortie, donc la même personne sur tous ses groupes.
 void main() {
-  const String organizerKey = 'participants.groupOrganizer';
+  // Le pied paginé accorde son nom au nombre (`.plural`) : il lui faut une
+  // locale chargée (docs/LEDGER_*.md MOB-139, N7).
+  setUpAll(loadTestTranslations);
+  String organizerKey() => 'participants.groupOrganizer'.tr();
 
   const PublicUserDto antoine = PublicUserDto(
     id: 'u1',
@@ -99,7 +105,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await open(tester);
-    expect(find.text(organizerKey), findsNothing);
+    expect(find.text(organizerKey()), findsNothing);
     expect(find.byType(PdlPersonRow), findsNWidgets(3));
   });
 
@@ -107,14 +113,14 @@ void main() {
     WidgetTester tester,
   ) async {
     await open(tester, organizerId: antoine.id);
-    expect(find.text(organizerKey), findsOneWidget);
+    expect(find.text(organizerKey()), findsOneWidget);
   });
 
   testWidgets('un meneur qui ne participe pas ne crée pas de ligne', (
     WidgetTester tester,
   ) async {
     await open(tester, organizerId: 'u9');
-    expect(find.text(organizerKey), findsNothing);
+    expect(find.text(organizerKey()), findsNothing);
     // Les trois participants restent rendus : l'absence du meneur n'enlève
     // rien à la liste.
     expect(find.text('Antoine Yvon'), findsOneWidget);

@@ -10,6 +10,10 @@ class HomeKeys {
   ValueKey<String> nextRideCard(String rideSlug) =>
       _HomeKey('nextRide_$rideSlug');
 
+  /// Le badge « Brouillon » d'une ligne des « 7 prochains jours ».
+  ValueKey<String> weekDraftBadge(String entitySlug) =>
+      _HomeKey('weekDraft_$entitySlug');
+
   /// « Se désinscrire » sur la carte « Ma prochaine sortie ».
   final nextRideLeaveButton = const _HomeKey('nextRideLeave');
 

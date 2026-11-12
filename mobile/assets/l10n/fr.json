@@ -229,8 +229,8 @@
     "scope": "Portée",
     "publicationCount": {
       "zero": "Aucune publication",
-      "one": "{} publication",
-      "other": "{} publications"
+      "one": "{} publication",
+      "other": "{} publications"
     },
     "week": {
       "title": "Les 7 prochains jours",
@@ -248,16 +248,16 @@
       "empty": "Vous n'êtes membre d'aucune équipe.",
       "find": "Trouver une équipe",
       "upcomingRides": {
-        "one": "{} sortie à venir",
-        "other": "{} sorties à venir"
+        "one": "{} sortie à venir",
+        "other": "{} sorties à venir"
       },
       "upcomingTrips": {
-        "one": "{} voyage à venir",
-        "other": "{} voyages à venir"
+        "one": "{} voyage à venir",
+        "other": "{} voyages à venir"
       },
       "recentPosts": {
-        "one": "{} nouvelle publication",
-        "other": "{} nouvelles publications"
+        "one": "{} nouvelle publication",
+        "other": "{} nouvelles publications"
       }
     }
   },
@@ -303,11 +303,14 @@
     },
     "viewTeam": "Voir l'équipe",
     "membersList": {
-      "noun": "membres",
+      "noun": {
+        "one": "membre",
+        "other": "membres"
+      },
       "count": {
         "zero": "Aucun membre",
-        "one": "{} membre",
-        "other": "{} membres"
+        "one": "{} membre",
+        "other": "{} membres"
       },
       "searchPlaceholder": "Rechercher un membre",
       "allRoles": "Tous",
@@ -322,7 +325,10 @@
     },
     "discovery": {
       "title": "Découvrir des équipes",
-      "noun": "équipes",
+      "noun": {
+        "one": "équipe",
+        "other": "équipes"
+      },
       "count": {
         "zero": "Aucune équipe",
         "one": "{} équipe",
@@ -427,8 +433,8 @@
         "groupStart": "départ {time}",
         "registeredCount": {
           "zero": "Aucune inscription",
-          "one": "{} inscription",
-          "other": "{} inscriptions"
+          "one": "{} inscription",
+          "other": "{} inscriptions"
         },
         "groupFill": {
           "zero": "{} inscription sur {max}",
@@ -595,8 +601,8 @@
     "title": "Sorties",
     "noUpcoming": "Aucune sortie à venir",
     "participants": {
-      "one": "{count} personne",
-      "other": "{count} personnes"
+      "one": "{count} personne",
+      "other": "{count} personnes"
     },
     "groups": "Groupes",
     "leave": "Se désinscrire",
@@ -610,8 +616,8 @@
     "leaving": "Désinscription...",
     "leaderIs": "Capitaine : {name}",
     "participantsOf": {
-      "one": "{count}/{max} personne",
-      "other": "{count}/{max} personnes"
+      "one": "{count}/{max} personne",
+      "other": "{count}/{max} personnes"
     },
     "otherGroupsLabel": "Autres groupes",
     "otherGroups": {
@@ -620,8 +626,8 @@
     },
     "groupCount": {
       "zero": "Aucun groupe",
-      "one": "{} groupe",
-      "other": "{} groupes"
+      "one": "{} groupe",
+      "other": "{} groupes"
     },
     "mainRoute": "Parcours principal",
     "selectedGroupProfile": "Profil du groupe sélectionné",
@@ -898,7 +904,10 @@
         "one": "{} modèle",
         "other": "{} modèles"
       },
-      "noun": "modèles",
+      "noun": {
+        "one": "modèle",
+        "other": "modèles"
+      },
       "emptyTitle": "Aucun modèle",
       "emptyMessage": "Créez des modèles pour accélérer la création de sorties.",
       "noResults": "Aucun modèle ne correspond à cette recherche",
@@ -1041,8 +1050,8 @@
   "trips": {
     "title": "Voyages",
     "participants": {
-      "one": "{count} personne",
-      "other": "{count} personnes"
+      "one": "{count} personne",
+      "other": "{count} personnes"
     },
     "stages": "Étapes",
     "mapColorBy": "Colorer le tracé selon",
@@ -1059,8 +1068,8 @@
     },
     "stageCount": {
       "zero": "Aucune étape",
-      "one": "{} étape",
-      "other": "{} étapes"
+      "one": "{} étape",
+      "other": "{} étapes"
     },
     "finished": "Terminé",
     "addToCalendar": "Ajouter à mon calendrier",
@@ -1192,7 +1201,10 @@
     "gradeAverage": "moy.",
     "gradeMax": "max.",
     "usedIn": "Utilisé dans",
-    "viaGroups": "via les groupes : {names}",
+    "viaGroups": {
+      "one": "via le groupe {names}",
+      "other": "via les groupes : {names}"
+    },
     "viaStage": {
       "one": "via l'étape {names}",
       "other": "via les étapes : {names}"
@@ -1949,8 +1961,8 @@
   "comments": {
     "count": {
       "zero": "Aucun commentaire",
-      "one": "{} commentaire",
-      "other": "{} commentaires"
+      "one": "{} commentaire",
+      "other": "{} commentaires"
     },
     "emptyTitle": "Aucun commentaire",
     "loadMore": "Voir plus de commentaires",
@@ -1981,7 +1993,10 @@
     "groupOrganizer": "Capitaine",
     "emptyTripMessage": "Aucune inscription à ce voyage pour le moment.",
     "loadMore": "Afficher plus",
-    "noun": "personnes"
+    "noun": {
+      "one": "personne",
+      "other": "personnes"
+    }
   },
   "status": {
     "draft": "Brouillon",

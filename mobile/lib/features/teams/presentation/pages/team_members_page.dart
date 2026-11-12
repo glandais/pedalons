@@ -247,12 +247,10 @@ class _TeamMembersPageState extends ConsumerState<TeamMembersPage> {
             onRetry: notifier.retryNextPage,
             // « 60 membres sur 1 999 » : l'exemple de référence du pied
             // paginé, et il ne coûte aucun endpoint `count`.
-            progressLabel: 'pagination.progressNamed'.tr(
-              namedArgs: <String, String>{
-                'loaded': '${state.items.length}',
-                'noun': 'teams.membersList.noun'.tr(),
-                'total': '$total',
-              },
+            progressLabel: pagedProgressNamed(
+              'teams.membersList.noun',
+              state.items.length,
+              total,
             ),
             loadingLabel: 'pagination.loadingMore'.tr(),
             endLabel: 'pagination.endOfList'.tr(),

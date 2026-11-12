@@ -233,12 +233,10 @@ class _RideTemplateList extends ConsumerWidget {
             isEmpty: state.items.isEmpty,
             hasError: state.nextError != null,
             onRetry: notifier.retryNextPage,
-            progressLabel: 'pagination.progressNamed'.tr(
-              namedArgs: <String, String>{
-                'loaded': '${state.items.length}',
-                'noun': 'rides.templates.noun'.tr(),
-                'total': '$total',
-              },
+            progressLabel: pagedProgressNamed(
+              'rides.templates.noun',
+              state.items.length,
+              total,
             ),
             loadingLabel: 'pagination.loadingMore'.tr(),
             endLabel: 'pagination.endOfList'.tr(),

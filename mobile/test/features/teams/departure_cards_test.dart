@@ -176,7 +176,7 @@ void main() {
       await pump(tester, PublicationCard(publication: ride()));
       final PdlStat groups = tester
           .widgetList<PdlStat>(find.byType(PdlStat))
-          .firstWhere((PdlStat s) => s.value == '2 groupes');
+          .firstWhere((PdlStat s) => s.value == '2\u00a0groupes');
       expect(groups.icon, PdlIcons.rideGroup);
       expect(groups.icon, isNot(PdlIcons.people));
     });
@@ -187,7 +187,7 @@ void main() {
       await pump(tester, PublicationCard(publication: ride(groupCount: 0)));
       expect(find.textContaining('personne'), findsNothing);
       await pump(tester, PublicationCard(publication: ride()));
-      expect(find.textContaining('10 personnes'), findsOneWidget);
+      expect(find.textContaining('10\u00a0personnes'), findsOneWidget);
     });
 
     testWidgets('boîte du jour posée sur l’image, « Départ 21:30 » en 700 '

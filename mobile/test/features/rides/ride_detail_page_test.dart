@@ -918,7 +918,7 @@ void main() {
       expect(others, lessThan(a));
       expect(a, lessThan(c));
       expect(
-        inKey(keys.ride.groupsSection, find.text('3 groupes')),
+        inKey(keys.ride.groupsSection, find.text('3\u00a0groupes')),
         findsOneWidget,
       );
       // Ma carte : « J'y vais », « GPS », « Quitter le groupe » ; ni

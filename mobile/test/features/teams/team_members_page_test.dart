@@ -103,7 +103,7 @@ void main() {
     expect(repository.calls.single['page'], 0);
     expect(repository.calls.single['size'], kDefaultPageSize);
     // 20 lignes chargées, 1 999 annoncées : la troncature n'est plus muette.
-    expect(find.text('1999 membres'), findsOneWidget);
+    expect(find.text('1999\u00a0membres'), findsOneWidget);
   });
 
   testWidgets(
@@ -176,6 +176,6 @@ void main() {
       brightness: Brightness.dark,
     );
     expect(tester.takeException(), isNull);
-    expect(find.text('3 membres'), findsOneWidget);
+    expect(find.text('3\u00a0membres'), findsOneWidget);
   });
 }

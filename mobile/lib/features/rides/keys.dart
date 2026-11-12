@@ -175,6 +175,14 @@ class RideDetailKeys {
   ValueKey<String> groupLeader(String groupId) =>
       _RideDetailKey('groupLeader_$groupId');
 
+  /// La grappe d'avatars d'une carte de groupe (sans la personne capitaine).
+  ValueKey<String> groupAvatars(String groupId) =>
+      _RideDetailKey('groupAvatars_$groupId');
+
+  /// « 11/12 personnes », sur la carte d'un groupe.
+  ValueKey<String> groupCount(String groupId) =>
+      _RideDetailKey('groupCount_$groupId');
+
   /// Le badge « J'y vais » à côté du nom, sur la carte de son groupe.
   ValueKey<String> groupGoingBadge(String groupId) =>
       _RideDetailKey('groupGoing_$groupId');

@@ -248,7 +248,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('3 groupes · prochaine #42'), findsOneWidget);
+      expect(find.text('3\u00a0groupes · prochaine #42'), findsOneWidget);
 
       expect(find.byKey(keys.teamDashboard.admin), findsNothing);
     });

@@ -381,19 +381,35 @@ class RideGroupCard extends StatelessWidget {
       );
     }
 
-    return Row(
+    // La grappe sans la personne capitaine : la ligne « Capitaine : … »
+    // au-dessus la nomme déjà (KIT §8, docs/LEDGER_*.md MOB-139, N10). Le
+    // compteur, lui, la compte toujours.
+    final String? leaderId = group.leader?.id;
+    final List<PublicUserDto> faces = <PublicUserDto>[
+      for (final PublicUserDto p in group.participants)
+        if (p.id != leaderId) p,
+    ];
+    final int facesTotal =
+        group.countParticipants - (group.participants.length - faces.length);
+
+    // Les visages et « 11/12 personnes » forment un bloc qui ne s'abrège
+    // jamais ; « Voir tout » passe à la ligne s'il n'a plus la place
+    // (docs/LEDGER_*.md MOB-139, N2 — « 11/12 p… » à côté de « Voir tout »).
+    final Widget count = Row(
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        if (group.participants.isNotEmpty) ...<Widget>[
+        if (faces.isNotEmpty) ...<Widget>[
           PdlAvatarStack(
+            key: keys.ride.groupAvatars(group.id),
             people: <PdlAvatarEntry>[
-              for (final PublicUserDto p in group.participants)
+              for (final PublicUserDto p in faces)
                 PdlAvatarEntry(
                   name: p.displayName,
                   imageUrl: p.avatarUrl,
                   isCurrentUser: p.id == currentUserId,
                 ),
             ],
-            total: group.countParticipants,
+            total: facesTotal,
             onTap: onShowParticipants,
             semanticLabel: _countLabel(max),
           ),
@@ -402,23 +418,28 @@ class RideGroupCard extends StatelessWidget {
         Flexible(
           child: Text(
             _countLabel(max),
+            key: keys.ride.groupCount(group.id),
             style: countStyle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
-        // « Voir tout » n'est offert que sur la carte sélectionnée : dix
-        // groupes portant chacun quatre lignes pleines dépassent l'écran. Les
-        // avatars, eux, restent cliquables partout.
-        if (selected && onShowParticipants != null) ...<Widget>[
-          const Spacer(),
-          PdlButton(
-            label: 'common.viewAll'.tr(),
-            variant: PdlButtonVariant.text,
-            size: PdlButtonSize.sm,
-            onPressed: onShowParticipants,
-          ),
-        ],
+      ],
+    );
+
+    // « Voir tout » n'est offert que sur la carte sélectionnée : dix groupes
+    // portant chacun quatre lignes pleines dépassent l'écran. Les avatars,
+    // eux, restent cliquables partout.
+    if (!selected || onShowParticipants == null) return count;
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: <Widget>[
+        count,
+        PdlButton(
+          label: 'common.viewAll'.tr(),
+          variant: PdlButtonVariant.text,
+          size: PdlButtonSize.sm,
+          onPressed: onShowParticipants,
+        ),
       ],
     );
   }

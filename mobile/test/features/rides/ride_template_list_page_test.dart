@@ -153,8 +153,8 @@ void main() {
     expect(find.byKey(keys.rideTemplates.card('dimanche')), findsOneWidget);
     expect(find.byKey(keys.rideTemplates.card('semaine')), findsOneWidget);
     expect(find.text('Sortie du dimanche'), findsOneWidget);
-    expect(find.text('3 groupes · prochaine sortie #42'), findsOneWidget);
-    expect(find.text('1 groupe · sans numéro'), findsOneWidget);
+    expect(find.text('3\u00a0groupes · prochaine sortie #42'), findsOneWidget);
+    expect(find.text('1\u00a0groupe · sans numéro'), findsOneWidget);
     expect(
       tester.widget<Text>(find.byKey(keys.rideTemplates.count)).data,
       '2 modèles',

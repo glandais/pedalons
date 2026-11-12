@@ -147,9 +147,9 @@ class _UsageCard extends StatelessWidget {
     );
   }
 
-  /// « via les groupes : A, B » pour une sortie ; pour un voyage, « via
-  /// l'étape J3 » ou « via les étapes : J1, J3 », selon le nombre d'étapes
-  /// (ledger `MOB-139`, D25).
+  /// « via le groupe A » ou « via les groupes : A, B » pour une sortie ; pour
+  /// un voyage, « via l'étape J3 » ou « via les étapes : J1, J3 », selon le
+  /// nombre de groupes ou d'étapes (ledger `MOB-139`, D25, N8).
   String _via() {
     final String names = usage.viaChildNames.join(', ');
     return switch (usage.type) {
@@ -157,7 +157,10 @@ class _UsageCard extends StatelessWidget {
         usage.viaChildNames.length,
         namedArgs: <String, String>{'names': names},
       ),
-      _ => 'routes.viaGroups'.tr(namedArgs: <String, String>{'names': names}),
+      _ => 'routes.viaGroups'.plural(
+        usage.viaChildNames.length,
+        namedArgs: <String, String>{'names': names},
+      ),
     };
   }
 

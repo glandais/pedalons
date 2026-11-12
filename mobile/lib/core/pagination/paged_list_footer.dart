@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../pdl/pdl_paged_list_footer.dart';
+import '../utils/formatters.dart';
 import 'paged_list_state.dart';
 
 /// Foot of an infinitely scrolled list.
@@ -22,16 +23,17 @@ class PagedListFooter extends StatelessWidget {
   /// so the list grows into the incoming content instead of jumping.
   final Widget? skeleton;
 
-  /// Nom de ce qui est compté, déjà accordé au pluriel par l'appelant —
-  /// « participants », « parcours ». Absent, le compteur reste « 8 sur 40 ».
-  final String? itemNoun;
+  /// Clé de traduction du nom de ce qui est compté, à formes `one`/`other` —
+  /// accordé au nombre chargé : « 1 personne sur 1 », « 8 personnes sur 40 »
+  /// (docs/LEDGER_*.md MOB-139, N7). Absent, le compteur reste « 8 sur 40 ».
+  final String? itemNounKey;
 
   const PagedListFooter({
     super.key,
     required this.state,
     required this.onRetry,
     this.skeleton,
-    this.itemNoun,
+    this.itemNounKey,
   });
 
   String _progressLabel() {
@@ -39,21 +41,20 @@ class PagedListFooter extends StatelessWidget {
     final int? total = state.total;
     if (total == null) {
       return 'pagination.loaded'.tr(
-        namedArgs: <String, String>{'loaded': '$loaded'},
+        namedArgs: <String, String>{
+          'loaded': AppFormatters.formatNumber(loaded),
+        },
       );
     }
-    if (itemNoun == null) {
+    if (itemNounKey == null) {
       return 'pagination.progress'.tr(
-        namedArgs: <String, String>{'loaded': '$loaded', 'total': '$total'},
+        namedArgs: <String, String>{
+          'loaded': AppFormatters.formatNumber(loaded),
+          'total': AppFormatters.formatNumber(total),
+        },
       );
     }
-    return 'pagination.progressNamed'.tr(
-      namedArgs: <String, String>{
-        'loaded': '$loaded',
-        'noun': itemNoun!,
-        'total': '$total',
-      },
-    );
+    return pagedProgressNamed(itemNounKey!, loaded, total);
   }
 
   @override
@@ -73,3 +74,15 @@ class PagedListFooter extends StatelessWidget {
     );
   }
 }
+
+/// « 60 membres sur 1 999 », « 1 membre sur 1 » : le nom ([nounKey], à formes
+/// `one`/`other`) s'accorde au nombre chargé, et les deux nombres passent par
+/// le formateur commun (docs/LEDGER_*.md MOB-139, N7).
+String pagedProgressNamed(String nounKey, int loaded, int total) =>
+    'pagination.progressNamed'.tr(
+      namedArgs: <String, String>{
+        'loaded': AppFormatters.formatNumber(loaded),
+        'noun': nounKey.plural(loaded),
+        'total': AppFormatters.formatNumber(total),
+      },
+    );

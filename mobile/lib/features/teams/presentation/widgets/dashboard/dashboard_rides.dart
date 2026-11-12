@@ -441,6 +441,8 @@ class DashboardRideCard extends ConsumerWidget {
         ride.routeSlug != null ||
         groups.any((RideGroupSummaryDto g) => g.routeSlug != null);
     final String path = Paths.ride(ride.team.slug, ride.slug);
+    final bool allFull =
+        groups.isNotEmpty && groups.every((RideGroupSummaryDto g) => g.full);
 
     return PdlCard(
       key: keys.teamDashboard.rideCard(ride.slug),
@@ -549,6 +551,17 @@ class DashboardRideCard extends ConsumerWidget {
                         size: PdlButtonSize.sm,
                         onPressed: () => context.push(path),
                       )
+                    // Tous les groupes pleins : plus rien à rejoindre, le
+                    // bouton le dit désactivé, comme la carte de groupe
+                    // (docs/LEDGER_*.md MOB-139, N4).
+                    : allFull
+                    ? PdlButton(
+                        key: keys.teamDashboard.rideFullButton(ride.slug),
+                        label: 'rides.groupFull'.tr(),
+                        variant: PdlButtonVariant.outline,
+                        size: PdlButtonSize.sm,
+                        enabled: false,
+                      )
                     // L'inscription se fait dans un groupe : la fiche de la
                     // sortie est l'endroit où l'on choisit lequel.
                     : PdlButton(
@@ -606,17 +619,21 @@ class _GroupFill extends StatelessWidget {
             group.countParticipants,
           )
         : '${group.countParticipants} / $max';
-    final String name = <String>[
+    final String label = <String>[
       group.name,
       if (group.averageSpeed != null)
         AppFormatters.formatSpeed(group.averageSpeed!, units),
-      if (showStartTime)
-        'teams.dashboard.upcomingRides.groupStart'.tr(
-          namedArgs: <String, String>{
-            'time': formatGroupStart(group.startAt, timezone),
-          },
-        ),
     ].join(' · ');
+    // L'heure à part, jamais tronquée : c'est le nom du groupe qui cède
+    // (docs/LEDGER_*.md MOB-139, N3 — « départ 10… »).
+    final String? departure = showStartTime
+        ? 'teams.dashboard.upcomingRides.groupStart'.tr(
+            namedArgs: <String, String>{
+              'time': formatGroupStart(group.startAt, timezone),
+            },
+          )
+        : null;
+    final String name = <String>[label, ?departure].join(' · ');
     // Une seule annonce pour la ligne : le groupe, son remplissage en toutes
     // lettres, et « Complet » le cas échéant — plutôt que la barre et le
     // texte « 11 / 16 » lus chacun pour soi, sans dire de quel groupe.
@@ -640,19 +657,33 @@ class _GroupFill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(
           children: <Widget>[
+            // Les barres restent alignées d'une ligne à l'autre ; dans la
+            // colonne du nom, seuls le nom et l'allure s'abrègent. Faute de
+            // place, l'heure passe dessous plutôt que d'être coupée.
             Expanded(
-              flex: 3,
-              child: Text(
-                name,
-                style: t.xs.copyWith(color: c.text),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              flex: 2,
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  Text(
+                    label,
+                    style: t.xs.copyWith(color: c.text),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (departure != null)
+                    Text(
+                      // Insécable : « départ 10:00 » ne se coupe pas non plus.
+                      ' · ${departure.replaceAll(' ', AppFormatters.nbsp)}',
+                      key: keys.teamDashboard.groupFillDeparture(group.id),
+                      style: t.xs.copyWith(color: c.text),
+                    ),
+                ],
               ),
             ),
             const SizedBox(width: PdlSpacing.chipGap),
             if (max != null && max > 0)
               Expanded(
-                flex: 2,
                 child: PdlProgressBar(
                   value: group.countParticipants / max,
                   color: group.full ? c.danger : null,

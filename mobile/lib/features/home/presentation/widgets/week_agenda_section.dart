@@ -169,6 +169,8 @@ class WeekAgendaRow extends StatelessWidget {
         : PublicationType.ride;
     final PdlTone tone = type.tone(c);
     final bool cancelled = event.status == 'CANCELLED';
+    // Un brouillon le dit, comme dans le fil (docs/LEDGER_*.md MOB-139, N6).
+    final bool draft = event.status == 'DRAFT';
 
     final String meta = <String>[
       if (!event.allDay) AppFormatters.formatTime(start),
@@ -208,7 +210,7 @@ class WeekAgendaRow extends StatelessWidget {
                 ),
                 if (!event.allDay)
                   ?ZoneMentionLine.maybe(event.start, event.timezone),
-                if (event.registered || cancelled) ...<Widget>[
+                if (event.registered || cancelled || draft) ...<Widget>[
                   const SizedBox(height: 6),
                   Wrap(
                     spacing: PdlSpacing.badgeGap,
@@ -225,6 +227,12 @@ class WeekAgendaRow extends StatelessWidget {
                           label: 'calendar.cancelled'.tr(),
                           icon: PdlIcons.cancelled,
                           tone: Status.cancelled.tone(c),
+                        ),
+                      if (draft)
+                        PdlBadge(
+                          key: keys.home.weekDraftBadge(event.entitySlug),
+                          label: 'status.draft'.tr(),
+                          tone: Status.draft.tone(c),
                         ),
                     ],
                   ),
