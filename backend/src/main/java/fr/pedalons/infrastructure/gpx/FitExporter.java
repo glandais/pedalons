@@ -51,7 +51,7 @@ public final class FitExporter {
   static final double COURSE_SPEED_MS = 25 / 3.6;
 
   /**
-   * Where a course without a clock starts: FIT timestamp {@code 0x10000000}, 1998-07-04T21:24:16Z,
+   * Where a course without a clock starts: FIT timestamp {@code 0x10000000}, 1998-07-03T21:24:16Z,
    * the lowest one that is a date and not a system time.
    */
   static final long COURSE_START_MS = FitUnits.FIT_EPOCH_OFFSET_MS + 0x10000000L * 1000;
