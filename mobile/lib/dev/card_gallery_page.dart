@@ -42,6 +42,7 @@ class CardGalleryPage extends StatefulWidget {
     super.key,
     this.sectionId,
     this.images = true,
+    this.prepareImages = prepareGalleryImages,
     this.now,
   });
 
@@ -50,6 +51,11 @@ class CardGalleryPage extends StatefulWidget {
   /// Faux dans les tests : les cartes restent sans image, et rien n'est
   /// dessiné ni déposé dans le cache.
   final bool images;
+
+  /// Prépare les images avant d'afficher les cartes, si [images]. Par défaut,
+  /// les dépose dans le cache disque de `CachedNetworkImage` ; le test de
+  /// capture, qui n'a pas ce cache, les pose lui-même en mémoire.
+  final Future<void> Function() prepareImages;
 
   /// Le jour J ; maintenant par défaut.
   final DateTime? now;
@@ -61,7 +67,7 @@ class CardGalleryPage extends StatefulWidget {
 class _CardGalleryPageState extends State<CardGalleryPage> {
   Brightness _brightness = Brightness.light;
   late final Future<void> _imagesReady = widget.images
-      ? prepareGalleryImages()
+      ? widget.prepareImages()
       : Future<void>.value();
 
   @override
@@ -91,6 +97,7 @@ class _CardGalleryPageState extends State<CardGalleryPage> {
         builder: (_) => CardGalleryPage(
           sectionId: sectionId,
           images: widget.images,
+          prepareImages: widget.prepareImages,
           now: widget.now,
         ),
       ),

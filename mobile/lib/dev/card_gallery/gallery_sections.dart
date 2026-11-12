@@ -585,7 +585,7 @@ class _OwnScrollState extends State<_OwnScroll> {
 /// `_TeamCard` est privée à l'onglet Équipes : la galerie monte l'onglet
 /// lui-même, avec une seule équipe, dans un cadre de hauteur fixe.
 Widget _teamsTab(GalleryData d, String role) =>
-    _scoped(d, const _OwnScroll(height: 260, child: TeamsPage()), <Override>[
+    _scoped(d, const _OwnScroll(height: 180, child: TeamsPage()), <Override>[
       // Une valeur déjà là : l'onglet ne passe pas par son squelette de
       // chargement, trois cartes qui débordent du cadre.
       myTeamsProvider.overrideWithValue(
@@ -603,7 +603,7 @@ Widget _teamsTab(GalleryData d, String role) =>
 Widget _membersPage(GalleryData d, MemberDto member) => _scoped(
   d,
   _OwnScroll(
-    height: 200,
+    height: 236,
     child: TeamMembersPage(teamSlug: GalleryData.vcm.slug, rolesShown: false),
   ),
   <Override>[

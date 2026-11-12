@@ -22,23 +22,36 @@ Future<void>? _ready;
 Future<void> prepareGalleryImages() => _ready ??= _prepare();
 
 Future<void> _prepare() async {
+  final Map<String, Uint8List> drawings = await drawGalleryImages();
+  for (final MapEntry<String, Uint8List> e in drawings.entries) {
+    await CachedNetworkImageProvider.defaultCacheManager.putFile(
+      e.key,
+      e.value,
+      fileExtension: 'png',
+    );
+  }
+}
+
+/// Les images de substitution en PNG, par adresse ([GalleryImageUrls]).
+///
+/// Séparé du dépôt dans le cache disque : un test, qui n'a ni système de
+/// fichiers ni base du gestionnaire de cache, les décode lui-même et les
+/// pose dans le cache d'images en mémoire
+/// (`test/dev/card_gallery_capture_test.dart`).
+Future<Map<String, Uint8List>> drawGalleryImages() async {
   final PdlColors light = PedalonsTheme.build(Brightness.light)
       .extension<PdlColors>()!;
   final PdlColors dark = PedalonsTheme.build(Brightness.dark)
       .extension<PdlColors>()!;
-  final Map<String, Future<Uint8List>> drawings = <String, Future<Uint8List>>{
-    GalleryImageUrls.mapLight: _map(light),
-    GalleryImageUrls.mapDark: _map(dark),
-    GalleryImageUrls.photo: _photo(light.accentTeal, light.primary),
-    GalleryImageUrls.adPhoto: _photo(light.accentOrange, light.accentGrape),
+  return <String, Uint8List>{
+    GalleryImageUrls.mapLight: await _map(light),
+    GalleryImageUrls.mapDark: await _map(dark),
+    GalleryImageUrls.photo: await _photo(light.accentTeal, light.primary),
+    GalleryImageUrls.adPhoto: await _photo(
+      light.accentOrange,
+      light.accentGrape,
+    ),
   };
-  for (final MapEntry<String, Future<Uint8List>> e in drawings.entries) {
-    await CachedNetworkImageProvider.defaultCacheManager.putFile(
-      e.key,
-      await e.value,
-      fileExtension: 'png',
-    );
-  }
 }
 
 const double _w = 800;
