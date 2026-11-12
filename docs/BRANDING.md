@@ -509,7 +509,7 @@ icône + valeur).
 | Tiroir de navigation mobile | 300 px de large, sous le point de rupture `sm` |
 | Hauteur minimale de bouton | **44 px** en mobile, **36 px** à partir de 48 em |
 | Taille par défaut d'`ActionIcon` | `lg` (cible tactile confortable) |
-| Notifications | Coin supérieur droit |
+| Notifications | Coin supérieur droit. **Jamais par-dessus une liste qui affiche déjà son erreur** (§7.10) |
 | Barre de chips de filtre (mobile) | Hauteur mesurée (pastille de 34 px dans une cible de 44), défilement horizontal, padding latéral 16 px |
 
 **Points de rupture** : `xs` 36 em (576 px) · `sm` 48 em (768 px) · `md` 62 em (992 px) ·
@@ -523,7 +523,8 @@ nombre de commentaires, masqué quand l'appelant n'y a pas accès ; tout compteu
 §7.1), titres tronqués sur une ligne (`lineClamp`), descriptions coupées à **150 caractères** (extrait
 sur 2 lignes sur les cartes d'équipe, de parcours et de modèle, §7.2 et §7.9). Les listes
 longues (l'équipe `n-peloton` compte 1999 membres) utilisent le défilement infini côté mobile et
-la pagination côté web — prévoir un état de squelette pour chaque type de carte.
+la pagination côté web — prévoir un état de squelette pour chaque type de carte. Ce qui entoure
+les cartes d'une liste (barre, filtres, compteur, états) suit le §7.10.
 
 ---
 
@@ -707,24 +708,30 @@ Sans vignette, la carte de parcours prend le dégradé de repli et l'icône du t
 de sortie (§7.1, priorité 3). Dans « Utilisé dans » (les sorties et voyages qui reprennent un
 parcours), la plage d'un voyage s'écrit comme sur la carte du fil, « ven. 20 → dim. 22 nov. ».
 
-### 7.3 Chip de filtre
+### 7.3 Filtres : bouton, panneau, chips
 
-Deux implémentations, à maquetter différemment :
+Deux implémentations, à maquetter différemment ; les règles communes sont au §7.10.
 
-**Web** — pas de chips : un bouton `variant="default"` « Filtres » avec `IconFilter` à gauche et
-un chevron à droite, qui déplie un `Paper withBorder p="md"` contenant un champ de recherche
-pleine largeur puis une grille de `Select` et de plages min/max
-(`1 colonne → 2 (sm) → 3 (lg) → 4 (xl)`, gouttière 16 px). Quand au moins un filtre est actif, un
-second bouton `variant="subtle"` « Effacer » avec `IconX` apparaît à droite.
+**Web** — la recherche et le tri sont **toujours visibles**, en tête de liste (champ de recherche,
+puis `Select` de tri et son bouton de sens). Un bouton « Filtres » avec `IconFilter` à gauche et un
+chevron à droite déplie un `Paper withBorder p="md"` qui ne contient que les **critères** : grille
+de `Select` et de plages min/max (`1 colonne → 2 (sm) → 3 (lg) → 4 (xl)`, gouttière 16 px). Quand
+un filtre est actif, le bouton est teinté et porte un **badge de compte** (nom accessible
+« Filtres, 2 actifs »), et un second bouton `variant="subtle"` « Effacer les filtres » avec `IconX`
+apparaît à sa droite. Une liste sans critère à replier (agenda, annonces) n'a pas de bouton
+« Filtres ». Un critère de type est un **segmenté** (« Tout / Sorties / Voyages »).
 
-**Mobile** — rangée de chips (`PdlChipRow`) au-dessus de la liste, hauteur mesurée, fondu sur les
-28 derniers pixels ; chaque `PdlChip` est une pastille de 34 px dans une cible tactile de 44 :
-- **1ʳᵉ position, toujours** : chip de tri (bordure `text`), avec chevron haut/bas 16 px + libellé
-  du critère.
+**Mobile** — champ de recherche épinglé en tête, puis une rangée de chips (`PdlChipRow`), alignée à
+gauche, hauteur mesurée, fondu sur les 28 derniers pixels ; chaque `PdlChip` est une pastille de
+34 px dans une cible tactile de 44 :
+- **1ʳᵉ position, quand la liste trie** : chip de tri (bordure `text`), avec chevron haut/bas
+  16 px + libellé du critère.
 - Ensuite les **filtres actifs** : fond `primarySoft`, texte `primaryOnSoft` en 600, pas de
-  coche, **croix de suppression à droite**, et **toute la pastille retire le filtre**.
+  coche, **croix de suppression à droite**, et **toute la pastille retire le filtre**. Une puce
+  **exclusive** (un type, un rôle) ne se lève pas en la retouchant : c'est le rôle de « Tout ».
 - Enfin les **filtres disponibles non renseignés** : fond transparent, bordure `border`, texte
   `textDimmed`.
+- Quand une feuille de critères existe (parcours), son bouton porte une **pastille de compte**.
 
 Forme dans les deux cas : **pilule**, 14 px de texte, 12 px de padding horizontal.
 
@@ -756,7 +763,7 @@ Une icône optionnelle de 12 px peut être placée en section gauche.
 **Avatar d'une personne** (décidé le 12 novembre 2026, KIT §9, R5) — **une couleur par personne,
 la même sur les deux supports**. Sans photo : deux initiales au plus (premier mot, deuxième mot),
 en blanc, sur une teinte tirée de son nom affiché : hachage `hash × 31 + unité`, gardé sur 31 bits,
-sur les unités UTF-16 du nom, modulo 12. Les douze teintes sont **foncées et identiques en clair et
+sur les unités UTF-16 du nom, modulo 11. Les onze teintes sont **foncées et identiques en clair et
 en sombre**, pour que les initiales blanches restent lisibles ; dans cet ordre :
 
 | # | Teinte | Valeur | | # | Teinte | Valeur |
@@ -764,12 +771,13 @@ en sombre**, pour que les initiales blanches restent lisibles ; dans cet ordre :
 | 0 | turquoise 9 | `#087f5b` | | 6 | rose 8 | `#c2255c` |
 | 1 | violet 8 | `#6741d9` | | 7 | ocre (hors palette : le jaune 9 n'atteint pas 3:1 sur blanc) | `#a16207` |
 | 2 | cyan 9 | `#0b7285` | | 8 | rouge 9 | `#c92a2a` |
-| 3 | bleu 8 | `#1971c2` | | 9 | indigo 8 | `#3b5bdb` |
-| 4 | citron 9 | `#5c940d` | | 10 | vert 8 | `#2f9e44` |
-| 5 | raisin 7 | `#ae3ec9` | | 11 | orange 8 | `#e8590c` |
+| 3 | bleu 8 | `#1971c2` | | 9 | vert 8 | `#2f9e44` |
+| 4 | citron 9 | `#5c940d` | | 10 | orange 8 | `#e8590c` |
+| 5 | raisin 7 | `#ae3ec9` | | | | |
 
 **La personne qui lit est toujours en couleur primaire** (aplat `primary`), quelle que soit la
-teinte de son nom. La table et le hachage vivent en deux endroits qui doivent rester identiques,
+teinte de son nom ; **l'indigo lui est réservé** et ne figure donc pas dans la table (complément du
+12 novembre 2026). La table et le hachage vivent en deux endroits qui doivent rester identiques,
 valeur pour valeur et dans le même ordre : `_avatarTints` / `avatarAccents` de
 [`pdl_colors.dart`](../mobile/lib/core/theme/pdl_colors.dart) (lu par `PdlAvatar.tintFor`) et
 `AVATAR_ACCENTS` de [`avatarTint.ts`](../frontend/src/lib/avatarTint.ts) — en changer un, c'est
@@ -904,6 +912,62 @@ Mêmes règles sur l'app et le site (KIT §9, R12 et R13 ; décidé le 12 novemb
 - **Ligne de membre, ligne de personne inscrite** : un menu ⋯ « Signaler / Bloquer ». Ancienneté :
   « Membre depuis mars 2024 ». Pas de chevron si la ligne ne s'ouvre pas.
 
+### 7.10 Pages de liste
+
+**Les listes de l'app et du site suivent les mêmes règles.** Décidées le 12 novembre 2026 après
+l'audit d'homogénéité des listes et de leurs filtres, elles sont écrites sous leur forme vérifiable
+dans [`KIT.md` §10](plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) (arbitrages et
+options écartées : [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md), RL1 à
+RL15 ; planches `cible-listes-rl*`) et mises en œuvre sous les ledgers `MOB-143`, `WEB-175` et
+`API-185`. Ce qui tient au support reste différent : feuille dans l'app et panneau sur le site,
+défilement infini et numéros de page, filtres en mémoire et filtres dans l'adresse.
+
+Une page de liste se lit de haut en bas :
+
+1. **Recherche**, toujours visible, en tête ; dans l'app, le bouton court **« Créer »** à sa
+   droite pour qui a le droit (agenda, parcours, modèles) ; sur le site, le bouton d'en-tête
+   « Créer {un objet} ».
+2. **Portée**, sur les listes inter-équipes seulement (fil d'accueil, Explorer, équipes) : un seul
+   contrôle par support, « Toutes les équipes / Membre / Organisateur / Administrateur », ouvert
+   sur « Membre ». Une puce neutre au défaut et teintée sinon dans l'app ; un sélecteur sur le
+   site. On ne choisit **une équipe** qu'au calendrier global (« Toutes mes équipes / {équipe} »).
+3. **Critères** : période (« Toutes les dates / Je participe » à l'agenda, « Tout / Je
+   participe » au fil), type, tri, « Filtres » (§7.3).
+4. **Compteur** à gauche, **contrôle de vue** à droite, sur la même ligne. Le compteur est formaté
+   et accordé, dit le total filtré seul (« 2 parcours »), et **disparaît à zéro**. Le contrôle de
+   vue est unique, à icônes, avec les mêmes noms des deux côtés : « Vignettes · Lignes · Carte »
+   (parcours), « Vignettes · Lignes · Calendrier » (agenda). Pas de compteur en vue carte.
+5. **La liste**, puis son pied : numéros de page sur le site ; dans l'app, « {N} {objets} sur
+   {M} · Vous avez tout vu ».
+
+**Deux sections pour les événements datés.** Une liste qui montre des sorties ou des voyages sans
+filtre de période est une seule liste paginée à deux sections : **« À venir »**, du plus proche au
+plus lointain (une sortie en cours y reste), puis **« Plus tôt »**, du plus récent au plus ancien.
+Dans un fil, les publications sont dans « Plus tôt », à leur date de parution. Chaque en-tête
+porte son compteur ; sur le site, il se répète en haut d'une page qui s'ouvre au milieu d'une
+section.
+
+**États**, les mêmes sur toutes les listes :
+
+| État | Ce qu'on lit |
+|---|---|
+| Vide simple | Ce qui apparaîtra ici, et l'action de création pour qui en a le droit |
+| Vide filtré | « Aucun parcours pour ces filtres » · « Rien ne correspond à : 50 km – 100 km · vallonné. » · bouton « Effacer les filtres » |
+| Erreur du serveur | « Chargement impossible » · « Le serveur n'a pas pu répondre. Réessayez dans un instant. » · « Réessayer » (et « Signaler un problème » dans l'app) |
+| Pas de réseau | « Pas de connexion » · « Vérifiez votre connexion internet, puis réessayez. » · « Réessayer » |
+| Accès refusé | Un message propre, **sans rouge** (« Réservées aux membres »), avec une issue (« À propos de l'équipe ») — ce n'est pas une erreur |
+| Changement de filtre | Squelettes dans l'app ; liste précédente estompée sur le site |
+
+**« Effacer les filtres » et le compteur du bouton « Filtres » disent la même chose** : le compteur
+compte exactement ce que le bouton lève — la recherche, les critères, les tags, la période et la
+portée hors de leur défaut. **Le tri n'est pas un filtre** : il n'est ni compté ni effacé.
+
+**Ordres par défaut** : membres par nom ; commentaires du plus ancien au plus récent ; équipes par
+nom sous « Membre », par nombre de membres sous « Toutes les équipes », et l'ordre est dit à côté
+du compteur (« 47 équipes · triées par nombre de membres »).
+
+L'app ne crée ni annonce ni équipe : ses listes n'en portent pas le bouton (ledger `MOB-144`).
+
 ---
 
 ## 8. Ton éditorial des libellés français
@@ -923,7 +987,16 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 | Routes of every team (global page) | **Explorer** (entrée de navigation et titre ; elle ouvre la carte). « Parcours » reste la section d'une équipe (`WEB-114`) | « Parcours » pour la page globale |
 | Post | **publication**, notifications comprises | « article », « news », « post » |
 | Trip | **voyage** ; ses composants sont des **étapes** | « séjour », « tour » |
-| Rides + trips of a team | **Agenda** (section : sorties et voyages ; filtres « À venir », « Je participe », « Passées ») ; état vide « Rien à l'agenda pour le moment » | « événements », « programme », « activités » |
+| Rides + trips of a team | **Agenda** (section : sorties et voyages ; période « Toutes les dates », « Je participe ») ; état vide « Rien à l'agenda pour le moment » | « événements », « programme », « activités » |
+| Sections of a dated list | **À venir**, puis **Plus tôt** (sans accord : juste pour une sortie, un voyage, une publication) | « Passées », « Historique », « Terminé(e)s » en en-tête |
+| Neutral option of a type filter | **Tout** | « Tous », « Tous les types » |
+| Reset filters | **Effacer les filtres** (un seul libellé ; garde le tri) | « Effacer », « Réinitialiser », « Tout réinitialiser », « Voir toutes les notifications » |
+| Scope of a cross-team list | **Portée** : « Toutes les équipes », « Membre », « Organisateur », « Administrateur » ; au calendrier, « Toutes mes équipes » | « Toutes » seul, « Rôle minimum » |
+| Create from a list | **Créer une sortie / un voyage / un parcours / une publication / une annonce / une équipe / un modèle** ; dans la barre de l'app, **Créer** | « Nouvelle publication », « Créer un nouveau parcours », « Ajouter », « Rédiger une publication » |
+| List views | **Vignettes**, **Lignes**, **Carte**, **Calendrier** | « Compact », « Liste » pour une vue |
+| Unread filter | **Toutes** / **Non lues** | « Non lues uniquement » |
+| Teams open to join | **Ouvertes à l'adhésion** | « Publiques », « Ouvertes » seul |
+| Load failure of a list | **Chargement impossible** (serveur), **Pas de connexion** (réseau), **Réessayer** | « Erreur », « Erreur de chargement », « Fil indisponible » |
 | Ride or trip under way | **En cours** (badge dérivé, comme « J'y vais ») | « en direct », « live » |
 | Ad | **annonce** (rubrique : **Annonces**) | « petite annonce » dans l'UI |
 | Team | **équipe** | « club », « groupe » |
@@ -960,7 +1033,7 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
   → « Parcours », « Annonces », « Groupes », « Cols et montées », « À propos de l'équipe ».
 - **Boutons : verbe à l'infinitif**, court.
   → « Rejoindre », « Quitter le groupe », « Changer pour B », « Enregistrer », « Annuler »,
-  « Retour », « Filtres », « Effacer », « S'abonner ». L'export d'un parcours n'a qu'un bouton,
+  « Retour », « Filtres », « Effacer les filtres », « Créer », « S'abonner ». L'export d'un parcours n'a qu'un bouton,
   « GPS » (§7.7) : un nom d'outil, pas un verbe.
 - **États en cours : verbe substantivé + points de suspension.**
   → « Création... », « Enregistrement... », « Adhésion... » (une équipe), « Inscription… » (un
@@ -968,12 +1041,14 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 - **États vides : un titre nominal + une phrase explicative.**
   → « Aucun parcours » / « Aucun parcours n'est disponible pour le moment. »
   → « Aucune publication pour le moment »
-  → « Aucune annonce ne correspond à votre recherche. »
-  Distinguer toujours *vide absolu* (« Aucun X ») de *vide filtré* (« Aucun X ne correspond à
-  votre recherche. »).
-- **Champs de recherche : verbe à l'infinitif en libellé, exemple concret en espace réservé.**
-  → libellé « Rechercher des parcours », espace réservé « Rechercher par titre ou description... ».
-  Les espaces réservés se terminent par des points de suspension.
+  Distinguer toujours *vide simple* (« Aucun X ») de *vide filtré* : « Aucun X pour ces filtres »,
+  puis « Rien ne correspond à : {filtres actifs}. », la recherche entre guillemets, les filtres
+  séparés par « · », et « Effacer les filtres » (§7.10).
+- **Champs de recherche : l'invite nomme l'objet cherché**, « Rechercher {un objet}… », avec le
+  caractère « … » (U+2026), et le même texte dans l'app et sur le site.
+  → « Rechercher un parcours… », « Rechercher une annonce… », « Rechercher un membre… »,
+  « Rechercher dans l'agenda… ». Seule exception : « Rechercher par nom ou e-mail… », pour qui
+  administre les membres. Jamais « Rechercher par titre ou description... ».
 - **Confirmations : question fermée + conséquence.**
   → « Voulez-vous vraiment quitter cette équipe ? »
   → « Voulez-vous vraiment supprimer cette annonce ? Cette action est irréversible. »
@@ -984,24 +1059,28 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
   → « Annonce créée avec succès », « Annonce mise à jour avec succès ».
 - **Erreurs : constat neutre, puis action possible.** Jamais de blâme.
   → « Email ou mot de passe incorrect », « Échec de l'ajout du membre. Veuillez réessayer. »
+- **Erreur d'une liste** : « Chargement impossible » ou « Pas de connexion », un message, « Réessayer »
+  (§7.10). Un refus d'accès n'est pas une erreur.
 - **Compteurs : toujours pluralisés** (`_one` / `_many` / `_other`).
   → « 1 groupe » / « 3 groupes », « 1 étape » / « 4 étapes », « 12 personnes », « 1 membre ».
   **Sur une carte, un compteur à zéro ne s'écrit pas** (ni « 0 groupe » ni « 0 commentaire » ;
   KIT §9, R4). Le compte des personnes d'un groupe s'écrit « 11/12 personnes », « 11 personnes »
-  sans maximum — jamais « 11/12 » nu ni « 8/12 places ».
+  sans maximum — jamais « 11/12 » nu ni « 8/12 places ». **Le compteur d'une liste est formaté**
+  (« 2 585 annonces »), dit le total filtré seul, et ne s'écrit pas à zéro (§7.10).
 - **Ligne météo d'une carte** : « 9–13 °C · ↗ 18 km/h · Pluie 20 % » (plage avec un tiret
   demi-cadratin, vent précédé de sa flèche, pluie toujours) ; en alerte « Pluie 60 % vers 11:00 » ;
   avant l'ouverture des prévisions « Météo dès le 15 novembre ». Pas de condition nommée sur une
   carte (§7.1).
 - **Départ (format unique, ledger `BRAND-8`)** : heure avec deux-points (« 09:00 », jamais « 09h00 »),
-  sur 24 h sur le web en français (l'anglais suit sa langue : « 9:00 AM »), au réglage
-  12 h / 24 h du téléphone sur mobile ; jour de semaine et mois abrégés, séparés de l'heure par « · » :
+  sur 24 h en français et 12 h en anglais (« 9:00 AM »), **sur le web comme dans l'app : l'heure
+  suit la langue, pas le réglage du téléphone** (décision du 10 novembre 2026) ; jour de semaine et
+  mois abrégés, séparés de l'heure par « · » :
   « sam. 12 avr. · 09:00 » ; **l'année seulement si elle n'est pas l'année en cours**
   (« sam. 10 avr. 2027 · 09:00 », et la quatrième ligne de la boîte du jour, §7.8) ; relatif seulement pour « Aujourd'hui · 09:00 » et
   « Demain · 09:00 » ; pas d'heure de retour ; titre de push et objet d'e-mail
   « Demain 09:00 : Boucle de la vallée ». §7.8 pour la mise en forme.
-- **Dates** : format français long abrégé, heure sur 24 h — sur le web, qui suit la langue ; le
-  mobile suit le réglage 12 h / 24 h du téléphone (ledger `API-60`). Un rendez-vous lu d'un autre
+- **Dates** : format français long abrégé, heure sur 24 h en français, 12 h en anglais, sur les
+  deux supports (ledger `API-60` pour les fuseaux). Un rendez-vous lu d'un autre
   fuseau porte la mention « heure de Tokyo (ven. 01:00 chez vous) » — même texte, deux formes : une
   ligne visible dans l'app, une infobulle sur une icône au site (ledger `WEB-171`). Le calendrier
   propose « Jour / Semaine / Mois », « Toute la journée », « +{{count}} autres ».
@@ -1012,8 +1091,10 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
     au-delà de 7 jours, la date, « 3 novembre 2026 » ;
   - **ancienneté d'un membre** : « Membre depuis mars 2024 ».
 - **Unités** : `km` / `m` en métrique, `mi` / `ft` en impérial — l'utilisateur choisit dans ses
-  préférences. Espace insécable entre le nombre et l'unité, séparateur de milliers = espace fine
-  (`1 240 m`).
+  préférences. Espace insécable entre le nombre et l'unité ; séparateur de milliers = **espace
+  insécable normale (U+00A0)**, pas l'espace fine (U+202F), que la police du site ne dessine pas
+  (`1 240 m`, « 2 585 annonces » ; complément du 12 novembre 2026, jeu de cas
+  `contracts/format-cases.json`).
 - **Apostrophe typographique** : le corpus existant utilise l'apostrophe droite (`'`). Rester
   cohérent avec l'existant plutôt que d'introduire `’`.
 - **Accessibilité** : chaque contrôle porte un libellé explicite (« Ouvrir le menu »,
@@ -1058,7 +1139,12 @@ au cas par cas : **on reformule de façon épicène**, sans point médian. Le po
 > « Quitter le groupe » · « Changer pour B » · « Inscription… » · « GPS » · « Équipe uniquement »
 > « 11/12 personnes » · « Pluie 60 % vers 11:00 » · « Météo dès le 15 novembre » · « Secteur Brest »
 > « Voir le parcours » · « Voir toutes les personnes inscrites » · « Voir tout »
-> « Masquer les filtres » · « Tous les niveaux » · « Prix à négocier »
+> « Filtres » · « Effacer les filtres » · « Tout » · « Toutes les dates » · « Je participe »
+> « À venir » · « Plus tôt » · « 2 parcours » · « 47 équipes · triées par nombre de membres »
+> « Rechercher un parcours… » · « Créer une sortie » · « Vignettes » · « Lignes »
+> « Aucun parcours pour ces filtres » · « Rien ne correspond à : Je participe · Sorties. »
+> « Chargement impossible » · « Pas de connexion » · « Réessayer »
+> « Tous les niveaux » · « Prix à négocier »
 > « Aucun groupe défini pour cette sortie. »
 > « Parcours introuvable » · « Le parcours que vous recherchez n'existe pas. »
 
