@@ -149,7 +149,7 @@ describe('StageFullscreenMapPage — the Météo mode (WEB-118)', () => {
     expect(screen.getByTestId('url').textContent).toBe('?color=wind')
   })
 
-  it('offers no Météo mode for a stage gone or not yet forecast, nor on a trip over or cancelled', () => {
+  it('offers no Météo mode for a stage gone or not yet forecast, nor on a cancelled trip', () => {
     for (const status of [WeatherStatus.OUT_OF_RANGE, WeatherStatus.NOT_YET_AVAILABLE]) {
       state.weather = tripWeather(weatherLeg(undefined, { status }))
       renderPage('?color=wind')
@@ -159,10 +159,7 @@ describe('StageFullscreenMapPage — the Météo mode (WEB-118)', () => {
       cleanup()
     }
     state.weather = tripWeather(weatherLeg(undefined))
-    for (const over of [
-      { finished: true, endDateTime: '2020-01-01T10:00:00Z' },
-      { status: Status.CANCELLED },
-    ]) {
+    for (const over of [{ status: Status.CANCELLED }]) {
       state.trip = trip(over)
       renderPage('?color=wind')
       expect(windLeg()).toBeUndefined()

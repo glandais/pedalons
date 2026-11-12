@@ -17,7 +17,6 @@ import '../../../../core/utils/share_link.dart';
 import '../../../../core/widgets/detail_stat_tiles.dart';
 import '../../../../keys.dart';
 import '../../../participants/providers/participant_list_provider.dart';
-import '../../../teams/domain/publication_timing.dart';
 import '../../domain/group_title.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
@@ -332,12 +331,11 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     );
   }
 
-  /// La météo se demande-t-elle ? Pas pour une sortie annulée, ni pour un
-  /// groupe arrivé : l'API la sert jusqu'à la fin du groupe (ledger
-  /// `API-170`), et répondrait `OUT_OF_RANGE` au-delà.
-  bool _asksWeather(RideDto ride, RideGroupDto group) =>
-      !ride.isCancelled &&
-      rideGroupPhase(ride, group, now: widget.now) != PublicationPhase.finished;
+  /// La météo se demande-t-elle ? Toujours, sauf pour une sortie annulée.
+  /// Aucune règle de date ici : jusqu'à quand elle se montre est la décision
+  /// du serveur, que sa réponse porte (`OUT_OF_RANGE` passé la fin du jour où
+  /// la sortie se termine — ledger `API-170`, `API-183`).
+  bool _asksWeather(RideDto ride, RideGroupDto group) => !ride.isCancelled;
 
   Widget _content(
     RideDto ride,
@@ -349,9 +347,9 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
       rideRegistrationProvider(key).notifier,
     );
     final bool asksWeather = _asksWeather(ride, group);
-    final AsyncValue<RideWeatherDto>? weatherState = asksWeather
-        ? ref.watch(rideWeatherProvider(key))
-        : null;
+    final AsyncValue<RideWeatherDto>? weatherState = shownRideWeather(
+      asksWeather ? ref.watch(rideWeatherProvider(key)) : null,
+    );
     final RideWeatherDto? weather = weatherState?.value;
     final WeatherLegDto? leg = weather == null
         ? null

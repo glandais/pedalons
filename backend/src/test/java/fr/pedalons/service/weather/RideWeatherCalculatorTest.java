@@ -6,17 +6,21 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.route.GpxTrack.TrackPoint;
 import fr.pedalons.enums.CompassPoint;
 import fr.pedalons.enums.RelativeWind;
+import fr.pedalons.enums.Status;
 import fr.pedalons.enums.WeatherCheckpointKind;
 import fr.pedalons.enums.WeatherCondition;
 import fr.pedalons.enums.WeatherStatus;
 import fr.pedalons.repository.weather.WeatherHourRow;
 import fr.pedalons.service.weather.RideWeatherCalculator.CellSeries;
 import fr.pedalons.service.weather.RideWeatherCalculator.LegInput;
+import fr.pedalons.service.weather.TripWeatherPlans.StagePlan;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -27,6 +31,56 @@ class RideWeatherCalculatorTest {
 
   private static final Instant NOW = Instant.parse("2026-10-05T12:00:00Z");
   private static final Instant DEPARTURE = Instant.parse("2026-10-06T07:00:00Z");
+
+  private static final ZoneId PARIS = ZoneId.of("Europe/Paris");
+
+  /** docs/LEDGER_*.md API-183: to the end of the local day of the estimated end, not to it. */
+  @Test
+  void shownUntil_isTheEndOfTheLocalDayOfTheEnd() {
+    // 14:18 in Paris on 12 November (UTC+1): shown until midnight there, 23:00 UTC.
+    assertEquals(
+        Instant.parse("2026-11-12T23:00:00Z"),
+        RideWeatherCalculator.shownUntil(Instant.parse("2026-11-12T13:18:47Z"), PARIS));
+    // The day is the zone's, not UTC's: 23:30 UTC is already the 13th in Paris.
+    assertEquals(
+        Instant.parse("2026-11-13T23:00:00Z"),
+        RideWeatherCalculator.shownUntil(Instant.parse("2026-11-12T23:30:00Z"), PARIS));
+    // A 25-hour day (clocks back on 25 October 2026): still its own midnight.
+    assertEquals(
+        Instant.parse("2026-10-25T23:00:00Z"),
+        RideWeatherCalculator.shownUntil(Instant.parse("2026-10-25T08:00:00Z"), PARIS));
+  }
+
+  @Test
+  void aRide_keepsItsWeatherPastItsEstimatedEnd_toTheEndOfThatDay() {
+    Ride ride = new Ride();
+    ride.setStatus(Status.PUBLISHED);
+    ride.setTimezone("Europe/Paris");
+    ride.setDateTime(Instant.parse("2026-11-12T05:00:00Z"));
+    ride.setEndDateTime(Instant.parse("2026-11-12T13:18:47Z"));
+
+    assertFalse(RideWeatherService.isOutOfRange(ride, Instant.parse("2026-11-12T10:00:00Z")));
+    // An hour after the estimated arrival, the case that lost its forecast.
+    assertFalse(RideWeatherService.isOutOfRange(ride, Instant.parse("2026-11-12T14:23:00Z")));
+    assertFalse(RideWeatherService.isOutOfRange(ride, Instant.parse("2026-11-12T22:59:59Z")));
+    assertTrue(RideWeatherService.isOutOfRange(ride, Instant.parse("2026-11-12T23:00:00Z")));
+
+    ride.setStatus(Status.CANCELLED);
+    assertTrue(RideWeatherService.isOutOfRange(ride, Instant.parse("2026-11-12T10:00:00Z")));
+  }
+
+  @Test
+  void aStage_isGoneOnlyOnceItsDayIsOver() {
+    Instant start = Instant.parse("2026-11-12T05:00:00Z");
+    StagePlan plan =
+        new StagePlan(
+            1L,
+            new LegInput(null, start, RideWeatherCalculator.speed(28f), null),
+            RideWeatherCalculator.shownUntil(Instant.parse("2026-11-12T13:18:47Z"), PARIS));
+
+    assertFalse(TripWeatherService.isGone(plan, Instant.parse("2026-11-12T14:23:00Z")));
+    assertTrue(TripWeatherService.isGone(plan, Instant.parse("2026-11-12T23:00:00Z")));
+  }
 
   private static WeatherHourRow hour(
       Instant time, double temperature, @Nullable Integer rain, double windSpeed, double windFrom) {

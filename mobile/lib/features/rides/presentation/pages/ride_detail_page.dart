@@ -156,20 +156,11 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
     super.dispose();
   }
 
-  /// La météo se demande-t-elle ? Pas pour une sortie annulée, ni une fois
-  /// arrivée : l'API la sert jusqu'à la fin du groupe (ledger `API-170`) ou
-  /// de la sortie, et répondrait `OUT_OF_RANGE` au-delà. Une sortie partie
-  /// mais pas rentrée la garde (SYNTHESE §6.2) — à plusieurs groupes, tant
-  /// que le dernier n'est pas arrivé (`RideDto.endDateTime`, le plus tardif
-  /// de ses groupes) : un groupe plus tardif roule encore.
-  bool get _asksWeather {
-    if (ride.isCancelled) return false;
-    final RideGroupDto? solo = soloGroupOf(ride);
-    final PublicationPhase phase = solo == null
-        ? ridePhase(ride, now: widget.now)
-        : rideGroupPhase(ride, solo, now: widget.now);
-    return phase != PublicationPhase.finished;
-  }
+  /// La météo se demande-t-elle ? Toujours, sauf pour une sortie annulée.
+  /// Aucune règle de date ici : jusqu'à quand elle se montre est la décision
+  /// du serveur, que sa réponse porte (`OUT_OF_RANGE` passé la fin du jour où
+  /// la sortie se termine — ledger `API-170`, `API-183`).
+  bool get _asksWeather => !ride.isCancelled;
 
   /// Le leg que l'écran déroule : celui du groupe d'une sortie solo, le leg
   /// unique d'une sortie sans groupe ([rideOwnLeg]) ; `null` à plusieurs
@@ -370,9 +361,9 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
       rideRegistrationProvider(rideKey),
     );
     final bool asksWeather = _asksWeather;
-    final AsyncValue<RideWeatherDto>? weatherState = asksWeather
-        ? ref.watch(rideWeatherProvider(rideKey))
-        : null;
+    final AsyncValue<RideWeatherDto>? weatherState = shownRideWeather(
+      asksWeather ? ref.watch(rideWeatherProvider(rideKey)) : null,
+    );
     final RideWeatherDto? weather = weatherState?.value;
     final WeatherLegDto? leg = _ownLeg(weather);
     final UnitSystem units = ref.watch(unitSystemProvider);
@@ -625,9 +616,9 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
     final bool routeOnly =
         ref.watch(selectedRideRouteOverrideProvider(rideKey)) != null;
     final String? selectedRoute = resolvedRideRouteSlug(ref, rideKey, ride);
-    final AsyncValue<RideWeatherDto>? weatherState = _asksWeather
-        ? ref.watch(rideWeatherProvider(rideKey))
-        : null;
+    final AsyncValue<RideWeatherDto>? weatherState = shownRideWeather(
+      _asksWeather ? ref.watch(rideWeatherProvider(rideKey)) : null,
+    );
     final RideWeatherDto? weather = weatherState?.value;
     // La météo au départ de mon groupe (`WeatherLegDto.departure`, ledger
     // `API-169`) ; inscrite nulle part, celle de la sortie.

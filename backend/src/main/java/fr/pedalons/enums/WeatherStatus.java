@@ -15,6 +15,6 @@ public enum WeatherStatus {
   UNAVAILABLE,
   /** The ride has neither a meeting point nor a route with a start. */
   NO_LOCATION,
-  /** Finished or cancelled: nothing to show. */
+  /** Cancelled, or the local day of its end is over: nothing to show. */
   OUT_OF_RANGE
 }

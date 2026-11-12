@@ -379,7 +379,8 @@ class RideWeatherResourceTest extends AbstractResourceTest {
 
   @Test
   void weather_ofAFinishedRide_isOutOfRange() {
-    rideAt("past-ride", Instant.now().minus(1, ChronoUnit.DAYS), Visibility.PUBLIC, true);
+    // Two days back: whatever the hour, the local day of its end is over (API-183).
+    rideAt("past-ride", Instant.now().minus(2, ChronoUnit.DAYS), Visibility.PUBLIC, true);
 
     given()
         .when()
@@ -458,15 +459,19 @@ class RideWeatherResourceTest extends AbstractResourceTest {
         .body("weather", notNullValue());
   }
 
-  /** Its end stored and passed: nothing to show, even if it left only five hours ago. */
+  /**
+   * The local day of its stored end is over: nothing to show. 26 hours back is another day
+   * whatever the hour; the same day past the estimated arrival is {@code
+   * RideWeatherCalculatorTest}'s, on a fixed clock (docs/LEDGER_*.md API-183).
+   */
   @Test
-  void weather_ofARidePastItsEnd_isOutOfRange() {
+  void weather_ofARidePastTheDayOfItsEnd_isOutOfRange() {
     Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
     groupedRide(
         "over-ride",
-        now.minus(5, ChronoUnit.HOURS),
-        now.minus(1, ChronoUnit.MINUTES),
-        now.minus(5, ChronoUnit.HOURS));
+        now.minus(30, ChronoUnit.HOURS),
+        now.minus(26, ChronoUnit.HOURS),
+        now.minus(30, ChronoUnit.HOURS));
 
     given()
         .when()

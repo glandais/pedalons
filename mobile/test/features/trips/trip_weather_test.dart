@@ -340,7 +340,8 @@ void main() {
       expect(find.byKey(keys.ride.weatherAlongRoute), findsOneWidget);
     });
 
-    testWidgets('une étape déjà partie : le titre et une phrase', (
+    // La seule règle de fin : la réponse du serveur (ledger `API-183`).
+    testWidgets('une étape OUT_OF_RANGE n\'a plus de section Météo', (
       WidgetTester tester,
     ) async {
       await pump(
@@ -352,17 +353,13 @@ void main() {
         home: stagePage('j1'),
       );
 
-      expect(inWeather(find.byKey(keys.ride.weatherSection)), findsOneWidget);
-      expect(inWeather(find.byKey(keys.ride.weatherEmpty)), findsOneWidget);
-      expect(
-        find.text('Aucune prévision n\'est à afficher pour cette étape.'),
-        findsOneWidget,
-      );
-      expect(find.byKey(keys.ride.weatherUnavailable), findsNothing);
-      expect(find.byKey(keys.ride.weatherNotYetAvailable), findsNothing);
+      expect(find.byKey(keys.trip.stageWeatherSection), findsNothing);
+      expect(find.byKey(keys.ride.weatherEmpty), findsNothing);
     });
 
-    testWidgets('une étape arrivée n\'a plus de section Météo', (
+    // Aucune règle de date dans l'app : passé son arrivée estimée, une étape
+    // que le serveur prévoit encore garde sa météo (ledger `API-183`).
+    testWidgets('une étape arrivée que le serveur prévoit encore la garde', (
       WidgetTester tester,
     ) async {
       // Le voyage dure encore ; J1, elle, est arrivée.
@@ -386,7 +383,10 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             tripRepositoryProvider.overrideWithValue(
-              _Trips(ongoing, _weather(<TripStageWeatherDto>[_stage('s2')])),
+              _Trips(
+                ongoing,
+                _weather(<TripStageWeatherDto>[_stage('s1'), _stage('s2')]),
+              ),
             ),
             teamRepositoryProvider.overrideWithValue(_Teams(role: 'MEMBER')),
             commentRepositoryProvider.overrideWithValue(_Comments()),
@@ -407,7 +407,7 @@ void main() {
       }
 
       expect(find.byKey(keys.trip.stageTitle), findsOneWidget);
-      expect(find.byKey(keys.trip.stageWeatherSection), findsNothing);
+      expect(find.byKey(keys.trip.stageWeatherSection), findsOneWidget);
     });
 
     testWidgets('NO_LOCATION : dit à l\'organisateur, une phrase au membre', (

@@ -184,11 +184,8 @@ describe('StageDetailPage — the page of a child, as a group (WEB-155)', () => 
     expect(state.weatherSection.offered).toBe(true)
   })
 
-  it('offers no weather once the trip is over or cancelled', () => {
-    for (const over of [
-      { finished: true, endDateTime: '2020-01-01T10:00:00Z' },
-      { status: Status.CANCELLED },
-    ]) {
+  it('offers no weather on a cancelled trip', () => {
+    for (const over of [{ status: Status.CANCELLED }]) {
       state.trip = trip(over)
       renderPage()
       expect(state.weatherSection.offered).toBe(false)
@@ -228,17 +225,14 @@ describe('StageDetailPage — the Météo mode of its map (WEB-118)', () => {
     expect(fullscreen('wind')).toBe(`${paths.stageMap('np', 'voyage', 'etape-1')}?color=wind`)
   })
 
-  it('offers no Météo mode for a stage gone, nor on a trip over or cancelled', () => {
+  it('offers no Météo mode for a stage gone, nor on a cancelled trip', () => {
     state.weather = tripWeather(weatherLeg(undefined, { status: WeatherStatus.OUT_OF_RANGE }))
     renderPage()
     expect(state.view.leg).toBeUndefined()
     expect(state.view.attribution).toBeUndefined()
     cleanup()
     state.weather = tripWeather(weatherLeg(undefined))
-    for (const over of [
-      { finished: true, endDateTime: '2020-01-01T10:00:00Z' },
-      { status: Status.CANCELLED },
-    ]) {
+    for (const over of [{ status: Status.CANCELLED }]) {
       state.trip = trip(over)
       renderPage()
       expect(state.view.leg).toBeUndefined()

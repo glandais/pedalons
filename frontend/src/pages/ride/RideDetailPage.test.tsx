@@ -264,7 +264,7 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     expect(screen.getByTestId('wind-map-legend')).toBeTruthy()
   })
 
-  it('offers no Météo mode without a forecast, nor on a finished or cancelled ride', async () => {
+  it('offers no Météo mode without a forecast, nor on a cancelled ride', async () => {
     state.weather = {
       ...okWeather,
       legs: [weatherLeg('g1', { status: WeatherStatus.NOT_YET_AVAILABLE })],
@@ -274,10 +274,7 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     expect(screen.queryByLabelText('Météo')).toBeNull()
     cleanup()
     state.weather = { ...okWeather, legs: [weatherLeg('g1')] }
-    for (const over of [
-      { finished: true, endDateTime: '2020-01-01T10:00:00Z' },
-      { status: Status.CANCELLED },
-    ]) {
+    for (const over of [{ status: Status.CANCELLED }]) {
       state.ride = ride(over)
       renderPage()
       await screen.findByTestId('route-map')

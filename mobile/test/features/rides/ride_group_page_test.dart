@@ -1336,11 +1336,19 @@ void main() {
     });
 
     // `NO_LOCATION` ici pour un membre qui n'organise pas.
-    for (final String status in <String>[
-      'OUT_OF_RANGE',
-      'NO_LOCATION',
-      'SOMETHING_NEW',
-    ]) {
+    // La seule règle de fin : la réponse du serveur (ledger `API-183`).
+    testWidgets('OUT_OF_RANGE : plus de section Météo du tout', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, fixtureWeather());
+
+      expect(find.byKey(keys.rideGroup.weatherSection), findsNothing);
+      expect(find.byKey(keys.rideGroup.participantsSection), findsOneWidget);
+      expect(repository.weatherCalls, greaterThan(0));
+      expect(tester.takeException(), isNull);
+    });
+
+    for (final String status in <String>['NO_LOCATION', 'SOMETHING_NEW']) {
       testWidgets('$status : le titre « Météo » reste, avec une ligne '
           'd\'explication', (WidgetTester tester) async {
         await open(tester, fixtureWeather(status: status));
@@ -1362,7 +1370,9 @@ void main() {
       });
     }
 
-    testWidgets('un groupe arrivé ne demande pas sa météo', (
+    // Aucune règle de date dans l'app : passé son arrivée estimée, un groupe
+    // que le serveur prévoit encore garde sa météo (ledger `API-183`).
+    testWidgets('un groupe arrivé que le serveur prévoit encore la garde', (
       WidgetTester tester,
     ) async {
       await open(
@@ -1386,8 +1396,8 @@ void main() {
         ),
       );
 
-      expect(find.byKey(keys.rideGroup.weatherSection), findsNothing);
-      expect(repository.weatherCalls, 0);
+      expect(find.byKey(keys.rideGroup.weatherSection), findsOneWidget);
+      expect(repository.weatherCalls, greaterThan(0));
     });
 
     testWidgets('NOT_YET_AVAILABLE donne la date d\'ouverture', (

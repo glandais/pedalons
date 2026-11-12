@@ -5,16 +5,15 @@
 // map chunk.
 import type { TripDto, TripWeatherDto, WeatherLegDto, WindExposureDto } from '@/api/dto'
 import { Status, WeatherStatus } from '@/api/dto'
-import { isOver } from '@/utils/publicationEnd'
 import { hasWindForecast } from './weatherOnRoute'
 
 /**
- * Whether the trip's maps can offer the Météo mode at all: neither over nor cancelled. Over is its
- * `endDateTime` passed (`isOver`), not the API's `finished`, which only says it has left: a trip
- * under way keeps the weather of the stages still out (API-170).
+ * Whether the trip's maps can offer the Météo mode at all: not cancelled. No date rule here: until
+ * when a stage's weather shows is the server's call, told by each leg's `status` (OUT_OF_RANGE past
+ * the day the stage ends — API-170, API-183).
  */
 export function tripOffersWind(trip: TripDto): boolean {
-  return !isOver(trip) && trip.status !== Status.CANCELLED
+  return trip.status !== Status.CANCELLED
 }
 
 /**

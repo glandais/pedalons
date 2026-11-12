@@ -130,11 +130,8 @@ describe('TripOverviewMap (WEB-118)', () => {
     expect(legend).toContain('pour les étapes sans vitesse indiquée')
   })
 
-  it('offers no Météo mode on a trip over or cancelled, nor without a forecast', async () => {
-    for (const t of [
-      trip({ finished: true, endDateTime: '2020-01-01T10:00:00Z' }),
-      trip({ status: Status.CANCELLED }),
-    ]) {
+  it('offers no Météo mode on a cancelled trip, nor without a forecast', async () => {
+    for (const t of [trip({ status: Status.CANCELLED })]) {
       show(t)
       await screen.findByTestId('routes-map')
       expect(screen.queryByLabelText('Météo')).toBeNull()

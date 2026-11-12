@@ -169,7 +169,7 @@ describe('RideFullscreenMapPage (WEB-118)', () => {
     expect(state.view.colorBy).toBe('grade')
   })
 
-  it('offers no Météo mode without a forecast, on a finished or a cancelled ride', () => {
+  it('offers no Météo mode without a forecast, nor on a cancelled ride', () => {
     state.weather = {
       ...okWeather,
       legs: [weatherLeg('g1', { status: WeatherStatus.NOT_YET_AVAILABLE })],
@@ -180,10 +180,6 @@ describe('RideFullscreenMapPage (WEB-118)', () => {
     expect(state.view.windAttribution).toBeUndefined()
     cleanup()
     state.weather = soloWeather
-    state.ride = ride({ finished: true, endDateTime: '2020-01-01T10:00:00Z' })
-    renderPage('?color=wind')
-    expect(windLeg()).toBeUndefined()
-    cleanup()
     state.ride = ride({ status: Status.CANCELLED })
     renderPage('?color=wind')
     expect(windLeg()).toBeUndefined()

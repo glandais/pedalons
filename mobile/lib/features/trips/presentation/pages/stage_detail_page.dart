@@ -269,12 +269,11 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
     _selection.select(key, move: PdlWaypointMove.center);
   }
 
-  /// La météo se demande-t-elle ? Pas pour un voyage annulé, ni pour une
-  /// étape arrivée : l'API la sert jusqu'à la fin de l'étape (ledger
-  /// `API-170`), et répondrait `OUT_OF_RANGE` au-delà.
-  bool get _asksWeather =>
-      !trip.isCancelled &&
-      tripStagePhase(trip, stage, now: widget.now) != PublicationPhase.finished;
+  /// La météo se demande-t-elle ? Toujours, sauf pour un voyage annulé.
+  /// Aucune règle de date ici : jusqu'à quand elle se montre est la décision
+  /// du serveur, que sa réponse porte (`OUT_OF_RANGE` sur l'étape passé la
+  /// fin du jour où elle arrive — ledger `API-170`, `API-183`).
+  bool get _asksWeather => !trip.isCancelled;
 
   @override
   Widget build(BuildContext context) {
@@ -305,9 +304,22 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
       watchTripMapWeather(ref, tripKey, trip),
     )[stage.id];
 
-    final AsyncValue<TripWeatherDto>? weatherState = _asksWeather
+    final AsyncValue<TripWeatherDto>? watchedWeather = _asksWeather
         ? ref.watch(tripWeatherProvider(tripKey))
         : null;
+    // `OUT_OF_RANGE` — le voyage, ou cette étape passé la fin du jour où elle
+    // arrive : plus de section Météo du tout. La seule règle de fin, celle
+    // du serveur (ledger `API-183`).
+    final TripWeatherDto? readWeather = watchedWeather?.value;
+    final bool weatherOver =
+        readWeather != null &&
+        (weatherIsOutOfRange(readWeather.status) ||
+            weatherIsOutOfRange(
+              stageWeatherFor(readWeather, stage.id)?.leg.status,
+            ));
+    final AsyncValue<TripWeatherDto>? weatherState = weatherOver
+        ? null
+        : watchedWeather;
     // Le réticule de la frise ne vaut que sur une carte à dessiner et une
     // frise prévue.
     final bool cursorEnabled =

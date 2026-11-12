@@ -395,22 +395,18 @@ describe('GroupWeatherSection', () => {
     expect(screen.getByText(/Ajoutez un lieu/)).toBeTruthy()
   })
 
-  it('draws nothing out of range, for a ride over or cancelled', () => {
+  it('draws nothing out of range or for a cancelled ride, and sets no date rule of its own', () => {
     const { container: outOfRange } = renderSection({
       weather: { ...okWeather, status: WeatherStatus.OUT_OF_RANGE, legs: [] },
     })
     expect(outOfRange.querySelector('section')).toBeNull()
     cleanup()
-    const { container: finished } = renderSection({
+    // Past its estimated end, yet the server still sends a forecast: shown. Until when is the
+    // server's call (OUT_OF_RANGE), never a date computed here (API-170, API-183).
+    const { container: pastEnd } = renderSection({
       ride: ride({ finished: true, endDateTime: '2020-01-01T10:00:00Z' }),
     })
-    expect(finished.querySelector('section')).toBeNull()
-    cleanup()
-    // Left, not back: the forecast stays to the ride's end (API-170).
-    const { container: underWay } = renderSection({
-      ride: ride({ finished: true, endDateTime: '2999-01-01T10:00:00Z' }),
-    })
-    expect(underWay.querySelector('section')).not.toBeNull()
+    expect(pastEnd.querySelector('section')).not.toBeNull()
     cleanup()
     const { container: cancelled } = renderSection({ ride: ride({ status: Status.CANCELLED }) })
     expect(cancelled.querySelector('section')).toBeNull()

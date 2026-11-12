@@ -365,14 +365,14 @@ describe('RideGroupPage (WEB-77)', () => {
     expect(screen.queryByRole('button', { name: 'Rejoindre' })).toBeNull()
   })
 
-  it("holds the group's whole weather under #meteo, and none on a finished ride", () => {
+  it("holds the group's whole weather under #meteo, and none on a cancelled ride", () => {
     const { container } = renderPage()
     const weather = container.querySelector('#meteo')
     expect(weather?.textContent).toContain('Météo du parcours')
     expect(weather?.querySelector('[aria-label="Le vent, tronçon par tronçon"]')).not.toBeNull()
     expect(weather?.textContent).toContain('Heure par heure, à votre passage')
     cleanup()
-    state.ride = ride({ finished: true, endDateTime: '2020-01-01T10:00:00Z' })
+    state.ride = ride({ status: Status.CANCELLED })
     const { container: finished } = renderPage()
     expect(finished.querySelector('#meteo section')).toBeNull()
   })
@@ -472,12 +472,7 @@ describe('RideGroupPage (WEB-77)', () => {
       expect(columns()[1].getAttribute('aria-pressed')).toBe('true')
     })
 
-    it('offers nothing on a finished or cancelled ride', async () => {
-      state.ride = ride({ finished: true, endDateTime: '2020-01-01T10:00:00Z' })
-      renderPage()
-      await findMap()
-      expect(screen.queryByLabelText('Météo')).toBeNull()
-      cleanup()
+    it('offers nothing on a cancelled ride', async () => {
       state.ride = ride({ status: Status.CANCELLED })
       renderPage()
       await findMap()

@@ -119,13 +119,17 @@ public class RideWeatherService {
   }
 
   /**
-   * Over — its stored end passed ({@link PublicationEndCalculator#effectiveEnd}, the last group
-   * back) — or cancelled: no weather block. A draft has none either. A ride that has left but whose
-   * groups are still out, or still to leave, keeps its weather (docs/LEDGER_*.md API-170), unlike
-   * {@code RideDto.finished}, which only says it has left.
+   * The local day of its end — its stored end ({@link PublicationEndCalculator#effectiveEnd}, the
+   * last group back), read in the ride's zone — is over, or the ride is cancelled: no weather
+   * block. A draft has none either. A ride that has left keeps its weather while its groups are
+   * out (docs/LEDGER_*.md API-170), and to the end of that day rather than to the estimated
+   * arrival ({@link RideWeatherCalculator#shownUntil}, docs/LEDGER_*.md API-183), unlike {@code
+   * RideDto.finished}, which only says it has left.
    */
   static boolean isOutOfRange(Ride ride, Instant now) {
     return ride.getStatus() != Status.PUBLISHED
-        || PublicationEndCalculator.effectiveEnd(ride).isBefore(now);
+        || !now.isBefore(
+            RideWeatherCalculator.shownUntil(
+                PublicationEndCalculator.effectiveEnd(ride), ride.zone()));
   }
 }

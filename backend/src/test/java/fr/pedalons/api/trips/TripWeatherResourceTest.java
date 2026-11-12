@@ -159,7 +159,8 @@ class TripWeatherResourceTest extends AbstractResourceTest {
   /** Each stage has its own state: gone, within range, beyond the horizon, without a route. */
   @Test
   void weather_shouldGiveEachStageItsOwnState_inStageOrder() throws Exception {
-    Instant start = Instant.now().minus(1, ChronoUnit.DAYS);
+    // Two days back: whatever the hour, the local day of the first stage's end is over (API-183).
+    Instant start = Instant.now().minus(2, ChronoUnit.DAYS);
     Trip trip = trip("Long trip", start, Visibility.PUBLIC, Status.PUBLISHED);
     TripStage gone = stage(trip, "Long day 1", 0, start, true);
     TripStage soon = stage(trip, "Long day 2", 1, Instant.now().plus(1, ChronoUnit.DAYS), true);
@@ -315,15 +316,16 @@ class TripWeatherResourceTest extends AbstractResourceTest {
 
   /**
    * docs/LEDGER_*.md API-170: a stage that left an hour ago and ends in two keeps its forecast;
-   * one whose end has passed is OUT_OF_RANGE, even if it left only four hours ago.
+   * one the day of whose end is over is OUT_OF_RANGE (26 hours back is another day whatever the
+   * hour, docs/LEDGER_*.md API-183).
    */
   @Test
   void weather_ofAStageUnderWay_isServedUntilItsEnd() {
     Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
     Trip trip =
-        trip("Running trip", now.minus(4, ChronoUnit.HOURS), Visibility.PUBLIC, Status.PUBLISHED);
-    TripStage over = stage(trip, "Running day 1", 0, now.minus(4, ChronoUnit.HOURS), true);
-    endAt(over, now.minus(1, ChronoUnit.MINUTES));
+        trip("Running trip", now.minus(30, ChronoUnit.HOURS), Visibility.PUBLIC, Status.PUBLISHED);
+    TripStage over = stage(trip, "Running day 1", 0, now.minus(30, ChronoUnit.HOURS), true);
+    endAt(over, now.minus(26, ChronoUnit.HOURS));
     TripStage underway = stage(trip, "Running day 2", 1, now.minus(1, ChronoUnit.HOURS), true);
     endAt(underway, now.plus(2, ChronoUnit.HOURS));
     planner.plan(Instant.now());

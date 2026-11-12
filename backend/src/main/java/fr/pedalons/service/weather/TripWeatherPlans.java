@@ -38,9 +38,10 @@ public class TripWeatherPlans {
    * A stage, located.
    *
    * @param stageId null for the leg of a trip without stages
-   * @param end when the stage is over — its stored end ({@link
-   *     PublicationEndCalculator#effectiveEnd}), the trip's for a trip without stages: its weather
-   *     is shown until then (docs/LEDGER_*.md API-170)
+   * @param end until when the stage's weather is shown: the end of the local day, in the stage's
+   *     zone, of its stored end ({@link PublicationEndCalculator#effectiveEnd}) — the trip's, in
+   *     the trip's zone, for a trip without stages ({@link RideWeatherCalculator#shownUntil},
+   *     docs/LEDGER_*.md API-170 and API-183)
    */
   public record StagePlan(@Nullable Long stageId, LegInput leg, Instant end) {}
 
@@ -59,7 +60,8 @@ public class TripWeatherPlans {
                   trip.getDateTime(),
                   RideWeatherCalculator.speed(null),
                   ridePlans.samples(route, trackIds)),
-              PublicationEndCalculator.effectiveEnd(trip)));
+              RideWeatherCalculator.shownUntil(
+                  PublicationEndCalculator.effectiveEnd(trip), trip.zone())));
     }
     return stagePlans(stages);
   }
@@ -84,7 +86,8 @@ public class TripWeatherPlans {
                   trip.getDateTime(),
                   RideWeatherCalculator.speed(null),
                   ridePlans.samples(RideWeatherPlans.live(trip.getRoute()), trackIds)),
-              PublicationEndCalculator.effectiveEnd(trip)));
+              RideWeatherCalculator.shownUntil(
+                  PublicationEndCalculator.effectiveEnd(trip), trip.zone())));
     }
     return plans;
   }
@@ -109,7 +112,8 @@ public class TripWeatherPlans {
                   stage.getDateTime(),
                   RideWeatherCalculator.speed(stage.getAverageSpeed()),
                   ridePlans.samples(RideWeatherPlans.live(stage.getRoute()), trackIds)),
-              PublicationEndCalculator.effectiveEnd(stage)));
+              RideWeatherCalculator.shownUntil(
+                  PublicationEndCalculator.effectiveEnd(stage), stage.zone())));
     }
     return plans;
   }

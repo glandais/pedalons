@@ -142,21 +142,18 @@ describe('groupWindLeg (WEB-115, WEB-117)', () => {
     expect(groupWindLeg(ride(), weatherLeg('g1', { status: WeatherStatus.STALE }))).toBeTruthy()
   })
 
-  it('stays on a ride under way: left, not back (API-170)', () => {
+  it('sets no date rule of its own: past its estimated end, a leg the server still forecasts stays (API-170, API-183)', () => {
     expect(
-      groupWindLeg(ride({ finished: true, endDateTime: '2999-01-01T10:00:00Z' }), weatherLeg('g1'))
+      groupWindLeg(ride({ finished: true, endDateTime: '2020-01-01T10:00:00Z' }), weatherLeg('g1'))
         ?.groupId
     ).toBe('g1')
   })
 
-  it('is none without a forecast, on a ride over or cancelled', () => {
+  it('is none without a forecast, or on a cancelled ride', () => {
     expect(
       groupWindLeg(ride(), weatherLeg('g1', { status: WeatherStatus.NOT_YET_AVAILABLE }))
     ).toBeUndefined()
     expect(groupWindLeg(ride(), undefined)).toBeUndefined()
-    expect(
-      groupWindLeg(ride({ finished: true, endDateTime: '2020-01-01T10:00:00Z' }), weatherLeg('g1'))
-    ).toBeUndefined()
     expect(groupWindLeg(ride({ status: Status.CANCELLED }), weatherLeg('g1'))).toBeUndefined()
   })
 })

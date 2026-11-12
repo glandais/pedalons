@@ -20,7 +20,8 @@ import java.util.Map;
  * counts.
  *
  * <p><b>It costs a page, not a row</b>: no query at all when no ride of the page is within the
- * seven-day window (over — its stored end passed, docs/LEDGER_*.md API-170 —, cancelled, too far
+ * seven-day window (over — the local day of its stored end passed, docs/LEDGER_*.md API-170 and
+ * API-183 —, cancelled, too far
  * ahead), <b>one</b> otherwise, whatever the page
  * size. The ride's groups are never loaded: the window to the last arrival is worked out in SQL
  * ({@code WeatherHourlyRepository#findRideWindowHours}). Reads the cache only, like the detail.

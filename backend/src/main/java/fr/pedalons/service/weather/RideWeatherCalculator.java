@@ -8,6 +8,7 @@ import fr.pedalons.enums.WeatherStatus;
 import fr.pedalons.repository.weather.WeatherHourRow;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -57,6 +58,18 @@ public final class RideWeatherCalculator {
     return averageSpeed != null && averageSpeed > 0
         ? new Speed(averageSpeed, false)
         : new Speed(DEFAULT_SPEED_KMH, true);
+  }
+
+  /**
+   * Until when the weather of a ride or a stage ending at {@code end} is shown: the end of that
+   * local day in {@code zone}, exclusive (docs/LEDGER_*.md API-183). The stored end is an estimate
+   * — the route's length at the group's speed, no stop counted — and people are still riding well
+   * after it: cutting there took the forecast away from those who needed it most. The hours behind
+   * are still in the cache then ({@code WeatherHousekeeping} keeps a day of them), so nothing more
+   * is fetched for it.
+   */
+  public static Instant shownUntil(Instant end, ZoneId zone) {
+    return end.atZone(zone).toLocalDate().plusDays(1).atStartOfDay(zone).toInstant();
   }
 
   /** The passage {@code distanceMeters} from the start at {@code speedKmh}. */

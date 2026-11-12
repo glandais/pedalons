@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart';
 import '../../../core/theme/pdl_icons.dart';
@@ -54,6 +55,21 @@ RideWeatherView rideWeatherViewOf(
   WeatherStatus.outOfRange => RideWeatherView.hidden,
   WeatherStatus.$unknown => RideWeatherView.hidden,
 };
+
+/// Le serveur dit-il que la météo n'a plus cours (`OUT_OF_RANGE`) ? Passé la
+/// fin du jour où la sortie ou l'étape se termine, ou hors publication : la
+/// section entière disparaît alors, titre compris. C'est la **seule** règle
+/// de fin — l'app ne calcule aucune date pour la météo (ledger `API-183`).
+/// Une réponse pas encore lue ([status] `null`) ne dit rien.
+bool weatherIsOutOfRange(String? status) =>
+    status != null &&
+    WeatherStatus.fromJson(status) == WeatherStatus.outOfRange;
+
+/// [state] tel quel, ou `null` quand sa réponse est `OUT_OF_RANGE` : les
+/// pages ne dessinent alors aucune section Météo.
+AsyncValue<RideWeatherDto>? shownRideWeather(
+  AsyncValue<RideWeatherDto>? state,
+) => weatherIsOutOfRange(state?.value?.status) ? null : state;
 
 /// Peut-on voir le message `NO_LOCATION` ? Les organisateurs et
 /// administrateurs de l'équipe, et l'administrateur de la plateforme — ceux

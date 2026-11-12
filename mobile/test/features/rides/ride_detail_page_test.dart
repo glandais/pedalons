@@ -1658,7 +1658,24 @@ void main() {
       expect(find.byKey(keys.ride.weatherNoLocation), findsOneWidget);
     });
 
-    for (final String status in <String>['OUT_OF_RANGE', 'SOMETHING_NEW']) {
+    // La seule règle de fin : la réponse du serveur (ledger `API-183`).
+    testWidgets('OUT_OF_RANGE : plus de section Météo du tout', (
+      WidgetTester tester,
+    ) async {
+      final RideDto ride = fixtureRide();
+      final _StubRideRepository repository = _StubRideRepository(
+        ride,
+        weather: fixtureWeather(),
+      );
+      await open(tester, ride, height: 4000, repository: repository);
+
+      expect(find.byKey(keys.ride.weatherBlock), findsNothing);
+      expect(find.byKey(keys.ride.weatherSection), findsNothing);
+      expect(repository.weatherCalls, greaterThan(0));
+      expect(tester.takeException(), isNull);
+    });
+
+    for (final String status in <String>['SOMETHING_NEW']) {
       testWidgets('$status : le titre « Météo » et une ligne d\'explication', (
         WidgetTester tester,
       ) async {
@@ -1683,7 +1700,9 @@ void main() {
       });
     }
 
-    testWidgets('une sortie terminée ne demande même pas la météo', (
+    // Aucune règle de date dans l'app : passé son arrivée estimée, une sortie
+    // que le serveur prévoit encore garde sa météo (ledger `API-183`).
+    testWidgets('une sortie passée que le serveur prévoit encore la garde', (
       WidgetTester tester,
     ) async {
       final RideDto ride = pastSolo();
@@ -1693,9 +1712,8 @@ void main() {
       );
       await open(tester, ride, repository: repository, height: 4000);
 
-      expect(find.byKey(keys.ride.weatherBlock), findsNothing);
-      expect(find.byKey(keys.ride.weatherSection), findsNothing);
-      expect(repository.weatherCalls, 0);
+      expect(find.byKey(keys.ride.weatherBlock), findsOneWidget);
+      expect(repository.weatherCalls, greaterThan(0));
     });
 
     testWidgets('une sortie en cours garde sa météo', (
@@ -2275,18 +2293,17 @@ void main() {
       });
     }
 
-    testWidgets('une sortie terminée : pas de « Météo », pas de météo', (
+    testWidgets('une sortie hors météo (OUT_OF_RANGE) : pas de « Météo »', (
       WidgetTester tester,
     ) async {
       tall(tester);
       final RideDto past = pastSolo();
       final _StubRideRepository repository = _StubRideRepository(
         past,
-        weather: served(),
+        weather: fixtureWeather(),
       );
       await open(tester, past, repository: repository);
       expect(windSegment(), findsNothing);
-      expect(repository.weatherCalls, 0);
     });
 
     testWidgets('une sortie annulée : pas de « Météo »', (
@@ -2414,6 +2431,7 @@ void main() {
         );
 
     RideWeatherDto served() => fixtureWeather(
+      status: 'OK',
       departure: fixtureConditions(),
       fetchedAt: '2099-07-29T17:00:00Z',
       legs: <WeatherLegDto>[fixtureLeg()],
