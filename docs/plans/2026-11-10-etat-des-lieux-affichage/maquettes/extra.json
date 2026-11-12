@@ -349,6 +349,132 @@
      ]
     ]
    ]
+  ],
+  [
+   "cartes-cibles",
+   "Cartes — cibles",
+   [
+    [
+     [
+      "cible-cartes-r1-badges.dc.html",
+      1600,
+      3000,
+      "R1 — Badges d'état — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r2-meteo.dc.html",
+      1280,
+      3000,
+      "R2 — Ligne météo — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r4-compteurs.dc.html",
+      1280,
+      3000,
+      "R4 — Compteurs — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r5-personnes.dc.html",
+      1720,
+      3000,
+      "R5 — Personnes inscrites — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r6-inscription.dc.html",
+      1720,
+      3000,
+      "R6 — Contrôles d'inscription — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r7-export.dc.html",
+      1720,
+      3000,
+      "R7 — Export du parcours — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r10-image.dc.html",
+      1760,
+      3000,
+      "R10 — Image d'en-tête — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r11-lieu-groupe.dc.html",
+      1280,
+      3000,
+      "R11 — Lieu et groupe — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r12-champs-equipe.dc.html",
+      1280,
+      3000,
+      "R12 — Champs : équipe — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r12-champs-parcours.dc.html",
+      1280,
+      3000,
+      "R12 — Champs : parcours — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r12-champs-modele.dc.html",
+      1280,
+      3000,
+      "R12 — Champs : modèle de sortie — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r12-champs-commentaire.dc.html",
+      1280,
+      3000,
+      "R12 — Champs : commentaire — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r13-actions-equipe.dc.html",
+      1280,
+      3000,
+      "R13 — Actions : rejoindre une équipe — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r13-actions-modele.dc.html",
+      1280,
+      3000,
+      "R13 — Actions : créer depuis un modèle — avant / cible"
+     ]
+    ],
+    [
+     [
+      "cible-cartes-r13-actions-membre.dc.html",
+      1280,
+      3000,
+      "R13 — Actions : signaler ou bloquer — avant / cible"
+     ]
+    ]
+   ]
   ]
  ]
 }

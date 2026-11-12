@@ -36,7 +36,7 @@ for pid, name, rows in PAGES:
             if w >= 1000: b["expand"] = "fill"
             boards[f] = b; order.append(f); x += w + 80
         y += max(r[2] for r in row) + 160
-    notes["t-" + pid] = {"x": 0, "y": -300, "text": name + ("" if pid=="cibles" else " — existant"), "kind": "title1", "maxW": 2220, "page": pid}
+    notes["t-" + pid] = {"x": 0, "y": -300, "text": name + ("" if pid in ("cibles","cartes-cibles") else " — existant"), "kind": "title1", "maxW": 2220, "page": pid}
 idx = {"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-10T02:00:00Z"},
        "title": "Pédalons — maquettes de l'existant (web et mobile)",
        "launch": {"view": "canvas", "page": "sortie"},
