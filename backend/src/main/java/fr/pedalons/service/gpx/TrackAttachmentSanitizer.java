@@ -43,8 +43,9 @@ import java.util.List;
  * points are gone too: vcyclist's FIT writer has no course point, so a FIT holding nothing else is
  * refused as empty.
  *
- * <p>Both writers are deterministic — the FIT one dates every record at the FIT epoch, the date
- * that means "no clock" — so a file is clean exactly when its rewrite gives it back byte for byte.
+ * <p>Both writers are deterministic — the FIT one starts every course at the same instant and
+ * times each record from its distance alone ({@link FitExporter}) — so a file is clean exactly
+ * when its rewrite gives it back byte for byte.
  */
 @ApplicationScoped
 public class TrackAttachmentSanitizer {

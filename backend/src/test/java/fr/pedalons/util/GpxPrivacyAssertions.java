@@ -53,8 +53,8 @@ public final class GpxPrivacyAssertions {
 
   /**
    * A FIT course with no recorded time, power, heart rate or cadence on any record. A sanitized
-   * track has no clock, so the course starts at the FIT epoch (1989-12-31, see {@code
-   * FitExporter}): long before any recording.
+   * track has no clock, so the course starts in 1998 (see {@code FitExporter}) and runs at a
+   * nominal speed: long before any recording.
    *
    * <p>Sensor fields are looked up by their profile name: the typed getters return Kotlin unsigned
    * types, whose mangled names Java cannot call.

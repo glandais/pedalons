@@ -254,7 +254,7 @@ public class GpxSanitizationBackfill {
         Objects.requireNonNullElse(GpxProcessingService.documentName(gpx), gpx.getName()));
   }
 
-  private void store(StoredFile file, byte[] content) {
+  void store(StoredFile file, byte[] content) {
     long size =
         storageService.store(
             file.key(),
