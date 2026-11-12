@@ -71,12 +71,14 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       son groupe, accueil, tableau de bord ; `TripStageDto.route` pour l'étape. Même
       vocabulaire d'état que l'interrupteur (`profile.gps.autoSync.*`). Pendant web : `WEB-163`.
 
-- [ ] `MOB-139` **Homogénéité des cartes, côté app (M, par lots)** — l'audit du 11 novembre 2026
-      ([`audit-cartes/`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/README.md)) relève une douzaine de défauts de l'app sur ses cartes et lignes de liste (brouillon
-      et voyage annulé sans badge dans le fil, « 1 membres », « Adhésion... » pour un groupe de sortie, dates longues qui
-      cassent l'anglais, `_TeamCard` hors charte, épingle d'une annonce…) et dix règles encore à décider sur maquette.
-      Défauts, règles et décisions : [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) ; marche à suivre : [`METHODE.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/METHODE.md) ; règles
-      décidées : `KIT.md` §9. Pendant du site : `WEB-167`.
+- [ ] `MOB-141` **Cartes homogènes : recette sur appareil de `MOB-139` (S)** — les règles communes des cartes sont
+      codées et vérifiées par tests et par captures de la galerie (`flutter test`, hors appareil), jamais sur simulateur
+      ni sur appareil : mode sombre, texte agrandi, petit écran, anglais, impérial, feuilles (GPS, signaler / bloquer,
+      confirmation de suppression d'un commentaire), cache réel des images. Les tests Patrol adaptés à la lecture pendant
+      le chantier n'ont jamais tourné (`calendar_test`, `next_ride_card_test`, `comment_reply_test`,
+      `comment_moderator_delete_test`, `team_invitation_accept_test`, `ride_group_full_rollback_test`,
+      `report_members_test`). À faire avec `MOB-135`. Points ouverts dans [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) : espace des milliers,
+      « Groupe B » ou « B », indigo dans les teintes d'avatar.
 - [ ] `MOB-135` **Refonte des écrans de détail : recette sur appareil de `MOB-134` (S)** — la refonte est livrée
       (`MOB-134`) sans avoir été regardée : **aucune passe Patrol, ni iOS ni Android, depuis le lot 6**, et les
       écrans voyage, parcours et étape (lots 9 à 11) n'ont **jamais été vus à l'écran** (la sortie à plusieurs
@@ -402,10 +404,12 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       l'espace fine insécable à moins de 2 px). Rustine en place (`WEB-167`) : une mini-police limitée à U+202F,
       `Pedalons Narrow Space` dans `index.css`. Charger Inter (sous-ensemble latin, quatre graisses, `font-display: swap`)
       change l'aspect de tout le site et demande une passe visuelle large ; la rustine se retire alors.
-- [ ] `WEB-167` **Homogénéité des cartes, côté site (M, par lots)** — pendant de `MOB-139` : une douzaine de défauts du
-      site (nombres sans la langue, « Quitter » sur une sortie annulée, aucun changement de groupe, plage de voyage écrite
-      de deux façons, épingle d'une annonce…) et les règles décidées le 11 novembre 2026 (`KIT.md` §9). Détail dans
-      [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md). Recouvre la partie « cartes » de `WEB-165`, qui garde les pages de détail.
+- [ ] `WEB-172` **Cartes homogènes : recette en navigateur de `WEB-167` (S)** — même réserve que `MOB-141` côté site :
+      vérifié par tests unitaires et par captures de la galerie de développement, pas sur le site servi (SSR, hydratation,
+      mode sombre, largeurs intermédiaires). Les e2e Playwright adaptés à la lecture n'ont pas tourné (`rides`, `calendar`,
+      `flow-rides`, `flow-routes`, `flow-trips`, `flow-posts`, `flow-ads`, `flow-notifications`, `member-directory`,
+      `flow-gpx-tools`, `gpx-planner`). Reste aussi : la carte du tracé, carrée, est rognée dans le bandeau d'une carte
+      du fil ; pas de distance sur les lignes d'agenda d'équipe (`AgendaRow`).
 - [ ] `WEB-165` **Aligner le web sur les décisions des cibles mobiles (M, à cadrer)** — heure de son groupe en gros,
       « Changer pour A », bouton « GPS » unique, tuiles dans le même ordre :
       [`maquettes/KIT.md`](plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) §8. Hors périmètre de `MOB-134`.
@@ -630,12 +634,6 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 
 ## API — Contrat d'API et backend
 
-- [ ] `API-178` **Distance d'affichage d'une sortie, calculée par l'API (S à M)** — une même sortie montre aujourd'hui
-      jusqu'à trois distances selon la carte (groupe, parcours de la sortie, premier groupe), dans l'app comme sur le site.
-      Décidé le 11 novembre 2026 (`KIT.md` §9, règle R3 de [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md)) : les DTO de liste (sortie, participation,
-      événement de calendrier) portent une distance et un dénivelé d'affichage pour la personne qui lit — ceux de son groupe
-      si elle est inscrite, sinon ceux du parcours commun, sinon rien. Les cartes cessent de les recalculer (`MOB-139`,
-      `WEB-167`).
 - [ ] `API-173` **La ligne météo d'un voyage dans les listes s'arrête au départ de sa dernière étape (S)** — reste
       de `API-170` : la page du voyage et celle de l'étape gardent leur météo jusqu'à la fin estimée de l'étape,
       mais `TripWeatherLookup.forTrips` écarte encore un voyage dès que `TripListSummary.endDate` (le **départ** de
