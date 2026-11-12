@@ -1,8 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/adaptive/adaptive.dart';
+import '../../../../core/material.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../../keys.dart';
 

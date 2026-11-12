@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/widgets/markdown_content.dart';
 
 /// On iOS, tapping the status bar scrolls the primary scroll view back to the

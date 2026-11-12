@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,15 +8,16 @@ import 'package:go_router/go_router.dart';
 import '../../../../api/generated/export.dart';
 import '../../../../api/pedalons_api_client.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/material.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/link_launcher.dart';
+import '../../../../core/widgets/widgets.dart';
+import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../profile/data/profile_repository.dart';
 import '../../../profile/presentation/widgets/connected_services_section.dart';
-import '../../../../core/widgets/widgets.dart';
-import '../../../../keys.dart';
 
 /// Device verification page for Karoo/Garmin device code flow.
 /// The user enters or receives a 6-character code from their GPS device,

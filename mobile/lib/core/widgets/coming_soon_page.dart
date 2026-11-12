@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+
+import '../material.dart';
 
 /// Explicit placeholder for a route that exists in the contract and in the
 /// router, but whose screen is delivered by a later batch.

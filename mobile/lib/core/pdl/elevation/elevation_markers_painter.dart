@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+
+import '../../material.dart';
 
 import '../../theme/pdl_tokens.dart';
 import '../map/pdl_waypoint_mark.dart';

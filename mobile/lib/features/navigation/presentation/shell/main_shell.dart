@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/adaptive/adaptive.dart';
 import '../../../../core/config/app_outdated_banner.dart';
+import '../../../../core/material.dart';
 
 /// The one and only navigation shell: five fixed tabs, present on every screen
 /// that is not a full-screen detail page — team screens included.

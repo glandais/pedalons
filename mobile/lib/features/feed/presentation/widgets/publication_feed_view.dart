@@ -1,15 +1,15 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../core/adaptive/adaptive.dart';
-import '../../../../core/pagination/pagination.dart';
-import '../../../../core/pdl/pdl.dart';
-import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/lists/list_scope.dart';
 import '../../../../core/lists/list_states.dart';
 import '../../../../core/lists/list_toolbar.dart';
+import '../../../../core/material.dart';
+import '../../../../core/pagination/pagination.dart';
+import '../../../../core/pdl/pdl.dart';
+import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../keys.dart';
 import '../../../posts/domain/post_neighbours.dart';
 import '../../../tags/presentation/tag_filter.dart';

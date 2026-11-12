@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 
 import '../../keys.dart';
+import '../material.dart';
 import '../pdl/pdl.dart';
 import 'breakpoints.dart';
 import 'navigation_destination.dart';

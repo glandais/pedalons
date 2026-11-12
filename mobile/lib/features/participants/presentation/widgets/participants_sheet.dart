@@ -1,17 +1,17 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_typography.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../keys.dart';
+import '../../../rides/domain/group_title.dart';
 import '../../domain/participant_query.dart';
 import 'participant_list_view.dart';
-import '../../../rides/domain/group_title.dart';
 
 /// La feuille « Participants » d'un groupe de sortie, d'une sortie entière ou
 /// d'un voyage.

@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
-
 import '../../api/generated/export.dart';
 import '../../config/paths.dart';
+import '../material.dart';
 import '../pdl/pdl_team_line.dart';
 import '../utils/push_location.dart';
 

@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/locale_context.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';

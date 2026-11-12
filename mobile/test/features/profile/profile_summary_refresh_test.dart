@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/features/profile/presentation/widgets/profile_subpage.dart';
 import 'package:pedalons/features/profile/providers/profile_summary_provider.dart';
 

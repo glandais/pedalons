@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../api/generated/export.dart';
 import '../../api/pedalons_api_client.dart';
+import '../material.dart';
 import '../preferences/user_preferences_provider.dart';
 import '../utils/provider_retry.dart';
 

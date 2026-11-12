@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart';
-import '../data/trip_repository.dart';
 import '../../../core/utils/formatters.dart';
+import '../data/trip_repository.dart';
 
 /// Ce qui identifie un voyage : son équipe et son slug.
 @immutable

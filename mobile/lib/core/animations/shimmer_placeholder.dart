@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../material.dart';
 
 import '../pdl/pdl_skeleton.dart';
 import '../theme/pdl_tokens.dart';
@@ -10,7 +10,7 @@ import '../theme/pdl_tokens.dart';
 ///
 /// Façade historique au-dessus de [PdlSkeleton], qui porte désormais l'unique
 /// implémentation du scintillement — dégradé `neutralSoft → disabledBg`,
-/// 1400 ms, coupé par `MediaQuery.disableAnimations`. Les nouveaux écrans
+/// 1400 ms, coupé par `PdlMotion.reducedOf`. Les nouveaux écrans
 /// emploient [PdlSkeleton] directement.
 class ShimmerPlaceholder extends StatelessWidget {
   /// The width of the shimmer placeholder.

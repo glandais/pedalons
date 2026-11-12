@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../api/generated/export.dart';
-import '../data/calendar_repository.dart';
 import '../../../core/utils/formatters.dart';
+import '../data/calendar_repository.dart';
 
 /// Les trois valeurs de la chip de type, **exclusives entre elles**.
 ///

@@ -1,14 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/config/paths.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
+import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/share_file.dart';
 import 'package:pedalons/features/auth/data/auth_repository.dart';
@@ -18,7 +19,6 @@ import 'package:pedalons/features/auth/providers/auth_provider.dart';
 import 'package:pedalons/features/home/presentation/widgets/next_ride_card.dart';
 import 'package:pedalons/features/home/providers/next_ride_provider.dart';
 import 'package:pedalons/features/rides/domain/ride_group_action.dart';
-import 'package:pedalons/core/theme/pdl_tokens.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dart';
 import 'package:pedalons/features/routes/presentation/gps_export_runner.dart';
 import 'package:pedalons/features/routes/presentation/gps_sheet.dart';
@@ -28,10 +28,10 @@ import 'package:pedalons/features/teams/presentation/widgets/dashboard/dashboard
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
 import '../rides/ride_fixtures.dart';
 import 'route_fixtures.dart';
-import '../../support/content_permissions.dart';
 
 /// docs/plans/2026-11-10-refonte-ecrans-detail-mobile.md, lot 4 : un seul
 /// bouton « GPS » et une seule feuille partout où un parcours s'exporte, et

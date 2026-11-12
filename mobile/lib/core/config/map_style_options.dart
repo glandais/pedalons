@@ -7,9 +7,9 @@ import '../../api/generated/models/map_terrain_dto.dart';
 import '../../api/generated/models/unit_system.dart';
 import '../pdl/pdl.dart';
 import '../preferences/user_preferences_provider.dart';
+import '../theme/pdl_colors.dart';
 import '../units/unit_system.dart';
 import '../utils/formatters.dart';
-import '../theme/pdl_colors.dart';
 import 'config_provider.dart';
 
 /// Les fonds servis, prêts pour le sélecteur de `PdlMapHero`.

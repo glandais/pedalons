@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
-
 import '../../../../api/generated/export.dart';
+import '../../../../core/material.dart';
 import 'ride_weather_summary_line.dart';
 
 /// La ligne météo d'un groupe — **non cliquable** (ledger `MOB-67`) : la ligne

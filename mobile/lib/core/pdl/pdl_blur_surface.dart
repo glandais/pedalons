@@ -1,6 +1,6 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
+import '../material.dart';
 
 import '../theme/pdl_tokens.dart';
 

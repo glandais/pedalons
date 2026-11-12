@@ -5,7 +5,7 @@ import '../theme/pdl_tokens.dart';
 
 /// Fait défiler [controller] pour caler le haut de [anchor] sous [topInset]
 /// (une barre épinglée), animé sauf quand le système demande de réduire les
-/// animations (`MediaQuery.disableAnimations`) — alors d'un saut.
+/// animations (`PdlMotion.reducedOf`) — alors d'un saut.
 ///
 /// L'ancre est cherchée telle qu'elle est posée : les slivers d'un
 /// `CustomScrollView` hors de l'écran ont leur position même s'ils ne sont
@@ -27,7 +27,7 @@ Future<void> revealInScroll(
     position.minScrollExtent,
     position.maxScrollExtent,
   );
-  if (MediaQuery.disableAnimationsOf(context)) {
+  if (PdlMotion.reducedOf(context)) {
     controller.jumpTo(offset);
     return;
   }

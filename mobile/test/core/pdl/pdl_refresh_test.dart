@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 
 /// Le « tirer pour rafraîchir » et sa secousse.

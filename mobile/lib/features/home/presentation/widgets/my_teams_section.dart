@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/config/config_provider.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -13,9 +13,9 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/push_location.dart';
 import '../../../../keys.dart';
 import '../../../teams/providers/team_providers.dart';
-import '../../../../core/utils/push_location.dart';
 
 /// Combien d'équipes « Mes équipes » montre au plus ; l'onglet Équipes a le
 /// reste.

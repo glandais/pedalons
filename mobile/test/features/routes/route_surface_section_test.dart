@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
-import 'package:pedalons/keys.dart';
 import 'package:pedalons/features/routes/domain/track_surfaces.dart';
 import 'package:pedalons/features/routes/presentation/widgets/route_color_mode_switch.dart';
 import 'package:pedalons/features/routes/presentation/widgets/route_surface_section.dart';
+import 'package:pedalons/keys.dart';
 
 import '../../support/localization.dart';
 

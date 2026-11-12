@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart';
-import '../data/ride_repository.dart';
 import '../../../core/utils/formatters.dart';
+import '../data/ride_repository.dart';
 
 /// Ce qui identifie une sortie : son équipe et son slug.
 @immutable

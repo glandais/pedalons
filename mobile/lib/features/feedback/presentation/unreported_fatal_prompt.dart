@@ -1,8 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 
 import '../../../api/generated/export.dart';
 import '../../../core/logging/error_reporter.dart';
+import '../../../core/material.dart';
 import '../../../core/pdl/pdl.dart';
 import 'feedback_sheet.dart';
 

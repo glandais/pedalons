@@ -20,12 +20,12 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/generated/export.dart';
 import '../core/config/config_provider.dart';
 import '../core/config/map_style_options.dart';
+import '../core/material.dart';
 import '../core/pdl/map/pdl_map.dart';
 import '../core/pdl/map/pdl_map_buttons.dart';
 import '../core/pdl/map/pdl_map_controller.dart';

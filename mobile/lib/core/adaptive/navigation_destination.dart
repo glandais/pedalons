@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
-
 import '../../config/locale_context.dart';
 import '../../config/paths.generated.dart';
+import '../material.dart';
 
 /// Abstract navigation destination used by both NavigationBar and NavigationRail.
 class AppDestination {

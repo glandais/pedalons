@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../material.dart';
 import '../theme/pdl_colors.dart';
 
 /// Le « tirer pour rafraîchir » de l'app, **avec sa secousse**.

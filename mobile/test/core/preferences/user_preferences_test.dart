@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/models/theme_preference.dart';
 import 'package:pedalons/api/generated/models/unit_system.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

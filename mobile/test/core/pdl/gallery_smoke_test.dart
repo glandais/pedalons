@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/dev/pdl_gallery_page.dart';
 

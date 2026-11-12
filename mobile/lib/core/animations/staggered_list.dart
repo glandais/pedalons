@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../material.dart';
+import '../theme/pdl_tokens.dart';
 
 /// A widget that animates its child with a staggered entrance effect.
 ///
@@ -81,7 +82,7 @@ class _StaggeredListItemState extends State<StaggeredListItem>
   @override
   Widget build(BuildContext context) {
     // Respect user's motion preferences
-    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final reduceMotion = PdlMotion.reducedOf(context);
 
     if (reduceMotion) {
       return widget.child;

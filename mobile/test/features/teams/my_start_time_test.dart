@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
@@ -18,8 +18,8 @@ import 'package:pedalons/features/teams/presentation/widgets/publication_card.da
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../support/localization.dart';
 import '../../support/content_permissions.dart';
+import '../../support/localization.dart';
 
 /// `docs/LEDGER_*.md MOB-112` : la carte du fil, la carte « Sorties à venir »
 /// et la ligne « Vos prochaines sorties » donnent le départ **qui concerne la

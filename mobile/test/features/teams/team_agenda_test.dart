@@ -1,18 +1,19 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/config/router.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
-import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
+import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/link_launcher.dart';
+import 'package:pedalons/dev/card_gallery/gallery_data.dart';
 import 'package:pedalons/features/calendar/presentation/pages/calendar_page.dart';
 import 'package:pedalons/features/calendar/providers/calendar_month_provider.dart';
 import 'package:pedalons/features/feed/presentation/widgets/publication_feed_view.dart';
@@ -24,7 +25,6 @@ import 'package:pedalons/features/teams/presentation/pages/team_home_page.dart';
 import 'package:pedalons/features/teams/presentation/widgets/publication_card.dart';
 import 'package:pedalons/features/teams/presentation/widgets/team_sections.dart';
 import 'package:pedalons/features/teams/providers/team_providers.dart';
-import 'package:pedalons/dev/card_gallery/gallery_data.dart';
 import 'package:pedalons/keys.dart';
 
 import '../../support/localization.dart';

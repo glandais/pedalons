@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/config/paths.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/utils/push_location.dart';
 
 /// docs/LEDGER_*.md MOB-44, MOB-46 — depuis une page plein écran, ouvrir une

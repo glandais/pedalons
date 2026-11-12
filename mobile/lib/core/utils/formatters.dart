@@ -1,10 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
-
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../api/generated/export.dart';
+import '../material.dart';
 import '../units/unit_system.dart';
 import 'zone_label.dart';
 

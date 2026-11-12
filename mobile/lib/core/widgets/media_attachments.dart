@@ -1,9 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/generated/export.dart';
 import '../../api/pedalons_api_client.dart';
+import '../material.dart';
 import '../pdl/pdl.dart';
 import '../theme/pdl_colors.dart';
 import '../theme/pdl_icons.dart';

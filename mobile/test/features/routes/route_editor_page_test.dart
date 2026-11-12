@@ -1,12 +1,12 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/locale_context.dart';
+import 'package:pedalons/core/material.dart' hide Visibility;
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/routes/data/gpx_file_source.dart';
@@ -18,9 +18,9 @@ import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
 import 'route_fixtures.dart';
-import '../../support/content_permissions.dart';
 
 /// L'éditeur de parcours (ledger `MOB-79`) : le refus pour qui n'organise pas,
 /// le contrôle du fichier, et surtout **ce qui part** — la requête et le

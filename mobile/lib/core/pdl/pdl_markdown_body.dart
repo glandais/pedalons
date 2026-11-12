@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:markdown_widget/markdown_widget.dart';
 
 import '../../api/pedalons_api_client.dart';
+import '../material.dart';
 import '../theme/pdl_colors.dart';
 import '../theme/pdl_tokens.dart';
 import '../theme/pdl_typography.dart';

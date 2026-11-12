@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 
 import '../../api/generated/models/asset_dto.dart';
+import '../material.dart';
 import '../pdl/pdl_markdown_body.dart';
 import '../utils/link_launcher.dart';
 

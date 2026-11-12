@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
@@ -10,8 +10,8 @@ import 'package:pedalons/features/posts/data/post_repository.dart';
 import 'package:pedalons/features/posts/domain/post_neighbours.dart';
 import 'package:pedalons/features/posts/presentation/pages/post_detail_page.dart';
 
-import '../../support/localization.dart';
 import '../../support/content_permissions.dart';
+import '../../support/localization.dart';
 
 /// S31-1 à S31-3 — l'écran d'une publication.
 ///

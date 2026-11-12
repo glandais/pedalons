@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../api/generated/export.dart';
 import '../../../../../config/paths.dart';
+import '../../../../../core/material.dart';
 import '../../../../../core/pdl/pdl.dart';
 import '../../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../../core/theme/enum_colors.dart';
@@ -13,18 +13,18 @@ import '../../../../../core/theme/pdl_icons.dart';
 import '../../../../../core/theme/pdl_tokens.dart';
 import '../../../../../core/theme/pdl_typography.dart';
 import '../../../../../core/utils/formatters.dart';
+import '../../../../../core/widgets/day_box.dart';
+import '../../../../../core/widgets/zone_mention_line.dart';
 import '../../../../../keys.dart';
+import '../../../../rides/domain/group_start.dart';
+import '../../../../rides/domain/group_title.dart';
 import '../../../../rides/presentation/widgets/ride_display_stats.dart';
 import '../../../../rides/presentation/widgets/ride_group_place_line.dart';
 import '../../../../rides/providers/participation_changes.dart';
 import '../../../../routes/presentation/gps_export_runner.dart';
 import '../../../../routes/presentation/widgets/gps_button.dart';
-import 'dashboard_section.dart';
-import '../../../../../core/widgets/day_box.dart';
-import '../../../../../core/widgets/zone_mention_line.dart';
-import '../../../../rides/domain/group_start.dart';
 import '../../../domain/publication_timing.dart';
-import '../../../../rides/domain/group_title.dart';
+import 'dashboard_section.dart';
 
 /// Une inscription faite dans l'app depuis le chargement du tableau de bord
 /// l'emporte sur la ligne chargée avant elle — même règle que le fil.

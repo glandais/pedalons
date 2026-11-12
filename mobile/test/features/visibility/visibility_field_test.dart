@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/material.dart' hide Visibility;
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/visibility/domain/content_visibility.dart';
 import 'package:pedalons/features/visibility/domain/incompatible_visibility.dart';

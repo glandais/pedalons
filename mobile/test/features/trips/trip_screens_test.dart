@@ -1,18 +1,19 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/config/config_provider.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/comments/data/comment_repository.dart';
 import 'package:pedalons/features/comments/presentation/widgets/comment_thread.dart';
-import 'package:pedalons/core/config/config_provider.dart';
+import 'package:pedalons/features/rides/presentation/widgets/weather_section.dart';
 import 'package:pedalons/features/routes/presentation/widgets/gps_button.dart';
 import 'package:pedalons/features/routes/presentation/widgets/route_map.dart';
 import 'package:pedalons/features/routes/providers/route_detail_provider.dart';
@@ -21,14 +22,13 @@ import 'package:pedalons/features/trips/data/trip_repository.dart';
 import 'package:pedalons/features/trips/presentation/pages/stage_detail_page.dart';
 import 'package:pedalons/features/trips/presentation/pages/trip_detail_page.dart';
 import 'package:pedalons/features/trips/presentation/widgets/stage_card.dart';
-import 'package:pedalons/features/rides/presentation/widgets/weather_section.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
 import '../rides/ride_fixtures.dart';
 import 'trip_fixtures.dart';
-import '../../support/content_permissions.dart';
 
 /// S24-1, S24-6, S25-2 et S25-4 — les deux écrans montés en entier.
 ///

@@ -1,13 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'config/locale_context.dart';
 import 'config/router.dart';
 import 'core/config/config_provider.dart';
+import 'core/material.dart';
 import 'core/preferences/user_preferences_provider.dart';
-import 'core/utils/formatters.dart';
 import 'core/theme/theme.dart';
+import 'core/utils/formatters.dart';
 import 'features/auth/providers/auth_provider.dart';
 
 class PedalonsApp extends ConsumerStatefulWidget {

@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
+import '../material.dart';
 import '../theme/pdl_colors.dart';
 import '../theme/pdl_tokens.dart';
 import '../theme/pdl_typography.dart';

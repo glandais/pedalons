@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/comments/data/comment_repository.dart';
@@ -12,10 +12,10 @@ import 'package:pedalons/features/trips/presentation/pages/trip_detail_page.dart
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
 import '../rides/ride_fixtures.dart';
 import 'trip_fixtures.dart';
-import '../../support/content_permissions.dart';
 
 /// La météo d'un voyage : la ligne de résumé des cartes d'étape (écran 24),
 /// et la section Météo de l'écran 25 dans ses états (ledger `MOB-134`,

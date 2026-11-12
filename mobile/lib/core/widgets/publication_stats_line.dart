@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
-
+import '../../api/generated/models/unit_system.dart';
+import '../material.dart';
 import '../theme/pdl_colors.dart';
 import '../theme/pdl_icons.dart';
 import '../theme/pdl_typography.dart';
-import '../../api/generated/models/unit_system.dart';
 import '../utils/formatters.dart';
 
 /// La ligne de chiffres d'une carte de groupe ou d'étape (ledger `MOB-134`,

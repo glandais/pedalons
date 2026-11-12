@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+
+import '../../../../core/material.dart';
 
 import '../widgets/data_and_account_section.dart';
 import '../widgets/profile_identity_section.dart';

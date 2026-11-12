@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:easy_localization/src/localization.dart';
 import 'package:easy_localization/src/translations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/models/unit_system.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pdl_colors.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';

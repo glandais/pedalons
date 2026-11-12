@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../material.dart';
 
 import '../theme/pdl_tokens.dart';
 import 'pdl_stat.dart';

@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
-
 import '../animations/animated_empty_state.dart';
+import '../material.dart';
 import '../theme/pdl_colors.dart';
 import '../theme/pdl_icons.dart';
 import '../theme/pdl_typography.dart';
@@ -31,7 +30,7 @@ enum PdlEmptyVariant {
 /// publié » de « la liste n'a pas chargé ».
 ///
 /// L'icône flotte doucement via [AnimatedEmptyState], qui respecte déjà
-/// `MediaQuery.disableAnimations`.
+/// `PdlMotion.reducedOf`.
 ///
 /// Pour l'état vide **filtré et détaillé** — le terme cité, les filtres
 /// listés un à un, un aperçu de ce qu'on rate — voyez `PdlDeadEndEmpty` : il

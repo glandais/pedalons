@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/config/config_provider.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/enum_colors.dart';
@@ -19,9 +19,9 @@ import 'package:pedalons/features/routes/domain/track_surfaces.dart';
 import 'package:pedalons/features/routes/presentation/widgets/route_color_mode_switch.dart';
 import 'package:pedalons/keys.dart';
 
+import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
 import 'ride_fixtures.dart';
-import '../../support/content_permissions.dart';
 
 /// Le vent sur la carte d'un groupe (ledger `MOB-91`) : la légende selon le
 /// statut du leg et le mode, les couleurs posées sur le tracé, et le leg

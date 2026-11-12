@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
-// `Visibility` est à la fois un widget Flutter et un enum du contrat.
-import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+// `Visibility` est à la fois un widget Flutter et un enum du contrat.
+import '../../../../core/material.dart' hide Visibility;
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/enum_colors.dart';
@@ -21,36 +21,36 @@ import '../../../../core/widgets/detail_stat_tiles.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
 import '../../../../core/widgets/team_banner.dart';
+import '../../../../keys.dart';
+import '../../../../screenshots/screenshot_mode.dart';
 import '../../../comments/data/comment_repository.dart';
 import '../../../comments/presentation/widgets/comment_thread.dart';
+import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../participants/presentation/widgets/participants_sheet.dart';
-import '../../../teams/domain/publication_timing.dart';
-import '../../../tags/presentation/content_tags.dart';
-import '../../providers/ride_detail_provider.dart';
-import '../widgets/ride_manage_menu.dart';
-import '../../providers/ride_group_selection_provider.dart';
 import '../../../routes/domain/track_surfaces.dart';
-import '../../providers/ride_registration_controller.dart';
-import '../../providers/ride_scroll_target_provider.dart';
+import '../../../tags/presentation/content_tags.dart';
+import '../../../teams/domain/publication_timing.dart';
 import '../../domain/group_title.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
 import '../../domain/solo_group.dart';
+import '../../providers/ride_detail_provider.dart';
+import '../../providers/ride_group_selection_provider.dart';
+import '../../providers/ride_registration_controller.dart';
+import '../../providers/ride_scroll_target_provider.dart';
 import '../../providers/ride_weather_provider.dart';
-import 'ride_group_page.dart' show kRideGroupWeatherTab;
 import '../widgets/registration_failure_banner.dart';
 import '../widgets/ride_departure_block.dart';
 import '../widgets/ride_group_participants_section.dart';
 import '../widgets/ride_group_stats.dart';
 import '../widgets/ride_groups_section.dart';
+import '../widgets/ride_manage_menu.dart';
 import '../widgets/ride_registration_control.dart';
 import '../widgets/ride_route_section.dart';
 import '../widgets/ride_weather_widgets.dart';
 import '../widgets/weather_section.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
-import '../../../../keys.dart';
-import '../../../../screenshots/screenshot_mode.dart';
+import 'ride_group_page.dart' show kRideGroupWeatherTab;
 
 /// L'écran 12 — détail d'une sortie et inscription à un groupe.
 ///

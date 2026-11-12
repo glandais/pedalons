@@ -18,16 +18,15 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-
+import '../core/material.dart';
 import '../core/pdl/pdl.dart';
-import '../core/utils/link_launcher.dart';
 import '../core/theme/enum_colors.dart' show PdlTone;
 import '../core/theme/pdl_colors.dart';
 import '../core/theme/pdl_icons.dart';
 import '../core/theme/pdl_tokens.dart';
 import '../core/theme/pdl_typography.dart';
 import '../core/theme/pedalons_theme.dart';
+import '../core/utils/link_launcher.dart';
 import 'pdl_shell_demo_page.dart';
 
 /// Galerie des 20 primitives, des 26 composés et des 10 coquilles, dans leurs

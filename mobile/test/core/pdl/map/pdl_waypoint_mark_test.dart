@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/map/pdl_waypoint_mark.dart';
 
 /// Les images des points de parcours (`MOB-84`), dessinées à 3× comme les

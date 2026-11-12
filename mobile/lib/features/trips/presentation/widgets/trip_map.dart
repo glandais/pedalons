@@ -1,16 +1,16 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../core/config/config_provider.dart';
 import '../../../../core/config/map_style_options.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
+import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
-import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../keys.dart';
 import '../../../rides/presentation/widgets/ride_weather_map_markers.dart';
 import '../../../rides/presentation/widgets/ride_wind_map_legend.dart';

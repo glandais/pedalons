@@ -13,8 +13,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/utils/formatters.dart';
-import 'package:pedalons/features/routes/domain/route_filters.dart';
 import 'package:pedalons/features/routes/domain/route_filter_labels.dart';
+import 'package:pedalons/features/routes/domain/route_filters.dart';
 
 /// Les caractères que la typographie impose, nommés une fois pour que les
 /// assertions portent sur le point de code et non sur ce que l'éditeur montre.

@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 
 import '../../api/generated/export.dart';
+import '../material.dart';
 import '../pdl/pdl.dart';
 import '../theme/pdl_colors.dart';
 import '../theme/pdl_icons.dart';

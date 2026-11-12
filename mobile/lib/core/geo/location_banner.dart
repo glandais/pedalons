@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
+
+import '../material.dart';
 
 import '../pdl/pdl_banner.dart';
 import '../pdl/pdl_button.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:maplibre/maplibre.dart';
 
+import '../../material.dart';
 import '../../theme/pdl_colors.dart';
 import '../../theme/pdl_tokens.dart';
 import '../../theme/pdl_typography.dart';

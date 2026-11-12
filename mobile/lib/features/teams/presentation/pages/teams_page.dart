@@ -1,22 +1,22 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/lists/list_states.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
-import '../../../../core/lists/list_states.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../../../keys.dart';
 import '../../providers/my_teams_list_provider.dart';
 import '../../providers/team_providers.dart';
+import '../team_list_labels.dart';
 import '../widgets/pending_invitations_card.dart';
 import '../widgets/team_discovery_card.dart';
-import '../team_list_labels.dart';
-import '../../../../keys.dart';
 
 /// The teams the user belongs to.
 ///

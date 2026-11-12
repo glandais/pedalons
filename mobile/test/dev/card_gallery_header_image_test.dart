@@ -2,9 +2,10 @@ import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
@@ -15,7 +16,6 @@ import 'package:pedalons/dev/card_gallery/gallery_scope.dart';
 import 'package:pedalons/dev/card_gallery_page.dart';
 import 'package:pedalons/features/home/presentation/widgets/next_ride_card.dart';
 import 'package:pedalons/features/home/providers/next_ride_provider.dart';
-import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 
+import '../material.dart';
 import '../theme/pdl_colors.dart';
 import '../theme/pdl_icons.dart';
 import '../theme/pdl_tokens.dart';

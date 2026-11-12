@@ -1,30 +1,30 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/config/paths.generated.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/auth/data/auth_repository.dart';
 import 'package:pedalons/features/auth/data/secure_storage.dart';
 import 'package:pedalons/features/auth/domain/auth_state.dart';
 import 'package:pedalons/features/auth/providers/auth_provider.dart';
+import 'package:pedalons/features/rides/presentation/widgets/ride_group_place_line.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_dashboard_page.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_home_page.dart';
 import 'package:pedalons/features/teams/presentation/widgets/team_sections.dart';
-import 'package:pedalons/features/rides/presentation/widgets/ride_group_place_line.dart';
-import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
 import 'team_fixtures.dart';
-import '../../support/content_permissions.dart';
 
 /// Le tableau de bord d'équipe : un écran, trois rôles.
 ///

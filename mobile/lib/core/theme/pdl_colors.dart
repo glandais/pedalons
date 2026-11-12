@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../material.dart';
 
 /// Jetons de couleur de rôle de la charte Pédalons.
 ///

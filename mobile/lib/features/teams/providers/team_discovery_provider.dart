@@ -7,8 +7,8 @@ import '../../../core/pagination/pagination.dart';
 import '../../../core/utils/api_error_handler.dart';
 import '../data/team_repository.dart';
 import '../domain/team_discovery_filters.dart';
-import 'team_providers.dart';
 import 'membership_scoped_content.dart';
+import 'team_providers.dart';
 
 /// Filtres courants de la découverte.
 final teamDiscoveryFiltersProvider =

@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:easy_localization/src/localization.dart';
 import 'package:easy_localization/src/translations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/models/geo_json_point.dart';
 import 'package:pedalons/api/generated/models/geo_json_point_type_type.dart';
 import 'package:pedalons/api/generated/models/place_detail_dto.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/directions.dart';
 import 'package:pedalons/core/utils/link_launcher.dart';

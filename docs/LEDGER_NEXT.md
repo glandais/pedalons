@@ -71,6 +71,18 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       son groupe, accueil, tableau de bord ; `TripStageDto.route` pour l'étape. Même
       vocabulaire d'état que l'interrupteur (`profile.gps.autoSync.*`). Pendant web : `WEB-163`.
 
+- [ ] `MOB-147` **Basculer l'app sur `material_ui` / `cupertino_ui` quand les dépendances y seront (M)** —
+      Flutter 3.50 déprécie `package:flutter/material.dart` et `cupertino.dart`, ainsi que les délégués de
+      `flutter_localizations` ; le retrait n'est pas daté. `material_ui` est une autre implémentation : tant que
+      `markdown_widget`, `maplibre`, `photo_view` et `easy_localization` importent l'ancien Material, basculer
+      l'app seule fait cohabiter deux `Theme` et deux `MaterialLocalizations` (essai du 12 novembre 2026 :
+      55 tests en échec, « No MaterialLocalizations found » sous le `SelectionArea` de `markdown_widget`). En
+      attendant, tout passe par le barrel `mobile/lib/core/material.dart`, seul porteur de l'`ignore`. À faire
+      le moment venu : changer l'export du barrel (ou le supprimer avec `dart fix --apply
+      --code=migrate_design_widgets`), remplacer les délégués de traduction dans `app.dart`, vérifier le thème
+      sombre du markdown et les libellés Material en français. Revérifier à chaque `flutter upgrade` quelles
+      dépendances ont migré (`grep -rl "package:flutter/material.dart"` dans leur `lib/`).
+
 - [ ] `MOB-146` **Listes homogènes : recette sur appareil de `MOB-143` (S)** — les quinze règles de listes (`plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md` §10)
   sont codées et vérifiées par tests et par les captures de la galerie `/dev/listes`, pas sur une app qui tourne. À
   regarder : mode sombre, texte agrandi (l'invite de recherche est coupée à côté de « Créer »), anglais, feuilles de

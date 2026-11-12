@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/models/map_style_dto.dart';
 import 'package:pedalons/core/config/config_provider.dart';
+import 'package:pedalons/core/material.dart';
 
 void main() {
   const MapStyleDto colorful = MapStyleDto(

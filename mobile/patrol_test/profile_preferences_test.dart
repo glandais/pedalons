@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart' show Brightness;
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/material.dart' show Brightness;
 import 'package:pedalons/core/units/unit_system.dart';
 import 'package:pedalons/core/utils/formatters.dart';
 

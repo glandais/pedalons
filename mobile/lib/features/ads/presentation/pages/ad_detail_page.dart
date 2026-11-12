@@ -1,8 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/material.dart' hide Visibility;
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -14,15 +14,15 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
 import '../../../../core/widgets/team_banner.dart';
+import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../data/ad_repository.dart';
 import '../widgets/ad_contact_sheet.dart';
 import '../widgets/ad_location_map.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
-import '../../../../keys.dart';
 
 final adDetailProvider =
     FutureProvider.family<AdDto, ({String teamSlug, String adSlug})>((

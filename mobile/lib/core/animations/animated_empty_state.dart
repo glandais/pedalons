@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import '../material.dart';
+import '../theme/pdl_tokens.dart';
 
 /// A widget that adds a gentle floating animation to empty state icons.
 ///
@@ -68,7 +69,7 @@ class _AnimatedEmptyStateState extends State<AnimatedEmptyState>
   @override
   Widget build(BuildContext context) {
     // Respect user's motion preferences
-    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final reduceMotion = PdlMotion.reducedOf(context);
 
     if (reduceMotion || !widget.animate) {
       return widget.child;

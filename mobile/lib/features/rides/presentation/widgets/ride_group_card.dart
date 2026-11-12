@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -11,12 +11,12 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/publication_stats_line.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
-import '../../domain/ride_group_action.dart';
+import '../../../../keys.dart';
 import '../../../routes/presentation/widgets/gps_button.dart';
+import '../../domain/group_title.dart';
+import '../../domain/ride_group_action.dart';
 import 'ride_group_participants_section.dart' show RideGroupLeaveLink;
 import 'ride_group_weather_line.dart';
-import '../../../../keys.dart';
-import '../../domain/group_title.dart';
 
 /// La carte d'un groupe de sortie — **le choix de groupe lui-même** (ledger
 /// `MOB-134`, lot 8, KIT §8, maquettes `sortie-groupes-meme-heure-mobile-cible`,

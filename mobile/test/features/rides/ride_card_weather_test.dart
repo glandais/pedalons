@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/home/providers/next_ride_provider.dart';
@@ -9,8 +9,8 @@ import 'package:pedalons/features/teams/presentation/widgets/publication_card.da
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../support/localization.dart';
 import '../../support/content_permissions.dart';
+import '../../support/localization.dart';
 
 /// La ligne météo d'une carte de fil, et son transport jusqu'à « Ma prochaine
 /// sortie » (`rideFromListRow`).

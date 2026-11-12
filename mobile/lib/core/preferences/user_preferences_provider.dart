@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -9,6 +8,7 @@ import '../../api/generated/export.dart';
 import '../../api/pedalons_api_client.dart';
 import '../../features/auth/domain/auth_state.dart';
 import '../../features/auth/providers/auth_provider.dart';
+import '../material.dart';
 
 /// Les préférences d'affichage de l'utilisateur courant.
 ///

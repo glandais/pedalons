@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart' show KeepAliveLink;
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/misc.dart' show KeepAliveLink;
 
 import '../../../api/generated/export.dart';
 import '../../../core/utils/api_error_handler.dart';

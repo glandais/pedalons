@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../material.dart';
 
 import 'enum_colors.generated.dart';
 import 'pdl_colors.dart';
@@ -183,6 +183,18 @@ abstract final class PdlMotion {
 
   /// Flou des boutons posés sur une carte.
   static const double blurOverlayButton = 6;
+
+  /// Vrai quand la personne a demandé moins de mouvement : couper l'animation,
+  /// ou la remplacer par un saut.
+  ///
+  /// **La seule lecture de ce réglage dans l'application.** Il vit dans deux
+  /// drapeaux depuis Flutter 3.50 : « Supprimer les animations » d'Android
+  /// arrive par `disableAnimations`, « Réduire les animations » d'iOS par
+  /// `reduceMotion` — et ne lève plus le premier. Lire `disableAnimations`
+  /// seul laisse donc iOS animer malgré le réglage.
+  static bool reducedOf(BuildContext context) =>
+      MediaQuery.disableAnimationsOf(context) ||
+      MediaQuery.reduceMotionOf(context);
 }
 
 /// Ombres de la charte (§1.1.7).

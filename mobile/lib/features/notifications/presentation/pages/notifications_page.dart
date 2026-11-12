@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/lists/list_states.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -13,12 +13,12 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/link_launcher.dart';
+import '../../../../keys.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../providers/notifications_provider.dart';
 import '../notification_display.dart';
 import '../widgets/notification_tile.dart';
 import '../widgets/push_activation_banner.dart';
-import '../../../../keys.dart';
 
 /// La boîte de réception : la liste paginée, et un filtre « non lues ».
 ///

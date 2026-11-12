@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
@@ -10,12 +10,12 @@ import 'package:pedalons/features/ads/data/ad_repository.dart';
 import 'package:pedalons/features/ads/domain/ad_filters.dart';
 import 'package:pedalons/features/ads/presentation/pages/ads_page.dart';
 import 'package:pedalons/features/ads/presentation/widgets/ad_card.dart';
-import 'package:pedalons/keys.dart';
 import 'package:pedalons/features/ads/providers/ad_list_provider.dart';
+import 'package:pedalons/keys.dart';
 
+import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
 import 'ad_fixtures.dart';
-import '../../support/content_permissions.dart';
 
 /// S32-2 — la rubrique Annonces montée en entier.
 ///

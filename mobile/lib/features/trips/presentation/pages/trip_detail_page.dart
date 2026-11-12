@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
-// `Visibility` est à la fois un widget Flutter et un enum du contrat.
-import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+// `Visibility` est à la fois un widget Flutter et un enum du contrat.
+import '../../../../core/material.dart' hide Visibility;
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/enum_colors.dart';
@@ -22,8 +22,8 @@ import '../../../../core/widgets/detail_section.dart';
 import '../../../../core/widgets/detail_stat_tiles.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
-import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../../core/widgets/team_banner.dart';
+import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';

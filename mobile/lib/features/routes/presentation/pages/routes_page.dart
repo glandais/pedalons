@@ -1,5 +1,4 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,26 +7,27 @@ import '../../../../config/paths.dart';
 import '../../../../core/lists/list_scope.dart';
 import '../../../../core/lists/list_states.dart';
 import '../../../../core/lists/list_toolbar.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
-import '../../../../keys.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
+import '../../../../keys.dart';
+import '../../../tags/presentation/tag_filter.dart';
 import '../../domain/route_filter_labels.dart';
 import '../../domain/route_filters.dart';
 import '../../providers/route_count_provider.dart';
 import '../../providers/route_editor_providers.dart';
 import '../../providers/route_list_provider.dart';
+import '../../providers/route_tags_provider.dart';
 import '../widgets/compact_route_row.dart';
 import '../widgets/route_card.dart';
 import '../widgets/route_filter_sheet.dart';
 import '../widgets/routes_map_view.dart';
 import '../widgets/routes_toolbar.dart';
-import '../../../tags/presentation/tag_filter.dart';
-import '../../providers/route_tags_provider.dart';
 
 /// La parcothèque : une coquille, un jeu de filtres, deux vues.
 ///

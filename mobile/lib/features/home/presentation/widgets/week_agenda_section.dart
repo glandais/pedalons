@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -12,13 +12,13 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../../keys.dart';
-import '../../../calendar/presentation/widgets/agenda_card.dart';
-import '../../providers/next_ride_provider.dart';
-import '../../providers/week_events_provider.dart';
 import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../../keys.dart';
+import '../../../calendar/presentation/widgets/agenda_card.dart';
 import '../../../rides/presentation/widgets/ride_meta_line.dart';
+import '../../providers/next_ride_provider.dart';
+import '../../providers/week_events_provider.dart';
 
 /// Combien de lignes « Cette semaine » montre au plus ; le reste est au
 /// calendrier.

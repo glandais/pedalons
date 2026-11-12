@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
-
 import '../adaptive/breakpoints.dart';
+import '../material.dart';
 import 'staggered_list.dart';
 
 /// A responsive grid with staggered entrance animations.

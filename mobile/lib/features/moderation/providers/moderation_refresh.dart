@@ -7,10 +7,10 @@ import '../../comments/providers/comment_thread_provider.dart';
 import '../../feed/providers/publication_feed_provider.dart';
 import '../../home/providers/next_ride_provider.dart';
 import '../../home/providers/week_events_provider.dart';
+import '../../profile/providers/profile_summary_provider.dart';
 import '../../routes/providers/route_count_provider.dart';
 import '../../routes/providers/route_list_provider.dart';
 import '../data/moderation_repository.dart';
-import '../../profile/providers/profile_summary_provider.dart';
 
 /// Relit les listes d'où un signalement retire la cible.
 ///

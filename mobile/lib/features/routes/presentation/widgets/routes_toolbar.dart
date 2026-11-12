@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 
 import '../../../../core/lists/list_scope.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
-import '../../../../keys.dart';
 import '../../../../core/theme/pdl_tokens.dart';
+import '../../../../keys.dart';
 import '../../domain/route_filters.dart';
 import 'route_filter_chips_bar.dart';
 

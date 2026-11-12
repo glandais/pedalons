@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/models/ad_type.dart';
 import 'package:pedalons/api/generated/models/climb_category.dart';
@@ -7,6 +6,7 @@ import 'package:pedalons/api/generated/models/status.dart';
 import 'package:pedalons/api/generated/models/surface_type.dart';
 import 'package:pedalons/api/generated/models/team_role.dart';
 import 'package:pedalons/api/generated/models/visibility.dart';
+import 'package:pedalons/core/material.dart' hide Visibility;
 import 'package:pedalons/core/theme/enum_colors.dart';
 import 'package:pedalons/core/theme/pdl_colors.dart';
 import 'package:pedalons/core/theme/pdl_tokens.dart';

@@ -1,8 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -11,13 +11,13 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/publication_stats_line.dart';
+import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../../keys.dart';
 import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
-import '../../providers/trip_detail_provider.dart';
 import '../../../routes/presentation/gps_export_runner.dart';
 import '../../../routes/presentation/widgets/gps_button.dart';
 import '../../../teams/domain/publication_timing.dart';
-import '../../../../core/widgets/zone_mention_line.dart';
-import '../../../../keys.dart';
+import '../../providers/trip_detail_provider.dart';
 
 /// Une étape dans la liste du voyage (ledger `MOB-134`, lot 9, KIT §8,
 /// maquettes `voyage-etapes-mobile-cible`, `voyage-une-etape-mobile-cible`) :

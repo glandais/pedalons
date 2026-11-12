@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/elevation/elevation_band_painter.dart';
 import 'package:pedalons/core/pdl/elevation/elevation_samples.dart';
 import 'package:pedalons/core/pdl/elevation/pdl_elevation_profile.dart';

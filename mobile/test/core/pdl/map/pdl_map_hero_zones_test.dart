@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
-import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/theme/pdl_tokens.dart';
+import 'package:pedalons/core/theme/pedalons_theme.dart';
 
 /// Les zones de `PdlMapHero` (ledger `MOB-129`) : la place qu'occupe le bas
 /// de la carte, mesurée et publiée par `PdlMapBottomInset` ; le crédit posé

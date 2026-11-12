@@ -3,8 +3,8 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/features/rides/domain/ride_form.dart';
 
-import 'ride_fixtures.dart';
 import '../../support/content_permissions.dart';
+import 'ride_fixtures.dart';
 
 /// Le formulaire de l'éditeur de sortie (ledger `MOB-80`) : ce qu'il envoie
 /// doit être ce que le site envoie (`rideToRequest`, `templateForNewRide`),

@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
-
 import '../animations/animated_empty_state.dart';
+import '../material.dart';
 import '../theme/pdl_colors.dart';
 import '../theme/pdl_icons.dart';
 import '../theme/pdl_tokens.dart';

@@ -1,43 +1,43 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/paths.dart';
+import 'package:pedalons/core/material.dart';
+import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
 import 'package:pedalons/core/widgets/publication_stats_line.dart';
-import 'package:pedalons/features/rides/data/ride_repository.dart';
-import 'package:pedalons/features/rides/presentation/pages/ride_detail_page.dart';
-import 'package:pedalons/features/rides/presentation/pages/ride_group_page.dart';
-import 'package:pedalons/core/pagination/pagination.dart';
+import 'package:pedalons/features/comments/data/comment_repository.dart';
 import 'package:pedalons/features/participants/data/participant_repository.dart';
 import 'package:pedalons/features/participants/domain/participant_query.dart';
 import 'package:pedalons/features/participants/presentation/widgets/participants_sheet.dart';
-import 'package:pedalons/features/comments/data/comment_repository.dart';
+import 'package:pedalons/features/rides/data/ride_repository.dart';
+import 'package:pedalons/features/rides/presentation/pages/ride_detail_page.dart';
+import 'package:pedalons/features/rides/presentation/pages/ride_group_page.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_groups_map.dart';
+import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
+import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_scroll_target_provider.dart';
-import 'package:pedalons/features/teams/data/team_repository.dart';
+import 'package:pedalons/features/rides/providers/ride_weather_provider.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
 import 'package:pedalons/features/routes/domain/track_surfaces.dart';
 import 'package:pedalons/features/routes/presentation/widgets/route_color_mode_switch.dart';
-import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
-import 'package:pedalons/features/rides/providers/ride_weather_provider.dart';
-import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
+import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
 import '../routes/route_fixtures.dart';
 import 'ride_fixtures.dart';
-import '../../support/content_permissions.dart';
 
 /// S12-8 — l'assemblage de l'écran 12 et ses états.
 ///

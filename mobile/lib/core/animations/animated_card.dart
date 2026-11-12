@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../material.dart';
 
 import '../pdl/pdl_card.dart';
 import '../theme/pdl_tokens.dart';
@@ -10,7 +10,7 @@ import '../theme/pdl_tokens.dart';
 ///
 /// Façade historique au-dessus de [PdlCard], qui porte désormais l'unique
 /// implémentation de l'échelle au press et du respect de
-/// `MediaQuery.disableAnimations`. Les nouveaux écrans emploient [PdlCard]
+/// `PdlMotion.reducedOf`. Les nouveaux écrans emploient [PdlCard]
 /// directement : il sait aussi rendre les variantes `selected` et `flat`.
 class AnimatedCard extends StatelessWidget {
   /// The child widget to wrap.

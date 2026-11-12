@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/material.dart' hide Visibility;
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/enum_colors.dart';
@@ -14,9 +14,11 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/card_header_image.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/utils/push_location.dart';
 import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/deleted_badge.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../posts/domain/post_neighbours.dart';
@@ -27,8 +29,6 @@ import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
 import '../../../rides/providers/participation_changes.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../../visibility/presentation/visibility_badge.dart';
-import '../../../../core/utils/push_location.dart';
-import '../../../../keys.dart';
 import '../../domain/publication_timing.dart';
 
 /// Les trois hauteurs de bandeau média de la charte, **partagées**.

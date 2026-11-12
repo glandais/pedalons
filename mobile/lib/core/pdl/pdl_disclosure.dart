@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../material.dart';
 
 import '../theme/pdl_colors.dart';
 import '../theme/pdl_icons.dart';
@@ -68,7 +68,7 @@ class _PdlDisclosureState extends State<PdlDisclosure> {
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
-    final bool reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final bool reduceMotion = PdlMotion.reducedOf(context);
 
     final Widget header = Semantics(
       button: true,

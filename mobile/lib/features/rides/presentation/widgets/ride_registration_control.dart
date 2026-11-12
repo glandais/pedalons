@@ -1,17 +1,17 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../keys.dart';
 import '../../../teams/domain/publication_timing.dart';
+import '../../domain/group_title.dart';
 import '../../domain/ride_group_action.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_registration_controller.dart';
-import '../../domain/group_title.dart';
 
 /// Ce que le contrôle d'inscription montre pour [group] (ledger `MOB-134`,
 /// KIT §8, maquettes `groupe-mobile-cible`, `groupe-inscrit-mobile-cible`).

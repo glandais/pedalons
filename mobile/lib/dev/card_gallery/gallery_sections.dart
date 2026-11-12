@@ -5,11 +5,11 @@
 // § Sections et cas). Chaque cas monte la **carte de production**, dans son
 // propre conteneur Riverpod ([GalleryScope]) quand elle lit un fournisseur.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 
 import '../../api/generated/export.dart';
+import '../../core/material.dart';
 import '../../core/theme/pdl_tokens.dart';
 import '../../features/ads/presentation/widgets/ad_card.dart';
 import '../../features/calendar/presentation/widgets/agenda_card.dart';

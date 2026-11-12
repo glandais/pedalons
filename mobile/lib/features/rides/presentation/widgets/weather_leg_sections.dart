@@ -1,9 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
-// `Visibility` est à la fois un widget Flutter et un enum du contrat.
-import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
+// `Visibility` est à la fois un widget Flutter et un enum du contrat.
+import '../../../../core/material.dart' hide Visibility;
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/enum_colors.dart';

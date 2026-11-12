@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:maplibre/maplibre.dart';
 
+import '../../material.dart';
 import '../../theme/pdl_colors.dart';
 import '../../theme/pdl_tokens.dart';
 import '../../theme/pdl_typography.dart';
@@ -311,7 +311,7 @@ class _PdlMapState extends State<PdlMap> {
   void _applyFocus(PdlWaypointFocus? focus) {
     _controller.setWaypointFocus(focus?.key);
     if (focus == null || focus.move == PdlWaypointMove.none) return;
-    final bool animate = !MediaQuery.disableAnimationsOf(context);
+    final bool animate = !PdlMotion.reducedOf(context);
     _controller.revealWaypoint(
       focus.key,
       onlyIfHidden: focus.move == PdlWaypointMove.ifHidden,

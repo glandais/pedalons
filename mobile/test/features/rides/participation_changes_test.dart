@@ -6,11 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/api/pedalons_api_client.dart';
 import 'package:pedalons/features/calendar/providers/calendar_month_provider.dart';
+import 'package:pedalons/features/home/providers/next_ride_leave_controller.dart';
 import 'package:pedalons/features/home/providers/next_ride_provider.dart';
 import 'package:pedalons/features/home/providers/week_events_provider.dart';
 import 'package:pedalons/features/profile/data/profile_repository.dart';
 import 'package:pedalons/features/profile/providers/profile_summary_provider.dart';
-import 'package:pedalons/features/home/providers/next_ride_leave_controller.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
 import 'package:pedalons/features/rides/providers/participation_changes.dart';
 import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
@@ -19,9 +19,9 @@ import 'package:pedalons/features/trips/data/trip_repository.dart';
 import 'package:pedalons/features/trips/providers/trip_detail_provider.dart';
 import 'package:pedalons/features/trips/providers/trip_participation_controller.dart';
 
+import '../../support/content_permissions.dart';
 import '../trips/trip_fixtures.dart';
 import 'ride_fixtures.dart';
-import '../../support/content_permissions.dart';
 
 /// Une inscription faite dans l'app doit atteindre **toutes** les vues qui
 /// dérivent de mes participations — pas seulement le détail de la sortie.

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../material.dart';
 
 import '../theme/pdl_colors.dart';
 import '../widgets/authenticated_image.dart';

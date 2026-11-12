@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:maplibre/maplibre.dart';
 
 import '../../geo/polyline_index.dart';
+import '../../material.dart';
+import '../../theme/pdl_tokens.dart';
 import 'pdl_map_camera.dart';
 import 'pdl_mass_layer.dart';
-import '../../theme/pdl_tokens.dart';
 import 'pdl_route_arrow.dart';
 import 'pdl_waypoint_mark.dart';
 

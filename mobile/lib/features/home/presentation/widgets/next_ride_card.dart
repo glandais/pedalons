@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/material.dart' hide Visibility;
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/enum_colors.dart';
@@ -14,29 +14,29 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/card_header_image.dart';
 import '../../../../core/utils/formatters.dart';
-import '../../../visibility/presentation/visibility_badge.dart';
-import '../../../rides/presentation/widgets/ride_group_place_line.dart';
-import '../../../rides/presentation/widgets/ride_display_stats.dart';
-import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
-import '../../../rides/providers/ride_detail_provider.dart';
-import '../../../routes/presentation/gps_export_runner.dart';
-import '../../../routes/presentation/widgets/gps_button.dart';
-import '../../../routes/data/route_repository.dart';
-import '../../../routes/providers/route_detail_provider.dart' show RouteKey;
-import '../../../rides/presentation/widgets/ride_group_participants_section.dart'
-    show RideGroupLeaveLink;
-import '../../../teams/domain/publication_timing.dart';
-import '../../../auth/domain/auth_state.dart';
-import '../../../auth/providers/auth_provider.dart';
-import '../../../rides/domain/group_title.dart';
-import '../../providers/next_ride_leave_controller.dart';
-import '../../../teams/presentation/widgets/publication_card.dart';
-import '../../providers/next_ride_provider.dart';
-import '../../../../keys.dart';
 import '../../../../core/utils/push_location.dart';
 import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../../keys.dart';
+import '../../../auth/domain/auth_state.dart';
+import '../../../auth/providers/auth_provider.dart';
 import '../../../rides/domain/group_start.dart';
+import '../../../rides/domain/group_title.dart';
+import '../../../rides/presentation/widgets/ride_display_stats.dart';
+import '../../../rides/presentation/widgets/ride_group_participants_section.dart'
+    show RideGroupLeaveLink;
+import '../../../rides/presentation/widgets/ride_group_place_line.dart';
+import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
+import '../../../rides/providers/ride_detail_provider.dart';
+import '../../../routes/data/route_repository.dart';
+import '../../../routes/presentation/gps_export_runner.dart';
+import '../../../routes/presentation/widgets/gps_button.dart';
+import '../../../routes/providers/route_detail_provider.dart' show RouteKey;
+import '../../../teams/domain/publication_timing.dart';
+import '../../../teams/presentation/widgets/publication_card.dart';
+import '../../../visibility/presentation/visibility_badge.dart';
+import '../../providers/next_ride_leave_controller.dart';
+import '../../providers/next_ride_provider.dart';
 
 /// La vignette de « Ma prochaine sortie » : celle du **parcours du groupe**
 /// (`docs/LEDGER_*.md API-3`), puisque deux groupes sur deux parcours n'ont pas

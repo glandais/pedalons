@@ -1,9 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../core/lists/list_states.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -11,6 +11,7 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
@@ -19,7 +20,6 @@ import '../../../teams/providers/team_providers.dart';
 import '../../data/comment_repository.dart';
 import '../../providers/comment_thread_provider.dart';
 import 'comment_text.dart';
-import '../../../../keys.dart';
 
 /// Le fil de commentaires — un niveau de réponse, pas deux.
 ///

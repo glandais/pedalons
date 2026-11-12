@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre/maplibre.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/map/pdl_map_controller.dart';
 import 'package:pedalons/core/pdl/map/pdl_route_arrow.dart';
 import 'package:pedalons/core/pdl/map/pdl_waypoint_mark.dart';

@@ -1,18 +1,18 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
-import '../../../../keys.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../keys.dart';
+import '../../../tags/presentation/tag_filter.dart';
+import '../../domain/route_filter_labels.dart';
 import '../../domain/route_filters.dart';
 import '../../providers/route_count_provider.dart';
 import '../../providers/route_tags_provider.dart';
-import '../../../tags/presentation/tag_filter.dart';
-import '../../domain/route_filter_labels.dart';
 
 /// Opens the filter sheet and returns the filters to apply, or null if the
 /// user dismissed it.

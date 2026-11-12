@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/adaptive/content_width_constraint.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -14,8 +14,8 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../keys.dart';
-import '../../providers/team_dashboard_provider.dart';
 import '../../../rides/presentation/ride_editor_location.dart';
+import '../../providers/team_dashboard_provider.dart';
 import '../team_web_paths.dart';
 import '../widgets/dashboard/dashboard_admin.dart';
 import '../widgets/dashboard/dashboard_content.dart';

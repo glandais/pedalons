@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/material.dart' hide Visibility;
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -20,14 +20,14 @@ import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
 import '../../../../core/widgets/team_banner.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../../keys.dart';
 import '../../../comments/data/comment_repository.dart';
 import '../../../comments/presentation/widgets/comment_thread.dart';
+import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../data/post_repository.dart';
 import '../../domain/post_neighbours.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
-import '../../../../keys.dart';
 
 final postDetailProvider =
     FutureProvider.family<PostDto, ({String teamSlug, String postSlug})>((

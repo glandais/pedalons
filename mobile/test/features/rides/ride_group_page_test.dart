@@ -1,15 +1,15 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/core/config/config_provider.dart';
+import 'package:pedalons/core/material.dart';
+import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
-import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
@@ -23,18 +23,18 @@ import 'package:pedalons/features/rides/presentation/pages/ride_group_page.dart'
 import 'package:pedalons/features/rides/presentation/widgets/ride_groups_map.dart';
 import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
-import 'package:pedalons/features/rides/providers/ride_weather_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_scroll_target_provider.dart';
+import 'package:pedalons/features/rides/providers/ride_weather_provider.dart';
 import 'package:pedalons/features/routes/domain/track_surfaces.dart';
 import 'package:pedalons/features/routes/presentation/widgets/route_color_mode_switch.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
 import '../routes/route_fixtures.dart';
 import 'ride_fixtures.dart';
-import '../../support/content_permissions.dart';
 
 /// La page d'un groupe de sortie (ledgers `MOB-67`, `MOB-134`) : une page qui
 /// défile, sans onglets ni barre d'action — bloc de départ et inscription,

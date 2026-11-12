@@ -1,15 +1,15 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/paths.dart';
+import '../../../../core/material.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
-import '../../providers/notifications_provider.dart';
 import '../../../../keys.dart';
+import '../../providers/notifications_provider.dart';
 
 /// La cloche de la barre d'accueil : une icône, et une pastille quand il y a
 /// des non lues.

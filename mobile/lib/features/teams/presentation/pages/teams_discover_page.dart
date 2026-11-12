@@ -1,18 +1,18 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/lists/list_states.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_tokens.dart';
-import '../../../../core/lists/list_states.dart';
+import '../../../../keys.dart';
 import '../../domain/team_discovery_filters.dart';
 import '../../providers/team_discovery_provider.dart';
-import '../widgets/team_discovery_card.dart';
 import '../team_list_labels.dart';
-import '../../../../keys.dart';
+import '../widgets/team_discovery_card.dart';
 
 /// L'annuaire public : rejoindre une équipe dont on n'est pas membre.
 ///

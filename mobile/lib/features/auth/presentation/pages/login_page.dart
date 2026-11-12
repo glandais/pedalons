@@ -1,18 +1,18 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../config/paths.dart';
 import '../../../../config/router.dart';
-import '../../../../keys.dart';
+import '../../../../core/material.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/link_launcher.dart';
+import '../../../../keys.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/passkey_service.dart';
 

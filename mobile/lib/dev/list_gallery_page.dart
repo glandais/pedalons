@@ -33,9 +33,9 @@
 
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/material.dart';
 import '../core/pdl/pdl.dart';
 import '../core/theme/pdl_colors.dart';
 import '../core/theme/pdl_tokens.dart';

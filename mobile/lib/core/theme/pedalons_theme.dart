@@ -1,5 +1,4 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import '../material.dart';
 
 import 'pdl_colors.dart';
 import 'pdl_tokens.dart';

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../material.dart';
 
 /// Couche d'indirection du jeu d'icônes (§1.0.3-10 du plan v2).
 ///

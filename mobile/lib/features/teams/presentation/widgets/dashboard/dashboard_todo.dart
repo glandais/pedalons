@@ -1,9 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../api/generated/export.dart';
 import '../../../../../config/paths.dart';
+import '../../../../../core/material.dart';
 import '../../../../../core/pdl/pdl.dart';
 import '../../../../../core/theme/pdl_colors.dart';
 import '../../../../../core/theme/pdl_icons.dart';
@@ -11,9 +11,9 @@ import '../../../../../core/theme/pdl_tokens.dart';
 import '../../../../../core/theme/pdl_typography.dart';
 import '../../../../../core/utils/formatters.dart';
 import '../../../../../keys.dart';
+import '../../../../rides/domain/group_title.dart';
 import '../../team_web_paths.dart';
 import 'dashboard_section.dart';
-import '../../../../rides/domain/group_title.dart';
 
 /// « À traiter » : ce qui attend un organisateur — brouillons, sorties sans
 /// parcours, groupes complets, signalements.

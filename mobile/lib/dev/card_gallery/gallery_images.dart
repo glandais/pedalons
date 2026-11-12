@@ -10,7 +10,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
+
+import '../../core/material.dart';
 
 import '../../core/theme/pdl_colors.dart';
 import '../../core/theme/pedalons_theme.dart';

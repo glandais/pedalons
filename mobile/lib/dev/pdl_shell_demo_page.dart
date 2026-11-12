@@ -10,7 +10,7 @@
 //  2. une feuille ouverte depuis la page recouvre la barre d'onglets ;
 //  3. rien ne déborde à 130 % d'agrandissement typographique.
 
-import 'package:flutter/material.dart';
+import '../core/material.dart';
 
 import '../core/pdl/pdl.dart';
 import '../core/theme/pdl_colors.dart';

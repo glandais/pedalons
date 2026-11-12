@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/config/paths.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
@@ -12,8 +12,8 @@ import 'package:pedalons/features/routes/presentation/widgets/route_manage_menu.
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../support/localization.dart';
 import '../../support/content_permissions.dart';
+import '../../support/localization.dart';
 import 'route_fixtures.dart';
 
 /// Le menu « Gérer le parcours » de la fiche (ledger `MOB-79`).

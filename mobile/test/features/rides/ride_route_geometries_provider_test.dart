@@ -7,8 +7,8 @@ import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_group_selection_provider.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
 
-import 'ride_fixtures.dart';
 import '../../support/content_permissions.dart';
+import 'ride_fixtures.dart';
 
 /// M1 — le chargement des tracés d'une sortie ne doit pas suivre le cycle de
 /// vie de son détail.

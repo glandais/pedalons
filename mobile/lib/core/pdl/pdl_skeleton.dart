@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../material.dart';
 
 import '../theme/pdl_colors.dart';
 import '../theme/pdl_tokens.dart';
@@ -10,7 +10,7 @@ import '../theme/pdl_tokens.dart';
 /// C'est la transcription de `.skel` de `pedalons.css` :
 /// `background-size: 400% 100%` + `@keyframes sh` de `100% 0` à `0 0`.
 ///
-/// `MediaQuery.disableAnimations` coupe l'animation et laisse l'aplat de base :
+/// `PdlMotion.reducedOf` coupe l'animation et laisse l'aplat de base :
 /// un scintillement perpétuel est exactement ce que « réduire les animations »
 /// demande de supprimer.
 class PdlSkeleton extends StatefulWidget {
@@ -62,7 +62,7 @@ class _PdlSkeletonState extends State<PdlSkeleton>
   @override
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
-    final bool reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final bool reduceMotion = PdlMotion.reducedOf(context);
 
     if (reduceMotion) {
       return Container(

@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/enum_colors.dart';
@@ -13,9 +13,9 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../../keys.dart';
 import '../../../rides/presentation/widgets/ride_display_stats.dart';
-import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../rides/presentation/widgets/ride_meta_line.dart';
 
 /// La couleur d'un événement de calendrier.

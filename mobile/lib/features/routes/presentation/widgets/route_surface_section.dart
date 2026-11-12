@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -11,10 +11,10 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/link_launcher.dart';
 import '../../../../core/widgets/detail_source_button.dart';
 import '../../../../keys.dart';
+import '../../../rides/domain/ride_weather_display.dart';
 import '../../domain/track_slope_colors.dart';
 import '../../domain/track_surfaces.dart';
 import '../../domain/track_wind_bars.dart';
-import '../../../rides/domain/ride_weather_display.dart';
 
 /// Le libellé d'une classe de revêtement (`MOB-81`) — ceux du site.
 String trackSurfaceLabel(TrackSurface surface) => switch (surface) {

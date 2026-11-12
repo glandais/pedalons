@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/config/app_config.dart';
 import 'package:pedalons/config/paths.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/link_launcher.dart';
 import 'package:pedalons/features/auth/presentation/pages/login_page.dart';

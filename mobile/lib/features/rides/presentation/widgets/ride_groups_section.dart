@@ -1,16 +1,19 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
+import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
-import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/widgets/detail_section.dart';
+import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../../../routes/presentation/gps_export_runner.dart';
+import '../../domain/group_start.dart';
 import '../../domain/ride_group_action.dart';
 import '../../domain/ride_route_layers.dart';
 import '../../domain/ride_weather_display.dart';
@@ -18,12 +21,9 @@ import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../providers/ride_registration_controller.dart';
 import 'registration_failure_banner.dart';
+import 'ride_group_card.dart';
 import 'ride_group_route_actions.dart';
 import 'ride_registration_control.dart';
-import '../../../routes/presentation/gps_export_runner.dart';
-import 'ride_group_card.dart';
-import '../../../../keys.dart';
-import '../../domain/group_start.dart';
 
 /// Combien de groupes sont montrés avant le repli.
 ///

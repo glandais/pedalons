@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
@@ -21,9 +21,9 @@ import 'package:pedalons/features/trips/presentation/widgets/stage_card.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
 import '../trips/trip_fixtures.dart';
-import '../../support/content_permissions.dart';
 
 /// Ledgers `MOB-114` et `MOB-115` (règle `BRAND-8`, BRANDING §7.1, §7.8,
 /// §8.3) : sur les cartes du fil, la date quitte la rangée de statistiques

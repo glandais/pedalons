@@ -1,31 +1,31 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/lists/list_states.dart';
+import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/utils/api_error_handler.dart';
+import '../../../../keys.dart';
 import '../../../ads/presentation/pages/ads_page.dart';
-import '../../../feed/presentation/widgets/publication_feed_view.dart';
-import '../../../routes/presentation/pages/routes_page.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../../../feed/presentation/widgets/publication_feed_view.dart';
+import '../../../feedback/presentation/report_problem_button.dart';
+import '../../../routes/presentation/pages/routes_page.dart';
 import '../../providers/team_membership_controller.dart';
 import '../../providers/team_providers.dart';
 import '../widgets/team_header.dart';
 import '../widgets/team_sections.dart';
 import '../widgets/team_sections_bar.dart';
 import 'team_about_page.dart';
-import 'team_dashboard_page.dart';
 import 'team_agenda_page.dart';
+import 'team_dashboard_page.dart';
 import 'team_members_page.dart';
-import '../../../feedback/presentation/report_problem_button.dart';
-import '../../../../keys.dart';
 
 /// A team, whatever section of it is being looked at.
 ///

@@ -1,17 +1,17 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart';
+import '../../../core/material.dart';
 import '../../../core/pdl/pdl.dart';
 import '../../../core/theme/pdl_colors.dart';
 import '../../../core/theme/pdl_icons.dart';
 import '../../../core/theme/pdl_tokens.dart';
 import '../../../core/theme/pdl_typography.dart';
 import '../../../core/utils/api_error_handler.dart';
-import '../data/moderation_repository.dart';
 import '../../../keys.dart';
+import '../data/moderation_repository.dart';
 
 /// Borne du texte libre, imposée par `ReportRequest` au contrat.
 const int kReportMessageMaxLength = 500;

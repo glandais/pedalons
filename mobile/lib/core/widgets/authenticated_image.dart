@@ -1,10 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../api/credential_scope.dart';
 import '../../api/pedalons_api_client.dart';
 import '../../config/app_config.dart';
+import '../material.dart';
 import '../pdl/pdl_skeleton.dart';
 import '../theme/pdl_icons.dart';
 

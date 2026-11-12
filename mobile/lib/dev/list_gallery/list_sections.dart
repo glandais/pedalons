@@ -17,13 +17,15 @@
 //
 // Un cas sans objet dans l'app est omis, avec sa raison ([ListSection.omitted]).
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 
 import '../../api/generated/export.dart';
+import '../../core/material.dart';
 import '../../core/pdl/pdl.dart';
 import '../../core/theme/pdl_icons.dart';
+import '../../features/ads/domain/ad_filters.dart';
+import '../../features/ads/providers/ad_list_provider.dart';
 import '../../features/calendar/presentation/pages/calendar_page.dart';
 import '../../features/calendar/providers/calendar_month_provider.dart';
 import '../../features/feed/providers/publication_feed_provider.dart';
@@ -34,8 +36,6 @@ import '../../features/rides/presentation/pages/ride_template_list_page.dart';
 import '../../features/routes/domain/route_filters.dart';
 import '../../features/routes/presentation/pages/all_routes_page.dart';
 import '../../features/routes/providers/route_list_provider.dart';
-import '../../features/ads/domain/ad_filters.dart';
-import '../../features/ads/providers/ad_list_provider.dart';
 import '../../features/teams/domain/member_filters.dart';
 import '../../features/teams/presentation/pages/team_home_page.dart';
 import '../../features/teams/presentation/pages/teams_discover_page.dart';

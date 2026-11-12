@@ -1,8 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../config/paths.dart';
+import '../material.dart';
 
 /// AppBar leading that pops when there is somewhere to pop to, and otherwise
 /// goes back to the app home.

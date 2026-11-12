@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-
 import '../../../../api/generated/export.dart';
 import '../../../../config/locale_context.dart';
 import '../../../../config/paths.generated.dart';
+import '../../../../core/material.dart';
 import '../../../../core/theme/pdl_icons.dart';
 
 /// The sections a team can show. The router names one per route, which is what

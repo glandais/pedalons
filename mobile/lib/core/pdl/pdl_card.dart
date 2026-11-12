@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import '../material.dart';
 
 import '../theme/pdl_colors.dart';
 import '../theme/pdl_tokens.dart';
@@ -25,7 +25,7 @@ enum PdlCardPadding {
 ///
 /// Quand [onTap] ou [onLongPress] est fourni, la carte reprend l'échelle 0.98
 /// au press héritée de `core/animations/animated_card.dart`, et **respecte
-/// `MediaQuery.disableAnimations`** : c'est la même implémentation, `AnimatedCard`
+/// `PdlMotion.reducedOf`** : c'est la même implémentation, `AnimatedCard`
 /// n'est plus qu'une façade au-dessus de celle-ci.
 class PdlCard extends StatefulWidget {
   const PdlCard({
@@ -107,7 +107,7 @@ class _PdlCardState extends State<PdlCard> {
 
     if (!_tappable) return card;
 
-    final bool reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final bool reduceMotion = PdlMotion.reducedOf(context);
     return GestureDetector(
       onTapDown: (_) => _setPressed(true),
       onTapUp: (_) => _setPressed(false),

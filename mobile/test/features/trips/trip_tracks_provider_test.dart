@@ -7,8 +7,8 @@ import 'package:pedalons/features/routes/data/route_repository.dart';
 import 'package:pedalons/features/trips/providers/trip_detail_provider.dart';
 import 'package:pedalons/features/trips/providers/trip_tracks_provider.dart';
 
-import 'trip_fixtures.dart';
 import '../../support/content_permissions.dart';
+import 'trip_fixtures.dart';
 
 /// S24-3 — le chargement des tracés d'un voyage.
 ///
