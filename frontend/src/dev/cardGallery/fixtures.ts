@@ -202,12 +202,13 @@ export const GRAVEL_TEAM = team(GRAVEL_REF, {
 
 // --- Shared bits ----------------------------------------------------------------------------
 
-const TAGS: TagDto[] = [
-  { id: 'tag-vallonne', label: 'vallonné', color: 'GREEN' },
-  { id: 'tag-finistere', label: 'Finistère', color: 'BLUE' },
+/** Ids a URL can carry (`tagIdsField` keeps `[0-9a-z]` only): the list gallery filters on them. */
+export const TAGS: TagDto[] = [
+  { id: 'tagvallonne', label: 'vallonné', color: 'GREEN' },
+  { id: 'tagfinistere', label: 'Finistère', color: 'BLUE' },
 ]
 
-const MEMBER_PERMISSIONS: ContentPermissionsDto = {
+export const MEMBER_PERMISSIONS: ContentPermissionsDto = {
   canEdit: false,
   canDelete: false,
   canRegister: true,

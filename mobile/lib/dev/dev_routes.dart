@@ -1,5 +1,5 @@
-// Les routes des pages de DEBUG : la galerie des composants et celle des
-// cartes.
+// Les routes des pages de DEBUG : la galerie des composants, celle des
+// cartes et celle des listes.
 //
 // `router.dart` ne les déclare que sous `kDebugMode`, une constante : en
 // profil et en release la branche est éliminée à la compilation, et avec elle
@@ -7,7 +7,9 @@
 // elles n'ont ni variante de langue, ni lien universel, ni entrée de manifeste.
 //
 // - `/dev/composants` : `PdlGalleryPage` ;
-// - `/dev/cartes`, `/dev/cartes/<section>` : `CardGalleryPage`.
+// - `/dev/cartes`, `/dev/cartes/<section>` : `CardGalleryPage` ;
+// - `/dev/listes`, `/dev/listes/<section>`, `/dev/listes/<section>/<cas>` :
+//   `ListGalleryPage`.
 //
 // Elles s'ouvrent sans session (`isDevLocation`, lu par `isAuthAdjacent`), et
 // au lancement avec `--dart-define=DEV_ROUTE=/dev/cartes/fil`.
@@ -15,6 +17,7 @@
 import 'package:go_router/go_router.dart';
 
 import 'card_gallery_page.dart';
+import 'list_gallery_page.dart';
 import 'pdl_gallery_page.dart';
 
 const String kDevComponentsPath = '/dev/composants';
@@ -41,6 +44,26 @@ List<RouteBase> devRoutes() => <RouteBase>[
         path: ':section',
         builder: (_, GoRouterState state) =>
             CardGalleryPage(sectionId: state.pathParameters['section']),
+      ),
+    ],
+  ),
+  GoRoute(
+    path: kListGalleryPath,
+    builder: (_, _) => const ListGalleryPage(),
+    routes: <RouteBase>[
+      GoRoute(
+        path: ':section',
+        builder: (_, GoRouterState state) =>
+            ListGalleryPage(sectionId: state.pathParameters['section']),
+        routes: <RouteBase>[
+          GoRoute(
+            path: ':case',
+            builder: (_, GoRouterState state) => ListGalleryPage(
+              sectionId: state.pathParameters['section'],
+              caseId: state.pathParameters['case'],
+            ),
+          ),
+        ],
       ),
     ],
   ),

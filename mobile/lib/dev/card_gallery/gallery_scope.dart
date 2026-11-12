@@ -41,11 +41,16 @@ class GalleryScope extends StatefulWidget {
     super.key,
     required this.data,
     this.overrides = const <Override>[],
+    this.dio,
     required this.child,
   });
 
   final GalleryData data;
   final List<Override> overrides;
+
+  /// Le Dio de l'app ; par défaut, un Dio qui refuse toute requête. La
+  /// galerie des listes y met son serveur factice (`list_gallery/gallery_api.dart`).
+  final Dio? dio;
   final Widget child;
 
   @override
@@ -65,6 +70,7 @@ class _GalleryScopeState extends State<GalleryScope> {
       overrides: <Override>[
         ..._baseOverrides(
           widget.data,
+          widget.dio,
           ProviderScope.containerOf(
             context,
             listen: false,
@@ -88,11 +94,12 @@ class _GalleryScopeState extends State<GalleryScope> {
 
 List<Override> _baseOverrides(
   GalleryData data,
+  Dio? dio,
   SharedPreferences preferences,
 ) => <Override>[
   // Aucun appel ne sort de la galerie : un appui sur « Rejoindre » ou
   // « Accepter » échoue sur place au lieu de partir vers l'API.
-  dioProvider.overrideWithValue(_offlineDio()),
+  dioProvider.overrideWithValue(dio ?? _offlineDio()),
   baseDioProvider.overrideWithValue(_offlineDio()),
   sharedPreferencesProvider.overrideWithValue(preferences),
   unitSystemProvider.overrideWithValue(UnitSystem.metric),
