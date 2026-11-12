@@ -62,7 +62,7 @@ class FormatUtils {
      * Format distance and elevation as a compact string.
      * @param distance Distance in meters
      * @param elevation Elevation in meters
-     * @return Formatted string like "87.5 km / 1250 m D+"
+     * @return Formatted string like "87.5 km · 1250 m D+"
      */
     function formatDistanceElevation(distance, elevation) {
         var distStr = formatDistance(distance);
@@ -72,7 +72,7 @@ class FormatUtils {
                 formatElevation(elevation) + " " + WatchUi.loadResource(Rez.Strings.UnitDPlus);
         }
         if (distStr.length() > 0 && elevStr.length() > 0) {
-            return distStr + " / " + elevStr;
+            return distStr + " · " + elevStr;
         } else if (distStr.length() > 0) {
             return distStr;
         }
@@ -94,18 +94,7 @@ class FormatUtils {
         }
         var info = Gregorian.info(moment, Time.FORMAT_SHORT);
 
-        // Use group time if provided, otherwise use ride datetime's time
-        var timeStr;
-        if (_is24Hour) {
-            timeStr = info.hour.format("%02d") + ":" + info.min.format("%02d");
-        } else {
-            var hour = info.hour % 12;
-            if (hour == 0) {
-                hour = 12; // 0:xx and 12:xx both display as 12
-            }
-            var suffix = WatchUi.loadResource(info.hour >= 12 ? Rez.Strings.PM : Rez.Strings.AM);
-            timeStr = hour.format("%02d") + ":" + info.min.format("%02d") + " " + suffix;
-        }
+        var timeStr = formatTime(info);
         // Date format: DD/MM for 24h (Europe/Asia), MM/DD for 12h (USA)
         var dateStr;
         if (_is24Hour) {
@@ -114,6 +103,36 @@ class FormatUtils {
             dateStr = info.month.format("%02d") + "/" + info.day.format("%02d");
         }
         return dateStr + " " + timeStr;
+    }
+
+    // "09:00", or "09:00 AM" on a 12-hour Edge
+    private function formatTime(info) {
+        if (_is24Hour) {
+            return info.hour.format("%02d") + ":" + info.min.format("%02d");
+        }
+        var hour = info.hour % 12;
+        if (hour == 0) {
+            hour = 12; // 0:xx and 12:xx both display as 12
+        }
+        var suffix = WatchUi.loadResource(info.hour >= 12 ? Rez.Strings.PM : Rez.Strings.AM);
+        return hour.format("%02d") + ":" + info.min.format("%02d") + " " + suffix;
+    }
+
+    /**
+     * An ISO 8601 instant split for a menu row: [weekday, day, month, time], the weekday and
+     * the month abbreviated in the Edge's language ("Sat", "14", "Nov", "08:45"). Null when the
+     * string cannot be read.
+     */
+    function dateParts(isoString) {
+        if (isoString == null) {
+            return null;
+        }
+        var moment = parseIsoDateTime(isoString);
+        if (moment == null) {
+            return null;
+        }
+        var info = Gregorian.info(moment, Time.FORMAT_MEDIUM);
+        return [info.day_of_week, info.day.toString(), info.month, formatTime(info)];
     }
 
     /**

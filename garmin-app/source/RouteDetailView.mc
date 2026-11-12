@@ -159,7 +159,7 @@ class RouteDetailView extends WatchUi.View {
             dc.setColor(Theme.muted(), Graphics.COLOR_TRANSPARENT);
             dc.drawText(
                 centerX,
-                y + 25,
+                y + dc.getFontHeight(Graphics.FONT_SMALL),
                 Graphics.FONT_TINY,
                 WatchUi.loadResource(Rez.Strings.PressSelect),
                 Graphics.TEXT_JUSTIFY_CENTER

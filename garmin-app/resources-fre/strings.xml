@@ -40,12 +40,14 @@
     <string id="Routes">Parcours</string>
     <string id="RideOne">sortie</string>
     <string id="RideMany">sorties</string>
+    <string id="GroupOne">groupe</string>
+    <string id="GroupMany">groupes</string>
     <string id="RouteOne">parcours</string>
     <string id="RouteMany">parcours</string>
     <string id="NoRides">Aucune sortie à venir</string>
     <string id="Logout">Déconnexion</string>
-    <string id="SyncSent">Déjà dans Garmin Connect</string>
-    <string id="SyncOutdated">Ancienne version dans Connect</string>
+    <string id="SyncSent">Dans Connect</string>
+    <string id="SyncOutdated">Ancienne version</string>
     <string id="SyncPending">Mise à jour en attente</string>
     <string id="SyncFailing">Échec de l'envoi</string>
     <string id="SyncReconnect">Reconnecter Garmin</string>

@@ -40,12 +40,14 @@
     <string id="Routes">Routes</string>
     <string id="RideOne">ride</string>
     <string id="RideMany">rides</string>
+    <string id="GroupOne">group</string>
+    <string id="GroupMany">groups</string>
     <string id="RouteOne">route</string>
     <string id="RouteMany">routes</string>
     <string id="NoRides">No upcoming rides</string>
     <string id="Logout">Logout</string>
-    <string id="SyncSent">In Garmin Connect</string>
-    <string id="SyncOutdated">Old version in Connect</string>
+    <string id="SyncSent">In Connect</string>
+    <string id="SyncOutdated">Old version</string>
     <string id="SyncPending">Update pending</string>
     <string id="SyncFailing">Upload failed</string>
     <string id="SyncReconnect">Reconnect Garmin</string>

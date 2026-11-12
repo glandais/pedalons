@@ -3,7 +3,7 @@ using Toybox.WatchUi;
 using Toybox.System;
 
 /**
- * Input delegate for the home Menu2.
+ * Input delegate for the home menu.
  * Handles selection of "My next rides", "Rides" or "Routes" top-level entries.
  */
 class HomeMenuDelegate extends WatchUi.Menu2InputDelegate {
@@ -30,30 +30,28 @@ class HomeMenuDelegate extends WatchUi.Menu2InputDelegate {
                 return; // Nothing to show
             }
 
-            // Build the list of the groups the user is registered in
-            var menu = new WatchUi.Menu2({
-                :title => WatchUi.loadResource(Rez.Strings.RegisteredGroups),
+            // The groups the user is registered in: the day, the ride, then the time and the
+            // group, and where the route stands in Garmin Connect as a badge of its own.
+            var menu = new PdlMenu(WatchUi.loadResource(Rez.Strings.RegisteredGroups), {
+                :badges => true,
+                :dayBox => true,
             });
-            if (menu has :setControlBar) {
-                menu.setControlBar({
-                    :leftButton => WatchUi.CONTROL_BAR_LEFT_BUTTON_BACK,
-                });
-            }
 
             for (var i = 0; i < _groups.size(); i++) {
                 var group = _groups[i];
-                var sublabel = _formatUtils.formatDateTime(group.get("startDateTime"));
-                // Where the route stands in Garmin Connect, before the group name: the sublabel
-                // is cut on small screens and this tells whether a download would duplicate it.
-                var syncLabel = syncStateLabel(group.get("syncState"));
-                if (syncLabel != null) {
-                    sublabel = sublabel.length() > 0 ? sublabel + " " + syncLabel : syncLabel;
-                }
+                var parts = _formatUtils.dateParts(group.get("startDateTime"));
+                var sublabel = parts != null ? parts[3] : "";
                 var groupName = group.get("groupName");
                 if (groupName != null && groupName.length() > 0) {
-                    sublabel = sublabel.length() > 0 ? sublabel + " " + groupName : groupName;
+                    sublabel = sublabel.length() > 0 ? sublabel + " · " + groupName : groupName;
                 }
-                menu.addItem(new WatchUi.MenuItem(group.get("rideName"), sublabel, i, {}));
+                var options = { :day => parts };
+                var sync = syncBadge(group.get("syncState"));
+                if (sync != null) {
+                    options.put(:badge, sync[0]);
+                    options.put(:badgeFamily, sync[1]);
+                }
+                menu.addItem(new PdlItem(i, group.get("rideName"), sublabel, options));
             }
 
             WatchUi.pushView(
@@ -66,32 +64,24 @@ class HomeMenuDelegate extends WatchUi.Menu2InputDelegate {
                 return; // Nothing to show
             }
 
-            // Build ride list menu
-            var menu = new WatchUi.Menu2({
-                :title => WatchUi.loadResource(Rez.Strings.Rides),
-            });
-            if (menu has :setControlBar) {
-                menu.setControlBar({
-                    :leftButton => WatchUi.CONTROL_BAR_LEFT_BUTTON_BACK,
-                });
-            }
+            // Rides: the day, the name, then the time and how many groups
+            var menu = new PdlMenu(WatchUi.loadResource(Rez.Strings.Rides), { :dayBox => true });
 
             for (var i = 0; i < _rides.size(); i++) {
                 var ride = _rides[i];
-                var rideName = ride.get("rideName");
-                var startDateTime = ride.get("startDateTime");
-                var sublabel = "";
-                if (startDateTime != null && startDateTime.length() > 0) {
-                    sublabel = _formatUtils.formatDateTime(startDateTime);
-                }
+                var parts = _formatUtils.dateParts(ride.get("startDateTime"));
                 var entries = ride.get("entries");
                 var entryCount = entries != null ? entries.size() : 0;
-                if (sublabel.length() > 0) {
-                    sublabel = sublabel + " (" + entryCount + ")";
-                } else {
-                    sublabel = entryCount.toString();
+                var sublabel =
+                    entryCount +
+                    " " +
+                    WatchUi.loadResource(
+                        entryCount == 1 ? Rez.Strings.GroupOne : Rez.Strings.GroupMany
+                    );
+                if (parts != null) {
+                    sublabel = parts[3] + " · " + sublabel;
                 }
-                menu.addItem(new WatchUi.MenuItem(rideName, sublabel, i, {}));
+                menu.addItem(new PdlItem(i, ride.get("rideName"), sublabel, { :day => parts }));
             }
 
             WatchUi.pushView(
@@ -104,23 +94,16 @@ class HomeMenuDelegate extends WatchUi.Menu2InputDelegate {
                 return; // Nothing to show
             }
 
-            // Build standalone route list menu
-            var menu = new WatchUi.Menu2({
-                :title => WatchUi.loadResource(Rez.Strings.Routes),
-            });
-            if (menu has :setControlBar) {
-                menu.setControlBar({
-                    :leftButton => WatchUi.CONTROL_BAR_LEFT_BUTTON_BACK,
-                });
-            }
+            // Routes attached to no ride: the name, then distance and elevation
+            var menu = new PdlMenu(WatchUi.loadResource(Rez.Strings.Routes), {});
 
             for (var i = 0; i < _routes.size(); i++) {
                 var route = _routes[i];
-                var routeName = route.get("routeName");
-                var distance = route.get("distance");
-                var elevationGain = route.get("elevationGain");
-                var sublabel = _formatUtils.formatDistanceElevation(distance, elevationGain);
-                menu.addItem(new WatchUi.MenuItem(routeName, sublabel, i, {}));
+                var sublabel = _formatUtils.formatDistanceElevation(
+                    route.get("distance"),
+                    route.get("elevationGain")
+                );
+                menu.addItem(new PdlItem(i, route.get("routeName"), sublabel, {}));
             }
 
             WatchUi.pushView(
@@ -138,22 +121,23 @@ class HomeMenuDelegate extends WatchUi.Menu2InputDelegate {
     }
 
     /**
-     * Short label for a group's route state in Garmin Connect (docs/LEDGER_*.md API-121), or null
-     * when there is nothing to say: not held by Garmin, an older backend, or an unknown state.
+     * The badge for a group's route state in Garmin Connect (docs/LEDGER_*.md API-121), as
+     * [text, colour family], or null when there is nothing to say: not held by Garmin, an older
+     * backend, or an unknown state.
      */
-    private function syncStateLabel(state) {
+    private function syncBadge(state) {
         if (state == null) {
             return null;
         } else if (state.equals("SENT")) {
-            return WatchUi.loadResource(Rez.Strings.SyncSent);
+            return [WatchUi.loadResource(Rez.Strings.SyncSent), :green];
         } else if (state.equals("OUTDATED")) {
-            return WatchUi.loadResource(Rez.Strings.SyncOutdated);
+            return [WatchUi.loadResource(Rez.Strings.SyncOutdated), :orange];
         } else if (state.equals("PENDING")) {
-            return WatchUi.loadResource(Rez.Strings.SyncPending);
+            return [WatchUi.loadResource(Rez.Strings.SyncPending), :gray];
         } else if (state.equals("FAILING")) {
-            return WatchUi.loadResource(Rez.Strings.SyncFailing);
+            return [WatchUi.loadResource(Rez.Strings.SyncFailing), :red];
         } else if (state.equals("RECONNECT_REQUIRED")) {
-            return WatchUi.loadResource(Rez.Strings.SyncReconnect);
+            return [WatchUi.loadResource(Rez.Strings.SyncReconnect), :red];
         }
         return null;
     }

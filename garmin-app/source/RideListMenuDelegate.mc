@@ -38,14 +38,10 @@ class RideListMenuDelegate extends WatchUi.Menu2InputDelegate {
 
             // Build entries menu
             var rideName = ride.get("rideName");
-            var menu = new WatchUi.Menu2({
-                :title => rideName != null ? rideName : WatchUi.loadResource(Rez.Strings.Rides),
-            });
-            if (menu has :setControlBar) {
-                menu.setControlBar({
-                    :leftButton => WatchUi.CONTROL_BAR_LEFT_BUTTON_BACK,
-                });
-            }
+            var menu = new PdlMenu(
+                rideName != null ? rideName : WatchUi.loadResource(Rez.Strings.Rides),
+                {}
+            );
 
             for (var i = 0; i < entries.size(); i++) {
                 var entry = entries[i];
@@ -55,7 +51,7 @@ class RideListMenuDelegate extends WatchUi.Menu2InputDelegate {
                 var distance = entry.get("distance");
                 var elevationGain = entry.get("elevationGain");
                 var sublabel = _formatUtils.formatDistanceElevation(distance, elevationGain);
-                menu.addItem(new WatchUi.MenuItem(title, sublabel, i, {}));
+                menu.addItem(new PdlItem(i, title, sublabel, {}));
             }
 
             WatchUi.pushView(menu, new RideEntryMenuDelegate(ride, _apiClient), WatchUi.SLIDE_LEFT);

@@ -55,21 +55,12 @@ class PedalonsView extends WatchUi.View {
                 return;
             }
 
-            // Build Home Menu: My next rides, Rides, Routes, Logout
-            var menu = new WatchUi.Menu2({
-                :title => WatchUi.loadResource(Rez.Strings.RoutesTitle),
+            // Home menu: My next rides, Rides, Routes, Logout
+            var menu = new PdlMenu(WatchUi.loadResource(Rez.Strings.RoutesTitle), {
+                :home => true,
             });
 
-            if (menu has :setActionMenuIndicator) {
-                menu.setActionMenuIndicator({ :enabled => false });
-            }
-            if (menu has :setControlBar) {
-                menu.setControlBar({
-                    :leftButton => WatchUi.CONTROL_BAR_LEFT_BUTTON_BACK,
-                });
-            }
-
-            // My next rides entry: the groups the user is registered in, always first
+            // My next rides: the groups the user is registered in, always first
             var groupsSublabel = countLabel(
                 groups.size(),
                 Rez.Strings.RegistrationOne,
@@ -79,24 +70,25 @@ class PedalonsView extends WatchUi.View {
                 groupsSublabel = WatchUi.loadResource(Rez.Strings.NoRegisteredGroups);
             }
             menu.addItem(
-                new WatchUi.MenuItem(
+                new PdlItem(
+                    "groups",
                     WatchUi.loadResource(Rez.Strings.RegisteredGroups),
                     groupsSublabel,
-                    "groups",
-                    {}
+                    { :icon => :mine, :iconFamily => :indigo }
                 )
             );
 
-            // Rides entry
-            var ridesLabel = WatchUi.loadResource(Rez.Strings.Rides);
             var ridesSublabel = countLabel(rides.size(), Rez.Strings.RideOne, Rez.Strings.RideMany);
             if (rides.size() == 0) {
                 ridesSublabel = WatchUi.loadResource(Rez.Strings.NoRides);
             }
-            var ridesItem = new WatchUi.MenuItem(ridesLabel, ridesSublabel, "rides", {});
+            var ridesItem = new PdlItem(
+                "rides",
+                WatchUi.loadResource(Rez.Strings.Rides),
+                ridesSublabel,
+                { :icon => :rides, :iconFamily => :blue }
+            );
 
-            // Routes entry
-            var routesLabel = WatchUi.loadResource(Rez.Strings.Routes);
             var routesSublabel = countLabel(
                 routes.size(),
                 Rez.Strings.RouteOne,
@@ -105,7 +97,12 @@ class PedalonsView extends WatchUi.View {
             if (routes.size() == 0) {
                 routesSublabel = WatchUi.loadResource(Rez.Strings.NoRoutes);
             }
-            var routesItem = new WatchUi.MenuItem(routesLabel, routesSublabel, "routes", {});
+            var routesItem = new PdlItem(
+                "routes",
+                WatchUi.loadResource(Rez.Strings.Routes),
+                routesSublabel,
+                { :icon => :routes, :iconFamily => :blue }
+            );
 
             // Put Routes first when there are no rides to show
             if (rides.size() == 0) {
@@ -116,9 +113,10 @@ class PedalonsView extends WatchUi.View {
                 menu.addItem(routesItem);
             }
 
-            // Logout entry
             menu.addItem(
-                new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.Logout), null, "logout", {})
+                new PdlItem("logout", WatchUi.loadResource(Rez.Strings.Logout), null, {
+                    :dim => true,
+                })
             );
 
             WatchUi.switchToView(
