@@ -76,7 +76,9 @@ void main() {
     dateTime: dateTime,
     endDateTime: endDateTime,
     status: status,
-    visibility: 'TEAM',
+    // La visibilité de son équipe : le cas ordinaire, sans badge de
+    // visibilité (règle R1, KIT §9).
+    visibility: 'PUBLIC',
     participantCount: 10,
     groupCount: groupCount,
     groups: const <RideGroupDto>[],

@@ -1,5 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart' hide Visibility;
+import 'package:flutter/material.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
@@ -9,7 +9,10 @@ import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
+import '../../../../core/utils/card_header_image.dart';
 import '../../../../core/utils/push_location.dart';
+import '../../../../keys.dart';
+import '../../../visibility/presentation/visibility_badge.dart';
 
 /// Débord du logo sous le bandeau, en pixels.
 const double _kLogoOverhang = 20;
@@ -19,8 +22,8 @@ const double _kLogoSize = 56;
 
 /// La carte d'une équipe sur l'écran de découverte.
 ///
-/// Bandeau `gradTeam` de 120 px, **logo de 56 px débordant de 20 px sous le
-/// bandeau**, titre, badge de visibilité, extrait de deux lignes, compte de
+/// Bandeau de 120 px — la photo de l'équipe, sinon `gradTeam` —, **logo de 56 px débordant de 20 px sous le
+/// bandeau**, titre, « Équipe uniquement » sur une équipe privée, extrait de deux lignes, compte de
 /// membres et action.
 ///
 /// Le débord est la seule difficulté : il exige un [Stack] à
@@ -48,7 +51,6 @@ class TeamDiscoveryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
 
     return PdlCard(
@@ -61,9 +63,12 @@ class TeamDiscoveryCard extends StatelessWidget {
             // Sans cela, la moitié basse du logo disparaît — et rien ne le dit.
             clipBehavior: Clip.none,
             children: <Widget>[
+              // La photo de l'équipe (la première image de sa page « À
+              // propos ») si elle en a une, sinon le dégradé (règle R10).
               PdlCardMedia(
                 tone: PdlMediaTone.team,
                 icon: PdlIcons.team,
+                imageUrl: firstPhotoUrl(team.about),
                 height: PdlMetrics.media120,
                 borderRadius: BorderRadius.zero,
               ),
@@ -94,11 +99,15 @@ class TeamDiscoveryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Expanded(child: Text(team.name, style: t.cardTitle)),
-                    const SizedBox(width: PdlSpacing.chipGap),
-                    PdlBadge(
-                      label: 'visibility.${team.visibility.toLowerCase()}'.tr(),
-                      tone: Visibility.fromJson(team.visibility).tone(c),
-                    ),
+                    // « Équipe uniquement » sur une équipe privée ; une équipe
+                    // publique, le cas ordinaire, ne porte rien (règle R1).
+                    for (final Widget badge in teamVisibilityBadges(
+                      team.visibility,
+                      key: keys.teamsDiscover.cardVisibility(team.slug),
+                    )) ...<Widget>[
+                      const SizedBox(width: PdlSpacing.chipGap),
+                      badge,
+                    ],
                   ],
                 ),
                 if (team.excerpt != null &&

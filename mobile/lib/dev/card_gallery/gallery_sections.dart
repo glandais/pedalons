@@ -188,7 +188,41 @@ final GallerySection _feed = GallerySection(
       (GalleryData d) =>
           _card(d, d.feedRide(slug: 'boucle-pluie', rainAlert: true)),
     ),
+    // À J+10 : la prévision n'ouvre qu'à J+3 (règle R2).
+    GalleryCase(
+      'fil-sortie-meteo-a-venir',
+      (GalleryData d) => _card(
+        d,
+        d.feedRide(
+          slug: 'boucle-meteo-a-venir',
+          dateTime: d.at(10, 9),
+          weatherSummary: d.weatherNotYet(),
+        ),
+      ),
+    ),
+    // La photo en bandeau, la carte du tracé en vignette (règle R10).
+    GalleryCase(
+      'fil-sortie-photo',
+      (GalleryData d) =>
+          _card(d, d.feedRide(slug: 'boucle-photo', photo: true)),
+    ),
+    // Lisible par lien dans l'équipe privée : le seul cas où la visibilité
+    // se badge (règle R1).
+    GalleryCase(
+      'fil-sortie-lien',
+      (GalleryData d) =>
+          _card(d, d.feedRide(slug: 'boucle-lien', visibility: 'PUBLIC')),
+    ),
     GalleryCase('fil-voyage', (GalleryData d) => _card(d, d.feedTrip())),
+    GalleryCase(
+      'fil-voyage-termine',
+      (GalleryData d) => _card(d, d.feedTrip(finished: true)),
+    ),
+    // Hors de l'équipe : le compte de personnes, ni grappe ni noms (règle R4).
+    GalleryCase(
+      'fil-voyage-non-membre',
+      (GalleryData d) => _card(d, d.feedTrip(outsider: true)),
+    ),
     GalleryCase(
       'fil-voyage-inscrit-en-cours',
       (GalleryData d) => _card(d, d.feedTrip(underWay: true, registered: true)),
@@ -730,6 +764,14 @@ final GallerySection _teams = GallerySection(
       'equipe-decouverte',
       (GalleryData d) => TeamDiscoveryCard(
         team: d.teamDetail(clubDesMonts: false),
+        onJoin: _noop,
+      ),
+    ),
+    // La photo de l'équipe en bandeau (règle R10).
+    GalleryCase(
+      'equipe-photo',
+      (GalleryData d) => TeamDiscoveryCard(
+        team: d.teamDetail(clubDesMonts: false, photo: true),
         onJoin: _noop,
       ),
     ),

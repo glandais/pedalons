@@ -12,7 +12,9 @@ import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
+import '../../../../core/utils/card_header_image.dart';
 import '../../../../core/utils/formatters.dart';
+import '../../../visibility/presentation/visibility_badge.dart';
 import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
 import '../../../rides/providers/ride_detail_provider.dart';
 import '../../../routes/presentation/gps_export_runner.dart';
@@ -91,6 +93,16 @@ class NextRideCard extends ConsumerWidget {
     final NextRideLeaveState registration = ref.watch(
       nextRideLeaveProvider(key),
     );
+    // La photo de la sortie en bandeau, sinon la carte du tracé du groupe ;
+    // la vignette du tracé seulement sous une photo (règle R10, KIT §9).
+    final CardHeaderImage header = cardHeaderImage(
+      photo: firstPhotoUrl(ride.media),
+      trackMap: nextRideThumbnailUrl(
+        ride,
+        group,
+        dark: Theme.of(context).brightness == Brightness.dark,
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -123,11 +135,7 @@ class NextRideCard extends ConsumerWidget {
               PdlCardMedia(
                 tone: PdlMediaTone.ride,
                 icon: PdlIcons.ride,
-                imageUrl: nextRideThumbnailUrl(
-                  ride,
-                  group,
-                  dark: Theme.of(context).brightness == Brightness.dark,
-                ),
+                imageUrl: header.banner,
                 height: PdlMediaHeights.hero,
                 borderRadius: BorderRadius.zero,
                 // La boîte du jour posée sur l'image (BRANDING §7.1, §7.8,
@@ -185,7 +193,20 @@ class NextRideCard extends ConsumerWidget {
                     const SizedBox(height: PdlSpacing.cardTight),
                     ..._facts(c, t, start, instant),
                     const SizedBox(height: PdlSpacing.cardTight),
-                    _stats(units),
+                    if (header.trackThumbnail == null)
+                      _stats(units)
+                    else
+                      Row(
+                        children: <Widget>[
+                          Expanded(child: _stats(units)),
+                          const SizedBox(width: PdlSpacing.statsNowrap),
+                          PdlThumb(
+                            key: keys.home.nextRideTrackThumb,
+                            imageUrl: header.trackThumbnail,
+                            size: PdlMetrics.thumbLg,
+                          ),
+                        ],
+                      ),
                     if (RideWeatherSummaryLine.shows(
                       ride.weather,
                       finished: ride.isPast,
@@ -228,7 +249,12 @@ class NextRideCard extends ConsumerWidget {
     );
   }
 
+  /// Dans l'ordre des cartes (règle R1, KIT §9) : type → un état (Annulé,
+  /// En cours) → visibilité si elle diffère de celle de l'équipe → J'y vais.
+  /// Ni brouillon ni terminée ici : le bloc ne retient que les sorties
+  /// publiées pas encore arrivées.
   Widget _badges(PdlColors c) => Wrap(
+    key: keys.home.nextRideBadges,
     spacing: PdlSpacing.badgeGap,
     runSpacing: PdlSpacing.badgeGap,
     children: <Widget>[
@@ -236,16 +262,20 @@ class NextRideCard extends ConsumerWidget {
         label: 'publicationType.ride'.tr(),
         tone: PublicationType.ride.tone(c),
       ),
+      if (ride.isCancelled)
+        PdlBadge(label: 'status.cancelled'.tr(), tone: Status.cancelled.tone(c))
+      else if (ridePhase(ride) == PublicationPhase.underWay)
+        PdlBadge(
+          label: 'teams.agenda.underWay'.tr(),
+          tone: PdlDerivedTones.underWay(c),
+          dot: true,
+        ),
+      ...cardVisibilityBadges(ride.visibility, reference: ride.team.visibility),
       PdlBadge(
         label: 'rides.registered'.tr(),
         tone: PdlDerivedTones.registered(c),
         icon: PdlIcons.check,
       ),
-      if (ride.isCancelled)
-        PdlBadge(
-          label: 'status.cancelled'.tr(),
-          tone: Status.cancelled.tone(c),
-        ),
     ],
   );
 

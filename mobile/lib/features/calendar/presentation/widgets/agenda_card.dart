@@ -223,7 +223,26 @@ class AgendaCard extends ConsumerWidget {
     return _isPast ? Opacity(opacity: 0.55, child: card) : card;
   }
 
+  /// Dans l'ordre des cartes (règle R1, KIT §9) : un état (Annulé,
+  /// Brouillon), puis J'y vais. Pas de type : la boîte et l'icône le disent.
+  /// Une ligne passée s'estompe au lieu de porter « Terminée » : un mois se
+  /// lit d'un bloc, et la moitié de ses lignes porteraient le même badge.
   List<Widget> _badges(PdlColors c) => <Widget>[
+    // Oublié par la maquette, ajouté depuis `CalendarEventDto.status` (§3.2) :
+    // une sortie annulée qui se rend comme les autres est un rendez-vous
+    // manqué.
+    if (_isCancelled)
+      PdlBadge(
+        label: 'calendar.cancelled'.tr(),
+        icon: PdlIcons.cancelled,
+        tone: Status.cancelled.tone(c),
+      )
+    else if (event.status == 'DRAFT')
+      PdlBadge(
+        key: keys.calendar.agendaDraftBadge(event.entitySlug),
+        label: 'status.draft'.tr(),
+        tone: Status.draft.tone(c),
+      ),
     if (event.registered)
       PdlBadge(
         key: keys.calendar.agendaRegisteredBadge(event.entitySlug),
@@ -236,15 +255,6 @@ class AgendaCard extends ConsumerWidget {
               ),
         icon: PdlIcons.check,
         tone: PdlDerivedTones.registered(c),
-      ),
-    // Oublié par la maquette, ajouté depuis `CalendarEventDto.status` (§3.2) :
-    // une sortie annulée qui se rend comme les autres est un rendez-vous
-    // manqué.
-    if (_isCancelled)
-      PdlBadge(
-        label: 'calendar.cancelled'.tr(),
-        icon: PdlIcons.cancelled,
-        tone: Status.cancelled.tone(c),
       ),
   ];
 }

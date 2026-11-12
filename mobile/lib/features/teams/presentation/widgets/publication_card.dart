@@ -12,6 +12,7 @@ import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
+import '../../../../core/utils/card_header_image.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/deleted_badge.dart';
@@ -23,6 +24,7 @@ import '../../../rides/domain/group_start.dart';
 import '../../../rides/presentation/widgets/ride_weather_summary_line.dart';
 import '../../../rides/providers/participation_changes.dart';
 import '../../../tags/presentation/content_tags.dart';
+import '../../../visibility/presentation/visibility_badge.dart';
 import '../../../../core/utils/push_location.dart';
 import '../../../../keys.dart';
 import '../../domain/publication_timing.dart';
@@ -375,11 +377,20 @@ class _RideBody extends ConsumerWidget {
             showRelative: !isPast && ride.status != 'CANCELLED',
           );
 
+    // La photo de la sortie en bandeau, sinon la carte du tracé ; la vignette
+    // du tracé seulement sous une photo (règle R10, KIT §9).
+    final CardHeaderImage header = cardHeaderImage(
+      photo: firstPhotoUrl(ride.media),
+      trackMap: ride.routeSlug == null
+          ? null
+          : _themed(context, ride.thumbnailLightUrl, ride.thumbnailDarkUrl),
+    );
+
     return _CardShell(
       onTap: () => context.push(Paths.ride(ride.team.slug, ride.slug)),
       tone: PdlMediaTone.ride,
       icon: PdlIcons.ride,
-      imageUrl: _themed(context, ride.thumbnailLightUrl, ride.thumbnailDarkUrl),
+      imageUrl: header.banner,
       teamName: showTeamLine ? ride.team.name : null,
       teamSlug: ride.team.slug,
       teamLogoUrl: ride.team.logoUrl,
@@ -415,6 +426,13 @@ class _RideBody extends ConsumerWidget {
           )
         else if (isPast)
           PdlBadge(label: 'rides.finished'.tr(), tone: PdlDerivedTones.done(c)),
+        // La visibilité, seulement quand elle diffère de celle de l'équipe
+        // (règle R1, KIT §9) : une sortie lisible par lien d'une équipe privée.
+        ...cardVisibilityBadges(
+          ride.visibility,
+          reference: ride.team.visibility,
+          key: keys.feed.visibilityBadge(ride.slug),
+        ),
         // L'apport principal de la v2 sur les listes : savoir, sans ouvrir la
         // sortie, qu'on y est inscrit.
         if (registered)
@@ -424,9 +442,9 @@ class _RideBody extends ConsumerWidget {
             icon: PdlIcons.check,
           ),
       ],
-      // La vignette du parcours, à droite de la ligne sociale — c'est la
-      // seule image dont on dispose en plus du bandeau.
-      trailingThumbnailUrl: ride.routeSlug == null ? null : ride.thumbnailUrl,
+      // La vignette du parcours, à droite de la ligne sociale — sous une
+      // photo seulement : sinon le bandeau est déjà la carte du tracé.
+      trailingThumbnailUrl: header.trackThumbnail,
       social: _SocialLine(
         people: ride.topParticipants,
         count: ride.participantCount,
@@ -447,8 +465,9 @@ class _RideBody extends ConsumerWidget {
       // La date n'est plus une statistique (BRANDING §7.1, ledger `BRAND-8`) :
       // elle est la boîte du jour et la ligne de départ, en haut.
       stats: <PdlStat>[
-        // Sans groupe, personne ne peut s'inscrire : pas de compteur.
-        if (ride.groupCount > 0)
+        // Sans groupe, personne ne peut s'inscrire : pas de compteur ; et un
+        // compteur à zéro ne s'affiche pas (règle R4, KIT §9).
+        if (ride.groupCount > 0 && ride.participantCount > 0)
           PdlStat(
             value: 'rides.participants'.plural(
               ride.participantCount,
@@ -518,6 +537,11 @@ class _PostBody extends StatelessWidget {
         ),
         if (post.status == 'DRAFT')
           PdlBadge(label: 'status.draft'.tr(), tone: Status.draft.tone(c)),
+        ...cardVisibilityBadges(
+          post.visibility,
+          reference: post.team.visibility,
+          key: keys.feed.visibilityBadge(post.slug),
+        ),
       ],
       stats: <PdlStat>[
         if (at != null)
@@ -582,11 +606,19 @@ class _TripBody extends ConsumerWidget {
       status: trip.status,
     );
 
+    // Comme la sortie (règle R10) : la photo, sinon la carte du tracé ; la
+    // vignette du tracé seulement sous une photo.
+    final CardHeaderImage header = cardHeaderImage(
+      photo: firstPhotoUrl(trip.media),
+      trackMap: _themed(context, trip.thumbnailLightUrl, trip.thumbnailDarkUrl),
+    );
+
     return _CardShell(
       onTap: () => context.push(Paths.trip(trip.team.slug, trip.slug)),
       tone: PdlMediaTone.trip,
       icon: PdlIcons.trip,
-      imageUrl: _themed(context, trip.thumbnailLightUrl, trip.thumbnailDarkUrl),
+      imageUrl: header.banner,
+      trailingThumbnailUrl: header.trackThumbnail,
       teamName: showTeamLine ? trip.team.name : null,
       teamSlug: trip.team.slug,
       teamLogoUrl: trip.team.logoUrl,
@@ -603,9 +635,8 @@ class _TripBody extends ConsumerWidget {
           label: 'publicationType.trip'.tr(),
           tone: PublicationType.trip.tone(c),
         ),
-        // Les mêmes états que la sortie, Terminée mise à part (un voyage passé
-        // ne porte rien) : Annulé, Brouillon, En cours (ledger `MOB-139`, D1
-        // et D2).
+        // Les mêmes états que la sortie : Annulé, Brouillon, En cours,
+        // Terminée (ledger `MOB-139`, D1 et D2 ; règle R1, KIT §9).
         if (trip.status == 'CANCELLED')
           PdlBadge(
             label: 'status.cancelled'.tr(),
@@ -619,7 +650,18 @@ class _TripBody extends ConsumerWidget {
             label: 'teams.agenda.underWay'.tr(),
             tone: PdlDerivedTones.underWay(c),
             dot: true,
+          )
+        else if (trip.finished)
+          PdlBadge(
+            key: keys.feed.finishedBadge(trip.slug),
+            label: 'trips.finished'.tr(),
+            tone: PdlDerivedTones.done(c),
           ),
+        ...cardVisibilityBadges(
+          trip.visibility,
+          reference: trip.team.visibility,
+          key: keys.feed.visibilityBadge(trip.slug),
+        ),
         if (registered)
           PdlBadge(
             label: 'rides.registered'.tr(),
@@ -628,9 +670,11 @@ class _TripBody extends ConsumerWidget {
           ),
       ],
       social: _SocialLine(
-        // Le voyage embarque ses premiers participants (`participants`, vide
-        // sur une ligne de liste), la sortie un aperçu (`topParticipants`) ;
-        // la pastille « +N » se compte sur le total.
+        // Le voyage embarque ses premiers participants, la sortie un aperçu
+        // (`topParticipants`) ; la pastille « +N » se compte sur le total.
+        // Une personne hors de l'équipe reçoit une liste vide
+        // (`MemberNamesVisibility`, ledger `API-144`) : pas de grappe, le
+        // compte seul, dans la rangée de chiffres.
         people: trip.participants,
         count: trip.participantCount,
       ),
@@ -668,6 +712,24 @@ class _TripBody extends ConsumerWidget {
             ),
             icon: PdlIcons.elevationUp,
             trend: PdlStatTrend.up,
+          ),
+        // Le compte de l'API (`participantCount`), jamais la longueur d'une
+        // liste de noms : une personne non membre le voit aussi, sans les
+        // noms (règle R4, KIT §9 ; ledger `API-144`).
+        if (trip.participantCount > 0)
+          PdlStat(
+            key: keys.feed.tripParticipantCount(trip.slug),
+            value: 'rides.participants'.plural(
+              trip.participantCount,
+              namedArgs: <String, String>{'count': '${trip.participantCount}'},
+            ),
+            icon: PdlIcons.people,
+          ),
+        // Les commentaires s'il y en a ; absents pour qui ne peut pas les lire.
+        if (trip.commentCount != null && trip.commentCount! > 0)
+          PdlStat(
+            value: 'comments.count'.plural(trip.commentCount!),
+            icon: PdlIcons.comment,
           ),
       ],
     );

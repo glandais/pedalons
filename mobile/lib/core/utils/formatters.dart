@@ -572,6 +572,20 @@ class AppFormatters {
   static String formatDayMonth(DateTime date) =>
       DateFormat.MMMMd().format(toDisplayTime(date));
 
+  /// « 15 novembre », ou « 15 novembre 2027 » hors de l'année en cours :
+  /// l'année seulement quand elle n'est pas celle du lecteur (KIT §9, règle
+  /// R2 — « Météo dès le 15 novembre »). [now] pour les tests.
+  static String formatDayMonthInYear(DateTime date, {DateTime? now}) {
+    final DateTime wall = toDisplayTime(date);
+    final DateTime reference = now == null
+        ? displayNow()
+        : toDisplayTime(now.toUtc());
+    return (wall.year == reference.year
+            ? DateFormat.MMMMd()
+            : DateFormat.yMMMMd())
+        .format(wall);
+  }
+
   /// « lundi 15 janvier », « Monday, January 15 ».
   static String formatFullDate(DateTime date) =>
       DateFormat.MMMMEEEEd().format(toDisplayTime(date));

@@ -104,7 +104,8 @@ class RideWeatherSummaryLine extends StatelessWidget {
     if (WeatherStatus.fromJson(s.status) == WeatherStatus.notYetAvailable) {
       final String text = 'rides.weather.summaryAvailableFrom'.tr(
         namedArgs: <String, String>{
-          'date': AppFormatters.formatDayMonth(
+          // L'année seulement hors de l'année en cours (règle R2, KIT §9).
+          'date': AppFormatters.formatDayMonthInYear(
             DateTime.parse(s.availableFrom!),
           ),
         },

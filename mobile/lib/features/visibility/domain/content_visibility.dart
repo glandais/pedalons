@@ -57,3 +57,30 @@ Visibility defaultContentVisibilityOf(TeamDetailDto team) {
 /// ce qui est proposé.
 bool isPrivateTeam(TeamDetailDto team) =>
     team.visibility == Visibility.team.json;
+
+/// La visibilité qu'une **carte** badge, ou `null` : la règle R1 des cartes
+/// (KIT §9, docs/LEDGER_*.md MOB-139) — un badge signale une exception, et la
+/// visibilité n'en est une que lorsqu'elle **diffère de celle de son équipe**
+/// ([reference] : `team.visibility` de la ligne de liste).
+///
+/// Une sortie « Équipe uniquement » d'une équipe privée ne porte donc rien ;
+/// la même, lisible par lien (« Public », « Non répertorié »), porte sa
+/// visibilité ; une sortie « Équipe uniquement » d'une équipe publique aussi.
+///
+/// La carte d'une **équipe** passe sa propre visibilité contre la visibilité
+/// ordinaire d'une équipe, `PUBLIC` ([teamCardVisibility]) : seule une équipe
+/// privée se badge.
+///
+/// **Le seul endroit où cette règle s'écrit** : chaque carte l'appelle, aucune
+/// ne compare deux visibilités elle-même. Une valeur inconnue de cette version
+/// ne se badge pas : elle ne saurait pas la nommer.
+Visibility? cardVisibility(String visibility, {required String reference}) {
+  final Visibility v = Visibility.fromJson(visibility);
+  if (v == Visibility.$unknown) return null;
+  return v == Visibility.fromJson(reference) ? null : v;
+}
+
+/// [cardVisibility] pour la carte d'une équipe : « Équipe uniquement » sur une
+/// équipe privée, rien sur une équipe publique.
+Visibility? teamCardVisibility(String teamVisibility) =>
+    cardVisibility(teamVisibility, reference: Visibility.public.json!);

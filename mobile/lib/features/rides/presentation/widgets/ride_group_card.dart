@@ -169,8 +169,13 @@ class RideGroupCard extends StatelessWidget {
             const SizedBox(height: PdlSpacing.cardTight),
             _leaderRow(t, c),
           ],
-          const SizedBox(height: PdlSpacing.cardTight),
-          _participantsRow(context, c, t),
+          // Sans maximum et sans personne, pas de « 0 personne » : un
+          // compteur à zéro ne s'affiche pas (règle R4, KIT §9).
+          if (group.maxParticipants != null ||
+              group.countParticipants > 0) ...<Widget>[
+            const SizedBox(height: PdlSpacing.cardTight),
+            _participantsRow(context, c, t),
+          ],
           if (failure != null) ...<Widget>[
             const SizedBox(height: PdlSpacing.cardTight),
             failure!,

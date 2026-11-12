@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pdl_colors.dart';
@@ -408,4 +409,176 @@ void main() {
       findsNothing,
     );
   });
+
+  // ── Règles R1, R2, R4 (KIT §9, docs/LEDGER_*.md MOB-139) ──────────────
+
+  /// Les libellés des badges d'un cas, dans l'ordre de lecture.
+  List<String> badges(WidgetTester tester, String id) => <String>[
+    for (final PdlBadge b in tester.widgetList<PdlBadge>(
+      inCase(id, find.byType(PdlBadge)),
+    ))
+      b.label,
+  ];
+
+  testWidgets('R1 — un seul état, après le type ; « J’y vais » en dernier ; '
+      'jamais « Publié »', (WidgetTester tester) async {
+    await pumpSection(tester, 'fil');
+    expect(badges(tester, 'fil-sortie'), <String>['Sortie']);
+    expect(badges(tester, 'fil-sortie-inscrite'), <String>[
+      'Sortie',
+      "J'y vais",
+    ]);
+    expect(badges(tester, 'fil-sortie-annulee'), <String>['Sortie', 'Annulé']);
+    expect(badges(tester, 'fil-sortie-terminee'), <String>[
+      'Sortie',
+      'Terminée',
+    ]);
+    expect(badges(tester, 'fil-sortie-brouillon'), <String>[
+      'Sortie',
+      'Brouillon',
+    ]);
+    expect(badges(tester, 'fil-supprime').first, 'Supprimé');
+    expect(badges(tester, 'fil-voyage-inscrit-en-cours'), <String>[
+      'Voyage',
+      'En cours',
+      "J'y vais",
+    ]);
+    for (final GalleryCase c in gallerySection('fil')!.cases) {
+      expect(badges(tester, c.id), isNot(contains('Publié')), reason: c.id);
+    }
+  });
+
+  testWidgets('R1 — un voyage terminé porte « Terminé »', (
+    WidgetTester tester,
+  ) async {
+    await pumpSection(tester, 'fil');
+    expect(
+      inCase(
+        'fil-voyage-termine',
+        find.byKey(keys.feed.finishedBadge(kTripSlug)),
+      ),
+      findsOne,
+    );
+    expect(badges(tester, 'fil-voyage-termine'), <String>[
+      'Voyage',
+      'Terminé',
+    ]);
+  });
+
+  testWidgets('R1 — la visibilité ne se badge que si elle diffère de celle de '
+      'l’équipe', (WidgetTester tester) async {
+    await pumpSection(tester, 'fil');
+    // « Équipe uniquement » dans l'équipe privée : rien.
+    expect(
+      inCase('fil-sortie', find.byKey(keys.feed.visibilityBadge(kRideSlug))),
+      findsNothing,
+    );
+    // Lisible par lien dans l'équipe privée : « Public ».
+    expect(
+      inCase(
+        'fil-sortie-lien',
+        find.byKey(keys.feed.visibilityBadge('boucle-lien')),
+      ),
+      findsOne,
+    );
+    expect(badges(tester, 'fil-sortie-lien'), <String>['Sortie', 'Public']);
+    // Public dans une équipe publique : rien.
+    expect(
+      inCase(
+        'fil-voyage-non-membre',
+        find.byKey(keys.feed.visibilityBadge(kTripSlug)),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('R1 — « Équipe uniquement » sur la carte d’une équipe privée, '
+      'rien sur une équipe publique', (WidgetTester tester) async {
+    await pumpSection(tester, 'equipes');
+    expect(
+      inCase(
+        'equipe',
+        find.byKey(keys.teams.teamCardVisibility(GalleryData.vcm.slug)),
+      ),
+      findsOne,
+    );
+    expect(badges(tester, 'equipe'), <String>['Équipe uniquement', 'Membre']);
+    expect(
+      inCase(
+        'equipe-decouverte',
+        find.byKey(keys.teamsDiscover.cardVisibility(GalleryData.gravel.slug)),
+      ),
+      findsNothing,
+    );
+    expect(badges(tester, 'equipe-decouverte'), isNot(contains('Public')));
+  });
+
+  testWidgets('R1 — un parcours public de l’équipe privée garde « Public »', (
+    WidgetTester tester,
+  ) async {
+    await pumpSection(tester, 'parcours');
+    expect(
+      inCase('parcours', find.byKey(keys.routes.cardVisibility(kRouteSlug))),
+      findsOne,
+    );
+  });
+
+  testWidgets(
+    'R2 — « Météo dès le {date} » avant l’ouverture de la prévision',
+    (WidgetTester tester) async {
+      await pumpSection(tester, 'fil');
+      final Finder line = inCase(
+        'fil-sortie-meteo-a-venir',
+        find.byKey(keys.ride.weatherSummary),
+      );
+      expect(line, findsOne);
+      // Le premier texte est le glyphe de l'icône.
+      expect(_plain(texts(line).last), startsWith('Météo dès le '));
+    },
+  );
+
+  testWidgets('R4 — voyage : étapes · distance · D+ · personnes ; hors de '
+      'l’équipe le compte seul, sans grappe ni nom', (
+    WidgetTester tester,
+  ) async {
+    await pumpSection(tester, 'fil');
+    for (final String id in <String>['fil-voyage', 'fil-voyage-non-membre']) {
+      final Finder count = inCase(
+        id,
+        find.byKey(keys.feed.tripParticipantCount(kTripSlug)),
+      );
+      expect(count, findsOne, reason: id);
+      expect(_plain(texts(count).last), '12 personnes', reason: id);
+    }
+    expect(inCase('fil-voyage', find.byType(PdlAvatarStack)), findsOne);
+    expect(
+      inCase('fil-voyage-non-membre', find.byType(PdlAvatarStack)),
+      findsNothing,
+    );
+    for (final PublicUserDto p in GalleryData.people) {
+      expect(
+        inCase('fil-voyage-non-membre', find.textContaining(p.displayName)),
+        findsNothing,
+      );
+    }
+    // Aucun commentaire : pas de « 0 commentaire ».
+    expect(
+      texts(inCase('fil-voyage', find.byType(PdlStatRow))).join(' '),
+      isNot(contains('commentaire')),
+    );
+  });
+
+  testWidgets('R4 — aucun compteur à zéro sur les cartes du fil', (
+    WidgetTester tester,
+  ) async {
+    await pumpSection(tester, 'fil');
+    for (final GalleryCase c in gallerySection('fil')!.cases) {
+      final String all = texts(inCase(c.id, find.byType(PdlCard))).join(' | ');
+      expect(all, isNot(contains('Aucun')), reason: c.id);
+      expect(all, isNot(matches(RegExp(r'(^|\| )0\u00a0'))), reason: c.id);
+    }
+  });
 }
+
+/// Les espaces insécables (normale, fine) ramenées à l'espace ordinaire.
+String _plain(String s) => s.replaceAll(RegExp('[\u00a0\u202f]'), ' ');

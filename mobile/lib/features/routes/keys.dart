@@ -15,6 +15,11 @@ class RoutesKeys {
   ValueKey<String> cardTags(String routeSlug) =>
       _RoutesKey('cardTags_$routeSlug');
 
+  /// Le badge de visibilité d'une carte de parcours — posé seulement quand
+  /// elle diffère de celle de l'équipe (règle R1).
+  ValueKey<String> cardVisibility(String routeSlug) =>
+      _RoutesKey('cardVisibility_$routeSlug');
+
   /// L'état vide filtré, « cul-de-sac ».
   final emptyState = const _RoutesKey('emptyState');
 

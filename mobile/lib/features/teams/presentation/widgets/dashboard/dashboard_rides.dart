@@ -501,10 +501,13 @@ class DashboardRideCard extends ConsumerWidget {
                   icon: PdlIcons.elevationUp,
                   trend: PdlStatTrend.up,
                 ),
-              PdlStat(
-                value: 'rides.groupCount'.plural(ride.groupCount),
-                icon: PdlIcons.rideGroup,
-              ),
+              // Un compteur à zéro ne s'affiche pas — plus d'« Aucun
+              // groupe » (règle R4, KIT §9).
+              if (ride.groupCount > 0)
+                PdlStat(
+                  value: 'rides.groupCount'.plural(ride.groupCount),
+                  icon: PdlIcons.rideGroup,
+                ),
               if (ride.commentCount != null && ride.commentCount! > 0)
                 PdlStat(
                   value: 'comments.count'.plural(ride.commentCount!),
@@ -693,7 +696,11 @@ class _GroupFill extends StatelessWidget {
                 ),
               ),
             const SizedBox(width: PdlSpacing.chipGap),
-            if (group.full)
+            // Sans maximum et sans personne, rien : un compteur à zéro ne
+            // s'affiche pas (règle R4) ; « 0/12 » reste, il dit les places.
+            if (max == null && group.countParticipants == 0)
+              const SizedBox.shrink()
+            else if (group.full)
               PdlBadge(
                 label: 'rides.groupFull'.tr(),
                 // « Complet » est un état terminal (pas de liste d'attente) :

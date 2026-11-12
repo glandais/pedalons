@@ -11,6 +11,10 @@ class TeamsPageKeys {
   ValueKey<String> teamCard(String teamSlug) =>
       _TeamsPageKey('teamCard_$teamSlug');
 
+  /// « Équipe uniquement » sur la carte d'une équipe privée (règle R1).
+  ValueKey<String> teamCardVisibility(String teamSlug) =>
+      _TeamsPageKey('teamCardVisibility_$teamSlug');
+
   /// « Vous avez des invitations en attente », en tête de la liste.
   final pendingInvitationsCard = const _TeamsPageKey('pendingInvitations');
 
@@ -27,6 +31,10 @@ class TeamsDiscoverKeys {
   final searchField = const _TeamsDiscoverKey('searchField');
 
   ValueKey<String> card(String teamSlug) => _TeamsDiscoverKey('card_$teamSlug');
+
+  /// « Équipe uniquement » sur la carte d'une équipe privée (règle R1).
+  ValueKey<String> cardVisibility(String teamSlug) =>
+      _TeamsDiscoverKey('cardVisibility_$teamSlug');
 }
 
 class _TeamPageKey extends ValueKey<String> {

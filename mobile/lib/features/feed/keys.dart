@@ -19,6 +19,17 @@ class FeedKeys {
   /// Le badge « En cours » d'une sortie ou d'un voyage, par son slug.
   ValueKey<String> underWayBadge(String slug) => _FeedKey('underWay_$slug');
 
+  /// Le badge « Terminée » d'un voyage, par son slug.
+  ValueKey<String> finishedBadge(String slug) => _FeedKey('finished_$slug');
+
+  /// Le badge de visibilité d'une carte, par son slug — posé seulement quand
+  /// la visibilité diffère de celle de l'équipe (règle R1).
+  ValueKey<String> visibilityBadge(String slug) => _FeedKey('visibility_$slug');
+
+  /// Le compte de personnes d'une carte de voyage, par son slug (règle R4).
+  ValueKey<String> tripParticipantCount(String slug) =>
+      _FeedKey('tripParticipants_$slug');
+
   /// L'état vide absolu (« Rien à l'agenda pour le moment »).
   final emptyState = const _FeedKey('emptyState');
 

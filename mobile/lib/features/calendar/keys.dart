@@ -14,6 +14,10 @@ class CalendarKeys {
   ValueKey<String> agendaRegisteredBadge(String entitySlug) =>
       _CalendarKey('agendaRegisteredBadge_$entitySlug');
 
+  /// « Brouillon » sur une ligne de l'agenda (règle R1).
+  ValueKey<String> agendaDraftBadge(String entitySlug) =>
+      _CalendarKey('agendaDraftBadge_$entitySlug');
+
   final nextMonthButton = const _CalendarKey('nextMonthButton');
 
   /// Le bloc d'abonnement : copier, régénérer, et le bandeau d'issue.

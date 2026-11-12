@@ -13,6 +13,7 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../tags/presentation/content_tags.dart';
+import '../../../../core/widgets/deleted_badge.dart';
 
 /// La carte d'une annonce dans la liste de la rubrique.
 ///
@@ -93,6 +94,8 @@ class AdCard extends StatelessWidget {
                     // ils ne se badgent pas.
                     PdlBadgeStack(
                       badges: <Widget>[
+                        // Supprimé → type → état (règle R1, KIT §9).
+                        ...deletedBadgeFirst(ad.deleted),
                         PdlBadge(
                           label: 'ads.adType.${ad.adType}'.tr(),
                           tone: type.tone(c),

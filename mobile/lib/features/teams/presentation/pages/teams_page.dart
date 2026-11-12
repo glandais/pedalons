@@ -19,6 +19,7 @@ import '../widgets/pending_invitations_card.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../../keys.dart';
 import '../../../../core/utils/push_location.dart';
+import '../../../visibility/presentation/visibility_badge.dart';
 
 /// The teams the user belongs to.
 ///
@@ -253,6 +254,12 @@ class _TeamCard extends StatelessWidget {
                     PdlStat(
                       value: 'teams.membersList.count'.plural(team.memberCount),
                       icon: PdlIcons.people,
+                    ),
+                    // « Équipe uniquement » sur une équipe privée, rien sur
+                    // une équipe publique (règle R1, KIT §9).
+                    ...teamVisibilityBadges(
+                      team.visibility,
+                      key: keys.teams.teamCardVisibility(team.slug),
                     ),
                     if (role != null)
                       PdlBadge(

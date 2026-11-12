@@ -1,5 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/material.dart' hide Visibility;
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,6 +16,7 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/deleted_badge.dart';
 import '../../../tags/presentation/content_tags.dart';
+import '../../../visibility/presentation/visibility_badge.dart';
 import '../../../../core/widgets/team_banner.dart';
 
 /// La densité « vignettes » de la parcothèque — un bandeau média de 208 px,
@@ -128,24 +129,22 @@ List<PdlStat> routeStats(RouteDto route, UnitSystem units) => <PdlStat>[
 ];
 
 /// Revêtement puis visibilité, dans l'ordre du §1.2 (type → statut →
-/// visibilité) — précédés du badge « Supprimé » quand il y a lieu.
+/// visibilité) — précédés du badge « Supprimé » quand il y a lieu. La
+/// visibilité seulement quand elle diffère de celle de l'équipe (règle R1,
+/// KIT §9) : un parcours public d'une équipe privée la porte, un parcours
+/// « Équipe uniquement » de la même équipe non.
 List<Widget> routeBadges(BuildContext context, RouteDto route) {
   final SurfaceType surface = SurfaceType.fromJson(route.surfaceType);
-  final Visibility visibility = Visibility.fromJson(route.visibility);
   return <Widget>[
     ...deletedBadgeFirst(route.deleted),
     PdlBadge(
       label: 'routes.surfaceType.${route.surfaceType.toLowerCase()}'.tr(),
       tone: surface.tone(context.pdl),
     ),
-    PdlBadge(
-      label: 'visibility.${route.visibility.toLowerCase()}'.tr(),
-      tone: visibility.tone(context.pdl),
-      icon: switch (visibility) {
-        Visibility.public => PdlIcons.visibilityPublic,
-        Visibility.publicUnlisted => PdlIcons.visibilityUnlisted,
-        _ => PdlIcons.visibilityTeam,
-      },
+    ...cardVisibilityBadges(
+      route.visibility,
+      reference: route.team.visibility,
+      key: keys.routes.cardVisibility(route.slug),
     ),
   ];
 }

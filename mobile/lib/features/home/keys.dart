@@ -14,6 +14,10 @@ class HomeKeys {
   ValueKey<String> weekDraftBadge(String entitySlug) =>
       _HomeKey('weekDraft_$entitySlug');
 
+  /// Le badge « J'y vais » d'une ligne des « 7 prochains jours ».
+  ValueKey<String> weekRegisteredBadge(String entitySlug) =>
+      _HomeKey('weekRegistered_$entitySlug');
+
   /// « Se désinscrire » sur la carte « Ma prochaine sortie ».
   final nextRideLeaveButton = const _HomeKey('nextRideLeave');
 
@@ -33,6 +37,13 @@ class HomeKeys {
   final nextRideAvatars = const _HomeKey('nextRideAvatars');
   final nextRideCount = const _HomeKey('nextRideCount');
   final nextRideSeatsBar = const _HomeKey('nextRideSeatsBar');
+
+  /// La vignette du tracé, posée seulement quand le bandeau est une photo
+  /// (règle R10).
+  final nextRideTrackThumb = const _HomeKey('nextRideTrackThumb');
+
+  /// Les badges d'état de la carte (règle R1).
+  final nextRideBadges = const _HomeKey('nextRideBadges');
 
   /// Le bloc « Cette semaine ».
   final weekSection = const _HomeKey('weekSection');

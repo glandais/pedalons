@@ -181,6 +181,26 @@ class GalleryData {
     assets: AssetsDto(images: <AssetDto>[], attachments: <AssetDto>[]),
   );
 
+  /// Un contenu qui a une photo : sa première image est le bandeau de sa
+  /// carte (règle R10).
+  MediaDto photoMedia(String id) => images
+      ? MediaDto(
+          markdown: '',
+          assets: AssetsDto(
+            images: <AssetDto>[
+              AssetDto(
+                id: 'a-$id-photo',
+                fileName: 'photo.png',
+                contentType: 'image/png',
+                url: GalleryImageUrls.photo,
+                imageUrl: GalleryImageUrls.photo,
+              ),
+            ],
+            attachments: const <AssetDto>[],
+          ),
+        )
+      : emptyMedia;
+
   /// Ce que le serveur calcule pour une membre de l'équipe : s'inscrire,
   /// commenter, voir les noms ; rien à modifier.
   static const ContentPermissionsDto memberPermissions = ContentPermissionsDto(
@@ -204,7 +224,11 @@ class GalleryData {
     Visibility.public,
   ];
 
-  TeamDetailDto teamDetail({required bool clubDesMonts, String? role}) {
+  TeamDetailDto teamDetail({
+    required bool clubDesMonts,
+    String? role,
+    bool photo = false,
+  }) {
     final List<Visibility> v = clubDesMonts ? _teamOnly : _all;
     final TeamPublicationDto t = clubDesMonts ? vcm : gravel;
     return TeamDetailDto(
@@ -212,7 +236,7 @@ class GalleryData {
       id: t.id,
       name: t.name,
       slug: t.slug,
-      about: emptyMedia,
+      about: photo ? photoMedia(t.slug) : emptyMedia,
       visibility: t.visibility,
       enableTrips: true,
       enableAds: true,
@@ -288,6 +312,13 @@ class GalleryData {
             : null,
         timezone: kGalleryZone,
       );
+
+  /// La prévision pas encore ouverte : elle le sera à J+3 (une sortie à
+  /// J+10 sort de la fenêtre de sept jours).
+  RideWeatherSummaryDto weatherNotYet() => RideWeatherSummaryDto(
+    status: 'NOT_YET_AVAILABLE',
+    availableFrom: at(3, 0),
+  );
 
   WeatherLegDto _leg(RideGroupDto group) => WeatherLegDto(
     status: 'OK',
@@ -446,6 +477,9 @@ class GalleryData {
     bool allFull = false,
     bool withRoute = true,
     int? commentCount = 2,
+    String visibility = 'TEAM',
+    bool photo = false,
+    RideWeatherSummaryDto? weatherSummary,
   }) {
     final List<RideGroupDto> gs = withGroups
         ? groups(registeredIn: registeredIn, allFull: allFull)
@@ -460,7 +494,7 @@ class GalleryData {
       id: 'r-$slug',
       slug: slug,
       name: name,
-      media: emptyMedia,
+      media: photo ? photoMedia(slug) : emptyMedia,
       dateTime: start,
       timezone: kGalleryZone,
       endDateTime:
@@ -471,7 +505,7 @@ class GalleryData {
               .toIso8601String(),
       status: status,
       finished: finished,
-      visibility: 'TEAM',
+      visibility: visibility,
       team: vcm,
       participantCount: gs.fold<int>(
         0,
@@ -511,7 +545,7 @@ class GalleryData {
       thumbnailUrl: routed ? _img(GalleryImageUrls.mapLight) : null,
       commentCount: commentCount,
       excerpt: 'Trois groupes, trois allures, un café à l’arrivée au Roc’h Trévézel.',
-      weather: rainAlert ? weather(rainAlert: true) : weather(),
+      weather: weatherSummary ?? weather(rainAlert: rainAlert),
     );
   }
 
@@ -575,16 +609,35 @@ class GalleryData {
   // ─────────────────────────────────────────────────────────────── voyages
 
   /// « Traversée du Morvan », J+10 → J+12, départ 08:30, 12 personnes.
+  ///
+  /// [finished] : le voyage d'il y a deux semaines, rentré. [outsider] : vu
+  /// par une personne hors de l'équipe — un voyage public de Gravel Bretagne,
+  /// sans aucun nom ni compte de commentaires (`MemberNamesVisibility`,
+  /// ledger `API-144`), le compte de personnes seul.
   PublicationDtoTrip feedTrip({
     String status = 'PUBLISHED',
     bool underWay = false,
     bool registered = false,
+    bool finished = false,
+    bool outsider = false,
   }) {
-    final String start = underWay ? at(-1, 8, 30) : at(10, 8, 30);
-    final String lastStage = underWay ? at(1, 9) : at(12, 9);
-    final String end = underWay ? at(1, 16) : at(12, 16);
+    final String start = underWay
+        ? at(-1, 8, 30)
+        : finished
+        ? at(-16, 8, 30)
+        : at(10, 8, 30);
+    final String lastStage = underWay
+        ? at(1, 9)
+        : finished
+        ? at(-14, 9)
+        : at(12, 9);
+    final String end = underWay
+        ? at(1, 16)
+        : finished
+        ? at(-14, 16)
+        : at(12, 16);
     return PublicationDtoTrip(
-      team: vcm,
+      team: outsider ? gravel : vcm,
       id: 'trip-$kTripSlug',
       slug: kTripSlug,
       name: kTripName,
@@ -595,28 +648,30 @@ class GalleryData {
       endDate: lastStage,
       status: status,
       // Terminé une fois la dernière étape commencée (ledger `API-16`).
-      finished: false,
-      visibility: 'TEAM',
+      finished: finished,
+      visibility: outsider ? 'PUBLIC' : 'TEAM',
       participantCount: 12,
       stageCount: 3,
       stages: const <TripStageDto>[],
-      participants: <PublicUserDto>[
-        if (registered) camille,
-        lea,
-        karim,
-        sacha,
-        jeanne,
-      ],
+      participants: outsider
+          ? const <PublicUserDto>[]
+          : <PublicUserDto>[if (registered) camille, lea, karim, sacha, jeanne],
       deleted: false,
       registered: registered,
       tags: const <TagDto>[],
-      permissions: memberPermissions,
+      permissions: outsider
+          ? memberPermissions.copyWith(
+              canRegister: false,
+              canComment: false,
+              canSeeParticipants: false,
+            )
+          : memberPermissions,
       excerpt: 'Trois jours d’Autun à Avallon, par les lacs et les crêtes.',
       totalDistance: 201000,
       totalElevationGain: 3340,
       thumbnailLightUrl: _img(GalleryImageUrls.mapLight),
       thumbnailDarkUrl: _img(GalleryImageUrls.mapDark),
-      commentCount: 0,
+      commentCount: outsider ? null : 0,
     );
   }
 

@@ -215,24 +215,27 @@ class WeekAgendaRow extends StatelessWidget {
                   Wrap(
                     spacing: PdlSpacing.badgeGap,
                     runSpacing: PdlSpacing.badgeGap,
+                    // L'ordre des cartes (règle R1, KIT §9) : un état,
+                    // puis J'y vais.
                     children: <Widget>[
-                      if (event.registered)
-                        PdlBadge(
-                          label: 'rides.registered'.tr(),
-                          icon: PdlIcons.check,
-                          tone: PdlDerivedTones.registered(c),
-                        ),
                       if (cancelled)
                         PdlBadge(
                           label: 'calendar.cancelled'.tr(),
                           icon: PdlIcons.cancelled,
                           tone: Status.cancelled.tone(c),
-                        ),
-                      if (draft)
+                        )
+                      else if (draft)
                         PdlBadge(
                           key: keys.home.weekDraftBadge(event.entitySlug),
                           label: 'status.draft'.tr(),
                           tone: Status.draft.tone(c),
+                        ),
+                      if (event.registered)
+                        PdlBadge(
+                          key: keys.home.weekRegisteredBadge(event.entitySlug),
+                          label: 'rides.registered'.tr(),
+                          icon: PdlIcons.check,
+                          tone: PdlDerivedTones.registered(c),
                         ),
                     ],
                   ),

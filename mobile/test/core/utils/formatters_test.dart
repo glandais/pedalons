@@ -520,6 +520,45 @@ void main() {
       );
     });
 
+    test('R2 — « 15 novembre », l’année seulement hors de l’année en cours '
+        '(« Météo dès le … », KIT §9)', () {
+      final DateTime now = DateTime.utc(2026, 11, 12, 10);
+      final DateTime sameYear = DateTime.utc(2026, 11, 15, 10);
+      final DateTime nextYear = DateTime.utc(2027, 1, 3, 10);
+      expect(
+        withLocale(
+          'fr',
+          fr,
+          () => AppFormatters.formatDayMonthInYear(sameYear, now: now),
+        ),
+        '15 novembre',
+      );
+      expect(
+        withLocale(
+          'fr',
+          fr,
+          () => AppFormatters.formatDayMonthInYear(nextYear, now: now),
+        ),
+        '3 janvier 2027',
+      );
+      expect(
+        withLocale(
+          'en',
+          en,
+          () => AppFormatters.formatDayMonthInYear(sameYear, now: now),
+        ),
+        'November 15',
+      );
+      expect(
+        withLocale(
+          'en',
+          en,
+          () => AppFormatters.formatDayMonthInYear(nextYear, now: now),
+        ),
+        'January 3, 2027',
+      );
+    });
+
     test('un instant UTC est ramené au fuseau de l’appareil', () {
       final DateTime utc = DateTime.utc(2026, 1, 15, 8, 30);
       expect(
