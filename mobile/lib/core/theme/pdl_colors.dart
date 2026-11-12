@@ -247,8 +247,11 @@ class PdlColors extends ThemeExtension<PdlColors> {
     softIndigo,
   ];
 
-  /// Les douze teintes servant à colorer un avatar par hachage de son nom.
-  /// L'utilisateur courant n'y passe jamais : il est toujours [primary].
+  /// Les onze teintes servant à colorer un avatar par hachage de son nom.
+  /// L'utilisateur courant n'y passe jamais : il est toujours [primary], et
+  /// l'indigo (`#3b5bdb`, nuance 8) lui est réservé — il a quitté la table le
+  /// 2026-11-12 (KIT §9), pour qu'aucune autre personne ne porte la couleur de
+  /// celle qui lit.
   ///
   /// **Des teintes foncées, les mêmes dans les deux thèmes** (règle R5 des
   /// cartes, KIT §8 et §9, docs/LEDGER_*.md MOB-139) : les initiales sont
@@ -262,10 +265,9 @@ class PdlColors extends ThemeExtension<PdlColors> {
   /// **L'ordre compte** : c'est lui que le hachage indexe, et le site le
   /// recopie valeur pour valeur (`frontend/src/lib/avatarTint.ts`) pour
   /// qu'une personne ait la même couleur sur les deux supports. Il est choisi
-  /// pour que les personnes des maquettes portent celles de KIT §8 — Léa
-  /// Martin en orange, Karim Benali en bleu, Noé Perrin en vert (Inès Roche,
-  /// au même indice que Karim, ne peut pas avoir le raisin) —, les trois
-  /// verts (turquoise, citron, vert) écartés les uns des autres.
+  /// pour que les trois verts (turquoise, citron, vert) restent écartés les
+  /// uns des autres ; le retrait de l'indigo a gardé l'ordre relatif des onze
+  /// autres (il change l'indice que le hachage donne à chacun).
   List<Color> get avatarAccents => _avatarTints;
 
   static const List<Color> _avatarTints = <Color>[
@@ -280,7 +282,6 @@ class PdlColors extends ThemeExtension<PdlColors> {
     // plus foncé, hors palette, garde la famille.
     Color(0xFFA16207), // ocre (jaune foncé) — 4,9:1
     Color(0xFFC92A2A), // rouge 9 — 5,5:1
-    Color(0xFF3B5BDB), // indigo 8 — 5,7:1
     Color(0xFF2F9E44), // vert 8 — 3,5:1
     Color(0xFFE8590C), // orange 8 — 3,6:1
   ];

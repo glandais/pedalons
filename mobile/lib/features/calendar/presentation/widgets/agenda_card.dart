@@ -16,6 +16,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../keys.dart';
 import '../../../rides/presentation/widgets/ride_display_stats.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../rides/presentation/widgets/ride_meta_line.dart';
 
 /// La couleur d'un événement de calendrier.
 ///
@@ -108,15 +109,11 @@ class AgendaCard extends ConsumerWidget {
     final Color accent = calendarEventColor(c, event.type);
 
     // La première ligne de toutes les cartes de sortie, celle des 7 prochains
-    // jours (règle R11, KIT §9) : « 09:30 · Vélo Club des Monts · B ». L'heure
+    // jours (règle R11, KIT §9) : « 09:30 · Vélo Club des Monts · Groupe B ». L'heure
     // en tête et en gras (ledger `MOB-115`, BRANDING §7.8), jamais tronquée ;
-    // le groupe rejoint seulement quand la personne est inscrite.
+    // le groupe rejoint seulement quand la personne est inscrite, en
+    // « Groupe B » (`groupLabel`) ; c'est l'équipe qui cède.
     final String? time = event.allDay ? null : AppFormatters.formatTime(_start);
-    final String meta = <String>[
-      event.teamName,
-      if (event.groupName != null && event.groupName!.isNotEmpty)
-        event.groupName!,
-    ].join(' · ');
     // Le lieu sur sa propre ligne, nom seul : derrière l'équipe, c'était lui
     // que l'ellipse mangeait (« Place de la Mai… »).
     final String? place =
@@ -175,29 +172,16 @@ class AgendaCard extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Row(
-                      children: <Widget>[
-                        if (time != null) ...<Widget>[
-                          Text(
-                            time,
-                            maxLines: 1,
-                            softWrap: false,
-                            style: t.sub.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: c.text,
-                            ),
-                          ),
-                          if (meta.isNotEmpty) Text(' · ', style: t.sub),
-                        ],
-                        Expanded(
-                          child: Text(
-                            meta,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: t.sub,
-                          ),
-                        ),
-                      ],
+                    RideMetaLine(
+                      key: keys.calendar.agendaMeta(event.entitySlug),
+                      time: time,
+                      timeStyle: t.sub.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: c.text,
+                      ),
+                      teamName: event.teamName,
+                      groupName: event.groupName,
+                      style: t.sub,
                     ),
                     if (!event.allDay)
                       ?ZoneMentionLine.maybe(event.start, event.timezone),

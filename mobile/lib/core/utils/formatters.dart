@@ -19,9 +19,12 @@ import 'zone_label.dart';
 ///
 /// * **espace insécable** (U+00A0) entre la valeur et son unité — « 46,3 km »
 ///   ne se coupe jamais en fin de ligne ;
-/// * **espace fine insécable** (U+202F) comme séparateur de milliers, ce que
-///   `NumberFormat.decimalPattern('fr')` produit déjà : on ne la fabrique pas
-///   à la main, on se contente de ne pas la casser ;
+/// * **espace insécable normale** (U+00A0) comme séparateur de milliers —
+///   « 1 240 m », « 1 200,00 € ». `NumberFormat` du français produit l'espace
+///   fine (U+202F), illisible en gras sur une carte : [_groupingSpace] la
+///   remplace à la sortie de chaque nombre et de chaque prix (décision du
+///   2026-11-12, KIT §9). Les heures anglaises (« 6:30 PM ») ne passent pas
+///   par là et gardent l'espace de CLDR ;
 /// * la locale est celle d'`Intl` — les tests peuvent donc la fixer avec
 ///   `Intl.withLocale`, et rien n'est mis en cache au-delà de sa locale.
 ///
@@ -37,8 +40,14 @@ class AppFormatters {
   /// Espace insécable, entre une valeur et son unité.
   static const String nbsp = ' ';
 
-  /// Espace fine insécable, séparateur de milliers du français.
+  /// Espace fine insécable : ce que `NumberFormat` du français met entre les
+  /// milliers, et que l'app n'affiche plus (voir [_groupingSpace]).
   static const String narrowNbsp = ' ';
+
+  /// Séparateur de milliers affiché : l'espace insécable normale, comme
+  /// devant l'unité (décision du 2026-11-12, KIT §9).
+  static String _groupingSpace(String formatted) =>
+      formatted.replaceAll(narrowNbsp, nbsp);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Nombres
@@ -63,7 +72,7 @@ class AppFormatters {
 
   /// Nombre seul, sans unité.
   static String formatNumber(num value, {int fractionDigits = 0}) =>
-      _decimal(fractionDigits).format(value);
+      _groupingSpace(_decimal(fractionDigits).format(value));
 
   /// Assemble une valeur et son unité avec l'espace insécable qui les lie.
   static String withUnit(String value, String symbol) => '$value$nbsp$symbol';
@@ -220,16 +229,18 @@ class AppFormatters {
   /// [_decimal].
   static String formatAmount(num price) {
     final String locale = Intl.getCurrentLocale();
-    return _currencyCache
-        .putIfAbsent(
-          locale,
-          () => NumberFormat.currency(
-            locale: locale,
-            symbol: '€',
-            decimalDigits: 2,
-          ),
-        )
-        .format(price);
+    return _groupingSpace(
+      _currencyCache
+          .putIfAbsent(
+            locale,
+            () => NumberFormat.currency(
+              locale: locale,
+              symbol: '€',
+              decimalDigits: 2,
+            ),
+          )
+          .format(price),
+    );
   }
 
   /// Le prix d'une annonce, décomposé pour l'affichage.

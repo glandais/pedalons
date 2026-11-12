@@ -16,6 +16,7 @@ import '../../../routes/presentation/widgets/gps_button.dart';
 import 'ride_group_participants_section.dart' show RideGroupLeaveLink;
 import 'ride_group_weather_line.dart';
 import '../../../../keys.dart';
+import '../../domain/group_title.dart';
 
 /// La carte d'un groupe de sortie — **le choix de groupe lui-même** (ledger
 /// `MOB-134`, lot 8, KIT §8, maquettes `sortie-groupes-meme-heure-mobile-cible`,
@@ -196,7 +197,7 @@ class RideGroupCard extends StatelessWidget {
             PdlButton(
               key: keys.ride.groupSwitchButton(group.id),
               label: 'rides.groupSwitchTo'.tr(
-                namedArgs: <String, String>{'group': group.name},
+                namedArgs: <String, String>{'group': groupLabel(group.name)},
               ),
               loadingLabel: 'rides.joining'.tr(),
               fullWidth: true,
@@ -230,7 +231,7 @@ class RideGroupCard extends StatelessWidget {
             children: <Widget>[
               Flexible(
                 child: Text(
-                  group.name,
+                  groupLabel(group.name),
                   style: t.cardTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

@@ -14,6 +14,10 @@ class HomeKeys {
   ValueKey<String> weekDraftBadge(String entitySlug) =>
       _HomeKey('weekDraft_$entitySlug');
 
+  /// La ligne heure · équipe · groupe d'une ligne des « 7 prochains jours ».
+  ValueKey<String> weekMeta(String entitySlug) =>
+      _HomeKey('weekMeta_$entitySlug');
+
   /// Le badge « J'y vais » d'une ligne des « 7 prochains jours ».
   ValueKey<String> weekRegisteredBadge(String entitySlug) =>
       _HomeKey('weekRegistered_$entitySlug');

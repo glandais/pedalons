@@ -33,6 +33,7 @@ import '../../providers/ride_group_selection_provider.dart';
 import '../../../routes/domain/track_surfaces.dart';
 import '../../providers/ride_registration_controller.dart';
 import '../../providers/ride_scroll_target_provider.dart';
+import '../../domain/group_title.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
 import '../../domain/solo_group.dart';
@@ -819,7 +820,7 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
               if (mine != null)
                 PdlBadge(
                   label: 'rides.registeredIn'.tr(
-                    namedArgs: <String, String>{'group': mine.name},
+                    namedArgs: <String, String>{'group': groupLabel(mine.name)},
                   ),
                   tone: PdlDerivedTones.registered(c),
                   icon: PdlIcons.check,

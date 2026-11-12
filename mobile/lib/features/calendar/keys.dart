@@ -14,6 +14,10 @@ class CalendarKeys {
   ValueKey<String> agendaPlace(String entitySlug) =>
       _CalendarKey('agendaPlace_$entitySlug');
 
+  /// La première ligne d'une carte d'agenda : heure · équipe · groupe.
+  ValueKey<String> agendaMeta(String entitySlug) =>
+      _CalendarKey('agendaMeta_$entitySlug');
+
   /// Le badge « J'y vais » d’une carte d’agenda.
   ValueKey<String> agendaRegisteredBadge(String entitySlug) =>
       _CalendarKey('agendaRegisteredBadge_$entitySlug');

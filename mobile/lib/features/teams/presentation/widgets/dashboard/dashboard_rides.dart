@@ -24,6 +24,7 @@ import '../../../../../core/widgets/day_box.dart';
 import '../../../../../core/widgets/zone_mention_line.dart';
 import '../../../../rides/domain/group_start.dart';
 import '../../../domain/publication_timing.dart';
+import '../../../../rides/domain/group_title.dart';
 
 /// Une inscription faite dans l'app depuis le chargement du tableau de bord
 /// l'emporte sur la ligne chargée avant elle — même règle que le fil.
@@ -134,8 +135,12 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow>
 
     // La ligne ne porte pas les fichiers du parcours : la feuille n'offre ici
     // que l'envoi vers un appareil, et le bouton n'apparaît qu'avec un
-    // service connecté, comme avant elle.
-    final bool canSend = routeSlug != null && watchGpsServices().isNotEmpty;
+    // service connecté, comme avant elle. Jamais sur une sortie annulée :
+    // aucun contrôle sur sa carte (décision du 2026-11-12, KIT §9).
+    final bool canSend =
+        routeSlug != null &&
+        p.status != 'CANCELLED' &&
+        watchGpsServices().isNotEmpty;
 
     return PdlCard(
       onTap: () => context.push(path),
@@ -630,7 +635,7 @@ class _GroupFill extends StatelessWidget {
         // « 8/12 », la forme du compte partout ailleurs (règle R5, KIT §9).
         : '${group.countParticipants}/$max';
     final String label = <String>[
-      group.name,
+      groupLabel(group.name),
       if (group.averageSpeed != null)
         AppFormatters.formatSpeed(group.averageSpeed!, units),
     ].join(' · ');

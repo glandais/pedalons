@@ -13,6 +13,7 @@ import '../../../../../core/utils/formatters.dart';
 import '../../../../../keys.dart';
 import '../../team_web_paths.dart';
 import 'dashboard_section.dart';
+import '../../../../rides/domain/group_title.dart';
 
 /// « À traiter » : ce qui attend un organisateur — brouillons, sorties sans
 /// parcours, groupes complets, signalements.
@@ -139,7 +140,7 @@ class DashboardTodo extends StatelessWidget {
           : 'teams.dashboard.todo.fullGroupLine'.plural(
               group.countParticipants,
               namedArgs: <String, String>{
-                'group': group.name,
+                'group': groupLabel(group.name),
                 'ride': ride.name,
                 'count': '${group.countParticipants}',
                 'max': '${group.maxParticipants}',

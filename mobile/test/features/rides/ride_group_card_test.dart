@@ -513,7 +513,10 @@ void main() {
       final Finder button = find.byKey(keys.ride.groupSwitchButton('g2'));
       expect(button, findsOneWidget);
       expect(
-        find.descendant(of: button, matching: find.text('Changer pour A')),
+        find.descendant(
+          of: button,
+          matching: find.text('Changer pour Groupe A'),
+        ),
         findsOneWidget,
       );
       expect(tester.widget<PdlButton>(button).variant, PdlButtonVariant.fill);

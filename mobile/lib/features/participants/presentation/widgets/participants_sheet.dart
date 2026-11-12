@@ -10,6 +10,7 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../keys.dart';
 import '../../domain/participant_query.dart';
 import 'participant_list_view.dart';
+import '../../../rides/domain/group_title.dart';
 
 /// La feuille « Participants » d'un groupe de sortie, d'une sortie entière ou
 /// d'un voyage.
@@ -62,7 +63,7 @@ class ParticipantsSheet extends ConsumerStatefulWidget {
     return PdlSheet.show<void>(
       context: context,
       builder: (BuildContext _) => ParticipantsSheet(
-        subtitle: group.name,
+        subtitle: groupLabel(group.name),
         source: RideParticipantSource(
           teamSlug: ride.team.slug,
           rideSlug: ride.slug,

@@ -117,7 +117,7 @@ class NextRideCard extends ConsumerWidget {
             tone: PdlBannerTone.danger,
             title: 'rides.failure.generic'.tr(
               namedArgs: <String, String>{
-                'group': registration.failure!.groupName,
+                'group': groupLabel(registration.failure!.groupName),
               },
             ),
             message: registration.failure!.message,
@@ -535,7 +535,7 @@ class _NextRideActionsState extends ConsumerState<_NextRideActions>
       GpsExportTarget(
         subtitle: joined == null
             ? ride.name
-            : '${groupTitle(joined.name, 'rides.groupPage.title'.tr())}'
+            : '${groupLabel(joined.name)}'
                   ' · ${ride.name}',
         teamSlug: ride.team.slug,
         routeSlug: routeSlug,

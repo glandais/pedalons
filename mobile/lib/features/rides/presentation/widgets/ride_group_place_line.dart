@@ -1,4 +1,3 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/pdl_colors.dart';
@@ -36,9 +35,7 @@ class RideGroupPlaceLine extends StatelessWidget {
   /// Le texte de la ligne, tel qu'un lecteur d'écran le lit.
   String get label => <String>[?_groupTitle, ?placeName].join(' · ');
 
-  String? get _groupTitle => groupName == null
-      ? null
-      : groupTitle(groupName!, 'rides.groupPage.title'.tr());
+  String? get _groupTitle => groupName == null ? null : groupLabel(groupName!);
 
   @override
   Widget build(BuildContext context) {

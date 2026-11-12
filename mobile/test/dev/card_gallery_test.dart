@@ -123,7 +123,7 @@ const Map<String, List<String>> _cahier = <String, List<String>>{
 /// données doit apparaître, preuve qu'ils ne sont restés ni en chargement ni en
 /// erreur.
 const Map<String, String> _loaded = <String, String>{
-  'groupes-inscrite-b': 'Changer pour A',
+  'groupes-inscrite-b': 'Changer pour Groupe A',
   'semaine': 'Sortie récupération',
   'mes-equipes': 'Gravel Bretagne',
   'usages': 'Traversée du Morvan',

@@ -11,6 +11,7 @@ import '../../../teams/domain/publication_timing.dart';
 import '../../domain/ride_group_action.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_registration_controller.dart';
+import '../../domain/group_title.dart';
 
 /// Ce que le contrôle d'inscription montre pour [group] (ledger `MOB-134`,
 /// KIT §8, maquettes `groupe-mobile-cible`, `groupe-inscrit-mobile-cible`).
@@ -179,7 +180,7 @@ class RideRegistrationControl extends ConsumerWidget {
       RideGroupAction.switchTo => PdlButton(
         key: keys.rideGroup.switchButton,
         label: 'rides.groupSwitchTo'.tr(
-          namedArgs: <String, String>{'group': group.name},
+          namedArgs: <String, String>{'group': groupLabel(group.name)},
         ),
         loadingLabel: 'rides.joining'.tr(),
         variant: PdlButtonVariant.outline,

@@ -17,6 +17,7 @@ import '../../../profile/presentation/widgets/confirm_sheet.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../data/comment_repository.dart';
 import '../../providers/comment_thread_provider.dart';
+import 'comment_text.dart';
 import '../../../../keys.dart';
 
 /// Le fil de commentaires — un niveau de réponse, pas deux.
@@ -296,9 +297,11 @@ class _CommentThreadState extends ConsumerState<CommentThread> {
               // rendu Markdown (règle R12, KIT §9) : la saisie ne le propose
               // pas, et un `**gras**` rendu change ce que la personne a écrit
               // — comme un lien `[texte](adresse)` y cacherait son adresse.
-              Text(
+              // Seule une adresse complète devient un lien, affichée en
+              // entier (décision du 2026-11-12, KIT §9).
+              CommentText(
                 comment.content,
-                key: keys.comments.content(comment.id),
+                textKey: keys.comments.content(comment.id),
                 style: t.body,
               ),
               if (widget.canComment && !isReply)

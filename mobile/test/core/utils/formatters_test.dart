@@ -135,7 +135,7 @@ void main() {
   });
 
   group('formatElevation', () {
-    test('9 840 m se séparent par une espace fine insécable', () {
+    test('9 840 m se séparent par une espace insécable normale', () {
       final String value = withLocale(
         'fr',
         fr,
@@ -143,15 +143,26 @@ void main() {
       );
       expect(
         value,
-        '9${String.fromCharCode(narrowNbsp)}840${String.fromCharCode(nbsp)}m',
+        '9${String.fromCharCode(nbsp)}840${String.fromCharCode(nbsp)}m',
       );
-      // Le séparateur de milliers du français est U+202F, pas U+0020 ni
-      // U+00A0 : on assert sur le point de code, l'œil ne les distingue pas.
-      expect(value.runes.elementAt(1), narrowNbsp);
+      // Le séparateur de milliers est U+00A0 (décision du 2026-11-12, KIT §9),
+      // ni U+0020 ni l'espace fine U+202F que produit `intl` : on assert sur
+      // le point de code, l'œil ne les distingue pas.
+      expect(value.runes.elementAt(1), nbsp);
       expect(value.runes.elementAt(1), isNot(0x20));
-      expect(value.runes.elementAt(1), isNot(nbsp));
-      // Et l'espace avant l'unité, lui, reste une insécable pleine.
+      expect(value.runes.elementAt(1), isNot(narrowNbsp));
+      // Et l'espace avant l'unité est la même insécable.
       expect(value.runes.elementAt(5), nbsp);
+    });
+
+    test('un prix sépare ses milliers par la même insécable', () {
+      final String value = withLocale(
+        'fr',
+        fr,
+        () => AppFormatters.formatAmount(1200),
+      );
+      expect(value, '1\u00a0200,00\u00a0€');
+      expect(value.runes, isNot(contains(narrowNbsp)));
     });
 
     test('en anglais le séparateur est une virgule', () {
@@ -175,7 +186,7 @@ void main() {
     test('D+ porte son suffixe traduit', () {
       expect(
         withLocale('fr', fr, () => AppFormatters.formatElevationGain(1200)),
-        '1${String.fromCharCode(narrowNbsp)}200${String.fromCharCode(nbsp)}m D+',
+        '1${String.fromCharCode(nbsp)}200${String.fromCharCode(nbsp)}m D+',
       );
       expect(
         withLocale('en', en, () => AppFormatters.formatElevationGain(1200)),
@@ -316,7 +327,7 @@ void main() {
       // D26 (docs/LEDGER_*.md MOB-139) : plus de `fr_FR` imposé.
       expect(
         withLocale('fr', fr, () => AppFormatters.formatAmount(1200)),
-        '1 200,00 €',
+        '1 200,00 €',
       );
       expect(
         withLocale('en', en, () => AppFormatters.formatAmount(1200)),
@@ -343,7 +354,7 @@ void main() {
         () => AppFormatters.formatPrice(1200),
       );
       expect(price.period, isNull);
-      expect(price.flat, '1 200,00 €');
+      expect(price.flat, '1 200,00 €');
     });
 
     test('un prix absent se dit « Prix à négocier », jamais un tiret', () {

@@ -803,7 +803,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Groupe Cool'), findsOneWidget);
+      expect(find.text('Cool'), findsOneWidget);
       expect(find.byKey(keys.rideGroup.goingBadge), findsOneWidget);
       expect(find.byKey(keys.rideGroup.leaveButton), findsOneWidget);
       expect(container.read(selectedRideGroupProvider(key)), 'g2');
@@ -876,6 +876,36 @@ void main() {
       // météo (API-170).
       expect(repository.weatherCalls, 1);
       expect(find.byKey(keys.ride.weatherSection), findsOneWidget);
+    });
+
+    testWidgets('la sortie terminée, inscrit : « Quitter le groupe » reste sur '
+        'la page du groupe (décision du 2026-11-12)', (
+      WidgetTester tester,
+    ) async {
+      // Départ le 11 à 06:00, arrivée estimée à 09:00 ; on lit le soir, la
+      // sortie est finie. La page garde « Quitter » pour corriger qui est
+      // venu ; les cartes, elles, ne le proposent plus.
+      await open(
+        tester,
+        weather(),
+        now: DateTime.utc(2026, 10, 11, 20),
+        ride: fixtureRide(
+          dateTime: '2026-10-11T06:00:00Z',
+          registered: true,
+          registeredGroupId: 'g1',
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', registered: true),
+            fixtureGroup(id: 'g2', name: 'Cool', sortOrder: 1),
+          ],
+        ),
+      );
+
+      expect(
+        inParticipants(find.byKey(keys.rideGroup.leaveButton)),
+        findsOneWidget,
+      );
+      expect(find.text('Quitter le groupe'), findsOneWidget);
+      expect(find.byKey(keys.rideGroup.joinButton), findsNothing);
     });
 
     testWidgets('un groupe parti, pas inscrit : ni « Rejoindre » ni « Changer '
@@ -1187,7 +1217,7 @@ void main() {
       await tester.pump();
 
       expect(container.read(selectedRideGroupProvider(key)), 'g2');
-      expect(find.text('Groupe Cool'), findsOneWidget);
+      expect(find.text('Cool'), findsOneWidget);
       expect(find.textContaining('Pluie probable'), findsNothing);
       expect(find.textContaining('vitesse par défaut'), findsOneWidget);
       expect(find.text('TRAVERS'), findsOneWidget);

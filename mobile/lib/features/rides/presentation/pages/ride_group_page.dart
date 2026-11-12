@@ -304,7 +304,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  groupTitle(group.name, 'rides.groupPage.title'.tr()),
+                  groupLabel(group.name),
                   style: t.barTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -324,7 +324,7 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
             semanticLabel: 'rides.groupPage.share'.tr(),
             onPressed: () => shareAppLink(
               context,
-              title: '${group.name} · ${ride.name}',
+              title: '${groupLabel(group.name)} · ${ride.name}',
               path: Paths.rideGroup(ride.team.slug, ride.slug, group.id),
             ),
           ),

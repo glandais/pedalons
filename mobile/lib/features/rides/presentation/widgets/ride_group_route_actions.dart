@@ -1,5 +1,3 @@
-import 'package:easy_localization/easy_localization.dart';
-
 import '../../../../api/generated/export.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../routes/presentation/gps_export_runner.dart';
@@ -8,7 +6,7 @@ import '../../domain/group_title.dart';
 /// Le sous-titre de la feuille GPS d'un groupe : « Groupe B · 78,0 km », le
 /// nom seul quand la distance n'est pas connue.
 String gpsSubtitleOfGroup(RideGroupDto group, UnitSystem units) {
-  final String title = groupTitle(group.name, 'rides.groupPage.title'.tr());
+  final String title = groupLabel(group.name);
   final double? distance = group.distance;
   return distance == null
       ? title

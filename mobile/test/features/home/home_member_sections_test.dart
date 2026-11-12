@@ -155,8 +155,19 @@ void main() {
         ],
       );
 
-      expect(find.text('18:30 · VC Craponne · Groupe A'), findsOneWidget);
-      expect(find.text('18:30 · VC Craponne'), findsOneWidget);
+      // La ligne est faite de morceaux (l'équipe cède, pas le groupe) :
+      // on la relit bout à bout.
+      String line(String slug) => tester
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byKey(keys.home.weekMeta(slug)),
+              matching: find.byType(Text),
+            ),
+          )
+          .map((Text t) => t.data ?? t.textSpan!.toPlainText())
+          .join();
+      expect(line('mardi-soir'), '18:30 · VC Craponne · Groupe A');
+      expect(line('jeudi'), '18:30 · VC Craponne');
     });
 
     testWidgets('ne répète pas la sortie que « Ma prochaine sortie » montre', (

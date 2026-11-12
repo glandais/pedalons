@@ -5,7 +5,7 @@ import '../widgets/authenticated_image.dart';
 
 /// A4 — Avatar rond : photo authentifiée, sinon initiales sur un aplat.
 ///
-/// **Teinte.** Elle est dérivée d'un hachage stable du nom sur les douze
+/// **Teinte.** Elle est dérivée d'un hachage stable du nom sur les onze
 /// teintes foncées de [PdlColors.avatarAccents] — deux personnes homonymes ont la même
 /// couleur, la même personne garde la sienne d'un écran à l'autre. Le hachage
 /// est calculé à la main sur les unités de code : `String.hashCode` n'est pas
@@ -71,7 +71,8 @@ class PdlAvatar extends StatelessWidget {
     return hash;
   }
 
-  /// La teinte d'un nom sur les douze accents. Exposée pour que les composés
+  /// La teinte d'un nom sur les onze accents ; l'indigo de
+  /// [PdlColors.primary] n'y est pas, il est à la personne qui lit. Exposée pour que les composés
   /// (grappe d'avatars, ligne de personne) n'aient pas à la recalculer.
   static Color tintFor(PdlColors c, String name, {bool isCurrentUser = false}) {
     if (isCurrentUser) return c.primary;

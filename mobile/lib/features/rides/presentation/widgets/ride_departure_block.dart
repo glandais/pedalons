@@ -99,7 +99,7 @@ class RideDepartureBlock extends StatelessWidget {
     if (group != null &&
         firstDeparture &&
         groupLeavesAtOwnTime(group.startAt, ride.dateTime)) {
-      final String title = groupTitle(group.name, 'rides.groupPage.title'.tr());
+      final String title = groupLabel(group.name);
       final String line = 'rides.departureBlock.groupFirstDeparture'.tr(
         namedArgs: <String, String>{
           'group': title,

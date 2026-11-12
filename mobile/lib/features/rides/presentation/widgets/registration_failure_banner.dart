@@ -5,6 +5,7 @@ import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../keys.dart';
 import '../../providers/ride_registration_controller.dart';
+import '../../domain/group_title.dart';
 
 /// Le bandeau d'échec — **persistant** et nommant le groupe.
 ///
@@ -20,14 +21,14 @@ Widget registrationFailureBanner(
 }) {
   final String title = switch (failure.reason) {
     RegistrationFailureReason.alreadyRegistered => 'rides.failure.exclusive'.tr(
-      namedArgs: <String, String>{'group': failure.groupName},
+      namedArgs: <String, String>{'group': groupLabel(failure.groupName)},
     ),
     RegistrationFailureReason.groupFull => 'rides.failure.full'.tr(
-      namedArgs: <String, String>{'group': failure.groupName},
+      namedArgs: <String, String>{'group': groupLabel(failure.groupName)},
     ),
     RegistrationFailureReason.notMember => 'rides.failure.notMember'.tr(),
     RegistrationFailureReason.generic => 'rides.failure.generic'.tr(
-      namedArgs: <String, String>{'group': failure.groupName},
+      namedArgs: <String, String>{'group': groupLabel(failure.groupName)},
     ),
   };
 
@@ -83,7 +84,7 @@ Widget registrationFailureNotice(
     RegistrationFailureReason.groupFull => 'rides.failure.inCard.full'.tr(),
     RegistrationFailureReason.alreadyRegistered =>
       'rides.failure.inCard.exclusive'.tr(
-        namedArgs: <String, String>{'group': failure.groupName},
+        namedArgs: <String, String>{'group': groupLabel(failure.groupName)},
       ),
     RegistrationFailureReason.notMember =>
       'rides.failure.inCard.notMember'.tr(),

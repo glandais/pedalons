@@ -112,7 +112,7 @@ void main() {
       );
 
       expect(_textOf(tester, keys.home.nextRideStart), contains('21:30'));
-      expect(_lineOf(tester), 'Groupe Chill Route Long');
+      expect(_lineOf(tester), 'Chill Route Long');
       expect(
         find.descendant(
           of: find.byKey(keys.home.nextRideGroup),
@@ -135,7 +135,7 @@ void main() {
       final String date = _textOf(tester, keys.home.nextRideStart);
       expect(date, contains('22:30'));
       expect(date, isNot(contains('21:30')));
-      expect(_lineOf(tester), 'Groupe Chill Route Long');
+      expect(_lineOf(tester), 'Chill Route Long');
     },
   );
 

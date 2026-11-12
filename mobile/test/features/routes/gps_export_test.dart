@@ -758,5 +758,58 @@ void main() {
       expect(inSheet('N-Peloton #665'), findsOneWidget);
       expect(find.byKey(keys.gpsSheet.service('GARMIN')), findsOneWidget);
     });
+
+    testWidgets(
+      '« Vos prochaines sorties » : pas de « GPS » sur une sortie annulée',
+      (WidgetTester tester) async {
+        const PublicationDtoRide row = PublicationDtoRide(
+          permissions: kNoPermissions,
+          timezone: 'Europe/Paris',
+          tags: <TagDto>[],
+          groupSummaries: <RideGroupSummaryDto>[],
+          team: TeamPublicationDto(
+            accessible: true,
+            id: 't1',
+            slug: 'n-peloton',
+            name: 'N-Peloton',
+            visibility: 'PUBLIC',
+          ),
+          id: 'r1',
+          slug: 'np-665',
+          name: 'N-Peloton #665',
+          routeSlug: 'court',
+          media: fixtureEmptyMedia,
+          dateTime: '2099-07-29T19:30:00Z',
+          endDateTime: '2099-07-29T22:30:00Z',
+          status: 'CANCELLED',
+          visibility: 'TEAM',
+          participantCount: 10,
+          groupCount: 1,
+          groups: <RideGroupDto>[],
+          topParticipants: <PublicUserDto>[],
+          deleted: false,
+          registered: true,
+          full: false,
+          finished: false,
+        );
+        await pump(
+          tester,
+          DashboardMyUpcoming(
+            list: const PublicationListResponse(
+              publications: <PublicationDto>[row],
+              total: 1,
+              page: 0,
+              size: 3,
+            ),
+            onViewAll: () {},
+          ),
+          services: _services,
+        );
+        expect(
+          find.byKey(keys.teamDashboard.myUpcomingGps('np-665')),
+          findsNothing,
+        );
+      },
+    );
   });
 }

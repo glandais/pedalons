@@ -935,9 +935,9 @@ void main() {
       }
       // « Voir tout » sur la carte affichée — la mienne, sélectionnée.
       expect(inCard('gB', find.text('Voir tout')), findsOneWidget);
-      // Les autres : « Changer pour A », « Complet » ; pas de « GPS ».
+      // Les autres : « Changer pour Groupe A », « Complet » ; pas de « GPS ».
       expect(find.byKey(keys.ride.groupSwitchButton('gA')), findsOneWidget);
-      expect(inCard('gA', find.text('Changer pour A')), findsOneWidget);
+      expect(inCard('gA', find.text('Changer pour Groupe A')), findsOneWidget);
       expect(find.byKey(keys.ride.groupFullButton('gC')), findsOneWidget);
       expect(find.byKey(keys.ride.groupGps('gA')), findsNothing);
       expect(find.byKey(keys.ride.groupGps('gC')), findsNothing);
@@ -1056,24 +1056,27 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('« Changer pour A » : un seul appel, sans confirmation ni '
-        'bandeau', (WidgetTester tester) async {
-      final _StubRideRepository repository = await openRide(
-        tester,
-        threeGroups(),
-      );
+    testWidgets(
+      '« Changer pour Groupe A » : un seul appel, sans confirmation ni '
+      'bandeau',
+      (WidgetTester tester) async {
+        final _StubRideRepository repository = await openRide(
+          tester,
+          threeGroups(),
+        );
 
-      await tester.tap(find.byKey(keys.ride.groupSwitchButton('gA')));
-      for (int i = 0; i < 4; i++) {
-        await tester.pump(const Duration(milliseconds: 10));
-      }
+        await tester.tap(find.byKey(keys.ride.groupSwitchButton('gA')));
+        for (int i = 0; i < 4; i++) {
+          await tester.pump(const Duration(milliseconds: 10));
+        }
 
-      expect(repository.switched, <String>['gA']);
-      expect(repository.joined, isEmpty);
-      expect(repository.left, isEmpty);
-      expect(find.byType(AlertDialog), findsNothing);
-      expect(find.byKey(keys.ride.registrationFailure), findsNothing);
-    });
+        expect(repository.switched, <String>['gA']);
+        expect(repository.joined, isEmpty);
+        expect(repository.left, isEmpty);
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.byKey(keys.ride.registrationFailure), findsNothing);
+      },
+    );
 
     testWidgets('« Rejoindre » sur une carte : un seul appel, sans '
         'confirmation', (WidgetTester tester) async {
@@ -2616,7 +2619,7 @@ void main() {
       expect(find.byKey(keys.gpsSheet.sheet), findsOneWidget);
       expect(
         tester.widget<Text>(find.byKey(keys.gpsSheet.subtitle)).data,
-        'Groupe Chill Route Long · '
+        'Chill Route Long · '
         '${AppFormatters.formatDistance(two.groups.first.distance!)}',
       );
       expect(find.byKey(keys.gpsSheet.gpxShare), findsOneWidget);

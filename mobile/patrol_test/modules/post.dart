@@ -65,9 +65,14 @@ final class Post extends Module {
       '';
 
   /// The text of [commentId] as the thread renders it: as typed, with no Markdown rendering
-  /// (rule R12).
-  String? commentText(String commentId) =>
-      $.tester.widget<Text>(find.byKey(keys.comments.content(commentId))).data;
+  /// (rule R12). A full `http(s)://` address in it is a link span (2026-11-12), so the rich
+  /// text is read back as plain text.
+  String? commentText(String commentId) {
+    final Text text = $.tester.widget<Text>(
+      find.byKey(keys.comments.content(commentId)),
+    );
+    return text.data ?? text.textSpan?.toPlainText();
+  }
 
   // ── Replies ─────────────────────────────────────────────────────────────
 

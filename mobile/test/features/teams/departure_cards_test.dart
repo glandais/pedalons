@@ -468,9 +468,16 @@ void main() {
     ) async {
       await pump(tester, const AgendaCard(event: event), width: 260);
 
-      final Finder time = find.text('21:30');
+      // L'heure ouvre la ligne, dans son propre morceau, en 700.
+      final Finder time = find.text('21:30 · ', findRichText: true);
       expect(time, findsOneWidget);
-      expect(tester.widget<Text>(time).style?.fontWeight, FontWeight.w700);
+      final InlineSpan head = tester.widget<RichText>(time).text;
+      final List<TextSpan> spans = <TextSpan>[];
+      head.visitChildren((InlineSpan s) {
+        if (s is TextSpan && s.text == '21:30') spans.add(s);
+        return true;
+      });
+      expect(spans.single.style?.fontWeight, FontWeight.w700);
       expect(
         tester.renderObject<RenderParagraph>(time).didExceedMaxLines,
         isFalse,
@@ -501,7 +508,19 @@ void main() {
         ),
       );
 
-      expect(find.text('Vélo Club des Monts · B'), findsOneWidget);
+      // « Groupe B » : un nom d'un caractère prend le mot (2026-11-12).
+      expect(
+        tester
+            .widgetList<Text>(
+              find.descendant(
+                of: find.byKey(keys.calendar.agendaMeta('np-665')),
+                matching: find.byType(Text),
+              ),
+            )
+            .map((Text t) => t.data ?? t.textSpan!.toPlainText())
+            .join(),
+        '21:30 · Vélo Club des Monts · Groupe B',
+      );
       expect(
         tester
             .widget<Text>(find.byKey(keys.calendar.agendaPlace('np-665')))

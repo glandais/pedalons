@@ -18,6 +18,7 @@ import '../../providers/next_ride_provider.dart';
 import '../../providers/week_events_provider.dart';
 import '../../../../core/widgets/day_box.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
+import '../../../rides/presentation/widgets/ride_meta_line.dart';
 
 /// Combien de lignes « Cette semaine » montre au plus ; le reste est au
 /// calendrier.
@@ -172,14 +173,16 @@ class WeekAgendaRow extends StatelessWidget {
     // Un brouillon le dit, comme dans le fil (docs/LEDGER_*.md MOB-139, N6).
     final bool draft = event.status == 'DRAFT';
 
-    final String meta = <String>[
-      if (!event.allDay) AppFormatters.formatTime(start),
-      event.teamName,
-      // L'heure est celle du groupe rejoint (BRANDING §7.8) : la ligne le
-      // nomme, comme le site (ledger `MOB-139`, D8).
-      if (event.groupName != null && event.groupName!.isNotEmpty)
-        event.groupName!,
-    ].join(' · ');
+    // L'heure est celle du groupe rejoint (BRANDING §7.8) : la ligne le
+    // nomme, comme le site (ledger `MOB-139`, D8) — « Groupe B » par
+    // `groupLabel`, et c'est l'équipe qui cède (décision du 2026-11-12).
+    final Widget meta = RideMetaLine(
+      key: keys.home.weekMeta(event.entitySlug),
+      time: event.allDay ? null : AppFormatters.formatTime(start),
+      teamName: event.teamName,
+      groupName: event.groupName,
+      style: t.sub,
+    );
 
     return PdlCard(
       padding: PdlCardPadding.tight,
@@ -202,12 +205,7 @@ class WeekAgendaRow extends StatelessWidget {
                   style: t.cardTitle.copyWith(color: c.text),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  meta,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: t.sub,
-                ),
+                meta,
                 if (!event.allDay)
                   ?ZoneMentionLine.maybe(event.start, event.timezone),
                 if (event.registered || cancelled || draft) ...<Widget>[

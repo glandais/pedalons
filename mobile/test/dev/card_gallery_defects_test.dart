@@ -103,7 +103,7 @@ void main() {
     expect(p.size.width, greaterThanOrEqualTo(natural - 0.5));
   }
 
-  testWidgets('N1 — tout nombre à quatre chiffres a sa fine insécable, '
+  testWidgets('N1 — tout nombre à quatre chiffres a son insécable, '
       'sur toutes les cartes', (WidgetTester tester) async {
     // Un dénivelé, une distance ou un prix sans séparateur : « 1240 m ».
     final RegExp bare = RegExp(r'\d{4}(\u00a0| )?(m|km|ft|mi|€)\b');
@@ -117,7 +117,7 @@ void main() {
 
   testWidgets('D26 — la carte d’annonce et le tableau de bord écrivent le '
       'même prix', (WidgetTester tester) async {
-    const String price = '1\u202f200,00\u00a0€';
+    const String price = '1\u00a0200,00\u00a0€';
     await pumpSection(tester, 'annonces');
     expect(
       texts(inCase('annonce-vente', find.byType(Column))),
