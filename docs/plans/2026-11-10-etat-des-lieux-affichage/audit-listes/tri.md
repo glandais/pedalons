@@ -73,7 +73,26 @@ noyée au milieu (T12, DL16 pour le cas « À venir » de l'accueil du site).
   numéros de page du site et le défilement de l'app restent une seule liste ; ou deux requêtes par client. App S, site S.
 - **Se voit** : oui, planche.
 
-Restent à décider, sur planche : RL2, RL3, RL4, RL6, RL8, RL9, RL10, RL11, RL13, RL15.
+### Décisions du 12 novembre 2026, sur les planches « Listes — cibles »
+
+Toutes les options recommandées ont été retenues. La forme vérifiable de chaque règle est dans
+[`maquettes/KIT.md` §10](../maquettes/KIT.md).
+
+| Règle | Décision |
+|---|---|
+| **RL2** | Un contrôle de portée par support ; le choix d'une équipe au calendrier global seulement. Explorer de l'app perd son choix d'équipe. |
+| **RL3** | L'app gagne la période du fil d'accueil et le prix des annonces ; le site gagne « Ouvertes à l'adhésion » et l'équipe au calendrier global. « Autour de moi » reste à l'app seule. |
+| **RL4** | La pastille compte ce que « Effacer les filtres » lève : tout sauf le tri. La portée revient à son défaut (le code de l'app la gardait : `route_filters.dart`, `cleared`). |
+| **RL6** | Recherche et tri toujours visibles, des deux côtés ; le panneau de l'agenda du site disparaît. |
+| **RL8** | Total filtré seul, masqué à zéro. |
+| **RL9** | Un seul contrôle de vue, comme le site ; l'app gagne la vue en lignes de l'agenda. **Revient sur l'écart voulu `MOB-140`.** |
+| **RL10** | Deux états de vide, filtres nommés dans le vide filtré. |
+| **RL11** | Une forme d'erreur par support ; plus de notification par-dessus le bloc ; liste estompée sur le site pendant un changement de filtre. |
+| **RL13** | Bouton court « Créer » dans la barre de l'app (agenda, parcours, modèles) ; libellés « Créer {un objet} » sur le site. |
+| **RL15** | Une liste, deux sections « À venir » · « Plus tôt » ; les publications dans la seconde ; agenda « Toutes les dates / Je participe » ; fil d'accueil « Tout / Je participe ». Ajout à l'API (`API-185`). |
+
+Conséquence : les planches RL4, RL6, RL9, RL10 et RL13 dessinent encore l'agenda avec ses trois périodes ; la barre
+décidée par RL15 prévaut.
 
 ---
 

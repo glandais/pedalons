@@ -53,6 +53,6 @@ Sur le site, `TeamDirectoryPage.tsx` est l'annuaire des membres d'une équipe ; 
 | Lot 0, les défauts | Fait le 12 novembre 2026 (`MOB-145`, `WEB-174`, `API-184`, contrat 14.7.0) ; DL23 et DL24 restent (`WEB-175`, `MOB-143`). Rien vu à l'écran |
 | 2. Galeries de listes | Faites le 12 novembre 2026 : app `/dev/listes` (73 cas), site `dev/lists.html` (75 cas), captures dans `captures/`, [constat](constat-captures.md) |
 | 3. Planches avant / cible | Faites le 12 novembre 2026 : neuf planches `maquettes/project/cible-listes-rl*.dc.html`, page « Listes — cibles » de l'artifact |
-| 4. Décisions | À faire |
+| 4. Décisions | Prises le 12 novembre 2026, toutes les options recommandées ; écrites dans `maquettes/KIT.md` §10 |
 | 5. Lots | À faire |
 | 6. Vérification contre la cible | À faire |

@@ -297,3 +297,59 @@ inscription, export, image d'en-tête, lieu et groupe, champs propres, actions) 
 - **Page d'un groupe** : « Quitter le groupe » y reste après la fin de la sortie ; pas sur les cartes.
 - **Commentaire** : texte brut ; une adresse complète est un lien, toujours visible en entier.
 - **Quitter une équipe** se confirme ; quitter un groupe de sortie, jamais.
+
+## 10. Règles des listes, app et site (décisions du 2026-11-12)
+
+Elles valent pour toute page de liste des deux supports. Source : [tri de l'audit des listes](../audit-listes/tri.md),
+planches `project/cible-listes-rl*.dc.html`. Ce qui tient au support reste différent (feuille dans l'app, panneau sur le
+site ; défilement infini contre numéros de page ; filtres en mémoire contre filtres dans l'adresse).
+
+- **RL1 — Ouverture** : une liste inter-équipes (fil d'accueil, Explorer, équipes) s'ouvre sur **mes équipes**
+  (« Membre »), ou sur toutes les équipes pour qui n'en a aucune.
+- **RL2 — Portée** : un seul contrôle par support. App : une puce « Portée », neutre au défaut, teintée hors du défaut,
+  qui ouvre une feuille à coche (sans chevrons). Site : un seul composant de sélection. Valeurs : « Toutes les équipes /
+  Membre / Organisateur / Administrateur ». Le choix d'**une équipe** n'existe qu'au **calendrier global**, des deux
+  côtés (« Toutes mes équipes / {équipe}… ») ; ailleurs, la page de l'équipe existe.
+- **RL3 — Critères** : l'app a la période du fil d'accueil et le prix des annonces (puce « Prix », feuille « Prix min. /
+  Prix max. ») ; le site a « Ouvertes à l'adhésion » (visible sous la portée « Toutes ») et le choix d'équipe au
+  calendrier global. « Autour de moi » reste à l'app seule. Pas de filtre de rôle sur « Mes équipes » de l'app, pas de
+  « Je participe » au calendrier global, pas de proximité ni de période sur les annonces.
+- **RL4 — Filtre actif** : là où une feuille ou un panneau existe, le bouton « Filtres » porte un **compteur** qui
+  compte exactement ce que « Effacer les filtres » lève. « Effacer les filtres » lève la recherche, les critères et les
+  tags, et remet la période et la portée à leur défaut. Il **garde le tri**. Jamais de pastille au repos ; l'équipe de
+  la page et le tri ne comptent pas. Retoucher une puce exclusive ne la lève pas.
+- **RL5 — Ordre par défaut** : membres par nom ; commentaires du plus ancien au plus récent ; équipes par nom sous
+  « Membre », par nombre de membres sous « Toutes », l'ordre étant dit à côté du compteur.
+- **RL6 — Barre** : la recherche est **toujours visible**, en tête de liste. Le tri est visible, hors du panneau.
+  « Filtres » ne garde que les critères ; un panneau qui n'a plus rien disparaît. Un critère a une forme par support :
+  des puces dans l'app, un segmenté sur le site.
+- **RL7 — Invite de recherche** : « Rechercher {un objet}… » (U+2026), même texte des deux côtés ; « Rechercher par nom
+  ou e-mail… » pour qui administre les membres ; « Rechercher dans l'agenda… » à l'agenda.
+- **RL8 — Compteur** : un compteur sur chaque liste paginée, sous la barre, à gauche de la bascule de vue. Nombre
+  formaté, nom accordé. Sous un filtre : le total filtré seul (« 2 parcours »). **Masqué à zéro.**
+- **RL9 — Vue** : un seul contrôle à icônes par liste, sur la ligne du compteur, mêmes valeurs et mêmes noms des deux
+  côtés : « Vignettes · Lignes · Carte » (parcours), « Vignettes · Lignes · Calendrier » (agenda). L'app gagne la vue en
+  lignes de l'agenda. Pas de compteur en vue carte.
+- **RL10 — Vide** : deux états. *Vide simple* : ce qui apparaîtra ici, plus l'action de création pour qui en a le droit.
+  *Vide filtré* : « Aucun {objet} pour ces filtres », « Rien ne correspond à : {filtres actifs} », et « Effacer les
+  filtres ». « Je participe » est un filtre. Le calendrier dit le mois vide (mois en minuscule) et propose « Aller au
+  prochain mois avec une sortie », des deux côtés.
+- **RL11 — Erreur** : une forme par support, la même sur toutes les listes (fil de l'app compris) : « Chargement
+  impossible » (serveur) ou « Pas de connexion » (réseau), un message, « Réessayer » ; « Signaler un problème » dans
+  l'app pour une panne du serveur. Jamais de notification par-dessus le bloc. Un refus d'accès n'est pas une erreur :
+  message propre (« Réservées aux membres »), sans rouge, avec une issue (« À propos de l'équipe »). Pendant un
+  changement de filtre : squelettes dans l'app, liste précédente estompée sur le site.
+- **RL12 — Pied** : dans l'app, un seul pied « {N} {objets} sur {M} · Vous avez tout vu », formaté. « Afficher plus de
+  commentaires » des deux côtés.
+- **RL13 — Créer** : un bouton de création en tête de chaque liste dont le support sait créer l'objet, pour qui en a le
+  droit, repris dans le vide simple. App : bouton court « Créer » dans la barre, à droite de la recherche (agenda :
+  une sortie ; parcours ; modèles), nom complet pour le lecteur d'écran et dans l'état vide. Site : bouton d'en-tête
+  « Créer une sortie / un parcours / une publication… ». L'app ne crée ni annonce ni équipe : pas de bouton.
+- **RL15 — Événements datés** : une liste qui montre des sorties ou des voyages sans filtre de période est **une seule
+  liste paginée à deux sections** : « À venir », du plus proche au plus lointain (une sortie en cours y reste, jugée
+  sur sa fin), puis « Plus tôt », du plus récent au plus ancien. Dans un fil mixte, les publications sont dans « Plus
+  tôt », à leur date de parution. Le compteur est dans l'en-tête de chaque section ; sur le site, l'en-tête se répète
+  en haut d'une page qui s'ouvre au milieu d'une section. L'ordre est servi par l'API, page par page.
+  - Agenda d'une équipe : la barre devient « Toutes les dates / Je participe » ; la période « Passées » disparaît,
+    « Je participe » vaut pour les deux sections.
+  - Fil d'accueil : « Tout / Je participe », des deux côtés ; plus de « À venir ».
