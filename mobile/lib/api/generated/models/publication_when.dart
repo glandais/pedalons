@@ -10,6 +10,8 @@ enum PublicationWhen {
   upcoming('UPCOMING'),
   @JsonValue('PAST')
   past('PAST'),
+  @JsonValue('UPCOMING_FIRST')
+  upcomingFirst('UPCOMING_FIRST'),
 
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);

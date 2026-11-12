@@ -3,4 +3,5 @@ export type PublicationWhen = (typeof PublicationWhen)[keyof typeof PublicationW
 export const PublicationWhen = {
   UPCOMING: 'UPCOMING',
   PAST: 'PAST',
+  UPCOMING_FIRST: 'UPCOMING_FIRST',
 } as const

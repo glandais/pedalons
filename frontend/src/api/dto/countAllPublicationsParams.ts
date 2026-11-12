@@ -18,6 +18,6 @@ export type CountAllPublicationsParams = {
   to?: string
   /** Types */
   type?: PublicationType
-  /** Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». Omitted: no such filter. */
+  /** Which side of now, judged by the end of a ride or a trip rather than its start: UPCOMING is what is not over yet (end >= now — an outing under way included), PAST what is over (end < now). Keeps rides and trips only: a post has no end. Sets the order too — UPCOMING soonest departure first, PAST latest first — unless sortDir is given. With participating=true, UPCOMING is « Je participe ». UPCOMING_FIRST filters nothing and orders the list in two sections (rule RL15): first what UPCOMING keeps, soonest departure first, then everything else — the rides and trips over and the posts — latest first; the id ends each section's key, so the order is total. The listing then fills upcomingTotal, the size of the first section; sortDir is ignored. On a count endpoint UPCOMING_FIRST counts the whole list, as omitting when does. Omitted: no such filter, newest first. */
   when?: PublicationWhen
 }

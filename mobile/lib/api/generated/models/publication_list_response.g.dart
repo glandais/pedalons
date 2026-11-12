@@ -15,6 +15,7 @@ _PublicationListResponse _$PublicationListResponseFromJson(
   total: (json['total'] as num).toInt(),
   page: (json['page'] as num).toInt(),
   size: (json['size'] as num).toInt(),
+  upcomingTotal: (json['upcomingTotal'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$PublicationListResponseToJson(
@@ -24,4 +25,5 @@ Map<String, dynamic> _$PublicationListResponseToJson(
   'total': instance.total,
   'page': instance.page,
   'size': instance.size,
+  'upcomingTotal': instance.upcomingTotal,
 };

@@ -5890,6 +5890,12 @@ export const GetTeamDashboardResponse = zod
         total: zod.int().describe('Total number of publications'),
         page: zod.int().describe('Current page number'),
         size: zod.int().describe('Page size'),
+        upcomingTotal: zod
+          .int()
+          .optional()
+          .describe(
+            "With when=UPCOMING_FIRST only, null otherwise: how many of the 'total' rows are in the first section, « À venir » (rides and trips not over yet). They are the first upcomingTotal rows of the whole list, so the row at position page * size + i (i its index in 'publications') is « À venir » when that position is below upcomingTotal, « Plus tôt » otherwise; the second section counts total - upcomingTotal. Same filters and same instant as the page."
+          ),
       })
       .optional()
       .describe(
@@ -8816,6 +8822,12 @@ export const GetTeamDashboardResponse = zod
         total: zod.int().describe('Total number of publications'),
         page: zod.int().describe('Current page number'),
         size: zod.int().describe('Page size'),
+        upcomingTotal: zod
+          .int()
+          .optional()
+          .describe(
+            "With when=UPCOMING_FIRST only, null otherwise: how many of the 'total' rows are in the first section, « À venir » (rides and trips not over yet). They are the first upcomingTotal rows of the whole list, so the row at position page * size + i (i its index in 'publications') is « À venir » when that position is below upcomingTotal, « Plus tôt » otherwise; the second section counts total - upcomingTotal. Same filters and same instant as the page."
+          ),
       })
       .optional()
       .describe(
@@ -11742,6 +11754,12 @@ export const GetTeamDashboardResponse = zod
         total: zod.int().describe('Total number of publications'),
         page: zod.int().describe('Current page number'),
         size: zod.int().describe('Page size'),
+        upcomingTotal: zod
+          .int()
+          .optional()
+          .describe(
+            "With when=UPCOMING_FIRST only, null otherwise: how many of the 'total' rows are in the first section, « À venir » (rides and trips not over yet). They are the first upcomingTotal rows of the whole list, so the row at position page * size + i (i its index in 'publications') is « À venir » when that position is below upcomingTotal, « Plus tôt » otherwise; the second section counts total - upcomingTotal. Same filters and same instant as the page."
+          ),
       })
       .optional()
       .describe(
@@ -15574,6 +15592,12 @@ export const GetTeamDashboardResponse = zod
             total: zod.int().describe('Total number of publications'),
             page: zod.int().describe('Current page number'),
             size: zod.int().describe('Page size'),
+            upcomingTotal: zod
+              .int()
+              .optional()
+              .describe(
+                "With when=UPCOMING_FIRST only, null otherwise: how many of the 'total' rows are in the first section, « À venir » (rides and trips not over yet). They are the first upcomingTotal rows of the whole list, so the row at position page * size + i (i its index in 'publications') is « À venir » when that position is below upcomingTotal, « Plus tôt » otherwise; the second section counts total - upcomingTotal. Same filters and same instant as the page."
+              ),
           })
           .describe(
             "The team's drafts (rides, posts, trips), newest first. total is the number of drafts, the rows their names."
@@ -18530,6 +18554,12 @@ export const GetTeamDashboardResponse = zod
             total: zod.int().describe('Total number of publications'),
             page: zod.int().describe('Current page number'),
             size: zod.int().describe('Page size'),
+            upcomingTotal: zod
+              .int()
+              .optional()
+              .describe(
+                "With when=UPCOMING_FIRST only, null otherwise: how many of the 'total' rows are in the first section, « À venir » (rides and trips not over yet). They are the first upcomingTotal rows of the whole list, so the row at position page * size + i (i its index in 'publications') is « À venir » when that position is below upcomingTotal, « Plus tôt » otherwise; the second section counts total - upcomingTotal. Same filters and same instant as the page."
+              ),
           })
           .optional()
           .describe(
@@ -21487,6 +21517,12 @@ export const GetTeamDashboardResponse = zod
             total: zod.int().describe('Total number of publications'),
             page: zod.int().describe('Current page number'),
             size: zod.int().describe('Page size'),
+            upcomingTotal: zod
+              .int()
+              .optional()
+              .describe(
+                "With when=UPCOMING_FIRST only, null otherwise: how many of the 'total' rows are in the first section, « À venir » (rides and trips not over yet). They are the first upcomingTotal rows of the whole list, so the row at position page * size + i (i its index in 'publications') is « À venir » when that position is below upcomingTotal, « Plus tôt » otherwise; the second section counts total - upcomingTotal. Same filters and same instant as the page."
+              ),
           })
           .optional()
           .describe(
