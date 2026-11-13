@@ -392,6 +392,48 @@ test.describe('a shared preview link', () => {
     expect((await getPreview(owner, preview.id))!.name).toBe(name)
   })
 
+  test('a signed-in visitor duplicates a preview: the copy is theirs, the original is untouched', async ({
+    page,
+    browser,
+  }) => {
+    const owner = await newUser(unique('Cycliste propriétaire'))
+    const other = await newUser(unique('Cycliste copieur'))
+    const name = unique('Trace à copier')
+    const preview = await uploadPreview(owner, name, eastward(41))
+
+    // An anonymous visitor is offered nothing.
+    const main = await openPreview(page, preview.id, name)
+    await expect(main.getByRole('button', { name: 'Dupliquer', exact: true })).toHaveCount(0)
+
+    const { context: otherContext, page: otherPage } = await pageAs(browser, other)
+    try {
+      await stubBasemap(otherPage)
+      const otherMain = await openPreview(otherPage, preview.id, name)
+      const duplicate = otherMain.getByRole('button', { name: 'Dupliquer', exact: true })
+      await hydrated(duplicate)
+      await duplicate.click()
+      const dialog = otherPage.getByRole('dialog', { name: 'Dupliquer le fichier' })
+      await expect(dialog.getByRole('textbox', { name: /Nom du parcours/ })).toHaveValue(
+        `Copie de ${name}`
+      )
+      await dialog.getByRole('button', { name: 'Dupliquer', exact: true }).click()
+
+      // On the copy's page, with a name of its own, and which the copier now edits.
+      await expect(toasts(otherPage).filter({ hasText: 'Fichier dupliqué' })).toBeVisible()
+      await expect(otherPage).not.toHaveURL(previewPath(preview.id))
+      await expect(
+        otherMain.getByRole('heading', { level: 1, name: `Copie de ${name}` })
+      ).toBeVisible()
+      await expect(otherMain.getByRole('button', { name: 'Modifier', exact: true })).toBeVisible()
+    } finally {
+      await otherContext.close()
+    }
+    const copies = (await myPreviews(other)).previews
+    expect(copies.map((p) => p.name)).toEqual([`Copie de ${name}`])
+    expect(copies[0].id).not.toBe(preview.id)
+    expect((await getPreview(owner, preview.id))!.name).toBe(name)
+  })
+
   test('the hub needs an account', async ({ page }) => {
     await page.goto(HUB)
     await expect(page).toHaveURL(/\/connexion/)

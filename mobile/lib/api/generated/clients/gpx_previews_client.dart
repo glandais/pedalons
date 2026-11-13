@@ -9,6 +9,7 @@ import 'package:retrofit/retrofit.dart';
 import 'package:retrofit/error_logger.dart';
 
 import '../models/gps_service_type.dart';
+import '../models/gpx_preview_copy_request.dart';
 import '../models/gpx_preview_dto.dart';
 import '../models/gpx_preview_from_points_request.dart';
 import '../models/gpx_preview_list_response.dart';
@@ -117,6 +118,19 @@ abstract class GpxPreviewsClient {
   @DELETE('/api/gpx-previews/{previewId}')
   Future<void> deletePreview({
     @Path('previewId') required String previewId,
+  });
+
+  /// Copy an analysed GPX file.
+  ///
+  /// Creates a new preview owned by the caller from any preview they have the link of, under the given name: same track, surface and waypoints, and the average speed and departure date when still to come. The planner state is private to the creator: only a copy by the creator keeps it. A copy counts no planner save, whatever the personal quota. Kept 30 days from its creation; the source is left as it is.
+  ///
+  /// [previewId] - Public preview identifier.
+  ///
+  /// [body] - Name not received - field will be skipped.
+  @POST('/api/gpx-previews/{previewId}/copy')
+  Future<GpxPreviewDto> copyGpxPreview({
+    @Path('previewId') required String previewId,
+    @Body() required GpxPreviewCopyRequest body,
   });
 
   /// Send an analysed GPX file to a GPS service.

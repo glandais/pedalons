@@ -18,6 +18,7 @@ import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.user.User;
+import fr.pedalons.dto.common.EventDateTime;
 import fr.pedalons.dto.common.PedalonsPage;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.gps.response.RouteUploadResponse;
@@ -92,6 +93,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -246,7 +249,7 @@ public class GpxPreviewService {
       @Nullable PlannerState state,
       WaypointPlan plan,
       PreviewDepartureEdit edit) {
-    return create(gpx, fallbackName, drawn, state, plan, edit, true, drawn);
+    return create(gpx, fallbackName, drawn, state, plan, edit, true, drawn, null);
   }
 
   /**
@@ -265,7 +268,8 @@ public class GpxPreviewService {
       WaypointPlan plan,
       PreviewDepartureEdit edit,
       boolean documentNameFirst,
-      boolean countedSave) {
+      boolean countedSave,
+      @Nullable List<@Nullable TrackSurfaceDocument> surfacesOverride) {
     User creator = pedalonsContext.getUser();
     Domain domain = pedalonsContext.getDomain();
     UUID publicId = UUID.randomUUID();
@@ -286,7 +290,10 @@ public class GpxPreviewService {
       rawLines = toRawLines(computed);
       waypoints = PreviewWaypoints.toDetails(computed.waypoints());
       metadata = computed.aggregated();
-      surfaces = gpxProcessingService.surfaceDocuments(computed, state);
+      surfaces =
+          surfacesOverride != null && surfacesOverride.size() == computed.tracks().size()
+              ? surfacesOverride
+              : gpxProcessingService.surfaceDocuments(computed, state);
       fallbackKm = computed.fallbackAfterErrorKm();
     } catch (IOException e) {
       deleteFiles(publicId, revision);
@@ -1039,7 +1046,85 @@ public class GpxPreviewService {
             new WaypointPlan(waypoints, false),
             PreviewDepartureEdit.KEEP,
             false,
-            false));
+            false,
+            null));
+  }
+
+  /** What a copy takes from its source, read in one short transaction. */
+  private record CopySource(
+      @Nullable PlannerState state,
+      @Nullable List<@Nullable TrackSurfaceDocument> surfaces,
+      List<WaypointDraft> waypoints,
+      PreviewDepartureEdit departure) {}
+
+  /**
+   * A copy of any preview the caller has the link of (docs/LEDGER_*.md API-197): the original GPX
+   * replayed under {@code name}, with what the page of the preview shows — its surface, its
+   * waypoints, its average speed and its departure date when still to come. The copy is the
+   * caller's, like any other; the source is left as it is.
+   *
+   * <p>The planner state is private ({@link #getPlannerState}): only the creator's copy keeps it,
+   * and only when the domain's planner is open, as in {@link #createFromRoute}; the {@code drawn}
+   * flag follows the state kept. A copy draws nothing, so it counts no personal save and is not
+   * refused when the quota is spent (docs/LEDGER_*.md BILL-10, as the duplicate of a route).
+   *
+   * <p>Not {@code @Transactional}, like every creation: the source is read in a short transaction
+   * of its own, the pipeline and the uploads hold no connection.
+   */
+  @Logged
+  public GpxPreviewDto copy(String publicId, String name) {
+    GpxPreview preview = getByPublicId(publicId);
+    CopySource source =
+        QuarkusTransaction.requiringNew().call(() -> readCopySource(getByPublicId(publicId)));
+    // The download holds no connection, like createRoute
+    Path gpxPath = downloadOriginalGpx(preview);
+    try {
+      PlannerState kept =
+          source.state() != null && pedalonsContext.getDomain().isEnableGpxPlanner()
+              ? source.state()
+              : null;
+      return toDtoJustSaved(
+          create(
+              gpxProcessingService.parseGpx(gpxPath),
+              name,
+              kept != null && kept.drawn(),
+              kept,
+              new WaypointPlan(source.waypoints(), false),
+              source.departure(),
+              false,
+              false,
+              source.surfaces()));
+    } finally {
+      try {
+        Files.deleteIfExists(gpxPath);
+      } catch (IOException e) {
+        LOG.warnf(e, "Failed to delete temp GPX %s", gpxPath);
+      }
+    }
+  }
+
+  private CopySource readCopySource(GpxPreview preview) {
+    PlannerStateDocument document = isCreator(preview) ? readableState(preview) : null;
+    List<@Nullable TrackSurfaceDocument> surfaces = readableSurfaces(preview);
+    List<WaypointDraft> waypoints =
+        PreviewWaypoints.drafts(
+            preview.readableWaypoints(), preview.getDistance(), false, d -> true);
+    Instant at = preview.getDepartureAt();
+    EventDateTime date = null;
+    if (at != null
+        && preview.getDepartureZone() != null
+        && at.isAfter(Instant.now())
+        && gpxPreviewRepository.countUpcomingDated(
+                pedalonsContext.getDomainId(), pedalonsContext.getUserId(), Instant.now(), null)
+            < GpxLimits.MAX_UPCOMING_DATED_PREVIEWS) {
+      date =
+          EventDateTime.local(LocalDateTime.ofInstant(at, ZoneId.of(preview.getDepartureZone())));
+    }
+    return new CopySource(
+        document == null ? null : document.state(),
+        surfaces,
+        waypoints,
+        PreviewDepartureEdit.of(date, preview.getAverageSpeed()));
   }
 
   /** Only the creator may delete a preview; anyone with the link may read it. */

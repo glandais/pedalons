@@ -18,6 +18,7 @@ import type {
   CreatePreviewBody,
   ErrorResponse,
   GpsServiceType,
+  GpxPreviewCopyRequest,
   GpxPreviewDto,
   GpxPreviewFromPointsRequest,
   GpxPreviewListResponse,
@@ -795,6 +796,96 @@ export const useDeletePreview = <TError = ErrorType<ErrorResponse>, TContext = u
   TContext
 > => {
   return useMutation(getDeletePreviewMutationOptions(options), queryClient)
+}
+/**
+ * Creates a new preview owned by the caller from any preview they have the link of, under the given name: same track, surface and waypoints, and the average speed and departure date when still to come. The planner state is private to the creator: only a copy by the creator keeps it. A copy counts no planner save, whatever the personal quota. Kept 30 days from its creation; the source is left as it is.
+ * @summary Copy an analysed GPX file
+ */
+export const copyGpxPreview = (
+  previewId: string,
+  gpxPreviewCopyRequest: BodyType<GpxPreviewCopyRequest>,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<GpxPreviewDto>(
+    {
+      url: `/api/gpx-previews/${previewId}/copy`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      data: gpxPreviewCopyRequest,
+      signal,
+    },
+    options
+  )
+}
+
+export const getCopyGpxPreviewMutationKey = () => ['copyGpxPreview'] as const
+
+export const getCopyGpxPreviewMutationOptions = <
+  TError = ErrorType<ErrorResponse | void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof copyGpxPreview>>,
+    TError,
+    CopyGpxPreviewMutationVariables,
+    TContext
+  >
+  request?: SecondParameter<typeof axiosMutator>
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof copyGpxPreview>>,
+  TError,
+  CopyGpxPreviewMutationVariables,
+  TContext
+> => {
+  const mutationKey = getCopyGpxPreviewMutationKey()
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof copyGpxPreview>>,
+    CopyGpxPreviewMutationVariables
+  > = (props) => {
+    const { previewId, data } = props ?? {}
+
+    return copyGpxPreview(previewId, data, requestOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type CopyGpxPreviewMutationResult = NonNullable<Awaited<ReturnType<typeof copyGpxPreview>>>
+export type CopyGpxPreviewMutationBody = BodyType<GpxPreviewCopyRequest>
+export type CopyGpxPreviewMutationError = ErrorType<ErrorResponse | void>
+export type CopyGpxPreviewMutationVariables = {
+  previewId: string
+  data: BodyType<GpxPreviewCopyRequest>
+}
+
+/**
+ * @summary Copy an analysed GPX file
+ */
+export const useCopyGpxPreview = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof copyGpxPreview>>,
+      TError,
+      CopyGpxPreviewMutationVariables,
+      TContext
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseMutationResult<
+  Awaited<ReturnType<typeof copyGpxPreview>>,
+  TError,
+  CopyGpxPreviewMutationVariables,
+  TContext
+> => {
+  return useMutation(getCopyGpxPreviewMutationOptions(options), queryClient)
 }
 /**
  * Uploads the preview to the current user's connected Garmin, Hammerhead or Wahoo

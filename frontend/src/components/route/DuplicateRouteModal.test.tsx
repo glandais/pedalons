@@ -74,3 +74,29 @@ describe('DuplicateRouteModal (WEB-168)', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 })
+
+describe('DuplicateRouteModal for a GPX preview (WEB-180)', () => {
+  afterEach(cleanup)
+
+  it('is titled « Dupliquer le fichier » and starts on « Copie de {name} »', async () => {
+    show({ target: 'preview' })
+    await screen.findByRole('dialog')
+    expect(screen.getByText('Dupliquer le fichier')).toBeTruthy()
+    expect(nameField().value).toBe('Copie de Tour du lac')
+  })
+
+  it('cuts the default to the 200 characters the API takes', async () => {
+    show({ target: 'preview', sourceName: 'x'.repeat(250) })
+    await screen.findByRole('dialog')
+    expect(nameField().value).toHaveLength(200)
+  })
+
+  it('cannot send a name under 3 characters once trimmed', async () => {
+    const { onSubmit } = show({ target: 'preview' })
+    await screen.findByRole('dialog')
+    fireEvent.change(nameField(), { target: { value: '  ab  ' } })
+    await waitFor(() => expect((submitButton() as HTMLButtonElement).disabled).toBe(true))
+    fireEvent.submit(nameField().closest('form')!)
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+})

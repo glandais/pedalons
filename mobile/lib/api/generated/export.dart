@@ -152,6 +152,7 @@ export 'models/gps_service_connection_dto.dart';
 export 'models/gps_service_type.dart';
 export 'models/gpx_import_response.dart';
 export 'models/gpx_import_track.dart';
+export 'models/gpx_preview_copy_request.dart';
 export 'models/gpx_preview_dto.dart';
 export 'models/gpx_preview_from_points_request.dart';
 export 'models/gpx_preview_list_response.dart';

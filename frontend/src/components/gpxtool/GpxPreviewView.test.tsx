@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -16,6 +16,8 @@ vi.mock('react-i18next', async (importOriginal) => {
 
 const state = vi.hoisted(() => ({ isAuthenticated: false }))
 const weatherState = vi.hoisted(() => ({ data: undefined as unknown }))
+const copyState = vi.hoisted(() => ({ mutate: vi.fn() }))
+const navState = vi.hoisted(() => ({ navigate: vi.fn() }))
 const teamsState = vi.hoisted(() => ({
   teams: [] as { slug: string; name: string; enableRoutes: boolean; enableRoutePlanner: boolean }[],
 }))
@@ -36,6 +38,8 @@ vi.mock('@/api/endpoints/teams/teams', () => ({
 }))
 vi.mock('@/api/endpoints/gpx-previews/gpx-previews', () => ({
   createRouteFromPreview: vi.fn(),
+  getListMyPreviewsQueryKey: () => ['/api/gpx-previews'],
+  useCopyGpxPreview: () => ({ mutate: copyState.mutate, isPending: false }),
   useDeletePreview: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useGetPreviewWeather: () => ({
     data: weatherState.data,
@@ -44,10 +48,15 @@ vi.mock('@/api/endpoints/gpx-previews/gpx-previews', () => ({
     refetch: vi.fn(),
   }),
 }))
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router-dom')>()),
+  useNavigate: () => navState.navigate,
+}))
 vi.mock('@/components/route/RouteMapView', () => ({
   RouteMapView: () => <div data-testid="route-map" />,
 }))
 
+import { paths } from '@/config/paths'
 import { GpxPreviewView } from './GpxPreviewView'
 import { createRouteFromPreview } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { ApiClientError } from '@/lib/apiError'
@@ -69,9 +78,9 @@ const preview: GpxPreviewDto = {
   waypoints: [],
 }
 
-function renderView(shown: GpxPreviewDto = preview) {
+function renderView(shown: GpxPreviewDto = preview, client: QueryClient = new QueryClient()) {
   render(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={client}>
       <MantineProvider>
         <MemoryRouter>
           <GpxPreviewView preview={shown} />
@@ -88,6 +97,47 @@ describe('GpxPreviewView', () => {
     weatherState.data = undefined
   })
   afterEach(cleanup)
+
+  describe('Dupliquer (WEB-180)', () => {
+    it('is absent for an anonymous visitor', () => {
+      renderView()
+      expect(screen.queryByRole('button', { name: 'Dupliquer' })).toBeNull()
+    })
+
+    it('is offered to any signed-in account, owner or not', () => {
+      state.isAuthenticated = true
+      renderView()
+      expect(screen.getByRole('button', { name: 'Dupliquer' })).toBeTruthy()
+      cleanup()
+      renderView({ ...preview, owned: true })
+      expect(screen.getByRole('button', { name: 'Dupliquer' })).toBeTruthy()
+    })
+
+    it('asks for the name, sends it, then opens the copy', async () => {
+      state.isAuthenticated = true
+      copyState.mutate.mockImplementation((_vars, options) =>
+        options.onSuccess({ ...preview, id: '0copycopycopy' })
+      )
+      const client = new QueryClient()
+      const invalidate = vi.spyOn(client, 'invalidateQueries')
+      renderView(preview, client)
+      fireEvent.click(screen.getByRole('button', { name: 'Dupliquer' }))
+      const field = (await screen.findByRole('textbox', {
+        name: /Nom du parcours/,
+      })) as HTMLInputElement
+      expect(field.value).toBe('Copie de Boucle des étangs')
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Dupliquer' }))
+      await waitFor(() =>
+        expect(copyState.mutate).toHaveBeenCalledWith(
+          { previewId: preview.id, data: { name: 'Copie de Boucle des étangs' } },
+          expect.anything()
+        )
+      )
+      expect(navState.navigate).toHaveBeenCalledWith(paths.gpxToolsView('0copycopycopy'))
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['/api/gpx-previews'] })
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    })
+  })
 
   it('says the precise elevation is still being computed, only while the preview is PENDING', () => {
     renderView({ ...preview, elevationState: 'PENDING' })

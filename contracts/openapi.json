@@ -2808,6 +2808,20 @@
           }
         }
       },
+      "GpxPreviewCopyRequest" : {
+        "description" : "GPX preview copy request",
+        "type" : "object",
+        "required" : [ "name" ],
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "description" : "Name of the copy",
+            "pattern" : "\\S",
+            "minLength" : 3,
+            "maxLength" : 200
+          }
+        }
+      },
       "GpxPreviewDto" : {
         "description" : "Analysed GPX file, not attached to any team",
         "type" : "object",
@@ -13339,6 +13353,81 @@
                 }
               }
             }
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "user" ]
+        } ]
+      }
+    },
+    "/api/gpx-previews/{previewId}/copy" : {
+      "post" : {
+        "summary" : "Copy an analysed GPX file",
+        "description" : "Creates a new preview owned by the caller from any preview they have the link of, under the given name: same track, surface and waypoints, and the average speed and departure date when still to come. The planner state is private to the creator: only a copy by the creator keeps it. A copy counts no planner save, whatever the personal quota. Kept 30 days from its creation; the source is left as it is.",
+        "operationId" : "copyGpxPreview",
+        "tags" : [ "GPX previews" ],
+        "parameters" : [ {
+          "description" : "Public preview identifier",
+          "name" : "previewId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GpxPreviewCopyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Preview copied successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GpxPreviewDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid name",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Preview not found or expired",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Not Allowed"
           }
         },
         "security" : [ {
@@ -25888,7 +25977,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "14.11.0",
+    "version" : "14.12.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

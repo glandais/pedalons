@@ -10,6 +10,7 @@ import {
   IconBolt,
   IconDeviceMobile,
   IconDownload,
+  IconCopy,
   IconEdit,
   IconRoute,
   IconTrash,
@@ -30,9 +31,15 @@ import {
 import { notifications } from '@mantine/notifications'
 import type { GpsServiceType, GpxPreviewDto } from '@/api/dto'
 import { ElevationState, ErrorCode, SurfaceType } from '@/api/dto'
-import { createRouteFromPreview, useDeletePreview } from '@/api/endpoints/gpx-previews/gpx-previews'
+import {
+  createRouteFromPreview,
+  getListMyPreviewsQueryKey,
+  useCopyGpxPreview,
+  useDeletePreview,
+} from '@/api/endpoints/gpx-previews/gpx-previews'
 import { useListTeams } from '@/api/endpoints/teams/teams'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { DuplicateRouteModal } from '@/components/route/DuplicateRouteModal'
 import { ShareButton } from '@/components/common/ShareButton'
 import { RouteMapView } from '@/components/route/RouteMapView'
 import { ColorModeControls } from '@/components/route/ColorModeControls'
@@ -73,6 +80,7 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [deleteOpened, setDeleteOpened] = useState(false)
+  const [duplicateOpened, setDuplicateOpened] = useState(false)
   // The forecast of the departure date, if the preview has one (read from the server's cache)
   const { weather, polling, retry } = useGpxPreviewWeather(preview)
   // What colours the line: the grade, the surface, or the wind of the forecast. In the URL, like a
@@ -87,6 +95,7 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
   const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
 
   const deletePreviewMutation = useDeletePreview()
+  const copyPreviewMutation = useCopyGpxPreview()
   // Promoting a drawn preview counts against the chosen team's quota (docs/LEDGER_*.md BILL-10)
   const quotaRefusal = usePlannerQuotaRefusal()
 
@@ -115,6 +124,23 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
     await deletePreviewMutation.mutateAsync({ previewId: preview.id })
     notifications.show({ message: t('gpxTools.preview.deleted'), color: 'green' })
     navigate(paths.gpxTools())
+  }
+
+  // Any signed-in account may copy a preview it holds the link of: the copy is its own, the
+  // original is untouched, and nothing counts against a quota (docs/LEDGER_*.md WEB-180).
+  const handleDuplicate = (name: string) => {
+    copyPreviewMutation.mutate(
+      { previewId: preview.id, data: { name } },
+      {
+        onSuccess: (copy) => {
+          // Refresh "my files": the key prefix matches every paginated variant.
+          queryClient.invalidateQueries({ queryKey: getListMyPreviewsQueryKey() })
+          notifications.show({ message: t('gpxTools.preview.duplicated'), color: 'green' })
+          setDuplicateOpened(false)
+          navigate(paths.gpxToolsView(copy.id))
+        },
+      }
+    )
   }
 
   const handleSaveAsRoute = async () => {
@@ -291,6 +317,17 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
           </Menu>
         )}
 
+        {isAuthenticated && (
+          <Button
+            variant="default"
+            size="sm"
+            leftSection={<IconCopy size={16} />}
+            onClick={() => setDuplicateOpened(true)}
+          >
+            {t('actions.duplicate')}
+          </Button>
+        )}
+
         {preview.owned && (
           <Button
             variant="default"
@@ -349,6 +386,16 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
       </Modal>
 
       {quotaRefusal.modal}
+
+      {duplicateOpened && (
+        <DuplicateRouteModal
+          target="preview"
+          sourceName={preview.name}
+          loading={copyPreviewMutation.isPending}
+          onSubmit={handleDuplicate}
+          onClose={() => setDuplicateOpened(false)}
+        />
+      )}
 
       <ConfirmDialog
         isOpen={deleteOpened}

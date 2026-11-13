@@ -1593,6 +1593,215 @@ export const DeletePreviewParams = zod.object({
 export const DeletePreviewResponse = zod.void()
 
 /**
+ * Creates a new preview owned by the caller from any preview they have the link of, under the given name: same track, surface and waypoints, and the average speed and departure date when still to come. The planner state is private to the creator: only a copy by the creator keeps it. A copy counts no planner save, whatever the personal quota. Kept 30 days from its creation; the source is left as it is.
+ * @summary Copy an analysed GPX file
+ */
+export const CopyGpxPreviewParams = zod.object({
+  previewId: zod.string().describe('Public preview identifier'),
+})
+
+export const copyGpxPreviewBodyNameMin = 3
+export const copyGpxPreviewBodyNameMax = 200
+
+export const copyGpxPreviewBodyNameRegExp = new RegExp('\\S')
+
+export const CopyGpxPreviewBody = zod
+  .object({
+    name: zod
+      .string()
+      .min(copyGpxPreviewBodyNameMin)
+      .max(copyGpxPreviewBodyNameMax)
+      .regex(copyGpxPreviewBodyNameRegExp)
+      .describe('Name of the copy'),
+  })
+  .describe('GPX preview copy request')
+
+export const CopyGpxPreviewResponse = zod
+  .object({
+    id: zod.string().describe('Public identifier used in URLs'),
+    name: zod.string().describe('Track name'),
+    distance: zod.number().describe('Distance in meters'),
+    elevationGain: zod.number().describe('Total elevation gain in meters'),
+    elevationLoss: zod.number().describe('Total elevation loss in meters'),
+    hilliness: zod.number().describe('Elevation gain per kilometer'),
+    elevationState: zod
+      .enum(['PENDING', 'HD', 'FAST'])
+      .describe(
+        'Where the elevation profile stands. PENDING: the fast profile (Mapterhorn) is stored and the precise IGN LiDAR HD recomputation is scheduled. HD: the precise profile. FAST: the fast profile is kept, the HD recomputation failed.'
+      ),
+    owned: zod.boolean().describe('Whether the current user created this preview'),
+    createdAt: zod.iso.datetime({ offset: true }).describe('Creation timestamp'),
+    thumbnailUrl: zod
+      .string()
+      .optional()
+      .describe(
+        'Rendered map thumbnail template URL (with a {size} placeholder), used for link previews; null when no thumbnail was generated. Opaque URL: may carry a query string; substitute {size} only.'
+      ),
+    gpxUrl: zod.string().describe('URL to download the analysed GPX file'),
+    fitUrl: zod.string().describe('URL to download the analysed track as a FIT file'),
+    drawn: zod
+      .boolean()
+      .describe(
+        'Whether the track was drawn in the route planner (true) rather than imported from a GPX file. A drawn preview can only become a route of a team whose route planner is enabled; false when the origin is unknown'
+      ),
+    tracks: zod
+      .array(
+        zod
+          .object({
+            line: zod.object({
+              type: zod.enum(['LineString']),
+              coordinates: zod
+                .array(zod.array(zod.number()))
+                .describe(
+                  "Array of [lon, lat] coordinates, followed by the elevation in metres when the line carries one ([lon, lat, ele]). A route track's geometry (TrackDto.line) adds a 4th component, [lon, lat, ele, dist]: the distance in metres from the start of THAT track, monotonic, restarting at 0 on each track of the route; it is not the distance along the whole route."
+                ),
+            }),
+            climbs: zod
+              .array(
+                zod
+                  .object({
+                    startDistance: zod.int().describe('Start distance from route start in meters'),
+                    endDistance: zod.int().describe('End distance from route start in meters'),
+                    elevationGain: zod.int().describe('Elevation gain in meters'),
+                    averageGradient: zod.number().describe('Average gradient percentage'),
+                    maxGradient: zod.number().describe('Maximum gradient percentage'),
+                    category: zod
+                      .enum(['HC', 'CAT1', 'CAT2', 'CAT3', 'CAT4'])
+                      .optional()
+                      .describe('Climb category (HC, 1, 2, 3, 4)'),
+                    parts: zod
+                      .array(
+                        zod
+                          .object({
+                            startDistance: zod
+                              .int()
+                              .describe('Start distance from route start in meters'),
+                            endDistance: zod
+                              .int()
+                              .describe('End distance from route start in meters'),
+                            elevationGain: zod.int().describe('Elevation gain in meters'),
+                            grade: zod.number().describe('Gradient percentage'),
+                          })
+                          .describe('Climb part information')
+                      )
+                      .describe('Gradient segments making up the climb'),
+                    name: zod
+                      .string()
+                      .optional()
+                      .describe(
+                        'Name of the climb: the route waypoint lying near its top (within 300 m), as the route\'s author named it in the GPX. Null when no waypoint marks the summit — clients then number the climb ("Climb N"). Never a geocoded guess.'
+                      ),
+                  })
+                  .describe('Climb segment information')
+              )
+              .describe('List of climbs on the route'),
+            surfaceState: zod
+              .enum(['PENDING', 'READY', 'UNAVAILABLE'])
+              .optional()
+              .describe(
+                'Where the surface of the track stands. Absent: never computed (a track saved before the feature, or the feature off), or not included (bulk endpoint with geometry=false, which carries no track)'
+              ),
+            surfaces: zod
+              .array(
+                zod
+                  .object({
+                    from: zod.number().describe('Start, metres along the track'),
+                    to: zod.number().describe('End, metres along the track'),
+                    surface: zod.enum([
+                      'PAVED',
+                      'PAVED_ROUGH',
+                      'GRAVEL',
+                      'DIRT',
+                      'PATH',
+                      'UNKNOWN',
+                      'OFF_NETWORK',
+                    ]),
+                  })
+                  .describe(
+                    'A stretch of a track with one surface class, in metres along the track (the M of its line)'
+                  )
+              )
+              .optional()
+              .describe(
+                "Surface along the track when surfaceState is READY: contiguous spans from 0 to the track's length, adjacent spans of the same class merged. Derived from OpenStreetMap (© OpenStreetMap contributors, ODbL), VersaTiles vector tiles"
+              ),
+          })
+          .describe('GPX track with track points')
+      )
+      .describe('Tracks'),
+    waypoints: zod
+      .array(
+        zod
+          .object({
+            geometry: zod
+              .object({
+                type: zod.enum(['Point']),
+                coordinates: zod.array(zod.number()).describe('Coordinates [longitude, latitude]'),
+              })
+              .describe('Location coordinates [longitude, latitude]'),
+            name: zod.string().describe('Name, possibly empty'),
+            id: zod
+              .string()
+              .optional()
+              .describe(
+                'Identifier (TSID) of the waypoint, to send back in the request so that it keeps its origin. Null for a waypoint of a GPX file not saved yet'
+              ),
+            type: zod
+              .enum([
+                'REGROUP',
+                'SUPPLY',
+                'WATER',
+                'CAFE',
+                'TOILETS',
+                'DANGER',
+                'SUMMIT',
+                'VIEWPOINT',
+                'BIKE_SHOP',
+                'REAL_START',
+                'SPLIT',
+                'INFO',
+              ])
+              .describe('What the waypoint is'),
+            description: zod.string().optional().describe('Free text, at most 500 characters'),
+            distance: zod
+              .number()
+              .optional()
+              .describe(
+                'Metres from the start along the tracks in order (cumulated from one track to the next, in the order of their ids). Null for a waypoint more than 50 m from the track'
+              ),
+            origin: zod
+              .enum(['AUTHOR', 'IMPORTED'])
+              .describe(
+                "Who put the waypoint: its AUTHOR in the editor, or a GPX file it was IMPORTED from. A new GPX file replaces the imported ones and keeps the author's"
+              ),
+          })
+          .describe(
+            'A waypoint of a route. Its geometry is where the author put it: its own position, never its projection on the track'
+          )
+      )
+      .describe('Waypoints'),
+    departureTime: zod.iso
+      .datetime({ offset: true })
+      .optional()
+      .describe(
+        'Departure instant, when the person gave a date. The wall time at the start of the track is this instant in departureTimezone. Present together with departureTimezone'
+      ),
+    departureTimezone: zod
+      .string()
+      .optional()
+      .describe(
+        'IANA time zone of the first point of the track, the one the departure was entered in'
+      ),
+    averageSpeed: zod
+      .number()
+      .optional()
+      .describe(
+        'Average speed in km/h the person gave, null when none (the weather then assumes 25 km/h)'
+      ),
+  })
+  .describe('Analysed GPX file, not attached to any team')
+
+/**
  * Uploads the preview to the current user's connected Garmin, Hammerhead or Wahoo
  * @summary Send an analysed GPX file to a GPS service
  */

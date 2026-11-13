@@ -6,6 +6,7 @@ import fr.pedalons.dto.common.EventDateTime;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.error.ErrorResponse;
 import fr.pedalons.dto.gps.response.RouteUploadResponse;
+import fr.pedalons.dto.gpx.request.GpxPreviewCopyRequest;
 import fr.pedalons.dto.gpx.request.GpxPreviewFromPointsRequest;
 import fr.pedalons.dto.gpx.request.GpxPreviewUpdateRequest;
 import fr.pedalons.dto.gpx.request.PreviewDepartureEdit;
@@ -570,5 +571,43 @@ public class GpxPreviewResource {
       @Valid @NotNull RouteRequest request) {
     RouteDto route = gpxPreviewService.createRoute(previewId, teamSlug, request);
     return Response.status(Response.Status.CREATED).entity(route).build();
+  }
+
+  @POST
+  @Path("/{previewId}/copy")
+  @Operation(
+      operationId = "copyGpxPreview",
+      summary = "Copy an analysed GPX file",
+      description =
+          "Creates a new preview owned by the caller from any preview they have the link of, under"
+              + " the given name: same track, surface and waypoints, and the average speed and"
+              + " departure date when still to come. The planner state is private to the creator:"
+              + " only a copy by the creator keeps it. A copy counts no planner save, whatever the"
+              + " personal quota. Kept 30 days from its creation; the source is left as it is.")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "201",
+        description = "Preview copied successfully",
+        content = @Content(schema = @Schema(implementation = GpxPreviewDto.class))),
+    @APIResponse(
+        responseCode = "400",
+        description = "Invalid name",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "401",
+        description = "Unauthorized",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "404",
+        description = "Preview not found or expired",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  @RolesAllowed("user")
+  public Response copyPreview(
+      @Parameter(description = "Public preview identifier") @PathParam("previewId")
+          String previewId,
+      @Valid @NotNull GpxPreviewCopyRequest request) {
+    GpxPreviewDto copy = gpxPreviewService.copy(previewId, request.name());
+    return Response.status(Response.Status.CREATED).entity(copy).build();
   }
 }
