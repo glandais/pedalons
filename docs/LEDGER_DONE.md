@@ -3224,6 +3224,42 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
 
 ## API — Contrat d'API et backend
 
+- `API-191` **L'app Karoo écrit comme l'app et le site : formats, mots, fuseau** (13 novembre 2026, contrat
+  inchangé pour cette part, [plan](plans/2026-11-13-karoo-alignement.md)) — le Karoo n'avait pas été passé à l'audit
+  des cartes et des listes : « 14/11/2026 09:30 » dans le fuseau de l'appareil, « ↑1240m », « 1 routes », « B » pour
+  un groupe. `ui/Formatters.kt` est réécrit sur les règles communes (BRANDING §8.3, `KIT.md` §9) : départ au format
+  unique « sam. 14 nov. · 09:30 », « Aujourd'hui », « Demain », l'année hors de l'année en cours, l'heure selon la
+  langue et non le réglage 12/24 h du Karoo ; « 42,0 km » et « 1 240 m D+ » avec espace insécable et milliers
+  groupés, dénivelé arrondi et non tronqué. **Le départ se lit dans le fuseau de la sortie** (`timezone`, déjà dans
+  le contrat et jusque-là ignoré), suivi de « heure de Tokyo (ven. 01:00 chez vous) » quand le Karoo n'est pas à ce
+  décalage (`ui/ZoneLabel.kt`, portage de `mobile/lib/core/utils/zone_label.dart`) : cela revient, pour le Karoo
+  seul, sur « les appareils rendent à leur heure locale » d'`API-78` et d'`API-84` — décision du 13 novembre 2026 ;
+  l'instant du contrat, lui, ne change pas. Compteurs accordés (`plurals`), « Groupe B » pour un nom de un ou deux
+  caractères (`ui/GroupTitle.kt`). La part Karoo d'`API-159` est faite ici ; la structure des écrans n'a pas bougé.
+  Tests : `FormatCasesTest` lit `contracts/format-cases.json` comme l'app et le site (`distance`, `elevation`,
+  `shortDateTime` ; un genre inconnu échoue), `FormattersTest`, `ZoneLabelAndGroupTitleTest`, `NavigationTest`,
+  `FrenchFlowsTest` ; 36 des 70 captures réenregistrées exprès. **À ne pas défaire** : aucun format du Karoo ne
+  s'écrit dans `strings.xml` ni dans un écran, tout passe par `ui/Formatters.kt` ; la table des villes avance avec
+  celles de l'app et du site ; l'horloge des tests et des captures est figée par `FormatClock`, sans quoi
+  « Demain » change les captures d'un jour à l'autre. Écarts voulus du Karoo : `KIT.md` §9. Recette : `API-193`.
+- `API-168` **Les étapes des voyages où l'on participe, dans « Prochaines sorties » du Karoo** (13 novembre 2026,
+  contrat 14.10.0, [plan](plans/2026-11-13-karoo-alignement.md)) — écartée le 10 novembre avec l'envoi automatique
+  (`API-162`), reprise le 13 pour le Karoo seul. `GET /api/device/routes?stages=true` ajoute `registeredStages`
+  (`DeviceRegisteredStageDto` : voyage, étape, son parcours, distance, dénivelé, départ, fuseau, noms des lieux de
+  départ et d'arrivée, état chez les services GPS). **Sans le paramètre le champ est absent du JSON**, ni nul ni
+  vide (`@JsonInclude(NON_NULL)`) : la réponse de l'app Garmin, qui ne le demande pas, est restée la même à l'octet
+  — c'est ce qui levait l'objection de taille du refus initial. `TripParticipationRepository.findUpcomingRegisteredStages`
+  reprend **exactement** la sélection de l'envoi automatique (`findGpsSyncStageTargets`) : équipes dont on est encore
+  membre, voyage publié, étape non supprimée, **son** parcours téléchargeable, jamais celui du voyage ; fenêtre des
+  groupes (de 12 h avant à 7 jours après) appliquée au départ de chaque étape, 20 lignes au plus, deux requêtes quel
+  que soit leur nombre. Sur le Karoo (`api/Models.kt`, `RegisteredItem`), groupes et étapes sont mêlés par instant
+  de départ ; une ligne d'étape dit l'étape, le voyage, le départ, « Bourg-d'Oisans → Valloire », distance et
+  dénivelé, jamais le nom du parcours (KIT §9) ; la sélectionner synchronise son parcours ; l'accueil compte une
+  inscription par voyage, quel que soit le nombre d'étapes. Tests : `DeviceRegisteredStagesResourceTest` (écrit, non
+  lancé : `API-193`), `PedalonsApiClientTest`, `ModelsTest`, `NavigationTest`, `SyncTest`, captures
+  `registered_with_stages`. **À ne pas défaire** : `registeredStages` reste hors de la réponse par défaut ; une
+  modification de la sélection va aux deux requêtes, celle de l'appareil et celle de l'envoi automatique. Garmin :
+  `API-192`.
 - [x] `API-183` **La météo se montre jusqu'à la fin du jour local de la fin estimée, plus jusqu'à l'arrivée estimée** (12 novembre 2026, contrat inchangé) — la fin stockée (`PublicationEndCalculator`) est une estimation, la longueur du parcours à la vitesse du groupe, sans aucune pause : sur une étape de 230 km, on roulait encore une heure après elle et la prévision avait disparu (`OUT_OF_RANGE`). `RideWeatherCalculator.shownUntil(end, zone)` donne le début du jour local suivant la fin, dans le fuseau de l'entité ; `RideWeatherService.isOutOfRange` (détail d'une sortie et ligne des cartes par `RideWeatherLookup`) et `TripWeatherPlans.StagePlan.end` (donc `TripWeatherService.isGone`, par étape dans son propre fuseau) le lisent. Rien d'autre ne bouge : les heures passées restent en cache un jour (`WeatherHousekeeping`), les cellules deux jours après la dernière demande, et le planificateur ne rafraîchit toujours que ce qui est devant — une prévision déjà roulée est jugée à l'heure du passage (`WeatherRefreshPolicy.isStale`). Tests qui couvrent : `RideWeatherCalculatorTest` (`shownUntil_isTheEndOfTheLocalDayOfTheEnd`, `aRide_keepsItsWeatherPastItsEstimatedEnd_toTheEndOfThatDay`, `aStage_isGoneOnlyOnceItsDayIsOver`, sur horloge fixe) ; `RideWeatherResourceTest` et `TripWeatherResourceTest` reculés de façon à tomber un autre jour quelle que soit l'heure — 96 tests verts sur optiplex avec `WeatherPlannerTest` et `PublicationQueryCountTest` (suite complète non lancée). **À ne pas défaire** : cette règle n'existe que côté serveur — les clients n'ont aucun calcul de date pour la météo, ils lisent `status` (`WEB-173`, `MOB-142`). Reste hors de cette règle : la ligne météo d'une carte de voyage (`TripWeatherLookup`, prochaine étape *à partir*) et un aperçu GPX daté (coupé à son départ).
 - `API-185` **Événements datés : « à venir » puis « plus tôt » dans une même liste paginée** (12 novembre 2026,
   contrat 14.8.0) — règle RL15 (`plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md` §10). `when=UPCOMING_FIRST` sur `/api/publications`, `/api/teams/{slug}/publications`

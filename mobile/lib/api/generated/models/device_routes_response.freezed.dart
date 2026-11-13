@@ -19,7 +19,8 @@ mixin _$DeviceRoutesResponse {
 /// Upcoming rides with route entries
  List<DeviceRideDto> get rides;/// Latest standalone routes
  List<DeviceRouteDto> get routes;/// Upcoming ride groups the user is registered in (from 12 hours ago to 7 days ahead), earliest first, each with the route to load
- List<DeviceRegisteredGroupDto> get registeredGroups;
+ List<DeviceRegisteredGroupDto> get registeredGroups;/// Upcoming stages of the trips the user is registered for (each stage leaving from 12 hours ago to 7 days ahead), earliest first, each with the route to load. Present only when the request carries stages=true.
+ List<DeviceRegisteredStageDto>? get registeredStages;
 /// Create a copy of DeviceRoutesResponse
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -33,20 +34,20 @@ $DeviceRoutesResponseCopyWith<DeviceRoutesResponse> get copyWith => _$DeviceRout
 @override
 bool operator ==(Object other) {
   final _this = this as DeviceRoutesResponse;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeviceRoutesResponse&&const DeepCollectionEquality().equals(other.rides, _this.rides)&&const DeepCollectionEquality().equals(other.routes, _this.routes)&&const DeepCollectionEquality().equals(other.registeredGroups, _this.registeredGroups));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeviceRoutesResponse&&const DeepCollectionEquality().equals(other.rides, _this.rides)&&const DeepCollectionEquality().equals(other.routes, _this.routes)&&const DeepCollectionEquality().equals(other.registeredGroups, _this.registeredGroups)&&const DeepCollectionEquality().equals(other.registeredStages, _this.registeredStages));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as DeviceRoutesResponse;
-  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.rides),const DeepCollectionEquality().hash(_this.routes),const DeepCollectionEquality().hash(_this.registeredGroups));
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.rides),const DeepCollectionEquality().hash(_this.routes),const DeepCollectionEquality().hash(_this.registeredGroups),const DeepCollectionEquality().hash(_this.registeredStages));
 }
 
 @override
 String toString() {
   final _this = this as DeviceRoutesResponse;
-  return 'DeviceRoutesResponse(rides: ${_this.rides}, routes: ${_this.routes}, registeredGroups: ${_this.registeredGroups})';
+  return 'DeviceRoutesResponse(rides: ${_this.rides}, routes: ${_this.routes}, registeredGroups: ${_this.registeredGroups}, registeredStages: ${_this.registeredStages})';
 }
 
 
@@ -57,7 +58,7 @@ abstract mixin class $DeviceRoutesResponseCopyWith<$Res>  {
   factory $DeviceRoutesResponseCopyWith(DeviceRoutesResponse value, $Res Function(DeviceRoutesResponse) _then) = _$DeviceRoutesResponseCopyWithImpl;
 @useResult
 $Res call({
- List<DeviceRideDto> rides, List<DeviceRouteDto> routes, List<DeviceRegisteredGroupDto> registeredGroups
+ List<DeviceRideDto> rides, List<DeviceRouteDto> routes, List<DeviceRegisteredGroupDto> registeredGroups, List<DeviceRegisteredStageDto>? registeredStages
 });
 
 
@@ -74,12 +75,13 @@ class _$DeviceRoutesResponseCopyWithImpl<$Res>
 
 /// Create a copy of DeviceRoutesResponse
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? rides = null,Object? routes = null,Object? registeredGroups = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? rides = null,Object? routes = null,Object? registeredGroups = null,Object? registeredStages = freezed,}) {
   return _then(DeviceRoutesResponse(
 rides: null == rides ? _self.rides : rides // ignore: cast_nullable_to_non_nullable
 as List<DeviceRideDto>,routes: null == routes ? _self.routes : routes // ignore: cast_nullable_to_non_nullable
 as List<DeviceRouteDto>,registeredGroups: null == registeredGroups ? _self.registeredGroups : registeredGroups // ignore: cast_nullable_to_non_nullable
-as List<DeviceRegisteredGroupDto>,
+as List<DeviceRegisteredGroupDto>,registeredStages: freezed == registeredStages ? _self.registeredStages : registeredStages // ignore: cast_nullable_to_non_nullable
+as List<DeviceRegisteredStageDto>?,
   ));
 }
 
@@ -164,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<DeviceRideDto> rides,  List<DeviceRouteDto> routes,  List<DeviceRegisteredGroupDto> registeredGroups)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<DeviceRideDto> rides,  List<DeviceRouteDto> routes,  List<DeviceRegisteredGroupDto> registeredGroups,  List<DeviceRegisteredStageDto>? registeredStages)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DeviceRoutesResponse() when $default != null:
-return $default(_that.rides,_that.routes,_that.registeredGroups);case _:
+return $default(_that.rides,_that.routes,_that.registeredGroups,_that.registeredStages);case _:
   return orElse();
 
 }
@@ -185,10 +187,10 @@ return $default(_that.rides,_that.routes,_that.registeredGroups);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<DeviceRideDto> rides,  List<DeviceRouteDto> routes,  List<DeviceRegisteredGroupDto> registeredGroups)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<DeviceRideDto> rides,  List<DeviceRouteDto> routes,  List<DeviceRegisteredGroupDto> registeredGroups,  List<DeviceRegisteredStageDto>? registeredStages)  $default,) {final _that = this;
 switch (_that) {
 case _DeviceRoutesResponse():
-return $default(_that.rides,_that.routes,_that.registeredGroups);case _:
+return $default(_that.rides,_that.routes,_that.registeredGroups,_that.registeredStages);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +207,10 @@ return $default(_that.rides,_that.routes,_that.registeredGroups);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<DeviceRideDto> rides,  List<DeviceRouteDto> routes,  List<DeviceRegisteredGroupDto> registeredGroups)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<DeviceRideDto> rides,  List<DeviceRouteDto> routes,  List<DeviceRegisteredGroupDto> registeredGroups,  List<DeviceRegisteredStageDto>? registeredStages)?  $default,) {final _that = this;
 switch (_that) {
 case _DeviceRoutesResponse() when $default != null:
-return $default(_that.rides,_that.routes,_that.registeredGroups);case _:
+return $default(_that.rides,_that.routes,_that.registeredGroups,_that.registeredStages);case _:
   return null;
 
 }
@@ -220,7 +222,7 @@ return $default(_that.rides,_that.routes,_that.registeredGroups);case _:
 @JsonSerializable()
 
 class _DeviceRoutesResponse implements DeviceRoutesResponse {
-  const _DeviceRoutesResponse({required  List<DeviceRideDto> rides, required  List<DeviceRouteDto> routes, required  List<DeviceRegisteredGroupDto> registeredGroups}): _rides = rides,_routes = routes,_registeredGroups = registeredGroups;
+  const _DeviceRoutesResponse({required  List<DeviceRideDto> rides, required  List<DeviceRouteDto> routes, required  List<DeviceRegisteredGroupDto> registeredGroups,  List<DeviceRegisteredStageDto>? registeredStages}): _rides = rides,_routes = routes,_registeredGroups = registeredGroups,_registeredStages = registeredStages;
   factory _DeviceRoutesResponse.fromJson(Map<String, dynamic> json) => _$DeviceRoutesResponseFromJson(json);
 
 /// Upcoming rides with route entries
@@ -250,6 +252,17 @@ class _DeviceRoutesResponse implements DeviceRoutesResponse {
   return EqualUnmodifiableListView(_registeredGroups);
 }
 
+/// Upcoming stages of the trips the user is registered for (each stage leaving from 12 hours ago to 7 days ahead), earliest first, each with the route to load. Present only when the request carries stages=true.
+ final  List<DeviceRegisteredStageDto>? _registeredStages;
+/// Upcoming stages of the trips the user is registered for (each stage leaving from 12 hours ago to 7 days ahead), earliest first, each with the route to load. Present only when the request carries stages=true.
+@override List<DeviceRegisteredStageDto>? get registeredStages {
+  final value = _registeredStages;
+  if (value == null) return null;
+  if (_registeredStages is EqualUnmodifiableListView) return _registeredStages;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of DeviceRoutesResponse
 /// with the given fields replaced by the non-null parameter values.
@@ -264,18 +277,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeviceRoutesResponse&&const DeepCollectionEquality().equals(other.rides, _rides)&&const DeepCollectionEquality().equals(other.routes, _routes)&&const DeepCollectionEquality().equals(other.registeredGroups, _registeredGroups));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeviceRoutesResponse&&const DeepCollectionEquality().equals(other.rides, _rides)&&const DeepCollectionEquality().equals(other.routes, _routes)&&const DeepCollectionEquality().equals(other.registeredGroups, _registeredGroups)&&const DeepCollectionEquality().equals(other.registeredStages, _registeredStages));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_rides),const DeepCollectionEquality().hash(_routes),const DeepCollectionEquality().hash(_registeredGroups));
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_rides),const DeepCollectionEquality().hash(_routes),const DeepCollectionEquality().hash(_registeredGroups),const DeepCollectionEquality().hash(_registeredStages));
 }
 
 @override
 String toString() {
-    return 'DeviceRoutesResponse(rides: $rides, routes: $routes, registeredGroups: $registeredGroups)';
+    return 'DeviceRoutesResponse(rides: $rides, routes: $routes, registeredGroups: $registeredGroups, registeredStages: $registeredStages)';
 }
 
 
@@ -286,7 +299,7 @@ abstract mixin class _$DeviceRoutesResponseCopyWith<$Res> implements $DeviceRout
   factory _$DeviceRoutesResponseCopyWith(_DeviceRoutesResponse value, $Res Function(_DeviceRoutesResponse) _then) = __$DeviceRoutesResponseCopyWithImpl;
 @override @useResult
 $Res call({
- List<DeviceRideDto> rides, List<DeviceRouteDto> routes, List<DeviceRegisteredGroupDto> registeredGroups
+ List<DeviceRideDto> rides, List<DeviceRouteDto> routes, List<DeviceRegisteredGroupDto> registeredGroups, List<DeviceRegisteredStageDto>? registeredStages
 });
 
 
@@ -303,12 +316,13 @@ class __$DeviceRoutesResponseCopyWithImpl<$Res>
 
 /// Create a copy of DeviceRoutesResponse
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? rides = null,Object? routes = null,Object? registeredGroups = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? rides = null,Object? routes = null,Object? registeredGroups = null,Object? registeredStages = freezed,}) {
   return _then(_DeviceRoutesResponse(
 rides: null == rides ? _self._rides : rides // ignore: cast_nullable_to_non_nullable
 as List<DeviceRideDto>,routes: null == routes ? _self._routes : routes // ignore: cast_nullable_to_non_nullable
 as List<DeviceRouteDto>,registeredGroups: null == registeredGroups ? _self._registeredGroups : registeredGroups // ignore: cast_nullable_to_non_nullable
-as List<DeviceRegisteredGroupDto>,
+as List<DeviceRegisteredGroupDto>,registeredStages: freezed == registeredStages ? _self._registeredStages : registeredStages // ignore: cast_nullable_to_non_nullable
+as List<DeviceRegisteredStageDto>?,
   ));
 }
 

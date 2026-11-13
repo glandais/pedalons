@@ -23,6 +23,8 @@ import fr.pedalons.karoo.MainActivity
 import fr.pedalons.karoo.api.PedalonsApiClient
 import fr.pedalons.karoo.api.TokenResponse
 import fr.pedalons.karoo.auth.AuthManager
+import fr.pedalons.karoo.ui.FormatClock
+import java.time.Instant
 import java.util.Locale
 import java.util.TimeZone
 import kotlinx.coroutines.runBlocking
@@ -41,6 +43,9 @@ import org.robolectric.Shadows.shadowOf
  * Tests drive and assert through what a rider can see and press (texts, keys, started activities)
  * and what the app sends or stores (HTTP requests, tokens), never through internal state.
  */
+/** « Now » for every date the tests read: the one of `contracts/format-cases.json`. */
+const val TEST_NOW = "2026-11-11T12:00:00Z"
+
 abstract class AppTestBase {
 
     @get:Rule val compose = createEmptyComposeRule()
@@ -61,6 +66,8 @@ abstract class AppTestBase {
         TimeZone.setDefault(TimeZone.getTimeZone("Europe/Paris"))
         Locale.setDefault(Locale.US)
         Settings.System.putString(context.contentResolver, Settings.System.TIME_12_24, "24")
+        // Three days before the fixtures' rides: neither « Today » nor « Tomorrow ».
+        FormatClock.now = { Instant.parse(TEST_NOW) }
 
         ShadowKarooSystemService.reset()
         PedalonsApiClient.engineFactoryForTests = { backend.engine() }
@@ -75,6 +82,7 @@ abstract class AppTestBase {
         runBlocking { auth.clearTokens() }
         TimeZone.setDefault(savedZone)
         Locale.setDefault(savedLocale)
+        FormatClock.now = Instant::now
     }
 
     // === Setup ===

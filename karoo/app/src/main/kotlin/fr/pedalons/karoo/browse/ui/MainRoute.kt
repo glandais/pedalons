@@ -81,16 +81,16 @@ private fun MainContent(
                             )
                         is NavState.RegisteredGroupList ->
                             RegisteredGroupListScreen(
-                                groups = nav.groups,
+                                items = nav.items,
                                 userProfile = state.userProfile,
                                 selectedIndex = selectedIndex,
                                 listState = listState,
                                 syncState = browse.sync,
                                 syncTargetIndex = browse.syncTargetIndex,
                                 syncedRoutes = browse.syncedRoutes,
-                                onSelectGroup = { index, group ->
+                                onSelectItem = { index, item ->
                                     onIntent(
-                                        MainIntent.Sync(group.teamSlug, group.routeSlug, index),
+                                        MainIntent.Sync(item.teamSlug, item.routeSlug, index),
                                     )
                                 },
                                 onBack = back,

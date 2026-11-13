@@ -22,8 +22,11 @@ abstract class DeviceRoutesClient {
   /// [lat] - User's current latitude (for proximity sorting).
   ///
   /// [lon] - User's current longitude (for proximity sorting).
+  ///
+  /// [stages] - Also return registeredStages, the upcoming stages of the trips the user is registered for. Off by default: a device that does not ask keeps the response it always had.
   @GET('/api/device/routes')
   Future<DeviceRoutesResponse> deviceListRoutes({
+    @Query('stages') bool? stages = false,
     @Query('lat') double? lat,
     @Query('lon') double? lon,
   });

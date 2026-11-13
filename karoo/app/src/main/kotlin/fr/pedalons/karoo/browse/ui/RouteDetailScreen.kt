@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.pedalons.karoo.R
@@ -25,9 +26,10 @@ import fr.pedalons.karoo.browse.NavState
 import fr.pedalons.karoo.browse.SyncState
 import fr.pedalons.karoo.ui.components.ScreenTopBar
 import fr.pedalons.karoo.ui.components.ScreenWithOverlay
-import fr.pedalons.karoo.ui.formatDateTime
+import fr.pedalons.karoo.ui.formatDeparture
 import fr.pedalons.karoo.ui.formatDistance
-import fr.pedalons.karoo.ui.formatElevation
+import fr.pedalons.karoo.ui.formatElevationGain
+import fr.pedalons.karoo.ui.formatZoneMention
 import io.hammerhead.karooext.models.UserProfile
 
 @Composable
@@ -63,7 +65,7 @@ internal fun RouteDetailScreen(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    val startStr = formatDateTime(context, detail.startDateTime)
+                    val startStr = formatDeparture(context, detail.startDateTime, detail.timezone)
                     if (startStr != null) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
@@ -71,6 +73,16 @@ internal fun RouteDetailScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        val mention =
+                            formatZoneMention(context, detail.startDateTime, detail.timezone)
+                        if (mention != null) {
+                            Text(
+                                text = mention,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -80,7 +92,7 @@ internal fun RouteDetailScreen(
                             color = MaterialTheme.colorScheme.primary,
                         )
                         Text(
-                            text = formatElevation(context, detail.elevationGain, userProfile),
+                            text = formatElevationGain(context, detail.elevationGain, userProfile),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.secondary,
                         )

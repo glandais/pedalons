@@ -124,6 +124,56 @@ class ModelsTest {
 
     // === UserStatusResponse.isHammerheadConnected ===
 
+    // === RoutesResponse.registeredItems (API-168) ===
+
+    private fun stage(name: String, start: String, trip: String = "alps") =
+        DeviceRegisteredStage(
+            teamSlug = "t",
+            tripSlug = trip,
+            tripName = "Trip",
+            stageName = name,
+            routeSlug = "rs-$name",
+            routeName = "Route",
+            distance = 1f,
+            elevationGain = 1f,
+            startDateTime = start,
+        )
+
+    @Test
+    fun registeredItems_withoutStagesIsTheServersOrderOfTheGroups() {
+        val late = group(null).copy(groupName = "Late", startDateTime = "2026-11-15T08:00:00Z")
+        val early = group(null).copy(groupName = "Early", startDateTime = "2026-11-14T08:00:00Z")
+        val response = RoutesResponse(emptyList(), emptyList(), listOf(late, early))
+        assertEquals(listOf(late, early), response.registeredItems())
+    }
+
+    @Test
+    fun registeredItems_mixesGroupsAndStagesByDeparture() {
+        val g = group(null).copy(startDateTime = "2026-11-14T08:30:00Z")
+        val before = stage("S1", "2026-11-14T07:00:00Z")
+        // Milliseconds in the instant: the order is that of the instants, not of the texts.
+        val after = stage("S2", "2026-11-14T08:30:00.500Z")
+        val response = RoutesResponse(emptyList(), emptyList(), listOf(g), listOf(after, before))
+        assertEquals(listOf(before, g, after), response.registeredItems())
+    }
+
+    @Test
+    fun registrationCount_countsATripOnceWhateverItsStages() {
+        val response =
+            RoutesResponse(
+                emptyList(),
+                emptyList(),
+                listOf(group(null)),
+                listOf(
+                    stage("S1", "2026-11-14T07:00:00Z"),
+                    stage("S2", "2026-11-15T07:00:00Z"),
+                    stage("Other", "2026-11-16T07:00:00Z", trip = "pyrenees"),
+                ),
+            )
+        assertEquals(3, response.registrationCount())
+        assertEquals(4, response.registeredItems().size)
+    }
+
     @Test
     fun isHammerheadConnected() {
         assertTrue(UserStatusResponse(listOf("HAMMERHEAD")).isHammerheadConnected())

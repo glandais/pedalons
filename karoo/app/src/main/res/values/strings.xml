@@ -49,23 +49,37 @@
 
     <!-- Navigation -->
     <string name="nav_registered">My next rides</string>
-    <string name="registered_count">%d registrations</string>
     <string name="no_registered">No upcoming registration</string>
     <string name="nav_rides">Rides</string>
     <string name="nav_routes">Routes</string>
-    <string name="rides_count">%d rides</string>
-    <string name="routes_count">%d routes</string>
     <string name="no_rides">No upcoming rides</string>
     <string name="no_routes">No routes available</string>
     <string name="route_detail_sync">Sync to Karoo</string>
 
-    <!-- Formatting -->
-    <string name="distance_format_km">%.1f km</string>
-    <string name="distance_format_mi">%.1f mi</string>
-    <string name="elevation_format_m">↑%1$dm</string>
-    <string name="elevation_format_ft">↑%1$dft</string>
-    <string name="elevation_dplus_m">%1$dm D+</string>
-    <string name="elevation_dplus_ft">%1$dft D+</string>
+    <!-- Counters: always agreed (docs/BRANDING.md §8.3) -->
+    <plurals name="registered_count">
+        <item quantity="one">%d registration</item>
+        <item quantity="other">%d registrations</item>
+    </plurals>
+    <plurals name="rides_count">
+        <item quantity="one">%d ride</item>
+        <item quantity="other">%d rides</item>
+    </plurals>
+    <plurals name="routes_count">
+        <item quantity="one">%d route</item>
+        <item quantity="other">%d routes</item>
+    </plurals>
+
+    <!-- Formatting: the shared rules of the app and the site (ui/Formatters.kt, contracts/format-cases.json) -->
+    <string name="group_title">Group %s</string>
+    <string name="elevation_gain">%s elev. +</string>
+    <string name="today">Today</string>
+    <string name="tomorrow">Tomorrow</string>
+    <string name="departure_at">%1$s · %2$s</string>
+    <string name="zone_mention">%s time</string>
+    <string name="at_your_place">%s your time</string>
+    <string name="zone_mention_with_local">%1$s (%2$s)</string>
+    <string name="places_span">%1$s → %2$s</string>
     <string name="nav_arrow">›</string>
     <string name="success_checkmark">✓</string>
 </resources>

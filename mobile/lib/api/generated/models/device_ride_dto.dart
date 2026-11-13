@@ -23,7 +23,7 @@ abstract class DeviceRideDto with _$DeviceRideDto {
     /// Ride name
     required String rideName,
 
-    /// IANA zone of the ride, as RideDto.timezone; devices may ignore it and render in their own zone
+    /// IANA zone of the ride, as RideDto.timezone: the Karoo renders the starts in it, the Garmin app ignores it and renders in its own zone
     required String timezone,
 
     /// Route entries for this ride

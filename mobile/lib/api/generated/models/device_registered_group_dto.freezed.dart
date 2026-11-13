@@ -24,7 +24,7 @@ mixin _$DeviceRegisteredGroupDto {
  String get routeSlug;/// Route name
  String get routeName;/// Distance in meters
  double get distance;/// Elevation gain in meters
- double get elevationGain;/// When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. Devices render it in their own zone.
+ double get elevationGain;/// When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. The Karoo renders it in timezone, the Garmin app in its own zone.
  String get startDateTime;/// IANA time zone of the ride (e.g. Europe/Paris)
  String get timezone;/// Where the route stands at each of the user's GPS services that hold it (sent automatically or uploaded by hand), so a device does not upload it again. Empty when no service holds it; a device only reads its own service's entry (Karoo: HAMMERHEAD, Garmin: GARMIN).
  List<DeviceRouteSyncStatusDto>? get syncStatuses;
@@ -255,7 +255,7 @@ class _DeviceRegisteredGroupDto implements DeviceRegisteredGroupDto {
 @override final  double distance;
 /// Elevation gain in meters
 @override final  double elevationGain;
-/// When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. Devices render it in their own zone.
+/// When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. The Karoo renders it in timezone, the Garmin app in its own zone.
 @override final  String startDateTime;
 /// IANA time zone of the ride (e.g. Europe/Paris)
 @override final  String timezone;

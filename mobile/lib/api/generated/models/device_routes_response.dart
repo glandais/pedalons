@@ -5,6 +5,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'device_registered_group_dto.dart';
+import 'device_registered_stage_dto.dart';
 import 'device_ride_dto.dart';
 import 'device_route_dto.dart';
 
@@ -23,6 +24,9 @@ abstract class DeviceRoutesResponse with _$DeviceRoutesResponse {
 
     /// Upcoming ride groups the user is registered in (from 12 hours ago to 7 days ahead), earliest first, each with the route to load
     required List<DeviceRegisteredGroupDto> registeredGroups,
+
+    /// Upcoming stages of the trips the user is registered for (each stage leaving from 12 hours ago to 7 days ahead), earliest first, each with the route to load. Present only when the request carries stages=true.
+    List<DeviceRegisteredStageDto>? registeredStages,
   }) = _DeviceRoutesResponse;
 
   factory DeviceRoutesResponse.fromJson(Map<String, Object?> json) =>

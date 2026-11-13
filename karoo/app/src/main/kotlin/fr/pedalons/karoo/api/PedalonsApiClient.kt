@@ -157,6 +157,9 @@ private constructor(
         val response =
             client.get("$baseUrl/api/device/routes") {
                 bearerAuth(accessToken)
+                // Asks for `registeredStages`: a device that does not send it gets the response
+                // without them (docs/LEDGER_*.md API-168).
+                parameter("stages", true)
                 if (lat != null && lon != null) {
                     parameter("lat", lat)
                     parameter("lon", lon)

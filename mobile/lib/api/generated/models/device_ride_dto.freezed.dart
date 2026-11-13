@@ -19,7 +19,7 @@ mixin _$DeviceRideDto {
 /// Team slug
  String get teamSlug;/// Ride slug
  String get rideSlug;/// Ride name
- String get rideName;/// IANA zone of the ride, as RideDto.timezone; devices may ignore it and render in their own zone
+ String get rideName;/// IANA zone of the ride, as RideDto.timezone: the Karoo renders the starts in it, the Garmin app ignores it and renders in its own zone
  String get timezone;/// Route entries for this ride
  List<DeviceRideEntryDto> get entries;/// Start date/time
  String? get startDateTime;
@@ -235,7 +235,7 @@ class _DeviceRideDto implements DeviceRideDto {
 @override final  String rideSlug;
 /// Ride name
 @override final  String rideName;
-/// IANA zone of the ride, as RideDto.timezone; devices may ignore it and render in their own zone
+/// IANA zone of the ride, as RideDto.timezone: the Karoo renders the starts in it, the Garmin app ignores it and renders in its own zone
 @override final  String timezone;
 /// Route entries for this ride
  final  List<DeviceRideEntryDto> _entries;

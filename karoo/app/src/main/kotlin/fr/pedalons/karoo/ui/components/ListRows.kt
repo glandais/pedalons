@@ -21,8 +21,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.pedalons.karoo.R
+import fr.pedalons.karoo.ui.formatDeparture
 import fr.pedalons.karoo.ui.formatDistance
-import fr.pedalons.karoo.ui.formatElevation
+import fr.pedalons.karoo.ui.formatElevationGain
+import fr.pedalons.karoo.ui.formatZoneMention
 import io.hammerhead.karooext.models.UserProfile
 
 /**
@@ -91,6 +93,29 @@ internal fun ListEmptyText(text: String) {
     }
 }
 
+/**
+ * When a row leaves: « sam. 14 nov. · 09:30 » in the ride's [zone], then « heure de Tokyo (ven.
+ * 01:00 chez vous) » when the Karoo is not at that zone's offset. Nothing without a start.
+ */
+@Composable
+internal fun DepartureLines(isoDateTime: String?, zone: String?) {
+    val context = LocalContext.current
+    val departure = formatDeparture(context, isoDateTime, zone) ?: return
+    Text(
+        text = departure,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    val mention = formatZoneMention(context, isoDateTime, zone)
+    if (mention != null) {
+        Text(
+            text = mention,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 @Composable
 internal fun DistanceAndElevation(distance: Float, elevation: Float, profile: UserProfile?) {
     val context = LocalContext.current
@@ -101,7 +126,7 @@ internal fun DistanceAndElevation(distance: Float, elevation: Float, profile: Us
             color = MaterialTheme.colorScheme.primary,
         )
         Text(
-            text = formatElevation(context, elevation, profile),
+            text = formatElevationGain(context, elevation, profile),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.secondary,
         )

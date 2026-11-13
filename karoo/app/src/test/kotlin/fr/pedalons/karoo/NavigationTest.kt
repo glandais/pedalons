@@ -64,7 +64,7 @@ class NavigationTest : AppTestBase() {
         home(rides = emptyList())
         assertTrue(topOf("My next rides") < topOf("Routes"))
         assertTrue(topOf("Routes") < topOf("Rides"))
-        assertShown("No upcoming rides", "1 routes")
+        assertShown("No upcoming rides", "1 route")
     }
 
     @Test
@@ -82,6 +82,91 @@ class NavigationTest : AppTestBase() {
 
     // === Opening each entry ===
 
+    // A trip stage is a row of « My next rides », beside the ride groups and by departure
+    // (docs/LEDGER_*.md API-168): the stage, its trip, when it leaves, « start → end ».
+    @Test
+    fun registeredList_listsTheTripStagesByDeparture() {
+        backend.routes = {
+            ok(
+                Fixtures.routesJson(
+                    groups = listOf(Fixtures.group("Fast")),
+                    stages =
+                        listOf(
+                            Fixtures.stage("Stage 1", from = "Bourg-d'Oisans", to = "Valloire"),
+                            Fixtures.stage("Stage 2", start = "2026-11-15T07:00:00Z"),
+                        ),
+                ),
+            )
+        }
+        signIn()
+        launch()
+        waitForHome()
+        // One registration for the group, one for the trip whatever its stages.
+        assertShown("2 registrations")
+
+        select()
+
+        assertShown(
+            "Stage 1",
+            "Alps crossing",
+            "Sat, Nov 14 · 8:00\u202fAM",
+            "Bourg-d'Oisans → Valloire",
+            "82.5\u00a0km",
+            "2,100\u00a0m elev. +",
+            "Fast",
+            "Stage 2",
+            "Sun, Nov 15 · 8:00\u202fAM",
+        )
+        // 08:00 before 09:30 the same day, then the next day.
+        assertTrue(topOf("Stage 1") < topOf("Fast"))
+        assertTrue(topOf("Fast") < topOf("Stage 2"))
+        // A stage never shows the name of its route.
+        assertNotShown("Route Stage 1")
+    }
+
+    // A group named by one or two characters reads « Group B » (KIT §9), on the registered row and
+    // in the entries of a ride.
+    @Test
+    fun shortGroupName_isPrefixed() {
+        home(
+            rides =
+                listOf(
+                    Fixtures.ride(
+                        "ride-1",
+                        "Sunday ride",
+                        listOf(
+                            Fixtures.entry("r1", "Col", "A"),
+                            Fixtures.entry("r2", "Loop", "Fast"),
+                        ),
+                    ),
+                ),
+            groups = listOf(Fixtures.group("B")),
+        )
+        select()
+        assertShown("Group B")
+        back()
+        // Rides, then the ride itself: its entries.
+        next()
+        select()
+        select()
+        assertShown("Group A", "Fast")
+    }
+
+    // A departure is read in the zone of the ride, not the Karoo's (Europe/Paris in the tests),
+    // and says so (docs/LEDGER_*.md API-191).
+    @Test
+    fun departureElsewhere_isInTheRidesZoneWithItsMention() {
+        home(
+            groups =
+                listOf(
+                    Fixtures.group("Fast", start = "2026-11-13T22:00:00Z")
+                        .replace("Europe/Paris", "Asia/Tokyo"),
+                ),
+        )
+        select()
+        assertShown("Sat, Nov 14 · 7:00\u202fAM", "Tokyo time (Fri 11:00\u202fPM your time)")
+    }
+
     @Test
     fun home_firstEntryOpensTheRegisteredGroups() {
         home()
@@ -92,9 +177,9 @@ class NavigationTest : AppTestBase() {
             "Fast",
             "Easy",
             "Sunday ride",
-            "11/14/26 09:30",
-            "42.0 km",
-            "↑600m",
+            "Sat, Nov 14 · 9:30\u202fAM",
+            "42.0\u00a0km",
+            "600\u00a0m elev. +",
         )
     }
 
@@ -200,11 +285,11 @@ class NavigationTest : AppTestBase() {
         select()
         assertShown(
             "Sunday ride",
-            "11/14/26 09:00",
+            "Sat, Nov 14 · 9:00\u202fAM",
             "2 routes",
             "Saturday spin",
-            "11/15/26 08:00",
-            "1 routes",
+            "Sun, Nov 15 · 8:00\u202fAM",
+            "1 route",
         )
     }
 
@@ -223,8 +308,8 @@ class NavigationTest : AppTestBase() {
         )
         next()
         select()
-        assertShown("Undated", "1 routes")
-        assertNotShown("11/14/26 09:00")
+        assertShown("Undated", "1 route")
+        assertNotShown("Sat, Nov 14 · 9:00\u202fAM")
     }
 
     @Test
@@ -234,9 +319,17 @@ class NavigationTest : AppTestBase() {
         select()
         select()
         // Title is the ride; rows are the groups (or the route name without a group).
-        assertShown("Sunday ride", "Fast", "Easy", "42.0 km", "↑600m", "25.0 km", "↑200m")
+        assertShown(
+            "Sunday ride",
+            "Fast",
+            "Easy",
+            "42.0\u00a0km",
+            "600\u00a0m elev. +",
+            "25.0\u00a0km",
+            "200\u00a0m elev. +",
+        )
         // A group's own start wins over the ride's; without one the ride's start is used.
-        assertShown("11/14/26 09:30", "11/14/26 09:00")
+        assertShown("Sat, Nov 14 · 9:30\u202fAM", "Sat, Nov 14 · 9:00\u202fAM")
     }
 
     @Test
@@ -262,7 +355,12 @@ class NavigationTest : AppTestBase() {
         select()
         // Detail: title and body both carry the route name.
         compose.onAllNodesWithTextCount("Canal loop", 2)
-        assertShown("Sync to Karoo", "15.0 km", "↑50m", "11/15/26 08:00")
+        assertShown(
+            "Sync to Karoo",
+            "15.0\u00a0km",
+            "50\u00a0m elev. +",
+            "Sun, Nov 15 · 8:00\u202fAM",
+        )
     }
 
     @Test
@@ -274,7 +372,12 @@ class NavigationTest : AppTestBase() {
         next()
         select()
         compose.onAllNodesWithTextCount("Chartreuse", 2)
-        assertShown("25.0 km", "↑200m", "11/14/26 09:00", "Sync to Karoo")
+        assertShown(
+            "25.0\u00a0km",
+            "200\u00a0m elev. +",
+            "Sat, Nov 14 · 9:00\u202fAM",
+            "Sync to Karoo",
+        )
     }
 
     @Test
@@ -285,7 +388,7 @@ class NavigationTest : AppTestBase() {
         select()
         select()
         compose.onAllNodesWithTextCount("Col de Porte", 2)
-        assertShown("11/14/26 09:30", "42.0 km", "↑600m")
+        assertShown("Sat, Nov 14 · 9:30\u202fAM", "42.0\u00a0km", "600\u00a0m elev. +")
     }
 
     // === Routes ===
@@ -297,14 +400,14 @@ class NavigationTest : AppTestBase() {
         select()
         assertShown(
             "Solo loop",
-            "30.0 km",
-            "↑300m",
+            "30.0\u00a0km",
+            "300\u00a0m elev. +",
             "Lake tour",
-            "50.0 km",
-            "↑450m",
+            "50.0\u00a0km",
+            "450\u00a0m elev. +",
             "Hill climb",
-            "20.0 km",
-            "↑1200m",
+            "20.0\u00a0km",
+            "1,200\u00a0m elev. +",
         )
     }
 
@@ -345,8 +448,8 @@ class NavigationTest : AppTestBase() {
         select()
         select()
         compose.onAllNodesWithTextCount("Solo loop", 2)
-        assertShown("30.0 km", "↑300m", "Sync to Karoo")
-        assertNotShown("11/14/26 09:00")
+        assertShown("30.0\u00a0km", "300\u00a0m elev. +", "Sync to Karoo")
+        assertNotShown("Sat, Nov 14 · 9:00\u202fAM")
     }
 
     // === Back stack ===
@@ -380,7 +483,7 @@ class NavigationTest : AppTestBase() {
         select()
         select()
         back()
-        assertShown("Saturday spin", "1 routes")
+        assertShown("Saturday spin", "1 route")
         assertNotShown("Sync to Karoo")
         back()
         assertShown("Pédalons")
@@ -407,8 +510,14 @@ class NavigationTest : AppTestBase() {
         compose.waitForIdle()
         next(2)
         select()
-        assertShown("18.6 mi", "↑984ft", "31.1 mi", "12.4 mi", "↑3937ft")
-        assertNotShown("30.0 km")
+        assertShown(
+            "18.6\u00a0mi",
+            "984\u00a0ft elev. +",
+            "31.1\u00a0mi",
+            "12.4\u00a0mi",
+            "3,937\u00a0ft elev. +",
+        )
+        assertNotShown("30.0\u00a0km")
     }
 
     @Test
@@ -418,7 +527,7 @@ class NavigationTest : AppTestBase() {
         compose.waitForIdle()
         next(2)
         select()
-        assertShown("18.6 mi", "↑300m")
+        assertShown("18.6\u00a0mi", "300\u00a0m elev. +")
     }
 
     @Test
@@ -428,7 +537,7 @@ class NavigationTest : AppTestBase() {
         compose.waitForIdle()
         next(2)
         select()
-        assertShown("30.0 km", "↑300m")
+        assertShown("30.0\u00a0km", "300\u00a0m elev. +")
     }
 
     private fun profile(distance: UnitType, elevation: UnitType) =

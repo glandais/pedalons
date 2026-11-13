@@ -11,6 +11,7 @@ import fr.pedalons.repository.common.BaseRepository;
 import fr.pedalons.repository.common.MemberRouteVisibility;
 import fr.pedalons.repository.common.ParticipantPages;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.TypedQuery;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
@@ -102,6 +103,67 @@ public class TripParticipationRepository implements BaseRepository<TripParticipa
         .setParameter("from", from)
         .setParameter("to", to)
         .getResultList();
+  }
+
+  /**
+   * For a device (docs/LEDGER_*.md API-168): the stages leaving within {@code [from, to)} of the
+   * trips this user is registered for, earliest first, each with its own route — in a single query,
+   * as scalars.
+   *
+   * <p>The selection is <b>exactly that of {@link #findGpsSyncStageTargets}</b>, for one user and
+   * as slugs rather than ids — what a device lists is what the automatic sync sends: live teams the
+   * user is still a member of, published, non-deleted trips (hidden by moderation only for the
+   * team's moderators), non-deleted stages whose own route the member can download ({@link
+   * MemberRouteVisibility#routeVisible}). A stage without such a route is left out — never the
+   * trip's route instead. The window applies to each stage's own departure. A change to either
+   * selection goes to both.
+   *
+   * @param pinnedTeamId the team a pinned domain is restricted to; null for none
+   */
+  public List<RegisteredStageRow> findUpcomingRegisteredStages(
+      Long domainId,
+      Long userId,
+      @Nullable Long pinnedTeamId,
+      Instant from,
+      Instant to,
+      int limit) {
+    String jpql =
+        "select new fr.pedalons.repository.trip.RegisteredStageRow("
+            + " t.slug, tr.slug, tr.name, s.name, s.dateTime, s.timezone,"
+            + " sr.id, sr.slug, sr.name, sr.distance, sr.elevationGain, sp.name, ep.name)"
+            + " from TripParticipation p"
+            + " join p.trip tr"
+            + " join tr.stages s"
+            + " join tr.team t"
+            + " join UserTeam ut on ut.team = t and ut.user.id = :userId"
+            + " left join s.route sr on "
+            + routeVisible("sr")
+            + " left join s.startPlace sp"
+            + " left join s.endPlace ep"
+            + " where p.user.id = :userId"
+            + " and t.domain.id = :domainId and t.deleted = false"
+            + " and tr.deleted = false and tr.status = :published"
+            + " and (tr.moderationHiddenAt is null or ut.role in (:moderators))"
+            + " and s.deleted = false"
+            + " and s.dateTime >= :from and s.dateTime < :to"
+            + " and sr is not null"
+            + (pinnedTeamId != null ? " and t.id = :pinnedTeamId" : "")
+            + " order by s.dateTime asc, s.sortOrder asc, s.id asc";
+    TypedQuery<RegisteredStageRow> query =
+        getEntityManager()
+            .createQuery(jpql, RegisteredStageRow.class)
+            .setParameter("userId", userId)
+            .setParameter("domainId", domainId)
+            .setParameter("published", Status.PUBLISHED)
+            .setParameter("memberStatuses", List.of(Status.PUBLISHED, Status.CANCELLED))
+            .setParameter("moderators", List.of(TeamRole.ORGANIZER, TeamRole.ADMIN))
+            .setParameter("from", from)
+            .setParameter("to", to)
+            .setMaxResults(limit);
+    if (pinnedTeamId != null) {
+      query.setParameter("pinnedTeamId", pinnedTeamId);
+    }
+    return query.getResultList();
   }
 
   /** The live users registered to a trip who are still members of its team. */

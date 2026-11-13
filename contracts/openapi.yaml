@@ -1924,8 +1924,8 @@ components:
           description: Elevation gain in meters
         startDateTime:
           description: "When the group leaves, as an absolute instant (UTC): the group's\
-            \ startAt, the ride's own start when the group has no time. Devices render\
-            \ it in their own zone."
+            \ startAt, the ride's own start when the group has no time. The Karoo\
+            \ renders it in timezone, the Garmin app in its own zone."
           type: string
           $ref: "#/components/schemas/Instant"
         timezone:
@@ -1939,6 +1939,69 @@ components:
             \ that hold it (sent automatically or uploaded by hand), so a device does\
             \ not upload it again. Empty when no service holds it; a device only reads\
             \ its own service's entry (Karoo: HAMMERHEAD, Garmin: GARMIN)."
+    DeviceRegisteredStageDto:
+      description: "Upcoming stage of a trip the user is registered for, with the\
+        \ route to load on the device"
+      type: object
+      required:
+      - teamSlug
+      - tripSlug
+      - tripName
+      - stageName
+      - routeSlug
+      - routeName
+      - distance
+      - elevationGain
+      - startDateTime
+      - timezone
+      - syncStatuses
+      properties:
+        teamSlug:
+          type: string
+          description: Team slug
+        tripSlug:
+          type: string
+          description: Trip slug
+        tripName:
+          type: string
+          description: Trip name
+        stageName:
+          type: string
+          description: Stage name
+        routeSlug:
+          type: string
+          description: "Slug of the route to load: the stage's own route, never the\
+            \ trip's (a stage without a route is left out)"
+        routeName:
+          type: string
+          description: Route name
+        distance:
+          type: number
+          format: float
+          description: Distance in meters
+        elevationGain:
+          type: number
+          format: float
+          description: Elevation gain in meters
+        startDateTime:
+          description: "When the stage leaves, as an absolute instant (UTC)"
+          type: string
+          $ref: "#/components/schemas/Instant"
+        timezone:
+          type: string
+          description: IANA time zone of the stage (e.g. Europe/Paris)
+        startPlaceName:
+          type: string
+          description: "Name of the place the stage leaves from, when it has one"
+        endPlaceName:
+          type: string
+          description: "Name of the place the stage ends at, when it has one"
+        syncStatuses:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeviceRouteSyncStatusDto"
+          description: "Where the route stands at each of the user's GPS services\
+            \ that hold it, as DeviceRegisteredGroupDto.syncStatuses"
     DeviceRequest:
       description: Device auth request
       type: object
@@ -1971,8 +2034,8 @@ components:
           $ref: "#/components/schemas/Instant"
         timezone:
           type: string
-          description: "IANA zone of the ride, as RideDto.timezone; devices may ignore\
-            \ it and render in their own zone"
+          description: "IANA zone of the ride, as RideDto.timezone: the Karoo renders\
+            \ the starts in it, the Garmin app ignores it and renders in its own zone"
         entries:
           type: array
           items:
@@ -2098,6 +2161,13 @@ components:
             $ref: "#/components/schemas/DeviceRegisteredGroupDto"
           description: "Upcoming ride groups the user is registered in (from 12 hours\
             \ ago to 7 days ahead), earliest first, each with the route to load"
+        registeredStages:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeviceRegisteredStageDto"
+          description: "Upcoming stages of the trips the user is registered for (each\
+            \ stage leaving from 12 hours ago to 7 days ahead), earliest first, each\
+            \ with the route to load. Present only when the request carries stages=true."
     DeviceTokenRequest:
       description: Device OAuth token request
       type: object
@@ -11296,6 +11366,14 @@ paths:
         schema:
           type: number
           format: double
+      - description: "Also return registeredStages, the upcoming stages of the trips\
+          \ the user is registered for. Off by default: a device that does not ask\
+          \ keeps the response it always had."
+        name: stages
+        in: query
+        schema:
+          type: boolean
+          default: false
       responses:
         "200":
           description: Routes list
@@ -21376,7 +21454,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 14.9.1
+  version: 14.10.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

@@ -16,8 +16,8 @@ public record DeviceRideDto(
     @Schema(description = "Start date/time") Instant startDateTime,
     @Schema(
             description =
-                "IANA zone of the ride, as RideDto.timezone; devices may ignore it and render in"
-                    + " their own zone",
+                "IANA zone of the ride, as RideDto.timezone: the Karoo renders the starts in it,"
+                    + " the Garmin app ignores it and renders in its own zone",
             required = true)
         String timezone,
     @Schema(description = "Route entries for this ride", required = true)

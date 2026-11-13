@@ -288,15 +288,16 @@ class PedalonsApiClientTest {
              "timezone":"Europe/Paris","syncStatuses":[{"serviceType":"HAMMERHEAD","state":"SENT"}]}]}"""
 
     @Test
-    fun getRoutes_withoutPositionSendsNoQuery() = runBlocking {
+    fun getRoutes_withoutPositionAsksForTheStagesOnly() = runBlocking {
         val h = harness { json(routesJson) }
         val routes = h.client.getRoutes("tok").getOrThrow()
 
         val request = h.only
         assertEquals(HttpMethod.Get, request.method)
-        assertEquals("$base/api/device/routes", request.url.toString())
+        // `stages=true` is what makes the server add `registeredStages` (docs/LEDGER_*.md
+        // API-168): a device that does not send it keeps the response without them.
+        assertEquals("$base/api/device/routes?stages=true", request.url.toString())
         assertEquals("Bearer tok", request.headers[HttpHeaders.Authorization])
-        assertTrue(request.url.parameters.isEmpty())
 
         assertEquals(1, routes.rides.size)
         assertEquals("Ride", routes.rides[0].rideName)
@@ -316,10 +317,46 @@ class PedalonsApiClientTest {
     }
 
     @Test
-    fun getRoutes_halfAPositionSendsNoQuery() = runBlocking {
+    fun getRoutes_halfAPositionSendsNoPosition() = runBlocking {
         val h = harness { json(routesJson) }
         h.client.getRoutes("tok", lat = 45.5, lon = null).getOrThrow()
-        assertTrue(h.only.url.parameters.isEmpty())
+        assertEquals(setOf("stages"), h.only.url.parameters.names())
+    }
+
+    @Test
+    fun getRoutes_readsTheRegisteredStages() = runBlocking {
+        val h = harness {
+            json(
+                """{"rides":[],"routes":[],"registeredGroups":[],
+                   "registeredStages":[{"teamSlug":"t","tripSlug":"alps","tripName":"Alps crossing",
+                     "stageName":"Stage 1","routeSlug":"rs","routeName":"Galibier","distance":82500,
+                     "elevationGain":2100,"startDateTime":"2026-11-14T07:00:00Z","timezone":"Europe/Paris",
+                     "startPlaceName":"Bourg-d'Oisans","endPlaceName":"Valloire",
+                     "syncStatuses":[{"serviceType":"HAMMERHEAD","state":"OUTDATED"}]},
+                    {"teamSlug":"t","tripSlug":"alps","tripName":"Alps crossing","stageName":"Stage 2",
+                     "routeSlug":"rs2","routeName":"Iseran","distance":64000,"elevationGain":1800,
+                     "startDateTime":"2026-11-15T07:00:00Z","timezone":"Europe/Paris","syncStatuses":[]}]}""",
+            )
+        }
+        val routes = h.client.getRoutes("tok").getOrThrow()
+
+        val stage = routes.registeredStages[0]
+        assertEquals("alps", stage.tripSlug)
+        assertEquals("Stage 1", stage.stageName)
+        assertEquals("rs", stage.routeSlug)
+        assertEquals(82500f, stage.distance)
+        assertEquals("Bourg-d'Oisans", stage.startPlaceName)
+        assertEquals("Valloire", stage.endPlaceName)
+        assertEquals(RouteSyncState.OUTDATED, stage.hammerheadSyncState())
+        // A stage that names no place, and whose route Hammerhead does not hold.
+        assertEquals(null, routes.registeredStages[1].startPlaceName)
+        assertEquals(null, routes.registeredStages[1].hammerheadSyncState())
+    }
+
+    @Test
+    fun getRoutes_anOlderServerSendsNoStage() = runBlocking {
+        val h = harness { json(routesJson) }
+        assertTrue(h.client.getRoutes("tok").getOrThrow().registeredStages.isEmpty())
     }
 
     @Test

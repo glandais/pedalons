@@ -61,7 +61,9 @@ app/src/main/kotlin/fr/pedalons/karoo/
 │   ├── PedalonsApiClient.kt  # Ktor HTTP client with Karoo engine
 │   └── Models.kt             # Kotlinx serialization data classes
 └── ui/
-    ├── Formatters.kt         # formatDateTime / formatDistance / formatElevation
+    ├── Formatters.kt         # The shared formats: formatDeparture / formatZoneMention / formatDistance / formatElevationGain
+    ├── ZoneLabel.kt          # The city naming a time zone (port of mobile's zone_label.dart)
+    ├── GroupTitle.kt         # « Groupe B » for a one- or two-character group name
     ├── components/           # ScreenScaffold (overlay, back/sync, top bar), ListRows (SelectableRow...)
     └── theme/Theme.kt        # Dark theme for outdoor visibility
 ```
@@ -89,9 +91,14 @@ app/src/main/kotlin/fr/pedalons/karoo/
 - `NavState` is a stack-based state machine driven by the Karoo keys (`KarooKey` -> `onKey`). Keys act
   on `BrowseState` whatever `MainUiState.screen()` shows, and are ignored until the Karoo system
   service is connected.
-- Home lists `homeEntries()`: « My next rides » (`registeredGroups`) always first, then Rides and
+- Home lists `homeEntries()`: « My next rides » always first, then Rides and
   Routes (Routes first when there is no ride). An empty entry stays visible with its empty text.
-- Selecting a registered group syncs its route straight away (no route detail screen); the status
+- « My next rides » is `RoutesResponse.registeredItems()`: the ride groups (`registeredGroups`) and
+  the stages of the trips the user is registered for (`registeredStages`, API-168), both
+  `RegisteredItem`, mixed by departure. The stages only come because `getRoutes` sends
+  `stages=true`; the Garmin app does not, and its response must stay without them. The home entry
+  counts registrations (`registrationCount()`: one per trip, whatever its stages).
+- Selecting a registered row syncs its route straight away (no route detail screen); the status
   shows on the row. The sync is `BrowseState.sync`, shared with the route detail screen (one at a time; a result only
   shows while its generation is current, but a success is always recorded in `syncedRoutes`).
 - `registeredGroups` defaults to an empty list, so an older backend still parses.
@@ -100,6 +107,20 @@ app/src/main/kotlin/fr/pedalons/karoo/
   absent (older backend) means « unknown », not « not sent »; unknown states are ignored rather than
   failing the parse. A route synced from the Karoo since the response was loaded (`syncedRoutes`,
   reset with every new response) shows as on the Karoo, the server state being older than it.
+
+**Formats and words — the app's and the site's (API-191):**
+- Every number and date goes through `ui/Formatters.kt`; never a format in `strings.xml` or in a
+  screen. The rules are `docs/BRANDING.md` §8.3 and KIT §9 (« Ce qui vaut pour l'app Karoo », which
+  also lists the Karoo's deliberate differences); `FormatCasesTest` reads
+  `contracts/format-cases.json`, the cases the app and the site read too.
+- A departure is « sam. 14 nov. · 09:30 » (« Aujourd'hui », « Demain », the year outside the current
+  one), **in the ride's zone** (`timezone` of the DTO), followed by « heure de Tokyo (ven. 01:00 chez
+  vous) » when the Karoo is at another offset. 24 h in French, 12 h in English: the language
+  decides, not the Karoo's 12/24 setting.
+- « 42,0 km », « 1 240 m D+ »: no-break space (U+00A0) before the unit and between thousands.
+- Counters are `plurals`; a group named by one or two characters reads « Groupe B » (`groupLabel`).
+- `FormatClock` is the « now » of the relative days: the tests and the goldens freeze it
+  (`TEST_NOW`), otherwise « Tomorrow » changes a golden from one day to the next.
 
 **Token Storage:**
 - DataStore preferences for access/refresh tokens
@@ -165,7 +186,7 @@ Signing secrets (`KAROO_KEYSTORE_BASE64`, `KAROO_KEYSTORE_PASSWORD`, `KAROO_KEY_
 | `POST /api/device/oauth/device` | Request device code for auth |
 | `POST /api/device/oauth/token` | Poll for tokens / refresh token |
 | `GET /api/device/me` | Connected GPS services (is Hammerhead connected?) |
-| `GET /api/device/routes` | Rides, standalone routes, and the groups the user is registered in (`registeredGroups`, API 11.4.0) |
+| `GET /api/device/routes?stages=true` | Rides, standalone routes, the groups the user is registered in (`registeredGroups`, API 11.4.0) and, because of `stages=true`, the stages of their trips (`registeredStages`, API 14.10.0) |
 | `POST /api/device/routes/{teamSlug}/{routeSlug}/sync?type=hammerhead` | Sync route to Karoo |
 
 ## Tests
@@ -184,7 +205,7 @@ through one command, which is also the end of `check.sh` and the karoo job of `c
 | Layer | Where (`app/src/test/kotlin/fr/pedalons/karoo/`) | Pins |
 |---|---|---|
 | API contract | `api/PedalonsApiClientTest`, `api/ModelsTest` | method, URL, bearer, JSON body (API-65 `clientId`), status -> result mapping, older-backend payloads (Ktor MockEngine) |
-| Pure logic | `HomeEntriesTest`, `FormattersTest`, `ModelsTest`, `auth/QrCodeTest` | `homeEntries`, `startOf`, sync states, units, 12h/24h dates |
+| Pure logic | `HomeEntriesTest`, `FormattersTest`, `FormatCasesTest`, `ZoneLabelAndGroupTitleTest`, `ModelsTest`, `auth/QrCodeTest` | `homeEntries`, `startOf`, `registeredItems`, sync states, units, departures in the ride's zone, the formats shared with the app and the site (`contracts/format-cases.json`) |
 | Plain JVM | `browse/BrowseStateTest`, `browse/MainUiStateTest`, `browse/MainViewModelTest`, `browse/RouteDetailFactoryTest`, `auth/SessionTest`, `auth/DeviceCodeLoginTest`, `auth/HammerheadLinkWatcherTest`, `auth/TokenExpiryTest`, `data/PedalonsRepositoryTest` (with `support/FakeTokenStore`, `support/TestClock`) | reducer, screen precedence, startup/sign-in sequence (one session per sign-in), single-flight refresh, RFC 8628 loop, repository result mapping |
 | Behaviour | `StartupAndAuthFlowTest`, `NavigationTest`, `SyncTest`, `auth/*ActivityTest` | the real activities driven by the Karoo keys and touch against a `FakeBackend`: texts shown, HTTP requests made, tokens stored, activities started |
 | Pixels | `screenshots/ScreenshotCases` (run in `en` and `fr`) | every screen on 480x800 px at 300 dpi (the Karoo's own `wm size` / `wm density`), Android 12 |

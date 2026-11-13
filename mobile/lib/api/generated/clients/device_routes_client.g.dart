@@ -22,11 +22,16 @@ class _DeviceRoutesClient implements DeviceRoutesClient {
 
   @override
   Future<DeviceRoutesResponse> deviceListRoutes({
+    bool? stages = false,
     double? lat,
     double? lon,
   }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{r'lat': lat, r'lon': lon};
+    final queryParameters = <String, dynamic>{
+      r'stages': stages,
+      r'lat': lat,
+      r'lon': lon,
+    };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;

@@ -57,6 +57,36 @@ class SyncTest : AppTestBase() {
 
     private fun count(text: String) = compose.onAllNodesWithText(text).fetchSemanticsNodes().size
 
+    // === Trip stage (API-168) ===
+
+    @Test
+    fun stageRow_selectSyncsTheStagesOwnRoute() {
+        backend.routes = {
+            ok(
+                Fixtures.routesJson(
+                    groups = emptyList(),
+                    stages =
+                        listOf(
+                            Fixtures.stage("Stage 1", routeSlug = "galibier", state = "OUTDATED"),
+                        ),
+                ),
+            )
+        }
+        signIn()
+        launch()
+        waitForHome()
+        select()
+        assertShown("Stage 1", "Older version on the Karoo")
+
+        select()
+
+        waitForText("Route synced!")
+        assertEquals(
+            "/api/device/routes/team-a/galibier/sync",
+            backend.syncRequests().single().path,
+        )
+    }
+
     // === Route detail ===
 
     @Test

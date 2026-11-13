@@ -1,9 +1,9 @@
 package fr.pedalons.karoo.browse
 
-import fr.pedalons.karoo.api.DeviceRegisteredGroup
 import fr.pedalons.karoo.api.DeviceRide
 import fr.pedalons.karoo.api.DeviceRideEntry
 import fr.pedalons.karoo.api.DeviceRoute
+import fr.pedalons.karoo.api.RegisteredItem
 import fr.pedalons.karoo.api.RoutesResponse
 
 // The key of a route in the routes synced during the session (MainScreen).
@@ -39,8 +39,9 @@ fun homeEntries(response: RoutesResponse): List<HomeEntry> =
 sealed class NavState {
     object Home : NavState()
 
-    // The groups the user is registered in: selecting one syncs its route directly.
-    data class RegisteredGroupList(val groups: List<DeviceRegisteredGroup>) : NavState()
+    // The ride groups and trip stages the user is registered in: selecting one syncs its route
+    // directly.
+    data class RegisteredGroupList(val items: List<RegisteredItem>) : NavState()
 
     data class RideList(val rides: List<DeviceRide>) : NavState()
 
@@ -56,6 +57,8 @@ sealed class NavState {
         val elevationGain: Float,
         // Start of the ride entry's group (null for a standalone route).
         val startDateTime: String? = null,
+        // The ride's zone, in which that start is displayed.
+        val timezone: String? = null,
     ) : NavState() {
         companion object {
             /** The detail of one entry of a ride: it starts with its group, else with the ride. */
@@ -67,6 +70,7 @@ sealed class NavState {
                     distance = entry.distance,
                     elevationGain = entry.elevationGain,
                     startDateTime = ride.startOf(entry),
+                    timezone = ride.timezone,
                 )
 
             /** The detail of a standalone route: it has no start. */

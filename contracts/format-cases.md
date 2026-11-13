@@ -1,6 +1,6 @@
 # `format-cases.json` — the formats both clients must agree on
 
-One list of cases, read by the tests of the app **and** of the site: a value, a language and a unit system, and the
+One list of cases, read by the tests of the app, of the site **and** of the Karoo extension: a value, a language and a unit system, and the
 exact text both formatters must return. It is what keeps a « 92.4 km » from coming back on one side only (ledgers
 `MOB-139`, `WEB-167`; rules in `docs/BRANDING.md` §8.3 and the cards' `KIT.md` §8–9).
 
@@ -17,5 +17,7 @@ French thousands separator and the English space before AM/PM). Never paste them
 written rule (BRANDING §8.3, KIT §8–9); where no rule decides, the app's rendering wins and the case says so in `note`.
 A new `kind` needs a branch in both tests.
 
-**Read by** `mobile/test/core/utils/format_cases_test.dart` (`flutter test`) and
-`frontend/src/utils/formatCases.test.ts` (`pnpm test`).
+**Read by** `mobile/test/core/utils/format_cases_test.dart` (`flutter test`),
+`frontend/src/utils/formatCases.test.ts` (`pnpm test`) and, for the kinds the Karoo shows (`distance`, `elevation`,
+`shortDateTime`), `karoo/app/src/test/kotlin/fr/pedalons/karoo/FormatCasesTest.kt` (`./gradlew testDebugUnitTest`,
+ledger `API-191`). That test skips the other kinds by name: a new `kind` must be added to its list or given a branch.

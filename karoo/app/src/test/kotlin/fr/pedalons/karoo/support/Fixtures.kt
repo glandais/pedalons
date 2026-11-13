@@ -43,8 +43,10 @@ object Fixtures {
         entries: List<String>,
         start: String? = "2026-11-14T08:00:00Z",
         team: String = "team-a",
+        timezone: String? = null,
     ) = buildString {
         append("""{"teamSlug":"$team","rideSlug":"$slug","rideName":"$name",""")
+        if (timezone != null) append(""""timezone":"$timezone",""")
         if (start != null) append(""""startDateTime":"$start",""")
         append(""""entries":[${entries.joinToString(",")}]}""")
     }
@@ -85,6 +87,35 @@ object Fixtures {
         append("}")
     }
 
+    /** A stage of a trip the user is registered for; [state] as in [group]. */
+    fun stage(
+        stage: String,
+        tripName: String = "Alps crossing",
+        routeSlug: String = "route-$stage",
+        team: String = "team-a",
+        start: String = "2026-11-14T07:00:00Z",
+        timezone: String = "Europe/Paris",
+        from: String? = null,
+        to: String? = null,
+        state: String? = null,
+        distance: Float = 82_500f,
+        elevation: Float = 2100f,
+    ) = buildString {
+        append(
+            """{"teamSlug":"$team","tripSlug":"trip-1","tripName":"$tripName","stageName":"$stage",
+               "routeSlug":"$routeSlug","routeName":"Route $stage","distance":$distance,
+               "elevationGain":$elevation,"startDateTime":"$start","timezone":"$timezone"""",
+        )
+        if (from != null) append(""","startPlaceName":"$from"""")
+        if (to != null) append(""","endPlaceName":"$to"""")
+        when (state) {
+            null -> {}
+            "" -> append(""","syncStatuses":[]""")
+            else -> append(""","syncStatuses":[{"serviceType":"HAMMERHEAD","state":"$state"}]""")
+        }
+        append("}")
+    }
+
     fun routesJson(
         rides: List<String> =
             listOf(
@@ -99,9 +130,11 @@ object Fixtures {
             ),
         routes: List<String> = listOf(route("s1", "Solo loop")),
         groups: List<String>? = listOf(group("Fast"), group("Easy")),
+        stages: List<String>? = null,
     ) = buildString {
         append("""{"rides":[${rides.joinToString(",")}],"routes":[${routes.joinToString(",")}]""")
         if (groups != null) append(""","registeredGroups":[${groups.joinToString(",")}]""")
+        if (stages != null) append(""","registeredStages":[${stages.joinToString(",")}]""")
         append("}")
     }
 }

@@ -50,7 +50,7 @@ internal data class BrowseState(
         get() =
             when (val state = current) {
                 is NavState.Home -> response?.let { homeEntries(it).size } ?: 0
-                is NavState.RegisteredGroupList -> state.groups.size
+                is NavState.RegisteredGroupList -> state.items.size
                 is NavState.RideList -> state.rides.size
                 is NavState.RideEntries -> state.ride.entries.size
                 is NavState.RouteList -> state.routes.size
@@ -86,7 +86,7 @@ internal data class BrowseState(
                     ?.let { homeEntries(it).getOrNull(selectedIndex) }
                     ?.let { openHomeEntry(it) } ?: BrowseStep(this)
             is NavState.RegisteredGroupList ->
-                state.groups.getOrNull(selectedIndex)?.let {
+                state.items.getOrNull(selectedIndex)?.let {
                     sync(it.teamSlug, it.routeSlug, selectedIndex)
                 } ?: BrowseStep(this)
             is NavState.RideList ->
@@ -106,7 +106,7 @@ internal data class BrowseState(
         return BrowseStep(
             navigateTo(
                 when (entry) {
-                    HomeEntry.REGISTERED -> NavState.RegisteredGroupList(response.registeredGroups)
+                    HomeEntry.REGISTERED -> NavState.RegisteredGroupList(response.registeredItems())
                     HomeEntry.RIDES -> NavState.RideList(response.rides)
                     HomeEntry.ROUTES -> NavState.RouteList(response.routes)
                 },

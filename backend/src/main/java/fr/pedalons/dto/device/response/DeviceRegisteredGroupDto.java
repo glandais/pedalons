@@ -33,8 +33,8 @@ public record DeviceRegisteredGroupDto(
     @Schema(
             description =
                 "When the group leaves, as an absolute instant (UTC): the group's startAt, the"
-                    + " ride's own start when the group has no time. Devices render it in their"
-                    + " own zone.",
+                    + " ride's own start when the group has no time. The Karoo renders it in"
+                    + " timezone, the Garmin app in its own zone.",
             required = true)
         Instant startDateTime,
     @Schema(description = "IANA time zone of the ride (e.g. Europe/Paris)", required = true)

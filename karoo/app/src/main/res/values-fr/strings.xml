@@ -49,23 +49,40 @@
 
     <!-- Navigation -->
     <string name="nav_registered">Prochaines sorties</string>
-    <string name="registered_count">%d inscriptions</string>
     <string name="no_registered">Aucune inscription à venir</string>
     <string name="nav_rides">Sorties</string>
     <string name="nav_routes">Parcours</string>
-    <string name="rides_count">%d sorties</string>
-    <string name="routes_count">%d parcours</string>
     <string name="no_rides">Aucune sortie à venir</string>
     <string name="no_routes">Aucun parcours disponible</string>
     <string name="route_detail_sync">Sync vers Karoo</string>
 
-    <!-- Formatting -->
-    <string name="distance_format_km">%.1f km</string>
-    <string name="distance_format_mi">%.1f mi</string>
-    <string name="elevation_format_m">↑%1$dm</string>
-    <string name="elevation_format_ft">↑%1$dft</string>
-    <string name="elevation_dplus_m">%1$dm D+</string>
-    <string name="elevation_dplus_ft">%1$dft D+</string>
+    <!-- Counters: always agreed (docs/BRANDING.md §8.3) -->
+    <plurals name="registered_count">
+        <item quantity="one">%d inscription</item>
+        <item quantity="many">%d inscriptions</item>
+        <item quantity="other">%d inscriptions</item>
+    </plurals>
+    <plurals name="rides_count">
+        <item quantity="one">%d sortie</item>
+        <item quantity="many">%d sorties</item>
+        <item quantity="other">%d sorties</item>
+    </plurals>
+    <plurals name="routes_count">
+        <item quantity="one">%d parcours</item>
+        <item quantity="many">%d parcours</item>
+        <item quantity="other">%d parcours</item>
+    </plurals>
+
+    <!-- Formatting: the shared rules of the app and the site (ui/Formatters.kt, contracts/format-cases.json) -->
+    <string name="group_title">Groupe %s</string>
+    <string name="elevation_gain">%s D+</string>
+    <string name="today">Aujourd\'hui</string>
+    <string name="tomorrow">Demain</string>
+    <string name="departure_at">%1$s · %2$s</string>
+    <string name="zone_mention">heure %s</string>
+    <string name="at_your_place">%s chez vous</string>
+    <string name="zone_mention_with_local">%1$s (%2$s)</string>
+    <string name="places_span">%1$s → %2$s</string>
     <string name="nav_arrow">›</string>
     <string name="success_checkmark">✓</string>
 </resources>

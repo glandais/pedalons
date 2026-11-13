@@ -21,7 +21,7 @@ export interface DeviceRegisteredGroupDto {
   distance: number
   /** Elevation gain in meters */
   elevationGain: number
-  /** When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. Devices render it in their own zone. */
+  /** When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. The Karoo renders it in timezone, the Garmin app in its own zone. */
   startDateTime: Instant
   /** IANA time zone of the ride (e.g. Europe/Paris) */
   timezone: string

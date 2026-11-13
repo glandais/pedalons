@@ -109,6 +109,7 @@ export 'models/deny_request.dart';
 export 'models/departure_weather_dto.dart';
 export 'models/device_code_response.dart';
 export 'models/device_registered_group_dto.dart';
+export 'models/device_registered_stage_dto.dart';
 export 'models/device_request.dart';
 export 'models/device_ride_dto.dart';
 export 'models/device_ride_entry_dto.dart';

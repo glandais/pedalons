@@ -10,19 +10,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.pedalons.karoo.R
 import fr.pedalons.karoo.api.DeviceRide
+import fr.pedalons.karoo.ui.components.DepartureLines
 import fr.pedalons.karoo.ui.components.ListEmptyText
 import fr.pedalons.karoo.ui.components.NavArrow
 import fr.pedalons.karoo.ui.components.ScreenTopBar
 import fr.pedalons.karoo.ui.components.ScreenWithOverlay
 import fr.pedalons.karoo.ui.components.SelectableRow
-import fr.pedalons.karoo.ui.formatDateTime
 
 @Composable
 internal fun RideListScreen(
@@ -32,8 +32,6 @@ internal fun RideListScreen(
     onSelectRide: (DeviceRide) -> Unit,
     onBack: () -> Unit,
 ) {
-    val context = LocalContext.current
-
     ScreenWithOverlay(onBack = onBack) {
         Column(modifier = Modifier.fillMaxSize()) {
             ScreenTopBar(title = stringResource(R.string.nav_rides))
@@ -62,18 +60,12 @@ internal fun RideListScreen(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
-                                val dateStr = formatDateTime(context, ride.startDateTime)
-                                if (dateStr != null) {
-                                    Text(
-                                        text = dateStr,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
+                                DepartureLines(ride.startDateTime, ride.timezone)
                                 Text(
                                     text =
-                                        stringResource(
-                                            R.string.routes_count,
+                                        pluralStringResource(
+                                            R.plurals.routes_count,
+                                            ride.entries.size,
                                             ride.entries.size,
                                         ),
                                     style = MaterialTheme.typography.bodySmall,

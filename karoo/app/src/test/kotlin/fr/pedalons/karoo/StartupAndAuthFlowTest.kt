@@ -123,8 +123,8 @@ class StartupAndAuthFlowTest : AppTestBase() {
 
         val routes = backend.requests.filter { it.path == "/api/device/routes" }
         assertTrue("routes requested", routes.isNotEmpty())
-        // The app does not send its position.
-        assertTrue(routes.all { it.bearer == "tok-1" && it.query.isEmpty() })
+        // The app does not send its position; it asks for the trip stages (API-168).
+        assertTrue(routes.all { it.bearer == "tok-1" && it.query == mapOf("stages" to "true") })
         // Nothing else was needed: the access token was valid, so no refresh.
         assertTrue(backend.requests.none { it.isRefresh })
         assertTrue(backend.unexpected.isEmpty())
@@ -480,7 +480,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
         signIn()
         launch()
         waitForHome()
-        assertShown("1 rides")
+        assertShown("1 ride")
 
         backend.routes = {
             ok(
@@ -497,7 +497,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
         clickDescription("Loading…")
 
         waitForText("2 rides")
-        assertNotShown("1 rides")
+        assertNotShown("1 ride")
     }
 
     @Test

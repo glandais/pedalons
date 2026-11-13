@@ -58,8 +58,16 @@ public class DeviceRoutesResource {
           @Nullable Double lat,
       @Parameter(description = "User's current longitude (for proximity sorting)")
           @QueryParam("lon")
-          @Nullable Double lon) {
-    return deviceRouteService.getRoutesForUser(lat, lon);
+          @Nullable Double lon,
+      @Parameter(
+              description =
+                  "Also return registeredStages, the upcoming stages of the trips the user is"
+                      + " registered for. Off by default: a device that does not ask keeps the"
+                      + " response it always had.")
+          @QueryParam("stages")
+          @DefaultValue("false")
+          boolean stages) {
+    return deviceRouteService.getRoutesForUser(lat, lon, stages);
   }
 
   @GET

@@ -22,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -89,7 +90,7 @@ internal fun HomeScreen(
                     ->
                     val count =
                         when (entry) {
-                            HomeEntry.REGISTERED -> response.registeredGroups.size
+                            HomeEntry.REGISTERED -> response.registrationCount()
                             HomeEntry.RIDES -> response.rides.size
                             HomeEntry.ROUTES -> response.routes.size
                         }
@@ -103,12 +104,13 @@ internal fun HomeScreen(
                                 },
                             ),
                         subtitle =
-                            stringResource(
+                            pluralStringResource(
                                 when (entry) {
-                                    HomeEntry.REGISTERED -> R.string.registered_count
-                                    HomeEntry.RIDES -> R.string.rides_count
-                                    HomeEntry.ROUTES -> R.string.routes_count
+                                    HomeEntry.REGISTERED -> R.plurals.registered_count
+                                    HomeEntry.RIDES -> R.plurals.rides_count
+                                    HomeEntry.ROUTES -> R.plurals.routes_count
                                 },
+                                count,
                                 count,
                             ),
                         isSelected = selectedIndex == index,

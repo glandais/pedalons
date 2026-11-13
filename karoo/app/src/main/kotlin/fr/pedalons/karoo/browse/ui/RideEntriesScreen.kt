@@ -16,12 +16,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.pedalons.karoo.api.DeviceRide
 import fr.pedalons.karoo.api.DeviceRideEntry
+import fr.pedalons.karoo.ui.components.DepartureLines
 import fr.pedalons.karoo.ui.components.DistanceAndElevation
 import fr.pedalons.karoo.ui.components.NavArrow
 import fr.pedalons.karoo.ui.components.ScreenTopBar
 import fr.pedalons.karoo.ui.components.ScreenWithOverlay
 import fr.pedalons.karoo.ui.components.SelectableRow
-import fr.pedalons.karoo.ui.formatDateTime
+import fr.pedalons.karoo.ui.groupLabel
 import io.hammerhead.karooext.models.UserProfile
 
 @Composable
@@ -54,20 +55,15 @@ internal fun RideEntriesScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = entry.groupName ?: entry.routeName,
+                                text =
+                                    entry.groupName?.let { groupLabel(context, it) }
+                                        ?: entry.routeName,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                            val startStr = formatDateTime(context, ride.startOf(entry))
-                            if (startStr != null) {
-                                Text(
-                                    text = startStr,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
+                            DepartureLines(ride.startOf(entry), ride.timezone)
                             DistanceAndElevation(entry.distance, entry.elevationGain, userProfile)
                         }
                         NavArrow()

@@ -14,6 +14,7 @@ import com.github.takahirom.roborazzi.RoborazziOptions
 import com.github.takahirom.roborazzi.captureRoboImage
 import fr.pedalons.karoo.api.DeviceCodeResponse
 import fr.pedalons.karoo.api.DeviceRegisteredGroup
+import fr.pedalons.karoo.api.DeviceRegisteredStage
 import fr.pedalons.karoo.api.DeviceRide
 import fr.pedalons.karoo.api.DeviceRideEntry
 import fr.pedalons.karoo.api.DeviceRoute
@@ -38,9 +39,12 @@ import fr.pedalons.karoo.browse.ui.RideListScreen
 import fr.pedalons.karoo.browse.ui.RouteDetailScreen
 import fr.pedalons.karoo.browse.ui.SkeletonScreen
 import fr.pedalons.karoo.browse.ui.StandaloneRouteListScreen
+import fr.pedalons.karoo.support.TEST_NOW
+import fr.pedalons.karoo.ui.FormatClock
 import fr.pedalons.karoo.ui.theme.PedalonsKarooTheme
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.UserProfile.PreferredUnit.UnitType
+import java.time.Instant
 import java.util.Locale
 import java.util.TimeZone
 import org.junit.After
@@ -74,12 +78,14 @@ abstract class ScreenshotCases(private val language: String) {
         TimeZone.setDefault(TimeZone.getTimeZone("Europe/Paris"))
         Locale.setDefault(Locale.forLanguageTag(language))
         Settings.System.putString(context.contentResolver, Settings.System.TIME_12_24, "24")
+        FormatClock.now = { Instant.parse(TEST_NOW) }
     }
 
     @After
     fun unfreeze() {
         TimeZone.setDefault(savedZone)
         Locale.setDefault(savedLocale)
+        FormatClock.now = Instant::now
     }
 
     private fun shot(name: String, content: @Composable () -> Unit) {
@@ -151,6 +157,44 @@ abstract class ScreenshotCases(private val language: String) {
         )
     private val groupReconnect = group("Gravel", "Saturday gravel", "r5", "RECONNECT_REQUIRED")
     private val groupUnknown = group("Social", "Coffee ride", "r6", null, km = 18_000f, up = 90f)
+
+    private fun stage(
+        name: String,
+        route: String,
+        state: String?,
+        start: String,
+        from: String? = null,
+        to: String? = null,
+        zone: String = "Europe/Paris",
+        km: Float = 82_500f,
+        up: Float = 2100f,
+    ) =
+        DeviceRegisteredStage(
+            teamSlug = "team-a",
+            tripSlug = "trip-1",
+            tripName = "Alps crossing",
+            stageName = name,
+            routeSlug = route,
+            routeName = "Route $name",
+            distance = km,
+            elevationGain = up,
+            startDateTime = start,
+            timezone = zone,
+            startPlaceName = from,
+            endPlaceName = to,
+            syncStatuses = state?.let { listOf(DeviceRouteSyncStatus("HAMMERHEAD", it)) },
+        )
+
+    private val stageOne =
+        stage("Stage 1", "st1", "SENT", "2026-11-14T07:00:00Z", "Bourg-d'Oisans", "Valloire")
+    private val stageTwo =
+        stage("Stage 2", "st2", null, "2026-11-15T07:30:00Z", km = 64_000f, up = 1800f)
+    // A ride read from elsewhere: Saturday 08:00 in Tokyo is Friday 23:00 on this Karoo.
+    private val groupTokyo =
+        group("B", "Tokyo sunrise", "r7", null, start = "2026-11-13T23:00:00Z")
+            .copy(
+                timezone = "Asia/Tokyo",
+            )
 
     private fun entry(
         slug: String,
@@ -420,6 +464,40 @@ abstract class ScreenshotCases(private val language: String) {
             RegisteredGroupListScreen(
                 listOf(groupSent, groupFailing),
                 imperial,
+                0,
+                rememberLazyListState(),
+                SyncState.IDLE,
+                null,
+                emptySet(),
+                { _, _ -> },
+                {},
+            )
+        }
+
+    // A trip stage beside a ride group, by departure (docs/LEDGER_*.md API-168).
+    @Test
+    fun registered_withStages() =
+        shot("registered_with_stages") {
+            RegisteredGroupListScreen(
+                listOf(stageOne, groupSent, stageTwo),
+                null,
+                0,
+                rememberLazyListState(),
+                SyncState.IDLE,
+                null,
+                emptySet(),
+                { _, _ -> },
+                {},
+            )
+        }
+
+    // A short group name, and a departure in another zone than the Karoo's.
+    @Test
+    fun registered_otherZone() =
+        shot("registered_other_zone") {
+            RegisteredGroupListScreen(
+                listOf(groupTokyo, groupUnknown),
+                null,
                 0,
                 rememberLazyListState(),
                 SyncState.IDLE,

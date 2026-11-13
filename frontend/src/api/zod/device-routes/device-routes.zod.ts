@@ -4,9 +4,17 @@ import * as zod from 'zod'
  * Get routes for authenticated user. Prioritizes routes from upcoming rides, then latest routes from user's teams.
  * @summary List routes for user
  */
+export const deviceListRoutesQueryStagesDefault = false
+
 export const DeviceListRoutesQueryParams = zod.object({
   lat: zod.number().optional().describe("User's current latitude (for proximity sorting)"),
   lon: zod.number().optional().describe("User's current longitude (for proximity sorting)"),
+  stages: zod
+    .boolean()
+    .default(deviceListRoutesQueryStagesDefault)
+    .describe(
+      'Also return registeredStages, the upcoming stages of the trips the user is registered for. Off by default: a device that does not ask keeps the response it always had.'
+    ),
 })
 
 export const DeviceListRoutesResponse = zod
@@ -25,7 +33,7 @@ export const DeviceListRoutesResponse = zod
             timezone: zod
               .string()
               .describe(
-                'IANA zone of the ride, as RideDto.timezone; devices may ignore it and render in their own zone'
+                'IANA zone of the ride, as RideDto.timezone: the Karoo renders the starts in it, the Garmin app ignores it and renders in its own zone'
               ),
             entries: zod
               .array(
@@ -88,7 +96,7 @@ export const DeviceListRoutesResponse = zod
             startDateTime: zod.iso
               .datetime({ offset: true })
               .describe(
-                "When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. Devices render it in their own zone."
+                "When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. The Karoo renders it in timezone, the Garmin app in its own zone."
               ),
             timezone: zod.string().describe('IANA time zone of the ride (e.g. Europe/Paris)'),
             syncStatuses: zod
@@ -117,6 +125,61 @@ export const DeviceListRoutesResponse = zod
       )
       .describe(
         'Upcoming ride groups the user is registered in (from 12 hours ago to 7 days ahead), earliest first, each with the route to load'
+      ),
+    registeredStages: zod
+      .array(
+        zod
+          .object({
+            teamSlug: zod.string().describe('Team slug'),
+            tripSlug: zod.string().describe('Trip slug'),
+            tripName: zod.string().describe('Trip name'),
+            stageName: zod.string().describe('Stage name'),
+            routeSlug: zod
+              .string()
+              .describe(
+                "Slug of the route to load: the stage's own route, never the trip's (a stage without a route is left out)"
+              ),
+            routeName: zod.string().describe('Route name'),
+            distance: zod.number().describe('Distance in meters'),
+            elevationGain: zod.number().describe('Elevation gain in meters'),
+            startDateTime: zod.iso
+              .datetime({ offset: true })
+              .describe('When the stage leaves, as an absolute instant (UTC)'),
+            timezone: zod.string().describe('IANA time zone of the stage (e.g. Europe/Paris)'),
+            startPlaceName: zod
+              .string()
+              .optional()
+              .describe('Name of the place the stage leaves from, when it has one'),
+            endPlaceName: zod
+              .string()
+              .optional()
+              .describe('Name of the place the stage ends at, when it has one'),
+            syncStatuses: zod
+              .array(
+                zod
+                  .object({
+                    serviceType: zod
+                      .enum(['HAMMERHEAD', 'GARMIN', 'WAHOO'])
+                      .describe('GPS service'),
+                    state: zod
+                      .enum(['SENT', 'OUTDATED', 'PENDING', 'FAILING', 'RECONNECT_REQUIRED'])
+                      .describe(
+                        'SENT: at the service, up to date; OUTDATED: at the service in an older version that nothing will update, send it again; PENDING: to be sent or updated shortly; FAILING: the last attempt failed (a few retries, then it waits for the route to change); RECONNECT_REQUIRED: the connection must be renewed'
+                      ),
+                  })
+                  .describe("Where the route stands at one of the user's GPS services")
+              )
+              .describe(
+                "Where the route stands at each of the user's GPS services that hold it, as DeviceRegisteredGroupDto.syncStatuses"
+              ),
+          })
+          .describe(
+            'Upcoming stage of a trip the user is registered for, with the route to load on the device'
+          )
+      )
+      .optional()
+      .describe(
+        'Upcoming stages of the trips the user is registered for (each stage leaving from 12 hours ago to 7 days ahead), earliest first, each with the route to load. Present only when the request carries stages=true.'
       ),
   })
   .describe('Response containing rides and routes for device applications')

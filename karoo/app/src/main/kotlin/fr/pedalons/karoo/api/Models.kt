@@ -1,5 +1,6 @@
 package fr.pedalons.karoo.api
 
+import java.time.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -46,30 +47,48 @@ data class RoutesResponse(
     @SerialName("routes") val routes: List<DeviceRoute>,
     // The groups the user is registered in, soonest first (API 11.4.0); absent from older servers.
     @SerialName("registeredGroups") val registeredGroups: List<DeviceRegisteredGroup> = emptyList(),
-)
+    // The stages of the trips the user is registered for, soonest first (API 14.10.0, sent because
+    // the request carries `stages=true`); absent from older servers (docs/LEDGER_*.md API-168).
+    @SerialName("registeredStages") val registeredStages: List<DeviceRegisteredStage> = emptyList(),
+) {
+    /**
+     * What « My next rides » lists: the groups and the trip stages the user is registered in, by
+     * departure. Without stages it is the server's own order of the groups, untouched.
+     */
+    fun registeredItems(): List<RegisteredItem> =
+        if (registeredStages.isEmpty()) {
+            registeredGroups
+        } else {
+            (registeredGroups + registeredStages).sortedBy {
+                runCatching { Instant.parse(it.startDateTime) }.getOrDefault(Instant.MAX)
+            }
+        }
+
+    /** How many registrations that is: one per ride group, one per trip whatever its stages. */
+    fun registrationCount(): Int =
+        registeredGroups.size + registeredStages.distinctBy { it.teamSlug to it.tripSlug }.size
+}
 
 /**
- * A ride group the user is registered in, with the route to load: selecting it syncs that route
- * straight away, without the route detail screen.
+ * A row of « My next rides »: a ride group or a trip stage the user is registered in, with the
+ * route to load — selecting it syncs that route straight away.
  */
-@Serializable
-data class DeviceRegisteredGroup(
-    @SerialName("teamSlug") val teamSlug: String,
-    @SerialName("rideSlug") val rideSlug: String,
-    @SerialName("rideName") val rideName: String,
-    @SerialName("groupName") val groupName: String,
-    @SerialName("routeSlug") val routeSlug: String,
-    @SerialName("routeName") val routeName: String,
-    @SerialName("distance") val distance: Float,
-    @SerialName("elevationGain") val elevationGain: Float,
-    // The group's start as a UTC instant.
-    @SerialName("startDateTime") val startDateTime: String,
-    // The ride's IANA zone, in which the start is displayed.
-    @SerialName("timezone") val timezone: String? = null,
+sealed interface RegisteredItem {
+    val teamSlug: String
+    val routeSlug: String
+    val distance: Float
+    val elevationGain: Float
+
+    // The departure as a UTC instant.
+    val startDateTime: String
+
+    // The IANA zone the departure is displayed in.
+    val timezone: String?
+
     // Where the route stands at each of the user's GPS services that hold it (docs/LEDGER_*.md
     // API-121). Null when the server predates the field: that means « unknown », not « not sent ».
-    @SerialName("syncStatuses") val syncStatuses: List<DeviceRouteSyncStatus>? = null,
-) {
+    val syncStatuses: List<DeviceRouteSyncStatus>?
+
     /**
      * Where the route stands at Hammerhead, the Karoo's own service: null when unknown (older
      * server), when Hammerhead does not hold the route, or for a state this build does not know.
@@ -79,6 +98,49 @@ data class DeviceRegisteredGroup(
             ?.firstOrNull { it.serviceType == GPS_SERVICE_HAMMERHEAD }
             ?.let { RouteSyncState.parse(it.state) }
 }
+
+/**
+ * A ride group the user is registered in, with the route to load: selecting it syncs that route
+ * straight away, without the route detail screen.
+ */
+@Serializable
+data class DeviceRegisteredGroup(
+    @SerialName("teamSlug") override val teamSlug: String,
+    @SerialName("rideSlug") val rideSlug: String,
+    @SerialName("rideName") val rideName: String,
+    @SerialName("groupName") val groupName: String,
+    @SerialName("routeSlug") override val routeSlug: String,
+    @SerialName("routeName") val routeName: String,
+    @SerialName("distance") override val distance: Float,
+    @SerialName("elevationGain") override val elevationGain: Float,
+    // The group's start as a UTC instant.
+    @SerialName("startDateTime") override val startDateTime: String,
+    // The ride's IANA zone, in which the start is displayed.
+    @SerialName("timezone") override val timezone: String? = null,
+    @SerialName("syncStatuses") override val syncStatuses: List<DeviceRouteSyncStatus>? = null,
+) : RegisteredItem
+
+/**
+ * A stage of a trip the user is registered for, with its own route (docs/LEDGER_*.md API-168): the
+ * counterpart of [DeviceRegisteredGroup] for trips.
+ */
+@Serializable
+data class DeviceRegisteredStage(
+    @SerialName("teamSlug") override val teamSlug: String,
+    @SerialName("tripSlug") val tripSlug: String,
+    @SerialName("tripName") val tripName: String,
+    @SerialName("stageName") val stageName: String,
+    @SerialName("routeSlug") override val routeSlug: String,
+    @SerialName("routeName") val routeName: String,
+    @SerialName("distance") override val distance: Float,
+    @SerialName("elevationGain") override val elevationGain: Float,
+    @SerialName("startDateTime") override val startDateTime: String,
+    @SerialName("timezone") override val timezone: String? = null,
+    // Where the stage leaves from and ends, when it names its places.
+    @SerialName("startPlaceName") val startPlaceName: String? = null,
+    @SerialName("endPlaceName") val endPlaceName: String? = null,
+    @SerialName("syncStatuses") override val syncStatuses: List<DeviceRouteSyncStatus>? = null,
+) : RegisteredItem
 
 /**
  * Where a route stands at one GPS service. Plain strings, parsed by [RouteSyncState.parse]: a value
@@ -116,6 +178,8 @@ data class DeviceRide(
     @SerialName("rideName") val rideName: String,
     @SerialName("startDateTime") val startDateTime: String? = null,
     @SerialName("entries") val entries: List<DeviceRideEntry>,
+    // The ride's IANA zone, in which its starts are displayed; absent from older servers.
+    @SerialName("timezone") val timezone: String? = null,
 ) {
     /**
      * When [entry] starts: its group's start (docs/LEDGER_*.md API-84), or the ride's start for a

@@ -298,6 +298,22 @@ inscription, export, image d'en-tête, lieu et groupe, champs propres, actions) 
 - **Commentaire** : texte brut ; une adresse complète est un lien, toujours visible en entier.
 - **Quitter une équipe** se confirme ; quitter un groupe de sortie, jamais.
 
+### Ce qui vaut pour l'app Karoo (2026-11-13)
+
+L'extension Karoo charge un parcours avant de rouler : quatre touches, un écran de 480 × 800, pas de clavier. Elle
+suit les règles de **format et de vocabulaire**, pas celles de structure ([plan](../../2026-11-13-karoo-alignement.md),
+ledger `API-191`, `API-168`).
+
+- **Vaut aussi pour le Karoo** : le format du départ (« sam. 14 nov. · 09:30 », « Aujourd'hui », « Demain », l'année
+  hors de l'année en cours, l'heure selon la langue), lu dans le fuseau de la sortie avec la mention « heure de
+  Tokyo (…) » ; distance et dénivelé (« 42,0 km », « 1 240 m D+ ») ; compteurs accordés ; nom d'un groupe
+  (« Groupe B ») ; ligne d'étape (titre, voyage, date, départ → arrivée, sans nom de parcours) ; une étape n'apparaît
+  que si l'on participe au voyage. Les formats sont tenus par `contracts/format-cases.json`, que le Karoo lit aussi.
+- **Écarts voulus** : « Sync vers Karoo » à la place du bouton « GPS » (une seule destination, pas de feuille) ; ni
+  avatars, ni badges, ni météo, ni personnes inscrites ; aucune des règles de listes RL2 à RL13 (pas de filtre, de
+  recherche, de bascule de vue ni de création) ; thème sombre seul ; date en petit gris sous le titre, sans boîte du
+  jour ; fenêtre de 7 jours.
+
 ## 10. Règles des listes, app et site (décisions du 2026-11-12)
 
 Elles valent pour toute page de liste des deux supports. Source : [tri de l'audit des listes](../audit-listes/tri.md),

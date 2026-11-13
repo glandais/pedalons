@@ -7,6 +7,7 @@ import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.team.UserTeam;
 import fr.pedalons.dto.device.response.DeviceRegisteredGroupDto;
+import fr.pedalons.dto.device.response.DeviceRegisteredStageDto;
 import fr.pedalons.dto.device.response.DeviceRideDto;
 import fr.pedalons.dto.device.response.DeviceRideEntryDto;
 import fr.pedalons.dto.device.response.DeviceRouteDto;
@@ -25,6 +26,8 @@ import fr.pedalons.repository.ride.RideRepository;
 import fr.pedalons.repository.route.RouteQuery;
 import fr.pedalons.repository.route.RouteRepository;
 import fr.pedalons.repository.team.UserTeamRepository;
+import fr.pedalons.repository.trip.RegisteredStageRow;
+import fr.pedalons.repository.trip.TripParticipationRepository;
 import fr.pedalons.service.gps.sync.GpsRouteSyncService;
 import fr.pedalons.service.gps.sync.GpsRouteSyncService.RouteSyncStatus;
 import fr.pedalons.service.route.GpxProcessingService;
@@ -48,7 +51,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Unified service for aggregating routes for device applications (Garmin, Karoo, etc.). Returns
- * upcoming rides (D-1 to D+7) with their route entries, and latest standalone routes independently.
+ * upcoming rides (D-1 to D+7) with their route entries, and latest standalone routes independently;
+ * the groups the user is registered in, and — for a device that asks — the stages of the trips they
+ * are registered for.
  */
 @ApplicationScoped
 public class DeviceRouteService {
@@ -72,11 +77,15 @@ public class DeviceRouteService {
 
   private static final Duration REGISTERED_GROUPS_AHEAD = Duration.ofDays(7);
 
+  /** Same bound as the groups: each row is about as heavy (see the 100KB cap above). */
+  private static final int MAX_REGISTERED_STAGES_IN_RESPONSE = 20;
+
   @Inject PedalonsQueryContext pedalonsContext;
   @Inject UserTeamRepository userTeamRepository;
   @Inject RideRepository rideRepository;
   @Inject RouteRepository routeRepository;
   @Inject RideParticipationRepository rideParticipationRepository;
+  @Inject TripParticipationRepository tripParticipationRepository;
   @Inject GpsServiceConnectionRepository gpsServiceConnectionRepository;
   @Inject GpxProcessingService gpxProcessingService;
   @Inject GpsRouteSyncService gpsRouteSyncService;
@@ -90,10 +99,14 @@ public class DeviceRouteService {
    *
    * @param lat User's latitude (optional, for proximity sorting)
    * @param lon User's longitude (optional, for proximity sorting)
+   * @param stages whether to add {@code registeredStages}, the upcoming stages of the trips the
+   *     user is registered for; without it the field is absent, not empty, so the response of a
+   *     device that does not ask is unchanged (docs/LEDGER_*.md API-168)
    * @return Response with rides and routes lists
    */
   @Logged
-  public DeviceRoutesResponse getRoutesForUser(@Nullable Double lat, @Nullable Double lon) {
+  public DeviceRoutesResponse getRoutesForUser(
+      @Nullable Double lat, @Nullable Double lon, boolean stages) {
     Long userId = pedalonsContext.getUserId();
     List<UserTeam> memberships = userTeamRepository.findByUserId(userId);
 
@@ -102,6 +115,7 @@ public class DeviceRouteService {
           .rides(List.of())
           .routes(List.of())
           .registeredGroups(List.of())
+          .registeredStages(stages ? List.of() : null)
           .build();
     }
 
@@ -152,7 +166,60 @@ public class DeviceRouteService {
         .rides(boundedRides)
         .routes(boundedRoutes)
         .registeredGroups(getRegisteredGroups(userId, now))
+        .registeredStages(stages ? getRegisteredStages(userId, now) : null)
         .build();
+  }
+
+  /**
+   * The stages of the trips the user is registered for, leaving between 12 hours ago and 7 days
+   * ahead — the groups' window, applied to each stage's own departure — earliest first, each with
+   * its own route and where that route stands at the user's GPS services. Two queries whatever
+   * their number, as {@link #getRegisteredGroups}.
+   */
+  private List<DeviceRegisteredStageDto> getRegisteredStages(Long userId, Instant now) {
+    Long domainId = pedalonsContext.getDomainId();
+    List<RegisteredStageRow> rows =
+        tripParticipationRepository.findUpcomingRegisteredStages(
+            domainId,
+            userId,
+            pedalonsContext.getPinnedTeamIdNullable(),
+            now.minus(REGISTERED_GROUPS_PAST),
+            now.plus(REGISTERED_GROUPS_AHEAD),
+            MAX_REGISTERED_STAGES_IN_RESPONSE);
+    Set<Long> routeIds = rows.stream().map(RegisteredStageRow::routeId).collect(Collectors.toSet());
+    Map<Long, List<RouteSyncStatus>> statuses =
+        gpsRouteSyncService.findRouteStatuses(domainId, userId, routeIds);
+    return rows.stream()
+        .map(row -> toRegisteredStage(row, statuses.getOrDefault(row.routeId(), List.of())))
+        .toList();
+  }
+
+  private static DeviceRegisteredStageDto toRegisteredStage(
+      RegisteredStageRow row, List<RouteSyncStatus> statuses) {
+    Float distance = row.routeDistance();
+    Float elevationGain = row.routeElevationGain();
+    return DeviceRegisteredStageDto.builder()
+        .teamSlug(row.teamSlug())
+        .tripSlug(row.tripSlug())
+        .tripName(row.tripName())
+        .stageName(row.stageName())
+        .routeSlug(row.routeSlug())
+        .routeName(row.routeName())
+        .distance(distance != null ? distance : 0f)
+        .elevationGain(elevationGain != null ? elevationGain : 0f)
+        .startDateTime(row.stageStartAt())
+        .timezone(row.timezone())
+        .startPlaceName(row.startPlaceName())
+        .endPlaceName(row.endPlaceName())
+        .syncStatuses(toSyncStatuses(statuses))
+        .build();
+  }
+
+  private static List<DeviceRouteSyncStatusDto> toSyncStatuses(List<RouteSyncStatus> statuses) {
+    return statuses.stream()
+        .sorted(Comparator.comparing(RouteSyncStatus::serviceType))
+        .map(st -> new DeviceRouteSyncStatusDto(st.serviceType(), st.state()))
+        .toList();
   }
 
   /**
@@ -204,11 +271,7 @@ public class DeviceRouteService {
         .elevationGain(elevationGain != null ? elevationGain : 0f)
         .startDateTime(row.startAt())
         .timezone(row.timezone())
-        .syncStatuses(
-            statuses.stream()
-                .sorted(Comparator.comparing(RouteSyncStatus::serviceType))
-                .map(st -> new DeviceRouteSyncStatusDto(st.serviceType(), st.state()))
-                .toList())
+        .syncStatuses(toSyncStatuses(statuses))
         .build();
   }
 
@@ -280,8 +343,9 @@ public class DeviceRouteService {
                 .teamSlug(ride.getTeam().getSlug())
                 .rideSlug(ride.getSlug())
                 .rideName(ride.getName())
-                // An absolute instant, as stored: the devices render it in their own zone
-                // (docs/LEDGER_*.md API-78). No reading at the departure's local time here.
+                // An absolute instant, as stored (docs/LEDGER_*.md API-78): the Karoo renders it
+                // in `timezone` below, the Garmin app in its own zone (API-191). No reading at
+                // the departure's local time here.
                 .startDateTime(ride.getDateTime())
                 // The stored zone, the team's on a row an older backend wrote (docs/LEDGER_*.md
                 // API-60).

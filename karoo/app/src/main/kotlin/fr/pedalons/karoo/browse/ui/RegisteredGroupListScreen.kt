@@ -1,5 +1,6 @@
 package fr.pedalons.karoo.browse.ui
 
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,16 +22,30 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.pedalons.karoo.R
 import fr.pedalons.karoo.api.DeviceRegisteredGroup
+import fr.pedalons.karoo.api.DeviceRegisteredStage
+import fr.pedalons.karoo.api.RegisteredItem
 import fr.pedalons.karoo.api.RouteSyncState
 import fr.pedalons.karoo.browse.SyncState
 import fr.pedalons.karoo.browse.routeKey
+import fr.pedalons.karoo.ui.components.DepartureLines
 import fr.pedalons.karoo.ui.components.DistanceAndElevation
 import fr.pedalons.karoo.ui.components.ListEmptyText
 import fr.pedalons.karoo.ui.components.ScreenTopBar
 import fr.pedalons.karoo.ui.components.ScreenWithOverlay
 import fr.pedalons.karoo.ui.components.SelectableRow
-import fr.pedalons.karoo.ui.formatDateTime
+import fr.pedalons.karoo.ui.groupLabel
 import io.hammerhead.karooext.models.UserProfile
+
+/** « Bourg-d'Oisans → Valloire », or the one place the stage names; null when it names none. */
+private fun stagePlaces(context: Context, stage: DeviceRegisteredStage): String? {
+    val start = stage.startPlaceName?.takeIf { it.isNotBlank() }
+    val end = stage.endPlaceName?.takeIf { it.isNotBlank() }
+    return if (start != null && end != null) {
+        context.getString(R.string.places_span, start, end)
+    } else {
+        start ?: end
+    }
+}
 
 /**
  * Where a registered group's route stands at Hammerhead, as sent by the server. Nothing when the
@@ -59,19 +74,23 @@ private fun HammerheadSyncStatusText(state: RouteSyncState?) {
 }
 
 /**
- * The groups the user is registered in. A row is the action itself: selecting it syncs the group's
- * route to Hammerhead, its status shown on the row, without going through the route detail screen.
+ * The ride groups and the trip stages the user is registered in, by departure. A row is the action
+ * itself: selecting it syncs its route to Hammerhead, its status shown on the row, without going
+ * through the route detail screen.
+ *
+ * A stage row is the app's stage card in a list (KIT §9): the stage, its trip, when it leaves, then
+ * « start → end » — never the name of its route (docs/LEDGER_*.md API-168).
  */
 @Composable
 internal fun RegisteredGroupListScreen(
-    groups: List<DeviceRegisteredGroup>,
+    items: List<RegisteredItem>,
     userProfile: UserProfile?,
     selectedIndex: Int,
     listState: LazyListState,
     syncState: SyncState,
     syncTargetIndex: Int?,
     syncedRoutes: Set<String>,
-    onSelectGroup: (Int, DeviceRegisteredGroup) -> Unit,
+    onSelectItem: (Int, RegisteredItem) -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -80,7 +99,7 @@ internal fun RegisteredGroupListScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             ScreenTopBar(title = stringResource(R.string.nav_registered))
 
-            if (groups.isEmpty()) {
+            if (items.isEmpty()) {
                 ListEmptyText(stringResource(R.string.no_registered))
             } else {
                 LazyColumn(
@@ -89,43 +108,58 @@ internal fun RegisteredGroupListScreen(
                     contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
                     itemsIndexed(
-                        groups,
-                        key = { index, group ->
-                            "$index-${group.teamSlug}/${group.rideSlug}/${group.groupName}"
+                        items,
+                        key = { index, item ->
+                            when (item) {
+                                is DeviceRegisteredGroup ->
+                                    "$index-${item.teamSlug}/${item.rideSlug}/${item.groupName}"
+                                is DeviceRegisteredStage ->
+                                    "$index-${item.teamSlug}/${item.tripSlug}/${item.stageName}"
+                            }
                         },
-                    ) { index, group ->
+                    ) { index, item ->
+                        val (title, subtitle) =
+                            when (item) {
+                                is DeviceRegisteredGroup ->
+                                    groupLabel(context, item.groupName) to item.rideName
+                                is DeviceRegisteredStage -> item.stageName to item.tripName
+                            }
                         val rowSyncState = if (index == syncTargetIndex) syncState else null
 
                         SelectableRow(
                             isSelected = index == selectedIndex,
-                            onClick = { onSelectGroup(index, group) },
+                            onClick = { onSelectItem(index, item) },
                             contentPadding = 10.dp,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = group.groupName,
+                                    text = title,
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 Text(
-                                    text = group.rideName,
+                                    text = subtitle,
                                     style = MaterialTheme.typography.bodySmall,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
-                                val startStr = formatDateTime(context, group.startDateTime)
-                                if (startStr != null) {
-                                    Text(
-                                        text = startStr,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+                                DepartureLines(item.startDateTime, item.timezone)
+                                if (item is DeviceRegisteredStage) {
+                                    val places = stagePlaces(context, item)
+                                    if (places != null) {
+                                        Text(
+                                            text = places,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
                                 }
                                 DistanceAndElevation(
-                                    group.distance,
-                                    group.elevationGain,
+                                    item.distance,
+                                    item.elevationGain,
                                     userProfile,
                                 )
                                 when (rowSyncState) {
@@ -158,12 +192,12 @@ internal fun RegisteredGroupListScreen(
                                     null ->
                                         HammerheadSyncStatusText(
                                             if (
-                                                routeKey(group.teamSlug, group.routeSlug) in
+                                                routeKey(item.teamSlug, item.routeSlug) in
                                                     syncedRoutes
                                             ) {
                                                 RouteSyncState.SENT
                                             } else {
-                                                group.hammerheadSyncState()
+                                                item.hammerheadSyncState()
                                             },
                                         )
                                 }

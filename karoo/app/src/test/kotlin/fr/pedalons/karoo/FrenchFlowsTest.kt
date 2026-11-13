@@ -47,9 +47,9 @@ class FrenchFlowsTest : AppTestBase() {
         home()
         assertShown(
             "Prochaines sorties",
-            "1 inscriptions",
+            "1 inscription",
             "Sorties",
-            "1 sorties",
+            "1 sortie",
             "Parcours",
             "3 parcours",
         )
@@ -57,11 +57,33 @@ class FrenchFlowsTest : AppTestBase() {
     }
 
     @Test
+    fun registeredRows_followTheSharedRulesInFrench() {
+        home(
+            groups =
+                listOf(
+                    Fixtures.group("B", distance = 92_400f, elevation = 1240f),
+                    Fixtures.group("Fast", start = "2026-11-13T22:00:00Z")
+                        .replace("Europe/Paris", "Asia/Tokyo"),
+                ),
+        )
+        assertShown("2 inscriptions")
+        select()
+        assertShown(
+            "Groupe B",
+            "sam. 14 nov. · 09:30",
+            "92,4\u00a0km",
+            "1\u00a0240\u00a0m D+",
+            "sam. 14 nov. · 07:00",
+            "heure de Tokyo (ven. 23:00 chez vous)",
+        )
+    }
+
+    @Test
     fun registeredRow_showsTheFrenchDateStatusAndSyncs() {
         home()
         select()
         // 08:30 UTC on 14 Nov 2026 is 09:30 in Paris; French short date, 24h time.
-        assertShown("Fast", "Sunday ride", "14/11/2026 09:30", "Ancienne version sur le Karoo")
+        assertShown("Fast", "Sunday ride", "sam. 14 nov. · 09:30", "Ancienne version sur le Karoo")
 
         select()
         waitForText("Parcours synchronisé !")
@@ -84,7 +106,7 @@ class FrenchFlowsTest : AppTestBase() {
         next()
         select() // rides
         select() // the ride's groups
-        assertShown("Sunday ride", "14/11/2026 09:30", "14/11/2026 09:00")
+        assertShown("Sunday ride", "sam. 14 nov. · 09:30", "sam. 14 nov. · 09:00")
         select()
         assertShown("Sync vers Karoo")
         select()

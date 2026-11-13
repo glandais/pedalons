@@ -38,7 +38,7 @@ abstract class DeviceRegisteredGroupDto with _$DeviceRegisteredGroupDto {
     /// Elevation gain in meters
     required double elevationGain,
 
-    /// When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. Devices render it in their own zone.
+    /// When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. The Karoo renders it in timezone, the Garmin app in its own zone.
     required String startDateTime,
 
     /// IANA time zone of the ride (e.g. Europe/Paris)
