@@ -3639,6 +3639,27 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
   (`WaypointDrafts.roundCoordinate`, `WaypointDraftsTest`) : la carte donne toute la précision d'un
   double, que le GPX aurait recopiée chiffre pour chiffre.
 
+### Import GPX : segments d'une trace remis bout à bout (vcyclist 6.13.0)
+
+- `API-195` **Les `trkseg` d'une `trk` écrits dans le désordre ou à l'envers sont remis bout à
+  bout** (2026-11-13, contrat inchangé, pas de migration). Le pipeline lisait une trace comme ses
+  segments concaténés dans l'ordre du fichier : un export AF3V (« de Langogne à Le Puy-en-Velay »,
+  une `trk`, 9 `trkseg` mélangés dont 4 inversés) donnait des allers-retours en ligne droite sur
+  plus de 10 km. Le calcul est dans **vcyclist 6.13.0** (`GpxSegmentOrderJvm`, option, pas défaut) :
+  la DP exacte qui était celle de `GpxTrackMerger.plan`, une pièce par segment, chaque segment
+  restant le sien ; la trace n'est réécrite que si le gain dépasse 200 m, jamais au-delà de
+  16 segments, idempotent. Côté Pédalons, `GpxSegmentOrderJvm.withOrderedSegments` est appelé dans
+  `GpxProcessingService.rawTracks` juste après `GpxSanitizer` (dépôt, parcours, planificateur,
+  recalcul d'altitude) et dans `GpxTrackMerger.pieces` avant d'ordonner les pistes ;
+  `GpxTrackMerger.plan` et `gap` délèguent désormais au planificateur de vcyclist (la tolérance de
+  jonction de 1 m et les codes `GPX_EMPTY` / `GPX_MERGE_TOO_MANY_TRACKS` restent chez nous). Tests :
+  `GpxSegmentOrderTest` (fixture `unordered_segments.gpx` : 9 segments, aucun point perdu, aucun pas
+  plus long que ceux du fichier dans un segment — le fichier en espace jusqu'à ~550 m — ; fusion
+  d'une piste aux segments mélangés), `GpxTrackMergerTest` (dont la recherche exhaustive, qui
+  contrôle maintenant la DP de vcyclist). **À ne pas défaire** : l'option reste conservatrice — la
+  norme GPX dit les segments ordonnés et une activité en pause ne doit pas bouger ; le calcul vit
+  dans vcyclist, pas de seconde copie ici.
+
 ### Modèles de sortie numérotés (repris de biketeam)
 
 - `API-108` **Un modèle peut numéroter les sorties créées depuis lui** (2026-10-15, API 11.1.0, Flyway `V70`) — la fonction « incrément » des modèles biketeam : `RideTemplate.nextNumber` (colonne `ride_templates.next_number`, nullable, `>= 0`) est le numéro que prend la prochaine sortie. Le web préremplit son nom par « Nom #42 » (`CreateRidePage.templateForNewRide`) et envoie `RideRequest.templateId`, dont la création relève le numéro d'un (`RideTemplateRepository.raiseNextNumber`, un seul `UPDATE … set next_number = next_number + 1`, borné à l'équipe et sans effet sur un modèle qui ne numérote pas ou n'existe plus) ; le numéro se règle dans l'éditeur de modèle, vide = pas de numérotation. L'import biketeam reprend `increment` tel quel (c'est déjà, chez biketeam, le numéro de la prochaine sortie) et une ré-importation l'écrase par celui que biketeam a atteint entre-temps. Le mobile ne crée pas de sortie depuis un modèle (il ouvre la page web), il n'a que le client régénéré. Tests : `RideTemplateResourceTest.nextNumber_*`, `BiketeamLiveMigrationTest.rideTemplate_keepsBiketeamsIncrement_asItsNextNumber`, `CreateRidePage.test.tsx`. **À ne pas défaire** : relever le numéro côté serveur à la création, en une requête atomique — jamais par un `PUT` du modèle depuis le client, deux sorties créées ensemble prendraient le même numéro ; le numéro monte même si le nom proposé a été changé, comme chez biketeam ; `templateId` est ignoré à la mise à jour d'une sortie.

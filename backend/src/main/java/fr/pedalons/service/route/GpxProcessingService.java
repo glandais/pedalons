@@ -44,6 +44,7 @@ import fr.pedalons.service.thumbnail.ThumbnailService;
 import io.github.glandais.engine.gpx.GpxDocument;
 import io.github.glandais.engine.gpx.GpxModelJvm;
 import io.github.glandais.engine.gpx.GpxParserJvm;
+import io.github.glandais.engine.gpx.GpxSegmentOrderJvm;
 import io.github.glandais.engine.gpx.GpxToPathJvm;
 import io.github.glandais.engine.gpx.GpxTrackPoint;
 import io.github.glandais.engine.gpx.GpxWriterJvm;
@@ -226,6 +227,9 @@ public class GpxProcessingService {
     } catch (Exception e) {
       throw new BusinessException(ErrorCode.GPX_FAILURE, e);
     }
+    // Segments written out of order or backwards are put back end to end before tracksAsPaths
+    // concatenates them in file order — vcyclist, conservative (docs/LEDGER_*.md API-195).
+    doc = GpxSegmentOrderJvm.withOrderedSegments(doc);
     // Tracks and routes alike, as GPXFileReader did: a <rte>-only file is a valid route — the
     // facade's default, which is the one thing a Java caller could not spell before g33.
     List<Path> unfiltered = GpxToPathJvm.tracksAsPaths(doc);
