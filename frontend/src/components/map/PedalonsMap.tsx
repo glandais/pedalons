@@ -43,6 +43,9 @@ export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
       setTerrain3d,
       hillshade,
       setHillshade,
+      lightInDark,
+      setLightInDark,
+      canForceLight,
     } = useMapStyle()
 
     // MapLibre's own controls (zoom, compass, fullscreen, geolocation) label themselves in English otherwise.
@@ -95,6 +98,8 @@ export const PedalonsMap = forwardRef<MapRef, PedalonsMapProps>(
             // No served elevation source, no relief controls: the switches would toggle nothing.
             onTerrain3DChange={terrainSource ? setTerrain3d : undefined}
             onHillshadeChange={terrainSource ? setHillshade : undefined}
+            lightMap={lightInDark}
+            onLightMapChange={canForceLight ? setLightInDark : undefined}
             traces={traces}
             onTraceToggle={onTraceToggle}
           />

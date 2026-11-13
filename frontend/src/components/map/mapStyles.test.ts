@@ -3,7 +3,6 @@ import {
   groupStyles,
   isDarkBasemap,
   isKnownGroup,
-  mapStyleChoices,
   rendersDark,
   resolveMapChoice,
   styleUrlFor,
@@ -34,12 +33,12 @@ const SERVED: MapStyle[] = [
 describe('resolveMapChoice', () => {
   it('falls back to the first served basemap when the remembered id has left the contract', () => {
     // The server may drop a basemap between two restarts; better a map than none.
-    expect(resolveMapChoice(SERVED, 'graybeard', false)?.id).toBe('colorful')
-    expect(resolveMapChoice(SERVED, null, false)?.id).toBe('colorful')
+    expect(resolveMapChoice(SERVED, 'graybeard')?.id).toBe('colorful')
+    expect(resolveMapChoice(SERVED, null)?.id).toBe('colorful')
   })
 
   it('renders nothing rather than an invented style when nothing is served yet', () => {
-    expect(resolveMapChoice([], 'colorful', false)).toBeUndefined()
+    expect(resolveMapChoice([], 'colorful')).toBeUndefined()
   })
 
   it('carries the served attribution through to the resolved style', () => {
@@ -47,37 +46,31 @@ describe('resolveMapChoice', () => {
     // set only where the provider's own style document declares none — IGN's PLAN.IGN — so losing
     // it in resolution would leave that one basemap uncredited, and only that one, which is
     // precisely the kind of gap nobody notices.
-    expect(resolveMapChoice(SERVED, 'ign-vector', false)?.attribution).toContain('IGN')
-    expect(resolveMapChoice(SERVED, 'colorful', false)?.attribution).toBeUndefined()
+    expect(resolveMapChoice(SERVED, 'ign-vector')?.attribution).toContain('IGN')
+    expect(resolveMapChoice(SERVED, 'colorful')?.attribution).toBeUndefined()
   })
 
-  it('keeps a pinned rendering across a theme change, on the line that shows it', () => {
-    const lightTheme = resolveMapChoice(SERVED, 'colorful:dark', false)
-    expect(lightTheme?.id).toBe('colorful:dark')
-    expect(rendersDark(lightTheme, false)).toBe(true)
-    // Under a dark theme the same pick is what the theme gives: it is that line which lights up
-    const darkTheme = resolveMapChoice(SERVED, 'colorful:dark', true)
-    expect(darkTheme?.id).toBe('colorful')
-    expect(rendersDark(darkTheme, true)).toBe(true)
-  })
-
-  it('ignores a pin on a basemap without a dark counterpart', () => {
-    const choice = resolveMapChoice(SERVED, 'cyclosm:dark', false)
-    expect(choice?.id).toBe('cyclosm')
-    expect(choice?.pin).toBeNull()
+  it('reads a pick remembered with its former rendering suffix as its basemap', () => {
+    // Written before WEB-177, when « (sombre) » and « (clair) » were lines of their own.
+    expect(resolveMapChoice(SERVED, 'colorful:dark')?.id).toBe('colorful')
+    expect(resolveMapChoice(SERVED, 'ign-vector:light')?.id).toBe('ign-vector')
   })
 })
 
-describe('mapStyleChoices', () => {
-  it('offers the rendering the theme would not pick, only where a dark counterpart exists', () => {
-    expect(mapStyleChoices(SERVED, false).map((s) => s.id)).toEqual([
-      'colorful',
-      'colorful:dark',
-      'ign-vector',
-      'ign-satellite',
-      'cyclosm',
-    ])
-    expect(mapStyleChoices(SERVED, true).map((s) => s.id)).toContain('colorful:light')
+describe('rendersDark', () => {
+  it('follows the theme, unless a light map was asked for', () => {
+    expect(rendersDark(SERVED[0], true, false)).toBe(true)
+    expect(rendersDark(SERVED[0], true, true)).toBe(false)
+  })
+
+  it('never renders a dark map under a light theme', () => {
+    expect(rendersDark(SERVED[0], false, false)).toBe(false)
+    expect(rendersDark(SERVED[0], false, true)).toBe(false)
+  })
+
+  it('leaves a basemap without a dark counterpart as it is', () => {
+    expect(rendersDark(SERVED[3], true, false)).toBe(false)
+    expect(rendersDark(undefined, true, false)).toBe(false)
   })
 })
 

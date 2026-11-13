@@ -1311,7 +1311,9 @@ questions ouvertes viennent du §10 de
             dépendance. Recette sur appareil restante : `MOB-86`. Détail dans `LEDGER_DONE.md`
             (`MOB-84`).
       - [ ] **C3g. POI de la carte → point de parcours** (S, optionnel, après C3e) — fond « Plan »,
-            zoom ≥ 14, couche `pois` des tuiles VersaTiles (ni cols ni sommets).
+            zoom ≥ 14, couche `pois` des tuiles VersaTiles (ni cols ni sommets). Le fond « Plan » a
+            été retiré (ledger `WEB-177`) : à lire sur les fonds « Route » et « Gravel », qui
+            reposent sur les mêmes tuiles.
       - [ ] **C3h. Extension Karoo** (L) — **seulement si C3a échoue pour Hammerhead** : dessiner
             les points et alerter à l'approche (karoo-ext). **Sans objet d'après C3a** (le GPX aux
             neuf types passe, 20 octobre 2026) ; à rouvrir seulement si les alertes du Karoo ne

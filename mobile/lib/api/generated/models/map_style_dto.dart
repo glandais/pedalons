@@ -11,7 +11,7 @@ part 'map_style_dto.g.dart';
 @Freezed()
 abstract class MapStyleDto with _$MapStyleDto {
   const factory MapStyleDto({
-    /// Stable style identifier, e.g. 'colorful'
+    /// Stable style identifier, e.g. 'cycling'
     required String id,
 
     /// Human-readable label for the style switcher

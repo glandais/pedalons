@@ -377,7 +377,7 @@ class _PdlMapHeroState extends State<PdlMapHero> {
         : SizedBox(height: widget.height, child: stack);
 
     // Sans voile, la barre système se lit sur la tuile elle-même : le fond
-    // suit le thème (seul `Plan` a une variante nocturne), les icônes aussi.
+    // suit le thème (là où il a une variante nocturne), les icônes aussi.
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: Theme.of(context).brightness == Brightness.dark
           ? SystemUiOverlayStyle.light

@@ -2,7 +2,6 @@ import { useGetConfig } from '@/api/endpoints/configuration/configuration'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import {
   isDarkBasemap,
-  mapStyleChoices,
   rendersDark,
   resolveMapChoice,
   styleUrlFor,
@@ -22,9 +21,9 @@ const NO_STYLES: MapStyle[] = []
  *
  * Dark mode no longer selects a *different entry* (it used to jump to `eclipse`, which the switcher
  * listed separately): the chosen basemap keeps its identity and loads its `darkVariant`. The user's
- * pick therefore survives a theme change, and the switcher shows one line per basemap rather than
- * one per basemap-and-scheme — plus, for a basemap with a dark counterpart, one line forcing the
- * rendering the theme would not pick (`mapStyleChoices`).
+ * pick therefore survives a theme change, and the switcher shows one line per basemap. Under a dark
+ * theme, a basemap with a dark counterpart can be kept light by one switch, shared by every basemap
+ * (`lightInDark`, docs/LEDGER_*.md WEB-177); a light theme never renders a dark map.
  */
 export function useMapStyle() {
   const colorScheme = useResolvedColorScheme()
@@ -39,22 +38,25 @@ export function useMapStyle() {
     savedStyleId,
     terrain3d,
     hillshade,
+    lightInDark,
     setStyleId,
     clearStylePreference,
     setTerrain3d,
     setHillshade,
+    setLightInDark,
   } = useMapStyleStore()
 
-  const styles = mapStyleChoices(served, dark)
-  const currentStyle = resolveMapChoice(served, savedStyleId, dark)
+  const currentStyle = resolveMapChoice(served, savedStyleId)
   const styleId: MapStyleId | undefined = currentStyle?.id
-  const renderDark = rendersDark(currentStyle, dark)
+  const renderDark = rendersDark(currentStyle, dark, lightInDark)
+  // Only where the switch does something: a dark theme, and a basemap that has a dark counterpart.
+  const canForceLight = dark && !!currentStyle?.darkVariant
   const style = currentStyle ? styleUrlFor(currentStyle, renderDark) : undefined
   const darkBasemap = isDarkBasemap(currentStyle, renderDark)
 
   return {
     styleId,
-    styles,
+    styles: served,
     terrainSource,
     setStyleId,
     clearPreference: clearStylePreference,
@@ -66,5 +68,8 @@ export function useMapStyle() {
     setTerrain3d,
     hillshade,
     setHillshade,
+    lightInDark,
+    setLightInDark,
+    canForceLight,
   }
 }

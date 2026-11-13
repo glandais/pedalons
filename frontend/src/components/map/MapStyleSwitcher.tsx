@@ -10,7 +10,7 @@ import {
   ColorSwatch,
   Divider,
 } from '@mantine/core'
-import { groupStyles, isKnownGroup, type MapStyleChoice, type MapStyleId } from './mapStyles'
+import { groupStyles, isKnownGroup, type MapStyle, type MapStyleId } from './mapStyles'
 import { MapPanel } from './MapPanel'
 
 /** A trace the visitor can show or hide on its own: a ride's group, a trip's stage. */
@@ -24,13 +24,16 @@ export interface MapTraceOption {
 
 export interface MapStyleSwitcherProps {
   /** The served basemaps, in served order. Empty while the config is in flight. */
-  styles: readonly MapStyleChoice[]
+  styles: readonly MapStyle[]
   currentStyleId: MapStyleId | undefined
   onStyleChange: (styleId: MapStyleId) => void
   terrain3d?: boolean
   onTerrain3DChange?: (enabled: boolean) => void
   hillshade?: boolean
   onHillshadeChange?: (enabled: boolean) => void
+  lightMap?: boolean
+  /** Left out where the switch would do nothing: a light theme, a basemap without a dark counterpart. */
+  onLightMapChange?: (enabled: boolean) => void
   /** Listed under the basemaps, one checkbox each. Left out when the map shows a single trace. */
   traces?: readonly MapTraceOption[]
   onTraceToggle?: (id: string) => void
@@ -44,6 +47,8 @@ export function MapStyleSwitcher({
   onTerrain3DChange,
   hillshade = false,
   onHillshadeChange,
+  lightMap = false,
+  onLightMapChange,
   traces,
   onTraceToggle,
 }: MapStyleSwitcherProps) {
@@ -95,9 +100,7 @@ export function MapStyleSwitcher({
                         c={isSelected ? 'var(--mantine-primary-color-filled)' : undefined}
                         fw={isSelected ? 500 : 400}
                       >
-                        {style.pin
-                          ? t(`map.styles.pinned.${style.pin}`, { label: style.label })
-                          : style.label}
+                        {style.label}
                       </Text>
                     </UnstyledButton>
                   )
@@ -105,10 +108,18 @@ export function MapStyleSwitcher({
               </Stack>
             ))}
           </Stack>
-          {(onTerrain3DChange || onHillshadeChange) && (
+          {(onLightMapChange || onTerrain3DChange || onHillshadeChange) && (
             <>
               <Divider my="xs" />
               <Stack gap={6}>
+                {onLightMapChange && (
+                  <Switch
+                    size="sm"
+                    checked={lightMap}
+                    onChange={(e) => onLightMapChange(e.currentTarget.checked)}
+                    label={t('map.styles.lightMap')}
+                  />
+                )}
                 {onTerrain3DChange && (
                   <Switch
                     size="sm"

@@ -291,7 +291,7 @@ class RideGroupsMap extends ConsumerWidget {
         hillshade: 'map.hillshade'.tr(),
         tracks: 'map.tracks'.tr(),
       ),
-      styles: servedMapStyleOptions(ref, brightness),
+      styles: servedMapStyleOptions(ref),
       hillshadeEnabled: servedHillshadeEnabled(ref),
       onHillshadeChanged: (bool on) =>
           ref.read(hillshadeEnabledProvider.notifier).set(on),
@@ -299,14 +299,14 @@ class RideGroupsMap extends ConsumerWidget {
       // parcours) n'a que « Météo » à basculer : en plein écran, dans la
       // feuille, comme l'ombrage. Une carte colorée comme un parcours a
       // l'interrupteur dans la carte du bas (`bottomLayer`, ledger `MOB-105`).
-      switches: fullscreen && !likeRoute && windLeg != null
-          ? <PdlMapHeroSwitch>[
-              weatherMapModeSwitch(
-                value: windMode,
-                onChanged: (bool on) => setRideMapWindMode(ref, rideKey, on),
-              ),
-            ]
-          : const <PdlMapHeroSwitch>[],
+      switches: <PdlMapHeroSwitch>[
+        ...servedLightMapSwitch(ref, brightness),
+        if (fullscreen && !likeRoute && windLeg != null)
+          weatherMapModeSwitch(
+            value: windMode,
+            onChanged: (bool on) => setRideMapWindMode(ref, rideKey, on),
+          ),
+      ],
       selectedStyleId: style.value?.selectedId,
       onStyleSelected: (String id) =>
           ref.read(mapStyleIdProvider.notifier).select(id),

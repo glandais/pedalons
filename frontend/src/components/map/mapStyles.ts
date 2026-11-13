@@ -37,54 +37,31 @@ export function isKnownGroup(group: string): group is MapStyleGroup {
   return KNOWN_GROUPS.includes(group)
 }
 
-/** A rendering forced whatever the site's theme. */
-export type MapStylePin = 'light' | 'dark'
-
-/** A line of the switcher: a served basemap, either following the theme or pinned to one rendering. */
-export type MapStyleChoice = MapStyle & { pin: MapStylePin | null }
-
-const pinnedId = (id: MapStyleId, pin: MapStylePin): MapStyleId => `${id}:${pin}`
-
 /**
- * The switcher's lines: each basemap follows the theme, and one having a dark counterpart gets a
- * second line for the rendering the theme would not pick.
- */
-export function mapStyleChoices(styles: readonly MapStyle[], dark: boolean): MapStyleChoice[] {
-  const opposite: MapStylePin = dark ? 'light' : 'dark'
-  return styles.flatMap((style) => [
-    { ...style, pin: null },
-    ...(style.darkVariant ? [{ ...style, id: pinnedId(style.id, opposite), pin: opposite }] : []),
-  ])
-}
-
-/**
- * The line to render, given what the server serves and what the user picked.
- *
- * A pin is remembered as a rendering rather than as "the opposite of the theme", so a map chosen dark
- * stays dark when the theme changes. It then coincides with the line following the theme, which is
- * the id returned: the switcher has no line for a pin equal to the theme.
+ * The basemap to render, given what the server serves and what the user picked.
  *
  * A remembered id that has since left the contract falls back to the first served basemap: better a
- * map than none.
+ * map than none. An id written before docs/LEDGER_*.md WEB-177 may carry a `:light` / `:dark`
+ * suffix (the rendering used to be part of the pick): it is read as its basemap.
  */
 export function resolveMapChoice(
   styles: readonly MapStyle[],
-  selectedId: MapStyleId | null,
-  dark: boolean
-): MapStyleChoice | undefined {
-  const [baseId, savedPin] = selectedId?.split(':') ?? []
-  const style = styles.find((candidate) => candidate.id === baseId) ?? styles[0]
-  if (!style) return undefined
-  const wanted =
-    style.id === baseId && (savedPin === 'light' || savedPin === 'dark') ? savedPin : null
-  const pin = wanted && style.darkVariant ? wanted : null
-  const followsTheme = pin === null || (pin === 'dark') === dark
-  return { ...style, id: followsTheme ? style.id : pinnedId(style.id, pin), pin }
+  selectedId: MapStyleId | null
+): MapStyle | undefined {
+  const baseId = selectedId?.split(':')[0]
+  return styles.find((candidate) => candidate.id === baseId) ?? styles[0]
 }
 
-/** Whether a line renders its dark counterpart: its pin when it has one, otherwise the theme. */
-export function rendersDark(choice: MapStyleChoice | undefined, dark: boolean): boolean {
-  return choice?.pin ? choice.pin === 'dark' : dark
+/**
+ * Whether the basemap renders its dark counterpart: under a dark theme, when it has one, unless the
+ * user asked for a light map (`lightInDark`). A light theme never renders a dark map.
+ */
+export function rendersDark(
+  style: MapStyle | undefined,
+  dark: boolean,
+  lightInDark: boolean
+): boolean {
+  return dark && !lightInDark && !!style?.darkVariant
 }
 
 /**

@@ -1862,10 +1862,7 @@
     "hillshade": "Hillshading",
     "tracks": "Routes",
     "attribution": "Map credits",
-    "stylePinned": {
-      "dark": "{label} (dark)",
-      "light": "{label} (light)"
-    },
+    "lightMap": "Light map",
     "styleGroup": {
       "vector": "Maps",
       "satellite": "Satellite",

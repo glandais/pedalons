@@ -24,7 +24,7 @@ export const GetConfigResponse = zod
       .array(
         zod
           .object({
-            id: zod.string().describe("Stable style identifier, e.g. 'colorful'"),
+            id: zod.string().describe("Stable style identifier, e.g. 'cycling'"),
             label: zod.string().describe('Human-readable label for the style switcher'),
             group: zod
               .string()

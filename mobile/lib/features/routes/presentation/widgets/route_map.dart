@@ -268,9 +268,12 @@ class _RouteMapState extends ConsumerState<RouteMap> {
               layer: widget.layer,
             )
           : null,
-      switches: layer?.switches ?? const <PdlMapHeroSwitch>[],
+      switches: <PdlMapHeroSwitch>[
+        ...servedLightMapSwitch(ref, brightness),
+        ...?layer?.switches,
+      ],
       bottomLayer: layer?.bottomLayer,
-      styles: servedMapStyleOptions(ref, brightness),
+      styles: servedMapStyleOptions(ref),
       hillshadeEnabled: servedHillshadeEnabled(ref),
       onHillshadeChanged: (bool on) =>
           ref.read(hillshadeEnabledProvider.notifier).set(on),

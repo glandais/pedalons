@@ -2,7 +2,7 @@
  * A basemap style the clients may offer
  */
 export interface MapStyleDto {
-  /** Stable style identifier, e.g. 'colorful' */
+  /** Stable style identifier, e.g. 'cycling' */
   id: string
   /** Human-readable label for the style switcher */
   label: string

@@ -19,34 +19,54 @@ void main() {
   );
   const List<MapStyleDto> styles = <MapStyleDto>[colorful, satellite];
 
-  group('rendu forcé', () {
-    test('tient malgré le thème, et allume la ligne qui le montre', () {
-      final ResolvedMapStyle clair = resolveMapStyle(
+  group('carte claire en thème sombre', () {
+    test('garde le style clair, sans changer de ligne', () {
+      final ResolvedMapStyle style = resolveMapStyle(
         styles,
-        'colorful:dark',
-        Brightness.light,
+        'colorful',
+        Brightness.dark,
+        lightInDark: true,
       )!;
-      expect(clair.url, colorful.darkVariant);
-      expect(clair.selectedId, 'colorful:dark');
+      expect(style.url, colorful.url);
+      expect(style.selectedId, 'colorful');
+      expect(style.hasDarkVariant, isTrue);
+    });
 
-      // Sous un thème sombre, c'est ce que donne déjà la ligne du fond.
+    test('ne rend jamais une carte sombre sous un thème clair', () {
+      for (final bool lightInDark in <bool>[false, true]) {
+        expect(
+          resolveMapStyle(
+            styles,
+            'colorful',
+            Brightness.light,
+            lightInDark: lightInDark,
+          )!.url,
+          colorful.url,
+        );
+      }
+    });
+
+    test('un fond sans variante sombre le signale', () {
+      expect(
+        resolveMapStyle(styles, 'satellite', Brightness.dark)!.hasDarkVariant,
+        isFalse,
+      );
+    });
+
+    test('un choix mémorisé avec son ancien suffixe se lit comme son fond', () {
+      // Écrit avant MOB-148, quand « (sombre) » et « (clair) » étaient des
+      // lignes du sélecteur.
       final ResolvedMapStyle sombre = resolveMapStyle(
         styles,
         'colorful:dark',
-        Brightness.dark,
-      )!;
-      expect(sombre.url, colorful.darkVariant);
-      expect(sombre.selectedId, 'colorful');
-    });
-
-    test('est ignoré sur un fond sans variante sombre', () {
-      final ResolvedMapStyle style = resolveMapStyle(
-        styles,
-        '${satellite.id}:dark',
         Brightness.light,
       )!;
-      expect(style.url, satellite.url);
-      expect(style.selectedId, satellite.id);
+      expect(sombre.url, colorful.url);
+      expect(sombre.selectedId, 'colorful');
+      expect(
+        resolveMapStyle(styles, 'satellite:light', Brightness.dark)!.selectedId,
+        'satellite',
+      );
     });
   });
 

@@ -3370,7 +3370,7 @@ components:
       properties:
         id:
           type: string
-          description: "Stable style identifier, e.g. 'colorful'"
+          description: "Stable style identifier, e.g. 'cycling'"
         label:
           type: string
           description: Human-readable label for the style switcher
@@ -21376,7 +21376,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 14.9.0
+  version: 14.9.1
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: http://localhost:8080

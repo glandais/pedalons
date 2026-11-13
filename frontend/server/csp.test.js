@@ -31,8 +31,8 @@ const config = {
   mapStyles: [
     {
       id: 'cycling',
-      url: 'https://glandais.github.io/cycling-style/style.json',
-      darkVariant: 'https://glandais.github.io/cycling-style/style-dark.json',
+      url: 'https://cdn.jsdelivr.net/npm/@glandais/cycling-style@1/dist/style.json',
+      darkVariant: 'https://cdn.jsdelivr.net/npm/@glandais/cycling-style@1/dist/style-dark.json',
     },
     {
       id: 'ign-vector',
@@ -221,6 +221,8 @@ describe('createConfigOriginResolver', () => {
     const origins = await configOrigins(config)
     expect(new Set(origins)).toEqual(
       new Set([
+        'https://cdn.jsdelivr.net',
+        // The cycling styles' own sprite: not on the host that serves the style document.
         'https://glandais.github.io',
         'https://tiles.versatiles.org',
         'https://data.geopf.fr',

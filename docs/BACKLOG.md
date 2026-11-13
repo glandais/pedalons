@@ -75,7 +75,7 @@ Features that differentiate and deepen engagement.
 - [ ] Team/global route heatmap
 - [x] Router profile selection — six routing profiles in the web planner (`RouterProfileSelector`;
       Valhalla costings, computed by Stadia Maps since October 2026, `OPS-48`)
-- [x] Custom cycling map style (Maplibre) — `cycling-style`, « Vélo » and « Route » (`WEB-141`)
+- [x] Custom cycling map style (Maplibre) — `cycling-style`, « Route » and « Gravel » (`WEB-141`, renamed by `WEB-177`)
 
 ### Visibility Controls
 - [x] PUBLIC_UNLISTED visibility — Shareable but not indexed

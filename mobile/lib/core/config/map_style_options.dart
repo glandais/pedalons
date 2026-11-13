@@ -17,46 +17,57 @@ import 'config_provider.dart';
 /// Un seul endroit pour les cinq cartes de l'app : la conversion était recopiée
 /// à l'identique dans chacune, et l'ajout des sections l'aurait été aussi.
 /// `core/pdl` ne traduit rien — l'intitulé de section est localisé ici.
-///
-/// Un fond qui a une variante sombre gagne une seconde ligne, pour le rendu que
-/// le thème ne choisirait pas.
-List<PdlMapStyleOption> servedMapStyleOptions(
-  WidgetRef ref,
-  Brightness brightness,
-) => mapStyleOptions(
+List<PdlMapStyleOption> servedMapStyleOptions(WidgetRef ref) => mapStyleOptions(
   ref.watch(appConfigProvider).value?.mapStyles ?? const <MapStyleDto>[],
-  brightness,
 );
 
-/// Les lignes du sélecteur, pour un thème donné.
-List<PdlMapStyleOption> mapStyleOptions(
-  List<MapStyleDto> styles,
-  Brightness brightness,
-) {
-  final Brightness opposite = brightness == Brightness.dark
-      ? Brightness.light
-      : Brightness.dark;
-  final String oppositeKey = opposite == Brightness.dark
-      ? 'map.stylePinned.dark'
-      : 'map.stylePinned.light';
-  return <PdlMapStyleOption>[
-    for (final MapStyleDto style in styles) ...<PdlMapStyleOption>[
-      PdlMapStyleOption(
-        id: style.id,
-        label: style.label,
-        groupLabel: mapStyleGroupLabel(style.group),
-      ),
-      if (style.darkVariant?.isNotEmpty ?? false)
+/// Les lignes du sélecteur : une par fond servi.
+List<PdlMapStyleOption> mapStyleOptions(List<MapStyleDto> styles) =>
+    <PdlMapStyleOption>[
+      for (final MapStyleDto style in styles)
         PdlMapStyleOption(
-          id: pinnedMapStyleId(style.id, opposite),
-          label: oppositeKey.tr(
-            namedArgs: <String, String>{'label': style.label},
-          ),
+          id: style.id,
+          label: style.label,
           groupLabel: mapStyleGroupLabel(style.group),
         ),
-    ],
-  ];
+    ];
+
+/// L'interrupteur « Carte claire » de la feuille des couches, ou rien.
+///
+/// Il n'est offert que là où il change quelque chose : en thème sombre, sur un
+/// fond qui a une variante sombre. Une liste, pour s'étaler dans `switches:`.
+List<PdlMapHeroSwitch> servedLightMapSwitch(
+  WidgetRef ref,
+  Brightness brightness,
+) {
+  final bool hasDarkVariant =
+      ref.watch(mapStyleProvider(brightness)).value?.hasDarkVariant ?? false;
+  // Le réglage n'est lu que là où il est offert : ailleurs il ne compte pas.
+  if (brightness != Brightness.dark || !hasDarkVariant) {
+    return const <PdlMapHeroSwitch>[];
+  }
+  return lightMapSwitch(
+    brightness: brightness,
+    hasDarkVariant: hasDarkVariant,
+    value: ref.watch(mapLightInDarkProvider),
+    onChanged: (bool v) => ref.read(mapLightInDarkProvider.notifier).set(v),
+  );
 }
+
+List<PdlMapHeroSwitch> lightMapSwitch({
+  required Brightness brightness,
+  required bool hasDarkVariant,
+  required bool value,
+  required ValueChanged<bool> onChanged,
+}) => <PdlMapHeroSwitch>[
+  if (brightness == Brightness.dark && hasDarkVariant)
+    PdlMapHeroSwitch(
+      id: 'lightMap',
+      label: 'map.lightMap'.tr(),
+      value: value,
+      onChanged: onChanged,
+    ),
+];
 
 /// Le crédit à passer à `PdlMap`, pour le fond résolu.
 ///

@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MapStyleDto {
 
-/// Stable style identifier, e.g. 'colorful'
+/// Stable style identifier, e.g. 'cycling'
  String get id;/// Human-readable label for the style switcher
  String get label;/// Section the switcher should list this style under — 'vector', 'satellite' or 'raster'. Clients group consecutive styles sharing a value and localise the heading themselves; an unknown value is rendered as its own section rather than dropped.
  String get group;/// URL of the MapLibre style document to load in light mode (or at all times when darkVariant is null). Either a third-party style document or, for a raster basemap the server wraps itself, a URL on /api/map/styles/{id}.json.
@@ -229,7 +229,7 @@ class _MapStyleDto implements MapStyleDto {
   const _MapStyleDto({required this.id, required this.label, required this.group, required this.url, this.darkVariant, this.attribution});
   factory _MapStyleDto.fromJson(Map<String, dynamic> json) => _$MapStyleDtoFromJson(json);
 
-/// Stable style identifier, e.g. 'colorful'
+/// Stable style identifier, e.g. 'cycling'
 @override final  String id;
 /// Human-readable label for the style switcher
 @override final  String label;

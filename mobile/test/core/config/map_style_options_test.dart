@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:pedalons/api/generated/models/map_style_dto.dart';
 import 'package:pedalons/api/generated/models/unit_system.dart';
 import 'package:pedalons/core/config/map_style_options.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
@@ -12,6 +14,51 @@ void main() {
       // (`map.styleGroup.hillshade`), l'ignorer rangerait le fond sous la
       // section précédente — les deux mentent sur ce que le serveur a classé.
       expect(mapStyleGroupLabel('hillshade'), 'hillshade');
+    });
+  });
+
+  group('mapStyleOptions', () {
+    test('une ligne par fond servi, variante sombre ou non', () {
+      const List<MapStyleDto> styles = <MapStyleDto>[
+        MapStyleDto(
+          id: 'cycling-road',
+          label: 'Route',
+          group: 'ign',
+          url: 'https://tiles.example/road.json',
+          darkVariant: 'https://tiles.example/road-dark.json',
+        ),
+        MapStyleDto(
+          id: 'scan',
+          label: 'Scan',
+          group: 'ign',
+          url: 'https://tiles.example/scan.json',
+        ),
+      ];
+      expect(
+        mapStyleOptions(styles).map((PdlMapStyleOption o) => o.id),
+        <String>['cycling-road', 'scan'],
+      );
+    });
+  });
+
+  group('lightMapSwitch', () {
+    List<PdlMapHeroSwitch> switches(Brightness brightness, bool hasDark) =>
+        lightMapSwitch(
+          brightness: brightness,
+          hasDarkVariant: hasDark,
+          value: true,
+          onChanged: (_) {},
+        );
+
+    test('offert en thème sombre, sur un fond qui a une variante sombre', () {
+      final PdlMapHeroSwitch option = switches(Brightness.dark, true).single;
+      expect(option.id, 'lightMap');
+      expect(option.value, isTrue);
+    });
+
+    test('absent là où il ne changerait rien', () {
+      expect(switches(Brightness.light, true), isEmpty);
+      expect(switches(Brightness.dark, false), isEmpty);
     });
   });
 

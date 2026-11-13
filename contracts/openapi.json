@@ -3258,7 +3258,7 @@
         "properties" : {
           "id" : {
             "type" : "string",
-            "description" : "Stable style identifier, e.g. 'colorful'"
+            "description" : "Stable style identifier, e.g. 'cycling'"
           },
           "label" : {
             "type" : "string",
@@ -25768,7 +25768,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "14.9.0",
+    "version" : "14.9.1",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

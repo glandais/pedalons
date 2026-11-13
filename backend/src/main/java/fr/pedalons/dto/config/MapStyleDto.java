@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
 @Schema(description = "A basemap style the clients may offer")
 @ValidateSchema
 public record MapStyleDto(
-    @Schema(description = "Stable style identifier, e.g. 'colorful'", required = true) String id,
+    @Schema(description = "Stable style identifier, e.g. 'cycling'", required = true) String id,
     @Schema(description = "Human-readable label for the style switcher", required = true)
         String label,
     @Schema(

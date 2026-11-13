@@ -74,6 +74,35 @@ class HillshadeEnabledNotifier extends Notifier<bool> {
   }
 }
 
+const String _kMapLightInDarkKey = 'map.lightInDark';
+
+/// « Carte claire » : la carte reste claire quand l'app est en thème sombre.
+///
+/// Un seul réglage pour tous les fonds qui ont une variante sombre, à part du
+/// fond choisi (`docs/LEDGER_*.md MOB-148`). Tant qu'il n'a pas été touché, un
+/// fond mémorisé `<id>:light` — l'ancienne ligne « (clair) » du sélecteur — en
+/// tient lieu. `<id>:dark` n'a pas de successeur : en thème clair la carte est
+/// toujours claire.
+final mapLightInDarkProvider = NotifierProvider<MapLightInDarkNotifier, bool>(
+  MapLightInDarkNotifier.new,
+);
+
+class MapLightInDarkNotifier extends Notifier<bool> {
+  @override
+  bool build() {
+    final SharedPreferences prefs = ref.watch(sharedPreferencesProvider);
+    return prefs.getBool(_kMapLightInDarkKey) ??
+        (prefs.getString(_kMapStyleKey)?.endsWith(':light') ?? false);
+  }
+
+  Future<void> set(bool enabled) async {
+    state = enabled;
+    await ref
+        .read(sharedPreferencesProvider)
+        .setBool(_kMapLightInDarkKey, enabled);
+  }
+}
+
 /// La source d'élévation servie, ou `null` si le déploiement n'en configure
 /// aucune — l'app ne propose alors pas d'ombrage du tout.
 final mapTerrainProvider = Provider<MapTerrainDto?>(
@@ -82,9 +111,10 @@ final mapTerrainProvider = Provider<MapTerrainDto?>(
 
 /// Le style de fond de carte effectif, résolu pour une luminosité donnée.
 ///
-/// Le sélecteur liste `ConfigDto.mapStyles` **dans l'ordre servi** ; en sombre
-/// on charge `darkVariant` **s'il est non nul**, sinon le style clair — un
-/// fond sans variante sombre reste utilisable, il n'est pas escamoté.
+/// Le sélecteur liste `ConfigDto.mapStyles` **dans l'ordre servi** ; en thème
+/// sombre on charge `darkVariant` **s'il est non nul**, sauf « Carte claire »
+/// ([mapLightInDarkProvider]) — un fond sans variante sombre reste utilisable,
+/// il n'est pas escamoté. En thème clair la carte est toujours claire.
 @immutable
 class ResolvedMapStyle {
   const ResolvedMapStyle({
@@ -96,26 +126,24 @@ class ResolvedMapStyle {
   final MapStyleDto style;
   final String url;
 
-  /// La ligne du sélecteur qui correspond à ce rendu.
+  /// La ligne du sélecteur qui correspond à ce fond.
   final String selectedId;
-}
 
-/// L'identifiant de la ligne qui force un rendu, quel que soit le thème.
-///
-/// Le rendu est mémorisé tel quel, pas comme « l'inverse du thème » : un fond
-/// choisi sombre le reste quand le thème change.
-String pinnedMapStyleId(String id, Brightness pin) =>
-    '$id:${pin == Brightness.dark ? 'dark' : 'light'}';
+  /// Le fond a une variante sombre : c'est ce qui donne un effet à « Carte
+  /// claire ».
+  bool get hasDarkVariant => style.darkVariant?.isNotEmpty ?? false;
+}
 
 ResolvedMapStyle? resolveMapStyle(
   List<MapStyleDto> styles,
   String? selectedId,
-  Brightness brightness,
-) {
+  Brightness brightness, {
+  bool lightInDark = false,
+}) {
   if (styles.isEmpty) return null;
-  final List<String>? parts = selectedId?.split(':');
-  final String? baseId = parts?.first;
-  final String? savedPin = parts != null && parts.length > 1 ? parts[1] : null;
+  // Un identifiant écrit avant MOB-148 peut porter un suffixe `:light` ou
+  // `:dark` (le rendu faisait partie du choix) : il se lit comme son fond.
+  final String? baseId = selectedId?.split(':').first;
   MapStyleDto? chosen;
   for (final MapStyleDto s in styles) {
     if (s.id == baseId) {
@@ -128,22 +156,12 @@ ResolvedMapStyle? resolveMapStyle(
   chosen ??= styles.first;
   final String? dark = chosen.darkVariant;
   final bool hasDark = dark != null && dark.isNotEmpty;
-  // Un rendu forcé ne vaut que pour le fond mémorisé, s'il a une variante sombre.
-  final Brightness? pin = !hasDark || chosen.id != baseId
-      ? null
-      : switch (savedPin) {
-          'dark' => Brightness.dark,
-          'light' => Brightness.light,
-          _ => null,
-        };
-  final Brightness rendered = pin ?? brightness;
   return ResolvedMapStyle(
     style: chosen,
-    url: rendered == Brightness.dark && hasDark ? dark : chosen.url,
-    // Un rendu égal au thème n'a pas de ligne à lui : c'est celle du fond.
-    selectedId: pin == null || pin == brightness
-        ? chosen.id
-        : pinnedMapStyleId(chosen.id, pin),
+    url: brightness == Brightness.dark && !lightInDark && hasDark
+        ? dark
+        : chosen.url,
+    selectedId: chosen.id,
   );
 }
 
@@ -160,6 +178,7 @@ final mapStyleProvider =
               config.mapStyles,
               ref.watch(mapStyleIdProvider),
               brightness,
+              lightInDark: ref.watch(mapLightInDarkProvider),
             ),
           ),
     );

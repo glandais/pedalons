@@ -47,6 +47,15 @@ export const FCM_ORIGINS = [
  */
 export const STADIA_MAPS_ORIGINS = ['https://api-eu.stadiamaps.com']
 
+/**
+ * The cycling styles are served from the npm release on jsDelivr, yet their own sprite (`cyclo`) is
+ * an absolute URL on the project's GitHub Pages (docs/LEDGER_*.md WEB-177). A third-party style
+ * document is not fetched here, so that host cannot be read from it: it is added whenever the config
+ * serves one of those styles — not a CSP_CONNECT_SRC_EXTRA an operator has to remember.
+ */
+const CYCLING_STYLE_URL = /^https:\/\/cdn\.jsdelivr\.net\/npm\/@glandais\/cycling-style@/
+export const CYCLING_STYLE_SPRITE_ORIGIN = 'https://glandais.github.io'
+
 /** 128 bits from the CSPRNG, base64: unguessable, and safe inside a double-quoted attribute. */
 export function generateNonce() {
   return crypto.randomBytes(16).toString('base64')
@@ -131,8 +140,9 @@ export function styleDocumentOrigins(style) {
  * - each basemap's style document and dark variant — a third-party style is assumed to keep its
  *   sprite, glyphs and tiles on its own host (true of IGN; CSP_CONNECT_SRC_EXTRA covers one that does
  *   not, and Report-Only shows it);
- * - the public tile host (`tileServerBaseUrl`): the cycling styles are published on GitHub Pages but
- *   their tiles, glyphs and base sprites are on that host;
+ * - the public tile host (`tileServerBaseUrl`): the cycling styles are published on jsDelivr but
+ *   their tiles, glyphs and base sprites are on that host — and their own sprite on GitHub Pages
+ *   (`CYCLING_STYLE_SPRITE_ORIGIN`);
  * - the raster basemaps the backend wraps itself (`/api/map/styles/{id}.json`, loaded same-origin):
  *   their tile hosts are only in that document, so it is fetched, through `fetchStyle`, and kept
  *   for `ttlMs` — the styles are deployment configuration, the same for every tenant;
@@ -193,6 +203,7 @@ export function createConfigOriginResolver({
         if (apiPath === null) {
           const origin = originOf(url)
           if (origin) origins.push(origin)
+          if (CYCLING_STYLE_URL.test(url)) origins.push(CYCLING_STYLE_SPRITE_ORIGIN)
         } else if (GENERATED_STYLE_PATH.test(apiPath)) {
           pending.push(generatedStyleOrigins(apiPath))
         }
