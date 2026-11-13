@@ -301,7 +301,7 @@ inscription, export, image d'en-tête, lieu et groupe, champs propres, actions) 
 ### Ce qui vaut pour l'app Karoo (2026-11-13)
 
 L'extension Karoo charge un parcours avant de rouler : quatre touches, un écran de 480 × 800, pas de clavier. Elle
-suit les règles de **format et de vocabulaire**, pas celles de structure ([plan](../../2026-11-13-karoo-alignement.md),
+suit les règles de **format et de vocabulaire**, pas celles de structure ([plan](../../archive/2026-11-13-karoo-alignement.md),
 ledger `API-191`, `API-168`).
 
 - **Structure d'une ligne (`API-194`)** : boîte du jour à gauche, le titre (la sortie, ou l'étape), un badge d'état

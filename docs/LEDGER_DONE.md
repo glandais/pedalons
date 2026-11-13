@@ -3224,7 +3224,15 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
 
 ## API — Contrat d'API et backend
 
-- `API-194` **Les lignes du Karoo ont la structure des cartes de l'app : boîte du jour, « Départ 09:30 », lieu, état** (13 novembre 2026, contrat 14.11.0, [plan](plans/2026-11-13-karoo-alignement.md)) —
+- `API-193` **Karoo aligné sur l'app : recette sur appareil** (13 novembre 2026, extension `1.0.15`, contrat 14.11.0) —
+  `API-191` (formats, mots, fuseau), `API-168` (étapes de voyage) et `API-194` (structure des lignes) n'étaient
+  vérifiés que par les tests JVM et les captures Roborazzi. Recette faite par le propriétaire sur un Karoo, le jour
+  de la publication : tout est conforme, aucun défaut relevé. Côté serveur, le paquet `api.device` et
+  `GpsRouteSyncPlannerTest` avaient tourné verts le même jour (123 tests). Les captures de la fiche de l'extension,
+  restées sur l'ancienne présentation à la sortie de la `1.0.14`, sont depuis la `1.0.15` rendues par
+  `StoreScreenshotsTest` et comparées comme les autres captures de référence (`karoo/PUBLISH.md`). Le reste du
+  filet de tests du Karoo est `API-190`.
+- `API-194` **Les lignes du Karoo ont la structure des cartes de l'app : boîte du jour, « Départ 09:30 », lieu, état** (13 novembre 2026, contrat 14.11.0, [plan](plans/archive/2026-11-13-karoo-alignement.md)) —
   après `API-191` les mots étaient ceux de l'app, pas la ligne : le départ restait une date en petit gris, le titre
   était le groupe, une sortie annulée disparaissait sans rien dire. Une ligne de « Prochaines sorties » est maintenant
   celle de « Ma prochaine sortie » (`KIT.md` §9, R11 ; BRANDING §7.8) : **boîte du jour** à gauche (jour, chiffre,
@@ -3252,7 +3260,7 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
   touches et leurs tests comptent trois entrées) ; la pastille du jour est sur sa propre ligne, à côté de
   « Départ 09:30 » elle est coupée sur 256 dp. Écarts restants : `KIT.md` §9.
 - `API-191` **L'app Karoo écrit comme l'app et le site : formats, mots, fuseau** (13 novembre 2026, contrat
-  inchangé pour cette part, [plan](plans/2026-11-13-karoo-alignement.md)) — le Karoo n'avait pas été passé à l'audit
+  inchangé pour cette part, [plan](plans/archive/2026-11-13-karoo-alignement.md)) — le Karoo n'avait pas été passé à l'audit
   des cartes et des listes : « 14/11/2026 09:30 » dans le fuseau de l'appareil, « ↑1240m », « 1 routes », « B » pour
   un groupe. `ui/Formatters.kt` est réécrit sur les règles communes (BRANDING §8.3, `KIT.md` §9) : départ au format
   unique « sam. 14 nov. · 09:30 », « Aujourd'hui », « Demain », l'année hors de l'année en cours, l'heure selon la
@@ -3271,7 +3279,7 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
   celles de l'app et du site ; l'horloge des tests et des captures est figée par `FormatClock`, sans quoi
   « Demain » change les captures d'un jour à l'autre. Écarts voulus du Karoo : `KIT.md` §9. Recette : `API-193`.
 - `API-168` **Les étapes des voyages où l'on participe, dans « Prochaines sorties » du Karoo** (13 novembre 2026,
-  contrat 14.10.0, [plan](plans/2026-11-13-karoo-alignement.md)) — écartée le 10 novembre avec l'envoi automatique
+  contrat 14.10.0, [plan](plans/archive/2026-11-13-karoo-alignement.md)) — écartée le 10 novembre avec l'envoi automatique
   (`API-162`), reprise le 13 pour le Karoo seul. `GET /api/device/routes?stages=true` ajoute `registeredStages`
   (`DeviceRegisteredStageDto` : voyage, étape, son parcours, distance, dénivelé, départ, fuseau, noms des lieux de
   départ et d'arrivée, état chez les services GPS). **Sans le paramètre le champ est absent du JSON**, ni nul ni

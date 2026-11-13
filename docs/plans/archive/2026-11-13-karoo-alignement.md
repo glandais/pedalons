@@ -1,9 +1,11 @@
 # Aligner l'app Karoo sur l'app mobile — formats, mots, fuseau, étapes de voyage (2026-11-13)
 
 L'app et le site suivent depuis le 12 novembre les mêmes règles de cartes et de listes
-([`KIT.md`](2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) §9 et §10). L'extension Karoo n'a pas été passée à
+([`KIT.md`](../2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) §9 et §10). L'extension Karoo n'a pas été passée à
 l'audit : ses lignes écrivent « 14/11/2026 09:30 », « ↑600m », « 1 routes », et elle ignore les voyages. Ce plan
 l'aligne, sans toucher à la structure de ses écrans. L'app Garmin reste de côté.
+
+**Exécuté et archivé le 13 novembre 2026** (extension `1.0.14` puis `1.0.15`).
 
 Ledger : `API-191` (formats, mots, fuseau), `API-168` (étapes de voyage), `API-194` (structure des lignes), `API-193` (recette).
 
@@ -51,7 +53,7 @@ Ledger : `API-191` (formats, mots, fuseau), `API-168` (étapes de voyage), `API-
 | 5. Captures | 36 des 70 références réenregistrées, 4 nouvelles (`registered_with_stages`, `registered_other_zone`, en et fr) ; regardées par échantillon |
 | 6. Documents | KIT §9, `contracts/format-cases.md`, `karoo/CLAUDE.md`, ledger |
 | Structure des lignes (`API-194`) | Codée le 13 novembre 2026, contrat `14.11.0` ; `bash karoo/check.sh` vert (398 tests) ; tests du serveur verts |
-| Recette sur un Karoo | À faire : `API-193` |
+| Recette sur un Karoo | Faite le 13 novembre 2026 sur la `1.0.15`, rien à signaler (`API-193`) |
 
 ## Second temps, le même jour : la structure des lignes (`API-194`)
 
