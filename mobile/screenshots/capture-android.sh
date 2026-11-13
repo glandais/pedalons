@@ -28,6 +28,11 @@ EMULATOR="$SDK/emulator/emulator"
 # A debug build on the emulator holds its splash screen for several seconds at first launch, and a
 # still splash looks settled: no screen is taken before this many seconds, whatever the plan says.
 MIN_WAIT=10
+# The route page shows the vector basemap full width, and the emulator draws it in software GL:
+# the route line is up and still for half a minute before the tiles behind it appear (both the
+# MapLibre render thread and Flutter's raster thread at 100 %, the network idle). A still frame
+# with no basemap looks settled, so that screen (`push` = routeMap) waits this long first.
+MAP_MIN_WAIT=60
 SETTLE_STEP=2
 SETTLE_MAX=40
 
@@ -151,7 +156,9 @@ for locale in "${locales[@]}"; do
     write_launch "$path" "$email" "$password" "$push"
     adb shell am start -n "$ACTIVITY" >/dev/null
     status_bar
-    settle_and_capture "$OUT/$locale/$id.png" "$(( wait > MIN_WAIT ? wait : MIN_WAIT ))"
+    min_wait=$MIN_WAIT
+    [ "$push" = routeMap ] && min_wait=$MAP_MIN_WAIT
+    settle_and_capture "$OUT/$locale/$id.png" "$(( wait > min_wait ? wait : min_wait ))"
   done 3< <(python3 -c '
 import json, sys
 plan = json.load(open(sys.argv[1]))

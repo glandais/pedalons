@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:pedalons/core/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:pedalons/api/generated/models/map_style_dto.dart';

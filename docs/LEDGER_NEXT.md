@@ -71,7 +71,15 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       son groupe, accueil, tableau de bord ; `TripStageDto.route` pour l'étape. Même
       vocabulaire d'état que l'interrupteur (`profile.gps.autoSync.*`). Pendant web : `WEB-163`.
 
-- [ ] `MOB-147` **Basculer l'app sur `material_ui` / `cupertino_ui` quand les dépendances y seront (M)** —
+- [ ] `MOB-151` **Plugins Android qui appliquent encore le Kotlin Gradle Plugin (S)** — le build Android sous
+      Flutter 3.50 avertit que `firebase_core` et `patrol` appliquent KGP et qu'une version future de Flutter
+      refusera de construire (« migrate to Built-in Kotlin »). L'app, elle, est déjà migrée
+      (`mobile/android/gradle.properties`). À faire : monter ces deux dépendances dès qu'une version migrée
+      existe, et revérifier l'avertissement à chaque `flutter upgrade`.
+
+- [ ] `MOB-149` **Basculer l'app sur `material_ui` / `cupertino_ui` quand les dépendances y seront (M)** —
+      (entrée citée `MOB-147` par les commits `7d2467533` et `d4f4c4796` : le numéro était déjà pris par la
+      version 1.2.0, elle a été renumérotée le 13 novembre 2026.)
       Flutter 3.50 déprécie `package:flutter/material.dart` et `cupertino.dart`, ainsi que les délégués de
       `flutter_localizations` ; le retrait n'est pas daté. `material_ui` est une autre implémentation : tant que
       `markdown_widget`, `maplibre`, `photo_view` et `easy_localization` importent l'ancien Material, basculer

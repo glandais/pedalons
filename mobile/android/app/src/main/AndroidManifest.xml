@@ -168,6 +168,14 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Hybrid Composition++ for platform views (the MapLibre map): composited through
+             SurfaceControl instead of the legacy texture path. Needs Android 14 (API 34) and
+             Impeller on Vulkan; elsewhere Flutter falls back to the previous strategy by itself.
+             docs.flutter.dev/platform-integration/android/platform-views -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableHcpp"
+            android:value="true" />
+
         <!-- The channel FcmClient names in every message it sends. The app creates it at
              startup (PushService), so this default only catches a message that named no
              channel — but without it such a message would land in FCM's own "Miscellaneous",
