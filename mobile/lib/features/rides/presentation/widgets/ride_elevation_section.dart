@@ -40,6 +40,8 @@ class RideElevationSection extends ConsumerStatefulWidget {
     this.colorBy = RouteColorBy.grade,
     this.profileColorByKey,
     this.windLeg,
+    this.mapWind,
+    this.onMapWindChanged,
     this.detailLayout = false,
     this.detailTitle,
   });
@@ -70,10 +72,21 @@ class RideElevationSection extends ConsumerStatefulWidget {
   final Key? profileColorByKey;
 
   /// Le leg météo du groupe, à passer **seulement** quand la carte est en
-  /// mode Météo ([colorBy] `wind`) : le profil, toujours en pente, gagne
-  /// sous son aire la bande du vent et son info-bulle le vent du point
-  /// (ledger `MOB-106`). Ignoré hors mode Météo.
+  /// mode Météo ([colorBy] `wind`, ou [mapWind] vrai) : le profil, toujours
+  /// en pente, gagne sous son aire la bande du vent et son info-bulle le vent
+  /// du point (ledger `MOB-106`). Ignoré hors mode Météo.
   final WeatherLegDto? windLeg;
+
+  /// Avec l'interrupteur propre au profil ([colorBy] `null`) : le mode
+  /// « Météo » de la carte, proposé comme troisième segment — Pente |
+  /// Revêtement | Météo (ledger `MOB-152`, une sortie à plusieurs groupes où
+  /// la personne est inscrite). `null` : pas proposé ; sinon son état, que
+  /// l'appelant tient ([onMapWindChanged]). En Météo, le profil reste sur la
+  /// pente.
+  final bool? mapWind;
+
+  /// « Météo » choisi (`true`) ou quitté pour la pente ou le revêtement.
+  final ValueChanged<bool>? onMapWindChanged;
 
   /// La mise en page des écrans de détail refondus (ledger `MOB-134`,
   /// maquette `groupe-mobile-cible`, `RideRouteSection`) : l'en-tête
@@ -127,10 +140,16 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
     final RouteColorBy? shared = widget.colorBy;
     // L'interrupteur propre au profil : Pente | Revêtement, pour le parcours
     // qu'il montre.
+    // Le mode « Météo » de la carte, dans ce même interrupteur.
+    final bool? mapWind = shared == null ? widget.mapWind : null;
+    final bool windOn = mapWind ?? false;
     final List<RouteColorBy> ownModes = shared != null
         ? const <RouteColorBy>[]
-        : routeColorModes(surfaces: hasTrackSurfaces(tracks), wind: false);
-    final RouteColorBy colorBy = !hasTrackSurfaces(tracks)
+        : routeColorModes(
+            surfaces: hasTrackSurfaces(tracks),
+            wind: mapWind != null,
+          );
+    final RouteColorBy colorBy = !hasTrackSurfaces(tracks) || windOn
         ? RouteColorBy.grade
         : shared != null
         ? profileColorBy(shared)
@@ -144,7 +163,7 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
         ? ref.watch(rideRouteClimbBarsProvider(routeRef)).value
         : null;
     // Le vent sous le profil, en mode Météo seulement (ledger `MOB-106`).
-    final WeatherLegDto? windLeg = shared == RouteColorBy.wind
+    final WeatherLegDto? windLeg = shared == RouteColorBy.wind || windOn
         ? widget.windLeg
         : null;
     final WindBars? wind = windLeg == null
@@ -163,9 +182,19 @@ class _RideElevationSectionState extends ConsumerState<RideElevationSection> {
     Widget ownSwitch() => RouteColorModeSwitch(
       key: widget.profileColorByKey,
       modes: ownModes,
-      value: colorBy,
-      semanticLabel: 'routes.surfaceDetail.profileColorBy'.tr(),
-      onChanged: (RouteColorBy v) => setState(() => _ownColorBy = v),
+      value: windOn ? RouteColorBy.wind : colorBy,
+      // Avec « Météo », il colore aussi le tracé : le libellé par défaut.
+      semanticLabel: mapWind == null
+          ? 'routes.surfaceDetail.profileColorBy'.tr()
+          : null,
+      onChanged: (RouteColorBy v) {
+        if (v == RouteColorBy.wind) {
+          widget.onMapWindChanged?.call(true);
+          return;
+        }
+        setState(() => _ownColorBy = v);
+        if (windOn) widget.onMapWindChanged?.call(false);
+      },
     );
 
     return Column(

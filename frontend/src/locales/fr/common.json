@@ -2209,6 +2209,7 @@
   "routes.surface.colorBy.grade": "Pente",
   "routes.surface.colorBy.label": "Colorer le profil et le tracé selon",
   "routes.surface.colorBy.lineLabel": "Colorer le tracé selon",
+  "routes.surface.colorBy.routes": "Parcours",
   "routes.surface.colorBy.stages": "Étapes",
   "routes.surface.colorBy.surface": "Revêtement",
   "routes.surface.colorBy.wind": "Météo",

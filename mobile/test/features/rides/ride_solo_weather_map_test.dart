@@ -26,7 +26,8 @@ import 'ride_fixtures.dart';
 /// `MOB-94`) : `RideGroupsMap` sans `onlyGroup`, avec le leg du groupe
 /// unique. Le vent colore le parcours de ce groupe, et lui seul ; les
 /// pastilles n'apparaissent qu'en plein écran ; une sortie à plusieurs
-/// groupes n'a pas de mode sur sa carte. Avec deux parcours (celui de la
+/// groupes n'a de mode sur sa carte que pour le groupe où la personne est
+/// inscrite (ledger `MOB-152`). Avec deux parcours (celui de la
 /// sortie, celui du groupe), la carte garde la couleur de ses couches hors
 /// Météo, comme au site (ledger `MOB-105`).
 void main() {
@@ -326,8 +327,39 @@ void main() {
     expect(find.byKey(keys.rideGroup.windMapCredit), findsNothing);
   });
 
-  testWidgets('plusieurs groupes : une couleur par groupe, pas de mode '
-      '« Météo » sur la carte de la sortie', (WidgetTester tester) async {
+  testWidgets('plusieurs groupes, inscrite dans l\'un (MOB-152) : le vent sur '
+      'le parcours de son groupe, les autres à leur couleur', (
+    WidgetTester tester,
+  ) async {
+    await pump(
+      tester,
+      ride: fixtureRide(
+        registered: true,
+        registeredGroupId: 'g2',
+        groups: <RideGroupDto>[
+          fixtureGroup(id: 'g1', routeSlug: 'court'),
+          fixtureGroup(
+            id: 'g2',
+            routeSlug: 'long',
+            sortOrder: 1,
+            registered: true,
+          ),
+        ],
+      ),
+      leg: fixtureLeg(groupId: 'g2'),
+    );
+
+    expect(track(tester, 'court').segmentColors, isNull);
+    expect(track(tester, 'long').segmentColors, isNotNull);
+    expect(track(tester, 'long').emphasized, isTrue);
+    expect(find.byKey(keys.rideGroup.windMapLegend), findsOneWidget);
+    expect(map(tester).markers, hasLength(2));
+  });
+
+  testWidgets('plusieurs groupes, inscrite nulle part : une couleur par '
+      'groupe, pas de mode « Météo » sur la carte de la sortie', (
+    WidgetTester tester,
+  ) async {
     await pump(
       tester,
       ride: fixtureRide(

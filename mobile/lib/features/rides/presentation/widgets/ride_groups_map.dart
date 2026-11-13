@@ -62,11 +62,15 @@ import 'weather_map_layer.dart';
 /// modes proposés sont ceux de [rideMapColorModes].
 ///
 /// Une sortie à **plusieurs groupes** garde une couleur par couche — comme
-/// ses légendes et sa pilule — et n'a pas de mode « Météo » : chaque groupe
-/// l'a sur sa carte. Une **sortie solo dont le groupe roule un autre
+/// ses légendes et sa pilule. Une **sortie solo dont le groupe roule un autre
 /// parcours** que la sortie aussi, comme au site : deux couches à leur
-/// couleur ; seul le mode « Météo » du parcours du groupe y reste (la puce
-/// sous la carte, l'interrupteur de la feuille des couches en plein écran).
+/// couleur. Sur ces cartes à plusieurs couches, seul le mode « Météo » reste,
+/// et il ne colore qu'**un** parcours ([rideMapWeatherGroup]) : celui du
+/// groupe unique, ou, à plusieurs groupes, celui du groupe où la personne est
+/// inscrite (ledger `MOB-152`) — inscrite nulle part, pas de mode « Météo »,
+/// chaque groupe l'a sur sa carte. Il se choisit sous la carte (la puce d'une
+/// sortie solo, l'interrupteur Pente | Revêtement | Météo d'une sortie à
+/// plusieurs groupes) et, en plein écran, dans la feuille des couches.
 ///
 /// Le réticule d'un point de la frise météo touché ([cursorDistance], ledger
 /// `MOB-93`) se pose sur le parcours du groupe.
@@ -99,8 +103,9 @@ class RideGroupsMap extends ConsumerWidget {
   /// graine **est** l'emprise du backend, relevée un instant plus tôt.
   final BoundsDto? seedExtent;
 
-  /// Le leg météo du groupe de [onlyGroup] — ou du groupe unique d'une
-  /// sortie solo —, `null` sans prévision chargée. Il n'a d'effet qu'avec
+  /// Le leg météo du groupe de [rideMapWeatherGroup] — celui de [onlyGroup],
+  /// le groupe unique d'une sortie solo, ou mon groupe à plusieurs groupes —,
+  /// `null` sans prévision chargée. Il n'a d'effet qu'avec
   /// une prévision ([showsWindOnMap]) : il propose alors le mode « Météo ».
   final WeatherLegDto? weatherLeg;
 
@@ -179,10 +184,11 @@ class RideGroupsMap extends ConsumerWidget {
         ? ref.watch(hiddenRideRoutesProvider(rideKey))
         : const <String>{};
 
-    // Le vent sur le tracé : le parcours d'un groupe (sa page, ou le détail
-    // d'une sortie solo), une prévision, et le mode choisi. Sinon le trait
-    // habituel, même si le mode reste allumé.
-    final RideGroupDto? weatherGroup = only ?? soloGroupOf(ride);
+    // Le vent sur le tracé : le parcours d'un groupe (sa page, le détail
+    // d'une sortie solo, ou mon groupe à plusieurs groupes), une prévision,
+    // et le mode choisi. Sinon le trait habituel, même si le mode reste
+    // allumé.
+    final RideGroupDto? weatherGroup = rideMapWeatherGroup(ride, only);
     final String? weatherSlug = weatherGroup == null
         ? null
         : effectiveRouteSlug(ride, weatherGroup);
@@ -295,9 +301,10 @@ class RideGroupsMap extends ConsumerWidget {
       hillshadeEnabled: servedHillshadeEnabled(ref),
       onHillshadeChanged: (bool on) =>
           ref.read(hillshadeEnabledProvider.notifier).set(on),
-      // Une carte à deux couches (sortie solo dont le groupe roule un autre
-      // parcours) n'a que « Météo » à basculer : en plein écran, dans la
-      // feuille, comme l'ombrage. Une carte colorée comme un parcours a
+      // Une carte à une couleur par couche (sortie solo dont le groupe roule
+      // un autre parcours, sortie à plusieurs groupes) n'a que « Météo » à
+      // basculer : en plein écran, dans la feuille, comme l'ombrage. Une
+      // carte colorée comme un parcours a
       // l'interrupteur dans la carte du bas (`bottomLayer`, ledger `MOB-105`).
       switches: <PdlMapHeroSwitch>[
         ...servedLightMapSwitch(ref, brightness),
@@ -653,6 +660,13 @@ bool rideMapColorsLikeRoute(RideDto ride, RideGroupDto? onlyGroup) =>
     onlyGroup != null ||
     (soloGroupOf(ride) != null && rideRouteLayers(ride).length == 1);
 
+/// Le groupe dont la carte montre la météo (son vent sur son parcours) : celui
+/// de la page d'un groupe ([onlyGroup]), le groupe unique d'une sortie solo,
+/// ou, à plusieurs groupes, **celui où la personne est inscrite** (ledger
+/// `MOB-152`). `null` : pas de mode « Météo ».
+RideGroupDto? rideMapWeatherGroup(RideDto ride, RideGroupDto? onlyGroup) =>
+    onlyGroup ?? soloGroupOf(ride) ?? ride.joinedGroup;
+
 /// Vrai quand la carte porte des bornes kilométriques : la page d'un groupe,
 /// ou une sortie dont tous les groupes roulent le même parcours — un seul
 /// tracé, quel que soit le nombre de groupes (ledger `MOB-121`). Sur plusieurs
@@ -669,7 +683,8 @@ bool rideMapShowsKmMarkers(RideDto ride, RideGroupDto? onlyGroup) =>
 /// pente — c'est-à-dire la couleur des couches — et Météo, quand le parcours
 /// du groupe a une prévision et est dessiné (pas décoché dans la feuille des
 /// couches) ; pas de revêtement, la carte ne le montre pas. Sortie à
-/// plusieurs groupes : la pente seule.
+/// plusieurs groupes : de même, pour le parcours du groupe où la personne est
+/// inscrite ([rideMapWeatherGroup]) ; inscrite nulle part, la pente seule.
 List<RouteColorBy> rideMapColorModes(
   WidgetRef ref, {
   required RideKey rideKey,
@@ -677,7 +692,7 @@ List<RouteColorBy> rideMapColorModes(
   RideGroupDto? onlyGroup,
   WeatherLegDto? weatherLeg,
 }) {
-  final RideGroupDto? group = onlyGroup ?? soloGroupOf(ride);
+  final RideGroupDto? group = rideMapWeatherGroup(ride, onlyGroup);
   final String? slug = group == null ? null : effectiveRouteSlug(ride, group);
   if (slug == null) return const <RouteColorBy>[RouteColorBy.grade];
   final RouteDetailDto? route = ref

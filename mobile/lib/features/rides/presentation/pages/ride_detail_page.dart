@@ -168,6 +168,16 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
   WeatherLegDto? _ownLeg(RideWeatherDto? dto) =>
       dto == null ? null : rideOwnLeg(dto, ride);
 
+  /// Le leg du mode « Météo » de la carte : [_ownLeg], ou, à plusieurs
+  /// groupes, celui du groupe où la personne est inscrite (ledger `MOB-152`).
+  WeatherLegDto? _mapLeg(RideWeatherDto? dto) {
+    if (ride.groups.length <= 1) return _ownLeg(dto);
+    final RideGroupDto? mine = ride.joinedGroup;
+    return dto == null || mine == null
+        ? null
+        : weatherLegOfGroup(dto.legs, mine.id);
+  }
+
   void _maybeScrollToGroups() {
     if (!_scrollToGroups) return;
     if (_asksWeather && ref.watch(rideWeatherProvider(rideKey)).isLoading) {
@@ -269,12 +279,12 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
     // Une prévision perdue au refetch ramène « Météo » sur la pente :
     // revenue, elle ne recolore pas le tracé sans nouveau choix (plan
     // 2026-10-24-weather-on-map §4, la règle de `RideGroupPage`).
-    if (!multi && _asksWeather) {
+    if (_asksWeather) {
       ref.listen(rideWeatherProvider(rideKey), (
         _,
         AsyncValue<RideWeatherDto> next,
       ) {
-        if (!showsWindOnMap(_ownLeg(next.value))) dropWindMode(ref, rideKey);
+        if (!showsWindOnMap(_mapLeg(next.value))) dropWindMode(ref, rideKey);
       });
     }
 
@@ -681,6 +691,10 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
               ride: ride,
               group: routeOnly ? null : _groupById(selected),
               groupOnly: false,
+              // Le vent de **mon** groupe sur la carte (ledger `MOB-152`),
+              // quel que soit le groupe sélectionné.
+              weatherLeg: myLeg,
+              weatherAttribution: weather?.attribution,
               actions: false,
               profileTitle: 'rides.selectedGroupProfile'.tr(),
               colorByKey: keys.ride.mapColorBy,

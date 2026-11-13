@@ -1,6 +1,9 @@
-import type { RideDto } from '@/api/dto'
+import type { RideDto, RideWeatherDto } from '@/api/dto'
 import type { MapRouteItem } from '@/components/route/RoutesMapView'
 import { routeColorsById } from '@/lib/routeColors'
+import type { MapItemWind } from '@/lib/tripWeatherOnMap'
+import { soloGroup } from '@/utils/soloGroup'
+import { groupWindLeg } from './rideGroupData'
 
 /**
  * The ride page's map: **one layer per distinct route**, never one per group. A group with no route
@@ -54,4 +57,29 @@ export function rideMapRoutes(ride: RideDto | undefined, mainRouteLabel: string)
   }
 
   return { items, itemIdByGroupId, colorByGroupId }
+}
+
+/**
+ * The Météo mode of the ride page's map of several routes (ledger WEB-178): the wind of **the
+ * reader's group** — the one they are registered in, or a solo ride's only group — on the route it
+ * rides, by map item id. One entry at most; empty when the reader has no group, when the group has
+ * no route, or when its leg offers no wind (`groupWindLeg`, the group page's own rule) — the map
+ * then has no Météo mode, each group keeping it on its own page.
+ */
+export function rideMapWinds(
+  ride: RideDto | undefined,
+  weather: RideWeatherDto | undefined,
+  itemIdByGroupId: ReadonlyMap<string, string>
+): Map<string, MapItemWind> {
+  const winds = new Map<string, MapItemWind>()
+  if (!ride) return winds
+  const groupId = soloGroup(ride)?.id ?? ride.registeredGroupId
+  const itemId = groupId ? itemIdByGroupId.get(groupId) : undefined
+  if (!groupId || !itemId) return winds
+  const leg = groupWindLeg(
+    ride,
+    weather?.legs.find((l) => l.groupId === groupId)
+  )
+  if (leg) winds.set(itemId, { leg, timezone: ride.timezone })
+  return winds
 }

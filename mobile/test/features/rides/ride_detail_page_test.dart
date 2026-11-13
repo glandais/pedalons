@@ -906,7 +906,9 @@ void main() {
       expect(find.byKey(keys.rideGroup.gps), findsNothing);
       expect(find.byKey(keys.rideRoute.details), findsNothing);
       expect(find.byKey(keys.rideRoute.waypoints), findsNothing);
-      expect(find.byKey(keys.routeDetail.colorByMode('wind')), findsNothing);
+      // Inscrite dans un groupe qui a une prévision : « Météo » dans
+      // l'interrupteur du profil (docs/LEDGER_*.md MOB-152).
+      expect(find.byKey(keys.routeDetail.colorByMode('wind')), findsOneWidget);
       // Plus de carte météo au-dessus de la carte, ni de bloc méta.
       expect(find.text('Voir la liste'), findsNothing);
       // Les cartes : la mienne en tête, puis « Autres groupes », A, C.
@@ -990,6 +992,22 @@ void main() {
       }
       expect(find.byKey(keys.rideGroup.departureWeatherTitle), findsOneWidget);
       expect(find.text('Météo au départ de 09:00'), findsOneWidget);
+
+      // « Météo » choisi : le mode partagé de la carte passe sur le vent.
+      final Finder wind = find.byKey(keys.routeDetail.colorByMode('wind'));
+      await tester.ensureVisible(wind);
+      await tester.pump();
+      await tester.tap(wind);
+      await tester.pump();
+      expect(
+        ProviderScope.containerOf(tester.element(find.byType(RideDetailPage)))
+            .read(
+              rideMapColorModeProvider(
+                const RideKey(teamSlug: 'n-peloton', rideSlug: 'np-665'),
+              ),
+            ),
+        RouteColorBy.wind,
+      );
     });
 
     testWidgets('sortie-groupes-heures-differentes-mobile-cible', (

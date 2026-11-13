@@ -2150,6 +2150,7 @@
   "routes.surface.colorBy.grade": "Grade",
   "routes.surface.colorBy.label": "Colour the profile and the route by",
   "routes.surface.colorBy.lineLabel": "Colour the route by",
+  "routes.surface.colorBy.routes": "Routes",
   "routes.surface.colorBy.stages": "Stages",
   "routes.surface.colorBy.surface": "Surface",
   "routes.surface.colorBy.wind": "Weather",

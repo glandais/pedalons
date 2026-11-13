@@ -53,8 +53,10 @@ void main() {
     WidgetTester tester,
     TrackDto track, {
     List<WaypointDto> waypoints = const <WaypointDto>[],
-    RouteColorBy colorBy = RouteColorBy.grade,
+    RouteColorBy? colorBy = RouteColorBy.grade,
     WeatherLegDto? windLeg,
+    bool? mapWind,
+    ValueChanged<bool>? onMapWindChanged,
   }) async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -81,6 +83,8 @@ void main() {
                 routeSlug: 'col-de-la-croix',
                 colorBy: colorBy,
                 windLeg: windLeg,
+                mapWind: mapWind,
+                onMapWindChanged: onMapWindChanged,
               ),
             ),
           ),
@@ -211,6 +215,61 @@ void main() {
 
     expect(profile(tester).bandColors, everyElement(slopeNeutral));
     expect(tip(tester, 500), contains('Vent inconnu'));
+  });
+
+  testWidgets('interrupteur propre au profil, Météo proposé (MOB-152) : '
+      'Pente | Revêtement | Météo, le choix remonte à l\'appelant', (
+    WidgetTester tester,
+  ) async {
+    final List<bool> changes = <bool>[];
+    await pump(
+      tester,
+      _track(spans: _spans),
+      colorBy: null,
+      mapWind: false,
+      onMapWindChanged: changes.add,
+    );
+
+    for (final RouteColorBy mode in RouteColorBy.values) {
+      expect(find.byKey(keys.routeDetail.colorByMode(mode.name)), findsOne);
+    }
+    await tester.tap(find.byKey(keys.routeDetail.colorByMode('wind')));
+    await tester.pump();
+    expect(changes, <bool>[true]);
+    // Le revêtement, lui, reste l'affaire du profil.
+    await tester.tap(find.byKey(keys.routeDetail.colorByMode('surface')));
+    await tester.pump();
+    expect(changes, <bool>[true]);
+    expect(profile(tester).barColors, isNot(everyElement(slopeNeutral)));
+  });
+
+  testWidgets('interrupteur propre au profil en Météo (MOB-152) : le profil '
+      'sur la pente, la bande du vent, et la pente choisie quitte Météo', (
+    WidgetTester tester,
+  ) async {
+    final List<bool> changes = <bool>[];
+    await pump(
+      tester,
+      _track(spans: _spans),
+      colorBy: null,
+      mapWind: true,
+      windLeg: fixtureLeg(),
+      onMapWindChanged: changes.add,
+    );
+
+    expect(profile(tester).barColors, everyElement(slopeNeutral));
+    expect(profile(tester).bandColors, isNotNull);
+    await tester.tap(find.byKey(keys.routeDetail.colorByMode('grade')));
+    await tester.pump();
+    expect(changes, <bool>[false]);
+  });
+
+  testWidgets('interrupteur propre au profil sans Météo proposé : Pente | '
+      'Revêtement seulement', (WidgetTester tester) async {
+    await pump(tester, _track(spans: _spans), colorBy: null);
+
+    expect(find.byKey(keys.routeDetail.colorByMode('wind')), findsNothing);
+    expect(find.byKey(keys.routeDetail.colorByMode('surface')), findsOne);
   });
 
   testWidgets('hors mode Météo, ni bande ni vent, même avec un leg', (

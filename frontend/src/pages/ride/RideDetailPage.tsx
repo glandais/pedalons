@@ -1,8 +1,8 @@
-import { Fragment, useState, useMemo, lazy, Suspense } from 'react'
+import { Fragment, useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { IconUsersGroup } from '@tabler/icons-react'
-import { Container, Stack, Title, Box, Skeleton, Divider } from '@mantine/core'
+import { Container, Stack, Title, Box, Divider } from '@mantine/core'
 import { rideRouteSlugs, useRideDetailData } from './rideDetailData'
 import { canSwitchTo, groupAction, groupsRegisteredFirst, groupWindLeg } from './rideGroupData'
 import { ReportTargetType } from '@/api/dto'
@@ -12,12 +12,9 @@ import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '../../components/common/DetailPageSkeleton'
 import { RideGroupCard } from '../../components/ride/RideGroupCard'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
-import { rideMapRoutes } from './rideMapRoutes'
+import { rideMapRoutes, rideMapWinds } from './rideMapRoutes'
 
 // Lazy load the map component (pulls in map-vendor ~1MB and chart-vendor ~150KB)
-const RoutesMapView = lazy(() =>
-  import('../../components/route/RoutesMapView').then((m) => ({ default: m.RoutesMapView }))
-)
 import { DepartureBlock } from '../../components/common/DepartureBlock'
 import {
   groupLeavesAtOwnTime,
@@ -33,6 +30,7 @@ import { GroupWeatherSection, RideWeatherSection } from '@/components/weather'
 import { useWeatherFocus } from '@/components/publication/useWeatherFocus'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { RideSoloGroupPanel } from '@/components/ride/RideSoloGroupPanel'
+import { RideOverviewMap } from '@/components/ride/RideOverviewMap'
 import { GroupParticipantsSection } from '@/components/ride/group/GroupParticipantsSection'
 import { RouteMapPanel } from '@/components/route/RouteMapPanel'
 import { GroupStats } from '@/components/ride/group/GroupStats'
@@ -48,7 +46,6 @@ import { usePublicationStatusActions } from '@/components/publication/usePublica
 
 /** The map fills the visible height beside the column on md+ (`.detail-map--fill`, WEB-134); its
  *  skeleton takes the same height so nothing shifts when the map bundle arrives. */
-const STICKY_MAP_HEIGHT = 'var(--detail-map-height, 500px)'
 
 /** The anchor of the weather block, as on a group's page: a former group link's `#meteo` lands here. */
 const WEATHER_ANCHOR = 'meteo'
@@ -100,6 +97,11 @@ export function RideDetailPage() {
     itemIdByGroupId,
     colorByGroupId: trackColors,
   } = useMemo(() => rideMapRoutes(ride, mainRouteLabel), [ride, mainRouteLabel])
+  // The reader's group's wind on that map, its Météo mode (WEB-178)
+  const mapWinds = useMemo(
+    () => rideMapWinds(ride, weather.data, itemIdByGroupId),
+    [ride, weather.data, itemIdByGroupId]
+  )
   // Hovering a group's card lights its whole route, so the cards of the groups that share it too.
   const hoverGroup = (groupId: string | null) => {
     const itemId = groupId ? (itemIdByGroupId.get(groupId) ?? null) : null
@@ -336,8 +338,10 @@ export function RideDetailPage() {
             reading follow the visual order, moved first below md by the grid areas */}
         {hasMap && (
           <Box
+            // The --solo height keeps room for the colour modes under the map: a single route's,
+            // or the Météo mode of the reader's group on a map of several routes (WEB-178).
             className={
-              soloRouteSlug
+              soloRouteSlug || mapWinds.size > 0
                 ? 'detail-map detail-map--fill detail-map--solo'
                 : 'detail-map detail-map--fill'
             }
@@ -362,20 +366,16 @@ export function RideDetailPage() {
                 heightVariant="sticky"
               />
             ) : (
-              <ErrorBoundary variant="inline">
-                <Suspense fallback={<Skeleton height={STICKY_MAP_HEIGHT} radius="md" />}>
-                  <RoutesMapView
-                    variant="sticky"
-                    items={mapItems}
-                    teamSlug={teamSlug!}
-                    highlightedItemId={litItemId}
-                    onItemHover={setHighlightedItemId}
-                    selectedItemId={selectedItemId}
-                    onItemSelect={chooseItem}
-                    kmMarkers={mapItems.length === 1}
-                  />
-                </Suspense>
-              </ErrorBoundary>
+              <RideOverviewMap
+                items={mapItems}
+                teamSlug={teamSlug!}
+                winds={mapWinds}
+                attribution={weather.data?.attribution}
+                highlightedItemId={litItemId}
+                onItemHover={setHighlightedItemId}
+                selectedItemId={selectedItemId}
+                onItemSelect={chooseItem}
+              />
             )}
           </Box>
         )}

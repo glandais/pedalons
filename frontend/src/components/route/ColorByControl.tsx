@@ -6,15 +6,17 @@ export type ColorByOption = 'grade' | 'surface' | 'wind'
 
 /**
  * Every mode the switch can name: a route's line modes, plus a map of several routes' default — one
- * colour per stage, on a trip's overview (« Étapes | Météo », WEB-118). Never in a `?color=`.
+ * colour per stage, on a trip's overview (« Étapes | Météo », WEB-118), one per route on a ride's
+ * (« Parcours | Météo », WEB-178). Never in a `?color=`.
  */
-export type LineModeOption = ColorByOption | 'stages'
+export type LineModeOption = ColorByOption | 'stages' | 'routes'
 
 const OPTION_LABEL_KEYS = {
   grade: 'routes.surface.colorBy.grade',
   surface: 'routes.surface.colorBy.surface',
   wind: 'routes.surface.colorBy.wind',
   stages: 'routes.surface.colorBy.stages',
+  routes: 'routes.surface.colorBy.routes',
 } as const satisfies Record<LineModeOption, string>
 
 interface ColorByControlProps<T extends LineModeOption> {
@@ -29,7 +31,7 @@ interface ColorByControlProps<T extends LineModeOption> {
 /**
  * The switch of what colours a route's line and profile, under its map: « Pente | Revêtement »
  * on a route sheet, « Pente | Météo » or « Pente | Revêtement | Météo » on a group's page, « Étapes |
- * Météo » on a trip's overview — which is why it stands apart from the surface summary, which shows nothing without a surface.
+ * Météo » on a trip's overview, « Parcours | Météo » on a ride's map of several routes — which is why it stands apart from the surface summary, which shows nothing without a surface.
  */
 export function ColorByControl<T extends LineModeOption>({
   value,

@@ -19,6 +19,7 @@ import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
 import '../../../routes/presentation/widgets/route_waypoints_section.dart';
 import '../../../routes/presentation/widgets/waypoint_selection.dart';
 import '../../domain/ride_route_layers.dart';
+import '../../domain/solo_group.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import 'ride_elevation_section.dart';
@@ -33,7 +34,9 @@ import 'weather_map_layer.dart';
 /// 2. la carte pleine largeur, à `PdlMetrics.detailMapHeight` ([RideGroupsMap]) ;
 /// 3. l'interrupteur Pente | Revêtement | Météo, partagé par la carte, son
 ///    plein écran et le profil (ledger `MOB-105`) — ou, sur une carte à
-///    plusieurs couches, la seule puce « Météo » du parcours du groupe ;
+///    plusieurs couches, la seule puce « Météo » du parcours du groupe (une
+///    sortie solo à deux parcours), ou « Météo » en troisième segment du
+///    Pente | Revêtement du profil (plusieurs groupes, ledger `MOB-152`) ;
 /// 4. « Profil » et son ⓘ (la source des altitudes), le profil à
 ///    `PdlMetrics.detailElevation`, la barre de revêtement, sa légende et son
 ///    ⓘ (OpenStreetMap) — [RideElevationSection] en `detailLayout` ;
@@ -54,7 +57,10 @@ import 'weather_map_layer.dart';
 ///   la sortie ;
 /// * **plusieurs groupes** — [group] le groupe sélectionné, [groupOnly] faux,
 ///   [actions] faux : toutes les couches, la pilule du groupe affiché, Pente |
-///   Revêtement, « Profil du groupe sélectionné » ([profileTitle]) ; ni
+///   Revêtement — et « Météo » quand la personne est inscrite dans un groupe
+///   qui a une prévision : le vent sur le parcours de **son** groupe
+///   ([weatherLeg], le leg de ce groupe-là) —, « Profil du groupe
+///   sélectionné » ([profileTitle]) ; ni
 ///   « GPS » ni « Détails » (le « GPS » est sur la carte de son groupe), ni
 ///   légende — le groupe affiché se choisit par sa carte de groupe (KIT §8).
 ///
@@ -90,8 +96,10 @@ class RideRouteSection extends ConsumerStatefulWidget {
   /// faux : toutes les couches de la sortie.
   final bool groupOnly;
 
-  /// Le leg météo de [group], `null` sans prévision chargée : il propose le
-  /// mode « Météo » de la carte (ledgers `MOB-91`, `MOB-94`).
+  /// Le leg météo de [group] — à plusieurs groupes, celui du groupe où la
+  /// personne est inscrite, quel que soit le groupe sélectionné
+  /// (`rideMapWeatherGroup`) —, `null` sans prévision chargée : il propose le
+  /// mode « Météo » de la carte (ledgers `MOB-91`, `MOB-94`, `MOB-152`).
   final WeatherLegDto? weatherLeg;
 
   /// Le crédit des prévisions, porté par la légende du mode « Météo ».
@@ -183,6 +191,13 @@ class _RideRouteSectionState extends ConsumerState<RideRouteSection>
       ref.watch(rideMapColorModeProvider(rideKey)),
       modes,
     );
+    // Une carte à une couleur par couche n'a que « Météo » à proposer : une
+    // puce sous la carte d'une sortie solo à deux parcours, un segment de
+    // l'interrupteur du profil à plusieurs groupes (ledger `MOB-152`).
+    final bool layersWind = !likeRoute && modes.contains(RouteColorBy.wind);
+    final bool solo = soloGroupOf(ride) != null;
+    final RideGroupDto? weatherGroup = rideMapWeatherGroup(ride, onlyGroup);
+    final bool windOn = colorBy == RouteColorBy.wind;
 
     const EdgeInsets side = EdgeInsets.symmetric(
       horizontal: PdlSpacing.section,
@@ -223,14 +238,14 @@ class _RideRouteSectionState extends ConsumerState<RideRouteSection>
                         v,
               ),
             )
-          else if (!likeRoute && modes.contains(RouteColorBy.wind))
+          else if (layersWind && solo)
             // Le vent sur le parcours du groupe d'une sortie solo à deux
             // parcours (ledger `MOB-94`) : la carte n'a que ce mode-là.
             Padding(
               padding: const EdgeInsets.only(top: PdlSpacing.chipGap),
               child: WeatherMapChip(
                 chipKey: widget.windChipKey ?? keys.ride.windMapChip,
-                selected: colorBy == RouteColorBy.wind,
+                selected: windOn,
                 onChanged: (bool on) => setRideMapWindMode(ref, rideKey, on),
               ),
             ),
@@ -252,8 +267,25 @@ class _RideRouteSectionState extends ConsumerState<RideRouteSection>
                 // interrupteur. Sinon, le profil a le sien, à lui seul.
                 colorBy: likeRoute ? colorBy : null,
                 profileColorByKey: widget.profileColorByKey,
-                // Le vent sous le profil, en mode Météo (ledger `MOB-106`).
-                windLeg: likeRoute && colorBy == RouteColorBy.wind
+                // « Météo » dans l'interrupteur du profil : le vent de mon
+                // groupe sur la carte, et son profil sous les yeux.
+                mapWind: layersWind && !solo ? windOn : null,
+                onMapWindChanged: (bool on) {
+                  setRideMapWindMode(ref, rideKey, on);
+                  if (on && weatherGroup != null) {
+                    selectRideGroup(ref, rideKey, weatherGroup.id);
+                  }
+                },
+                // Le vent sous le profil, en mode Météo (ledger `MOB-106`) :
+                // seulement sous le profil du parcours qu'il concerne.
+                windLeg:
+                    windOn &&
+                        (likeRoute ||
+                            (layersWind &&
+                                !solo &&
+                                weatherGroup != null &&
+                                routeSlug ==
+                                    effectiveRouteSlug(ride, weatherGroup)))
                     ? widget.weatherLeg
                     : null,
                 detailLayout: true,

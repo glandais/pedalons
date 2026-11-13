@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { RideDto, RideGroupDto } from '@/api/dto'
+import type { RideDto, RideGroupDto, RideWeatherDto } from '@/api/dto'
+import { Status, WeatherStatus } from '@/api/dto'
 import { ROUTE_COLORS } from '@/lib/routeColors'
-import { rideMapRoutes, routeItemId } from './rideMapRoutes'
+import { weatherLeg } from '@/test/weatherFixtures'
+import { rideMapRoutes, rideMapWinds, routeItemId } from './rideMapRoutes'
 
 const g = (id: string, name: string, routeSlug?: string) =>
   ({ id, name, routeSlug }) as RideGroupDto
@@ -54,5 +56,42 @@ describe('rideMapRoutes', () => {
   it('has no item for a ride without routes, nor for no ride', () => {
     expect(rideMapRoutes(ride(undefined, [g('g1', 'A')]), 'main').items).toEqual([])
     expect(rideMapRoutes(undefined, 'main').items).toEqual([])
+  })
+})
+
+describe('rideMapWinds (WEB-178)', () => {
+  const groups = [g('g1', 'Chill', 'court'), g('g2', 'Rapide', 'long')]
+  const published = (overrides: Partial<RideDto> = {}) =>
+    ({
+      status: Status.PUBLISHED,
+      timezone: 'Europe/Paris',
+      groups,
+      ...overrides,
+    }) as unknown as RideDto
+  const weather = { legs: [weatherLeg('g1'), weatherLeg('g2')] } as RideWeatherDto
+  const winds = (r: RideDto, w: RideWeatherDto | null = weather) =>
+    rideMapWinds(r, w ?? undefined, rideMapRoutes(r, 'Parcours principal').itemIdByGroupId)
+
+  it("lays the registered group's leg on the route it rides, in the ride's zone", () => {
+    expect([...winds(published({ registeredGroupId: 'g2' }))]).toEqual([
+      [routeItemId('long'), { leg: weather.legs[1], timezone: 'Europe/Paris' }],
+    ])
+  })
+
+  it('has none for a reader registered nowhere', () => {
+    expect(winds(published()).size).toBe(0)
+  })
+
+  it("takes a solo ride's only group, registered or not", () => {
+    const solo = published({ routeSlug: 'principal', groups: [groups[0]] })
+    expect([...winds(solo).keys()]).toEqual([routeItemId('court')])
+  })
+
+  it('has none without a forecast, nor on a cancelled ride', () => {
+    const mine = published({ registeredGroupId: 'g2' })
+    expect(winds(mine, null).size).toBe(0)
+    const gone = { legs: [weatherLeg('g2', { status: WeatherStatus.OUT_OF_RANGE })] }
+    expect(winds(mine, gone as RideWeatherDto).size).toBe(0)
+    expect(winds(published({ registeredGroupId: 'g2', status: Status.CANCELLED })).size).toBe(0)
   })
 })
