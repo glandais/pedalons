@@ -1811,11 +1811,6 @@ components:
           examples:
           - MEMBER
           $ref: "#/components/schemas/TeamRole"
-    Data:
-      type: object
-      properties:
-        surface_detail:
-          type: boolean
     DenyRequest:
       description: Deny device authorization request
       type: object
@@ -2258,12 +2253,6 @@ components:
           items:
             $ref: "#/components/schemas/GpsServiceType"
           description: List of connected GPS services
-    Elevation:
-      type: object
-      properties:
-        smoothing_m:
-          type: number
-          format: double
     ElevationRefreshKind:
       type: string
       enum:
@@ -2413,17 +2402,6 @@ components:
       - TAG
       - PUBLICATION
       - ANY
-    Enums:
-      type: object
-      properties:
-        profiles:
-          type: array
-          items:
-            type: string
-        surface_detail:
-          type: array
-          items:
-            type: string
     ErrorCode:
       type: string
       enum:
@@ -3385,74 +3363,6 @@ components:
       - ACCEPTED
       - REVOKED
       - EXPIRED
-    JsonNode:
-      type: object
-      properties:
-        empty:
-          type: boolean
-        valueNode:
-          type: boolean
-        containerNode:
-          type: boolean
-        missingNode:
-          type: boolean
-        array:
-          type: boolean
-        object:
-          type: boolean
-        nodeType:
-          $ref: "#/components/schemas/JsonNodeType"
-        pojo:
-          type: boolean
-        number:
-          type: boolean
-        integralNumber:
-          type: boolean
-        floatingPointNumber:
-          type: boolean
-        short:
-          type: boolean
-        int:
-          type: boolean
-        long:
-          type: boolean
-        float:
-          type: boolean
-        double:
-          type: boolean
-        bigDecimal:
-          type: boolean
-        bigInteger:
-          type: boolean
-        textual:
-          type: boolean
-        boolean:
-          type: boolean
-        "null":
-          type: boolean
-        binary:
-          type: boolean
-    JsonNodeType:
-      type: string
-      enum:
-      - ARRAY
-      - BINARY
-      - BOOLEAN
-      - MISSING
-      - "NULL"
-      - NUMBER
-      - OBJECT
-      - POJO
-      - STRING
-    Limits:
-      type: object
-      properties:
-        max_points:
-          type: integer
-          format: int32
-        max_length_m:
-          type: number
-          format: double
     LineElevationRequest:
       type: object
       properties:
@@ -3712,17 +3622,6 @@ components:
         message:
           type: string
           description: Response message
-    Meta:
-      type: object
-      properties:
-        api_version:
-          type: string
-        rules_version:
-          type: string
-        profile:
-          type: string
-        data_versions:
-          $ref: "#/components/schemas/JsonNode"
     MinRole:
       type: string
       enum:
@@ -4230,43 +4129,6 @@ components:
           - user@example.com
           pattern: \S
           maxLength: 250
-    OutputPoint:
-      type: object
-      properties:
-        d_m:
-          type: number
-          format: double
-        index:
-          type: integer
-          format: int32
-        origin:
-          type: string
-        reasons:
-          type: array
-          items:
-            type: string
-        lat:
-          type: number
-          format: double
-        lon:
-          type: number
-          format: double
-        ele:
-          type: number
-          format: double
-        ele_smoothed:
-          type: number
-          format: double
-        ele_method:
-          type: string
-        gain_cum_m:
-          type: number
-          format: double
-        loss_cum_m:
-          type: number
-          format: double
-        inserted:
-          type: boolean
     PairedDeviceDto:
       description: "A device (Karoo, Garmin) paired with the account by code"
       type: object
@@ -4704,15 +4566,6 @@ components:
       type: string
       enum:
       - PLATFORM_ADMIN
-    Point:
-      type: object
-      properties:
-        lat:
-          type: number
-          format: double
-        lon:
-          type: number
-          format: double
     PostDto:
       description: Post summary data
       type: object
@@ -5136,19 +4989,6 @@ components:
       - ANDROID
       - IOS
       - WEB
-    Quality:
-      type: object
-      properties:
-        terrain:
-          type: array
-          items:
-            $ref: "#/components/schemas/TerrainRange"
-        warnings:
-          type: array
-          items:
-            $ref: "#/components/schemas/Warning"
-        structure_correction:
-          $ref: "#/components/schemas/JsonNode"
     RegisterRequest:
       description: User registration request
       type: object
@@ -6273,78 +6113,6 @@ components:
             \ detail only)."
           type: object
           $ref: "#/components/schemas/ContentPermissionsDto"
-    RouteDetailsCapabilities:
-      type: object
-      properties:
-        api_version:
-          type: string
-        limits:
-          $ref: "#/components/schemas/Limits"
-        enums:
-          $ref: "#/components/schemas/Enums"
-        data:
-          $ref: "#/components/schemas/Data"
-    RouteDetailsOptions:
-      type: object
-      properties:
-        profile:
-          $ref: "#/components/schemas/RouteDetailsProfile"
-        sections:
-          type: array
-          items:
-            $ref: "#/components/schemas/RouteDetailsSection"
-        sampling:
-          $ref: "#/components/schemas/Sampling"
-        elevation:
-          $ref: "#/components/schemas/Elevation"
-        accept_partial:
-          type: boolean
-    RouteDetailsProfile:
-      type: string
-      enum:
-      - fast
-      - full
-    RouteDetailsRequest:
-      type: object
-      properties:
-        polyline:
-          type: string
-        polyline_precision:
-          type: integer
-          format: int32
-        points:
-          type: array
-          items:
-            $ref: "#/components/schemas/Point"
-        options:
-          $ref: "#/components/schemas/RouteDetailsOptions"
-    RouteDetailsResponse:
-      type: object
-      properties:
-        meta:
-          $ref: "#/components/schemas/Meta"
-        status:
-          type: string
-        points:
-          type: array
-          items:
-            $ref: "#/components/schemas/OutputPoint"
-        segments:
-          type: array
-          items:
-            $ref: "#/components/schemas/Segment"
-        summary:
-          $ref: "#/components/schemas/Summary"
-        quality:
-          $ref: "#/components/schemas/Quality"
-        partial:
-          type: boolean
-    RouteDetailsSection:
-      type: string
-      enum:
-      - elevation
-      - typology
-      - summary
     RouteDto:
       type: object
       description: Route summary data
@@ -6751,41 +6519,11 @@ components:
             \ is empty"
           type: object
           $ref: "#/components/schemas/BoundsDto"
-    Sampling:
-      type: object
-      properties:
-        mode:
-          type: string
     SearchedBy:
       type: string
       enum:
       - ID
       - SLUG
-    Segment:
-      type: object
-      properties:
-        from_m:
-          type: number
-          format: double
-        to_m:
-          type: number
-          format: double
-        from_index:
-          type: integer
-          format: int32
-        to_index:
-          type: integer
-          format: int32
-        structure:
-          type: string
-        structure_source:
-          type: string
-        surface:
-          $ref: "#/components/schemas/Surface"
-        way_kind:
-          type: string
-        matched:
-          type: boolean
     SitemapDto:
       description: "Every page of the site a search engine may index: the public content\
         \ of public teams, without classified ads nor routes. Capped at 50,000 entries,\
@@ -6925,60 +6663,6 @@ components:
           $ref: "#/components/schemas/GeoPoint"
         to:
           $ref: "#/components/schemas/GeoPoint"
-    Structure:
-      type: object
-      properties:
-        kind:
-          type: string
-        from_m:
-          type: number
-          format: double
-        to_m:
-          type: number
-          format: double
-        length_m:
-          type: number
-          format: double
-        structure_source:
-          type: string
-        method:
-          type: string
-    Summary:
-      type: object
-      properties:
-        length_m:
-          type: number
-          format: double
-        gain_m:
-          type: number
-          format: double
-        loss_m:
-          type: number
-          format: double
-        ele_min_m:
-          type: number
-          format: double
-        ele_max_m:
-          type: number
-          format: double
-        structures:
-          type: array
-          items:
-            $ref: "#/components/schemas/Structure"
-        terrain_m:
-          type: object
-          additionalProperties:
-            type: number
-            format: double
-    Surface:
-      type: object
-      properties:
-        class:
-          type: string
-        detail:
-          type: string
-        source:
-          type: string
     SurfaceSpanDto:
       type: object
       description: "A stretch of a track with one surface class, in metres along the\
@@ -8024,21 +7708,6 @@ components:
         error:
           type: string
           description: "Why it failed, when it did"
-    TerrainRange:
-      type: object
-      properties:
-        from_m:
-          type: number
-          format: double
-        to_m:
-          type: number
-          format: double
-        origin:
-          type: string
-        measured:
-          type: boolean
-        fallback_after_error:
-          type: boolean
     ThemePreference:
       type: string
       enum:
@@ -9087,19 +8756,6 @@ components:
       - TEAM
       - PUBLIC_UNLISTED
       - PUBLIC
-    Warning:
-      type: object
-      properties:
-        code:
-          type: string
-        message:
-          type: string
-        from_m:
-          type: number
-          format: double
-        to_m:
-          type: number
-          format: double
     WaypointDto:
       type: object
       description: "A waypoint of a route. Its geometry is where the author put it:\
@@ -21838,32 +21494,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VersionDto"
-  /v1/capabilities:
-    get:
-      operationId: capabilities
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RouteDetailsCapabilities"
-  /v1/route-details:
-    post:
-      operationId: routeDetails
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RouteDetailsRequest"
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RouteDetailsResponse"
 info:
   title: Pedalons API
   version: 14.11.0

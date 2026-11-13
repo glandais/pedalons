@@ -49,7 +49,6 @@ import 'clients/trip_comments_client.dart';
 import 'clients/team_webhook_client.dart';
 import 'clients/tiles_client.dart';
 import 'clients/server_version_client.dart';
-import 'clients/api_client.dart';
 
 /// Pedalons API `v14.11.0`.
 ///
@@ -111,7 +110,6 @@ class PedalonsApiClient {
   TeamWebhookClient? _teamWebhook;
   TilesClient? _tiles;
   ServerVersionClient? _serverVersion;
-  ApiClient? _api;
 
   AdminDomainsClient get adminDomains =>
       _adminDomains ??= AdminDomainsClient(_dio, baseUrl: _baseUrl);
@@ -235,6 +233,4 @@ class PedalonsApiClient {
 
   ServerVersionClient get serverVersion =>
       _serverVersion ??= ServerVersionClient(_dio, baseUrl: _baseUrl);
-
-  ApiClient get api => _api ??= ApiClient(_dio, baseUrl: _baseUrl);
 }
