@@ -160,6 +160,9 @@ private constructor(
                 // Asks for `registeredStages`: a device that does not send it gets the response
                 // without them (docs/LEDGER_*.md API-168).
                 parameter("stages", true)
+                // And for what a registered row says beside its route — team, start place, status,
+                // estimated arrival — and the groups of a cancelled ride (API-194).
+                parameter("details", true)
                 if (lat != null && lon != null) {
                     parameter("lat", lat)
                     parameter("lon", lon)

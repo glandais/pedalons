@@ -22,18 +22,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.pedalons.karoo.R
+import fr.pedalons.karoo.api.DeviceRegisteredGroup
+import fr.pedalons.karoo.api.DeviceRegisteredStage
 import fr.pedalons.karoo.api.RoutesResponse
 import fr.pedalons.karoo.browse.HomeEntry
 import fr.pedalons.karoo.browse.homeEntries
+import fr.pedalons.karoo.browse.nextRegistered
+import fr.pedalons.karoo.ui.FormatClock
 import fr.pedalons.karoo.ui.components.NavArrow
 import fr.pedalons.karoo.ui.components.ScreenTopBar
 import fr.pedalons.karoo.ui.components.ScreenWithOverlay
 import fr.pedalons.karoo.ui.components.SelectableRow
+import fr.pedalons.karoo.ui.formatDeparture
 
 @Composable
 internal fun HomeScreen(
@@ -46,6 +53,7 @@ internal fun HomeScreen(
     onDisconnect: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     ScreenWithOverlay(onBack = onBack) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -55,7 +63,7 @@ internal fun HomeScreen(
                     IconButton(onClick = onRefresh) {
                         Icon(
                             imageVector = Icons.Filled.Refresh,
-                            contentDescription = stringResource(R.string.loading),
+                            contentDescription = stringResource(R.string.refresh),
                         )
                     }
                     Box {
@@ -94,7 +102,27 @@ internal fun HomeScreen(
                             HomeEntry.RIDES -> response.rides.size
                             HomeEntry.ROUTES -> response.routes.size
                         }
+                    // « Ma prochaine sortie », on the entry that leads to it: what is next and
+                    // when.
+                    val next =
+                        if (entry == HomeEntry.REGISTERED) {
+                            response.nextRegistered(FormatClock.now())
+                        } else {
+                            null
+                        }
                     HomeMenuItem(
+                        detail =
+                            next?.let { item ->
+                                val name =
+                                    when (item) {
+                                        is DeviceRegisteredGroup -> item.rideName
+                                        is DeviceRegisteredStage -> item.stageName
+                                    }
+                                listOfNotNull(
+                                    name,
+                                    formatDeparture(context, item.startDateTime, item.timezone),
+                                )
+                            } ?: emptyList(),
                         title =
                             stringResource(
                                 when (entry) {
@@ -133,6 +161,7 @@ internal fun HomeScreen(
 
 @Composable
 private fun HomeMenuItem(
+    detail: List<String>,
     title: String,
     subtitle: String,
     isSelected: Boolean,
@@ -147,6 +176,15 @@ private fun HomeMenuItem(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
+            detail.forEachIndexed { index, line ->
+                Text(
+                    text = line,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = if (index == 0) FontWeight.Medium else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Text(
                 text = if (isEmpty) emptyText else subtitle,
                 style = MaterialTheme.typography.bodySmall,

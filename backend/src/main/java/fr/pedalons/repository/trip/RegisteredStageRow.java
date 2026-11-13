@@ -1,5 +1,6 @@
 package fr.pedalons.repository.trip;
 
+import fr.pedalons.enums.Status;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 
@@ -22,4 +23,7 @@ public record RegisteredStageRow(
     @Nullable Float routeDistance,
     @Nullable Float routeElevationGain,
     @Nullable String startPlaceName,
-    @Nullable String endPlaceName) {}
+    @Nullable String endPlaceName,
+    String teamName,
+    Status tripStatus,
+    @Nullable Instant stageEndAt) {}

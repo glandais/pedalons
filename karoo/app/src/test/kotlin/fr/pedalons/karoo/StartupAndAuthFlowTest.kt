@@ -31,7 +31,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
     @Test
     fun notAuthenticated_showsTheConnectScreenAndTalksToNobody() {
         launch()
-        waitForText("Connect")
+        waitForText("Sign in")
         assertShown("Pédalons", "Scan the QR code with your phone to authenticate")
         assertNotShown("My next rides")
         assertTrue("no request before signing in", backend.requests.isEmpty())
@@ -40,8 +40,8 @@ class StartupAndAuthFlowTest : AppTestBase() {
     @Test
     fun connectButton_startsTheDeviceCodeFlowAgainstTheProductionHost() {
         launch()
-        waitForText("Connect")
-        click("Connect")
+        waitForText("Sign in")
+        click("Sign in")
 
         val intent = startedForResult()
         assertStartedClass(intent, AuthActivity::class.java)
@@ -54,7 +54,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
     @Test
     fun connectScreen_backKeyAndBackButtonFinish() {
         launch()
-        waitForText("Connect")
+        waitForText("Sign in")
         assertNotFinishing()
         back()
         assertFinishing()
@@ -63,7 +63,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
     @Test
     fun connectScreen_backButtonTouchFinishes() {
         launch()
-        waitForText("Connect")
+        waitForText("Sign in")
         clickDescription("Back")
         assertFinishing()
     }
@@ -71,19 +71,19 @@ class StartupAndAuthFlowTest : AppTestBase() {
     @Test
     fun connectScreen_otherKeysDoNothing() {
         launch()
-        waitForText("Connect")
+        waitForText("Sign in")
         next()
         previous()
         select()
-        assertShown("Connect")
+        assertShown("Sign in")
         assertNotFinishing()
     }
 
     @Test
     fun authSucceeded_loadsTheRoutes() {
         launch()
-        waitForText("Connect")
-        click("Connect")
+        waitForText("Sign in")
+        click("Sign in")
         startedForResult()
 
         // AuthActivity stores the tokens, then reports success.
@@ -91,18 +91,18 @@ class StartupAndAuthFlowTest : AppTestBase() {
         deliverResult(AuthActivity.RESULT_SUCCESS)
 
         waitForHome()
-        assertNotShown("Connect")
+        assertNotShown("Sign in")
         assertTrue(backend.requests.any { it.path == "/api/device/routes" })
     }
 
     @Test
     fun authCancelled_staysOnTheConnectScreen() {
         launch()
-        waitForText("Connect")
-        click("Connect")
+        waitForText("Sign in")
+        click("Sign in")
         deliverResult(AuthActivity.RESULT_CANCELLED)
 
-        assertShown("Connect")
+        assertShown("Sign in")
         assertNotFinishing()
         assertTrue(backend.requests.isEmpty())
     }
@@ -124,7 +124,11 @@ class StartupAndAuthFlowTest : AppTestBase() {
         val routes = backend.requests.filter { it.path == "/api/device/routes" }
         assertTrue("routes requested", routes.isNotEmpty())
         // The app does not send its position; it asks for the trip stages (API-168).
-        assertTrue(routes.all { it.bearer == "tok-1" && it.query == mapOf("stages" to "true") })
+        assertTrue(
+            routes.all {
+                it.bearer == "tok-1" && it.query == mapOf("stages" to "true", "details" to "true")
+            },
+        )
         // Nothing else was needed: the access token was valid, so no refresh.
         assertTrue(backend.requests.none { it.isRefresh })
         assertTrue(backend.unexpected.isEmpty())
@@ -143,7 +147,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
         // Skeleton: the app bar, no menu, no connect button.
         waitForText("Pédalons")
         compose.waitForIdle()
-        assertNotShown("Connect", "My next rides", "An error occurred")
+        assertNotShown("Sign in", "My next rides", "Could not load")
 
         gate.complete(Unit)
         waitForHome()
@@ -184,7 +188,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
         )
         // Behind it, the skeleton keeps waiting: no routes yet.
         assertTrue(backend.requests.none { it.path == "/api/device/routes" })
-        assertNotShown("My next rides", "Connect")
+        assertNotShown("My next rides", "Sign in")
     }
 
     @Test
@@ -213,7 +217,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
 
         deliverResult(GpsConnectActivity.RESULT_LOGOUT)
 
-        waitForText("Connect")
+        waitForText("Sign in")
         assertNull(runBlocking { auth.getRefreshToken() })
         assertNull(runBlocking { auth.getValidAccessToken() })
     }
@@ -362,7 +366,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
         signIn(expiresIn = -10)
         launch()
 
-        waitForText("Connect")
+        waitForText("Sign in")
         assertNull(runBlocking { auth.getRefreshToken() })
         assertNull(runBlocking { auth.getValidAccessToken() })
         // CHARACTERIZATION: the refresh is attempted again by the routes load after the account
@@ -378,7 +382,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
         signIn()
         launch()
 
-        waitForText("Connect")
+        waitForText("Sign in")
         assertNull(runBlocking { auth.getRefreshToken() })
     }
 
@@ -393,14 +397,14 @@ class StartupAndAuthFlowTest : AppTestBase() {
         signIn()
         launch()
 
-        waitForText("An error occurred")
-        assertShown("Loading…")
-        assertNotShown("My next rides", "Connect")
+        waitForText("Could not load")
+        assertShown("Try again")
+        assertNotShown("My next rides", "Sign in")
 
         failing = false
-        click("Loading…")
+        click("Try again")
         waitForHome()
-        assertNotShown("An error occurred")
+        assertNotShown("Could not load")
         // The session is kept.
         assertEquals("stored-refresh", runBlocking { auth.getRefreshToken() })
     }
@@ -410,7 +414,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
         backend.routes = { throw java.io.IOException("offline") }
         signIn()
         launch()
-        waitForText("An error occurred")
+        waitForText("Could not load")
     }
 
     @Test
@@ -418,7 +422,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
         backend.routes = { ok("""{"unexpected":true}""") }
         signIn()
         launch()
-        waitForText("An error occurred")
+        waitForText("Could not load")
     }
 
     @Test
@@ -426,14 +430,14 @@ class StartupAndAuthFlowTest : AppTestBase() {
         backend.routes = { Reply(500, "boom") }
         signIn()
         launch()
-        waitForText("An error occurred")
+        waitForText("Could not load")
         val before = backend.requests.count { it.path == "/api/device/routes" }
 
-        click("Loading…")
+        click("Try again")
         compose.waitUntil(10_000) {
             backend.requests.count { it.path == "/api/device/routes" } > before
         }
-        waitForText("An error occurred")
+        waitForText("Could not load")
     }
 
     @Test
@@ -442,10 +446,10 @@ class StartupAndAuthFlowTest : AppTestBase() {
         backend.routes = { if (failing) Reply(500, "boom") else ok(Fixtures.routesJson()) }
         signIn()
         launch()
-        waitForText("An error occurred")
+        waitForText("Could not load")
         val meBefore = backend.count("GET", "/api/device/me")
         failing = false
-        click("Loading…")
+        click("Try again")
         waitForHome()
         assertEquals(meBefore, backend.count("GET", "/api/device/me"))
     }
@@ -455,7 +459,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
         backend.routes = { Reply(500, "boom") }
         signIn()
         launch()
-        waitForText("An error occurred")
+        waitForText("Could not load")
         back()
         assertFinishing()
     }
@@ -465,11 +469,11 @@ class StartupAndAuthFlowTest : AppTestBase() {
         backend.routes = { Reply(500, "boom") }
         signIn()
         launch()
-        waitForText("An error occurred")
+        waitForText("Could not load")
         next()
         select()
         previous()
-        assertShown("An error occurred")
+        assertShown("Could not load")
         assertNotFinishing()
     }
 
@@ -493,8 +497,8 @@ class StartupAndAuthFlowTest : AppTestBase() {
                 ),
             )
         }
-        // CHARACTERIZATION: the refresh icon's content description is the « Loading… » string.
-        clickDescription("Loading…")
+        // The refresh icon says « Refresh » (it said « Loading… » until API-194).
+        clickDescription("Refresh")
 
         waitForText("2 rides")
         assertNotShown("1 ride")
@@ -507,8 +511,8 @@ class StartupAndAuthFlowTest : AppTestBase() {
         waitForHome()
 
         backend.routes = { Reply(500, "boom") }
-        clickDescription("Loading…")
-        waitForText("An error occurred")
+        clickDescription("Refresh")
+        waitForText("Could not load")
     }
 
     @Test
@@ -518,11 +522,11 @@ class StartupAndAuthFlowTest : AppTestBase() {
         waitForHome()
 
         backend.routes = { Reply(401, "{}") }
-        clickDescription("Loading…")
+        clickDescription("Refresh")
 
         // CHARACTERIZATION: unlike the first load, a 401 on a manual refresh does not sign out: the
         // rider gets the generic error screen with the tokens still stored.
-        waitForText("An error occurred")
+        waitForText("Could not load")
         assertEquals("stored-refresh", runBlocking { auth.getRefreshToken() })
     }
 
@@ -534,9 +538,9 @@ class StartupAndAuthFlowTest : AppTestBase() {
         val before = backend.requests.size
 
         clickDescription("Settings")
-        click("Disconnect")
+        click("Sign out")
 
-        waitForText("Connect")
+        waitForText("Sign in")
         assertNull(runBlocking { auth.getRefreshToken() })
         assertNull(runBlocking { auth.getValidAccessToken() })
         // Signing out is local: nothing is sent to the server.

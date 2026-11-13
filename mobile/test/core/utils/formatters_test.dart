@@ -190,7 +190,7 @@ void main() {
       );
       expect(
         withLocale('en', en, () => AppFormatters.formatElevationGain(1200)),
-        '1,200${String.fromCharCode(nbsp)}m elev. +',
+        '1,200${String.fromCharCode(nbsp)}m D+',
       );
     });
   });

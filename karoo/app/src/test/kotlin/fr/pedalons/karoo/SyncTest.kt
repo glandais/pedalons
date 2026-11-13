@@ -80,7 +80,7 @@ class SyncTest : AppTestBase() {
 
         select()
 
-        waitForText("Route synced!")
+        waitForText("Route sent")
         assertEquals(
             "/api/device/routes/team-a/galibier/sync",
             backend.syncRequests().single().path,
@@ -93,12 +93,12 @@ class SyncTest : AppTestBase() {
     fun detail_selectSendsTheSyncRequestAndShowsSuccess() {
         home()
         openRouteDetail()
-        assertShown("Sync to Karoo")
+        assertShown("Send to the Karoo")
 
         select()
 
-        waitForText("Route synced!")
-        assertNotShown("Sync to Karoo", "Syncing…", "Sync failed")
+        waitForText("Route sent")
+        assertNotShown("Send to the Karoo", "Sending…", "Could not send")
         val req = backend.syncRequests().single()
         assertEquals("POST", req.method)
         assertEquals("/api/device/routes/team-a/s1/sync", req.path)
@@ -111,8 +111,8 @@ class SyncTest : AppTestBase() {
     fun detail_syncButtonTouchSyncsToo() {
         home()
         openRouteDetail(1)
-        clickDescription("Sync")
-        waitForText("Route synced!")
+        clickDescription("Send")
+        waitForText("Route sent")
         assertEquals("/api/device/routes/team-a/s2/sync", backend.syncRequests().single().path)
     }
 
@@ -130,13 +130,13 @@ class SyncTest : AppTestBase() {
         awaitSyncRequests(1)
         compose.waitForIdle()
         // Only a spinner: neither the idle label nor a result.
-        assertNotShown("Sync to Karoo", "Route synced!", "Sync failed")
+        assertNotShown("Send to the Karoo", "Route sent", "Could not send")
         select()
-        clickDescription("Sync")
+        clickDescription("Send")
         assertEquals(1, backend.syncRequests().size)
 
         gate.complete(Unit)
-        waitForText("Route synced!")
+        waitForText("Route sent")
         assertEquals(1, backend.syncRequests().size)
     }
 
@@ -148,12 +148,12 @@ class SyncTest : AppTestBase() {
         openRouteDetail()
 
         select()
-        waitForText("Sync failed")
-        assertNotShown("Route synced!")
+        waitForText("Could not send")
+        assertNotShown("Route sent")
 
         failing = false
         select()
-        waitForText("Route synced!")
+        waitForText("Route sent")
         assertEquals(2, backend.syncRequests().size)
     }
 
@@ -162,10 +162,10 @@ class SyncTest : AppTestBase() {
         home()
         openRouteDetail()
         select()
-        waitForText("Route synced!")
+        waitForText("Route sent")
         select()
         compose.waitUntil(10_000) { backend.syncRequests().size == 2 }
-        waitForText("Route synced!")
+        waitForText("Route sent")
     }
 
     @Test
@@ -173,16 +173,16 @@ class SyncTest : AppTestBase() {
         home()
         openRouteDetail()
         select()
-        waitForText("Route synced!")
+        waitForText("Route sent")
 
         back()
         next()
         select() // second route
-        assertShown("Sync to Karoo")
-        assertNotShown("Route synced!")
+        assertShown("Send to the Karoo")
+        assertNotShown("Route sent")
         back()
         select()
-        assertShown("Sync to Karoo")
+        assertShown("Send to the Karoo")
     }
 
     @Test
@@ -193,31 +193,31 @@ class SyncTest : AppTestBase() {
         home()
         openRouteDetail()
         select()
-        waitForText("Route synced!")
+        waitForText("Route sent")
     }
 
     @Test
     fun detail_expiredAccessTokenFailsWithoutAnyRequest() {
         // CHARACTERIZATION: syncing never refreshes the token; an access token that expired since
-        // the routes were loaded gives « Sync failed » and nothing is sent.
+        // the routes were loaded gives « Could not send » and nothing is sent.
         home()
         openRouteDetail()
         signIn(access = "late", refresh = "late-r", expiresIn = -10)
         select()
-        waitForText("Sync failed")
+        waitForText("Could not send")
         assertTrue(backend.syncRequests().isEmpty())
     }
 
     @Test
     fun detail_401_failsButKeepsTheSession() {
-        // CHARACTERIZATION: a 401 on sync is « Sync failed », not a sign-out.
+        // CHARACTERIZATION: a 401 on sync is « Could not send », not a sign-out.
         backend.sync = { Reply(401, "{}") }
         home()
         openRouteDetail()
         select()
-        waitForText("Sync failed")
+        waitForText("Could not send")
         assertEquals("stored-refresh", runBlocking { auth.getRefreshToken() })
-        assertNotShown("Connect")
+        assertNotShown("Sign in")
     }
 
     @Test
@@ -229,7 +229,7 @@ class SyncTest : AppTestBase() {
         openRouteDetail()
         select()
 
-        waitForText("Sync failed")
+        waitForText("Could not send")
         val intent = startedForResult()
         assertStartedClass(intent, GpsConnectActivity::class.java)
         assertEquals(
@@ -244,25 +244,25 @@ class SyncTest : AppTestBase() {
         home()
         openRouteDetail()
         select()
-        waitForText("Sync failed")
+        waitForText("Could not send")
         assertEquals(null, startedForResult())
     }
 
     @Test
     fun detail_afterTheGpsConnectFlowTheDetailStaysAsItWas() {
         // CHARACTERIZATION: completing the Hammerhead step after a failed sync neither retries the
-        // sync nor reloads anything: the rider is left on « Sync failed ».
+        // sync nor reloads anything: the rider is left on « Could not send ».
         backend.sync = { Reply(400, """{"code":"GPS_SERVICE_NOT_CONNECTED"}""") }
         home()
         openRouteDetail()
         select()
-        waitForText("Sync failed")
+        waitForText("Could not send")
         startedForResult()
         val routesBefore = backend.count("GET", "/api/device/routes")
 
         deliverResult(GpsConnectActivity.RESULT_SUCCESS)
 
-        assertShown("Sync failed")
+        assertShown("Could not send")
         assertEquals(routesBefore, backend.count("GET", "/api/device/routes"))
         assertEquals(1, backend.syncRequests().size)
     }
@@ -284,20 +284,20 @@ class SyncTest : AppTestBase() {
         back()
         next()
         select() // another route's detail
-        assertShown("Sync to Karoo")
+        assertShown("Send to the Karoo")
 
         gates[0].complete(Unit) // the first sync ends while the second route is shown
         compose.waitForIdle()
         Thread.sleep(300)
         compose.waitForIdle()
-        assertShown("Sync to Karoo")
-        assertNotShown("Route synced!", "Sync failed")
+        assertShown("Send to the Karoo")
+        assertNotShown("Route sent", "Could not send")
 
         // That detail can sync on its own meanwhile.
         select()
         awaitSyncRequests(2)
         gates[1].complete(Unit)
-        waitForText("Route synced!")
+        waitForText("Route sent")
         assertEquals(listOf("s1", "s2"), backend.syncRequests().map { it.path.split("/")[5] })
     }
 
@@ -340,12 +340,12 @@ class SyncTest : AppTestBase() {
         back()
         next()
         select() // another route's detail
-        assertShown("Sync to Karoo")
+        assertShown("Send to the Karoo")
 
         gates[0].complete(Unit)
         settleAfter(responded[0])
-        assertShown("Sync to Karoo")
-        assertNotShown("Route synced!", "Syncing…", "Sync failed")
+        assertShown("Send to the Karoo")
+        assertNotShown("Route sent", "Sending…", "Could not send")
     }
 
     @Test
@@ -358,19 +358,19 @@ class SyncTest : AppTestBase() {
         select() // rides list
         select() // the ride with two entries
         select() // first entry: route detail
-        assertShown("Sync to Karoo")
+        assertShown("Send to the Karoo")
         select()
         awaitSyncRequests(1)
 
         back() // the entries of the ride
         next()
         select() // second entry: another route detail
-        assertShown("Sync to Karoo")
+        assertShown("Send to the Karoo")
 
         gates[0].complete(Unit)
         settleAfter(responded[0])
-        assertShown("Sync to Karoo")
-        assertNotShown("Route synced!", "Syncing…", "Sync failed")
+        assertShown("Send to the Karoo")
+        assertNotShown("Route sent", "Sending…", "Could not send")
         assertEquals("r1", backend.syncRequests().single().path.split("/")[5])
     }
 
@@ -383,13 +383,13 @@ class SyncTest : AppTestBase() {
 
         select()
 
-        waitForText("Route synced!")
+        waitForText("Route sent")
         assertEquals(
             "/api/device/routes/team-a/route-Fast/sync",
             backend.syncRequests().single().path,
         )
         assertEquals(mapOf("type" to "hammerhead"), backend.syncRequests().single().query)
-        assertEquals(1, count("Route synced!"))
+        assertEquals(1, count("Route sent"))
         assertShown("✓")
     }
 
@@ -398,7 +398,7 @@ class SyncTest : AppTestBase() {
         home()
         openRegistered()
         click("Easy")
-        waitForText("Route synced!")
+        waitForText("Route sent")
         assertEquals(
             "/api/device/routes/team-a/route-Easy/sync",
             backend.syncRequests().single().path,
@@ -430,13 +430,13 @@ class SyncTest : AppTestBase() {
             backend.syncRequests().single().path,
         )
         // Second row syncing, first row keeps the server's state.
-        assertShown("Syncing…", "Already on the Karoo")
+        assertShown("Sending…", "Already on the Karoo")
         assertNotShown("Older version on the Karoo")
 
         gate.complete(Unit)
-        waitForText("Route synced!")
-        assertEquals(1, count("Route synced!"))
-        assertNotShown("Syncing…", "Older version on the Karoo")
+        waitForText("Route sent")
+        assertEquals(1, count("Route sent"))
+        assertNotShown("Sending…", "Older version on the Karoo")
         assertShown("Already on the Karoo")
     }
 
@@ -458,7 +458,7 @@ class SyncTest : AppTestBase() {
         compose.waitForIdle()
         assertEquals(1, backend.syncRequests().size)
         gate.complete(Unit)
-        waitForText("Route synced!")
+        waitForText("Route sent")
     }
 
     @Test
@@ -475,11 +475,11 @@ class SyncTest : AppTestBase() {
 
         select()
 
-        waitForText("Sync failed")
-        assertEquals(1, count("Sync failed"))
+        waitForText("Could not send")
+        assertEquals(1, count("Could not send"))
         // The other row keeps what the server says; the failed row replaces its own with the error.
         assertShown("Sending failed")
-        assertNotShown("Update pending", "Route synced!")
+        assertNotShown("Update pending", "Route sent")
     }
 
     @Test
@@ -495,13 +495,13 @@ class SyncTest : AppTestBase() {
         assertShown("Older version on the Karoo", "Update pending")
 
         select()
-        waitForText("Route synced!")
+        waitForText("Route sent")
 
         // Leaving and coming back clears the transient result; the route is still known as sent.
         back()
         select()
         assertShown("Already on the Karoo", "Update pending")
-        assertNotShown("Older version on the Karoo", "Route synced!")
+        assertNotShown("Older version on the Karoo", "Route sent")
     }
 
     @Test
@@ -510,7 +510,7 @@ class SyncTest : AppTestBase() {
         home(groups = listOf(Fixtures.group("Fast", state = "OUTDATED")))
         openRegistered()
         select()
-        waitForText("Sync failed")
+        waitForText("Could not send")
         back()
         select()
         assertShown("Older version on the Karoo")
@@ -529,7 +529,7 @@ class SyncTest : AppTestBase() {
         )
         openRegistered()
         select()
-        waitForText("Route synced!")
+        waitForText("Route sent")
         back()
         select()
         assertEquals(2, count("Already on the Karoo"))
@@ -540,7 +540,7 @@ class SyncTest : AppTestBase() {
         home(groups = listOf(Fixtures.group("Fast", routeSlug = "s2", state = "OUTDATED")))
         openRouteDetail(1) // s2
         select()
-        waitForText("Route synced!")
+        waitForText("Route sent")
         back()
         back()
         select()
@@ -553,7 +553,7 @@ class SyncTest : AppTestBase() {
         home(groups = listOf(Fixtures.group("Fast", state = "OUTDATED")))
         openRegistered()
         select()
-        waitForText("Route synced!")
+        waitForText("Route sent")
         back()
 
         // Home refresh: a new response (still OUTDATED at the server) replaces the local memory.
@@ -566,7 +566,7 @@ class SyncTest : AppTestBase() {
                 ),
             )
         }
-        clickDescription("Loading…")
+        clickDescription("Refresh")
         waitForText("4 routes")
         select()
         assertShown("Older version on the Karoo")
@@ -581,11 +581,11 @@ class SyncTest : AppTestBase() {
         home(groups = listOf(Fixtures.group("Fast", state = "OUTDATED")))
         openRegistered()
         select()
-        waitForText("Route synced!")
+        waitForText("Route sent")
         back()
 
         val before = backend.count("GET", "/api/device/routes")
-        clickDescription("Loading…")
+        clickDescription("Refresh")
         compose.waitUntil(10_000) { backend.count("GET", "/api/device/routes") > before }
         waitForHome()
         compose.waitForIdle()
@@ -613,7 +613,7 @@ class SyncTest : AppTestBase() {
 
         back()
         select() // the list again, a fresh screen
-        assertNotShown("Syncing…")
+        assertNotShown("Sending…")
 
         gate.complete(Unit)
         // The sync coroutine records the route and then applies (or not) its result in the same
@@ -621,7 +621,7 @@ class SyncTest : AppTestBase() {
         waitForText("Already on the Karoo")
         compose.waitForIdle()
         // The result is not shown on any row of the new screen...
-        assertNotShown("Route synced!", "Syncing…", "Sync failed")
+        assertNotShown("Route sent", "Sending…", "Could not send")
         // ...but the route did reach the Karoo, and the first row says so.
         assertEquals(1, count("Already on the Karoo"))
         assertEquals(1, count("Older version on the Karoo"))
@@ -633,7 +633,7 @@ class SyncTest : AppTestBase() {
         home()
         openRegistered()
         select()
-        waitForText("Sync failed")
+        waitForText("Could not send")
         assertStartedClass(startedForResult(), GpsConnectActivity::class.java)
     }
 

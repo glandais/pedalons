@@ -30,6 +30,7 @@ import fr.pedalons.repository.trip.RegisteredStageRow;
 import fr.pedalons.repository.trip.TripParticipationRepository;
 import fr.pedalons.service.gps.sync.GpsRouteSyncService;
 import fr.pedalons.service.gps.sync.GpsRouteSyncService.RouteSyncStatus;
+import fr.pedalons.service.publication.PublicationEndCalculator;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.annotation.Logged;
@@ -102,11 +103,14 @@ public class DeviceRouteService {
    * @param stages whether to add {@code registeredStages}, the upcoming stages of the trips the
    *     user is registered for; without it the field is absent, not empty, so the response of a
    *     device that does not ask is unchanged (docs/LEDGER_*.md API-168)
+   * @param details whether each registered group also carries its team's name, the ride's start
+   *     place, status and estimated arrival — and whether the groups of a cancelled ride are listed
+   *     at all (docs/LEDGER_*.md API-194); same rule, absent without it
    * @return Response with rides and routes lists
    */
   @Logged
   public DeviceRoutesResponse getRoutesForUser(
-      @Nullable Double lat, @Nullable Double lon, boolean stages) {
+      @Nullable Double lat, @Nullable Double lon, boolean stages, boolean details) {
     Long userId = pedalonsContext.getUserId();
     List<UserTeam> memberships = userTeamRepository.findByUserId(userId);
 
@@ -165,7 +169,7 @@ public class DeviceRouteService {
     return DeviceRoutesResponse.builder()
         .rides(boundedRides)
         .routes(boundedRoutes)
-        .registeredGroups(getRegisteredGroups(userId, now))
+        .registeredGroups(getRegisteredGroups(userId, now, details))
         .registeredStages(stages ? getRegisteredStages(userId, now) : null)
         .build();
   }
@@ -212,6 +216,12 @@ public class DeviceRouteService {
         .startPlaceName(row.startPlaceName())
         .endPlaceName(row.endPlaceName())
         .syncStatuses(toSyncStatuses(statuses))
+        .teamName(row.teamName())
+        .status(row.tripStatus())
+        .endDateTime(
+            row.stageEndAt() != null
+                ? row.stageEndAt()
+                : row.stageStartAt().plus(PublicationEndCalculator.DEFAULT_DURATION))
         .build();
   }
 
@@ -229,7 +239,8 @@ public class DeviceRouteService {
    * at the user's GPS services (docs/LEDGER_*.md API-121). Two queries whatever their number: the
    * groups, then the sync state of all their routes.
    */
-  private List<DeviceRegisteredGroupDto> getRegisteredGroups(Long userId, Instant now) {
+  private List<DeviceRegisteredGroupDto> getRegisteredGroups(
+      Long userId, Instant now, boolean details) {
     Long domainId = pedalonsContext.getDomainId();
     List<RegisteredGroupRow> rows =
         rideParticipationRepository.findUpcomingRegisteredGroups(
@@ -238,7 +249,8 @@ public class DeviceRouteService {
             pedalonsContext.getPinnedTeamIdNullable(),
             now.minus(REGISTERED_GROUPS_PAST),
             now.plus(REGISTERED_GROUPS_AHEAD),
-            MAX_REGISTERED_GROUPS_IN_RESPONSE);
+            MAX_REGISTERED_GROUPS_IN_RESPONSE,
+            details);
     Set<Long> routeIds =
         rows.stream()
             .map(RegisteredGroupRow::effectiveRouteId)
@@ -247,13 +259,14 @@ public class DeviceRouteService {
     Map<Long, List<RouteSyncStatus>> statuses =
         gpsRouteSyncService.findRouteStatuses(domainId, userId, routeIds);
     return rows.stream()
-        .map(
-            row -> toRegisteredGroup(row, statuses.getOrDefault(row.effectiveRouteId(), List.of())))
+        .map(row ->
+            toRegisteredGroup(
+                row, statuses.getOrDefault(row.effectiveRouteId(), List.of()), details))
         .toList();
   }
 
   private static DeviceRegisteredGroupDto toRegisteredGroup(
-      RegisteredGroupRow row, List<RouteSyncStatus> statuses) {
+      RegisteredGroupRow row, List<RouteSyncStatus> statuses, boolean details) {
     // The query only returns rows where one of the two routes is live: the group's wins.
     boolean ownRoute = row.ownRoute();
     String routeSlug = ownRoute ? row.groupRouteSlug() : row.rideRouteSlug();
@@ -272,7 +285,25 @@ public class DeviceRouteService {
         .startDateTime(row.startAt())
         .timezone(row.timezone())
         .syncStatuses(toSyncStatuses(statuses))
+        .teamName(details ? row.teamName() : null)
+        .startPlaceName(details ? row.startPlaceName() : null)
+        .status(details ? row.rideStatus() : null)
+        .endDateTime(details ? groupEnd(row, distance) : null)
         .build();
+  }
+
+  /**
+   * When a registered group is expected to arrive: its route's length at its speed, its departure
+   * plus {@link PublicationEndCalculator#DEFAULT_DURATION} when either is missing — the rule of
+   * {@code RideGroupDto.estimatedArrival} and of the ride's stored end.
+   */
+  private static Instant groupEnd(RegisteredGroupRow row, @Nullable Float distance) {
+    Instant start = row.startAt();
+    PublicationEndCalculator.LegEstimate estimate =
+        PublicationEndCalculator.estimate(start, distance, row.groupAverageSpeed());
+    return estimate != null
+        ? estimate.arrival()
+        : start.plus(PublicationEndCalculator.DEFAULT_DURATION);
   }
 
   /**

@@ -1,6 +1,7 @@
 package fr.pedalons.dto.device.response;
 
 import fr.pedalons.dto.validation.ValidateSchema;
+import fr.pedalons.enums.Status;
 import java.time.Instant;
 import java.util.List;
 import lombok.Builder;
@@ -44,4 +45,17 @@ public record DeviceRegisteredStageDto(
                 "Where the route stands at each of the user's GPS services that hold it, as"
                     + " DeviceRegisteredGroupDto.syncStatuses",
             required = true)
-        List<DeviceRouteSyncStatusDto> syncStatuses) {}
+        List<DeviceRouteSyncStatusDto> syncStatuses,
+    @Schema(description = "Team name", required = true) String teamName,
+    @Schema(
+            description =
+                "Status of the trip: PUBLISHED or CANCELLED (the stages of a cancelled trip are"
+                    + " listed, for the device to say so)",
+            required = true)
+        Status status,
+    @Schema(
+            description =
+                "When the stage is expected to end, as an absolute instant (UTC): its stored end,"
+                    + " the departure plus three hours without one",
+            required = true)
+        Instant endDateTime) {}

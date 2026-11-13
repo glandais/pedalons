@@ -172,6 +172,65 @@ internal fun formatDeparture(
     return context.getString(R.string.departure_at, day, formatTime(wall, locale))
 }
 
+/** The hour of a departure alone, for « Départ 09:30 »: « 09:30 », « 9:30 AM ». */
+internal fun formatDepartureTime(context: Context, isoDateTime: String?, zone: String?): String? {
+    val instant = parseInstant(isoDateTime) ?: return null
+    return formatTime(instant.atZone(zoneOrDevice(zone)), formatLocale(context))
+}
+
+/**
+ * « Aujourd'hui » or « Demain » when the departure falls on that day in the [zone] of the ride;
+ * null otherwise — yesterday included: no other relative day exists (ledger BRAND-8).
+ */
+internal fun formatRelativeDay(
+    context: Context,
+    isoDateTime: String?,
+    zone: String?,
+    now: Instant = FormatClock.now(),
+): String? {
+    val instant = parseInstant(isoDateTime) ?: return null
+    val zoneId = zoneOrDevice(zone)
+    val gap =
+        ChronoUnit.DAYS.between(
+            now.atZone(zoneId).toLocalDate(),
+            instant.atZone(zoneId).toLocalDate(),
+        )
+    return when (gap) {
+        0L -> context.getString(R.string.today)
+        1L -> context.getString(R.string.tomorrow)
+        else -> null
+    }
+}
+
+/**
+ * The lines of the day box (docs/BRANDING.md §7.8): weekday, day, month — « sam. », « 14 », « nov.
+ * » — and the year only outside the current one, since on a row the box is the only date.
+ */
+internal data class DayBoxParts(
+    val weekday: String,
+    val day: String,
+    val month: String,
+    val year: String?,
+)
+
+internal fun dayBoxParts(
+    context: Context,
+    isoDateTime: String?,
+    zone: String?,
+    now: Instant = FormatClock.now(),
+): DayBoxParts? {
+    val instant = parseInstant(isoDateTime) ?: return null
+    val locale = formatLocale(context)
+    val zoneId = zoneOrDevice(zone)
+    val wall = instant.atZone(zoneId)
+    return DayBoxParts(
+        weekday = wall.format(DateTimeFormatter.ofPattern("EEE", locale)),
+        day = wall.dayOfMonth.toString(),
+        month = wall.format(DateTimeFormatter.ofPattern("MMM", locale)),
+        year = if (wall.year == now.atZone(zoneId).year) null else wall.year.toString(),
+    )
+}
+
 /**
  * « heure de Tokyo (ven. 01:00 chez vous) » for a departure whose [zone] is not, at that instant,
  * at the Karoo's offset; null otherwise — nearly always. The reader's day is named only when it

@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import fr.pedalons.karoo.R
 import fr.pedalons.karoo.ui.components.ScreenTopBar
@@ -77,13 +78,14 @@ internal fun ErrorScreen(onRetry: () -> Unit, onBack: () -> Unit) {
                 modifier = Modifier.padding(24.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.error_unknown),
+                    text = stringResource(R.string.load_error_title),
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(onClick = onRetry) {
-                    Text(stringResource(R.string.loading))
+                    Text(stringResource(R.string.retry))
                 }
             }
         }

@@ -18,18 +18,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.pedalons.karoo.R
 import fr.pedalons.karoo.browse.NavState
 import fr.pedalons.karoo.browse.SyncState
+import fr.pedalons.karoo.ui.components.DayBox
+import fr.pedalons.karoo.ui.components.DepartureLines
 import fr.pedalons.karoo.ui.components.ScreenTopBar
 import fr.pedalons.karoo.ui.components.ScreenWithOverlay
-import fr.pedalons.karoo.ui.formatDeparture
 import fr.pedalons.karoo.ui.formatDistance
 import fr.pedalons.karoo.ui.formatElevationGain
-import fr.pedalons.karoo.ui.formatZoneMention
 import io.hammerhead.karooext.models.UserProfile
 
 @Composable
@@ -65,23 +64,16 @@ internal fun RouteDetailScreen(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    val startStr = formatDeparture(context, detail.startDateTime, detail.timezone)
-                    if (startStr != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = startStr,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        val mention =
-                            formatZoneMention(context, detail.startDateTime, detail.timezone)
-                        if (mention != null) {
-                            Text(
-                                text = mention,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                            )
+                    if (detail.startDateTime != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        // The departure block of the app's detail pages (BRANDING §7.8): the day
+                        // box, then « Départ 09:30 ».
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            DayBox(detail.startDateTime, detail.timezone)
+                            Column { DepartureLines(detail.startDateTime, detail.timezone) }
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))

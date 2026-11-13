@@ -3,6 +3,7 @@ package fr.pedalons.karoo.browse
 import fr.pedalons.karoo.api.DeviceRide
 import fr.pedalons.karoo.api.DeviceRideEntry
 import fr.pedalons.karoo.api.DeviceRoute
+import fr.pedalons.karoo.api.RegisteredItem
 import fr.pedalons.karoo.api.RoutesResponse
 
 /** What a transition asks the caller to do besides showing the new state. */
@@ -86,9 +87,8 @@ internal data class BrowseState(
                     ?.let { homeEntries(it).getOrNull(selectedIndex) }
                     ?.let { openHomeEntry(it) } ?: BrowseStep(this)
             is NavState.RegisteredGroupList ->
-                state.items.getOrNull(selectedIndex)?.let {
-                    sync(it.teamSlug, it.routeSlug, selectedIndex)
-                } ?: BrowseStep(this)
+                state.items.getOrNull(selectedIndex)?.let { syncRegistered(it, selectedIndex) }
+                    ?: BrowseStep(this)
             is NavState.RideList ->
                 state.rides.getOrNull(selectedIndex)?.let { openRide(it) } ?: BrowseStep(this)
             is NavState.RideEntries ->
@@ -121,6 +121,13 @@ internal data class BrowseState(
 
     fun openRoute(route: DeviceRoute): BrowseStep =
         BrowseStep(navigateTo(NavState.RouteDetail.of(route)))
+
+    /**
+     * The key or the touch on a row of « My next rides »: syncs its route — unless the ride or the
+     * trip is cancelled, whose row has no control (KIT §9, docs/LEDGER_*.md API-194).
+     */
+    fun syncRegistered(item: RegisteredItem, row: Int): BrowseStep =
+        if (item.isCancelled) BrowseStep(this) else sync(item.teamSlug, item.routeSlug, row)
 
     /**
      * Syncs a route to Hammerhead, the one action shared by the route detail screen and the

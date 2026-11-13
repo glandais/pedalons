@@ -1847,7 +1847,7 @@
   "units": {
     "metric": "Metric",
     "imperial": "Imperial",
-    "elevationGain": "elev. +",
+    "elevationGain": "D+",
     "elevationGainLong": "Elevation gain",
     "byte": "B",
     "kilobyte": "kB",

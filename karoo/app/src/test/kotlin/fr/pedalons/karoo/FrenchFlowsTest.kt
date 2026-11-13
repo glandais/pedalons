@@ -70,10 +70,10 @@ class FrenchFlowsTest : AppTestBase() {
         select()
         assertShown(
             "Groupe B",
-            "sam. 14 nov. · 09:30",
+            "Départ 09:30",
             "92,4\u00a0km",
             "1\u00a0240\u00a0m D+",
-            "sam. 14 nov. · 07:00",
+            "Départ 07:00",
             "heure de Tokyo (ven. 23:00 chez vous)",
         )
     }
@@ -83,10 +83,10 @@ class FrenchFlowsTest : AppTestBase() {
         home()
         select()
         // 08:30 UTC on 14 Nov 2026 is 09:30 in Paris; French short date, 24h time.
-        assertShown("Fast", "Sunday ride", "sam. 14 nov. · 09:30", "Ancienne version sur le Karoo")
+        assertShown("Fast", "Sunday ride", "Départ 09:30", "Ancienne version sur le Karoo")
 
         select()
-        waitForText("Parcours synchronisé !")
+        waitForText("Parcours envoyé")
         assertEquals(1, backend.syncRequests().size)
         assertNotShown("Ancienne version sur le Karoo")
     }
@@ -97,7 +97,7 @@ class FrenchFlowsTest : AppTestBase() {
         home()
         select()
         select()
-        waitForText("Échec de la synchronisation")
+        waitForText("Envoi impossible")
     }
 
     @Test
@@ -106,10 +106,10 @@ class FrenchFlowsTest : AppTestBase() {
         next()
         select() // rides
         select() // the ride's groups
-        assertShown("Sunday ride", "sam. 14 nov. · 09:30", "sam. 14 nov. · 09:00")
+        assertShown("Sunday ride", "Départ 09:30", "Départ 09:00")
         select()
-        assertShown("Sync vers Karoo")
+        assertShown("Envoyer vers le Karoo")
         select()
-        waitForText("Parcours synchronisé !")
+        waitForText("Parcours envoyé")
     }
 }

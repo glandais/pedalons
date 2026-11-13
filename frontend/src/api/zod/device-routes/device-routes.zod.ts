@@ -4,9 +4,16 @@ import * as zod from 'zod'
  * Get routes for authenticated user. Prioritizes routes from upcoming rides, then latest routes from user's teams.
  * @summary List routes for user
  */
+export const deviceListRoutesQueryDetailsDefault = false
 export const deviceListRoutesQueryStagesDefault = false
 
 export const DeviceListRoutesQueryParams = zod.object({
+  details: zod
+    .boolean()
+    .default(deviceListRoutesQueryDetailsDefault)
+    .describe(
+      'Also return, on each registered group, teamName, startPlaceName, status and endDateTime, and list the groups of a cancelled ride. Off by default: a device that does not ask keeps the response it always had.'
+    ),
   lat: zod.number().optional().describe("User's current latitude (for proximity sorting)"),
   lon: zod.number().optional().describe("User's current longitude (for proximity sorting)"),
   stages: zod
@@ -118,6 +125,25 @@ export const DeviceListRoutesResponse = zod
               .describe(
                 "Where the route stands at each of the user's GPS services that hold it (sent automatically or uploaded by hand), so a device does not upload it again. Empty when no service holds it; a device only reads its own service's entry (Karoo: HAMMERHEAD, Garmin: GARMIN)."
               ),
+            teamName: zod.string().optional().describe('Team name. Only with details=true.'),
+            startPlaceName: zod
+              .string()
+              .optional()
+              .describe(
+                'Name of the place the ride leaves from, when it has one. Only with details=true.'
+              ),
+            status: zod
+              .enum(['DRAFT', 'PUBLISHED', 'CANCELLED'])
+              .optional()
+              .describe(
+                'Status of the ride: PUBLISHED or CANCELLED. Only with details=true — which also lists the groups of a cancelled ride, left out otherwise.'
+              ),
+            endDateTime: zod.iso
+              .datetime({ offset: true })
+              .optional()
+              .describe(
+                "When the group is expected to arrive, as an absolute instant (UTC): its route's length at its speed, the departure plus three hours when either is missing. Only with details=true."
+              ),
           })
           .describe(
             'Upcoming ride group the user is registered in, with the route to load on the device'
@@ -171,6 +197,17 @@ export const DeviceListRoutesResponse = zod
               )
               .describe(
                 "Where the route stands at each of the user's GPS services that hold it, as DeviceRegisteredGroupDto.syncStatuses"
+              ),
+            teamName: zod.string().describe('Team name'),
+            status: zod
+              .enum(['DRAFT', 'PUBLISHED', 'CANCELLED'])
+              .describe(
+                'Status of the trip: PUBLISHED or CANCELLED (the stages of a cancelled trip are listed, for the device to say so)'
+              ),
+            endDateTime: zod.iso
+              .datetime({ offset: true })
+              .describe(
+                'When the stage is expected to end, as an absolute instant (UTC): its stored end, the departure plus three hours without one'
               ),
           })
           .describe(

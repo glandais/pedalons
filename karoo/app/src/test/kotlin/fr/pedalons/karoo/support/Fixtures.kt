@@ -73,12 +73,21 @@ object Fixtures {
         state: String? = null,
         distance: Float = 42_000f,
         elevation: Float = 600f,
+        // What `details=true` adds (API-194); absent from an older server.
+        teamName: String? = null,
+        place: String? = null,
+        status: String? = null,
+        end: String? = null,
     ) = buildString {
         append(
             """{"teamSlug":"$team","rideSlug":"ride-$group","rideName":"$rideName","groupName":"$group",
                "routeSlug":"$routeSlug","routeName":"$routeName","distance":$distance,"elevationGain":$elevation,
                "startDateTime":"$start","timezone":"Europe/Paris"""",
         )
+        if (teamName != null) append(""","teamName":"$teamName"""")
+        if (place != null) append(""","startPlaceName":"$place"""")
+        if (status != null) append(""","status":"$status"""")
+        if (end != null) append(""","endDateTime":"$end"""")
         when (state) {
             null -> {}
             "" -> append(""","syncStatuses":[]""")

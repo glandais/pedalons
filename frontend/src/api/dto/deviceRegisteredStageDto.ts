@@ -1,5 +1,6 @@
 import type { DeviceRouteSyncStatusDto } from './deviceRouteSyncStatusDto.ts'
 import type { Instant } from './instant.ts'
+import type { Status } from './status.ts'
 
 /**
  * Upcoming stage of a trip the user is registered for, with the route to load on the device
@@ -31,4 +32,10 @@ export interface DeviceRegisteredStageDto {
   endPlaceName?: string
   /** Where the route stands at each of the user's GPS services that hold it, as DeviceRegisteredGroupDto.syncStatuses */
   syncStatuses: DeviceRouteSyncStatusDto[]
+  /** Team name */
+  teamName: string
+  /** Status of the trip: PUBLISHED or CANCELLED (the stages of a cancelled trip are listed, for the device to say so) */
+  status: Status
+  /** When the stage is expected to end, as an absolute instant (UTC): its stored end, the departure plus three hours without one */
+  endDateTime: Instant
 }

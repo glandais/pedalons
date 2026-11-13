@@ -295,8 +295,9 @@ class PedalonsApiClientTest {
         val request = h.only
         assertEquals(HttpMethod.Get, request.method)
         // `stages=true` is what makes the server add `registeredStages` (docs/LEDGER_*.md
-        // API-168): a device that does not send it keeps the response without them.
-        assertEquals("$base/api/device/routes?stages=true", request.url.toString())
+        // API-168), `details=true` what a registered row says beside its route (API-194): a
+        // device that sends neither keeps the response without them.
+        assertEquals("$base/api/device/routes?stages=true&details=true", request.url.toString())
         assertEquals("Bearer tok", request.headers[HttpHeaders.Authorization])
 
         assertEquals(1, routes.rides.size)
@@ -320,7 +321,7 @@ class PedalonsApiClientTest {
     fun getRoutes_halfAPositionSendsNoPosition() = runBlocking {
         val h = harness { json(routesJson) }
         h.client.getRoutes("tok", lat = 45.5, lon = null).getOrThrow()
-        assertEquals(setOf("stages"), h.only.url.parameters.names())
+        assertEquals(setOf("stages", "details"), h.only.url.parameters.names())
     }
 
     @Test

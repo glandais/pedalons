@@ -1,11 +1,14 @@
 package fr.pedalons.repository.ride;
 
+import fr.pedalons.enums.Status;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 
 /**
  * One ride group a user is registered in, as scalars: the group, its ride, and both candidate
- * routes (the group's own, the ride's), each null when absent or deleted. Selected in a single
+ * routes (the group's own, the ride's), each null when absent or deleted; then what a device shows
+ * beside them — the team's name, the name of the ride's start place, the ride's status and the
+ * group's speed, from which its arrival is estimated (docs/LEDGER_*.md API-194). Selected in a single
  * query so nothing enters the persistence context — see {@link
  * RideParticipationRepository#findUpcomingRegisteredGroups}.
  */
@@ -26,7 +29,11 @@ public record RegisteredGroupRow(
     @Nullable String rideRouteSlug,
     @Nullable String rideRouteName,
     @Nullable Float rideRouteDistance,
-    @Nullable Float rideRouteElevationGain) {
+    @Nullable Float rideRouteElevationGain,
+    String teamName,
+    @Nullable String startPlaceName,
+    Status rideStatus,
+    @Nullable Float groupAverageSpeed) {
 
   /** The group's departure: its own start, the ride's when it has none. */
   public Instant startAt() {

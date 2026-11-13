@@ -3224,13 +3224,41 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
 
 ## API — Contrat d'API et backend
 
+- `API-194` **Les lignes du Karoo ont la structure des cartes de l'app : boîte du jour, « Départ 09:30 », lieu, état** (13 novembre 2026, contrat 14.11.0, [plan](plans/2026-11-13-karoo-alignement.md)) —
+  après `API-191` les mots étaient ceux de l'app, pas la ligne : le départ restait une date en petit gris, le titre
+  était le groupe, une sortie annulée disparaissait sans rien dire. Une ligne de « Prochaines sorties » est maintenant
+  celle de « Ma prochaine sortie » (`KIT.md` §9, R11 ; BRANDING §7.8) : **boîte du jour** à gauche (jour, chiffre,
+  mois, l'année hors de l'année en cours ; turquoise pour une étape de voyage, `ui/theme/Theme.kt`), la sortie en
+  titre, **« Départ 09:30 »** en gras avec la pastille « Aujourd'hui » / « Demain », puis « Groupe B · Place de la
+  Mairie » ; le nom de l'équipe seulement quand les lignes viennent de plusieurs. **Un badge d'état, par exception**
+  (R1) : « Annulé », « En cours », « Terminée » (`browse/ItemPhase.kt`, la règle de
+  `mobile/…/publication_timing.dart` : sans arrivée, départ + 3 h ; annulé n'est jamais en cours). **Une sortie
+  annulée n'a aucun contrôle** : ni icône, ni état Hammerhead, et la touche n'envoie rien
+  (`BrowseState.syncRegistered`). L'entrée « Prochaines sorties » de l'accueil nomme la prochaine à rouler et son
+  départ. La liste des sorties et l'écran d'un parcours prennent la boîte du jour ; l'écran d'erreur dit
+  « Chargement impossible » et « Réessayer », l'icône de rechargement « Actualiser » (RL11, part des libellés
+  d'`API-188`). Le vocabulaire est celui de l'app : on **envoie** un parcours (« Envoyer vers le Karoo », « Envoi… »,
+  « Parcours envoyé », « Envoi impossible », plus « Sync » ni « synchroniser »), aucune exclamation (BRANDING §8.1),
+  boutons à l'infinitif (« Se connecter », « Se déconnecter »). Contrat : `GET /api/device/routes?details=true` ajoute à chaque groupe inscrit `teamName`,
+  `startPlaceName`, `status`, `endDateTime` (arrivée estimée, `PublicationEndCalculator.estimate`, départ + 3 h à
+  défaut) et **liste les groupes d'une sortie annulée** ; les étapes (`stages=true`) portent `teamName`, `status`,
+  `endDateTime` et celles d'un voyage annulé sont listées. Sans `details`, ces champs sont absents du JSON et une
+  sortie annulée reste hors de la liste : la réponse de Garmin n'a pas changé. Tests : `ItemPhaseTest`,
+  `NavigationTest` (lieu, équipe, état, ligne annulée, accueil), `FrenchFlowsTest`, captures
+  `registered_states_and_places` ; côté serveur `DeviceRegisteredGroupsResourceTest` et
+  `DeviceRegisteredStagesResourceTest` (paquet `api.device` et `GpsRouteSyncPlannerTest` : 123 verts le 13 novembre). **À ne pas défaire** : la sélection de
+  l'envoi automatique ne prend toujours pas une sortie annulée, la liste de l'appareil si — pour l'afficher
+  seulement ; la prochaine sortie de l'accueil est une information sur l'entrée, pas une quatrième entrée (les
+  touches et leurs tests comptent trois entrées) ; la pastille du jour est sur sa propre ligne, à côté de
+  « Départ 09:30 » elle est coupée sur 256 dp. Écarts restants : `KIT.md` §9.
 - `API-191` **L'app Karoo écrit comme l'app et le site : formats, mots, fuseau** (13 novembre 2026, contrat
   inchangé pour cette part, [plan](plans/2026-11-13-karoo-alignement.md)) — le Karoo n'avait pas été passé à l'audit
   des cartes et des listes : « 14/11/2026 09:30 » dans le fuseau de l'appareil, « ↑1240m », « 1 routes », « B » pour
   un groupe. `ui/Formatters.kt` est réécrit sur les règles communes (BRANDING §8.3, `KIT.md` §9) : départ au format
   unique « sam. 14 nov. · 09:30 », « Aujourd'hui », « Demain », l'année hors de l'année en cours, l'heure selon la
   langue et non le réglage 12/24 h du Karoo ; « 42,0 km » et « 1 240 m D+ » avec espace insécable et milliers
-  groupés, dénivelé arrondi et non tronqué. **Le départ se lit dans le fuseau de la sortie** (`timezone`, déjà dans
+  groupés, dénivelé arrondi et non tronqué. « D+ » en anglais aussi : l'app écrivait « elev. + » (écart A7 de l'audit
+  des cartes, jamais tranché), `units.elevationGain` de `mobile/assets/l10n/en.json` passe à « D+ » le même jour. **Le départ se lit dans le fuseau de la sortie** (`timezone`, déjà dans
   le contrat et jusque-là ignoré), suivi de « heure de Tokyo (ven. 01:00 chez vous) » quand le Karoo n'est pas à ce
   décalage (`ui/ZoneLabel.kt`, portage de `mobile/lib/core/utils/zone_label.dart`) : cela revient, pour le Karoo
   seul, sur « les appareils rendent à leur heure locale » d'`API-78` et d'`API-84` — décision du 13 novembre 2026 ;
@@ -3255,8 +3283,7 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
   que soit leur nombre. Sur le Karoo (`api/Models.kt`, `RegisteredItem`), groupes et étapes sont mêlés par instant
   de départ ; une ligne d'étape dit l'étape, le voyage, le départ, « Bourg-d'Oisans → Valloire », distance et
   dénivelé, jamais le nom du parcours (KIT §9) ; la sélectionner synchronise son parcours ; l'accueil compte une
-  inscription par voyage, quel que soit le nombre d'étapes. Tests : `DeviceRegisteredStagesResourceTest` (écrit, non
-  lancé : `API-193`), `PedalonsApiClientTest`, `ModelsTest`, `NavigationTest`, `SyncTest`, captures
+  inscription par voyage, quel que soit le nombre d'étapes. Tests : `DeviceRegisteredStagesResourceTest`, `PedalonsApiClientTest`, `ModelsTest`, `NavigationTest`, `SyncTest`, captures
   `registered_with_stages`. **À ne pas défaire** : `registeredStages` reste hors de la réponse par défaut ; une
   modification de la sélection va aux deux requêtes, celle de l'appareil et celle de l'envoi automatique. Garmin :
   `API-192`.

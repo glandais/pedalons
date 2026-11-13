@@ -334,6 +334,84 @@ class DeviceRegisteredGroupsResourceTest extends AbstractResourceTest {
     assertEquals(List.of("J+1", "J+3 tôt", "J+3 décalé", "J+5"), groupNames(USER3));
   }
 
+  // ------------------------------------------------------------------ details=true (API-194)
+
+  private JsonPath fetchDetails(String user) {
+    return given()
+        .auth()
+        .oauth2(getAccessToken(user))
+        .when()
+        .get("/api/device/routes?details=true")
+        .then()
+        .statusCode(200)
+        .extract()
+        .jsonPath();
+  }
+
+  @Test
+  void withoutDetails_theFourFieldsAreAbsent_andACancelledRideIsNotListed() {
+    dataService.createParticipation(
+        group(ride("Maintenue", inTwoDays, rideRoute), "A", null, null), user3);
+    Ride cancelled = ride(team1, "Annulée", inTwoDays, Status.CANCELLED, rideRoute);
+    dataService.createParticipation(group(cancelled, "B", null, null), user3);
+
+    String body =
+        given()
+            .auth()
+            .oauth2(getAccessToken(USER3))
+            .when()
+            .get("/api/device/routes")
+            .then()
+            .statusCode(200)
+            .extract()
+            .asString();
+
+    // Absent, not null: the Garmin app parses the whole body in counted memory.
+    for (String field : List.of("teamName", "startPlaceName", "\"status\"", "endDateTime")) {
+      assertTrue(!body.contains(field), field + " in " + body);
+    }
+    assertEquals(List.of("A"), groupNames(USER3));
+  }
+
+  @Test
+  void withDetails_aGroupCarriesItsTeamItsStatusAndItsEstimatedArrival() {
+    Ride ride = ride("Sortie du samedi", inTwoDays, rideRoute);
+    RideGroup group = group(ride, "A", null, null);
+    group.setAverageSpeed(20f);
+    dataService.updateRideGroup(group);
+    dataService.createParticipation(group, user3);
+
+    JsonPath json = fetchDetails(USER3);
+
+    assertEquals(team1.getName(), json.getString("registeredGroups[0].teamName"));
+    assertEquals("PUBLISHED", json.getString("registeredGroups[0].status"));
+    // 40 km at 20 km/h: two hours after the departure.
+    assertEquals(
+        inTwoDays.plus(2, ChronoUnit.HOURS),
+        Instant.parse(json.getString("registeredGroups[0].endDateTime")));
+  }
+
+  @Test
+  void withDetails_aGroupWithoutSpeedEndsThreeHoursAfterItsDeparture() {
+    dataService.createParticipation(
+        group(ride("Sans vitesse", inTwoDays, rideRoute), "A", null, null), user3);
+
+    assertEquals(
+        inTwoDays.plus(3, ChronoUnit.HOURS),
+        Instant.parse(fetchDetails(USER3).getString("registeredGroups[0].endDateTime")));
+  }
+
+  @Test
+  void withDetails_theGroupOfACancelledRideIsListedAsCancelled() {
+    Ride cancelled = ride(team1, "Annulée", inTwoDays, Status.CANCELLED, rideRoute);
+    dataService.createParticipation(group(cancelled, "B", null, null), user3);
+
+    JsonPath json = fetchDetails(USER3);
+
+    assertEquals(List.of("B"), json.getList("registeredGroups.groupName"));
+    assertEquals("CANCELLED", json.getString("registeredGroups[0].status"));
+  }
+
   @Test
   void registeredGroups_areCapped() {
     for (int i = 0; i < 25; i++) {

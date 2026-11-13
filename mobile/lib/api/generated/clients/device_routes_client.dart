@@ -19,6 +19,8 @@ abstract class DeviceRoutesClient {
   ///
   /// Get routes for authenticated user. Prioritizes routes from upcoming rides, then latest routes from user's teams.
   ///
+  /// [details] - Also return, on each registered group, teamName, startPlaceName, status and endDateTime, and list the groups of a cancelled ride. Off by default: a device that does not ask keeps the response it always had.
+  ///
   /// [lat] - User's current latitude (for proximity sorting).
   ///
   /// [lon] - User's current longitude (for proximity sorting).
@@ -26,9 +28,10 @@ abstract class DeviceRoutesClient {
   /// [stages] - Also return registeredStages, the upcoming stages of the trips the user is registered for. Off by default: a device that does not ask keeps the response it always had.
   @GET('/api/device/routes')
   Future<DeviceRoutesResponse> deviceListRoutes({
-    @Query('stages') bool? stages = false,
     @Query('lat') double? lat,
     @Query('lon') double? lon,
+    @Query('details') bool? details = false,
+    @Query('stages') bool? stages = false,
   });
 
   /// Download FIT file.

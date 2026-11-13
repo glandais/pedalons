@@ -22,6 +22,10 @@ _DeviceRegisteredGroupDto _$DeviceRegisteredGroupDtoFromJson(
   syncStatuses: (json['syncStatuses'] as List<dynamic>?)
       ?.map((e) => DeviceRouteSyncStatusDto.fromJson(e as Map<String, dynamic>))
       .toList(),
+  teamName: json['teamName'] as String?,
+  startPlaceName: json['startPlaceName'] as String?,
+  status: json['status'] as String?,
+  endDateTime: json['endDateTime'] as String?,
 );
 
 Map<String, dynamic> _$DeviceRegisteredGroupDtoToJson(
@@ -38,4 +42,8 @@ Map<String, dynamic> _$DeviceRegisteredGroupDtoToJson(
   'startDateTime': instance.startDateTime,
   'timezone': instance.timezone,
   'syncStatuses': instance.syncStatuses?.map((e) => e.toJson()).toList(),
+  'teamName': instance.teamName,
+  'startPlaceName': instance.startPlaceName,
+  'status': instance.status,
+  'endDateTime': instance.endDateTime,
 };

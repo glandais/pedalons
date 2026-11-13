@@ -110,10 +110,12 @@ public class TripParticipationRepository implements BaseRepository<TripParticipa
    * trips this user is registered for, earliest first, each with its own route — in a single query,
    * as scalars.
    *
-   * <p>The selection is <b>exactly that of {@link #findGpsSyncStageTargets}</b>, for one user and
-   * as slugs rather than ids — what a device lists is what the automatic sync sends: live teams the
-   * user is still a member of, published, non-deleted trips (hidden by moderation only for the
-   * team's moderators), non-deleted stages whose own route the member can download ({@link
+   * <p>The selection is that of {@link #findGpsSyncStageTargets}, for one user and as slugs rather
+   * than ids — what a device lists is what the automatic sync sends — <b>plus the stages of a
+   * cancelled trip</b>, which the device shows as « Annulé » rather than letting them vanish
+   * (docs/LEDGER_*.md API-194) and which the sync never takes: live teams the user is still a
+   * member of, published or cancelled, non-deleted trips (hidden by moderation only for the team's
+   * moderators), non-deleted stages whose own route the member can download ({@link
    * MemberRouteVisibility#routeVisible}). A stage without such a route is left out — never the
    * trip's route instead. The window applies to each stage's own departure. A change to either
    * selection goes to both.
@@ -130,7 +132,8 @@ public class TripParticipationRepository implements BaseRepository<TripParticipa
     String jpql =
         "select new fr.pedalons.repository.trip.RegisteredStageRow("
             + " t.slug, tr.slug, tr.name, s.name, s.dateTime, s.timezone,"
-            + " sr.id, sr.slug, sr.name, sr.distance, sr.elevationGain, sp.name, ep.name)"
+            + " sr.id, sr.slug, sr.name, sr.distance, sr.elevationGain, sp.name, ep.name,"
+            + " t.name, tr.status, s.endDateTime)"
             + " from TripParticipation p"
             + " join p.trip tr"
             + " join tr.stages s"
@@ -142,7 +145,7 @@ public class TripParticipationRepository implements BaseRepository<TripParticipa
             + " left join s.endPlace ep"
             + " where p.user.id = :userId"
             + " and t.domain.id = :domainId and t.deleted = false"
-            + " and tr.deleted = false and tr.status = :published"
+            + " and tr.deleted = false and tr.status in (:tripStatuses)"
             + " and (tr.moderationHiddenAt is null or ut.role in (:moderators))"
             + " and s.deleted = false"
             + " and s.dateTime >= :from and s.dateTime < :to"
@@ -154,7 +157,7 @@ public class TripParticipationRepository implements BaseRepository<TripParticipa
             .createQuery(jpql, RegisteredStageRow.class)
             .setParameter("userId", userId)
             .setParameter("domainId", domainId)
-            .setParameter("published", Status.PUBLISHED)
+            .setParameter("tripStatuses", List.of(Status.PUBLISHED, Status.CANCELLED))
             .setParameter("memberStatuses", List.of(Status.PUBLISHED, Status.CANCELLED))
             .setParameter("moderators", List.of(TeamRole.ORGANIZER, TeamRole.ADMIN))
             .setParameter("from", from)

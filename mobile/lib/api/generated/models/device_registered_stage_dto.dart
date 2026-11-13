@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'device_route_sync_status_dto.dart';
 import 'instant.dart';
+import 'status.dart';
 
 part 'device_registered_stage_dto.freezed.dart';
 part 'device_registered_stage_dto.g.dart';
@@ -46,6 +47,15 @@ abstract class DeviceRegisteredStageDto with _$DeviceRegisteredStageDto {
 
     /// Where the route stands at each of the user's GPS services that hold it, as DeviceRegisteredGroupDto.syncStatuses
     required List<DeviceRouteSyncStatusDto> syncStatuses,
+
+    /// Team name
+    required String teamName,
+
+    /// Status of the trip: PUBLISHED or CANCELLED (the stages of a cancelled trip are listed, for the device to say so)
+    required String status,
+
+    /// When the stage is expected to end, as an absolute instant (UTC): its stored end, the departure plus three hours without one
+    required String endDateTime,
 
     /// Name of the place the stage leaves from, when it has one
     String? startPlaceName,

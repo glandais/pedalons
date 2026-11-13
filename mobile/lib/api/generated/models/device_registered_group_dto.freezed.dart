@@ -27,7 +27,11 @@ mixin _$DeviceRegisteredGroupDto {
  double get elevationGain;/// When the group leaves, as an absolute instant (UTC): the group's startAt, the ride's own start when the group has no time. The Karoo renders it in timezone, the Garmin app in its own zone.
  String get startDateTime;/// IANA time zone of the ride (e.g. Europe/Paris)
  String get timezone;/// Where the route stands at each of the user's GPS services that hold it (sent automatically or uploaded by hand), so a device does not upload it again. Empty when no service holds it; a device only reads its own service's entry (Karoo: HAMMERHEAD, Garmin: GARMIN).
- List<DeviceRouteSyncStatusDto>? get syncStatuses;
+ List<DeviceRouteSyncStatusDto>? get syncStatuses;/// Team name. Only with details=true.
+ String? get teamName;/// Name of the place the ride leaves from, when it has one. Only with details=true.
+ String? get startPlaceName;/// Status of the ride: PUBLISHED or CANCELLED. Only with details=true — which also lists the groups of a cancelled ride, left out otherwise.
+ String? get status;/// When the group is expected to arrive, as an absolute instant (UTC): its route's length at its speed, the departure plus three hours when either is missing. Only with details=true.
+ String? get endDateTime;
 /// Create a copy of DeviceRegisteredGroupDto
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -41,20 +45,20 @@ $DeviceRegisteredGroupDtoCopyWith<DeviceRegisteredGroupDto> get copyWith => _$De
 @override
 bool operator ==(Object other) {
   final _this = this as DeviceRegisteredGroupDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeviceRegisteredGroupDto&&(identical(other.teamSlug, _this.teamSlug) || other.teamSlug == _this.teamSlug)&&(identical(other.rideSlug, _this.rideSlug) || other.rideSlug == _this.rideSlug)&&(identical(other.rideName, _this.rideName) || other.rideName == _this.rideName)&&(identical(other.groupName, _this.groupName) || other.groupName == _this.groupName)&&(identical(other.routeSlug, _this.routeSlug) || other.routeSlug == _this.routeSlug)&&(identical(other.routeName, _this.routeName) || other.routeName == _this.routeName)&&(identical(other.distance, _this.distance) || other.distance == _this.distance)&&(identical(other.elevationGain, _this.elevationGain) || other.elevationGain == _this.elevationGain)&&(identical(other.startDateTime, _this.startDateTime) || other.startDateTime == _this.startDateTime)&&(identical(other.timezone, _this.timezone) || other.timezone == _this.timezone)&&const DeepCollectionEquality().equals(other.syncStatuses, _this.syncStatuses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeviceRegisteredGroupDto&&(identical(other.teamSlug, _this.teamSlug) || other.teamSlug == _this.teamSlug)&&(identical(other.rideSlug, _this.rideSlug) || other.rideSlug == _this.rideSlug)&&(identical(other.rideName, _this.rideName) || other.rideName == _this.rideName)&&(identical(other.groupName, _this.groupName) || other.groupName == _this.groupName)&&(identical(other.routeSlug, _this.routeSlug) || other.routeSlug == _this.routeSlug)&&(identical(other.routeName, _this.routeName) || other.routeName == _this.routeName)&&(identical(other.distance, _this.distance) || other.distance == _this.distance)&&(identical(other.elevationGain, _this.elevationGain) || other.elevationGain == _this.elevationGain)&&(identical(other.startDateTime, _this.startDateTime) || other.startDateTime == _this.startDateTime)&&(identical(other.timezone, _this.timezone) || other.timezone == _this.timezone)&&const DeepCollectionEquality().equals(other.syncStatuses, _this.syncStatuses)&&(identical(other.teamName, _this.teamName) || other.teamName == _this.teamName)&&(identical(other.startPlaceName, _this.startPlaceName) || other.startPlaceName == _this.startPlaceName)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.endDateTime, _this.endDateTime) || other.endDateTime == _this.endDateTime));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as DeviceRegisteredGroupDto;
-  return Object.hash(runtimeType,_this.teamSlug,_this.rideSlug,_this.rideName,_this.groupName,_this.routeSlug,_this.routeName,_this.distance,_this.elevationGain,_this.startDateTime,_this.timezone,const DeepCollectionEquality().hash(_this.syncStatuses));
+  return Object.hash(runtimeType,_this.teamSlug,_this.rideSlug,_this.rideName,_this.groupName,_this.routeSlug,_this.routeName,_this.distance,_this.elevationGain,_this.startDateTime,_this.timezone,const DeepCollectionEquality().hash(_this.syncStatuses),_this.teamName,_this.startPlaceName,_this.status,_this.endDateTime);
 }
 
 @override
 String toString() {
   final _this = this as DeviceRegisteredGroupDto;
-  return 'DeviceRegisteredGroupDto(teamSlug: ${_this.teamSlug}, rideSlug: ${_this.rideSlug}, rideName: ${_this.rideName}, groupName: ${_this.groupName}, routeSlug: ${_this.routeSlug}, routeName: ${_this.routeName}, distance: ${_this.distance}, elevationGain: ${_this.elevationGain}, startDateTime: ${_this.startDateTime}, timezone: ${_this.timezone}, syncStatuses: ${_this.syncStatuses})';
+  return 'DeviceRegisteredGroupDto(teamSlug: ${_this.teamSlug}, rideSlug: ${_this.rideSlug}, rideName: ${_this.rideName}, groupName: ${_this.groupName}, routeSlug: ${_this.routeSlug}, routeName: ${_this.routeName}, distance: ${_this.distance}, elevationGain: ${_this.elevationGain}, startDateTime: ${_this.startDateTime}, timezone: ${_this.timezone}, syncStatuses: ${_this.syncStatuses}, teamName: ${_this.teamName}, startPlaceName: ${_this.startPlaceName}, status: ${_this.status}, endDateTime: ${_this.endDateTime})';
 }
 
 
@@ -65,7 +69,7 @@ abstract mixin class $DeviceRegisteredGroupDtoCopyWith<$Res>  {
   factory $DeviceRegisteredGroupDtoCopyWith(DeviceRegisteredGroupDto value, $Res Function(DeviceRegisteredGroupDto) _then) = _$DeviceRegisteredGroupDtoCopyWithImpl;
 @useResult
 $Res call({
- String teamSlug, String rideSlug, String rideName, String groupName, String routeSlug, String routeName, double distance, double elevationGain, String startDateTime, String timezone, List<DeviceRouteSyncStatusDto>? syncStatuses
+ String teamSlug, String rideSlug, String rideName, String groupName, String routeSlug, String routeName, double distance, double elevationGain, String startDateTime, String timezone, List<DeviceRouteSyncStatusDto>? syncStatuses, String? teamName, String? startPlaceName, String? status, String? endDateTime
 });
 
 
@@ -82,7 +86,7 @@ class _$DeviceRegisteredGroupDtoCopyWithImpl<$Res>
 
 /// Create a copy of DeviceRegisteredGroupDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? teamSlug = null,Object? rideSlug = null,Object? rideName = null,Object? groupName = null,Object? routeSlug = null,Object? routeName = null,Object? distance = null,Object? elevationGain = null,Object? startDateTime = null,Object? timezone = null,Object? syncStatuses = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? teamSlug = null,Object? rideSlug = null,Object? rideName = null,Object? groupName = null,Object? routeSlug = null,Object? routeName = null,Object? distance = null,Object? elevationGain = null,Object? startDateTime = null,Object? timezone = null,Object? syncStatuses = freezed,Object? teamName = freezed,Object? startPlaceName = freezed,Object? status = freezed,Object? endDateTime = freezed,}) {
   return _then(DeviceRegisteredGroupDto(
 teamSlug: null == teamSlug ? _self.teamSlug : teamSlug // ignore: cast_nullable_to_non_nullable
 as String,rideSlug: null == rideSlug ? _self.rideSlug : rideSlug // ignore: cast_nullable_to_non_nullable
@@ -95,7 +99,11 @@ as double,elevationGain: null == elevationGain ? _self.elevationGain : elevation
 as double,startDateTime: null == startDateTime ? _self.startDateTime : startDateTime // ignore: cast_nullable_to_non_nullable
 as String,timezone: null == timezone ? _self.timezone : timezone // ignore: cast_nullable_to_non_nullable
 as String,syncStatuses: freezed == syncStatuses ? _self.syncStatuses : syncStatuses // ignore: cast_nullable_to_non_nullable
-as List<DeviceRouteSyncStatusDto>?,
+as List<DeviceRouteSyncStatusDto>?,teamName: freezed == teamName ? _self.teamName : teamName // ignore: cast_nullable_to_non_nullable
+as String?,startPlaceName: freezed == startPlaceName ? _self.startPlaceName : startPlaceName // ignore: cast_nullable_to_non_nullable
+as String?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String?,endDateTime: freezed == endDateTime ? _self.endDateTime : endDateTime // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -180,10 +188,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String teamSlug,  String rideSlug,  String rideName,  String groupName,  String routeSlug,  String routeName,  double distance,  double elevationGain,  String startDateTime,  String timezone,  List<DeviceRouteSyncStatusDto>? syncStatuses)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String teamSlug,  String rideSlug,  String rideName,  String groupName,  String routeSlug,  String routeName,  double distance,  double elevationGain,  String startDateTime,  String timezone,  List<DeviceRouteSyncStatusDto>? syncStatuses,  String? teamName,  String? startPlaceName,  String? status,  String? endDateTime)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DeviceRegisteredGroupDto() when $default != null:
-return $default(_that.teamSlug,_that.rideSlug,_that.rideName,_that.groupName,_that.routeSlug,_that.routeName,_that.distance,_that.elevationGain,_that.startDateTime,_that.timezone,_that.syncStatuses);case _:
+return $default(_that.teamSlug,_that.rideSlug,_that.rideName,_that.groupName,_that.routeSlug,_that.routeName,_that.distance,_that.elevationGain,_that.startDateTime,_that.timezone,_that.syncStatuses,_that.teamName,_that.startPlaceName,_that.status,_that.endDateTime);case _:
   return orElse();
 
 }
@@ -201,10 +209,10 @@ return $default(_that.teamSlug,_that.rideSlug,_that.rideName,_that.groupName,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String teamSlug,  String rideSlug,  String rideName,  String groupName,  String routeSlug,  String routeName,  double distance,  double elevationGain,  String startDateTime,  String timezone,  List<DeviceRouteSyncStatusDto>? syncStatuses)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String teamSlug,  String rideSlug,  String rideName,  String groupName,  String routeSlug,  String routeName,  double distance,  double elevationGain,  String startDateTime,  String timezone,  List<DeviceRouteSyncStatusDto>? syncStatuses,  String? teamName,  String? startPlaceName,  String? status,  String? endDateTime)  $default,) {final _that = this;
 switch (_that) {
 case _DeviceRegisteredGroupDto():
-return $default(_that.teamSlug,_that.rideSlug,_that.rideName,_that.groupName,_that.routeSlug,_that.routeName,_that.distance,_that.elevationGain,_that.startDateTime,_that.timezone,_that.syncStatuses);case _:
+return $default(_that.teamSlug,_that.rideSlug,_that.rideName,_that.groupName,_that.routeSlug,_that.routeName,_that.distance,_that.elevationGain,_that.startDateTime,_that.timezone,_that.syncStatuses,_that.teamName,_that.startPlaceName,_that.status,_that.endDateTime);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -221,10 +229,10 @@ return $default(_that.teamSlug,_that.rideSlug,_that.rideName,_that.groupName,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String teamSlug,  String rideSlug,  String rideName,  String groupName,  String routeSlug,  String routeName,  double distance,  double elevationGain,  String startDateTime,  String timezone,  List<DeviceRouteSyncStatusDto>? syncStatuses)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String teamSlug,  String rideSlug,  String rideName,  String groupName,  String routeSlug,  String routeName,  double distance,  double elevationGain,  String startDateTime,  String timezone,  List<DeviceRouteSyncStatusDto>? syncStatuses,  String? teamName,  String? startPlaceName,  String? status,  String? endDateTime)?  $default,) {final _that = this;
 switch (_that) {
 case _DeviceRegisteredGroupDto() when $default != null:
-return $default(_that.teamSlug,_that.rideSlug,_that.rideName,_that.groupName,_that.routeSlug,_that.routeName,_that.distance,_that.elevationGain,_that.startDateTime,_that.timezone,_that.syncStatuses);case _:
+return $default(_that.teamSlug,_that.rideSlug,_that.rideName,_that.groupName,_that.routeSlug,_that.routeName,_that.distance,_that.elevationGain,_that.startDateTime,_that.timezone,_that.syncStatuses,_that.teamName,_that.startPlaceName,_that.status,_that.endDateTime);case _:
   return null;
 
 }
@@ -236,7 +244,7 @@ return $default(_that.teamSlug,_that.rideSlug,_that.rideName,_that.groupName,_th
 @JsonSerializable()
 
 class _DeviceRegisteredGroupDto implements DeviceRegisteredGroupDto {
-  const _DeviceRegisteredGroupDto({required this.teamSlug, required this.rideSlug, required this.rideName, required this.groupName, required this.routeSlug, required this.routeName, required this.distance, required this.elevationGain, required this.startDateTime, required this.timezone,  List<DeviceRouteSyncStatusDto>? syncStatuses}): _syncStatuses = syncStatuses;
+  const _DeviceRegisteredGroupDto({required this.teamSlug, required this.rideSlug, required this.rideName, required this.groupName, required this.routeSlug, required this.routeName, required this.distance, required this.elevationGain, required this.startDateTime, required this.timezone,  List<DeviceRouteSyncStatusDto>? syncStatuses, this.teamName, this.startPlaceName, this.status, this.endDateTime}): _syncStatuses = syncStatuses;
   factory _DeviceRegisteredGroupDto.fromJson(Map<String, dynamic> json) => _$DeviceRegisteredGroupDtoFromJson(json);
 
 /// Team slug
@@ -270,6 +278,14 @@ class _DeviceRegisteredGroupDto implements DeviceRegisteredGroupDto {
   return EqualUnmodifiableListView(value);
 }
 
+/// Team name. Only with details=true.
+@override final  String? teamName;
+/// Name of the place the ride leaves from, when it has one. Only with details=true.
+@override final  String? startPlaceName;
+/// Status of the ride: PUBLISHED or CANCELLED. Only with details=true — which also lists the groups of a cancelled ride, left out otherwise.
+@override final  String? status;
+/// When the group is expected to arrive, as an absolute instant (UTC): its route's length at its speed, the departure plus three hours when either is missing. Only with details=true.
+@override final  String? endDateTime;
 
 /// Create a copy of DeviceRegisteredGroupDto
 /// with the given fields replaced by the non-null parameter values.
@@ -284,18 +300,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeviceRegisteredGroupDto&&(identical(other.teamSlug, teamSlug) || other.teamSlug == teamSlug)&&(identical(other.rideSlug, rideSlug) || other.rideSlug == rideSlug)&&(identical(other.rideName, rideName) || other.rideName == rideName)&&(identical(other.groupName, groupName) || other.groupName == groupName)&&(identical(other.routeSlug, routeSlug) || other.routeSlug == routeSlug)&&(identical(other.routeName, routeName) || other.routeName == routeName)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.elevationGain, elevationGain) || other.elevationGain == elevationGain)&&(identical(other.startDateTime, startDateTime) || other.startDateTime == startDateTime)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&const DeepCollectionEquality().equals(other.syncStatuses, _syncStatuses));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeviceRegisteredGroupDto&&(identical(other.teamSlug, teamSlug) || other.teamSlug == teamSlug)&&(identical(other.rideSlug, rideSlug) || other.rideSlug == rideSlug)&&(identical(other.rideName, rideName) || other.rideName == rideName)&&(identical(other.groupName, groupName) || other.groupName == groupName)&&(identical(other.routeSlug, routeSlug) || other.routeSlug == routeSlug)&&(identical(other.routeName, routeName) || other.routeName == routeName)&&(identical(other.distance, distance) || other.distance == distance)&&(identical(other.elevationGain, elevationGain) || other.elevationGain == elevationGain)&&(identical(other.startDateTime, startDateTime) || other.startDateTime == startDateTime)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&const DeepCollectionEquality().equals(other.syncStatuses, _syncStatuses)&&(identical(other.teamName, teamName) || other.teamName == teamName)&&(identical(other.startPlaceName, startPlaceName) || other.startPlaceName == startPlaceName)&&(identical(other.status, status) || other.status == status)&&(identical(other.endDateTime, endDateTime) || other.endDateTime == endDateTime));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,teamSlug,rideSlug,rideName,groupName,routeSlug,routeName,distance,elevationGain,startDateTime,timezone,const DeepCollectionEquality().hash(_syncStatuses));
+    return Object.hash(runtimeType,teamSlug,rideSlug,rideName,groupName,routeSlug,routeName,distance,elevationGain,startDateTime,timezone,const DeepCollectionEquality().hash(_syncStatuses),teamName,startPlaceName,status,endDateTime);
 }
 
 @override
 String toString() {
-    return 'DeviceRegisteredGroupDto(teamSlug: $teamSlug, rideSlug: $rideSlug, rideName: $rideName, groupName: $groupName, routeSlug: $routeSlug, routeName: $routeName, distance: $distance, elevationGain: $elevationGain, startDateTime: $startDateTime, timezone: $timezone, syncStatuses: $syncStatuses)';
+    return 'DeviceRegisteredGroupDto(teamSlug: $teamSlug, rideSlug: $rideSlug, rideName: $rideName, groupName: $groupName, routeSlug: $routeSlug, routeName: $routeName, distance: $distance, elevationGain: $elevationGain, startDateTime: $startDateTime, timezone: $timezone, syncStatuses: $syncStatuses, teamName: $teamName, startPlaceName: $startPlaceName, status: $status, endDateTime: $endDateTime)';
 }
 
 
@@ -306,7 +322,7 @@ abstract mixin class _$DeviceRegisteredGroupDtoCopyWith<$Res> implements $Device
   factory _$DeviceRegisteredGroupDtoCopyWith(_DeviceRegisteredGroupDto value, $Res Function(_DeviceRegisteredGroupDto) _then) = __$DeviceRegisteredGroupDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String teamSlug, String rideSlug, String rideName, String groupName, String routeSlug, String routeName, double distance, double elevationGain, String startDateTime, String timezone, List<DeviceRouteSyncStatusDto>? syncStatuses
+ String teamSlug, String rideSlug, String rideName, String groupName, String routeSlug, String routeName, double distance, double elevationGain, String startDateTime, String timezone, List<DeviceRouteSyncStatusDto>? syncStatuses, String? teamName, String? startPlaceName, String? status, String? endDateTime
 });
 
 
@@ -323,7 +339,7 @@ class __$DeviceRegisteredGroupDtoCopyWithImpl<$Res>
 
 /// Create a copy of DeviceRegisteredGroupDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? teamSlug = null,Object? rideSlug = null,Object? rideName = null,Object? groupName = null,Object? routeSlug = null,Object? routeName = null,Object? distance = null,Object? elevationGain = null,Object? startDateTime = null,Object? timezone = null,Object? syncStatuses = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? teamSlug = null,Object? rideSlug = null,Object? rideName = null,Object? groupName = null,Object? routeSlug = null,Object? routeName = null,Object? distance = null,Object? elevationGain = null,Object? startDateTime = null,Object? timezone = null,Object? syncStatuses = freezed,Object? teamName = freezed,Object? startPlaceName = freezed,Object? status = freezed,Object? endDateTime = freezed,}) {
   return _then(_DeviceRegisteredGroupDto(
 teamSlug: null == teamSlug ? _self.teamSlug : teamSlug // ignore: cast_nullable_to_non_nullable
 as String,rideSlug: null == rideSlug ? _self.rideSlug : rideSlug // ignore: cast_nullable_to_non_nullable
@@ -336,7 +352,11 @@ as double,elevationGain: null == elevationGain ? _self.elevationGain : elevation
 as double,startDateTime: null == startDateTime ? _self.startDateTime : startDateTime // ignore: cast_nullable_to_non_nullable
 as String,timezone: null == timezone ? _self.timezone : timezone // ignore: cast_nullable_to_non_nullable
 as String,syncStatuses: freezed == syncStatuses ? _self._syncStatuses : syncStatuses // ignore: cast_nullable_to_non_nullable
-as List<DeviceRouteSyncStatusDto>?,
+as List<DeviceRouteSyncStatusDto>?,teamName: freezed == teamName ? _self.teamName : teamName // ignore: cast_nullable_to_non_nullable
+as String?,startPlaceName: freezed == startPlaceName ? _self.startPlaceName : startPlaceName // ignore: cast_nullable_to_non_nullable
+as String?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String?,endDateTime: freezed == endDateTime ? _self.endDateTime : endDateTime // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

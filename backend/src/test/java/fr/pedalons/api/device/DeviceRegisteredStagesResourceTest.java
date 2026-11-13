@@ -129,6 +129,12 @@ class DeviceRegisteredStagesResourceTest extends AbstractResourceTest {
     assertEquals(stage1.getTimezone(), json.getString("registeredStages[0].timezone"));
     assertEquals(List.of(), json.getList("registeredStages[0].syncStatuses"));
     assertNull(json.getString("registeredStages[0].startPlaceName"));
+    assertEquals(team1.getName(), json.getString("registeredStages[0].teamName"));
+    assertEquals("PUBLISHED", json.getString("registeredStages[0].status"));
+    // No stored end on a stage built by the test: the departure plus three hours.
+    assertEquals(
+        now.plus(1, ChronoUnit.DAYS).plus(3, ChronoUnit.HOURS),
+        Instant.parse(json.getString("registeredStages[0].endDateTime")));
     assertEquals(stage2Route.getSlug(), json.getString("registeredStages[1].routeSlug"));
   }
 
@@ -197,6 +203,30 @@ class DeviceRegisteredStagesResourceTest extends AbstractResourceTest {
     dataService.createTripParticipation(draft, user3);
 
     assertTrue(stageNames(USER3).stream().noneMatch("Étape cachée"::equals));
+  }
+
+  @Test
+  void cancelledTrip_keepsItsStages_markedCancelled() {
+    Trip cancelled =
+        dataService.createTrip(
+            team1,
+            user1,
+            "Voyage annulé",
+            now.plus(1, ChronoUnit.DAYS),
+            Visibility.TEAM,
+            Status.CANCELLED,
+            null);
+    TripStage stage =
+        dataService.createTripStage(
+            user1, cancelled, "Étape annulée", 0, now.plus(3, ChronoUnit.DAYS));
+    sync.setStageRoute(stage, route("Annulé", 50000, 500));
+    dataService.createTripParticipation(cancelled, user3);
+
+    JsonPath json = fetch(USER3, true);
+
+    assertEquals(
+        List.of("Étape 1", "Étape 2", "Étape annulée"), json.getList("registeredStages.stageName"));
+    assertEquals("CANCELLED", json.getString("registeredStages[2].status"));
   }
 
   @Test

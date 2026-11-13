@@ -839,9 +839,9 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       l'affiche), `RouteDetailView.mc:97-103` met la date en `FONT_TINY`, `FormatUtils.mc:109-114`
       déduit DD/MM ou MM/DD du réglage 12/24 h (une montre française en 12 h passe en MM/DD) et garde
       le zéro initial en 12 h. La part Karoo est livrée sous `API-191`, qui donne la cible : le
-      format unique du départ, dans le fuseau de la sortie. Aucun des deux écrans d'accueil ne montre
-      la prochaine sortie ; sur Karoo la date reste en petit gris (option « structure » non retenue
-      le 13 novembre 2026, [plan](plans/2026-11-13-karoo-alignement.md)).
+      format unique du départ, dans le fuseau de la sortie, puis sous `API-194` (boîte du jour,
+      « Départ 09:30 », prochaine sortie nommée dès l'accueil). L'écran d'accueil de Garmin ne
+      montre pas la prochaine sortie.
 
 ### Extension Karoo : ce que le découpage de novembre 2026 a figé sans le corriger
 
@@ -872,8 +872,9 @@ c'est changer ce test exprès, dans le même commit.
       premier chargement, ancien contenu gardé sans rien dire au rechargement) ; « Réessayer » ne
       ramène pas à l'accueil alors que le rechargement le fait ; si `/api/device/me` échoue au
       lancement, les parcours se chargent comme si Hammerhead était relié. Libellés : l'écran
-      d'erreur ignore le message reçu, son bouton et l'icône de rechargement sont libellés
-      « Chargement… », la description du QR (« QR Code ») n'est pas traduite, et une sortie sans
+      d'erreur ignore le message reçu et ne distingue pas une panne du serveur d'une absence de
+      réseau (« Chargement impossible » dans les deux cas ; ses mots et ceux du bouton sont faits
+      sous `API-194`), la description du QR (« QR Code ») n'est pas traduite, et une sortie sans
       parcours ouvre une liste vide sans texte (`browse/ui/RideEntriesScreen.kt`). Tests :
       `StartupAndAuthFlowTest`, `MainViewModelTest`.
 - [ ] `API-189` **Karoo : l'étape Hammerhead ne rend jamais la main (S)** — `HammerheadLinkWatcher`
@@ -895,16 +896,20 @@ c'est changer ce test exprès, dans le même commit.
       chemin (gardé pour sa capture), `PedalonsApiClient.engineFactoryForTests` est un point d'entrée
       de test dans le code livré, `karoo-ext-testing` (doublures du Karoo System Service) permettrait
       de s'en passer mais a été écarté le 12 novembre 2026 (bibliothèque d'un mois, `0.1.1`).
-- [ ] `API-193` **Karoo aligné sur l'app : recette sur appareil et tests du serveur (S)** — `API-191`
+- [ ] `API-193` **Karoo aligné sur l'app : recette sur appareil (S)** — `API-191`
       (formats, mots, fuseau) et `API-168` (étapes de voyage) sont vérifiés par les tests JVM et les
       captures Roborazzi, jamais sur un Karoo. À regarder sur l'appareil : les abréviations de jour
       et de mois (« sam. 14 nov. », données de langue d'Android 12, pas celles du JDK des tests),
       l'espace insécable avant l'unité et avant « AM », « Aujourd'hui » et « Demain », la mention
       « heure de Tokyo (…) » en réglant le Karoo sur un autre fuseau, une ligne d'étape avec ses
       lieux, la synchro d'une étape, et la hauteur d'une ligne d'étape (six lignes de texte) sur
-      l'écran réel. Côté serveur, `DeviceRegisteredStagesResourceTest` est écrit et compile mais
-      **n'a pas été lancé** : le lancer, avec `DeviceRegisteredGroupsResourceTest` et
-      `DeviceRoutesQueryCountTest`. À faire avec `API-190` (4), même séance.
+      l'écran réel. De même pour `API-194` : la boîte du jour (largeur, année sur une quatrième
+      ligne), « Départ 09:30 » et sa pastille, les badges « Annulé », « En cours », « Terminée »,
+      « Groupe B · lieu » coupé ou non, le nom d'équipe quand on roule dans plusieurs, une ligne
+      annulée qui ne répond pas à la touche, la prochaine sortie sur l'accueil, et combien de
+      lignes tiennent à l'écran (elles sont plus hautes). Les tests du serveur ont tourné le
+      13 novembre 2026 (paquet `api.device` et `GpsRouteSyncPlannerTest`, 123 verts) ; la suite
+      entière n'a pas été relancée. À faire avec `API-190` (4), même séance.
 
 ### `API-63` Onboarding d'un Karoo refait de bout en bout (M, backend + web + mobile + Karoo)
 

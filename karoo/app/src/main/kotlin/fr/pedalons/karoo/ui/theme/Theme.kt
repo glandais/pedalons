@@ -26,6 +26,10 @@ private val DarkColorScheme =
         onError = Color.White,
     )
 
+// The business colour of a trip, teal (contracts/brand-colors.yaml: RIDE blue, TRIP teal), in its
+// light shade for this dark theme. A ride takes the theme's primary.
+val TripAccent = Color(0xFF3BC9DB) // Cyan-4
+
 private val AppTypography =
     Typography(
         displayLarge =

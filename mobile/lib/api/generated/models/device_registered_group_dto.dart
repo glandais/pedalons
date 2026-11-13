@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'device_route_sync_status_dto.dart';
 import 'instant.dart';
+import 'status.dart';
 
 part 'device_registered_group_dto.freezed.dart';
 part 'device_registered_group_dto.g.dart';
@@ -46,6 +47,18 @@ abstract class DeviceRegisteredGroupDto with _$DeviceRegisteredGroupDto {
 
     /// Where the route stands at each of the user's GPS services that hold it (sent automatically or uploaded by hand), so a device does not upload it again. Empty when no service holds it; a device only reads its own service's entry (Karoo: HAMMERHEAD, Garmin: GARMIN).
     List<DeviceRouteSyncStatusDto>? syncStatuses,
+
+    /// Team name. Only with details=true.
+    String? teamName,
+
+    /// Name of the place the ride leaves from, when it has one. Only with details=true.
+    String? startPlaceName,
+
+    /// Status of the ride: PUBLISHED or CANCELLED. Only with details=true — which also lists the groups of a cancelled ride, left out otherwise.
+    String? status,
+
+    /// When the group is expected to arrive, as an absolute instant (UTC): its route's length at its speed, the departure plus three hours when either is missing. Only with details=true.
+    String? endDateTime,
   }) = _DeviceRegisteredGroupDto;
 
   factory DeviceRegisteredGroupDto.fromJson(Map<String, Object?> json) =>

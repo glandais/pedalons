@@ -113,7 +113,15 @@ app/src/main/kotlin/fr/pedalons/karoo/
   screen. The rules are `docs/BRANDING.md` §8.3 and KIT §9 (« Ce qui vaut pour l'app Karoo », which
   also lists the Karoo's deliberate differences); `FormatCasesTest` reads
   `contracts/format-cases.json`, the cases the app and the site read too.
-- A departure is « sam. 14 nov. · 09:30 » (« Aujourd'hui », « Demain », the year outside the current
+- A row is the app's card (API-194, BRANDING §7.8, KIT §9): `DayBox` on the left (teal for a trip
+  stage), the ride as title, one state badge by exception (« Annulé », « En cours », « Terminée »,
+  `browse/ItemPhase.kt` — the app's rule), `DepartureLines` (« Départ 09:30 » in bold, the
+  « Demain » pill above it), then « Groupe B · Place de la Mairie ». A cancelled ride stays listed
+  with no control: `BrowseState.syncRegistered` ignores it. Team, place, status and arrival only
+  come because `getRoutes` sends `details=true`; all four are nullable (older server).
+- The home entry « My next rides » names the next one to ride (`nextRegistered`): information on
+  the entry, not a fourth entry — the keys and their tests count three.
+- In one string, a departure is « sam. 14 nov. · 09:30 » (« Aujourd'hui », « Demain », the year outside the current
   one), **in the ride's zone** (`timezone` of the DTO), followed by « heure de Tokyo (ven. 01:00 chez
   vous) » when the Karoo is at another offset. 24 h in French, 12 h in English: the language
   decides, not the Karoo's 12/24 setting.
@@ -186,7 +194,7 @@ Signing secrets (`KAROO_KEYSTORE_BASE64`, `KAROO_KEYSTORE_PASSWORD`, `KAROO_KEY_
 | `POST /api/device/oauth/device` | Request device code for auth |
 | `POST /api/device/oauth/token` | Poll for tokens / refresh token |
 | `GET /api/device/me` | Connected GPS services (is Hammerhead connected?) |
-| `GET /api/device/routes?stages=true` | Rides, standalone routes, the groups the user is registered in (`registeredGroups`, API 11.4.0) and, because of `stages=true`, the stages of their trips (`registeredStages`, API 14.10.0) |
+| `GET /api/device/routes?stages=true&details=true` | Rides, standalone routes, the groups the user is registered in (`registeredGroups`, API 11.4.0); because of `stages=true`, the stages of their trips (`registeredStages`, API 14.10.0); because of `details=true`, each group's team, start place, status and estimated arrival, and the groups of a cancelled ride (API 14.11.0) |
 | `POST /api/device/routes/{teamSlug}/{routeSlug}/sync?type=hammerhead` | Sync route to Karoo |
 
 ## Tests
@@ -205,7 +213,7 @@ through one command, which is also the end of `check.sh` and the karoo job of `c
 | Layer | Where (`app/src/test/kotlin/fr/pedalons/karoo/`) | Pins |
 |---|---|---|
 | API contract | `api/PedalonsApiClientTest`, `api/ModelsTest` | method, URL, bearer, JSON body (API-65 `clientId`), status -> result mapping, older-backend payloads (Ktor MockEngine) |
-| Pure logic | `HomeEntriesTest`, `FormattersTest`, `FormatCasesTest`, `ZoneLabelAndGroupTitleTest`, `ModelsTest`, `auth/QrCodeTest` | `homeEntries`, `startOf`, `registeredItems`, sync states, units, departures in the ride's zone, the formats shared with the app and the site (`contracts/format-cases.json`) |
+| Pure logic | `HomeEntriesTest`, `FormattersTest`, `FormatCasesTest`, `ZoneLabelAndGroupTitleTest`, `ItemPhaseTest`, `ModelsTest`, `auth/QrCodeTest` | `homeEntries`, `startOf`, `registeredItems`, sync states, units, departures in the ride's zone, the formats shared with the app and the site (`contracts/format-cases.json`) |
 | Plain JVM | `browse/BrowseStateTest`, `browse/MainUiStateTest`, `browse/MainViewModelTest`, `browse/RouteDetailFactoryTest`, `auth/SessionTest`, `auth/DeviceCodeLoginTest`, `auth/HammerheadLinkWatcherTest`, `auth/TokenExpiryTest`, `data/PedalonsRepositoryTest` (with `support/FakeTokenStore`, `support/TestClock`) | reducer, screen precedence, startup/sign-in sequence (one session per sign-in), single-flight refresh, RFC 8628 loop, repository result mapping |
 | Behaviour | `StartupAndAuthFlowTest`, `NavigationTest`, `SyncTest`, `auth/*ActivityTest` | the real activities driven by the Karoo keys and touch against a `FakeBackend`: texts shown, HTTP requests made, tokens stored, activities started |
 | Pixels | `screenshots/ScreenshotCases` (run in `en` and `fr`) | every screen on 480x800 px at 300 dpi (the Karoo's own `wm size` / `wm density`), Android 12 |

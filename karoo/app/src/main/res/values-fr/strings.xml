@@ -5,12 +5,12 @@
     <!-- Auth -->
     <string name="auth_connect_title">Connexion à Pédalons</string>
     <string name="auth_connect_subtitle">Scannez le QR code avec votre téléphone pour vous authentifier</string>
-    <string name="auth_connect_button">Connexion</string>
+    <string name="auth_connect_button">Se connecter</string>
     <string name="auth_url_label">Allez sur pedalons.fr/karoo</string>
     <string name="auth_code_label">Ou entrez ce code :</string>
     <string name="auth_steps">Sur le téléphone : autorisez ce Karoo, puis associez Hammerhead</string>
     <string name="auth_waiting">En attente d\'authentification…</string>
-    <string name="auth_success">Connecté !</string>
+    <string name="auth_success">Connecté</string>
     <string name="auth_error">Échec de l\'authentification</string>
     <string name="auth_expired">Code expiré. Veuillez réessayer.</string>
 
@@ -19,10 +19,10 @@
     <string name="routes_empty">Aucun parcours disponible</string>
     <string name="routes_upcoming">Prochaines sorties</string>
     <string name="routes_recent">Parcours récents</string>
-    <string name="route_sync">Sync vers Karoo</string>
-    <string name="route_syncing">Synchronisation…</string>
-    <string name="route_synced">Parcours synchronisé !</string>
-    <string name="route_sync_error">Échec de la synchronisation</string>
+    <string name="route_sync">Envoyer vers le Karoo</string>
+    <string name="route_syncing">Envoi…</string>
+    <string name="route_synced">Parcours envoyé</string>
+    <string name="route_sync_error">Envoi impossible</string>
     <string name="route_on_karoo">Déjà sur le Karoo</string>
     <string name="route_outdated_on_karoo">Ancienne version sur le Karoo</string>
     <string name="route_update_pending">Mise à jour en attente</string>
@@ -33,7 +33,7 @@
     <string name="gps_connect_title">Dernière étape : associer Hammerhead</string>
     <string name="gps_connect_subtitle">Vos parcours arrivent sur le Karoo par Hammerhead. Terminez l\'association sur votre téléphone.</string>
     <string name="gps_connect_scan">Page fermée sur le téléphone ? Scannez pour reprendre</string>
-    <string name="gps_connect_success">Hammerhead associé !</string>
+    <string name="gps_connect_success">Hammerhead associé</string>
     <string name="gps_connect_waiting">En attente de Hammerhead…</string>
 
     <!-- General -->
@@ -41,11 +41,11 @@
     <string name="loading">Chargement…</string>
     <string name="error_network">Erreur réseau</string>
     <string name="error_unknown">Une erreur est survenue</string>
-    <string name="disconnect">Déconnexion</string>
+    <string name="disconnect">Se déconnecter</string>
     <string name="settings">Paramètres</string>
     <string name="close">Fermer</string>
     <string name="back">Retour</string>
-    <string name="sync">Synchroniser</string>
+    <string name="sync">Envoyer</string>
 
     <!-- Navigation -->
     <string name="nav_registered">Prochaines sorties</string>
@@ -54,7 +54,7 @@
     <string name="nav_routes">Parcours</string>
     <string name="no_rides">Aucune sortie à venir</string>
     <string name="no_routes">Aucun parcours disponible</string>
-    <string name="route_detail_sync">Sync vers Karoo</string>
+    <string name="route_detail_sync">Envoyer vers le Karoo</string>
 
     <!-- Counters: always agreed (docs/BRANDING.md §8.3) -->
     <plurals name="registered_count">
@@ -82,6 +82,16 @@
     <string name="zone_mention">heure %s</string>
     <string name="at_your_place">%s chez vous</string>
     <string name="zone_mention_with_local">%1$s (%2$s)</string>
+    <string name="departure_time">Départ %s</string>
+    <string name="group_and_place">%1$s · %2$s</string>
+    <!-- State badges: one per row, an exception only (KIT §9, R1) -->
+    <string name="badge_cancelled">Annulé</string>
+    <string name="badge_under_way">En cours</string>
+    <string name="badge_finished">Terminée</string>
+    <!-- Load failure of a list (KIT §10, RL11) -->
+    <string name="load_error_title">Chargement impossible</string>
+    <string name="retry">Réessayer</string>
+    <string name="refresh">Actualiser</string>
     <string name="places_span">%1$s → %2$s</string>
     <string name="nav_arrow">›</string>
     <string name="success_checkmark">✓</string>

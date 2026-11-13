@@ -52,7 +52,7 @@ class GpsConnectActivityTest : AppTestBase() {
             "Your routes reach the Karoo through Hammerhead. Finish linking it on your phone.",
             "Waiting for Hammerhead…",
             "Page closed on the phone? Scan to resume",
-            "Disconnect",
+            "Sign out",
         )
         assertTrue(hasDescription("QR Code"))
         compose.waitUntil(10_000) { meRequests().isNotEmpty() }
@@ -66,7 +66,7 @@ class GpsConnectActivityTest : AppTestBase() {
         start()
         compose.waitUntil(10_000) { gps.isFinishing }
         assertEquals(GpsConnectActivity.RESULT_SUCCESS, result())
-        assertEquals("Hammerhead linked!", ShadowToast.getTextOfLatestToast())
+        assertEquals("Hammerhead linked", ShadowToast.getTextOfLatestToast())
     }
 
     @Test
@@ -74,8 +74,8 @@ class GpsConnectActivityTest : AppTestBase() {
         signIn()
         backend.me = { ok(notConnected) }
         start()
-        waitForText("Disconnect")
-        click("Disconnect")
+        waitForText("Sign out")
+        click("Sign out")
         assertTrue(gps.isFinishing)
         assertEquals(GpsConnectActivity.RESULT_LOGOUT, result())
         // Clearing the tokens is MainActivity's job on RESULT_LOGOUT.

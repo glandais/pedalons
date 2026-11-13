@@ -196,6 +196,32 @@ abstract class ScreenshotCases(private val language: String) {
                 timezone = "Asia/Tokyo",
             )
 
+    // What `details=true` adds to a row (docs/LEDGER_*.md API-194): the start place, the team, a
+    // cancelled ride, one that has left.
+    private val groupWithPlace =
+        group("B", "Sunday ride", "r8", "SENT", start = "2026-11-12T08:30:00Z")
+            .copy(
+                teamName = "Vélo Club des Monts",
+                startPlaceName = "Place de la Mairie",
+                status = "PUBLISHED",
+                endDateTime = "2026-11-12T11:30:00Z",
+            )
+    private val groupCancelled =
+        group("Fast", "Evening spin", "r9", "SENT", start = "2026-11-12T17:00:00Z")
+            .copy(
+                teamSlug = "team-b",
+                teamName = "Gravel du jeudi",
+                status = "CANCELLED",
+            )
+    private val groupUnderWay =
+        group("A", "Morning loop", "r10", null, start = "2026-11-11T10:00:00Z")
+            .copy(
+                teamName = "Vélo Club des Monts",
+                startPlaceName = "Gare",
+                status = "PUBLISHED",
+                endDateTime = "2026-11-11T13:00:00Z",
+            )
+
     private fun entry(
         slug: String,
         name: String,
@@ -499,6 +525,23 @@ abstract class ScreenshotCases(private val language: String) {
                 listOf(groupTokyo, groupUnknown),
                 null,
                 0,
+                rememberLazyListState(),
+                SyncState.IDLE,
+                null,
+                emptySet(),
+                { _, _ -> },
+                {},
+            )
+        }
+
+    // Under way, tomorrow with its place, cancelled — from two teams, so each row names its own.
+    @Test
+    fun registered_statesAndPlaces() =
+        shot("registered_states_and_places") {
+            RegisteredGroupListScreen(
+                listOf(groupUnderWay, groupWithPlace, groupCancelled),
+                null,
+                1,
                 rememberLazyListState(),
                 SyncState.IDLE,
                 null,

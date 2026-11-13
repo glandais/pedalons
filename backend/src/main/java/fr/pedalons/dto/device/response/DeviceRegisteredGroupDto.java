@@ -1,10 +1,13 @@
 package fr.pedalons.dto.device.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import fr.pedalons.dto.validation.ValidateSchema;
+import fr.pedalons.enums.Status;
 import java.time.Instant;
 import java.util.List;
 import lombok.Builder;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A ride group the device's user is registered in, with the route to load for it: everything a
@@ -47,4 +50,28 @@ public record DeviceRegisteredGroupDto(
                     + " automatically or uploaded by hand), so a device does not upload it again."
                     + " Empty when no service holds it; a device only reads its own service's"
                     + " entry (Karoo: HAMMERHEAD, Garmin: GARMIN).")
-        List<DeviceRouteSyncStatusDto> syncStatuses) {}
+        List<DeviceRouteSyncStatusDto> syncStatuses,
+    // The four below only for a device that asks for them (`details=true`), left out of the JSON
+    // otherwise: the Garmin app parses the whole body in counted memory (docs/LEDGER_*.md API-194).
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+        @Schema(description = "Team name. Only with details=true.")
+        @Nullable String teamName,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+        @Schema(
+            description =
+                "Name of the place the ride leaves from, when it has one. Only with"
+                    + " details=true.")
+        @Nullable String startPlaceName,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+        @Schema(
+            description =
+                "Status of the ride: PUBLISHED or CANCELLED. Only with details=true — which also"
+                    + " lists the groups of a cancelled ride, left out otherwise.")
+        @Nullable Status status,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+        @Schema(
+            description =
+                "When the group is expected to arrive, as an absolute instant (UTC): its route's"
+                    + " length at its speed, the departure plus three hours when either is"
+                    + " missing. Only with details=true.")
+        @Nullable Instant endDateTime) {}

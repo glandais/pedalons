@@ -304,15 +304,24 @@ L'extension Karoo charge un parcours avant de rouler : quatre touches, un écran
 suit les règles de **format et de vocabulaire**, pas celles de structure ([plan](../../2026-11-13-karoo-alignement.md),
 ledger `API-191`, `API-168`).
 
+- **Structure d'une ligne (`API-194`)** : boîte du jour à gauche, le titre (la sortie, ou l'étape), un badge d'état
+  par exception (« Annulé », « En cours », « Terminée »), « Départ 09:30 » en gras avec la pastille « Aujourd'hui » /
+  « Demain » au-dessus, puis « Groupe B · Place de la Mairie » (R11) ; aucune commande sur une sortie annulée ; la
+  prochaine sortie nommée sur l'accueil ; « Chargement impossible » et « Réessayer » (RL11).
 - **Vaut aussi pour le Karoo** : le format du départ (« sam. 14 nov. · 09:30 », « Aujourd'hui », « Demain », l'année
   hors de l'année en cours, l'heure selon la langue), lu dans le fuseau de la sortie avec la mention « heure de
   Tokyo (…) » ; distance et dénivelé (« 42,0 km », « 1 240 m D+ ») ; compteurs accordés ; nom d'un groupe
   (« Groupe B ») ; ligne d'étape (titre, voyage, date, départ → arrivée, sans nom de parcours) ; une étape n'apparaît
   que si l'on participe au voyage. Les formats sont tenus par `contracts/format-cases.json`, que le Karoo lit aussi.
-- **Écarts voulus** : « Sync vers Karoo » à la place du bouton « GPS » (une seule destination, pas de feuille) ; ni
+- **Vocabulaire** : celui de l'app. On **envoie** un parcours, on ne le « synchronise » pas (« Envoyer vers le
+  Karoo », « Envoi… », « Parcours envoyé », « Envoi impossible ») ; aucune exclamation (BRANDING §8.1) ; boutons à
+  l'infinitif (« Se connecter », « Se déconnecter ») ; « D+ » en français comme en anglais.
+- **Écarts voulus** : « Envoyer vers le Karoo » à la place du bouton « GPS » (une seule destination, pas de feuille) ; ni
   avatars, ni badges, ni météo, ni personnes inscrites ; aucune des règles de listes RL2 à RL13 (pas de filtre, de
-  recherche, de bascule de vue ni de création) ; thème sombre seul ; date en petit gris sous le titre, sans boîte du
-  jour ; fenêtre de 7 jours.
+  recherche, de bascule de vue ni de création) ; thème sombre seul ; fenêtre de 7 jours ; la prochaine sortie de
+  l'accueil est une information sur l'entrée « Prochaines sorties », pas une carte à part, et sa synchro demande
+  d'ouvrir la liste ; « Terminée » aussi pour une étape (l'accord porte sur l'étape) ; pas de distinction entre panne
+  du serveur et absence de réseau.
 
 ## 10. Règles des listes, app et site (décisions du 2026-11-12)
 

@@ -98,7 +98,7 @@ class FormattersTest {
         assertEquals("600 m D+", formatElevationGain(fr, 600f, null))
         assertEquals("600 m D+", formatElevationGain(fr, 599.9f, null))
         assertEquals("1 240 m D+", formatElevationGain(fr, 1240f, null))
-        assertEquals("1,240 m elev. +", formatElevationGain(en, 1240f, null))
+        assertEquals("1,240 m D+", formatElevationGain(en, 1240f, null))
         assertEquals("0 m D+", formatElevationGain(fr, 0f, null))
     }
 

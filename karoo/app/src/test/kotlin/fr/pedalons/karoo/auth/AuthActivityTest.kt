@@ -77,7 +77,7 @@ class AuthActivityTest : AppTestBase() {
         }
         start()
 
-        waitForText("Connected!", 20_000)
+        waitForText("Connected", 20_000)
         assertEquals("device-refresh", runBlocking { AuthManager(context).getRefreshToken() })
         assertEquals("device-access", runBlocking { AuthManager(context).getValidAccessToken() })
         assertEquals(2, pollRequests().size)
@@ -195,11 +195,11 @@ class AuthActivityTest : AppTestBase() {
         compose.mainClock.autoAdvance = false
         advanceAndSettle(1_100) // the default interval is 1 s
         var spins = 0
-        while (!hasText("Connected!") && spins++ < 100) advanceAndSettle(0)
-        assertShown("Connected!")
+        while (!hasText("Connected") && spins++ < 100) advanceAndSettle(0)
+        assertShown("Connected")
 
         compose.mainClock.advanceTimeBy(900)
-        assertShown("Connected!")
+        assertShown("Connected")
         assertTrue("still showing the success", !authActivity.isFinishing)
 
         advanceAndSettle(200)

@@ -76,6 +76,9 @@ public class RideParticipationRepository implements BaseRepository<RideParticipa
    * the caller only has to pick the first non-null one and never lists a slug that 404s.
    *
    * @param pinnedTeamId the team a pinned domain is restricted to; null for none
+   * @param includeCancelled also the groups of a cancelled ride, for a device that says so on the
+   *     row (« Annulé », docs/LEDGER_*.md API-194) rather than letting it vanish. For display only:
+   *     the automatic sync ({@link #findGpsSyncTargets}) never takes a cancelled ride.
    */
   public List<RegisteredGroupRow> findUpcomingRegisteredGroups(
       Long domainId,
@@ -83,12 +86,14 @@ public class RideParticipationRepository implements BaseRepository<RideParticipa
       @Nullable Long pinnedTeamId,
       Instant from,
       Instant to,
-      int limit) {
+      int limit,
+      boolean includeCancelled) {
     String jpql =
         "select new fr.pedalons.repository.ride.RegisteredGroupRow("
             + " t.slug, r.slug, r.name, g.name, g.startAt, r.dateTime, r.timezone,"
             + " gr.id, gr.slug, gr.name, gr.distance, gr.elevationGain,"
-            + " rr.id, rr.slug, rr.name, rr.distance, rr.elevationGain)"
+            + " rr.id, rr.slug, rr.name, rr.distance, rr.elevationGain,"
+            + " t.name, rsp.name, r.status, g.averageSpeed)"
             + " from RideParticipation p"
             + " join p.rideGroup g"
             + " join g.ride r"
@@ -98,9 +103,10 @@ public class RideParticipationRepository implements BaseRepository<RideParticipa
             + routeVisible("gr")
             + " left join r.route rr on "
             + routeVisible("rr")
+            + " left join r.start rsp"
             + " where p.user.id = :userId"
             + " and t.domain.id = :domainId and t.deleted = false"
-            + " and r.deleted = false and r.status = :published"
+            + " and r.deleted = false and r.status in (:rideStatuses)"
             + " and (r.moderationHiddenAt is null or ut.role in (:moderators))"
             + " and g.startAt >= :from and g.startAt < :to"
             + " and (gr is not null or rr is not null)"
@@ -111,7 +117,11 @@ public class RideParticipationRepository implements BaseRepository<RideParticipa
             .createQuery(jpql, RegisteredGroupRow.class)
             .setParameter("userId", userId)
             .setParameter("domainId", domainId)
-            .setParameter("published", Status.PUBLISHED)
+            .setParameter(
+                "rideStatuses",
+                includeCancelled
+                    ? List.of(Status.PUBLISHED, Status.CANCELLED)
+                    : List.of(Status.PUBLISHED))
             .setParameter("memberStatuses", List.of(Status.PUBLISHED, Status.CANCELLED))
             .setParameter("moderators", List.of(TeamRole.ORGANIZER, TeamRole.ADMIN))
             .setParameter("from", from)

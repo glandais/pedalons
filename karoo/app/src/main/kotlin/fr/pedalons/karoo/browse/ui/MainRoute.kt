@@ -89,9 +89,12 @@ private fun MainContent(
                                 syncTargetIndex = browse.syncTargetIndex,
                                 syncedRoutes = browse.syncedRoutes,
                                 onSelectItem = { index, item ->
-                                    onIntent(
-                                        MainIntent.Sync(item.teamSlug, item.routeSlug, index),
-                                    )
+                                    // A cancelled ride has no control (KIT §9).
+                                    if (!item.isCancelled) {
+                                        onIntent(
+                                            MainIntent.Sync(item.teamSlug, item.routeSlug, index),
+                                        )
+                                    }
                                 },
                                 onBack = back,
                             )

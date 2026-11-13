@@ -66,8 +66,16 @@ public class DeviceRoutesResource {
                       + " response it always had.")
           @QueryParam("stages")
           @DefaultValue("false")
-          boolean stages) {
-    return deviceRouteService.getRoutesForUser(lat, lon, stages);
+          boolean stages,
+      @Parameter(
+              description =
+                  "Also return, on each registered group, teamName, startPlaceName, status and"
+                      + " endDateTime, and list the groups of a cancelled ride. Off by default:"
+                      + " a device that does not ask keeps the response it always had.")
+          @QueryParam("details")
+          @DefaultValue("false")
+          boolean details) {
+    return deviceRouteService.getRoutesForUser(lat, lon, stages, details);
   }
 
   @GET

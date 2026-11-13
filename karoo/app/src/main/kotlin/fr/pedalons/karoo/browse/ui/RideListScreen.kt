@@ -2,7 +2,9 @@ package fr.pedalons.karoo.browse.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -17,6 +19,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import fr.pedalons.karoo.R
 import fr.pedalons.karoo.api.DeviceRide
+import fr.pedalons.karoo.ui.components.DayBox
 import fr.pedalons.karoo.ui.components.DepartureLines
 import fr.pedalons.karoo.ui.components.ListEmptyText
 import fr.pedalons.karoo.ui.components.NavArrow
@@ -52,6 +55,8 @@ internal fun RideListScreen(
                             onClick = { onSelectRide(ride) },
                             contentPadding = 10.dp,
                         ) {
+                            DayBox(ride.startDateTime, ride.timezone)
+                            if (ride.startDateTime != null) Spacer(modifier = Modifier.width(8.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = ride.rideName,

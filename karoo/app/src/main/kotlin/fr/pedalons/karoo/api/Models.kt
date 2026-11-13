@@ -89,6 +89,23 @@ sealed interface RegisteredItem {
     // API-121). Null when the server predates the field: that means « unknown », not « not sent ».
     val syncStatuses: List<DeviceRouteSyncStatus>?
 
+    // What the row says beside its route (docs/LEDGER_*.md API-194, sent for a group because the
+    // request carries `details=true`); all absent from an older server.
+    val teamName: String?
+
+    // Where it leaves from, when the ride or the stage names a place.
+    val startPlaceName: String?
+
+    // PUBLISHED or CANCELLED, as a plain string: a status added later must not break the parse.
+    val status: String?
+
+    // When it is expected to arrive, as a UTC instant.
+    val endDateTime: String?
+
+    /** A cancelled ride or trip: shown as such, with no control (KIT §9). */
+    val isCancelled: Boolean
+        get() = status == STATUS_CANCELLED
+
     /**
      * Where the route stands at Hammerhead, the Karoo's own service: null when unknown (older
      * server), when Hammerhead does not hold the route, or for a state this build does not know.
@@ -118,6 +135,10 @@ data class DeviceRegisteredGroup(
     // The ride's IANA zone, in which the start is displayed.
     @SerialName("timezone") override val timezone: String? = null,
     @SerialName("syncStatuses") override val syncStatuses: List<DeviceRouteSyncStatus>? = null,
+    @SerialName("teamName") override val teamName: String? = null,
+    @SerialName("startPlaceName") override val startPlaceName: String? = null,
+    @SerialName("status") override val status: String? = null,
+    @SerialName("endDateTime") override val endDateTime: String? = null,
 ) : RegisteredItem
 
 /**
@@ -137,9 +158,12 @@ data class DeviceRegisteredStage(
     @SerialName("startDateTime") override val startDateTime: String,
     @SerialName("timezone") override val timezone: String? = null,
     // Where the stage leaves from and ends, when it names its places.
-    @SerialName("startPlaceName") val startPlaceName: String? = null,
+    @SerialName("startPlaceName") override val startPlaceName: String? = null,
     @SerialName("endPlaceName") val endPlaceName: String? = null,
     @SerialName("syncStatuses") override val syncStatuses: List<DeviceRouteSyncStatus>? = null,
+    @SerialName("teamName") override val teamName: String? = null,
+    @SerialName("status") override val status: String? = null,
+    @SerialName("endDateTime") override val endDateTime: String? = null,
 ) : RegisteredItem
 
 /**
@@ -170,6 +194,8 @@ enum class RouteSyncState {
 }
 
 const val GPS_SERVICE_HAMMERHEAD = "HAMMERHEAD"
+
+const val STATUS_CANCELLED = "CANCELLED"
 
 @Serializable
 data class DeviceRide(
