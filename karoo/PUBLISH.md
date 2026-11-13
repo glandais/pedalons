@@ -22,8 +22,10 @@ so the description in `app.json` is bilingual the same way.
 The workflow publishes `pedalons.apk`, `pedalons.png` and `manifest.json` — karoo-ext's
 [`KarooAppManifest`](https://github.com/hammerheadnav/karoo-ext/blob/master/lib/src/main/kotlin/io/hammerhead/karooext/models/KarooAppManifest.kt),
 built from `karoo/metadata/app.json` (label, description, tags…) plus the version, the notes and
-URLs pinned to the tag. Screenshots (480×800, taken on the device) live in
-`karoo/metadata/screenshots/`; only those listed in `app.json`'s `screenshots`, in that order, are
+URLs pinned to the tag. Screenshots (480×800) live in
+`karoo/metadata/screenshots/`: all but `qrcode.png` are rendered from the real screens on demo data
+by `StoreScreenshotsTest` (`./gradlew recordRoborazziDebug`) and checked like the other goldens, so
+a release cannot ship the screens of the version before; `qrcode.png` is a device capture; only those listed in `app.json`'s `screenshots`, in that order, are
 published — the first one is what the store listing shows first. Karoo offers an update when the manifest's `latestVersionCode` exceeds the
 installed one (`MAJOR*10000 + MINOR*100 + PATCH`, from the tag).
 

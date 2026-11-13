@@ -217,6 +217,7 @@ through one command, which is also the end of `check.sh` and the karoo job of `c
 | Plain JVM | `browse/BrowseStateTest`, `browse/MainUiStateTest`, `browse/MainViewModelTest`, `browse/RouteDetailFactoryTest`, `auth/SessionTest`, `auth/DeviceCodeLoginTest`, `auth/HammerheadLinkWatcherTest`, `auth/TokenExpiryTest`, `data/PedalonsRepositoryTest` (with `support/FakeTokenStore`, `support/TestClock`) | reducer, screen precedence, startup/sign-in sequence (one session per sign-in), single-flight refresh, RFC 8628 loop, repository result mapping |
 | Behaviour | `StartupAndAuthFlowTest`, `NavigationTest`, `SyncTest`, `auth/*ActivityTest` | the real activities driven by the Karoo keys and touch against a `FakeBackend`: texts shown, HTTP requests made, tokens stored, activities started |
 | Pixels | `screenshots/ScreenshotCases` (run in `en` and `fr`) | every screen on 480x800 px at 300 dpi (the Karoo's own `wm size` / `wm density`), Android 12 |
+| Listing | `screenshots/StoreScreenshotsTest` | the screenshots published with a release (`metadata/screenshots/`, all but `qrcode.png`): the real screens on demo data, goldens too — a visual change fails until they are re-recorded |
 
 - Behaviour tests go through `MainActivity` / `AuthActivity` / `GpsConnectActivity` and the
   `support/` helpers (`AppTestBase`, `FakeBackend`, `ShadowKarooSystemService`), never through
