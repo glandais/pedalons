@@ -115,3 +115,5 @@ data/monitoring/
 data/valhalla/
 # Launch videos rendered by the /brag skill
 brag-output/
+# Git worktrees created by Claude Code agents
+.claude/worktrees/
