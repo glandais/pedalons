@@ -89,9 +89,9 @@ class RouteDetailView extends WatchUi.View {
 
         // 4. Date/time (if Ride exists)
         if (startDateTime != null && startDateTime.length() > 0) {
-            var dateStr = _formatUtils.formatDateTime(startDateTime);
+            var dateStr = _formatUtils.formatDeparture(startDateTime);
             if (dateStr.length() > 0) {
-                layout.draw(dc, centerX, Graphics.FONT_TINY, dateStr, null, Theme.text());
+                layout.draw(dc, centerX, Graphics.FONT_SMALL, dateStr, null, Theme.text());
             }
         }
 

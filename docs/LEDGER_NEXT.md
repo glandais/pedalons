@@ -834,14 +834,16 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       `PublicationIcsService`), choix établi par `API-85` et `API-90` : l'heure de départ de l'étape
       n'apparaît pas dans l'agenda. Décider si une étape devient un événement horodaté (départ →
       arrivée estimée) ou reste en journée entière avec l'heure dans le titre ou la description.
-- [ ] `API-159` **Garmin : date discrète, formats divergents (S)** — le menu des groupes d'une
-      sortie (`RideListMenuDelegate.mc:50-58`) n'affiche pas l'heure de chaque groupe (Karoo
-      l'affiche), `RouteDetailView.mc:97-103` met la date en `FONT_TINY`, `FormatUtils.mc:109-114`
-      déduit DD/MM ou MM/DD du réglage 12/24 h (une montre française en 12 h passe en MM/DD) et garde
-      le zéro initial en 12 h. La part Karoo est livrée sous `API-191`, qui donne la cible : le
-      format unique du départ, dans le fuseau de la sortie, puis sous `API-194` (boîte du jour,
-      « Départ 09:30 », prochaine sortie nommée dès l'accueil). L'écran d'accueil de Garmin ne
-      montre pas la prochaine sortie.
+- [ ] `API-196` **Garmin : fuseau de la sortie, lieu, équipe, état — ce que `details=true` donnerait (M)** —
+      scindé d'`API-159`, dont la part sans changement de contrat est livrée. L'app Garmin lit
+      encore le départ à l'heure de l'Edge (`FormatUtils.formatDeparture`), ne montre ni le lieu de
+      départ, ni l'équipe, ni « Annulé » / « En cours » / « Terminée », ni « Aujourd'hui » /
+      « Demain » : le Karoo les tient de `GET /api/device/routes?details=true` (`API-194`), que
+      Garmin n'envoie pas pour garder sa réponse à l'octet. Les demander alourdit la réponse : à
+      mesurer en mémoire sur les 14 Edge avant de l'activer, avec les étapes (`API-192`). Reste
+      aussi une recette sur un Edge réel des menus dessinés (`PdlMenu.mc`) : seuls les 530, 540 et
+      1050 ont été vus, au simulateur, et aucun badge orange, rouge ou gris faute de données ; et
+      le fond d'un menu ouvert ne suit pas une bascule jour/nuit avant sa réouverture.
 
 ### Extension Karoo : ce que le découpage de novembre 2026 a figé sans le corriger
 

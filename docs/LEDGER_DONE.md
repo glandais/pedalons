@@ -3230,6 +3230,22 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
 
 ## API — Contrat d'API et backend
 
+- `API-159` **L'app Garmin écrit comme l'app et le Karoo, dans des menus qu'elle dessine** (13 novembre 2026, contrat
+  inchangé) — après `API-191` et `API-194` le Karoo avait les formats et la structure des cartes, Garmin gardait
+  « 15/11 08:00 (1) », « 45.2 km / 287 m D+ », une date en DD/MM ou MM/DD selon le réglage 12/24 h, et des `Menu2` du
+  firmware où date, état Garmin Connect et groupe se suivaient dans un sous-libellé coupé (« In Garmin Connect Gr… »).
+  `FormatUtils.mc` est réécrit sur les règles communes : « 92,4 km », « 1 240 m D+ », départ au format unique
+  « sam. 14 nov. · 09:30 », la langue de l'Edge décidant des séparateurs et de l'ordre de la date, plus le réglage
+  12/24 h ; pas de zéro initial en 12 h. Les cinq menus sont des `CustomMenu` (`PdlMenu.mc`) aux couleurs de la charte
+  (`Theme.mc`, jour et nuit) : boîte du jour, « Départ 09:15 · Groupe B », état Garmin Connect en badge doux, heure de
+  chaque groupe d'une sortie, prochaine sortie nommée dès l'accueil (« sam. 09:15 · Gravel aux Glières »). Le QR code
+  d'appairage vient du firmware quand il sait en faire (`Toybox.ScanCode`, API 6.0.0). Tests : `FormatCasesTest.mc`,
+  généré de `contracts/format-cases.json` par `scripts/format-vectors.py` (`make test`). **À ne pas défaire** :
+  l'espace insécable des cas communs est remplacée par une espace à l'écran (les polices Edge la dessinent deux fois
+  trop large) ; les abréviations du firmware (« Sam », « Nov. ») sont réécrites en « sam. », « nov. » ; le focus d'une
+  ligne se lit à sa hauteur impaire et à la mémoire du menu, `isFocused()` ne répondant jamais vrai en API 3.3 ; fond
+  de nuit noir, pas `#242424`, qui vire au vert sur un écran 16 bits ; « Logout » et « My next rides » restent tels
+  quels en anglais, ce sont les mots des captures du store. Reste ouvert : `API-196`.
 - `API-193` **Karoo aligné sur l'app : recette sur appareil** (13 novembre 2026, extension `1.0.15`, contrat 14.11.0) —
   `API-191` (formats, mots, fuseau), `API-168` (étapes de voyage) et `API-194` (structure des lignes) n'étaient
   vérifiés que par les tests JVM et les captures Roborazzi. Recette faite par le propriétaire sur un Karoo, le jour

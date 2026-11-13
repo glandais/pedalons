@@ -68,7 +68,8 @@ source/
 ├── StandaloneRouteMenuDelegate.mc  # Routes not attached to a ride
 ├── RouteDetailView.mc              # Single route details
 ├── RouteDetailDelegate.mc          # Route detail input + download
-├── FormatUtils.mc                  # Distance / elevation / date formatting
+├── FormatUtils.mc                  # Distance / elevation / departure in the app's shared formats (module Fmt)
+├── FormatCasesTest.mc              # (:test) Fmt vs contracts/format-cases.json, from scripts/format-vectors.py
 ├── VerticalLayout.mc               # Line-by-line drawing helper
 ├── Theme.mc                        # Charter colours of everything the app draws, light or dark like the Edge (night mode, API 4.1.2+)
 ├── PdlMenu.mc                      # The menus, drawn by the app (CustomMenu): day box, soft badges, pictograms

@@ -68,6 +68,18 @@ class PedalonsView extends WatchUi.View {
             );
             if (groups.size() == 0) {
                 groupsSublabel = WatchUi.loadResource(Rez.Strings.NoRegisteredGroups);
+            } else {
+                // The home names the next ride (the server lists the groups by departure):
+                // when it leaves, then its name — the name is what a narrow screen cuts. The
+                // weekday is enough, the list never goes past a week. The count goes when a
+                // ride can be named.
+                var next = groups[0];
+                var nextName = next.get("rideName");
+                var nextStart = _formatUtils.formatWeekdayTime(next.get("startDateTime"));
+                if (nextName != null && nextName.length() > 0) {
+                    groupsSublabel =
+                        nextStart.length() > 0 ? nextStart + " · " + nextName : nextName;
+                }
             }
             menu.addItem(
                 new PdlItem(

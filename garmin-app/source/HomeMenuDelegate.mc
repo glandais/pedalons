@@ -40,7 +40,7 @@ class HomeMenuDelegate extends WatchUi.Menu2InputDelegate {
             for (var i = 0; i < _groups.size(); i++) {
                 var group = _groups[i];
                 var parts = _formatUtils.dateParts(group.get("startDateTime"));
-                var sublabel = parts != null ? parts[3] : "";
+                var sublabel = parts != null ? departure(parts[3]) : "";
                 var groupName = group.get("groupName");
                 if (groupName != null && groupName.length() > 0) {
                     sublabel = sublabel.length() > 0 ? sublabel + " · " + groupName : groupName;
@@ -79,7 +79,7 @@ class HomeMenuDelegate extends WatchUi.Menu2InputDelegate {
                         entryCount == 1 ? Rez.Strings.GroupOne : Rez.Strings.GroupMany
                     );
                 if (parts != null) {
-                    sublabel = parts[3] + " · " + sublabel;
+                    sublabel = departure(parts[3]) + " · " + sublabel;
                 }
                 menu.addItem(new PdlItem(i, ride.get("rideName"), sublabel, { :day => parts }));
             }
@@ -118,6 +118,11 @@ class HomeMenuDelegate extends WatchUi.Menu2InputDelegate {
             var viewPair = app.showLoginView();
             WatchUi.switchToView(viewPair[0], viewPair[1], WatchUi.SLIDE_IMMEDIATE);
         }
+    }
+
+    // « Départ 09:30 »: the departure is a primary piece of information (BRANDING.md §7.8)
+    private function departure(time) {
+        return WatchUi.loadResource(Rez.Strings.Departure) + " " + time;
     }
 
     /**

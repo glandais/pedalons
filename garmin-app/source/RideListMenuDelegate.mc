@@ -50,7 +50,12 @@ class RideListMenuDelegate extends WatchUi.Menu2InputDelegate {
                 var title = groupName != null && groupName.length() > 0 ? groupName : routeName;
                 var distance = entry.get("distance");
                 var elevationGain = entry.get("elevationGain");
+                // Each group leaves at its own time: the hour first, then the route's figures
                 var sublabel = _formatUtils.formatDistanceElevation(distance, elevationGain);
+                var time = _formatUtils.formatDepartureTime(entry.get("startDateTime"));
+                if (time.length() > 0) {
+                    sublabel = sublabel.length() > 0 ? time + " · " + sublabel : time;
+                }
                 menu.addItem(new PdlItem(i, title, sublabel, {}));
             }
 
