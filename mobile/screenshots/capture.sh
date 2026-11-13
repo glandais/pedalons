@@ -32,7 +32,8 @@ OUT="screenshots/flat"
 # A screen is taken once two captures this far apart are identical, or after
 # SETTLE_MAX seconds whatever the screen does (a map may never be still).
 SETTLE_STEP=2
-SETTLE_MAX=40
+SETTLE_MAX=60
+READY_MIN_BYTES=200000
 
 # ------------------------------------------------------------------ arguments
 
@@ -151,8 +152,11 @@ settle_and_capture() {
   while :; do
     xcrun simctl io "$CURRENT" screenshot --type=png "$tmp/frame.png" >/dev/null 2>&1
     cur=$(md5 -q "$tmp/frame.png")
-    [ "$cur" = "$prev" ] && break
-    [ "$waited" -ge "$SETTLE_MAX" ] && { echo "  (still moving after ${SETTLE_MAX}s, keeping the last frame)"; break; }
+    # A still frame under READY_MIN_BYTES is the splash screen or a loading
+    # skeleton (110-150 KB; the lightest real screen weighs twice that): a cold
+    # launch after a reinstall can outlast the screen's wait.
+    if [ "$cur" = "$prev" ] && [ "$(stat -f%z "$tmp/frame.png")" -ge "$READY_MIN_BYTES" ]; then break; fi
+    [ "$waited" -ge "$SETTLE_MAX" ] && { echo "  (not settled after ${SETTLE_MAX}s — still moving, or still loading — keeping the last frame)"; break; }
     prev="$cur"
     sleep "$SETTLE_STEP"
     waited=$((waited + SETTLE_STEP))
@@ -183,6 +187,13 @@ for device in "${devices[@]}"; do
     mkdir -p "$OUT/$device/$locale"
     email=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]]["email"])' "$ACCOUNTS" "$locale")
     password=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]]["password"])' "$ACCOUNTS" "$locale")
+    # A warm-up launch, not captured: the first launch after a reinstall signs
+    # in and starts with empty tile and font caches, and on a simulator just
+    # booted it can sit on a blank map long enough to pass for a settled screen.
+    echo "▸ $device $locale warm-up"
+    write_launch "/" "$email" "$password" ""
+    xcrun simctl launch "$CURRENT" "$BUNDLE_ID" >/dev/null
+    sleep 30
     while IFS=$'\t' read -r id path wait push; do
       echo "▸ $device $locale $id  ($path)"
       xcrun simctl terminate "$CURRENT" "$BUNDLE_ID" >/dev/null 2>&1 || true

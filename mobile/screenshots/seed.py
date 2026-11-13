@@ -781,7 +781,11 @@ def seed_club(locale: str, acc: dict, viewer: dict) -> list:
         {"id": "01-trip", "path": f"{prefix}/{slug}/{voyages}/{trip_slug}", "devices": ["ipad"], "wait": 12},
         {"id": "02-ride", "path": f"{prefix}/{slug}/{sorties}/{ride0}", "push": "rideGroups", "wait": 12},
         {"id": "03-weather", "path": f"{prefix}/{slug}/{sorties}/{ride0}", "push": "rideGroupWeather", "wait": 12},
-        {"id": "04-route", "path": f"{prefix}/{slug}/{parcours}/{routes['forclaz']}", "wait": 12},
+        # The phone frames the route on its map (profile, surface and GPS button under it);
+        # the iPad shows the page from its title, which fits all of that already.
+        {"id": "04-route", "path": f"{prefix}/{slug}/{parcours}/{routes['forclaz']}", "devices": ["iphone"],
+         "push": "routeMap", "wait": 12},
+        {"id": "04-route", "path": f"{prefix}/{slug}/{parcours}/{routes['forclaz']}", "devices": ["ipad"], "wait": 12},
         {"id": "05-dashboard", "path": f"{prefix}/{slug}"},
         {"id": "06-routes", "path": f"{prefix}/{slug}/{parcours}"},
         {"id": "07-calendar", "path": "/calendrier" if fr else "/calendar"},

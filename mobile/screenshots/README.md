@@ -122,7 +122,14 @@ Un seul simulateur à la fois (iPhone 17 Pro Max, puis iPad Pro 13" M4, éteint 
 barre d'état figée à 9:41, app réinstallée à chaque changement de langue (EasyLocalization garde
 la dernière). Une capture est prise quand deux images successives sont identiques, après le délai
 `wait` de l'écran dans `plan.json` — les cartes continuent de recevoir des tuiles après la
-première image stable.
+première image stable. Chaque langue commence par un lancement de chauffe, non capturé (connexion,
+caches de tuiles), et une image stable de moins de 200 Ko — l'écran de démarrage, un squelette de
+chargement — n'est pas prise pour un écran prêt. Relire quand même les captures : une carte restée
+vide pèse assez pour passer.
+
+Trois écrans sont cadrés par l'app (`push` dans `plan.json`, `lib/screenshots/screenshot_mode.dart`) :
+`rideGroups` (la sortie défilée jusqu'à ses groupes), `rideGroupWeather` (la page du groupe défilée
+jusqu'à « Météo ») et `routeMap` (la fiche parcours défilée jusqu'à sa carte, sur téléphone seulement).
 
 L'accueil n'est pas capturé sur iPad : sa mise en page large ajoute les « dernières publications »
 de tous les clubs publics de staging, donc le contenu de vraies personnes. Le voyage le remplace.

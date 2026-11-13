@@ -48,9 +48,9 @@ and marketing URLs), in `fr-FR` (primary) and `en-US` — plus `review-informati
 ```bash
 cd mobile
 asc metadata validate --dir ./metadata
-asc metadata plan     --app 6761760079 --version 1.1.3 --platform IOS --dir ./metadata --include localizations,review-information --review-dir ../.asc/metadata/review
+asc metadata plan     --app 6761760079 --version 1.2.0 --platform IOS --dir ./metadata --include localizations,review-information --review-dir ../.asc/metadata/review
 asc metadata approve  --review-dir ../.asc/metadata/review --all
-asc metadata apply    --app 6761760079 --version 1.1.3 --platform IOS --dir ./metadata --include localizations,review-information --review-dir ../.asc/metadata/review --confirm
+asc metadata apply    --app 6761760079 --version 1.2.0 --platform IOS --dir ./metadata --include localizations,review-information --review-dir ../.asc/metadata/review --confirm
 ```
 
 Name, subtitle and keywords form **one indexed pool**: never repeat a word across them, keep keywords

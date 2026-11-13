@@ -21,6 +21,7 @@ import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
 import '../../../../core/widgets/team_banner.dart';
 import '../../../../keys.dart';
+import '../../../../screenshots/screenshot_mode.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../comments/data/comment_repository.dart';
@@ -127,11 +128,30 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     );
   }
 
+  /// Captures des stores seulement (`routeMap`) : la fiche cadrée sur sa
+  /// carte, pour que le profil, le revêtement et le bouton « GPS » tiennent
+  /// sous elle sur un téléphone. Recadrée deux fois : le profil et le
+  /// revêtement prennent leur hauteur après la première image.
+  void _screenshotRevealMap() {
+    void reveal() {
+      final BuildContext? map = _mapAnchor.currentContext;
+      if (mounted && map != null) Scrollable.ensureVisible(map);
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => reveal());
+    for (final int s in <int>[2, 4]) {
+      Future<void>.delayed(Duration(seconds: s), reveal);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AsyncValue<RouteDetailDto> detail = ref.watch(
       routeDetailProvider(_key),
     );
+    if (detail.hasValue && screenshotTakePush('routeMap')) {
+      _screenshotRevealMap();
+    }
 
     return detail.when(data: _content, loading: _loading, error: _error);
   }

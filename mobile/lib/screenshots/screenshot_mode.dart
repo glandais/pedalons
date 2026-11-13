@@ -70,7 +70,9 @@ Future<void> screenshotSignIn(WidgetRef ref) async {
 /// from a ride's detail (ledgers `MOB-67`, `MOB-134`) — or, for a single-group ride, which has no group page,
 /// a scroll of the detail down to its weather (ledger `MOB-69`) —, or
 /// `rideGroups`, a scroll of a ride's detail down to its group cards, which
-/// the weather at the start pushes below the map. True once for [name], so a rebuild of the page
+/// the weather at the start pushes below the map —, or `routeMap`, a scroll of
+/// a route's detail down to its map, so that the profile, the surface and the
+/// « GPS » button fit under it on a phone. True once for [name], so a rebuild of the page
 /// underneath does not push it a second time.
 bool screenshotTakePush(String name) {
   if (!kScreenshotMode || _launch['push'] != name) return false;

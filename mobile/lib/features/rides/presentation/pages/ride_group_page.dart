@@ -16,6 +16,7 @@ import '../../../../core/utils/scroll_reveal.dart';
 import '../../../../core/utils/share_link.dart';
 import '../../../../core/widgets/detail_stat_tiles.dart';
 import '../../../../keys.dart';
+import '../../../../screenshots/screenshot_mode.dart';
 import '../../../participants/providers/participant_list_provider.dart';
 import '../../domain/group_title.dart';
 import '../../domain/ride_weather_display.dart';
@@ -553,6 +554,14 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
     if (weather != null && weather.isLoading) return;
     _weatherScrollPending = false;
     WidgetsBinding.instance.addPostFrameCallback((_) => _revealWeather());
+    // Captures des stores seulement : les personnes inscrites, au-dessus,
+    // arrivent après la météo et la repoussent sous son cadrage — on recadre
+    // une fois qu'elles ont leur hauteur.
+    if (kScreenshotMode) {
+      for (final int s in <int>[2, 4]) {
+        Future<void>.delayed(Duration(seconds: s), _revealWeather);
+      }
+    }
   }
 
   /// La section Météo est le dernier bloc, longtemps sous l'écran : pas
@@ -568,10 +577,12 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
         await WidgetsBinding.instance.endOfFrame;
         continue;
       }
-      final double toolbar = _toolbarKey.currentContext?.size?.height ?? 0;
-      final double target =
-          RenderAbstractViewport.of(box).getOffsetToReveal(box, 0).offset -
-          toolbar;
+      // `getOffsetToReveal` retranche déjà la barre épinglée des pastilles
+      // (`maxScrollObstructionExtentBefore`) : la retrancher une seconde fois
+      // laissait sa hauteur de la section précédente au-dessus de « Météo ».
+      final double target = RenderAbstractViewport.of(box)
+          .getOffsetToReveal(box, 0)
+          .offset;
       final ScrollPosition position = _scroll.position;
       _scroll.jumpTo(
         target.clamp(position.minScrollExtent, position.maxScrollExtent),

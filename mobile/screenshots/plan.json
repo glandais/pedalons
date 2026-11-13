@@ -34,6 +34,18 @@
         {
           "id": "04-route",
           "path": "/equipes/vc-du-lac-d-annecy/parcours/col-de-la-forclaz-par-talloires",
+          "devices": [
+            "iphone"
+          ],
+          "push": "routeMap",
+          "wait": 12
+        },
+        {
+          "id": "04-route",
+          "path": "/equipes/vc-du-lac-d-annecy/parcours/col-de-la-forclaz-par-talloires",
+          "devices": [
+            "ipad"
+          ],
           "wait": 12
         },
         {
@@ -83,6 +95,18 @@
         {
           "id": "04-route",
           "path": "/teams/annecy-lakeside-cycling/routes/col-de-la-forclaz-via-talloires",
+          "devices": [
+            "iphone"
+          ],
+          "push": "routeMap",
+          "wait": 12
+        },
+        {
+          "id": "04-route",
+          "path": "/teams/annecy-lakeside-cycling/routes/col-de-la-forclaz-via-talloires",
+          "devices": [
+            "ipad"
+          ],
           "wait": 12
         },
         {
