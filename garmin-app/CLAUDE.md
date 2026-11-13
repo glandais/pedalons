@@ -102,6 +102,9 @@ Uses Device Code Flow (RFC 8628) since Edge devices have no keyboard:
 
 ## Key Patterns
 
+- **Menus are `PdlMenu` / `PdlItem`, never `Menu2`**: the firmware's Menu2 has no light/dark
+  theme on Edge. A row's focus is read from its height, not only `isFocused()`, which never
+  answers true on API 3.3 — see the comments in `PdlMenu.mc` before touching row heights.
 - **Callbacks**: Async operations use method references: `method(:onDeviceCodeReceived)`
 - **Polling timer**: `Timer.Timer` with 5s minimum interval per RFC 8628
 - **Token refresh**: Automatic before API calls when token expires in <10 min
@@ -109,7 +112,7 @@ Uses Device Code Flow (RFC 8628) since Edge devices have no keyboard:
 - **FIT download**: Uses `HTTP_RESPONSE_CONTENT_TYPE_FIT` for direct device import
 - **Route already in Garmin Connect** (API-121): of a registered group's `syncStatuses`,
   `ApiClient.parseRegisteredGroupDto` keeps only the GARMIN entry's state as `syncState`;
-  `HomeMenuDelegate.syncStateLabel` puts it in the row's sublabel (in Connect / old version /
+  `HomeMenuDelegate.syncBadge` shows it as a soft badge on the row (in Connect / old version /
   update pending / upload failed / reconnect). Absent (older backend, or Garmin does not hold the
   route) means « unknown », not « not sent », and an unknown state shows nothing.
 

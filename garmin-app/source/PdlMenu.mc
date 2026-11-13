@@ -185,8 +185,9 @@ class PdlItem extends WatchUi.CustomMenuItem {
         var w = dc.getWidth();
         var h = dc.getHeight();
         var pad = Pdl.pad();
-        // A row is lit while pressed, and when it has the focus on an Edge driven by buttons;
-        // a touch screen has no focus to show.
+        // A row is lit when it has the focus on an Edge driven by buttons; a touch screen has no
+        // focus to show. isSelected() is left out on purpose: on a touch screen it stays true
+        // after the tap, and the row was still lit when coming back from its sub-menu.
         // isFocused() never answers true on API 3.3 (Edge 530, in the simulator at least), where
         // the focus does move: the focused row is also the one drawn one pixel taller, at an odd
         // height (PdlMenu sets :focusItemHeight to the even row height plus one).
@@ -199,7 +200,7 @@ class PdlItem extends WatchUi.CustomMenuItem {
                 focused = menu.lastFocus() == _rank;
             }
         }
-        var lit = isSelected() || (focused && !System.getDeviceSettings().isTouchScreen);
+        var lit = focused && !System.getDeviceSettings().isTouchScreen;
 
         dc.setColor(lit ? Theme.soft() : Theme.background(), Graphics.COLOR_TRANSPARENT);
         dc.fillRectangle(0, 0, w, h);
