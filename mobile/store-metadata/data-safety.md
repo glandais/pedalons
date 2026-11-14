@@ -347,9 +347,10 @@ positions (`t`, `token`, `code`, `state`, `next`, `lat`, `lon`, `nearLat`, `near
 `q`**: `GET /api/geocode/search?q=<what the member typed>` is written as is. The same holds for the
 `search` parameter of the list searches, which predates the ad editor. **Decided the same
 day: the filter deletes `q` and `search`** (and `id`, the place picked on `/api/geocode/place`), as
-`docs/OPERATIONS.md` now shows — which is what makes "no Search History" true. **Until that
-configuration is installed on the production host and the 14 days already written have rotated
-out, the answer is not yet exact**; if the filter is ever dropped, declare Apple *Search History*
+`docs/OPERATIONS.md` now shows — which is what makes "no Search History" true. The filter was installed on
+the production host on 2026-11-14 and checked there (an address search is logged as
+`/api/geocode/search`, no query); the lines written before it rotate out by **2026-11-28**, the
+date from which the answer is exact. If the filter is ever dropped, declare Apple *Search History*
 (not linked) and Play *In-app search history* instead.
 
 *Device ID* covers the **push registration token** and the device model sent with it (#11, #12) —

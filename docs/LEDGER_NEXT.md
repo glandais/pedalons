@@ -359,21 +359,10 @@ n'ont aucun appelant d'écran).
       `PHYSICAL_ADDRESS`, jeton déduit des autres entrées et **jamais passé par `asc`** : le
       vérifier à l'application, comme `OTHER_DATA` l'avait été ; (2) Play Console → Sécurité des
       données, importer `data-safety.csv` (*Informations personnelles → Adresse* : collectée, non
-      partagée, non éphémère, facultative, fonctionnement de l'appli). (3) **Trancher le sort du texte des recherches dans le journal d'accès** — vérifié en
-      production le 14 novembre 2026 : seul le Caddy de l'hôte journalise (Traefik
-      `--accesslog=false` ; rien dans les journaux de Varnish, du backend ni du frontend), il garde
-      l'URI entière 14 jours avec l'IP, sans identifiant de compte, et son filtre ne retire pas
-      `q` : `GET /api/geocode/search?q=<texte tapé>` y est écrit tel quel (requête confirmée dans
-      Chrome sur le formulaire d'annonce du site ; le contenu du journal n'a pas pu être lu, le
-      compte `pedalons` n'ayant pas les droits). Même chose pour le paramètre `search` des listes,
-      antérieur à l'éditeur d'annonce. **Décidé le 14 novembre : filtrer.**
-      `docs/OPERATIONS.md` (*Access logs*) porte les trois lignes — `delete q`, `delete search`, et
-      `delete id` pour `/api/geocode/place?id=…`, l'adresse choisie. **Reste à les installer sur
-      l'hôte** (`/etc/caddy/Caddyfile` appartient à root, le compte `pedalons` ne peut pas
-      l'écrire) : copie de sauvegarde, `caddy validate`, `systemctl reload caddy`, puis vérifier
-      qu'une recherche d'adresse s'écrit sans `q`. Les 14 jours déjà écrits s'effacent par
-      rotation ; la réponse « pas de *Search History* » de `data-safety.md` §4 n'est exacte
-      qu'après. Ensuite, à la main, en simple membre,
+      partagée, non éphémère, facultative, fonctionnement de l'appli). (3) Rien à faire, seulement une date : le journal d'accès ne garde plus le texte des recherches depuis le
+      14 novembre (voir la part livrée), mais les lignes écrites avant ne s'effacent par rotation
+      que le **28 novembre 2026** — ne pas soumettre avant en affirmant « pas de *Search History* »,
+      ou l'assumer. Ensuite, à la main, en simple membre,
       clair et sombre : publier une annonce avec photo et position, la retrouver en brouillon, la
       publier, la modifier, la dépublier, la supprimer ; en administrateur, modifier l'annonce
       d'une autre personne **sans toucher à la position** et vérifier côté auteur que le point
