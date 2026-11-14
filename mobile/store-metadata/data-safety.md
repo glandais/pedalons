@@ -345,9 +345,12 @@ backend nor the frontend logs the request. That log keeps the full URI for 14 da
 client's IP address and no account identifier, and its query filter removes credentials and
 positions (`t`, `token`, `code`, `state`, `next`, `lat`, `lon`, `nearLat`, `nearLon`) but **not
 `q`**: `GET /api/geocode/search?q=<what the member typed>` is written as is. The same holds for the
-`search` parameter of the list searches, which predates the ad editor. Two ways to close it, to be
-chosen: delete `q` and `search` in the Caddy filter, which makes "no Search History" true; or
-declare Apple *Search History* (not linked) and Play *In-app search history*.
+`search` parameter of the list searches, which predates the ad editor. **Decided the same
+day: the filter deletes `q` and `search`** (and `id`, the place picked on `/api/geocode/place`), as
+`docs/OPERATIONS.md` now shows — which is what makes "no Search History" true. **Until that
+configuration is installed on the production host and the 14 days already written have rotated
+out, the answer is not yet exact**; if the filter is ever dropped, declare Apple *Search History*
+(not linked) and Play *In-app search history* instead.
 
 *Device ID* covers the **push registration token** and the device model sent with it (#11, #12) —
 not an advertising identifier, which the app still never reads.

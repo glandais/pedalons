@@ -324,7 +324,7 @@ The host's Caddy writes the **only** access log: Traefik's is off (`--accesslog=
 with the container anyway. The privacy policy (§1, §6) makes two promises about that log, and both
 live in the host's Caddy configuration, outside this repository:
 
-- **Nothing sensitive from the query string.** Three kinds of parameters are written away before
+- **Nothing sensitive from the query string.** Four kinds of parameters are written away before
   the line is:
   - credentials, because their client fetches them outside the authenticated HTTP stack and
     cannot set a header — `?t=` on `/api/…/tiles/{z}/{x}/{y}.mvt` (the tile token, ~15 min, see
@@ -332,7 +332,13 @@ live in the host's Caddy configuration, outside this repository:
     `?token=` on the ICS calendar feed (it only expires after 90 days *without a fetch*, `SEC-17`: a feed still polled stays valid for ever), and the OAuth
     `?code=`/`?state=` of the GPS-service callbacks;
   - the device's position: `?lat=`/`?lon=` from the Garmin app (`DeviceRoutesResource`),
-    `?nearLat=`/`?nearLon=` from "around me" and the ad proximity probe.
+    `?nearLat=`/`?nearLon=` from "around me" and the ad proximity probe;
+  - what a member types in a search field (ledger `MOB-159`): `?q=` of the address search
+    (`/api/geocode/search`) and `?search=` of every list. The stores' privacy declarations say the
+    app keeps no search history (`mobile/store-metadata/data-safety.md` §4): that is only true
+    while these two are deleted here;
+  - the address a member picked for an ad: `?id=` of `/api/geocode/place`, the provider's
+    identifier of that place — next to an IP address, it says where the ad's author located it.
 - **14 days**, then deleted.
 
 ```caddyfile
@@ -354,6 +360,11 @@ live in the host's Caddy configuration, outside this repository:
 				delete lon
 				delete nearLat
 				delete nearLon
+				# Typed by a member: the address search and the list searches (MOB-159).
+				delete q
+				delete search
+				# The place picked for an ad, /api/geocode/place?id=… (MOB-159).
+				delete id
 			}
 			# A redirect's Location repeats the raw query string, filter or not.
 			resp_headers>Location delete
