@@ -467,16 +467,11 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 `frontend/e2e/README.md`.
 
 
-- [ ] `WEB-181` **Publier ou dépublier son annonce depuis sa fiche remplace sa position exacte par
-      le point flouté (S)** — constaté à la lecture du code le 14 novembre 2026 en écrivant
-      `MOB-158`, pas reproduit. `AdDetailPage.handlePublish` / `handleUnpublish`
-      (`frontend/src/pages/ad/AdDetailPage.tsx`) font un `PUT` de `{ ...ad, status }`, où `ad` est
-      l'`AdDto` dont `locationGeometry` est **flouté pour tout le monde, auteur compris**
-      (`AdDto.from`, `CoarseLocation.blur`). Or `AdService.locationKeptOnUpdate` ne garde le point
-      enregistré que pour un **non-auteur** : pour l'auteur, le point reçu est appliqué tel quel, et
-      le centre de la cellule d'environ 1 km remplace l'adresse qu'il avait choisie. Remède : passer
-      par `PATCH …/classifieds/{slug}/status` (`changeAdStatus`), comme l'app, et un test qui
-      vérifie que la position survit à une publication.
+- [ ] `WEB-181` **Lancer le test e2e qui vérifie que le point exact d'une annonce survit à une
+      dépublication puis une publication depuis sa fiche (XS)** — le défaut est corrigé (voir la
+      part livrée sous le même ID) et couvert par vitest ; le cas de bout en bout
+      `frontend/e2e/flow-ads.e2e.ts` (« ad place », `unpublishing then publishing from the ad page
+      keeps the exact point underneath`) est écrit et typé, pas encore lancé sur la pile e2e.
 - [ ] `WEB-163` **Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)** — depuis `API-163`
       (contrat `13.4.0`), `RouteDto`, `RouteDetailDto`, `RideDto` et `RideGroupDto` disent, pour
       chacun des services de la personne en synchro automatique, si le parcours y est déjà (`state`,

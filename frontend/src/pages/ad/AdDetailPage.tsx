@@ -33,7 +33,7 @@ import {
   Loader,
 } from '@mantine/core'
 import {
-  useUpdateAd,
+  useChangeAdStatus,
   useDeleteAd,
   useUndeleteAd,
   getListAdsQueryKey,
@@ -83,7 +83,10 @@ export function AdDetailPage() {
 
   useCanonicalPath(team && ad ? paths.ad(team.slug, ad.slug) : undefined)
 
-  const updateMutation = useUpdateAd()
+  // The status alone, never a PUT of `{ ...ad, status }`: `AdDto.locationGeometry` is the blurred
+  // point, for the author too, and the update applies what an author sends — publishing would swap
+  // the exact place for the centre of its ~1 km cell (docs/LEDGER_*.md WEB-181).
+  const statusMutation = useChangeAdStatus()
   const deleteMutation = useDeleteAd()
   const undeleteMutation = useUndeleteAd()
 
@@ -142,8 +145,8 @@ export function AdDetailPage() {
   }
 
   const handlePublish = () => {
-    updateMutation.mutate(
-      { teamSlug: teamSlug!, slug: adSlug!, data: { ...ad, status: Status.PUBLISHED } },
+    statusMutation.mutate(
+      { teamSlug: teamSlug!, slug: adSlug!, data: { status: Status.PUBLISHED } },
       {
         onSuccess: () => {
           invalidateAds()
@@ -154,8 +157,8 @@ export function AdDetailPage() {
   }
 
   const handleUnpublish = () => {
-    updateMutation.mutate(
-      { teamSlug: teamSlug!, slug: adSlug!, data: { ...ad, status: Status.DRAFT } },
+    statusMutation.mutate(
+      { teamSlug: teamSlug!, slug: adSlug!, data: { status: Status.DRAFT } },
       {
         onSuccess: () => {
           invalidateAds()
@@ -244,9 +247,9 @@ export function AdDetailPage() {
                     {ad.status === Status.DRAFT && (
                       <Menu.Item
                         onClick={handlePublish}
-                        disabled={updateMutation.isPending}
+                        disabled={statusMutation.isPending}
                         color="success"
-                        leftSection={updateMutation.isPending ? <Loader size="sm" /> : undefined}
+                        leftSection={statusMutation.isPending ? <Loader size="sm" /> : undefined}
                       >
                         {t('actions.publish')}
                       </Menu.Item>
@@ -387,7 +390,7 @@ export function AdDetailPage() {
         message={t('ads.detail.confirmations.unpublish')}
         confirmText={t('actions.unpublish')}
         variant="warning"
-        isLoading={updateMutation.isPending}
+        isLoading={statusMutation.isPending}
       />
       <AdContactModal
         opened={contactOpen}

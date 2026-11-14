@@ -621,6 +621,41 @@ test.describe('ad place', () => {
     )
   })
 
+  // The ad's page holds the blurred point only: a publish that sent the whole ad back would make
+  // the cell's centre the author's exact point (docs/LEDGER_*.md WEB-181).
+  test('unpublishing then publishing from the ad page keeps the exact point underneath', async ({
+    page,
+    context,
+  }) => {
+    const { team, member, ad, editShape } = await placedAd()
+    const exactBefore = (await editShape()).locationGeometry?.coordinates
+    expect(exactBefore).toEqual([RENNES.lon, RENNES.lat])
+    expect(exactBefore).not.toEqual(ad.locationGeometry?.coordinates)
+
+    await signIn(context, member)
+    await page.goto(adPath(team.slug, ad.slug))
+    const main = mainOf(page)
+    await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
+
+    await (await openActionsMenu(page)).getByRole('menuitem', { name: 'Dépublier' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Dépublier' })
+    await dialog.getByRole('button', { name: 'Dépublier' }).click()
+    await expect(dialog).toBeHidden()
+    await expect(main.getByText('Brouillon', { exact: true })).toBeVisible()
+    expect((await editShape()).locationGeometry?.coordinates, 'after unpublishing').toEqual(
+      exactBefore
+    )
+
+    await (await openActionsMenu(page)).getByRole('menuitem', { name: 'Publier' }).click()
+    await expect(main.getByText('Publié', { exact: true })).toBeVisible()
+    expect((await editShape()).locationGeometry?.coordinates, 'after publishing').toEqual(
+      exactBefore
+    )
+    expect((await getAd(member, team.slug, ad.slug)).locationGeometry?.coordinates).toEqual(
+      ad.locationGeometry?.coordinates
+    )
+  })
+
   test('clearing the place takes the map off the ad, the written place stays', async ({
     page,
     context,
