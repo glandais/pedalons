@@ -213,6 +213,33 @@ describe('RouteGeneratorPanel (WEB-179)', () => {
     expect('start' in generateMock.mock.calls[0][1]).toBe(false)
   })
 
+  it('filters the places as the name is typed', async () => {
+    generateMock.mockResolvedValue(response())
+    places.state = {
+      startPlaces: [
+        { id: 'p1', name: 'Parking du stade', point: { lat: 45.2, lng: 5.7 } },
+        { id: 'p2', name: 'Place de la mairie', point: { lat: 45.3, lng: 5.8 } },
+      ],
+      endPlaces: [],
+    }
+    renderPanel(TEAM())
+    const select = screen.getByRole('combobox', { name: 'Départ' })
+    // Mantine takes a change on an unfocused input for an autofill, not for typing
+    select.focus()
+    fireEvent.click(select)
+    fireEvent.change(select, { target: { value: 'mai' } })
+    const options = screen.getAllByRole('option', { hidden: true }).map((o) => o.textContent)
+    expect(options).toEqual(['Place de la mairie'])
+    fireEvent.change(select, { target: { value: 'zzz' } })
+    expect(screen.queryAllByRole('option', { hidden: true })).toEqual([])
+    expect(screen.getByText('Aucun lieu ne correspond')).toBeTruthy()
+    fireEvent.change(select, { target: { value: 'stade' } })
+    fireEvent.click(screen.getByRole('option', { name: 'Parking du stade', hidden: true }))
+    fireEvent.click(generate())
+    await waitFor(() => expect(generateMock).toHaveBeenCalled())
+    expect(generateMock.mock.calls[0][1].start).toEqual({ lat: 45.2, lng: 5.7 })
+  })
+
   it('shows a point clicked on the map as such in the list', () => {
     renderPanel(TEAM())
     fireEvent.click(screen.getByText('pick start'))

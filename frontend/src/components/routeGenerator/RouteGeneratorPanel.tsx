@@ -215,6 +215,8 @@ export function RouteGeneratorPanel({
             onChange={(value) => onChoice('start', value)}
             placeholder={t('routeGenerator.start.placeholder')}
             allowDeselect={false}
+            searchable
+            nothingFoundMessage={t('routeGenerator.place.nothingFound')}
             aria-label={t('routeGenerator.start.label')}
           />
         ) : params.start ? (
@@ -265,6 +267,8 @@ export function RouteGeneratorPanel({
               onChange={(value) => onChoice('end', value)}
               placeholder={t('routeGenerator.end.placeholder')}
               allowDeselect={false}
+              searchable
+              nothingFoundMessage={t('routeGenerator.place.nothingFound')}
               aria-label={t('routeGenerator.end.choice')}
             />
             <Group gap="xs">

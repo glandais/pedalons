@@ -2107,6 +2107,7 @@
   "routeGenerator.incomplete_one": "The analysis of the team's roads is not finished ({{count}} route waiting): more proposals may appear.",
   "routeGenerator.incomplete_other": "The analysis of the team's roads is not finished ({{count}} routes waiting): more proposals may appear.",
   "routeGenerator.more": "Other proposals",
+  "routeGenerator.place.nothingFound": "No matching place",
   "routeGenerator.quotaSpent": "This month's saves of drawn tracks are used up.",
   "routeGenerator.replaceTrack.text": "Do you really want to replace the current track with this route?",
   "routeGenerator.replaceTrack.title": "Replace the track",
