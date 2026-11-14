@@ -3254,8 +3254,10 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
   Appareils et services sous le nom déclaré (`PairedDeviceDto.applicationName`, type `OTHER`),
   révoquée de là, refusée aussitôt par `DeviceSessionFilter`. Les codes expirés partent au nettoyage
   nocturne, ceux d'un compte à son effacement (`AccountErasureService`). Documenté dans le README
-  (« API and OAuth »). Tests qui couvrent : `OAuthFlowTest` (backend, écrit, non lancé),
-  `oauthAuthorize.test.ts` ; e2e `routes-render` (ligne `oauthAuthorize`, écrite, non lancée).
+  (« API and OAuth »). Tests qui couvrent : `OAuthFlowTest` (backend, 20 tests),
+  `oauthAuthorize.test.ts` ; e2e `routes-render` (ligne `oauthAuthorize`). Recette complète du
+  14 novembre 2026 sur la pile e2e d'optiplex, verte : backend 5078, web 2359, mobile 2250,
+  Playwright 2021, Patrol 69 sur iOS et 69 sur Android.
   **À ne pas défaire** : pas d'enregistrement d'application, pas de secret, pas de scopes, aucun
   contrôle de `redirect_uri` — décision du propriétaire (`API-201`) — donc PKCE `S256` reste
   obligatoire et l'approbation reste un clic sur un écran qui montre l'adresse de retour ; seuls les
