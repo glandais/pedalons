@@ -37,6 +37,7 @@ final class QueryContext {
   private double @Nullable [] polygonPenalty;
   final EdgeDisjointPaths disjoint;
   double astarFactor;
+  private java.util.function.BooleanSupplier stop = () -> false;
 
   // counters, read when the diagnostics are built
   int loopCandidates;
@@ -67,6 +68,17 @@ final class QueryContext {
     this.dijkstra = new EdgeDijkstra(g, p.maxTurnDeg());
     this.disjoint = new EdgeDisjointPaths(g, p.maxTurnDeg());
     this.astarFactor = g.base().aStarScale() * EdgeDijkstra.minWeightPerMetre(g, weights);
+  }
+
+  void stopWhen(java.util.function.BooleanSupplier stop) {
+    this.stop = stop;
+  }
+
+  /** Polled at coarse points of the search; throws once the caller's time budget is spent. */
+  void checkStop() {
+    if (stop.getAsBoolean()) {
+      throw new GeneratorStoppedException();
+    }
   }
 
   /**

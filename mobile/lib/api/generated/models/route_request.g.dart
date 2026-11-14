@@ -24,6 +24,7 @@ _RouteRequest _$RouteRequestFromJson(Map<String, dynamic> json) =>
       waypoints: (json['waypoints'] as List<dynamic>?)
           ?.map((e) => WaypointRequest.fromJson(e as Map<String, dynamic>))
           .toList(),
+      excludedFromGenerator: json['excludedFromGenerator'] as bool?,
     );
 
 Map<String, dynamic> _$RouteRequestToJson(_RouteRequest instance) =>
@@ -36,4 +37,5 @@ Map<String, dynamic> _$RouteRequestToJson(_RouteRequest instance) =>
       'tagIds': instance.tagIds,
       'plannerState': instance.plannerState?.toJson(),
       'waypoints': instance.waypoints?.map((e) => e.toJson()).toList(),
+      'excludedFromGenerator': instance.excludedFromGenerator,
     };

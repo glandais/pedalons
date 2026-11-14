@@ -48,6 +48,14 @@ public class Route extends TeamEntity {
   @NotNullableDbValue
   private SurfaceType surfaceType;
 
+  /**
+   * "Ne pas utiliser pour générer des parcours" (docs/LEDGER_*.md API-198, lot 3): the roads of the
+   * route do not feed the team's route generator unless another route rides them.
+   */
+  @Column(name = "excluded_from_generator")
+  @NotNullableDbValue
+  private boolean excludedFromGenerator = false;
+
   @Column(name = "`start`", columnDefinition = "geometry(Point,4326)")
   @NotNullableDbValue
   private Point<G2D> start;

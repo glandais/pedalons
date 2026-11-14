@@ -101,7 +101,13 @@ public record RouteDetailDto(
                     + " visibilities it may be saved with (allowedVisibilities, on this detail"
                     + " only).",
             required = true)
-        ContentPermissionsDto permissions) {
+        ContentPermissionsDto permissions,
+    @Schema(
+            description =
+                "Ne pas utiliser pour générer des parcours: the route's roads do not feed the"
+                    + " team's route generator unless another route rides them. Always sent;"
+                    + " absent means false for a client reading an older payload.")
+        boolean excludedFromGenerator) {
 
   /**
    * The route detail.
@@ -159,7 +165,8 @@ public record RouteDetailDto(
         commentCounts.forEntity(route.getId()),
         tags.forContent(route.getId()),
         gpsSync.fieldFor(route.getId()),
-        permissions.of(route));
+        permissions.of(route),
+        route.isExcludedFromGenerator());
   }
 
   /** The route's waypoints, to name the climbs they mark (docs/LEDGER_*.md API-10). */

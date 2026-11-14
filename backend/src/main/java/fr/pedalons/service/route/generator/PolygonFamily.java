@@ -143,6 +143,7 @@ final class PolygonFamily {
     int evaluations = 0;
     boolean fits = false;
     while (evaluations < budget || (!fits && evaluations < EXTRA_FACTOR * budget)) {
+      ctx.checkStop();
       int k = p.polygonViaMin() + ctx.rnd.nextInt(p.polygonViaMax() - p.polygonViaMin() + 1);
       double dir;
       if (ctx.bearingApplies) {
@@ -175,6 +176,7 @@ final class PolygonFamily {
       double lastR = Double.NaN;
       double lastLen = Double.NaN;
       for (int i = 0; i < p.secantIterations(); i++) {
+        ctx.checkStop();
         evaluations++;
         Double len = evaluate(ctx, pair, shape, r, tailNodes, out);
         if (len == null) {

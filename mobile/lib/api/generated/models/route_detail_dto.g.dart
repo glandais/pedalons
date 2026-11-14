@@ -49,6 +49,7 @@ _RouteDetailDto _$RouteDetailDtoFromJson(Map<String, dynamic> json) =>
             (e) => RouteGpsSyncStatusDto.fromJson(e as Map<String, dynamic>),
           )
           .toList(),
+      excludedFromGenerator: json['excludedFromGenerator'] as bool?,
     );
 
 Map<String, dynamic> _$RouteDetailDtoToJson(
@@ -77,4 +78,5 @@ Map<String, dynamic> _$RouteDetailDtoToJson(
   'createdBy': instance.createdBy?.toJson(),
   'commentCount': instance.commentCount,
   'gpsSyncStatuses': instance.gpsSyncStatuses?.map((e) => e.toJson()).toList(),
+  'excludedFromGenerator': instance.excludedFromGenerator,
 };

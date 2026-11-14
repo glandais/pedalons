@@ -118,7 +118,8 @@ public class RouteCopyService {
                     null,
                     tagIds,
                     null,
-                    null);
+                    null,
+                    route.isExcludedFromGenerator());
             return routeService.createRoute(
                 teamSlug,
                 request,

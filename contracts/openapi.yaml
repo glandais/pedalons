@@ -2447,6 +2447,13 @@ components:
       - ROUTING_UNAVAILABLE
       - PLANNER_QUOTA_REACHED
       - ROUTING_DAILY_LIMIT_REACHED
+      - GENERATOR_START_TOO_FAR
+      - GENERATOR_END_TOO_FAR
+      - GENERATOR_DISTANCE_TOO_SHORT
+      - GENERATOR_NETWORK_TOO_SMALL
+      - GENERATOR_NO_ROUTE
+      - ROUTE_GENERATOR_RATE_LIMITED
+      - ROUTE_GENERATOR_BUSY
       - GEOCODING_UNAVAILABLE
       - INVALID_FORMAT
       - INVALID_TIMEZONE
@@ -2534,6 +2541,7 @@ components:
       - $ref: "#/components/schemas/IncompatibleVisibilityDetails"
       - $ref: "#/components/schemas/TeamMemberLimitDetails"
       - $ref: "#/components/schemas/PlannerQuotaDetails"
+      - $ref: "#/components/schemas/RouteGeneratorNetworkDetails"
       description: Error details
       discriminator:
         propertyName: type
@@ -2544,6 +2552,7 @@ components:
           INCOMPATIBLE_VISIBILITY: "#/components/schemas/IncompatibleVisibilityDetails"
           TEAM_MEMBER_LIMIT_REACHED: "#/components/schemas/TeamMemberLimitDetails"
           PLANNER_QUOTA_REACHED: "#/components/schemas/PlannerQuotaDetails"
+          GENERATOR_NETWORK_TOO_SMALL: "#/components/schemas/RouteGeneratorNetworkDetails"
       type: object
       properties:
         type:
@@ -2669,6 +2678,63 @@ components:
           - user@example.com
           pattern: \S
           maxLength: 250
+    GeneratedRouteDto:
+      description: "A route proposed by the generator, every metre of it on a team\
+        \ road"
+      type: object
+      required:
+      - polyline
+      - distanceM
+      - ascentM
+      - descentM
+      - familiarity
+      - unpavedShare
+      - sharedM
+      - crossings
+      - bounds
+      properties:
+        polyline:
+          type: string
+          description: "Geometry as a polyline of precision 6 (latitude then longitude),\
+            \ the encoding of the planner's GPX import"
+        distanceM:
+          type: number
+          format: double
+          description: Distance in metres
+        ascentM:
+          type: number
+          format: double
+          description: Elevation gain in metres
+        descentM:
+          type: number
+          format: double
+          description: Elevation loss in metres
+        bearingDeviationDeg:
+          type: number
+          format: double
+          description: Angle in degrees between the wished bearing and the route's.
+            Absent when the bearing did not apply
+        familiarity:
+          type: number
+          format: double
+          description: "How often the team rides these roads, 0 to 1"
+        unpavedShare:
+          type: number
+          format: double
+          description: "Share of the distance on unpaved roads, 0 to 1"
+        sharedM:
+          type: number
+          format: double
+          description: "Metres ridden twice (the way to and from the loop), counted\
+            \ once"
+        crossings:
+          type: integer
+          format: int32
+          description: Junctions crossed more than once outside the shared part
+        bounds:
+          description: Map frame of the route
+          type: object
+          $ref: "#/components/schemas/BoundsDto"
     GeoJsonLineString:
       type: object
       required:
@@ -6217,6 +6283,11 @@ components:
             \ detail only)."
           type: object
           $ref: "#/components/schemas/ContentPermissionsDto"
+        excludedFromGenerator:
+          type: boolean
+          description: "Ne pas utiliser pour générer des parcours: the route's roads\
+            \ do not feed the team's route generator unless another route rides them.\
+            \ Always sent; absent means false for a client reading an older payload."
     RouteDto:
       type: object
       description: Route summary data
@@ -6340,6 +6411,147 @@ components:
           pattern: \S
           minLength: 3
           maxLength: 200
+    RouteGeneratorNetworkDetails:
+      type: object
+      required:
+      - type
+      - routeCount
+      - pendingRouteCount
+      - excludedRouteCount
+      - totalLengthM
+      - incomplete
+      properties:
+        type:
+          description: Type
+          type: string
+          $ref: "#/components/schemas/ErrorCode"
+        routeCount:
+          type: integer
+          format: int32
+          description: Routes the network is made of
+        pendingRouteCount:
+          type: integer
+          format: int32
+          description: Routes whose roads are still being analysed and are not in
+            the network yet
+        excludedRouteCount:
+          type: integer
+          format: int32
+          description: Routes ticked "ne pas utiliser pour générer des parcours"
+        totalLengthM:
+          type: number
+          format: double
+          description: "Length of the whole network of the team, in metres"
+        incomplete:
+          type: boolean
+          description: "True when pendingRouteCount is above zero: the network may\
+            \ still grow"
+    RouteGeneratorNetworkDto:
+      description: What the team's generator network is made of. Lengths in metres
+      type: object
+      properties:
+        lengthM:
+          type: number
+          format: double
+          description: Length of the road the search can reach around the start and
+            the end. Absent when no route was generated
+        totalLengthM:
+          type: number
+          format: double
+          description: Length of the whole network of the team
+        routeCount:
+          type: integer
+          format: int32
+          description: Routes the network is made of
+        pendingRouteCount:
+          type: integer
+          format: int32
+          description: Routes whose roads are still being analysed and are not in
+            the network yet
+        excludedRouteCount:
+          type: integer
+          format: int32
+          description: Routes ticked "ne pas utiliser pour générer des parcours"
+        incomplete:
+          type: boolean
+          description: "True when pendingRouteCount is above zero: the network may\
+            \ still grow"
+      required:
+      - totalLengthM
+      - routeCount
+      - pendingRouteCount
+      - excludedRouteCount
+      - incomplete
+    RouteGeneratorRequest:
+      description: What to ask the team's route generator for
+      type: object
+      properties:
+        start:
+          description: "Start. Absent: the team's location (400 VALIDATION if it has\
+            \ none)"
+          type: object
+          $ref: "#/components/schemas/GeoPoint"
+        end:
+          description: "End. Absent: a loop, the route ends where it starts. Present:\
+            \ a one-way route from start to end"
+          type: object
+          $ref: "#/components/schemas/GeoPoint"
+        bearing:
+          description: "Wished direction, only used when the end is closer than half\
+            \ the distance (a loop included)"
+          type: string
+          $ref: "#/components/schemas/CompassPoint"
+        distanceKm:
+          type: number
+          format: double
+          description: "Wished distance in kilometres, 10 to 300"
+          maximum: 300
+          minimum: 10
+        familiarity:
+          type: number
+          format: double
+          description: "0 prefers roads the team rides rarely, 1 the ones it rides\
+            \ often. Absent: 0.5"
+          maximum: 1
+          minimum: 0
+        type:
+          description: "What to ride. Absent: ROAD"
+          type: string
+          $ref: "#/components/schemas/RouteGeneratorType"
+        seed:
+          type: integer
+          format: int32
+          description: "Makes \"other proposals\" reproducible: the same seed gives\
+            \ the same routes. Absent: 0"
+      required:
+      - distanceKm
+    RouteGeneratorResponse:
+      description: Routes proposed by the team's route generator
+      type: object
+      required:
+      - candidates
+      - network
+      - familiarityFallback
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/GeneratedRouteDto"
+          description: "One to three routes, best first, different from each other"
+        network:
+          description: What the team's network is made of
+          type: object
+          $ref: "#/components/schemas/RouteGeneratorNetworkDto"
+        familiarityFallback:
+          type: boolean
+          description: "True when the team rides too few routes of the requested type\
+            \ nearby, so the familiarity of all kinds was used instead"
+    RouteGeneratorType:
+      type: string
+      enum:
+      - ROAD
+      - GRAVEL
+      - MTB
     RouteGpsSyncStatusDto:
       type: object
       description: Where the route stands at one of the caller's automatically synced
@@ -6448,6 +6660,12 @@ components:
             \ the author's). When present it wins over the waypoints of a GPX file\
             \ sent with it"
           maxItems: 500
+        excludedFromGenerator:
+          type: boolean
+          description: "Ne pas utiliser pour générer des parcours: the route's roads\
+            \ do not feed the team's route generator unless another route rides them.\
+            \ Omitted: false on a creation, left as it is on an update (clients older\
+            \ than 14.13.0 do not send it)"
     RouteSortBy:
       type: string
       enum:
@@ -9437,6 +9655,8 @@ tags:
   description: Ride management and participation operations
 - name: Route Comments
   description: Comment operations for routes
+- name: Route generator
+  description: Routes made only of the roads a team already rides
 - name: Router
   description: Route calculation using the Stadia Maps routing API
 - name: Routes
@@ -18730,6 +18950,84 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /api/teams/{teamSlug}/route-generator:
+    post:
+      summary: Propose routes made of the team's own roads
+      description: "Proposes one to three routes, loops or one-way, whose every metre\
+        \ lies on a road that a route of the team already rides. Same rights as the\
+        \ route planner: the caller must be allowed to create routes in the team and\
+        \ the team must have its route planner on (ROUTE_PLANNER_DISABLED otherwise).\
+        \ Nothing is stored, no routing provider is called and no quota is drawn.\
+        \ Failures have their own codes, all 400: GENERATOR_START_TOO_FAR and GENERATOR_END_TOO_FAR\
+        \ (no road of the team within 2 km), GENERATOR_DISTANCE_TOO_SHORT, GENERATOR_NETWORK_TOO_SMALL\
+        \ (with RouteGeneratorNetworkDetails: also sent while the team's routes are\
+        \ still being analysed) and GENERATOR_NO_ROUTE. At most 30 requests per user\
+        \ in 15 minutes (ROUTE_GENERATOR_RATE_LIMITED, 429 with Retry-After); ROUTE_GENERATOR_BUSY\
+        \ (503) when the server has no free slot or the run took too long."
+      operationId: generateRoutes
+      tags:
+      - Route generator
+      parameters:
+      - name: teamSlug
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RouteGeneratorRequest"
+        required: true
+      responses:
+        "200":
+          description: Routes proposed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RouteGeneratorResponse"
+        "400":
+          description: "Invalid request, planner disabled (ROUTE_PLANNER_DISABLED),\
+            \ or no route (GENERATOR_START_TOO_FAR, GENERATOR_END_TOO_FAR, GENERATOR_DISTANCE_TOO_SHORT,\
+            \ GENERATOR_NETWORK_TOO_SMALL, GENERATOR_NO_ROUTE)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User may not create routes in the team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Team not found in this domain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too many requests (ROUTE_GENERATOR_RATE_LIMITED); Retry-After
+            gives the seconds
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "No free slot, or time budget spent (ROUTE_GENERATOR_BUSY)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - SecurityScheme:
+        - user
   /api/teams/{teamSlug}/routes:
     get:
       summary: List routes

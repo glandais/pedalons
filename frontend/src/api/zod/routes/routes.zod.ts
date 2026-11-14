@@ -1728,6 +1728,12 @@ export const CreateRouteBody = zod.object({
         .describe(
           "The complete list of the route's waypoints, replacing them. Omitted: they stay as they are (placed again on the new track when the track changes, and a new GPX file replaces the imported ones and keeps the author's). When present it wins over the waypoints of a GPX file sent with it"
         ),
+      excludedFromGenerator: zod
+        .boolean()
+        .optional()
+        .describe(
+          "Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Omitted: false on a creation, left as it is on an update (clients older than 14.13.0 do not send it)"
+        ),
     })
     .optional()
     .describe('Route update request'),
@@ -2827,6 +2833,12 @@ export const GetRoutesBulkResponse = zod
               .describe(
                 'What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only).'
               ),
+            excludedFromGenerator: zod
+              .boolean()
+              .optional()
+              .describe(
+                "Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Always sent; absent means false for a client reading an older payload."
+              ),
           })
           .describe('Detailed route information')
       )
@@ -3506,6 +3518,12 @@ export const UpdateRouteBody = zod.object({
         .optional()
         .describe(
           "The complete list of the route's waypoints, replacing them. Omitted: they stay as they are (placed again on the new track when the track changes, and a new GPX file replaces the imported ones and keeps the author's). When present it wins over the waypoints of a GPX file sent with it"
+        ),
+      excludedFromGenerator: zod
+        .boolean()
+        .optional()
+        .describe(
+          "Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Omitted: false on a creation, left as it is on an update (clients older than 14.13.0 do not send it)"
         ),
     })
     .optional()
@@ -4495,6 +4513,12 @@ export const GetRouteResponse = zod
       })
       .describe(
         'What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only).'
+      ),
+    excludedFromGenerator: zod
+      .boolean()
+      .optional()
+      .describe(
+        "Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Always sent; absent means false for a client reading an older payload."
       ),
   })
   .describe('Detailed route information')
@@ -5876,6 +5900,12 @@ export const ChangeRouteSlugResponse = zod
       .describe(
         'What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only).'
       ),
+    excludedFromGenerator: zod
+      .boolean()
+      .optional()
+      .describe(
+        "Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Always sent; absent means false for a client reading an older payload."
+      ),
   })
   .describe('Detailed route information')
 
@@ -6448,6 +6478,12 @@ export const UndeleteRouteResponse = zod
       })
       .describe(
         'What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only).'
+      ),
+    excludedFromGenerator: zod
+      .boolean()
+      .optional()
+      .describe(
+        "Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Always sent; absent means false for a client reading an older payload."
       ),
   })
   .describe('Detailed route information')

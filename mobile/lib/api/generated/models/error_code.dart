@@ -90,6 +90,20 @@ enum ErrorCode {
   plannerQuotaReached('PLANNER_QUOTA_REACHED'),
   @JsonValue('ROUTING_DAILY_LIMIT_REACHED')
   routingDailyLimitReached('ROUTING_DAILY_LIMIT_REACHED'),
+  @JsonValue('GENERATOR_START_TOO_FAR')
+  generatorStartTooFar('GENERATOR_START_TOO_FAR'),
+  @JsonValue('GENERATOR_END_TOO_FAR')
+  generatorEndTooFar('GENERATOR_END_TOO_FAR'),
+  @JsonValue('GENERATOR_DISTANCE_TOO_SHORT')
+  generatorDistanceTooShort('GENERATOR_DISTANCE_TOO_SHORT'),
+  @JsonValue('GENERATOR_NETWORK_TOO_SMALL')
+  generatorNetworkTooSmall('GENERATOR_NETWORK_TOO_SMALL'),
+  @JsonValue('GENERATOR_NO_ROUTE')
+  generatorNoRoute('GENERATOR_NO_ROUTE'),
+  @JsonValue('ROUTE_GENERATOR_RATE_LIMITED')
+  routeGeneratorRateLimited('ROUTE_GENERATOR_RATE_LIMITED'),
+  @JsonValue('ROUTE_GENERATOR_BUSY')
+  routeGeneratorBusy('ROUTE_GENERATOR_BUSY'),
   @JsonValue('GEOCODING_UNAVAILABLE')
   geocodingUnavailable('GEOCODING_UNAVAILABLE'),
   @JsonValue('INVALID_FORMAT')

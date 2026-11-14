@@ -89,6 +89,9 @@ abstract class RouteDetailDto with _$RouteDetailDto {
 
     /// Where this route stands at each of the caller's GPS services whose automatic sync is on and which hold it (sent for one of their rides or trip stages, or uploaded by hand), sorted by service. Only ever about the caller's own connections. Absent when there is none — anonymous caller, no such service, or a response that does not report it.
     List<RouteGpsSyncStatusDto>? gpsSyncStatuses,
+
+    /// Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Always sent; absent means false for a client reading an older payload.
+    bool? excludedFromGenerator,
   }) = _RouteDetailDto;
 
   factory RouteDetailDto.fromJson(Map<String, Object?> json) =>

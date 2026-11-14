@@ -2533,6 +2533,12 @@ export const CreateRouteFromPreviewBody = zod
       .describe(
         "The complete list of the route's waypoints, replacing them. Omitted: they stay as they are (placed again on the new track when the track changes, and a new GPX file replaces the imported ones and keeps the author's). When present it wins over the waypoints of a GPX file sent with it"
       ),
+    excludedFromGenerator: zod
+      .boolean()
+      .optional()
+      .describe(
+        "Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Omitted: false on a creation, left as it is on an update (clients older than 14.13.0 do not send it)"
+      ),
   })
   .describe('Route update request')
 

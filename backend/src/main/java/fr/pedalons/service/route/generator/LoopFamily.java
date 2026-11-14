@@ -73,6 +73,7 @@ final class LoopFamily {
     int evaluated = 0;
     boolean fits = false;
     for (int t : eligible) {
+      ctx.checkStop();
       if (evaluated >= maxEvaluations || (evaluated >= budget && fits)) {
         break;
       }

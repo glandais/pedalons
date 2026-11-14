@@ -30,6 +30,19 @@ public final class RouteGenerator {
   }
 
   public GeneratorResult generate(NetworkGraph graph, GeneratorRequest request) {
+    return generate(graph, request, () -> false);
+  }
+
+  /**
+   * As {@link #generate(NetworkGraph, GeneratorRequest)}, with a stop signal polled once per turning
+   * point, per polygon evaluation and per checked candidate: nothing else bounds the CPU time of a
+   * request (lot 3, plan §3.6). A run that is not stopped is the same computation, so its result is
+   * the same.
+   *
+   * @throws GeneratorStoppedException when {@code stop} returned true; no partial result
+   */
+  public GeneratorResult generate(
+      NetworkGraph graph, GeneratorRequest request, java.util.function.BooleanSupplier stop) {
     GeneratorParameters p = parameters;
     if (p.maxTurnDeg() < graph.parameters().contractionMaxTurnDeg()) {
       // a contracted turn must always be legal (design §12.2)
@@ -55,6 +68,7 @@ public final class RouteGenerator {
     int start = qg.snapNode(0);
     int end = request.end() == null ? start : qg.snapNode(1);
     QueryContext ctx = new QueryContext(qg, p, request, start, end);
+    ctx.stopWhen(stop);
     double d = request.distanceM();
 
     // feasibility
@@ -107,6 +121,7 @@ public final class RouteGenerator {
     // every candidate goes through the independent checker
     List<CandidateScorer.Scored> scored = new ArrayList<>();
     for (Candidate c : pool) {
+      ctx.checkStop();
       GuaranteeReport report = RouteGuarantees.check(qg, start, end, d, c.states(), p);
       if (!report.ok()) {
         ctx.reject(report.violations());

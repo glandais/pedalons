@@ -452,6 +452,8 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     Route route =
         new Route(creator, team, request.name(), slug, request.visibility(), request.surfaceType());
 
+    route.setExcludedFromGenerator(Boolean.TRUE.equals(request.excludedFromGenerator()));
+
     // Persist to get ID for file storage
     routeRepository.persistAndFlush(route);
     // Before the GPX work: a refused tag is a 400 with nothing stored yet.
@@ -670,6 +672,10 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
     // Update basic metadata
     route.setName(request.name());
     route.setSurfaceType(request.surfaceType());
+    // Omitted: left as it is, an older client must not untick the box on every save (API-198)
+    if (request.excludedFromGenerator() != null) {
+      route.setExcludedFromGenerator(request.excludedFromGenerator());
+    }
     route.setVisibility(request.visibility());
     route.setDateTime(Instant.now());
     // Before the GPX work, for the same reason as on creation.

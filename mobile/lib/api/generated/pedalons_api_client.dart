@@ -43,6 +43,7 @@ import 'clients/post_comments_client.dart';
 import 'clients/ride_templates_client.dart';
 import 'clients/rides_client.dart';
 import 'clients/ride_comments_client.dart';
+import 'clients/route_generator_client.dart';
 import 'clients/route_comments_client.dart';
 import 'clients/trip_stage_comments_client.dart';
 import 'clients/tags_client.dart';
@@ -106,6 +107,7 @@ class PedalonsApiClient {
   RideTemplatesClient? _rideTemplates;
   RidesClient? _rides;
   RideCommentsClient? _rideComments;
+  RouteGeneratorClient? _routeGenerator;
   RouteCommentsClient? _routeComments;
   TripStageCommentsClient? _tripStageComments;
   TagsClient? _tags;
@@ -221,6 +223,9 @@ class PedalonsApiClient {
 
   RideCommentsClient get rideComments =>
       _rideComments ??= RideCommentsClient(_dio, baseUrl: _baseUrl);
+
+  RouteGeneratorClient get routeGenerator =>
+      _routeGenerator ??= RouteGeneratorClient(_dio, baseUrl: _baseUrl);
 
   RouteCommentsClient get routeComments =>
       _routeComments ??= RouteCommentsClient(_dio, baseUrl: _baseUrl);

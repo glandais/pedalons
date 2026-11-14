@@ -60,4 +60,6 @@ export interface RouteDetailDto {
   gpsSyncStatuses?: RouteGpsSyncStatusDto[]
   /** What the caller may do with the route: edit, delete, comment, and the visibilities it may be saved with (allowedVisibilities, on this detail only). */
   permissions: ContentPermissionsDto
+  /** Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Always sent; absent means false for a client reading an older payload. */
+  excludedFromGenerator?: boolean
 }

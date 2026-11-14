@@ -36,4 +36,6 @@ export interface RouteRequest {
    * @maxItems 500
    */
   waypoints?: WaypointRequest[]
+  /** Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Omitted: false on a creation, left as it is on an update (clients older than 14.13.0 do not send it) */
+  excludedFromGenerator?: boolean
 }

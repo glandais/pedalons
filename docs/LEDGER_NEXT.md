@@ -861,10 +861,15 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       Endpoint `POST /api/teams/{teamSlug}/route-generator`. Décisions du 13 novembre 2026 : plan [`2026-11-13-generateur-boucles-equipe.md`](plans/2026-11-13-generateur-boucles-equipe.md). Suites : `WEB-179`, `MOB-154`.
       Livrés le 14 novembre 2026 : lot 1 (`V91`, `NetworkEdgesBackfill`, désactivé par défaut) et
       lot 2 (`service/route/generator`, conception [`…-conception-lot2.md`](plans/2026-11-13-generateur-boucles-equipe-conception-lot2.md)).
-      Restent : le banc sur données réelles (seuils, Suurballe, temps, lacets à deux chaussées
-      acceptés sous 15 m et de 15 à 30 m), le lot 3 (cache du graphe, endpoint,
-      `Route.excludedFromGenerator`, contrat `14.13.0`), le lot 4 (site), et l'image
-      osm-route-details à monter après le déploiement du backend.
+      Lot 3 codé le 14 novembre 2026 (conception [`…-lot3.md`](plans/2026-11-13-generateur-boucles-equipe-lot3.md)) :
+      cache Caffeine du graphe par équipe (empreinte relue à chaque requête), endpoint, garde-fous CPU
+      (`ROUTE_GENERATOR_RATE_LIMITED`, `ROUTE_GENERATOR_BUSY`, budget de 5 s), `Route.excludedFromGenerator`
+      (`V92`), contrat `14.13.0` ; tests `RouteGeneratorResourceTest`, `RouteGeneratorCacheTest`,
+      `RouteGeneratorQueryCountTest`, `RouteExcludedFromGeneratorResourceTest`. Restent : le banc sur
+      données réelles (seuils, Suurballe, temps, mémoire du plus gros graphe, `EXPLAIN` de l'empreinte,
+      lacets à deux chaussées acceptés sous 15 m et de 15 à 30 m), les clés `pedalons.route-generator.*`
+      dans `docs/OPERATIONS.md`, et la décision 403 ou 404 pour une personne non membre (le code suit
+      `PlannerAccess` : 403).
 
 ### Heure de départ : audit du 7 novembre 2026
 

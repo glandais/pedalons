@@ -79,6 +79,33 @@ public enum ErrorCode {
    */
   ROUTING_DAILY_LIMIT_REACHED,
   /**
+   * Route generator (docs/LEDGER_*.md API-198, lot 3), HTTP 400: no road of the team that the type
+   * admits lies within 2 km of the start.
+   */
+  GENERATOR_START_TOO_FAR,
+  /** Route generator, HTTP 400: no road of the team that the type admits lies within 2 km of the end. */
+  GENERATOR_END_TOO_FAR,
+  /** Route generator, HTTP 400: the distance is shorter than the way from the start to the end. */
+  GENERATOR_DISTANCE_TOO_SHORT,
+  /**
+   * Route generator, HTTP 400, with {@link RouteGeneratorNetworkDetails}: the roads the team rides
+   * around the start do not add up to what this distance needs, or the team has no analysed route
+   * yet (the details say how many are still being analysed).
+   */
+  GENERATOR_NETWORK_TOO_SMALL,
+  /** Route generator, HTTP 400: no route made of the team's roads fits the request. */
+  GENERATOR_NO_ROUTE,
+  /**
+   * The caller asked the route generator too often (30 per 15 minutes) — HTTP 429 with a
+   * Retry-After.
+   */
+  ROUTE_GENERATOR_RATE_LIMITED,
+  /**
+   * The route generator has no free CPU or memory slot for the request, or ran out of its time
+   * budget — HTTP 503; the caller may try again.
+   */
+  ROUTE_GENERATOR_BUSY,
+  /**
    * The geocoder failed, timed out, could not be reached or its quota is spent, while resolving the
    * position of a picked place (GET /api/geocode/place) — HTTP 503.
    */

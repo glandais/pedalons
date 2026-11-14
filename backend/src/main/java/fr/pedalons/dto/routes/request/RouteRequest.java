@@ -55,8 +55,29 @@ public record RouteRequest(
                     + " GPX file replaces the imported ones and keeps the author's). When present"
                     + " it wins over the waypoints of a GPX file sent with it")
         @Size(max = GpxLimits.MAX_WAYPOINTS)
-        List<@Valid WaypointRequest> waypoints)
+        List<@Valid WaypointRequest> waypoints,
+    @Nullable
+        @Schema(
+            description =
+                "Ne pas utiliser pour générer des parcours: the route's roads do not feed the"
+                    + " team's route generator unless another route rides them. Omitted: false on"
+                    + " a creation, left as it is on an update (clients older than 14.13.0 do not"
+                    + " send it)")
+        Boolean excludedFromGenerator)
     implements WithVisibility {
+
+  /** Without the generator box: the shape this record had before API-198 (lot 3). */
+  public RouteRequest(
+      String name,
+      MediaDto media,
+      SurfaceType surfaceType,
+      Visibility visibility,
+      @Nullable List<GeoPoint> points,
+      @Nullable List<String> tagIds,
+      @Nullable PlannerState plannerState,
+      @Nullable List<WaypointRequest> waypoints) {
+    this(name, media, surfaceType, visibility, points, tagIds, plannerState, waypoints, null);
+  }
 
   /** Without waypoints: the shape this record had before WEB-100 (C3c). */
   public RouteRequest(
@@ -67,7 +88,7 @@ public record RouteRequest(
       @Nullable List<GeoPoint> points,
       @Nullable List<String> tagIds,
       @Nullable PlannerState plannerState) {
-    this(name, media, surfaceType, visibility, points, tagIds, plannerState, null);
+    this(name, media, surfaceType, visibility, points, tagIds, plannerState, null, null);
   }
 
   /** Without tags: the shape this record had before API-59 — leaves the tags as they are. */

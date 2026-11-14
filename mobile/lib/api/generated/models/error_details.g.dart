@@ -108,3 +108,25 @@ Map<String, dynamic> _$ErrorDetailsPlannerQuotaReachedToJson(
   'teamName': instance.teamName,
   'type': instance.$type,
 };
+
+ErrorDetailsGeneratorNetworkTooSmall
+_$ErrorDetailsGeneratorNetworkTooSmallFromJson(Map<String, dynamic> json) =>
+    ErrorDetailsGeneratorNetworkTooSmall(
+      routeCount: (json['routeCount'] as num).toInt(),
+      pendingRouteCount: (json['pendingRouteCount'] as num).toInt(),
+      excludedRouteCount: (json['excludedRouteCount'] as num).toInt(),
+      totalLengthM: (json['totalLengthM'] as num).toDouble(),
+      incomplete: json['incomplete'] as bool,
+      $type: json['type'] as String?,
+    );
+
+Map<String, dynamic> _$ErrorDetailsGeneratorNetworkTooSmallToJson(
+  ErrorDetailsGeneratorNetworkTooSmall instance,
+) => <String, dynamic>{
+  'routeCount': instance.routeCount,
+  'pendingRouteCount': instance.pendingRouteCount,
+  'excludedRouteCount': instance.excludedRouteCount,
+  'totalLengthM': instance.totalLengthM,
+  'incomplete': instance.incomplete,
+  'type': instance.$type,
+};
