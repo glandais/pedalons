@@ -338,10 +338,16 @@ from the other entries and **not yet accepted by an `asc` run**: check it at the
 goes to our backend, which relays it to Stadia Maps from the server's IP. The backend attaches it
 to no account and writes it nowhere: an in-memory cache keyed by the normalised query, shared by
 all accounts, for 24 hours (`GeocodingLookup`). Stadia Maps has no code in the app. The app's
-other text searches (ads, rides, members) are not declared either. **One thing was not verified**:
-whether anything in front of the backend in production logs full request URLs — the policy
-mentions 14-day access logs holding the "page requested". If it does, the query would be kept with
-an IP address and this answer has to be revisited.
+other text searches (ads, rides, members) are not declared either. **Verified in production on
+2026-11-14, and this answer is open again (ledger `MOB-159`)**: the host's Caddy writes the only
+access log (`docs/OPERATIONS.md`, *Access logs*) — Traefik's is off, and neither Varnish, the
+backend nor the frontend logs the request. That log keeps the full URI for 14 days, with the
+client's IP address and no account identifier, and its query filter removes credentials and
+positions (`t`, `token`, `code`, `state`, `next`, `lat`, `lon`, `nearLat`, `nearLon`) but **not
+`q`**: `GET /api/geocode/search?q=<what the member typed>` is written as is. The same holds for the
+`search` parameter of the list searches, which predates the ad editor. Two ways to close it, to be
+chosen: delete `q` and `search` in the Caddy filter, which makes "no Search History" true; or
+declare Apple *Search History* (not linked) and Play *In-app search history*.
 
 *Device ID* covers the **push registration token** and the device model sent with it (#11, #12) —
 not an advertising identifier, which the app still never reads.
