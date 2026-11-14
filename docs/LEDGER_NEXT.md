@@ -61,6 +61,24 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
+- [ ] `MOB-160` **Éditeur riche des publications : l'éditeur Tiptap du site dans une WebView (POC, M)** —
+      le texte d'une publication s'écrit dans l'app en markdown brut (`MarkdownEditorField`, `MOB-80`),
+      faute d'éditeur riche Flutter qui relise et réécrive sans perte le markdown du site. Une étude du
+      15 novembre 2026 (785 textes publics de pedalons.fr) l'a vérifié pour super_editor 0.3.0-dev :
+      `::asset{}` et tableaux tiennent, mais les sauts de ligne `\` et les échappements que Tiptap écrit
+      sont détruits, une citation perd ses lignes et une liste numérotée son départ. Le POC embarque
+      donc l'éditeur du site : `frontend/src/embed/mobile-editor/` (schéma et sérialisation partagés,
+      `markdownEditorExtensions` et `AssetNodeBase`), construit par `pnpm build:mobile-editor` dans
+      `mobile/assets/editor/`, piloté par `RichMarkdownEditorField`
+      (`mobile/lib/features/rides/presentation/widgets/editor/rich_markdown_editor_field.dart`) ; les
+      images passent par l'app avec ses en-têtes ; la barre « ^ v ✓ » de WKWebView est masquée dans
+      `AppDelegate.swift`. Derrière `--dart-define=RICH_EDITOR=true`, éditeur de publication seulement.
+      Reste avant de l'allumer : essai au doigt sur iPhone (AXe n'atteint pas le contenu d'une WebView
+      dans une vue native Flutter), saisie Gboard réelle, hauteur de la zone (fixe, 360) et défilement
+      vers le curseur au-dessus du clavier, tests de widget (le pont) et Patrol (le champ n'est plus un
+      `TextField`), puis sorties et annonces. Au passage, le site transforme `- [ ] tâche` en
+      `- \[ \] tâche` (pas d'extension de cases à cocher) : à porter côté `WEB` si on le garde.
+
 - [ ] `MOB-133` **Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)** — depuis `API-163`
       (contrat `13.4.0`), `RouteDto`, `RouteDetailDto`, `RideDto` et `RideGroupDto` disent, pour
       chacun des services de la personne en synchro automatique, si le parcours y est déjà (`state`,

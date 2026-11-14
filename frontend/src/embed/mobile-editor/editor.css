@@ -1,0 +1,118 @@
+/* The app sets the variables from its theme (`pedalons.load`), light or dark. */
+:root {
+  --text: #1d1d1f;
+  --muted: #8a8a8e;
+  --background: #ffffff;
+  --border: #d8d8dc;
+  --accent: #e85d04;
+  --surface: #f4f4f6;
+  --font-size: 16px;
+  font-family: -apple-system, system-ui, Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--background);
+  color: var(--text);
+}
+
+#editor {
+  padding: 12px;
+  font-size: var(--font-size);
+  line-height: 1.5;
+}
+
+.ProseMirror {
+  outline: none;
+  min-height: 200px;
+  overflow-wrap: anywhere;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.ProseMirror > :first-child {
+  margin-top: 0;
+}
+
+h2 {
+  font-size: 1.3em;
+  margin: 1em 0 0.4em;
+}
+
+h3 {
+  font-size: 1.15em;
+  margin: 1em 0 0.4em;
+}
+
+a {
+  color: var(--accent);
+}
+
+blockquote {
+  border-left: 3px solid var(--accent);
+  margin: 0.8em 0;
+  padding-left: 12px;
+  color: var(--muted);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.8em 0;
+  table-layout: fixed;
+}
+
+td,
+th {
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+th {
+  background: var(--surface);
+  text-align: left;
+}
+
+.selectedCell {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+figure.asset {
+  margin: 0.8em 0;
+}
+
+figure.asset img {
+  display: block;
+  max-width: 100%;
+  max-width: min(100%, 448px);
+  min-height: 80px;
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+figure.asset-full img {
+  max-width: 100%;
+}
+
+figure.asset-icon img {
+  width: 32px;
+  min-height: 32px;
+}
+
+figure.asset-thumbnail img {
+  width: 96px;
+}
+
+.ProseMirror-selectednode img {
+  outline: 3px solid var(--accent);
+}

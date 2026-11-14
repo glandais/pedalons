@@ -744,7 +744,8 @@
         "numbers": "Numbered list",
         "quote": "Quote",
         "link": "Link",
-        "image": "Insert an image"
+        "image": "Insert an image",
+        "table": "Table"
       },
       "linkTitle": "Insert a link",
       "linkUrl": "Address (https://…)",

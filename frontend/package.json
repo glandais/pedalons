@@ -12,6 +12,7 @@
     "prebuild": "pnpm copy-legal",
     "build": "vite build --outDir dist/client && vite build --ssr src/entry-server.tsx --outDir dist/server",
     "typecheck": "tsc -b",
+    "build:mobile-editor": "vite build --config vite.mobile-editor.config.ts",
     "preview": "vite preview",
     "serve": "pnpm build && vite preview",
     "serve:ssr": "pnpm build && NODE_ENV=production node server.js",

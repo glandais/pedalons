@@ -70,7 +70,7 @@ class _MarkdownEditorFieldState extends State<MarkdownEditorField> {
   }
 
   Future<void> _link() async {
-    final ({String url, String label})? link = await _askLink(context);
+    final ({String url, String label})? link = await askMarkdownLink(context);
     if (link == null || !mounted) return;
     _apply(
       (TextEditingValue v) => insertLink(v, url: link.url, label: link.label),
@@ -257,8 +257,9 @@ class _Toolbar extends StatelessWidget {
   }
 }
 
-/// La feuille « Insérer un lien » : une adresse, un texte facultatif.
-Future<({String url, String label})?> _askLink(BuildContext context) {
+/// La feuille « Insérer un lien » : une adresse, un texte facultatif. Partagée
+/// avec l'éditeur riche ([RichMarkdownEditorField]).
+Future<({String url, String label})?> askMarkdownLink(BuildContext context) {
   final TextEditingController url = TextEditingController();
   final TextEditingController label = TextEditingController();
   return PdlSheet.show<({String url, String label})>(

@@ -199,6 +199,7 @@ abstract final class PdlIcons {
   static const IconData formatBullets = Icons.format_list_bulleted;
   static const IconData formatNumbers = Icons.format_list_numbered;
   static const IconData formatQuote = Icons.format_quote;
+  static const IconData formatTable = Icons.table_chart_outlined;
   static const IconData imageAdd = Icons.add_photo_alternate_outlined;
   static const IconData fileAdd = Icons.upload_file_outlined;
 

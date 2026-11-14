@@ -1,4 +1,6 @@
 export { AssetNode } from './AssetNode'
+export { AssetNodeBase } from './AssetNodeBase'
+export { markdownEditorExtensions } from './markdownExtensions'
 export { AssetNodeView } from './AssetNodeView'
 export { AssetImagesProvider, useAssetImages } from './AssetImagesContext'
 export { markdownToEditor } from './markdownUtils'

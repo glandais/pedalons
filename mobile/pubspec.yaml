@@ -101,6 +101,9 @@ dependencies:
   # The device name sent with the push token, so a member can tell their phones
   # apart in a future device list.
   device_info_plus: ^13.3.0
+  # The post editor's rich text: the site's Tiptap editor, embedded (assets/editor/, built by
+  # `pnpm build:mobile-editor` in frontend/) so the app writes exactly the site's markdown.
+  webview_flutter: ^4.14.1
 
 dev_dependencies:
   flutter_test:
@@ -132,6 +135,7 @@ flutter:
     - assets/l10n/
     - assets/icon.png
     - assets/gps/
+    - assets/editor/
     - privacy/
 
   # Inter ships with the app (rsms/inter 4.1, SIL OFL — assets/fonts/inter/OFL.txt) rather than

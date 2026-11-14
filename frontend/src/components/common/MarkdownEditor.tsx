@@ -4,13 +4,6 @@ import { Box } from '@mantine/core'
 import { RichTextEditor } from '@mantine/tiptap'
 import { useEditor, type Editor } from '@tiptap/react'
 import type { EditorView } from '@tiptap/pm/view'
-import StarterKit from '@tiptap/starter-kit'
-import { Table } from '@tiptap/extension-table'
-import TableRow from '@tiptap/extension-table-row'
-import TableHeader from '@tiptap/extension-table-header'
-import TableCell from '@tiptap/extension-table-cell'
-import Placeholder from '@tiptap/extension-placeholder'
-import { Markdown } from 'tiptap-markdown'
 import '@mantine/tiptap/styles.css'
 
 import type { AssetDto } from '@/api/dto'
@@ -18,6 +11,7 @@ import {
   AssetNode,
   AssetImagesProvider,
   markdownToEditor,
+  markdownEditorExtensions,
   ImageUploadControl,
   imageFiles,
   uploadAndInsert,
@@ -154,22 +148,9 @@ export function MarkdownEditor({
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        // Disable code block (not in original editor)
-        codeBlock: false,
-      }),
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      Placeholder.configure({
+      ...markdownEditorExtensions({
         placeholder: placeholder || t('editor.placeholder'),
-      }),
-      Markdown.configure({
-        // html: true is needed to parse <div data-type="asset"> tags from markdownToEditor()
-        html: true,
-        tightLists: true,
-        bulletListMarker: '-',
+        resizableTables: true,
       }),
       AssetNode,
     ],
