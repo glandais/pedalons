@@ -888,6 +888,163 @@ export const useCopyGpxPreview = <TError = ErrorType<ErrorResponse | void>, TCon
   return useMutation(getCopyGpxPreviewMutationOptions(options), queryClient)
 }
 /**
+ * Whoever holds the preview identifier may download it.
+ * @summary Download an analysed GPX file as FIT
+ */
+export const downloadGpxPreviewFit = (
+  previewId: string,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<Blob>(
+    { url: `/api/gpx-previews/${previewId}/fit`, method: 'GET', responseType: 'blob', signal },
+    options
+  )
+}
+
+export const getDownloadGpxPreviewFitQueryKey = (previewId: string) => {
+  return [`/api/gpx-previews/${previewId}/fit`] as const
+}
+
+export const getDownloadGpxPreviewFitQueryOptions = <
+  TData = Awaited<ReturnType<typeof downloadGpxPreviewFit>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewFit>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  }
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getDownloadGpxPreviewFitQueryKey(previewId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadGpxPreviewFit>>> = ({ signal }) =>
+    downloadGpxPreviewFit(previewId, requestOptions, signal)
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: previewId !== null && previewId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewFit>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type DownloadGpxPreviewFitQueryResult = NonNullable<
+  Awaited<ReturnType<typeof downloadGpxPreviewFit>>
+>
+export type DownloadGpxPreviewFitQueryError = ErrorType<ErrorResponse>
+
+export function useDownloadGpxPreviewFit<
+  TData = Awaited<ReturnType<typeof downloadGpxPreviewFit>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewFit>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadGpxPreviewFit>>,
+          TError,
+          Awaited<ReturnType<typeof downloadGpxPreviewFit>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadGpxPreviewFit<
+  TData = Awaited<ReturnType<typeof downloadGpxPreviewFit>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewFit>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadGpxPreviewFit>>,
+          TError,
+          Awaited<ReturnType<typeof downloadGpxPreviewFit>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadGpxPreviewFit<
+  TData = Awaited<ReturnType<typeof downloadGpxPreviewFit>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewFit>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Download an analysed GPX file as FIT
+ */
+
+export function useDownloadGpxPreviewFit<
+  TData = Awaited<ReturnType<typeof downloadGpxPreviewFit>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewFit>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getDownloadGpxPreviewFitQueryOptions(previewId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+/**
+ * @summary Download an analysed GPX file as FIT
+ */
+export const prefetchDownloadGpxPreviewFitQuery = async <
+  TData = Awaited<ReturnType<typeof downloadGpxPreviewFit>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  queryClient: QueryClient,
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewFit>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  }
+): Promise<QueryClient> => {
+  const queryOptions = getDownloadGpxPreviewFitQueryOptions(previewId, options)
+
+  await queryClient.query(queryOptions).catch(() => {})
+
+  return queryClient
+}
+
+/**
  * Uploads the preview to the current user's connected Garmin, Hammerhead or Wahoo
  * @summary Send an analysed GPX file to a GPS service
  */
@@ -970,6 +1127,163 @@ export const useUploadToGpsService = <TError = ErrorType<ErrorResponse | void>, 
 > => {
   return useMutation(getUploadToGpsServiceMutationOptions(options), queryClient)
 }
+/**
+ * Whoever holds the preview identifier may download it.
+ * @summary Download an analysed GPX file as GPX
+ */
+export const downloadGpxPreviewGpx = (
+  previewId: string,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<Blob>(
+    { url: `/api/gpx-previews/${previewId}/gpx`, method: 'GET', responseType: 'blob', signal },
+    options
+  )
+}
+
+export const getDownloadGpxPreviewGpxQueryKey = (previewId: string) => {
+  return [`/api/gpx-previews/${previewId}/gpx`] as const
+}
+
+export const getDownloadGpxPreviewGpxQueryOptions = <
+  TData = Awaited<ReturnType<typeof downloadGpxPreviewGpx>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewGpx>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  }
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getDownloadGpxPreviewGpxQueryKey(previewId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadGpxPreviewGpx>>> = ({ signal }) =>
+    downloadGpxPreviewGpx(previewId, requestOptions, signal)
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: previewId !== null && previewId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewGpx>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type DownloadGpxPreviewGpxQueryResult = NonNullable<
+  Awaited<ReturnType<typeof downloadGpxPreviewGpx>>
+>
+export type DownloadGpxPreviewGpxQueryError = ErrorType<ErrorResponse>
+
+export function useDownloadGpxPreviewGpx<
+  TData = Awaited<ReturnType<typeof downloadGpxPreviewGpx>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewGpx>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadGpxPreviewGpx>>,
+          TError,
+          Awaited<ReturnType<typeof downloadGpxPreviewGpx>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadGpxPreviewGpx<
+  TData = Awaited<ReturnType<typeof downloadGpxPreviewGpx>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewGpx>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof downloadGpxPreviewGpx>>,
+          TError,
+          Awaited<ReturnType<typeof downloadGpxPreviewGpx>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDownloadGpxPreviewGpx<
+  TData = Awaited<ReturnType<typeof downloadGpxPreviewGpx>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewGpx>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Download an analysed GPX file as GPX
+ */
+
+export function useDownloadGpxPreviewGpx<
+  TData = Awaited<ReturnType<typeof downloadGpxPreviewGpx>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewGpx>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getDownloadGpxPreviewGpxQueryOptions(previewId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+/**
+ * @summary Download an analysed GPX file as GPX
+ */
+export const prefetchDownloadGpxPreviewGpxQuery = async <
+  TData = Awaited<ReturnType<typeof downloadGpxPreviewGpx>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  queryClient: QueryClient,
+  previewId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof downloadGpxPreviewGpx>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  }
+): Promise<QueryClient> => {
+  const queryOptions = getDownloadGpxPreviewGpxQueryOptions(previewId, options)
+
+  await queryClient.query(queryOptions).catch(() => {})
+
+  return queryClient
+}
+
 /**
  * The control points, routed pieces and imported ranges the preview was last saved with, for its edit page. Only the creator may read it. 'state' is absent when there is none to read back.
  * @summary Get the planner state of an analysed GPX file
@@ -1221,6 +1535,175 @@ export const useCreateRouteFromPreview = <TError = ErrorType<ErrorResponse>, TCo
 > => {
   return useMutation(getCreateRouteFromPreviewMutationOptions(options), queryClient)
 }
+/**
+ * The preview's map thumbnail, resized to the requested size and encoded in the best format the Accept header allows. Whoever holds the preview identifier may read it.
+ * @summary Download the map thumbnail of an analysed GPX file
+ */
+export const getGpxPreviewThumbnail = (
+  previewId: string,
+  size: number,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<Blob>(
+    {
+      url: `/api/gpx-previews/${previewId}/thumbnail/${size}`,
+      method: 'GET',
+      responseType: 'blob',
+      signal,
+    },
+    options
+  )
+}
+
+export const getGetGpxPreviewThumbnailQueryKey = (previewId: string, size: number) => {
+  return [`/api/gpx-previews/${previewId}/thumbnail/${size}`] as const
+}
+
+export const getGetGpxPreviewThumbnailQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGpxPreviewThumbnail>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  size: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getGpxPreviewThumbnail>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  }
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetGpxPreviewThumbnailQueryKey(previewId, size)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getGpxPreviewThumbnail>>> = ({ signal }) =>
+    getGpxPreviewThumbnail(previewId, size, requestOptions, signal)
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: previewId !== null && previewId !== undefined && size !== null && size !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getGpxPreviewThumbnail>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetGpxPreviewThumbnailQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGpxPreviewThumbnail>>
+>
+export type GetGpxPreviewThumbnailQueryError = ErrorType<ErrorResponse>
+
+export function useGetGpxPreviewThumbnail<
+  TData = Awaited<ReturnType<typeof getGpxPreviewThumbnail>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  size: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getGpxPreviewThumbnail>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGpxPreviewThumbnail>>,
+          TError,
+          Awaited<ReturnType<typeof getGpxPreviewThumbnail>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetGpxPreviewThumbnail<
+  TData = Awaited<ReturnType<typeof getGpxPreviewThumbnail>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  size: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getGpxPreviewThumbnail>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getGpxPreviewThumbnail>>,
+          TError,
+          Awaited<ReturnType<typeof getGpxPreviewThumbnail>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetGpxPreviewThumbnail<
+  TData = Awaited<ReturnType<typeof getGpxPreviewThumbnail>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  size: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getGpxPreviewThumbnail>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Download the map thumbnail of an analysed GPX file
+ */
+
+export function useGetGpxPreviewThumbnail<
+  TData = Awaited<ReturnType<typeof getGpxPreviewThumbnail>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  previewId: string,
+  size: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getGpxPreviewThumbnail>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetGpxPreviewThumbnailQueryOptions(previewId, size, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+/**
+ * @summary Download the map thumbnail of an analysed GPX file
+ */
+export const prefetchGetGpxPreviewThumbnailQuery = async <
+  TData = Awaited<ReturnType<typeof getGpxPreviewThumbnail>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  queryClient: QueryClient,
+  previewId: string,
+  size: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getGpxPreviewThumbnail>>, TError, TData>
+    >
+    request?: SecondParameter<typeof axiosMutator>
+  }
+): Promise<QueryClient> => {
+  const queryOptions = getGetGpxPreviewThumbnailQueryOptions(previewId, size, options)
+
+  await queryClient.query(queryOptions).catch(() => {})
+
+  return queryClient
+}
+
 /**
  * The forecast along the track when the preview has a departure date: at the start, then at each estimated passage (the average speed given, else 25 km/h). Anyone holding the link may read it. Read from the server's cache only — the forecast is refreshed in the background, never on request — and always 200: the state is in status (OUT_OF_RANGE without a date or once it is past). Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
  * @summary Get the weather of an analysed GPX file

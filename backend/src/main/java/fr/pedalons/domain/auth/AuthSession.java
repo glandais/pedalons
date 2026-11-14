@@ -16,6 +16,12 @@ import org.jspecify.annotations.Nullable;
 @NoArgsConstructor
 public class AuthSession {
 
+  /**
+   * Prefix of {@link #deviceClient} for a session an external application opened through OAuth
+   * ({@code oauth:<client_id>}, docs/LEDGER_*.md API-199) — a paired device never carries it.
+   */
+  public static final String OAUTH_CLIENT_PREFIX = "oauth:";
+
   @Id @Tsid private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
@@ -71,6 +77,11 @@ public class AuthSession {
     this.user = user;
     this.refreshTokenHash = refreshTokenHash;
     this.expiresAt = expiresAt;
+  }
+
+  /** Whether an external application opened this session through OAuth. */
+  public boolean isOAuthApplication() {
+    return deviceClient != null && deviceClient.startsWith(OAUTH_CLIENT_PREFIX);
   }
 
   public void revoke() {

@@ -176,8 +176,10 @@ class _PairedDevicesCardState extends ConsumerState<PairedDevicesCard> {
   }
 }
 
-/// Le nom d'un appareil appairé : son type, le contrat n'en porte pas d'autre.
+/// Le nom d'un appareil appairé : son type, ou, pour une application externe
+/// autorisée par OAuth, le nom qu'elle s'est donné (docs/LEDGER_*.md API-199).
 String pairedDeviceName(PairedDeviceDto device) =>
+    device.applicationName ??
     switch (PairedDeviceType.fromJson(device.type)) {
       PairedDeviceType.karoo => 'profile.devices.karoo'.tr(),
       PairedDeviceType.garmin => 'profile.devices.garmin'.tr(),

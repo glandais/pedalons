@@ -80,6 +80,11 @@ public class DeviceAuthService {
   @Public
   @Transactional
   public DeviceCodeResponse initiateDeviceCodeFlow(String clientId) {
+    // That prefix marks the sessions of external applications (docs/LEDGER_*.md API-199): a
+    // pairing must not be listed, nor refreshed, as one.
+    if (clientId.startsWith(AuthSession.OAUTH_CLIENT_PREFIX)) {
+      throw new BadRequestException(ErrorCode.BAD_REQUEST);
+    }
     Long domainId = domainResolver.getDomain().getId();
 
     // Generate device code (long, for polling)
@@ -227,6 +232,10 @@ public class DeviceAuthService {
             session -> {
               if (!session.isValid()) {
                 throw new BadRequestException(ErrorCode.SESSION_EXPIRED);
+              }
+              // An external application refreshes on /api/oauth/token (docs/LEDGER_*.md API-199).
+              if (session.isOAuthApplication()) {
+                throw new BadRequestException(ErrorCode.TOKEN_INVALID);
               }
             });
     if (refresh.outcome() == RefreshTokenRotation.Outcome.UNKNOWN) {

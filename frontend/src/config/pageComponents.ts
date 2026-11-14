@@ -38,6 +38,10 @@ export const pages = {
   ),
   LoginPage: lazyPage('LoginPage', () => import('../pages/auth/LoginPage')),
   DeviceVerifyPage: lazyPage('DeviceVerifyPage', () => import('../pages/device/DeviceVerifyPage')),
+  OAuthAuthorizePage: lazyPage(
+    'OAuthAuthorizePage',
+    () => import('../pages/oauth/OAuthAuthorizePage')
+  ),
   VerifyEmailPage: lazyPage('VerifyEmailPage', () => import('../pages/auth/VerifyEmailPage')),
   AcceptInvitationPage: lazyPage(
     'AcceptInvitationPage',

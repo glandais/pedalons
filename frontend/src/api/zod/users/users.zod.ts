@@ -524,14 +524,24 @@ export const GetMyDeletionImpactResponse = zod
 export const ListPairedDevicesResponseItem = zod
   .object({
     id: zod.string().describe('Pairing ID, to unpair the device'),
-    type: zod.enum(['KAROO', 'GARMIN', 'OTHER']).describe('Kind of device'),
+    type: zod
+      .enum(['KAROO', 'GARMIN', 'OTHER'])
+      .describe('Kind of device. OTHER for an external application: applicationName then names it'),
+    applicationName: zod
+      .string()
+      .optional()
+      .describe(
+        'For an access opened through OAuth, the name the application gave itself (client_id) — unverified. Absent for a device.'
+      ),
     pairedAt: zod.iso.datetime({ offset: true }).describe('When the device was paired'),
     lastUsedAt: zod.iso
       .datetime({ offset: true })
       .optional()
       .describe('When the device last renewed its access'),
   })
-  .describe('A device (Karoo, Garmin) paired with the account by code')
+  .describe(
+    'A device (Karoo, Garmin) paired with the account by code, or an external application the user authorized through OAuth'
+  )
 export const ListPairedDevicesResponse = zod.array(ListPairedDevicesResponseItem)
 
 /**
@@ -6646,14 +6656,26 @@ export const GetMyProfileSummaryResponse = zod
         zod
           .object({
             id: zod.string().describe('Pairing ID, to unpair the device'),
-            type: zod.enum(['KAROO', 'GARMIN', 'OTHER']).describe('Kind of device'),
+            type: zod
+              .enum(['KAROO', 'GARMIN', 'OTHER'])
+              .describe(
+                'Kind of device. OTHER for an external application: applicationName then names it'
+              ),
+            applicationName: zod
+              .string()
+              .optional()
+              .describe(
+                'For an access opened through OAuth, the name the application gave itself (client_id) — unverified. Absent for a device.'
+              ),
             pairedAt: zod.iso.datetime({ offset: true }).describe('When the device was paired'),
             lastUsedAt: zod.iso
               .datetime({ offset: true })
               .optional()
               .describe('When the device last renewed its access'),
           })
-          .describe('A device (Karoo, Garmin) paired with the account by code')
+          .describe(
+            'A device (Karoo, Garmin) paired with the account by code, or an external application the user authorized through OAuth'
+          )
       )
       .describe(
         'Devices (Karoo, Garmin) paired with the account, newest first — the same rows as GET /api/users/me/devices'

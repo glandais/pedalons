@@ -691,6 +691,32 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
 
 ## API — Contrat d'API et backend
 
+- [ ] `API-200` **OAuth des applications externes : l'écran de consentement dans l'app mobile (M)** —
+      `API-199` n'ouvre le flux que par le site : `/oauth/authorize` (`contracts/routes.yaml`,
+      `oauthAuthorize`) est `mobile: false`, `deeplink: false`, donc sur un téléphone où l'app est
+      installée le lien s'ouvre dans le navigateur, où la personne n'a souvent pas de session et doit
+      se connecter avant de consentir. À faire : un écran de consentement dans l'app (mêmes mots que
+      `OAuthAuthorizePage`, même appel `POST /api/oauth/authorize`), la route en `deeplink: true`, et
+      le retour vers le `redirect_uri` par `url_launcher` — un deep link d'une autre app compris.
+      Décidé « plus tard » par le propriétaire le 14 novembre 2026.
+- [ ] `API-203` **Ce qu'un jeton d'application ou d'appareil peut faire sans le membre (S, décision
+      d'abord)** — relecture sécurité d'`API-199` : un jeton qui porte `sid` (application OAuth,
+      Karoo, Garmin) vaut la session du membre, donc il peut demander un changement d'e-mail
+      (`POST /api/auth/email/change-request`, confirmé depuis la *nouvelle* adresse : prise de
+      compte), enregistrer ou supprimer une clé d'accès, approuver un appairage
+      (`/api/device/oauth/complete`), déconnecter les autres sessions, exporter les données,
+      supprimer le compte, et tout `@Admin` si le membre l'est. Seule l'approbation d'une autre
+      application est déjà refusée. Le plus court : refuser les jetons à `sid` sur ces opérations
+      (un filtre lié par nom, comme `@TileTokenAuth`) ; des scopes restent écartés (`API-201`).
+- [ ] `API-202` **Une application externe dans un navigateur ne peut pas appeler l'API (S, décision
+      d'abord)** — `quarkus.http.cors.origins` ne liste que les origines du site : une page servie par
+      une autre origine obtient son code (`API-199`, simple navigation) mais ni l'échange sur
+      `/api/oauth/token` ni les appels d'API ne passent le CORS. Les applications serveur et natives
+      ne sont pas concernées. Ouvrir le CORS à toute origine pour les requêtes **sans** cookie
+      (`Authorization: Bearer` seul, `allow-credentials` réservé aux origines du site) est
+      faisable, mais `CrossSiteRequestFilter` et le cookie `refresh_token` reposent sur la liste
+      actuelle : à décider avec une relecture sécurité, pas en passant.
+
 
 - [ ] `API-173` **La ligne météo d'un voyage dans les listes s'arrête au départ de sa dernière étape (S)** — reste
       de `API-170` : la page du voyage et celle de l'étape gardent leur météo jusqu'à la fin estimée de l'étape,
@@ -1646,6 +1672,12 @@ l'app mobile, un changement n'y apparaît qu'avec la build suivante.
 La politique réécrite pour la mesure d'audience (`LEGAL-19`) est en ligne ; ce qui reste de la mise
 en service (précondition du §5.3 du plan, vérifications de l'étape 6) est sous `OPS-41`.
 
+- [ ] `LEGAL-28` **La politique ne parle pas des applications externes autorisées par OAuth (S)** —
+      depuis `API-199` un membre peut ouvrir son compte à une application tierce
+      (`/oauth/authorize`) : `privacy/privacy-policy.{fr,en}.md` §6 n'en dit rien (ni l'accès donné,
+      ni son retrait depuis le profil, ni les codes d'autorisation supprimés après cinq minutes ou
+      par le nettoyage nocturne). À écrire en parité FR/EN ; visible dans l'app à la build suivante.
+
 - [ ] `LEGAL-26` **Revêtement des parcours : ODbL et mention de VersaTiles côté serveur (S)** —
       deux points relevés par `API-150`, à instruire. (1) Le backend stocke par parcours des plages
       typées tirées d'OSM (`TrackSurfaceDocument.ways` : structure, revêtement, type de voie) ; le
@@ -1712,6 +1744,7 @@ redevient une entrée de sa section sous le même identifiant.
 
 | ID | Sujet | Décision | Ce que ça implique |
 |---|---|---|---|
+| `API-201` | **OAuth : enregistrer les applications, vérifier `redirect_uri`, des scopes** | Non (14 novembre 2026, décision du propriétaire) : le flux d'`API-199` est minimal, tout domaine, URL ou deep link est accepté | Rien ne garantit qui reçoit le code : ce qui en tient lieu est l'écran de consentement, qui montre le `client_id` déclaré et l'adresse de retour, et PKCE `S256` obligatoire. Les jetons donnent tout ce que donne la session du membre. Ne pas rendre PKCE facultatif ni approuver sans clic tant que ce point n'est pas rouvert : ce sont les deux seuls garde-fous. À rouvrir si l'API s'ouvre à des tiers qu'on ne connaît pas |
 | `API-183` | **Renvoyer tout le parc aux services GPS après `API-182`** | Non fait : le rattrapage réécrit les `route.fit` en place, sans nouvelle révision de contenu | Les parcours déjà poussés chez Wahoo avant `API-181` gardent un FIT à l'horodatage unique. Rien ne dit qu'un ELEMNT en souffre, et une révision sur chaque parcours renverrait tout le parc à chaque compte connecté. À rouvrir sur un retour Wahoo ; un parcours se renvoie déjà en le réenregistrant. |
 | `API-29` | **Liste d'attente (`waitlisted`)** | N'existe pas en base ; ni colonne, ni statut, ni rang sur `RideParticipation` | « Complet » est un **état terminal**. Ne pas câbler un `waitlisted: false` en dur : un champ toujours faux rend la vraie fonctionnalité indétectable en revue |
 | `API-30` | **Repli sur `createdBy` pour le meneur** | **Interdit partout** — base, DTO, client | `createdBy` vaut le créateur de la **sortie**, donc le même nom sur tous ses groupes : un repli serait faux presque partout, et faux de la façon qui ne se signale pas. C'est le défaut que `leader_id` corrige. Gardé par `groupLeader_isNotTheRideCreator` |

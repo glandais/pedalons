@@ -1802,6 +1802,16 @@ export const CopyGpxPreviewResponse = zod
   .describe('Analysed GPX file, not attached to any team')
 
 /**
+ * Whoever holds the preview identifier may download it.
+ * @summary Download an analysed GPX file as FIT
+ */
+export const DownloadGpxPreviewFitParams = zod.object({
+  previewId: zod.string().describe('Public preview identifier'),
+})
+
+export const DownloadGpxPreviewFitResponse = zod.unknown()
+
+/**
  * Uploads the preview to the current user's connected Garmin, Hammerhead or Wahoo
  * @summary Send an analysed GPX file to a GPS service
  */
@@ -1817,6 +1827,16 @@ export const UploadToGpsServiceResponse = zod
     externalRouteId: zod.string().optional().describe('External route ID on the GPS service'),
   })
   .describe('Result of uploading a route to a GPS service')
+
+/**
+ * Whoever holds the preview identifier may download it.
+ * @summary Download an analysed GPX file as GPX
+ */
+export const DownloadGpxPreviewGpxParams = zod.object({
+  previewId: zod.string().describe('Public preview identifier'),
+})
+
+export const DownloadGpxPreviewGpxResponse = zod.unknown()
 
 /**
  * The control points, routed pieces and imported ranges the preview was last saved with, for its edit page. Only the creator may read it. 'state' is absent when there is none to read back.
@@ -2931,6 +2951,17 @@ export const CreateRouteFromPreviewResponse = zod
       ),
   })
   .describe('Route summary data')
+
+/**
+ * The preview's map thumbnail, resized to the requested size and encoded in the best format the Accept header allows. Whoever holds the preview identifier may read it.
+ * @summary Download the map thumbnail of an analysed GPX file
+ */
+export const GetGpxPreviewThumbnailParams = zod.object({
+  previewId: zod.string().describe('Public preview identifier'),
+  size: zod.int().describe('Requested square size in pixels'),
+})
+
+export const GetGpxPreviewThumbnailResponse = zod.unknown()
 
 /**
  * The forecast along the track when the preview has a departure date: at the start, then at each estimated passage (the average speed given, else 25 km/h). Anyone holding the link may read it. Read from the server's cache only — the forecast is refreshed in the background, never on request — and always 200: the state is in status (OUT_OF_RANGE without a date or once it is past). Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.

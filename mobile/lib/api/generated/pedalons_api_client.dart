@@ -17,6 +17,7 @@ import 'clients/configuration_client.dart';
 import 'clients/device_user_client.dart';
 import 'clients/device_o_auth_client.dart';
 import 'clients/device_routes_client.dart';
+import 'clients/downloads_client.dart';
 import 'clients/users_client.dart';
 import 'clients/feedback_client.dart';
 import 'clients/geocode_client.dart';
@@ -24,6 +25,7 @@ import 'clients/gps_services_client.dart';
 import 'clients/gpx_previews_client.dart';
 import 'clients/invitations_client.dart';
 import 'clients/notifications_client.dart';
+import 'clients/o_auth_client.dart';
 import 'clients/publications_client.dart';
 import 'clients/moderation_client.dart';
 import 'clients/router_client.dart';
@@ -50,7 +52,7 @@ import 'clients/team_webhook_client.dart';
 import 'clients/tiles_client.dart';
 import 'clients/server_version_client.dart';
 
-/// Pedalons API `v14.12.0`.
+/// Pedalons API `v14.13.0`.
 ///
 /// API for Pedalons Cycling Team Management Platform.
 class PedalonsApiClient {
@@ -63,7 +65,7 @@ class PedalonsApiClient {
   final Dio _dio;
   final String? _baseUrl;
 
-  static String get version => '14.12.0';
+  static String get version => '14.13.0';
 
   AdminDomainsClient? _adminDomains;
   AdminElevationClient? _adminElevation;
@@ -78,6 +80,7 @@ class PedalonsApiClient {
   DeviceUserClient? _deviceUser;
   DeviceOAuthClient? _deviceOAuth;
   DeviceRoutesClient? _deviceRoutes;
+  DownloadsClient? _downloads;
   UsersClient? _users;
   FeedbackClient? _feedback;
   GeocodeClient? _geocode;
@@ -85,6 +88,7 @@ class PedalonsApiClient {
   GpxPreviewsClient? _gpxPreviews;
   InvitationsClient? _invitations;
   NotificationsClient? _notifications;
+  OAuthClient? _oAuth;
   PublicationsClient? _publications;
   ModerationClient? _moderation;
   RouterClient? _router;
@@ -150,6 +154,9 @@ class PedalonsApiClient {
   DeviceRoutesClient get deviceRoutes =>
       _deviceRoutes ??= DeviceRoutesClient(_dio, baseUrl: _baseUrl);
 
+  DownloadsClient get downloads =>
+      _downloads ??= DownloadsClient(_dio, baseUrl: _baseUrl);
+
   UsersClient get users => _users ??= UsersClient(_dio, baseUrl: _baseUrl);
 
   FeedbackClient get feedback =>
@@ -169,6 +176,8 @@ class PedalonsApiClient {
 
   NotificationsClient get notifications =>
       _notifications ??= NotificationsClient(_dio, baseUrl: _baseUrl);
+
+  OAuthClient get oAuth => _oAuth ??= OAuthClient(_dio, baseUrl: _baseUrl);
 
   PublicationsClient get publications =>
       _publications ??= PublicationsClient(_dio, baseUrl: _baseUrl);

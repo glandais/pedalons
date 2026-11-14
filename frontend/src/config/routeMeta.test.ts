@@ -320,6 +320,7 @@ describe('routes kept out of the index', () => {
     'verify-email',
     'invitation',
     'biketeam-migration',
+    'oauth-authorize',
     'device-verify-garmin',
     'device-verify-karoo',
     'device-hammerhead',

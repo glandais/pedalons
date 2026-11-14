@@ -133,6 +133,17 @@ abstract class GpxPreviewsClient {
     @Body() required GpxPreviewCopyRequest body,
   });
 
+  /// Download an analysed GPX file as FIT.
+  ///
+  /// Whoever holds the preview identifier may download it.
+  ///
+  /// [previewId] - Public preview identifier.
+  @GET('/api/gpx-previews/{previewId}/fit')
+  @DioResponseType(ResponseType.bytes)
+  Future<HttpResponse<List<int>>> downloadGpxPreviewFit({
+    @Path('previewId') required String previewId,
+  });
+
   /// Send an analysed GPX file to a GPS service.
   ///
   /// Uploads the preview to the current user's connected Garmin, Hammerhead or Wahoo.
@@ -144,6 +155,17 @@ abstract class GpxPreviewsClient {
   Future<RouteUploadResponse> uploadToGpsService({
     @Path('previewId') required String previewId,
     @Path('serviceType') required GpsServiceType serviceType,
+  });
+
+  /// Download an analysed GPX file as GPX.
+  ///
+  /// Whoever holds the preview identifier may download it.
+  ///
+  /// [previewId] - Public preview identifier.
+  @GET('/api/gpx-previews/{previewId}/gpx')
+  @DioResponseType(ResponseType.bytes)
+  Future<HttpResponse<List<int>>> downloadGpxPreviewGpx({
+    @Path('previewId') required String previewId,
   });
 
   /// Get the planner state of an analysed GPX file.
@@ -170,6 +192,20 @@ abstract class GpxPreviewsClient {
     @Path('previewId') required String previewId,
     @Path('teamSlug') required String teamSlug,
     @Body() required RouteRequest body,
+  });
+
+  /// Download the map thumbnail of an analysed GPX file.
+  ///
+  /// The preview's map thumbnail, resized to the requested size and encoded in the best format the Accept header allows. Whoever holds the preview identifier may read it.
+  ///
+  /// [previewId] - Public preview identifier.
+  ///
+  /// [size] - Requested square size in pixels.
+  @GET('/api/gpx-previews/{previewId}/thumbnail/{size}')
+  @DioResponseType(ResponseType.bytes)
+  Future<HttpResponse<List<int>>> getGpxPreviewThumbnail({
+    @Path('previewId') required String previewId,
+    @Path('size') required int size,
   });
 
   /// Get the weather of an analysed GPX file.

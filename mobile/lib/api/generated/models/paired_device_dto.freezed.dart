@@ -17,9 +17,10 @@ T _$identity<T>(T value) => value;
 mixin _$PairedDeviceDto {
 
 /// Pairing ID, to unpair the device
- String get id;/// Kind of device
+ String get id;/// Kind of device. OTHER for an external application: applicationName then names it
  String get type;/// When the device was paired
- String get pairedAt;/// When the device last renewed its access
+ String get pairedAt;/// For an access opened through OAuth, the name the application gave itself (client_id) — unverified. Absent for a device.
+ String? get applicationName;/// When the device last renewed its access
  String? get lastUsedAt;
 /// Create a copy of PairedDeviceDto
 /// with the given fields replaced by the non-null parameter values.
@@ -34,20 +35,20 @@ $PairedDeviceDtoCopyWith<PairedDeviceDto> get copyWith => _$PairedDeviceDtoCopyW
 @override
 bool operator ==(Object other) {
   final _this = this as PairedDeviceDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PairedDeviceDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.pairedAt, _this.pairedAt) || other.pairedAt == _this.pairedAt)&&(identical(other.lastUsedAt, _this.lastUsedAt) || other.lastUsedAt == _this.lastUsedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PairedDeviceDto&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.pairedAt, _this.pairedAt) || other.pairedAt == _this.pairedAt)&&(identical(other.applicationName, _this.applicationName) || other.applicationName == _this.applicationName)&&(identical(other.lastUsedAt, _this.lastUsedAt) || other.lastUsedAt == _this.lastUsedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PairedDeviceDto;
-  return Object.hash(runtimeType,_this.id,_this.type,_this.pairedAt,_this.lastUsedAt);
+  return Object.hash(runtimeType,_this.id,_this.type,_this.pairedAt,_this.applicationName,_this.lastUsedAt);
 }
 
 @override
 String toString() {
   final _this = this as PairedDeviceDto;
-  return 'PairedDeviceDto(id: ${_this.id}, type: ${_this.type}, pairedAt: ${_this.pairedAt}, lastUsedAt: ${_this.lastUsedAt})';
+  return 'PairedDeviceDto(id: ${_this.id}, type: ${_this.type}, pairedAt: ${_this.pairedAt}, applicationName: ${_this.applicationName}, lastUsedAt: ${_this.lastUsedAt})';
 }
 
 
@@ -58,7 +59,7 @@ abstract mixin class $PairedDeviceDtoCopyWith<$Res>  {
   factory $PairedDeviceDtoCopyWith(PairedDeviceDto value, $Res Function(PairedDeviceDto) _then) = _$PairedDeviceDtoCopyWithImpl;
 @useResult
 $Res call({
- String id, String type, String pairedAt, String? lastUsedAt
+ String id, String type, String pairedAt, String? applicationName, String? lastUsedAt
 });
 
 
@@ -75,12 +76,13 @@ class _$PairedDeviceDtoCopyWithImpl<$Res>
 
 /// Create a copy of PairedDeviceDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? pairedAt = null,Object? lastUsedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? type = null,Object? pairedAt = null,Object? applicationName = freezed,Object? lastUsedAt = freezed,}) {
   return _then(PairedDeviceDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,pairedAt: null == pairedAt ? _self.pairedAt : pairedAt // ignore: cast_nullable_to_non_nullable
-as String,lastUsedAt: freezed == lastUsedAt ? _self.lastUsedAt : lastUsedAt // ignore: cast_nullable_to_non_nullable
+as String,applicationName: freezed == applicationName ? _self.applicationName : applicationName // ignore: cast_nullable_to_non_nullable
+as String?,lastUsedAt: freezed == lastUsedAt ? _self.lastUsedAt : lastUsedAt // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -166,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String type,  String pairedAt,  String? lastUsedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String type,  String pairedAt,  String? applicationName,  String? lastUsedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PairedDeviceDto() when $default != null:
-return $default(_that.id,_that.type,_that.pairedAt,_that.lastUsedAt);case _:
+return $default(_that.id,_that.type,_that.pairedAt,_that.applicationName,_that.lastUsedAt);case _:
   return orElse();
 
 }
@@ -187,10 +189,10 @@ return $default(_that.id,_that.type,_that.pairedAt,_that.lastUsedAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String type,  String pairedAt,  String? lastUsedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String type,  String pairedAt,  String? applicationName,  String? lastUsedAt)  $default,) {final _that = this;
 switch (_that) {
 case _PairedDeviceDto():
-return $default(_that.id,_that.type,_that.pairedAt,_that.lastUsedAt);case _:
+return $default(_that.id,_that.type,_that.pairedAt,_that.applicationName,_that.lastUsedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -207,10 +209,10 @@ return $default(_that.id,_that.type,_that.pairedAt,_that.lastUsedAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String type,  String pairedAt,  String? lastUsedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String type,  String pairedAt,  String? applicationName,  String? lastUsedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _PairedDeviceDto() when $default != null:
-return $default(_that.id,_that.type,_that.pairedAt,_that.lastUsedAt);case _:
+return $default(_that.id,_that.type,_that.pairedAt,_that.applicationName,_that.lastUsedAt);case _:
   return null;
 
 }
@@ -222,15 +224,17 @@ return $default(_that.id,_that.type,_that.pairedAt,_that.lastUsedAt);case _:
 @JsonSerializable()
 
 class _PairedDeviceDto implements PairedDeviceDto {
-  const _PairedDeviceDto({required this.id, required this.type, required this.pairedAt, this.lastUsedAt});
+  const _PairedDeviceDto({required this.id, required this.type, required this.pairedAt, this.applicationName, this.lastUsedAt});
   factory _PairedDeviceDto.fromJson(Map<String, dynamic> json) => _$PairedDeviceDtoFromJson(json);
 
 /// Pairing ID, to unpair the device
 @override final  String id;
-/// Kind of device
+/// Kind of device. OTHER for an external application: applicationName then names it
 @override final  String type;
 /// When the device was paired
 @override final  String pairedAt;
+/// For an access opened through OAuth, the name the application gave itself (client_id) — unverified. Absent for a device.
+@override final  String? applicationName;
 /// When the device last renewed its access
 @override final  String? lastUsedAt;
 
@@ -247,18 +251,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PairedDeviceDto&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.pairedAt, pairedAt) || other.pairedAt == pairedAt)&&(identical(other.lastUsedAt, lastUsedAt) || other.lastUsedAt == lastUsedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PairedDeviceDto&&(identical(other.id, id) || other.id == id)&&(identical(other.type, type) || other.type == type)&&(identical(other.pairedAt, pairedAt) || other.pairedAt == pairedAt)&&(identical(other.applicationName, applicationName) || other.applicationName == applicationName)&&(identical(other.lastUsedAt, lastUsedAt) || other.lastUsedAt == lastUsedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,type,pairedAt,lastUsedAt);
+    return Object.hash(runtimeType,id,type,pairedAt,applicationName,lastUsedAt);
 }
 
 @override
 String toString() {
-    return 'PairedDeviceDto(id: $id, type: $type, pairedAt: $pairedAt, lastUsedAt: $lastUsedAt)';
+    return 'PairedDeviceDto(id: $id, type: $type, pairedAt: $pairedAt, applicationName: $applicationName, lastUsedAt: $lastUsedAt)';
 }
 
 
@@ -269,7 +273,7 @@ abstract mixin class _$PairedDeviceDtoCopyWith<$Res> implements $PairedDeviceDto
   factory _$PairedDeviceDtoCopyWith(_PairedDeviceDto value, $Res Function(_PairedDeviceDto) _then) = __$PairedDeviceDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String type, String pairedAt, String? lastUsedAt
+ String id, String type, String pairedAt, String? applicationName, String? lastUsedAt
 });
 
 
@@ -286,12 +290,13 @@ class __$PairedDeviceDtoCopyWithImpl<$Res>
 
 /// Create a copy of PairedDeviceDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? type = null,Object? pairedAt = null,Object? lastUsedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? type = null,Object? pairedAt = null,Object? applicationName = freezed,Object? lastUsedAt = freezed,}) {
   return _then(_PairedDeviceDto(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String,pairedAt: null == pairedAt ? _self.pairedAt : pairedAt // ignore: cast_nullable_to_non_nullable
-as String,lastUsedAt: freezed == lastUsedAt ? _self.lastUsedAt : lastUsedAt // ignore: cast_nullable_to_non_nullable
+as String,applicationName: freezed == applicationName ? _self.applicationName : applicationName // ignore: cast_nullable_to_non_nullable
+as String?,lastUsedAt: freezed == lastUsedAt ? _self.lastUsedAt : lastUsedAt // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

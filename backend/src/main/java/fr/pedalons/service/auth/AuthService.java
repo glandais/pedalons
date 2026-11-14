@@ -590,10 +590,18 @@ public class AuthService {
     };
   }
 
-  /** Refuses a session that is no longer alive, or that belongs to another site. */
+  /**
+   * Refuses a session that is no longer alive, that belongs to another site, or that an external
+   * application opened through OAuth: refreshed here it would get the site's access token, which
+   * names no session and so outlives its revocation by up to fifteen minutes (docs/LEDGER_*.md
+   * API-199). It refreshes on {@code /api/oauth/token}.
+   */
   private static void checkRefreshable(AuthSession session, Domain domain) {
     if (!session.isValid()) {
       throw new BadRequestException(ErrorCode.SESSION_EXPIRED);
+    }
+    if (session.isOAuthApplication()) {
+      throw new ForbiddenException();
     }
     if (!session.getUser().getDomain().getId().equals(domain.getId())) {
       throw new ForbiddenException();

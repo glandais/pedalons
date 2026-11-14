@@ -59,8 +59,12 @@ export function PairedDevicesManager() {
     },
   })
 
-  const deviceName = (type: PairedDeviceType) =>
-    t(`gps.devices.types.${type.toLowerCase() as Lowercase<PairedDeviceType>}`)
+  // An external application authorized through OAuth (docs/LEDGER_*.md API-199) is listed here
+  // too, under the name it gave itself; a device under its kind.
+  const deviceName = (device: PairedDeviceDto) =>
+    device.applicationName
+      ? t('gps.devices.application', { name: device.applicationName })
+      : t(`gps.devices.types.${device.type.toLowerCase() as Lowercase<PairedDeviceType>}`)
 
   return (
     <Stack>
@@ -97,7 +101,7 @@ export function PairedDevicesManager() {
                     )}
                     <div>
                       <Text size="sm" fw={500}>
-                        {deviceName(device.type)}
+                        {deviceName(device)}
                       </Text>
                       <Text size="xs" c="dimmed">
                         {t('gps.devices.pairedOn', { date: formatDate(device.pairedAt) })}
@@ -111,7 +115,7 @@ export function PairedDevicesManager() {
                     color="danger"
                     onClick={() => setToUnpair(device)}
                     title={t('gps.devices.unpair')}
-                    aria-label={t('gps.devices.unpairLabel', { device: deviceName(device.type) })}
+                    aria-label={t('gps.devices.unpairLabel', { device: deviceName(device) })}
                   >
                     <IconUnlink size={16} />
                   </ActionIcon>
@@ -128,7 +132,7 @@ export function PairedDevicesManager() {
         onConfirm={() => toUnpair && unpair.mutate({ deviceId: toUnpair.id })}
         title={t('gps.devices.unpairConfirm.title')}
         message={t('gps.devices.unpairConfirm.message', {
-          device: toUnpair ? deviceName(toUnpair.type) : '',
+          device: toUnpair ? deviceName(toUnpair) : '',
         })}
         confirmText={t('gps.devices.unpairConfirm.confirm')}
         variant="danger"

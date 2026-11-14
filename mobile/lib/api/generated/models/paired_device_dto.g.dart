@@ -11,6 +11,7 @@ _PairedDeviceDto _$PairedDeviceDtoFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       type: json['type'] as String,
       pairedAt: json['pairedAt'] as String,
+      applicationName: json['applicationName'] as String?,
       lastUsedAt: json['lastUsedAt'] as String?,
     );
 
@@ -19,5 +20,6 @@ Map<String, dynamic> _$PairedDeviceDtoToJson(_PairedDeviceDto instance) =>
       'id': instance.id,
       'type': instance.type,
       'pairedAt': instance.pairedAt,
+      'applicationName': instance.applicationName,
       'lastUsedAt': instance.lastUsedAt,
     };

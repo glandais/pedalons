@@ -360,7 +360,7 @@ class BiketeamMigrationInternalResourceTest extends AbstractResourceTest {
     // the shared ErrorCode enum stay.
     given()
         .when()
-        .get("/q/openapi?format=json")
+        .get("/api/openapi?format=json")
         .then()
         .statusCode(200)
         .body("paths", hasKey("/api/version"))

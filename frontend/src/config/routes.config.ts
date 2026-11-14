@@ -323,6 +323,15 @@ export const routesConfig: RoutesConfig = [
     breadcrumb: { type: 'static', i18nKey: tRegister('auth.login.title') },
   },
   {
+    // The consent screen of the OAuth flow for external applications (docs/LEDGER_*.md API-199).
+    id: 'oauth-authorize',
+    paths: pathVariants.oauthAuthorize(),
+    component: pages.OAuthAuthorizePage,
+    auth: 'authenticated',
+    parentId: null,
+    breadcrumb: { type: 'static', i18nKey: tRegister('oauth.title') },
+  },
+  {
     id: 'device-verify-garmin',
     paths: pathVariants.deviceVerifyGarmin(),
     component: pages.DeviceVerifyPage,

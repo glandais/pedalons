@@ -203,6 +203,8 @@ const screens: Record<string, Screen> = {
   },
   forgotPassword: { roles: ['anonymous'], sees: heading('Mot de passe oublié') },
   resetPassword: { roles: EVERYONE, sees: heading('Lien invalide') },
+  // Without the application's parameters, the consent screen says the link is incomplete.
+  oauthAuthorize: { roles: SIGNED_IN, sees: heading('Demande invalide') },
   deviceVerifyGarmin: { roles: SIGNED_IN, sees: heading('Entrez le code') },
   deviceVerifyKaroo: { roles: SIGNED_IN, sees: heading('Entrez le code') },
   // The Karoo's fallback QR: the Hammerhead step alone. Offered on localhost by the beforeAll, else

@@ -4011,6 +4011,94 @@
         "type" : "string",
         "enum" : [ "RIDE_PUBLISHED", "RIDE_CANCELLED", "TRIP_PUBLISHED", "TRIP_CANCELLED", "POST_PUBLISHED", "COMMENT_REPLY", "RIDE_REMINDER", "RIDE_UPDATED", "RIDE_GROUP_REMOVED", "RIDE_JOINED", "COMMENT_ON_MY_PUBLICATION", "TEAM_INVITATION", "CONTENT_REPORTED" ]
       },
+      "OAuthAuthorizeRequest" : {
+        "description" : "Approval of an OAuth 2.0 authorization request by the signed-in user",
+        "type" : "object",
+        "required" : [ "clientId", "redirectUri", "codeChallenge", "codeChallengeMethod", "confirmed" ],
+        "properties" : {
+          "clientId" : {
+            "type" : "string",
+            "description" : "The name the application gave itself (client_id). Free text: applications are not registered.",
+            "pattern" : "\\S",
+            "maxLength" : 40
+          },
+          "redirectUri" : {
+            "type" : "string",
+            "description" : "Where the code is sent (redirect_uri): any absolute URL or deep link, without a fragment. Not checked against anything.",
+            "pattern" : "\\S",
+            "maxLength" : 2000
+          },
+          "codeChallenge" : {
+            "type" : "string",
+            "description" : "PKCE challenge (code_challenge): BASE64URL(SHA-256(code_verifier))",
+            "pattern" : "^[A-Za-z0-9_-]{43}$"
+          },
+          "codeChallengeMethod" : {
+            "type" : "string",
+            "description" : "PKCE method (code_challenge_method): S256 only",
+            "pattern" : "^S256$"
+          },
+          "state" : {
+            "type" : "string",
+            "description" : "Opaque value given back to the application with the code (state)",
+            "maxLength" : 500
+          },
+          "confirmed" : {
+            "type" : "boolean",
+            "description" : "Must be true: the user explicitly confirmed, on a screen naming the application and where the code goes"
+          }
+        }
+      },
+      "OAuthAuthorizeResponse" : {
+        "description" : "Where the site sends the browser once an OAuth 2.0 request is approved",
+        "type" : "object",
+        "required" : [ "redirectUri" ],
+        "properties" : {
+          "redirectUri" : {
+            "type" : "string",
+            "description" : "The application's redirect_uri, carrying the authorization code and the state"
+          }
+        }
+      },
+      "OAuthErrorResponse" : {
+        "description" : "OAuth 2.0 token error (RFC 6749 §5.2)",
+        "type" : "object",
+        "required" : [ "error", "error_description" ],
+        "properties" : {
+          "error" : {
+            "type" : "string",
+            "description" : "invalid_request, invalid_grant or unsupported_grant_type"
+          },
+          "error_description" : {
+            "type" : "string",
+            "description" : "What was wrong, for the developer"
+          }
+        }
+      },
+      "OAuthTokenResponse" : {
+        "description" : "OAuth 2.0 token response (RFC 6749 §5.1)",
+        "type" : "object",
+        "required" : [ "access_token", "token_type", "expires_in" ],
+        "properties" : {
+          "access_token" : {
+            "type" : "string",
+            "description" : "Access token, sent as « Authorization: Bearer … » on every API call"
+          },
+          "token_type" : {
+            "type" : "string",
+            "description" : "Always 'Bearer'"
+          },
+          "expires_in" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Lifetime of the access token, in seconds"
+          },
+          "refresh_token" : {
+            "type" : "string",
+            "description" : "Refresh token, to keep in place of the one presented: it rotates at every refresh. Absent when the refresh came within the grace of a rotation made by another one — keep the token already held."
+          }
+        }
+      },
       "OtpRequest" : {
         "description" : "OTP request",
         "type" : "object",
@@ -4026,7 +4114,7 @@
         }
       },
       "PairedDeviceDto" : {
-        "description" : "A device (Karoo, Garmin) paired with the account by code",
+        "description" : "A device (Karoo, Garmin) paired with the account by code, or an external application the user authorized through OAuth",
         "type" : "object",
         "required" : [ "id", "type", "pairedAt" ],
         "properties" : {
@@ -4035,9 +4123,13 @@
             "description" : "Pairing ID, to unpair the device"
           },
           "type" : {
-            "description" : "Kind of device",
+            "description" : "Kind of device. OTHER for an external application: applicationName then names it",
             "type" : "string",
             "$ref" : "#/components/schemas/PairedDeviceType"
+          },
+          "applicationName" : {
+            "type" : "string",
+            "description" : "For an access opened through OAuth, the name the application gave itself (client_id) — unverified. Absent for a device."
           },
           "pairedAt" : {
             "description" : "When the device was paired",
@@ -9035,6 +9127,9 @@
     "name" : "Device User",
     "description" : "User status for device applications"
   }, {
+    "name" : "Downloads",
+    "description" : "Files (GPX, FIT, documents), images and avatars, under the URLs the API hands out"
+  }, {
     "name" : "Feedback",
     "description" : "Bug reports, suggestions and automatic error reports"
   }, {
@@ -9055,6 +9150,9 @@
   }, {
     "name" : "Notifications",
     "description" : "Notification inbox and preferences"
+  }, {
+    "name" : "OAuth",
+    "description" : "OAuth 2.0 authorization code flow with PKCE (S256), for external applications. Send the browser to the site's /oauth/authorize, then exchange the code on /api/oauth/token. No registration, no client secret, no scopes: the access token is the bearer JWT every secured operation takes."
   }, {
     "name" : "Passkeys",
     "description" : "WebAuthn passkey management"
@@ -12316,6 +12414,376 @@
         } ]
       }
     },
+    "/api/download/public/assets/{teamSlug}/{assetId}/{fileName}" : {
+      "get" : {
+        "summary" : "Download a file",
+        "description" : "Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.",
+        "operationId" : "downloadPublicAsset",
+        "tags" : [ "Downloads" ],
+        "parameters" : [ {
+          "description" : "Asset ID",
+          "name" : "assetId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "File name: the last segment of the URL, not used to find the file",
+          "name" : "fileName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Team slug",
+          "name" : "teamSlug",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The file, with its own content type",
+            "content" : {
+              "application/octet-stream" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller may not read this asset",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "No such asset",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/api/download/public/avatars/{fileId}/{size}" : {
+      "get" : {
+        "summary" : "Download a user's avatar",
+        "description" : "Serves an avatar under the URL the API gave for it (avatarUrl), in the best format the Accept header allows. Avatars are stored at 256 px: a larger size is served at 256.",
+        "operationId" : "downloadAvatar",
+        "tags" : [ "Downloads" ],
+        "parameters" : [ {
+          "description" : "Avatar file ID, from avatarUrl",
+          "name" : "fileId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Requested square size in pixels",
+          "name" : "size",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The image",
+            "content" : {
+              "image/*" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No such avatar",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/api/download/public/images/{teamSlug}/{assetId}/{size}" : {
+      "get" : {
+        "summary" : "Download an image",
+        "description" : "Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.",
+        "operationId" : "downloadPublicImage",
+        "tags" : [ "Downloads" ],
+        "parameters" : [ {
+          "description" : "Asset ID",
+          "name" : "assetId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Requested square size in pixels",
+          "name" : "size",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "description" : "Team slug",
+          "name" : "teamSlug",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The image",
+            "content" : {
+              "image/*" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller may not read this asset",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "No such asset",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/api/download/public_unlisted/assets/{teamSlug}/{assetId}/{fileName}" : {
+      "get" : {
+        "summary" : "Download a file",
+        "description" : "Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.",
+        "operationId" : "downloadUnlistedAsset",
+        "tags" : [ "Downloads" ],
+        "parameters" : [ {
+          "description" : "Asset ID",
+          "name" : "assetId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "File name: the last segment of the URL, not used to find the file",
+          "name" : "fileName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Team slug",
+          "name" : "teamSlug",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The file, with its own content type",
+            "content" : {
+              "application/octet-stream" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller may not read this asset",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "No such asset",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/api/download/public_unlisted/images/{teamSlug}/{assetId}/{size}" : {
+      "get" : {
+        "summary" : "Download an image",
+        "description" : "Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.",
+        "operationId" : "downloadUnlistedImage",
+        "tags" : [ "Downloads" ],
+        "parameters" : [ {
+          "description" : "Asset ID",
+          "name" : "assetId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Requested square size in pixels",
+          "name" : "size",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "description" : "Team slug",
+          "name" : "teamSlug",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The image",
+            "content" : {
+              "image/*" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller may not read this asset",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "No such asset",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/api/download/team/assets/{teamSlug}/{assetId}/{fileName}" : {
+      "get" : {
+        "summary" : "Download a file",
+        "description" : "Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.",
+        "operationId" : "downloadTeamAsset",
+        "tags" : [ "Downloads" ],
+        "parameters" : [ {
+          "description" : "Asset ID",
+          "name" : "assetId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "File name: the last segment of the URL, not used to find the file",
+          "name" : "fileName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Team slug",
+          "name" : "teamSlug",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The file, with its own content type",
+            "content" : {
+              "application/octet-stream" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller may not read this asset",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "No such asset",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/api/download/team/images/{teamSlug}/{assetId}/{size}" : {
+      "get" : {
+        "summary" : "Download an image",
+        "description" : "Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.",
+        "operationId" : "downloadTeamImage",
+        "tags" : [ "Downloads" ],
+        "parameters" : [ {
+          "description" : "Asset ID",
+          "name" : "assetId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Requested square size in pixels",
+          "name" : "size",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "description" : "Team slug",
+          "name" : "teamSlug",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The image",
+            "content" : {
+              "image/*" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "The caller may not read this asset",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "No such asset",
+            "content" : { }
+          }
+        }
+      }
+    },
     "/api/export/download" : {
       "get" : {
         "summary" : "Download a personal data export",
@@ -13435,6 +13903,46 @@
         } ]
       }
     },
+    "/api/gpx-previews/{previewId}/fit" : {
+      "get" : {
+        "summary" : "Download an analysed GPX file as FIT",
+        "description" : "Whoever holds the preview identifier may download it.",
+        "operationId" : "downloadGpxPreviewFit",
+        "tags" : [ "GPX previews" ],
+        "parameters" : [ {
+          "description" : "Public preview identifier",
+          "name" : "previewId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "FIT file",
+            "content" : {
+              "application/vnd.ant.fit" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Preview not found or expired",
+            "content" : {
+              "application/vnd.ant.fit" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/gpx-previews/{previewId}/gps/{serviceType}" : {
       "post" : {
         "summary" : "Send an analysed GPX file to a GPS service",
@@ -13506,6 +14014,46 @@
         "security" : [ {
           "SecurityScheme" : [ "user" ]
         } ]
+      }
+    },
+    "/api/gpx-previews/{previewId}/gpx" : {
+      "get" : {
+        "summary" : "Download an analysed GPX file as GPX",
+        "description" : "Whoever holds the preview identifier may download it.",
+        "operationId" : "downloadGpxPreviewGpx",
+        "tags" : [ "GPX previews" ],
+        "parameters" : [ {
+          "description" : "Public preview identifier",
+          "name" : "previewId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "GPX file",
+            "content" : {
+              "application/gpx+xml" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Preview not found or expired",
+            "content" : {
+              "application/gpx+xml" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/gpx-previews/{previewId}/planner-state" : {
@@ -13658,6 +14206,55 @@
         "security" : [ {
           "SecurityScheme" : [ "user" ]
         } ]
+      }
+    },
+    "/api/gpx-previews/{previewId}/thumbnail/{size}" : {
+      "get" : {
+        "summary" : "Download the map thumbnail of an analysed GPX file",
+        "description" : "The preview's map thumbnail, resized to the requested size and encoded in the best format the Accept header allows. Whoever holds the preview identifier may read it.",
+        "operationId" : "getGpxPreviewThumbnail",
+        "tags" : [ "GPX previews" ],
+        "parameters" : [ {
+          "description" : "Public preview identifier",
+          "name" : "previewId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "description" : "Requested square size in pixels",
+          "name" : "size",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Thumbnail image",
+            "content" : {
+              "image/*" : {
+                "schema" : {
+                  "format" : "binary",
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Preview not found, expired, or has no thumbnail",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/gpx-previews/{previewId}/weather" : {
@@ -14109,6 +14706,115 @@
         "security" : [ {
           "SecurityScheme" : [ "user" ]
         } ]
+      }
+    },
+    "/api/oauth/authorize" : {
+      "post" : {
+        "summary" : "Approve an OAuth authorization request",
+        "description" : "Called by the site's consent screen once the signed-in user pressed « Autoriser »: mints a single-use authorization code and returns the redirect_uri to send the browser to. Not for applications — they send the browser to /oauth/authorize.",
+        "operationId" : "oauthAuthorize",
+        "tags" : [ "OAuth" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OAuthAuthorizeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Where to send the browser",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OAuthAuthorizeResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request: a redirect_uri that is not an absolute URI, carries a fragment or uses a scheme a browser runs (javascript:, data:…), a challenge that is not S256, or no explicit confirmation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "403" : {
+            "description" : "Not Allowed"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "user" ]
+        } ]
+      }
+    },
+    "/api/oauth/token" : {
+      "post" : {
+        "summary" : "Exchange an authorization code, or refresh an access token",
+        "description" : "The OAuth 2.0 token endpoint (RFC 6749 §3.2), form-encoded. grant_type=authorization_code takes code, client_id, redirect_uri (both as sent to /oauth/authorize) and code_verifier (PKCE); a code is good once, for five minutes. grant_type=refresh_token takes refresh_token, which rotates: keep the one of the answer. Access tokens last 15 minutes, a refresh token 90 days after its last use, until the user revokes the application from their profile.",
+        "operationId" : "oauthToken",
+        "tags" : [ "OAuth" ],
+        "requestBody" : {
+          "content" : {
+            "application/x-www-form-urlencoded" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "grant_type" : {
+                    "type" : "string"
+                  },
+                  "code" : {
+                    "type" : "string"
+                  },
+                  "client_id" : {
+                    "type" : "string"
+                  },
+                  "redirect_uri" : {
+                    "type" : "string"
+                  },
+                  "code_verifier" : {
+                    "type" : "string"
+                  },
+                  "refresh_token" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Tokens",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OAuthTokenResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "invalid_request, invalid_grant or unsupported_grant_type",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OAuthErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/publications" : {
@@ -25977,14 +26683,10 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "14.12.0",
+    "version" : "14.13.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {
-    "url" : "http://localhost:8080",
-    "description" : "Auto generated value"
-  }, {
-    "url" : "http://0.0.0.0:8080",
-    "description" : "Auto generated value"
+    "url" : "/"
   } ]
 }

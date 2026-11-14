@@ -121,6 +121,18 @@ routes:
     mobile: true
     deeplink: true
 
+  # --- OAuth consent screen for external applications (ledger API-199) ---
+  # The authorization endpoint of the OAuth 2.0 flow: one URL whatever the language, since
+  # applications hard-code it. Web only for now — neither a mobile builder nor a deeplink, so the
+  # app never claims a link that must end on the site's consent screen.
+  - id: oauthAuthorize
+    path:
+      en: /oauth/authorize
+      fr: /oauth/authorize
+    web: true
+    mobile: false
+    deeplink: false
+
   # --- Apps ---
   - id: apps
     path:

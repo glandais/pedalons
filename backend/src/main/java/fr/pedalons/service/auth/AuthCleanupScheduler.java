@@ -5,6 +5,7 @@ import fr.pedalons.repository.auth.AuthFailureRepository;
 import fr.pedalons.repository.auth.AuthSessionRepository;
 import fr.pedalons.repository.auth.AuthTokenRepository;
 import fr.pedalons.repository.auth.DeviceCodeRepository;
+import fr.pedalons.repository.auth.OAuthAuthorizationCodeRepository;
 import fr.pedalons.repository.auth.WebAuthnChallengeRepository;
 import fr.pedalons.repository.calendar.CalendarTokenRepository;
 import fr.pedalons.repository.gps.GpsOAuthStateRepository;
@@ -28,6 +29,8 @@ import org.jboss.logging.Logger;
  *   <li>Expired GPS OAuth states
  *   <li>Expired device pairing codes (Karoo, Garmin) and WebAuthn challenges — the privacy policy
  *       (§6) announces them as deleted, not merely unusable
+ *   <li>Expired OAuth authorization codes, which an application never came to exchange
+ *       (docs/LEDGER_*.md API-199)
  *   <li>Failed password and pairing-code attempts older than a day: the throttle reads at most the
  *       last quarter of an hour (docs/LEDGER_*.md SEC-4, SEC-7)
  *   <li>Calendar feed tokens silent past their inactivity limit: refused already, the privacy
@@ -43,6 +46,7 @@ public class AuthCleanupScheduler {
   @Inject AuthTokenRepository authTokenRepository;
   @Inject GpsOAuthStateRepository gpsOAuthStateRepository;
   @Inject DeviceCodeRepository deviceCodeRepository;
+  @Inject OAuthAuthorizationCodeRepository oauthAuthorizationCodeRepository;
   @Inject WebAuthnChallengeRepository webAuthnChallengeRepository;
   @Inject AuthFailureRepository authFailureRepository;
   @Inject CalendarTokenRepository calendarTokenRepository;
@@ -55,6 +59,7 @@ public class AuthCleanupScheduler {
     long deletedTokens = authTokenRepository.deleteExpiredTokens();
     long deletedGpsStates = gpsOAuthStateRepository.deleteExpiredStates();
     long deletedDeviceCodes = deviceCodeRepository.deleteExpiredCodes();
+    long deletedOAuthCodes = oauthAuthorizationCodeRepository.deleteExpiredCodes();
     long deletedChallenges = webAuthnChallengeRepository.deleteExpiredChallenges();
     long deletedFailures =
         authFailureRepository.deleteOlderThan(Instant.now().minus(Duration.ofDays(1)));
@@ -65,17 +70,20 @@ public class AuthCleanupScheduler {
             + deletedTokens
             + deletedGpsStates
             + deletedDeviceCodes
+            + deletedOAuthCodes
             + deletedChallenges
             + deletedFailures
             + deletedCalendarTokens
         > 0) {
       LOG.infof(
-          "Auth cleanup completed: %d sessions, %d tokens, %d GPS OAuth states, %d device codes,"
-              + " %d WebAuthn challenges, %d failed attempts, %d calendar tokens deleted",
+          "Auth cleanup completed: %d sessions, %d tokens, %d GPS OAuth states, %d device codes, %d"
+              + " OAuth codes, %d WebAuthn challenges, %d failed attempts, %d calendar tokens"
+              + " deleted",
           deletedSessions,
           deletedTokens,
           deletedGpsStates,
           deletedDeviceCodes,
+          deletedOAuthCodes,
           deletedChallenges,
           deletedFailures,
           deletedCalendarTokens);

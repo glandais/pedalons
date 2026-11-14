@@ -37,6 +37,7 @@ import java.time.DateTimeException;
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
@@ -328,9 +329,21 @@ public class GpxPreviewResource {
 
   @GET
   @Path("/{previewId}/thumbnail/{size}")
-  @Operation(hidden = true)
+  @Operation(
+      operationId = "getGpxPreviewThumbnail",
+      summary = "Download the map thumbnail of an analysed GPX file",
+      description =
+          "The preview's map thumbnail, resized to the requested size and encoded in the best"
+              + " format the Accept header allows. Whoever holds the preview identifier may read"
+              + " it.")
   @APIResponses({
-    @APIResponse(responseCode = "200", description = "Thumbnail image"),
+    @APIResponse(
+        responseCode = "200",
+        description = "Thumbnail image",
+        content =
+            @Content(
+                mediaType = "image/*",
+                schema = @Schema(type = SchemaType.STRING, format = "binary"))),
     @APIResponse(
         responseCode = "404",
         description = "Preview not found, expired, or has no thumbnail",
@@ -348,9 +361,18 @@ public class GpxPreviewResource {
   @GET
   @Path("/{previewId}/gpx")
   @Produces("application/gpx+xml")
-  @Operation(hidden = true)
+  @Operation(
+      operationId = "downloadGpxPreviewGpx",
+      summary = "Download an analysed GPX file as GPX",
+      description = "Whoever holds the preview identifier may download it.")
   @APIResponses({
-    @APIResponse(responseCode = "200", description = "GPX file"),
+    @APIResponse(
+        responseCode = "200",
+        description = "GPX file",
+        content =
+            @Content(
+                mediaType = "application/gpx+xml",
+                schema = @Schema(type = SchemaType.STRING, format = "binary"))),
     @APIResponse(
         responseCode = "404",
         description = "Preview not found or expired",
@@ -366,9 +388,18 @@ public class GpxPreviewResource {
   @GET
   @Path("/{previewId}/fit")
   @Produces("application/vnd.ant.fit")
-  @Operation(hidden = true)
+  @Operation(
+      operationId = "downloadGpxPreviewFit",
+      summary = "Download an analysed GPX file as FIT",
+      description = "Whoever holds the preview identifier may download it.")
   @APIResponses({
-    @APIResponse(responseCode = "200", description = "FIT file"),
+    @APIResponse(
+        responseCode = "200",
+        description = "FIT file",
+        content =
+            @Content(
+                mediaType = "application/vnd.ant.fit",
+                schema = @Schema(type = SchemaType.STRING, format = "binary"))),
     @APIResponse(
         responseCode = "404",
         description = "Preview not found or expired",

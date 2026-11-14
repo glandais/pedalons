@@ -3231,6 +3231,50 @@ relevés sont `WEB-111` à `WEB-114` et `MOB-87` à `MOB-90`. `MOB-88` et `MOB-8
 
 ## API — Contrat d'API et backend
 
+- `API-199` **L'API consommable de l'extérieur : contrat servi par l'API, téléchargements dans le contrat, OAuth 2.0 minimal par le site** (14 novembre 2026, **contrat `14.13.0`**, mineure, ajouts purs ; migration `V92`) —
+  l'API reste celle du site et des apps, sans chemin versionné ni API publique à part. Trois ajouts.
+  **(1) Le contrat est servi sous `/api`** : `quarkus.smallrye-openapi.path=/api/openapi` (YAML,
+  `.json`, `.yaml`), seul préfixe que traefik route vers le backend ; `/q/openapi` n'existe plus.
+  **(2) Les téléchargements sont dans le contrat** (tag `Downloads`) : fichiers, images et avatars
+  de `/api/download/{public,public_unlisted,team}/…`, vignette, GPX et FIT d'un aperçu GPX — ils
+  étaient `hidden`. Les endpoints sont déclarés sur chacune des trois ressources et non plus hérités
+  d'`AbstractDownloadAssetResource` : avec `operationIdStrategy=METHOD`, trois copies héritées
+  auraient le même `operationId`. Les URL servies ne changent pas.
+  **(3) OAuth 2.0, code d'autorisation + PKCE** (`OAuthService`, `OAuthResource`) : l'application
+  envoie le navigateur sur la page du site `/oauth/authorize` (`OAuthAuthorizePage`, route
+  `oauthAuthorize`, web seulement) ; le membre connecté lit le `client_id` déclaré et l'adresse de
+  retour, puis autorise (`POST /api/oauth/authorize`, `confirmed: true` exigé) ou refuse
+  (`error=access_denied`, sans appel) ; l'application échange le code sur `POST /api/oauth/token`
+  (formulaire et réponses de la RFC 6749, erreurs `invalid_request` / `invalid_grant` /
+  `unsupported_grant_type`), puis renouvelle par `refresh_token` (rotation de `RefreshTokenRotation`).
+  Le code vit cinq minutes, sert une fois, n'est stocké que haché (`oauth_authorization_codes`), est
+  lié au site, au `client_id`, au `redirect_uri` et au défi PKCE ; un échange raté le brûle.
+  L'accès ouvert est une session comme celle d'un appareil appairé (`AuthSession.deviceClient =
+  oauth:<client_id>`, jetons de `DeviceJwtService` : 15 min / 90 jours) : listée dans Profil >
+  Appareils et services sous le nom déclaré (`PairedDeviceDto.applicationName`, type `OTHER`),
+  révoquée de là, refusée aussitôt par `DeviceSessionFilter`. Les codes expirés partent au nettoyage
+  nocturne, ceux d'un compte à son effacement (`AccountErasureService`). Documenté dans le README
+  (« API and OAuth »). Tests qui couvrent : `OAuthFlowTest` (backend, écrit, non lancé),
+  `oauthAuthorize.test.ts` ; e2e `routes-render` (ligne `oauthAuthorize`, écrite, non lancée).
+  **À ne pas défaire** : pas d'enregistrement d'application, pas de secret, pas de scopes, aucun
+  contrôle de `redirect_uri` — décision du propriétaire (`API-201`) — donc PKCE `S256` reste
+  obligatoire et l'approbation reste un clic sur un écran qui montre l'adresse de retour ; seuls les
+  schémas qu'un navigateur exécute (`javascript:`, `data:`, `vbscript:`, `blob:`, `file:`,
+  `about:`) et les fragments sont refusés, au backend comme sur la page, parce que la page assigne
+  l'URL à `window.location` ; `/api/oauth/token` ne renouvelle que les sessions `oauth:` (celles du
+  site, de l'app et des appareils se renouvellent là où elles sont nées), et à l'inverse
+  `/api/auth/refresh` et `/api/device/oauth/token` refusent une session `oauth:`
+  (`AuthSession.isOAuthApplication`) : renouvelée par le site, elle recevrait un jeton sans `sid`,
+  que la révocation n'arrête pas avant 15 minutes ; le flux appareil refuse un `clientId` en
+  `oauth:` ; `POST /api/oauth/authorize` refuse (403) un jeton qui porte `sid` — une application ou
+  un appareil n'approuve pas la suivante ; un `client_id` ou un `redirect_uri` à caractères
+  invisibles (contrôle, bidi) et un `redirect_uri` avec `user@` sont refusés, l'écran de
+  consentement devant montrer ce qui a été envoyé ; `servers` du contrat est `/` (le build y
+  écrivait `http://localhost:8080`) ; ne pas déclarer de
+  `securityScheme` OAuth2 dans le contrat : Quarkus le substitue alors au schéma bearer sur chaque
+  opération sécurisée ; `PairedDeviceType` ne gagne pas de valeur (les apps mobiles déjà installées
+  lisent l'enum). Restes : `API-200` (écran dans l'app mobile), `API-202` (CORS), `LEGAL-28`.
+
 - `API-159` **L'app Garmin écrit comme l'app et le Karoo, dans des menus qu'elle dessine** (13 novembre 2026, contrat
   inchangé) — après `API-191` et `API-194` le Karoo avait les formats et la structure des cartes, Garmin gardait
   « 15/11 08:00 (1) », « 45.2 km / 287 m D+ », une date en DD/MM ou MM/DD selon le réglage 12/24 h, et des `Menu2` du

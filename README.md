@@ -11,7 +11,8 @@ Multi-tenant web platform for cycling teams to organize rides, trips, manage GPX
 | `garmin-app/` | Monkey C, Connect IQ SDK | [garmin-app/README.md](garmin-app/README.md) |
 
 The API is OpenAPI 3.1, contract-first: the backend build writes `contracts/openapi.yaml` and
-`openapi.json`, and the clients are generated from them.
+`openapi.json`, and the clients are generated from them. External applications read the same
+contract from the API and sign members in through OAuth — see [API and OAuth](#api-and-oauth).
 
 ## Quick Start
 
@@ -62,7 +63,7 @@ works. The search bar on the maps needs no key: Stadia Maps lets `localhost` thr
 cd backend
 ./generate-keys.sh             # once: the dev/test JWT key pair, in backend/keys/
 source ../scripts/dev-env.sh   # the stack's postgres + MinIO credentials, nothing else
-mvn quarkus:dev                # http://localhost:8080/api, Swagger UI on /q/swagger-ui
+mvn quarkus:dev                # http://localhost:8080/api, Swagger UI on /q/swagger-ui, contract on /api/openapi
 ```
 
 The ports it talks to, why `dev-env.sh` exports so little, and how to log in as the dev admin are in
@@ -277,6 +278,75 @@ register a user, and a user before anyone can be an admin. Break the cycle with 
    No re-login is needed: the role is not in the JWT, `AdminInterceptor` reads it from the database
    on every request. It lives on `users`, which is scoped by `domain_id`: despite the name, you are
    an admin *of that domain* — a second domain needs a fresh account and a fresh `UPDATE`.
+
+## API and OAuth
+
+The API is the one the site and the apps use — there is no separate public API, no versioned
+path and no stability promise beyond the contract's own semver (`GET /api/version`). An external
+application can call it for a member all the same:
+
+- **The contract is served by the API**: `GET /api/openapi` (YAML), `/api/openapi.json`,
+  `/api/openapi.yaml`, on every site. It is `contracts/openapi.yaml`, file downloads included
+  (tag `Downloads`: GPX, FIT, documents, images, avatars — follow the URLs the API returns rather
+  than build them).
+- **Every secured operation takes `Authorization: Bearer <access token>`**, and an application
+  gets that token through OAuth 2.0, authorization code flow with PKCE (ledger `API-199`).
+
+### The OAuth flow
+
+Deliberately minimal: **no registration, no client secret, no scopes, and `redirect_uri` is not
+checked** — any URL or deep link is accepted. `client_id` is a name the application gives itself;
+it is shown to the member on the consent screen and in their profile, along with where the code
+goes. PKCE (`S256`) is mandatory: it is what keeps a code useless to anyone but the application
+that asked for it.
+
+1. Send the member's browser to the **site** (not the API):
+
+   ```
+   https://<site>/oauth/authorize?response_type=code
+     &client_id=My%20app
+     &redirect_uri=https%3A%2F%2Fapp.example.org%2Fcallback
+     &code_challenge=<BASE64URL(SHA-256(code_verifier))>
+     &code_challenge_method=S256
+     &state=<opaque>
+   ```
+
+   The member signs in if needed, then authorizes or refuses. The browser comes back to
+   `redirect_uri` with `?code=…&state=…`, or `?error=access_denied&state=…`. A request that is
+   incomplete or malformed is not redirected: the site shows an error.
+
+2. Exchange the code — once, within five minutes:
+
+   ```bash
+   curl https://<site>/api/oauth/token \
+     -d grant_type=authorization_code \
+     -d code=<code> \
+     -d client_id='My app' \
+     -d redirect_uri=https://app.example.org/callback \
+     -d code_verifier=<code_verifier>
+   # {"access_token":"…","token_type":"Bearer","expires_in":900,"refresh_token":"…"}
+   ```
+
+3. Call the API with the access token (15 minutes), and renew it with the refresh token, which
+   **rotates** — keep the one of each answer (absent from an answer: keep the one you hold):
+
+   ```bash
+   curl https://<site>/api/users/me -H "Authorization: Bearer $ACCESS_TOKEN"
+   curl https://<site>/api/oauth/token -d grant_type=refresh_token -d refresh_token=<refresh_token>
+   ```
+
+Errors of the token endpoint follow RFC 6749 §5.2 (`{"error":"invalid_grant",…}`, 400).
+
+What an application should know:
+
+- The tokens give **everything the member's own session gives**, on that site only (one site per
+  host: an account, its teams and its tokens do not cross domains).
+- The access lasts until the member removes it in Profile > Devices and services, where the
+  application is listed under its `client_id`; a revoked access token is refused at once (401).
+  A refresh token unused for 90 days expires.
+- **Server-side and native applications only, for now**: CORS allows the site's own origins, so a
+  page on another origin cannot call the API from the browser (ledger `API-202`). The consent
+  screen is a page of the site; the mobile app does not handle it yet (ledger `API-200`).
 
 ## Features
 
