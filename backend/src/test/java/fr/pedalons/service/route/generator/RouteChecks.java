@@ -19,9 +19,11 @@ final class RouteChecks {
     List<Snap> snaps = new ArrayList<>();
     QueryGraph plain = QueryGraph.of(g);
     java.util.function.IntPredicate admitted = e -> EdgeWeights.admitted(plain, e, r.type());
-    snaps.add(Snapper.snap(g, r.start(), p.snapMaxM(), admitted));
+    java.util.function.IntPredicate leadingOn =
+        EdgeWeights.leadingOn(plain, r.type(), p.networkTooSmallFactor() * r.distanceM());
+    snaps.add(Snapper.snap(g, r.start(), p.snapMaxM(), leadingOn, admitted));
     if (r.end() != null) {
-      snaps.add(Snapper.snap(g, r.end(), p.snapMaxM(), admitted));
+      snaps.add(Snapper.snap(g, r.end(), p.snapMaxM(), leadingOn, admitted));
     }
     return QueryGraph.create(g, snaps, p.snapToNodeM());
   }

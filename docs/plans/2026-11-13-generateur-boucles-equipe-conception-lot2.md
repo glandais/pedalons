@@ -2114,3 +2114,47 @@ déploiement, alors qu'elle y tient.
 tas de 4 Go (`JAVA_MAX_MEM_RATIO=50`), pas les 920 Mo supposés au §13.2 ; la construction de A n'y
 aurait pas débordé, même avant. La préproduction, elle, est à 1,5 Gio (920 Mo de tas). Le §13.7
 reste vrai pour toute instance au réglage par défaut.
+
+### 13.9 Suites du 14 novembre : contresens partiel et accroche (propositions 4 et 5)
+
+Mesurées sur le même export, graphe construit et 24 boucles route (8 départs du banc × 30, 50 et
+80 km) rejouées avec le code d'avant et celui d'après.
+
+**Proposition 4, contresens partiel.** Dans `NetworkGraphBuilder.aggregate`, un sens n'est plus
+ouvert par les seules observations `AGAINST` (rue à sens unique prise à contresens) que si, en plus
+du seuil de support, ces observations couvrent ensemble l'arête d'un bout à l'autre, à
+`coverageGapM` près aux extrémités et entre elles. Deux traces qui se relaient suffisent : chaque
+mètre a été roulé dans ce sens. Un sens roulé légalement (`FORWARD` ou `BOTH`) garde le seuil
+d'avant, min(100 m, moitié de l'arête) ; sans cela une arête recousue de morceaux, qu'aucune trace
+ne couvre en entier, perdrait son sens légal. Quand rien n'atteint le seuil, la plus grande
+observation légale passe avant la plus grande tout court.
+
+| Équipe | Arêtes refermées dans un sens | Longueur | Boucles réussies (avant → après) |
+|---|---|---|---|
+| A (69 458 arêtes) | 54 | 10,6 km | 11/24 → 11/24 |
+| B (13 174 arêtes) | 1 | moins de 0,1 km | 1/24 → 1/24 |
+
+Aucune arête ne change autrement. Le risque annoncé (rues à contresens cyclable perdues) reste
+donc faible : 54 arêtes sur 9 605 à sens restreint chez A.
+
+**Proposition 5, accroche utile.** `EdgeWeights.leadingOn` donne les arêtes admises dont le
+morceau connexe de route admise fait au moins `networkTooSmallFactor × D` ; `Snapper.snap` les
+préfère dans tout le rayon `snapMaxM`, puis prend l'arête admise la plus proche, puis n'importe
+laquelle, comme avant. Le seuil n'est pas un réglage de plus : en dessous, la requête est refusée
+`NETWORK_TOO_SMALL` quoi qu'il arrive, puisque la recherche ne sort pas des arêtes admises. Seules
+des requêtes qui échouaient changent donc de résultat.
+
+Le départ 3 de A s'accroche maintenant à 196 m, sur la composante principale (12 514 km de
+cycles), au lieu du bout de 41 m. **Il n'obtient pas de parcours pour autant** : il rejoint les
+départs non expliqués du §13.5 point 4 (`NO_ROUTE` en 280 ms, aucun candidat, 6 points de demi-tour
+essayés et tous sans deux chemins disjoints, comme le départ 2). Chez B, le départ 0 passe de
+`NETWORK_TOO_SMALL` à `NO_ROUTE` / `TAIL_TOO_LONG`. L'accroche est corrigée, le défaut suivant est
+celui du point 4, à diagnostiquer avant de compter ces départs comme rétablis.
+
+**Écart au plan §5.5, assumé.** Le plan fait partir le parcours du point admis le plus proche ; le
+départ peut maintenant en être éloigné, jusqu'à `snapMaxM` (2 km) : 196 m pour le départ 3 de A,
+environ 1 km dans deux réseaux aléatoires des tests de propriété. `RawInputOracle` (contrôle 8)
+l'accepte seulement quand le point admis le plus proche est sur un morceau de route admise trop
+court, qu'il mesure lui-même sur les clés de nœuds brutes, avec un facteur 2 de marge (le
+constructeur fusionne des nœuds et replie des rues jumelles). Si un départ déplacé d'un kilomètre
+ne convient pas au produit, borner la distance dans `Snapper.snap` plutôt que retirer la règle.

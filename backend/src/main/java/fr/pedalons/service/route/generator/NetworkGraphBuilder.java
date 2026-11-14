@@ -1174,6 +1174,11 @@ public final class NetworkGraphBuilder {
       boolean oneway = false;
       Map<Long, Double> coverUV = new TreeMap<>();
       Map<Long, Double> coverVU = new TreeMap<>();
+      // the same, without the observations made against a one-way street
+      Map<Long, Double> legalUV = new TreeMap<>();
+      Map<Long, Double> legalVU = new TreeMap<>();
+      List<double[]> spansUV = new ArrayList<>();
+      List<double[]> spansVU = new ArrayList<>();
       double[] way = new double[WayKind.values().length];
       double[] cls = new double[3];
       double[][] detail = new double[3][DETAILS.length + 1];
@@ -1183,6 +1188,8 @@ public final class NetworkGraphBuilder {
       double[] footW = new double[ACCESS_RANK.length];
       Piece largest = null;
       double largestOverlap = 0;
+      Piece largestLegal = null;
+      double largestLegalOverlap = 0;
       for (Piece pc : live) {
         double ov = Math.min(pc.t, et) - Math.max(pc.s, es);
         if (ov <= 0) {
@@ -1193,11 +1200,19 @@ public final class NetworkGraphBuilder {
           largestOverlap = ov;
           largest = pc;
         }
+        if (pc.o.oneway != Oneway.AGAINST && ov > largestLegalOverlap) {
+          largestLegalOverlap = ov;
+          largestLegal = pc;
+        }
         if (ov >= 1) {
           if (pc.o.oneway != Oneway.BOTH) {
             oneway = true;
           }
           (pc.uv ? coverUV : coverVU).merge(pc.o.trackId, ov, Math::max);
+          if (pc.o.oneway != Oneway.AGAINST) {
+            (pc.uv ? legalUV : legalVU).merge(pc.o.trackId, ov, Math::max);
+          }
+          (pc.uv ? spansUV : spansVU).add(new double[] {Math.max(pc.s, es), Math.min(pc.t, et)});
         }
         Obs o = pc.o;
         if (o.wayKind >= 0) {
@@ -1217,11 +1232,21 @@ public final class NetworkGraphBuilder {
       double need = Math.min(p.supportMinCoverM(), p.supportMinCoverShare() * len);
       // a direction is observed only when one track covers it as much as support requires: a few
       // metres of wrong-way entry or a U-turn must not open a whole one-way edge in contraflow
-      boolean obsUV = coverUV.values().stream().anyMatch(v -> v >= need);
-      boolean obsVU = coverVU.values().stream().anyMatch(v -> v >= need);
+      // A direction ridden only against the one-way (a contraflow lane, probably) has to be ridden
+      // from one end of the edge to the other as well: a track that takes the contraflow over part
+      // of the street must not send a route the wrong way over the part nobody rode (design §13.5).
+      boolean obsUV =
+          legalUV.values().stream().anyMatch(v -> v >= need)
+              || (coverUV.values().stream().anyMatch(v -> v >= need) && spans(spansUV, es, et));
+      boolean obsVU =
+          legalVU.values().stream().anyMatch(v -> v >= need)
+              || (coverVU.values().stream().anyMatch(v -> v >= need) && spans(spansVU, es, et));
       if (!obsUV && !obsVU && largest != null) {
-        obsUV = largest.uv;
-        obsVU = !largest.uv;
+        // nothing reaches the threshold: the direction of the largest observation, a legal one
+        // first
+        Piece pick = largestLegal != null ? largestLegal : largest;
+        obsUV = pick.uv;
+        obsVU = !pick.uv;
       }
       List<Long> ids = new ArrayList<>();
       for (Map.Entry<Long, Double> c : cover.entrySet()) {
@@ -1253,6 +1278,23 @@ public final class NetworkGraphBuilder {
       e.tType = (byte) pick(trackTypeW, TRACK_TYPE_RANK, 0);
       e.bike = (byte) pick(bikeW, ACCESS_RANK, 0);
       e.foot = (byte) pick(footW, ACCESS_RANK, 0);
+    }
+
+    /**
+     * Whether the intervals, taken together, cover the edge from one end to the other, to within
+     * {@code coverageGapM} at each end and between two of them.
+     */
+    boolean spans(List<double[]> intervals, double es, double et) {
+      double gap = p.coverageGapM();
+      intervals.sort((x, y) -> Double.compare(x[0], y[0]));
+      double reached = es;
+      for (double[] iv : intervals) {
+        if (iv[0] > reached + gap) {
+          return false;
+        }
+        reached = Math.max(reached, iv[1]);
+      }
+      return reached >= et - gap;
     }
 
     /** Majority by weight; a tie goes to the higher rank (the most restrictive) or the lower code. */

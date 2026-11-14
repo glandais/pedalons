@@ -119,6 +119,40 @@ class NetworkGraphBuilderTest {
   }
 
   @Test
+  void aContraflowRiddenOverPartOfAOnewayEdge_doesNotOpenTheWholeEdge() {
+    TestNetwork n = net().node("A", 0, 0).node("B", 600, 0);
+    n.track(1).oneway(Oneway.FORWARD).path("A", "B");
+    n.track(2).oneway(Oneway.AGAINST).endAt("B", "A", 350); // well over the support threshold
+    NetworkGraph g = n.build();
+    assertEquals(1, g.edgeCount());
+    assertTrue(g.allowed(n.state(g, "A", "B")));
+    assertFalse(g.allowed(n.state(g, "B", "A")));
+  }
+
+  @Test
+  void aContraflowRiddenFromEndToEnd_evenByTwoTracks_opensTheEdge() {
+    TestNetwork n = net().node("A", 0, 0).node("B", 600, 0);
+    n.track(1).oneway(Oneway.FORWARD).path("A", "B");
+    n.track(2).oneway(Oneway.AGAINST).endAt("B", "A", 350);
+    n.track(3).oneway(Oneway.AGAINST).startAt("B", "A", 340);
+    NetworkGraph g = n.build();
+    assertEquals(1, g.edgeCount());
+    assertTrue(g.allowed(n.state(g, "A", "B")));
+    assertTrue(g.allowed(n.state(g, "B", "A")));
+  }
+
+  @Test
+  void aLegalDirectionRiddenOverPartOfAOnewayEdge_staysOpen() {
+    TestNetwork n = net().node("A", 0, 0).node("B", 600, 0);
+    n.track(1).oneway(Oneway.AGAINST).path("B", "A");
+    n.track(2).oneway(Oneway.FORWARD).endAt("A", "B", 350);
+    NetworkGraph g = n.build();
+    assertEquals(1, g.edgeCount());
+    assertTrue(g.allowed(n.state(g, "A", "B")));
+    assertTrue(g.allowed(n.state(g, "B", "A")));
+  }
+
+  @Test
   void oneObservationSayingOnewayWinsOverTwoWay() {
     TestNetwork n = net().node("A", 0, 0).node("B", 1000, 0);
     n.track(1).path("A", "B");

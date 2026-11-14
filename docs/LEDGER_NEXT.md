@@ -879,11 +879,14 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       construit avec 440 Mo de tas vivant au lieu de 1,66 Go, graphes identiques au bit près sur les
       neuf équipes de production ; clés décrites dans `docs/OPERATIONS.md`. **À ne pas défaire** : les
       traces arrivent par identifiant croissant et les exclues sont classées après les autres (le
-      graphe en dépend), une géométrie partagée n'est jamais écrite en place. Restent : lancer
-      `NetworkGraphBuilderTest`, `RouteGeneratorCacheTest` et les tests du paquet
-      `service.route.generator` ; les propositions 3 à 9 du
-      §13.6 (budget de 10 s, contresens partiel, accroche sur un îlot, reconstructions, pondérateur,
-      familiarité, banc) ; l'`EXPLAIN` de l'empreinte. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
+      graphe en dépend), une géométrie partagée n'est jamais écrite en place. Propositions 4 et 5
+      codées le même jour (§13.9) : un sens roulé seulement à contresens n'est ouvert que s'il a été
+      roulé d'un bout à l'autre de l'arête (`NetworkGraphBuilder.aggregate`, 54 arêtes et 10,6 km
+      refermés chez la plus grande équipe), et le départ s'accroche d'abord à une route admise qui
+      mène quelque part (`EdgeWeights.leadingOn`, `Snapper.snap` à trois rangs). Restent : les
+      propositions 3 et 6 à 9 du §13.6 (budget de 10 s, reconstructions, pondérateur, familiarité,
+      banc) ; les départs sans aucune proposition du §13.5 point 4, que le départ sorti de son îlot
+      rejoint (§13.9) ; l'`EXPLAIN` de l'empreinte. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
       de `PlannerAccess`), les parcours masqués par la modération alimentent le réseau, une copie
       garde la case d'exclusion.
 

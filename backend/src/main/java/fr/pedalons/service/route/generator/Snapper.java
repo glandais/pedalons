@@ -21,6 +21,18 @@ public final class Snapper {
    * a footway that runs along a road snaps onto the road (plan §5.5).
    */
   public static @Nullable Snap snap(NetworkGraph g, LatLon p, double maxM, IntPredicate admitted) {
+    return snap(g, p, maxM, admitted, admitted);
+  }
+
+  /**
+   * Same, with a first choice above the admitted edges: the nearest edge that {@code preferred}
+   * accepts wherever it lies within {@code maxM}, then the nearest admitted one, then the nearest
+   * of all. {@code preferred} is the admitted edges that lead somewhere ({@link
+   * EdgeWeights#leadingOn}): a start beside a short admitted stretch cut off from the rest snaps
+   * onto the road next to it instead (design §13.5).
+   */
+  public static @Nullable Snap snap(
+      NetworkGraph g, LatLon p, double maxM, IntPredicate preferred, IntPredicate admitted) {
     if (g.edgeCount() == 0) {
       return null;
     }
@@ -30,11 +42,13 @@ public final class Snapper {
     double pad = g.segmentGrid().cellSize() / 4;
     double radius = Math.min(100, maxM);
     while (true) {
-      // [0] = nearest admitted edge, [1] = nearest edge whatever its type
-      int[] bestEdge = {-1, -1};
-      double[] best = {Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY};
-      double[] bestAlong = {0, 0};
-      double[][] bestXY = {{0, 0}, {0, 0}};
+      // [0] = nearest preferred edge, [1] = nearest admitted edge, [2] = nearest edge of all
+      int[] bestEdge = {-1, -1, -1};
+      double[] best = {
+        Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY
+      };
+      double[] bestAlong = {0, 0, 0};
+      double[][] bestXY = {{0, 0}, {0, 0}, {0, 0}};
       double r = radius;
       g.segmentGrid()
           .query(
@@ -44,8 +58,8 @@ public final class Snapper {
               py + r + pad,
               e -> {
                 Geo.Projection pr = Geo.project(px, py, g.geometryX(e), g.geometryY(e));
-                boolean ok = admitted.test(e);
-                for (int k = ok ? 0 : 1; k < 2; k++) {
+                int first = preferred.test(e) ? 0 : admitted.test(e) ? 1 : 2;
+                for (int k = first; k < 3; k++) {
                   if (pr.distance() < best[k] || (pr.distance() == best[k] && e < bestEdge[k])) {
                     best[k] = pr.distance();
                     bestEdge[k] = e;
@@ -57,11 +71,13 @@ public final class Snapper {
       int k = -1;
       if (bestEdge[0] >= 0 && best[0] <= radius) {
         k = 0;
-      } else if (radius >= maxM && bestEdge[1] >= 0) {
-        k = 1; // no admitted edge within reach: the nearest forbidden one, as a last resort
+      } else if (radius >= maxM) {
+        // nothing preferred within reach: the nearest admitted edge, then, as a last resort, the
+        // nearest forbidden one
+        k = bestEdge[1] >= 0 && best[1] <= maxM ? 1 : 2;
       }
       if (k >= 0) {
-        if (best[k] > maxM) {
+        if (bestEdge[k] < 0 || best[k] > maxM) {
           return null;
         }
         int e = bestEdge[k];

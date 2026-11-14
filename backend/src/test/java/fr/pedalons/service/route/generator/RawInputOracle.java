@@ -697,6 +697,7 @@ final class RawInputOracle {
       double[] bestPoint = null;
       double bestAdmitted = Double.POSITIVE_INFINITY;
       double[] bestAdmittedPoint = null;
+      TrackEdge bestAdmittedEdge = null;
       // grow the box until the best admitted hit lies inside its inscribed circle: nothing closer
       // is missed (the nearest hit of any type is then inside it too)
       for (double reach = CELL; reach <= 4200; reach *= 2) {
@@ -718,6 +719,7 @@ final class RawInputOracle {
             if (admits(r.type(), s.edge, kinds)) {
               bestAdmitted = dist;
               bestAdmittedPoint = nearestPoint(wx, wy, s);
+              bestAdmittedEdge = s.edge;
             }
           }
         }
@@ -731,7 +733,18 @@ final class RawInputOracle {
       if (bestAdmittedPoint != null && bestAdmitted <= p.snapMaxM()) {
         bestPoint = bestAdmittedPoint;
       }
+      // design 13.9: a nearest admitted point on a piece of admitted road that touches too little
+      // to hold the request is passed over for a farther one within snapMaxM (checks 2 and 9 say
+      // that the route does start on live, admitted input). The piece is measured here on the raw
+      // node keys, with a factor 2 of slack: the builder merges nodes and folds twin streets
+      boolean passedOver =
+          bestAdmittedEdge != null
+              && bestPoint == bestAdmittedPoint
+              && Math.hypot(got[0] - wx, got[1] - wy) <= p.snapMaxM() + 1
+              && admittedPieceLength(prep, r.type(), bestAdmittedEdge)
+                  < 2 * p.networkTooSmallFactor() * d;
       if (bestPoint != null
+          && !passedOver
           && Math.hypot(got[0] - bestPoint[0], got[1] - bestPoint[1]) > p.snapToNodeM() + 12) {
         out.add(
             String.format(
@@ -741,6 +754,64 @@ final class RawInputOracle {
       }
     }
     return out;
+  }
+
+  /**
+   * Length of the admitted live input connected to {@code seed} through shared node keys, each
+   * street counted once. An unknown end connects to nothing.
+   */
+  private static double admittedPieceLength(Prepared prep, RideType type, TrackEdge seed) {
+    Map<String, List<TrackEdge>> byNode = new HashMap<>();
+    for (TrackInput t : prep.tracks) {
+      if (t.excluded()) {
+        continue;
+      }
+      for (TrackEdge e : t.edges()) {
+        Set<TrackKind> kinds = new HashSet<>();
+        kinds.add(t.kind());
+        for (String street : streets(e)) {
+          Set<TrackKind> known = prep.kindsByStreet.get(street);
+          if (known != null) {
+            kinds.addAll(known);
+          }
+        }
+        if (!admits(type, e, kinds)) {
+          continue;
+        }
+        if (e.from() != null) {
+          byNode.computeIfAbsent(plain(e.from()), k -> new ArrayList<>()).add(e);
+        }
+        if (e.to() != null) {
+          byNode.computeIfAbsent(plain(e.to()), k -> new ArrayList<>()).add(e);
+        }
+      }
+    }
+    Map<String, Double> lengthByStreet = new HashMap<>();
+    Set<String> seenNodes = new HashSet<>();
+    java.util.ArrayDeque<TrackEdge> queue = new java.util.ArrayDeque<>();
+    queue.add(seed);
+    double floating = 0;
+    while (!queue.isEmpty()) {
+      TrackEdge e = queue.poll();
+      double len = e.lengthM() != null ? e.lengthM() : e.traversedM();
+      List<String> streets = streets(e);
+      if (streets.isEmpty()) {
+        floating = Math.max(floating, len);
+      }
+      for (String street : streets) {
+        lengthByStreet.merge(street, len, Math::max);
+      }
+      for (NodeRef ref : new NodeRef[] {e.from(), e.to()}) {
+        if (ref != null && seenNodes.add(plain(ref))) {
+          queue.addAll(byNode.getOrDefault(plain(ref), List.of()));
+        }
+      }
+    }
+    double total = floating;
+    for (double len : lengthByStreet.values()) {
+      total += len;
+    }
+    return total;
   }
 
   /**

@@ -51,14 +51,18 @@ public final class RouteGenerator {
     }
     QueryGraph plain = QueryGraph.of(graph);
     java.util.function.IntPredicate admitted = e -> EdgeWeights.admitted(plain, e, request.type());
-    Snap snapStart = Snapper.snap(graph, request.start(), p.snapMaxM(), admitted);
+    // a piece of admitted road shorter than this is refused as too small whatever happens next
+    java.util.function.IntPredicate leadingOn =
+        EdgeWeights.leadingOn(
+            plain, request.type(), p.networkTooSmallFactor() * request.distanceM());
+    Snap snapStart = Snapper.snap(graph, request.start(), p.snapMaxM(), leadingOn, admitted);
     if (snapStart == null) {
       return failure(GeneratorFailure.START_TOO_FAR, null);
     }
     List<Snap> snaps = new ArrayList<>();
     snaps.add(snapStart);
     if (request.end() != null) {
-      Snap snapEnd = Snapper.snap(graph, request.end(), p.snapMaxM(), admitted);
+      Snap snapEnd = Snapper.snap(graph, request.end(), p.snapMaxM(), leadingOn, admitted);
       if (snapEnd == null) {
         return failure(GeneratorFailure.END_TOO_FAR, null);
       }

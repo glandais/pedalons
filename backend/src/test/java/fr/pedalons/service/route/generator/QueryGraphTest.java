@@ -172,4 +172,35 @@ class QueryGraphTest {
     Snap fallback = Snapper.snap(g, n.latLon(0, 12), 5, e -> e == road);
     assertEquals(footway, fallback.edge());
   }
+
+  @Test
+  void snappingPrefersAnAdmittedEdgeThatLeadsSomewhere_overACloserIsland() {
+    TestNetwork n =
+        new TestNetwork(45.0, 5.0)
+            .node("W", -3000, 0)
+            .node("E", 3000, 0)
+            .node("I1", 0, 50)
+            .node("I2", 40, 50);
+    n.track(1).unpaved(false).wayKind(WayKind.MINOR_ROAD).path("W", "E");
+    n.track(2).unpaved(false).wayKind(WayKind.MINOR_ROAD).path("I1", "I2");
+    NetworkGraph g = n.build();
+    int road = n.edgeBetween(g, "W", "E");
+    int island = n.edgeBetween(g, "I1", "I2");
+    QueryGraph plain = QueryGraph.of(g);
+    java.util.function.IntPredicate admitted = e -> EdgeWeights.admitted(plain, e, RideType.ROAD);
+    LatLon start = n.latLon(20, 48);
+    assertEquals(island, Snapper.snap(g, start, 2000, admitted).edge());
+    // 40 m of road that touch nothing cannot hold a 1 km route: the road 48 m away can
+    Snap snap =
+        Snapper.snap(g, start, 2000, EdgeWeights.leadingOn(plain, RideType.ROAD, 1000), admitted);
+    assertEquals(road, snap.edge());
+    // no piece of the network is long enough: the nearest admitted edge, as before
+    Snap none =
+        Snapper.snap(g, start, 2000, EdgeWeights.leadingOn(plain, RideType.ROAD, 10_000), admitted);
+    assertEquals(island, none.edge());
+    // the road is out of reach: the island again
+    Snap far =
+        Snapper.snap(g, start, 30, EdgeWeights.leadingOn(plain, RideType.ROAD, 1000), admitted);
+    assertEquals(island, far.edge());
+  }
 }

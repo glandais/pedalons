@@ -1,6 +1,7 @@
 package fr.pedalons.service.route.generator;
 
 import java.util.BitSet;
+import java.util.function.IntPredicate;
 
 /**
  * Search weight of every directed state for one request (design §5.3 and §12.7):
@@ -124,6 +125,39 @@ final class EdgeWeights {
         }
         return true;
     }
+  }
+
+  /**
+   * The admitted edges that lead somewhere: those whose connected piece of admitted road is at
+   * least {@code minLengthM} long. A start snapped onto a shorter piece (41 m of footway open to
+   * bikes between forbidden paths, on real data) can only be answered that the network is too
+   * small, whatever road lies next to it (design §13.5).
+   */
+  static IntPredicate leadingOn(QueryGraph g, RideType type, double minLengthM) {
+    int[] parent = new int[g.nodeCount()];
+    for (int i = 0; i < parent.length; i++) {
+      parent[i] = i;
+    }
+    BitSet admitted = new BitSet(g.edgeCount());
+    for (int e = 0; e < g.edgeCount(); e++) {
+      if (admitted(g, e, type)) {
+        admitted.set(e);
+        parent[find(parent, g.edgeU(e))] = find(parent, g.edgeV(e));
+      }
+    }
+    double[] length = new double[parent.length];
+    for (int e = admitted.nextSetBit(0); e >= 0; e = admitted.nextSetBit(e + 1)) {
+      length[find(parent, g.edgeU(e))] += g.length(e);
+    }
+    return e -> admitted.get(e) && length[find(parent, g.edgeU(e))] >= minLengthM;
+  }
+
+  private static int find(int[] parent, int node) {
+    while (parent[node] != node) {
+      parent[node] = parent[parent[node]];
+      node = parent[node];
+    }
+    return node;
   }
 
   /** Multiplier of the weight for the ride type (1 = neutral). */
