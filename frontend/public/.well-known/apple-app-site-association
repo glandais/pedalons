@@ -41,10 +41,6 @@
           "NOT /equipes/*/parcours/generer",
           "NOT /teams/*/routes/*/map",
           "NOT /equipes/*/parcours/*/carte",
-          "NOT /teams/*/classifieds/new",
-          "NOT /equipes/*/annonces/nouvelle",
-          "NOT /teams/*/classifieds/*/edit",
-          "NOT /equipes/*/annonces/*/modifier",
           "/",
           "/login",
           "/connexion",
@@ -138,8 +134,12 @@
           "/equipes/*/parcours/*",
           "/teams/*/routes/*/edit",
           "/equipes/*/parcours/*/modifier",
+          "/teams/*/classifieds/new",
+          "/equipes/*/annonces/nouvelle",
           "/teams/*/classifieds/*",
-          "/equipes/*/annonces/*"
+          "/equipes/*/annonces/*",
+          "/teams/*/classifieds/*/edit",
+          "/equipes/*/annonces/*/modifier"
         ]
       }
     ]

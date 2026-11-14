@@ -774,6 +774,7 @@ routes:
     deeplink: true
 
   # --- Ads (classifieds) ---
+  # `adNew` and `adEdit` are app screens since MOB-158 (docs/LEDGER_*.md MOB-158).
   - id: ads
     path:
       en: /teams/{teamSlug}/classifieds
@@ -790,6 +791,8 @@ routes:
     params:
       - teamSlug
     web: true
+    mobile: true
+    deeplink: true
   - id: ad
     path:
       en: /teams/{teamSlug}/classifieds/{adSlug}
@@ -808,6 +811,8 @@ routes:
       - teamSlug
       - adSlug
     web: true
+    mobile: true
+    deeplink: true
 
   # --- Platform admin ---
   # Kept off "/admin" so that on a pinned single-team host the clean "/admin"

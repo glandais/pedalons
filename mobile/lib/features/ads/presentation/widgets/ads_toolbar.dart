@@ -24,10 +24,19 @@ import 'ad_sort_sheet.dart';
 /// La chip « Tags » ferme la rangée, et seulement quand l'équipe a des tags
 /// d'annonce (ledger `MOB-39`) : elle combine, elle, plusieurs choix en OU.
 class AdsToolbar extends ConsumerWidget {
-  const AdsToolbar({super.key, required this.filters, required this.onChanged});
+  const AdsToolbar({
+    super.key,
+    required this.filters,
+    required this.onChanged,
+    this.trailing,
+  });
 
   final AdFilters filters;
   final ValueChanged<AdFilters> onChanged;
+
+  /// À droite de la recherche : « Créer », pour un membre (règle RL13,
+  /// ledger `MOB-158`).
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -42,16 +51,26 @@ class AdsToolbar extends ConsumerWidget {
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
-          child: PdlSearchField(
-            key: keys.adsList.searchField,
-            value: filters.search,
-            hintText: 'ads.list.searchPlaceholder'.tr(),
-            clearTooltip: 'common.clearSearch'.tr(),
-            onChanged: (String? value) => onChanged(
-              value == null
-                  ? filters.copyWith(clearSearch: true)
-                  : filters.copyWith(search: value),
-            ),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: PdlSearchField(
+                  key: keys.adsList.searchField,
+                  value: filters.search,
+                  hintText: 'ads.list.searchPlaceholder'.tr(),
+                  clearTooltip: 'common.clearSearch'.tr(),
+                  onChanged: (String? value) => onChanged(
+                    value == null
+                        ? filters.copyWith(clearSearch: true)
+                        : filters.copyWith(search: value),
+                  ),
+                ),
+              ),
+              if (trailing != null) ...<Widget>[
+                const SizedBox(width: PdlSpacing.chipGap),
+                trailing!,
+              ],
+            ],
           ),
         ),
         const SizedBox(height: PdlSpacing.chipGap),

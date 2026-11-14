@@ -184,6 +184,16 @@ void main() {
       }
     });
 
+    test('l\'éditeur d\'annonce s\'ouvre dans l\'app (MOB-158)', () {
+      for (final String page in <String>[
+        ...PathVariants.adNew('vc').values,
+        ...PathVariants.adEdit('vc', 'velo').values,
+      ]) {
+        expect(isSitePageLocation(page), isFalse, reason: page);
+        expect(internalLocationFor(page), page, reason: page);
+      }
+    });
+
     test('l\'éditeur de parcours s\'ouvre dans l\'app (MOB-79)', () {
       for (final String page in <String>[
         ...PathVariants.routeNew('vc').values,

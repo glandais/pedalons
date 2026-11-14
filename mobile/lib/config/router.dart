@@ -12,6 +12,7 @@ import '../core/pdl/pdl.dart';
 import '../core/utils/link_launcher.dart';
 import '../dev/dev_routes.dart';
 import '../features/ads/presentation/pages/ad_detail_page.dart';
+import '../features/ads/presentation/pages/ad_editor_page.dart';
 import '../features/apps/presentation/pages/apps_page.dart';
 import '../features/auth/presentation/pages/forgot_password_page.dart';
 import '../features/auth/presentation/pages/login_page.dart';
@@ -119,6 +120,8 @@ String _teamRoutesAncestor(Map<String, String> p, String locale) =>
     PathVariants.routes(p['teamSlug']!)[locale]!;
 String _postAncestor(Map<String, String> p, String locale) =>
     PathVariants.post(p['teamSlug']!, p['postSlug']!)[locale]!;
+String _adAncestor(Map<String, String> p, String locale) =>
+    PathVariants.ad(p['teamSlug']!, p['adSlug']!)[locale]!;
 String _routeAncestor(Map<String, String> p, String locale) =>
     PathVariants.route(p['teamSlug']!, p['routeSlug']!)[locale]!;
 
@@ -353,6 +356,18 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
       _teamAgendaAncestor,
       _tripAncestor,
     ],
+  ),
+  // L'éditeur d'une annonce : une création sous les annonces de l'équipe,
+  // une modification sous l'écran qu'elle réécrit (ledger `MOB-158`).
+  // `adNew` **avant** `ad` : `annonces/nouvelle` est aussi l'annonce de slug
+  // `nouvelle`, et la première entrée qui correspond l'emporte.
+  _DeepLinkHierarchy(
+    patterns: PathVariants.adNew(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _teamAdsAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.adEdit(':teamSlug', ':adSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _teamAdsAncestor, _adAncestor],
   ),
   _DeepLinkHierarchy(
     entity: true,
@@ -843,6 +858,14 @@ GoRoute _teamTree(String locale) {
               : null,
         ),
       ),
+      // Avant le détail : `…/annonces/nouvelle` est aussi l'annonce de slug
+      // `nouvelle`, et c'est l'éditeur qui est visé (ledger `MOB-158`).
+      GoRoute(
+        path: _underTeam(PathVariants.adNew(':teamSlug'), locale, teamBase),
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            AdEditorPage(teamSlug: state.pathParameters['teamSlug']!),
+      ),
       GoRoute(
         path: _underTeam(
           PathVariants.ad(':teamSlug', ':adSlug'),
@@ -850,6 +873,7 @@ GoRoute _teamTree(String locale) {
           teamBase,
         ),
         parentNavigatorKey: _rootNavigatorKey,
+        routes: [_adEditRoute(locale)],
         builder: (context, state) => AdDetailPage(
           teamSlug: state.pathParameters['teamSlug']!,
           adSlug: state.pathParameters['adSlug']!,
@@ -909,6 +933,24 @@ GoRoute _rideEditRoute(String locale) {
     builder: (context, state) => RideEditorPage(
       teamSlug: state.pathParameters['teamSlug']!,
       rideSlug: state.pathParameters['rideSlug']!,
+    ),
+  );
+}
+
+/// L'éditeur d'une annonce, sous son écran : ouvert par un lien, l'écran se
+/// reconstruit dessous et l'enregistrement y revient (ledger `MOB-158`).
+GoRoute _adEditRoute(String locale) {
+  final adBase = PathVariants.ad(':teamSlug', ':adSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(
+      PathVariants.adEdit(':teamSlug', ':adSlug'),
+      locale,
+      adBase,
+    ),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => AdEditorPage(
+      teamSlug: state.pathParameters['teamSlug']!,
+      adSlug: state.pathParameters['adSlug']!,
     ),
   );
 }

@@ -351,6 +351,20 @@ n'ont aucun appelant d'écran).
       stack (certificat mkcert ajouté au simulateur), `PEDALONS_WEBAUTHN_RP_ID` et
       `--dart-define=WEBAUTHN_RP_ID` réglés dessus, une variante d'entitlements de debug
       (`?mode=developer`) et un pas « visage reconnu » lancé par l'hôte.
+- [ ] `MOB-159` **Éditeur d'annonce : déclaration des stores à trancher, recette sur appareil et test
+      Patrol (S)** — `MOB-158` n'est couvert que par les tests unitaires et de widget. **Avant toute
+      publication sur les stores** : l'app envoie désormais la **position exacte** qu'un membre
+      choisit pour son annonce (une adresse, souvent la sienne), gardée exacte côté serveur et
+      rattachée au compte. Ce n'est pas la position de l'appareil, mais Apple (*Physical Address* ou
+      *Precise Location*) et Play (*Personal info → Address* ou *Location*) peuvent l'entendre comme
+      une donnée de localisation : rien n'est déclaré aujourd'hui, `data-safety.md` (#25) le note
+      comme **non tranché**. Décider, puis mettre à jour `PrivacyInfo.xcprivacy` et les deux
+      formulaires. Ensuite, à la main, en simple membre, clair et sombre : publier une annonce avec
+      photo et position, la retrouver en brouillon, la publier, la modifier, la dépublier, la
+      supprimer ; en administrateur, modifier l'annonce d'une autre personne **sans toucher à la
+      position** et vérifier côté auteur que le point exact est intact ; vérifier que le lien
+      `…/annonces/nouvelle` ouvre l'éditeur (iOS et Android). Un test Patrol `ad_editor_test`.
+      Clés dans `keys.adEditor` / `keys.adManage`.
 - [ ] `MOB-157` **Éditeur de publication : recette sur appareil et test Patrol (S)** — `MOB-156` n'est
       couvert que par les tests unitaires et de widget : ni le sélecteur de photos ni l'envoi réel
       n'ont tourné. À la main, en organisateur, clair et sombre : créer une publication depuis le
@@ -453,6 +467,16 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 `frontend/e2e/README.md`.
 
 
+- [ ] `WEB-181` **Publier ou dépublier son annonce depuis sa fiche remplace sa position exacte par
+      le point flouté (S)** — constaté à la lecture du code le 14 novembre 2026 en écrivant
+      `MOB-158`, pas reproduit. `AdDetailPage.handlePublish` / `handleUnpublish`
+      (`frontend/src/pages/ad/AdDetailPage.tsx`) font un `PUT` de `{ ...ad, status }`, où `ad` est
+      l'`AdDto` dont `locationGeometry` est **flouté pour tout le monde, auteur compris**
+      (`AdDto.from`, `CoarseLocation.blur`). Or `AdService.locationKeptOnUpdate` ne garde le point
+      enregistré que pour un **non-auteur** : pour l'auteur, le point reçu est appliqué tel quel, et
+      le centre de la cellule d'environ 1 km remplace l'adresse qu'il avait choisie. Remède : passer
+      par `PATCH …/classifieds/{slug}/status` (`changeAdStatus`), comme l'app, et un test qui
+      vérifie que la position survit à une publication.
 - [ ] `WEB-163` **Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)** — depuis `API-163`
       (contrat `13.4.0`), `RouteDto`, `RouteDetailDto`, `RideDto` et `RideGroupDto` disent, pour
       chacun des services de la personne en synchro automatique, si le parcours y est déjà (`state`,
@@ -1845,7 +1869,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `MOB-88` | **Mode mono-équipe dans l'app** (masquer l'onglet Équipes, ouvrir l'équipe épinglée, lire `pinnedTeamSlugProvider`) | Non (24 octobre 2026) | L'app ne sert que `pedalons.fr`, et ce domaine n'est jamais mono-équipe : le mode n'y a pas de cas d'usage. `pinnedTeamSlugProvider` (`core/config/config_provider.dart`) reste sans lecteur. Le web garde son `hideWhenSingleTeam`, qui sert les autres domaines. À rouvrir si l'app devait un jour servir un domaine mono-équipe |
 | `MOB-89` | **Pages personnalisées d'équipe en puces de section, comme les onglets du web** | Non (24 octobre 2026) | Au mobile, elles restent une liste dans « À propos », une ligne par page qui ouvre son écran (`team_about_page.dart`), comme le demandait la note de conception (`plans/archive/audit-ux/BRIEF.md`, onglet À propos). Avec plusieurs pages, la rangée de puces déborderait. Le web garde ses onglets : sa rangée a la place et n'a pas de menu de débordement (`WEB-25`). Le filtrage des pages réservées aux membres se fait côté backend (`isListed` dans `TeamDetailDto`). L'autre volet de l'entrée, la visibilité de « Membres », n'avait rien à changer au mobile : c'est sa règle que le web reprend (`WEB-112`) |
 | `WEB-171` | **Mention de fuseau en ligne sur le site, comme dans l'app** (« heure de Tokyo (ven. 01:00 chez vous) ») | Non (12 novembre 2026, écart voulu V5 du [tri de l'audit des cartes](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) §3) | Même texte, deux formes : une ligne visible dans l'app (`ZoneMentionLine`, `core/widgets/zone_mention_line.dart`), une icône globe à infobulle sur le site (`ZoneMentionIcon`, `components/common/Rendezvous.tsx`). Au doigt il n'y a pas de survol, d'où la ligne ; au bureau, l'infobulle garde la carte courte. BRANDING §8.3 fixe le texte, pas la forme. La date d'une publication n'en relève pas : c'est la règle des dates de carte (KIT §9) |
-| `MOB-144` | **Créer une annonce ou une équipe depuis l'app** | Non (12 novembre 2026, écart voulu VL11 du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §3) | Choix de périmètre : ces deux créations restent sur le site ; les listes de l'app n'en portent pas le bouton |
+| `MOB-144` | **Créer une équipe depuis l'app** (la création d'**annonce**, écartée avec elle, a été livrée le 14 novembre 2026 : `MOB-158`) | Non (12 novembre 2026, écart voulu VL11 du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §3) | Choix de périmètre : ces deux créations restent sur le site ; les listes de l'app n'en portent pas le bouton |
 
 ---
 

@@ -1030,7 +1030,58 @@
         "other": "{} heures"
       }
     },
-    "sector": "Secteur {place}"
+    "sector": "Secteur {place}",
+    "editor": {
+      "createTitle": "Nouvelle annonce",
+      "editTitle": "Modifier l'annonce",
+      "create": "Publier l'annonce",
+      "created": "Annonce créée",
+      "saved": "Annonce enregistrée",
+      "forbiddenTitle": "Annonce non modifiable",
+      "membersOnlyMessage": "Seuls les membres de l'équipe peuvent publier une annonce.",
+      "notYoursMessage": "Une annonce se modifie par la personne qui l'a publiée ou par le rôle Administrateur de l'équipe.",
+      "modulesOffMessage": "Les annonces sont désactivées pour cette équipe.",
+      "namePlaceholder": "ex. Vélo de route taille 54",
+      "adType": "Type d'annonce",
+      "price": "Prix",
+      "priceHint": "Laissez vide si le prix est à négocier.",
+      "priceError": "Un montant, par exemple 450 ou 12,50",
+      "rentalPeriod": "Période de location",
+      "rentalPeriodError": "Choisissez une période : jour, semaine ou mois.",
+      "markdownPlaceholder": "Décrivez votre annonce… Le markdown est accepté.",
+      "place": "Lieu, en quelques mots",
+      "placePlaceholder": "ex. Lyon 7e, près de la gare",
+      "positionNone": "Aucune position sur la carte",
+      "positionSaved": "Position enregistrée",
+      "positionHint": "Les membres ne voient qu'un secteur d'environ 1 km, jamais le point exact.",
+      "placePickerTitle": "Position sur la carte",
+      "placeSearch": "Rechercher une adresse…",
+      "placeEmpty": "Aucune adresse. Tapez au moins 3 caractères.",
+      "placeAttribution": "Adresses : Stadia Maps, © les contributeurs OpenStreetMap et autres",
+      "placeResolving": "Localisation de l'adresse…",
+      "placeResolveFailed": "Impossible d'obtenir la position de cette adresse. Recherchez-la et choisissez-la de nouveau, ou laissez la position vide.",
+      "placeUnavailable": "Le service de recherche d'adresse est indisponible. Réessayez dans un instant, ou laissez la position vide.",
+      "tagsPickerTitle": "Tags de l'annonce",
+      "statusHint": "Un brouillon n'est visible que de vous et du rôle Administrateur de l'équipe."
+    },
+    "manage": {
+      "edit": "Modifier l'annonce",
+      "menuTitle": "Gérer l'annonce",
+      "publish": "Publier",
+      "unpublish": "Dépublier",
+      "delete": "Supprimer l'annonce",
+      "restore": "Restaurer l'annonce",
+      "report": "Signaler",
+      "published": "Annonce publiée",
+      "unpublished": "Annonce repassée en brouillon",
+      "deleted": "Annonce supprimée",
+      "restored": "Annonce restaurée",
+      "unpublishTitle": "Dépublier l'annonce ?",
+      "unpublishMessage": "Elle repassera en brouillon et ne sera plus visible des membres.",
+      "deleteTitle": "Supprimer l'annonce ?",
+      "deleteMessage": "Elle disparaîtra des listes. Le rôle Administrateur de l'équipe pourra la restaurer.",
+      "deletedBanner": "Cette annonce est supprimée. Seul le rôle Administrateur de l'équipe la voit."
+    }
   },
   "trips": {
     "title": "Voyages",
@@ -2167,7 +2218,8 @@
     "createLabel": {
       "ride": "Créer une sortie",
       "route": "Créer un parcours",
-      "template": "Créer un modèle"
+      "template": "Créer un modèle",
+      "ad": "Publier une annonce"
     },
     "view": {
       "label": "Affichage",

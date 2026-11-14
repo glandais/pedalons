@@ -80,7 +80,10 @@
 		     only the track and its waypoints). The GPX may come from a recorded ride but is
 		     published as a team route and kept without timestamps (the server keeps only the geometry),
 		     so it is not a location history and adds no PreciseLocation row (data-safety.md §7);
-		     posts an organizer writes in the post editor (POST/PUT /api/teams/{slug}/posts).
+		     posts an organizer writes in the post editor (POST/PUT /api/teams/{slug}/posts);
+		     ads a member writes in the ad editor (POST/PUT /api/teams/{slug}/classifieds) — the
+		     position a member picks for an ad is NOT covered by this row and its declaration is
+		     still to be decided (data-safety.md #25, ledger MOB-159).
 		     All user-generated, all stored against the account, used only to run the app and moderate
 		     it. -->
 		<dict>

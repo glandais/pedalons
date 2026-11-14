@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/lists/list_states.dart';
+import '../../../../core/lists/list_toolbar.dart';
 import '../../../../core/material.dart';
 import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
@@ -15,6 +16,7 @@ import '../../../tags/presentation/tag_filter.dart';
 import '../../../tags/providers/team_tags_provider.dart';
 import '../../domain/ad_filters.dart';
 import '../../providers/ad_list_provider.dart';
+import '../../providers/ad_providers.dart';
 import '../widgets/ad_card.dart';
 import '../widgets/ad_price_sheet.dart';
 import '../widgets/ads_toolbar.dart';
@@ -67,6 +69,10 @@ class _AdsPageState extends ConsumerState<AdsPage> {
 
     final AdFilters filters = ref.watch(adFiltersProvider(widget.teamSlug));
     final PagedListState<AdDto> state = ref.watch(adListProvider(filters));
+    // Tout membre publie une annonce (ledger `MOB-158`) ; rien tant que le
+    // rôle n'est pas connu.
+    final bool canCreate =
+        ref.watch(canCreateAdsProvider(widget.teamSlug)) ?? false;
     final AdListNotifier notifier = ref.read(adListProvider(filters).notifier);
 
     return PdlRefresh(
@@ -76,20 +82,33 @@ class _AdsPageState extends ConsumerState<AdsPage> {
         primary: true,
         slivers: <Widget>[
           PdlPinnedToolbar(
-            child: AdsToolbar(filters: filters, onChanged: _setFilters),
+            child: AdsToolbar(
+              filters: filters,
+              onChanged: _setFilters,
+              trailing: canCreate
+                  ? ListCreateButton(
+                      key: keys.adsList.createButton,
+                      semanticLabel: 'lists.createLabel.ad'.tr(),
+                      onPressed: _openNew,
+                    )
+                  : null,
+            ),
           ),
-          ..._contentSlivers(state, notifier, filters),
+          ..._contentSlivers(state, notifier, filters, canCreate: canCreate),
           const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
         ],
       ),
     );
   }
 
+  void _openNew() => context.push(Paths.adNew(widget.teamSlug));
+
   List<Widget> _contentSlivers(
     PagedListState<AdDto> state,
     AdListNotifier notifier,
-    AdFilters filters,
-  ) {
+    AdFilters filters, {
+    required bool canCreate,
+  }) {
     const EdgeInsets padding = EdgeInsets.fromLTRB(
       PdlSpacing.section,
       PdlSpacing.chipGap,
@@ -151,6 +170,14 @@ class _AdsPageState extends ConsumerState<AdsPage> {
                   icon: Icons.sell,
                   title: 'ads.empty'.tr(),
                   message: 'ads.emptyHint'.tr(),
+                  actions: <Widget>[
+                    if (canCreate)
+                      ListEmptyCreateButton(
+                        key: keys.adsList.emptyCreateButton,
+                        label: 'lists.createLabel.ad'.tr(),
+                        onPressed: _openNew,
+                      ),
+                  ],
                 ),
         ),
       ];

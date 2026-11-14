@@ -489,12 +489,30 @@ class Paths {
     }
   }
 
+  static String adNew(String teamSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/annonces/nouvelle';
+      default:
+        return '/teams/$teamSlug/classifieds/new';
+    }
+  }
+
   static String ad(String teamSlug, String adSlug) {
     switch (getCurrentLocale()) {
       case 'fr':
         return '/equipes/$teamSlug/annonces/$adSlug';
       default:
         return '/teams/$teamSlug/classifieds/$adSlug';
+    }
+  }
+
+  static String adEdit(String teamSlug, String adSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/annonces/$adSlug/modifier';
+      default:
+        return '/teams/$teamSlug/classifieds/$adSlug/edit';
     }
   }
 }
@@ -728,9 +746,17 @@ class PathVariants {
     'en': '/teams/$teamSlug/classifieds',
     'fr': '/equipes/$teamSlug/annonces',
   };
+  static Map<String, String> adNew(String teamSlug) => {
+    'en': '/teams/$teamSlug/classifieds/new',
+    'fr': '/equipes/$teamSlug/annonces/nouvelle',
+  };
   static Map<String, String> ad(String teamSlug, String adSlug) => {
     'en': '/teams/$teamSlug/classifieds/$adSlug',
     'fr': '/equipes/$teamSlug/annonces/$adSlug',
+  };
+  static Map<String, String> adEdit(String teamSlug, String adSlug) => {
+    'en': '/teams/$teamSlug/classifieds/$adSlug/edit',
+    'fr': '/equipes/$teamSlug/annonces/$adSlug/modifier',
   };
 }
 
@@ -785,8 +811,4 @@ const List<String> sitePagePathPatterns = <String>[
   r'^/equipes/[^/]+/parcours/generer/?$',
   r'^/teams/[^/]+/routes/[^/]+/map/?$',
   r'^/equipes/[^/]+/parcours/[^/]+/carte/?$',
-  r'^/teams/[^/]+/classifieds/new/?$',
-  r'^/equipes/[^/]+/annonces/nouvelle/?$',
-  r'^/teams/[^/]+/classifieds/[^/]+/edit/?$',
-  r'^/equipes/[^/]+/annonces/[^/]+/modifier/?$',
 ];

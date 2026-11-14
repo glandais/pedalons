@@ -117,7 +117,9 @@ final Map<String, List<String>> internalRouteTemplates = <String, List<String>>{
   'route': PathVariants.route(_slot, _slot).values.toList(),
   'routeEdit': PathVariants.routeEdit(_slot, _slot).values.toList(),
   'teamAds': PathVariants.teamAds(_slot).values.toList(),
+  'adNew': PathVariants.adNew(_slot).values.toList(),
   'ad': PathVariants.ad(_slot, _slot).values.toList(),
+  'adEdit': PathVariants.adEdit(_slot, _slot).values.toList(),
 };
 
 // Les entrées de `PathVariants` qui n'ont **pas** d'écran dans l'app sont

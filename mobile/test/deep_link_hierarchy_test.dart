@@ -224,6 +224,19 @@ final List<_LinkCase> _cases = [
     PathVariants.teamAgenda(_teamSlug),
     PathVariants.trip(_teamSlug, _tripSlug),
   ]),
+  // L'éditeur d'une annonce (ledger `MOB-158`) : la création sous les
+  // annonces de l'équipe, la modification sous l'écran qu'elle réécrit.
+  _LinkCase('adNew', PathVariants.adNew(_teamSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+    PathVariants.teamAds(_teamSlug),
+  ]),
+  _LinkCase('adEdit', PathVariants.adEdit(_teamSlug, _adSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+    PathVariants.teamAds(_teamSlug),
+    PathVariants.ad(_teamSlug, _adSlug),
+  ]),
   _LinkCase('ad', PathVariants.ad(_teamSlug, _adSlug), [
     PathVariants.teams(),
     PathVariants.team(_teamSlug),

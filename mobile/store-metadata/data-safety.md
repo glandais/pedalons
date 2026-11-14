@@ -13,7 +13,8 @@ from:
 
 - **App**: Pédalons, `fr.pedalons.mobile`, version `1.0.0+57` (`mobile/pubspec.yaml`)
 - **Backend**: `https://www.pedalons.fr` (`mobile/lib/config/app_config.dart`)
-- **Last verified against the code**: 2026-11-14 (post editor, `MOB-156` —
+- **Last verified against the code**: 2026-11-14 (ad editor, `MOB-158` — `lib/features/ads/`,
+  **with one declaration left open, see #25**; post editor, `MOB-156` —
   `lib/features/posts/`; before that 2026-10-17: route editor and GPX import, `MOB-79` —
   `lib/features/routes/`; before that 2026-09-27: problem reports and automatic error reports,
   `lib/features/feedback/`, `lib/core/logging/`, backend `FeedbackService`)
@@ -135,7 +136,7 @@ and `mobile/android/`:
   it names the device at push registration.
 - No StoreKit / `in_app_purchase` / payment SDK.
 - The multipart / `FormData` uploads reachable from the UI are the avatar
-  (`POST /api/users/me/avatar`), the ride, route and post editors' assets
+  (`POST /api/users/me/avatar`), the ride, route, post and ad editors' assets
   (`POST /api/teams/{slug}/assets`) and the creation and modification of a route with its GPX
   (`POST`/`PUT /api/teams/{slug}/routes`). Every other multipart operation in the generated client
   stays unreachable.
@@ -175,6 +176,7 @@ Everything below leaves the device to `https://www.pedalons.fr` unless stated ot
 | 22 | **Ride images and attachments** | Same editor → `POST /api/teams/{slug}/assets`: a photo from the library (`image_picker`, logo and images) or any file from the document picker (`file_picker`, attachments) | Yes | Yes |
 | 23 | **Routes written by organizers** | Route editor (`lib/features/routes/presentation/pages/route_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/routes`, multipart: name, markdown description, surface, visibility, tags, images and attachments through the path of #22, and the **GPX file** (`file_picker`) — its track and waypoints, the timestamps, sensor measurements and metadata being removed by the server before anything is stored. Organizers and administrators of the team only | Yes | Yes |
 | 24 | **Posts written by organizers** | Post editor (`lib/features/posts/presentation/pages/post_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/posts`: title, markdown text, date, visibility, tags, signature (team or author), and photos and attachments through the path of #22. Organizers and administrators of the team only | Yes | Yes |
+| 25 | **Ads written by members** | Ad editor (`lib/features/ads/presentation/pages/ad_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/classifieds`: title, type, price, markdown description, a free-text place, tags, photos and attachments through the path of #22 — any member of the team. **And a position**: the member searches an address (`GET /api/geocode/search`, the typed text goes to the Pédalons server, which relays it to Stadia Maps; the device never calls the provider) and the picked address's coordinates are sent as `locationGeometry`. The server stores the **exact** point against the ad and its author and shows other members a ~1 km sector only. The device's own position is **not** read. **Declaration not decided (ledger `MOB-159`)**: this is a user-typed address, not a device location, yet it is an exact point, often the member's home, linked to the account — Apple *Physical Address* or *Precise Location*, Play *Personal info → Address* or *Location*. Nothing is declared for it today; decide before the next store submission | Yes | Yes |
 | 10 | **Approximate location** | `geolocator` at `LocationAccuracy.low`, while in use, only when the user turns on the "around me" filter — becomes the `nearLat`/`nearLon`/`nearRadius` query parameters | Yes, as query parameters of a read request | **No** — not stored server-side, not written to the account |
 
 Stored **on device only**, never transmitted:

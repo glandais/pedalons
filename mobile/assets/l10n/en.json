@@ -1030,7 +1030,58 @@
         "other": "{} hours"
       }
     },
-    "sector": "Area {place}"
+    "sector": "Area {place}",
+    "editor": {
+      "createTitle": "New ad",
+      "editTitle": "Edit ad",
+      "create": "Post the ad",
+      "created": "Ad created",
+      "saved": "Ad saved",
+      "forbiddenTitle": "You can't edit this ad",
+      "membersOnlyMessage": "Only members of the team can post an ad.",
+      "notYoursMessage": "An ad can be edited by the person who posted it or by a team administrator.",
+      "modulesOffMessage": "Ads are turned off for this team.",
+      "namePlaceholder": "e.g. Road bike, size 54",
+      "adType": "Ad type",
+      "price": "Price",
+      "priceHint": "Leave empty if the price is negotiable.",
+      "priceError": "An amount, for example 450 or 12.50",
+      "rentalPeriod": "Rental period",
+      "rentalPeriodError": "Choose a period: day, week or month.",
+      "markdownPlaceholder": "Describe your ad… Markdown is supported.",
+      "place": "Place, in a few words",
+      "placePlaceholder": "e.g. Lyon 7th, near the station",
+      "positionNone": "No position on the map",
+      "positionSaved": "Position saved",
+      "positionHint": "Members only see an area about 1 km across, never the exact point.",
+      "placePickerTitle": "Position on the map",
+      "placeSearch": "Search for an address…",
+      "placeEmpty": "No address. Type at least 3 characters.",
+      "placeAttribution": "Addresses: Stadia Maps, © OpenStreetMap contributors & others",
+      "placeResolving": "Locating the address…",
+      "placeResolveFailed": "Couldn't get the position of this address. Search and pick it again, or leave the position empty.",
+      "placeUnavailable": "The address search service is unavailable. Try again in a moment, or leave the position empty.",
+      "tagsPickerTitle": "Ad tags",
+      "statusHint": "A draft is only visible to you and to team administrators."
+    },
+    "manage": {
+      "edit": "Edit ad",
+      "menuTitle": "Manage ad",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "delete": "Delete ad",
+      "restore": "Restore ad",
+      "report": "Report",
+      "published": "Ad published",
+      "unpublished": "Ad back to draft",
+      "deleted": "Ad deleted",
+      "restored": "Ad restored",
+      "unpublishTitle": "Unpublish the ad?",
+      "unpublishMessage": "It will go back to draft and members will no longer see it.",
+      "deleteTitle": "Delete the ad?",
+      "deleteMessage": "It will disappear from lists. A team administrator can restore it.",
+      "deletedBanner": "This ad is deleted. Only team administrators can see it."
+    }
   },
   "trips": {
     "title": "Trips",
@@ -2167,7 +2218,8 @@
     "createLabel": {
       "ride": "Create a ride",
       "route": "Create a route",
-      "template": "Create a template"
+      "template": "Create a template",
+      "ad": "Post an ad"
     },
     "view": {
       "label": "View",

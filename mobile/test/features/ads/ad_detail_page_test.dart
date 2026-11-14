@@ -15,6 +15,7 @@ import 'package:pedalons/features/auth/data/auth_repository.dart';
 import 'package:pedalons/features/auth/data/secure_storage.dart';
 import 'package:pedalons/features/auth/domain/auth_state.dart';
 import 'package:pedalons/features/auth/providers/auth_provider.dart';
+import 'package:pedalons/keys.dart';
 
 import '../../support/localization.dart';
 import 'ad_fixtures.dart';
@@ -62,6 +63,9 @@ class _StubAdRepository implements AdRepository {
     int size = kDefaultPageSize,
     ListViewMode? view,
   }) async => const PageResult<AdDto>(items: <AdDto>[], total: 0);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 DioException _apiError(
@@ -321,6 +325,50 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+  });
+
+  // Ledger `MOB-158` : le crayon et « Gérer l'annonce » suivent le bloc
+  // `permissions` de l'annonce — son auteur, ou l'administration de l'équipe.
+  group('gestes de l\'auteur', () {
+    testWidgets('sans droit : ni crayon ni bandeau', (
+      WidgetTester tester,
+    ) async {
+      await openAd(tester, fixtureAd());
+
+      expect(find.byKey(keys.adManage.editButton), findsNothing);
+      expect(find.byKey(keys.adManage.deletedBanner), findsNothing);
+    });
+
+    testWidgets('sa propre annonce : le crayon, et un menu sans « Signaler »', (
+      WidgetTester tester,
+    ) async {
+      await openAd(
+        tester,
+        fixtureAd(createdById: 'u-me', permissions: kAdOwnerPermissions),
+      );
+
+      expect(find.byKey(keys.adManage.editButton), findsOneWidget);
+      await tester.tap(find.byKey(keys.ad.moreButton));
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(find.text('Gérer l\'annonce'), findsOneWidget);
+      expect(find.byKey(keys.adManage.unpublish), findsOneWidget);
+      expect(find.byKey(keys.adManage.delete), findsOneWidget);
+      expect(find.byKey(keys.adManage.report), findsNothing);
+    });
+
+    testWidgets('supprimée : le bandeau, plus de crayon', (
+      WidgetTester tester,
+    ) async {
+      await openAd(
+        tester,
+        fixtureAd(deleted: true, permissions: kAdOwnerPermissions),
+      );
+
+      expect(find.byKey(keys.adManage.deletedBanner), findsOneWidget);
+      expect(find.byKey(keys.adManage.editButton), findsNothing);
     });
   });
 

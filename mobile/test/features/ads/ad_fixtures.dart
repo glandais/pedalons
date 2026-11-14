@@ -33,8 +33,10 @@ AdDto fixtureAd({
   String createdById = 'u-seller',
   String createdByDisplayName = 'Jeanne Martin',
   MediaDto media = kEmptyMedia,
+  bool deleted = false,
+  ContentPermissionsDto permissions = kNoPermissions,
 }) => AdDto(
-  permissions: kNoPermissions,
+  permissions: permissions,
   tags: const [],
   team: kAdTeam,
   id: 'ad-$slug',
@@ -49,13 +51,58 @@ AdDto fixtureAd({
   updatedAt: '2026-03-14T09:00:00Z',
   createdById: createdById,
   createdByDisplayName: createdByDisplayName,
-  deleted: false,
+  deleted: deleted,
   excerpt: excerpt,
   thumbnailUrl: images.isEmpty ? null : images.first,
   price: price,
   rentalPeriod: rentalPeriod,
   locationDescription: locationDescription,
   locationGeometry: locationGeometry,
+);
+
+/// Le droit que le backend calcule pour l'auteur d'une annonce ou pour
+/// l'administration de l'équipe (docs/LEDGER_*.md MOB-137).
+const ContentPermissionsDto kAdOwnerPermissions = ContentPermissionsDto(
+  canEdit: true,
+  canDelete: true,
+  indexable: false,
+);
+
+/// L'annonce telle que son formulaire la lit (`GET …/edit`, ledger
+/// `MOB-158`).
+AdEditDto fixtureAdEdit({
+  String slug = 'velo-a-vendre',
+  String name = 'Vélo à vendre',
+  String adType = 'SALE',
+  String status = 'PUBLISHED',
+  num? price = 1200,
+  String? rentalPeriod,
+  String? locationDescription = 'Lyon 7e',
+  List<double>? coordinates,
+  List<TagDto> tags = const <TagDto>[],
+}) => AdEditDto(
+  team: kAdTeam,
+  id: 'ad-$slug',
+  slug: slug,
+  name: name,
+  media: kEmptyMedia.copyWith(markdown: 'Très bon état.'),
+  status: status,
+  visibility: 'TEAM',
+  adType: adType,
+  createdAt: '2026-03-14T09:00:00Z',
+  updatedAt: '2026-03-14T09:00:00Z',
+  createdById: 'u-seller',
+  deleted: false,
+  tags: tags,
+  price: price,
+  rentalPeriod: rentalPeriod,
+  locationDescription: locationDescription,
+  locationGeometry: coordinates == null
+      ? null
+      : AdEditDtoLocationGeometry(
+          type: AdEditDtoLocationGeometryTypeType.point,
+          coordinates: coordinates,
+        ),
 );
 
 /// [count] annonces distinctes, pour remplir une page.

@@ -46,6 +46,8 @@ class Keys {
   final participants = ParticipantsSheetKeys();
   final ad = AdDetailKeys();
   final adContact = AdContactKeys();
+  final adEditor = AdEditorKeys();
+  final adManage = AdManageKeys();
   final apps = AppsPageKeys();
   final feedback = FeedbackKeys();
   final legal = LegalPageKeys();

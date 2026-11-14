@@ -11,6 +11,7 @@ import 'package:pedalons/features/ads/domain/ad_filters.dart';
 import 'package:pedalons/features/ads/presentation/pages/ads_page.dart';
 import 'package:pedalons/features/ads/presentation/widgets/ad_card.dart';
 import 'package:pedalons/features/ads/providers/ad_list_provider.dart';
+import 'package:pedalons/features/ads/providers/ad_providers.dart';
 import 'package:pedalons/keys.dart';
 
 import '../../support/content_permissions.dart';
@@ -108,11 +109,13 @@ void main() {
     required _StubAdRepository repository,
     AdFilters? filters,
     Brightness brightness = Brightness.light,
+    bool canCreate = false,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           adRepositoryProvider.overrideWithValue(repository),
+          canCreateAdsProvider(_team.slug).overrideWithValue(canCreate),
           if (filters != null)
             adFiltersProvider(_team.slug).overrideWith((ref) => filters),
         ],
@@ -403,6 +406,35 @@ void main() {
       await tester.tap(find.text('Effacer les filtres'));
       await tester.pump();
       expect(current(tester).hasPrice, isFalse);
+    });
+  });
+
+  // Ledger `MOB-158` : tout membre publie une annonce.
+  group('« Créer »', () {
+    testWidgets('absent pour qui n\'est pas membre', (
+      WidgetTester tester,
+    ) async {
+      await openAds(tester, repository: _StubAdRepository());
+
+      expect(find.byKey(keys.adsList.createButton), findsNothing);
+    });
+
+    testWidgets('à droite de la recherche pour un membre, lu « Publier une '
+        'annonce »', (WidgetTester tester) async {
+      await openAds(tester, repository: _StubAdRepository(), canCreate: true);
+
+      expect(find.byKey(keys.adsList.createButton), findsOneWidget);
+      expect(find.bySemanticsLabel('Publier une annonce'), findsOneWidget);
+    });
+
+    testWidgets('la liste vide le propose aussi', (WidgetTester tester) async {
+      await openAds(
+        tester,
+        repository: _StubAdRepository(total: 0),
+        canCreate: true,
+      );
+
+      expect(find.byKey(keys.adsList.emptyCreateButton), findsOneWidget);
     });
   });
 

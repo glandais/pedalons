@@ -1,7 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../config/paths.dart';
 import '../../../../core/material.dart' hide Visibility;
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
@@ -20,18 +22,12 @@ import '../../../auth/providers/auth_provider.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../tags/presentation/content_tags.dart';
-import '../../data/ad_repository.dart';
+import '../../providers/ad_providers.dart';
 import '../widgets/ad_contact_sheet.dart';
 import '../widgets/ad_location_map.dart';
+import '../widgets/ad_manage_menu.dart';
 
-final adDetailProvider =
-    FutureProvider.family<AdDto, ({String teamSlug, String adSlug})>((
-      ref,
-      params,
-    ) async {
-      final repository = ref.watch(adRepositoryProvider);
-      return repository.getAd(params.teamSlug, params.adSlug);
-    });
+export '../../providers/ad_providers.dart' show adDetailProvider;
 
 class AdDetailPage extends ConsumerWidget {
   final String teamSlug;
@@ -137,10 +133,34 @@ class _AdDetailContentState extends ConsumerState<_AdDetailContent> {
         // dessous. Le répéter en 17 dans la barre le dit deux fois.
         onBack: () => Navigator.of(context).maybePop(),
         backSemanticLabel: 'ads.title'.tr(),
-        // Sa propre annonce ne se signale pas et son auteur ne se bloque
-        // pas : le menu serait vide, le bouton n'existe donc pas.
         actions: <Widget>[
-          if (currentUserId != null && currentUserId != ad.createdById)
+          // Le droit de **cette** annonce, calculé par le backend : son
+          // auteur ou l'administration de l'équipe (docs/LEDGER_*.md
+          // MOB-137, MOB-158).
+          if (ad.permissions.canEdit && !ad.deleted)
+            PdlAppBarAction(
+              key: keys.adManage.editButton,
+              icon: PdlIcons.edit,
+              semanticLabel: 'ads.manage.edit'.tr(),
+              onPressed: () =>
+                  context.push(Paths.adEdit(ad.team.slug, ad.slug)),
+            ),
+          if (adHasManageActions(ad))
+            PdlAppBarAction(
+              key: keys.ad.moreButton,
+              icon: PdlIcons.more,
+              semanticLabel: 'ads.manage.menuTitle'.tr(),
+              onPressed: () => showAdManageMenu(
+                context,
+                ref,
+                ad,
+                canReport:
+                    currentUserId != null && currentUserId != ad.createdById,
+              ),
+            )
+          // Sa propre annonce ne se signale pas et son auteur ne se bloque
+          // pas : le menu serait vide, le bouton n'existe donc pas.
+          else if (currentUserId != null && currentUserId != ad.createdById)
             PdlAppBarAction(
               key: keys.ad.moreButton,
               icon: PdlIcons.more,
@@ -213,6 +233,15 @@ class _AdDetailContentState extends ConsumerState<_AdDetailContent> {
                     ContentTagRow(tags: ad.tags),
                   ],
                   const SizedBox(height: PdlSpacing.section),
+                  if (ad.deleted) ...<Widget>[
+                    PdlBanner(
+                      key: keys.adManage.deletedBanner,
+                      tone: PdlBannerTone.warn,
+                      icon: PdlIcons.delete,
+                      message: 'ads.manage.deletedBanner'.tr(),
+                    ),
+                    const SizedBox(height: PdlSpacing.section),
+                  ],
                   // `note` porte la période d'une location et rien d'autre : le
                   // lieu a sa propre section, et l'absence de prix est déjà dite
                   // par `amount` — « Prix à négocier », jamais un tiret.

@@ -61,6 +61,50 @@ class AdRepository {
     return response.total;
   }
 
+  // --- Écriture (docs/LEDGER_*.md MOB-158).
+
+  /// L'annonce telle que son formulaire la lit : la position y est exacte
+  /// pour son auteur, floutée pour toute autre personne qui la modifie.
+  Future<AdEditDto> getAdEdit(String teamSlug, String adSlug) {
+    return _adsClient.getAdEdit(teamSlug: teamSlug, slug: adSlug);
+  }
+
+  Future<AdDto> createAd(String teamSlug, AdRequest request) {
+    return _adsClient.createAd(teamSlug: teamSlug, body: request);
+  }
+
+  Future<AdDto> updateAd(String teamSlug, String adSlug, AdRequest request) {
+    return _adsClient.updateAd(teamSlug: teamSlug, slug: adSlug, body: request);
+  }
+
+  /// Change le seul statut, sans réécrire l'annonce : un PUT recopié depuis
+  /// le détail renverrait sa position **floutée**, et effacerait la vraie.
+  Future<AdDto> changeStatus(String teamSlug, String adSlug, Status status) {
+    return _adsClient.changeAdStatus(
+      teamSlug: teamSlug,
+      slug: adSlug,
+      body: StatusChangeRequest(status: status.toJson()),
+    );
+  }
+
+  /// Change l'adresse (le slug). Les liens vers l'ancienne ne mènent plus
+  /// nulle part.
+  Future<AdDto> changeSlug(String teamSlug, String adSlug, String slug) {
+    return _adsClient.changeAdSlug(
+      teamSlug: teamSlug,
+      slug: adSlug,
+      body: SlugChangeRequest(slug: slug),
+    );
+  }
+
+  Future<void> deleteAd(String teamSlug, String adSlug) {
+    return _adsClient.deleteAd(teamSlug: teamSlug, slug: adSlug);
+  }
+
+  Future<void> undeleteAd(String teamSlug, String adSlug) {
+    return _adsClient.undeleteAd(teamSlug: teamSlug, slug: adSlug);
+  }
+
   /// Relais d'un message vers l'auteur d'une annonce.
   ///
   /// Rend `void` sur un **204**, et laisse remonter la `DioException` sur les
