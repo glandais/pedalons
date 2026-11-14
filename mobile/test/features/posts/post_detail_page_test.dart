@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
@@ -62,10 +63,14 @@ PostDto _post({
 class _StubPostRepository implements PostRepository {
   _StubPostRepository(this.post);
 
-  final PostDto post;
+  PostDto post;
+  int reads = 0;
 
   @override
-  Future<PostDto> getPost(String teamSlug, String postSlug) async => post;
+  Future<PostDto> getPost(String teamSlug, String postSlug) async {
+    reads++;
+    return post;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -76,7 +81,7 @@ void main() {
 
   setUpAll(loadTestTranslations);
 
-  Future<void> openPost(
+  Future<_StubPostRepository> openPost(
     WidgetTester tester,
     PostDto post, {
     PostNeighbours? neighbours,
@@ -86,11 +91,10 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
+    final _StubPostRepository repository = _StubPostRepository(post);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          postRepositoryProvider.overrideWithValue(_StubPostRepository(post)),
-        ],
+        overrides: [postRepositoryProvider.overrideWithValue(repository)],
         child: MaterialApp(
           theme: PedalonsTheme.build(brightness),
           home: PostDetailPage(
@@ -104,7 +108,43 @@ void main() {
     for (int i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 10));
     }
+    return repository;
   }
+
+  testWidgets(
+    'tirer pour rafraîchir relit la publication : le nouveau titre apparaît',
+    (WidgetTester tester) async {
+      final _StubPostRepository repository = await openPost(tester, _post());
+      expect(repository.reads, 1);
+      // La secousse de `PdlRefresh` passe par le canal de plate-forme : sans
+      // réponse, le rafraîchissement l'attendrait indéfiniment.
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async => null,
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      repository.post = _post(name: 'Le compte rendu corrigé');
+      // L'écran de test fait 3 000 px de haut, et l'indicateur s'arme au
+      // sixième de la hauteur du défileur : 400 px n'y suffiraient pas.
+      await tester.fling(
+        find.text('Le compte rendu'),
+        const Offset(0, 900),
+        1000,
+      );
+      for (int i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(repository.reads, 2);
+      expect(find.text('Le compte rendu corrigé'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'signée par l\'équipe : le titre, la date et l\'équipe, sans auteur',

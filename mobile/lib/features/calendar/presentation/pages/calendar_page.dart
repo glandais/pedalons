@@ -179,34 +179,58 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       children: <Widget>[
         _grid(monthKey, month),
         Expanded(
+          // Tirer pour rafraîchir porte sur l'agenda, pas sur la grille : c'est
+          // lui qui défile. Posé **sous** l'écouteur de défilement, qui replie
+          // la grille et doit continuer de voir passer les notifications.
           child: entries.isEmpty
-              ? SingleChildScrollView(
-                  child: Column(
-                    children: <Widget>[
-                      _emptyState(monthKey, typeFilter, monthHasEvents),
-                      CalendarSubscriptionCard(teamSlug: widget.teamSlug),
-                      const SizedBox(height: 32),
-                    ],
+              ? PdlRefresh(
+                  onRefresh: () => _refresh(monthKey),
+                  child: SingleChildScrollView(
+                    // Un mois vide ne déborde pas : sans cela il ne se tirerait
+                    // pas, et c'est justement lui qu'on veut relire.
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: <Widget>[
+                        _emptyState(monthKey, typeFilter, monthHasEvents),
+                        CalendarSubscriptionCard(teamSlug: widget.teamSlug),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
                   ),
                 )
               : NotificationListener<ScrollNotification>(
                   onNotification: _onAgendaScroll,
-                  child: ScrollablePositionedList.builder(
-                    itemScrollController: _agendaController,
-                    // La liste ne pose **pas** de marge latérale : le bloc
-                    // d'abonnement, qui en est la dernière entrée, porte les
-                    // siennes et les doublerait.
-                    padding: const EdgeInsets.only(bottom: 32),
-                    itemCount: entries.length + 1,
-                    itemBuilder: (BuildContext context, int index) =>
-                        index == entries.length
-                        ? CalendarSubscriptionCard(teamSlug: widget.teamSlug)
-                        : _entry(entries[index]),
+                  child: PdlRefresh(
+                    onRefresh: () => _refresh(monthKey),
+                    child: ScrollablePositionedList.builder(
+                      itemScrollController: _agendaController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      // La liste ne pose **pas** de marge latérale : le bloc
+                      // d'abonnement, qui en est la dernière entrée, porte les
+                      // siennes et les doublerait.
+                      padding: const EdgeInsets.only(bottom: 32),
+                      itemCount: entries.length + 1,
+                      itemBuilder: (BuildContext context, int index) =>
+                          index == entries.length
+                          ? CalendarSubscriptionCard(teamSlug: widget.teamSlug)
+                          : _entry(entries[index]),
+                    ),
                   ),
                 ),
         ),
       ],
     );
+  }
+
+  /// Relit le mois affiché. Le mois reste à l'écran pendant l'aller-retour :
+  /// un rechargement garde la valeur précédente.
+  Future<void> _refresh(CalendarMonthKey monthKey) async {
+    ref.invalidate(calendarMonthProvider(monthKey));
+    try {
+      await ref.read(calendarMonthProvider(monthKey).future);
+    } catch (_) {
+      // L'échec se rend par l'état d'erreur de l'écran.
+    }
   }
 
   Widget _entry(_AgendaEntry entry) => Padding(

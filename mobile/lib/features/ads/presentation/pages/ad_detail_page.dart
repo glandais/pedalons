@@ -159,131 +159,142 @@ class _AdDetailContentState extends ConsumerState<_AdDetailContent> {
             ),
         ],
       ),
-      body: CustomScrollView(
-        slivers: <Widget>[
-          SliverPadding(
-            padding: const EdgeInsets.all(PdlSpacing.section),
-            sliver: SliverList.list(
-              children: <Widget>[
-                TeamBanner(team: ad.team),
-                const SizedBox(height: PdlSpacing.cardTight),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        ad.name,
-                        key: keys.ad.title,
-                        style: t.screenTitle,
-                      ),
-                    ),
-                    const SizedBox(width: PdlSpacing.chipGap),
-                    PdlBadgeStack(
-                      badges: <Widget>[
-                        PdlBadge(
-                          label: 'ads.adType.${ad.adType}'.tr(),
-                          tone: type.tone(c),
-                          size: PdlBadgeSize.lg,
+      body: PdlRefresh(
+        onRefresh: () async {
+          final params = (teamSlug: ad.team.slug, adSlug: ad.slug);
+          ref.invalidate(adDetailProvider(params));
+          try {
+            await ref.read(adDetailProvider(params).future);
+          } catch (_) {
+            // L'échec se rend par l'état d'erreur de l'écran.
+          }
+        },
+        child: CustomScrollView(
+          slivers: <Widget>[
+            SliverPadding(
+              padding: const EdgeInsets.all(PdlSpacing.section),
+              sliver: SliverList.list(
+                children: <Widget>[
+                  TeamBanner(team: ad.team),
+                  const SizedBox(height: PdlSpacing.cardTight),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          ad.name,
+                          key: keys.ad.title,
+                          style: t.screenTitle,
                         ),
-                        if (ad.status == 'DRAFT')
+                      ),
+                      const SizedBox(width: PdlSpacing.chipGap),
+                      PdlBadgeStack(
+                        badges: <Widget>[
                           PdlBadge(
-                            label: 'status.draft'.tr(),
-                            tone: Status.draft.tone(c),
+                            label: 'ads.adType.${ad.adType}'.tr(),
+                            tone: type.tone(c),
+                            size: PdlBadgeSize.lg,
                           ),
-                      ],
+                          if (ad.status == 'DRAFT')
+                            PdlBadge(
+                              label: 'status.draft'.tr(),
+                              tone: Status.draft.tone(c),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (at != null) ...<Widget>[
+                    const SizedBox(height: 4),
+                    Text(AppFormatters.formatFullDate(at), style: t.sub),
+                  ],
+                  if (ad.tags.isNotEmpty) ...<Widget>[
+                    const SizedBox(height: PdlSpacing.chipGap),
+                    ContentTagRow(tags: ad.tags),
+                  ],
+                  const SizedBox(height: PdlSpacing.section),
+                  // `note` porte la période d'une location et rien d'autre : le
+                  // lieu a sa propre section, et l'absence de prix est déjà dite
+                  // par `amount` — « Prix à négocier », jamais un tiret.
+                  PdlPriceBlock(price: price.amount, note: price.period),
+                  if (ad.media.markdown.isNotEmpty) ...<Widget>[
+                    const SizedBox(height: PdlSpacing.section),
+                    PdlSectionHeader(title: 'ads.detail.description'.tr()),
+                    MarkdownContent(
+                      data: ad.media.markdown,
+                      images: ad.media.assets.images,
                     ),
                   ],
-                ),
-                if (at != null) ...<Widget>[
-                  const SizedBox(height: 4),
-                  Text(AppFormatters.formatFullDate(at), style: t.sub),
-                ],
-                if (ad.tags.isNotEmpty) ...<Widget>[
-                  const SizedBox(height: PdlSpacing.chipGap),
-                  ContentTagRow(tags: ad.tags),
-                ],
-                const SizedBox(height: PdlSpacing.section),
-                // `note` porte la période d'une location et rien d'autre : le
-                // lieu a sa propre section, et l'absence de prix est déjà dite
-                // par `amount` — « Prix à négocier », jamais un tiret.
-                PdlPriceBlock(price: price.amount, note: price.period),
-                if (ad.media.markdown.isNotEmpty) ...<Widget>[
-                  const SizedBox(height: PdlSpacing.section),
-                  PdlSectionHeader(title: 'ads.detail.description'.tr()),
-                  MarkdownContent(
-                    data: ad.media.markdown,
-                    images: ad.media.assets.images,
-                  ),
-                ],
-                // Les fichiers joints à l'annonce — facture, notice, fiche
-                // technique. Ils voyagent dans `media.assets.attachments`,
-                // servi en entier par `getAd` : la liste, elle, est chargée en
-                // `COMPACT` et ne les porte pas, d'où leur absence de la carte.
-                MediaAttachments(attachments: ad.media.assets.attachments),
-                if (ad.locationGeometry != null ||
-                    ad.locationDescription != null) ...<Widget>[
+                  // Les fichiers joints à l'annonce — facture, notice, fiche
+                  // technique. Ils voyagent dans `media.assets.attachments`,
+                  // servi en entier par `getAd` : la liste, elle, est chargée en
+                  // `COMPACT` et ne les porte pas, d'où leur absence de la carte.
+                  MediaAttachments(attachments: ad.media.assets.attachments),
+                  if (ad.locationGeometry != null ||
+                      ad.locationDescription != null) ...<Widget>[
+                    const SizedBox(height: PdlSpacing.section),
+                    PdlSectionHeader(
+                      key: keys.ad.location,
+                      title: 'ads.detail.location'.tr(),
+                    ),
+                    if (ad.locationDescription != null)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          bottom: PdlSpacing.chipGap,
+                        ),
+                        child: PdlStat(
+                          key: keys.ad.locationDescription,
+                          value: ad.locationDescription!,
+                          icon: PdlIcons.place,
+                        ),
+                      ),
+                    // Aucune carte quand la géométrie manque : le lieu écrit se
+                    // suffit, et une carte centrée sur un repli mentirait.
+                    if (ad.locationGeometry != null)
+                      AdLocationMap(geometry: ad.locationGeometry!),
+                  ],
                   const SizedBox(height: PdlSpacing.section),
                   PdlSectionHeader(
-                    key: keys.ad.location,
-                    title: 'ads.detail.location'.tr(),
+                    key: keys.ad.seller,
+                    title: 'ads.detail.seller'.tr(),
                   ),
-                  if (ad.locationDescription != null)
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        bottom: PdlSpacing.chipGap,
-                      ),
-                      child: PdlStat(
-                        key: keys.ad.locationDescription,
-                        value: ad.locationDescription!,
-                        icon: PdlIcons.place,
-                      ),
+                  PdlPersonRow(name: ad.createdByDisplayName),
+                  if (_messageSent) ...<Widget>[
+                    const SizedBox(height: PdlSpacing.cardTight),
+                    // `PdlBannerTone` n'a pas de teinte « succès » et n'en
+                    // gagne pas une pour l'occasion : `info` porte la même
+                    // paire primaire, et l'icône dit le reste.
+                    PdlBanner(
+                      key: keys.ad.contactSent,
+                      tone: PdlBannerTone.info,
+                      icon: PdlIcons.checkCircle,
+                      message: 'ads.contact.sent'.tr(),
                     ),
-                  // Aucune carte quand la géométrie manque : le lieu écrit se
-                  // suffit, et une carte centrée sur un repli mentirait.
-                  if (ad.locationGeometry != null)
-                    AdLocationMap(geometry: ad.locationGeometry!),
+                  ] else if (_optedOut) ...<Widget>[
+                    const SizedBox(height: PdlSpacing.cardTight),
+                    PdlBanner(
+                      key: keys.ad.contactOptedOut,
+                      tone: PdlBannerTone.warn,
+                      message: 'ads.contact.optedOut'.tr(),
+                    ),
+                  ] else if (currentUserId != ad.createdById) ...<Widget>[
+                    // Le bouton **n'existe pas** sur sa propre annonce : se
+                    // relayer un message à soi-même n'est pas une action.
+                    const SizedBox(height: PdlSpacing.cardTight),
+                    PdlButton(
+                      key: keys.ad.contactButton,
+                      label: 'ads.contact.cta'.tr(),
+                      icon: PdlIcons.email,
+                      fullWidth: true,
+                      onPressed: _contact,
+                    ),
+                  ],
+                  const SizedBox(height: 32),
                 ],
-                const SizedBox(height: PdlSpacing.section),
-                PdlSectionHeader(
-                  key: keys.ad.seller,
-                  title: 'ads.detail.seller'.tr(),
-                ),
-                PdlPersonRow(name: ad.createdByDisplayName),
-                if (_messageSent) ...<Widget>[
-                  const SizedBox(height: PdlSpacing.cardTight),
-                  // `PdlBannerTone` n'a pas de teinte « succès » et n'en
-                  // gagne pas une pour l'occasion : `info` porte la même
-                  // paire primaire, et l'icône dit le reste.
-                  PdlBanner(
-                    key: keys.ad.contactSent,
-                    tone: PdlBannerTone.info,
-                    icon: PdlIcons.checkCircle,
-                    message: 'ads.contact.sent'.tr(),
-                  ),
-                ] else if (_optedOut) ...<Widget>[
-                  const SizedBox(height: PdlSpacing.cardTight),
-                  PdlBanner(
-                    key: keys.ad.contactOptedOut,
-                    tone: PdlBannerTone.warn,
-                    message: 'ads.contact.optedOut'.tr(),
-                  ),
-                ] else if (currentUserId != ad.createdById) ...<Widget>[
-                  // Le bouton **n'existe pas** sur sa propre annonce : se
-                  // relayer un message à soi-même n'est pas une action.
-                  const SizedBox(height: PdlSpacing.cardTight),
-                  PdlButton(
-                    key: keys.ad.contactButton,
-                    label: 'ads.contact.cta'.tr(),
-                    icon: PdlIcons.email,
-                    fullWidth: true,
-                    onPressed: _contact,
-                  ),
-                ],
-                const SizedBox(height: 32),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/paths.dart';
 import '../../../../core/material.dart';
@@ -12,13 +13,23 @@ import '../widgets/profile_subpage.dart';
 /// appareils ». La suppression du compte n'est pas ici mais dans « Mon
 /// compte », vers lequel la page renvoie : une action rare et sans retour
 /// descend d'un niveau, dans la page qui la concerne.
-class ProfileSecurityPage extends StatelessWidget {
+class ProfileSecurityPage extends ConsumerWidget {
   const ProfileSecurityPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ProfileSubpage(
       title: 'profile.nav.security'.tr(),
+      // Une clé créée ou retirée depuis un autre appareil n'arrive ici que si
+      // on relit la liste.
+      onRefresh: () async {
+        ref.invalidate(passkeysProvider);
+        try {
+          await ref.read(passkeysProvider.future);
+        } catch (_) {
+          // L'échec se rend par l'état d'erreur de la section.
+        }
+      },
       slivers: <Widget>[
         const SliverToBoxAdapter(child: PasskeysSection()),
         SliverToBoxAdapter(

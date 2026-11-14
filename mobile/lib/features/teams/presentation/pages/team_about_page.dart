@@ -12,6 +12,7 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
 import '../../../../keys.dart';
+import '../../providers/team_providers.dart';
 
 /// A team's About section: its presentation and its free pages.
 ///
@@ -57,70 +58,82 @@ class TeamAboutPage extends ConsumerWidget {
     // la création de l'équipe sur la plateforme.
     final DateTime? created = DateTime.tryParse(team.createdAt);
 
-    return CustomScrollView(
-      primary: true,
-      slivers: <Widget>[
-        ...leadingSlivers,
-        ?toolbar,
-        SliverPadding(
-          padding: const EdgeInsets.all(PdlSpacing.section),
-          sliver: SliverList.list(
-            children: <Widget>[
-              if (created != null) ...<Widget>[
-                Text(
-                  'teams.aboutPage.founded'.tr(
-                    namedArgs: <String, String>{'year': '${created.year}'},
+    // Le détail de l'équipe porte tout ce que la section affiche : c'est lui
+    // qu'on relit. `TeamHomePage` garde l'écran en place pendant l'aller-retour.
+    return PdlRefresh(
+      onRefresh: () async {
+        ref.invalidate(teamDetailProvider(team.slug));
+        try {
+          await ref.read(teamDetailProvider(team.slug).future);
+        } catch (_) {
+          // L'échec se rend par l'état d'erreur de l'écran.
+        }
+      },
+      child: CustomScrollView(
+        primary: true,
+        slivers: <Widget>[
+          ...leadingSlivers,
+          ?toolbar,
+          SliverPadding(
+            padding: const EdgeInsets.all(PdlSpacing.section),
+            sliver: SliverList.list(
+              children: <Widget>[
+                if (created != null) ...<Widget>[
+                  Text(
+                    'teams.aboutPage.founded'.tr(
+                      namedArgs: <String, String>{'year': '${created.year}'},
+                    ),
+                    style: t.sub,
                   ),
-                  style: t.sub,
-                ),
-                const SizedBox(height: PdlSpacing.section),
-              ],
-              if (team.about.markdown.trim().isNotEmpty) ...<Widget>[
-                PdlSectionHeader(title: 'teams.about'.tr()),
-                MarkdownContent(
-                  data: team.about.markdown,
-                  images: team.about.assets.images,
-                ),
-                const SizedBox(height: PdlSpacing.section),
-              ],
-              if (team.about.assets.attachments.isNotEmpty) ...<Widget>[
-                MediaAttachments(
-                  attachments: team.about.assets.attachments,
-                  spacingBefore: 0,
-                ),
-                const SizedBox(height: PdlSpacing.section),
-              ],
-              if (pages.isNotEmpty) ...<Widget>[
-                PdlSectionHeader(title: 'teams.aboutPage.pages'.tr()),
-                Text('teams.aboutPage.pagesHint'.tr(), style: t.xs),
-                const SizedBox(height: 4),
-                for (int i = 0; i < pages.length; i++)
-                  PdlSettingRow(
-                    key: keys.team.aboutPageRow(pages[i].slug),
-                    icon: PdlIcons.page,
-                    title: pages[i].title,
-                    showDivider: i < pages.length - 1,
-                    onTap: () =>
-                        context.push(Paths.teamPage(teamSlug, pages[i].slug)),
+                  const SizedBox(height: PdlSpacing.section),
+                ],
+                if (team.about.markdown.trim().isNotEmpty) ...<Widget>[
+                  PdlSectionHeader(title: 'teams.about'.tr()),
+                  MarkdownContent(
+                    data: team.about.markdown,
+                    images: team.about.assets.images,
+                  ),
+                  const SizedBox(height: PdlSpacing.section),
+                ],
+                if (team.about.assets.attachments.isNotEmpty) ...<Widget>[
+                  MediaAttachments(
+                    attachments: team.about.assets.attachments,
+                    spacingBefore: 0,
+                  ),
+                  const SizedBox(height: PdlSpacing.section),
+                ],
+                if (pages.isNotEmpty) ...<Widget>[
+                  PdlSectionHeader(title: 'teams.aboutPage.pages'.tr()),
+                  Text('teams.aboutPage.pagesHint'.tr(), style: t.xs),
+                  const SizedBox(height: 4),
+                  for (int i = 0; i < pages.length; i++)
+                    PdlSettingRow(
+                      key: keys.team.aboutPageRow(pages[i].slug),
+                      icon: PdlIcons.page,
+                      title: pages[i].title,
+                      showDivider: i < pages.length - 1,
+                      onTap: () =>
+                          context.push(Paths.teamPage(teamSlug, pages[i].slug)),
+                    ),
+                ],
+                if (team.about.markdown.trim().isEmpty &&
+                    team.about.assets.attachments.isEmpty &&
+                    pages.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: PdlEmptyState(
+                      variant: PdlEmptyVariant.empty,
+                      icon: PdlIcons.info,
+                      title: 'teams.aboutPage.empty'.tr(),
+                      message: 'teams.aboutPage.emptyHint'.tr(),
+                    ),
                   ),
               ],
-              if (team.about.markdown.trim().isEmpty &&
-                  team.about.assets.attachments.isEmpty &&
-                  pages.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: PdlEmptyState(
-                    variant: PdlEmptyVariant.empty,
-                    icon: PdlIcons.info,
-                    title: 'teams.aboutPage.empty'.tr(),
-                    message: 'teams.aboutPage.emptyHint'.tr(),
-                  ),
-                ),
-            ],
+            ),
           ),
-        ),
-        const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
-      ],
+          const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+        ],
+      ),
     );
   }
 }

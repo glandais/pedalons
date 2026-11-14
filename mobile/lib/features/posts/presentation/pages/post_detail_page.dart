@@ -157,63 +157,78 @@ class _PostDetailContent extends ConsumerWidget {
           ),
         ],
       ),
-      body: CustomScrollView(
-        slivers: <Widget>[
-          SliverPadding(
-            padding: const EdgeInsets.all(PdlSpacing.section),
-            sliver: SliverList.list(
-              children: <Widget>[
-                _identity(context),
-                const SizedBox(height: PdlSpacing.section),
-                if (post.media.markdown.trim().isNotEmpty)
-                  MarkdownContent(
-                    data: post.media.markdown,
-                    images: post.media.assets.images,
-                  ),
-                MediaAttachments(attachments: attachments),
-                const SizedBox(height: PdlSpacing.section),
-                // `commentCount` absent signifie « vous n'avez pas le droit de
-                // lire les commentaires » : un non-membre n'est même pas
-                // informé qu'il y en a zéro, donc le fil ne se monte pas.
-                if (post.commentCount != null)
-                  CommentThread(
-                    target: CommentTarget(
-                      entity: CommentEntity.post,
-                      teamSlug: post.team.slug,
-                      slug: post.slug,
+      body: PdlRefresh(
+        onRefresh: () async {
+          final params = (teamSlug: post.team.slug, postSlug: post.slug);
+          ref.invalidate(postDetailProvider(params));
+          try {
+            await ref.read(postDetailProvider(params).future);
+          } catch (_) {
+            // L'échec se rend par l'état d'erreur de l'écran.
+          }
+        },
+        child: CustomScrollView(
+          slivers: <Widget>[
+            SliverPadding(
+              padding: const EdgeInsets.all(PdlSpacing.section),
+              sliver: SliverList.list(
+                children: <Widget>[
+                  _identity(context),
+                  const SizedBox(height: PdlSpacing.section),
+                  if (post.media.markdown.trim().isNotEmpty)
+                    MarkdownContent(
+                      data: post.media.markdown,
+                      images: post.media.assets.images,
                     ),
-                    canComment: canComment,
-                  )
-                else
-                  // Une équipe que l'appelant ne peut pas consulter (privée,
-                  // publication lue par lien) n'offre pas de lien vers elle.
-                  PdlBanner(
-                    tone: PdlBannerTone.info,
-                    message: viewTeam == null
-                        ? 'posts.commentsPrivateTeam'.tr()
-                        : 'posts.commentsMembersOnly'.tr(),
-                    action: viewTeam == null
-                        ? null
-                        : PdlButton(
-                            label: 'teams.viewTeam'.tr(),
-                            variant: PdlButtonVariant.outline,
-                            size: PdlButtonSize.sm,
-                            onPressed: viewTeam,
-                          ),
-                  ),
-              ],
+                  MediaAttachments(attachments: attachments),
+                  const SizedBox(height: PdlSpacing.section),
+                  // `commentCount` absent signifie « vous n'avez pas le droit de
+                  // lire les commentaires » : un non-membre n'est même pas
+                  // informé qu'il y en a zéro, donc le fil ne se monte pas.
+                  if (post.commentCount != null)
+                    CommentThread(
+                      target: CommentTarget(
+                        entity: CommentEntity.post,
+                        teamSlug: post.team.slug,
+                        slug: post.slug,
+                      ),
+                      canComment: canComment,
+                    )
+                  else
+                    // Une équipe que l'appelant ne peut pas consulter (privée,
+                    // publication lue par lien) n'offre pas de lien vers elle.
+                    PdlBanner(
+                      tone: PdlBannerTone.info,
+                      message: viewTeam == null
+                          ? 'posts.commentsPrivateTeam'.tr()
+                          : 'posts.commentsMembersOnly'.tr(),
+                      action: viewTeam == null
+                          ? null
+                          : PdlButton(
+                              label: 'teams.viewTeam'.tr(),
+                              variant: PdlButtonVariant.outline,
+                              size: PdlButtonSize.sm,
+                              onPressed: viewTeam,
+                            ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          // Absent en ouverture froide, et sans espace résiduel : le composant
-          // rend `SizedBox.shrink()` quand il n'a aucun voisin.
-          SliverToBoxAdapter(
-            child: PdlPrevNextNav(
-              previous: _target(context, neighbours?.previous, forward: false),
-              next: _target(context, neighbours?.next, forward: true),
+            // Absent en ouverture froide, et sans espace résiduel : le composant
+            // rend `SizedBox.shrink()` quand il n'a aucun voisin.
+            SliverToBoxAdapter(
+              child: PdlPrevNextNav(
+                previous: _target(
+                  context,
+                  neighbours?.previous,
+                  forward: false,
+                ),
+                next: _target(context, neighbours?.next, forward: true),
+              ),
             ),
-          ),
-          const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
-        ],
+            const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+          ],
+        ),
       ),
     );
   }

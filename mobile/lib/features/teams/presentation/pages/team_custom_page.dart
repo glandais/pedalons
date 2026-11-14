@@ -56,31 +56,43 @@ class TeamCustomPage extends ConsumerWidget {
         backSemanticLabel: 'common.back'.tr(),
       ),
       body: pageAsync.when(
-        data: (TeamPageDto page) => SingleChildScrollView(
-          primary: true,
-          padding: const EdgeInsets.all(PdlSpacing.section),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              // Pas de `onTap`, à dessein (ledger `MOB-90`) : la page est une
-              // sous-route de l'équipe, qui est toujours la page dessous — le
-              // retour y mène, et la toucher en empilerait une seconde copie.
-              PdlTeamLine(label: page.team.name, imageUrl: page.team.logoUrl),
-              const SizedBox(height: PdlSpacing.chipGap),
-              Text(
-                page.title,
-                key: keys.team.customPageTitle,
-                style: context.pdlText.screenTitle,
-              ),
-              const SizedBox(height: PdlSpacing.cardTight),
-              MarkdownContent(
-                key: keys.team.customPageBody,
-                data: page.media.markdown,
-                images: page.media.assets.images,
-              ),
-              MediaAttachments(attachments: page.media.assets.attachments),
-              const SizedBox(height: 32),
-            ],
+        data: (TeamPageDto page) => PdlRefresh(
+          onRefresh: () async {
+            ref.invalidate(teamPageProvider(params));
+            try {
+              await ref.read(teamPageProvider(params).future);
+            } catch (_) {
+              // L'échec se rend par l'état d'erreur de l'écran.
+            }
+          },
+          child: SingleChildScrollView(
+            primary: true,
+            // Une page courte ne déborde pas : sans cela elle ne se tirerait pas.
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(PdlSpacing.section),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                // Pas de `onTap`, à dessein (ledger `MOB-90`) : la page est une
+                // sous-route de l'équipe, qui est toujours la page dessous — le
+                // retour y mène, et la toucher en empilerait une seconde copie.
+                PdlTeamLine(label: page.team.name, imageUrl: page.team.logoUrl),
+                const SizedBox(height: PdlSpacing.chipGap),
+                Text(
+                  page.title,
+                  key: keys.team.customPageTitle,
+                  style: context.pdlText.screenTitle,
+                ),
+                const SizedBox(height: PdlSpacing.cardTight),
+                MarkdownContent(
+                  key: keys.team.customPageBody,
+                  data: page.media.markdown,
+                  images: page.media.assets.images,
+                ),
+                MediaAttachments(attachments: page.media.assets.attachments),
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
         ),
         loading: () => const SingleChildScrollView(

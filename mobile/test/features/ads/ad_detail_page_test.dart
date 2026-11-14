@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
@@ -27,14 +28,18 @@ import 'ad_fixtures.dart';
 class _StubAdRepository implements AdRepository {
   _StubAdRepository(this.ad, {this.contactError});
 
-  final AdDto ad;
+  AdDto ad;
   final Object? contactError;
 
+  int reads = 0;
   int contacts = 0;
   String? lastMessage;
 
   @override
-  Future<AdDto> getAd(String teamSlug, String adSlug) async => ad;
+  Future<AdDto> getAd(String teamSlug, String adSlug) async {
+    reads++;
+    return ad;
+  }
 
   @override
   Future<int> countAds(AdFilters filters) async => 0;
@@ -118,6 +123,37 @@ void main() {
     }
     return repository;
   }
+
+  testWidgets(
+    'tirer pour rafraîchir relit l\'annonce : le nouveau lieu apparaît',
+    (WidgetTester tester) async {
+      final AdDto ad = fixtureAd(locationDescription: 'Lille');
+      final _StubAdRepository repository = await openAd(tester, ad);
+      expect(repository.reads, 1);
+      // La secousse de `PdlRefresh` passe par le canal de plate-forme : sans
+      // réponse, le rafraîchissement l'attendrait indéfiniment.
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall call) async => null,
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      repository.ad = fixtureAd(locationDescription: 'Roubaix');
+      await tester.fling(find.text(ad.name), const Offset(0, 400), 1000);
+      for (int i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(repository.reads, 2);
+      expect(find.text('Roubaix'), findsOneWidget);
+      expect(find.text('Lille'), findsNothing);
+    },
+  );
 
   group('localisation', () {
     testWidgets('une annonce géolocalisée rend un secteur et le dit', (
