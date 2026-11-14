@@ -2,7 +2,7 @@
 
 *Garmin information below was gathered on 2026-10-15 from the developer site and the dashboard —
 verify the links and the process before relying on it.* Version 1.0.0 submitted for review on
-2026-10-15, replaced in review by 1.0.1 on 2026-10-16 (approved), 1.0.2 submitted and approved on 2026-10-23 (ledger `OPS-35`); each release is tagged
+2026-10-15, replaced in review by 1.0.1 on 2026-10-16 (approved), 1.0.2 submitted and approved on 2026-10-23, 1.0.3 (app-drawn menus, day/night mode) submitted on 2026-11-14 (ledger `OPS-35`); each release is tagged
 `garmin.X.Y.Z` (skill `garmin-release`).
 
 ## Current Situation
@@ -31,6 +31,7 @@ verify the links and the process before relying on it.* Version 1.0.0 submitted 
 | `metadata/version/X.Y.Z/fr-FR.json`, `en-US.json` | `whatsNew`: the release notes of version X.Y.Z |
 | `metadata/screenshots/` | Captures, listed in `app.json`'s `screenshots` in display order |
 | `metadata/cover.png` | Cover image, 500×500, from `assets/icon-1024.png` |
+| `metadata/store-icon-64colors.png`, `store-icon-24bit.png` | On-device store icons, 128×128, from `assets/icon-1024.png` |
 | `metadata/hero/` | Hero image per language, 1440×720, rendered by `render.sh` from `hero.html` |
 
 Write the version folder **before** packaging, as for Karoo. Nothing reads these files
@@ -76,8 +77,11 @@ characters under it may stay, the code expires after ten minutes).
    - **User data collected**: yes, with the privacy policy URL — one URL for all languages,
      `/confidentialite`.
    - ANT+ profiles: no. Regional limits: no.
-   - **Cover image** 500×500, 300 KB max: `metadata/cover.png`. On-device store icons (128×128):
-     no.
+   - **Cover image** 500×500, 300 KB max: `metadata/cover.png`. On-device store icons (128×128),
+     optional, since 1.0.3: `metadata/store-icon-64colors.png` (Garmin's 64-colour palette, four
+     levels per channel, saved as an **indexed** PNG) and `store-icon-24bit.png` (RGBA). Two files
+     with the same width, height and bit depth are refused ("There's an existing app icon
+     submitted for this app"): the indexed PNG is what tells them apart.
    - **Screenshots**, 150 KB max each, five at most: add them **one at a time**, the input keeps only the first
      file of a multiple selection.
    - Video (optional): none. **Public contact e-mail**: `contact@pedalons.fr`. Source code URL:
