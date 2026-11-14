@@ -6520,7 +6520,7 @@
           },
           "excludedFromGenerator" : {
             "type" : "boolean",
-            "description" : "Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Omitted: false on a creation, left as it is on an update (clients older than 14.13.0 do not send it)"
+            "description" : "Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Omitted: false on a creation, left as it is on an update (clients older than 14.14.0 do not send it)"
           }
         }
       },
@@ -26998,7 +26998,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "14.13.0",
+    "version" : "14.14.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

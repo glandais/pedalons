@@ -24,7 +24,7 @@ mixin _$RouteRequest {
  List<GeoPoint>? get points;/// IDs (TSID) of the team's ROUTE tags the route carries, replacing the whole set — at most 10, each a tag of this team and of kind ROUTE, else 400 (TAG_INVALID, TOO_MANY_TAGS). An empty list removes them all. Omitted: none on a creation, left as they are on an update.
  List<String>? get tagIds;/// Editing state of the planner; the server derives the track from it. Not with points (400 PLANNER_STATE_INVALID); a gpxFile wins over it
  PlannerState? get plannerState;/// The complete list of the route's waypoints, replacing them. Omitted: they stay as they are (placed again on the new track when the track changes, and a new GPX file replaces the imported ones and keeps the author's). When present it wins over the waypoints of a GPX file sent with it
- List<WaypointRequest>? get waypoints;/// Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Omitted: false on a creation, left as it is on an update (clients older than 14.13.0 do not send it)
+ List<WaypointRequest>? get waypoints;/// Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Omitted: false on a creation, left as it is on an update (clients older than 14.14.0 do not send it)
  bool? get excludedFromGenerator;
 /// Create a copy of RouteRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -299,7 +299,7 @@ class _RouteRequest implements RouteRequest {
   return EqualUnmodifiableListView(value);
 }
 
-/// Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Omitted: false on a creation, left as it is on an update (clients older than 14.13.0 do not send it)
+/// Ne pas utiliser pour générer des parcours: the route's roads do not feed the team's route generator unless another route rides them. Omitted: false on a creation, left as it is on an update (clients older than 14.14.0 do not send it)
 @override final  bool? excludedFromGenerator;
 
 /// Create a copy of RouteRequest

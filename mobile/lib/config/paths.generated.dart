@@ -787,6 +787,8 @@ const List<String> sitePagePathPatterns = <String>[
   r'^/equipes/[^/]+/articles/[^/]+/modifier/?$',
   r'^/teams/[^/]+/routes/map/?$',
   r'^/equipes/[^/]+/parcours/carte/?$',
+  r'^/teams/[^/]+/routes/generate/?$',
+  r'^/equipes/[^/]+/parcours/generer/?$',
   r'^/teams/[^/]+/routes/[^/]+/map/?$',
   r'^/equipes/[^/]+/parcours/[^/]+/carte/?$',
   r'^/teams/[^/]+/classifieds/new/?$',

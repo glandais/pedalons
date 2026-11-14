@@ -7,9 +7,9 @@ in `gpx_tracks.network_edges`, `V91`) and lot 2
 ([`…-conception-lot2.md`](2026-11-13-generateur-boucles-equipe-conception-lot2.md), the pure engine in
 `service/route/generator/`; §12 is the normative part, §12.1 the mapping rules).
 
-Written 14 November 2026. Status: **design, not coded**. Contract `14.12.0` → **`14.13.0`**
-(checked in `application.properties` on 14 November 2026). Last migration `V91`, so this lot takes
-**`V92`**.
+Written 14 November 2026. Status: **design, not coded**. Contract `14.13.0` → **`14.14.0`**
+(checked in `application.properties` on 14 November 2026). Last migration `V91`; renumbered after the rebase over `API-199` (which took `V92` and `14.13.0`), this lot takes
+**`V93`**.
 
 Paths are relative to `backend/src/main/java/fr/pedalons/` unless stated otherwise.
 
@@ -27,7 +27,7 @@ Paths are relative to `backend/src/main/java/fr/pedalons/` unless stated otherwi
 | Endpoint | `POST /api/teams/{teamSlug}/route-generator`, rights `PlannerAccess.check(teamSlug)` (not `checkRouting`: nothing billed, no quota drawn), not transactional, no DB connection held while computing. |
 | CPU | A per-user in-memory sliding window (30 per 15 min) → 429 `ROUTE_GENERATOR_RATE_LIMITED`; a per-instance semaphore (default `max(1, cores / 2)` permits, 2 s wait) → 503 `ROUTE_GENERATOR_BUSY`; a 5 s wall-clock stop inside the engine → 503 `ROUTE_GENERATOR_BUSY`. |
 | Engine change | One, needed by the adapter: an optional stop signal (`BooleanSupplier`) polled per turning point, per polygon evaluation and per checked candidate. Without it, nothing bounds a single request's CPU time. The default overload never stops, so lot 2's results and tests are unchanged (§3.6). |
-| `excludedFromGenerator` | `V92` adds `team_entities.excluded_from_generator boolean not null default false`. `RouteRequest` gets an optional `Boolean` (null means unchanged on update, false on create). `RouteDetailDto` gets the field, always sent, **not marked required** in the schema so that no mobile or web fixture has to change (§4). |
+| `excludedFromGenerator` | `V93` adds `team_entities.excluded_from_generator boolean not null default false`. `RouteRequest` gets an optional `Boolean` (null means unchanged on update, false on create). `RouteDetailDto` gets the field, always sent, **not marked required** in the schema so that no mobile or web fixture has to change (§4). |
 | Error details | Only `GENERATOR_NETWORK_TOO_SMALL` carries details (the network summary, so the site can say "analysis still running"). The other `GENERATOR_*` codes carry none. |
 
 ---
@@ -429,7 +429,7 @@ unknown slug or another domain's team → 404. Non-member, or member without rou
 
 ### 3.8 Contract
 
-`pedalons.api.version=14.13.0` (minor: a new endpoint, new optional request field, new response
+`pedalons.api.version=14.14.0` (minor: a new endpoint, new optional request field, new response
 field, new enum values and error codes). Regenerate deliberately with the `contract-first-api`
 skill (`mvn package -DskipTests`, then `pnpm generate-api` in `frontend/`, then the mobile
 generator as the skill says), and keep `contracts/openapi.json` / `.yaml` and the generated clients.
@@ -438,7 +438,7 @@ generator as the skill says), and keep `contracts/openapi.json` / `.yaml` and th
 
 ## 4. `Route.excludedFromGenerator`
 
-**Migration** `V92__route_excluded_from_generator.sql`:
+**Migration** `V93__route_excluded_from_generator.sql`:
 
 ```sql
 -- docs/LEDGER_*.md API-198 (lot 3, plan docs/plans/2026-11-13-generateur-boucles-equipe-lot3.md §4):
@@ -464,7 +464,7 @@ convention: "Without X: the shape this record had before API-198"), so the 71 te
 `BiketeamMigrationService` and `RouteCopyService` compile unchanged.
 
 **Null means unchanged** on update. That is required, not a convenience: the mobile route form and
-any client older than `14.13.0` omit the field, and must not untick it on every save.
+any client older than `14.14.0` omit the field, and must not untick it on every save.
 
 **`RouteService`**:
 
@@ -579,7 +579,7 @@ Main (`backend/src/main/…`):
 
 | File | Change |
 |---|---|
-| `resources/db/migration/V92__route_excluded_from_generator.sql` | new (§4) |
+| `resources/db/migration/V93__route_excluded_from_generator.sql` | new (§4) |
 | `domain/route/Route.java` | field |
 | `dto/routes/request/RouteRequest.java` | component + compatibility constructor |
 | `dto/routes/response/RouteDetailDto.java` | field, filled in `from(...)` |
@@ -594,7 +594,7 @@ Main (`backend/src/main/…`):
 | `service/route/network/` (`package-info`, `TrackInputMapper`, `TeamNetwork`, `TeamNetworkSummary`, `Fingerprint`, `TeamNetworkCache`, `RouteGeneratorService`, `RouteGeneratorGuard`, `RouteGeneratorErrors`, `RouteGeneratorMetrics`, `RouteGeneratorProducer`) | new |
 | `api/routes/RouteGeneratorResource.java` | new |
 | `service/route/generator/RouteGenerator.java`, `QueryContext.java`, `LoopFamily.java`, `PolygonFamily.java`, new `GeneratorStoppedException.java` | stop signal only (§3.6) |
-| `resources/application.properties` | `pedalons.api.version=14.13.0`; `pedalons.route-generator.*` (§2.3, §3.5) with comments |
+| `resources/application.properties` | `pedalons.api.version=14.14.0`; `pedalons.route-generator.*` (§2.3, §3.5) with comments |
 | `backend/pom.xml` | explicit `caffeine` dependency (BOM-managed) |
 
 `RouteGeneratorMetrics` (Micrometer, like `NetworkEdgesMetrics`):
@@ -612,7 +612,7 @@ kill switch). The plan header and ledger move are the owner's (this lot does not
 
 ### 6.2 Order
 
-1. `V92`, `Route` field, `RouteRequest` / `RouteDetailDto` / `RouteService` / `RouteCopyService`,
+1. `V93`, `Route` field, `RouteRequest` / `RouteDetailDto` / `RouteService` / `RouteCopyService`,
    then `RouteExcludedFromGeneratorResourceTest`.
 2. `TrackInputMapper` and its unit test.
 3. Engine stop signal and `RouteGeneratorStopTest`. Re-run the lot 2 generator suite
@@ -622,7 +622,7 @@ kill switch). The plan header and ledger move are the owner's (this lot does not
    `NetworkEdgesFixtures`, then `RouteGeneratorCacheTest`.
 5. DTOs, `ErrorCode`, `RouteGeneratorNetworkDetails`, `RouteGeneratorErrors`, `RouteGeneratorGuard`,
    `RouteGeneratorService`, `RouteGeneratorResource`, then the resource, query-count and unit tests.
-6. `pedalons.api.version=14.13.0`, then `contract-first-api` (backend package, `pnpm
+6. `pedalons.api.version=14.14.0`, then `contract-first-api` (backend package, `pnpm
    generate-api`, mobile generation). Then `pnpm typecheck && pnpm lint && pnpm test` in
    `frontend/`, and the mobile analyzer the skill runs.
 7. `OPERATIONS.md` keys; `EXPLAIN (ANALYZE, BUFFERS)` of both queries on a migrated base (no TOAST
@@ -663,7 +663,7 @@ kill switch). The plan header and ledger move are the owner's (this lot does not
 
 ## As implemented (14 November 2026)
 
-Contract `14.13.0`, migration `V92`. All of §6.1 is coded except the items listed below.
+Contract `14.14.0`, migration `V93`. All of §6.1 is coded except the items listed below.
 
 Deviations from the design:
 

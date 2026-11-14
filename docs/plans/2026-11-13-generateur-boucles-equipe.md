@@ -3,7 +3,7 @@
 Écrit le 13 novembre 2026. **État : en cours. Décisions prises le 13 novembre 2026
 (§10) ; lot 0 livré le même jour (osm-route-details api `1.7`, image `sha-9f0f16f`, puis api `1.8`, `sha-ce4ec11`) ;
 lot 1 (`network_edges`, `V91`) et lot 2 (générateur pur, tests verts, relu) livrés le 14 novembre 2026 ;
-lot 3 (cache, endpoint, `V92`, contrat `14.13.0`) et lot 4 (site, `WEB-179`) codés le 14 novembre 2026 ; restent l'e2e du lot 4 et le banc sur données réelles.**
+lot 3 (cache, endpoint, `V93`, contrat `14.14.0`) et lot 4 (site, `WEB-179`) codés le 14 novembre 2026 ; restent l'e2e du lot 4 et le banc sur données réelles.**
 Ledger `API-198` (réseau et générateur, backend), `WEB-179` (site), `MOB-154` (app, plus tard).
 Numéros renumérotés le 14 novembre 2026 après rebase (`API-196`, `MOB-153` et le contrat `14.12.0` pris entre-temps) ; contrat à `14.12.0`, dernière migration `V90`.
 
@@ -305,7 +305,7 @@ part de non-revêtu de chaque proposition (`unpavedShare`). Remplace l'option `s
 
 ## 6. Contrat
 
-`POST /api/teams/{teamSlug}/route-generator` (version mineure, `14.13.0`) :
+`POST /api/teams/{teamSlug}/route-generator` (version mineure, `14.14.0`) :
 
 - **Requête** : `start` (lat, lon ; défaut le lieu de l'équipe), `end` (lat, lon ; défaut
   `start`), `bearing` (enum `N…NW`, nullable), `distanceKm`, `familiarity` (0 à 1, défaut 0,5),
@@ -405,7 +405,7 @@ le parcours est possible ensuite ; hors périmètre de ce plan.
 | **0** | `edges[]` dans osm-route-details (dépôt séparé) | décision 10.1 |
 | **1** | `network_edges` : migration, client, écriture par le worker, rattrapage | 0 |
 | **2** | Générateur pur + contrôleur + tests unitaires + banc | 1 (le banc) ; le code peut commencer avant sur des graphes à la main |
-| **3** | Graphe d'équipe en cache, endpoint, case `excludedFromGenerator`, contrat `14.13.0` | 1, 2 |
+| **3** | Graphe d'équipe en cache, endpoint, case `excludedFromGenerator`, contrat `14.14.0` | 1, 2 |
 | **4** | Site (panneau, case dans l'éditeur de parcours) | 3 |
 
 ## 12. Délibérément dehors

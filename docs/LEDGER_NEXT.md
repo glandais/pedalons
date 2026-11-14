@@ -869,7 +869,7 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       Lot 3 codé le 14 novembre 2026 (conception [`…-lot3.md`](plans/2026-11-13-generateur-boucles-equipe-lot3.md)) :
       cache Caffeine du graphe par équipe (empreinte relue à chaque requête), endpoint, garde-fous CPU
       (`ROUTE_GENERATOR_RATE_LIMITED`, `ROUTE_GENERATOR_BUSY`, budget de 5 s), `Route.excludedFromGenerator`
-      (`V92`), contrat `14.13.0` ; tests `RouteGeneratorResourceTest`, `RouteGeneratorCacheTest`,
+      (`V93`), contrat `14.14.0` ; tests `RouteGeneratorResourceTest`, `RouteGeneratorCacheTest`,
       `RouteGeneratorQueryCountTest`, `RouteExcludedFromGeneratorResourceTest`. Restent : le banc sur
       données réelles (seuils, Suurballe, temps, mémoire du plus gros graphe, `EXPLAIN` de l'empreinte,
       lacets à deux chaussées acceptés sous 15 m et de 15 à 30 m), les clés `pedalons.route-generator.*`

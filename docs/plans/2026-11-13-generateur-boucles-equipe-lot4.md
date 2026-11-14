@@ -3,12 +3,12 @@
 Lot 4 of the team route generator, ledger `WEB-179`. Parent plan:
 [`2026-11-13-generateur-boucles-equipe.md`](2026-11-13-generateur-boucles-equipe.md) (§7 site, §10
 decisions 3, 8, 9). Input: lot 3 ([`…-lot3.md`](2026-11-13-generateur-boucles-equipe-lot3.md)),
-contract `14.13.0`: `POST /api/teams/{teamSlug}/route-generator` (`generateRoutes`, generated as
+contract `14.14.0`: `POST /api/teams/{teamSlug}/route-generator` (`generateRoutes`, generated as
 `src/api/endpoints/route-generator/route-generator.ts`), `RouteRequest.excludedFromGenerator` /
 `RouteDetailDto.excludedFromGenerator`, and the seven `errors.api.*` keys that lot 3 added.
 
 Written 14 November 2026. Status: **design, not coded**. **No contract change**: the lot uses
-`14.13.0` as it is. It changes no backend code, unless the owner takes the optional reserved slug
+`14.14.0` as it is. It changes no backend code, unless the owner takes the optional reserved slug
 of §2.3. Paths are relative to `frontend/src/` unless stated otherwise.
 
 ---
