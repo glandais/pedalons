@@ -742,8 +742,6 @@ const Set<String> webOnlyRouteIds = <String>{
   'teamAdminReports',
   'teamSettings',
   'tripEdit',
-  'postNew',
-  'postEdit',
 };
 
 /// Pages of the **site** a deeplink wildcard captures although the app has no
@@ -781,10 +779,6 @@ const List<String> sitePagePathPatterns = <String>[
   r'^/equipes/[^/]+/voyages/[^/]+/modifier/?$',
   r'^/teams/[^/]+/trips/[^/]+/stages/[^/]+/map/?$',
   r'^/equipes/[^/]+/voyages/[^/]+/etapes/[^/]+/carte/?$',
-  r'^/teams/[^/]+/posts/new/?$',
-  r'^/equipes/[^/]+/articles/nouveau/?$',
-  r'^/teams/[^/]+/posts/[^/]+/edit/?$',
-  r'^/equipes/[^/]+/articles/[^/]+/modifier/?$',
   r'^/teams/[^/]+/routes/map/?$',
   r'^/equipes/[^/]+/parcours/carte/?$',
   r'^/teams/[^/]+/routes/generate/?$',

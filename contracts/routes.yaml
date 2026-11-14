@@ -677,6 +677,7 @@ routes:
     web: true
 
   # --- Posts ---
+  # `postNew` and `postEdit` are app screens since MOB-156 (docs/LEDGER_*.md MOB-156).
   - id: postNew
     path:
       en: /teams/{teamSlug}/posts/new
@@ -685,7 +686,7 @@ routes:
       - teamSlug
     web: true
     mobile: true
-    appScreen: false
+    deeplink: true
   - id: post
     path:
       en: /teams/{teamSlug}/posts/{postSlug}
@@ -705,7 +706,7 @@ routes:
       - postSlug
     web: true
     mobile: true
-    appScreen: false
+    deeplink: true
 
   # --- Team routes (GPX) ---
   # `routeNew` and `routeEdit` are app screens since MOB-79 (GPX upload; the route planner

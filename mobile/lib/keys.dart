@@ -50,6 +50,8 @@ class Keys {
   final feedback = FeedbackKeys();
   final legal = LegalPageKeys();
   final post = PostDetailKeys();
+  final postEditor = PostEditorKeys();
+  final postManage = PostManageKeys();
   final comments = CommentKeys();
   final moderation = ModerationKeys();
   final notifications = NotificationsKeys();

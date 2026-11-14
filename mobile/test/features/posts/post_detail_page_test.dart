@@ -11,6 +11,8 @@ import 'package:pedalons/features/posts/data/post_repository.dart';
 import 'package:pedalons/features/posts/domain/post_neighbours.dart';
 import 'package:pedalons/features/posts/presentation/pages/post_detail_page.dart';
 
+import 'package:pedalons/keys.dart';
+
 import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
 
@@ -374,6 +376,54 @@ void main() {
 
     test('un slug étranger au fil ne rend rien', () {
       expect(position.movedTo('inconnu'), isNull);
+    });
+  });
+
+  // Ledger `MOB-156` : le crayon et « Gérer la publication » suivent le bloc
+  // `permissions` de la publication.
+  group('gestes d\'organisateur', () {
+    testWidgets('sans droit : ni crayon ni bandeau, le signalement seul', (
+      WidgetTester tester,
+    ) async {
+      await openPost(tester, _post());
+
+      expect(find.byKey(keys.postManage.editButton), findsNothing);
+      expect(find.byKey(keys.postManage.deletedBanner), findsNothing);
+      expect(find.byKey(keys.post.moreButton), findsOneWidget);
+    });
+
+    testWidgets('avec canEdit : le crayon, et le menu de gestion', (
+      WidgetTester tester,
+    ) async {
+      await openPost(
+        tester,
+        _post().copyWith(
+          permissions: permissionsFor(member: true, role: 'ORGANIZER'),
+        ),
+      );
+
+      expect(find.byKey(keys.postManage.editButton), findsOneWidget);
+      await tester.tap(find.byKey(keys.post.moreButton));
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(find.text('Gérer la publication'), findsOneWidget);
+      expect(find.byKey(keys.postManage.unpublish), findsOneWidget);
+    });
+
+    testWidgets('supprimée : le bandeau, plus de crayon', (
+      WidgetTester tester,
+    ) async {
+      await openPost(
+        tester,
+        _post().copyWith(
+          deleted: true,
+          permissions: permissionsFor(member: true, role: 'ADMIN'),
+        ),
+      );
+
+      expect(find.byKey(keys.postManage.deletedBanner), findsOneWidget);
+      expect(find.byKey(keys.postManage.editButton), findsNothing);
     });
   });
 }

@@ -29,6 +29,7 @@ import '../features/notifications/presentation/pages/notification_settings_page.
 import '../features/notifications/presentation/pages/notifications_page.dart';
 import '../features/posts/domain/post_neighbours.dart';
 import '../features/posts/presentation/pages/post_detail_page.dart';
+import '../features/posts/presentation/pages/post_editor_page.dart';
 import '../features/profile/presentation/pages/profile_account_page.dart';
 import '../features/profile/presentation/pages/profile_devices_page.dart';
 import '../features/profile/presentation/pages/profile_help_page.dart';
@@ -116,6 +117,8 @@ String _teamAdsAncestor(Map<String, String> p, String locale) =>
     PathVariants.teamAds(p['teamSlug']!)[locale]!;
 String _teamRoutesAncestor(Map<String, String> p, String locale) =>
     PathVariants.routes(p['teamSlug']!)[locale]!;
+String _postAncestor(Map<String, String> p, String locale) =>
+    PathVariants.post(p['teamSlug']!, p['postSlug']!)[locale]!;
 String _routeAncestor(Map<String, String> p, String locale) =>
     PathVariants.route(p['teamSlug']!, p['routeSlug']!)[locale]!;
 
@@ -312,6 +315,24 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   _DeepLinkHierarchy(
     patterns: PathVariants.rideTemplateEdit(':teamSlug', ':templateSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _rideTemplatesAncestor],
+  ),
+  // L'éditeur d'une publication : une création sous les publications de
+  // l'équipe, une modification sous l'écran qu'elle réécrit (ledger
+  // `MOB-156`). `postNew` **avant** `post` : `articles/nouveau` est aussi la
+  // publication de slug `nouveau`, et la première entrée qui correspond
+  // l'emporte.
+  _DeepLinkHierarchy(
+    patterns: PathVariants.postNew(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _teamPostsAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.postEdit(':teamSlug', ':postSlug'),
+    ancestors: [
+      _teamsAncestor,
+      _teamAncestor,
+      _teamPostsAncestor,
+      _postAncestor,
+    ],
   ),
   _DeepLinkHierarchy(
     entity: true,
@@ -795,6 +816,14 @@ GoRoute _teamTree(String locale) {
         ),
         routes: [_rideGroupRoute(locale), _rideEditRoute(locale)],
       ),
+      // Avant le détail : `…/articles/nouveau` est aussi la publication de
+      // slug `nouveau`, et c'est l'éditeur qui est visé (ledger `MOB-156`).
+      GoRoute(
+        path: _underTeam(PathVariants.postNew(':teamSlug'), locale, teamBase),
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            PostEditorPage(teamSlug: state.pathParameters['teamSlug']!),
+      ),
       GoRoute(
         path: _underTeam(
           PathVariants.post(':teamSlug', ':postSlug'),
@@ -802,6 +831,7 @@ GoRoute _teamTree(String locale) {
           teamBase,
         ),
         parentNavigatorKey: _rootNavigatorKey,
+        routes: [_postEditRoute(locale)],
         builder: (context, state) => PostDetailPage(
           teamSlug: state.pathParameters['teamSlug']!,
           postSlug: state.pathParameters['postSlug']!,
@@ -879,6 +909,24 @@ GoRoute _rideEditRoute(String locale) {
     builder: (context, state) => RideEditorPage(
       teamSlug: state.pathParameters['teamSlug']!,
       rideSlug: state.pathParameters['rideSlug']!,
+    ),
+  );
+}
+
+/// L'éditeur d'une publication, sous son écran : ouvert par un lien, l'écran
+/// se reconstruit dessous et l'enregistrement y revient (ledger `MOB-156`).
+GoRoute _postEditRoute(String locale) {
+  final postBase = PathVariants.post(':teamSlug', ':postSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(
+      PathVariants.postEdit(':teamSlug', ':postSlug'),
+      locale,
+      postBase,
+    ),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => PostEditorPage(
+      teamSlug: state.pathParameters['teamSlug']!,
+      postSlug: state.pathParameters['postSlug']!,
     ),
   );
 }

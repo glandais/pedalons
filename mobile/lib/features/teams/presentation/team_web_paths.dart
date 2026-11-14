@@ -2,11 +2,12 @@ import '../../../config/paths.dart';
 
 /// Les pages **du site** qu'ouvre le tableau de bord d'un organisateur.
 ///
-/// Créer ou modifier une publication ou un voyage, traiter un signalement,
-/// gérer les membres et les réglages de l'équipe : l'application n'a d'écran
-/// pour aucun de ces gestes. Créer et modifier une **sortie** se fait dans
-/// l'app depuis `MOB-80` (`rideNewLocation`, `Paths.rideEdit`), et gérer les
-/// **modèles de sortie** depuis `MOB-78` (`Paths.rideTemplates`). Le tableau de bord les propose
+/// Modifier un voyage, traiter un signalement, gérer les membres et les
+/// réglages de l'équipe : l'application n'a d'écran pour aucun de ces gestes.
+/// Créer et modifier une **sortie** se fait dans l'app depuis `MOB-80`
+/// (`rideNewLocation`, `Paths.rideEdit`), gérer les **modèles de sortie**
+/// depuis `MOB-78` (`Paths.rideTemplates`), créer et modifier une
+/// **publication** depuis `MOB-156` (`Paths.postNew`, `Paths.postEdit`). Le tableau de bord les propose
 /// néanmoins — parité avec le web —, et les ouvre dans le navigateur de l'appareil
 /// par `openWebPage`.
 ///
@@ -15,11 +16,6 @@ import '../../../config/paths.dart';
 /// ils sont dans la langue de l'app (docs/LEDGER_*.md MOB-54). Seuls les
 /// paramètres de requête, qu'aucune route ne porte, sont ajoutés ici.
 abstract final class TeamWebPaths {
-  static String postNew(String teamSlug) => Paths.postNew(teamSlug);
-
-  static String postEdit(String teamSlug, String postSlug) =>
-      Paths.postEdit(teamSlug, postSlug);
-
   static String tripEdit(String teamSlug, String tripSlug) =>
       Paths.tripEdit(teamSlug, tripSlug);
 

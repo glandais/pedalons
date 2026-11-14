@@ -26,17 +26,11 @@ import '../../../comments/presentation/widgets/comment_thread.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../tags/presentation/content_tags.dart';
-import '../../data/post_repository.dart';
 import '../../domain/post_neighbours.dart';
+import '../../providers/post_providers.dart';
+import '../widgets/post_manage_menu.dart';
 
-final postDetailProvider =
-    FutureProvider.family<PostDto, ({String teamSlug, String postSlug})>((
-      ref,
-      params,
-    ) async {
-      final repository = ref.watch(postRepositoryProvider);
-      return repository.getPost(params.teamSlug, params.postSlug);
-    });
+export '../../providers/post_providers.dart' show postDetailProvider;
 
 /// L'écran d'une publication.
 ///
@@ -136,25 +130,45 @@ class _PostDetailContent extends ConsumerWidget {
             semanticLabel: 'routes.share'.tr(),
             onPressed: () => unawaited(_share(context)),
           ),
-          // Signaler seulement : une publication n'expose pas son auteur, on
-          // ne peut donc ni savoir si c'est la sienne, ni proposer de le
-          // bloquer. Le serveur refuse `REPORT_SELF`, et la feuille le dit.
-          PdlAppBarAction(
-            key: keys.post.moreButton,
-            icon: PdlIcons.more,
-            semanticLabel: 'moderation.more'.tr(),
-            onPressed: () => unawaited(
-              showDetailModerationMenu(
-                context,
-                subject: ModerationSubject(
-                  teamSlug: post.team.slug,
-                  type: ReportTargetType.post,
-                  id: post.id,
-                  teamName: post.team.name,
+          // Le droit de **cette** publication, calculé par le backend
+          // (docs/LEDGER_*.md MOB-137, MOB-156).
+          if (post.permissions.canEdit && !post.deleted)
+            PdlAppBarAction(
+              key: keys.postManage.editButton,
+              icon: PdlIcons.edit,
+              semanticLabel: 'posts.manage.edit'.tr(),
+              onPressed: () =>
+                  context.push(Paths.postEdit(post.team.slug, post.slug)),
+            ),
+          if (postHasManageActions(post))
+            PdlAppBarAction(
+              key: keys.post.moreButton,
+              icon: PdlIcons.more,
+              semanticLabel: 'posts.manage.menuTitle'.tr(),
+              onPressed: () =>
+                  unawaited(showPostManageMenu(context, ref, post)),
+            )
+          else
+            // Signaler seulement : une publication n'expose pas toujours son
+            // auteur, on ne peut donc ni savoir si c'est la sienne, ni
+            // proposer de le bloquer. Le serveur refuse `REPORT_SELF`, et la
+            // feuille le dit.
+            PdlAppBarAction(
+              key: keys.post.moreButton,
+              icon: PdlIcons.more,
+              semanticLabel: 'moderation.more'.tr(),
+              onPressed: () => unawaited(
+                showDetailModerationMenu(
+                  context,
+                  subject: ModerationSubject(
+                    teamSlug: post.team.slug,
+                    type: ReportTargetType.post,
+                    id: post.id,
+                    teamName: post.team.name,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
       body: PdlRefresh(
@@ -175,6 +189,15 @@ class _PostDetailContent extends ConsumerWidget {
                 children: <Widget>[
                   _identity(context),
                   const SizedBox(height: PdlSpacing.section),
+                  if (post.deleted) ...<Widget>[
+                    PdlBanner(
+                      key: keys.postManage.deletedBanner,
+                      tone: PdlBannerTone.warn,
+                      icon: PdlIcons.delete,
+                      message: 'posts.manage.deletedBanner'.tr(),
+                    ),
+                    const SizedBox(height: PdlSpacing.section),
+                  ],
                   if (post.media.markdown.trim().isNotEmpty)
                     MarkdownContent(
                       data: post.media.markdown,
@@ -314,6 +337,11 @@ class _PostDetailContent extends ConsumerWidget {
                   PdlBadge(
                     label: 'status.draft'.tr(),
                     tone: Status.draft.tone(c),
+                  ),
+                if (post.status == 'CANCELLED')
+                  PdlBadge(
+                    label: 'status.cancelled'.tr(),
+                    tone: Status.cancelled.tone(c),
                   ),
               ],
             ),

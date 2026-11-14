@@ -79,7 +79,8 @@
 		     route its track (POST/PUT /api/teams/{slug}/routes, multipart, file_picker; the server keeps
 		     only the track and its waypoints). The GPX may come from a recorded ride but is
 		     published as a team route and kept without timestamps (the server keeps only the geometry),
-		     so it is not a location history and adds no PreciseLocation row (data-safety.md §7).
+		     so it is not a location history and adds no PreciseLocation row (data-safety.md §7);
+		     posts an organizer writes in the post editor (POST/PUT /api/teams/{slug}/posts).
 		     All user-generated, all stored against the account, used only to run the app and moderate
 		     it. -->
 		<dict>
@@ -96,7 +97,8 @@
 		</dict>
 		<!-- Profile picture picked from the photo library and uploaded to
 		     POST /api/users/me/avatar (image_picker), and a ride's logo and images an organizer picks
-		     in the ride editor (POST /api/teams/{slug}/assets). Stored against the account. -->
+		     in the ride editor, like a route's images and a post's photos in their editors
+		     (POST /api/teams/{slug}/assets). Stored against the account. -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>

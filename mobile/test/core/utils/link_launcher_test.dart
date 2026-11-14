@@ -154,8 +154,6 @@ void main() {
       ...PathVariants.teamAdminReports('vc').values,
       ...PathVariants.teamSettings('vc').values,
       ...PathVariants.tripEdit('vc', 'ete').values,
-      ...PathVariants.postNew('vc').values,
-      ...PathVariants.postEdit('vc', 'news').values,
     ];
 
     test('reconnaît les pages du site sans écran, requête comprise', () {
@@ -170,6 +168,16 @@ void main() {
       for (final String page in <String>[
         ...PathVariants.rideNew('vc').values,
         ...PathVariants.rideEdit('vc', 'rando').values,
+      ]) {
+        expect(isSitePageLocation(page), isFalse, reason: page);
+        expect(internalLocationFor(page), page, reason: page);
+      }
+    });
+
+    test('l\'éditeur de publication s\'ouvre dans l\'app (MOB-156)', () {
+      for (final String page in <String>[
+        ...PathVariants.postNew('vc').values,
+        ...PathVariants.postEdit('vc', 'news').values,
       ]) {
         expect(isSitePageLocation(page), isFalse, reason: page);
         expect(internalLocationFor(page), page, reason: page);
@@ -274,10 +282,11 @@ void main() {
       expect(launched, isEmpty, reason: 'Une route interne ne sort pas.');
     });
 
-    // `…/sorties/nouvelle` était l'exemple jusqu'à `MOB-80`, qui en a fait
-    // un écran de l'app ; `…/articles/nouveau` a la même ambiguïté avec
-    // l'article de slug `nouveau` et reste une page du site.
-    testWidgets('une page du site part au navigateur, pas sur l\'article '
+    // `…/sorties/nouvelle` était l'exemple jusqu'à `MOB-80`, puis
+    // `…/articles/nouveau` jusqu'à `MOB-156`, qui en ont fait des écrans de
+    // l'app ; `…/voyages/nouveau` a la même ambiguïté avec le voyage de slug
+    // `nouveau` et reste une page du site.
+    testWidgets('une page du site part au navigateur, pas sur le voyage '
         '« nouveau » (MOB-59)', (WidgetTester tester) async {
       final List<Uri> launched = <Uri>[];
       debugLinkOpener = (Uri url) async {
@@ -287,14 +296,34 @@ void main() {
 
       final GoRouter router = await _pumpMarkdown(
         tester,
+        'Proposez un [voyage](https://www.pedalons.fr/equipes/vc/voyages/nouveau).',
+      );
+
+      await _tapLink(tester, 'voyage');
+
+      expect(find.text('page du voyage'), findsNothing);
+      expect(router.routerDelegate.currentConfiguration.matches, hasLength(1));
+      expect(launched.single.path, '/equipes/vc/voyages/nouveau');
+    });
+
+    testWidgets('« nouvel article » ouvre l\'éditeur de l\'app (MOB-156)', (
+      WidgetTester tester,
+    ) async {
+      final List<Uri> launched = <Uri>[];
+      debugLinkOpener = (Uri url) async {
+        launched.add(url);
+        return true;
+      };
+
+      await _pumpMarkdown(
+        tester,
         'Proposez un [article](https://www.pedalons.fr/equipes/vc/articles/nouveau).',
       );
 
       await _tapLink(tester, 'article');
 
-      expect(find.text('page de l\'article'), findsNothing);
-      expect(router.routerDelegate.currentConfiguration.matches, hasLength(1));
-      expect(launched.single.path, '/equipes/vc/articles/nouveau');
+      expect(find.text('page de l\'article'), findsOneWidget);
+      expect(launched, isEmpty, reason: 'Une route interne ne sort pas.');
     });
 
     testWidgets('un lien externe part au système, jamais dans le routeur', (
@@ -506,6 +535,11 @@ Future<GoRouter> _pumpMarkdown(
         path: PathVariants.ride(':teamSlug', ':rideSlug')['fr']!,
         builder: (BuildContext context, GoRouterState state) =>
             const Scaffold(body: Text('page de la sortie')),
+      ),
+      GoRoute(
+        path: PathVariants.trip(':teamSlug', ':tripSlug')['fr']!,
+        builder: (BuildContext _, GoRouterState _) =>
+            const Scaffold(body: Text('page du voyage')),
       ),
       GoRoute(
         path: PathVariants.post(':teamSlug', ':postSlug')['fr']!,

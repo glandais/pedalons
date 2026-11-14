@@ -16,11 +16,9 @@ import '../../../../core/utils/api_error_handler.dart';
 import '../../../../keys.dart';
 import '../../../rides/presentation/ride_editor_location.dart';
 import '../../providers/team_dashboard_provider.dart';
-import '../team_web_paths.dart';
 import '../widgets/dashboard/dashboard_admin.dart';
 import '../widgets/dashboard/dashboard_content.dart';
 import '../widgets/dashboard/dashboard_rides.dart';
-import '../widgets/dashboard/dashboard_section.dart';
 import '../widgets/dashboard/dashboard_todo.dart';
 import '../widgets/team_sections.dart';
 
@@ -260,10 +258,7 @@ class _Summary extends StatelessWidget {
                     icon: PdlIcons.post,
                     variant: PdlButtonVariant.outline,
                     size: PdlButtonSize.sm,
-                    onPressed: () => openTeamWebPage(
-                      context,
-                      TeamWebPaths.postNew(team.slug),
-                    ),
+                    onPressed: () => context.push(Paths.postNew(team.slug)),
                   ),
               ],
             ),
