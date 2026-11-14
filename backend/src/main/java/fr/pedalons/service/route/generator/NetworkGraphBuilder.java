@@ -53,7 +53,77 @@ public final class NetworkGraphBuilder {
   static final double SECONDARY_WEIGHT = 0.25;
 
   public static NetworkGraph build(List<TrackInput> tracks, NetworkParameters p) {
-    return new Work(tracks, p).run();
+    List<TrackInput> sorted = new ArrayList<>(tracks);
+    sorted.sort(Comparator.comparingLong(TrackInput::trackId));
+    Intake intake = new Intake(p);
+    for (TrackInput t : sorted) {
+      intake.add(t);
+    }
+    return intake.build();
+  }
+
+  /**
+   * The same build, fed one track at a time: what a track brings is reduced to its observations as
+   * it comes, so the caller never holds the tracks of a team at once (a large team's are several
+   * hundred megabytes, design §13.2). Tracks must come by ascending track id, the order {@link
+   * #build(List, NetworkParameters)} sorts them into; the graph is the same, bit for bit.
+   *
+   * <p>Geometries are shared by identity: the edges that hold the same {@code geometry} list (a
+   * street ridden whole by many routes, interned by the mapper) are projected once.
+   */
+  public static final class Intake {
+    private final Work work;
+    private long lastTrackId = Long.MIN_VALUE;
+    private boolean built;
+
+    public Intake(NetworkParameters p) {
+      this.work = new Work(p);
+    }
+
+    public void add(TrackInput track) {
+      if (built) {
+        throw new IllegalStateException("The graph is already built");
+      }
+      if (track.trackId() < lastTrackId) {
+        throw new IllegalArgumentException(
+            "Tracks must come by ascending id: " + track.trackId() + " after " + lastTrackId);
+      }
+      lastTrackId = track.trackId();
+      work.add(track);
+    }
+
+    public NetworkGraph build() {
+      if (built) {
+        throw new IllegalStateException("The graph is already built");
+      }
+      built = true;
+      return work.run();
+    }
+  }
+
+  /**
+   * A projected geometry, shared by every observation of the same input list. Never written after
+   * {@link Work#project()}: whoever changes a point clones the array first.
+   */
+  private static final class Geom {
+    double[] xs;
+    double[] ys;
+    private double[] rxs;
+    private double[] rys;
+
+    double[] reversedXs() {
+      if (rxs == null) {
+        rxs = Geo.reversed(xs);
+      }
+      return rxs;
+    }
+
+    double[] reversedYs() {
+      if (rys == null) {
+        rys = Geo.reversed(ys);
+      }
+      return rys;
+    }
   }
 
   private enum Cls {
@@ -71,22 +141,20 @@ public final class NetworkGraphBuilder {
     Cls cls;
     int a = -1; // node of `from`
     int b = -1; // node of `to`
-    double[] xs;
-    double[] ys;
+    Geom geom;
     double length = Double.NaN; // complete edge, NaN when unknown
-    double traversed;
     double o1;
     double o2;
     double gain;
     double loss;
     Oneway oneway;
-    int wayKind = -1;
-    int sClass = -1;
-    int sDetail;
-    int sSource;
-    int trackType;
-    int bicycle;
-    int foot;
+    byte wayKind = -1;
+    byte sClass = -1;
+    byte sDetail;
+    byte sSource;
+    byte trackType;
+    byte bicycle;
+    byte foot;
 
     /** The previous observation of the same track, when it was kept (the track's own order). */
     Obs prev;
@@ -98,14 +166,28 @@ public final class NetworkGraphBuilder {
   /** An observation placed on a slot, in the slot frame (u to v). */
   private static final class Piece {
     Obs o;
-    double[] xs;
-    double[] ys;
     double s;
     double t;
     boolean uv;
-    double gain;
-    double loss;
     boolean complete;
+
+    // The geometry and the climb in the slot frame are read off the observation: a piece per
+    // observation is what a large team's build holds most of (design §13.2).
+    double[] xs() {
+      return uv ? o.geom.xs : o.geom.reversedXs();
+    }
+
+    double[] ys() {
+      return uv ? o.geom.ys : o.geom.reversedYs();
+    }
+
+    double gain() {
+      return uv ? o.gain : o.loss;
+    }
+
+    double loss() {
+      return uv ? o.loss : o.gain;
+    }
   }
 
   /** One complete street edge between u and v (or an open one, v = -1, hanging off u). */
@@ -164,9 +246,28 @@ public final class NetworkGraphBuilder {
   }
 
   private static final class Work {
-    final List<TrackInput> tracks;
     final NetworkParameters p;
     LocalProjection projection;
+
+    // What the intake keeps of the tracks. Until project(), node positions and geometries hold raw
+    // degrees (x = longitude, y = latitude): the projection reference is the mean of every edge end
+    // and is only known once the last track came.
+    List<Obs> observations = new ArrayList<>();
+    List<TrackInput> excludedTracks = new ArrayList<>();
+    Map<List<LatLon>, Geom> geoms = new java.util.IdentityHashMap<>();
+    final List<Geom> allGeoms = new ArrayList<>();
+    final List<Obs> toOnly = new ArrayList<>();
+    final List<LatLon> toOnlyEnd = new ArrayList<>();
+    double sumLat;
+    double sumLon;
+    int sumCount;
+    double sumGeomLat;
+    double sumGeomLon;
+    int sumGeomCount;
+    int trackCount;
+    int excludedCount;
+    int inputEdges;
+    final Map<TrackKind, Integer> byKind = new EnumMap<>(TrackKind.class);
 
     double[] nx = new double[64];
     double[] ny = new double[64];
@@ -189,17 +290,56 @@ public final class NetworkGraphBuilder {
     final Map<Integer, List<Slot>> slotsByNode = new LinkedHashMap<>();
     final List<Slot> allSlots = new ArrayList<>();
 
-    Work(List<TrackInput> tracks, NetworkParameters p) {
-      this.tracks = new ArrayList<>(tracks);
-      this.tracks.sort(Comparator.comparingLong(TrackInput::trackId));
+    Work(NetworkParameters p) {
       this.p = p;
     }
 
     List<RawTransition> transitions = new ArrayList<>();
 
+    /** One more track, by ascending id. */
+    void add(TrackInput t) {
+      trackCount++;
+      inputEdges += t.edges().size();
+      for (TrackEdge e : t.edges()) {
+        if (e.from() != null) {
+          sumLat += e.from().position().lat();
+          sumLon += e.from().position().lon();
+          sumCount++;
+        }
+        if (e.to() != null) {
+          sumLat += e.to().position().lat();
+          sumLon += e.to().position().lon();
+          sumCount++;
+        }
+      }
+      if (sumCount == 0) {
+        // no edge end so far: the fallback reference, the mean of every point, may still be needed
+        for (TrackEdge e : t.edges()) {
+          for (LatLon q : e.geometry()) {
+            sumGeomLat += q.lat();
+            sumGeomLon += q.lon();
+            sumGeomCount++;
+          }
+        }
+      }
+      if (t.excluded()) {
+        // live observations first: an excluded track never founds a node a live one could have
+        excludedCount++;
+        excludedTracks.add(t);
+      } else {
+        byKind.merge(t.kind(), 1, Integer::sum);
+        kindOf.put(t.trackId(), t.kind());
+        collect(t);
+      }
+    }
+
     NetworkGraph run() {
-      projection = reference();
-      List<Obs> observations = collect();
+      for (TrackInput t : excludedTracks) {
+        collect(t);
+      }
+      excludedTracks = null;
+      geoms = null;
+      project();
       mergeNodes();
       for (Obs o : observations) {
         if (o.cls == Cls.COMPLETE) {
@@ -215,44 +355,58 @@ public final class NetworkGraphBuilder {
         }
       }
       List<EdgeRec> edges = buildEdges();
+      // the slots and their pieces, then the observations, are done: the rest of the build works
+      // on the edges alone, and must not hold several times the graph beside it
+      allSlots.clear();
+      slotsByKey.clear();
+      slotsByNode.clear();
       transitions = transitionsOf(observations);
+      observations = null;
       return contractAndAssemble(edges);
     }
 
     // ---- projection reference -----------------------------------------------------------------
 
-    LocalProjection reference() {
-      double sumLat = 0;
-      double sumLon = 0;
-      int count = 0;
-      for (TrackInput t : tracks) {
-        for (TrackEdge e : t.edges()) {
-          if (e.from() != null) {
-            sumLat += e.from().position().lat();
-            sumLon += e.from().position().lon();
-            count++;
-          }
-          if (e.to() != null) {
-            sumLat += e.to().position().lat();
-            sumLon += e.to().position().lon();
-            count++;
-          }
+    /**
+     * Turns the raw degrees kept by the intake into metres around the reference, in place, and
+     * settles what needed a distance.
+     */
+    void project() {
+      // with no edge end at all every observation was dropped: the reference only names the graph
+      projection =
+          sumCount > 0
+              ? new LocalProjection(sumLat / sumCount, sumLon / sumCount)
+              : sumGeomCount > 0
+                  ? new LocalProjection(sumGeomLat / sumGeomCount, sumGeomLon / sumGeomCount)
+                  : new LocalProjection(0, 0);
+      for (int i = 0; i < n; i++) {
+        double lon = nx[i];
+        double lat = ny[i];
+        nx[i] = projection.toX(lat, lon);
+        ny[i] = projection.toY(lat, lon);
+      }
+      for (Geom g : allGeoms) {
+        for (int i = 0; i < g.xs.length; i++) {
+          double lon = g.xs[i];
+          double lat = g.ys[i];
+          g.xs[i] = projection.toX(lat, lon);
+          g.ys[i] = projection.toY(lat, lon);
         }
       }
-      if (count == 0) {
-        for (TrackInput t : tracks) {
-          for (TrackEdge e : t.edges()) {
-            for (LatLon q : e.geometry()) {
-              sumLat += q.lat();
-              sumLon += q.lon();
-              count++;
-            }
-          }
-        }
+      allGeoms.clear();
+      double gap = p.coverageGapM();
+      for (int i = 0; i < toOnly.size(); i++) {
+        Obs o = toOnly.get(i);
+        LatLon end = toOnlyEnd.get(i);
+        int last = o.geom.xs.length - 1;
+        double d =
+            Math.hypot(
+                o.geom.xs[last] - projection.toX(end.lat(), end.lon()),
+                o.geom.ys[last] - projection.toY(end.lat(), end.lon()));
+        o.cls = d <= gap ? Cls.PARTIAL_TO : Cls.FLOATING;
       }
-      return count == 0
-          ? new LocalProjection(0, 0)
-          : new LocalProjection(sumLat / count, sumLon / count);
+      toOnly.clear();
+      toOnlyEnd.clear();
     }
 
     // ---- step 0 and 1: classification, nodes by key -------------------------------------------
@@ -281,12 +435,7 @@ public final class NetworkGraphBuilder {
         nstreet[id] = Math.max(nstreet[id], ref.streetDegree());
       } else {
         LatLon pos = ref.position();
-        id =
-            newNode(
-                projection.toX(pos.lat(), pos.lon()),
-                projection.toY(pos.lat(), pos.lon()),
-                false,
-                ref.streetDegree());
+        id = newNode(pos.lon(), pos.lat(), false, ref.streetDegree());
         keyToNode.put(ref.key(), id);
       }
       if (live) {
@@ -295,33 +444,38 @@ public final class NetworkGraphBuilder {
       return id;
     }
 
-    List<Obs> collect() {
-      List<Obs> out = new ArrayList<>();
-      // live observations first: an excluded track never founds a node a live one could have
-      for (int pass = 0; pass < 2; pass++) {
-        boolean excludedPass = pass == 1;
-        for (TrackInput t : tracks) {
-          if (t.excluded() != excludedPass) {
-            continue;
-          }
-          if (!excludedPass) {
-            kindOf.put(t.trackId(), t.kind());
-          }
-          Obs previous = null;
-          for (TrackEdge te : t.edges()) {
-            Obs o = classify(t, te);
-            if (o == null) {
-              dropped++;
-              previous = null;
-            } else {
-              o.prev = previous;
-              previous = o;
-              out.add(o);
-            }
-          }
+    void collect(TrackInput t) {
+      Obs previous = null;
+      for (TrackEdge te : t.edges()) {
+        Obs o = classify(t, te);
+        if (o == null) {
+          dropped++;
+          previous = null;
+        } else {
+          o.prev = previous;
+          previous = o;
+          observations.add(o);
         }
       }
-      return out;
+    }
+
+    /** The shared arrays of an input geometry, in raw degrees until {@link #project()}. */
+    Geom geomOf(List<LatLon> g) {
+      Geom known = geoms.get(g);
+      if (known != null) {
+        return known;
+      }
+      Geom geom = new Geom();
+      geom.xs = new double[g.size()];
+      geom.ys = new double[g.size()];
+      for (int i = 0; i < geom.xs.length; i++) {
+        LatLon q = g.get(i);
+        geom.xs[i] = q.lon();
+        geom.ys[i] = q.lat();
+      }
+      geoms.put(g, geom);
+      allGeoms.add(geom);
+      return geom;
     }
 
     /** Design §12.3 step 0; null = DROPPED. */
@@ -332,41 +486,32 @@ public final class NetworkGraphBuilder {
       if ((f == null && to == null) || g.size() < 2 || te.traversedM() < p.minEdgeLengthM()) {
         return null;
       }
-      double[] xs = new double[g.size()];
-      double[] ys = new double[g.size()];
-      for (int i = 0; i < xs.length; i++) {
-        xs[i] = projection.toX(g.get(i).lat(), g.get(i).lon());
-        ys[i] = projection.toY(g.get(i).lat(), g.get(i).lon());
-      }
       double gap = p.coverageGapM();
       boolean partial = te.partial() || f == null || to == null;
       Obs o = new Obs();
       o.trackId = t.trackId();
       o.excluded = t.excluded();
-      o.xs = xs;
-      o.ys = ys;
-      o.traversed = te.traversedM();
       o.gain = te.gainM();
       o.loss = te.lossM();
       o.oneway = te.oneway();
       if (te.wayKind() != null) {
-        o.wayKind = te.wayKind().ordinal();
+        o.wayKind = (byte) te.wayKind().ordinal();
       }
       EdgeSurface sf = te.surface();
       if (sf != null) {
-        o.sClass = sf.surfaceClass().ordinal();
-        o.sSource = sf.source().ordinal();
+        o.sClass = (byte) sf.surfaceClass().ordinal();
+        o.sSource = (byte) sf.source().ordinal();
         if (sf.detail() != null) {
           int code = detailCode(sf.detail());
           if (code == 0) {
             unknownDetails++;
           }
-          o.sDetail = code;
+          o.sDetail = (byte) code;
         }
       }
-      o.trackType = te.trackType() == null ? 0 : te.trackType().ordinal() + 1;
-      o.bicycle = te.bicycle() == null ? 0 : te.bicycle().ordinal() + 1;
-      o.foot = te.foot() == null ? 0 : te.foot().ordinal() + 1;
+      o.trackType = (byte) (te.trackType() == null ? 0 : te.trackType().ordinal() + 1);
+      o.bicycle = (byte) (te.bicycle() == null ? 0 : te.bicycle().ordinal() + 1);
+      o.foot = (byte) (te.foot() == null ? 0 : te.foot().ordinal() + 1);
       Double len = te.lengthM();
       if (!partial) {
         if (len == null || len < p.minEdgeLengthM()) {
@@ -397,17 +542,13 @@ public final class NetworkGraphBuilder {
         o.o1 = Math.max(0, a1);
         o.o2 = Math.max(o.o1, a2);
       } else {
-        LatLon last = g.get(g.size() - 1);
-        double d =
-            Math.hypot(
-                projection.toX(last.lat(), last.lon())
-                    - projection.toX(to.position().lat(), to.position().lon()),
-                projection.toY(last.lat(), last.lon())
-                    - projection.toY(to.position().lat(), to.position().lon()));
-        o.cls = d <= gap ? Cls.PARTIAL_TO : Cls.FLOATING;
+        // PARTIAL_TO or FLOATING by the distance of the last point to the node: project() decides
+        toOnly.add(o);
+        toOnlyEnd.add(to.position());
         o.o1 = 0;
         o.o2 = te.traversedM();
       }
+      o.geom = geomOf(g);
       boolean live = !t.excluded();
       if (f != null) {
         o.a = nodeForKey(f, live);
@@ -521,25 +662,21 @@ public final class NetworkGraphBuilder {
       pc.s = s;
       pc.t = t;
       pc.complete = complete;
-      pc.xs = uv ? o.xs : Geo.reversed(o.xs);
-      pc.ys = uv ? o.ys : Geo.reversed(o.ys);
-      pc.gain = uv ? o.gain : o.loss;
-      pc.loss = uv ? o.loss : o.gain;
       return pc;
     }
 
     /** Point of the slot's known geometry at offset x from u, or null when nothing covers it. */
     double[] pointOnSlot(Slot slot, double x) {
       if (slot.ref != null && !Double.isNaN(slot.length) && slot.length > 0) {
-        double len = Geo.polylineLength(slot.ref.xs, slot.ref.ys);
+        double len = Geo.polylineLength(slot.ref.xs(), slot.ref.ys());
         return Geo.pointAt(
-            slot.ref.xs, slot.ref.ys, Math.max(0, Math.min(1, x / slot.length)) * len);
+            slot.ref.xs(), slot.ref.ys(), Math.max(0, Math.min(1, x / slot.length)) * len);
       }
       for (Piece pc : slot.pieces) {
         if (x >= pc.s - 0.5 && x <= pc.t + 0.5 && pc.t > pc.s) {
-          double len = Geo.polylineLength(pc.xs, pc.ys);
+          double len = Geo.polylineLength(pc.xs(), pc.ys());
           return Geo.pointAt(
-              pc.xs, pc.ys, Math.max(0, Math.min(1, (x - pc.s) / (pc.t - pc.s))) * len);
+              pc.xs(), pc.ys(), Math.max(0, Math.min(1, (x - pc.s) / (pc.t - pc.s))) * len);
         }
       }
       return null;
@@ -548,7 +685,7 @@ public final class NetworkGraphBuilder {
     /** Mean distance of a piece to the slot's known geometry over the offsets both cover; NaN none. */
     double fit(Slot slot, Piece pc) {
       int samples = p.dedupSamples();
-      double len = Geo.polylineLength(pc.xs, pc.ys);
+      double len = Geo.polylineLength(pc.xs(), pc.ys());
       double sum = 0;
       int count = 0;
       for (int i = 0; i < samples; i++) {
@@ -558,7 +695,7 @@ public final class NetworkGraphBuilder {
         if (ref == null) {
           continue;
         }
-        double[] q = Geo.pointAt(pc.xs, pc.ys, f * len);
+        double[] q = Geo.pointAt(pc.xs(), pc.ys(), f * len);
         sum += Math.hypot(q[0] - ref[0], q[1] - ref[1]);
         count++;
       }
@@ -607,8 +744,8 @@ public final class NetworkGraphBuilder {
 
     boolean sameGeometry(Piece x, Piece y) {
       int s = p.dedupSamples();
-      double[] r1 = Geo.resample(x.xs, x.ys, s);
-      double[] r2 = Geo.resample(y.xs, y.ys, s);
+      double[] r1 = Geo.resample(x.xs(), x.ys(), s);
+      double[] r2 = Geo.resample(y.xs(), y.ys(), s);
       double sum = 0;
       for (int i = 0; i < s; i++) {
         sum += Math.hypot(r1[2 * i] - r2[2 * i], r1[2 * i + 1] - r2[2 * i + 1]);
@@ -674,10 +811,14 @@ public final class NetworkGraphBuilder {
         double dist;
         if (q.t <= pc.s) {
           gap = pc.s - q.t;
-          dist = Math.hypot(pc.xs[0] - q.xs[q.xs.length - 1], pc.ys[0] - q.ys[q.ys.length - 1]);
+          dist =
+              Math.hypot(
+                  pc.xs()[0] - q.xs()[q.xs().length - 1], pc.ys()[0] - q.ys()[q.ys().length - 1]);
         } else if (q.s >= pc.t) {
           gap = q.s - pc.t;
-          dist = Math.hypot(pc.xs[pc.xs.length - 1] - q.xs[0], pc.ys[pc.ys.length - 1] - q.ys[0]);
+          dist =
+              Math.hypot(
+                  pc.xs()[pc.xs().length - 1] - q.xs()[0], pc.ys()[pc.ys().length - 1] - q.ys()[0]);
         } else {
           continue;
         }
@@ -738,10 +879,12 @@ public final class NetworkGraphBuilder {
           if (sl.ref == null || sl.open()) {
             continue;
           }
-          double len = Geo.polylineLength(sl.ref.xs, sl.ref.ys);
-          int last = o.xs.length - 1;
-          Geo.Projection p1 = Geo.project(o.xs[0], o.ys[0], sl.ref.xs, sl.ref.ys);
-          Geo.Projection p2 = Geo.project(o.xs[last], o.ys[last], sl.ref.xs, sl.ref.ys);
+          double len = Geo.polylineLength(sl.ref.xs(), sl.ref.ys());
+          double[] ox = o.geom.xs;
+          double[] oy = o.geom.ys;
+          int last = ox.length - 1;
+          Geo.Projection p1 = Geo.project(ox[0], oy[0], sl.ref.xs(), sl.ref.ys());
+          Geo.Projection p2 = Geo.project(ox[last], oy[last], sl.ref.xs(), sl.ref.ys());
           if (p1.distance() >= p.dedupMeanDistM()
               || p2.distance() >= p.dedupMeanDistM()
               || len <= 0) {
@@ -835,11 +978,11 @@ public final class NetworkGraphBuilder {
           EdgeRec e = new EdgeRec();
           e.u = sl.u;
           e.v = sl.v;
-          e.xs = sl.ref.xs;
-          e.ys = sl.ref.ys;
+          e.xs = sl.ref.xs();
+          e.ys = sl.ref.ys();
           e.length = sl.length;
-          e.gainUV = sl.ref.gain;
-          e.lossUV = sl.ref.loss;
+          e.gainUV = sl.ref.gain();
+          e.lossUV = sl.ref.loss();
           aggregate(e, live, 0, sl.length, false);
           bind(e, live);
           out.add(e);
@@ -961,10 +1104,10 @@ public final class NetworkGraphBuilder {
         if (pc.t <= cursor + 0.5 || pc.t <= pc.s) {
           continue;
         }
-        double plen = Geo.polylineLength(pc.xs, pc.ys);
+        double plen = Geo.polylineLength(pc.xs(), pc.ys());
         double from = Math.max(pc.s, cursor);
         double arcFrom = (from - pc.s) / (pc.t - pc.s) * plen;
-        double[][] sl = Geo.slice(pc.xs, pc.ys, arcFrom, plen);
+        double[][] sl = Geo.slice(pc.xs(), pc.ys(), arcFrom, plen);
         double sliceLen = Geo.polylineLength(sl[0], sl[1]);
         for (int i = 0; i < sl[0].length; i++) {
           if (i == 0 && !pts.isEmpty()) {
@@ -979,8 +1122,8 @@ public final class NetworkGraphBuilder {
           pts.add(new double[] {sl[0][i], sl[1][i]});
         }
         if (plen > 0) {
-          gain += pc.gain * sliceLen / plen;
-          loss += pc.loss * sliceLen / plen;
+          gain += pc.gain() * sliceLen / plen;
+          loss += pc.loss() * sliceLen / plen;
         }
         cursor = pc.t;
       }
@@ -1731,21 +1874,10 @@ public final class NetworkGraphBuilder {
           dangling++;
         }
       }
-      int excluded = 0;
-      int inputEdges = 0;
-      Map<TrackKind, Integer> byKind = new EnumMap<>(TrackKind.class);
-      for (TrackInput t : tracks) {
-        if (t.excluded()) {
-          excluded++;
-        } else {
-          byKind.merge(t.kind(), 1, Integer::sum);
-        }
-        inputEdges += t.edges().size();
-      }
       a.stats =
           new NetworkStats(
-              tracks.size(),
-              excluded,
+              trackCount,
+              excludedCount,
               inputEdges,
               edgeCount,
               nodeCount,

@@ -20,7 +20,8 @@ public class RouteGeneratorMetrics {
   public enum CacheResult {
     HIT,
     DEFERRED,
-    MISS
+    MISS,
+    TOO_LARGE
   }
 
   @Inject MeterRegistry registry;

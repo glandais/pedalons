@@ -870,10 +870,20 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       cache Caffeine du graphe par équipe (empreinte relue à chaque requête), endpoint, garde-fous CPU
       (`ROUTE_GENERATOR_RATE_LIMITED`, `ROUTE_GENERATOR_BUSY`, budget de 5 s), `Route.excludedFromGenerator`
       (`V93`), contrat `14.14.0` ; tests `RouteGeneratorResourceTest`, `RouteGeneratorCacheTest`,
-      `RouteGeneratorQueryCountTest`, `RouteExcludedFromGeneratorResourceTest`. Restent : le banc sur
-      données réelles (seuils, Suurballe, temps, mémoire du plus gros graphe, `EXPLAIN` de l'empreinte,
-      lacets à deux chaussées acceptés sous 15 m et de 15 à 30 m), les clés `pedalons.route-generator.*`
-      dans `docs/OPERATIONS.md`. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
+      `RouteGeneratorQueryCountTest`, `RouteExcludedFromGeneratorResourceTest`. Banc sur données
+      réelles fait le 14 novembre 2026 (conception du lot 2, §13 : verdicts et neuf propositions).
+      Propositions 1 et 2 codées le même jour (§13.8) : borne `pedalons.route-generator.max-observations`
+      (par défaut un quart du tas de l'instance ; `GENERATOR_NETWORK_TOO_LARGE`, contrat `14.15.0`,
+      refus gardé par empreinte) et lecture en flux
+      du constructeur (`NetworkGraphBuilder.Intake`, géométries partagées) — la plus grande équipe se
+      construit avec 440 Mo de tas vivant au lieu de 1,66 Go, graphes identiques au bit près sur les
+      neuf équipes de production ; clés décrites dans `docs/OPERATIONS.md`. **À ne pas défaire** : les
+      traces arrivent par identifiant croissant et les exclues sont classées après les autres (le
+      graphe en dépend), une géométrie partagée n'est jamais écrite en place. Restent : lancer
+      `NetworkGraphBuilderTest`, `RouteGeneratorCacheTest` et les tests du paquet
+      `service.route.generator` ; les propositions 3 à 9 du
+      §13.6 (budget de 10 s, contresens partiel, accroche sur un îlot, reconstructions, pondérateur,
+      familiarité, banc) ; l'`EXPLAIN` de l'empreinte. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
       de `PlannerAccess`), les parcours masqués par la modération alimentent le réseau, une copie
       garde la case d'exclusion.
 

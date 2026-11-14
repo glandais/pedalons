@@ -257,6 +257,7 @@ describe('generatorErrorMessage and generatedRouteName (real catalogue)', () => 
     expect(isRetryableGeneratorError(fail(ErrorCode.ROUTE_GENERATOR_BUSY))).toBe(true)
     expect(isRetryableGeneratorError(new Error('boom'))).toBe(true)
     expect(isRetryableGeneratorError(fail(ErrorCode.GENERATOR_NO_ROUTE))).toBe(false)
+    expect(isRetryableGeneratorError(fail(ErrorCode.GENERATOR_NETWORK_TOO_LARGE))).toBe(false)
     expect(isRetryableGeneratorError(fail(ErrorCode.ROUTE_GENERATOR_RATE_LIMITED))).toBe(false)
   })
 })

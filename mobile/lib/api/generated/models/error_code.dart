@@ -98,6 +98,8 @@ enum ErrorCode {
   generatorDistanceTooShort('GENERATOR_DISTANCE_TOO_SHORT'),
   @JsonValue('GENERATOR_NETWORK_TOO_SMALL')
   generatorNetworkTooSmall('GENERATOR_NETWORK_TOO_SMALL'),
+  @JsonValue('GENERATOR_NETWORK_TOO_LARGE')
+  generatorNetworkTooLarge('GENERATOR_NETWORK_TOO_LARGE'),
   @JsonValue('GENERATOR_NO_ROUTE')
   generatorNoRoute('GENERATOR_NO_ROUTE'),
   @JsonValue('ROUTE_GENERATOR_RATE_LIMITED')

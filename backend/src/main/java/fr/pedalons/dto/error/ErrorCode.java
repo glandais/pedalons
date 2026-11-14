@@ -93,6 +93,12 @@ public enum ErrorCode {
    * yet (the details say how many are still being analysed).
    */
   GENERATOR_NETWORK_TOO_SMALL,
+  /**
+   * Route generator, HTTP 400: the team's routes hold more street edge observations than the
+   * generator can turn into a graph in the memory it has ({@code
+   * pedalons.route-generator.max-observations}); nothing in the request changes it.
+   */
+  GENERATOR_NETWORK_TOO_LARGE,
   /** Route generator, HTTP 400: no route made of the team's roads fits the request. */
   GENERATOR_NO_ROUTE,
   /**

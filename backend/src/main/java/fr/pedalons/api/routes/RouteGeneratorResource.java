@@ -44,7 +44,9 @@ public class RouteGeneratorResource {
               + " GENERATOR_START_TOO_FAR and GENERATOR_END_TOO_FAR (no road of the team within 2"
               + " km), GENERATOR_DISTANCE_TOO_SHORT, GENERATOR_NETWORK_TOO_SMALL (with"
               + " RouteGeneratorNetworkDetails: also sent while the team's routes are still being"
-              + " analysed) and GENERATOR_NO_ROUTE. At most 30 requests per user in 15 minutes"
+              + " analysed), GENERATOR_NETWORK_TOO_LARGE (the team's routes are more than the"
+              + " generator can hold in memory; no request succeeds until the limit is raised)"
+              + " and GENERATOR_NO_ROUTE. At most 30 requests per user in 15 minutes"
               + " (ROUTE_GENERATOR_RATE_LIMITED, 429 with Retry-After); ROUTE_GENERATOR_BUSY (503)"
               + " when the server has no free slot or the run took too long.")
   @APIResponses({
@@ -57,7 +59,7 @@ public class RouteGeneratorResource {
         description =
             "Invalid request, planner disabled (ROUTE_PLANNER_DISABLED), or no route"
                 + " (GENERATOR_START_TOO_FAR, GENERATOR_END_TOO_FAR, GENERATOR_DISTANCE_TOO_SHORT,"
-                + " GENERATOR_NETWORK_TOO_SMALL, GENERATOR_NO_ROUTE)",
+                + " GENERATOR_NETWORK_TOO_SMALL, GENERATOR_NETWORK_TOO_LARGE, GENERATOR_NO_ROUTE)",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "401",

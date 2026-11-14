@@ -312,6 +312,50 @@ class NetworkGraphBuilderTest {
     }
   }
 
+  @Test
+  void theIntakeBuildsTheSameGraphAsTheList_tracksSharingOneGeometryIncluded() {
+    TestNetwork n = net().node("A", 0, 0).node("B", 1000, 0).node("C", 1000, 1000);
+    n.track(1).path("A", "B", "C");
+    n.track(2).path("C", "A");
+    n.track(3).path("C", "B", "A");
+    var inputs = new java.util.ArrayList<>(n.inputs());
+    // the mapper interns geometries: a second track holding the very lists of the first
+    TrackInput first = inputs.get(0);
+    inputs.add(new TrackInput(4, false, first.kind(), first.edges()));
+    NetworkGraph list = NetworkGraphBuilder.build(inputs, NetworkParameters.defaults());
+    NetworkGraphBuilder.Intake intake =
+        new NetworkGraphBuilder.Intake(NetworkParameters.defaults());
+    for (TrackInput t : inputs) {
+      intake.add(t);
+    }
+    NetworkGraph streamed = intake.build();
+    assertEquals(list.edgeCount(), streamed.edgeCount());
+    assertEquals(list.nodeCount(), streamed.nodeCount());
+    for (int e = 0; e < list.edgeCount(); e++) {
+      assertEquals(list.edgeU(e), streamed.edgeU(e));
+      assertEquals(list.edgeV(e), streamed.edgeV(e));
+      assertEquals(list.length(e), streamed.length(e));
+      assertEquals(list.support(e), streamed.support(e));
+      org.junit.jupiter.api.Assertions.assertArrayEquals(list.geometryX(e), streamed.geometryX(e));
+    }
+    assertEquals(list.stats(), streamed.stats());
+  }
+
+  @Test
+  void theIntakeRefusesATrackOutOfOrder_andASecondBuild() {
+    TestNetwork n = net().node("A", 0, 0).node("B", 1000, 0);
+    n.track(1).path("A", "B");
+    n.track(2).path("B", "A");
+    var inputs = n.inputs();
+    NetworkGraphBuilder.Intake intake =
+        new NetworkGraphBuilder.Intake(NetworkParameters.defaults());
+    intake.add(inputs.get(1));
+    org.junit.jupiter.api.Assertions.assertThrows(
+        IllegalArgumentException.class, () -> intake.add(inputs.get(0)));
+    intake.build();
+    org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, intake::build);
+  }
+
   private static boolean contains(int[] values, int v) {
     for (int x : values) {
       if (x == v) {

@@ -86,7 +86,13 @@ class RouteGeneratorCacheTest extends AbstractResourceTest {
   @AfterEach
   void restoreClock() {
     cache.setClockForTest(null);
+    if (maxObservations != null) {
+      cache.setMaxObservationsForTest(maxObservations);
+      cache.clearForTest();
+    }
   }
+
+  private Long maxObservations;
 
   /** A 10 km loop from the middle of the grid; the network summary, whatever the outcome. */
   private ValidatableResponse generate() {
@@ -240,6 +246,31 @@ class RouteGeneratorCacheTest extends AbstractResourceTest {
             + " where id = ?1",
         grid.get(0).route().getId());
     assertEquals(1, excludedCount());
+    assertEquals(before + 1, builds());
+  }
+
+  /**
+   * Past the bound no graph is built (its build would not fit in the heap), and the refusal is
+   * remembered like a graph: the documents are read again only when a route changes.
+   */
+  @Test
+  void aTeamOverTheObservationBound_isRefused_withoutReadingItsDocumentsAgain() {
+    maxObservations = cache.setMaxObservationsForTest(20);
+    long before = builds();
+    generate()
+        .statusCode(400)
+        .body("code", org.hamcrest.Matchers.equalTo("GENERATOR_NETWORK_TOO_LARGE"));
+    generate()
+        .statusCode(400)
+        .body("code", org.hamcrest.Matchers.equalTo("GENERATOR_NETWORK_TOO_LARGE"));
+    assertEquals(before, builds());
+    // every route but one deleted: the team is under the bound again, and is read again at once
+    seeder.sql(
+        "update team_entities set deleted = true, version = version + 1"
+            + " where team_id = ?1 and entity_type = 2 and id <> ?2",
+        team1.getId(),
+        grid.get(0).route().getId());
+    assertEquals(1, routeCount());
     assertEquals(before + 1, builds());
   }
 

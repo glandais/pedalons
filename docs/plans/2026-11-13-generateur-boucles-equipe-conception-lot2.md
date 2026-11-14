@@ -1798,3 +1798,319 @@ Amends the hairpin and B1 bullets above where they disagree; 156 generator tests
   kept consecutive ranks. `transitionsOf` now marks the track's next transition as a break (same
   gap as a dropped observation). Pinned by `aJumpInTheTracksRideSeparatesTwoPasses` (checker,
   `pathOk` and oracle refuse; the one real pass stays accepted).
+
+## 13. Banc sur données réelles (14 novembre 2026)
+
+Banc `RealDataGeneratorBench` (hors dépôt pour l'instant) sur un export anonymisé de la production :
+neuf équipes, documents `network_edges` à jour. Les équipes sont nommées A à I par taille de réseau
+(arêtes du graphe). Aucun chiffre ci-dessous ne vient de `summary.md` sans avoir été recompté sur
+les fichiers par requête ; les points marqués « harnais » viennent de mesures complémentaires faites
+le même jour avec des programmes jetables (construction lue en flux comme en production, rejeu de
+requêtes, sondes sous les arêtes), hors dépôt.
+
+### 13.1 Les réseaux
+
+| Équipe | Traces | Arêtes du graphe | Réseau total | Plus grande composante 2-arête-connexe | Construction (banc, médiane de 3) | Graphe retenu en mémoire | Estimation du pondérateur |
+|---|---|---|---|---|---|---|---|
+| A | 2 726 | 69 458 | 14 979 km | 12 514 km | 20,3 s | 110 Mo | 67 Mo |
+| B | 446 | 15 720 | 2 865 km | 2 086 km | 2,1 s | 18 Mo | 13 Mo |
+| C | 108 | 14 094 | 10 149 km | 1 204 km | 4,9 s | 48 Mo | 21 Mo |
+| D | 71 | 13 174 | 11 879 km | 550 km | 6,3 s | 54 Mo | 21 Mo |
+| E | 10 | 3 151 | 1 625 km | 409 km | 0,8 s | 7 Mo | 3 Mo |
+| F, G | 7 chacune | 692 | 241 km | 17 km | 0,1 s | 1 Mo | 0 |
+| H, I | 1 chacune | 214 / 113 | 127 / 132 km | 0 | 0,1 s | 0 | 0 |
+
+F et G ont exactement le même réseau (mêmes parcours). C et D sont des réseaux de grands tours
+(100 à 170 km par trace en moyenne) qui se recoupent peu : beaucoup de kilomètres, presque pas de
+cycles. « Composante 2-arête-connexe » est une approximation stricte de ce qu'une boucle peut
+utiliser (elle explique les 0 km des équipes à une seule trace).
+
+### 13.2 Mémoire : la construction de l'équipe A ne tient pas dans le tas de production
+
+**Ce que disaient les chiffres du banc.** Le banc a été lancé avec `-DargLine=-Xmx1228m`, mais le
+tas n'a pas été plafonné : le pic échantillonné de l'équipe A atteint 3,2 Go. Dans `backend/pom.xml`
+Surefire a `<argLine>@{argLine}</argLine>` ; la propriété arrive bien dans la JVM fille comme
+propriété système (`argLine=-Xmx1228m` dans le rapport Surefire) mais pas comme option de la JVM, et
+la machine (30 Go) donne par défaut un tas d'environ 7,5 Go. Ce qui marche : `JAVA_TOOL_OPTIONS=-Xmx…`
+(la JVM fille l'affiche au démarrage). De plus le banc garde en mémoire tous les documents de
+l'équipe (703 millions de caractères pour A) pendant la mesure, ce que la production ne fait pas
+(`streamTracks` lit par paquets de 32). Donc : « graphe retenu » est la seule mesure propre (le
+graphe seul, après trois GC) ; le pic échantillonné du banc compte les documents et les déchets et
+ne dit rien du pic de production.
+
+**Mesure refaite (harnais).** Lecture en flux, une ligne à la fois, comme `TeamNetworkCache.build`
+(analyse JSON, `TrackInputMapper`, `NetworkGraphBuilder.build`), tas vide au départ :
+
+| Équipe | Tas | Résultat | Entrées (`TrackInput`) vivantes avant la construction | Tas vivant après GC, max pendant la construction |
+|---|---|---|---|---|
+| A | 920 Mo (`BACKEND_MEMORY` par défaut, 1 536 M × 60 %) | **OutOfMemoryError** dans `NetworkGraphBuilder.collect` | — | — |
+| A | 1 228 Mo (2 Gio × 60 %) | **OutOfMemoryError** dans `NetworkGraphBuilder.transitionsOf` | — | — |
+| A | 3 000 Mo | construit en 12-13 s | 470-490 Mo | 1,66 Go (1,75 Go quand l'ancien graphe reste en cache pendant la reconstruction) |
+| B, C, D | 920 Mo | construits (2 à 7 s) | 50-70 Mo | 200 à 350 Mo |
+
+Un deuxième essai du banc lui-même plafonné à 2 000 Mo (documents en mémoire) finit aussi en
+OutOfMemoryError après une suite de GC complets de 200 ms.
+
+Pourquoi : A apporte 1 967 881 observations d'arêtes (7,55 millions de points) pour 69 458 arêtes
+finales, chaque rue étant vue en moyenne 28 fois. L'estimation du lot 3 (§2.3 : « environ 1 million
+de `TrackEdge`, pic d'environ 300 Mo ») est fausse d'un facteur 5 sur le pic. Trois copies coexistent :
+la liste de `TrackInput` (records `TrackEdge`, `Double` encapsulés, `LatLon` par point ; gardée par
+`TeamNetworkCache.build` et par `Work.tracks` jusqu'à la fin), un `Obs` par observation avec ses
+propres tableaux projetés `xs`/`ys` (`NetworkGraphBuilder.classify`, l. 335-346, qui recopie même
+les géométries que `TrackInputMapper` avait mises en commun), et un `RawTransition` par pas.
+
+Conséquence : **la première requête de génération de l'équipe A ferait tomber le tas du backend
+entier** (OutOfMemoryError dans un thread de travail, GC complets en rafale avant), pas seulement la
+génération.
+
+**Pondérateur.** `TeamNetworkCache.weigh` sous-estime le graphe retenu d'un facteur 1,4 (B) à 2,6 (D),
+1,6 pour A : les 192 Mo de `max-weight-mb` peuvent représenter 300 à 500 Mo réels.
+
+### 13.3 Requêtes
+
+Requêtes tirées par équipe (départs = premiers points des traces les plus fréquents, à plus de 2 km
+les uns des autres), boucles de 30 à 150 km, cap N/E/S/O ou aucun, f = 0 / 0,5 / 1, plus gravel, VTT
+et aller simple. Le banc n'a pu passer que 48 des 324 requêtes de A dans son temps ; le rejeu
+(harnais, même graine, mêmes résultats sur B, C et D à l'identique) en a passé 300.
+
+| Équipe | Requêtes | Succès | Arrêtées (5 s) | `NO_ROUTE` | `NETWORK_TOO_SMALL` | Temps des succès p50 / p90 / max |
+|---|---|---|---|---|---|---|
+| A (banc, 48) | 48 | 20 (42 %) | 8 (17 %) | 11 | 9 | 2,5 / 4,4 / 4,7 s |
+| A (rejeu, 300) | 300 | 124 (41 %) | 34 (11 %) | 108 | 34 | 2,4 / 4,4 / 5,1 s |
+| B | 154 | 22 (14 %) | 0 | 55 | 77 | 0,5 / 1,2 / 1,4 s |
+| C | 300 | 4 (1 %) | 0 | 193 (dont 80 `TAIL_TOO_LONG`) | 103 | < 0,2 s |
+| D | 300 | 7 (2 %) | 0 | 89 (dont 51 `TAIL_TOO_LONG`) | 204 | < 0,1 s |
+| E | 77 | 0 | 0 | 77 | 0 | — |
+| F à I | 22 | 0 | 0 | 13 | 9 | — |
+
+- **Garanties** : les 84 propositions des équipes A à D rendues, revérifiées par `RouteGuarantees`, n'ont aucune
+  violation ; toutes sont à ±10 % de D (0,91 à 1,09). Croisements : 0 pour 59 sur 73, au plus 2.
+- **Le départ décide.** A : les départs 0, 1, 4 et 6 réussissent 20 fois sur 29 ; les départs 2, 3,
+  5 et 7 jamais (0 sur 19), quelle que soit la distance. B : le départ 1 est sur un îlot de 2 km
+  (77 `NETWORK_TOO_SMALL`, légitimes) ; le départ 0 réussit 22 fois sur 77, et rien au-delà de 80 km.
+- **Distance** (A, banc) : 30 km 6/11, 50 km 1/5, 80 km 5/8, 110 km 3/8, 150 km 2/11 ; VTT 2/3,
+  gravel 0/1, aller simple 1/1. B : 30 km 8/15, 50 km 9/15, 80 km 3/15, 110 et 150 km 0/15.
+- **Rejets** : presque tous `DISTANCE_OUT_OF_TOLERANCE`. B : 33 des 55 `NO_ROUTE` avaient des
+  candidats, tous hors des ±10 %.
+- **Familiarité** : le curseur ne sépare que f = 0 du reste. B : f = 0 → 0,33 (médiane atteinte),
+  f = 0,5 → 0,54, f = 1 → 0,53. A : 0,36 / 0,43 / 0,27 (6 propositions seulement à f = 1).
+- **Cap** : écart médian 12° (A) et 17° (B), au plus 48°.
+
+### 13.4 Questions ouvertes : verdicts
+
+**Demi-tour en un passage entre chaussées à moins de 15 m ; connecteur oblique ou courbe de 15 à
+30 m (limites acceptées).** Le comptage du banc (`uTurnEventsByClass`, 185 « LT15 » chez A, un par
+proposition au moins) est **faux** : `RealDataGeneratorBench.java:847` fait `turn = 180 - turn` sur un
+angle déjà calculé comme un virage, si bien que toute ligne droite compte comme un demi-tour de 180°.
+Recompté par le harnais avec l'angle corrigé et l'écart latéral mesuré entre la ligne d'arrivée
+(40 m avant) et la ligne de départ (40 m après), sur 120 requêtes de A et toutes celles de B, C, D,
+au milieu du parcours (hors zones de queue), parcours route :
+
+| Équipe | Propositions | Demi-tour < 15 m | 15-30 m | ≥ 30 m (tour d'un pâté de maisons, épingle large) |
+|---|---|---|---|---|
+| A | 106 | 5 propositions (5 %), toutes « sur place » (le virage est complet en un point) | 7 propositions (7 %) | 61 événements |
+| B | 30 | 0 | 0 | 17 |
+| C | 4 | 2 (une même route rendue deux fois) | 0 | 6 |
+| D | 7 | 0 | 0 | 5 |
+
+Le contrôle 5 de l'oracle (« fold ») trouve les mêmes : 4 propositions de A sur 43 au banc.
+**Verdict : garder les deux limites et leurs seuils.** Elles coûtent un aller-retour visible sur
+environ une proposition sur vingt chez A, aucune ailleurs ; le resserrement coûterait des épingles
+réellement roulées (VTT en tête : 35 événements sur les propositions gravel et VTT de A, presque tous
+≥ 30 m). À revoir seulement si les retours d'usage les signalent.
+
+**Éligibilité 3·D et planchers à 80 %.** Sur données réelles, la règle (route admise à moins de D/2
+du départ ≥ 3 D) ne prédit pas le succès : A, 48 requêtes éligibles à 2 D, 3 D et 4 D, 42 % de
+succès ; C, 165 éligibles à 3 D, 4 succès ; E, 77 éligibles, aucun. La variable manquante est la
+**cyclicité** : C et D ont beaucoup de route autour du départ mais en lignes (tours), qui ne font pas
+de boucle. **Verdict : ne pas recalibrer les planchers du test réaliste sur ce banc** (le test tourne
+sur des grilles, où la règle est juste) ; donner au banc une éligibilité « route admise de la
+composante 2-arête-connexe du départ, à moins de D/2 » avant toute recalibration.
+
+**Suurballe (famille « aller par un côté, revenir par l'autre »).** Sur 53 succès des équipes A à D,
+32 ne viennent que de cette famille (A 6/20, B 16/22, C 3/4, D 7/7) ; 4 seulement ne viennent que du
+polygone (tous chez B). **Verdict : on garde.** C'est la famille qui trouve les boucles des petits
+réseaux.
+
+**Budget de 5 s.** Chez A, 11 à 17 % des requêtes sont arrêtées, et le client reçoit alors
+`ROUTE_GENERATOR_BUSY` (« occupé »), ce qui est faux. Rejouées sans plafond, les 8 requêtes arrêtées au banc et une arrêtée dans un rejeu chargé : 6 sur 9
+réussissent entre 4,9 et 8,2 s, 3 finissent en `NO_ROUTE`. Le p90 des succès est à
+4,4 s **sur cette machine** ; un serveur 20 % plus lent en arrête nettement plus (une requête à 4,7 s
+au banc a été arrêtée dans un rejeu concurrent). B, C, D sont loin du budget (max 1,9 s).
+**Verdict : passer à 10 s** maintenant (A passerait de ~42 % à ~50 % de succès, plus aucune réponse
+« occupé » trompeuse pour les requêtes qui aboutissent), et mesurer le temps réel sur le serveur avant
+d'aller plus loin. Le budget de travail par requête (16 points de retournement, 32 polygones) reste
+déterministe ; seule la coupure change.
+
+**Mémoire.** Voir §13.2 : **bloquant pour A**, sans objet pour les autres (pic ≤ 350 Mo, graphe
+≤ 54 Mo).
+
+**Intervalle de reconstruction (10 min) et attente de construction (30 s).** La reconstruction de A
+coûte 20 s au banc (documents déjà en mémoire), 12-13 s de graphe plus 7-8 s d'analyse au harnais ;
+en production s'ajoute la lecture de ~700 Mo de `network_edges::text` en base, et le processeur peut
+être plus lent : compter 30 à 50 s. Pendant ce temps, une requête de la même équipe attend le verrou
+jusqu'à 30 s puis reçoit 503 ; une requête d'une autre équipe qui doit construire aussi. Et
+`min-rebuild-interval` ne protège que les changements de traces : **tout enregistrement de parcours
+de A relance une construction complète à la requête suivante.** Le banc ne dit pas à quelle fréquence
+A enregistre des parcours (l'export n'a pas de dates). **Verdict : garder 10 min pour les traces ;
+une fois la mémoire réglée, étendre le report aux changements de parcours pour les grands réseaux**
+(proposition 6 ci-dessous), et porter `build-wait` à 60 s.
+
+### 13.5 Défauts de correction relevés
+
+Aucune violation du contrôleur. L'oracle `RawInputOracle` signale 27 propositions (A 21, B 4, C 2) ;
+chacune a été rejouée et les observations brutes sous l'arête fautive sondées (harnais).
+
+1. **Contresens ouvert sur toute l'arête par une observation partielle (vrai défaut).** Une arête à
+   sens unique est ouverte dans le sens contraire dès qu'une trace la couvre dans ce sens sur
+   `min(supportMinCoverM, supportMinCoverShare × longueur)` = min(100 m, moitié de l'arête)
+   (`NetworkGraphBuilder.aggregate`, l. 1074-1075). Sur données réelles, des traces prennent le
+   contresens (probable contresens cyclable) sur une partie de la rue seulement, et le générateur
+   roule alors à contresens là où personne de l'équipe ne l'a fait :
+   - équipe B, requête 66, proposition 0 : arête de 585 m, contresens observé sur 45-370 m depuis une
+     extrémité, la proposition entre par l'autre et roule **environ 210 m** à contresens sans
+     observation ;
+   - équipe A, requête 4 (banc), proposition 1 : arête de 220 m, contresens observé sur 145 m,
+     **environ 75 m** sans observation ;
+   - équipe A, requête 46 (banc), proposition 0 : arête de 65 m, contresens observé sur 40 m,
+     **environ 25 m** sans observation.
+
+   Ce n'est pas une limite acceptée : le plan §4 n'autorise un sens unique « que dans le sens où
+   l'équipe l'a déjà parcouru ». Correction : proposition 4.
+2. **Départ sur un îlot admis (vrai défaut d'accroche).** Équipe A, départ 3 (le quatrième lieu de
+   départ le plus fréquent de l'équipe), requêtes 0, 19, 23, 25, 28, 35, 40, 42, 44 du banc :
+   `NETWORK_TOO_SMALL` en 4 ms pour toutes les distances, alors que 185 km de route admise sont à
+   moins de 15 km. Le point tombe sur un bout de voie piétonne autorisée aux vélos (41 m, une seule
+   trace), donc admis pour la route ; ce bout ne touche que 0,1 km d'arêtes admises, entourées de
+   voies non admises. `Snapper.snap` prend l'arête admise la plus proche sans regarder si elle mène
+   quelque part. Correction : proposition 5.
+3. **Faux positifs de l'oracle (pas de défaut du générateur), les autres signalements :**
+   - *contresens* : rouler à l'opposé d'une observation `AGAINST`, c'est rouler dans le sens légal, mais le
+     contrôle 3 ne retient comme « parcouru » que le sens d'une observation (A 1, 12, 33) ; voies
+     jumelles à 3,7-6 m repliées par le constructeur (`dedupMeanDistM` 10 m) alors que l'oracle
+     regarde à 4 m (`NEAR`) (A 9, B 5) ; bouts de 5 m à un carrefour (A 1, 26) ; données
+     contradictoires entre documents pour la même rue (A 18) ;
+   - *type ROAD* (B 42) : sentier et petite route jumeaux à 4-6 m, repliés en une arête ;
+   - *virages* (A 5, 9, 16, 18 ; C 1, 196) : 151 à 156° (178° une fois) pour des nœuds à 50-100 m,
+     soit le seuil de 150° et la borne de 100 m mesurés différemment (oracle sur la polyligne et des
+     passages quantifiés à 5 m, contrôleur sur les longueurs d'arêtes) : des cas limites, pas une
+     règle contournée.
+
+   À aligner dans l'oracle (sens légal d'un `AGAINST`, tolérance des jumeaux), pour qu'il redevienne
+   un signal exploitable sur données réelles.
+4. **Non expliqué.** A, départs 2, 5 et 7 : aucune proposition (0 sur 10 au banc), route admise
+   abondante et connexe, ni pont ni îlot ; aucun candidat produit (`disjointInfeasible` 3 à 64).
+   Exemple reproductible : A, requêtes 17, 27, 30 (départ 2, 30 et 50 km). Équipe E : 77 `NO_ROUTE`
+   en moins de 65 ms, non diagnostiqué (probablement aucune boucle de la bonne longueur dans ses
+   409 km de cycles).
+
+### 13.6 Propositions, par ordre
+
+1. **Garde-fou mémoire avant d'ouvrir le site à A (bloquant).** Dans `TeamNetworkCache.build`
+   (`TeamNetworkCache.java:203-231`), compter les observations pendant la lecture en flux et abandonner
+   au-delà d'une borne configurable (par exemple `pedalons.route-generator.max-observations` = 600 000 ;
+   B en a 189 000, A 1 968 000), avec une erreur dédiée et le verdict mis en cache par empreinte pour
+   ne pas relire 700 Mo à chaque requête. Effet : plus d'OutOfMemoryError ; A reçoit un refus
+   explicite. Risque : faible ; un code d'erreur au contrat. Taille : S.
+2. **Régime du constructeur (pour rouvrir A).** Partager les tableaux projetés par géométrie (une
+   `IdentityHashMap` sur la `List<LatLon>` commune dans `classify`), lâcher les `TrackInput` dès
+   `collect()` fini (le constructeur en devient propriétaire), et à terme lire les observations en
+   flux sans liste intermédiaire. Gain attendu : de l'ordre de 300 à 600 Mo sur le pic de A, à
+   remesurer sous 1 228 Mo plafonnés. Risque : déterminisme (l'ordre par identifiant de trace est
+   déjà celui de la requête SQL). Taille : M. Si le pic reste au-dessus, relever `BACKEND_MEMORY`
+   (le §2.3 du lot 3 le prévoit) : il faudrait au moins 3 Gio de conteneur au rythme actuel.
+3. **Budget 10 s** (`application.properties:409`, `pedalons.route-generator.time-budget=PT10S`).
+   Effet : A ~42 % → ~50 % de succès, moins de 503 trompeurs. Risque : un permis tenu plus longtemps
+   (`max-concurrent` = processeurs/2) ; acceptable avec `permit-wait` 2 s et la limite par personne.
+4. **Contresens partiel** (`NetworkGraphBuilder.aggregate`, l. 1074-1080) : pour ouvrir le sens
+   contraire d'une arête à sens unique, exiger une couverture de presque toute l'arête (par exemple
+   longueur − 2 × `coverageGapM`) au lieu de min(100 m, moitié), ou couper l'arête aux bouts des
+   observations partielles. Effet : supprime les trois cas de §13.5. Risque : quelques rues à
+   contresens cyclable perdues dans les centres anciens. Taille : S.
+5. **Accroche utile** (`Snapper.snap`) : ignorer une arête admise dont la composante admise fait
+   moins de quelques kilomètres (ou moins de `networkTooSmallFactor × D`) quand une autre arête
+   admise est à portée. Effet : le départ 3 de A redevient utilisable. Risque : un départ très
+   légèrement déplacé. Taille : S.
+6. **Reconstructions de A** : reporter aussi les changements de parcours de `min-rebuild-interval`
+   au-delà d'une taille de réseau (servir l'ancien graphe, retard ≤ 10 min, à écrire dans le tableau
+   du §2.5 du lot 3), et `build-wait` à 60 s. Effet : un enregistrement de parcours ne coûte plus
+   une reconstruction de 30 à 50 s à la personne suivante. Risque : un parcours tout juste créé
+   absent pendant 10 min. Décision du propriétaire.
+7. **Pondérateur** (`TeamNetworkCache.weigh`, l. 247-253) : recaler les constantes sur les graphes
+   retenus mesurés (× 1,6 à 2,6), sinon le cache de « 192 Mo » occupe jusqu'à 500 Mo. Taille : XS.
+8. **Familiarité** : β = 1 ne sépare pas f = 0,5 de f = 1 ; essayer β = 2 et 3 au banc. Taille : XS
+   plus un passage du banc.
+9. **Banc** : corriger `RealDataGeneratorBench.java:847` (supprimer `turn = 180 - turn` et mesurer
+   l'écart entre la ligne d'arrivée et celle de départ) ; éligibilité sur la composante
+   2-arête-connexe ; noter `Runtime.maxMemory()` dans le rapport et documenter
+   `JAVA_TOOL_OPTIONS=-Xmx…` ; lire les documents en flux pour que le pic mesuré soit celui de la
+   production.
+
+### 13.7 Pour le propriétaire, en clair
+
+- **Grande équipe (A) : pas utilisable aujourd'hui, et dangereuse.** Construire son réseau demande
+  plus de 1,2 Go de mémoire alors que le serveur en donne 0,9 à 1,2 Go en tout : la première demande
+  ferait planter le serveur pour tout le monde. Il faut le garde-fou (proposition 1) avant d'ouvrir le
+  site, puis le régime mémoire (proposition 2) pour la rouvrir. Une fois cela fait, ce que verront
+  ses membres : environ quatre demandes sur dix aboutissent (en 2 à 5 s, jusqu'à 10 s avec le
+  nouveau budget), avec des parcours justes en distance et sans faute de règle ; mais certains lieux
+  de départ habituels ne donnent jamais rien (« réseau trop petit » ou « aucun parcours »), environ une
+  proposition sur vingt fait un aller-retour visible sur la même route, et la première demande après
+  l'enregistrement d'un parcours attend 30 à 50 s.
+- **Équipes moyennes (B) : utilisable.** Réponse en moins de 2 s. Depuis le lieu de départ principal,
+  une demande sur trois aboutit jusqu'à 50 km ; au-delà de 80 km presque jamais : le réseau de
+  l'équipe est trop petit, et le message le dit.
+- **Équipes de grands tours (C, D) et petites équipes (E à I) : techniquement sûr, mais presque
+  inutile.** 1 à 2 % de succès chez C et D, aucun chez E à I : leurs parcours sont des lignes qui ne
+  se recoupent pas, il n'y a pas de boucle à proposer. Les personnes verront surtout « réseau trop
+  petit » ou « aucun parcours trouvé ». C'est le comportement attendu, à présenter comme tel sur le
+  site (« le générateur s'appuie sur les parcours que votre équipe a déjà roulés ; plus elle en
+  partage, plus il propose »).
+- Un vrai défaut de règle trouvé : le générateur peut rouler jusqu'à quelques centaines de mètres à
+  contresens d'un sens unique que l'équipe n'a pris à contresens qu'en partie (proposition 4).
+
+### 13.8 Suites du 14 novembre : garde-fou et régime mémoire (propositions 1 et 2)
+
+Faites le même jour, mesurées sur le même export (vérifié contre la production : mêmes nombres de
+traces par équipe) avec un harnais jetable qui lit en flux comme `TeamNetworkCache.build`.
+
+**Proposition 1, garde-fou.** `TeamNetworkCache.build` compte les observations (arêtes des
+documents à jour) pendant la lecture et s'arrête à `pedalons.route-generator.max-observations` ;
+l'équipe reçoit `GENERATOR_NETWORK_TOO_LARGE` (400, contrat `14.15.0`). Le refus est gardé par
+empreinte sous les règles d'un graphe (immédiat si un parcours change, `min-rebuild-interval` si
+seuls les documents bougent) : les documents ne sont pas relus à chaque requête.
+
+**Proposition 2, régime du constructeur.** `NetworkGraphBuilder.Intake` reçoit les traces une à
+une et n'en garde que les observations ; `build(List)` passe par lui. Trois changements :
+
+- plus de liste de `TrackInput` (470 à 490 Mo chez A) : positions brutes gardées en degrés, projetées
+  en place quand la référence (moyenne des extrémités) est connue, la décision `PARTIAL_TO` /
+  `FLOATING` reportée à ce moment-là ;
+- tableaux projetés partagés par géométrie d'entrée (identité de la liste que `TrackInputMapper` met
+  en commun) : chez A, 1 967 881 observations mais 198 985 géométries distinctes (839 863 points au
+  lieu de 7 551 764), et le tableau inversé calculé une fois par géométrie au lieu d'une fois par
+  pièce ;
+- pièces et observations allégées, emplacements lâchés dès les arêtes construites, observations dès
+  les transitions calculées.
+
+Le graphe est le même **au bit près** : empreinte SHA-256 de tous les champs de `NetworkGraph`
+identique avant et après, pour les neuf équipes, par la liste comme par le flux.
+
+| Équipe A, lecture en flux | Avant | Après |
+|---|---|---|
+| Tas de 920 Mo (ParallelGC, options de la production) | OutOfMemoryError | construit, 5 GC complets |
+| Tas de 650 Mo | — | construit, 13 GC complets |
+| Tas de 500 Mo | — | OutOfMemoryError (G1 : construit) |
+| Tas vivant après GC, max pendant la construction | 1,66 Go | 440 Mo |
+| Construction après lecture | 12-13 s | 11,5-12 s |
+
+Soit environ 225 Mo par million d'observations. **Borne par défaut : proportionnelle au tas**
+(`-1` : tas / 900 octets, un quart du tas pour une construction), soit environ 1 million pour le tas
+par défaut de 920 Mo (B en a 188 600, D 103 493, C 82 493 : toutes passent) et 4,7 millions pour un
+tas de 4 Go, où A (1,97 million) passe. Une borne fixe aurait refusé A en production au premier
+déploiement, alors qu'elle y tient.
+
+**Constat en production le 14 novembre** : le backend de production a un conteneur de 8 Gio et un
+tas de 4 Go (`JAVA_MAX_MEM_RATIO=50`), pas les 920 Mo supposés au §13.2 ; la construction de A n'y
+aurait pas débordé, même avant. La préproduction, elle, est à 1,5 Gio (920 Mo de tas). Le §13.7
+reste vrai pour toute instance au réglage par défaut.

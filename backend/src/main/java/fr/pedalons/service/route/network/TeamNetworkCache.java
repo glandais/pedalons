@@ -2,6 +2,7 @@ package fr.pedalons.service.route.network;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.ServiceUnavailableException;
 import fr.pedalons.domain.route.NetworkEdgesDocument;
 import fr.pedalons.dto.error.ErrorCode;
@@ -9,7 +10,6 @@ import fr.pedalons.repository.route.TeamNetworkRepository;
 import fr.pedalons.service.route.generator.NetworkGraph;
 import fr.pedalons.service.route.generator.NetworkGraphBuilder;
 import fr.pedalons.service.route.generator.NetworkParameters;
-import fr.pedalons.service.route.generator.TrackInput;
 import io.hypersistence.utils.hibernate.type.util.JsonConfiguration;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.annotation.PostConstruct;
@@ -17,8 +17,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -37,6 +38,12 @@ import org.jspecify.annotations.Nullable;
  * way. A route-level change (creation, delete, exclusion box, surface type) rebuilds at once; a
  * change of tracks or documents alone, which includes the HD catch-up of a saved route, waits for {@code min-rebuild-interval}, so that the backfill filling
  * documents all day does not rebuild the largest team's graph every few minutes.
+ *
+ * <p>A team whose routes hold more street edge observations than {@code max-observations} gets no
+ * graph: building it would take more heap than the backend has (lot 2 design §13.2), and an
+ * OutOfMemoryError there takes the whole instance down, not the generator alone. The read stops at
+ * the bound and the refusal is remembered under the same rules as a graph, so that the documents
+ * are not read again at every request.
  */
 @ApplicationScoped
 public class TeamNetworkCache {
@@ -68,7 +75,31 @@ public class TeamNetworkCache {
   @ConfigProperty(name = "pedalons.route-generator.build-wait", defaultValue = "PT30S")
   Duration buildWait;
 
+  /**
+   * Heap a build may hold per observation when the bound is sized on the heap: its measured peak is
+   * about 225 bytes (lot 2 design §13.8), so a build takes at most a quarter of the heap.
+   */
+  static final long HEAP_BYTES_PER_OBSERVATION = 900;
+
+  /**
+   * Street edge observations a team may hold: -1 sizes the bound on the heap of this instance, 0
+   * lifts it.
+   */
+  @ConfigProperty(name = "pedalons.route-generator.max-observations", defaultValue = "-1")
+  long maxObservations;
+
+  /** A team refused for its size: what was read of it, and when. */
+  private record Refusal(Fingerprint fingerprint, Instant at) {}
+
+  /** Stops the streamed read at the bound; never leaves this class. */
+  private static final class TooLargeException extends RuntimeException {
+    TooLargeException() {
+      super(null, null, false, false);
+    }
+  }
+
   private Cache<Long, TeamNetwork> cache;
+  private final Map<Long, Refusal> refusals = new ConcurrentHashMap<>();
   private final ReentrantLock[] locks = new ReentrantLock[STRIPES];
   private final Semaphore buildPermits = new Semaphore(1, true);
   private final AtomicLong builds = new AtomicLong();
@@ -79,6 +110,11 @@ public class TeamNetworkCache {
     for (int i = 0; i < STRIPES; i++) {
       locks[i] = new ReentrantLock();
     }
+    if (maxObservations < 0) {
+      maxObservations = boundFor(Runtime.getRuntime().maxMemory());
+    }
+    LOG.infof(
+        "Route generator: a team may hold up to %d street edge observations", maxObservations);
     cache =
         Caffeine.newBuilder()
             .maximumWeight(maxWeightMb * 1024 * 1024)
@@ -87,6 +123,11 @@ public class TeamNetworkCache {
             .expireAfterWrite(expireAfterWrite)
             .build();
     metrics.watch(this);
+  }
+
+  /** The bound of an instance with that much heap: 1 million for 900 MB. */
+  static long boundFor(long heapBytes) {
+    return Math.max(1, heapBytes / HEAP_BYTES_PER_OBSERVATION);
   }
 
   /** The graphs built since the start, for the tests and the metrics. */
@@ -107,9 +148,17 @@ public class TeamNetworkCache {
     this.clock = testClock != null ? testClock : Clock.systemUTC();
   }
 
-  /** Tests only: forgets every graph. */
+  /** Tests only: forgets every graph and every refusal. */
   public void clearForTest() {
     cache.invalidateAll();
+    refusals.clear();
+  }
+
+  /** Tests only: the bound on a team's observations; returns the previous one. */
+  public long setMaxObservationsForTest(long max) {
+    long previous = maxObservations;
+    maxObservations = max;
+    return previous;
   }
 
   /**
@@ -118,6 +167,8 @@ public class TeamNetworkCache {
    *
    * @throws ServiceUnavailableException {@code ROUTE_GENERATOR_BUSY}: another build holds the
    *     memory for longer than {@code build-wait}
+   * @throws BusinessException {@code GENERATOR_NETWORK_TOO_LARGE}: the team holds more observations
+   *     than {@code max-observations}
    */
   public TeamNetwork lookup(long teamId, long domainId) {
     Fingerprint fp = repository.fingerprint(teamId, domainId);
@@ -129,6 +180,7 @@ public class TeamNetworkCache {
               : RouteGeneratorMetrics.CacheResult.DEFERRED);
       return cached;
     }
+    refuseIfKnownTooLarge(teamId, fp);
     ReentrantLock lock = locks[Math.floorMod(Long.hashCode(teamId), STRIPES)];
     try {
       if (!lock.tryLock(buildWait.toMillis(), TimeUnit.MILLISECONDS)) {
@@ -146,6 +198,7 @@ public class TeamNetworkCache {
         metrics.cache(RouteGeneratorMetrics.CacheResult.HIT);
         return cached;
       }
+      refuseIfKnownTooLarge(teamId, fp);
       try {
         if (!buildPermits.tryAcquire(buildWait.toMillis(), TimeUnit.MILLISECONDS)) {
           throw new ServiceUnavailableException(ErrorCode.ROUTE_GENERATOR_BUSY);
@@ -157,7 +210,23 @@ public class TeamNetworkCache {
       try {
         metrics.cache(RouteGeneratorMetrics.CacheResult.MISS);
         long started = System.nanoTime();
-        TeamNetwork built = build(teamId, domainId, fp);
+        TeamNetwork built;
+        try {
+          built = build(teamId, domainId, fp);
+        } catch (RuntimeException e) {
+          if (!tooLarge(e)) {
+            throw e;
+          }
+          LOG.warnf(
+              "Team network %d holds more than %d street edge observations: no graph is built"
+                  + " (pedalons.route-generator.max-observations)",
+              teamId, maxObservations);
+          refusals.put(teamId, new Refusal(fp, clock.instant()));
+          cache.invalidate(teamId);
+          metrics.cache(RouteGeneratorMetrics.CacheResult.TOO_LARGE);
+          throw new BusinessException(ErrorCode.GENERATOR_NETWORK_TOO_LARGE);
+        }
+        refusals.remove(teamId);
         metrics.built(Duration.ofNanos(System.nanoTime() - started));
         builds.incrementAndGet();
         long max = maxWeightMb * 1024 * 1024;
@@ -182,18 +251,43 @@ public class TeamNetworkCache {
    * and the graph is younger than the rebuild interval.
    */
   private boolean acceptable(TeamNetwork cached, Fingerprint fp) {
-    if (cached.fingerprint().equals(fp)) {
+    return acceptable(cached.fingerprint(), cached.builtAt(), fp);
+  }
+
+  private boolean acceptable(Fingerprint known, Instant at, Fingerprint fp) {
+    if (known.equals(fp)) {
       return true;
     }
-    return cached.fingerprint().sameRoutes(fp)
-        && Duration.between(cached.builtAt(), clock.instant()).compareTo(minRebuildInterval) < 0;
+    return known.sameRoutes(fp)
+        && Duration.between(at, clock.instant()).compareTo(minRebuildInterval) < 0;
+  }
+
+  /** A refusal stands as long as a graph would: the documents are not read again to find it out. */
+  private void refuseIfKnownTooLarge(long teamId, Fingerprint fp) {
+    Refusal refusal = refusals.get(teamId);
+    if (refusal != null && acceptable(refusal.fingerprint(), refusal.at(), fp)) {
+      metrics.cache(RouteGeneratorMetrics.CacheResult.TOO_LARGE);
+      throw new BusinessException(ErrorCode.GENERATOR_NETWORK_TOO_LARGE);
+    }
+  }
+
+  private static boolean tooLarge(Throwable e) {
+    for (Throwable t = e; t != null; t = t.getCause()) {
+      if (t instanceof TooLargeException) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private TeamNetwork build(long teamId, long domainId, Fingerprint fp) {
     TrackInputMapper mapper = new TrackInputMapper(MAX_POINTS_PER_EDGE);
-    List<TrackInput> tracks = new ArrayList<>();
+    // fed as the rows come: the tracks of a team are never held at once (lot 2 design §13.2)
+    NetworkGraphBuilder.Intake intake =
+        new NetworkGraphBuilder.Intake(NetworkParameters.defaults());
     TeamNetworkSummary.Tally tally = new TeamNetworkSummary.Tally();
     int[] unreadable = {0};
+    long[] observations = {0};
     QuarkusTransaction.requiringNew()
         .run(() ->
             repository.streamTracks(
@@ -210,7 +304,11 @@ public class TeamNetworkCache {
                           && doc.rev() == row.original();
                   tally.track(row.routeId(), row.excluded(), current);
                   if (current) {
-                    tracks.add(
+                    observations[0] += doc.edges().size();
+                    if (maxObservations > 0 && observations[0] > maxObservations) {
+                      throw new TooLargeException();
+                    }
+                    intake.add(
                         mapper.map(
                             row.trackId(),
                             row.excluded(),
@@ -218,8 +316,7 @@ public class TeamNetworkCache {
                             doc));
                   }
                 }));
-    NetworkGraph graph = NetworkGraphBuilder.build(tracks, NetworkParameters.defaults());
-    tracks.clear();
+    NetworkGraph graph = intake.build();
     TeamNetworkSummary summary =
         tally.build(graph.stats().totalLengthM(), mapper.droppedEdges() + unreadable[0]);
     return new TeamNetwork(fp, graph, summary, clock.instant(), weigh(graph));

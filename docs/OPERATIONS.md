@@ -784,6 +784,49 @@ before it. Between two releases that both have it, leave it running through the 
   keeps its profile. Retry with `POST /api/admin/elevation-refresh/retry`, as above.
 - **Done** is when the log says `Network edges backfill done`.
 
+#### The team route generator
+
+`POST /api/teams/{slug}/route-generator` (ledger `API-198`, lot 3) proposes routes on the graph of
+the streets the team's routes ride, built from the documents above and cached per backend instance.
+Nothing is stored and no routing provider is called: what it costs is CPU and heap.
+
+| Key (`pedalons.route-generator.…`) | Default | What it does |
+|---|---|---|
+| `enabled` (`ROUTE_GENERATOR_ENABLED`) | `true` | The kill switch: `false` answers `ROUTE_PLANNER_DISABLED` |
+| `max-observations` (`ROUTE_GENERATOR_MAX_OBSERVATIONS`) | `-1` (sized on the heap) | Street edge observations a team may hold (one per street and per route riding it). Past it no graph is built and the team gets `GENERATOR_NETWORK_TOO_LARGE`; `0` lifts the bound |
+| `cache.max-weight-mb` (`ROUTE_GENERATOR_CACHE_MB`) | `192` | Estimated size of the cached graphs; the estimate is 1.4 to 2.6 times under the real size |
+| `cache.min-rebuild-interval` | `PT10M` | How long a change of tracks or documents alone (the backfill, an HD catch-up) may wait; a route saved, deleted or ticked out rebuilds at the next request |
+| `cache.expire-after-access`, `cache.expire-after-write` | `PT2H`, `PT6H` | When an unused graph leaves the cache |
+| `rate.max-per-window`, `rate.window-minutes` | `30`, `15` | Requests per person (`ROUTE_GENERATOR_RATE_LIMITED`, 429) |
+| `max-concurrent`, `permit-wait` | `0` (half of the cores), `PT2S` | Generations at once per instance, and the wait for a slot (`ROUTE_GENERATOR_BUSY`, 503) |
+| `time-budget` | `PT5S` | One generation; past it, `ROUTE_GENERATOR_BUSY` |
+| `build-wait` | `PT30S` | The wait for the one graph build at a time |
+
+**`max-observations` follows the heap.** Building a graph holds about 225 MB of heap per million
+observations at its peak (measured on 14 November 2026 with the production JVM options: 440 MB for
+the 1.97 million observations of the largest team, whose graph then keeps about 130 MB; the build
+takes 12 s after the read). Left at `-1`, the bound gives a build a quarter of the instance's heap
+(heap / 900 bytes): about 1 million observations for the default `BACKEND_MEMORY=1536M` (920 MB of
+heap), 4.7 million for a 4 GB heap; the backend logs the value at startup (`Route generator: a team
+may hold up to N street edge observations`). So a team refused for its size is served by raising
+`BACKEND_MEMORY`, not this key. The bound exists because the JVM runs with `-XX:+ExitOnOutOfMemoryError`: a build that does
+not fit takes the whole backend down, not the generator alone. Count a team's observations with
+
+```sql
+select te.team_id, sum(jsonb_array_length(t.network_edges -> 'edges')) as observations
+  from team_entities te join gpx_tracks t on t.route_id = te.id
+ where te.entity_type = 2 and not te.deleted and t.network_edges is not null
+ group by te.team_id order by 2 desc limit 10;
+```
+
+(it reads every document: several hundred megabytes on the largest team, run it off-peak).
+
+- **Follow it**: the counters `pedalons_route_generator_requests_total{outcome}` and
+  `pedalons_route_generator_cache_total{result}` (`hit`, `deferred`, `miss`, `too_large`), the timers
+  `pedalons_route_generator_generate` and `pedalons_route_generator_build`, the gauges
+  `pedalons_route_generator_cached_teams` and `pedalons_route_generator_cached_bytes`; a refused team
+  logs `Team network N holds more than N street edge observations`.
+
 **The DEM tiles left on disk.** Since phase E the backend reads none: `mapterhorn`,
 `ign-lidar-hd-mnt` and `ign-lidar-hd-mns` in each environment's `data/cache` (about 7 GB in
 production) serve nothing, and only a release older than phase B would read them. Regenerable, so

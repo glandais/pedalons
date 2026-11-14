@@ -180,6 +180,7 @@ export function generatedRouteName(distanceText: string, t: TFunction): string {
 const GENERATOR_ERROR_KEYS: Partial<Record<ErrorCode, TranslationKey>> = {
   [ErrorCode.GENERATOR_START_TOO_FAR]: tRegister('routeGenerator.errors.startTooFar'),
   [ErrorCode.GENERATOR_END_TOO_FAR]: tRegister('routeGenerator.errors.endTooFar'),
+  [ErrorCode.GENERATOR_NETWORK_TOO_LARGE]: tRegister('routeGenerator.errors.networkTooLarge'),
   [ErrorCode.ROUTE_GENERATOR_BUSY]: tRegister('routeGenerator.errors.busy'),
   [ErrorCode.ROUTE_PLANNER_DISABLED]: tRegister('routeGenerator.errors.disabled'),
 }
@@ -191,6 +192,7 @@ const GENERATOR_NON_RETRYABLE: ReadonlySet<ErrorCode> = new Set([
   ErrorCode.GENERATOR_DISTANCE_TOO_SHORT,
   ErrorCode.GENERATOR_NO_ROUTE,
   ErrorCode.GENERATOR_NETWORK_TOO_SMALL,
+  ErrorCode.GENERATOR_NETWORK_TOO_LARGE,
   ErrorCode.ROUTE_GENERATOR_RATE_LIMITED,
   ErrorCode.ROUTE_PLANNER_DISABLED,
 ])
