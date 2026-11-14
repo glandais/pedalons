@@ -7032,6 +7032,7 @@ fait.
 
 ## LEGAL — Politique de confidentialité
 
+- `LEGAL-29` **La politique ne dit plus le point exact d'une annonce visible du rôle Administrateur de l'équipe** (14 novembre 2026, contrat inchangé) — `privacy/privacy-policy.{fr,en}.md`, § des petites annonces : « il n'est visible précisément que de vous et de l'administration de la plateforme ». Depuis `SEC-26`, `GET …/classifieds/{slug}/edit` ne sert le point exact qu'à la personne qui a publié l'annonce (`AdService.getAdEdit` → `isAuthor`) ; un rôle Administrateur qui la modifie reçoit le point flouté. Relevé en instruisant `MOB-159`. **À ne pas défaire** : l'administration de la plateforme reste nommée — l'exploitant a accès à la base, où le point exact est stocké. Parité FR/EN tenue, date de mise à jour portée au 14 novembre 2026 ; le texte étant un asset de l'app, il n'y paraît qu'à la build suivante. Aucun test : c'est un texte.
 - `LEGAL-19` **La mesure d'audience du site déclarée** (2026-10-15, texte rédigé, contrat
   inchangé ; **pas encore en ligne** : il part avec le déploiement de l'étape 5 du plan, `OPS-41`,
   et la date d'en-tête, « 15 octobre 2026 », est à recaler au jour de cette mise en ligne) — plan

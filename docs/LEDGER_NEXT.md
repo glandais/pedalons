@@ -1728,16 +1728,6 @@ l'app mobile, un changement n'y apparaît qu'avec la build suivante.
 La politique réécrite pour la mesure d'audience (`LEGAL-19`) est en ligne ; ce qui reste de la mise
 en service (précondition du §5.3 du plan, vérifications de l'étape 6) est sous `OPS-41`.
 
-- [ ] `LEGAL-29` **La politique dit le point exact d'une annonce visible de l'administration, ce
-      qui n'est plus vrai (XS)** — `privacy/privacy-policy.{fr,en}.md` l. 92 : « il n'est visible
-      précisément que de vous, des personnes ayant le rôle Administrateur dans votre équipe et de
-      l'administration de la plateforme ». Depuis `SEC-26`, `AdEditDto.locationGeometry` n'est
-      exact que pour la personne qui a publié l'annonce ; toute autre personne qui la modifie reçoit
-      le point flouté (vérifié le 14 novembre : `AdService.getAdEdit` → `isAuthor`). Seule la
-      mention du rôle Administrateur de l'équipe est fausse ; celle de l'administration de la
-      plateforme reste vraie au sens de l'exploitant, qui a accès à la base : la garder. La
-      politique promet moins que ce qui est fait, donc sans risque, mais elle est inexacte. Relevé le 14 novembre 2026 en instruisant `MOB-159`. À corriger en parité
-      FR/EN ; le texte étant un asset de l'app, il n'y paraît qu'à la build suivante.
 - [ ] `LEGAL-28` **La politique ne parle pas des applications externes autorisées par OAuth (S)** —
       depuis `API-199` un membre peut ouvrir son compte à une application tierce
       (`/oauth/authorize`) : `privacy/privacy-policy.{fr,en}.md` §6 n'en dit rien (ni l'accès donné,

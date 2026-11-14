@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-**Dernière mise à jour : 10 novembre 2026**
+**Dernière mise à jour : 14 novembre 2026**
 
 La présente politique de confidentialité décrit la manière dont Pedalons (« nous », « notre », « nos ») collecte, utilise et protège vos données personnelles lorsque vous utilisez notre plateforme (site web, application mobile, extensions pour appareils GPS).
 
@@ -89,7 +89,7 @@ Notre outil GPX permet d'analyser un fichier GPX, ou un itinéraire que vous des
 - **Inscriptions (participations)** : la sortie ou le voyage, le groupe de niveau choisi, et la date de votre inscription. Votre nom affiché et votre photo de profil apparaissent alors dans la liste des personnes inscrites, visible par toute personne pouvant voir la sortie ou le voyage — y compris des personnes non connectées lorsqu'il est public. Annuler votre inscription supprime l'enregistrement.
 - **Publications (posts)** : titre et texte au format Markdown.
 - **Commentaires** : texte associé à une publication, une sortie, un voyage ou un itinéraire.
-- **Petites annonces** : titre, description, photos, type (vente, achat, location), prix, période de location, et le lieu que vous indiquez (texte libre et/ou point sur la carte). Les annonces ne sont visibles que par les membres de votre équipe, après connexion, jamais publiquement. Nous stockons exactement le point que vous placez, mais il n'est visible précisément que de vous, des personnes ayant le rôle Administrateur dans votre équipe et de l'administration de la plateforme ; les autres membres ne voient qu'une zone d'environ 1 km de côté. Le lieu saisi en texte est affiché tel que vous l'avez écrit. Les photos jointes ne portent pas de position GPS (voir « Photos et images »).
+- **Petites annonces** : titre, description, photos, type (vente, achat, location), prix, période de location, et le lieu que vous indiquez (texte libre et/ou point sur la carte). Les annonces ne sont visibles que par les membres de votre équipe, après connexion, jamais publiquement. Nous stockons exactement le point que vous placez, mais il n'est visible précisément que de vous et de l'administration de la plateforme ; les autres membres ne voient qu'une zone d'environ 1 km de côté. Le lieu saisi en texte est affiché tel que vous l'avez écrit. Les photos jointes ne portent pas de position GPS (voir « Photos et images »).
 - **Messages au sujet d'une petite annonce** : « Répondre à l'annonce » envoie votre message (2 000 caractères au maximum) par e-mail à la personne qui a publié l'annonce, avec votre nom affiché, le titre de l'annonce et un lien vers elle. Votre adresse e-mail est indiquée comme adresse de réponse : cette personne la voit et peut vous répondre ; la sienne ne vous est jamais montrée. Nous ne conservons pas le texte du message : nous enregistrons seulement que vous avez écrit au sujet de cette annonce, et quand, pour limiter les abus (10 messages par heure au maximum).
 - **Pages d'équipe** : la page « à propos » et les pages supplémentaires publiées par votre équipe.
 - **Modèles de sortie** : les modèles réutilisables (titre, description, groupes de niveau) enregistrés par les personnes qui organisent les sorties de votre équipe.

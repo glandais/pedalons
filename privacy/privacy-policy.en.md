@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: November 10, 2026**
+**Last updated: November 14, 2026**
 
 This privacy policy describes how Pedalons ("we", "our", "us") collects, uses, and protects your personal data when you use our platform (website, mobile app, GPS device extensions).
 
@@ -89,7 +89,7 @@ Our GPX tool lets you analyse a GPX file, or a route you draw, without attaching
 - **Sign-ups (participations)**: the ride or trip, the pace group you chose, and the date of your registration. Your display name and profile picture then appear in the participant list, visible to everyone who can see the ride or trip — including visitors who are not logged in when it is public. Cancelling your registration deletes the record.
 - **Posts**: title and text in Markdown format.
 - **Comments**: text attached to a post, ride, trip or route.
-- **Classified ads**: title, description, photos, type (sale, purchase, rental), price, rental period, and the location you enter (free text and/or a point on the map). Ads are only visible to signed-in members of your team, never publicly. We store exactly the point you place, but only you, your team's administrators and the platform administrators see it exactly; other members see only an area about 1 km across. Location text you type is shown as you typed it. Attached photos carry no GPS position (see "Photos and images").
+- **Classified ads**: title, description, photos, type (sale, purchase, rental), price, rental period, and the location you enter (free text and/or a point on the map). Ads are only visible to signed-in members of your team, never publicly. We store exactly the point you place, but only you and the platform administrators see it exactly; other members see only an area about 1 km across. Location text you type is shown as you typed it. Attached photos carry no GPS position (see "Photos and images").
 - **Messages about a classified ad**: "Contact the seller" emails your message (up to 2,000 characters) to the ad's author, along with your display name, the ad's title and a link to it. Your email address is set as the reply address: the author sees it and can reply to you; theirs is never shown to you. We do not keep the text of the message: we record only that you wrote about that ad, and when, to limit abuse (at most 10 messages per hour).
 - **Team pages**: the "about" page and any additional pages your team publishes.
 - **Ride templates**: reusable ride models (title, description, pace groups) saved by your team's organisers.
