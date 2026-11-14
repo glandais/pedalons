@@ -190,6 +190,7 @@ class OAuthFlowTest extends AbstractResourceTest {
     // once; the devices' is not for applications.
     given()
         .header("X-Refresh-Token", refreshToken)
+        .contentType(ContentType.JSON)
         .when()
         .post("/api/auth/refresh")
         .then()
