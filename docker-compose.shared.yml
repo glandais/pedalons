@@ -48,11 +48,11 @@ services:
   # (IGN plafonne a 20 Go par defaut, ORD_CACHE__DISK_MAX_GB_IGN). Image distroless, mais le binaire
   # porte son propre healthcheck (HEALTHCHECK de l'image, `osm-route-details healthcheck`) : garde
   # tel quel. Journaux en JSON par defaut de l'image (ORD_LOG__FORMAT).
-  # API-198 (aretes des rues des parcours d'equipe) demande l'api >= 1.7 (options.edges) : monter
-  # l'image APRES le deploiement du backend, sur une release taguee (1.7.0 / 1.8.0) plutot que sur
-  # un sha ; tant qu'elle reste en 1.6.0 le backend n'envoie rien (capabilities).
+  # API-198 (aretes des rues des parcours d'equipe) demande l'api >= 1.7 (options.edges) : 1.8.0
+  # (api 1.8, tracktype / bicycle / foot) montee le 14 novembre 2026 apres le deploiement du backend
+  # qui sait les lire. Ne pas revenir sous 1.7 sans savoir que le backend cesse alors d'en demander.
   osm-route-details:
-    image: ghcr.io/glandais/osm-route-details:1.6.0
+    image: ghcr.io/glandais/osm-route-details:1.8.0
     networks:
       - shared
     environment:
