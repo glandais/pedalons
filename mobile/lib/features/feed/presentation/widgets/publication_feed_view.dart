@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
@@ -134,6 +135,15 @@ class PublicationFeedView extends ConsumerStatefulWidget {
   /// La vue « Lignes » (règle RL9) : une ligne par élément au lieu d'une carte.
   final bool rows;
 
+  /// Un changement de filtre ramène au **début du fil** — la barre de filtres
+  /// épinglée, la première carte dessous — et non tout en haut de la page.
+  ///
+  /// L'accueil : « Ma prochaine sortie », « Cette semaine » et « Mes équipes »
+  /// précèdent le fil, et remonter au-dessus d'eux sortait de l'écran les
+  /// résultats du filtre qu'on venait de toucher (docs/LEDGER_*.md MOB-155).
+  /// Plus haut que le début du fil, rien ne bouge.
+  final bool filtersKeepLeading;
+
   const PublicationFeedView({
     super.key,
     required this.teamSlug,
@@ -161,6 +171,7 @@ class PublicationFeedView extends ConsumerStatefulWidget {
     this.filteredTitleKey = 'lists.emptyFiltered.publications',
     this.itemNounKey = 'lists.noun.publication',
     this.rows = false,
+    this.filtersKeepLeading = false,
   });
 
   @override
@@ -183,6 +194,9 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
   /// Vrai quand l'appelant tient le type ([PublicationFeedView.onTypeChanged]).
   bool get _typeControlled => widget.onTypeChanged != null;
 
+  /// Le sliver de la barre de filtres : c'est lui qui dit où le fil commence.
+  final GlobalKey _toolbarKey = GlobalKey();
+
   /// Scrolls back to the top through the route's primary controller.
   ///
   /// The feed deliberately declares no `controller:` of its own: that is what
@@ -190,7 +204,37 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
   /// status-bar tap scroll it to the top.
   void _scrollToTop() {
     final controller = PrimaryScrollController.maybeOf(context);
-    if (controller != null && controller.hasClients) controller.jumpTo(0);
+    if (controller == null || !controller.hasClients) return;
+    if (!widget.filtersKeepLeading) {
+      controller.jumpTo(0);
+      return;
+    }
+    final RenderObject? toolbar = _toolbarKey.currentContext
+        ?.findRenderObject();
+    final RenderObject? viewport = toolbar?.parent;
+    if (toolbar is! RenderSliver ||
+        !toolbar.attached ||
+        viewport is! RenderViewport) {
+      return;
+    }
+    // Là où la barre s'épingle : son rang dans la page, moins ce qui reste
+    // épinglé au-dessus d'elle (la barre supérieure de l'accueil).
+    // `getOffsetToReveal` ne sert pas ici : pour un sliver épinglé, toujours
+    // visible, il répond l'infini.
+    double start = toolbar.constraints.precedingScrollExtent;
+    for (
+      RenderSliver? above = viewport.childBefore(toolbar);
+      above != null;
+      above = viewport.childBefore(above)
+    ) {
+      start -= above.geometry?.maxScrollObstructionExtent ?? 0;
+    }
+    final ScrollPosition position = controller.position;
+    if (position.pixels > start) {
+      controller.jumpTo(
+        start.clamp(position.minScrollExtent, position.maxScrollExtent),
+      );
+    }
   }
 
   void _setType(PublicationType? value) {
@@ -358,6 +402,7 @@ class _PublicationFeedViewState extends ConsumerState<PublicationFeedView> {
           // comme `routes_page` le fait déjà, et le champ de recherche — qui
           // manquait au fil — y monte avec elle.
           PdlPinnedToolbar(
+            key: _toolbarKey,
             padding: EdgeInsets.zero,
             child: FeedToolbar(
               period: widget.showPeriod

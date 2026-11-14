@@ -47,6 +47,9 @@ class HomePage extends ConsumerWidget {
         // tôt » dès que le fil montre des sorties ou des voyages (RL15).
         showPeriod: true,
         datedSections: true,
+        // Un filtre touché garde le fil à l'écran : pas de retour au-dessus
+        // des trois blocs qui le précèdent.
+        filtersKeepLeading: true,
         // Tirer sur la liste rafraîchit l'écran entier, pas sa seule moitié
         // basse.
         onRefreshExtras: () async {
