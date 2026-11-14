@@ -1,0 +1,472 @@
+{
+  "meta": {
+    "api_version": "1.7",
+    "rules_version": "2026.11.13",
+    "data_versions": {
+      "typology": {
+        "source": "versatiles-shortbread",
+        "zoom": 14,
+        "role": "primary",
+        "indicative": true
+      },
+      "elevation": [
+        {
+          "source": "mapterhorn",
+          "id": "0.0.13",
+          "zoom": 12,
+          "role": "primary",
+          "indicative": true
+        },
+        {
+          "source": "mapterhorn-coverage",
+          "date": "2026-09-14",
+          "zoom": 12,
+          "products": [
+            "coverage-index",
+            "coverage"
+          ],
+          "role": "coverage",
+          "indicative": true
+        }
+      ]
+    },
+    "request_id": "…",
+    "duration_ms": 15,
+    "profile": "fast"
+  },
+  "status": "complete",
+  "edges": [
+    {
+      "from_m": 0.0,
+      "to_m": 52.78,
+      "from_index": 0,
+      "to_index": 7,
+      "from_node": {
+        "id": "z14:33260341:23548731",
+        "lat": 47.201628,
+        "lon": -1.577627,
+        "degree": 4
+      },
+      "to_node": {
+        "id": "z14:33260246:23548642",
+        "lat": 47.201953,
+        "lon": -1.578137,
+        "degree": 4
+      },
+      "partial": false,
+      "length_m": 52.76,
+      "traversed_m": 52.76,
+      "from_offset_m": 0.0,
+      "to_offset_m": 52.76,
+      "oneway": "both",
+      "geometry": "wt}_yAthh_BiSz^",
+      "from_gain_cum_m": 0.0,
+      "to_gain_cum_m": 2.74,
+      "from_loss_cum_m": 0.0,
+      "to_loss_cum_m": 0.0,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "minor_road"
+    },
+    {
+      "from_m": 52.78,
+      "to_m": 186.18,
+      "from_index": 6,
+      "to_index": 24,
+      "from_node": {
+        "id": "z14:33260246:23548642",
+        "lat": 47.201953,
+        "lon": -1.578137,
+        "degree": 4
+      },
+      "to_node": {
+        "id": "z14:33260005:23548418",
+        "lat": 47.202769,
+        "lon": -1.57943,
+        "degree": 3
+      },
+      "partial": false,
+      "length_m": 133.34,
+      "traversed_m": 133.34,
+      "from_offset_m": 0.0,
+      "to_offset_m": 133.34,
+      "oneway": "both",
+      "geometry": "ai~_yAphi_B_r@xoA",
+      "from_gain_cum_m": 2.74,
+      "to_gain_cum_m": 7.72,
+      "from_loss_cum_m": 0.0,
+      "to_loss_cum_m": 0.0,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "minor_road"
+    },
+    {
+      "from_m": 186.18,
+      "to_m": 200.24,
+      "from_index": 23,
+      "to_index": 26,
+      "from_node": {
+        "id": "z14:33260005:23548418",
+        "lat": 47.202769,
+        "lon": -1.57943,
+        "degree": 3
+      },
+      "to_node": {
+        "id": "z14:33260009:23548384",
+        "lat": 47.202893,
+        "lon": -1.579408,
+        "degree": 3
+      },
+      "partial": false,
+      "length_m": 14.08,
+      "traversed_m": 14.08,
+      "from_offset_m": 0.0,
+      "to_offset_m": 14.08,
+      "oneway": "forward",
+      "geometry": "a|_`yAjyk_B{Bu@{BH",
+      "from_gain_cum_m": 7.72,
+      "to_gain_cum_m": 7.99,
+      "from_loss_cum_m": 0.0,
+      "to_loss_cum_m": 0.0,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "minor_road"
+    },
+    {
+      "from_m": 200.24,
+      "to_m": 270.12,
+      "from_index": 25,
+      "to_index": 34,
+      "from_node": {
+        "id": "z14:33260009:23548384",
+        "lat": 47.202893,
+        "lon": -1.579408,
+        "degree": 3
+      },
+      "to_node": {
+        "id": "z14:33259877:23548303",
+        "lat": 47.203188,
+        "lon": -1.580116,
+        "degree": 3
+      },
+      "partial": false,
+      "length_m": 69.81,
+      "traversed_m": 69.81,
+      "from_offset_m": 0.0,
+      "to_offset_m": 69.81,
+      "oneway": "forward",
+      "geometry": "yc``yA~wk_BqC~AyMdXk@tHhAjE",
+      "from_gain_cum_m": 7.99,
+      "to_gain_cum_m": 9.07,
+      "from_loss_cum_m": 0.0,
+      "to_loss_cum_m": 0.0,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "minor_road"
+    },
+    {
+      "from_m": 270.12,
+      "to_m": 325.73,
+      "from_index": 33,
+      "to_index": 40,
+      "from_node": {
+        "id": "z14:33259877:23548303",
+        "lat": 47.203188,
+        "lon": -1.580116,
+        "degree": 3
+      },
+      "to_node": {
+        "id": "z14:33259779:23548207",
+        "lat": 47.203538,
+        "lon": -1.580642,
+        "degree": 4
+      },
+      "partial": false,
+      "length_m": 55.6,
+      "traversed_m": 55.6,
+      "from_offset_m": 0.0,
+      "to_offset_m": 55.6,
+      "oneway": "both",
+      "geometry": "gv``yAfdm_B{Tz_@",
+      "from_gain_cum_m": 9.07,
+      "to_gain_cum_m": 9.31,
+      "from_loss_cum_m": 0.0,
+      "to_loss_cum_m": 0.0,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "minor_road"
+    },
+    {
+      "from_m": 325.73,
+      "to_m": 334.44,
+      "from_index": 39,
+      "to_index": 40,
+      "from_node": {
+        "id": "z14:33259779:23548207",
+        "lat": 47.203538,
+        "lon": -1.580642,
+        "degree": 4
+      },
+      "to_node": {
+        "id": "z14:33259731:23548152",
+        "lat": 47.203739,
+        "lon": -1.580899,
+        "degree": 3
+      },
+      "partial": true,
+      "length_m": 29.73,
+      "traversed_m": 8.72,
+      "from_offset_m": 0.0,
+      "to_offset_m": 8.72,
+      "oneway": "both",
+      "geometry": "cla`yAben_BmBdD",
+      "from_gain_cum_m": 9.31,
+      "to_gain_cum_m": 9.34,
+      "from_loss_cum_m": 0.0,
+      "to_loss_cum_m": 0.0,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "minor_road"
+    },
+    {
+      "from_m": 334.44,
+      "to_m": 343.17,
+      "from_index": 40,
+      "to_index": 42,
+      "from_node": {
+        "id": "z14:33259731:23548152",
+        "lat": 47.203739,
+        "lon": -1.580899,
+        "degree": 3
+      },
+      "to_node": {
+        "id": "z14:33259779:23548207",
+        "lat": 47.203538,
+        "lon": -1.580642,
+        "degree": 4
+      },
+      "partial": true,
+      "length_m": 29.73,
+      "traversed_m": 8.72,
+      "from_offset_m": 21.01,
+      "to_offset_m": 29.73,
+      "oneway": "both",
+      "geometry": "qoa`yAhjn_BlBeD",
+      "from_gain_cum_m": 9.34,
+      "to_gain_cum_m": 9.34,
+      "from_loss_cum_m": 0.0,
+      "to_loss_cum_m": 0.03,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "minor_road"
+    },
+    {
+      "from_m": 343.17,
+      "to_m": 398.76,
+      "from_index": 41,
+      "to_index": 47,
+      "from_node": {
+        "id": "z14:33259779:23548207",
+        "lat": 47.203538,
+        "lon": -1.580642,
+        "degree": 4
+      },
+      "to_node": {
+        "id": "z14:33259877:23548303",
+        "lat": 47.203188,
+        "lon": -1.580116,
+        "degree": 3
+      },
+      "partial": false,
+      "length_m": 55.6,
+      "traversed_m": 55.6,
+      "from_offset_m": 0.0,
+      "to_offset_m": 55.6,
+      "oneway": "both",
+      "geometry": "cla`yAben_BzT{_@",
+      "from_gain_cum_m": 9.34,
+      "to_gain_cum_m": 9.34,
+      "from_loss_cum_m": 0.03,
+      "to_loss_cum_m": 0.29,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "minor_road"
+    },
+    {
+      "from_m": 398.76,
+      "to_m": 469.97,
+      "from_index": 46,
+      "to_index": 55,
+      "from_node": {
+        "id": "z14:33259877:23548303",
+        "lat": 47.203188,
+        "lon": -1.580116,
+        "degree": 3
+      },
+      "to_node": {
+        "id": "z14:33259976:23548428",
+        "lat": 47.202733,
+        "lon": -1.579585,
+        "degree": 3
+      },
+      "partial": false,
+      "length_m": 71.27,
+      "traversed_m": 71.27,
+      "from_offset_m": 0.0,
+      "to_offset_m": 71.27,
+      "oneway": "forward",
+      "geometry": "gv``yAfdm_BtDt@rB_@vPeYj@uF",
+      "from_gain_cum_m": 9.34,
+      "to_gain_cum_m": 9.34,
+      "from_loss_cum_m": 0.29,
+      "to_loss_cum_m": 1.46,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "minor_road"
+    },
+    {
+      "from_m": 469.97,
+      "to_m": 482.82,
+      "from_index": 54,
+      "to_index": 58,
+      "from_node": {
+        "id": "z14:33259976:23548428",
+        "lat": 47.202733,
+        "lon": -1.579585,
+        "degree": 3
+      },
+      "to_node": {
+        "id": "z14:33260005:23548418",
+        "lat": 47.202769,
+        "lon": -1.57943,
+        "degree": 3
+      },
+      "partial": false,
+      "length_m": 12.84,
+      "traversed_m": 12.84,
+      "from_offset_m": 0.0,
+      "to_offset_m": 12.84,
+      "oneway": "forward",
+      "geometry": "yy_`yA`cl_BE_DaAuC",
+      "from_gain_cum_m": 9.34,
+      "to_gain_cum_m": 9.34,
+      "from_loss_cum_m": 1.46,
+      "to_loss_cum_m": 1.65,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "minor_road"
+    },
+    {
+      "from_m": 482.82,
+      "to_m": 616.15,
+      "from_index": 57,
+      "to_index": 74,
+      "from_node": {
+        "id": "z14:33260005:23548418",
+        "lat": 47.202769,
+        "lon": -1.57943,
+        "degree": 3
+      },
+      "to_node": {
+        "id": "z14:33260246:23548642",
+        "lat": 47.201953,
+        "lon": -1.578137,
+        "degree": 4
+      },
+      "partial": false,
+      "length_m": 133.34,
+      "traversed_m": 133.34,
+      "from_offset_m": 0.0,
+      "to_offset_m": 133.34,
+      "oneway": "both",
+      "geometry": "a|_`yAjyk_B~q@yoA",
+      "from_gain_cum_m": 9.34,
+      "to_gain_cum_m": 9.34,
+      "from_loss_cum_m": 1.65,
+      "to_loss_cum_m": 6.6,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "minor_road"
+    },
+    {
+      "from_m": 616.15,
+      "to_m": 668.93,
+      "from_index": 73,
+      "to_index": 80,
+      "from_node": {
+        "id": "z14:33260246:23548642",
+        "lat": 47.201953,
+        "lon": -1.578137,
+        "degree": 4
+      },
+      "to_node": {
+        "id": "z14:33260341:23548731",
+        "lat": 47.201628,
+        "lon": -1.577627,
+        "degree": 4
+      },
+      "partial": false,
+      "length_m": 52.76,
+      "traversed_m": 52.76,
+      "from_offset_m": 0.0,
+      "to_offset_m": 52.76,
+      "oneway": "both",
+      "geometry": "ai~_yAphi_BhS{^",
+      "from_gain_cum_m": 9.34,
+      "to_gain_cum_m": 9.34,
+      "from_loss_cum_m": 6.6,
+      "to_loss_cum_m": 9.34,
+      "structure": "ground",
+      "surface": {
+        "class": "paved",
+        "detail": "asphalt",
+        "source": "tagged"
+      },
+      "way_kind": "minor_road"
+    }
+  ]
+}

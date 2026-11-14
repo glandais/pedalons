@@ -161,7 +161,9 @@ Custom exception hierarchy mapped to HTTP responses by `GlobalExceptionMapper`:
 
 **osm-route-details**: no test reaches the service. `FakeRouteDetailsGateway` serves
 `FakeRouteDetailsClient`: flat 100 m in `fast`, 200 m in `full`, with static switches (`segmentsOf`, `failFast`,
-`failFull`, `partial`, `fallbackAfterError`, `terrain`) that `reset()` clears.
+`failFull`, `partial`, `fallbackAfterError`, `terrain`, `apiVersion`, `noEdges`, `edgesOf`) that `reset()` clears.
+Edges (api 1.7, ledger `API-198`): route `full` calls only, gated by the capabilities (≥ 1.7 with `data.edges`) in the
+gateway, previews and the planner never; the fake answers 1.7 with synthetic edges, `lastOptions` records what was asked.
 
 **Critical rules**:
 - Never `@Transactional` on test methods that use RestAssured (HTTP can't see uncommitted data)

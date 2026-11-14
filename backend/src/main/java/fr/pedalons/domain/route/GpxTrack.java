@@ -80,6 +80,18 @@ public class GpxTrack extends BaseEntity {
   private @Nullable TrackSurfaceDocument surfaces;
 
   /**
+   * The street edges osm-route-details matched along the track (docs/LEDGER_*.md API-198, lot 1),
+   * written by the HD catch-up and the backfill of the team routes, in the same transaction as the
+   * profile. Null until one has run. Lazy, in a group of its own: up to a few hundred kB, nothing
+   * on the read paths of a route may load it. Read and written through {@code GpxTrackRepository}.
+   */
+  @Basic(fetch = FetchType.LAZY)
+  @LazyGroup("edges")
+  @Type(JsonBinaryType.class)
+  @Column(name = "network_edges", columnDefinition = "jsonb")
+  private @Nullable NetworkEdgesDocument networkEdges;
+
+  /**
    * The track as its source produced it (docs/LEDGER_*.md API-149): 2D, neither resampled nor
    * simplified, the same trace as {@link #geometry}. Written with every replacement of the track,
    * never by what only changes the elevations (the HD catch-up). Null when not known (a row that

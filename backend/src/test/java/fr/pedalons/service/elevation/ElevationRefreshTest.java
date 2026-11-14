@@ -16,6 +16,7 @@ import fr.pedalons.common.TsidUtils;
 import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.route.ElevationRefresh;
 import fr.pedalons.domain.route.GpxTrack;
+import fr.pedalons.domain.route.NetworkEdgesDocument;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.dto.common.asset.MediaDto;
@@ -98,6 +99,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
   @Inject EntityManager entityManager;
   @Inject PedalonsQueryContext queryContext;
   @Inject DomainResolver domainResolver;
+  @Inject GpxPipeline gpxPipeline;
 
   /** An asset row as the tests compare it before and after the catch-up. */
   private record Snap(Long id, AssetType type, long fileId, Long revision) {}
@@ -126,6 +128,7 @@ class ElevationRefreshTest extends AbstractResourceTest {
   void restoreSwitch() {
     service.setAsyncHdEnabledForTest(true);
     surfaceService.setEnabledForTest(false);
+    gpxPipeline.setEdgesEnabledForTest(true);
   }
 
   private static RouteRequest request(String name) {
@@ -1182,6 +1185,8 @@ class ElevationRefreshTest extends AbstractResourceTest {
 
   @Test
   void withTheSurfaceOff_theCatchUpLeavesItOut() {
+    // The edges ask the typology on their own account: leave them out to see the surface's
+    gpxPipeline.setEdgesEnabledForTest(false);
     RouteDto created = createRoute(EXAMPLE);
     makeDue(created);
 
@@ -1424,5 +1429,154 @@ class ElevationRefreshTest extends AbstractResourceTest {
     service.writeSurfaceOnly(claim, List.of(aDocument(), aDocument()));
 
     assertNoDocument(created);
+  }
+
+  // ==================== the street edges, from the same answer (docs/LEDGER_*.md API-198)
+  // ====================
+
+  /** The stored edges document of each track by track id. */
+  private Map<Long, NetworkEdgesDocument> edgesOf(RouteDto route) {
+    return QuarkusTransaction.requiringNew()
+        .call(() -> trackRepository.findNetworkEdges(id(route)));
+  }
+
+  private int trackCount(RouteDto route) {
+    return QuarkusTransaction.requiringNew()
+        .call(() -> trackRepository.findIdsByRouteIds(List.of(id(route))).get(id(route)).size());
+  }
+
+  private long originalOf(RouteDto route) {
+    return byType(snaps(route)).get(AssetType.ROUTE_ORIGINAL_GPX).fileId();
+  }
+
+  @Test
+  void theCatchUp_writesTheEdges_ofTheRevisionItComputed_withTheProfile() {
+    RouteDto created = createRoute(EXAMPLE);
+    assertTrue(edgesOf(created).isEmpty());
+    assertTrue(
+        FakeRouteDetailsClient.REQUESTS.stream().noneMatch(r -> r.options().wantsEdges()),
+        "a FAST save asks none");
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    RouteDetailsOptions call = fullCalls().getFirst();
+    assertTrue(call.wantsEdges());
+    assertTrue(
+        call.sections().contains(RouteDetailsSection.TYPOLOGY),
+        "the typology comes with the edges, whatever the surface says");
+    assertEquals(ElevationState.HD, storedState(created));
+    Map<Long, NetworkEdgesDocument> documents = edgesOf(created);
+    assertEquals(trackCount(created), documents.size());
+    for (NetworkEdgesDocument d : documents.values()) {
+      assertEquals(NetworkEdgesDocument.VERSION, d.v());
+      assertEquals(originalOf(created), d.rev());
+      assertTrue(d.ok());
+      assertEquals("1.7", d.api());
+      assertEquals("full", d.profile());
+      assertFalse(d.edges().isEmpty());
+    }
+  }
+
+  @Test
+  void aTrackSavedDuringTheCompute_getsNoEdges_andTheNextRunWritesTheNewRevisions()
+      throws Exception {
+    RouteDto created = createRoute(EXAMPLE);
+    makeDue(created);
+    Claim claim = service.claimNext(Instant.now(), false).orElseThrow();
+    ElevationRefreshService.Recomputed recomputed = service.compute(claim);
+
+    updateRoute(created, "Boucle", TWO_TRACKS);
+
+    assertEquals(ElevationRefreshService.Outcome.REALIGNED, service.write(claim, recomputed));
+    assertTrue(edgesOf(created).isEmpty());
+
+    makeDue(created);
+    assertEquals(1, worker.processDue());
+    Map<Long, NetworkEdgesDocument> documents = edgesOf(created);
+    assertEquals(trackCount(created), documents.size());
+    assertTrue(documents.values().stream().allMatch(d -> d.rev() == originalOf(created)));
+  }
+
+  @Test
+  void aNewSave_givesNewTrackRows_withoutADocument() {
+    RouteDto created = createRoute(EXAMPLE);
+    makeDue(created);
+    assertEquals(1, worker.processDue());
+    assertFalse(edgesOf(created).isEmpty());
+
+    updateRoute(created, "Boucle", TWO_TRACKS);
+
+    assertTrue(edgesOf(created).isEmpty(), "replaced rows start null, their catch-up fills them");
+  }
+
+  @Test
+  void withTheSwitchOff_noEdgesAreAsked_andTheProfileIsWritten() {
+    gpxPipeline.setEdgesEnabledForTest(false);
+    RouteDto created = createRoute(EXAMPLE);
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    assertFalse(fullCalls().getFirst().wantsEdges());
+    assertEquals(ElevationState.HD, storedState(created));
+    assertTrue(edgesOf(created).isEmpty());
+  }
+
+  @Test
+  void withAnOlderService_noEdgesAreAsked_andTheProfileIsWritten() {
+    FakeRouteDetailsClient.apiVersion = "1.6";
+    RouteDto created = createRoute(EXAMPLE);
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    assertFalse(fullCalls().getFirst().wantsEdges(), "the gateway took the option out");
+    assertEquals(ElevationState.HD, storedState(created));
+    assertFlat(created, FakeRouteDetailsClient.FULL_ELEVATION);
+    assertTrue(edgesOf(created).isEmpty());
+  }
+
+  @Test
+  void anAnswerWithoutEdges_stillWritesTheProfile() {
+    FakeRouteDetailsClient.noEdges = true;
+    RouteDto created = createRoute(EXAMPLE);
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    assertEquals(ElevationState.HD, storedState(created));
+    assertFlat(created, FakeRouteDetailsClient.FULL_ELEVATION);
+    assertTrue(edgesOf(created).isEmpty());
+  }
+
+  @Test
+  void edgesThatCannotBeStored_neverBlockTheProfile() {
+    // A hole in the list makes no document: the mapping fails, the profile goes through
+    FakeRouteDetailsClient.edgesOf =
+        (request, points) ->
+            java.util.Arrays.asList(
+                (fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Edge) null);
+    RouteDto created = createRoute(EXAMPLE);
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    assertEquals(ElevationState.HD, storedState(created));
+    assertFlat(created, FakeRouteDetailsClient.FULL_ELEVATION);
+    assertTrue(edgesOf(created).isEmpty());
+  }
+
+  @Test
+  void aSynchronousHdSave_writesTheEdges_onTheNewRows() {
+    service.setAsyncHdEnabledForTest(false);
+
+    RouteDto created = createRoute(EXAMPLE);
+
+    assertEquals(ElevationState.HD, storedState(created));
+    assertEquals(0, refreshCount());
+    Map<Long, NetworkEdgesDocument> documents = edgesOf(created);
+    assertEquals(trackCount(created), documents.size());
+    assertTrue(documents.values().stream().allMatch(d -> d.rev() == originalOf(created)));
   }
 }

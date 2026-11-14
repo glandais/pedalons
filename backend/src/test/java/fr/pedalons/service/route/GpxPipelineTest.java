@@ -2,6 +2,7 @@ package fr.pedalons.service.route;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -479,5 +480,110 @@ class GpxPipelineTest extends AbstractBaseTest {
       coordinates.add(new LatLonElevation(47.2184, -1.5536 + i * 0.001, 0.0));
     }
     return PathJvm.fromCoordinates(coordinates);
+  }
+
+  // ------------------------------------------------------------------ the street edges (API-198)
+
+  @Test
+  void anHdCallWithEdges_asksThemAndTheTypology_evenWithTheSurfaceOff() {
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.HD, false, true);
+
+    RouteDetailsOptions options = FakeRouteDetailsClient.REQUESTS.getLast().options();
+    assertTrue(options.wantsEdges());
+    assertEquals(ALL_SECTIONS, options.sections());
+    assertEquals(RouteDetailsProfile.FULL, options.profile());
+    assertNull(processed.surface());
+    assertNotNull(processed.edges());
+    assertFalse(processed.edges().edges().isEmpty());
+    assertFalse(processed.edges().tooShort());
+    assertAllElevations(processed.path(), FakeRouteDetailsClient.FULL_ELEVATION);
+  }
+
+  @Test
+  void aFastCallWithEdges_asksNone() {
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.FAST, false, true);
+
+    assertFalse(FakeRouteDetailsClient.REQUESTS.getLast().options().wantsEdges());
+    assertNull(processed.edges());
+  }
+
+  @Test
+  void withoutTheFlag_noEdgesAreAsked() {
+    gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.HD, true);
+
+    assertFalse(FakeRouteDetailsClient.REQUESTS.getLast().options().wantsEdges());
+  }
+
+  @Test
+  void withTheSwitchOff_noEdgesAreAsked() {
+    gpxPipeline.setEdgesEnabledForTest(false);
+    try {
+      GpxPipeline.Processed processed =
+          gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.HD, false, true);
+
+      assertFalse(FakeRouteDetailsClient.REQUESTS.getLast().options().wantsEdges());
+      assertNull(processed.edges());
+    } finally {
+      gpxPipeline.setEdgesEnabledForTest(true);
+    }
+  }
+
+  @Test
+  void aDegenerateTrack_asksNoEdges_andGetsAnAnswerWithoutAny() {
+    Path source = line(47.2184, -1.5536, 47.2184, -1.5536);
+
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(source, "test", ElevationQuality.HD, true, true);
+
+    assertFalse(FakeRouteDetailsClient.REQUESTS.getLast().options().wantsEdges());
+    assertTrue(processed.edges().tooShort());
+    assertTrue(processed.edges().edges().isEmpty());
+  }
+
+  @Test
+  void anAnswerWithoutEdges_leavesTheProfileAlone() {
+    FakeRouteDetailsClient.noEdges = true;
+
+    GpxPipeline.Processed processed =
+        gpxPipeline.processReported(nantesLine(), "test", ElevationQuality.HD, false, true);
+
+    assertNull(processed.edges());
+    assertAllElevations(processed.path(), FakeRouteDetailsClient.FULL_ELEVATION);
+  }
+
+  @Test
+  void edgesOf_asksTheEdgesAndTheTypology_inFull_withoutPartialAnswers() {
+    var answer = gpxPipeline.edgesOf(nantesLine(), "test");
+
+    RouteDetailsOptions options = FakeRouteDetailsClient.REQUESTS.getLast().options();
+    assertTrue(options.wantsEdges());
+    assertEquals(RouteDetailsProfile.FULL, options.profile());
+    assertEquals(
+        List.of(RouteDetailsSection.TYPOLOGY, RouteDetailsSection.SUMMARY), options.sections());
+    assertNull(options.acceptPartial());
+    assertFalse(answer.edges().isEmpty());
+  }
+
+  @Test
+  void edgesOf_throws_onAnAnswerWithoutEdges_andOnAFailure() {
+    FakeRouteDetailsClient.noEdges = true;
+    org.junit.jupiter.api.Assertions.assertThrows(
+        IllegalStateException.class, () -> gpxPipeline.edgesOf(nantesLine(), "test"));
+
+    FakeRouteDetailsClient.noEdges = false;
+    FakeRouteDetailsClient.failFull = true;
+    org.junit.jupiter.api.Assertions.assertThrows(
+        fr.pedalons.infrastructure.routedetails.RouteDetailsException.class,
+        () -> gpxPipeline.edgesOf(nantesLine(), "test"));
+  }
+
+  @Test
+  void edgesOf_aDegenerateTrack_isTooShort_withoutACall() {
+    var answer = gpxPipeline.edgesOf(line(47.2184, -1.5536, 47.2184, -1.5536), "test");
+
+    assertTrue(answer.tooShort());
+    assertTrue(FakeRouteDetailsClient.REQUESTS.isEmpty());
   }
 }

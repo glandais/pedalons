@@ -9,6 +9,7 @@ import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
 import fr.pedalons.domain.gpx.PreviewWaypointDetail;
 import fr.pedalons.domain.gpx.PreviewWaypointsDocument;
 import fr.pedalons.domain.route.GpxWaypoint;
+import fr.pedalons.domain.route.NetworkEdgesDocument;
 import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
@@ -22,14 +23,17 @@ import fr.pedalons.repository.route.ElevationRefreshRepository;
 import fr.pedalons.repository.route.ElevationRefreshRepository.Claim;
 import fr.pedalons.repository.route.ElevationRefreshRepository.PreviewClaim;
 import fr.pedalons.repository.route.GpxTrackRepository;
+import fr.pedalons.repository.route.GpxTrackRepository.NetworkEdgesHead;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.gpx.GpxPreviewService;
 import fr.pedalons.service.gpx.PreviewWaypoints;
 import fr.pedalons.service.publication.PublicationEndCalculator;
+import fr.pedalons.service.route.GpxPipeline;
 import fr.pedalons.service.route.GpxProcessingService;
 import fr.pedalons.service.route.GpxProcessingService.ComputedGpx;
 import fr.pedalons.service.route.GpxProcessingService.ElevationRecompute;
 import fr.pedalons.service.route.GpxProcessingService.ElevationUnavailableException;
+import fr.pedalons.service.route.edges.NetworkEdgesMetrics;
 import fr.pedalons.service.route.response.TrackMetadata;
 import fr.pedalons.service.route.waypoint.WaypointDraft;
 import fr.pedalons.service.route.waypoint.WaypointDrafts;
@@ -76,6 +80,12 @@ import org.jspecify.annotations.Nullable;
  * pipeline. A compute that fell back keeps the fast profile, and writes the surface alone when
  * every answer was {@code complete}: only the elevation needs the retry.
  *
+ * <p><b>Edges only</b> (docs/LEDGER_*.md API-198, lot 1): a request marked {@code backfill} for a
+ * route that is HD at the current pipeline is served by {@link #processEdgesOnly}, which fetches
+ * the street edges and writes them, and nothing else — no new file, no profile, no change a GPS
+ * service would be told of. The HD catch-up of a save writes the edges of the same answer as its
+ * profile ({@link #write}).
+ *
  * <p>The phases are separate, package-visible methods so a test can change the track between
  * compute and write.
  */
@@ -106,8 +116,15 @@ public class ElevationRefreshService {
     /** The route is gone. */
     GONE,
     /** The attempt failed: backoff, or given up. */
-    FAILED
+    FAILED,
+    /** The street edges were written, nothing else, and the request removed. */
+    EDGES,
+    /** The service announces no edges: the request was put off, no attempt counted. */
+    POSTPONED
   }
+
+  /** How long a request waits when the service cannot serve its edges. */
+  static final Duration EDGES_POSTPONE = Duration.ofHours(1);
 
   /** A route recomputed in HD, ready to be written. */
   record Recomputed(Team team, ElevationRecompute recompute) {}
@@ -155,6 +172,8 @@ public class ElevationRefreshService {
   @Inject PublicationEndCalculator publicationEndCalculator;
   @Inject GpxPreviewService gpxPreviewService;
   @Inject EntityManager entityManager;
+  @Inject GpxPipeline pipeline;
+  @Inject NetworkEdgesMetrics edgesMetrics;
 
   public boolean isAsyncHdEnabled() {
     return enabled;
@@ -223,6 +242,9 @@ public class ElevationRefreshService {
       if (stale != null) {
         return stale;
       }
+      if (claim.backfill() && tx(() -> edgesOnlyApplies(claim))) {
+        return processEdgesOnly(claim);
+      }
       recomputed = compute(claim);
     } catch (Exception e) {
       keepSurface(e, surfaces -> writeSurfaceOnly(claim, surfaces));
@@ -234,6 +256,104 @@ public class ElevationRefreshService {
       // The write transaction rolled back: its synchronisations deleted the new files
       return fail(claim, e);
     }
+  }
+
+  /**
+   * Whether a {@code backfill} request is for the edges alone: the route is HD (or without a
+   * state) at the current pipeline, so that nothing but its edges is missing. A route behind the
+   * pipeline, or still on the fast profile, keeps the full path as before.
+   */
+  private boolean edgesOnlyApplies(Claim claim) {
+    Route route = entityManager.find(Route.class, claim.routeId());
+    return route != null
+        && isHd(route.getElevationState())
+        && route.getElevationPipeline() != null
+        && route.getElevationPipeline() == GpxPipeline.VERSION;
+  }
+
+  /**
+   * The street edges of a route whose profile is up to date, and nothing else (docs/LEDGER_*.md
+   * API-198, lot 1), in the same three phases: <b>already done?</b> (an HD catch-up or an earlier
+   * pass may have written them), <b>capability</b> (the service announces no edges: the request is
+   * put off an hour, no attempt counted), <b>compute</b> (the original downloaded, one {@code
+   * full} call per track, no transaction) and <b>write</b> (a short transaction that checks the
+   * original is still the one computed). A failure is recorded like any other.
+   */
+  Outcome processEdgesOnly(Claim claim) {
+    List<NetworkEdgesDocument> documents;
+    try {
+      List<NetworkEdgesHead> heads =
+          tx(() -> gpxTrackRepository.findNetworkEdgesHeads(claim.routeId()));
+      if (!heads.isEmpty()
+          && heads.stream()
+              .allMatch(h -> h.isCurrent(NetworkEdgesDocument.VERSION, claim.sourceRevision()))) {
+        tx(() -> refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision()));
+        return Outcome.GONE;
+      }
+      if (!pipeline.edgesAvailable()) {
+        Instant due = Instant.now().plus(EDGES_POSTPONE);
+        tx(() -> {
+          refreshRepository.postpone(claim.id(), due);
+          return null;
+        });
+        edgesMetrics.failed(NetworkEdgesMetrics.Failure.POSTPONED);
+        LOG.debugf(
+            "Network edges of route %d put off: the service announces none", claim.routeId());
+        return Outcome.POSTPONED;
+      }
+      GpxDocument original = load(assetService.getAssetKey(claim.teamId(), claim.sourceRevision()));
+      documents = gpxProcessingService.networkEdgesOnly(original, claim.sourceRevision());
+    } catch (Exception e) {
+      edgesMetrics.failed(NetworkEdgesMetrics.Failure.CALL);
+      return failEdges(claim, e);
+    }
+    try {
+      return writeEdgesOnly(claim, documents);
+    } catch (Exception e) {
+      return failEdges(claim, e);
+    }
+  }
+
+  /**
+   * Phase 3 of {@link #processEdgesOnly}: locks the route and, when its original is still the
+   * revision computed, writes the documents and removes the request. Otherwise nothing is written
+   * and the request is settled as {@link #write} does: dropped for a route that is HD (a synchronous
+   * save computed its own edges), else moved to the new revision.
+   */
+  Outcome writeEdgesOnly(Claim claim, List<NetworkEdgesDocument> documents) {
+    return tx(() -> {
+      Route route =
+          entityManager.find(Route.class, claim.routeId(), LockModeType.PESSIMISTIC_WRITE);
+      if (route == null) {
+        return Outcome.GONE;
+      }
+      long current = currentOriginalFileId(route);
+      if (current != claim.sourceRevision()) {
+        if (isHd(route.getElevationState())) {
+          refreshRepository.delete("id", claim.id());
+          return Outcome.GONE;
+        }
+        route.setElevationState(ElevationState.PENDING);
+        Instant now = Instant.now();
+        refreshRepository.realign(claim.id(), current, now, now.plus(quiet));
+        return Outcome.REALIGNED;
+      }
+      List<Long> trackIds =
+          gpxTrackRepository
+              .findIdsByRouteIds(List.of(claim.routeId()))
+              .getOrDefault(claim.routeId(), List.of());
+      if (trackIds.size() != documents.size()) {
+        throw new IllegalStateException(
+            "Route %d has %d track(s), %d edges document(s) computed"
+                .formatted(claim.routeId(), trackIds.size(), documents.size()));
+      }
+      for (int i = 0; i < trackIds.size(); i++) {
+        gpxTrackRepository.updateNetworkEdges(trackIds.get(i), documents.get(i));
+        edgesMetrics.documentWritten(NetworkEdgesMetrics.Source.BACKFILL, documents.get(i));
+      }
+      refreshRepository.deleteIfRevision(claim.id(), claim.sourceRevision());
+      return Outcome.EDGES;
+    });
   }
 
   /**
@@ -282,7 +402,8 @@ public class ElevationRefreshService {
     GpxDocument gpx = GpxModelJvm.document(original.getTracks(), original.getName(), List.of());
     return new Recomputed(
         sources.team(),
-        gpxProcessingService.recomputeHd(sources.team(), gpx, sources.drafts(), sources.state()));
+        gpxProcessingService.recomputeHd(
+            sources.team(), gpx, sources.drafts(), sources.state(), claim.sourceRevision()));
   }
 
   /**
@@ -466,6 +587,24 @@ public class ElevationRefreshService {
    */
   Outcome fail(Claim claim, Exception e) {
     return fail(
+        "HD elevation",
+        claim.id(),
+        claim.sourceRevision(),
+        claim.attempts(),
+        "route " + claim.routeId(),
+        () -> lockTarget(Route.class, claim.routeId()),
+        () -> abandonTarget("Route", claim.routeId()),
+        e);
+  }
+
+  /**
+   * As {@link #fail(Claim, Exception)}, for a request served by {@link #processEdgesOnly}: the
+   * route keeps its profile whatever happens, and a request that gives up stays in the table, in
+   * the admin list of the abandoned ones, which includes the {@code backfill} rows.
+   */
+  Outcome failEdges(Claim claim, Exception e) {
+    return fail(
+        "Network edges",
         claim.id(),
         claim.sourceRevision(),
         claim.attempts(),
@@ -478,6 +617,7 @@ public class ElevationRefreshService {
   /** As {@link #fail(Claim, Exception)}, for a preview. */
   Outcome failPreview(PreviewClaim claim, Exception e) {
     return fail(
+        "HD elevation",
         claim.id(),
         claim.sourceRevision(),
         claim.attempts(),
@@ -514,6 +654,7 @@ public class ElevationRefreshService {
   }
 
   private Outcome fail(
+      String what,
       Long id,
       long sourceRevision,
       int made,
@@ -541,14 +682,11 @@ public class ElevationRefreshService {
     });
     if (attempts >= MAX_ATTEMPTS) {
       LOG.warnf(
-          e,
-          "HD elevation of %s given up after %d attempts, it keeps its profile",
-          target,
-          attempts);
+          e, "%s of %s given up after %d attempts, it keeps its profile", what, target, attempts);
     } else {
       LOG.infof(
-          "HD elevation of %s failed (attempt %d), next try in %s: %s",
-          target, attempts, delay, recorded);
+          "%s of %s failed (attempt %d), next try in %s: %s",
+          what, target, attempts, delay, recorded);
     }
     return Outcome.FAILED;
   }

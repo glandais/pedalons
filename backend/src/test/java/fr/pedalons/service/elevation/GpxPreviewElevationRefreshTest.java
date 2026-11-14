@@ -924,6 +924,22 @@ class GpxPreviewElevationRefreshTest extends fr.pedalons.AbstractBaseTest {
         .toList();
   }
 
+  /** Previews belong to people, not to a team: their calls never ask for edges (API-198). */
+  @Test
+  void aPreviewsCatchUp_asksNoEdges() {
+    GpxPreview created = previewService.create(EXAMPLE, "example.gpx");
+    makeDue(created);
+
+    assertEquals(1, worker.processDue());
+
+    assertEquals(1, fullCalls().size());
+    assertFalse(fullCalls().getFirst().wantsEdges());
+    assertTrue(
+        FakeRouteDetailsClient.REQUESTS.stream().noneMatch(r -> r.options().wantsEdges()),
+        "neither the save nor the catch-up");
+    assertNotNull(FakeRouteDetailsClient.lastOptions);
+  }
+
   @Test
   void onePass_writesProfileSurfaceAndPipeline_underTheNewRevision() {
     surfaceService.setEnabledForTest(true);

@@ -21,7 +21,8 @@ import org.jspecify.annotations.Nullable;
 public class ElevationRefreshRepository implements PanacheRepository<ElevationRefresh> {
 
   /** A request taken by the worker, detached from the claiming transaction. */
-  public record Claim(Long id, Long routeId, Long teamId, long sourceRevision, int attempts) {}
+  public record Claim(
+      Long id, Long routeId, Long teamId, long sourceRevision, int attempts, boolean backfill) {}
 
   /**
    * Asks for the HD recompute of a route's track, or postpones the pending request: the next save
@@ -110,7 +111,7 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
         getEntityManager()
             .createNativeQuery(
                 """
-                select e.id, e.route_id, t.team_id, e.source_revision, e.attempts
+                select e.id, e.route_id, t.team_id, e.source_revision, e.attempts, e.backfill
                   from elevation_refresh e
                   join team_entities t on t.id = e.route_id
                   join teams tm on tm.id = t.team_id
@@ -141,7 +142,17 @@ public class ElevationRefreshRepository implements PanacheRepository<ElevationRe
             ((Number) r[1]).longValue(),
             ((Number) r[2]).longValue(),
             ((Number) r[3]).longValue(),
-            ((Number) r[4]).intValue()));
+            ((Number) r[4]).intValue(),
+            Boolean.TRUE.equals(r[5])));
+  }
+
+  /**
+   * Puts a claimed request off to {@code dueAt}, its lease released and its attempts left as they
+   * are: for a request that cannot be served yet through no fault of its own (the service announces
+   * no edges), which must not use up its five attempts.
+   */
+  public void postpone(Long id, Instant dueAt) {
+    update("dueAt = ?1, claimedUntil = null where id = ?2", dueAt, id);
   }
 
   /**

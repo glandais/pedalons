@@ -3,6 +3,8 @@ package fr.pedalons.infrastructure.routedetails;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import fr.pedalons.common.GeoDistance;
+import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Edge;
+import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.EdgeNode;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Meta;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.OutputPoint;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Quality;
@@ -19,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiFunction;
 import java.util.function.DoubleFunction;
 import java.util.function.DoubleUnaryOperator;
 import org.jspecify.annotations.Nullable;
@@ -34,6 +37,12 @@ import org.jspecify.annotations.Nullable;
  * fake answers no {@code segments} when the {@code typology} section is left out. Every input point
  * comes back once (consecutive duplicates dropped, as the service does), with its own index; no
  * breakpoint is inserted, which only {@code RouteDetailsTrackTest} and the recorded fixture cover.
+ *
+ * <p><b>Edges</b> (api 1.7): the fake announces api {@link #apiVersion} (1.7 by default, with
+ * {@code data.edges}). A request with {@code options.edges} gets one synthetic edge per run of
+ * three answer points ({@code z14:<i>:<i>} nodes, a polyline6 of the points, the gains of the
+ * terrain), unless {@link #edgesOf} replaces them or {@link #noEdges} drops them. Below 1.7 the
+ * option is a 400, as the real service answers an unknown key.
  *
  * <p>The switches are static, as the gateway bean holds one instance; a test that sets one calls
  * {@link #reset()} afterwards.
@@ -84,6 +93,22 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
    */
   public static volatile @Nullable DoubleFunction<List<Segment>> segmentsOf = null;
 
+  /** The api version the fake announces; the edges need 1.7 or more. */
+  public static volatile String apiVersion = "1.7";
+
+  /** While true an answer to a request with {@code edges} carries none. */
+  public static volatile boolean noEdges = false;
+
+  /**
+   * When set, the edges of an answer in place of the synthetic ones: given the request and the
+   * answer's points.
+   */
+  public static volatile @Nullable BiFunction<RouteDetailsRequest, List<OutputPoint>, List<Edge>>
+      edgesOf = null;
+
+  /** The options of the last request received, null before any. */
+  public static volatile @Nullable RouteDetailsOptions lastOptions = null;
+
   /** Every request received, in order. */
   public static final List<RouteDetailsRequest> REQUESTS = new CopyOnWriteArrayList<>();
 
@@ -120,6 +145,10 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
     partial = false;
     fallbackAfterError = false;
     segmentsOf = null;
+    apiVersion = "1.7";
+    noEdges = false;
+    edgesOf = null;
+    lastOptions = null;
     limits = RouteDetailsCapabilities.FALLBACK_LIMITS;
     REQUESTS.clear();
   }
@@ -127,6 +156,11 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
   @Override
   public RouteDetailsResponse routeDetails(RouteDetailsRequest request) {
     REQUESTS.add(request);
+    lastOptions = request.options();
+    boolean edgesAsked = request.options() != null && request.options().wantsEdges();
+    if (edgesAsked && !edgesSupported()) {
+      throw invalidInput();
+    }
     RouteDetailsProfile profile = request.effectiveProfile();
     if (failFull && profile == RouteDetailsProfile.FULL) {
       throw new WebApplicationException(
@@ -231,12 +265,72 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
             List.of(),
             partial ? Map.of(origin, half, "none", length - half) : Map.of(origin, length));
     return new RouteDetailsResponse(
-        new Meta("1.6", "test", profile.value(), DATA_VERSIONS),
+        new Meta(apiVersion, "test", profile.value(), DATA_VERSIONS),
         partial ? RouteDetailsResponse.STATUS_PARTIAL : RouteDetailsResponse.STATUS_COMPLETE,
         points,
         typology(request, d, length),
         summary,
-        new Quality(terrain, warnings, null));
+        new Quality(terrain, warnings, null),
+        edgesAsked && !noEdges ? edges(request, points, latLon) : null);
+  }
+
+  private static boolean edgesSupported() {
+    return new RouteDetailsCapabilities(
+            apiVersion,
+            null,
+            null,
+            new RouteDetailsCapabilities.Data(
+                true, new RouteDetailsCapabilities.EdgesFeature("z14", 14, 4096, 6)))
+        .supportsEdges();
+  }
+
+  /** One edge per run of three answer points, or the test's own. */
+  private static List<Edge> edges(
+      RouteDetailsRequest request, List<OutputPoint> points, List<double[]> latLon) {
+    BiFunction<RouteDetailsRequest, List<OutputPoint>, List<Edge>> custom = edgesOf;
+    if (custom != null) {
+      return custom.apply(request, points);
+    }
+    List<Edge> edges = new ArrayList<>();
+    for (int i = 0; i + 2 < points.size(); i += 2) {
+      OutputPoint a = points.get(i);
+      OutputPoint b = points.get(i + 2);
+      List<double[]> line = new ArrayList<>();
+      for (int k = i; k <= i + 2; k++) {
+        line.add(latLon.get(points.get(k).index()));
+      }
+      double length = b.dM() - a.dM();
+      edges.add(
+          new Edge(
+              a.dM(),
+              b.dM(),
+              a.index(),
+              b.index(),
+              node(i, latLon.get(a.index())),
+              node(i + 2, latLon.get(b.index())),
+              false,
+              length,
+              length,
+              0.0,
+              length,
+              "both",
+              EdgePolylines.encode(line),
+              a.gainCumM(),
+              b.gainCumM(),
+              a.lossCumM(),
+              b.lossCumM(),
+              "ground",
+              new Surface("paved", "asphalt", "tagged"),
+              "minor_road",
+              null,
+              null,
+              null));
+    }
+    return edges;
+  }
+
+  private static EdgeNode node(int i, double[] latLon) {
+    return new EdgeNode("z14:" + i + ":" + i, latLon[0], latLon[1], 3);
   }
 
   /** The {@code segments} of an answer, null when its section was not asked for. */
@@ -292,11 +386,15 @@ public class FakeRouteDetailsClient implements RouteDetailsClient {
   @Override
   public RouteDetailsCapabilities capabilities() {
     return new RouteDetailsCapabilities(
-        "1.6",
+        apiVersion,
         limits,
         new RouteDetailsCapabilities.Enums(
             List.of("fast", "full"), List.of("asphalt", "concrete", "gravel")),
-        new RouteDetailsCapabilities.Data(true));
+        new RouteDetailsCapabilities.Data(
+            true,
+            edgesSupported()
+                ? new RouteDetailsCapabilities.EdgesFeature("z14", 14, 4096, 6)
+                : null));
   }
 
   /** The input as {@code [lat, lon]} pairs, from the polyline or the points. */

@@ -68,10 +68,12 @@ public class ElevationRefresh {
   private @Nullable String lastError;
 
   /**
-   * Queued by the former catch-up of the whole fleet (docs/LEDGER_*.md API-150, removed once the
-   * fleet was recomputed), not by a save: taken only once no normal request is due. Nothing sets it
-   * any more; the rows left (given up, or retried by the admin) are still served. A save of the
-   * track makes it a normal request again. Column and priority to drop: docs/LEDGER_*.md API-175.
+   * Queued by {@code NetworkEdgesBackfill} (docs/LEDGER_*.md API-198, lot 1), as it was by the
+   * former catch-up of the whole fleet (docs/LEDGER_*.md API-150, removed once the fleet was
+   * recomputed), not by a save: taken only once no normal request is due. Served with an edges-only
+   * call when the route's profile is up to date, else as an ordinary HD catch-up. A save of the
+   * track makes it a normal request again. The column has a writer again: docs/LEDGER_*.md API-175
+   * (drop it) no longer holds as written.
    */
   @Column(name = "backfill", nullable = false)
   private boolean backfill;

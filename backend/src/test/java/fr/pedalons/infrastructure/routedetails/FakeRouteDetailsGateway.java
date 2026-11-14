@@ -2,6 +2,7 @@ package fr.pedalons.infrastructure.routedetails;
 
 import io.quarkus.test.Mock;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.util.Optional;
 
 /**
  * Replaces {@link RouteDetailsGateway} in every {@code @QuarkusTest} (plan §8, docs/LEDGER_*.md
@@ -22,6 +23,12 @@ public class FakeRouteDetailsGateway extends RouteDetailsGateway {
   @Override
   RouteDetailsClient client(RouteDetailsProfile profile) {
     return client;
+  }
+
+  /** The fake's current capabilities, never cached: a test that changes its api sees it at once. */
+  @Override
+  public Optional<RouteDetailsCapabilities> capabilities() {
+    return Optional.of(client.capabilities());
   }
 
   /** The fake's current bounds, never cached: a test that lowers them sees them at once. */

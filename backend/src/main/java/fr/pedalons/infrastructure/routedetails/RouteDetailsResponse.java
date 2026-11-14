@@ -18,7 +18,7 @@ import org.jspecify.annotations.Nullable;
  * {@code class}). Constants for the values the backend tests against are below.
  *
  * <p>{@code points}, {@code segments} and {@code summary} are null when their section was not
- * asked for.
+ * asked for, and {@code edges} (api 1.7) when the option of that name was not.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record RouteDetailsResponse(
@@ -27,7 +27,32 @@ public record RouteDetailsResponse(
     @Nullable List<OutputPoint> points,
     @Nullable List<Segment> segments,
     @Nullable Summary summary,
-    @Nullable Quality quality) {
+    @Nullable Quality quality,
+    @Nullable List<Edge> edges,
+    boolean edgesDropped) {
+
+  /** Without {@code edgesDropped}: edges given or never asked. */
+  public RouteDetailsResponse(
+      @Nullable Meta meta,
+      @Nullable String status,
+      @Nullable List<OutputPoint> points,
+      @Nullable List<Segment> segments,
+      @Nullable Summary summary,
+      @Nullable Quality quality,
+      @Nullable List<Edge> edges) {
+    this(meta, status, points, segments, summary, quality, edges, false);
+  }
+
+  /** Without {@code edges}: the shape this record had before api 1.7. */
+  public RouteDetailsResponse(
+      @Nullable Meta meta,
+      @Nullable String status,
+      @Nullable List<OutputPoint> points,
+      @Nullable List<Segment> segments,
+      @Nullable Summary summary,
+      @Nullable Quality quality) {
+    this(meta, status, points, segments, summary, quality, null);
+  }
 
   /** {@code status}: a source gave nothing on part of the route (down, or out of its coverage). */
   public static final String STATUS_PARTIAL = "partial";
@@ -95,7 +120,72 @@ public record RouteDetailsResponse(
       @Nullable @JsonProperty("structure_source") String structureSource,
       @Nullable Surface surface,
       @Nullable @JsonProperty("way_kind") String wayKind,
-      boolean matched) {}
+      boolean matched,
+      @Nullable @JsonProperty("unmatched_reason") String unmatchedReason) {
+
+    /** Without a reason: the shape this record had before api 1.7. */
+    public Segment(
+        double fromM,
+        double toM,
+        int fromIndex,
+        int toIndex,
+        @Nullable String structure,
+        @Nullable String structureSource,
+        @Nullable Surface surface,
+        @Nullable String wayKind,
+        boolean matched) {
+      this(
+          fromM,
+          toM,
+          fromIndex,
+          toIndex,
+          structure,
+          structureSource,
+          surface,
+          wayKind,
+          matched,
+          null);
+    }
+  }
+
+  /**
+   * An edge of the street graph the track rode (api 1.7, contract §4.3 bis): a maximal run of
+   * streets between two junctions. {@code fromNode} / {@code toNode} are the ends of the
+   * <b>complete</b> edge in the direction of travel, even when the track does not reach them, null
+   * when that end lies outside the corridor read. The offsets count from {@code fromNode} along the
+   * complete edge, null when it is. {@code geometry} is a Google polyline of precision 6, the part
+   * traversed only. The typology attributes are present only when homogeneous along the edge;
+   * {@code tracktype}, {@code bicycle} and {@code foot} come with api 1.8 and are absent before.
+   */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Edge(
+      @JsonProperty("from_m") double fromM,
+      @JsonProperty("to_m") double toM,
+      @JsonProperty("from_index") int fromIndex,
+      @JsonProperty("to_index") int toIndex,
+      @Nullable @JsonProperty("from_node") EdgeNode fromNode,
+      @Nullable @JsonProperty("to_node") EdgeNode toNode,
+      boolean partial,
+      @Nullable @JsonProperty("length_m") Double lengthM,
+      @JsonProperty("traversed_m") double traversedM,
+      @Nullable @JsonProperty("from_offset_m") Double fromOffsetM,
+      @Nullable @JsonProperty("to_offset_m") Double toOffsetM,
+      @Nullable String oneway,
+      @Nullable String geometry,
+      @JsonProperty("from_gain_cum_m") double fromGainCumM,
+      @JsonProperty("to_gain_cum_m") double toGainCumM,
+      @JsonProperty("from_loss_cum_m") double fromLossCumM,
+      @JsonProperty("to_loss_cum_m") double toLossCumM,
+      @Nullable String structure,
+      @Nullable Surface surface,
+      @Nullable @JsonProperty("way_kind") String wayKind,
+      @Nullable String tracktype,
+      @Nullable String bicycle,
+      @Nullable String foot) {}
+
+  /** A junction of the street graph: {@code id} is {@code z14:<x>:<y>}, its place on the tile grid. */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record EdgeNode(String id, double lat, double lon, int degree) {}
 
   /**
    * {@code class}: {@code paved}, {@code unpaved} or {@code unknown}. {@code detail} (api 1.6) only

@@ -1,6 +1,7 @@
 package fr.pedalons.repository.route;
 
 import fr.pedalons.domain.route.GpxTrack;
+import fr.pedalons.domain.route.NetworkEdgesDocument;
 import fr.pedalons.domain.route.PlannerStateDocument;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
 import io.hypersistence.utils.hibernate.type.util.JsonConfiguration;
@@ -148,6 +149,74 @@ public class GpxTrackRepository implements PanacheRepository<GpxTrack> {
         .setParameter("doc", JsonConfiguration.INSTANCE.getObjectMapperWrapper().toString(surfaces))
         .setParameter("id", trackId)
         .executeUpdate();
+  }
+
+  /**
+   * Stores the street edges of a track, with no read of the row, as {@link #updateSurfaces} does
+   * (docs/LEDGER_*.md API-198, lot 1).
+   */
+  public void updateNetworkEdges(Long trackId, NetworkEdgesDocument document) {
+    getEntityManager()
+        .createNativeQuery(
+            "update gpx_tracks set network_edges = cast(:doc as jsonb) where id = :id")
+        .setParameter("doc", JsonConfiguration.INSTANCE.getObjectMapperWrapper().toString(document))
+        .setParameter("id", trackId)
+        .executeUpdate();
+  }
+
+  /**
+   * The street edges documents of a route's tracks by track id, tracks without one left out: a
+   * projection that reads neither the points nor the other lazy columns. For the tests and for the
+   * team graph (lot 3).
+   */
+  public Map<Long, NetworkEdgesDocument> findNetworkEdges(Long routeId) {
+    Map<Long, NetworkEdgesDocument> out = new HashMap<>();
+    getEntityManager()
+        .createQuery(
+            "select t.id, t.networkEdges from GpxTrack t where t.route.id = :routeId order by t.id",
+            Object[].class)
+        .setParameter("routeId", routeId)
+        .getResultList()
+        .forEach(row -> {
+          if (row[1] != null) {
+            out.put((Long) row[0], (NetworkEdgesDocument) row[1]);
+          }
+        });
+    return out;
+  }
+
+  /**
+   * What a track's document says of itself, without reading it: its version and the revision it was
+   * computed for, both null when the track has none.
+   */
+  public record NetworkEdgesHead(Long trackId, @Nullable Integer version, @Nullable Long revision) {
+
+    /** Whether the track has a document of {@code version} for {@code revision}. */
+    public boolean isCurrent(int version, long revision) {
+      return this.version != null
+          && this.version == version
+          && this.revision != null
+          && this.revision == revision;
+    }
+  }
+
+  /** The head of the document of each track of a route, in id order: a native projection. */
+  public List<NetworkEdgesHead> findNetworkEdgesHeads(Long routeId) {
+    @SuppressWarnings("unchecked")
+    List<Object[]> rows =
+        getEntityManager()
+            .createNativeQuery(
+                "select id, (network_edges->>'v')::int, (network_edges->>'rev')::bigint"
+                    + " from gpx_tracks where route_id = :routeId order by id")
+            .setParameter("routeId", routeId)
+            .getResultList();
+    return rows.stream()
+        .map(r ->
+            new NetworkEdgesHead(
+                ((Number) r[0]).longValue(),
+                r[1] == null ? null : ((Number) r[1]).intValue(),
+                r[2] == null ? null : ((Number) r[2]).longValue()))
+        .toList();
   }
 
   /** A track's id and its number of stored points, without reading them. */

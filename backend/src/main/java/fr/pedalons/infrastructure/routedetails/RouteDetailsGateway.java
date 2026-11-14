@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -79,6 +80,12 @@ public class RouteDetailsGateway {
   @ConfigProperty(name = "pedalons.route-details.full-timeout", defaultValue = "PT100S")
   Duration fullTimeout;
 
+  /** The switch of the edges: only read here to say once that the service cannot serve them. */
+  @ConfigProperty(name = "pedalons.network-edges.enabled", defaultValue = "true")
+  boolean networkEdgesEnabled;
+
+  private final AtomicBoolean edgesMissingLogged = new AtomicBoolean();
+
   /** Package-private so that a test against a local server can set its own. */
   volatile @Nullable RouteDetailsClient fastClient;
 
@@ -113,7 +120,14 @@ public class RouteDetailsGateway {
     try {
       response = client.routeDetails(request);
     } catch (WebApplicationException e) {
-      throw paused(fromWebApplication(e), profile);
+      RouteDetailsException failure = fromWebApplication(e);
+      if (failure.status() == 400 && request.options() != null && request.options().wantsEdges()) {
+        // Sent to a service that does not know the option, whatever the capabilities said (rolled
+        // back to an older image within the cache hour): ask them again before the next call
+        LOG.warnf("osm-route-details refused a request with edges (400), capabilities dropped");
+        capabilitiesFetchedAt = null;
+      }
+      throw paused(failure, profile);
     } catch (ProcessingException e) {
       throw paused(RouteDetailsErrors.noAnswer(e), profile);
     }
@@ -139,7 +153,9 @@ public class RouteDetailsGateway {
    */
   public RouteDetailsResponse details(double[] lat, double[] lon, RouteDetailsOptions options) {
     RouteSlicer.Plan plan = RouteSlicer.plan(lat, lon, limits());
-    RouteDetailsOptions sent = plan.isSliced() ? forSlicing(options) : options;
+    RouteDetailsOptions asked =
+        options.wantsEdges() && !supportsEdges() ? options.withEdges(false) : options;
+    RouteDetailsOptions sent = plan.isSliced() ? forSlicing(asked) : asked;
     List<RouteDetailsResponse> responses = new ArrayList<>(plan.slices().size());
     for (RouteSlicer.Slice slice : plan.slices()) {
       responses.add(
@@ -185,7 +201,8 @@ public class RouteDetailsGateway {
               sent.sections(),
               new RouteDetailsOptions.Sampling(RouteDetailsOptions.INPUT_WITH_BREAKPOINTS),
               sent.elevation(),
-              sent.acceptPartial());
+              sent.acceptPartial(),
+              sent.edges());
     }
     return sent;
   }
@@ -206,6 +223,16 @@ public class RouteDetailsGateway {
       return Optional.ofNullable(cached);
     }
     return Optional.ofNullable(fetchCapabilities());
+  }
+
+  /**
+   * Whether the service answers {@code options.edges} (api 1.7 with {@code data.edges}), on the
+   * cached capabilities: false while they are unknown or the service is unreachable. Never throws.
+   * {@link #details(double[], double[], RouteDetailsOptions)} takes the option out of a request
+   * when this is false, so that no caller can make an older service answer a 400.
+   */
+  public boolean supportsEdges() {
+    return capabilities().map(RouteDetailsCapabilities::supportsEdges).orElse(false);
   }
 
   /** The input bounds a request must stay under: the published ones, else 200 km / 16 000 points. */
@@ -254,6 +281,7 @@ public class RouteDetailsGateway {
         return capabilities;
       }
       check(fetched);
+      checkEdges(fetched);
       capabilities = fetched;
       capabilitiesFetchedAt = Instant.now();
       capabilitiesFailedAt = null;
@@ -268,6 +296,16 @@ public class RouteDetailsGateway {
       // Asked first, on the fast client: no answer here would otherwise cost a second timeout
       pauseIfNoAnswer(failure);
       return capabilities;
+    }
+  }
+
+  private void checkEdges(RouteDetailsCapabilities fetched) {
+    if (networkEdgesEnabled
+        && !fetched.supportsEdges()
+        && edgesMissingLogged.compareAndSet(false, true)) {
+      LOG.infof(
+          "osm-route-details api %s serves no edges: network edges not asked",
+          fetched.apiVersion());
     }
   }
 

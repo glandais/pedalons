@@ -34,7 +34,25 @@ public record RouteDetailsCapabilities(
       @Nullable @JsonProperty("surface_detail") List<String> surfaceDetail) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public record Data(@JsonProperty("surface_detail") boolean surfaceDetail) {}
+  public record Data(
+      @JsonProperty("surface_detail") boolean surfaceDetail, @Nullable EdgesFeature edges) {
+
+    /** Without edges: the shape this record had before api 1.7. */
+    public Data(boolean surfaceDetail) {
+      this(surfaceDetail, null);
+    }
+  }
+
+  /**
+   * {@code data.edges} (api 1.7): how {@code edges[]} is built. Only its presence is read, the grid
+   * and the precision are what the contract publishes for a client that decodes them.
+   */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record EdgesFeature(
+      @Nullable @JsonProperty("node_id_prefix") String nodeIdPrefix,
+      @Nullable @JsonProperty("node_grid_zoom") Integer nodeGridZoom,
+      @Nullable @JsonProperty("node_grid_extent") Integer nodeGridExtent,
+      @Nullable @JsonProperty("polyline_precision") Integer polylinePrecision) {}
 
   /** The published bounds, or {@link #FALLBACK_LIMITS} when they are missing or not positive. */
   public Limits effectiveLimits() {
@@ -54,6 +72,11 @@ public record RouteDetailsCapabilities(
   /** {@code segments[].surface.detail} is served (api 1.6). */
   public boolean supportsSurfaceDetail() {
     return data != null && data.surfaceDetail();
+  }
+
+  /** {@code options.edges} is understood (api 1.7, announced by {@code data.edges}). */
+  public boolean supportsEdges() {
+    return apiAtLeast(1, 7) && data != null && data.edges() != null;
   }
 
   /** Whether {@code apiVersion} is at least {@code major.minor}; false when it is unreadable. */

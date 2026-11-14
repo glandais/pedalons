@@ -3,6 +3,7 @@ package fr.pedalons.infrastructure.routedetails;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Edge;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.OutputPoint;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Quality;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Segment;
@@ -17,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -39,6 +41,10 @@ import org.jspecify.annotations.Nullable;
  *   <li>segments, structures, terrain ranges, ranged warnings: cut to the core and moved; equal
  *       neighbours across a boundary are merged, so a bridge cut by a slice comes out whole. A
  *       warning without a range is kept once;
+ *   <li>edges (api 1.7): cut to the core like the segments, their offsets, geometry and cumulative
+ *       gains cut with them (linearly, on the traversed length); the two halves of an edge a
+ *       boundary cut, with the same nodes and offsets that meet, come out as one edge, whose
+ *       typology survives where both halves agree;
  *   <li>{@code quality.structure_correction}: per structure type, the most telling status of the
  *       slices ({@code disabled}, then {@code unavailable}, {@code partial}, {@code applied}, {@code
  *       none_found}); its {@code counts} and {@code counts_by_source} are counted again on the
@@ -48,9 +54,16 @@ import org.jspecify.annotations.Nullable;
  * </ul>
  */
 public final class RouteDetailsStitcher {
+  private static final Logger LOG = Logger.getLogger(RouteDetailsStitcher.class);
 
   /** Two boundaries closer than this are the same: the anchors are exact up to rounding. */
   static final double JOIN_TOLERANCE_M = 0.01;
+
+  /** Two halves of an edge meet when the offset one ends at and the other starts at are this close. */
+  static final double OFFSET_TOLERANCE_M = 2.0;
+
+  /** An edge is complete when its offsets are within this of 0 and of its length. */
+  static final double COMPLETE_TOLERANCE_M = 0.05;
 
   private RouteDetailsStitcher() {}
 
@@ -71,6 +84,9 @@ public final class RouteDetailsStitcher {
     }
     List<OutputPoint> points = new ArrayList<>();
     List<Segment> segments = new ArrayList<>();
+    List<Edge> edges = new ArrayList<>();
+    boolean anyEdges = false;
+    boolean edgesFailed = false;
     List<Structure> structures = new ArrayList<>();
     List<TerrainRange> terrain = new ArrayList<>();
     List<Warning> warnings = new ArrayList<>();
@@ -136,8 +152,33 @@ public final class RouteDetailsStitcher {
                   s.structureSource(),
                   s.surface(),
                   s.wayKind(),
-                  s.matched());
+                  s.matched(),
+                  s.unmatchedReason());
           appendSegment(segments, moved);
+        }
+      }
+
+      if (r.edges() != null && !edgesFailed) {
+        try {
+          anyEdges = true;
+          for (Edge e : r.edges()) {
+            Edge moved =
+                clipEdge(
+                    e,
+                    slice,
+                    fromM,
+                    toM,
+                    shift,
+                    offsetGain - from.gainCumM(),
+                    offsetLoss - from.lossCumM());
+            if (moved != null) {
+              appendEdge(edges, moved);
+            }
+          }
+        } catch (RuntimeException ex) {
+          LOG.error("edges could not be stitched, dropped (profile kept)", ex);
+          edgesFailed = true;
+          edges.clear();
         }
       }
 
@@ -221,7 +262,9 @@ public final class RouteDetailsStitcher {
         new Quality(
             List.copyOf(terrain),
             List.copyOf(warnings),
-            combineStructureCorrection(structureCorrections, anySummary ? structures : null)));
+            combineStructureCorrection(structureCorrections, anySummary ? structures : null)),
+        anyEdges && !edgesFailed ? List.copyOf(edges) : null,
+        edgesFailed);
   }
 
   /**
@@ -267,7 +310,44 @@ public final class RouteDetailsStitcher {
                 s.structureSource(),
                 s.surface(),
                 s.wayKind(),
-                s.matched()));
+                s.matched(),
+                s.unmatchedReason()));
+      }
+    }
+    List<Edge> edges = null;
+    if (response.edges() != null) {
+      try {
+        edges = new ArrayList<>(response.edges().size());
+        for (Edge e : response.edges()) {
+          edges.add(
+              new Edge(
+                  e.fromM(),
+                  e.toM(),
+                  map(sent, e.fromIndex()),
+                  map(sent, e.toIndex()),
+                  e.fromNode(),
+                  e.toNode(),
+                  e.partial(),
+                  e.lengthM(),
+                  e.traversedM(),
+                  e.fromOffsetM(),
+                  e.toOffsetM(),
+                  e.oneway(),
+                  e.geometry(),
+                  e.fromGainCumM(),
+                  e.toGainCumM(),
+                  e.fromLossCumM(),
+                  e.toLossCumM(),
+                  e.structure(),
+                  e.surface(),
+                  e.wayKind(),
+                  e.tracktype(),
+                  e.bicycle(),
+                  e.foot()));
+        }
+      } catch (RuntimeException ex) {
+        LOG.error("edges could not be reindexed, dropped (profile kept)", ex);
+        edges = null;
       }
     }
     return new RouteDetailsResponse(
@@ -276,7 +356,9 @@ public final class RouteDetailsStitcher {
         points,
         segments,
         response.summary(),
-        response.quality());
+        response.quality(),
+        edges,
+        response.edgesDropped() || (edges == null && response.edges() != null));
   }
 
   /**
@@ -302,7 +384,8 @@ public final class RouteDetailsStitcher {
           && Objects.equals(prev.structureSource(), s.structureSource())
           && Objects.equals(prev.surface(), s.surface())
           && Objects.equals(prev.wayKind(), s.wayKind())
-          && prev.matched() == s.matched()) {
+          && prev.matched() == s.matched()
+          && Objects.equals(prev.unmatchedReason(), s.unmatchedReason())) {
         out.set(
             out.size() - 1,
             new Segment(
@@ -314,11 +397,176 @@ public final class RouteDetailsStitcher {
                 prev.structureSource(),
                 prev.surface(),
                 prev.wayKind(),
-                prev.matched()));
+                prev.matched(),
+                prev.unmatchedReason()));
         return;
       }
     }
     out.add(s);
+  }
+
+  /**
+   * {@code e} cut to the core {@code [fromM, toM]} of its slice and moved onto the stitched axes,
+   * null when it lies in the overlap. A cut edge is partial; its offsets move by the share of the
+   * traversed length cut off, its geometry is cut at that share of its own length, and its
+   * cumulative gains are interpolated between its ends.
+   *
+   * @param gainShift added to a slice's cumulative gain to put it on the stitched one (likewise
+   *     {@code lossShift})
+   */
+  private static @Nullable Edge clipEdge(
+      Edge e,
+      Slice slice,
+      double fromM,
+      double toM,
+      double shift,
+      double gainShift,
+      double lossShift) {
+    double a = Math.max(fromM, e.fromM());
+    double b = Math.min(toM, e.toM());
+    if (b <= a) {
+      return null;
+    }
+    double span = e.toM() - e.fromM();
+    boolean clipped = a > e.fromM() || b < e.toM();
+    double t0 = clipped && span > 0 ? (a - e.fromM()) / span : 0;
+    double t1 = clipped && span > 0 ? (b - e.fromM()) / span : 1;
+    double traversed = e.traversedM();
+    Double fromOffset = e.fromOffsetM();
+    Double toOffset = e.toOffsetM();
+    String geometry = e.geometry();
+    double fromGain = e.fromGainCumM();
+    double toGain = e.toGainCumM();
+    double fromLoss = e.fromLossCumM();
+    double toLoss = e.toLossCumM();
+    if (clipped) {
+      if (fromOffset != null && toOffset != null) {
+        fromOffset = fromOffset + t0 * traversed;
+        toOffset = toOffset - (1 - t1) * traversed;
+        traversed = toOffset - fromOffset;
+      } else {
+        traversed = traversed * (t1 - t0);
+      }
+      if (geometry != null) {
+        List<double[]> line = EdgePolylines.decode(geometry);
+        double length = EdgePolylines.length(line);
+        geometry = EdgePolylines.encode(EdgePolylines.slice(line, t0 * length, t1 * length));
+      }
+      fromGain = e.fromGainCumM() + (e.toGainCumM() - e.fromGainCumM()) * t0;
+      toGain = e.fromGainCumM() + (e.toGainCumM() - e.fromGainCumM()) * t1;
+      fromLoss = e.fromLossCumM() + (e.toLossCumM() - e.fromLossCumM()) * t0;
+      toLoss = e.fromLossCumM() + (e.toLossCumM() - e.fromLossCumM()) * t1;
+    }
+    return new Edge(
+        a + shift,
+        b + shift,
+        clamp(slice.from() + e.fromIndex(), slice.coreFrom(), slice.coreTo()),
+        clamp(slice.from() + e.toIndex(), slice.coreFrom(), slice.coreTo()),
+        e.fromNode(),
+        e.toNode(),
+        e.partial() || clipped,
+        e.lengthM(),
+        traversed,
+        fromOffset,
+        toOffset,
+        e.oneway(),
+        geometry,
+        fromGain + gainShift,
+        toGain + gainShift,
+        fromLoss + lossShift,
+        toLoss + lossShift,
+        e.structure(),
+        e.surface(),
+        e.wayKind(),
+        e.tracktype(),
+        e.bicycle(),
+        e.foot());
+  }
+
+  /**
+   * An edge added to the stitched ones: joined to the previous one when that is the other half of
+   * the same edge a slice boundary cut (same two known nodes, same {@code oneway}, offsets that
+   * meet), else kept as it is.
+   */
+  private static void appendEdge(List<Edge> out, Edge e) {
+    if (!out.isEmpty()) {
+      Edge prev = out.getLast();
+      if (sameEdge(prev, e)) {
+        out.set(out.size() - 1, joinEdges(prev, e));
+        return;
+      }
+    }
+    out.add(e);
+  }
+
+  private static boolean sameEdge(Edge prev, Edge next) {
+    return Math.abs(prev.toM() - next.fromM()) <= JOIN_TOLERANCE_M
+        && prev.fromNode() != null
+        && next.fromNode() != null
+        && prev.toNode() != null
+        && next.toNode() != null
+        && prev.fromNode().id().equals(next.fromNode().id())
+        && prev.toNode().id().equals(next.toNode().id())
+        && Objects.equals(prev.oneway(), next.oneway())
+        && prev.toOffsetM() != null
+        && next.fromOffsetM() != null
+        && Math.abs(prev.toOffsetM() - next.fromOffsetM()) <= OFFSET_TOLERANCE_M;
+  }
+
+  private static Edge joinEdges(Edge prev, Edge next) {
+    String geometry = null;
+    if (prev.geometry() != null && next.geometry() != null) {
+      List<double[]> line = EdgePolylines.decode(prev.geometry());
+      List<double[]> tail = EdgePolylines.decode(next.geometry());
+      int skip = 0;
+      if (!line.isEmpty() && !tail.isEmpty()) {
+        double[] end = line.getLast();
+        double[] start = tail.getFirst();
+        if (Math.abs(end[0] - start[0]) < 1e-6 && Math.abs(end[1] - start[1]) < 1e-6) {
+          skip = 1;
+        }
+      }
+      line.addAll(tail.subList(skip, tail.size()));
+      geometry = EdgePolylines.encode(line);
+    }
+    Double length = prev.lengthM();
+    boolean partial;
+    if (length != null && prev.fromOffsetM() != null && next.toOffsetM() != null) {
+      partial =
+          !(Math.abs(prev.fromOffsetM()) <= COMPLETE_TOLERANCE_M
+              && Math.abs(next.toOffsetM() - length) <= COMPLETE_TOLERANCE_M);
+    } else {
+      partial = prev.partial() || next.partial();
+    }
+    return new Edge(
+        prev.fromM(),
+        next.toM(),
+        prev.fromIndex(),
+        next.toIndex(),
+        prev.fromNode(),
+        next.toNode(),
+        partial,
+        length,
+        prev.traversedM() + next.traversedM(),
+        prev.fromOffsetM(),
+        next.toOffsetM(),
+        prev.oneway(),
+        geometry,
+        prev.fromGainCumM(),
+        next.toGainCumM(),
+        prev.fromLossCumM(),
+        next.toLossCumM(),
+        agree(prev.structure(), next.structure()),
+        agree(prev.surface(), next.surface()),
+        agree(prev.wayKind(), next.wayKind()),
+        agree(prev.tracktype(), next.tracktype()),
+        agree(prev.bicycle(), next.bicycle()),
+        agree(prev.foot(), next.foot()));
+  }
+
+  /** What both halves say, null when they differ: the edge is no longer homogeneous. */
+  private static <T> @Nullable T agree(@Nullable T a, @Nullable T b) {
+    return Objects.equals(a, b) ? a : null;
   }
 
   private static void appendStructure(List<Structure> out, Structure s) {

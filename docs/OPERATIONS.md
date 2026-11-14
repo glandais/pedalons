@@ -745,6 +745,42 @@ null, which means "to recompute". Nothing picks it up by itself any more (the ca
 is gone): its next save does, so keep the surface on wherever the fleet must stay current. The e2e
 stack has it off (`.env.e2e`): nothing in the suite looks at the surface.
 
+**Street edges of the team routes** (ledger `API-198`, lot 1; plan
+`docs/plans/2026-11-13-generateur-boucles-equipe-lot1.md`). The `full` call that computes a route's HD
+profile (the catch-up, a synchronous save, the backfill below) also asks `options.edges`, and the
+write puts them in `gpx_tracks.network_edges` (a `NetworkEdgesDocument`, JSONB, nullable), in the same
+transaction as the profile and under the same route lock. Previews, the planner and FAST saves never
+ask. The gateway sends the option only when the service's capabilities announce api >= 1.7 with
+`data.edges`: **deploy the backend first, then move the `osm-route-details` image** (>= 1.7 in
+`docker-compose.shared.yml`, ideally a tagged release), and the edges come with the next catch-ups
+within an hour. `NETWORK_EDGES_ENABLED=false` asks and writes none. Missing edges never block a
+profile; a save replaces the track rows, so the new ones start without a document and the catch-up
+of that save writes it.
+
+#### The network edges backfill
+
+`NetworkEdgesBackfill` (every 5 min) queues the live routes of live teams that are HD at the current
+pipeline and have a track without a document, or with one older than `NetworkEdgesDocument.VERSION`,
+most recent first, into `elevation_refresh` (`backfill = true`, behind the normal requests). The
+worker serves such a row with an **edges-only** call: nothing else changes (no file, no profile, no
+GPS push). **Off by default**: `NETWORK_EDGES_BACKFILL_ENABLED=true` to start it,
+`NETWORK_EDGES_BACKFILL_PER_HOUR` (default 30 service calls an hour across the backends, a 188 km
+slice is one call: about 3.7 days for 2,656 routes) to size it. Watch the memory of
+`osm-route-details` (the `OPS-58` figures) while it runs before raising the cap. It stops by itself
+while the edges are off or the service announces none (a warning), and what it queued is put off an
+hour without using attempts. **Switch it off for a deploy**: during a rolling update the previous
+release serves its rows with a full recompute (one route pushed again to the GPS services, no
+document written, queued again by the next pass), at most the 5 rows of its 10-minute window.
+
+- **Follow it**: the log line `Network edges backfill: N queued; left N route(s) (N km); given up
+  N`, the gauge `pedalons_network_edges_backfill_remaining`, the counters
+  `pedalons_network_edges_documents_total{source,status}` and
+  `pedalons_network_edges_failures_total{reason}`, the summary `pedalons_network_edges_document_bytes`;
+  `select count(*) from gpx_tracks where network_edges is null;`.
+- **Given up** (five failures): the row stays, in the admin list of abandoned requests; the route
+  keeps its profile. Retry with `POST /api/admin/elevation-refresh/retry`, as above.
+- **Done** is when the log says `Network edges backfill done`.
+
 **The DEM tiles left on disk.** Since phase E the backend reads none: `mapterhorn`,
 `ign-lidar-hd-mnt` and `ign-lidar-hd-mns` in each environment's `data/cache` (about 7 GB in
 production) serve nothing, and only a release older than phase B would read them. Regenerable, so

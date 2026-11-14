@@ -10,6 +10,7 @@ import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.route.ClimbData;
 import fr.pedalons.domain.route.GpxTrack;
+import fr.pedalons.domain.route.NetworkEdgesDocument;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.domain.team.Team;
@@ -26,6 +27,9 @@ import fr.pedalons.infrastructure.gpx.FitExporter;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.route.GpxTrackRepository;
 import fr.pedalons.service.asset.AssetService;
+import fr.pedalons.service.route.edges.NetworkEdgesAnswer;
+import fr.pedalons.service.route.edges.NetworkEdgesDocuments;
+import fr.pedalons.service.route.edges.NetworkEdgesMetrics;
 import fr.pedalons.service.route.response.TrackMetadata;
 import fr.pedalons.service.route.waypoint.AnchoredWaypoint;
 import fr.pedalons.service.route.waypoint.TrackAxis;
@@ -104,6 +108,8 @@ public class GpxProcessingService {
 
   @Inject GpxTrackRepository gpxTrackRepository;
 
+  @Inject NetworkEdgesMetrics edgesMetrics;
+
   /**
    * Parses a GPX file, refused with {@code GPX_TOO_LONG} when its tracks are longer than {@link
    * GpxLimits#MAX_TRACK_DISTANCE_METERS} (SEC-6). The size of an uploaded file is bounded before
@@ -157,6 +163,8 @@ public class GpxProcessingService {
    *     path, 2D, neither resampled nor simplified
    * @param surface what the HD answer says of its surface (docs/LEDGER_*.md API-150), null for a
    *     FAST track, with the surface switched off, or when the call failed
+   * @param edges what the same answer says of the street edges (docs/LEDGER_*.md API-198), null
+   *     when they were not asked for or the service gave none
    */
   public record ComputedTrack(
       String name,
@@ -165,7 +173,21 @@ public class GpxProcessingService {
       List<GpxTrack.TrackPoint> trackPoints,
       List<ClimbData> climbs,
       TrackMetadata metadata,
-      @Nullable RouteSurfaceAnswer surface) {}
+      @Nullable RouteSurfaceAnswer surface,
+      @Nullable NetworkEdgesAnswer edges) {
+
+    /** Without edges: the shape this record had before docs/LEDGER_*.md API-198. */
+    public ComputedTrack(
+        String name,
+        LineString<G2D> line,
+        LineString<G2D> raw,
+        List<GpxTrack.TrackPoint> trackPoints,
+        List<ClimbData> climbs,
+        TrackMetadata metadata,
+        @Nullable RouteSurfaceAnswer surface) {
+      this(name, line, raw, trackPoints, climbs, metadata, surface, null);
+    }
+  }
 
   /**
    * Outcome of {@link #computeGpx}: the two GPX serializations and the FIT export as temp files,
@@ -301,6 +323,21 @@ public class GpxProcessingService {
    */
   public ComputedGpx computeGpx(
       GpxDocument source, ElevationQuality quality, WaypointPlan plan, @Nullable String name) {
+    return computeGpx(source, quality, plan, name, false);
+  }
+
+  /**
+   * As {@link #computeGpx(GpxDocument, ElevationQuality, WaypointPlan, String)}, also asking for
+   * the street edges of the same {@code full} call when {@code withEdges} (docs/LEDGER_*.md
+   * API-198, lot 1): only the two paths that write a team route's HD profile do, never a preview,
+   * the planner or a FAST save.
+   */
+  public ComputedGpx computeGpx(
+      GpxDocument source,
+      ElevationQuality quality,
+      WaypointPlan plan,
+      @Nullable String name,
+      boolean withEdges) {
     RawTracks rawTracks = rawTracks(source);
     GpxDocument doc = rawTracks.doc();
     List<Path> raw = rawTracks.paths();
@@ -324,12 +361,15 @@ public class GpxProcessingService {
       boolean withSurface = quality == ElevationQuality.HD && surfaceRefreshService.isEnabled();
       List<Path> processed = new ArrayList<>(raw.size());
       List<@Nullable RouteSurfaceAnswer> surfaces = new ArrayList<>(raw.size());
+      List<@Nullable NetworkEdgesAnswer> edges = new ArrayList<>(raw.size());
       double fallbackKm = 0.0;
       for (int i = 0; i < raw.size(); i++) {
         GpxPipeline.Processed result =
-            pipeline.processReported(raw.get(i), trackNames.get(i), quality, withSurface);
+            pipeline.processReported(
+                raw.get(i), trackNames.get(i), quality, withSurface, withEdges);
         processed.add(result.path());
         surfaces.add(result.surface());
+        edges.add(result.edges());
         fallbackKm += result.fallbackAfterErrorKm();
       }
 
@@ -361,7 +401,8 @@ public class GpxProcessingService {
                 toTrackPoints(path),
                 pipeline.climbs(path),
                 metadata,
-                surfaces.get(i)));
+                surfaces.get(i),
+                edges.get(i)));
         tracksMetadata.add(metadata);
       }
 
@@ -441,6 +482,71 @@ public class GpxProcessingService {
         "HD elevation unavailable for %.2f km of the track"
             .formatted(computed.fallbackAfterErrorKm()),
         complete ? surfaceDocuments(computed, state) : null);
+  }
+
+  /**
+   * The street edges documents of a computed GPX, one per track in computed order, for the
+   * revision {@code rev} of the route's original. A track without an answer (the service gave no
+   * edges, or an older one) is a null element, and so is one whose answer could not be turned into
+   * a document: <b>edges never fail the profile</b>, the next catch-up or the backfill fills them
+   * (docs/LEDGER_*.md API-198, lot 1).
+   */
+  List<@Nullable NetworkEdgesDocument> edgesDocuments(
+      List<ComputedTrack> tracks, long rev, NetworkEdgesMetrics.Source source) {
+    Instant now = Instant.now();
+    List<@Nullable NetworkEdgesDocument> documents = new ArrayList<>(tracks.size());
+    for (ComputedTrack track : tracks) {
+      NetworkEdgesAnswer answer = track.edges();
+      if (answer == null) {
+        if (pipeline.edgesAvailable()) {
+          edgesMetrics.failed(NetworkEdgesMetrics.Failure.NO_EDGES);
+        }
+        documents.add(null);
+        continue;
+      }
+      if (answer.dropped()) {
+        edgesMetrics.failed(NetworkEdgesMetrics.Failure.STITCH);
+        documents.add(null);
+        continue;
+      }
+      try {
+        NetworkEdgesDocument document = NetworkEdgesDocuments.from(answer, rev, now);
+        edgesMetrics.documentWritten(source, document);
+        if (LOG.isDebugEnabled()) {
+          LOG.debugf(
+              "Network edges of %s: %d edge(s), %d node(s), unmatched %s",
+              track.name(), document.edges().size(), document.nodes().size(), document.unmatched());
+        }
+        documents.add(document);
+      } catch (RuntimeException e) {
+        edgesMetrics.failed(NetworkEdgesMetrics.Failure.STITCH);
+        LOG.errorf(e, "Network edges of %s not stored, the profile is", track.name());
+        documents.add(null);
+      }
+    }
+    return documents;
+  }
+
+  /**
+   * The street edges documents of a route's original GPX and nothing else (docs/LEDGER_*.md
+   * API-198, lot 1): the backfill's lighter path, which recomputes neither the profile nor the
+   * files, so no GPS service is told of a change. One document per track, in the order of the
+   * route's tracks. No transaction, no entity: like {@link #processGpxData}.
+   *
+   * @param rev the {@code file_id} of the original the documents are computed for
+   * @throws RuntimeException when a call failed or an answer carried no edges: the request is then
+   *     retried
+   */
+  @Transactional(Transactional.TxType.NOT_SUPPORTED)
+  public List<NetworkEdgesDocument> networkEdgesOnly(GpxDocument original, long rev) {
+    RawTracks raw = rawTracks(original);
+    Instant now = Instant.now();
+    List<NetworkEdgesDocument> documents = new ArrayList<>(raw.paths().size());
+    for (int i = 0; i < raw.paths().size(); i++) {
+      NetworkEdgesAnswer answer = pipeline.edgesOf(raw.paths().get(i), raw.trackNames().get(i));
+      documents.add(NetworkEdgesDocuments.from(answer, rev, now));
+    }
+    return documents;
   }
 
   /**
@@ -579,7 +685,9 @@ public class GpxProcessingService {
     Team team = route.getTeam();
     // Outside the try: the catches below delete what was uploaded before the failure
     List<PreparedAsset> uploadedAssets = new ArrayList<>();
-    try (ComputedGpx computed = computeGpx(gpx, quality, plan, route.getName())) {
+    // The street edges come with the HD profile of a route, on the same call (API-198)
+    try (ComputedGpx computed =
+        computeGpx(gpx, quality, plan, route.getName(), quality == ElevationQuality.HD)) {
       uploadedAssets.add(
           prepareAndUpload(
               team,
@@ -628,6 +736,14 @@ public class GpxProcessingService {
       LOG.infov("GPX processing complete for route {0}", routeId);
 
       List<@Nullable TrackSurfaceDocument> surfaces = surfaceDocuments(computed, state);
+      // The revision the edges describe: the original just uploaded, the first of the assets
+      List<@Nullable NetworkEdgesDocument> edgeDocuments =
+          quality == ElevationQuality.HD
+              ? edgesDocuments(
+                  computed.tracks(),
+                  uploadedAssets.getFirst().fileId(),
+                  NetworkEdgesMetrics.Source.SAVE)
+              : null;
       List<GpxTrack> tracks = new ArrayList<>(computed.tracks().size());
       for (int i = 0; i < computed.tracks().size(); i++) {
         ComputedTrack t = computed.tracks().get(i);
@@ -646,6 +762,9 @@ public class GpxProcessingService {
         track.setRawGeometry(t.raw());
         if (surfaces != null) {
           track.setSurfaces(surfaces.get(i));
+        }
+        if (edgeDocuments != null) {
+          track.setNetworkEdges(edgeDocuments.get(i));
         }
         tracks.add(track);
       }
@@ -792,7 +911,20 @@ public class GpxProcessingService {
       PreparedAsset fit,
       List<AnchoredWaypoint> waypoints,
       List<WaypointDraft> used,
-      @Nullable List<@Nullable TrackSurfaceDocument> surfaces) {
+      @Nullable List<@Nullable TrackSurfaceDocument> surfaces,
+      @Nullable List<@Nullable NetworkEdgesDocument> networkEdges) {
+
+    /** Without edges: the shape this record had before docs/LEDGER_*.md API-198. */
+    public ElevationRecompute(
+        TrackMetadata metadata,
+        List<ComputedTrack> tracks,
+        PreparedAsset filtered,
+        PreparedAsset fit,
+        List<AnchoredWaypoint> waypoints,
+        List<WaypointDraft> used,
+        @Nullable List<@Nullable TrackSurfaceDocument> surfaces) {
+      this(metadata, tracks, filtered, fit, waypoints, used, surfaces, null);
+    }
 
     /** Without waypoints: the shape this record had before WEB-100 (C3c). */
     public ElevationRecompute(
@@ -811,7 +943,7 @@ public class GpxProcessingService {
         PreparedAsset fit,
         List<AnchoredWaypoint> waypoints,
         List<WaypointDraft> used) {
-      this(metadata, tracks, filtered, fit, waypoints, used, null);
+      this(metadata, tracks, filtered, fit, waypoints, used, null, null);
     }
   }
 
@@ -831,7 +963,7 @@ public class GpxProcessingService {
    */
   @Transactional(Transactional.TxType.NOT_SUPPORTED)
   public ElevationRecompute recomputeHd(Team team, GpxDocument gpx) {
-    return recomputeHd(team, gpx, WaypointPlan.FROM_DOCUMENT, null);
+    return recomputeHd(team, gpx, WaypointPlan.FROM_DOCUMENT, null, null);
   }
 
   /**
@@ -841,7 +973,7 @@ public class GpxProcessingService {
    */
   @Transactional(Transactional.TxType.NOT_SUPPORTED)
   public ElevationRecompute recomputeHd(Team team, GpxDocument gpx, List<WaypointDraft> drafts) {
-    return recomputeHd(team, gpx, new WaypointPlan(drafts, false), null);
+    return recomputeHd(team, gpx, new WaypointPlan(drafts, false), null, null);
   }
 
   /**
@@ -851,13 +983,34 @@ public class GpxProcessingService {
   @Transactional(Transactional.TxType.NOT_SUPPORTED)
   public ElevationRecompute recomputeHd(
       Team team, GpxDocument gpx, List<WaypointDraft> drafts, @Nullable PlannerState state) {
-    return recomputeHd(team, gpx, new WaypointPlan(drafts, false), state);
+    return recomputeHd(team, gpx, new WaypointPlan(drafts, false), state, null);
+  }
+
+  /**
+   * As {@link #recomputeHd(Team, GpxDocument, List, PlannerState)}, also asking for the street
+   * edges of the same call (docs/LEDGER_*.md API-198, lot 1), carried to {@link #applyRecompute} in
+   * {@link ElevationRecompute#networkEdges()} for the revision {@code sourceRevision} of the
+   * original: the {@code file_id} the catch-up claimed.
+   */
+  @Transactional(Transactional.TxType.NOT_SUPPORTED)
+  public ElevationRecompute recomputeHd(
+      Team team,
+      GpxDocument gpx,
+      List<WaypointDraft> drafts,
+      @Nullable PlannerState state,
+      long sourceRevision) {
+    return recomputeHd(team, gpx, new WaypointPlan(drafts, false), state, sourceRevision);
   }
 
   private ElevationRecompute recomputeHd(
-      Team team, GpxDocument gpx, WaypointPlan plan, @Nullable PlannerState state) {
+      Team team,
+      GpxDocument gpx,
+      WaypointPlan plan,
+      @Nullable PlannerState state,
+      @Nullable Long sourceRevision) {
     List<PreparedAsset> uploaded = new ArrayList<>(2);
-    try (ComputedGpx computed = computeGpx(gpx, ElevationQuality.HD, plan)) {
+    try (ComputedGpx computed =
+        computeGpx(gpx, ElevationQuality.HD, plan, null, sourceRevision != null)) {
       if (computed.fallbackAfterErrorKm() > 0) {
         throw elevationUnavailable(computed, state);
       }
@@ -879,7 +1032,11 @@ public class GpxProcessingService {
           fit,
           computed.waypoints(),
           plan.drafts(),
-          surfaceDocuments(computed, state));
+          surfaceDocuments(computed, state),
+          sourceRevision == null
+              ? null
+              : edgesDocuments(
+                  computed.tracks(), sourceRevision, NetworkEdgesMetrics.Source.CATCHUP));
     } catch (Exception e) {
       cleanupUploadedAssets(uploaded, team);
       throw e instanceof RuntimeException re ? re : new BusinessException(ErrorCode.GPX_FAILURE, e);
@@ -967,6 +1124,17 @@ public class GpxProcessingService {
         if (document != null) {
           // By its own update: a lazy column that nothing here has read
           gpxTrackRepository.updateSurfaces(tracks.get(i).getId(), document);
+        }
+      }
+    }
+    // Same transaction, same lock, after the revision check of the caller (docs/LEDGER_*.md
+    // API-198). A null element leaves the column as it was: edges never block the profile.
+    List<@Nullable NetworkEdgesDocument> networkEdges = recompute.networkEdges();
+    if (networkEdges != null && networkEdges.size() == tracks.size()) {
+      for (int i = 0; i < tracks.size(); i++) {
+        NetworkEdgesDocument document = networkEdges.get(i);
+        if (document != null) {
+          gpxTrackRepository.updateNetworkEdges(tracks.get(i).getId(), document);
         }
       }
     }

@@ -8,6 +8,7 @@ import fr.pedalons.infrastructure.routedetails.RouteDetailsOptions;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsProfile;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsSection;
+import fr.pedalons.service.route.edges.NetworkEdgesAnswer;
 import fr.pedalons.service.surface.RouteSurfaceAnswer;
 import io.github.glandais.engine.climb.ClimbDetectorJvm;
 import io.github.glandais.engine.path.ElevationGainJvm;
@@ -19,6 +20,7 @@ import io.github.glandais.engine.path.PointPerDistance;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
 
@@ -118,6 +120,14 @@ public class GpxPipeline {
   @Inject RouteDetailsGateway routeDetails;
 
   /**
+   * Whether an {@code HD} track of a team route asks for the street edges of the same call (docs/
+   * LEDGER_*.md API-198): the way back without redeploying, like {@code pedalons.surface.enabled}.
+   * The gateway still leaves the option out when the service does not announce api 1.7.
+   */
+  @ConfigProperty(name = "pedalons.network-edges.enabled", defaultValue = "true")
+  boolean edgesEnabled = true;
+
+  /**
    * Runs the full pipeline on {@code source}, returning a new path. Never throws on an elevation
    * failure: an IGN tile that cannot be read is served from Mapterhorn by the service (and counted
    * in {@link Processed#fallbackAfterErrorKm}); a call that fails keeps the original elevations and
@@ -142,12 +152,22 @@ public class GpxPipeline {
    *     were kept. Zero means the requested quality was really obtained (docs/LEDGER_*.md API-131).
    * @param surface what the answer says of the surface along {@code path}, when it was asked for
    *     and the service answered; null otherwise
+   * @param edges the street edges of the same answer (docs/LEDGER_*.md API-198), when they were
+   *     asked for and the service answered; null otherwise. A track too short to be sent has an
+   *     answer without edges.
    */
   public record Processed(
-      Path path, double fallbackAfterErrorKm, @Nullable RouteSurfaceAnswer surface) {
+      Path path,
+      double fallbackAfterErrorKm,
+      @Nullable RouteSurfaceAnswer surface,
+      @Nullable NetworkEdgesAnswer edges) {
+
+    public Processed(Path path, double fallbackAfterErrorKm, @Nullable RouteSurfaceAnswer surface) {
+      this(path, fallbackAfterErrorKm, surface, null);
+    }
 
     public Processed(Path path, double fallbackAfterErrorKm) {
-      this(path, fallbackAfterErrorKm, null);
+      this(path, fallbackAfterErrorKm, null, null);
     }
   }
 
@@ -165,12 +185,27 @@ public class GpxPipeline {
    */
   public Processed processReported(
       Path source, String name, ElevationQuality quality, boolean withSurface) {
+    return processReported(source, name, quality, withSurface, false);
+  }
+
+  /**
+   * As {@link #processReported(Path, String, ElevationQuality, boolean)}, also keeping the street
+   * edges of the same {@code full} call (docs/LEDGER_*.md API-198, lot 1).
+   *
+   * @param withEdges for an {@code HD} track and while {@code pedalons.network-edges.enabled} is
+   *     on, asks {@code options.edges} and the {@code typology} section (whose segments say what
+   *     stayed unmatched), and fills {@link Processed#edges()}; ignored for {@code FAST}, which
+   *     the HD catch-up replaces minutes later. Missing edges never fail the profile.
+   */
+  public Processed processReported(
+      Path source, String name, ElevationQuality quality, boolean withSurface, boolean withEdges) {
     boolean surface = withSurface && quality == ElevationQuality.HD;
-    DenseResult dense = processDense(source, name, quality, surface);
+    boolean edges = withEdges && edgesEnabled && quality == ElevationQuality.HD;
+    DenseResult dense = processDense(source, name, quality, surface, edges);
     if (!surface) {
       Path simplified = PathSimplifierJvm.simplify(dense.path(), 3.0, 3.0);
       LOG.debugv("Simplified {0} to {1} points (Douglas-Peucker)", name, simplified.getSize());
-      return new Processed(simplified, dense.fallbackAfterErrorKm());
+      return new Processed(simplified, dense.fallbackAfterErrorKm(), null, dense.edges());
     }
     // The same path as simplify, which delegates to it: the indices are what anchors the surface
     PathSimplifier.Simplified simplified =
@@ -178,7 +213,34 @@ public class GpxPipeline {
     LOG.debugv(
         "Simplified {0} to {1} points (Douglas-Peucker)", name, simplified.getPath().getSize());
     return new Processed(
-        simplified.getPath(), dense.fallbackAfterErrorKm(), surfaceOf(dense, simplified, name));
+        simplified.getPath(),
+        dense.fallbackAfterErrorKm(),
+        surfaceOf(dense, simplified, name),
+        dense.edges());
+  }
+
+  /**
+   * The street edges of {@code raw} alone, for the backfill (docs/LEDGER_*.md API-198, lot 1): one
+   * {@code full} call on the same densified line as the profile's, the edges and the typology
+   * asked for, nothing else kept. Unlike the profile path it <b>throws</b> on a failed call or an
+   * answer without edges, so that the request is retried; a track too short to be sent answers
+   * {@link NetworkEdgesAnswer#tooShort}.
+   *
+   * @throws RouteDetailsException when the call failed
+   * @throws IllegalStateException when the answer carries no {@code edges}
+   */
+  public NetworkEdgesAnswer edgesOf(Path raw, String name) {
+    if (raw.getSize() < 2 || raw.getTotalDistance() < MIN_LENGTH_M) {
+      return NetworkEdgesAnswer.tooShort(raw.getTotalDistance());
+    }
+    RouteDetailsTrack.Sent sent = RouteDetailsTrack.densify(raw, SENT_MAX_GAP_M);
+    RouteDetailsResponse response =
+        routeDetails.details(sent.lat(), sent.lon(), RouteDetailsOptions.edgesOnly());
+    NetworkEdgesAnswer answer = NetworkEdgesAnswer.of(response);
+    if (answer == null || answer.dropped()) {
+      throw new IllegalStateException("osm-route-details answered no edges for " + name);
+    }
+    return answer;
   }
 
   /** What {@code dense} says of the surface of its simplified path, null when it says nothing. */
@@ -217,7 +279,7 @@ public class GpxPipeline {
    * still know its ascent.
    */
   public ProcessedWithClimb processWithClimb(Path source, String name, ElevationQuality quality) {
-    DenseResult dense = processDense(source, name, quality, false);
+    DenseResult dense = processDense(source, name, quality, false, false);
     PathSimplifier.Simplified simplified =
         PathSimplifierJvm.simplifyWithIndices(dense.path(), 3.0, 3.0);
     double[] climb = RouteDetailsTrack.pick(dense.climb(), simplified.getIndices());
@@ -234,22 +296,27 @@ public class GpxPipeline {
    * @param answer the answer {@code path} comes from, null when the original elevations were kept
    * @param probed whether {@code answer} is that of a probe of the elevation, sent in place of a
    *     degenerate track: its points are not those of {@code path}
+   * @param edges the street edges of the answer, when asked for and given
    */
   private record DenseResult(
       Path path,
       double[] climb,
       double fallbackAfterErrorKm,
       RouteDetailsTrack.@Nullable Dense answer,
-      boolean probed) {
+      boolean probed,
+      @Nullable NetworkEdgesAnswer edges) {
 
     /** The original elevations kept. */
     DenseResult(Path path, double[] climb, double fallbackAfterErrorKm) {
-      this(path, climb, fallbackAfterErrorKm, null, false);
+      this(path, climb, fallbackAfterErrorKm, null, false, null);
     }
   }
 
+  /** A usable answer and the street edges it carried. */
+  private record Answered(RouteDetailsTrack.Dense dense, @Nullable NetworkEdgesAnswer edges) {}
+
   private DenseResult processDense(
-      Path source, String name, ElevationQuality quality, boolean withSurface) {
+      Path source, String name, ElevationQuality quality, boolean withSurface, boolean withEdges) {
     if (source.getSize() == 0) {
       return fallback(source, 0.0, false);
     }
@@ -257,35 +324,60 @@ public class GpxPipeline {
         quality == ElevationQuality.FAST ? RouteDetailsProfile.FAST : RouteDetailsProfile.FULL;
     double wholeKm = Math.max(source.getTotalDistance() / 1000.0, Double.MIN_VALUE);
     if (source.getSize() < 2 || source.getTotalDistance() < MIN_LENGTH_M) {
-      RouteDetailsTrack.Dense probe =
-          read(RouteDetailsTrack.probe(source, PROBE_M), name, profile, false);
-      if (probe == null) {
+      Answered probed = read(RouteDetailsTrack.probe(source, PROBE_M), name, profile, false, false);
+      if (probed == null) {
         return fallback(source, wholeKm, false);
       }
+      RouteDetailsTrack.Dense probe = probed.dense();
       Path flat = RouteDetailsTrack.flat(source, probe.path());
       ElevationGainJvm.annotate(flat);
+      // Too short for a document of edges: one without any, so that nothing asks again
       return new DenseResult(
-          flat, ElevationGainJvm.cumulativeGain(flat), probe.fallbackAfterErrorKm(), probe, true);
+          flat,
+          ElevationGainJvm.cumulativeGain(flat),
+          probe.fallbackAfterErrorKm(),
+          probe,
+          true,
+          withEdges ? NetworkEdgesAnswer.tooShort(source.getTotalDistance()) : null);
     }
-    RouteDetailsTrack.Dense dense =
-        read(RouteDetailsTrack.densify(source, SENT_MAX_GAP_M), name, profile, withSurface);
-    if (dense == null) {
+    Answered answered =
+        read(
+            RouteDetailsTrack.densify(source, SENT_MAX_GAP_M),
+            name,
+            profile,
+            withSurface,
+            withEdges);
+    if (answered == null) {
       return fallback(source, wholeKm, true);
     }
-    return new DenseResult(dense.path(), dense.climb(), dense.fallbackAfterErrorKm(), dense, false);
+    RouteDetailsTrack.Dense dense = answered.dense();
+    return new DenseResult(
+        dense.path(), dense.climb(), dense.fallbackAfterErrorKm(), dense, false, answered.edges());
   }
 
   /**
    * The answer for {@code sent}, or null, logged, when the call failed or the answer is unusable.
    */
-  private RouteDetailsTrack.@Nullable Dense read(
-      RouteDetailsTrack.Sent sent, String name, RouteDetailsProfile profile, boolean withSurface) {
+  private @Nullable Answered read(
+      RouteDetailsTrack.Sent sent,
+      String name,
+      RouteDetailsProfile profile,
+      boolean withSurface,
+      boolean withEdges) {
     try {
       RouteDetailsResponse response =
-          routeDetails.details(sent.lat(), sent.lon(), options(profile, withSurface));
+          routeDetails.details(sent.lat(), sent.lon(), options(profile, withSurface, withEdges));
       RouteDetailsTrack.Dense dense = RouteDetailsTrack.toDense(sent.lat(), sent.lon(), response);
       logAnswer(response, dense, name, sent.size());
-      return dense;
+      NetworkEdgesAnswer edges = null;
+      if (withEdges) {
+        try {
+          edges = edgesIn(response, name);
+        } catch (RuntimeException ex) {
+          LOG.errorf(ex, "Street edges of %s unreadable, the profile is kept", name);
+        }
+      }
+      return new Answered(dense, edges);
     } catch (RouteDetailsException e) {
       if (e.kind() == RouteDetailsException.Kind.BUG) {
         LOG.errorf(
@@ -315,15 +407,49 @@ public class GpxPipeline {
    * catch-up that follows does.
    *
    * @param withSurface all three sections, the {@code typology} included
+   * @param withEdges {@code options.edges}, and the typology too: its segments say what stayed
+   *     unmatched
    */
-  private static RouteDetailsOptions options(RouteDetailsProfile profile, boolean withSurface) {
+  private static RouteDetailsOptions options(
+      RouteDetailsProfile profile, boolean withSurface, boolean withEdges) {
     // accept_partial in fast only: Mapterhorn elevations rather than a 503 when the typology is
     // down; in full, an outage is a 503 and the catch-up retries it
     RouteDetailsOptions options =
         RouteDetailsOptions.of(profile, profile == RouteDetailsProfile.FAST);
-    return withSurface
-        ? options
-        : options.withSections(List.of(RouteDetailsSection.ELEVATION, RouteDetailsSection.SUMMARY));
+    RouteDetailsOptions sections =
+        withSurface || withEdges
+            ? options
+            : options.withSections(
+                List.of(RouteDetailsSection.ELEVATION, RouteDetailsSection.SUMMARY));
+    return withEdges ? sections.withEdges(true) : sections;
+  }
+
+  /**
+   * The edges of an answer asked with them, null (and logged) when it carries none: the gateway
+   * leaves the option out of a request to a service below api 1.7, which is no failure.
+   */
+  private @Nullable NetworkEdgesAnswer edgesIn(RouteDetailsResponse response, String name) {
+    NetworkEdgesAnswer answer = NetworkEdgesAnswer.of(response);
+    if (answer != null && answer.dropped()) {
+      LOG.warnf("Street edges of %s dropped by the stitcher, none stored", name);
+    } else if (answer == null) {
+      if (routeDetails.supportsEdges()) {
+        LOG.warnf("osm-route-details answered no edges for %s though it announces them", name);
+      } else {
+        LOG.debugf("osm-route-details serves no edges, none stored for %s", name);
+      }
+    }
+    return answer;
+  }
+
+  /** For the tests: flips the switch of {@code pedalons.network-edges.enabled}. */
+  public void setEdgesEnabledForTest(boolean enabled) {
+    this.edgesEnabled = enabled;
+  }
+
+  /** Whether an {@code HD} call asks for edges and the service announces them (api 1.7). */
+  public boolean edgesAvailable() {
+    return edgesEnabled && routeDetails.supportsEdges();
   }
 
   /**
