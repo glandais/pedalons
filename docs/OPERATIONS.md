@@ -768,9 +768,12 @@ GPS push). **Off by default**: `NETWORK_EDGES_BACKFILL_ENABLED=true` to start it
 slice is one call: about 3.7 days for 2,656 routes) to size it. Watch the memory of
 `osm-route-details` (the `OPS-58` figures) while it runs before raising the cap. It stops by itself
 while the edges are off or the service announces none (a warning), and what it queued is put off an
-hour without using attempts. **Switch it off for a deploy**: during a rolling update the previous
-release serves its rows with a full recompute (one route pushed again to the GPS services, no
-document written, queued again by the next pass), at most the 5 rows of its 10-minute window.
+hour without using attempts. **Only a release from before the backfill must not see its rows**:
+such a release serves a `backfill` row with a full recompute (the route pushed again to the GPS
+services, its profile rewritten, no document written, queued again by the next pass), up to the
+rows of the 10-minute window (5 at 30 an hour). Hence: switch it on only once the first release that
+has it (`API-198`, lot 1) runs alone, and switch it off before rolling back to a release from
+before it. Between two releases that both have it, leave it running through the deploys.
 
 - **Follow it**: the log line `Network edges backfill: N queued; left N route(s) (N km); given up
   N`, the gauge `pedalons_network_edges_backfill_remaining`, the counters

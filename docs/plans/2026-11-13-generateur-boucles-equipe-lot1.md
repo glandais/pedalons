@@ -425,7 +425,7 @@ back with another candidate query (routes only, no previews):
 | Situation | What happens |
 |---|---|
 | New backend, osm-route-details still 1.6 | `supportsEdges()` is false: no option is sent, the backfill does not run. Nothing changes until the image moves. |
-| Old and new backends side by side (about 1 min) | The old one ignores the column. A backfill row it claims gets the **full** recompute: one route pushed again to GPS and its row deleted, with no document written, so the next pass queues it again. That is at most the `WINDOW` (5 rows at 30/h), and only while the backfill is switched on during the deploy. Recommended: deploy with the backfill off, or accept this. |
+| Old and new backends side by side (about 1 min) | The old one ignores the column. A backfill row it claims gets the **full** recompute: one route pushed again to GPS and its row deleted, with no document written, so the next pass queues it again. That is at most the `WINDOW` (5 rows at 30/h). It only happens when the old backend is from **before lot 1**: the first deploy of lot 1 (the backfill is off by default, so switch it on only once the new release runs alone) or a rollback to before lot 1 (switch it off first). Between two releases that both have lot 1, both serve the rows edges-only: leave it running. |
 | Image upgraded after the backend | The capabilities are refetched within one hour, and the edges come from the next catch-up. |
 | Image rolled back to 1.6 | At most one failed `full` attempt (400), then the cache is invalidated; backfill rows are postponed without an attempt; the HD catch-ups go on without edges. |
 | Backend rolled back to before V91 | The column stays (additive) and is unread. On redeploy, the documents are still valid by `rev`. |
