@@ -873,8 +873,9 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       `RouteGeneratorQueryCountTest`, `RouteExcludedFromGeneratorResourceTest`. Restent : le banc sur
       données réelles (seuils, Suurballe, temps, mémoire du plus gros graphe, `EXPLAIN` de l'empreinte,
       lacets à deux chaussées acceptés sous 15 m et de 15 à 30 m), les clés `pedalons.route-generator.*`
-      dans `docs/OPERATIONS.md`, et la décision 403 ou 404 pour une personne non membre (le code suit
-      `PlannerAccess` : 403).
+      dans `docs/OPERATIONS.md`. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
+      de `PlannerAccess`), les parcours masqués par la modération alimentent le réseau, une copie
+      garde la case d'exclusion.
 
 ### Heure de départ : audit du 7 novembre 2026
 

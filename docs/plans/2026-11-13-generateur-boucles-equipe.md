@@ -368,7 +368,7 @@ le parcours est possible ensuite ; hors périmètre de ce plan.
   d'une base migrée et sort taux de réussite, écart de distance et de cap, temps. Sert à régler β, les pénalités et
   les seuils, et à valider le §3.1 avant le site.
 - **Backend** : construction du graphe à partir de `network_edges` fictifs, cache invalidé à
-  l'enregistrement et à la suppression d'un parcours, droits (non-membre 404, planificateur coupé),
+  l'enregistrement et à la suppression d'un parcours, droits (non-membre 403 comme le planificateur, décision du 14 novembre 2026, planificateur coupé),
   nombre de requêtes. À lancer par le propriétaire (règle du dépôt).
 - **Site** : Vitest sur le panneau ; un e2e qui génère sur une équipe semée de quelques parcours.
 
