@@ -27,6 +27,24 @@
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
 			</array>
 		</dict>
+		<!-- The position a member attaches to an ad (ad editor, POST/PUT
+		     /api/teams/{slug}/classifieds, locationGeometry): the coordinates of an address the
+		     member searched and picked — often their home. Stored exact against the ad and its
+		     author; other members only ever get a ~1 km sector. A place the member designates,
+		     not a position read from the device: an address, not a PreciseLocation
+		     (data-safety.md §4 and §7, ledger MOB-159). -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhysicalAddress</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 		<!-- Display name chosen at registration, shown to the user's teammates. -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
@@ -82,8 +100,8 @@
 		     so it is not a location history and adds no PreciseLocation row (data-safety.md §7);
 		     posts an organizer writes in the post editor (POST/PUT /api/teams/{slug}/posts);
 		     ads a member writes in the ad editor (POST/PUT /api/teams/{slug}/classifieds) — the
-		     position a member picks for an ad is NOT covered by this row and its declaration is
-		     still to be decided (data-safety.md #25, ledger MOB-159).
+		     position a member picks for an ad is NOT covered by this row: it is the
+		     PhysicalAddress row below (data-safety.md #25).
 		     All user-generated, all stored against the account, used only to run the app and moderate
 		     it. -->
 		<dict>

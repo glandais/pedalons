@@ -351,20 +351,24 @@ n'ont aucun appelant d'écran).
       stack (certificat mkcert ajouté au simulateur), `PEDALONS_WEBAUTHN_RP_ID` et
       `--dart-define=WEBAUTHN_RP_ID` réglés dessus, une variante d'entitlements de debug
       (`?mode=developer`) et un pas « visage reconnu » lancé par l'hôte.
-- [ ] `MOB-159` **Éditeur d'annonce : déclaration des stores à trancher, recette sur appareil et test
-      Patrol (S)** — `MOB-158` n'est couvert que par les tests unitaires et de widget. **Avant toute
-      publication sur les stores** : l'app envoie désormais la **position exacte** qu'un membre
-      choisit pour son annonce (une adresse, souvent la sienne), gardée exacte côté serveur et
-      rattachée au compte. Ce n'est pas la position de l'appareil, mais Apple (*Physical Address* ou
-      *Precise Location*) et Play (*Personal info → Address* ou *Location*) peuvent l'entendre comme
-      une donnée de localisation : rien n'est déclaré aujourd'hui, `data-safety.md` (#25) le note
-      comme **non tranché**. Décider, puis mettre à jour `PrivacyInfo.xcprivacy` et les deux
-      formulaires. Ensuite, à la main, en simple membre, clair et sombre : publier une annonce avec
-      photo et position, la retrouver en brouillon, la publier, la modifier, la dépublier, la
-      supprimer ; en administrateur, modifier l'annonce d'une autre personne **sans toucher à la
-      position** et vérifier côté auteur que le point exact est intact ; vérifier que le lien
-      `…/annonces/nouvelle` ouvre l'éditeur (iOS et Android). Un test Patrol `ad_editor_test`.
-      Clés dans `keys.adEditor` / `keys.adManage`.
+- [ ] `MOB-159` **Éditeur d'annonce : déclarer l'adresse sur les deux stores, recette sur appareil et
+      test Patrol (S)** — la déclaration est **tranchée et écrite dans le dépôt** (voir la part
+      livrée sous le même ID) ; reste ce qui se fait hors du dépôt ou sur un appareil.
+      **Avant la prochaine soumission** : (1) App Store Connect → App Privacy, ajouter *Contact Info
+      → Physical Address* (lié, sans suivi, App Functionality) — `app-privacy.json` le porte en
+      `PHYSICAL_ADDRESS`, jeton déduit des autres entrées et **jamais passé par `asc`** : le
+      vérifier à l'application, comme `OTHER_DATA` l'avait été ; (2) Play Console → Sécurité des
+      données, importer `data-safety.csv` (*Informations personnelles → Adresse* : collectée, non
+      partagée, non éphémère, facultative, fonctionnement de l'appli). (3) **Vérifier les journaux
+      d'accès de production** : la politique parle de journaux gardant la « page demandée »
+      14 jours ; si un proxy devant le backend journalise l'URL avec `?q=…` de
+      `/api/geocode/search`, le texte de recherche est conservé avec une IP et la réponse « pas de
+      *Search History* » de `data-safety.md` §4 est à revoir. Ensuite, à la main, en simple membre,
+      clair et sombre : publier une annonce avec photo et position, la retrouver en brouillon, la
+      publier, la modifier, la dépublier, la supprimer ; en administrateur, modifier l'annonce
+      d'une autre personne **sans toucher à la position** et vérifier côté auteur que le point
+      exact est intact ; vérifier que le lien `…/annonces/nouvelle` ouvre l'éditeur (iOS et
+      Android). Un test Patrol `ad_editor_test`. Clés dans `keys.adEditor` / `keys.adManage`.
 - [ ] `MOB-157` **Éditeur de publication : recette sur appareil et test Patrol (S)** — `MOB-156` n'est
       couvert que par les tests unitaires et de widget : ni le sélecteur de photos ni l'envoi réel
       n'ont tourné. À la main, en organisateur, clair et sombre : créer une publication depuis le
@@ -1725,6 +1729,14 @@ l'app mobile, un changement n'y apparaît qu'avec la build suivante.
 La politique réécrite pour la mesure d'audience (`LEGAL-19`) est en ligne ; ce qui reste de la mise
 en service (précondition du §5.3 du plan, vérifications de l'étape 6) est sous `OPS-41`.
 
+- [ ] `LEGAL-29` **La politique dit le point exact d'une annonce visible de l'administration, ce
+      qui n'est plus vrai (XS)** — `privacy/privacy-policy.{fr,en}.md` l. 92 : « il n'est visible
+      précisément que de vous, des personnes ayant le rôle Administrateur dans votre équipe et de
+      l'administration de la plateforme ». Depuis `SEC-26`, `AdEditDto.locationGeometry` n'est
+      exact que pour la personne qui a publié l'annonce ; toute autre personne qui la modifie reçoit
+      le point flouté. La politique promet moins que ce qui est fait, donc sans risque, mais elle
+      est inexacte. Relevé le 14 novembre 2026 en instruisant `MOB-159`. À corriger en parité
+      FR/EN ; le texte étant un asset de l'app, il n'y paraît qu'à la build suivante.
 - [ ] `LEGAL-28` **La politique ne parle pas des applications externes autorisées par OAuth (S)** —
       depuis `API-199` un membre peut ouvrir son compte à une application tierce
       (`/oauth/authorize`) : `privacy/privacy-policy.{fr,en}.md` §6 n'en dit rien (ni l'accès donné,

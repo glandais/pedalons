@@ -13,8 +13,8 @@ from:
 
 - **App**: Pédalons, `fr.pedalons.mobile`, version `1.0.0+57` (`mobile/pubspec.yaml`)
 - **Backend**: `https://www.pedalons.fr` (`mobile/lib/config/app_config.dart`)
-- **Last verified against the code**: 2026-11-14 (ad editor, `MOB-158` — `lib/features/ads/`,
-  **with one declaration left open, see #25**; post editor, `MOB-156` —
+- **Last verified against the code**: 2026-11-14 (ad editor, `MOB-158` — `lib/features/ads/`, and
+  the declaration of an ad's position as an address, `MOB-159`, #25; post editor, `MOB-156` —
   `lib/features/posts/`; before that 2026-10-17: route editor and GPX import, `MOB-79` —
   `lib/features/routes/`; before that 2026-09-27: problem reports and automatic error reports,
   `lib/features/feedback/`, `lib/core/logging/`, backend `FeedbackService`)
@@ -176,7 +176,7 @@ Everything below leaves the device to `https://www.pedalons.fr` unless stated ot
 | 22 | **Ride images and attachments** | Same editor → `POST /api/teams/{slug}/assets`: a photo from the library (`image_picker`, logo and images) or any file from the document picker (`file_picker`, attachments) | Yes | Yes |
 | 23 | **Routes written by organizers** | Route editor (`lib/features/routes/presentation/pages/route_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/routes`, multipart: name, markdown description, surface, visibility, tags, images and attachments through the path of #22, and the **GPX file** (`file_picker`) — its track and waypoints, the timestamps, sensor measurements and metadata being removed by the server before anything is stored. Organizers and administrators of the team only | Yes | Yes |
 | 24 | **Posts written by organizers** | Post editor (`lib/features/posts/presentation/pages/post_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/posts`: title, markdown text, date, visibility, tags, signature (team or author), and photos and attachments through the path of #22. Organizers and administrators of the team only | Yes | Yes |
-| 25 | **Ads written by members** | Ad editor (`lib/features/ads/presentation/pages/ad_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/classifieds`: title, type, price, markdown description, a free-text place, tags, photos and attachments through the path of #22 — any member of the team. **And a position**: the member searches an address (`GET /api/geocode/search`, the typed text goes to the Pédalons server, which relays it to Stadia Maps; the device never calls the provider) and the picked address's coordinates are sent as `locationGeometry`. The server stores the **exact** point against the ad and its author and shows other members a ~1 km sector only. The device's own position is **not** read. **Declaration not decided (ledger `MOB-159`)**: this is a user-typed address, not a device location, yet it is an exact point, often the member's home, linked to the account — Apple *Physical Address* or *Precise Location*, Play *Personal info → Address* or *Location*. Nothing is declared for it today; decide before the next store submission | Yes | Yes |
+| 25 | **Ads written by members** | Ad editor (`lib/features/ads/presentation/pages/ad_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/classifieds`: title, type, price, markdown description, a free-text place, tags, photos and attachments through the path of #22 — any member of the team. **And a position**: the member searches an address (`GET /api/geocode/search`, the typed text goes to the Pédalons server, which relays it to Stadia Maps; the device never calls the provider) and the picked address's coordinates are sent as `locationGeometry`. The server stores the **exact** point against the ad and its author and shows other members a ~1 km sector only. The device's own position is **not** read. **Declared as an address** (decision of 2026-11-14, ledger `MOB-159`): Apple *Physical Address*, Play *Personal info → Address* — see §4 and §5, and §7 for why it is not a location. The rest of the ad is *Other User Content* and *Photos or Videos* like #21–#22 | Yes | Yes |
 | 10 | **Approximate location** | `geolocator` at `LocationAccuracy.low`, while in use, only when the user turns on the "around me" filter — becomes the `nearLat`/`nearLon`/`nearRadius` query parameters | Yes, as query parameters of a read request | **No** — not stored server-side, not written to the account |
 
 Stored **on device only**, never transmitted:
@@ -212,10 +212,11 @@ value is invented.
 |---|---|---|---|---|
 | `NSPrivacyCollectedDataTypeEmailAddress` | `true` | `false` | `…PurposeAppFunctionality` | inventory #1 |
 | `NSPrivacyCollectedDataTypeName` | `true` | `false` | `…PurposeAppFunctionality` | #3 |
+| `NSPrivacyCollectedDataTypePhysicalAddress` | `true` | `false` | `…PurposeAppFunctionality` | #25 (the position of an ad) |
 | `NSPrivacyCollectedDataTypeUserID` | `true` | `false` | `…PurposeAppFunctionality` | #4, #5, #7 |
-| `NSPrivacyCollectedDataTypeOtherUserContent` | `true` | `false` | `…PurposeAppFunctionality` | #6, #13, #14, #15, #20, #21, #22 (attachments), #23, #24 |
+| `NSPrivacyCollectedDataTypeOtherUserContent` | `true` | `false` | `…PurposeAppFunctionality` | #6, #13, #14, #15, #20, #21, #22 (attachments), #23, #24, #25 (the ad itself) |
 | `NSPrivacyCollectedDataTypeOtherDataTypes` | `true` | `false` | `…PurposeAppFunctionality` | #8 |
-| `NSPrivacyCollectedDataTypePhotosorVideos` | `true` | `false` | `…PurposeAppFunctionality` | #9, #22 (images), #24 (a post's photos) |
+| `NSPrivacyCollectedDataTypePhotosorVideos` | `true` | `false` | `…PurposeAppFunctionality` | #9, #22 (images), #24 (a post's photos), #25 (an ad's photos) |
 | `NSPrivacyCollectedDataTypeCoarseLocation` | **`false`** | `false` | `…PurposeAppFunctionality` | #10 |
 | `NSPrivacyCollectedDataTypeDeviceID` | `true` | `false` | `…PurposeAppFunctionality` | #11, #12 |
 | `NSPrivacyCollectedDataTypeCrashData` | `true` | `false` | `…PurposeAppFunctionality` | #18 |
@@ -257,7 +258,7 @@ plutil -lint mobile/ios/Runner/PrivacyInfo.xcprivacy
 
 ## 4. App Store Connect → App Privacy
 
-Answer **"Yes, we collect data from this app"**, then declare exactly these eleven, none used for
+Answer **"Yes, we collect data from this app"**, then declare exactly these twelve, none used for
 **Tracking**, all purpose **App Functionality**. All are **Data Linked to You** except Coarse
 Location, which is **Data Not Linked to You**:
 
@@ -265,6 +266,7 @@ Location, which is **Data Not Linked to You**:
 |---|---|---|---|---|
 | Contact Info | Email Address | Yes | No | App Functionality |
 | Contact Info | Name | Yes | No | App Functionality |
+| Contact Info | Physical Address | Yes | No | App Functionality |
 | Identifiers | User ID | Yes | No | App Functionality |
 | User Content | Other User Content | Yes | No | App Functionality |
 | User Content | Photos or Videos | Yes | No | App Functionality |
@@ -316,6 +318,31 @@ you import*). What is collected is therefore a geometry, which no longer says *w
 *where* — neither a location history nor a log of movements. *Coarse Location* is untouched.
 `app-privacy.json` is **unchanged**.
 
+**The position of an ad is a *Physical Address*, not a location** (2026-11-14, `MOB-159`, #25).
+A member who publishes an ad may search an address and attach its position. It has to be declared:
+the point leaves the device, is stored exact against the ad and its author, and publishing an ad
+is a function of the app — Apple's optional-disclosure exemption does not apply. *Physical
+Address* — "such as home address, physical address, or mailing address" — is the type, because
+that is what the member gives: a place they designate by typing an address, often their home.
+*Precise Location* was considered and rejected: Apple defines it as "the location of a user or
+device", and nothing here is measured on the device — the same reasoning as for a route (§7). The
+argument for the other reading is noted so it is not rediscovered: what the server stores is a
+pair of coordinates at full precision, not an address string, and for a home it does say where a
+user lives. Declaring both was rejected as over-declaring, and *Precise Location* would contradict
+the coarse-only permission. The ~1 km blur changes nothing here: it limits what other members
+see, not what is collected. `app-privacy.json` carries it as `PHYSICAL_ADDRESS` — a token inferred
+from the other entries and **not yet accepted by an `asc` run**: check it at the next apply, as
+`OTHER_DATA` once had to be.
+
+**The address search adds no *Search History*.** The text typed in the ad editor's address search
+goes to our backend, which relays it to Stadia Maps from the server's IP. The backend attaches it
+to no account and writes it nowhere: an in-memory cache keyed by the normalised query, shared by
+all accounts, for 24 hours (`GeocodingLookup`). Stadia Maps has no code in the app. The app's
+other text searches (ads, rides, members) are not declared either. **One thing was not verified**:
+whether anything in front of the backend in production logs full request URLs — the policy
+mentions 14-day access logs holding the "page requested". If it does, the query would be kept with
+an IP address and this answer has to be revisited.
+
 *Device ID* covers the **push registration token** and the device model sent with it (#11, #12) —
 not an advertising identifier, which the app still never reads.
 
@@ -354,6 +381,7 @@ per-row, because approximate location is the one type that is processed ephemera
 | Personal info | Name | Yes | No | Required | App functionality, Account management |
 | Personal info | Email address | Yes | No | Required | App functionality, Account management |
 | Personal info | User IDs | Yes | No | Required | App functionality, Account management, Fraud prevention, security, and compliance |
+| Personal info | Address | Yes | No | Optional | App functionality |
 | App activity | Other actions | Yes | No | Optional | App functionality |
 | App activity | Other user-generated content | Yes | No | Optional | App functionality, Fraud prevention, security, and compliance |
 | Messages | Other in-app messages | Yes | No | Optional | App functionality |
@@ -381,6 +409,15 @@ are *Other User Content*. Nobody has to attach a file or create a route, and the
 shared** beyond the service: it is shown to the ride's or the route's readers, inside the app. The
 GPX adds no *Location* row: it is published as a team route and stored without timestamps, and
 the app reads no device position for it (see §4, *GPX import adds no data type*, and §7).
+
+*Address* (2026-11-14, `MOB-159`, #25) is **optional** and covers the **position a member attaches
+to an ad**: Google's "a user's address, such as a mailing or home address". Nobody has to publish
+an ad, and an ad needs no position. It is **not shared**: other members only see a ~1 km sector
+inside the app, and Stadia Maps, which turns the typed address into coordinates, is called by our
+backend as a service provider — which Google does not count as sharing. It is not *Location →
+Precise location*: Google's definition is the "user or device physical location", and the app
+reads no device position for it (§4, §7). No *In-app search history* row for the address search,
+for the reasons given in §4. `data-safety.csv` carries it as `PSL_ADDRESS`.
 
 *Approximate location* is **optional** and **processed ephemerally**: it is read only when the user
 turns on the "around me" filter, sent as `nearLat`/`nearLon`/`nearRadius` on a read request, and
@@ -505,6 +542,11 @@ rather than this table when it changes.
 publishes them to a private GitHub repository: GitHub is a sub-processor of the *backend*, named in
 the privacy policy (§4 and the US transfer in §5), not a third party of the app binary.
 
+**Stadia Maps is never contacted by the app.** The ad editor's address search (#25) goes to our
+backend (`/api/geocode/*`), which calls Stadia Maps from the server: it sees the typed text, the
+language and the server's IP address, never the device's nor an account identifier. Like GitHub,
+it is a sub-processor of the *backend*, named in the privacy policy.
+
 FCM is a genuine **sub-processor**: it does not merely see an IP address, it carries the message.
 The map providers are independent controllers of a request the device makes; none receives an
 account identifier. Both are in the published policy since 2026-09-21 (§4 *Technical service
@@ -520,7 +562,7 @@ a dependency. Do not bring it back — it would re-open a US transfer for a type
 
 | Not declared | Why |
 |---|---|
-| Precise Location | Only `ACCESS_COARSE_LOCATION` is requested and only `LocationAccuracy.low` is used; `ACCESS_FINE_LOCATION` is stripped from the merged manifest. No background location, no ride recording, no user-location puck. Route coordinates are **downloaded** for display; describing where a *route* is is not describing where the *user* is. **The GPX an organizer imports (`MOB-79`, #23) does not change that**: the file may come from a ride the organizer recorded, but it is published as a team route for the members, the app reads no device position to produce it, and the server keeps only the geometry — timestamps, sensor measurements and file metadata are removed before storing (`GpxSanitizer`, policy § *GPX files you import*) — so what is collected is neither a location history nor a log of movements. |
+| Precise Location | Only `ACCESS_COARSE_LOCATION` is requested and only `LocationAccuracy.low` is used; `ACCESS_FINE_LOCATION` is stripped from the merged manifest. No background location, no ride recording, no user-location puck. Route coordinates are **downloaded** for display; describing where a *route* is is not describing where the *user* is. **The GPX an organizer imports (`MOB-79`, #23) does not change that**: the file may come from a ride the organizer recorded, but it is published as a team route for the members, the app reads no device position to produce it, and the server keeps only the geometry — timestamps, sensor measurements and file metadata are removed before storing (`GpxSanitizer`, policy § *GPX files you import*) — so what is collected is neither a location history nor a log of movements. **The position of an ad (`MOB-158`, #25) does not change that either**: it is an address the member types and picks, declared as *Physical Address* / *Address* (§4, §5); the device's position is not read to produce it. |
 | Videos | `image_picker` is restricted to still images (`pickImage`) for the avatar and a ride's logo and images; no video is ever read. |
 | Camera | No `NSCameraUsageDescription` and no camera permission — the photo library is the only entry point. |
 | Fitness / Health | No HealthKit, no Motion & Fitness, no activity recording. |
@@ -528,7 +570,8 @@ a dependency. Do not bring it back — it would re-open a US transfer for a type
 | Product Interaction / Usage / Advertising Data | No analytics or advertising SDK of any kind. |
 | Performance Data | Nothing measured: no timings, no frame stats. (Crash Data *is* declared since 2026-09-27, #18.) |
 | Purchase History / Payment Info | No purchases in the app. |
-| Emails or Text Messages, Contacts, Audio, Search History, Browsing History | No corresponding capability. |
+| Emails or Text Messages, Contacts, Audio, Browsing History | No corresponding capability. |
+| Search History | The app has text searches, the ad editor's address search among them (#25), but none is kept against the account: see §4, *The address search adds no Search History*, and the unverified point about production access logs there. |
 
 ---
 
@@ -544,6 +587,8 @@ these ships:
 | Trip authoring (comments are already declared, #13; ride authoring since `MOB-80`, #21–#22; route authoring since `MOB-79`, #23; post authoring since `MOB-156`, #24) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
 | A screenshot or attachment on a report, or automatic moderation of images or text beyond the word filter | Apple `…PhotosorVideos` already covers images, but re-read §4 for the purpose; Play *Photos*; any third-party moderation service is a new sub-processor for the policy |
 | GPX **import** from the device | Delivered by `MOB-79` for a team route an organizer publishes (#23): Play *Files and docs* and Apple `…OtherUserContent`, both declared; no Precise Location: the file may come from a recorded ride, but it is published as a route for the members, no device position is read and the server keeps only the geometry (timestamps, sensor data and metadata are stripped before storing). **Precise Location (Apple `…PreciseLocation`, Play *Location → Precise location*) becomes due** if the app imports **activities** as the user's own history, if the server starts keeping timestamps, or if the app records a ride. Any other import (FIT, a GPX outside the route editor) is a new audit |
+| Offering the **device's position** as the position of an ad ("use my location"), or any other stored position read from the device | Apple `NSPrivacyCollectedDataTypePreciseLocation`, linked; Play *Location → Precise location*, collected, not ephemeral. The *Physical Address* / *Address* rows of #25 only hold while the position is an address the member types |
+| Keeping what a member searches (address search, list searches) against their account, or logging request URLs with their query | Apple `NSPrivacyCollectedDataTypeSearchHistory`; Play *App activity → In-app search history* |
 | Live location / "record a ride" / follow-me on the map / a MapLibre user-location puck | Apple `NSPrivacyCollectedDataTypePreciseLocation` (and flip Coarse Location's `Linked` if it becomes persisted); Play *Location → Precise location* and drop the *processed ephemerally* flag; stop stripping `ACCESS_FINE_LOCATION`; `NSLocationAlwaysAndWhenInUseUsageDescription` if it ever runs in the background |
 | Storing the user's position server-side (saved "home area", proximity history) | flip Apple `NSPrivacyCollectedDataTypeCoarseLocation` → `Linked: true` and clear Play's *processed ephemerally* |
 | Any other Firebase product (Analytics, Crashlytics, Remote Config, In-App Messaging) | It is no longer "no Firebase, full stop": re-read §1, and expect Apple `…ProductInteraction` / `…CrashData` and Play *App info and performance* to become due |

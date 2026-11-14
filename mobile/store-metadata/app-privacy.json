@@ -20,6 +20,15 @@
       ]
     },
     {
+      "category": "PHYSICAL_ADDRESS",
+      "purposes": [
+        "APP_FUNCTIONALITY"
+      ],
+      "dataProtections": [
+        "DATA_LINKED_TO_YOU"
+      ]
+    },
+    {
       "category": "USER_ID",
       "purposes": [
         "APP_FUNCTIONALITY"
