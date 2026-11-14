@@ -201,6 +201,10 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       quand l'appartenance change. Reste à faire tourner Patrol
       (`private_team_public_ride_test.dart`) avant de ranger l'entrée.
 
+- [ ] `MOB-154` **Générer un parcours depuis l'app (M, plus tard)** — l'app n'a ni éditeur de
+      parcours ni aperçus GPX ; un écran qui crée directement le parcours depuis une proposition
+      d'`API-198`. Plan [`2026-11-13-generateur-boucles-equipe.md`](plans/2026-11-13-generateur-boucles-equipe.md) §8.
+
 ### Heure de départ : audit du 7 novembre 2026
 
 Audit de la visibilité de la date et de l'heure de départ (sortie, groupe, voyage, étape) sur les
@@ -631,6 +635,10 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       `permissions.indexable`. Reste à faire tourner les specs e2e écrites
       (`private-team-public-content.e2e.ts`, `flow-rides.e2e.ts`) avant de ranger l'entrée.
 
+- [ ] `WEB-179` **Panneau « Générer un parcours » (M)** — départ, arrivée, rose des vents, distance, fréquentation, trois
+      propositions sur la carte avec le réseau de l'équipe en fond, ouverture dans l'éditeur comme
+      ligne importée (pas d'ancres reroutées par Stadia). Dépend d'`API-198`. Plan [`2026-11-13-generateur-boucles-equipe.md`](plans/2026-11-13-generateur-boucles-equipe.md) §7.
+
 ### Heure de départ : audit du 7 novembre 2026
 
 Pendant web de `MOB-111` à `MOB-116` ; la règle commune est `BRAND-8`.
@@ -707,17 +715,6 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       worker (`WeatherFetchWorker` sert le passage le plus proche d'abord, sans distinguer l'origine),
       et un cache d'échantillons à 1 000 entrées (`weather-preview-samples`) qui, au-delà, relit
       `tracks` à chaque passage. Dans `service/gpx/PreviewDepartures.checkQuota` et `WeatherPlanner`.
-- [ ] `API-175` **Retirer la colonne `elevation_refresh.backfill` et la priorité qui la lit (S)** —
-      plus rien n'écrit `backfill = true` depuis le retrait de `RouteDetailsBackfill` (`API-174`),
-      mais `ElevationRefreshWorker.processDue` sert encore deux classes de demandes,
-      `claimNextRoute` / `claimNextPreview` filtrent sur la colonne, le `upsert` la remet à faux et
-      la liste des abandons (`ABANDONED`) inclut une ligne `backfill` quelle que soit son état.
-      Deux versions, pour le déploiement progressif : d'abord le code (un seul passage, plus de
-      filtre, entité sans le champ ; la colonne a `default false` en base, `V84`, donc les
-      insertions sans elle passent), puis la migration qui supprime la colonne, son index
-      `elevation_refresh_backfill` et l'index partiel `team_entities_pipeline_behind`, qui ne
-      servait que les candidats du recalcul. Une fois les abandons du recalcul relancés ou
-      acceptés.
 - [ ] `API-152` **D+ du service écrit dans le `Path` par une API publique de vcyclist (XS)** —
       `RouteDetailsTrack` pose le D+ et le D- d'osm-route-details avec les setters Kotlin
       `internal` de vcyclist, appelés depuis Java sous leur nom généré
@@ -826,6 +823,22 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       requête change l'appartenance (rejoindre, quitter, changer un rôle). Touche le contexte de
       sécurité de tous les endpoints d'équipe : à faire à part, avec les `…QueryCountTest` pour
       mesurer.
+
+- [ ] `API-198` **Générateur de parcours sur le réseau de l'équipe (L, backend, plus une évolution
+      d'osm-route-details)** — rien ne propose de parcours à partir d'un départ, d'une arrivée (le
+      café, ou le départ), d'un cap et d'une distance ; la recherche du 17 octobre le jugeait bridé
+      faute de graphe local. Les parcours d'une équipe forment ce graphe : apparier chaque trace à
+      des arêtes de rue (`edges[]` d'osm-route-details api `1.7`, écrit dans
+      `gpx_tracks.network_edges` par `elevation_refresh`), puis chercher des parcours sans
+      demi-tour ni impasse, réemprunt limité à un tronçon commun au départ ou à l'arrivée,
+      croisements bornés, curseur de fréquentation, à ±10 % de la distance, sans appel Stadia.
+      Endpoint `POST /api/teams/{teamSlug}/route-generator`. Décisions du 13 novembre 2026 : plan [`2026-11-13-generateur-boucles-equipe.md`](plans/2026-11-13-generateur-boucles-equipe.md). Suites : `WEB-179`, `MOB-154`.
+      Livrés le 14 novembre 2026 : lot 1 (`V91`, `NetworkEdgesBackfill`, désactivé par défaut) et
+      lot 2 (`service/route/generator`, conception [`…-conception-lot2.md`](plans/2026-11-13-generateur-boucles-equipe-conception-lot2.md)).
+      Restent : le banc sur données réelles (seuils, Suurballe, temps, lacets à deux chaussées
+      acceptés sous 15 m et de 15 à 30 m), le lot 3 (cache du graphe, endpoint,
+      `Route.excludedFromGenerator`, contrat `14.13.0`), le lot 4 (site), et l'image
+      osm-route-details à monter après le déploiement du backend.
 
 ### Heure de départ : audit du 7 novembre 2026
 
@@ -1716,6 +1729,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `API-166` | **Envoi groupé de toutes les étapes dès que la première entre dans la fenêtre** | Non (10 novembre 2026, `API-162`) | Chaque étape a sa propre fenêtre : un voyage de deux semaines déposerait d'un coup une quinzaine de parcours, dont la plupart resteraient des jours chez le service. À rouvrir si la recette montre qu'on veut tout le voyage sur le compteur avant de partir |
 | `API-167` | **Aligner le séparateur des sorties (` · `) sur celui des étapes (` - `)** | Non (10 novembre 2026, `API-162`) | Le nom envoyé fait partie de l'empreinte de chaque ligne (`asset_id` du GPX et nom envoyé, `API-120`) : changer le séparateur des sorties renverrait tous les parcours de toutes les connexions au tick suivant. Incohérence assumée ; à faire seulement avec un autre changement qui renvoie déjà tout |
 | `API-192` | **Les étapes de voyage dans l'app Garmin** (scindé d'`API-168`) | Non (13 novembre 2026, [plan](plans/archive/2026-11-13-karoo-alignement.md)) | Le serveur sait les donner (`registeredStages`, sur `stages=true`) et le Karoo les affiche (`API-168`). L'app Garmin ne les demande pas : sa réponse est restée la même à l'octet, son budget de mémoire n'est pas touché. Les lui donner, c'est une ligne de plus dans son menu et une réponse plus lourde à mesurer sur les 13 appareils ; à reprendre avec ses formats (`API-159`) |
+| `API-175` | **Retirer la colonne `elevation_refresh.backfill` et la priorité qui la lit** | Non (13 novembre 2026, décision du propriétaire) | Le backfill des tronçons du réseau d'équipe (`API-198`, lot 1, `NetworkEdgesBackfill`) écrit de nouveau `backfill = true` et sert ces lignes par un appel « tronçons seuls ». La colonne, son index et la priorité du worker (demandes normales d'abord, puis lignes `backfill`) restent donc utiles. À rouvrir si ce backfill est retiré à son tour |
 | `WEB-44` | **Passkey en tête du formulaire de connexion** | Ordre actuel gardé (décidé le 4 octobre 2026 avec le propriétaire) | `LoginForm` (`WEB-42`) garde email et mot de passe en tête, puis « ou », puis la passkey et le code par e-mail. Le bouton passkey n'apparaît qu'après hydratation (`browserSupportsWebAuthn`) : en tête, il décalerait le haut de l'accueil rendu côté serveur |
 | `WEB-54` | **Calendrier rendu côté serveur dans le mauvais fuseau, sans préférence `timezone`** | Accepté tel quel (décidé le 4 octobre 2026, à la dissolution de `frontend/docs/SSR-BUGS.md`) | Sans préférence `timezone`, le serveur ne connaît pas le fuseau du visiteur et rend en UTC : une sortie à 00 h 30, heure de Paris, s'affiche dans la case de la **veille**, puis change de case au rendu qui suit l'hydratation, avec le vrai fuseau (`useEffectiveTimezone`, `getServerSnapshot` en UTC ; `CalendarView`). Ce n'est pas une erreur d'hydratation : le rendu d'hydratation lit UTC des deux côtés, et le mois de la grille est calé sur `hourAlignedNow()` dans le même fuseau. Régler une préférence `timezone` supprime l'effet. Seule autre issue : ne pas rendre la grille côté serveur quand le fuseau est deviné, ce qui perd tout l'intérêt de son préchargement |
 | `WEB-58` | **Redirection des anciennes adresses du profil** (`/profil#notifications`, `/profil#gps`, `/profil/participations`) | Non (4 octobre 2026, refonte du profil `WEB-55` / `MOB-48`) | Aucun lien extérieur publié ne cite ces adresses, et les e-mails envoyés avant la refonte visaient `/profil`, toujours servi. Les liens internes (e-mails `NotificationLinks.PREFERENCES_PATH`, `FeaturesPromoCard`, aide, politique) visent les nouvelles routes `/profil/<sujet>`. À rouvrir seulement si une de ces adresses a été publiée |
