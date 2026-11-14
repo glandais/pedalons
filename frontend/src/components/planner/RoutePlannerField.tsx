@@ -32,6 +32,9 @@ import {
 import { projectOnRoute, toWaypointDto, type WaypointPlacement } from '@/lib/plannerWaypoints'
 import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
 import { MapPanelContext, useMapPanelState } from '@/components/map/mapPanelState'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { decode2 } from '@/lib/polyline'
+import { gpxFromLine } from '@/lib/routeGenerator'
 import { PlannerBottomBar } from './PlannerBottomBar'
 import { PlannerElevationStrip } from './PlannerElevationStrip'
 import { PlannerWaypointForm, type WaypointFormFields } from './PlannerWaypointForm'
@@ -91,6 +94,23 @@ interface RoutePlannerFieldProps {
    * each bump opens the fullscreen editor. Never opens by itself on load.
    */
   openRequest?: number
+  /**
+   * A route generated from the team's own roads, to load in place of the track (route generator,
+   * ledger WEB-179). Handled once per `seq`; the points are loaded as an import that keeps no file,
+   * so the save sends the planner state and draws the planner quota.
+   */
+  importRequest?: PlannerImportRequest
+  /** Told once the request is taken, so the host drops it: the field unmounts when the source switches. */
+  onImportHandled?: (seq: number) => void
+}
+
+/** A generated route handed to the planner: `seq` is bumped for each new candidate. */
+export interface PlannerImportRequest {
+  seq: number
+  /** Polyline of precision 6 (latitude then longitude). */
+  polyline: string
+  /** Name written in the GPX, the form fills its empty name field with it. */
+  name: string
 }
 
 /**
@@ -118,6 +138,8 @@ export function RoutePlannerField({
   onBusyChange,
   onImportName,
   openRequest,
+  importRequest,
+  onImportHandled,
 }: RoutePlannerFieldProps) {
   const { t } = useTranslation()
   const planner = useRoutePlanner({
@@ -462,8 +484,8 @@ export function RoutePlannerField({
   const { importGpx } = planner
   const [fitRequest, setFitRequest] = useState(0)
   const runImport = useCallback(
-    async (file: File, mode: 'replace' | 'append') => {
-      const info = await importGpx(file, mode)
+    async (file: File, mode: 'replace' | 'append', options?: { keepFile?: boolean }) => {
+      const info = await importGpx(file, mode, options)
       if (!info) return
       setFitRequest((n) => n + 1)
       onImportNameRef.current?.(info.name)
@@ -481,6 +503,22 @@ export function RoutePlannerField({
     },
     [importGpx, t]
   )
+  // A generated route: loaded as a replacing import that keeps no file (WEB-179). Over an existing
+  // route the person is asked first.
+  const [pendingGenerated, setPendingGenerated] = useState<File | null>(null)
+  const handledImportSeq = useRef(0)
+  useEffect(() => {
+    if (!importRequest || importRequest.seq <= handledImportSeq.current) return
+    handledImportSeq.current = importRequest.seq
+    onImportHandled?.(importRequest.seq)
+    const file = new File(
+      [gpxFromLine(importRequest.name, decode2(importRequest.polyline))],
+      'parcours-genere.gpx',
+      { type: 'application/gpx+xml' }
+    )
+    if (route.points.length >= 2) setPendingGenerated(file)
+    else void runImport(file, 'replace', { keepFile: false })
+  }, [importRequest, onImportHandled, route.points.length, runImport])
   const openFilePicker = useCallback(() => fileInputRef.current?.click(), [])
   const handleFileChosen = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -566,6 +604,18 @@ export function RoutePlannerField({
         aria-label={t('planner.import')}
         data-testid="planner-import-input"
         onChange={handleFileChosen}
+      />
+      <ConfirmDialog
+        isOpen={pendingGenerated !== null}
+        onClose={() => setPendingGenerated(null)}
+        onConfirm={() => {
+          const file = pendingGenerated
+          setPendingGenerated(null)
+          if (file) void runImport(file, 'replace', { keepFile: false })
+        }}
+        title={t('routeGenerator.replaceTrack.title')}
+        message={t('routeGenerator.replaceTrack.text')}
+        confirmText={t('planner.import.replace')}
       />
       <Modal
         opened={pendingFile !== null}

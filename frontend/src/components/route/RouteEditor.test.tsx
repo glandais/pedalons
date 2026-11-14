@@ -8,7 +8,11 @@ import type { PlannerSnapshot } from '@/hooks/useRoutePlanner'
 
 const snapshotMock = vi.hoisted(() => vi.fn())
 const notify = vi.hoisted(() => vi.fn())
-const fieldProps = vi.hoisted(() => ({ last: undefined as Record<string, unknown> | undefined }))
+const fieldProps = vi.hoisted(() => ({
+  last: undefined as Record<string, unknown> | undefined,
+  // every import request a mounted field took, in order
+  taken: [] as { seq: number; polyline: string }[],
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: 'fr' } }),
@@ -18,15 +22,39 @@ vi.mock('@/hooks/useResponsive', () => ({ useMediaMatch: () => false }))
 vi.mock('../common/MediaEditor', () => ({ MediaEditor: () => <div /> }))
 vi.mock('../common/SlugEditor', () => ({ SlugEditor: () => <div /> }))
 vi.mock('@/components/tag', () => ({ TagPicker: () => <div /> }))
+// The generator is out of scope here: a stand-in that offers one candidate.
+vi.mock('../routeGenerator/RouteGeneratorModal', () => ({
+  RouteGeneratorModal: (props: {
+    opened: boolean
+    onUse: (candidate: unknown, type: string) => void
+  }) =>
+    props.opened ? (
+      <button
+        onClick={() =>
+          props.onUse({ polyline: 'POLY', distanceM: 82000, ascentM: 600, bounds: {} }, 'GRAVEL')
+        }
+      >
+        use generated
+      </button>
+    ) : null,
+}))
 
 // The planner itself is out of scope: a stand-in that has two points and gives a snapshot.
 vi.mock('../planner/RoutePlannerField', () => ({
   RoutePlannerField: (props: {
     plannerRef?: Ref<{ snapshot: () => PlannerSnapshot }>
     onPointsChange: (points: { lng: number; lat: number }[]) => void
+    importRequest?: { seq: number; polyline: string }
+    onImportHandled?: (seq: number) => void
   }) => {
     fieldProps.last = props as never
-    const { onPointsChange } = props
+    const { onPointsChange, importRequest, onImportHandled } = props
+    // As the real field: a request is taken once, and the host is told
+    useEffect(() => {
+      if (!importRequest) return
+      fieldProps.taken.push(importRequest)
+      onImportHandled?.(importRequest.seq)
+    }, [importRequest, onImportHandled])
     useEffect(() => {
       onPointsChange([
         { lng: 5, lat: 45 },
@@ -372,5 +400,114 @@ describe('planner quota (BILL-10)', () => {
     expect(screen.getByText('planner.quota.teamLift')).toBeTruthy()
     // Not saved: the warning about a dropped state is not given
     expect(notify).not.toHaveBeenCalled()
+  })
+})
+
+describe('route generator (WEB-179)', () => {
+  const SPENT = { limit: 20, used: 20, resetsOn: '2026-12-01' }
+  const GENERATE = 'routes.create.form.sourceModeGenerator'
+  const BOX = 'routes.create.form.excludedFromGenerator'
+  beforeEach(() => {
+    snapshotMock.mockReset()
+    snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS })
+    fieldProps.taken.length = 0
+  })
+  afterEach(cleanup)
+
+  it('shows the exclusion box only on a team with the planner, and sends its value', async () => {
+    const onSubmit = renderEditor()
+    const box = screen.getByLabelText(BOX) as HTMLInputElement
+    expect(box.checked).toBe(false)
+    fireEvent.click(box)
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled())
+    expect(onSubmit.mock.calls[0][0].excludedFromGenerator).toBe(true)
+    cleanup()
+    renderEditor({ team: { ...TEAM, enableRoutePlanner: false } as unknown as TeamDetailDto })
+    expect(screen.queryByLabelText(BOX)).toBeNull()
+  })
+
+  it('starts the box from the route on an edit', () => {
+    renderEditor({
+      initialValues: {
+        name: 'Boucle du lac',
+        media: defaultMedia(),
+        surfaceType: 'ROAD',
+        visibility: 'TEAM',
+        tagIds: [],
+        excludedFromGenerator: true,
+      },
+    })
+    expect((screen.getByLabelText(BOX) as HTMLInputElement).checked).toBe(true)
+  })
+
+  it('offers « Générer un parcours » on a creation only, disabled at a spent quota', () => {
+    renderEditor({ isCreateMode: true, initialTrack: undefined })
+    expect((screen.getByRole('button', { name: GENERATE }) as HTMLButtonElement).disabled).toBe(
+      false
+    )
+    cleanup()
+    renderEditor({
+      isCreateMode: true,
+      initialTrack: undefined,
+      team: { ...TEAM, name: 'Club', plannerQuota: SPENT } as unknown as TeamDetailDto,
+    })
+    expect((screen.getByRole('button', { name: GENERATE }) as HTMLButtonElement).disabled).toBe(
+      true
+    )
+    cleanup()
+    renderEditor()
+    expect(screen.queryByRole('button', { name: GENERATE })).toBeNull()
+  })
+
+  it('a candidate chosen in the dialog goes to the planner and presets the type', async () => {
+    renderEditor({ isCreateMode: true, initialTrack: undefined })
+    fireEvent.click(screen.getByRole('button', { name: GENERATE }))
+    fireEvent.click(await screen.findByRole('button', { name: 'use generated' }))
+    await screen.findByTestId('field')
+    expect(fieldProps.taken).toMatchObject([{ seq: 1, polyline: 'POLY' }])
+    const surface = screen
+      .getAllByLabelText(/routes.create.form.surfaceType/)
+      .find((e) => e.tagName === 'INPUT') as HTMLInputElement
+    expect(surface.value).toBe('routes.surfaceType.GRAVEL')
+  })
+
+  it('a hand-off from the generator page opens the planner on it', async () => {
+    renderEditor({
+      isCreateMode: true,
+      initialTrack: undefined,
+      initialGenerated: { polyline: 'POLY', type: 'GRAVEL', distanceM: 82000 },
+    })
+    await screen.findByTestId('field')
+    expect(fieldProps.taken).toMatchObject([{ seq: 1, polyline: 'POLY' }])
+  })
+
+  it('does not load the generated route again when the planner comes back after the GPX source', async () => {
+    renderEditor({ isCreateMode: true, initialTrack: undefined })
+    fireEvent.click(screen.getByRole('button', { name: GENERATE }))
+    fireEvent.click(await screen.findByRole('button', { name: 'use generated' }))
+    await screen.findByTestId('field')
+    expect(fieldProps.taken).toHaveLength(1)
+    fireEvent.click(screen.getByRole('button', { name: 'routes.create.form.sourceModeGpx' }))
+    expect(screen.queryByTestId('field')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'routes.create.form.sourceModePlanner' }))
+    await screen.findByTestId('field')
+    expect(fieldProps.taken).toHaveLength(1)
+    expect(fieldProps.last?.importRequest).toBeUndefined()
+    // A second choice is still taken
+    fireEvent.click(screen.getByRole('button', { name: GENERATE }))
+    fireEvent.click(await screen.findByRole('button', { name: 'use generated' }))
+    await waitFor(() => expect(fieldProps.taken).toHaveLength(2))
+    expect(fieldProps.taken[1].seq).toBe(2)
+  })
+
+  it('ignores a hand-off at a spent quota: the file input stays', () => {
+    renderEditor({
+      isCreateMode: true,
+      initialTrack: undefined,
+      team: { ...TEAM, name: 'Club', plannerQuota: SPENT } as unknown as TeamDetailDto,
+      initialGenerated: { polyline: 'POLY', type: 'GRAVEL', distanceM: 82000 },
+    })
+    expect(screen.queryByTestId('field')).toBeNull()
   })
 })

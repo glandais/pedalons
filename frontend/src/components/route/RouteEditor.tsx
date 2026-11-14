@@ -1,7 +1,7 @@
 import { VisibilitySelector } from '@/components/visibility/VisibilitySelector'
 import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
 import { Visibility } from '@/api/dto'
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useForm } from '@mantine/form'
 import { zodFormValidator } from '@/lib/formUtils'
 import { useTranslation } from 'react-i18next'
@@ -17,16 +17,31 @@ import {
   FileInput,
   Box,
   Badge,
+  Checkbox,
 } from '@mantine/core'
 import { RouteRequest, SurfaceType } from '@/api/dto'
-import type { TeamDetailDto, GeoPoint, PlannerState, WaypointDto } from '@/api/dto'
+import type {
+  TeamDetailDto,
+  GeoPoint,
+  PlannerState,
+  WaypointDto,
+  GeneratedRouteDto,
+  RouteGeneratorType,
+} from '@/api/dto'
 import { notifications } from '@mantine/notifications'
 import { plannerPayload } from '@/lib/plannerSubmit'
 import { SURFACE_TYPE_COLORS } from '@/lib/badgeColors.generated'
 import { MediaEditor } from '../common/MediaEditor'
 import { SlugEditor } from '../common/SlugEditor'
 import { paths } from '@/config/paths'
-import { RoutePlannerField, type RoutePlannerHandle } from '../planner/RoutePlannerField'
+import {
+  RoutePlannerField,
+  type PlannerImportRequest,
+  type RoutePlannerHandle,
+} from '../planner/RoutePlannerField'
+import { RouteGeneratorModal } from '../routeGenerator/RouteGeneratorModal'
+import { useUnits } from '@/hooks/useUnits'
+import { generatedRouteName, type GeneratedHandoff } from '@/lib/routeGenerator'
 import { PlannerQuotaMessage } from '../planner/PlannerQuotaModal'
 import { usePlannerQuotaRefusal } from '../planner/usePlannerQuotaRefusal'
 import { isPlannerQuotaSpent } from '@/lib/plannerQuota'
@@ -80,6 +95,11 @@ interface RouteEditorProps {
   onPlannerFullscreenChange?: (opened: boolean) => void
   /** What the saved track's surface suggests (WEB-100 C1c): offered next to the field, never applied by itself. */
   suggestedSurfaceType?: SurfaceType | null
+  /**
+   * A route proposed by the team route generator (ledger WEB-179), handed over by its page: the
+   * planner opens on it (when the team's planner is usable) as an import that keeps no file.
+   */
+  initialGenerated?: GeneratedHandoff
 }
 
 export function RouteEditor({
@@ -105,8 +125,10 @@ export function RouteEditor({
   onSlugChange,
   canEditSlug = false,
   onPlannerFullscreenChange,
+  initialGenerated,
 }: RouteEditorProps) {
   const { t } = useTranslation()
+  const { distance } = useUnits()
   // On a finger the preview card already says how many points there are.
   const isCoarse = useMediaMatch('(pointer: coarse)')
 
@@ -126,9 +148,45 @@ export function RouteEditor({
   const canUsePlanner = plannerOpen && !quotaSpent
   // A save refused because the quota was spent in the meantime: its dialog says why
   const quotaRefusal = usePlannerQuotaRefusal(team.slug)
-  const [sourceMode, setSourceMode] = useState<RouteSourceMode>(
-    canUsePlanner && !isCreateMode ? 'planner' : 'gpx'
+  // A generated route (the page's hand-off, or one chosen in the generator's dialog): handled once
+  // per `seq` by the planner field. Ignored at a spent quota: the entry points are disabled then.
+  const [importRequest, setImportRequest] = useState<PlannerImportRequest | undefined>(() =>
+    initialGenerated && canUsePlanner
+      ? {
+          seq: 1,
+          polyline: initialGenerated.polyline,
+          name: generatedRouteName(distance(initialGenerated.distanceM), t),
+        }
+      : undefined
   )
+  const importSeq = useRef(importRequest?.seq ?? 0)
+  // The planner field unmounts when the source switches and forgets what it handled: the request is
+  // dropped here once taken, or coming back to the planner would load the same route again.
+  const handleImportHandled = useCallback((seq: number) => {
+    setImportRequest((current) => (current?.seq === seq ? undefined : current))
+  }, [])
+  const [sourceMode, setSourceMode] = useState<RouteSourceMode>(
+    canUsePlanner && (!isCreateMode || importRequest) ? 'planner' : 'gpx'
+  )
+  const [generatorOpen, setGeneratorOpen] = useState(false)
+  // The host dialog's Escape waits while the generator's dialog is open, as for the planner's
+  useEffect(() => {
+    if (generatorOpen) onPlannerFullscreenChange?.(true)
+    return () => {
+      if (generatorOpen) onPlannerFullscreenChange?.(false)
+    }
+  }, [generatorOpen, onPlannerFullscreenChange])
+  const useGenerated = (candidate: GeneratedRouteDto, type: RouteGeneratorType) => {
+    setGeneratorOpen(false)
+    form.setFieldValue('surfaceType', type)
+    importSeq.current += 1
+    setImportRequest({
+      seq: importSeq.current,
+      polyline: candidate.polyline,
+      name: generatedRouteName(distance(candidate.distanceM), t),
+    })
+    setSourceMode('planner')
+  }
 
   const name = form.values.name
   // Bumped by the « draw on the map » button: on a finger it opens the fullscreen editor.
@@ -253,6 +311,14 @@ export function RouteEditor({
       <Stack>
         {error && <Alert color="red">{error}</Alert>}
         {quotaRefusal.modal}
+        {isCreateMode && plannerOpen && (
+          <RouteGeneratorModal
+            opened={generatorOpen}
+            onClose={() => setGeneratorOpen(false)}
+            team={team}
+            onUse={useGenerated}
+          />
+        )}
 
         {/* Route Source - Mode selector */}
         {plannerOpen && (
@@ -282,6 +348,15 @@ export function RouteEditor({
               >
                 {t('routes.create.form.sourceModePlanner')}
               </Button>
+              {isCreateMode && (
+                <Button
+                  variant="default"
+                  disabled={quotaSpent}
+                  onClick={() => setGeneratorOpen(true)}
+                >
+                  {t('routes.create.form.sourceModeGenerator')}
+                </Button>
+              )}
             </Group>
             {quotaSpent && team.plannerQuota?.limit != null && (
               <PlannerQuotaMessage
@@ -341,6 +416,8 @@ export function RouteEditor({
               onBusyChange={setPlannerBusy}
               onImportName={handleImportName}
               openRequest={drawRequest}
+              importRequest={importRequest}
+              onImportHandled={handleImportHandled}
             />
             {plannerPoints.length > 0 && !isCoarse && (
               <Text size="sm" c="dimmed" mt="xs" px="md">
@@ -443,6 +520,16 @@ export function RouteEditor({
             </Group>
           )}
         </Stack>
+
+        {/* Kept out of the team route generator (WEB-179): only where the planner is on */}
+        {team.enableRoutePlanner && (
+          <Checkbox
+            label={t('routes.create.form.excludedFromGenerator')}
+            description={t('routes.create.form.excludedFromGeneratorHint')}
+            {...form.getInputProps('excludedFromGenerator', { type: 'checkbox' })}
+            disabled={isPending}
+          />
+        )}
 
         {/* Visibility */}
         <TagPicker

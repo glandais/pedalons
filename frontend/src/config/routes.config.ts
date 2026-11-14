@@ -53,6 +53,7 @@ import { prefetchTeamPagesAdmin } from '@/pages/team/teamPagesAdminData'
 import { prefetchEditTeamPageForm } from '@/pages/team/teamPageFormData'
 import { prefetchCreateTripForm, prefetchEditTripForm } from '@/pages/trip/tripFormData'
 import { prefetchCreatePostForm, prefetchEditPostForm } from '@/pages/post/postFormData'
+import { prefetchRouteGenerator } from '@/pages/route/routeGeneratorData'
 import { prefetchCreateRouteForm, prefetchEditRouteForm } from '@/pages/route/routeFormData'
 import { prefetchAdDetail } from '@/pages/ad/adDetailData'
 import { prefetchCreateAdForm, prefetchEditAdForm } from '@/pages/ad/adFormData'
@@ -984,6 +985,19 @@ export const routesConfig: RoutesConfig = [
     breadcrumb: { type: 'static', i18nKey: tRegister('routes.view.map') },
     prefetch: (queryClient, params, url) =>
       withTeamSwitcher(queryClient, prefetchRoutesMap(queryClient, params.teamSlug!, url)),
+  },
+  {
+    id: 'route-generate',
+    paths: pathVariants.routeGenerate(':teamSlug'),
+    component: pages.RouteGeneratorPage,
+    auth: 'authenticated',
+    noindex: true,
+    parentId: 'routes',
+    breadcrumb: { type: 'static', i18nKey: tRegister('routeGenerator.title') },
+    // The generation itself is client-only (a POST under a rate limit): only the counts that pick
+    // the default type are prefetched
+    prefetch: teamScopedPrefetch((qc, p) => prefetchRouteGenerator(qc, p.teamSlug!)),
+    showBackLink: true,
   },
   {
     id: 'route-new',

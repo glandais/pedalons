@@ -111,6 +111,12 @@ export interface PlannerSnapshot {
   waypoints?: WaypointRequest[]
 }
 
+/** Options of `importGpx`. */
+export interface ImportGpxOptions {
+  /** False: the save sends the planner state, never the file itself. Default true. */
+  keepFile?: boolean
+}
+
 /** What the planner tells about a file it imported, for the view to report. */
 export interface GpxImportInfo {
   /** Name of the file: its metadata, else its first track, else its file name. */
@@ -209,8 +215,14 @@ export interface RoutePlannerState {
   /**
    * Loads a GPX file: it replaces the route, or is added after its last point. Resolves with what
    * was loaded, null when nothing was (refused, failed, cancelled, or another operation running).
+   * With `keepFile: false` the file is not remembered as what the form uploads: the save sends the
+   * planner state (the route generator's candidates, which must count in the planner quota).
    */
-  importGpx: (file: File, mode: 'replace' | 'append') => Promise<GpxImportInfo | null>
+  importGpx: (
+    file: File,
+    mode: 'replace' | 'append',
+    options?: ImportGpxOptions
+  ) => Promise<GpxImportInfo | null>
   undo: () => void
   redo: () => void
 }
@@ -629,7 +641,12 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
   // does not send the file again.
   const importCacheRef = useRef<{ key: string; response: GpxImportResponse } | null>(null)
   const importGpx = useCallback(
-    async (file: File, mode: 'replace' | 'append'): Promise<GpxImportInfo | null> => {
+    async (
+      file: File,
+      mode: 'replace' | 'append',
+      options?: ImportGpxOptions
+    ): Promise<GpxImportInfo | null> => {
+      const keepFile = options?.keepFile ?? true
       const outcome: {
         info: GpxImportInfo | null
         produced: { file: File; routes: Set<Route> } | null
@@ -676,7 +693,7 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
         )
         // Only an operation that went through leaves its sources behind
         sourcesRef.current.push(...sources)
-        if (mode === 'replace' || route.points.length === 0)
+        if (keepFile && (mode === 'replace' || route.points.length === 0))
           outcome.produced = { file, routes: new Set([next]) }
         outcome.info = {
           name: response.name,

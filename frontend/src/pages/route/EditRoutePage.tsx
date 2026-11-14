@@ -87,6 +87,7 @@ export function EditRoutePage() {
     surfaceType: route.surfaceType || SurfaceType.ROAD,
     visibility: route.visibility,
     tagIds: route.tags.map((tag) => tag.id),
+    excludedFromGenerator: route.excludedFromGenerator ?? false,
   }
 
   // Check if route has a single track (required for planner mode)

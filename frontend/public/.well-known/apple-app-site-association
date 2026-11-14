@@ -41,6 +41,8 @@
           "NOT /equipes/*/articles/*/modifier",
           "NOT /teams/*/routes/map",
           "NOT /equipes/*/parcours/carte",
+          "NOT /teams/*/routes/generate",
+          "NOT /equipes/*/parcours/generer",
           "NOT /teams/*/routes/*/map",
           "NOT /equipes/*/parcours/*/carte",
           "NOT /teams/*/classifieds/new",

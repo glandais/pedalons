@@ -638,6 +638,11 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 - [ ] `WEB-179` **Panneau « Générer un parcours » (M)** — départ, arrivée, rose des vents, distance, fréquentation, trois
       propositions sur la carte avec le réseau de l'équipe en fond, ouverture dans l'éditeur comme
       ligne importée (pas d'ancres reroutées par Stadia). Dépend d'`API-198`. Plan [`2026-11-13-generateur-boucles-equipe.md`](plans/2026-11-13-generateur-boucles-equipe.md) §7.
+      Codé le 14 novembre 2026 (conception [`…-lot4.md`](plans/2026-11-13-generateur-boucles-equipe-lot4.md)) :
+      page `routeGenerate`, bouton dans la liste et troisième source de l'éditeur, case d'exclusion,
+      Vitest verts. Restent : lancer `e2e/route-generator.e2e.ts` (écrit, jamais exécuté), vérifier à
+      l'œil l'ordre des couches de la carte (non couvert, carte bouchonnée en Vitest), puis ranger
+      l'entrée.
 
 ### Heure de départ : audit du 7 novembre 2026
 

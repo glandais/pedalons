@@ -49,7 +49,9 @@ const plannerState = vi.hoisted(() => ({
   updateWaypoint: (...args: unknown[]) => waypointOps.updateWaypoint(...args),
   moveWaypoint: (...args: unknown[]) => waypointOps.moveWaypoint(...args),
   removeWaypoint: (...args: unknown[]) => waypointOps.removeWaypoint(...args),
-  importGpx: (file: File, mode: string) => importGpxMock(file, mode),
+  // The options are passed on only when given: the other tests assert the two-argument call
+  importGpx: (file: File, mode: string, options?: unknown) =>
+    options === undefined ? importGpxMock(file, mode) : importGpxMock(file, mode, options),
   canUndo: false,
   canRedo: false,
   directStats: { total: 0, longest: 0, count: 0 },
@@ -150,6 +152,7 @@ vi.mock('./PlannerElevationStrip', () => ({
 }))
 
 import { computeRoute, createPoint, edgeKey } from '@/lib/planner'
+import { encode2 } from '@/lib/polyline'
 import { RoutePlannerField, type RoutePlannerHandle } from './RoutePlannerField'
 
 function setCoarse(coarse: boolean) {
@@ -674,6 +677,69 @@ describe('RoutePlannerField', () => {
         </QueryClientProvider>
       )
       await screen.findByRole('dialog')
+    })
+  })
+
+  describe('a route generated from the team roads (WEB-179)', () => {
+    const POLYLINE = encode2([
+      [5, 45],
+      [5.01, 45.01],
+      [5.02, 45],
+    ])
+    const info = () => ({
+      name: 'Parcours',
+      droppedWaypoints: 0,
+      elevationFallback: false,
+      mode: 'replace',
+    })
+    const request = (seq: number) => ({ seq, polyline: POLYLINE, name: 'Parcours généré de 82 km' })
+
+    beforeEach(() => setCoarse(false))
+
+    it('imports it once per seq as a replacing import that keeps no file', async () => {
+      importGpxMock.mockResolvedValue(info())
+      const { rerender } = renderField({ importRequest: request(1) })
+      await waitFor(() => expect(importGpxMock).toHaveBeenCalledTimes(1))
+      const [file, mode, options] = importGpxMock.mock.calls[0]
+      expect(mode).toBe('replace')
+      expect(options).toEqual({ keepFile: false })
+      expect((file as File).name).toBe('parcours-genere.gpx')
+      const text = await (file as File).text()
+      expect(text).toContain('<name>Parcours généré de 82 km</name>')
+      expect(text.match(/<trkpt /g)).toHaveLength(3)
+      // the same seq again: nothing
+      rerender(
+        <QueryClientProvider client={new QueryClient()}>
+          <MantineProvider>
+            <RoutePlannerField
+              onPointsChange={onPointsChange}
+              title="Ma sortie"
+              importRequest={request(1)}
+            />
+          </MantineProvider>
+        </QueryClientProvider>
+      )
+      expect(importGpxMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('asks before replacing a route that has points', async () => {
+      importGpxMock.mockResolvedValue(info())
+      plannerState.route = { points: [{}, {}], dist: 1, ascend: 0 } as never
+      renderField({ importRequest: request(1) })
+      await screen.findByRole('dialog')
+      expect(importGpxMock).not.toHaveBeenCalled()
+      fireEvent.click(screen.getByRole('button', { name: 'planner.import.replace' }))
+      await waitFor(() => expect(importGpxMock).toHaveBeenCalledTimes(1))
+      expect(importGpxMock.mock.calls[0][2]).toEqual({ keepFile: false })
+    })
+
+    it('imports nothing when the question is cancelled', async () => {
+      plannerState.route = { points: [{}, {}], dist: 1, ascend: 0 } as never
+      renderField({ importRequest: request(1) })
+      await screen.findByRole('dialog')
+      fireEvent.click(screen.getByRole('button', { name: 'actions.cancelAction' }))
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+      expect(importGpxMock).not.toHaveBeenCalled()
     })
   })
 })

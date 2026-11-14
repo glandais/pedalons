@@ -154,6 +154,10 @@ export const pages = {
     () => import('../pages/route/RouteFullscreenMapPage')
   ),
   CreateRoutePage: lazyPage('CreateRoutePage', () => import('../pages/route/CreateRoutePage')),
+  RouteGeneratorPage: lazyPage(
+    'RouteGeneratorPage',
+    () => import('../pages/route/RouteGeneratorPage')
+  ),
   EditRoutePage: lazyPage('EditRoutePage', () => import('../pages/route/EditRoutePage')),
   AllRoutesMapPage: lazyPage('AllRoutesMapPage', () => import('../pages/route/AllRoutesMapPage')),
   GpxToolsPage: lazyPage('GpxToolsPage', () => import('../pages/gpxtool/GpxToolsPage')),

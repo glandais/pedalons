@@ -726,6 +726,14 @@ routes:
     params:
       - teamSlug
     web: true
+  # Web only: the app has no route generator (MOB-154, WEB-179).
+  - id: routeGenerate
+    path:
+      en: /teams/{teamSlug}/routes/generate
+      fr: /equipes/{teamSlug}/parcours/generer
+    params:
+      - teamSlug
+    web: true
   - id: routeNew
     path:
       en: /teams/{teamSlug}/routes/new

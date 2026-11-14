@@ -92,6 +92,23 @@ describe('useRoutePlanner importGpx', () => {
     expect(result.current.snapshot().file).toBe(file)
   })
 
+  it('keepFile: false loads the import without remembering the file: the save sends the planner state', async () => {
+    importMock.mockResolvedValue(response())
+    const file = fileOf()
+    const { result } = renderHook(() => useRoutePlanner({ teamSlug: 'club' }))
+    await act(async () => {
+      await result.current.importGpx(file, 'replace', { keepFile: false })
+    })
+    const snapshot = result.current.snapshot()
+    expect(snapshot.file).toBeUndefined()
+    expect(snapshot.plannerState).not.toBeNull()
+    expect(snapshot.dirty).toBe(true)
+    expect(result.current.route.points.length).toBeGreaterThanOrEqual(2)
+    expect(result.current.route.points.every((p) => p.sourceId !== undefined)).toBe(true)
+    // no routing provider is called by a replacing import
+    expect(routeMock).not.toHaveBeenCalled()
+  })
+
   it('keeps the file when the relief of the join between two tracks is read in the background', async () => {
     vi.useFakeTimers()
     try {

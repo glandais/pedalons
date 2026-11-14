@@ -1,4 +1,4 @@
-import { useParams, Navigate, useNavigate } from 'react-router-dom'
+import { useParams, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
@@ -16,10 +16,13 @@ import { invalidatePlannerQuota } from '@/lib/plannerQuota'
 import { useCreateRouteFormData } from './routeFormData'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
+import { readGeneratedHandoff } from '@/lib/routeGenerator'
 
 export function CreateRoutePage() {
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const navigate = useNavigate()
+  // A route proposed by the generator page (ledger WEB-179); ignored when malformed
+  const generated = readGeneratedHandoff(useLocation().state)
   const { t } = useTranslation()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const queryClient = useQueryClient()
@@ -80,8 +83,10 @@ export function CreateRoutePage() {
   const initialValues = {
     name: '',
     media: defaultMedia(),
-    surfaceType: SurfaceType.ROAD,
+    // The generator's type is one of ROAD, GRAVEL, MTB: all SurfaceType values
+    surfaceType: generated ? SurfaceType[generated.type] : SurfaceType.ROAD,
     visibility: team.defaultContentVisibility,
+    excludedFromGenerator: false,
   }
 
   return (
@@ -96,6 +101,7 @@ export function CreateRoutePage() {
         teamSlug={teamSlug!}
         initialValues={initialValues}
         isCreateMode={true}
+        initialGenerated={generated}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         isPending={createRouteMutation.isPending}

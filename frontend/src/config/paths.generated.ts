@@ -418,6 +418,12 @@ export const paths = {
       default: return `/teams/${teamSlug}/routes/map`
     }
   },
+  routeGenerate: (teamSlug: string) => {
+    switch (getCurrentLocale()) {
+      case 'fr': return `/equipes/${teamSlug}/parcours/generer`
+      default: return `/teams/${teamSlug}/routes/generate`
+    }
+  },
   routeNew: (teamSlug: string) => {
     switch (getCurrentLocale()) {
       case 'fr': return `/equipes/${teamSlug}/parcours/nouveau`
@@ -581,6 +587,7 @@ export const pathVariants = {
   postEdit: (teamSlug: string, postSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/posts/${postSlug}/edit`, fr: `/equipes/${teamSlug}/articles/${postSlug}/modifier` }),
   routes: (teamSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/routes`, fr: `/equipes/${teamSlug}/parcours` }),
   routesMap: (teamSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/routes/map`, fr: `/equipes/${teamSlug}/parcours/carte` }),
+  routeGenerate: (teamSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/routes/generate`, fr: `/equipes/${teamSlug}/parcours/generer` }),
   routeNew: (teamSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/routes/new`, fr: `/equipes/${teamSlug}/parcours/nouveau` }),
   route: (teamSlug: string, routeSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/routes/${routeSlug}`, fr: `/equipes/${teamSlug}/parcours/${routeSlug}` }),
   routeMap: (teamSlug: string, routeSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/routes/${routeSlug}/map`, fr: `/equipes/${teamSlug}/parcours/${routeSlug}/carte` }),
