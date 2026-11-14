@@ -25,7 +25,8 @@ export interface GeneratorParamsWithGo extends GeneratorParams {
   endPending?: boolean
 }
 
-function teamPoint(team: TeamDetailDto): GeoPoint | undefined {
+/** The team's location, the start when none is picked. */
+export function teamPoint(team: TeamDetailDto): GeoPoint | undefined {
   const coordinates = team.geometry?.coordinates
   if (!coordinates || coordinates.length < 2) return undefined
   return { lng: coordinates[0], lat: coordinates[1] }

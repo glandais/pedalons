@@ -7,6 +7,7 @@ import {
   Group,
   ScrollArea,
   SegmentedControl,
+  Select,
   Skeleton,
   Slider,
   Stack,
@@ -26,11 +27,12 @@ import {
 } from '@/lib/routeGenerator'
 import { isPlannerQuotaSpent } from '@/lib/plannerQuota'
 import { selectIsPlatformAdmin, useAuthStore } from '@/store/authStore'
+import { useGeneratorPlaces, type GeneratorPlace } from '@/pages/route/routeGeneratorData'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 import { CompassPicker } from './CompassPicker'
 import { GeneratedRouteCard } from './GeneratedRouteCard'
 import { RouteGeneratorMap, type GeneratorClickMode } from './RouteGeneratorMap'
-import { useRouteGenerator } from './useRouteGenerator'
+import { teamPoint, useRouteGenerator } from './useRouteGenerator'
 
 /** What the panel changes: the parameters of the request, never the results. */
 export type GeneratorParamPatch = Partial<
@@ -69,6 +71,39 @@ const FAMILIARITY_BANDS: TranslationKey[] = [
   tRegister('routeGenerator.card.band.high'),
 ]
 
+const TEAM_OPTION = 'team'
+const MAP_OPTION = 'map'
+const placeOption = (place: GeneratorPlace) => `place:${place.id}`
+
+/**
+ * The list a start or an end is picked from: the team's location when it has one, then its places
+ * with a position, then « Point choisi sur la carte » when the point is none of them. A place is
+ * recognised by its point, the only thing the query string keeps.
+ */
+function pointChoices(
+  param: string | undefined,
+  teamParam: string | undefined,
+  places: GeneratorPlace[]
+): {
+  value: string | null
+  options: { kind: 'team' | 'place' | 'map'; value: string; label?: string }[]
+} {
+  const options: { kind: 'team' | 'place' | 'map'; value: string; label?: string }[] = []
+  if (teamParam) options.push({ kind: 'team', value: TEAM_OPTION })
+  for (const place of places)
+    options.push({ kind: 'place', value: placeOption(place), label: place.name })
+  let value: string | null = null
+  if (param !== undefined) {
+    if (param === teamParam) value = TEAM_OPTION
+    else {
+      const place = places.find((p) => pointToParam(p.point) === param)
+      value = place ? placeOption(place) : MAP_OPTION
+    }
+    if (value === MAP_OPTION) options.push({ kind: 'map', value: MAP_OPTION })
+  }
+  return { value, options }
+}
+
 /**
  * The route generator: controls, proposals and map (ledger `WEB-179`). It owns no parameter: they
  * live in the query string on the page and in a reducer in the editor's modal. The only state here
@@ -102,7 +137,15 @@ export function RouteGeneratorPanel({
 
   const generator = useRouteGenerator(team, { ...params, endPending: endElsewhere && !params.end })
   const quotaSpent = isPlannerQuotaSpent(team.plannerQuota, isPlatformAdmin)
-  const teamHasLocation = !!team.geometry
+  const teamStart = teamPoint(team)
+  const teamHasLocation = !!teamStart
+  const teamParam = teamStart ? pointToParam(teamStart) : undefined
+  const { startPlaces, endPlaces } = useGeneratorPlaces(team.slug)
+  // No start in the query string is the team's location, when it has one
+  const startChoices = pointChoices(params.start ?? teamParam, teamParam, startPlaces)
+  const endChoices = pointChoices(params.end, teamParam, endPlaces)
+  const hasStartList = startChoices.options.length > 0
+  const hasEndList = teamHasLocation || endPlaces.length > 0
   const candidates = generator.data?.candidates ?? []
   const selected = Math.min(params.selected, Math.max(0, candidates.length - 1))
   const distanceText = distance(params.distanceKm * 1000)
@@ -123,18 +166,39 @@ export function RouteGeneratorPanel({
     return Math.min(300, Math.max(10, km))
   }
 
-  const startLabel = params.start
-    ? t('routeGenerator.start.picked')
-    : teamHasLocation
-      ? t('routeGenerator.start.team')
-      : null
-
   const blockerText =
     generator.blocker === 'noStart'
-      ? t('routeGenerator.start.missing')
+      ? hasStartList
+        ? t('routeGenerator.start.missingList')
+        : t('routeGenerator.start.missing')
       : generator.blocker === 'noEnd'
-        ? t('routeGenerator.end.missing')
+        ? hasEndList
+          ? t('routeGenerator.end.missingList')
+          : t('routeGenerator.end.missing')
         : null
+
+  const choiceData = (choices: ReturnType<typeof pointChoices>) =>
+    choices.options.map((option) => ({
+      value: option.value,
+      label:
+        option.kind === 'team'
+          ? t('routeGenerator.start.team')
+          : option.kind === 'map'
+            ? t('routeGenerator.start.picked')
+            : option.label!,
+    }))
+
+  const onChoice = (mode: 'start' | 'end', value: string | null) => {
+    if (!value || value === MAP_OPTION) return
+    setClickMode(null)
+    const places = mode === 'start' ? startPlaces : endPlaces
+    const place = places.find((p) => placeOption(p) === value)
+    const param = value === TEAM_OPTION ? teamParam : place && pointToParam(place.point)
+    if (!param) return
+    // The team's location as a start is no start at all: the query string stays tied to the team
+    if (mode === 'start') onParamsChange({ start: value === TEAM_OPTION ? undefined : param })
+    else onParamsChange({ end: param })
+  }
 
   const controls = (
     <Stack gap="md">
@@ -143,8 +207,18 @@ export function RouteGeneratorPanel({
         <Text size="sm" fw={500}>
           {t('routeGenerator.start.label')}
         </Text>
-        {startLabel ? (
-          <Text size="sm">{startLabel}</Text>
+        {hasStartList ? (
+          <Select
+            size="sm"
+            data={choiceData(startChoices)}
+            value={startChoices.value}
+            onChange={(value) => onChoice('start', value)}
+            placeholder={t('routeGenerator.start.placeholder')}
+            allowDeselect={false}
+            aria-label={t('routeGenerator.start.label')}
+          />
+        ) : params.start ? (
+          <Text size="sm">{t('routeGenerator.start.picked')}</Text>
         ) : (
           <Alert color="blue" variant="light" icon={<IconInfoCircle />}>
             {t('routeGenerator.start.noLocation')}
@@ -154,15 +228,6 @@ export function RouteGeneratorPanel({
           <Button variant="subtle" size="compact-sm" onClick={() => setClickMode('start')}>
             {t('routeGenerator.start.pick')}
           </Button>
-          {params.start && teamHasLocation && (
-            <Button
-              variant="subtle"
-              size="compact-sm"
-              onClick={() => onParamsChange({ start: undefined })}
-            >
-              {t('routeGenerator.start.reset')}
-            </Button>
-          )}
         </Group>
       </Stack>
 
@@ -181,7 +246,8 @@ export function RouteGeneratorPanel({
               if (params.end) onParamsChange({ end: undefined })
             } else {
               setEndElsewhere(true)
-              if (!params.end) setClickMode('end')
+              // With a list to pick from, the map waits for « Choisir sur la carte »
+              if (!params.end && !hasEndList) setClickMode('end')
             }
           }}
           data={[
@@ -190,7 +256,25 @@ export function RouteGeneratorPanel({
           ]}
           aria-label={t('routeGenerator.end.label')}
         />
-        {params.end && (
+        {endElsewhere && hasEndList && (
+          <>
+            <Select
+              size="sm"
+              data={choiceData(endChoices)}
+              value={endChoices.value}
+              onChange={(value) => onChoice('end', value)}
+              placeholder={t('routeGenerator.end.placeholder')}
+              allowDeselect={false}
+              aria-label={t('routeGenerator.end.choice')}
+            />
+            <Group gap="xs">
+              <Button variant="subtle" size="compact-sm" onClick={() => setClickMode('end')}>
+                {t('routeGenerator.start.pick')}
+              </Button>
+            </Group>
+          </>
+        )}
+        {params.end && !hasEndList && (
           <Group gap="xs">
             <Text size="sm">{t('routeGenerator.start.picked')}</Text>
             <Button variant="subtle" size="compact-sm" onClick={() => setClickMode('end')}>

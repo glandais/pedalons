@@ -97,6 +97,21 @@ export function RouteGeneratorMap({
     )
   }, [candidates])
 
+  // A start or an end picked from the list may lie off screen: bring it into view (a click on the
+  // map is always in view, so this leaves it alone)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const bounds = map.getBounds()
+    for (const point of [start, end]) {
+      if (point && !bounds.contains([point.lng, point.lat])) {
+        map.easeTo({ center: [point.lng, point.lat] })
+        return
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- on a moved point, not a new object
+  }, [start?.lat, start?.lng, end?.lat, end?.lng])
+
   const initialViewState = start
     ? { longitude: start.lng, latitude: start.lat, zoom: 11 }
     : (defaultView ?? undefined)

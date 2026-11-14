@@ -13,6 +13,12 @@ const counts = vi.hoisted(() => ({
     isPending: boolean
   },
 }))
+const places = vi.hoisted(() => ({
+  state: { startPlaces: [], endPlaces: [] } as {
+    startPlaces: { id: string; name: string; point: { lat: number; lng: number } }[]
+    endPlaces: { id: string; name: string; point: { lat: number; lng: number } }[]
+  },
+}))
 const mapProps = vi.hoisted(() => ({ last: undefined as Record<string, unknown> | undefined }))
 
 vi.mock('react-i18next', async (importOriginal) => {
@@ -25,6 +31,7 @@ vi.mock('react-i18next', async (importOriginal) => {
 vi.mock('@/api/endpoints/route-generator/route-generator', () => ({ generateRoutes: generateMock }))
 vi.mock('@/pages/route/routeGeneratorData', () => ({
   useGeneratorTypeCounts: () => counts.state,
+  useGeneratorPlaces: () => places.state,
 }))
 // The map is out of scope: a stand-in that exposes what the panel gives it, and places points.
 vi.mock('./RouteGeneratorMap', () => ({
@@ -137,9 +144,12 @@ const cards = () => screen.queryAllByTestId('generated-route-card')
 
 describe('RouteGeneratorPanel (WEB-179)', () => {
   beforeEach(() => {
+    // Mantine's combobox scrolls to the selected option, which jsdom does not implement
+    Element.prototype.scrollIntoView = vi.fn()
     generateMock.mockReset()
     onOpen.mockReset()
     counts.state = { counts: { ROAD: 2, GRAVEL: 1, MTB: 0 }, isPending: false }
+    places.state = { startPlaces: [], endPlaces: [] }
   })
   afterEach(cleanup)
 
@@ -147,13 +157,14 @@ describe('RouteGeneratorPanel (WEB-179)', () => {
     renderPanel(TEAM({ geometry: undefined }))
     expect(generate().disabled).toBe(true)
     expect(screen.getByText('Choisissez un départ sur la carte.')).toBeTruthy()
-    expect(screen.getByText(/L'équipe n'a pas de lieu enregistré/)).toBeTruthy()
+    expect(screen.getByText(/L'équipe n'a ni localisation ni lieu de départ/)).toBeTruthy()
     fireEvent.click(screen.getByText('pick start'))
     expect(generate().disabled).toBe(false)
   })
 
   it('cannot generate with an end « Ailleurs » that is not placed yet', () => {
-    renderPanel()
+    // Neither a team location nor an end place: the map is the only way to place the end
+    renderPanel(TEAM({ geometry: undefined }), { start: '45.00000,5.00000' })
     expect(generate().disabled).toBe(false)
     fireEvent.click(screen.getByText('Ailleurs'))
     expect(generate().disabled).toBe(true)
@@ -161,6 +172,78 @@ describe('RouteGeneratorPanel (WEB-179)', () => {
     expect(screen.getByText("Choisissez l'arrivée sur la carte.")).toBeTruthy()
     fireEvent.click(screen.getByText('pick near end'))
     expect(generate().disabled).toBe(false)
+  })
+
+  it('offers the start places of a team without location, and sends the one picked', async () => {
+    generateMock.mockResolvedValue(response())
+    places.state = {
+      startPlaces: [{ id: 'p1', name: 'Parking du stade', point: { lat: 45.2, lng: 5.7 } }],
+      endPlaces: [],
+    }
+    renderPanel(TEAM({ geometry: undefined }))
+    expect(generate().disabled).toBe(true)
+    expect(screen.getByText('Choisissez un départ dans la liste ou sur la carte.')).toBeTruthy()
+    expect(screen.queryByText(/L'équipe n'a ni localisation/)).toBeNull()
+    fireEvent.click(screen.getByRole('combobox', { name: 'Départ' }))
+    expect(
+      screen.queryByRole('option', { name: "Localisation de l'équipe", hidden: true })
+    ).toBeNull()
+    fireEvent.click(screen.getByRole('option', { name: 'Parking du stade', hidden: true }))
+    fireEvent.click(generate())
+    await waitFor(() => expect(generateMock).toHaveBeenCalled())
+    expect(generateMock.mock.calls[0][1].start).toEqual({ lat: 45.2, lng: 5.7 })
+  })
+
+  it('lists the team location first and recognises a place from its point', async () => {
+    generateMock.mockResolvedValue(response())
+    places.state = {
+      startPlaces: [{ id: 'p1', name: 'Parking du stade', point: { lat: 45.2, lng: 5.7 } }],
+      endPlaces: [],
+    }
+    renderPanel(TEAM(), { start: '45.20000,5.70000' })
+    const select = screen.getByRole('combobox', { name: 'Départ' }) as HTMLInputElement
+    expect(select.value).toBe('Parking du stade')
+    fireEvent.click(select)
+    const options = screen.getAllByRole('option', { hidden: true }).map((o) => o.textContent)
+    expect(options).toEqual(["Localisation de l'équipe", 'Parking du stade'])
+    // Back to the team location: no start is sent at all
+    fireEvent.click(screen.getByRole('option', { name: "Localisation de l'équipe", hidden: true }))
+    fireEvent.click(generate())
+    await waitFor(() => expect(generateMock).toHaveBeenCalled())
+    expect('start' in generateMock.mock.calls[0][1]).toBe(false)
+  })
+
+  it('shows a point clicked on the map as such in the list', () => {
+    renderPanel(TEAM())
+    fireEvent.click(screen.getByText('pick start'))
+    expect((screen.getByRole('combobox', { name: 'Départ' }) as HTMLInputElement).value).toBe(
+      'Point choisi sur la carte'
+    )
+  })
+
+  it('offers the team location and the end places for an end « Ailleurs »', async () => {
+    generateMock.mockResolvedValue(response())
+    places.state = {
+      startPlaces: [],
+      endPlaces: [{ id: 'p2', name: 'Gare', point: { lat: 45.05, lng: 5.05 } }],
+    }
+    renderPanel()
+    fireEvent.click(screen.getByText('Ailleurs'))
+    // A list to pick from: the map does not take the click until asked
+    expect(screen.getByTestId('map').getAttribute('data-click-mode')).toBeNull()
+    expect(generate().disabled).toBe(true)
+    expect(screen.getByText("Choisissez l'arrivée dans la liste ou sur la carte.")).toBeTruthy()
+    const endSelect = screen.getByRole('combobox', { name: "Lieu d'arrivée" })
+    fireEvent.click(endSelect)
+    const listbox = document.getElementById(endSelect.getAttribute('aria-controls')!)!
+    const options = within(listbox)
+      .getAllByRole('option', { hidden: true })
+      .map((o) => o.textContent)
+    expect(options).toEqual(["Localisation de l'équipe", 'Gare'])
+    fireEvent.click(screen.getByRole('option', { name: 'Gare', hidden: true }))
+    fireEvent.click(generate())
+    await waitFor(() => expect(generateMock).toHaveBeenCalled())
+    expect(generateMock.mock.calls[0][1].end).toEqual({ lat: 45.05, lng: 5.05 })
   })
 
   it('sends the dominant type, no start and no bearing for the team location', async () => {
