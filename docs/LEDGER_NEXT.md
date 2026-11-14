@@ -1733,8 +1733,10 @@ en service (précondition du §5.3 du plan, vérifications de l'étape 6) est so
       précisément que de vous, des personnes ayant le rôle Administrateur dans votre équipe et de
       l'administration de la plateforme ». Depuis `SEC-26`, `AdEditDto.locationGeometry` n'est
       exact que pour la personne qui a publié l'annonce ; toute autre personne qui la modifie reçoit
-      le point flouté. La politique promet moins que ce qui est fait, donc sans risque, mais elle
-      est inexacte. Relevé le 14 novembre 2026 en instruisant `MOB-159`. À corriger en parité
+      le point flouté (vérifié le 14 novembre : `AdService.getAdEdit` → `isAuthor`). Seule la
+      mention du rôle Administrateur de l'équipe est fausse ; celle de l'administration de la
+      plateforme reste vraie au sens de l'exploitant, qui a accès à la base : la garder. La
+      politique promet moins que ce qui est fait, donc sans risque, mais elle est inexacte. Relevé le 14 novembre 2026 en instruisant `MOB-159`. À corriger en parité
       FR/EN ; le texte étant un asset de l'app, il n'y paraît qu'à la build suivante.
 - [ ] `LEGAL-28` **La politique ne parle pas des applications externes autorisées par OAuth (S)** —
       depuis `API-199` un membre peut ouvrir son compte à une application tierce
