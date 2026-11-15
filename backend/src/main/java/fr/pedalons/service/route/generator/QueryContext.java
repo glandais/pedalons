@@ -140,7 +140,7 @@ final class QueryContext {
       }
       probe[probe.length - 1] = s;
       if (SearchTurns.pathOk(
-          g, probe, Math.max(0, probe.length - 3), probe.length, p.maxTurnDeg())) {
+          g, probe, Math.max(0, probe.length - 3), probe.length, p.maxTurnDeg(), false)) {
         out.add(s);
       }
     }

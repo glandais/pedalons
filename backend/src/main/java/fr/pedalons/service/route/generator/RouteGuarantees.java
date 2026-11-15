@@ -25,6 +25,26 @@ public final class RouteGuarantees {
   static final double CLUSTER_M = 100;
 
   /**
+   * The cluster rule does not apply this close to the start or to the end of the route. It is
+   * there against a route that goes out by one carriageway and back by the other; in its first
+   * metres a route only leaves its start, and riding round the block to face the right way is no
+   * way back. Without this a start in a street grid had no route at all in the directions whose
+   * shortest way out goes round a block of less than {@link #CLUSTER_M} (design §13.14).
+   */
+  static final double CLUSTER_FREE_ENDS_M = 200;
+
+  /**
+   * Is the cluster {@code head(states[i])..head(states[j])} within {@link #CLUSTER_FREE_ENDS_M}
+   * of the start of the route or, when {@code cum} covers the whole route, of its end?
+   *
+   * @param cum cumulated lengths, {@code cum[k]} = metres before {@code states[k]}
+   */
+  static boolean clusterAtAnEnd(double[] cum, int i, int j, boolean wholeRoute) {
+    return cum[j + 1] <= CLUSTER_FREE_ENDS_M
+        || (wholeRoute && cum[cum.length - 1] - cum[i + 1] <= CLUSTER_FREE_ENDS_M);
+  }
+
+  /**
    * @param startNode query node of S
    * @param endNode query node of E (equal to {@code startNode} for a loop)
    * @param targetM requested distance D
@@ -101,7 +121,7 @@ public final class RouteGuarantees {
         continue;
       }
       for (int j = i + 1; j + 1 < n && cum[j + 1] - cum[i + 1] <= CLUSTER_M; j++) {
-        if (!clusterApplies(g, g.head(states[j]))) {
+        if (!clusterApplies(g, g.head(states[j])) || clusterAtAnEnd(cum, i, j, true)) {
           continue;
         }
         if (Geo.turnAngleDeg(

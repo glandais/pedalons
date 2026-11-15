@@ -82,8 +82,19 @@ final class SearchTurns {
     return true;
   }
 
-  /** Every turn of {@code states[from..to)} on walked windows (joins of legs, tails, flow output). */
+  /** Every turn of {@code states[from..to)} on walked windows, {@code states} being a whole route. */
   static boolean pathOk(QueryGraph g, int[] states, int from, int to, double maxTurnDeg) {
+    return pathOk(g, states, from, to, maxTurnDeg, true);
+  }
+
+  /**
+   * Every turn of {@code states[from..to)} on walked windows (joins of legs, tails, flow output).
+   *
+   * @param wholeRoute {@code states} ends where the route ends, so the cluster rule is lifted
+   *     there as it is at the start; false for the beginning of a route still being built
+   */
+  static boolean pathOk(
+      QueryGraph g, int[] states, int from, int to, double maxTurnDeg, boolean wholeRoute) {
     NetworkParameters np = g.parameters();
     for (int i = Math.max(0, from); i + 1 < Math.min(to, states.length); i++) {
       if (states[i + 1] == (states[i] ^ 1)) {
@@ -110,6 +121,7 @@ final class SearchTurns {
               && cum[j + 1] - cum[i + 1] <= RouteGuarantees.CLUSTER_M;
           j++) {
         if (RouteGuarantees.clusterApplies(g, g.head(states[j]))
+            && !RouteGuarantees.clusterAtAnEnd(cum, i, j, wholeRoute)
             && Geo.turnAngleDeg(
                     windowHeading(g, states, i, false, np),
                     windowHeading(g, states, j + 1, true, np))

@@ -587,6 +587,32 @@ class RouteGeneratorScenarioTest {
     assertEquals(0, s.diagnostics().disjointInfeasible());
   }
 
+  @Test
+  void aStartWhoseOnlyWayOutGoesRoundABlockStillGetsALoop() {
+    // the start is on a street that ends, 40 m south, on a cross street; the loop leaves west
+    // along it for 100 m, then north: two right angles 100 m apart, which the cluster rule reads
+    // as a U-turn. In the first and last 200 m of a route it is only the way out of the start
+    TestNetwork n =
+        base()
+            .node("N", 0, 300)
+            .node("P", 0, 0)
+            .node("P2", 300, 0)
+            .node("Q", -100, 0)
+            .node("Q2", -100, -300)
+            .node("R", -100, 300)
+            .node("A", -100, 6000)
+            .node("B", 4000, 6000)
+            .node("C", 4000, 300);
+    Ids ids = new Ids();
+    ride(n, ids, 2, "N", "P", "Q", "R", "A", "B", "C", "N");
+    ride(n, ids, 2, "P", "P2");
+    ride(n, ids, 2, "Q", "Q2");
+    NetworkGraph g = n.build();
+    GeneratorRequest r = loop(n, 0, 40, 20000);
+    GeneratorResult.Success s = success(GENERATOR.generate(g, r));
+    assertAllValid(n.inputs(), g, r, s, "round the block at the start");
+  }
+
   // ---- 6: end different from start ------------------------------------------------------------
 
   @Test

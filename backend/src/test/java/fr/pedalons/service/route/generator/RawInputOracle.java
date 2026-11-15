@@ -601,6 +601,10 @@ final class RawInputOracle {
       for (int b = a; b < passes.size() && passes.get(b)[0] - passes.get(a)[0] <= 100; b++) {
         double xa = passes.get(a)[0];
         double xb = passes.get(b)[0];
+        // a turn spread over two junctions is no way back in the first and last 200 m (§13.14)
+        if (b > a && (xb <= 200 || rt.length - xa <= 200)) {
+          continue;
+        }
         double turn = angle(rt.heading(xa - 50, xa - 30), rt.heading(xb + 30, xb + 50));
         double[] chord = {passes.get(b)[1] - passes.get(a)[1], passes.get(b)[2] - passes.get(a)[2]};
         if (turn >= maxTurn

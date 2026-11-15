@@ -2342,3 +2342,50 @@ par un côté, retour par l'autre », dont 15 s sur 249 appels où le flot exist
 est refusé au contrôle, puis passe au repli séquentiel (qui aboutit 166 fois) ; 8,5 s dans la
 famille des polygones. Le levier suivant est donc le contrôle a posteriori (sens unique mal placé
 par l'échange de tronçons, virages sur fenêtre parcourue), pas les flots sans issue.
+
+### 13.14 Production, 15 novembre : aucun parcours vers le nord-ouest depuis la place de l'équipe
+
+Constat en production (`22c23ce`) : boucle route de 50 km, cap nord-ouest, départ à la localisation
+de l'équipe A : `NO_ROUTE` en 4,2 à 4,5 s, aucun candidat dans aucune famille. Reproduit en local
+sur l'export : échec à 30 et 50 km avec le cap, réussite sans.
+
+**Cause.** Le départ est sur une rue qui débouche, 40 m au sud, sur une rue transversale. Le plus
+court chemin vers le nord-ouest la longe sur une centaine de mètres puis remonte au nord : deux
+angles droits à 91 m l'un de l'autre, que la règle du demi-tour étalé (§12.12, `CLUSTER_M` = 100 m)
+lit comme un demi-tour (162° entre l'entrée et la sortie). Ni le flot ni `EdgeDijkstra` ne
+connaissent cette règle ; tous leurs chemins passent par là, à l'aller ou au retour (43 refus sur
+53 au même carrefour, 56 m avant le retour au départ), et `SearchTurns.pathOk` les refuse tous.
+
+**Trois correctifs essayés.**
+
+| | Requête de production (30 / 50 / 80 km) | Ailleurs |
+|---|---|---|
+| Interdire l'arête refusée et relancer le flot | 1 / 1 / 2 parcours, à partir de 20 relances par paire d'ancres | chaque relance coûte 30 ms ; requêtes de 80 km ralenties de 1 à 2 s ; un départ où 44 relances ne débloquent rien |
+| `CLUSTER_M` à 50 m | 3 / 3 / 3 parcours | rouvre l'aller-retour par deux routes parallèles reliées par un raccord de 60 à 80 m, que les scénarios 15 refusent exprès (4 tests en échec) |
+| Règle levée aux deux bouts du parcours (retenu) | 3 / 3 / 3 parcours, 1,8 à 3,2 s | aucun test existant ne change |
+
+**Retenu.** La règle du demi-tour étalé ne s'applique plus quand le groupe de nœuds est dans les
+200 premiers ou les 200 derniers mètres du parcours (`RouteGuarantees.CLUSTER_FREE_ENDS_M`,
+`clusterAtAnEnd`). Elle vise un parcours qui part par une chaussée et revient par l'autre ; dans ses
+premiers mètres un parcours ne fait que quitter son départ, et faire le tour du pâté de maisons pour
+se mettre dans le bon sens n'est pas un retour. Le virage à un nœud seul (150°) garde sa règle
+partout. Appliqué au contrôleur, à `SearchTurns.pathOk` (le début seulement pour un parcours en
+construction) et à l'oracle de test, qui a sa propre copie. Test
+`aStartWhoseOnlyWayOutGoesRoundABlockStillGetsALoop`, qui échoue sans le correctif.
+
+**Banc**, un passage à la fois, oracle coupé, mêmes requêtes qu'au §13.13 :
+
+| Équipe | Mesure | Production | §13.13 | Avec la règle levée aux bouts |
+|---|---|---|---|---|
+| A | réussies / arrêts sur budget | 55 / 9 | 57 / 7 | 58 / 6 |
+| A | parcours rendus | 115 | 119 | 129 |
+| A | temps d'une réussite, médiane / p90 | 1,9 / 4,2 s | 2,0 / 4,2 s | 1,7 / 4,0 s |
+| `903379379966724603` | réussies | 19 | 23 | 28 |
+| `903379379966724603` | parcours rendus | 25 | 37 | 54 |
+| `902861823942084536` | réussies | 0 | 6 | 6 |
+
+Aucun parcours rendu n'est refusé par le contrôleur. Sur les 24 boucles de A, les cœurs refusés
+près d'une ancre étaient 104 sur 190 refus : c'était le premier poste de temps relevé au §13.13.
+
+Relevé au passage : la première requête après un déploiement attend la construction du graphe
+(34 s pour A).

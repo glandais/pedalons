@@ -967,13 +967,20 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       de demi-tour par ponts du type demandé (`AnchorPair.coreComponent`, test
       `aTurningPointBeyondABridgeOfTheRideTypeIsNotTried`) supprime les flots sans issue sans
       changer le taux de réussite. Ne jamais comparer deux passages du banc lancés en même
-      temps. Restent : les
+      temps. Production, 15 novembre (§13.14) : aucun parcours vers le nord-ouest depuis la place de
+      l'équipe A, le tour d'un pâté de maisons de 91 m à la sortie du départ étant lu comme un
+      demi-tour étalé ; la règle est levée dans les 200 premiers et derniers mètres du parcours
+      (`RouteGuarantees.CLUSTER_FREE_ENDS_M`, test
+      `aStartWhoseOnlyWayOutGoesRoundABlockStillGetsALoop`), 58 réussites sur 120 pour A et 28 pour
+      `903379379966724603` au banc. Ne pas baisser `CLUSTER_M` à la place : les raccords de 60 à
+      80 m entre deux chaussées doivent rester refusés. Restent : les
       propositions 3 et 6 à 9 du §13.6 (budget de 10 s, reconstructions, pondérateur, familiarité,
       banc) ; les composantes par type de sortie sur les arêtes admises (§13.10, correction b :
       queue forcée jamais planifiée pour un départ sur une antenne du type demandé) ; les départs 4
       et 5 de l'équipe A, sans proposition à 30 et 50 km pour une raison non expliquée (§13.11) ;
-      les flots refusés au contrôle dans les deux ordres, premier poste de temps de A (249 appels
-      sur 563, §13.13) ; l'oracle de test devenu lent sur A et ses relevés nouveaux non analysés
+      la première requête après un déploiement, qui attend la construction du graphe (34 s
+      pour A, §13.14) ; les cœurs du flot encore refusés au contrôle loin des ancres (86 refus sur 24
+      boucles de A, §13.14) ; l'oracle de test devenu lent sur A et ses relevés nouveaux non analysés
       (§13.12) ; l'`EXPLAIN` de l'empreinte. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
       de `PlannerAccess`), les parcours masqués par la modération alimentent le réseau, une copie
       garde la case d'exclusion.
