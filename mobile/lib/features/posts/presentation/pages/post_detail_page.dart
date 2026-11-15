@@ -64,6 +64,7 @@ class PostDetailPage extends ConsumerWidget {
       loading: () => Scaffold(
         appBar: PdlAppBar(
           onBack: () => context.pop(),
+          backKey: keys.post.backButton,
           backSemanticLabel: 'common.back'.tr(),
         ),
         body: const SingleChildScrollView(
@@ -77,6 +78,7 @@ class PostDetailPage extends ConsumerWidget {
       error: (Object error, StackTrace stack) => Scaffold(
         appBar: PdlAppBar(
           onBack: () => context.pop(),
+          backKey: keys.post.backButton,
           backSemanticLabel: 'common.back'.tr(),
         ),
         body: Center(
@@ -123,6 +125,7 @@ class _PostDetailContent extends ConsumerWidget {
         // Pas de titre : le corps porte déjà le nom en 22/700, juste
         // dessous. Le répéter en 17 dans la barre le dit deux fois.
         onBack: () => context.pop(),
+        backKey: keys.post.backButton,
         backSemanticLabel: 'common.back'.tr(),
         actions: <Widget>[
           PdlAppBarAction(

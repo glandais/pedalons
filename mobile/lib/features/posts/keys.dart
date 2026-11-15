@@ -8,6 +8,7 @@ class PostDetailKeys {
   final loadError = const _PostDetailKey('loadError');
   final title = const _PostDetailKey('title');
   final moreButton = const _PostDetailKey('moreButton');
+  final backButton = const _PostDetailKey('backButton');
 }
 
 class _PostEditorKey extends ValueKey<String> {

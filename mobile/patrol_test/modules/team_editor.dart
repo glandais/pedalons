@@ -26,7 +26,10 @@ final class TeamEditor extends Module {
     await $(keys.teamEditor.nameField).waitUntilVisible();
   }
 
+  /// Scrolls back up first: the settings check the visibility row, lower in the form, before
+  /// renaming, and the field scrolled out of a lazy list is no longer built.
   Future<void> enterName(String name) async {
+    await scrolledUpTo(keys.teamEditor.nameField);
     await $(keys.teamEditor.nameField).enterText(name);
   }
 

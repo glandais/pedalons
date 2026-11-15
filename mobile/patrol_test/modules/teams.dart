@@ -104,6 +104,13 @@ final class Teams extends Module {
 
   bool showsMyTeam(String teamSlug) => isShown(keys.teams.teamCard(teamSlug));
 
+  /// Waits for the card of [teamSlug] in « Mes équipes ». The tab is on screen as soon as its
+  /// « Découvrir » button is, and that button is also in the empty state shown before the list
+  /// reloads: right after creating or joining a team, wait for the card, not for the tab.
+  Future<void> waitUntilShowsMyTeam(String teamSlug) async {
+    await $(keys.teams.teamCard(teamSlug)).waitUntilVisible();
+  }
+
   /// Whether the card of [teamSlug] in the Teams tab gives the member's real role, [role]
   /// (« Membre », « Organisateur »…) — a badge renders its label in capitals. The tab mounts the
   /// discovery card (rule R12), with no « Voir l'équipe » button: tapping the card opens the team.

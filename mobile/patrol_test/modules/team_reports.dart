@@ -77,9 +77,10 @@ final class TeamReports extends Module {
     await $(keys.teamReports.emptyOpen).waitUntilVisible();
   }
 
-  /// Leaves a page opened from a card, back to the queue.
-  Future<void> backToQueue() async {
-    await $.tester.pageBack();
+  /// Leaves a post opened from a card, back to the queue. Its bar is a `PdlAppBar`, whose
+  /// back arrow is not the `CupertinoNavigationBarBackButton` that `pageBack()` looks for.
+  Future<void> backToQueueFromPost() async {
+    await $(keys.post.backButton).tap();
     await waitUntilShown();
   }
 

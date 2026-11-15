@@ -78,7 +78,7 @@ void main() {
       await modules.teamReports.openContent(postCard);
       await modules.post.waitUntilShown();
       expect(modules.post.title, post['name']);
-      await modules.teamReports.backToQueue();
+      await modules.teamReports.backToQueueFromPost();
 
       // Dismissing needs no confirmation: the report is closed, the member stays.
       await modules.teamReports.dismiss(memberCard);

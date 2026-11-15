@@ -56,7 +56,7 @@ void main() {
       // « Mes équipes » lists the new team, with the creator's real role.
       await openLink($, Paths.teams());
       await modules.teams.waitUntilTeamsListIsShown();
-      expect(modules.teams.showsMyTeam(slug), isTrue);
+      await modules.teams.waitUntilShowsMyTeam(slug);
       expect(modules.teams.myTeamShowsRole(slug, 'Administrateur'), isTrue);
 
       // A second team: the server refuses, the banner says why, the name stays.
