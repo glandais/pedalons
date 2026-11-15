@@ -1,7 +1,7 @@
 # Route planner in the mobile app
 
 Ledger `MOB-170` (app) and `WEB-183` (the site's side: shared fullscreen component and embed
-build). Written 15 November 2026. Status: **design, spike done, not coded**. **No contract change**
+build). Written 15 November 2026. Status: **lot 2 (site) coded the same day, lot 3 (app) not coded**. **No contract change**
 and no backend change: the generated Dart client already exposes everything the planner calls.
 
 Goal: creating and editing a route in the app does what the site does — drawing on the map
@@ -144,6 +144,12 @@ Page to Flutter:
 | `quotaRefused{scope}` | Opens the quota dialog, refetches the team |
 | `done{payload, stats, nameSuggestion, notice}` | Closes the screen, hands the result to the form |
 
+**As built, the protocol's reference is `frontend/src/embed/mobile-planner/README.md`.** It adds
+to the table above: `load.create` (to pass explicitly when reopening a drawing not saved yet),
+`load.terrain` and `load.defaultCenter`, `dirty{dirty}` for the app's `PopScope`, `error{message}`,
+`close{dirty}`, and `done.stats.line` (a polyline6 for the native preview). `done.payload.file` is
+`true`, never the bytes. `theme` is `light` or `dark`, not CSS variables.
+
 A multipart body crosses the bridge as base64. Flutter keeps the picked file so that an import left
 untouched is uploaded as a file, as on the site.
 
@@ -170,8 +176,19 @@ untouched is uploaded as a file, as on the site.
 1. **Spike** — done, §2.
 2. **Site** (`WEB-183`, M): extraction, injectable transport, entry point and build. Ends with the
    real planner bundle loaded in the app's debug page: weight, satellite tiles, first paint on the
-   Pixel.
+   Pixel. **Done 15 November 2026**: 2.6 MB of script (760 KB gzipped), 0.5 MB of
+   worker, 0.4 MB of CSS; on the Pixel 6a the page is ready in 0.7 s and the eight basemaps
+   render, the API-served ones (satellite, OSM, SCAN 25, Michelin) through style documents read
+   by Flutter. The debug page `mobile/lib/dev/planner_embed_page.dart` (`/dev/planificateur`) is
+   kept: it is the bridge's minimal reference until lot 3.
 3. **App** (`MOB-170`, M): screen, bridge, source choice, preview, send, quota, exclusion checkbox.
+   Three points lot 2 left to lot 3:
+   - **Reopening.** `done` returns no state, and a payload is relative to the state the page
+     opened on: destroying the WebView between two openings would let an untouched reopening wipe
+     the first result. Keep the WebView alive for the life of the form.
+   - **Large GPX.** A 10 MB file crosses the bridge twice as base64; untested on a device. If it
+     hurts, the multipart refers to the file Flutter kept instead of carrying it.
+   - **Android back** never reaches the page: Flutter decides from the last `dirty` message.
 4. **Tests and device check** (§6), then `contracts/routes.yaml`'s comment on `routeNew` /
    `routeEdit` (« the route planner stays web-only ») and the `MOB-24` row are brought up to date.
 

@@ -136,6 +136,7 @@ flutter:
     - assets/icon.png
     - assets/gps/
     - assets/editor/
+    - assets/planner/
     - privacy/
 
   # Inter ships with the app (rsms/inter 4.1, SIL OFL — assets/fonts/inter/OFL.txt) rather than

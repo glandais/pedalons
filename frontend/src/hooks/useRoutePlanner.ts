@@ -58,7 +58,7 @@ import {
   type PlannerWaypoint,
   type WaypointPlacement,
 } from '@/lib/plannerWaypoints'
-import { importGpx as importGpxRequest } from '@/api/endpoints/router/router'
+import { plannerTransport } from '@/lib/plannerTransport'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 import { plannerErrorMessage } from '@/lib/plannerErrors'
 import { plannerQuotaRefusalOf } from '@/lib/plannerQuota'
@@ -658,11 +658,7 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
         const key = `${file.name}|${file.size}|${file.lastModified}`
         let response = importCacheRef.current?.key === key ? importCacheRef.current.response : null
         if (!response) {
-          response = await importGpxRequest(
-            { gpxFile: file, teamSlug },
-            { skipErrorToast: true },
-            signal
-          )
+          response = await plannerTransport().importGpx({ gpxFile: file, teamSlug }, signal)
           importCacheRef.current = { key, response }
         }
         signal.throwIfAborted()

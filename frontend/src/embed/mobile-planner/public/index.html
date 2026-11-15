@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, interactive-widget=resizes-content"
+    />
+    <link rel="stylesheet" href="planner.css" />
+  </head>
+  <body>
+    <div id="planner"></div>
+    <!-- Classic scripts, not modules: a module loaded from file:// is refused by Android's WebView.
+         worker-src.js holds MapLibre's worker as a string, which planner.js turns into a Blob. -->
+    <script src="worker-src.js"></script>
+    <script src="planner.js"></script>
+  </body>
+</html>

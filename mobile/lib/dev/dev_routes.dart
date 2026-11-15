@@ -8,6 +8,7 @@
 //
 // - `/dev/composants` : `PdlGalleryPage` ;
 // - `/dev/cartes`, `/dev/cartes/<section>` : `CardGalleryPage` ;
+// - `/dev/planificateur` : `PlannerEmbedPage`, le planificateur embarqué ;
 // - `/dev/listes`, `/dev/listes/<section>`, `/dev/listes/<section>/<cas>` :
 //   `ListGalleryPage`.
 //
@@ -19,6 +20,7 @@ import 'package:go_router/go_router.dart';
 import 'card_gallery_page.dart';
 import 'list_gallery_page.dart';
 import 'pdl_gallery_page.dart';
+import 'planner_embed_page.dart';
 
 const String kDevComponentsPath = '/dev/composants';
 
@@ -36,6 +38,7 @@ String? devInitialPath() {
 
 List<RouteBase> devRoutes() => <RouteBase>[
   GoRoute(path: kDevComponentsPath, builder: (_, _) => const PdlGalleryPage()),
+  GoRoute(path: kPlannerEmbedPath, builder: (_, _) => const PlannerEmbedPage()),
   GoRoute(
     path: kCardGalleryPath,
     builder: (_, _) => const CardGalleryPage(),

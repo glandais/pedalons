@@ -720,6 +720,16 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       `src/embed/mobile-planner/` vers `mobile/assets/planner/` (script classique, worker MapLibre
       chargé en Blob). Le site ne change pas de comportement. Sert `MOB-170`. Plan
       [`2026-11-15-planificateur-parcours-mobile.md`](plans/2026-11-15-planificateur-parcours-mobile.md) §4.1.
+      Codé le 15 novembre 2026 : `usePlannerEditing`, `PlannerTouchFullscreen` et
+      `PlannerEditingDialogs` partagés par les deux hôtes, `lib/plannerTransport.ts`, recherche et
+      « Me localiser » injectés par `plannerMapControls.ts`, `pnpm build:mobile-planner`, banc
+      navigateur `pnpm dev:mobile-planner`, protocole du pont dans
+      `src/embed/mobile-planner/README.md` ; Vitest verts (`bridge.test.ts`, `done.test.ts`).
+      Recette sur Pixel 6a par la page de debug `/dev/planificateur` : prêt en 0,7 s, les huit
+      fonds s'affichent, ceux de notre API compris. Reste avant de ranger l'entrée : faire tourner
+      les specs e2e du planificateur (l'extraction touche `RoutePlannerField.tsx`), recetter sur
+      iOS, et alléger le bundle (2,6 Mo : catalogues entiers, paquet de recherche Stadia, CSS du
+      site).
 
 - [ ] `WEB-179` **Panneau « Générer un parcours » (M)** — départ, arrivée, rose des vents, distance, fréquentation, trois
       propositions sur la carte avec le réseau de l'équipe en fond, ouverture dans l'éditeur comme

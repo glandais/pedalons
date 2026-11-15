@@ -1,4 +1,4 @@
-import { useCallback, useRef, useMemo, useState, useEffect } from 'react'
+import { useCallback, useContext, useRef, useMemo, useState, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -31,6 +31,7 @@ import { HoverMarker, KmMarkersLayer } from '../map/MapMarkers'
 import { routeArrowLayout } from '../map/routeArrowLayout'
 import type { ExpressionSpecification } from 'maplibre-gl'
 import { surfaceColors } from '@/lib/plannerSurface'
+import { PlannerMapControlsContext } from './plannerMapControls'
 import { PlannerToolbar } from './PlannerToolbar'
 import { RoutePlannerMiniMap } from './RoutePlannerMiniMap'
 import { calculateBounds } from '../map/mapUtils'
@@ -370,6 +371,8 @@ export function RoutePlanner({
   const proposeStart = useCallback((place: { lng: number; lat: number }) => {
     if (noPointYetRef.current) setStartCandidate({ lng: place.lng, lat: place.lat })
   }, [])
+  // The search and « Me localiser » of a host that cannot use the site's (the mobile app's page)
+  const hostControls = useContext(PlannerMapControlsContext)
   const handleSearchSelected = useCallback(
     (place: SearchedPlace) => proposeStart(place),
     [proposeStart]
@@ -1706,12 +1709,22 @@ export function RoutePlanner({
                     : 'crosshair'
             }
           >
-            <MapSearchControl onResultSelected={handleSearchSelected} />
+            {hostControls ? (
+              <hostControls.Search onResultSelected={handleSearchSelected} />
+            ) : (
+              <MapSearchControl onResultSelected={handleSearchSelected} />
+            )}
 
             {/* One shot, not tracked: it is only there to find where to start. */}
-            <LocateControl
-              onGeolocate={(e) => proposeStart({ lng: e.coords.longitude, lat: e.coords.latitude })}
-            />
+            {hostControls ? (
+              <hostControls.Locate onLocated={proposeStart} />
+            ) : (
+              <LocateControl
+                onGeolocate={(e) =>
+                  proposeStart({ lng: e.coords.longitude, lat: e.coords.latitude })
+                }
+              />
+            )}
 
             {/* The drawing tools are in the toolbar below (mouse) or the dialog's bottom bar
                 (finger): the columns keep the camera and the display. No « Masquer le tracé » on a

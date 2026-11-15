@@ -1,4 +1,4 @@
-import { lineElevation } from '@/api/endpoints/router/router'
+import { plannerTransport } from '@/lib/plannerTransport'
 import type { GpxImportTrack } from '@/api/dto'
 import { apiErrorStatus } from '@/lib/apiError'
 import { decode1, decode2 } from '@/lib/polyline'
@@ -63,9 +63,8 @@ export async function readDirectProfiles(
   for (const chunk of chunkEdges(edges)) {
     signal?.throwIfAborted()
     // Silent on failure: the climb stays the net one between the ends
-    const response = await lineElevation(
+    const response = await plannerTransport().lineElevation(
       { teamSlug, lines: chunk.map((e) => ({ from: e.from, to: e.to })) },
-      { skipErrorToast: true },
       signal
     )
     if (response.lines.length !== chunk.length) continue

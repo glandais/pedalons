@@ -1,5 +1,5 @@
 import { distance } from '@/components/map/mapUtils'
-import { route as routerRoute } from '@/api/endpoints/router/router'
+import { plannerTransport } from '@/lib/plannerTransport'
 import KDBush from 'kdbush'
 import { around } from 'geokdbush'
 import { RouterProfile, type GpxImportTrack, type UnpavedSpan, type WaypointDto } from '@/api/dto'
@@ -1228,10 +1228,8 @@ async function router(
   }
   // Routing is billed per request: never send one for an operation already abandoned.
   signal?.throwIfAborted()
-  // The planner renders the failure itself, by code (plannerErrorMessage): no global toast on top.
-  const response = await routerRoute(
+  const response = await plannerTransport().route(
     { from, to, ...definedSettings(settings), teamSlug },
-    { skipErrorToast: true },
     signal
   )
   const points = createPoints(response.route.coordinates)
