@@ -389,6 +389,20 @@ n'ont aucun appelant d'écran).
       d'une autre personne **sans toucher à la position** et vérifier côté auteur que le point
       exact est intact ; vérifier que le lien `…/annonces/nouvelle` ouvre l'éditeur (iOS et
       Android). Un test Patrol `ad_editor_test`. Clés dans `keys.adEditor` / `keys.adManage`.
+- [ ] `MOB-163` **Éditeur de voyage : recette sur appareil, test Patrol et restes (S)** — `MOB-162`
+      n'est couvert que par les tests unitaires et de widget : ni les feuilles de choix (lieu,
+      parcours), ni l'envoi réel, ni l'éditeur riche d'une étape n'ont tourné sur un appareil. À la
+      main, en organisateur, clair et sombre : créer un voyage depuis le tableau de bord, lui donner
+      trois étapes avec parcours et lieux, en déplacer une, en retirer une, l'enregistrer en
+      brouillon, le reprendre depuis « À traiter », le publier, l'annuler, le supprimer et le
+      restaurer ; vérifier qu'un simple membre ne voit ni le crayon ni « Gérer le voyage », et que
+      `…/voyages/nouveau` ouvre l'éditeur (iOS et Android). Un test Patrol `trip_editor_test` sur le
+      modèle de `ride_editor_test`. Clés dans `keys.tripEditor` / `keys.tripManage`. Restes connus,
+      à trancher à la recette : la description d'une étape est du texte seul (les images posées au
+      site sont gardées, l'app n'en ajoute pas) ; la mention « heure de … » n'est montrée que pour
+      le départ du voyage, pas par étape (le site résout un fuseau par étape, `TripEditor`) ;
+      l'Agenda de l'équipe n'offre que « créer une sortie », le voyage se crée depuis le tableau de
+      bord.
 - [ ] `MOB-157` **Éditeur de publication : recette sur appareil et test Patrol (S)** — `MOB-156` n'est
       couvert que par les tests unitaires et de widget : ni le sélecteur de photos ni l'envoi réel
       n'ont tourné. À la main, en organisateur, clair et sombre : créer une publication depuis le

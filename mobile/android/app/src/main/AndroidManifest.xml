@@ -143,8 +143,12 @@
                 <data android:pathPattern="/equipes/.*/admin/modeles-sortie/nouveau" />
                 <data android:pathPattern="/teams/.*/admin/ride-templates/.*/edit" />
                 <data android:pathPattern="/equipes/.*/admin/modeles-sortie/.*/modifier" />
+                <data android:pathPattern="/teams/.*/trips/new" />
+                <data android:pathPattern="/equipes/.*/voyages/nouveau" />
                 <data android:pathPattern="/teams/.*/trips/.*" />
                 <data android:pathPattern="/equipes/.*/voyages/.*" />
+                <data android:pathPattern="/teams/.*/trips/.*/edit" />
+                <data android:pathPattern="/equipes/.*/voyages/.*/modifier" />
                 <data android:pathPattern="/teams/.*/trips/.*/stages/.*" />
                 <data android:pathPattern="/equipes/.*/voyages/.*/etapes/.*" />
                 <data android:pathPattern="/teams/.*/posts/new" />

@@ -225,7 +225,7 @@ class DashboardTodo extends StatelessWidget {
   }
 
   /// Reprendre un brouillon : une sortie dans l'éditeur de l'app (ledger
-  /// `MOB-80`) comme une publication (`MOB-156`), un voyage sur le site.
+  /// `MOB-80`) comme une publication (`MOB-156`) ou un voyage (`MOB-162`).
   static void _openEdit(BuildContext context, PublicationDto p) => switch (p) {
     PublicationDtoRide(:final team, :final slug) => context.push(
       Paths.rideEdit(team.slug, slug),
@@ -233,9 +233,8 @@ class DashboardTodo extends StatelessWidget {
     PublicationDtoPost(:final team, :final slug) => context.push(
       Paths.postEdit(team.slug, slug),
     ),
-    PublicationDtoTrip(:final team, :final slug) => openTeamWebPage(
-      context,
-      TeamWebPaths.tripEdit(team.slug, slug),
+    PublicationDtoTrip(:final team, :final slug) => context.push(
+      Paths.tripEdit(team.slug, slug),
     ),
   };
 

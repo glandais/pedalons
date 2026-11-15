@@ -20,6 +20,9 @@ import 'trip_fixtures.dart';
 class _FakeTripRepository implements TripRepository {
   _FakeTripRepository(this._trip);
 
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
   TripDto _trip;
 
   int joins = 0;

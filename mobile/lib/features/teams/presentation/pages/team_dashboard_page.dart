@@ -211,6 +211,9 @@ class _Summary extends StatelessWidget {
     final bool canCreateRide =
         organizer && team.enableRides && team.enableRoutes;
     final bool canPost = organizer && team.enablePosts;
+    // Un voyage se crée sur des parcours, comme une sortie (ledger `MOB-162`).
+    final bool canCreateTrip =
+        organizer && team.enableTrips && team.enableRoutes;
 
     return Padding(
       key: keys.teamDashboard.summary,
@@ -237,7 +240,7 @@ class _Summary extends StatelessWidget {
               ),
             ],
           ),
-          if (canCreateRide || canPost) ...<Widget>[
+          if (canCreateRide || canPost || canCreateTrip) ...<Widget>[
             const SizedBox(height: PdlSpacing.chipGap),
             Wrap(
               spacing: PdlSpacing.chipGap,
@@ -259,6 +262,15 @@ class _Summary extends StatelessWidget {
                     variant: PdlButtonVariant.outline,
                     size: PdlButtonSize.sm,
                     onPressed: () => context.push(Paths.postNew(team.slug)),
+                  ),
+                if (canCreateTrip)
+                  PdlButton(
+                    key: keys.teamDashboard.createTripButton,
+                    label: 'teams.dashboard.createTrip'.tr(),
+                    icon: PdlIcons.trip,
+                    variant: PdlButtonVariant.outline,
+                    size: PdlButtonSize.sm,
+                    onPressed: () => context.push(Paths.tripNew(team.slug)),
                   ),
               ],
             ),

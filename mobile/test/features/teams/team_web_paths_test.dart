@@ -30,7 +30,6 @@ void main() {
     // `appScreen: false` dans le contrat : le lien part dans le navigateur,
     // jamais sur le routeur de l'app.
     for (final String id in <String>[
-      'tripEdit',
       'teamAdminReports',
       'teamAdminMembers',
       'teamSettings',
@@ -53,6 +52,11 @@ void main() {
       '(MOB-156)', () {
     expect(webOnlyRouteIds, isNot(contains('postNew')));
     expect(webOnlyRouteIds, isNot(contains('postEdit')));
+  });
+
+  test('créer et modifier un voyage sont des écrans de l\'app (MOB-162)', () {
+    expect(webOnlyRouteIds, isNot(contains('tripNew')));
+    expect(webOnlyRouteIds, isNot(contains('tripEdit')));
   });
 
   test('les modèles de sortie sont des écrans de l\'app (MOB-78)', () {

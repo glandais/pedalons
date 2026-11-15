@@ -213,6 +213,19 @@ final List<_LinkCase> _cases = [
     PathVariants.team(_teamSlug),
     PathVariants.teamPosts(_teamSlug),
   ]),
+  // L'éditeur d'un voyage (ledger `MOB-162`) : la création sous l'Agenda, la
+  // modification sous l'écran qu'elle réécrit.
+  _LinkCase('tripNew', PathVariants.tripNew(_teamSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+    PathVariants.teamAgenda(_teamSlug),
+  ]),
+  _LinkCase('tripEdit', PathVariants.tripEdit(_teamSlug, _tripSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+    PathVariants.teamAgenda(_teamSlug),
+    PathVariants.trip(_teamSlug, _tripSlug),
+  ]),
   _LinkCase('trip', PathVariants.trip(_teamSlug, _tripSlug), [
     PathVariants.teams(),
     PathVariants.team(_teamSlug),

@@ -60,6 +60,8 @@ class Keys {
   final device = DeviceVerifyKeys();
   final home = HomeKeys();
   final trip = TripDetailKeys();
+  final tripEditor = TripEditorKeys();
+  final tripManage = TripManageKeys();
   final calendar = CalendarKeys();
   final routes = RoutesKeys();
   final routeDetail = RouteDetailKeys();

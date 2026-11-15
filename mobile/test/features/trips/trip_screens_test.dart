@@ -40,6 +40,9 @@ import 'trip_fixtures.dart';
 class _StubTripRepository implements TripRepository {
   _StubTripRepository(this.trip, {this.neverCompletes = false, this.weather});
 
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
   /// Ce que le serveur rend **maintenant** : un test peut le changer entre
   /// deux lectures, comme un organisateur qui annule le voyage.
   TripDto trip;
@@ -361,6 +364,47 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    // Le crayon et le bandeau « supprimé » suivent le bloc `permissions` et
+    // l'état du voyage (docs/LEDGER_*.md MOB-162).
+    testWidgets('un simple membre n\'a pas le crayon', (
+      WidgetTester tester,
+    ) async {
+      await openTrip(tester, fixtureTrip());
+
+      expect(find.byKey(keys.tripManage.editButton), findsNothing);
+      expect(find.byKey(keys.tripManage.deletedBanner), findsNothing);
+    });
+
+    testWidgets('avec canEdit : le crayon ; supprimé : le bandeau, sans '
+        'crayon', (WidgetTester tester) async {
+      final TripDto trip = fixtureTrip();
+      Future<void> mount(TripDto t) async {
+        await tester.pumpWidget(
+          app(
+            t,
+            repository: _StubTripRepository(t)
+              ..permissions = permissionsFor(member: true, role: 'ORGANIZER'),
+            home: TripDetailPage(
+              key: ValueKey<bool>(t.deleted),
+              teamSlug: t.team.slug,
+              tripSlug: t.slug,
+            ),
+          ),
+        );
+        for (int i = 0; i < 4; i++) {
+          await tester.pump(const Duration(milliseconds: 10));
+        }
+      }
+
+      await mount(trip);
+      expect(find.byKey(keys.tripManage.editButton), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await mount(trip.copyWith(deleted: true));
+      expect(find.byKey(keys.tripManage.editButton), findsNothing);
+      expect(find.byKey(keys.tripManage.deletedBanner), findsOneWidget);
     });
 
     testWidgets('un voyage annulé porte son bandeau et aucune action', (

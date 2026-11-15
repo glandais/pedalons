@@ -137,3 +137,61 @@ class TripDetailKeys {
   /// étape (ledger `MOB-105`).
   final stageMapColorBy = const _TripKey('stageMapColorBy');
 }
+
+class _TripEditorKey extends ValueKey<String> {
+  const _TripEditorKey(String value) : super('tripEditor_$value');
+}
+
+/// L'éditeur de voyage, création et modification (ledger `MOB-162`).
+class TripEditorKeys {
+  final forbidden = const _TripEditorKey('forbidden');
+  final loadError = const _TripEditorKey('loadError');
+  final saveButton = const _TripEditorKey('saveButton');
+  final errorBanner = const _TripEditorKey('errorBanner');
+  final nameField = const _TripEditorKey('nameField');
+  final slugRow = const _TripEditorKey('slugRow');
+  final markdownField = const _TripEditorKey('markdownField');
+  final dateRow = const _TripEditorKey('dateRow');
+  final timeRow = const _TripEditorKey('timeRow');
+  final tagsRow = const _TripEditorKey('tagsRow');
+  final visibility = const _TripEditorKey('visibility');
+  final status = const _TripEditorKey('status');
+  final publishAtRow = const _TripEditorKey('publishAtRow');
+  final routeRow = const _TripEditorKey('routeRow');
+  final addStageButton = const _TripEditorKey('addStageButton');
+
+  /// La carte de l'étape de rang [index] (à partir de zéro), et ses champs.
+  ValueKey<String> stage(int index) => _TripEditorKey('stage_$index');
+  ValueKey<String> stageName(int index) => _TripEditorKey('stageName_$index');
+  ValueKey<String> stageDate(int index) => _TripEditorKey('stageDate_$index');
+  ValueKey<String> stageTime(int index) => _TripEditorKey('stageTime_$index');
+  ValueKey<String> stageSpeed(int index) => _TripEditorKey('stageSpeed_$index');
+  ValueKey<String> stageStartPlace(int index) =>
+      _TripEditorKey('stageStartPlace_$index');
+  ValueKey<String> stageEndPlace(int index) =>
+      _TripEditorKey('stageEndPlace_$index');
+  ValueKey<String> stageRoute(int index) => _TripEditorKey('stageRoute_$index');
+  ValueKey<String> stageMarkdown(int index) =>
+      _TripEditorKey('stageMarkdown_$index');
+  ValueKey<String> stageUp(int index) => _TripEditorKey('stageUp_$index');
+  ValueKey<String> stageDown(int index) => _TripEditorKey('stageDown_$index');
+  ValueKey<String> stageRemove(int index) =>
+      _TripEditorKey('stageRemove_$index');
+}
+
+class _TripManageKey extends ValueKey<String> {
+  const _TripManageKey(String value) : super('tripManage_$value');
+}
+
+/// Les gestes d'organisateur du détail d'un voyage (ledger `MOB-162`).
+class TripManageKeys {
+  final editButton = const _TripManageKey('editButton');
+  final publish = const _TripManageKey('publish');
+  final unpublish = const _TripManageKey('unpublish');
+  final cancel = const _TripManageKey('cancel');
+  final reinstate = const _TripManageKey('reinstate');
+  final delete = const _TripManageKey('delete');
+  final restore = const _TripManageKey('restore');
+  final report = const _TripManageKey('report');
+  final deletedBanner = const _TripManageKey('deletedBanner');
+}

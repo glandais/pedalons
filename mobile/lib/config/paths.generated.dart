@@ -390,6 +390,15 @@ class Paths {
     }
   }
 
+  static String tripNew(String teamSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/voyages/nouveau';
+      default:
+        return '/teams/$teamSlug/trips/new';
+    }
+  }
+
   static String trip(String teamSlug, String tripSlug) {
     switch (getCurrentLocale()) {
       case 'fr':
@@ -698,6 +707,10 @@ class PathVariants {
     'en': '/teams/$teamSlug/admin/ride-templates/$templateSlug/edit',
     'fr': '/equipes/$teamSlug/admin/modeles-sortie/$templateSlug/modifier',
   };
+  static Map<String, String> tripNew(String teamSlug) => {
+    'en': '/teams/$teamSlug/trips/new',
+    'fr': '/equipes/$teamSlug/voyages/nouveau',
+  };
   static Map<String, String> trip(String teamSlug, String tripSlug) => {
     'en': '/teams/$teamSlug/trips/$tripSlug',
     'fr': '/equipes/$teamSlug/voyages/$tripSlug',
@@ -767,7 +780,6 @@ const Set<String> webOnlyRouteIds = <String>{
   'teamAdminMembers',
   'teamAdminReports',
   'teamSettings',
-  'tripEdit',
 };
 
 /// Pages of the **site** a deeplink wildcard captures although the app has no
@@ -799,10 +811,6 @@ const List<String> sitePagePathPatterns = <String>[
   r'^/equipes/[^/]+/sorties/[^/]+/groupes/[^/]+/carte/?$',
   r'^/teams/[^/]+/rides/[^/]+/map/?$',
   r'^/equipes/[^/]+/sorties/[^/]+/carte/?$',
-  r'^/teams/[^/]+/trips/new/?$',
-  r'^/equipes/[^/]+/voyages/nouveau/?$',
-  r'^/teams/[^/]+/trips/[^/]+/edit/?$',
-  r'^/equipes/[^/]+/voyages/[^/]+/modifier/?$',
   r'^/teams/[^/]+/trips/[^/]+/stages/[^/]+/map/?$',
   r'^/equipes/[^/]+/voyages/[^/]+/etapes/[^/]+/carte/?$',
   r'^/teams/[^/]+/routes/map/?$',

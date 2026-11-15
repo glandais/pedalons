@@ -56,6 +56,7 @@ import '../features/teams/presentation/widgets/team_sections.dart';
 import '../features/teams/providers/team_access_probe.dart';
 import '../features/trips/presentation/pages/stage_detail_page.dart';
 import '../features/trips/presentation/pages/trip_detail_page.dart';
+import '../features/trips/presentation/pages/trip_editor_page.dart';
 import 'paths.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -341,6 +342,23 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
     entity: true,
     patterns: PathVariants.post(':teamSlug', ':postSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamPostsAncestor],
+  ),
+  // L'éditeur d'un voyage : une création sous l'Agenda, une modification
+  // sous l'écran qu'elle réécrit (ledger `MOB-162`). `tripNew` **avant**
+  // `trip` : `voyages/nouveau` est aussi le voyage de slug `nouveau`, et la
+  // première entrée qui correspond l'emporte.
+  _DeepLinkHierarchy(
+    patterns: PathVariants.tripNew(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _teamAgendaAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.tripEdit(':teamSlug', ':tripSlug'),
+    ancestors: [
+      _teamsAncestor,
+      _teamAncestor,
+      _teamAgendaAncestor,
+      _tripAncestor,
+    ],
   ),
   _DeepLinkHierarchy(
     entity: true,
@@ -879,6 +897,14 @@ GoRoute _teamTree(String locale) {
           adSlug: state.pathParameters['adSlug']!,
         ),
       ),
+      // Avant le détail : `…/voyages/nouveau` est aussi le voyage de slug
+      // `nouveau`, et c'est l'éditeur qui est visé (ledger `MOB-162`).
+      GoRoute(
+        path: _underTeam(PathVariants.tripNew(':teamSlug'), locale, teamBase),
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            TripEditorPage(teamSlug: state.pathParameters['teamSlug']!),
+      ),
       _tripShellRoute(locale, teamBase),
     ],
   );
@@ -1041,6 +1067,20 @@ GoRoute _tripShellRoute(String locale, String teamBase) {
           teamSlug: state.pathParameters['teamSlug']!,
           tripSlug: state.pathParameters['tripSlug']!,
           stageSlug: state.pathParameters['stageSlug']!,
+        ),
+      ),
+      // L'éditeur du voyage, sous son écran : ouvert par un lien, l'écran se
+      // reconstruit dessous et l'enregistrement y revient (ledger `MOB-162`).
+      GoRoute(
+        path: _underTeam(
+          PathVariants.tripEdit(':teamSlug', ':tripSlug'),
+          locale,
+          tripBase,
+        ),
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => TripEditorPage(
+          teamSlug: state.pathParameters['teamSlug']!,
+          tripSlug: state.pathParameters['tripSlug']!,
         ),
       ),
     ],

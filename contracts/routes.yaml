@@ -628,6 +628,7 @@ routes:
     deeplink: true
 
   # --- Trips ---
+  # `tripNew` and `tripEdit` are app screens since MOB-162 (the trip editor).
   - id: tripNew
     path:
       en: /teams/{teamSlug}/trips/new
@@ -635,6 +636,8 @@ routes:
     params:
       - teamSlug
     web: true
+    mobile: true
+    deeplink: true
   - id: trip
     path:
       en: /teams/{teamSlug}/trips/{tripSlug}
@@ -654,7 +657,7 @@ routes:
       - tripSlug
     web: true
     mobile: true
-    appScreen: false
+    deeplink: true
   - id: stage
     path:
       en: /teams/{teamSlug}/trips/{tripSlug}/stages/{stageSlug}

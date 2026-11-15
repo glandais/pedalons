@@ -153,7 +153,6 @@ void main() {
       ...PathVariants.teamAdminMembers('vc').values,
       ...PathVariants.teamAdminReports('vc').values,
       ...PathVariants.teamSettings('vc').values,
-      ...PathVariants.tripEdit('vc', 'ete').values,
     ];
 
     test('reconnaît les pages du site sans écran, requête comprise', () {
@@ -168,6 +167,16 @@ void main() {
       for (final String page in <String>[
         ...PathVariants.rideNew('vc').values,
         ...PathVariants.rideEdit('vc', 'rando').values,
+      ]) {
+        expect(isSitePageLocation(page), isFalse, reason: page);
+        expect(internalLocationFor(page), page, reason: page);
+      }
+    });
+
+    test('l\'éditeur de voyage s\'ouvre dans l\'app (MOB-162)', () {
+      for (final String page in <String>[
+        ...PathVariants.tripNew('vc').values,
+        ...PathVariants.tripEdit('vc', 'ete').values,
       ]) {
         expect(isSitePageLocation(page), isFalse, reason: page);
         expect(internalLocationFor(page), page, reason: page);
@@ -293,11 +302,11 @@ void main() {
     });
 
     // `…/sorties/nouvelle` était l'exemple jusqu'à `MOB-80`, puis
-    // `…/articles/nouveau` jusqu'à `MOB-156`, qui en ont fait des écrans de
-    // l'app ; `…/voyages/nouveau` a la même ambiguïté avec le voyage de slug
-    // `nouveau` et reste une page du site.
-    testWidgets('une page du site part au navigateur, pas sur le voyage '
-        '« nouveau » (MOB-59)', (WidgetTester tester) async {
+    // `…/articles/nouveau` jusqu'à `MOB-156` et `…/voyages/nouveau` jusqu'à
+    // `MOB-162`, qui en ont fait des écrans de l'app. Restent sans écran les
+    // pages d'administration de l'équipe.
+    testWidgets('une page du site part au navigateur, pas sur le routeur '
+        '(MOB-59)', (WidgetTester tester) async {
       final List<Uri> launched = <Uri>[];
       debugLinkOpener = (Uri url) async {
         launched.add(url);
@@ -306,14 +315,33 @@ void main() {
 
       final GoRouter router = await _pumpMarkdown(
         tester,
+        'Voir les [réglages](https://www.pedalons.fr/equipes/vc/admin/parametres).',
+      );
+
+      await _tapLink(tester, 'réglages');
+
+      expect(router.routerDelegate.currentConfiguration.matches, hasLength(1));
+      expect(launched.single.path, '/equipes/vc/admin/parametres');
+    });
+
+    testWidgets('« nouveau voyage » ouvre l\'éditeur de l\'app (MOB-162)', (
+      WidgetTester tester,
+    ) async {
+      final List<Uri> launched = <Uri>[];
+      debugLinkOpener = (Uri url) async {
+        launched.add(url);
+        return true;
+      };
+
+      await _pumpMarkdown(
+        tester,
         'Proposez un [voyage](https://www.pedalons.fr/equipes/vc/voyages/nouveau).',
       );
 
       await _tapLink(tester, 'voyage');
 
-      expect(find.text('page du voyage'), findsNothing);
-      expect(router.routerDelegate.currentConfiguration.matches, hasLength(1));
-      expect(launched.single.path, '/equipes/vc/voyages/nouveau');
+      expect(find.text('page du voyage'), findsOneWidget);
+      expect(launched, isEmpty, reason: 'Une route interne ne sort pas.');
     });
 
     testWidgets('« nouvel article » ouvre l\'éditeur de l\'app (MOB-156)', (

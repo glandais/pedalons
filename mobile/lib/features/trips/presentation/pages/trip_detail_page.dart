@@ -41,6 +41,7 @@ import '../../providers/trip_participation_controller.dart';
 import '../../providers/trip_stage_selection_provider.dart';
 import '../../providers/trip_weather_provider.dart';
 import '../widgets/stage_card.dart';
+import '../widgets/trip_manage_menu.dart';
 import '../widgets/trip_elevation.dart';
 import '../widgets/trip_map.dart';
 
@@ -228,24 +229,47 @@ class _TripDetailContent extends ConsumerWidget {
             semanticLabel: 'routes.share'.tr(),
             onPressed: () => _share(context),
           ),
+          // Le crayon et le menu de gestion suivent le droit que le backend
+          // calcule pour ce voyage (docs/LEDGER_*.md MOB-162) ; sans lui, le
+          // `⋯` n'ouvre que le signalement.
+          if (permissions.canEdit && !trip.deleted)
+            PdlAppBarAction(
+              key: keys.tripManage.editButton,
+              icon: PdlIcons.edit,
+              semanticLabel: 'trips.manage.edit'.tr(),
+              onPressed: () =>
+                  context.push(Paths.tripEdit(trip.team.slug, trip.slug)),
+            ),
           PdlAppBarAction(
             key: keys.trip.moreButton,
             icon: PdlIcons.more,
             semanticLabel: 'moderation.more'.tr(),
-            onPressed: () => showDetailModerationMenu(
-              context,
-              subject: ModerationSubject(
-                teamSlug: trip.team.slug,
-                type: ReportTargetType.trip,
-                id: trip.id,
-                teamName: trip.team.name,
-              ),
-            ),
+            onPressed: tripHasManageActions(trip)
+                ? () => showTripManageMenu(context, ref, trip)
+                : () => showDetailModerationMenu(
+                    context,
+                    subject: ModerationSubject(
+                      teamSlug: trip.team.slug,
+                      type: ReportTargetType.trip,
+                      id: trip.id,
+                      teamName: trip.team.name,
+                    ),
+                  ),
           ),
         ],
       ),
       slivers: <Widget>[
         SliverToBoxAdapter(child: _identity(context, phase)),
+        if (trip.deleted)
+          SliverToBoxAdapter(
+            child: PdlBanner(
+              key: keys.tripManage.deletedBanner,
+              tone: PdlBannerTone.warn,
+              icon: PdlIcons.delete,
+              message: 'trips.manage.deletedBanner'.tr(),
+              fullBleed: true,
+            ),
+          ),
         if (trip.isCancelled)
           SliverToBoxAdapter(
             child: PdlBanner(

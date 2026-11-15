@@ -127,6 +127,7 @@ class TeamDashboardKeys {
   final summary = const _TeamDashboardKey('summary');
   final createRideButton = const _TeamDashboardKey('createRideButton');
   final newPostButton = const _TeamDashboardKey('newPostButton');
+  final createTripButton = const _TeamDashboardKey('createTripButton');
   final loadError = const _TeamDashboardKey('loadError');
 
   final todo = const _TeamDashboardKey('todo');
