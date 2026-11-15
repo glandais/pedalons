@@ -307,6 +307,10 @@ const api = {
   blur() {
     editor.commands.blur()
   },
+  /** The caret at the end of the text: the app opens the editor to write. */
+  focusEnd() {
+    editor.commands.focus('end')
+  },
 }
 
 export type PedalonsEditorApi = typeof api

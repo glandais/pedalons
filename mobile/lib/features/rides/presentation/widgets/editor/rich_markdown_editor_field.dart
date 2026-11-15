@@ -13,11 +13,13 @@ import '../../../../../api/credential_scope.dart';
 import '../../../../../api/generated/export.dart';
 import '../../../../../api/pedalons_api_client.dart';
 import '../../../../../core/material.dart';
+import '../../../../../core/pdl/pdl.dart';
 import '../../../../../core/theme/pdl_colors.dart';
 import '../../../../../core/theme/pdl_icons.dart';
 import '../../../../../core/theme/pdl_tokens.dart';
 import '../../../../../core/theme/pdl_typography.dart';
 import '../../../../../core/widgets/authenticated_image.dart';
+import '../../../../../core/widgets/markdown_content.dart';
 import 'markdown_editor_field.dart';
 
 /// L'éditeur riche d'une publication : **l'éditeur Tiptap du site**, embarqué
@@ -30,26 +32,34 @@ import 'markdown_editor_field.dart';
 /// schéma et la sérialisation du site (`markdownEditorExtensions`,
 /// `AssetNodeBase`) : l'app écrit exactement ce que le site écrit.
 ///
+/// Dans le formulaire, le champ n'est que **le texte rendu**, comme sur la
+/// fiche ([MarkdownContent]) ; un toucher ouvre l'éditeur en plein écran. Une
+/// WebView éditable au milieu d'une page qui défile se disputait le geste avec
+/// elle, et sa barre d'outils, qui ne sert qu'à la frappe, n'avait pas de place
+/// stable : en plein écran, la WebView est tout le corps et la barre est en
+/// bas, au-dessus du clavier.
+///
 /// Même contrat que [MarkdownEditorField] : le texte vit dans [controller],
-/// que l'éditeur tient à jour à chaque frappe et relit quand il change ailleurs
-/// (une image ajoutée depuis la section Médias). La page ne connaît ni jeton ni
+/// que l'éditeur tient à jour à chaque frappe. La page ne connaît ni jeton ni
 /// adresse : les images passent par l'app, qui les charge avec ses en-têtes et
 /// les lui rend en `data:`.
-class RichMarkdownEditorField extends ConsumerStatefulWidget {
+class RichMarkdownEditorField extends StatefulWidget {
   const RichMarkdownEditorField({
     super.key,
     required this.controller,
+    required this.title,
     this.images = const <AssetDto>[],
     this.onInsertImage,
     this.hintText,
     this.errorText,
     this.enabled = true,
     this.imageBusy = false,
-    this.height = 360,
-    this.onTypingChanged,
   });
 
   final TextEditingController controller;
+
+  /// Le titre de l'éditeur plein écran — celui de la section du formulaire.
+  final String title;
   final List<AssetDto> images;
   final Future<String?> Function()? onInsertImage;
   final String? hintText;
@@ -57,58 +67,158 @@ class RichMarkdownEditorField extends ConsumerStatefulWidget {
   final bool enabled;
   final bool imageBusy;
 
-  /// La hauteur de la zone d'édition, qui défile en elle-même. Pendant la
-  /// frappe, elle se réduit à ce que le clavier laisse visible.
-  final double height;
-
-  /// Appelé quand la frappe commence ou s'arrête (l'éditeur a le focus et le
-  /// clavier est ouvert). La barre d'outils est alors posée au-dessus du
-  /// clavier, là où l'écran a sa barre d'action : l'écran la retire.
-  final ValueChanged<bool>? onTypingChanged;
-
   @override
-  ConsumerState<RichMarkdownEditorField> createState() =>
+  State<RichMarkdownEditorField> createState() =>
       _RichMarkdownEditorFieldState();
 }
 
-class _RichMarkdownEditorFieldState
-    extends ConsumerState<RichMarkdownEditorField>
-    with WidgetsBindingObserver {
+class _RichMarkdownEditorFieldState extends State<RichMarkdownEditorField> {
+  // Ce que le formulaire change pendant que l'éditeur est ouvert (une image
+  // envoyée, son indicateur) : l'écran plein, route à part, ne se reconstruit
+  // pas avec lui et l'écoute ici.
+  late final ValueNotifier<List<AssetDto>> _images =
+      ValueNotifier<List<AssetDto>>(widget.images);
+  late final ValueNotifier<bool> _imageBusy = ValueNotifier<bool>(
+    widget.imageBusy,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onText);
+  }
+
+  @override
+  void didUpdateWidget(RichMarkdownEditorField old) {
+    super.didUpdateWidget(old);
+    if (old.controller != widget.controller) {
+      old.controller.removeListener(_onText);
+      widget.controller.addListener(_onText);
+    }
+    _images.value = widget.images;
+    _imageBusy.value = widget.imageBusy;
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onText);
+    _images.dispose();
+    _imageBusy.dispose();
+    super.dispose();
+  }
+
+  void _onText() {
+    if (mounted) setState(() {});
+  }
+
+  void _open() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _RichMarkdownEditorScreen(
+          title: widget.title,
+          controller: widget.controller,
+          images: _images,
+          imageBusy: _imageBusy,
+          onInsertImage: widget.onInsertImage,
+          hintText: widget.hintText,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final PdlColors c = context.pdl;
+    final PdlTypography t = context.pdlText;
+    final String text = widget.controller.text;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Material(
+          color: c.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: PdlRadii.mdAll,
+            side: BorderSide(
+              color: widget.errorText == null ? c.border : c.danger,
+            ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: widget.enabled ? _open : null,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: PdlMetrics.media120),
+              child: Padding(
+                padding: const EdgeInsets.all(PdlSpacing.cardTight),
+                child: text.trim().isEmpty
+                    ? Text(
+                        widget.hintText ?? '',
+                        style: t.body.copyWith(color: c.textDimmed),
+                      )
+                    // Le rendu ne réagit pas aux touchers (un lien, une
+                    // image) : le champ entier ouvre l'éditeur.
+                    : IgnorePointer(
+                        child: MarkdownContent(
+                          data: text,
+                          images: widget.images,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ),
+        if (widget.errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: PdlSpacing.badgeGap),
+            child: Text(
+              widget.errorText!,
+              style: t.sub.copyWith(color: c.danger),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// L'éditeur en plein écran : le titre et le retour, la WebView, la barre
+/// d'outils en bas — au-dessus du clavier quand il est ouvert.
+class _RichMarkdownEditorScreen extends ConsumerStatefulWidget {
+  const _RichMarkdownEditorScreen({
+    required this.title,
+    required this.controller,
+    required this.images,
+    required this.imageBusy,
+    this.onInsertImage,
+    this.hintText,
+  });
+
+  final String title;
+  final TextEditingController controller;
+  final ValueListenable<List<AssetDto>> images;
+  final ValueListenable<bool> imageBusy;
+  final Future<String?> Function()? onInsertImage;
+  final String? hintText;
+
+  @override
+  ConsumerState<_RichMarkdownEditorScreen> createState() =>
+      _RichMarkdownEditorScreenState();
+}
+
+class _RichMarkdownEditorScreenState
+    extends ConsumerState<_RichMarkdownEditorScreen> {
   late final WebViewController _web;
-  final Dio _images = Dio();
+  final Dio _imageClient = Dio();
   bool _ready = false;
-  bool _themed = false;
-
-  /// Le dernier texte échangé avec la page, dans un sens ou dans l'autre : ce
-  /// que l'éditeur vient d'écrire ne doit pas lui revenir comme un changement.
-  String _synced = '';
   Map<String, bool> _active = const <String, bool>{};
-
-  /// La page a le focus (d'après Tiptap).
-  bool _focused = false;
-
-  /// La frappe est en cours : [_focused] et le clavier ouvert. La barre
-  /// d'outils n'existe qu'alors, posée au-dessus du clavier : elle ne sert qu'à
-  /// la frappe, et au haut du champ le menu Android de la sélection (Copier,
-  /// Traduire…), qui se pose au-dessus du texte sélectionné, la recouvrait.
-  bool _typing = false;
-  double _typingInset = 0;
-  final OverlayPortalController _dock = OverlayPortalController();
-  final GlobalKey _editorBox = GlobalKey();
 
   static const MethodChannel _editorChannel = MethodChannel(
     'fr.pedalons.mobile/rich_editor',
   );
 
-  static const double _dockHeight =
-      PdlMetrics.tapTarget + 2 * PdlSpacing.badgeGap;
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _synced = widget.controller.text;
-    widget.controller.addListener(_onControllerChanged);
+    widget.images.addListener(_onImages);
     _web = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..enableZoom(false)
@@ -133,62 +243,31 @@ class _RichMarkdownEditorFieldState
   void didChangeDependencies() {
     super.didChangeDependencies();
     _web.setBackgroundColor(context.pdl.surface);
-    if (_ready) _load();
-  }
-
-  @override
-  void didUpdateWidget(RichMarkdownEditorField old) {
-    super.didUpdateWidget(old);
-    if (old.controller != widget.controller) {
-      old.controller.removeListener(_onControllerChanged);
-      widget.controller.addListener(_onControllerChanged);
-    }
-    if (!_ready) return;
-    if (!listEquals(old.images, widget.images)) {
-      _js('pedalons.setImages(${jsonEncode(_assetRefs())})');
-    }
-    if (old.enabled != widget.enabled) {
-      _js('pedalons.setEditable(${widget.enabled})');
-    }
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    widget.controller.removeListener(_onControllerChanged);
-    _images.close();
+    widget.images.removeListener(_onImages);
+    _imageClient.close();
     super.dispose();
-  }
-
-  /// Le clavier s'ouvre ou se ferme : voir [_keyboardInset].
-  @override
-  void didChangeMetrics() {
-    if (mounted) setState(() {});
-  }
-
-  /// La hauteur du clavier, lue sur la vue : le [Scaffold] de l'écran la
-  /// retire du [MediaQuery] de son corps, où le champ la lirait toujours nulle.
-  double _keyboardInset() {
-    final FlutterView view = View.of(context);
-    return view.viewInsets.bottom / view.devicePixelRatio;
   }
 
   Future<void> _js(String source) => _web.runJavaScript(source);
 
   List<Map<String, String?>> _assetRefs() => <Map<String, String?>>[
-    for (final AssetDto a in widget.images)
+    for (final AssetDto a in widget.images.value)
       <String, String?>{'id': a.id, 'imageUrl': a.imageUrl, 'url': a.url},
   ];
 
-  void _onReady() {
-    if (_ready) return;
-    _ready = true;
-    _load();
-    if (!widget.enabled) _js('pedalons.setEditable(false)');
+  void _onImages() {
+    if (_ready) _js('pedalons.setImages(${jsonEncode(_assetRefs())})');
   }
 
-  /// Le texte, les images et le thème — au chargement, et quand le thème change.
-  void _load() {
+  /// Le texte, les images et le thème, puis le curseur à la fin du texte et le
+  /// clavier ouvert : on ouvre l'éditeur pour écrire.
+  Future<void> _onReady() async {
+    if (_ready || !mounted) return;
+    _ready = true;
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
     String css(Color color) {
@@ -205,42 +284,37 @@ class _RichMarkdownEditorFieldState
       'surface': css(c.surfaceAlt),
       'fontSize': t.body.fontSize ?? 15,
     };
-    _themed = true;
-    _synced = widget.controller.text;
-    _js(
-      'pedalons.load(${jsonEncode(_synced)}, ${jsonEncode(_assetRefs())}, '
-      '${jsonEncode(widget.hintText ?? 'posts.editor.markdownPlaceholder'.tr())}, '
+    await _js(
+      'pedalons.load(${jsonEncode(widget.controller.text)}, '
+      '${jsonEncode(_assetRefs())}, ${jsonEncode(widget.hintText ?? '')}, '
       '${jsonEncode(theme)})',
     );
+    await _js('pedalons.focusEnd()');
+    await _showKeyboard();
   }
 
-  void _onControllerChanged() {
-    if (!_ready || !_themed) return;
-    final String text = widget.controller.text;
-    if (text == _synced) return;
-    _synced = text;
-    _js(
-      'pedalons.load(${jsonEncode(text)}, ${jsonEncode(_assetRefs())}, '
-      '${jsonEncode(widget.hintText ?? 'posts.editor.markdownPlaceholder'.tr())}, '
-      'null)',
-    );
+  /// Un `focus()` en JavaScript, sans geste de la personne, n'ouvre pas le
+  /// clavier : Android le demande pour la WebView
+  /// (`MainActivity.showEditorKeyboard`). Rien sur iOS pour l'instant.
+  Future<void> _showKeyboard() async {
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      await _editorChannel.invokeMethod<bool>('showKeyboard');
+    } on PlatformException {
+      // Le clavier reste fermé : un toucher dans le texte l'ouvre.
+    }
   }
 
   Future<void> _onMessage(String raw) async {
     final Map<String, dynamic> msg = jsonDecode(raw) as Map<String, dynamic>;
     switch (msg['type']) {
       case 'ready':
-        _onReady();
+        await _onReady();
       case 'change':
-        final String markdown = msg['markdown'] as String;
-        _synced = markdown;
-        widget.controller.text = markdown;
+        widget.controller.text = msg['markdown'] as String;
       case 'state':
         if (!mounted) return;
-        setState(() {
-          _active = (msg['active'] as Map).cast<String, bool>();
-          _focused = msg['focused'] as bool? ?? false;
-        });
+        setState(() => _active = (msg['active'] as Map).cast<String, bool>());
       case 'image':
         await _sendImage(msg['key'] as String, msg['url'] as String);
     }
@@ -252,7 +326,7 @@ class _RichMarkdownEditorFieldState
     final String resolved = resolveImageUrl(url);
     final String? token = ref.read(accessTokenHolderProvider);
     try {
-      final Response<List<int>> res = await _images.get<List<int>>(
+      final Response<List<int>> res = await _imageClient.get<List<int>>(
         resolved,
         options: Options(
           responseType: ResponseType.bytes,
@@ -284,63 +358,16 @@ class _RichMarkdownEditorFieldState
     if (insert == null) return;
     final String? directive = await insert();
     if (directive == null || !mounted) return;
-    // La nouvelle image n'est dans [widget.images] qu'au prochain build : la
-    // page la redemande à `setImages`, dans didUpdateWidget.
+    // La nouvelle image n'arrive dans [widget.images] qu'au prochain build du
+    // formulaire : la page la redemande à `setImages` ([_onImages]).
     await _js('pedalons.insertDirective(${jsonEncode(directive)})');
-    // Le sélecteur de photos a fermé le clavier, et le focus que la page vient
-    // de reprendre en JavaScript ne le rouvre pas : Android le demande pour la
-    // WebView (MainActivity.showEditorKeyboard).
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      try {
-        await _editorChannel.invokeMethod<bool>('showKeyboard');
-      } on PlatformException {
-        // Le clavier reste fermé : un toucher dans le texte le rouvre.
-      }
-    }
-  }
-
-  /// Suit le passage en frappe et en sort. Appelé pendant build : les effets
-  /// (afficher la barre, prévenir l'écran, défiler) attendent la fin du frame.
-  void _trackTyping(bool typing, double inset) {
-    final bool changed = typing != _typing;
-    final bool moved = typing && inset != _typingInset;
-    _typing = typing;
-    _typingInset = typing ? inset : 0;
-    if (!changed && !moved) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (changed) {
-        typing ? _dock.show() : _dock.hide();
-        widget.onTypingChanged?.call(typing);
-      }
-      // Le champ entier au-dessus du clavier, son haut en haut de l'écran : sa
-      // hauteur est taillée pour que son bas touche la barre d'outils.
-      final BuildContext? box = _editorBox.currentContext;
-      if (typing && box != null) {
-        Scrollable.ensureVisible(box, alignment: 0);
-      }
-    });
+    // Le sélecteur de photos a fermé le clavier.
+    await _showKeyboard();
   }
 
   @override
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
-    final PdlTypography t = context.pdlText;
-    final double inset = _keyboardInset();
-    final bool typing = widget.enabled && _focused && inset > 0;
-    _trackTyping(typing, inset);
-
-    // Pendant la frappe, le champ tient dans ce que le clavier et la barre
-    // d'outils laissent de la page : sinon sa fin, et le curseur qui y est,
-    // passent dessous.
-    double height = widget.height;
-    final ScrollPosition? page = Scrollable.maybeOf(context)?.position;
-    if (typing && page != null && page.hasViewportDimension) {
-      final double room =
-          page.viewportDimension - _dockHeight - PdlSpacing.badgeGap;
-      if (room > 120 && room < height) height = room;
-    }
-
     Widget tool(
       IconData icon,
       String labelKey,
@@ -357,127 +384,105 @@ class _RichMarkdownEditorFieldState
           minWidth: PdlMetrics.tapTarget,
           minHeight: PdlMetrics.tapTarget,
         ),
-        onPressed: widget.enabled ? onTap : null,
+        onPressed: onTap,
       );
     }
 
-    final Widget toolbar = SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: <Widget>[
-          tool(
-            PdlIcons.formatBold,
-            'rides.editor.toolbar.bold',
-            () => _cmd('bold'),
-            state: 'bold',
-          ),
-          tool(
-            PdlIcons.formatItalic,
-            'rides.editor.toolbar.italic',
-            () => _cmd('italic'),
-            state: 'italic',
-          ),
-          tool(
-            PdlIcons.formatHeading,
-            'rides.editor.toolbar.heading',
-            () => _cmd('heading'),
-            state: 'heading',
-          ),
-          if (widget.onInsertImage == null)
-            const SizedBox.shrink()
-          else if (widget.imageBusy)
-            const SizedBox(
-              width: PdlMetrics.tapTarget,
-              height: PdlMetrics.tapTarget,
-              child: Center(child: CircularProgressIndicator.adaptive()),
-            )
-          else
-            tool(PdlIcons.imageAdd, 'rides.editor.toolbar.image', _image),
-          tool(
-            PdlIcons.formatBullets,
-            'rides.editor.toolbar.bullets',
-            () => _cmd('bulletList'),
-            state: 'bulletList',
-          ),
-          tool(
-            PdlIcons.formatNumbers,
-            'rides.editor.toolbar.numbers',
-            () => _cmd('orderedList'),
-            state: 'orderedList',
-          ),
-          tool(
-            PdlIcons.formatQuote,
-            'rides.editor.toolbar.quote',
-            () => _cmd('blockquote'),
-            state: 'blockquote',
-          ),
-          tool(
-            PdlIcons.link,
-            'rides.editor.toolbar.link',
-            _link,
-            state: 'link',
-          ),
-        ],
-      ),
-    );
-
-    return OverlayPortal(
-      controller: _dock,
-      overlayChildBuilder: (BuildContext overlay) => Positioned(
-        left: 0,
-        right: 0,
-        bottom: MediaQuery.viewInsetsOf(overlay).bottom,
-        child: Material(
-          color: c.surface,
-          child: Container(
-            height: _dockHeight,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: c.border)),
+    final Widget toolbar = Material(
+      color: c.surface,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: c.border)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: PdlSpacing.badgeGap),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: <Widget>[
+                  tool(
+                    PdlIcons.formatBold,
+                    'rides.editor.toolbar.bold',
+                    () => _cmd('bold'),
+                    state: 'bold',
+                  ),
+                  tool(
+                    PdlIcons.formatItalic,
+                    'rides.editor.toolbar.italic',
+                    () => _cmd('italic'),
+                    state: 'italic',
+                  ),
+                  tool(
+                    PdlIcons.formatHeading,
+                    'rides.editor.toolbar.heading',
+                    () => _cmd('heading'),
+                    state: 'heading',
+                  ),
+                  if (widget.onInsertImage != null)
+                    ValueListenableBuilder<bool>(
+                      valueListenable: widget.imageBusy,
+                      builder: (_, bool busy, _) => busy
+                          ? const SizedBox(
+                              width: PdlMetrics.tapTarget,
+                              height: PdlMetrics.tapTarget,
+                              child: Center(
+                                child: CircularProgressIndicator.adaptive(),
+                              ),
+                            )
+                          : tool(
+                              PdlIcons.imageAdd,
+                              'rides.editor.toolbar.image',
+                              _image,
+                            ),
+                    ),
+                  tool(
+                    PdlIcons.formatBullets,
+                    'rides.editor.toolbar.bullets',
+                    () => _cmd('bulletList'),
+                    state: 'bulletList',
+                  ),
+                  tool(
+                    PdlIcons.formatNumbers,
+                    'rides.editor.toolbar.numbers',
+                    () => _cmd('orderedList'),
+                    state: 'orderedList',
+                  ),
+                  tool(
+                    PdlIcons.formatQuote,
+                    'rides.editor.toolbar.quote',
+                    () => _cmd('blockquote'),
+                    state: 'blockquote',
+                  ),
+                  tool(
+                    PdlIcons.link,
+                    'rides.editor.toolbar.link',
+                    _link,
+                    state: 'link',
+                  ),
+                ],
+              ),
             ),
-            child: toolbar,
           ),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Container(
-            key: _editorBox,
-            height: height,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              borderRadius: PdlRadii.mdAll,
-              border: Border.all(
-                color: widget.errorText == null ? c.border : c.danger,
-              ),
-            ),
-            child: WebViewWidget(
-              controller: _web,
-              // Glisser verticalement dans le texte le fait défiler, pas la page.
-              // Avec le seuil de l'appareil, celui du défileur de la page : avec
-              // celui par défaut, plus long, la page gagnait toujours le geste et
-              // la WebView ne recevait aucun mouvement.
-              gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-                Factory<VerticalDragGestureRecognizer>(
-                  () => VerticalDragGestureRecognizer()
-                    ..gestureSettings = MediaQuery.maybeGestureSettingsOf(
-                      context,
-                    ),
-                ),
-              },
-            ),
-          ),
-          if (widget.errorText != null)
-            Padding(
-              padding: const EdgeInsets.only(top: PdlSpacing.badgeGap),
-              child: Text(
-                widget.errorText!,
-                style: t.sub.copyWith(color: c.danger),
-              ),
-            ),
-        ],
+    );
+
+    return PdlScreenScaffold(
+      backgroundColor: c.surface,
+      appBar: PdlAppBar(
+        title: widget.title,
+        onBack: () => Navigator.of(context).maybePop(),
+        backSemanticLabel: 'common.back'.tr(),
+      ),
+      actionBar: toolbar,
+      body: WebViewWidget(
+        controller: _web,
+        // Rien d'autre ne défile à l'écran : la WebView prend tous les gestes.
+        gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+          Factory<EagerGestureRecognizer>(EagerGestureRecognizer.new),
+        },
       ),
     );
   }

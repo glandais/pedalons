@@ -73,15 +73,17 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       (`mobile/lib/features/rides/presentation/widgets/editor/rich_markdown_editor_field.dart`) ; les
       images passent par l'app avec ses en-têtes ; la barre « ^ v ✓ » de WKWebView est masquée dans
       `AppDelegate.swift`. Derrière `--dart-define=RICH_EDITOR=true`, éditeur de publication seulement.
-      La barre d'outils n'existe que pendant la frappe, posée au-dessus du clavier à la place de la barre
-      d'action de l'écran (en haut du champ, le menu Android de la sélection la recouvrait) ; le champ
-      se réduit alors à la place laissée et garde le curseur visible ; après l'ajout d'une image,
-      `MainActivity.showEditorKeyboard` rouvre le clavier sur Android. Reste avant de l'allumer : essai
-      au doigt sur iPhone (AXe n'atteint pas le contenu d'une WebView dans une vue native Flutter), dont
-      le clavier après une image (rien n'est fait sur iOS), saisie Gboard réelle, tests de widget (le
-      pont) et Patrol (le champ n'est plus un `TextField`), puis sorties et annonces. Tableaux :
-      `MOB-161`. Au passage, le site transforme `- [ ] tâche` en
-      `- \[ \] tâche` (pas d'extension de cases à cocher) : à porter côté `WEB` si on le garde.
+      Dans le formulaire, le champ n'est que le texte rendu (`MarkdownContent`) ; un toucher ouvre
+      l'éditeur en plein écran (titre et retour, la WebView, la barre d'outils en bas au-dessus du
+      clavier) — embarquée dans la page, la WebView se disputait le défilement avec elle et sa barre
+      n'avait pas de place stable. Le clavier s'ouvre à l'ouverture et après l'ajout d'une image par
+      `MainActivity.showEditorKeyboard` sur Android. Une image touchée montre les tailles XS à L du
+      site. Reste avant de l'allumer : essai au doigt sur iPhone (AXe n'atteint pas le contenu d'une
+      WebView dans une vue native Flutter), dont le clavier à l'ouverture et après une image (rien
+      n'est fait sur iOS), saisie Gboard réelle, tests de widget (le pont) et Patrol (le champ n'est
+      plus un `TextField`), puis sorties et annonces. Tableaux : `MOB-161`. Au passage, le site
+      transforme `- [ ] tâche` en `- \[ \] tâche` (pas d'extension de cases à cocher) : à porter côté
+      `WEB` si on le garde.
 
 - [ ] `MOB-161` **Éditeur riche : insérer un tableau et en ajouter ou retirer lignes et colonnes (S)** —
       l'éditeur riche (`MOB-160`) affiche et édite les cellules d'un tableau écrit sur le site, mais

@@ -183,10 +183,6 @@ class _PostEditorFormState extends ConsumerState<_PostEditorForm>
 
   bool _uploading = false;
   bool _saving = false;
-
-  /// L'éditeur riche est en cours de frappe : sa barre d'outils est posée
-  /// au-dessus du clavier, à la place de la barre d'action.
-  bool _typingRich = false;
   bool _saved = false;
   bool _showErrors = false;
   String? _error;
@@ -492,22 +488,20 @@ class _PostEditorFormState extends ConsumerState<_PostEditorForm>
           onBack: () => Navigator.of(context).maybePop(),
           backSemanticLabel: 'common.back'.tr(),
         ),
-        actionBar: _typingRich
-            ? null
-            : PdlActionBar(
-                children: <Widget>[
-                  PdlButton(
-                    key: keys.postEditor.saveButton,
-                    label: creating
-                        ? 'posts.editor.create'.tr()
-                        : 'routes.editor.save'.tr(),
-                    loading: _saving,
-                    loadingLabel: 'routes.editor.saving'.tr(),
-                    enabled: !_uploading,
-                    onPressed: _save,
-                  ),
-                ],
-              ),
+        actionBar: PdlActionBar(
+          children: <Widget>[
+            PdlButton(
+              key: keys.postEditor.saveButton,
+              label: creating
+                  ? 'posts.editor.create'.tr()
+                  : 'routes.editor.save'.tr(),
+              loading: _saving,
+              loadingLabel: 'routes.editor.saving'.tr(),
+              enabled: !_uploading,
+              onPressed: _save,
+            ),
+          ],
+        ),
         slivers: <Widget>[
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
@@ -566,13 +560,12 @@ class _PostEditorFormState extends ConsumerState<_PostEditorForm>
                   child: _kRichEditor
                       ? RichMarkdownEditorField(
                           controller: _markdown,
+                          title: 'posts.editor.body'.tr(),
                           hintText: 'posts.editor.markdownPlaceholder'.tr(),
                           images: _form.media.assets.images,
                           enabled: !_saving,
                           imageBusy: _uploading,
                           onInsertImage: addImage,
-                          onTypingChanged: (bool typing) =>
-                              setState(() => _typingRich = typing),
                           errorText: _form.markdownValid
                               ? null
                               : 'rides.editor.markdownTooLong'.tr(),
