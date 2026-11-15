@@ -219,6 +219,15 @@ class Paths {
     }
   }
 
+  static String teamsNew() {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/nouvelle';
+      default:
+        return '/teams/new';
+    }
+  }
+
   static String team(String teamSlug) {
     switch (getCurrentLocale()) {
       case 'fr':
@@ -297,6 +306,42 @@ class Paths {
         return '/equipes/$teamSlug/pages/$pageSlug';
       default:
         return '/teams/$teamSlug/pages/$pageSlug';
+    }
+  }
+
+  static String teamAdmin(String teamSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/admin';
+      default:
+        return '/teams/$teamSlug/admin';
+    }
+  }
+
+  static String teamAdminPlaces(String teamSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/admin/lieux';
+      default:
+        return '/teams/$teamSlug/admin/places';
+    }
+  }
+
+  static String teamAdminTags(String teamSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/admin/tags';
+      default:
+        return '/teams/$teamSlug/admin/tags';
+    }
+  }
+
+  static String teamAdminPages(String teamSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/admin/pages';
+      default:
+        return '/teams/$teamSlug/admin/pages';
     }
   }
 
@@ -624,6 +669,10 @@ class PathVariants {
     'en': '/teams/discover',
     'fr': '/equipes/decouvrir',
   };
+  static Map<String, String> teamsNew() => {
+    'en': '/teams/new',
+    'fr': '/equipes/nouvelle',
+  };
   static Map<String, String> team(String teamSlug) => {
     'en': '/teams/$teamSlug',
     'fr': '/equipes/$teamSlug',
@@ -659,6 +708,22 @@ class PathVariants {
   static Map<String, String> teamPage(String teamSlug, String pageSlug) => {
     'en': '/teams/$teamSlug/pages/$pageSlug',
     'fr': '/equipes/$teamSlug/pages/$pageSlug',
+  };
+  static Map<String, String> teamAdmin(String teamSlug) => {
+    'en': '/teams/$teamSlug/admin',
+    'fr': '/equipes/$teamSlug/admin',
+  };
+  static Map<String, String> teamAdminPlaces(String teamSlug) => {
+    'en': '/teams/$teamSlug/admin/places',
+    'fr': '/equipes/$teamSlug/admin/lieux',
+  };
+  static Map<String, String> teamAdminTags(String teamSlug) => {
+    'en': '/teams/$teamSlug/admin/tags',
+    'fr': '/equipes/$teamSlug/admin/tags',
+  };
+  static Map<String, String> teamAdminPages(String teamSlug) => {
+    'en': '/teams/$teamSlug/admin/pages',
+    'fr': '/equipes/$teamSlug/admin/pages',
   };
   static Map<String, String> teamAdminMembers(String teamSlug) => {
     'en': '/teams/$teamSlug/admin/members',
@@ -777,6 +842,9 @@ class PathVariants {
 /// for (`appScreen: false`): their path only serves to open them in a browser.
 const Set<String> webOnlyRouteIds = <String>{
   'features',
+  'teamAdminPlaces',
+  'teamAdminTags',
+  'teamAdminPages',
   'teamAdminMembers',
   'teamAdminReports',
   'teamSettings',
@@ -787,10 +855,6 @@ const Set<String> webOnlyRouteIds = <String>{
 /// to the app, which opens it in the browser (docs/LEDGER_*.md MOB-59). The
 /// AASA excludes the same pages (`NOT …`); the Android manifest cannot.
 const List<String> sitePagePathPatterns = <String>[
-  r'^/teams/new/?$',
-  r'^/equipes/nouvelle/?$',
-  r'^/teams/[^/]+/admin/?$',
-  r'^/equipes/[^/]+/admin/?$',
   r'^/teams/[^/]+/admin/places/?$',
   r'^/equipes/[^/]+/admin/lieux/?$',
   r'^/teams/[^/]+/admin/tags/?$',

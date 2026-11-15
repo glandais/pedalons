@@ -16,7 +16,9 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/utils/share_link.dart';
 import '../../../../keys.dart';
+import '../../domain/team_permissions.dart';
 import '../../providers/team_membership_controller.dart';
+import '../../providers/team_permission_providers.dart';
 import '../../providers/team_providers.dart';
 import 'my_teams_sheet.dart';
 import 'team_sections.dart';
@@ -127,6 +129,12 @@ class _Bar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final PdlColors c = context.pdl;
     final PdlTypography ty = context.pdlText;
+    // Lu sur l'équipe que l'en-tête affiche — celle de la fiche, bascule
+    // optimiste d'adhésion comprise.
+    final bool canManage = isTeamOrganizer(
+      teamRole: teamRoleOf(team),
+      platformAdmin: ref.watch(isPlatformAdminProvider),
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -174,6 +182,16 @@ class _Bar extends ConsumerWidget {
           ),
           const SizedBox(width: 8),
           _MembershipAction(team: team),
+          // « Gérer » : le hub « Gestion de l'équipe », pour qui l'organise
+          // (docs/LEDGER_*.md MOB-165). Une icône : la barre porte déjà
+          // l'action d'adhésion en toutes lettres.
+          if (canManage)
+            PdlAppBarAction(
+              key: keys.team.manageButton,
+              icon: PdlIcons.settings,
+              semanticLabel: 'teams.manage.open'.tr(),
+              onPressed: () => context.push(Paths.teamAdmin(team.slug)),
+            ),
           PdlAppBarAction(
             icon: PdlIcons.share,
             semanticLabel: 'routes.share'.tr(),

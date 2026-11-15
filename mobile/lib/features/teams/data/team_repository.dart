@@ -91,6 +91,12 @@ class TeamRepository {
     return _teamsClient.getTeam(teamSlug: slug);
   }
 
+  /// Crée une équipe ; la personne qui la crée en devient l'administratrice
+  /// (docs/LEDGER_*.md MOB-165). Le serveur génère le slug.
+  Future<TeamDetailDto> createTeam(TeamRequest request) {
+    return _teamsClient.createTeam(body: request);
+  }
+
   /// Le tableau de bord de l'équipe : toutes ses sections, filtrées par le
   /// rôle de l'appelant, en **un seul appel** (`GET …/dashboard`).
   Future<TeamDashboardDto> getDashboard(String slug) {

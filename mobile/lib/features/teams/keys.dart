@@ -7,6 +7,12 @@ class _TeamsPageKey extends ValueKey<String> {
 class TeamsPageKeys {
   final discoverButton = const _TeamsPageKey('discoverButton');
 
+  /// « Créer une équipe », dans la barre (ledger `MOB-165`).
+  final createButton = const _TeamsPageKey('createButton');
+
+  /// « Créer une équipe », dans l'état vide de qui n'a aucune équipe.
+  final emptyCreateButton = const _TeamsPageKey('emptyCreateButton');
+
   /// La recherche de « Mes équipes », toujours visible (règle RL6).
   final searchField = const _TeamsPageKey('searchField');
 
@@ -62,6 +68,10 @@ class _TeamPageKey extends ValueKey<String> {
 
 class TeamPageKeys {
   final loadError = const _TeamPageKey('loadError');
+
+  /// « Gérer l'équipe », dans la barre de l'en-tête — organisateurs
+  /// seulement (ledger `MOB-165`).
+  final manageButton = const _TeamPageKey('manageButton');
 
   /// « Réessayer » de l'état d'erreur.
   final loadErrorRetryButton = const _TeamPageKey('loadErrorRetryButton');
@@ -210,4 +220,49 @@ class TeamAgendaKeys {
 
   /// « Créer une sortie » dans l'état vide simple.
   final emptyCreateButton = const _TeamAgendaKey('emptyCreate');
+}
+
+class _TeamAdminKey extends ValueKey<String> {
+  const _TeamAdminKey(String value) : super('teamAdmin_$value');
+}
+
+/// Le hub « Gestion de l'équipe » (ledger `MOB-165`).
+class TeamAdminKeys {
+  final loadError = const _TeamAdminKey('loadError');
+
+  /// Le refus rendu à qui n'organise pas l'équipe, et son bouton « Retour ».
+  final forbidden = const _TeamAdminKey('forbidden');
+  final forbiddenBack = const _TeamAdminKey('forbiddenBack');
+
+  // Les lignes, dans l'ordre des onglets du site.
+  final rideTemplates = const _TeamAdminKey('rideTemplates');
+  final places = const _TeamAdminKey('places');
+  final tags = const _TeamAdminKey('tags');
+  final pages = const _TeamAdminKey('pages');
+  final members = const _TeamAdminKey('members');
+  final reports = const _TeamAdminKey('reports');
+  final settings = const _TeamAdminKey('settings');
+}
+
+class _TeamEditorKey extends ValueKey<String> {
+  const _TeamEditorKey(String value) : super('teamEditor_$value');
+}
+
+/// Le formulaire d'équipe : création (ledger `MOB-165`), puis paramètres
+/// (ledger `MOB-166`).
+class TeamEditorKeys {
+  final errorBanner = const _TeamEditorKey('errorBanner');
+  final nameField = const _TeamEditorKey('nameField');
+  final markdownField = const _TeamEditorKey('markdownField');
+  final locationRow = const _TeamEditorKey('locationRow');
+  final locationClear = const _TeamEditorKey('locationClear');
+  final timezoneRow = const _TeamEditorKey('timezoneRow');
+  final enableRoutes = const _TeamEditorKey('enableRoutes');
+  final enableRides = const _TeamEditorKey('enableRides');
+  final enableTrips = const _TeamEditorKey('enableTrips');
+  final enablePosts = const _TeamEditorKey('enablePosts');
+  final enableAds = const _TeamEditorKey('enableAds');
+  final enableMemberDirectory = const _TeamEditorKey('enableMemberDirectory');
+  final postsAsTeamByDefault = const _TeamEditorKey('postsAsTeamByDefault');
+  final saveButton = const _TeamEditorKey('saveButton');
 }

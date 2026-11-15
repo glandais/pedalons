@@ -32,7 +32,10 @@
 		     member searched and picked — often their home. Stored exact against the ad and its
 		     author; other members only ever get a ~1 km sector. A place the member designates,
 		     not a position read from the device: an address, not a PreciseLocation
-		     (data-safety.md §4 and §7, ledger MOB-159). -->
+		     (data-safety.md §4 and §7, ledger MOB-159).
+		     Also the location a member gives a team they create (team creation form,
+		     POST /api/teams, geometry): the same address search, the same reasoning; stored against
+		     the team and returned with it, not blurred (data-safety.md #26, ledger MOB-165). -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypePhysicalAddress</string>
@@ -101,7 +104,10 @@
 		     posts an organizer writes in the post editor (POST/PUT /api/teams/{slug}/posts);
 		     ads a member writes in the ad editor (POST/PUT /api/teams/{slug}/classifieds) — the
 		     position a member picks for an ad is NOT covered by this row: it is the
-		     PhysicalAddress row below (data-safety.md #25).
+		     PhysicalAddress row below (data-safety.md #25);
+		     teams a member creates in the team creation form (POST /api/teams: name, description,
+		     time zone, module switches) — the team's location is the PhysicalAddress row too
+		     (data-safety.md #26).
 		     All user-generated, all stored against the account, used only to run the app and moderate
 		     it. -->
 		<dict>

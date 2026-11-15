@@ -36,6 +36,8 @@ class Keys {
   final team = TeamPageKeys();
   final teamDashboard = TeamDashboardKeys();
   final teamAgenda = TeamAgendaKeys();
+  final teamAdmin = TeamAdminKeys();
+  final teamEditor = TeamEditorKeys();
   final ride = RideDetailKeys();
   final rideGroup = RideGroupPageKeys();
   final rideRoute = RideRouteSectionKeys();

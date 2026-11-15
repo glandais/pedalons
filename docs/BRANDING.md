@@ -967,7 +967,9 @@ portée hors de leur défaut. **Le tri n'est pas un filtre** : il n'est ni compt
 nom sous « Membre », par nombre de membres sous « Toutes les équipes », et l'ordre est dit à côté
 du compteur (« 47 équipes · triées par nombre de membres »).
 
-L'app ne crée ni annonce ni équipe : ses listes n'en portent pas le bouton (ledger `MOB-144`).
+L'app crée une annonce (ledger `MOB-158`) et une équipe (ledger `MOB-165`) : la liste des annonces
+porte « Créer », « Mes équipes » porte « Créer une équipe » dans sa barre et dans son état vide —
+la décision contraire du 12 novembre 2026 (ledger `MOB-144`) a été rouverte.
 
 ---
 

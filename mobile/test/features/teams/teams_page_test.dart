@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
@@ -269,5 +271,94 @@ void main() {
     // La forme commune des erreurs de liste (règle RL11).
     expect(find.text('Chargement impossible'), findsOneWidget);
     expect(find.text('Équipe indisponible'), findsNothing);
+  });
+
+  group('« Créer une équipe » (MOB-165)', () {
+    // L'état vide s'anime : des images comptées, pas `pumpAndSettle`.
+    Future<void> settle(WidgetTester tester) async {
+      for (int i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    /// La page sous un routeur : le bouton pousse le formulaire de création.
+    Future<void> openRouted(
+      WidgetTester tester,
+      List<TeamDetailDto> teams,
+    ) async {
+      setCurrentLocale('fr');
+      final GoRouter router = GoRouter(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/',
+            builder: (BuildContext _, GoRouterState _) => const TeamsPage(),
+          ),
+          GoRoute(
+            path: '/equipes/nouvelle',
+            builder: (BuildContext _, GoRouterState _) =>
+                const Text('formulaire de création'),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            teamRepositoryProvider.overrideWithValue(
+              _StubTeamRepository(teams),
+            ),
+            myInvitationsProvider.overrideWith(
+              (Ref ref) async => const <MyInvitationDto>[],
+            ),
+          ],
+          child: MaterialApp.router(
+            theme: PedalonsTheme.build(Brightness.light),
+            routerConfig: router,
+          ),
+        ),
+      );
+      await settle(tester);
+    }
+
+    testWidgets('dans la barre, à côté de « Découvrir », même avec des '
+        'équipes', (WidgetTester tester) async {
+      await openRouted(tester, <TeamDetailDto>[
+        fixtureTeam(slug: 'club', name: 'Club', role: 'MEMBER'),
+      ]);
+
+      expect(find.byKey(keys.teams.createButton), findsOneWidget);
+      expect(find.byTooltip('Créer une équipe'), findsOneWidget);
+      // L'état vide n'est pas là : son bouton non plus.
+      expect(find.byKey(keys.teams.emptyCreateButton), findsNothing);
+
+      await tester.tap(find.byKey(keys.teams.createButton));
+      await settle(tester);
+      expect(find.text('formulaire de création'), findsOneWidget);
+    });
+
+    testWidgets('dans l\'état vide de qui n\'a aucune équipe, avec '
+        '« Découvrir »', (WidgetTester tester) async {
+      await openRouted(tester, const <TeamDetailDto>[]);
+
+      expect(find.text('Aucune équipe'), findsOneWidget);
+      expect(find.byKey(keys.teams.emptyCreateButton), findsOneWidget);
+      expect(find.text('Découvrir des équipes'), findsOneWidget);
+
+      await tester.tap(find.byKey(keys.teams.emptyCreateButton));
+      await settle(tester);
+      expect(find.text('formulaire de création'), findsOneWidget);
+    });
+
+    testWidgets('une recherche sans résultat ne propose pas de créer', (
+      WidgetTester tester,
+    ) async {
+      await openRouted(tester, <TeamDetailDto>[
+        fixtureTeam(slug: 'club', name: 'Club', role: 'MEMBER'),
+      ]);
+
+      await tester.enterText(find.byKey(keys.teams.searchField), 'zzz');
+      await settle(tester);
+
+      expect(find.byKey(keys.teams.emptyCreateButton), findsNothing);
+    });
   });
 }

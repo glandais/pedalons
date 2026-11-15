@@ -353,11 +353,15 @@ routes:
     mobile: true
     deeplink: true
     webFallback: teams
+  # An app screen since MOB-165 (the team creation form). Declared before `team` in the app's
+  # router: `/teams/new` is also the team whose slug is `new`.
   - id: teamsNew
     path:
       en: /teams/new
       fr: /equipes/nouvelle
     web: true
+    mobile: true
+    deeplink: true
   - id: team
     path:
       en: /teams/{teamSlug}
@@ -457,6 +461,12 @@ routes:
     mobile: true
 
   # --- Team admin ---
+  # The team's administration (docs/plans/2026-11-15-gestion-equipe-mobile.md). `teamAdmin` is an
+  # app screen since MOB-165: the hub « Gestion de l'équipe », where the site only redirects to
+  # the ride templates. Each page below becomes an app screen with its own lot (MOB-166 to
+  # MOB-169); until then it is `mobile: true` + `appScreen: false`, and the hub opens it on the
+  # site (docs/LEDGER_*.md MOB-54). Flip a page in the commit of its screen: drop `appScreen`,
+  # add `deeplink: true`.
   - id: teamAdmin
     path:
       en: /teams/{teamSlug}/admin
@@ -464,6 +474,8 @@ routes:
     params:
       - teamSlug
     web: true
+    mobile: true
+    deeplink: true
   - id: teamAdminPlaces
     path:
       en: /teams/{teamSlug}/admin/places
@@ -471,6 +483,8 @@ routes:
     params:
       - teamSlug
     web: true
+    mobile: true
+    appScreen: false
   # Vocabulary of the team's tags, one tab per kind of content (docs/LEDGER_*.md WEB-40).
   - id: teamAdminTags
     path:
@@ -479,6 +493,8 @@ routes:
     params:
       - teamSlug
     web: true
+    mobile: true
+    appScreen: false
   - id: teamAdminPages
     path:
       en: /teams/{teamSlug}/admin/pages
@@ -486,6 +502,8 @@ routes:
     params:
       - teamSlug
     web: true
+    mobile: true
+    appScreen: false
   - id: teamAdminPageNew
     path:
       en: /teams/{teamSlug}/admin/pages/new
@@ -502,7 +520,7 @@ routes:
       - pageSlug
     web: true
   # `mobile: true` + `appScreen: false` on the organizer's pages below: the app's team dashboard
-  # opens them on the site (mobile/…/team_web_paths.dart, docs/LEDGER_*.md MOB-54).
+  # and its hub open them on the site (mobile/…/team_web_paths.dart, docs/LEDGER_*.md MOB-54).
   - id: teamAdminMembers
     path:
       en: /teams/{teamSlug}/admin/members

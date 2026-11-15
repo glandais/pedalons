@@ -48,7 +48,9 @@ import '../features/routes/presentation/pages/all_routes_page.dart';
 import '../features/routes/presentation/pages/route_detail_page.dart';
 import '../features/routes/presentation/pages/route_editor_page.dart';
 import '../features/routes/presentation/route_editor_location.dart';
+import '../features/teams/presentation/pages/team_admin_page.dart';
 import '../features/teams/presentation/pages/team_custom_page.dart';
+import '../features/teams/presentation/pages/team_editor_page.dart';
 import '../features/teams/presentation/pages/team_home_page.dart';
 import '../features/teams/presentation/pages/teams_discover_page.dart';
 import '../features/teams/presentation/pages/teams_page.dart';
@@ -219,6 +221,13 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
     patterns: PathVariants.teamsDiscover(),
     ancestors: [_teamsAncestor],
   ),
+  // `teamsNew` **avant** `team` : `…/equipes/nouvelle` est aussi l'équipe de
+  // slug `nouvelle`, et la première entrée qui correspond l'emporte (ledger
+  // `MOB-165`).
+  _DeepLinkHierarchy(
+    patterns: PathVariants.teamsNew(),
+    ancestors: [_teamsAncestor],
+  ),
   _DeepLinkHierarchy(
     patterns: PathVariants.team(':teamSlug'),
     ancestors: [_teamsAncestor],
@@ -305,6 +314,12 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
       _teamAgendaAncestor,
       _rideAncestor,
     ],
+  ),
+  // « Gestion de l'équipe » : le hub sous l'équipe (ledger `MOB-165`). Les
+  // écrans d'administration des lots suivants viennent sous lui.
+  _DeepLinkHierarchy(
+    patterns: PathVariants.teamAdmin(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor],
   ),
   // Les modèles de sortie : la liste sous l'équipe, le formulaire sous la
   // liste — l'enregistrement y revient par `pop` (ledger `MOB-78`).
@@ -813,6 +828,14 @@ GoRoute _teamTree(String locale) {
         ),
         routes: [_routeEditRoute(locale)],
       ),
+      // « Gestion de l'équipe », plein écran : le hub des écrans
+      // d'administration (ledger `MOB-165`).
+      GoRoute(
+        path: _underTeam(PathVariants.teamAdmin(':teamSlug'), locale, teamBase),
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            TeamAdminPage(teamSlug: state.pathParameters['teamSlug']!),
+      ),
       // Les modèles de sortie : la liste, et dessous son formulaire de
       // création et de modification (ledger `MOB-78`).
       GoRoute(
@@ -1194,6 +1217,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           hammerheadStep: true,
           gpsError: st.uri.queryParameters['gps_error'],
         ),
+      ),
+
+      // Créer une équipe : un éditeur plein écran (docs/LEDGER_*.md MOB-165).
+      // Hors du shell — une route directe d'une branche ne peut pas viser le
+      // navigateur racine — et **avant** lui : `…/equipes/nouvelle` est aussi
+      // l'équipe de slug `nouvelle`, et la première route qui correspond
+      // l'emporte.
+      ..._perLocale(
+        PathVariants.teamsNew(),
+        (ctx, st) => const TeamEditorPage(),
       ),
 
       // The single navigation shell: five fixed tabs, one branch each, one

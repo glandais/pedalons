@@ -113,6 +113,8 @@
                 <data android:path="/equipes" />
                 <data android:path="/teams/discover" />
                 <data android:path="/equipes/decouvrir" />
+                <data android:path="/teams/new" />
+                <data android:path="/equipes/nouvelle" />
                 <data android:pathPattern="/teams/.*" />
                 <data android:pathPattern="/equipes/.*" />
                 <data android:pathPattern="/teams/.*/about" />
@@ -129,6 +131,8 @@
                 <data android:pathPattern="/equipes/.*/voyages" />
                 <data android:pathPattern="/teams/.*/members" />
                 <data android:pathPattern="/equipes/.*/membres" />
+                <data android:pathPattern="/teams/.*/admin" />
+                <data android:pathPattern="/equipes/.*/admin" />
                 <data android:pathPattern="/teams/.*/rides/new" />
                 <data android:pathPattern="/equipes/.*/sorties/nouvelle" />
                 <data android:pathPattern="/teams/.*/rides/.*" />

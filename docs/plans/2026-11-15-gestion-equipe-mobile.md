@@ -1,6 +1,8 @@
 # Créer et gérer une équipe dans l'application mobile
 
-Écrit le 15 novembre 2026. **État : conçu, rien de codé.** Ledger prévu : `MOB-165` (socle et
+Écrit le 15 novembre 2026. **État : lot 1 écrit le 15 novembre 2026 (`MOB-165` — reste son test
+Patrol à lancer — et `WEB-182`, livré) ; lots 2 à 5 conçus, pas codés.** Ce que le lot 1 a tranché en
+codant est noté « Fait » dans les sections 4 et 5. Ledger : `MOB-165` (socle et
 création), `MOB-166` (paramètres et webhook), `MOB-167` (membres et invitations), `MOB-168` (lieux et
 signalements), `MOB-169` (tags et pages), `WEB-182` (libellé `USER_TEAM_LIMIT_REACHED`). Numéros
 réservés le 15 novembre 2026, entrées créées le même jour dans `LEDGER_NEXT.md`. Branche prévue :
@@ -109,12 +111,12 @@ Faits qui contredisent ce qu'on supposerait :
 | D7 | **Le webhook est une `PdlFullSheet`** ouverte depuis Paramètres | Il a son propre « Enregistrer », distinct de celui du formulaire d'équipe |
 | D8 | **Parité stricte sur les règles de membres** : pas de rétrogradation d'un admin, pas d'ajout direct par `addMember` | « Iso fonctionnel » ; l'élargir se décide des deux côtés |
 
-### Arbitrages encore ouverts (déclarations des stores, §8)
+### Arbitrages des déclarations des stores (§8) — tranchés le 15 novembre 2026
 
-| # | Question | Recommandation |
+| # | Question | Décision |
 |---|---|---|
-| O1 | La localisation d'équipe et l'adresse d'un lieu relèvent-elles de *Physical Address* ou de *Other User Content* ? | *Physical Address* : un lieu de départ peut être le domicile de quelqu'un, et la ligne existe déjà (`MOB-159`) |
-| O2 | L'e-mail d'une personne invitée, saisi à la main, demande-t-il une déclaration propre ? | Non : ligne *Email Address* existante ; vérifier que la politique de confidentialité vaut pour l'app |
+| O1 | La localisation d'équipe et l'adresse d'un lieu relèvent-elles de *Physical Address* ou de *Other User Content* ? | ***Physical Address*** (Play : *Address*), sous les lignes existantes (`MOB-159`) : un lieu de départ peut être le domicile de quelqu'un. Inscrit dans `mobile/store-metadata/data-safety.md` pour la localisation d'équipe avec le lot 1 (ligne d'inventaire #26) ; l'adresse d'un lieu suit avec le lot 4 |
+| O2 | L'e-mail d'une personne invitée, saisi à la main, demande-t-il une déclaration propre ? | **Non** : ligne *Email Address* existante. À inscrire dans `data-safety.md` avec le lot 3, en vérifiant que la politique de confidentialité vaut pour l'app |
 
 ## 4. Socle (lot 1)
 
@@ -142,10 +144,19 @@ Chaque drapeau bascule **dans le commit de l'écran correspondant** (règle de `
 lot par lot. Dans `config/router.dart` :
 
 - `teamsNew` se déclare avant `:teamSlug`, comme `teamsDiscover` ; `teamAdminPageNew` avant
-  `teamAdminPageEdit` ;
+  `teamAdminPageEdit`. **Fait (lot 1)** : `teamsNew` est une route de premier niveau, déclarée
+  **avant le shell** — go_router refuse à une route directe d'une branche un
+  `parentNavigatorKey` autre que celui de la branche ; hors du shell, elle est plein écran sans
+  clé ;
 - les écrans d'édition sont des `GoRoute` à `parentNavigatorKey: _rootNavigatorKey` ;
 - chaque route reçoit son entrée dans `_deepLinkHierarchies` (ancêtres : teams, team, `teamAdmin`),
   couverte par `test/deep_link_hierarchy_test.dart`.
+
+**Fait (lot 1)** : `teamAdminPlaces`, `teamAdminTags` et `teamAdminPages` n'avaient pas de builder
+Dart ; le hub les ouvrant sur le site, elles sont passées `mobile: true, appScreen: false` comme
+les trois autres (`MOB-54`), et `TeamWebPaths` a gagné `places`, `tags` et `pages`. Chaque lot retire
+`appScreen` et ajoute `deeplink: true` pour ses routes. `teamAdminPageNew` et `teamAdminPageEdit`
+restent `web` seulement jusqu'au lot 5.
 
 `webOnlyRouteIds` se réduit à `features`. `team_web_paths.dart` perd une entrée par lot et disparaît
 au lot 5 ; `test/features/teams/team_web_paths_test.dart` suit. La notification `CONTENT_REPORTED`
@@ -162,7 +173,10 @@ ne sont rendues qu'à un admin. Tant qu'un lot n'est pas livré, sa ligne ouvre 
 
 Entrées :
 
-- bouton « Gérer » dans l'en-tête d'équipe (`team_header.dart`), pour un organisateur ;
+- bouton « Gérer » dans l'en-tête d'équipe (`team_header.dart`), pour un organisateur. **Fait
+  (lot 1)** : une icône de barre (`PdlIcons.settings`, libellé d'accessibilité « Gérer l'équipe »,
+  clé `keys.team.manageButton`) entre l'action d'adhésion et le partage — la barre porte déjà
+  « Quitter » en toutes lettres ; le droit est lu sur l'équipe que l'en-tête affiche ;
 - les boutons de `widgets/dashboard/dashboard_admin.dart` et l'entrée signalements de
   `dashboard_todo.dart`, repointés lot par lot.
 
@@ -171,7 +185,10 @@ Entrées :
 `notifyTeamChanged(ProviderContainer, slug)` dans `features/teams/providers/` : fiche, « Mes
 équipes », tableau de bord, découverte, et `invalidateMembershipScopedContent` quand la visibilité
 ou le fuseau a changé. Il prend le conteneur, comme `notifyRideTemplatesChanged`, pour survivre à un
-écran démonté.
+écran démonté. **Fait (lot 1)** : `features/teams/providers/team_change.dart`,
+`notifyTeamChanged(container, slug, {contentScopeChanged})` — le drapeau est à passer à `true`
+quand la visibilité ou le fuseau a changé ; après un changement de slug, l'appeler pour l'ancien et
+pour le nouveau.
 
 ### 4.5 Sélecteur de lieu géocodé
 
@@ -194,8 +211,16 @@ GeoJSON `[lon, lat]`. L'éditeur d'annonce passe sur le sélecteur commun ; rest
 texte « environ 1 km », la carte en secteur et `adLocationOf`. `test/features/ads/ad_editor_page_test.dart`
 change d'import.
 
-À vérifier en codant : que le champ de recherche de `search_picker_sheet.dart` temporise la saisie
-(le site attend 300 ms).
+**Fait (lot 1)** : `features/geocoding/data/place_search_repository.dart` et
+`features/geocoding/presentation/geocoded_place_picker.dart` — `pickGeocodedPlace(context, ref,
+{title, onResolvingChange})` rend `null` (feuille fermée), un `GeocodedPlace` (`name`, `lat`, `lon`,
+`coordinates` dans l'ordre GeoJSON) ou un `GeocodedPlaceFailure` (`GeocodeFailure.unavailable` /
+`failed`, avec son `message`). Clés `geocoder.*` : `label`, `search`, `empty`, `attribution`,
+`resolving`, `resolveFailed`, `unavailable`, `none`, `saved`, `clear`.
+
+Vérifié en codant : le champ de recherche de `search_picker_sheet.dart` est un `PdlSearchField`, qui
+temporise la saisie de 350 ms (`kSearchDebounce`, `core/pdl/pdl_search_field.dart`) ; le site attend
+300 ms. Rien à ajouter.
 
 ## 5. Création d'équipe (lot 1, `MOB-165`)
 
@@ -211,7 +236,7 @@ d'équivalent (`MOB-88`).
 | Nom de l'équipe | texte | requis, 1 à 200, au moins un caractère non blanc | `name` |
 | Description | `RichMarkdownEditorField`, `onInsertImage: null` | pas d'image ni de logo à la création | `media.markdown` |
 | Localisation | `pickGeocodedPlace`, effaçable | facultative | `geometry` |
-| Fuseau horaire | `showTimezoneSheet` | défaut : fuseau de l'appareil | `timezone` |
+| Fuseau horaire | `showTimezoneSheet` | défaut : la préférence de fuseau du profil, sinon `Europe/Paris` (voir ci-dessous) | `timezone` |
 | Activer les parcours | `PdlSwitch` | décoché : sorties et voyages passent à faux et se grisent | `enableRoutes` |
 | Activer les sorties | `PdlSwitch` | grisé sans parcours | `enableRides` |
 | Activer les voyages | `PdlSwitch` | grisé sans parcours | `enableTrips` |
@@ -223,8 +248,17 @@ d'équivalent (`MOB-88`).
 Valeurs initiales : tous les modules à vrai sauf le trombinoscope, `visibility: TEAM` (non
 proposée), `postsAsTeamByDefault: true`.
 
-Enregistrement : `createTeam`, `notifyTeamChanged`, message « Équipe créée », puis
-`pushReplacement` vers la page de l'équipe.
+Enregistrement : `createTeam`, `notifyTeamChanged`, message « Équipe créée », puis la page de
+l'équipe. **Fait (lot 1)** : par `go`, pas `pushReplacement` — la page d'une équipe est une page
+d'onglet, et l'empiler depuis un écran plein écran laisse un écran vide sans retour
+(`mobile/CLAUDE.md`, ledgers `MOB-44`, `MOB-46`, `MOB-138`).
+
+**Écart : le fuseau de départ n'est pas celui de l'appareil.** L'app ne connaît pas le nom IANA du
+fuseau de l'appareil : `AppFormatters` ne manipule que la préférence `UserDto.timezone` et retombe
+sur `.toLocal()`, et `editorTimezoneProvider` interroge un endpoint d'équipe (le fuseau d'un point).
+Le formulaire part donc de la préférence de fuseau du profil et, sans elle, de `Europe/Paris` — le
+défaut du serveur (`API-60`) —, affiché sur la ligne et modifiable par `showTimezoneSheet`. Lire le
+fuseau de l'appareil demanderait un plugin natif (`flutter_timezone`) : à décider.
 
 ### 5.2 Erreurs
 
@@ -396,12 +430,14 @@ vérification**, qui attend « exactement deux appels » à `file_picker`.
 |---|---|
 | Logo, images, pièces jointes | Couvert (*Photos*, *Files and docs*, *Other User Content*) |
 | URL de webhook | Couvert (contenu saisi) |
-| Localisation d'équipe, adresse d'un lieu | O1 (§3) |
-| E-mail d'une personne invitée | O2 (§3) |
+| Localisation d'équipe, adresse d'un lieu | *Physical Address* / *Address*, lignes existantes (O1, §3) |
+| E-mail d'une personne invitée | *Email Address*, ligne existante (O2, §3) |
 
 Pas d'« historique de recherche » à déclarer : le filtre des journaux Caddy
 (`docs/OPERATIONS.md`) efface `q`, `search` et `id`, les paramètres du géocodage et des recherches
-de lieux et de membres — **à confirmer sur la configuration Caddy elle-même** avant le lot 1. La
+de lieux et de membres — relu le 15 novembre 2026 sur la configuration que documente
+`docs/OPERATIONS.md` (`delete q`, `delete search`, `delete id`), et `data-safety.md` §4 note le
+filtre installé et vérifié sur l'hôte de production le 14 novembre 2026. La
 saisie App Store Connect et l'import Play Console de `MOB-159` ne sont pas faits ; ces écrans s'y
 ajoutent.
 

@@ -55,6 +55,9 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
 
   void _openDiscover() => context.push(Paths.teamsDiscover());
 
+  /// Le formulaire de création, plein écran (docs/LEDGER_*.md MOB-165).
+  void _openCreate() => context.push(Paths.teamsNew());
+
   @override
   Widget build(BuildContext context) {
     final PagedListState<TeamDetailDto> state = ref.watch(
@@ -68,6 +71,12 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
       appBar: AppBar(
         title: Text('teams.title'.tr()),
         actions: [
+          IconButton(
+            key: keys.teams.createButton,
+            icon: const Icon(PdlIcons.add),
+            tooltip: 'teams.create'.tr(),
+            onPressed: _openCreate,
+          ),
           IconButton(
             key: keys.teams.discoverButton,
             icon: const Icon(Icons.travel_explore_outlined),
@@ -158,6 +167,14 @@ class _TeamsPageState extends ConsumerState<TeamsPage> {
                           variant: PdlButtonVariant.outline,
                           size: PdlButtonSize.sm,
                           onPressed: _openDiscover,
+                        ),
+                        PdlButton(
+                          key: keys.teams.emptyCreateButton,
+                          label: 'teams.create'.tr(),
+                          icon: PdlIcons.add,
+                          variant: PdlButtonVariant.outline,
+                          size: PdlButtonSize.sm,
+                          onPressed: _openCreate,
                         ),
                       ],
                     )

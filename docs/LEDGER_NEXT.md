@@ -62,14 +62,44 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 ## MOB — Application mobile
 
 - [ ] `MOB-165` **Créer une équipe dans l'app, et le socle de la gestion d'équipe (M)** — l'app ne
-      sait que rejoindre ou quitter une équipe : créer la sienne renvoie au site, et rien n'y dit
-      « cette personne organise ou administre l'équipe » autrement que par des
+      savait que rejoindre ou quitter une équipe : créer la sienne renvoyait au site, et rien n'y
+      disait « cette personne organise ou administre l'équipe » autrement que par des
       `team.role == 'ADMIN'` en ligne ou par « Mes équipes » (d'où `MOB-96`). Lot 1 du plan
-      [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md) §4 et §5 :
-      droits lus sur la fiche d'équipe (`mobile/lib/features/teams/domain/team_permissions.dart`),
-      routes `teamsNew` et `teamAdmin` en écrans, hub « Gestion de l'équipe », `notifyTeamChanged`,
-      sélecteur de lieu géocodé commun (`mobile/lib/features/geocoding/`), écran de création
-      (`team_editor_page.dart`) et libellé `USER_TEAM_LIMIT_REACHED` (côté site : `WEB-182`).
+      [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md) §4 et §5 ;
+      revient sur `MOB-144` (« créer une équipe depuis l'app : non »). Contrat d'API inchangé.
+      **Code écrit le 15 novembre 2026** (`check.sh` vert, 2456 tests) :
+      droits lus sur la fiche d'équipe (`mobile/lib/features/teams/domain/team_permissions.dart`,
+      `isTeamOrganizerProvider`, `isTeamAdminProvider`, `isPlatformAdminProvider` —
+      `team_permission_providers.dart` ; `null` tant que la fiche charge) ; `notifyTeamChanged`
+      (`team_change.dart`) ; sélecteur de lieu géocodé commun
+      (`mobile/lib/features/geocoding/`, `pickGeocodedPlace`, clés `geocoder.*`), sur lequel
+      l'éditeur d'annonce est passé — `ad_place_picker.dart` et `ads/data/place_search_repository.dart`
+      n'existent plus ; `teamsNew` et `teamAdmin` écrans de l'app et liens profonds ; hub « Gestion de
+      l'équipe » (`team_admin_page.dart`) aux sept lignes du site, celles d'administration rendues
+      aux seuls administrateurs, six d'entre elles ouvrant encore le site (`TeamWebPaths`,
+      `teamAdminPlaces`, `teamAdminTags` et `teamAdminPages` passées `mobile: true, appScreen: false`) ;
+      « Gérer l'équipe » dans l'en-tête d'équipe ; écran de création (`team_editor_page.dart`,
+      `TeamForm` — `fromTeam` déjà là pour `MOB-166`) ouvert par « Créer une équipe » dans la barre
+      et l'état vide de « Mes équipes » ; `errors.api.USER_TEAM_LIMIT_REACHED` (côté site :
+      `WEB-182`). Déclarations des stores : ligne d'inventaire #26 de
+      `mobile/store-metadata/data-safety.md`, la localisation d'équipe sous *Physical Address* /
+      *Address* (arbitrage O1 du plan), commentaires de `PrivacyInfo.xcprivacy` ; aucun type de
+      donnée nouveau, `app-privacy.json` et `data-safety.csv` inchangés.
+      **À ne pas défaire** : (1) les droits d'équipe se lisent sur `teamDetailProvider`, pas sur
+      « Mes équipes » — un admin de plateforme non membre n'y est pas ; (2) `teamsNew` est déclarée
+      **avant** le shell et avant `:teamSlug` (`…/equipes/nouvelle` est aussi l'équipe de slug
+      `nouvelle`), hors de la branche Équipes, où une route directe ne peut pas viser le navigateur
+      racine ; (3) après la création on **va** (`go`) à la page de l'équipe, on ne l'empile pas sur
+      l'éditeur plein écran (`MOB-44`) ; (4) la position d'une suggestion d'adresse n'est lue que
+      pour celle qui est choisie (`API-129`), et rien ne s'enregistre tant qu'elle court.
+      **Écart avec le plan** : le fuseau de départ est la préférence de fuseau du profil, sinon
+      `Europe/Paris`, et non le fuseau de l'appareil, dont l'app ne connaît pas le nom IANA (un
+      plugin natif serait à ajouter : à décider). Tests : `team_permissions_test`,
+      `team_change_test`, `geocoded_place_picker_test`, `ad_editor_page_test`, `team_form_test`,
+      `team_editor_page_test`, `team_admin_page_test`, `team_header_manage_test`, `teams_page_test`
+      (« Créer une équipe »), `team_web_paths_test`, `deep_link_hierarchy_test`,
+      `link_launcher_test`. Reste à faire tourner Patrol (`team_create_test.dart`) avant de ranger
+      l'entrée, et à pousser les formulaires des stores avec ceux de `MOB-159`.
 
 - [ ] `MOB-166` **Paramètres et webhook de l'équipe dans l'app (L)** — modifier le profil, le slug,
       le logo, les modules, le fuseau et la visibilité d'une équipe, la supprimer, régler son
@@ -2013,7 +2043,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `MOB-88` | **Mode mono-équipe dans l'app** (masquer l'onglet Équipes, ouvrir l'équipe épinglée, lire `pinnedTeamSlugProvider`) | Non (24 octobre 2026) | L'app ne sert que `pedalons.fr`, et ce domaine n'est jamais mono-équipe : le mode n'y a pas de cas d'usage. `pinnedTeamSlugProvider` (`core/config/config_provider.dart`) reste sans lecteur. Le web garde son `hideWhenSingleTeam`, qui sert les autres domaines. À rouvrir si l'app devait un jour servir un domaine mono-équipe |
 | `MOB-89` | **Pages personnalisées d'équipe en puces de section, comme les onglets du web** | Non (24 octobre 2026) | Au mobile, elles restent une liste dans « À propos », une ligne par page qui ouvre son écran (`team_about_page.dart`), comme le demandait la note de conception (`plans/archive/audit-ux/BRIEF.md`, onglet À propos). Avec plusieurs pages, la rangée de puces déborderait. Le web garde ses onglets : sa rangée a la place et n'a pas de menu de débordement (`WEB-25`). Le filtrage des pages réservées aux membres se fait côté backend (`isListed` dans `TeamDetailDto`). L'autre volet de l'entrée, la visibilité de « Membres », n'avait rien à changer au mobile : c'est sa règle que le web reprend (`WEB-112`) |
 | `WEB-171` | **Mention de fuseau en ligne sur le site, comme dans l'app** (« heure de Tokyo (ven. 01:00 chez vous) ») | Non (12 novembre 2026, écart voulu V5 du [tri de l'audit des cartes](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) §3) | Même texte, deux formes : une ligne visible dans l'app (`ZoneMentionLine`, `core/widgets/zone_mention_line.dart`), une icône globe à infobulle sur le site (`ZoneMentionIcon`, `components/common/Rendezvous.tsx`). Au doigt il n'y a pas de survol, d'où la ligne ; au bureau, l'infobulle garde la carte courte. BRANDING §8.3 fixe le texte, pas la forme. La date d'une publication n'en relève pas : c'est la règle des dates de carte (KIT §9) |
-| `MOB-144` | **Créer une équipe depuis l'app** (la création d'**annonce**, écartée avec elle, a été livrée le 14 novembre 2026 : `MOB-158`) | Non (12 novembre 2026, écart voulu VL11 du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §3) | Choix de périmètre : ces deux créations restent sur le site ; les listes de l'app n'en portent pas le bouton |
+| `MOB-144` | **Créer une équipe depuis l'app** (la création d'**annonce**, écartée avec elle, a été livrée le 14 novembre 2026 : `MOB-158`) | **Rouverte le 15 novembre 2026** : la création d'équipe est écrite dans l'app (`MOB-165`, plan [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md)). Le « non » du 12 novembre 2026 (écart voulu VL11 du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §3) ne tient plus | Plus rien n'est dehors sous cet identifiant : « Mes équipes » porte « Créer une équipe », la liste des annonces « Créer ». La ligne reste le temps que `MOB-165` soit rangée, pour qui cherche la décision d'origine |
 
 ---
 

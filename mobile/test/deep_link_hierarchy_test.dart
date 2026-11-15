@@ -93,6 +93,8 @@ final List<_LinkCase> _cases = [
   _LinkCase('teamsDiscover', PathVariants.teamsDiscover(), [
     PathVariants.teams(),
   ]),
+  // Avant `team` : `…/equipes/nouvelle` est aussi l'équipe de slug `nouvelle`.
+  _LinkCase('teamsNew', PathVariants.teamsNew(), [PathVariants.teams()]),
   _LinkCase('team', PathVariants.team(_teamSlug), [PathVariants.teams()]),
 
   // Team sections. They stopped at the teams list while `TeamShell` provided
@@ -174,6 +176,11 @@ final List<_LinkCase> _cases = [
     PathVariants.team(_teamSlug),
     PathVariants.teamAgenda(_teamSlug),
     PathVariants.ride(_teamSlug, _rideSlug),
+  ]),
+  // « Gestion de l'équipe », sous l'équipe (ledger `MOB-165`).
+  _LinkCase('teamAdmin', PathVariants.teamAdmin(_teamSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
   ]),
   // Les modèles de sortie (ledger `MOB-78`) : la liste sous l'équipe, le
   // formulaire sous la liste.
@@ -542,6 +549,24 @@ void main() {
     test('an unknown path gets no ancestor rather than a bogus one', () {
       expect(ancestorsForDeepLink('/equipes/velo-club/inconnu/x'), isEmpty);
       expect(ancestorsForDeepLink('/nope'), isEmpty);
+    });
+
+    // docs/LEDGER_*.md MOB-165 : `…/equipes/nouvelle` est aussi l'équipe de
+    // slug `nouvelle`. C'est le formulaire de création qui doit répondre, et
+    // la page d'une équipe pour tout autre slug.
+    test('the team creation form wins over a team whose slug is « new »', () {
+      for (final String path in PathVariants.teamsNew().values) {
+        final RouteMatchList match = router.configuration.findMatch(
+          Uri.parse(path),
+        );
+        expect(match.isError, isFalse);
+        expect(match.pathParameters, isEmpty, reason: '$path read as a team');
+        expect(match.last.route.path, path);
+      }
+      final RouteMatchList team = router.configuration.findMatch(
+        Uri.parse('/equipes/velo-club'),
+      );
+      expect(team.pathParameters, <String, String>{'teamSlug': 'velo-club'});
     });
   });
 

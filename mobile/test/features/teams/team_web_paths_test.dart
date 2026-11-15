@@ -33,9 +33,30 @@ void main() {
       'teamAdminReports',
       'teamAdminMembers',
       'teamSettings',
+      // Ouvertes par le hub « Gestion de l'équipe » tant que leur écran
+      // n'existe pas (MOB-165).
+      'teamAdminPlaces',
+      'teamAdminTags',
+      'teamAdminPages',
     ]) {
       expect(webOnlyRouteIds, contains(id));
     }
+  });
+
+  test('créer une équipe et le hub de gestion sont des écrans de l\'app '
+      '(MOB-165)', () {
+    expect(webOnlyRouteIds, isNot(contains('teamsNew')));
+    expect(webOnlyRouteIds, isNot(contains('teamAdmin')));
+  });
+
+  test('les pages que le hub ouvre sur le site sont dans la langue de '
+      'l\'app', () {
+    setCurrentLocale('fr');
+    expect(TeamWebPaths.places('velo-club'), '/equipes/velo-club/admin/lieux');
+    expect(TeamWebPaths.tags('velo-club'), '/equipes/velo-club/admin/tags');
+    expect(TeamWebPaths.pages('velo-club'), '/equipes/velo-club/admin/pages');
+    setCurrentLocale('en');
+    expect(TeamWebPaths.places('velo-club'), '/teams/velo-club/admin/places');
   });
 
   test('créer et modifier une sortie sont des écrans de l\'app (MOB-80)', () {

@@ -41,7 +41,8 @@ fichier garde **ce qui est fait**, et ce qu'il ne faut pas défaire.
   « Plus tôt » (`when=UPCOMING_FIRST`, `dated=true` pour l'agenda, `PagedListState.firstSectionTotal`).
   `myTeamsProvider` lit toutes les pages ; l'en-tête d'équipe affiche le rôle réel. **À ne pas défaire** : la frontière
   des sections se calcule sur la position globale (`page × size + i`), pas sur le nombre de lignes affichées ; l'app ne
-  crée ni annonce ni équipe (`MOB-144`). Tests : `list_states_test`, `paged_list_sections_test`, `team_agenda_test`,
+  crée ni annonce ni équipe (`MOB-144` — point rouvert depuis : l'app publie une annonce, `MOB-158`, et crée une
+  équipe, `MOB-165`). Tests : `list_states_test`, `paged_list_sections_test`, `team_agenda_test`,
   `home_feed_bar_test`, `routes_list_states_test`, `publication_feed_dated_test`, galerie `list_gallery_test` (74 cas).
   **Complément, contrat 14.9.0** (même jour) — troisième choix de période « Plus tôt » : fil « Tout / Je participe /
   Plus tôt » (`when=EARLIER`, `publicationFeedPeriodProvider`), agenda « Toutes les dates / Je participe / Plus tôt »
