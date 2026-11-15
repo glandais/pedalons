@@ -61,31 +61,13 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
-- [ ] `MOB-160` **Éditeur riche : l'éditeur Tiptap du site dans une WebView, pour tous les textes (M)** —
-      le texte d'une sortie, d'un modèle de sortie, d'un parcours, d'une annonce ou d'une publication
-      s'écrivait dans l'app en markdown brut (`MOB-80`), faute d'éditeur riche Flutter qui relise et
-      réécrive sans perte le markdown du site. Une étude du 15 novembre 2026 (785 textes publics de
-      pedalons.fr) l'a vérifié pour super_editor 0.3.0-dev : `::asset{}` et tableaux tiennent, mais
-      les sauts de ligne `\` et les échappements que Tiptap écrit sont détruits, une citation perd ses
-      lignes et une liste numérotée son départ. L'app embarque donc l'éditeur du site :
-      `frontend/src/embed/mobile-editor/` (schéma et sérialisation partagés, `markdownEditorExtensions`
-      et `AssetNodeBase`), construit par `pnpm build:mobile-editor` dans `mobile/assets/editor/`,
-      piloté par `RichMarkdownEditorField`
-      (`mobile/lib/features/rides/presentation/widgets/editor/rich_markdown_editor_field.dart`), dans
-      les cinq formulaires, sans drapeau ; l'éditeur markdown brut est retiré. Dans le formulaire, le
-      champ n'est que le texte rendu (`MarkdownContent`) ; un toucher ouvre l'éditeur en plein écran
-      (titre et retour, la WebView, la barre d'outils en bas) — embarquée dans la page, la WebView se
-      disputait le défilement avec elle. Les images passent par l'app avec ses en-têtes ; une image
-      touchée montre les tailles XS à L du site ; un lien se pose sur le texte sélectionné
-      (`markdown_link_sheet.dart`) ; le clavier s'ouvre à l'ouverture et après une image ou un lien
-      (`MainActivity.showEditorKeyboard` sur Android ; sur iOS, `AppDelegate.letWebViewFocusShowKeyboard`
-      fait passer tout focus de WKWebView pour un geste de la personne — vérifié à l'ouverture sur un
-      iPhone, iOS 27.2, le 15 novembre 2026) ; la barre « ^ v ✓ » de WKWebView est masquée dans
-      `AppDelegate.swift`. Les textes d'invite sont ceux du site. **Reste** : le reste de l'essai au
-      doigt sur iPhone (AXe n'atteint pas le contenu d'une WebView dans une vue native Flutter) — le
-      clavier après une image, la barre « ^ v ✓ », un lien, les tailles d'image ; saisie Gboard réelle ; test de
-      widget du pont et test Patrol de l'écran plein (les tests de widget écrivent dans le contrôleur
-      du champ, la WebView n'y existe pas). Tableaux : `MOB-161`. Au passage, le site transforme
+- [ ] `MOB-160` **Éditeur riche : test de widget du pont et test Patrol de l'écran plein (S)** —
+      l'éditeur riche (l'éditeur Tiptap du site dans une WebView, voir la part livrée) a été essayé
+      et validé à la main le 15 novembre 2026, mais rien d'automatique ne le couvre : les tests de
+      widget écrivent dans le contrôleur du champ, la WebView n'y existe pas. À faire : un test de
+      widget du pont (`RichMarkdownEditorField`,
+      `mobile/lib/features/rides/presentation/widgets/editor/rich_markdown_editor_field.dart`) et un
+      test Patrol de l'écran plein. Tableaux : `MOB-161`. Au passage, le site transforme
       `- [ ] tâche` en `- \[ \] tâche` (pas d'extension de cases à cocher) : à porter côté `WEB` si
       on le garde.
 
