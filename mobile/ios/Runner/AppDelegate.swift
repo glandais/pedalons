@@ -16,7 +16,7 @@ import WebKit
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
   }
 
-  /// Hides the « ^ v ✓ » bar WKWebView puts above the keyboard. The rich post editor (the site's
+  /// Hides the « ^ v ✓ » bar WKWebView puts above the keyboard. The rich text editor (the site's
   /// Tiptap editor in a WebView, `rich_markdown_editor_field.dart`) has its own toolbar, and the
   /// bar's arrows jump between form fields the editor doesn't have. webview_flutter offers no
   /// setting for it, so `WKContentView` — the view that becomes first responder inside every

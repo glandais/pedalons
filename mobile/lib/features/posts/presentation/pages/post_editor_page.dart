@@ -21,7 +21,6 @@ import '../../../profile/presentation/widgets/confirm_sheet.dart';
 import '../../../rides/domain/ride_form.dart' show parseWallTime, wallTimeOf;
 import '../../../rides/presentation/widgets/editor/editor_media_actions.dart';
 import '../../../rides/presentation/widgets/editor/editor_section.dart';
-import '../../../rides/presentation/widgets/editor/markdown_editor_field.dart';
 import '../../../rides/presentation/widgets/editor/rich_markdown_editor_field.dart';
 import '../../../rides/presentation/widgets/editor/ride_group_editor.dart'
     show EditorClearButton;
@@ -35,11 +34,6 @@ import '../../../visibility/presentation/visibility_field.dart';
 import '../../data/post_repository.dart';
 import '../../domain/post_form.dart';
 import '../../providers/post_providers.dart';
-
-/// POC de l'éditeur riche (l'éditeur Tiptap du site dans une WebView) :
-/// `flutter run --dart-define=RICH_EDITOR=true`. Éteint par défaut, les tests
-/// Patrol de l'éditeur de publication écrivent dans le champ markdown brut.
-const bool _kRichEditor = bool.fromEnvironment('RICH_EDITOR');
 
 /// Créer ([postSlug] nul) ou modifier une publication — le pendant mobile de
 /// `CreatePostPage` / `EditPostPage` du site (docs/LEDGER_*.md MOB-156) :
@@ -557,33 +551,19 @@ class _PostEditorFormState extends ConsumerState<_PostEditorForm>
                 // les réglages.
                 EditorSection(
                   title: 'posts.editor.body'.tr(),
-                  child: _kRichEditor
-                      ? RichMarkdownEditorField(
-                          controller: _markdown,
-                          title: 'posts.editor.body'.tr(),
-                          // Celui du site (`posts.create.descriptionPlaceholder`) :
-                          // le markdown ne se tape plus.
-                          hintText: 'posts.editor.richPlaceholder'.tr(),
-                          images: _form.media.assets.images,
-                          enabled: !_saving,
-                          imageBusy: _uploading,
-                          onInsertImage: addImage,
-                          errorText: _form.markdownValid
-                              ? null
-                              : 'rides.editor.markdownTooLong'.tr(),
-                        )
-                      : MarkdownEditorField(
-                          fieldKey: keys.postEditor.markdownField,
-                          controller: _markdown,
-                          hintText: 'posts.editor.markdownPlaceholder'.tr(),
-                          images: _form.media.assets.images,
-                          enabled: !_saving,
-                          imageBusy: _uploading,
-                          onInsertImage: addImage,
-                          errorText: _form.markdownValid
-                              ? null
-                              : 'rides.editor.markdownTooLong'.tr(),
-                        ),
+                  child: RichMarkdownEditorField(
+                    fieldKey: keys.postEditor.markdownField,
+                    controller: _markdown,
+                    title: 'posts.editor.body'.tr(),
+                    hintText: 'posts.editor.markdownPlaceholder'.tr(),
+                    images: _form.media.assets.images,
+                    enabled: !_saving,
+                    imageBusy: _uploading,
+                    onInsertImage: addImage,
+                    errorText: _form.markdownValid
+                        ? null
+                        : 'rides.editor.markdownTooLong'.tr(),
+                  ),
                 ),
                 EditorSection(
                   title: 'routes.editor.media'.tr(),

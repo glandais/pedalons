@@ -18,7 +18,7 @@ import '../../../../keys.dart';
 import '../../../profile/presentation/widgets/confirm_sheet.dart';
 import '../../../rides/presentation/widgets/editor/editor_media_actions.dart';
 import '../../../rides/presentation/widgets/editor/editor_section.dart';
-import '../../../rides/presentation/widgets/editor/markdown_editor_field.dart';
+import '../../../rides/presentation/widgets/editor/rich_markdown_editor_field.dart';
 import '../../../rides/presentation/widgets/editor/ride_media_section.dart';
 import '../../../rides/presentation/widgets/editor/slug_edit_sheet.dart';
 import '../../../tags/presentation/tag_filter.dart';
@@ -726,7 +726,8 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
                   // ── Description et médias ──
                   EditorSection(
                     title: 'routes.editor.description'.tr(),
-                    child: MarkdownEditorField(
+                    child: RichMarkdownEditorField(
+                      title: 'routes.editor.description'.tr(),
                       fieldKey: keys.routeEditor.markdownField,
                       controller: _markdown,
                       hintText: 'routes.editor.markdownPlaceholder'.tr(),

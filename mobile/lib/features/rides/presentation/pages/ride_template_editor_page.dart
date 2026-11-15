@@ -25,7 +25,7 @@ import '../../domain/ride_form.dart';
 import '../../domain/ride_template_form.dart';
 import '../../providers/ride_template_providers.dart';
 import '../widgets/editor/editor_section.dart';
-import '../widgets/editor/markdown_editor_field.dart';
+import '../widgets/editor/rich_markdown_editor_field.dart';
 import '../widgets/editor/ride_group_editor.dart';
 import '../widgets/templates/ride_template_gate.dart';
 
@@ -433,9 +433,12 @@ class _RideTemplateEditorFormState
                 // ── Description ── Pas d'image : le modèle n'a pas de médias.
                 EditorSection(
                   title: 'rides.editor.description'.tr(),
-                  child: MarkdownEditorField(
+                  child: RichMarkdownEditorField(
+                    title: 'rides.editor.description'.tr(),
                     controller: _markdown,
                     fieldKey: keys.rideTemplateEditor.markdownField,
+                    // « Description », comme sur le site.
+                    hintText: 'routes.editor.markdownPlaceholder'.tr(),
                     enabled: !_saving,
                     errorText: _form.markdownValid
                         ? null

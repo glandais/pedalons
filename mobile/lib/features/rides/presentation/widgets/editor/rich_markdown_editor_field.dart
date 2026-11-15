@@ -20,11 +20,12 @@ import '../../../../../core/theme/pdl_tokens.dart';
 import '../../../../../core/theme/pdl_typography.dart';
 import '../../../../../core/widgets/authenticated_image.dart';
 import '../../../../../core/widgets/markdown_content.dart';
-import 'markdown_editor_field.dart';
+import 'markdown_link_sheet.dart';
 
-/// L'éditeur riche d'une publication : **l'éditeur Tiptap du site**, embarqué
-/// dans une WebView (POC, `assets/editor/`, construit par
-/// `pnpm build:mobile-editor` dans `frontend/`).
+/// L'éditeur du texte d'une sortie, d'un modèle de sortie, d'un parcours, d'une
+/// annonce ou d'une publication : **l'éditeur Tiptap du site**, embarqué dans
+/// une WebView (`assets/editor/`, construit par `pnpm build:mobile-editor`
+/// dans `frontend/` — docs/LEDGER_*.md MOB-160).
 ///
 /// Pourquoi pas un éditeur Flutter : le texte est du markdown écrit par le site
 /// (sauts de ligne `\`, échappements, tableaux, directives `::asset{}`), et un
@@ -39,15 +40,19 @@ import 'markdown_editor_field.dart';
 /// stable : en plein écran, la WebView est tout le corps et la barre est en
 /// bas, au-dessus du clavier.
 ///
-/// Même contrat que [MarkdownEditorField] : le texte vit dans [controller],
-/// que l'éditeur tient à jour à chaque frappe. La page ne connaît ni jeton ni
-/// adresse : les images passent par l'app, qui les charge avec ses en-têtes et
-/// les lui rend en `data:`.
+/// Le texte vit dans [controller], que l'éditeur tient à jour à chaque frappe.
+/// La page ne connaît ni jeton ni adresse : les images passent par l'app, qui
+/// les charge avec ses en-têtes et les lui rend en `data:`. [onInsertImage]
+/// envoie une image et rend sa directive `::asset{}`, ou `null` si la personne
+/// a renoncé ; nul, il **retire** l'outil image (le modèle de sortie n'a pas de
+/// médias, ledger `MOB-78`). [fieldKey] est la clé de l'aperçu, que l'on
+/// touche pour ouvrir l'éditeur.
 class RichMarkdownEditorField extends StatefulWidget {
   const RichMarkdownEditorField({
     super.key,
     required this.controller,
     required this.title,
+    this.fieldKey,
     this.images = const <AssetDto>[],
     this.onInsertImage,
     this.hintText,
@@ -60,6 +65,7 @@ class RichMarkdownEditorField extends StatefulWidget {
 
   /// Le titre de l'éditeur plein écran — celui de la section du formulaire.
   final String title;
+  final Key? fieldKey;
   final List<AssetDto> images;
   final Future<String?> Function()? onInsertImage;
   final String? hintText;
@@ -145,6 +151,7 @@ class _RichMarkdownEditorFieldState extends State<RichMarkdownEditorField> {
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
+            key: widget.fieldKey,
             onTap: widget.enabled ? _open : null,
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: PdlMetrics.media120),

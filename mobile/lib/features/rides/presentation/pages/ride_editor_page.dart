@@ -36,7 +36,7 @@ import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_editor_providers.dart';
 import '../widgets/editor/editor_media_actions.dart';
 import '../widgets/editor/editor_section.dart';
-import '../widgets/editor/markdown_editor_field.dart';
+import '../widgets/editor/rich_markdown_editor_field.dart';
 import '../widgets/editor/ride_group_editor.dart';
 import '../widgets/editor/ride_media_section.dart';
 import '../widgets/editor/search_picker_sheet.dart';
@@ -979,8 +979,11 @@ class _RideEditorFormState extends ConsumerState<_RideEditorForm>
                 // ── Description ──
                 EditorSection(
                   title: 'rides.editor.description'.tr(),
-                  child: MarkdownEditorField(
+                  child: RichMarkdownEditorField(
+                    title: 'rides.editor.description'.tr(),
+                    fieldKey: keys.rideEditor.markdownField,
                     controller: _markdown,
+                    hintText: 'rides.editor.markdownPlaceholder'.tr(),
                     images: _form.media.assets.images,
                     enabled: !_saving,
                     imageBusy: _uploading,

@@ -361,7 +361,6 @@ class RideEditorKeys implements GroupEditorKeys {
   final slugSave = const _RideEditorKey('slugSave');
   final markdownField = const _RideEditorKey('markdownField');
   final markdownPreview = const _RideEditorKey('markdownPreview');
-  final markdownMode = const _RideEditorKey('markdownMode');
   final logoButton = const _RideEditorKey('logoButton');
   final imageAddButton = const _RideEditorKey('imageAddButton');
   final attachmentAddButton = const _RideEditorKey('attachmentAddButton');

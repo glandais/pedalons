@@ -19,7 +19,7 @@ import '../../../auth/providers/auth_provider.dart';
 import '../../../profile/presentation/widgets/confirm_sheet.dart';
 import '../../../rides/presentation/widgets/editor/editor_media_actions.dart';
 import '../../../rides/presentation/widgets/editor/editor_section.dart';
-import '../../../rides/presentation/widgets/editor/markdown_editor_field.dart';
+import '../../../rides/presentation/widgets/editor/rich_markdown_editor_field.dart';
 import '../../../rides/presentation/widgets/editor/ride_group_editor.dart'
     show EditorClearButton;
 import '../../../rides/presentation/widgets/editor/ride_media_section.dart';
@@ -651,7 +651,8 @@ class _AdEditorFormState extends ConsumerState<_AdEditorForm>
                 // ── Description et médias ──
                 EditorSection(
                   title: 'ads.detail.description'.tr(),
-                  child: MarkdownEditorField(
+                  child: RichMarkdownEditorField(
+                    title: 'ads.detail.description'.tr(),
                     fieldKey: keys.adEditor.markdownField,
                     controller: _markdown,
                     hintText: 'ads.editor.markdownPlaceholder'.tr(),

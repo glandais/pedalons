@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pedalons/features/rides/presentation/widgets/editor/rich_markdown_editor_field.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/core/material.dart' hide Visibility;
@@ -227,11 +228,19 @@ void main() {
         find.byKey(keys.postEditor.nameField),
         'Retour du dimanche',
       );
-      await tester.enterText(
-        find.byKey(keys.postEditor.markdownField),
-        'Quel vent !',
-      );
+      // L'éditeur riche (une WebView, absente des tests de widget) écrit son
+      // markdown dans le contrôleur du champ : on y écrit à sa place.
+      expect(find.byKey(keys.postEditor.markdownField), findsOneWidget);
+      tester
+              .widget<RichMarkdownEditorField>(
+                find.byType(RichMarkdownEditorField),
+              )
+              .controller
+              .text =
+          'Quel vent !';
       await tester.pump();
+      // L'aperçu rend le texte.
+      expect(find.text('Quel vent !'), findsOneWidget);
       await tester.tap(find.byKey(keys.postEditor.saveButton));
       await settle(tester);
 

@@ -1187,7 +1187,8 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   `team_web_paths_test.dart` ; `bash check.sh` vert (1 081 tests). Pas encore de recette sur
   appareil ni de test Patrol : ledger `MOB-77`. **À ne pas défaire** : la description reste du
   **markdown brut** (`markdown_edit.dart`) — un éditeur riche mobile réécrirait à l'enregistrement
-  ce que Tiptap a produit, directives `::asset{id="…"}` comprises, qui placent les images ; une
+  ce que Tiptap a produit, directives `::asset{id="…"}` comprises, qui placent les images (levé par
+  `MOB-160` : l'éditeur riche de l'app *est* celui du site, sa sérialisation comprise) ; une
   image ajoutée s'insère comme au site (`createAssetDirective`) et une image retirée emporte ses
   directives. Le PUT réécrit **tous** les champs : `RideForm.fromRide` renvoie l'id de chaque
   groupe, son `leaderId` et les deux lieux, sinon le serveur les efface (et supprime les

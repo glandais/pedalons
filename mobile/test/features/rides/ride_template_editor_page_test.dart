@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pedalons/features/rides/presentation/widgets/editor/rich_markdown_editor_field.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/core/material.dart';
@@ -278,9 +279,14 @@ void main() {
       ),
       findsOneWidget,
     );
-    // La barre d'outils du markdown est là, sans son bouton image.
-    expect(find.byTooltip('Gras'), findsOneWidget);
-    expect(find.byTooltip('Insérer une image'), findsNothing);
+    // Le texte, sans outil image : l'éditeur riche n'en reçoit pas.
+    expect(find.byKey(keys.rideTemplateEditor.markdownField), findsOneWidget);
+    expect(
+      tester
+          .widget<RichMarkdownEditorField>(find.byType(RichMarkdownEditorField))
+          .onInsertImage,
+      isNull,
+    );
   });
 
   testWidgets('une équipe privée n\'offre pas de visibilité', (
