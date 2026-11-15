@@ -746,6 +746,8 @@
         "link": "Lien",
         "image": "Insérer une image"
       },
+      "linkOn": "Lien sur « {text} »",
+      "linkEditTitle": "Modifier le lien",
       "linkTitle": "Insérer un lien",
       "linkUrl": "Adresse (https://…)",
       "linkLabel": "Texte du lien (facultatif)",

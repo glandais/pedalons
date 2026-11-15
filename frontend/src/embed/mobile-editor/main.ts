@@ -224,6 +224,8 @@ function applyTheme(theme: Theme) {
   root.setProperty('--font-size', `${theme.fontSize}px`)
 }
 
+let linkRange: { from: number; to: number } | null = null
+
 const api = {
   /** Replaces the whole text — the first load, or a change made outside the editor. */
   load(markdown: string, images: AssetRef[], placeholder: string, theme: Theme | null) {
@@ -263,11 +265,31 @@ const api = {
       .insertAsset({ id: parsed.assetId, alt: parsed.alt, size: parsed.size })
       .run()
   },
+  /** What the link sheet needs: the selected text, and the address of a link under the caret. */
+  linkContext(): string {
+    // A caret in a link stands for the whole link: its text is kept, its address changed.
+    if (editor.state.selection.empty && editor.isActive('link')) {
+      editor.commands.extendMarkRange('link')
+    }
+    const { from, to } = editor.state.selection
+    // The sheet takes the focus, and the WebView's blur can collapse the selection: `setLink` puts
+    // this one back.
+    linkRange = { from, to }
+    const text = editor.state.doc.textBetween(from, to, ' ')
+    const href = editor.isActive('link') ? String(editor.getAttributes('link').href ?? '') : ''
+    return JSON.stringify({ text, href })
+  },
+  /**
+   * A selection becomes the link, its text kept; a caret in a link changes that link's address;
+   * otherwise the link is inserted, its text the label (or the address).
+   */
   setLink(url: string, label: string) {
+    if (linkRange) editor.commands.setTextSelection(linkRange)
+    linkRange = null
     ensureTextCaret()
     const { empty } = editor.state.selection
     const chain = editor.chain().focus()
-    if (empty) {
+    if (empty && !editor.isActive('link')) {
       chain
         .insertContent({
           type: 'text',

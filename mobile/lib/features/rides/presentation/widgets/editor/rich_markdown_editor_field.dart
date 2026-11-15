@@ -346,11 +346,33 @@ class _RichMarkdownEditorScreenState
   void _cmd(String name) => _js('pedalons.cmd(${jsonEncode(name)})');
 
   Future<void> _link() async {
-    final ({String url, String label})? link = await askMarkdownLink(context);
-    if (link == null || !mounted) return;
+    // La sélection de la page devient le lien ; un lien sous le curseur se
+    // modifie. La page garde sa sélection pendant que la feuille a le focus.
+    final Object raw = await _web.runJavaScriptReturningResult(
+      'pedalons.linkContext()',
+    );
+    if (!mounted) return;
+    // Android rend la chaîne JSON entre guillemets, iOS telle quelle.
+    final Object decoded = raw is String && raw.startsWith('"')
+        ? jsonDecode(raw) as Object
+        : raw;
+    final Map<String, dynamic> ctx =
+        jsonDecode(decoded.toString()) as Map<String, dynamic>;
+    final String href = ctx['href'] as String? ?? '';
+    final ({String url, String label})? link = await askMarkdownLink(
+      context,
+      selectedText: ctx['text'] as String?,
+      initialUrl: href.isEmpty ? null : href,
+    );
+    if (link == null || !mounted) {
+      await _showKeyboard();
+      return;
+    }
     await _js(
       'pedalons.setLink(${jsonEncode(link.url)}, ${jsonEncode(link.label)})',
     );
+    // La feuille a fermé le clavier.
+    await _showKeyboard();
   }
 
   Future<void> _image() async {

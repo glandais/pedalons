@@ -746,6 +746,8 @@
         "link": "Link",
         "image": "Insert an image"
       },
+      "linkOn": "Link on “{text}”",
+      "linkEditTitle": "Edit the link",
       "linkTitle": "Insert a link",
       "linkUrl": "Address (https://…)",
       "linkLabel": "Link text (optional)",
