@@ -49,7 +49,7 @@ void main() {
   });
 
   test('créer et modifier une publication sont des écrans de l\'app '
-      '(MOB-156)', () {
+      '(MOB-164)', () {
     expect(webOnlyRouteIds, isNot(contains('postNew')));
     expect(webOnlyRouteIds, isNot(contains('postEdit')));
   });

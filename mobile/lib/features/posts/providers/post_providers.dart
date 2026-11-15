@@ -21,7 +21,7 @@ final postDetailProvider = FutureProvider.family<PostDto, PostKey>((
 /// L'utilisateur peut-il créer une publication dans [teamSlug] ? `null` tant
 /// que « Mes équipes » n'est pas chargé et qu'il n'est pas admin de
 /// plateforme : l'écran n'affiche alors ni bouton ni refus (docs/LEDGER_*.md
-/// MOB-156).
+/// MOB-164).
 ///
 /// La règle est celle du serveur : organisateur ou administrateur, module
 /// publications actif — [canManageTeamPosts].
@@ -32,7 +32,7 @@ final canManagePostsProvider = Provider.family<bool?, String>(
 
 /// **Le** point où l'app dit « un organisateur vient de changer une
 /// publication » — créée, réécrite, publiée, dépubliée, renommée d'adresse,
-/// supprimée ou restaurée (ledger `MOB-156`). Le pendant de
+/// supprimée ou restaurée (ledger `MOB-164`). Le pendant de
 /// `notifyRideChanged`.
 ///
 /// Une publication paraît dans les fils (accueil, équipe), le tableau de bord

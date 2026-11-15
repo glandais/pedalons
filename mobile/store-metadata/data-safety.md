@@ -14,7 +14,7 @@ from:
 - **App**: Pédalons, `fr.pedalons.mobile`, version `1.0.0+57` (`mobile/pubspec.yaml`)
 - **Backend**: `https://www.pedalons.fr` (`mobile/lib/config/app_config.dart`)
 - **Last verified against the code**: 2026-11-14 (ad editor, `MOB-158` — `lib/features/ads/`, and
-  the declaration of an ad's position as an address, `MOB-159`, #25; post editor, `MOB-156` —
+  the declaration of an ad's position as an address, `MOB-159`, #25; post editor, `MOB-164` —
   `lib/features/posts/`; before that 2026-10-17: route editor and GPX import, `MOB-79` —
   `lib/features/routes/`; before that 2026-09-27: problem reports and automatic error reports,
   `lib/features/feedback/`, `lib/core/logging/`, backend `FeedbackService`)
@@ -28,7 +28,7 @@ from:
 ## 1. What the app actually does
 
 The mobile app authenticates, then reads team content — and, for a team's organizers, writes
-its rides, routes and posts (the ride editor, `MOB-80`, #21–#22; the route editor, `MOB-79`, #23; the post editor, `MOB-156`, #24). Four capabilities beyond reading touch
+its rides, routes and posts (the ride editor, `MOB-80`, #21–#22; the route editor, `MOB-79`, #23; the post editor, `MOB-164`, #24). Four capabilities beyond reading touch
 personal data: **picking a profile picture** from the photo library, **picking a document**
 (a ride's attachments and a route's GPX file) with the system document picker, reading a **coarse
 device position** to sort content by proximity, and registering the device for **push
@@ -44,7 +44,7 @@ The capabilities added, and their exact boundary:
 - **`image_picker`** — photo library only, to feed `POST /api/users/me/avatar` and, since
   `MOB-80` (2026-10-17), a ride's logo and images in the **ride editor** (organizers only,
   `POST /api/teams/{slug}/assets`, see #22) — the same path serves the route editor (#23) and,
-  since `MOB-156` (2026-11-14), the photos of a post in the **post editor** (#24). No camera
+  since `MOB-164` (2026-11-14), the photos of a post in the **post editor** (#24). No camera
   capture (`NSCameraUsageDescription` is deliberately absent, so iOS cannot grant it).
   `NSPhotoLibraryUsageDescription` exists in `mobile/ios/Runner/Info.plist`, localized in
   `Runner/{en,fr}.lproj/InfoPlist.strings`.
@@ -594,7 +594,7 @@ these ships:
 |---|---|
 | Profile editing (`PUT /api/users/me`) | nothing new — Name/Email already declared |
 | Camera capture for the avatar | `NSCameraUsageDescription` in `Info.plist` (+ its two `InfoPlist.strings`); no new data type — Photos or Videos already covers it |
-| Trip authoring (comments are already declared, #13; ride authoring since `MOB-80`, #21–#22; route authoring since `MOB-79`, #23; post authoring since `MOB-156`, #24) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
+| Trip authoring (comments are already declared, #13; ride authoring since `MOB-80`, #21–#22; route authoring since `MOB-79`, #23; post authoring since `MOB-164`, #24) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
 | A screenshot or attachment on a report, or automatic moderation of images or text beyond the word filter | Apple `…PhotosorVideos` already covers images, but re-read §4 for the purpose; Play *Photos*; any third-party moderation service is a new sub-processor for the policy |
 | GPX **import** from the device | Delivered by `MOB-79` for a team route an organizer publishes (#23): Play *Files and docs* and Apple `…OtherUserContent`, both declared; no Precise Location: the file may come from a recorded ride, but it is published as a route for the members, no device position is read and the server keeps only the geometry (timestamps, sensor data and metadata are stripped before storing). **Precise Location (Apple `…PreciseLocation`, Play *Location → Precise location*) becomes due** if the app imports **activities** as the user's own history, if the server starts keeping timestamps, or if the app records a ride. Any other import (FIT, a GPX outside the route editor) is a new audit |
 | Offering the **device's position** as the position of an ad ("use my location"), or any other stored position read from the device | Apple `NSPrivacyCollectedDataTypePreciseLocation`, linked; Play *Location → Precise location*, collected, not ephemeral. The *Physical Address* / *Address* rows of #25 only hold while the position is an address the member types |

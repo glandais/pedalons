@@ -379,7 +379,7 @@ void main() {
     });
   });
 
-  // Ledger `MOB-156` : le crayon et « Gérer la publication » suivent le bloc
+  // Ledger `MOB-164` : le crayon et « Gérer la publication » suivent le bloc
   // `permissions` de la publication.
   group('gestes d\'organisateur', () {
     testWidgets('sans droit : ni crayon ni bandeau, le signalement seul', (

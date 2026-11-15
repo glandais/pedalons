@@ -21,7 +21,7 @@ import '../../support/localization.dart';
 import '../routes/route_fixtures.dart';
 import 'post_fixtures.dart';
 
-/// L'éditeur de publication (ledger `MOB-156`) : le refus pour qui n'organise
+/// L'éditeur de publication (ledger `MOB-164`) : le refus pour qui n'organise
 /// pas, et surtout **ce qui part** — la requête que le serveur recevra.
 class _StubPosts implements PostRepository {
   _StubPosts({PostDto? post}) : post = post ?? fixturePost();

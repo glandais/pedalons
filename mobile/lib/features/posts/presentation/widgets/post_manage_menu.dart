@@ -18,7 +18,7 @@ import '../../providers/post_providers.dart';
 /// Les gestes d'un organisateur sur une publication, selon son statut — ceux
 /// du menu du site (`PostDetailPage`) : publier un brouillon, dépublier ou
 /// annuler une publication en ligne, rétablir une publication annulée,
-/// supprimer, restaurer, et signaler (ledger `MOB-156`). Modifier est le
+/// supprimer, restaurer, et signaler (ledger `MOB-164`). Modifier est le
 /// crayon de la barre.
 enum PostManageAction {
   publish,

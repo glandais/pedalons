@@ -680,7 +680,7 @@ routes:
     web: true
 
   # --- Posts ---
-  # `postNew` and `postEdit` are app screens since MOB-156 (docs/LEDGER_*.md MOB-156).
+  # `postNew` and `postEdit` are app screens since MOB-164 (docs/LEDGER_*.md MOB-164).
   - id: postNew
     path:
       en: /teams/{teamSlug}/posts/new

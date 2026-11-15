@@ -183,7 +183,7 @@ void main() {
       }
     });
 
-    test('l\'éditeur de publication s\'ouvre dans l\'app (MOB-156)', () {
+    test('l\'éditeur de publication s\'ouvre dans l\'app (MOB-164)', () {
       for (final String page in <String>[
         ...PathVariants.postNew('vc').values,
         ...PathVariants.postEdit('vc', 'news').values,
@@ -302,7 +302,7 @@ void main() {
     });
 
     // `…/sorties/nouvelle` était l'exemple jusqu'à `MOB-80`, puis
-    // `…/articles/nouveau` jusqu'à `MOB-156` et `…/voyages/nouveau` jusqu'à
+    // `…/articles/nouveau` jusqu'à `MOB-164` et `…/voyages/nouveau` jusqu'à
     // `MOB-162`, qui en ont fait des écrans de l'app. Restent sans écran les
     // pages d'administration de l'équipe.
     testWidgets('une page du site part au navigateur, pas sur le routeur '
@@ -344,7 +344,7 @@ void main() {
       expect(launched, isEmpty, reason: 'Une route interne ne sort pas.');
     });
 
-    testWidgets('« nouvel article » ouvre l\'éditeur de l\'app (MOB-156)', (
+    testWidgets('« nouvel article » ouvre l\'éditeur de l\'app (MOB-164)', (
       WidgetTester tester,
     ) async {
       final List<Uri> launched = <Uri>[];

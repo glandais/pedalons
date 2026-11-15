@@ -36,7 +36,7 @@ import '../../domain/post_form.dart';
 import '../../providers/post_providers.dart';
 
 /// Créer ([postSlug] nul) ou modifier une publication — le pendant mobile de
-/// `CreatePostPage` / `EditPostPage` du site (docs/LEDGER_*.md MOB-156) :
+/// `CreatePostPage` / `EditPostPage` du site (docs/LEDGER_*.md MOB-164) :
 /// titre, texte markdown, photos et pièces jointes, tags, visibilité,
 /// signature, statut et dates.
 ///

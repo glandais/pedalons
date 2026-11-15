@@ -2,7 +2,7 @@ import 'package:pedalons/api/generated/export.dart';
 
 import '../../support/content_permissions.dart';
 
-/// Jeux de données de l'éditeur de publication (ledger `MOB-156`).
+/// Jeux de données de l'éditeur de publication (ledger `MOB-164`).
 const TeamPublicationDto fixturePostTeam = TeamPublicationDto(
   accessible: true,
   id: 't1',

@@ -322,7 +322,7 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   ),
   // L'éditeur d'une publication : une création sous les publications de
   // l'équipe, une modification sous l'écran qu'elle réécrit (ledger
-  // `MOB-156`). `postNew` **avant** `post` : `articles/nouveau` est aussi la
+  // `MOB-164`). `postNew` **avant** `post` : `articles/nouveau` est aussi la
   // publication de slug `nouveau`, et la première entrée qui correspond
   // l'emporte.
   _DeepLinkHierarchy(
@@ -850,7 +850,7 @@ GoRoute _teamTree(String locale) {
         routes: [_rideGroupRoute(locale), _rideEditRoute(locale)],
       ),
       // Avant le détail : `…/articles/nouveau` est aussi la publication de
-      // slug `nouveau`, et c'est l'éditeur qui est visé (ledger `MOB-156`).
+      // slug `nouveau`, et c'est l'éditeur qui est visé (ledger `MOB-164`).
       GoRoute(
         path: _underTeam(PathVariants.postNew(':teamSlug'), locale, teamBase),
         parentNavigatorKey: _rootNavigatorKey,
@@ -982,7 +982,7 @@ GoRoute _adEditRoute(String locale) {
 }
 
 /// L'éditeur d'une publication, sous son écran : ouvert par un lien, l'écran
-/// se reconstruit dessous et l'enregistrement y revient (ledger `MOB-156`).
+/// se reconstruit dessous et l'enregistrement y revient (ledger `MOB-164`).
 GoRoute _postEditRoute(String locale) {
   final postBase = PathVariants.post(':teamSlug', ':postSlug')[locale]!;
   return GoRoute(

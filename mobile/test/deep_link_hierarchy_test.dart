@@ -195,7 +195,7 @@ final List<_LinkCase> _cases = [
       PathVariants.rideTemplates(_teamSlug),
     ],
   ),
-  // L'éditeur d'une publication (ledger `MOB-156`) : la création sous les
+  // L'éditeur d'une publication (ledger `MOB-164`) : la création sous les
   // publications de l'équipe, la modification sous l'écran qu'elle réécrit.
   _LinkCase('postNew', PathVariants.postNew(_teamSlug), [
     PathVariants.teams(),

@@ -14,7 +14,7 @@ class _PostEditorKey extends ValueKey<String> {
   const _PostEditorKey(String value) : super('postEditor_$value');
 }
 
-/// L'éditeur de publication, création et modification (ledger `MOB-156`).
+/// L'éditeur de publication, création et modification (ledger `MOB-164`).
 /// Les boutons de médias (logo, images, pièces jointes) gardent les clés de
 /// `keys.rideEditor` : c'est le même widget.
 class PostEditorKeys {
@@ -44,7 +44,7 @@ class _PostManageKey extends ValueKey<String> {
   const _PostManageKey(String value) : super('postManage_$value');
 }
 
-/// Les gestes d'organisateur de l'écran d'une publication (ledger `MOB-156`).
+/// Les gestes d'organisateur de l'écran d'une publication (ledger `MOB-164`).
 class PostManageKeys {
   /// Le crayon de la barre : modifier la publication.
   final editButton = const _PostManageKey('editButton');

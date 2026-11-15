@@ -16,7 +16,7 @@ class PostRepository {
     return _postsClient.getPost(teamSlug: teamSlug, postSlug: postSlug);
   }
 
-  // --- Écriture (docs/LEDGER_*.md MOB-156).
+  // --- Écriture (docs/LEDGER_*.md MOB-164).
 
   Future<PostDto> createPost(String teamSlug, PostRequest request) {
     return _postsClient.createPost(teamSlug: teamSlug, body: request);

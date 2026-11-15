@@ -16,7 +16,7 @@ import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
 import 'post_fixtures.dart';
 
-/// Le menu « Gérer la publication » (ledger `MOB-156`).
+/// Le menu « Gérer la publication » (ledger `MOB-164`).
 class _StubPosts implements PostRepository {
   final List<String> statuses = <String>[];
   final List<String> deleted = <String>[];

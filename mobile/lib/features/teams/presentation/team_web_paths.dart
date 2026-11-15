@@ -7,7 +7,7 @@ import '../../../config/paths.dart';
 /// Créer et modifier une **sortie** se fait dans l'app depuis `MOB-80`
 /// (`rideNewLocation`, `Paths.rideEdit`), gérer les **modèles de sortie**
 /// depuis `MOB-78` (`Paths.rideTemplates`), créer et modifier une
-/// **publication** depuis `MOB-156` (`Paths.postNew`, `Paths.postEdit`), créer et
+/// **publication** depuis `MOB-164` (`Paths.postNew`, `Paths.postEdit`), créer et
 /// modifier un **voyage** depuis `MOB-162` (`Paths.tripNew`, `Paths.tripEdit`).
 /// Le tableau de bord les propose
 /// néanmoins — parité avec le web —, et les ouvre dans le navigateur de l'appareil

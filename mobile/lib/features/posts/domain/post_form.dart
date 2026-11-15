@@ -14,7 +14,7 @@ const int kPostMaxTags = 10;
 
 /// Qui peut créer une publication : la règle de rôle des sorties
 /// ([canManageRides] — `PostAccessChecker` demande `teamRole.isOrganizer()`)
-/// et le seul module publications (docs/LEDGER_*.md MOB-156). Modifier et
+/// et le seul module publications (docs/LEDGER_*.md MOB-164). Modifier et
 /// supprimer suivent, eux, le `permissions` de la publication.
 bool canManageTeamPosts(
   TeamDetailDto team, {

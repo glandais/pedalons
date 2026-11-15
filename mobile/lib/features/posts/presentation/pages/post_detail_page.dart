@@ -131,7 +131,7 @@ class _PostDetailContent extends ConsumerWidget {
             onPressed: () => unawaited(_share(context)),
           ),
           // Le droit de **cette** publication, calculé par le backend
-          // (docs/LEDGER_*.md MOB-137, MOB-156).
+          // (docs/LEDGER_*.md MOB-137, MOB-164).
           if (post.permissions.canEdit && !post.deleted)
             PdlAppBarAction(
               key: keys.postManage.editButton,
