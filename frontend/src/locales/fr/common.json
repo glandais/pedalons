@@ -717,7 +717,7 @@
   "errors.api.UNKNOWN": "Une erreur inattendue s'est produite",
   "errors.api.USER_NOT_FOUND": "Compte introuvable",
   "errors.api.USER_NOT_SYNCED": "Le compte n'est pas synchronisé",
-  "errors.api.USER_TEAM_LIMIT_REACHED": "Vous avez atteint la limite d'équipes rejoignables",
+  "errors.api.USER_TEAM_LIMIT_REACHED": "Vous administrez déjà une équipe : il n'est pas possible d'en créer une autre.",
   "errors.api.VALIDATION": "Les données fournies sont invalides",
   "errors.api.WEBHOOK_URL_INVALID": "L'URL doit être en https et pointer vers une adresse publique.",
   "errors.notFound.backHome": "Retour à l'accueil",

@@ -570,14 +570,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 `frontend/e2e/README.md`.
 
 
-- [ ] `WEB-182` **Le libellé de `USER_TEAM_LIMIT_REACHED` dit autre chose que ce que fait le
-      serveur (XS)** — « Vous avez atteint la limite d'équipes rejoignables » alors que le code
-      n'est levé qu'à la création, quand la personne administre déjà une équipe
-      (`TeamService.createTeam`) ; être membre ne compte pas. À corriger dans
-      `frontend/src/locales/fr/common.json` et `en/common.json`, sans nombre (l'erreur ne porte
-      aucun détail). Plan [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md)
-      §5.2, décision D4 ; côté app : `MOB-165`.
-
 - [ ] `WEB-181` **Lancer le test e2e qui vérifie que le point exact d'une annonce survit à une
       dépublication puis une publication depuis sa fiche (XS)** — le défaut est corrigé (voir la
       part livrée sous le même ID) et couvert par vitest ; le cas de bout en bout

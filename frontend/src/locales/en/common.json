@@ -701,7 +701,7 @@
   "errors.api.UNKNOWN": "An unexpected error occurred",
   "errors.api.USER_NOT_FOUND": "User not found",
   "errors.api.USER_NOT_SYNCED": "The user account is not synchronized",
-  "errors.api.USER_TEAM_LIMIT_REACHED": "You have reached the maximum number of teams you can join",
+  "errors.api.USER_TEAM_LIMIT_REACHED": "You already administer a team: you cannot create another one.",
   "errors.api.VALIDATION": "The provided data is invalid",
   "errors.api.WEBHOOK_URL_INVALID": "The URL must use https and point to a public address.",
   "errors.notFound.backHome": "Back to Home",
