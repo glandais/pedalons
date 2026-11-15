@@ -458,7 +458,10 @@ Données : `features/teams/data/team_invitations_repository.dart` et le provider
   `TeamMembersNotifier.apply`) : la ligne retirée part, le badge de rôle est réécrit, sans
   squelettes ni retour en haut, puis `notifyTeamChanged`. Sous un filtre de rôle, la personne
   quitte la liste si son rôle n'est plus celui du filtre, et la liste est relue (ses lignes
-  restant à l'écran) si elle vient d'y entrer. Les listes des autres équipes ne bougent pas.
+  restant à l'écran) si elle vient d'y entrer. Une personne retirée qui n'est **pas dans les
+  pages chargées** fait perdre un au total de la liste sans filtre ; sous un filtre, où l'on ne
+  sait pas si elle lui correspondait, la liste est relue (revue du lot 4). Les listes des
+  autres équipes ne bougent pas.
   (Revue du lot 3 : la première écriture invalidait toute la famille `teamMembersProvider`, et
   la liste repartait de sa première page.) Un message « Rôle mis à jour », absent du site,
   confirme le changement.
@@ -541,11 +544,19 @@ Données : `features/teams/data/team_invitations_repository.dart` et le provider
   (`PagedListNotifier.replaceItem` / `removeItem`, ajoutés à `core/pagination/` — `removeItem`
   relit la dernière page chargée quand il en reste, pour ne pas sauter la ligne que le décalage
   d'offset y fait glisser) ; un lieu créé, ou modifié sous une recherche, fait relire la liste,
-  ses lignes restant à l'écran. Côté éditeurs de sortie et de voyage, **la recherche de lieux n'a
+  ses lignes restant à l'écran. **Un lieu renommé** aussi, tant que des pages restent à lire :
+  la liste est triée par nom, le serveur le range ailleurs, et la page suivante, découpée sur le
+  nouvel ordre, sauterait un lieu et rendrait le renommé en double (revue du lot 4).
+  `removeItem` décide de sa relecture sur l'état **d'avant** le retrait : à 21 lieux dont 20
+  lus, le 21e glisse dans la liste et aucune page suivante ne l'aurait apporté (revue du
+  lot 4). Côté éditeurs de sortie et de voyage, **la recherche de lieux n'a
   pas de cache** (la feuille interroge le serveur à chaque ouverture) : ce qui est relu est
   `editorPlaceProvider`, le lieu déjà choisi dont ils tirent le nom et le fuseau.
 - **Pendant une suppression**, « Ajouter un lieu » et les boutons des lignes sont inactifs :
-  aucun geste n'est perdu en silence.
+  aucun geste n'est perdu en silence. Un double appui n'ouvre qu'une feuille — le formulaire
+  comme la confirmation — et n'envoie qu'une suppression (`_sheetOpen`, posé avant
+  l'ouverture) ; la croix de la localisation disparaît pendant l'enregistrement (revue du
+  lot 4).
 
 ### 7.3 Signalements (lot 4, `MOB-168`)
 
@@ -584,7 +595,10 @@ admin de plateforme y arrive par notification sans être membre).
   action, teamSlug}` comme au site — `targetType` part tel que la file l'a donné. « Supprimer
   le contenu » se confirme (`confirmDestructive`, textes du site), « Rejeter le signalement »
   part aussitôt, comme au site. Une décision à la fois : pendant qu'elle court, les boutons des
-  autres cartes sont inactifs. Un refus du serveur se lit dans un bandeau, la carte reste.
+  autres cartes sont inactifs, et c'est le bouton de la décision prise qui tourne. Un refus du
+  serveur se lit dans un bandeau, la carte reste — sauf un 404 ou un 409 (quelqu'un d'autre
+  vient de décider, le contenu a disparu) : les deux onglets sont alors relus, la carte ne
+  reste pas à l'écran sans plus répondre à rien (`isGoneOrConflictError`, revue du lot 4).
 - **Membre signalé** : le texte de renvoi dit « la gestion des membres » (le site : « la page
   Membres ») ; le lien « Gestion des membres » (`Paths.teamAdminMembers`) n'est rendu qu'à qui
   administre l'équipe ou la plateforme — un organisateur y lirait un refus.

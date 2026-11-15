@@ -316,7 +316,9 @@ class _PlaceFormSheetState extends ConsumerState<PlaceFormSheet> {
                 dimension: 20,
                 child: CircularProgressIndicator.adaptive(),
               )
-            : _form.location == null
+            // Pas de croix pendant l'enregistrement : la position qui part
+            // est déjà lue.
+            : _form.location == null || _saving
             ? null
             : EditorClearButton(
                 key: keys.teamPlaces.formLocationClear,

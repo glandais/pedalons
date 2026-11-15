@@ -135,6 +135,11 @@ class _PlacesState extends ConsumerState<_Places> {
   /// Une suppression est en cours : les autres gestes attendent.
   bool _writing = false;
 
+  /// Une feuille est ouverte — le formulaire, ou la confirmation d'une
+  /// suppression. Posé **avant** de l'ouvrir : un double appui n'en ouvre pas
+  /// deux, et n'envoie pas deux suppressions.
+  bool _sheetOpen = false;
+
   /// Ce que le serveur a refusé à une suppression, dans la barre épinglée.
   String? _error;
 
@@ -155,14 +160,16 @@ class _PlacesState extends ConsumerState<_Places> {
   /// Ouvre le formulaire — d'un nouveau lieu, ou de [place]. La feuille
   /// enregistre et fait relire la liste ; l'écran confirme.
   Future<void> _openForm([PlaceDetailDto? place]) async {
-    if (_writing) return;
+    if (_writing || _sheetOpen) return;
+    _sheetOpen = true;
     setState(() => _error = null);
     final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    final PlaceDetailDto? saved = await showPlaceFormSheet(
-      context,
-      _slug,
-      place: place,
-    );
+    final PlaceDetailDto? saved;
+    try {
+      saved = await showPlaceFormSheet(context, _slug, place: place);
+    } finally {
+      _sheetOpen = false;
+    }
     if (saved == null) return;
     _snack(
       messenger,
@@ -171,14 +178,20 @@ class _PlacesState extends ConsumerState<_Places> {
   }
 
   Future<void> _delete(PlaceDetailDto place) async {
-    if (_writing) return;
-    final bool confirmed = await confirmDestructive(
-      context,
-      title: 'places.deleteConfirm.title'.tr(),
-      message: 'places.deleteConfirm.message'.tr(),
-      confirmLabel: 'places.deleteConfirm.confirm'.tr(),
-    );
-    if (!confirmed || !mounted) return;
+    if (_writing || _sheetOpen) return;
+    _sheetOpen = true;
+    final bool confirmed;
+    try {
+      confirmed = await confirmDestructive(
+        context,
+        title: 'places.deleteConfirm.title'.tr(),
+        message: 'places.deleteConfirm.message'.tr(),
+        confirmLabel: 'places.deleteConfirm.confirm'.tr(),
+      );
+    } finally {
+      _sheetOpen = false;
+    }
+    if (!confirmed || !mounted || _writing) return;
 
     final PlacesRepository repository = ref.read(placesRepositoryProvider);
     // Pris avant l'`await` : l'écran peut être quitté avant la réponse.

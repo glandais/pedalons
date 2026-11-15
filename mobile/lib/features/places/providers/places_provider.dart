@@ -91,7 +91,10 @@ class TeamPlacesNotifier extends PagedListNotifier<PlaceDetailDto> {
   ///
   /// * un lieu supprimé quitte la liste ;
   /// * un lieu réécrit est remplacé à sa place — sauf sous une recherche, où
-  ///   il ne lui correspond peut-être plus : la liste est alors relue ;
+  ///   il ne lui correspond peut-être plus, et sauf s'il a **changé de nom**
+  ///   alors que des pages restent à lire : la liste est triée par nom, le
+  ///   serveur le range ailleurs, et la page suivante, découpée sur le nouvel
+  ///   ordre, sauterait un lieu. La liste est alors relue ;
   /// * un lieu créé n'a pas de place connue (l'ordre est celui du serveur) :
   ///   la liste est relue, ses lignes restant à l'écran entre-temps.
   void apply(PlaceChange change) {
@@ -101,7 +104,18 @@ class TeamPlacesNotifier extends PagedListNotifier<PlaceDetailDto> {
         unawaited(removeItem(change.placeId!));
       case PlaceChangeKind.updated:
         final PlaceDetailDto place = change.place!;
-        if (_filters.isFiltered || !replaceItem(place.id, place)) {
+        PlaceDetailDto? shown;
+        for (final PlaceDetailDto item in state.items) {
+          if (item.id == place.id) shown = item;
+        }
+        // Le tri du serveur : `lower(name)`, puis l'identifiant.
+        final bool keepsRank =
+            shown != null &&
+            (!state.hasMore ||
+                shown.name.toLowerCase() == place.name.toLowerCase());
+        if (_filters.isFiltered ||
+            !keepsRank ||
+            !replaceItem(place.id, place)) {
           unawaited(refresh());
         }
       case PlaceChangeKind.created:

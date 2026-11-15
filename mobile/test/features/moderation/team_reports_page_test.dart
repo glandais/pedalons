@@ -855,4 +855,83 @@ void main() {
       expect(enabled(tester, k.dismissButton('MEMBER_t4')), isTrue);
     });
   });
+
+  group('revue du lot 4', () {
+    bool loading(WidgetTester tester, Key key) =>
+        tester.widget<PdlButton>(find.byKey(key)).loading;
+
+    testWidgets('pendant « Supprimer le contenu », c\'est son bouton qui '
+        'tourne, pas « Rejeter »', (WidgetTester tester) async {
+      final _Moderation moderation = _Moderation()
+        ..resolveGate = Completer<void>();
+      await open(
+        tester,
+        teams: _Teams(role: 'ORGANIZER'),
+        moderation: moderation,
+      );
+
+      await tester.tap(find.byKey(k.removeButton('POST_t1')));
+      await settle(tester);
+      await tester.tap(find.byKey(keys.profile.confirmDestructiveButton));
+      await settle(tester);
+
+      expect(loading(tester, k.removeButton('POST_t1')), isTrue);
+      expect(loading(tester, k.dismissButton('POST_t1')), isFalse);
+      // Les autres cartes ne tournent pas.
+      expect(loading(tester, k.dismissButton('COMMENT_t2')), isFalse);
+
+      moderation.resolveGate!.complete();
+      await settle(tester);
+    });
+
+    testWidgets('pendant « Rejeter le signalement », c\'est le sien', (
+      WidgetTester tester,
+    ) async {
+      final _Moderation moderation = _Moderation()
+        ..resolveGate = Completer<void>();
+      await open(
+        tester,
+        teams: _Teams(role: 'ORGANIZER'),
+        moderation: moderation,
+      );
+
+      await tester.tap(find.byKey(k.dismissButton('POST_t1')));
+      await settle(tester);
+
+      expect(loading(tester, k.dismissButton('POST_t1')), isTrue);
+      expect(loading(tester, k.removeButton('POST_t1')), isFalse);
+
+      moderation.resolveGate!.complete();
+      await settle(tester);
+    });
+
+    for (final int status in <int>[404, 409]) {
+      testWidgets('une cible déjà traitée par quelqu\'un d\'autre ($status) : '
+          'le bandeau, et la file est relue — la carte ne reste pas', (
+        WidgetTester tester,
+      ) async {
+        final _Moderation moderation = _Moderation()
+          ..resolveError = _apiError(status, 'NOT_FOUND');
+        await open(
+          tester,
+          teams: _Teams(role: 'ORGANIZER'),
+          moderation: moderation,
+        );
+        final int lists = moderation.listCalls.length;
+        // Entre-temps, quelqu'un d'autre a rejeté ce signalement.
+        moderation.open = <ModerationItemDto>[
+          for (final ModerationItemDto i in moderation.open)
+            if (i.targetId != 't2') i,
+        ];
+
+        await tester.tap(find.byKey(k.dismissButton('COMMENT_t2')));
+        await settle(tester);
+
+        expect(find.byKey(k.errorBanner), findsOneWidget);
+        expect(moderation.listCalls.length, greaterThan(lists));
+        expect(find.byKey(k.card('COMMENT_t2')), findsNothing);
+        expect(find.byKey(k.card('POST_t1')), findsOneWidget);
+      });
+    }
+  });
 }

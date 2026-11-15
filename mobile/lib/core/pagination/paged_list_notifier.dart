@@ -168,9 +168,12 @@ abstract class PagedListNotifier<T> extends StateNotifier<PagedListState<T>> {
   ///
   /// The API paginates by offset: with one row less on the server, the first
   /// row of the next page slides into the last loaded one, and the next page
-  /// request would skip it. So when pages remain, the last loaded page is
-  /// read again and whatever is new in it is appended. A next page already in
-  /// flight was cut on the old offsets: the list is refreshed instead.
+  /// request would skip it. So when rows existed past the loaded pages
+  /// **before the removal**, the last loaded page is read again and whatever
+  /// is new in it is appended — even when that row was the only one left
+  /// (21 rows, 20 loaded: the 21st slides in and there is no next page to
+  /// bring it). A next page already in flight was cut on the old offsets: the
+  /// list is refreshed instead.
   ///
   /// For a list served in one piece: a sectioned list ([PageResult
   /// .firstSectionTotal]) is refreshed, its section boundary having moved.
@@ -188,10 +191,13 @@ abstract class PagedListNotifier<T> extends StateNotifier<PagedListState<T>> {
     final int? total = state.total == null
         ? null
         : (state.total! - 1).clamp(0, state.total!);
-    final bool hasMore =
-        total != null && state.loadedPages * pageSize < total && state.hasMore;
-    state = state.copyWith(items: items, total: total, hasMore: hasMore);
-    if (!hasMore || state.loadedPages == 0) return true;
+    // Decided on the state **before** the removal: a row has slid into the
+    // loaded range whenever rows existed past it, including when the removal
+    // brings the total down to exactly what is loaded. `hasMore` then comes
+    // from the re-read.
+    final bool rowsBeyond = state.hasMore;
+    state = state.copyWith(items: items, total: total);
+    if (!rowsBeyond || state.loadedPages == 0) return true;
 
     final generation = _generation;
     _requestInFlight = true;

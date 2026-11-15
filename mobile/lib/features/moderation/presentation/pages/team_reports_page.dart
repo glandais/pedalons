@@ -177,6 +177,9 @@ class _ReportsState extends ConsumerState<_Reports> {
   /// autres gestes attendent.
   String? _resolving;
 
+  /// La décision en cours sur cette carte : c'est son bouton qui tourne.
+  ModerationAction? _resolvingAction;
+
   /// Ce que le serveur a refusé à une décision.
   String? _error;
 
@@ -218,6 +221,7 @@ class _ReportsState extends ConsumerState<_Reports> {
     );
     setState(() {
       _resolving = moderationItemKey(item);
+      _resolvingAction = action;
       _error = null;
     });
     try {
@@ -240,9 +244,25 @@ class _ReportsState extends ConsumerState<_Reports> {
             : 'moderation.queue.dismissed'.tr(),
       );
     } catch (error, stackTrace) {
+      // La cible n'est plus à traiter — quelqu'un d'autre vient de décider,
+      // ou le contenu a disparu : la carte, restée à l'écran, ne répondrait
+      // plus à rien. Les deux onglets sont relus ; le bandeau dit pourquoi.
+      if (isGoneOrConflictError(error)) {
+        for (final ReportQueueStatus status
+            in ReportQueueStatus.$valuesDefined) {
+          container.invalidate(
+            teamReportsProvider((teamSlug: _slug, status: status)),
+          );
+        }
+      }
       if (mounted) setState(() => _error = getErrorMessage(error, stackTrace));
     } finally {
-      if (mounted) setState(() => _resolving = null);
+      if (mounted) {
+        setState(() {
+          _resolving = null;
+          _resolvingAction = null;
+        });
+      }
     }
   }
 
@@ -391,7 +411,7 @@ class _ReportsState extends ConsumerState<_Reports> {
               item: item,
               // Une décision à la fois : les autres cartes attendent.
               enabled: _resolving == null,
-              resolving: _resolving == id,
+              resolving: _resolving == id ? _resolvingAction : null,
               canOpenMembers: widget.canOpenMembers,
               onRemove: () => _decide(item, ModerationAction.removeContent),
               onDismiss: () => _decide(item, ModerationAction.dismiss),
@@ -418,7 +438,9 @@ class _ReportCard extends StatelessWidget {
 
   final ModerationItemDto item;
   final bool enabled;
-  final bool resolving;
+
+  /// La décision en cours sur cette carte, ou `null` : son bouton tourne.
+  final ModerationAction? resolving;
   final bool canOpenMembers;
   final VoidCallback onRemove;
   final VoidCallback onDismiss;
@@ -622,6 +644,7 @@ class _ReportCard extends StatelessWidget {
                     icon: PdlIcons.delete,
                     variant: PdlButtonVariant.danger,
                     size: PdlButtonSize.sm,
+                    loading: resolving == ModerationAction.removeContent,
                     enabled: enabled,
                     onPressed: onRemove,
                   ),
@@ -631,7 +654,7 @@ class _ReportCard extends StatelessWidget {
                   icon: PdlIcons.check,
                   variant: PdlButtonVariant.outline,
                   size: PdlButtonSize.sm,
-                  loading: resolving,
+                  loading: resolving == ModerationAction.dismiss,
                   enabled: enabled,
                   onPressed: onDismiss,
                 ),

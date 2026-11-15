@@ -125,8 +125,12 @@ class TeamMembersNotifier extends PagedListNotifier<MemberDto> {
   /// * un changement inconnu fait relire la liste, ses lignes restant à
   ///   l'écran.
   ///
-  /// Une personne qui n'est pas dans les pages chargées n'a rien à reporter :
-  /// sa page arrivera à jour.
+  /// Une personne qui n'est pas dans les pages chargées n'a pas de ligne à
+  /// reporter — sa page arrivera à jour —, mais le **total** de la liste, lui,
+  /// a pu changer : sans filtre, elle en faisait partie et le total perd un ;
+  /// sous un filtre, on ne sait pas si elle lui correspondait, et la liste
+  /// est relue. Une liste entièrement chargée qui ne la montre pas ne la
+  /// comptait pas.
   void apply(TeamMembersChange change) {
     if (change.teamSlug != _filters.teamSlug || !mounted) return;
     final String? userId = change.userId;
@@ -141,13 +145,27 @@ class TeamMembersNotifier extends PagedListNotifier<MemberDto> {
     final TeamRole? role = change.role;
     final TeamRole? filter = _filters.role;
     if (change.removed || role == null) {
-      if (shown != null) unawaited(removeItem(shown.id));
+      if (shown != null) {
+        unawaited(removeItem(shown.id));
+      } else if (state.hasMore) {
+        if (_filters.isFiltered) {
+          unawaited(refresh());
+        } else {
+          final int? total = state.total;
+          if (total != null && total > 0) {
+            state = state.copyWith(total: total - 1);
+          }
+        }
+      }
       return;
     }
     if (shown == null) {
       // Sous le filtre de son nouveau rôle, la personne vient d'entrer dans
-      // la liste, à une place que seul le serveur connaît.
-      if (filter == role) unawaited(refresh());
+      // la liste, à une place que seul le serveur connaît ; sous un autre,
+      // elle vient peut-être d'en sortir, sur une page pas encore lue.
+      if (filter == role || (filter != null && state.hasMore)) {
+        unawaited(refresh());
+      }
       return;
     }
     if (filter != null && filter != role) {

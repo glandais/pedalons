@@ -62,6 +62,9 @@ class _Places implements PlacesRepository {
   /// Si posé, `delete` attend qu'il soit complété.
   Completer<void>? deleteGate;
 
+  /// Si posé, `update` attend qu'il soit complété.
+  Completer<void>? writeGate;
+
   final List<({String slug, String? search, int page, int size})> listCalls =
       <({String slug, String? search, int page, int size})>[];
   final List<({String slug, PlaceRequest request})> created =
@@ -128,6 +131,7 @@ class _Places implements PlacesRepository {
     String placeId,
     PlaceRequest request,
   ) async {
+    await writeGate?.future;
     final Object? error = writeError;
     if (error != null) throw error;
     updated.add((slug: teamSlug, id: placeId, request: request));
@@ -932,6 +936,73 @@ void main() {
       expect(enabled(tester, k.addButton), isTrue);
       expect(actionEnabled(tester, k.rowEdit('p2')), isTrue);
       expect(find.byKey(k.row('p1')), findsNothing);
+    });
+  });
+
+  group('un geste à la fois', () {
+    testWidgets('un double appui sur la corbeille n\'ouvre qu\'une '
+        'confirmation et n\'envoie qu\'une suppression', (
+      WidgetTester tester,
+    ) async {
+      final _Places places = _Places();
+      await open(
+        tester,
+        teams: _Teams(role: 'ORGANIZER'),
+        places: places,
+      );
+
+      await tester.tap(find.byKey(k.rowDelete('p1')));
+      await tester.tap(find.byKey(k.rowDelete('p1')), warnIfMissed: false);
+      await settle(tester);
+
+      expect(find.byKey(keys.profile.confirmDestructiveButton), findsOneWidget);
+      await tester.tap(find.byKey(keys.profile.confirmDestructiveButton));
+      await settle(tester);
+
+      expect(places.deleted, hasLength(1));
+      expect(find.byKey(keys.profile.confirmDestructiveButton), findsNothing);
+    });
+
+    testWidgets('un double appui sur « Ajouter un lieu » n\'ouvre qu\'une '
+        'feuille', (WidgetTester tester) async {
+      await open(tester, teams: _Teams(role: 'ORGANIZER'));
+
+      await tester.tap(find.byKey(k.addButton));
+      await tester.tap(find.byKey(k.addButton), warnIfMissed: false);
+      await settle(tester);
+
+      expect(find.byKey(k.formSheet), findsOneWidget);
+
+      // La feuille fermée, le geste est rendu.
+      await tester.tap(find.byKey(k.formClose));
+      await settle(tester);
+      expect(find.byKey(k.formSheet), findsNothing);
+      await tester.tap(find.byKey(k.addButton));
+      await settle(tester);
+      expect(find.byKey(k.formSheet), findsOneWidget);
+    });
+
+    testWidgets('pendant l\'enregistrement, la croix de la localisation '
+        'n\'est plus là', (WidgetTester tester) async {
+      final _Places places = _Places()..writeGate = Completer<void>();
+      await open(
+        tester,
+        teams: _Teams(role: 'ORGANIZER'),
+        places: places,
+      );
+
+      await tester.tap(find.byKey(k.rowEdit('p1')));
+      await settle(tester);
+      expect(find.byKey(k.formLocationClear), findsOneWidget);
+
+      await submit(tester);
+      expect(find.byKey(k.formLocationClear), findsNothing);
+      expect(places.updated, isEmpty);
+
+      places.writeGate!.complete();
+      await settle(tester);
+      // La position est partie avec le lieu.
+      expect(places.updated.single.request.geometry, isNotNull);
     });
   });
 }

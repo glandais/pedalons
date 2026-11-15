@@ -304,6 +304,49 @@ void main() {
         expect(notifier.state.hasMore, isFalse);
       });
 
+      test('removeItem that brings the total down to exactly what is loaded '
+          'still re-reads: the last row slid in and no next page would bring '
+          'it', () async {
+        var all = ['a', 'b', 'c', 'd'];
+        final notifier = _FakeNotifier(
+          (page) async =>
+              _page(all.skip(page * 3).take(3).toList(), all.length),
+        );
+        await pumpEventQueue();
+        expect(notifier.state.items, ['a', 'b', 'c']);
+        expect(notifier.state.hasMore, isTrue);
+
+        all = ['a', 'c', 'd'];
+        expect(await notifier.removeItem('b'), isTrue);
+
+        expect(notifier.requestedPages, [0, 0]);
+        expect(notifier.state.items, ['a', 'c', 'd']);
+        expect(notifier.state.total, 3);
+        expect(notifier.state.hasMore, isFalse);
+      });
+
+      test('removeItem with two pages loaded and one row left: that row '
+          'slides into the second page', () async {
+        var all = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+        final notifier = _FakeNotifier(
+          (page) async =>
+              _page(all.skip(page * 3).take(3).toList(), all.length),
+        );
+        await pumpEventQueue();
+        await notifier.loadNextPage();
+        expect(notifier.state.items, ['a', 'b', 'c', 'd', 'e', 'f']);
+        expect(notifier.state.hasMore, isTrue);
+
+        all = ['a', 'b', 'c', 'd', 'f', 'g'];
+        expect(await notifier.removeItem('e'), isTrue);
+
+        // The last loaded page again, not the first.
+        expect(notifier.requestedPages, [0, 1, 1]);
+        expect(notifier.state.items, ['a', 'b', 'c', 'd', 'f', 'g']);
+        expect(notifier.state.total, 6);
+        expect(notifier.state.hasMore, isFalse);
+      });
+
       test('removeItem keeps the removal when the re-read fails', () async {
         var fail = false;
         final notifier = _FakeNotifier((page) async {

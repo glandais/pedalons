@@ -129,6 +129,16 @@ Map<String, String> _detailArgs(Object? details) {
 bool isForbiddenError(Object error) =>
     error is DioException && error.response?.statusCode == 403;
 
+/// Le serveur a répondu que la cible de l'écriture **n'est plus là** (404) ou
+/// **n'est plus dans l'état attendu** (409) — quelqu'un d'autre a agi
+/// entre-temps. L'écran qui le lit relit sa liste : la ligne restée à l'écran
+/// ne répondrait plus à rien.
+bool isGoneOrConflictError(Object error) {
+  if (error is! DioException) return false;
+  final int? status = error.response?.statusCode;
+  return status == 404 || status == 409;
+}
+
 /// Extracts a user-friendly, localized error message from an exception.
 ///
 /// A screen that renders a code itself reads it **before** falling back to
