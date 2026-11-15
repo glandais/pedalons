@@ -560,6 +560,33 @@ class RouteGeneratorScenarioTest {
     assertEquals(0, f.diagnostics().loopCandidates());
   }
 
+  @Test
+  void aTurningPointBeyondABridgeOfTheRideTypeIsNotTried() {
+    // two squares joined by a road and by an unpaved track: the graph has no bridge, but for a
+    // road ride the road B-E is one, and no loop from A turns in the eastern square
+    TestNetwork n =
+        base()
+            .node("A", 0, 0)
+            .node("B", 4000, 0)
+            .node("C", 4000, 4000)
+            .node("D", 0, 4000)
+            .node("E", 8000, 0)
+            .node("F", 12000, 0)
+            .node("G", 12000, 4000)
+            .node("H", 8000, 4000);
+    Ids ids = new Ids();
+    ride(n, ids, 2, "A", "B", "C", "D", "A");
+    ride(n, ids, 2, "E", "F", "G", "H", "E");
+    ride(n, ids, 2, "B", "E");
+    n.track(900).wayKind(WayKind.MINOR_ROAD).unpaved(true).path("C", "H");
+    n.track(901).wayKind(WayKind.MINOR_ROAD).unpaved(true).path("C", "H");
+    NetworkGraph g = n.build();
+    GeneratorRequest r = loop(n, 0, 0, 16000);
+    GeneratorResult.Success s = success(GENERATOR.generate(g, r));
+    assertAllValid(n.inputs(), g, r, s, "bridge of the ride type");
+    assertEquals(0, s.diagnostics().disjointInfeasible());
+  }
+
   // ---- 6: end different from start ------------------------------------------------------------
 
   @Test

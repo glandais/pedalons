@@ -2257,6 +2257,11 @@ perdu sur les points de demi-tour sans flot (210 appels sur 614).
 
 ### 13.12 Banc du 15 novembre : avant et après les quatre correctifs
 
+> **Corrigé au §13.13.** Les deux passages ci-dessous tournaient en même temps : la concurrence a
+> pesé bien plus sur le second, et les chiffres de A (53 réussites, 15 arrêts), comme la conclusion
+> « le flot orienté coûte deux requêtes à A », sont faux. Tourné seul, le même commit fait 59
+> réussites et 8 arrêts.
+
 `RealDataGeneratorBench` sur les neuf équipes de l'export, mêmes requêtes des deux côtés (120 par
 équipe au plus, pas de coupure par temps global, budget de 5 s par requête), au commit en production
 (`43b15bb9d`) et au commit `c03e3193a`. Les deux passages ont tourné en même temps sur la même
@@ -2292,3 +2297,48 @@ machine : les temps sont pessimistes de la même façon. Le tirage des départs 
 Suite proposée : le temps de A part dans les flots sans issue, dont la seconde passe épuise le
 graphe. Un calcul de ponts par requête sur les seules arêtes admises (`BridgeFinder`, linéaire,
 pas de cache) permettrait d'écarter ces points de demi-tour avant le flot et de rendre du budget.
+
+### 13.13 Banc refait, un passage à la fois, et filtre par ponts du type demandé
+
+Trois passages tournés seuls, oracle coupé, mêmes 120 requêtes au plus par équipe, sur les trois
+équipes où quelque chose bouge : le commit en production (`43b15bb9d`), le flot orienté
+(`848298b76`), puis le filtre décrit plus bas.
+
+| Équipe | Mesure | Production | Flot orienté | Avec le filtre |
+|---|---|---|---|---|
+| A | réussies / arrêts sur budget | 55 / 9 | 59 / 8 | 57 / 7 |
+| A | parcours rendus | 115 | 117 | 119 |
+| A | temps d'une réussite, médiane / p90 | 1,9 / 4,2 s | 2,1 / 4,6 s | 2,0 / 4,2 s |
+| `903379379966724603` | réussies | 19 | 22 | 23 |
+| `903379379966724603` | parcours rendus | 25 | 35 | 37 |
+| `903379379966724603` | temps d'une réussite, médiane / p90 | 0,55 / 1,33 s | 0,50 / 0,87 s | 0,51 / 0,68 s |
+| `902861823942084536` | réussies | 0 | 6 | 6 |
+
+Les six autres équipes ne bougent pas (6 réussites sur 262, §13.12). Le flot orienté et le retour
+impossible font donc passer le total de 80 à 91 réussites sur 579, sans rien coûter à A : elle
+gagne 7 requêtes et en perd 3, toutes au bord du budget de 5 s.
+
+**Filtre par ponts du type demandé.** `AnchorPair.coreComponent` calcule, par requête et par paire
+d'ancres, les composantes 2-arête-connexes des seules arêtes que le cœur peut rouler (ni interdites
+pour le type, ni prises par une queue) ; `LoopFamily` écarte un point de demi-tour qui n'est pas
+dans celle de l'ancre. C'est une condition nécessaire (un cœur est un circuit fermé sur ces arêtes),
+linéaire, sans rien ajouter au cache. Sur les 24 boucles route de A, les flots sans issue passent
+de 210 à 3. Le temps n'en baisse pas pour autant : `LoopFamily` essaie des points de demi-tour
+jusqu'à épuiser son budget d'évaluations, et les évaluations rendues vont à d'autres points.
+
+**Second ordre sauté.** `EdgeDisjointPaths.solve` reçoit une borne inférieure (le moins cher aller
+plus le moins cher retour par le point, `AnchorPair.cheapestThrough`) et ne cherche pas le second
+ordre quand le premier est à moins de 25 % de la borne. Sur 563 appels, le second ordre ne
+sauvait un appel que 57 fois et n'améliorait le coût de plus de 5 % que 9 fois ; le saut évite 85
+flots, environ 10 % du temps de la famille.
+
+**Bilan honnête.** L'effet du filtre et du saut sur les réussites est dans le bruit du budget : A
+perd 5 requêtes et en gagne 3, `903379379966724603` en gagne une. Ils rendent un peu plus de
+parcours et resserrent la queue des temps (p90). Ce n'est pas le gain annoncé au §13.12, dont le
+point de départ était faux.
+
+Où part le temps de A, mesuré sur les 24 boucles (36 s de recherche) : 26 s dans la famille « aller
+par un côté, retour par l'autre », dont 15 s sur 249 appels où le flot existe dans les deux ordres,
+est refusé au contrôle, puis passe au repli séquentiel (qui aboutit 166 fois) ; 8,5 s dans la
+famille des polygones. Le levier suivant est donc le contrôle a posteriori (sens unique mal placé
+par l'échange de tronçons, virages sur fenêtre parcourue), pas les flots sans issue.

@@ -957,12 +957,19 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       retour répond tout de suite `NO_ROUTE` / `NO_WAY_BACK` (10 à 50 ms au lieu de 0,25 à 2,5 s),
       et le flot de `EdgeDisjointPaths` connaît le sens de chaque côté, dans les deux ordres, le
       moins cher gardé (207 cœurs acceptés au lieu de 15 sur 24 requêtes de A, 12 réussies au lieu
-      de 11) ; ne pas revenir au flot aveugle sur un graphe à sens uniques. Restent : les
+      de 11) ; ne pas revenir au flot aveugle sur un graphe à sens uniques. Banc refait un passage
+      à la fois (§13.13) : 91 réussites sur 579 au lieu de 80 en production ; le filtre des points
+      de demi-tour par ponts du type demandé (`AnchorPair.coreComponent`, test
+      `aTurningPointBeyondABridgeOfTheRideTypeIsNotTried`) supprime les flots sans issue sans
+      changer le taux de réussite. Ne jamais comparer deux passages du banc lancés en même
+      temps. Restent : les
       propositions 3 et 6 à 9 du §13.6 (budget de 10 s, reconstructions, pondérateur, familiarité,
       banc) ; les composantes par type de sortie sur les arêtes admises (§13.10, correction b :
       queue forcée jamais planifiée pour un départ sur une antenne du type demandé) ; les départs 4
-      et 5 de l'équipe A, sans proposition à 30 et 50 km pour une raison non expliquée, et les
-      points de demi-tour sans flot (210 appels sur 614) (§13.11) ; l'`EXPLAIN` de l'empreinte. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
+      et 5 de l'équipe A, sans proposition à 30 et 50 km pour une raison non expliquée (§13.11) ;
+      les flots refusés au contrôle dans les deux ordres, premier poste de temps de A (249 appels
+      sur 563, §13.13) ; l'oracle de test devenu lent sur A et ses relevés nouveaux non analysés
+      (§13.12) ; l'`EXPLAIN` de l'empreinte. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
       de `PlannerAccess`), les parcours masqués par la modération alimentent le réseau, une copie
       garde la case d'exclusion.
 

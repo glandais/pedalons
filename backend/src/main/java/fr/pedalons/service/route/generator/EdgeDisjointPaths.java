@@ -99,6 +99,12 @@ final class EdgeDisjointPaths {
   /** The passes of a graph without one-way: one flow, blind to a direction that never matters. */
   private static final int[][] BLIND = {{SIDE_ANY, SIDE_ANY}};
 
+  /**
+   * The second order of the directed flow is skipped when the first is within this factor of the
+   * lower bound. On real networks it then came out 5 % cheaper 9 times out of 563 (design §13.13).
+   */
+  private static final double SECOND_ORDER_MARGIN = 1.25;
+
   /** Both orders of a directed flow; the cheaper legal core of the two is kept. */
   private static final int[][] DIRECTED = {{SIDE_E, SIDE_S}, {SIDE_S, SIDE_E}};
 
@@ -157,6 +163,23 @@ final class EdgeDisjointPaths {
       int[] tailE,
       double[] w,
       @Nullable BitSet banned) {
+    return solve(t, anchorS, anchorE, tailS, tailE, w, banned, 0);
+  }
+
+  /**
+   * @param lowerBound a weight no core through {@code t} can cost less than, 0 when unknown: once
+   *     a core is within {@link #SECOND_ORDER_MARGIN} of it, the other order of the directed flow
+   *     has too little left to gain and is not searched
+   */
+  @Nullable Solution solve(
+      int t,
+      int anchorS,
+      int anchorE,
+      int[] tailS,
+      int[] tailE,
+      double[] w,
+      @Nullable BitSet banned,
+      double lowerBound) {
     calls++;
     ensure();
     if (t == anchorS || t == anchorE) {
@@ -175,6 +198,9 @@ final class EdgeDisjointPaths {
     int[] best = null;
     double bestCost = Double.POSITIVE_INFINITY;
     for (int[] sides : oneWays ? DIRECTED : BLIND) {
+      if (bestCost <= SECOND_ORDER_MARGIN * lowerBound) {
+        break;
+      }
       int[][] paths = flow(sides[0], sides[1]);
       if (paths == null) {
         continue;

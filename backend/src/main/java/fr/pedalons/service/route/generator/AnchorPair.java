@@ -24,6 +24,9 @@ final class AnchorPair {
   private EdgeDijkstra.@Nullable Tree backward;
   private double @Nullable [] metresFromS;
   private double @Nullable [] metresToE;
+  private int @Nullable [] coreComponents;
+  private double @Nullable [] costFromS;
+  private double @Nullable [] costToE;
 
   AnchorPair(
       int anchorS,
@@ -130,12 +133,62 @@ final class AnchorPair {
     }
     metresFromS = fromS;
     metresToE = toE;
+    double[] cFromS = new double[g.nodeCount()];
+    double[] cToE = new double[g.nodeCount()];
+    Arrays.fill(cFromS, Double.POSITIVE_INFINITY);
+    Arrays.fill(cToE, Double.POSITIVE_INFINITY);
+    for (int s = 0; s < g.stateCount(); s++) {
+      if (fwd.reached(s)) {
+        int h = g.head(s);
+        cFromS[h] = Math.min(cFromS[h], fwd.cost[s]);
+      }
+      if (bwd.reached(s)) {
+        int t = g.tail(s);
+        cToE[t] = Math.min(cToE[t], bwd.cost[s]);
+      }
+    }
+    costFromS = cFromS;
+    costToE = cToE;
+  }
+
+  /**
+   * Component of a node among the edges the core may ride (neither banned for the ride type nor
+   * taken by a tail), bridges removed. A core through two nodes is a closed trail on these edges,
+   * so both lie in the same component: the components of the whole graph, which count the edges
+   * of every type, let through turning points that no flow can serve (design §13.13).
+   */
+  int coreComponent(QueryContext ctx, int node) {
+    if (coreComponents == null) {
+      QueryGraph g = ctx.g;
+      IntList us = new IntList();
+      IntList vs = new IntList();
+      for (int e = 0; e < g.edgeCount(); e++) {
+        if (!banned.get(e) && (g.allowed(2 * e) || g.allowed(2 * e + 1))) {
+          us.add(g.edgeU(e));
+          vs.add(g.edgeV(e));
+        }
+      }
+      int[] u = us.toArray();
+      coreComponents =
+          BridgeFinder.find(g.nodeCount(), u, vs.toArray(), new double[u.length]).component();
+    }
+    return coreComponents[node];
   }
 
   /** Shortest metres from the core's start to a node (arriving at it), infinite if unreached. */
   double metresFromS(QueryContext ctx, int node) {
     search(ctx);
     return java.util.Objects.requireNonNull(metresFromS)[node];
+  }
+
+  /**
+   * Weight of the cheapest way out to a node plus the cheapest way back from it: no core through
+   * the node costs less, the two being free to share edges.
+   */
+  double cheapestThrough(QueryContext ctx, int node) {
+    search(ctx);
+    return java.util.Objects.requireNonNull(costFromS)[node]
+        + java.util.Objects.requireNonNull(costToE)[node];
   }
 
   /** Shortest metres from a node (leaving it) to the core's end, infinite if unreached. */

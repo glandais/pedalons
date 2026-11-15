@@ -37,6 +37,11 @@ final class LoopFamily {
       if (pair.loop() && g.component(t) != g.component(pair.anchorS)) {
         continue;
       }
+      // the same on the edges this core may ride: a turning point beyond a bridge of the ride
+      // type has no second path, and the flow would search the whole graph to find it out
+      if (pair.loop() && pair.coreComponent(ctx, t) != pair.coreComponent(ctx, pair.anchorS)) {
+        continue;
+      }
       double out = pair.metresFromS(ctx, t);
       double back = pair.metresToE(ctx, t);
       if (out == Double.POSITIVE_INFINITY || back == Double.POSITIVE_INFINITY) {
@@ -80,7 +85,14 @@ final class LoopFamily {
       evaluated++;
       EdgeDisjointPaths.Solution core =
           ctx.disjoint.solve(
-              t, pair.anchorS, pair.anchorE, pair.tailS, pair.tailE, ctx.weights, pair.banned);
+              t,
+              pair.anchorS,
+              pair.anchorE,
+              pair.tailS,
+              pair.tailE,
+              ctx.weights,
+              pair.banned,
+              pair.cheapestThrough(ctx, t));
       if (core != null) {
         int[] states = QueryContext.concat(pair.tailS, core.core(), pair.tailE);
         if (!SearchTurns.pathOk(g, states, 0, states.length, p.maxTurnDeg())) {
