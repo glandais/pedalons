@@ -168,13 +168,15 @@ routes:
     web: true
     mobile: true
     deeplink: true
+  # `mobile: true` + `appScreen: false`: the app has no support screen, and opens the site's from
+  # the « contactez-nous » link of a full free team (docs/LEDGER_*.md MOB-167, MOB-54).
   - id: support
     path:
       en: /support
       fr: /support
     web: true
-    mobile: false
-    deeplink: false
+    mobile: true
+    appScreen: false
 
   # --- User tabs ---
   - id: profile
@@ -464,7 +466,7 @@ routes:
   # The team's administration (docs/plans/2026-11-15-gestion-equipe-mobile.md). `teamAdmin` is an
   # app screen since MOB-165: the hub « Gestion de l'équipe », where the site only redirects to
   # the ride templates. Each page below becomes an app screen with its own lot (MOB-166 to
-  # MOB-169; `teamSettings` since MOB-166); until then it is `mobile: true` + `appScreen: false`,
+  # MOB-169; `teamSettings` since MOB-166, `teamAdminMembers` since MOB-167); until then it is `mobile: true` + `appScreen: false`,
   # and the hub opens it on the site (docs/LEDGER_*.md MOB-54). Flip a page in the commit of its screen: drop `appScreen`,
   # add `deeplink: true`.
   - id: teamAdmin
@@ -519,8 +521,8 @@ routes:
       - teamSlug
       - pageSlug
     web: true
-  # `mobile: true` + `appScreen: false` on the organizer's pages below: the app's team dashboard
-  # and its hub open them on the site (mobile/…/team_web_paths.dart, docs/LEDGER_*.md MOB-54).
+  # Members and invitations: an app screen since MOB-167, under the hub. `?invite=1` opens the
+  # invitation dialog, on the site as in the app.
   - id: teamAdminMembers
     path:
       en: /teams/{teamSlug}/admin/members
@@ -529,7 +531,9 @@ routes:
       - teamSlug
     web: true
     mobile: true
-    appScreen: false
+    deeplink: true
+  # `mobile: true` + `appScreen: false` on the organizer's page below: the app's team dashboard
+  # and its hub open it on the site (mobile/…/team_web_paths.dart, docs/LEDGER_*.md MOB-54).
   - id: teamAdminReports
     path:
       en: /teams/{teamSlug}/admin/reports

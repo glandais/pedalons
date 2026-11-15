@@ -150,10 +150,16 @@ void main() {
     // Les pages du site qu'ouvre le tableau de bord, dans les deux locales :
     // `/equipes/.*` les donne à l'app sous Android (docs/LEDGER_*.md MOB-59).
     final List<String> sitePages = <String>[
-      ...PathVariants.teamAdminMembers('vc').values,
       ...PathVariants.teamAdminReports('vc').values,
       ...PathVariants.teamAdminPages('vc').values,
     ];
+
+    test('la gestion des membres s\'ouvre dans l\'app (MOB-167)', () {
+      for (final String page in PathVariants.teamAdminMembers('vc').values) {
+        expect(isSitePageLocation(page), isFalse, reason: page);
+        expect(internalLocationFor(page), page, reason: page);
+      }
+    });
 
     test('reconnaît les pages du site sans écran, requête comprise', () {
       for (final String page in sitePages) {

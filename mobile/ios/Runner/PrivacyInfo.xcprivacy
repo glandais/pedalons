@@ -14,7 +14,10 @@
 	<array/>
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array>
-		<!-- Sign-up, sign-in, password reset, e-mail verification. -->
+		<!-- Sign-up, sign-in, password reset, e-mail verification.
+		     Also the address a team's administrator types to invite someone to the team
+		     (POST /api/teams/{slug}/invitations): one typed address, never read from the address
+		     book — the app has no contacts permission (data-safety.md #28, ledger MOB-167). -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeEmailAddress</string>

@@ -184,6 +184,32 @@ class TeamRepository {
     );
   }
 
+  /// Change le rôle d'un membre (docs/LEDGER_*.md MOB-167), administration
+  /// de l'équipe seulement.
+  ///
+  /// **[userId] est l'identifiant de la personne** (`member.user.id`), pas
+  /// celui de l'adhésion (`member.id`) : c'est ce que le chemin
+  /// `…/members/{memberId}` attend, malgré son nom. `LAST_ADMIN` si le
+  /// changement laisserait l'équipe sans personne pour l'administrer.
+  Future<MemberDto> updateMemberRole(
+    String slug, {
+    required String userId,
+    required TeamRole role,
+  }) {
+    return _teamMembersClient.updateMemberRole(
+      teamSlug: slug,
+      memberId: userId,
+      body: UpdateMemberRoleRequest(role: role.toJson()),
+    );
+  }
+
+  /// Retire un membre de l'équipe. [userId] est, là aussi, l'identifiant de
+  /// la **personne** (`member.user.id`). `LAST_ADMIN` pour la dernière
+  /// personne qui administre l'équipe.
+  Future<void> removeMember(String slug, {required String userId}) {
+    return _teamMembersClient.removeMember(teamSlug: slug, memberId: userId);
+  }
+
   /// One page of the team directory.
   ///
   /// Triée selon la portée ([TeamDiscoveryFilters.sortBy]) — l'ordre que

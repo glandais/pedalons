@@ -83,6 +83,13 @@ void main() {
                 builder: (BuildContext _, GoRouterState state) =>
                     Text('liste modèles ${state.pathParameters['teamSlug']}'),
               ),
+              GoRoute(
+                path: PathVariants.teamAdminMembers(':teamSlug')['fr']!,
+                builder: (BuildContext _, GoRouterState state) => Text(
+                  'membres ${state.pathParameters['teamSlug']} '
+                  'invite=${state.uri.queryParameters['invite']}',
+                ),
+              ),
             ],
           )
         : null;
@@ -467,6 +474,31 @@ void main() {
         ),
         <String>['Désactivé'],
       );
+    });
+
+    // Ledger `MOB-167` : les deux boutons ouvrent l'écran des membres de
+    // l'app, plus le site.
+    testWidgets('« Gérer les membres » ouvre l\'écran des membres de l\'app', (
+      WidgetTester tester,
+    ) async {
+      final TeamDashboardDto d = _dashboard(role: 'ADMIN');
+      await renderBody(tester, d, routed: true);
+
+      await tester.tap(find.byKey(keys.teamDashboard.manageMembersButton));
+      await settle(tester);
+
+      expect(find.text('membres ${d.team.slug} invite=null'), findsOneWidget);
+    });
+
+    testWidgets('« Inviter » ouvre l\'écran des membres, feuille d\'invitation '
+        'demandée', (WidgetTester tester) async {
+      final TeamDashboardDto d = _dashboard(role: 'ADMIN');
+      await renderBody(tester, d, routed: true);
+
+      await tester.tap(find.byKey(keys.teamDashboard.inviteButton));
+      await settle(tester);
+
+      expect(find.text('membres ${d.team.slug} invite=1'), findsOneWidget);
     });
 
     testWidgets('sans ajout de membres permis, pas de bouton « Inviter »', (

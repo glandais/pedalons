@@ -46,6 +46,24 @@ class ModerationMoreButton extends StatelessWidget {
   }
 }
 
+/// Une entrée que l'écran appelant ajoute au menu `⋯`, avant Signaler et
+/// Bloquer. [onSelected] s'exécute une fois la feuille fermée.
+class ModerationMenuEntry {
+  const ModerationMenuEntry({
+    this.key,
+    required this.icon,
+    required this.title,
+    required this.onSelected,
+    this.destructive = false,
+  });
+
+  final Key? key;
+  final IconData icon;
+  final String title;
+  final bool destructive;
+  final Future<void> Function() onSelected;
+}
+
 /// Le menu `⋯` : Supprimer, Signaler, Bloquer {nom} — chacun seulement quand
 /// il a un sens.
 ///
@@ -60,6 +78,11 @@ class ModerationMoreButton extends StatelessWidget {
 /// Toute la suite se joue ici : la feuille de signalement, la confirmation du
 /// blocage, la confirmation affichée et la relecture des listes. Un menu vide
 /// ne s'ouvre pas.
+///
+/// [leading] : les entrées propres à l'écran, rendues **avant** celles-ci —
+/// « Modifier le rôle » et « Retirer de l'équipe » sur une ligne de la gestion
+/// des membres (docs/LEDGER_*.md MOB-167). La feuille fermée, l'entrée choisie
+/// s'exécute et le menu rend `null`.
 Future<ModerationOutcome?> showModerationMenu(
   BuildContext context, {
   required ModerationSubject subject,
@@ -68,9 +91,12 @@ Future<ModerationOutcome?> showModerationMenu(
   String? blockUserName,
   Future<void> Function()? onDelete,
   String? title,
+  List<ModerationMenuEntry> leading = const <ModerationMenuEntry>[],
 }) async {
   final bool canBlock = blockUserId != null && blockUserName != null;
-  if (!canReport && !canBlock && onDelete == null) return null;
+  if (!canReport && !canBlock && onDelete == null && leading.isEmpty) {
+    return null;
+  }
 
   // Pris **avant** le premier `await` : l'écran appelant peut être dépilé
   // pendant la suite, et son contexte avec lui.
@@ -80,13 +106,22 @@ Future<ModerationOutcome?> showModerationMenu(
     listen: false,
   );
 
-  final _Choice? choice = await PdlSheet.show<_Choice>(
+  final Object? picked = await PdlSheet.show<Object>(
     context: context,
     builder: (BuildContext sheetContext) => PdlSheet(
       title: title,
       bodyPadding: EdgeInsets.zero,
       footer: const SafeArea(top: false, child: SizedBox(height: 8)),
       children: <Widget>[
+        for (final ModerationMenuEntry entry in leading)
+          PdlSettingRow(
+            key: entry.key,
+            icon: entry.icon,
+            title: entry.title,
+            trailing: const SizedBox.shrink(),
+            destructive: entry.destructive,
+            onTap: () => Navigator.of(sheetContext).pop(entry),
+          ),
         if (canReport)
           PdlSettingRow(
             key: keys.moderation.reportAction,
@@ -120,9 +155,13 @@ Future<ModerationOutcome?> showModerationMenu(
       ],
     ),
   );
-  if (choice == null || !context.mounted) return null;
+  if (picked == null || !context.mounted) return null;
+  if (picked is ModerationMenuEntry) {
+    await picked.onSelected();
+    return null;
+  }
 
-  switch (choice) {
+  switch (picked as _Choice) {
     case _Choice.delete:
       await onDelete!();
       return ModerationOutcome.deleted;

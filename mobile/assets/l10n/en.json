@@ -425,6 +425,44 @@
       },
       "searchPlaceholderAdmin": "Search by name or e-mail…"
     },
+    "adminMembers": {
+      "title": "Manage members",
+      "forbiddenTitle": "Admins only",
+      "forbiddenMessage": "Only the team's Admin role can manage its members.",
+      "full": "The team has reached {limit} members, the limit of the free plan.",
+      "contact": "To go beyond it, contact us.",
+      "youName": "{name} (you)",
+      "changeRole": "Change role",
+      "roleOf": "Role of {name}",
+      "roleUpdated": "Role updated",
+      "remove": "Remove from the team",
+      "removeConfirm": "Are you sure you want to remove {name} from the team?",
+      "removeAction": "Remove",
+      "removed": "Member removed from team",
+      "invite": {
+        "open": "Invite by e-mail",
+        "consentNotice": "Nobody is enrolled without consent: the invitation has to be accepted. The message is the same whether or not they already have an account.",
+        "email": "E-mail address",
+        "emailPlaceholder": "first.last@example.com",
+        "emailHelp": "They will get an e-mail, and only join the team if they accept.",
+        "emailRequired": "The e-mail address is required",
+        "emailInvalid": "Invalid e-mail address",
+        "role": "Role",
+        "send": "Send invitation",
+        "sending": "Sending…",
+        "sent": "Invitation sent to {email}."
+      },
+      "pending": {
+        "title": "Pending invitations",
+        "help": "A mistyped address produces an invitation nobody will ever accept: this is where it shows up, and the cancel button is how to undo it.",
+        "sentBy": "Invited by {name}",
+        "expiresAt": "Expires on {date}",
+        "resend": "Resend",
+        "revoke": "Cancel invitation",
+        "revokeConfirm": "Cancel the invitation sent to {email}?",
+        "revoked": "Invitation cancelled."
+      }
+    },
     "discovery": {
       "title": "Discover teams",
       "noun": {
@@ -2088,6 +2126,9 @@
       "TEAM_INVITE_INVALID": "This invitation does not exist or is no longer valid.",
       "TEAM_INVITE_NOT_PENDING": "This invitation is no longer pending.",
       "TEAM_INVITE_REVOKED": "This invitation has been cancelled.",
+      "TEAM_INVITE_SELF": "You cannot invite yourself.",
+      "TEAM_INVITE_RATE_LIMITED": "You have sent too many invitations recently. Try again later.",
+      "TEAM_INVITE_DELIVERY_FAILED": "The invitation e-mail could not be sent. Nothing was recorded, so you can try again.",
       "TEAM_NOT_FOUND": "Team not found",
       "TOKEN_EXPIRED": "The token has expired",
       "TOKEN_INVALID": "The token is invalid",

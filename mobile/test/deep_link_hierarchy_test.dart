@@ -188,6 +188,12 @@ final List<_LinkCase> _cases = [
     PathVariants.team(_teamSlug),
     PathVariants.teamAdmin(_teamSlug),
   ]),
+  // La gestion des membres, sous le hub (ledger `MOB-167`).
+  _LinkCase('teamAdminMembers', PathVariants.teamAdminMembers(_teamSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+    PathVariants.teamAdmin(_teamSlug),
+  ]),
   // Les modèles de sortie (ledger `MOB-78`) : la liste sous l'équipe, le
   // formulaire sous la liste.
   _LinkCase('rideTemplates', PathVariants.rideTemplates(_teamSlug), [

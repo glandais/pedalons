@@ -114,6 +114,11 @@ void main() {
           builder: (BuildContext _, GoRouterState state) =>
               Text('paramètres de ${state.pathParameters['teamSlug']}'),
         ),
+        GoRoute(
+          path: '/equipes/:teamSlug/admin/membres',
+          builder: (BuildContext _, GoRouterState state) =>
+              Text('membres de ${state.pathParameters['teamSlug']}'),
+        ),
       ],
     );
     await tester.pumpWidget(
@@ -271,6 +276,23 @@ void main() {
     expect(launched, isEmpty);
   });
 
+  testWidgets('« Gestion des membres » ouvre l\'écran de l\'app (MOB-167)', (
+    WidgetTester tester,
+  ) async {
+    final List<Uri> launched = <Uri>[];
+    debugLinkOpener = (Uri url) async {
+      launched.add(url);
+      return true;
+    };
+    await open(tester, role: 'ADMIN');
+
+    await tester.tap(find.byKey(keys.teamAdmin.members));
+    await settle(tester);
+
+    expect(find.text('membres de n-peloton'), findsOneWidget);
+    expect(launched, isEmpty);
+  });
+
   testWidgets('les lignes sans écran ouvrent le site, et le disent', (
     WidgetTester tester,
   ) async {
@@ -281,15 +303,14 @@ void main() {
     };
     await open(tester, role: 'ADMIN');
 
-    // Cinq lignes sur sept quittent l'app : les modèles et les paramètres y
-    // ont un écran.
-    expect(find.text('S\'ouvre sur le site'), findsNWidgets(5));
+    // Quatre lignes sur sept quittent l'app : les modèles, les membres et les
+    // paramètres y ont un écran.
+    expect(find.text('S\'ouvre sur le site'), findsNWidgets(4));
 
     for (final Key row in <Key>[
       keys.teamAdmin.places,
       keys.teamAdmin.tags,
       keys.teamAdmin.pages,
-      keys.teamAdmin.members,
       keys.teamAdmin.reports,
     ]) {
       await tester.tap(find.byKey(row));
@@ -302,7 +323,6 @@ void main() {
         '/equipes/n-peloton/admin/lieux',
         '/equipes/n-peloton/admin/tags',
         '/equipes/n-peloton/admin/pages',
-        '/equipes/n-peloton/admin/membres',
         '/equipes/n-peloton/admin/signalements',
       ],
     );

@@ -9,8 +9,9 @@ final invitationsRepositoryProvider = Provider<InvitationsRepository>((ref) {
 
 /// Les invitations **reçues** par l'utilisateur connecté.
 ///
-/// Celles qu'une équipe envoie (`TeamInvitationsClient`) sont une affaire
-/// d'administrateur et restent sur le web.
+/// Celles qu'une équipe envoie (`TeamInvitationsClient`) sont l'affaire de qui
+/// l'administre : `TeamInvitationsRepository`, écran « Gestion des membres »
+/// (docs/LEDGER_*.md MOB-167).
 class InvitationsRepository {
   InvitationsRepository(this._client);
 

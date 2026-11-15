@@ -92,6 +92,7 @@ class Paths {
     }
   }
 
+  static String support() => '/support';
   static String profile() {
     switch (getCurrentLocale()) {
       case 'fr':
@@ -615,6 +616,7 @@ class PathVariants {
     'fr': '/confidentialite',
   };
   static Map<String, String> terms() => {'en': '/terms', 'fr': '/cgu'};
+  static Map<String, String> support() => {'en': '/support', 'fr': '/support'};
   static Map<String, String> profile() => {'en': '/profile', 'fr': '/profil'};
   static Map<String, String> notifications() => {
     'en': '/notifications',
@@ -842,10 +844,10 @@ class PathVariants {
 /// for (`appScreen: false`): their path only serves to open them in a browser.
 const Set<String> webOnlyRouteIds = <String>{
   'features',
+  'support',
   'teamAdminPlaces',
   'teamAdminTags',
   'teamAdminPages',
-  'teamAdminMembers',
   'teamAdminReports',
 };
 
@@ -864,8 +866,6 @@ const List<String> sitePagePathPatterns = <String>[
   r'^/equipes/[^/]+/admin/pages/nouvelle/?$',
   r'^/teams/[^/]+/admin/pages/[^/]+/edit/?$',
   r'^/equipes/[^/]+/admin/pages/[^/]+/modifier/?$',
-  r'^/teams/[^/]+/admin/members/?$',
-  r'^/equipes/[^/]+/admin/membres/?$',
   r'^/teams/[^/]+/admin/reports/?$',
   r'^/equipes/[^/]+/admin/signalements/?$',
   r'^/teams/[^/]+/rides/[^/]+/groups/[^/]+/map/?$',

@@ -425,6 +425,44 @@
       },
       "searchPlaceholderAdmin": "Rechercher par nom ou e-mail…"
     },
+    "adminMembers": {
+      "title": "Gestion des membres",
+      "forbiddenTitle": "Réservé au rôle Administrateur",
+      "forbiddenMessage": "Seul le rôle Administrateur de l'équipe peut gérer ses membres.",
+      "full": "L'équipe a atteint {limit} membres, la limite de l'offre gratuite.",
+      "contact": "Pour aller au-delà, contactez-nous.",
+      "youName": "{name} (vous)",
+      "changeRole": "Modifier le rôle",
+      "roleOf": "Rôle de {name}",
+      "roleUpdated": "Rôle mis à jour",
+      "remove": "Retirer de l'équipe",
+      "removeConfirm": "Voulez-vous vraiment retirer {name} de l'équipe ?",
+      "removeAction": "Retirer",
+      "removed": "Membre retiré de l'équipe",
+      "invite": {
+        "open": "Inviter par e-mail",
+        "consentNotice": "Nous n'inscrivons personne d'office : l'invitation doit être acceptée. Le message est le même que la personne ait déjà un compte ou non.",
+        "email": "Adresse e-mail",
+        "emailPlaceholder": "prenom.nom@exemple.fr",
+        "emailHelp": "La personne recevra un e-mail et rejoindra l'équipe seulement si elle accepte.",
+        "emailRequired": "L'adresse e-mail est requise",
+        "emailInvalid": "Adresse e-mail invalide",
+        "role": "Rôle",
+        "send": "Envoyer l'invitation",
+        "sending": "Envoi…",
+        "sent": "Invitation envoyée à {email}."
+      },
+      "pending": {
+        "title": "Invitations en attente",
+        "help": "Une adresse mal orthographiée produit une invitation qui ne sera jamais acceptée : c'est ici qu'elle se voit, et le bouton d'annulation est là pour ça.",
+        "sentBy": "Invitation de {name}",
+        "expiresAt": "Expire le {date}",
+        "resend": "Renvoyer",
+        "revoke": "Annuler l'invitation",
+        "revokeConfirm": "Annuler l'invitation envoyée à {email} ?",
+        "revoked": "Invitation annulée."
+      }
+    },
     "discovery": {
       "title": "Découvrir des équipes",
       "noun": {
@@ -2088,6 +2126,9 @@
       "TEAM_INVITE_INVALID": "Cette invitation n'existe pas ou n'est plus valide.",
       "TEAM_INVITE_NOT_PENDING": "Cette invitation n'est plus en attente.",
       "TEAM_INVITE_REVOKED": "Cette invitation a été annulée.",
+      "TEAM_INVITE_SELF": "Vous ne pouvez pas vous inviter vous-même.",
+      "TEAM_INVITE_RATE_LIMITED": "Vous avez envoyé trop d'invitations récemment. Réessayez plus tard.",
+      "TEAM_INVITE_DELIVERY_FAILED": "L'e-mail d'invitation n'a pas pu être envoyé. Rien n'a été enregistré, vous pouvez réessayer.",
       "TEAM_NOT_FOUND": "Équipe introuvable",
       "TOKEN_EXPIRED": "Le jeton a expiré",
       "TOKEN_INVALID": "Le jeton est invalide",

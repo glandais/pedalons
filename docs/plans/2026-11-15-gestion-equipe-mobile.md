@@ -1,9 +1,9 @@
 # Créer et gérer une équipe dans l'application mobile
 
-Écrit le 15 novembre 2026. **État : lots 1 et 2 écrits le 15 novembre 2026 (`MOB-165` et
-`MOB-166` — restent leurs tests Patrol à lancer — et `WEB-184`, livré) ; lots 3 à 5 conçus, pas
-codés.** Ce que les lots 1 et 2 ont tranché en codant est noté « Fait » dans les sections 4, 5
-et 6. Ledger : `MOB-165` (socle et
+Écrit le 15 novembre 2026. **État : lots 1 à 3 écrits le 15 novembre 2026 (`MOB-165`, `MOB-166`
+et `MOB-167` — restent leurs tests Patrol à lancer — et `WEB-184`, livré) ; lots 4 et 5 conçus,
+pas codés.** Ce que les lots 1 à 3 ont tranché en codant est noté « Fait » dans les sections 4,
+5, 6 et 7.1. Ledger : `MOB-165` (socle et
 création), `MOB-166` (paramètres et webhook), `MOB-167` (membres et invitations), `MOB-168` (lieux et
 signalements), `MOB-169` (tags et pages), `WEB-184` (libellé `USER_TEAM_LIMIT_REACHED`). Numéros
 réservés le 15 novembre 2026, entrées créées le même jour dans `LEDGER_NEXT.md`. Branche prévue :
@@ -117,7 +117,7 @@ Faits qui contredisent ce qu'on supposerait :
 | # | Question | Décision |
 |---|---|---|
 | O1 | La localisation d'équipe et l'adresse d'un lieu relèvent-elles de *Physical Address* ou de *Other User Content* ? | ***Physical Address*** (Play : *Address*), sous les lignes existantes (`MOB-159`) : un lieu de départ peut être le domicile de quelqu'un. Inscrit dans `mobile/store-metadata/data-safety.md` pour la localisation d'équipe avec le lot 1 (ligne d'inventaire #26) ; l'adresse d'un lieu suit avec le lot 4 |
-| O2 | L'e-mail d'une personne invitée, saisi à la main, demande-t-il une déclaration propre ? | **Non** : ligne *Email Address* existante. À inscrire dans `data-safety.md` avec le lot 3, en vérifiant que la politique de confidentialité vaut pour l'app |
+| O2 | L'e-mail d'une personne invitée, saisi à la main, demande-t-il une déclaration propre ? | **Non** : ligne *Email Address* existante. Inscrit dans `data-safety.md` avec le lot 3 (ligne d'inventaire #28) ; la politique de confidentialité, relue, vaut pour l'app telle quelle |
 
 ## 4. Socle (lot 1)
 
@@ -419,6 +419,56 @@ admin. `team_members_page.dart` (le trombinoscope) ne change pas.
 Données : `features/teams/data/team_invitations_repository.dart` et le provider de
 `TeamInvitationsClient`. Après chaque écriture : liste des membres, invitations, et
 `notifyTeamChanged` (le compteur et la répartition par rôle du tableau de bord en dépendent).
+
+**Fait (lot 3)** — ce que le code a tranché :
+
+- **Accès** : `TeamAdminMembersPage(teamSlug:, openInvite:)`, sous-route du hub
+  (`_teamAdminMembersRoute`). La page publique tranche le refus (`keys.teamAdminMembers.forbidden`,
+  403 et 404 de `GET team` compris) ; les membres et les invitations ne sont écoutés que par le
+  corps rendu à qui administre. Un organisateur, un membre ou une équipe refusée ne déclenchent
+  donc **aucune** requête de membres ni d'invitations — le test de page le vérifie.
+- **Les invitations en attente sont au-dessus de la liste**, pas dessous comme au site : la
+  liste se charge par défilement, une section placée après elle ne serait jamais atteinte dans
+  une grande équipe. Ordre de l'écran : compteur et « Inviter par e-mail », invitations, barre
+  épinglée (recherche, puces de rôle), liste.
+- **Le bandeau d'erreur est dans la barre épinglée** (`LAST_ADMIN`, un renvoi ou une annulation
+  refusés) : visible où que soit la liste.
+- **Filtres** : `adminMemberFiltersProvider`, distinct de `memberFiltersProvider` — filtrer cet
+  écran ne filtre pas le trombinoscope resté ouvert dessous. La liste est la même
+  (`teamMembersProvider`, `TeamMembersNotifier` inchangé) ; une puce « Tous » lève le filtre de
+  rôle, comme au trombinoscope.
+- **Feuille d'une ligne** : le menu de modération (`showModerationMenu`), qui a gagné un
+  paramètre `leading` (`ModerationMenuEntry`) — « Modifier le rôle » et « Retirer de l'équipe »
+  précèdent Signaler et Bloquer. Le rôle se choisit dans une seconde feuille
+  (`widgets/team_role_sheet.dart`) et part aussitôt, sans « Enregistrer » ; choisir le rôle
+  actuel n'envoie rien. La confirmation du retrait nomme la personne (le site : « ce membre »).
+- **Après un changement de rôle ou un retrait** : toute la famille `teamMembersProvider` est
+  invalidée (la liste repart de sa première page, le trombinoscope est relu aussi), puis
+  `notifyTeamChanged`. Un message « Rôle mis à jour », absent du site, confirme le changement.
+- **Une invitation ne passe pas par `notifyTeamChanged`** : ni la fiche ni le tableau de bord
+  n'en dépendent ; seule `teamInvitationsProvider` est relue (comme le site). Exception : un
+  **409 à l'annulation** — l'invitation a peut-être été acceptée — relit les invitations, les
+  membres, la fiche et le tableau de bord, et le bandeau dit
+  `errors.api.TEAM_INVITE_NOT_PENDING`.
+- **Feuille d'invitation** (`widgets/team_invite_sheet.dart`, `showTeamInviteSheet`) : le rôle
+  se choisit par trois puces. « Envoyer l'invitation » reste actif et les erreurs de champ
+  n'apparaissent qu'après une tentative (§2.3), là où le site désactive le bouton. En cas
+  d'erreur du serveur la feuille reste ouverte avec un **bandeau** (le site : un toast).
+- **Clés d'erreur** : `TEAM_INVITE_SELF`, `TEAM_INVITE_RATE_LIMITED` et
+  `TEAM_INVITE_DELIVERY_FAILED` manquaient à `fr.json` et `en.json` (l'app aurait dit
+  « Erreur ») : ajoutées, textes du site. `TEAM_INVITE_ALREADY_MEMBER` et
+  `TEAM_MEMBER_LIMIT_REACHED` y étaient.
+- **Lien de contact d'une équipe pleine** : la page d'assistance **du site** (`Paths.support()`,
+  `openTeamWebPage`) — l'app n'en a pas l'écran. `support` passe donc `mobile: true,
+  appScreen: false` dans `contracts/routes.yaml` (`MOB-54`) : `webOnlyRouteIds` finira à
+  `features` et `support`, pas à `features` seul (§4.2). La notice est celle du site
+  (`teams.adminMembers.full` + `.contact`) ; le tableau de bord garde la sienne, et les deux
+  lisent `isTeamFull` (`domain/team_member_limit.dart`).
+- **`?invite=1`** : `teamAdminMembersInviteLocation(slug)` ; la feuille ne s'ouvre que si
+  l'équipe peut inviter (`addMemberAllowed`, pas pleine ou admin de plateforme), comme au site.
+- **Déclarations des stores** : ligne #28 de `data-safety.md`, sous *Email Address* (O2). La
+  politique de confidentialité (« Invitations dans une équipe », « Auprès d'autres membres »,
+  durées de conservation) ne dit rien de propre au site : elle vaut pour l'app, inchangée.
 
 ### 7.2 Lieux (lot 4, `MOB-168`)
 

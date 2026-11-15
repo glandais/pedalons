@@ -166,6 +166,11 @@ class TeamDashboardKeys {
   /// Le pourquoi d'une invitation désactivée, à la limite de l'offre gratuite.
   final memberLimitReached = const _TeamDashboardKey('memberLimitReached');
 
+  /// « Inviter » et « Gérer les membres » du bloc Administration : l'écran
+  /// des membres de l'app (ledger `MOB-167`).
+  final inviteButton = const _TeamDashboardKey('inviteButton');
+  final manageMembersButton = const _TeamDashboardKey('manageMembersButton');
+
   /// La carte d'une sortie à venir, par son slug.
   ValueKey<String> rideCard(String rideSlug) =>
       _TeamDashboardKey('rideCard_$rideSlug');
@@ -336,4 +341,75 @@ class TeamWebhookKeys {
   final saveButton = const _TeamWebhookKey('saveButton');
   final testButton = const _TeamWebhookKey('testButton');
   final removeButton = const _TeamWebhookKey('removeButton');
+}
+
+class _TeamAdminMembersKey extends ValueKey<String> {
+  const _TeamAdminMembersKey(String value) : super('teamAdminMembers_$value');
+}
+
+/// « Gestion des membres » : la liste, les invitations en attente et la
+/// feuille d'invitation (ledger `MOB-167`).
+class TeamAdminMembersKeys {
+  final loadError = const _TeamAdminMembersKey('loadError');
+
+  /// Le refus rendu à qui n'administre pas l'équipe, et son « Retour ».
+  final forbidden = const _TeamAdminMembersKey('forbidden');
+  final forbiddenBack = const _TeamAdminMembersKey('forbiddenBack');
+
+  /// « 24 / 25 membres », quand l'équipe a un plafond.
+  final counter = const _TeamAdminMembersKey('counter');
+
+  /// « Inviter par e-mail ».
+  final inviteButton = const _TeamAdminMembersKey('inviteButton');
+
+  /// L'équipe est pleine : la notice de l'offre gratuite, et son lien de
+  /// contact.
+  final fullNotice = const _TeamAdminMembersKey('fullNotice');
+  final contactLink = const _TeamAdminMembersKey('contactLink');
+
+  /// Ce que le serveur a refusé (`LAST_ADMIN`…).
+  final errorBanner = const _TeamAdminMembersKey('errorBanner');
+
+  final searchField = const _TeamAdminMembersKey('searchField');
+
+  /// Une puce de rôle — `all`, `MEMBER`, `ORGANIZER`, `ADMIN`.
+  ValueKey<String> roleChip(String role) =>
+      _TeamAdminMembersKey('roleChip_$role');
+
+  final resultCount = const _TeamAdminMembersKey('resultCount');
+  final empty = const _TeamAdminMembersKey('empty');
+  final filteredEmpty = const _TeamAdminMembersKey('filteredEmpty');
+
+  /// La ligne d'un membre, par l'identifiant de la **personne**, son badge de
+  /// rôle et son `⋯`.
+  ValueKey<String> row(String userId) => _TeamAdminMembersKey('row_$userId');
+  ValueKey<String> rowRole(String userId) =>
+      _TeamAdminMembersKey('rowRole_$userId');
+  ValueKey<String> rowMore(String userId) =>
+      _TeamAdminMembersKey('rowMore_$userId');
+
+  /// Les deux entrées de la feuille d'une ligne, avant Signaler / Bloquer.
+  final changeRoleAction = const _TeamAdminMembersKey('changeRoleAction');
+  final removeAction = const _TeamAdminMembersKey('removeAction');
+
+  /// Un choix de la feuille de rôle — `ADMIN`, `ORGANIZER`, `MEMBER`.
+  ValueKey<String> roleOption(String role) =>
+      _TeamAdminMembersKey('roleOption_$role');
+
+  // ── Invitations en attente ──
+  final pendingSection = const _TeamAdminMembersKey('pendingSection');
+  ValueKey<String> invitation(String id) =>
+      _TeamAdminMembersKey('invitation_$id');
+  ValueKey<String> invitationResend(String id) =>
+      _TeamAdminMembersKey('invitationResend_$id');
+  ValueKey<String> invitationRevoke(String id) =>
+      _TeamAdminMembersKey('invitationRevoke_$id');
+
+  // ── Feuille d'invitation ──
+  final inviteSheet = const _TeamAdminMembersKey('inviteSheet');
+  final inviteEmailField = const _TeamAdminMembersKey('inviteEmailField');
+  ValueKey<String> inviteRole(String role) =>
+      _TeamAdminMembersKey('inviteRole_$role');
+  final inviteErrorBanner = const _TeamAdminMembersKey('inviteErrorBanner');
+  final inviteSubmit = const _TeamAdminMembersKey('inviteSubmit');
 }

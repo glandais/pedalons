@@ -48,6 +48,7 @@ import '../features/routes/presentation/pages/all_routes_page.dart';
 import '../features/routes/presentation/pages/route_detail_page.dart';
 import '../features/routes/presentation/pages/route_editor_page.dart';
 import '../features/routes/presentation/route_editor_location.dart';
+import '../features/teams/presentation/pages/team_admin_members_page.dart';
 import '../features/teams/presentation/pages/team_admin_page.dart';
 import '../features/teams/presentation/pages/team_custom_page.dart';
 import '../features/teams/presentation/pages/team_editor_page.dart';
@@ -326,6 +327,11 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   // Les paramètres de l'équipe, sous le hub (ledger `MOB-166`).
   _DeepLinkHierarchy(
     patterns: PathVariants.teamSettings(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _teamAdminAncestor],
+  ),
+  // La gestion des membres, sous le hub (ledger `MOB-167`).
+  _DeepLinkHierarchy(
+    patterns: PathVariants.teamAdminMembers(':teamSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamAdminAncestor],
   ),
   // Les modèles de sortie : la liste sous l'équipe, le formulaire sous la
@@ -842,7 +848,7 @@ GoRoute _teamTree(String locale) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) =>
             TeamAdminPage(teamSlug: state.pathParameters['teamSlug']!),
-        routes: [_teamSettingsRoute(locale)],
+        routes: [_teamSettingsRoute(locale), _teamAdminMembersRoute(locale)],
       ),
       // Les modèles de sortie : la liste, et dessous son formulaire de
       // création et de modification (ledger `MOB-78`).
@@ -950,6 +956,24 @@ GoRoute _teamSettingsRoute(String locale) {
     parentNavigatorKey: _rootNavigatorKey,
     builder: (context, state) =>
         TeamEditorPage(teamSlug: state.pathParameters['teamSlug']!),
+  );
+}
+
+/// La gestion des membres, sous le hub (ledger `MOB-167`). `?invite=1` ouvre
+/// la feuille d'invitation avec l'écran.
+GoRoute _teamAdminMembersRoute(String locale) {
+  final hubBase = PathVariants.teamAdmin(':teamSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(
+      PathVariants.teamAdminMembers(':teamSlug'),
+      locale,
+      hubBase,
+    ),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => TeamAdminMembersPage(
+      teamSlug: state.pathParameters['teamSlug']!,
+      openInvite: state.uri.queryParameters['invite'] == '1',
+    ),
   );
 }
 

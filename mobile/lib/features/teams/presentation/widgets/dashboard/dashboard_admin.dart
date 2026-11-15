@@ -17,7 +17,8 @@ import '../../../../auth/domain/auth_state.dart';
 import '../../../../auth/providers/auth_provider.dart';
 import '../../../../rides/presentation/ride_editor_location.dart';
 import '../../../../rides/presentation/widgets/templates/ride_template_summary.dart';
-import '../../team_web_paths.dart';
+import '../../../domain/team_member_limit.dart';
+import '../../pages/team_admin_members_page.dart';
 import 'dashboard_section.dart';
 
 // ─────────────────────────────────────────────────── créer depuis un modèle
@@ -107,8 +108,7 @@ class DashboardAdmin extends ConsumerWidget {
       ),
     );
     final int? limit = team.memberLimit;
-    final bool full =
-        limit != null && team.memberCount >= limit && !platformAdmin;
+    final bool full = isTeamFull(team) && !platformAdmin;
     final List<String> features = <String>[
       if (team.enableRides) 'rides',
       if (team.enableRoutes) 'routes',
@@ -190,24 +190,25 @@ class DashboardAdmin extends ConsumerWidget {
               children: <Widget>[
                 if (team.addMemberAllowed)
                   PdlButton(
+                    key: keys.teamDashboard.inviteButton,
                     label: 'teams.dashboard.admin.invite'.tr(),
                     icon: PdlIcons.personAdd,
                     size: PdlButtonSize.sm,
                     enabled: !full,
-                    onPressed: () => openTeamWebPage(
-                      context,
-                      TeamWebPaths.adminMembersInvite(team.slug),
-                    ),
+                    // L'écran des membres, feuille d'invitation ouverte
+                    // (ledger `MOB-167`).
+                    onPressed: () =>
+                        context.push(teamAdminMembersInviteLocation(team.slug)),
                   ),
                 PdlButton(
+                  key: keys.teamDashboard.manageMembersButton,
                   label: 'teams.dashboard.admin.manageMembers'.tr(),
                   icon: PdlIcons.people,
                   variant: PdlButtonVariant.outline,
                   size: PdlButtonSize.sm,
-                  onPressed: () => openTeamWebPage(
-                    context,
-                    TeamWebPaths.adminMembers(team.slug),
-                  ),
+                  // Un écran de l'app (ledger `MOB-167`).
+                  onPressed: () =>
+                      context.push(Paths.teamAdminMembers(team.slug)),
                 ),
                 PdlButton(
                   label: 'teams.dashboard.admin.settings'.tr(),

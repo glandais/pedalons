@@ -1,29 +1,39 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/config/paths.dart';
+import 'package:pedalons/features/teams/presentation/pages/team_admin_members_page.dart';
 import 'package:pedalons/features/teams/presentation/team_web_paths.dart';
 
 /// Les pages du site qu'ouvre le tableau de bord viennent de
 /// `contracts/routes.yaml` (docs/LEDGER_*.md MOB-54), dans la langue de l'app.
-/// L'une d'elles porte en plus un état que le web passe en état de routeur,
-/// qu'une URL ne transporte pas — le site lit donc ce paramètre
-/// (`TeamMembersPage`). Créer et modifier une sortie se font dans l'app
-/// depuis `MOB-80`, les modèles de sortie depuis `MOB-78` : ces pages ne sont
-/// plus du site.
+/// Créer et modifier une sortie se font dans l'app depuis `MOB-80`, les
+/// modèles de sortie depuis `MOB-78`, la gestion des membres depuis
+/// `MOB-167` : ces pages ne sont plus du site.
 void main() {
   tearDown(() => setCurrentLocale('fr'));
 
-  test('« Inviter » ouvre le dialogue d\'invitation', () {
+  test('« Inviter » ouvre l\'écran des membres de l\'app, feuille '
+      'd\'invitation ouverte (MOB-167)', () {
     setCurrentLocale('en');
     expect(
-      TeamWebPaths.adminMembersInvite('velo-club'),
+      teamAdminMembersInviteLocation('velo-club'),
       '/teams/velo-club/admin/members?invite=1',
     );
     setCurrentLocale('fr');
     expect(
-      TeamWebPaths.adminMembersInvite('velo-club'),
+      teamAdminMembersInviteLocation('velo-club'),
       '/equipes/velo-club/admin/membres?invite=1',
     );
+  });
+
+  test('la gestion des membres est un écran de l\'app (MOB-167)', () {
+    expect(webOnlyRouteIds, isNot(contains('teamAdminMembers')));
+  });
+
+  test('la page d\'assistance du site s\'ouvre dans le navigateur : le lien '
+      'de contact d\'une équipe pleine (MOB-167)', () {
+    expect(webOnlyRouteIds, contains('support'));
+    expect(Paths.support(), '/support');
   });
 
   test('chaque page du tableau de bord est une page du site sans écran', () {
@@ -31,7 +41,6 @@ void main() {
     // jamais sur le routeur de l'app.
     for (final String id in <String>[
       'teamAdminReports',
-      'teamAdminMembers',
       // Ouvertes par le hub « Gestion de l'équipe » tant que leur écran
       // n'existe pas (MOB-165).
       'teamAdminPlaces',

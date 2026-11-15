@@ -14,7 +14,10 @@ from:
 - **App**: Pédalons, `fr.pedalons.mobile`, version `1.0.0+57` (`mobile/pubspec.yaml`)
 - **Backend**: `https://www.pedalons.fr` (`mobile/lib/config/app_config.dart`)
 - **Last verified against the code**: 2026-11-15 (route planner, `MOB-170` —
-  `lib/features/routes/data/planner_bridge.dart`; the same day, team settings and the team webhook, `MOB-166` —
+  `lib/features/routes/data/planner_bridge.dart`; the same day, member management and invitations by e-mail,
+  `MOB-167` — `lib/features/teams/presentation/pages/team_admin_members_page.dart` and
+  `lib/features/teams/presentation/widgets/team_invite_sheet.dart`, #28; the same day, team
+  settings and the team webhook, `MOB-166` —
   the same `team_editor_page.dart` in edit mode and
   `lib/features/teams/presentation/widgets/team_webhook_sheet.dart`, #27; the same day, team
   creation form, `MOB-165` —
@@ -201,6 +204,7 @@ Everything below leaves the device to `https://www.pedalons.fr` unless stated ot
 | 25 | **Ads written by members** | Ad editor (`lib/features/ads/presentation/pages/ad_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/classifieds`: title, type, price, markdown description, a free-text place, tags, photos and attachments through the path of #22 — any member of the team. **And a position**: the member searches an address (`GET /api/geocode/search`, the typed text goes to the Pédalons server, which relays it to Stadia Maps; the device never calls the provider) and the picked address's coordinates are sent as `locationGeometry`. The server stores the **exact** point against the ad and its author and shows other members a ~1 km sector only. The device's own position is **not** read. **Declared as an address** (decision of 2026-11-14, ledger `MOB-159`): Apple *Physical Address*, Play *Personal info → Address* — see §4 and §5, and §7 for why it is not a location. The rest of the ad is *Other User Content* and *Photos or Videos* like #21–#22 | Yes | Yes |
 | 26 | **Teams created by members** | Team creation form (`lib/features/teams/presentation/pages/team_editor_page.dart`) → `POST /api/teams`: the team's name, its markdown description, its time zone (an IANA name the member picks; the default is the account's time-zone preference, #8, else `Europe/Paris` — the app reads no time zone from the device) and the module switches — any signed-in member, who becomes the team's administrator. No logo, photo or attachment at creation: an upload needs the team to exist. **And a location**, optional: the member searches an address through the same relay as #25 (`lib/features/geocoding/`, `GET /api/geocode/search` then `GET /api/geocode/place` for the picked one; the device never calls the provider) and the picked address's coordinates are sent as `geometry`. The server stores the point against the team and returns it with the team to whoever may read it (`TeamDetailDto.geometry`) — not blurred, unlike an ad's. The device's own position is **not** read. **Declared as an address** (decision of 2026-11-15, O1 of `docs/plans/2026-11-15-gestion-equipe-mobile.md`): the existing Apple *Physical Address* and Play *Personal info → Address* rows — see §4 and §5. Name and description are *Other User Content* like #21 | Yes | Yes (the team's creator is its administrator) |
 | 27 | **Team settings written by administrators** | Team settings (`lib/features/teams/presentation/pages/team_editor_page.dart` in edit mode) → `PUT /api/teams/{slug}`: what #26 sends — name, markdown description, time zone, module switches, the optional location picked through the address search of #25–#26 (a cleared location is sent as `geometry: null` and erased) — plus the team's **visibility** when the platform lets its administrators change it, and the team's **logo, images and attachments** through the path of #22 (`image_picker`, still images only; `file_picker`). `PATCH /api/teams/{slug}/slug` changes the team's address, `DELETE /api/teams/{slug}` deletes the team, `GET …/timezone/change-preview` only reads. **And the team's webhook** (`team_webhook_sheet.dart` → `PUT`/`DELETE /api/teams/{slug}/webhook`, `POST …/webhook/test`): an **https URL the administrator types** (a Slack, Discord or Mattermost incoming-webhook address, or any public https endpoint), a language and an on/off switch. The URL is a secret: the server stores it and only ever returns it masked (`TeamWebhookDto.maskedUrl`); the app keeps no copy, shows nothing but the masked form, and never calls the URL itself — the server posts the team's announcements to it (privacy policy, « Canaux de discussion d'équipe »). The team's administrators and the platform administrator only. Name, description, attachments and the webhook URL are *Other User Content*, the logo and images *Photos or Videos*, the location the *Physical Address* row of #25–#26 | Yes | Yes (written by a team's administrator, stored against the team) |
+| 28 | **Invitations sent by a team's administrators, and member management** | *Manage members* (`lib/features/teams/presentation/pages/team_admin_members_page.dart`), the team's administrators and the platform administrator only. **An e-mail address the administrator types** in the invitation sheet (`team_invite_sheet.dart` → `POST /api/teams/{slug}/invitations`: the address and the role offered) — the address of **someone else**, who may have no account. It is typed by hand: the app reads no address book and requests no contacts permission. The server stores the address, the role, who invited and the invitation's status and dates, e-mails the invitation, and returns the pending invitations to the team's administrators (`GET …/invitations?status=PENDING`), who can resend one (the same `POST`, same address and role) or cancel it (`DELETE …/invitations/{id}`); nobody joins without accepting (privacy policy, « Invitations dans une équipe »). The app keeps no copy of the address once the sheet is closed. **Declared under the existing e-mail row** (decision of 2026-11-15, O2 of `docs/plans/2026-11-15-gestion-equipe-mobile.md`): Apple *Email Address*, Play *Personal info → Email address* — see §4 and §5. The screen also changes a member's role (`PUT /api/teams/{slug}/members/{userId}`) and removes a member (`DELETE …/members/{userId}`): a role and an identifier the server already holds, nothing typed. Its member search (`GET …/members?search=`, by name or e-mail for an administrator) is the search the member directory already sent | Yes | Yes (the invitation is stored against the team and the inviting account; the invited address becomes an account's only if that person signs up) |
 | 10 | **Approximate location** | `geolocator` at `LocationAccuracy.low`, while in use, only when the user turns on the "around me" filter — becomes the `nearLat`/`nearLon`/`nearRadius` query parameters | Yes, as query parameters of a read request | **No** — not stored server-side, not written to the account |
 
 Stored **on device only**, never transmitted:
@@ -234,7 +238,7 @@ value is invented.
 
 | `NSPrivacyCollectedDataType` | Linked | Tracking | Purposes | Covers |
 |---|---|---|---|---|
-| `NSPrivacyCollectedDataTypeEmailAddress` | `true` | `false` | `…PurposeAppFunctionality` | inventory #1 |
+| `NSPrivacyCollectedDataTypeEmailAddress` | `true` | `false` | `…PurposeAppFunctionality` | inventory #1, #28 (the address an administrator invites) |
 | `NSPrivacyCollectedDataTypeName` | `true` | `false` | `…PurposeAppFunctionality` | #3 |
 | `NSPrivacyCollectedDataTypePhysicalAddress` | `true` | `false` | `…PurposeAppFunctionality` | #25 (the position of an ad), #26 (the location of a team) |
 | `NSPrivacyCollectedDataTypeUserID` | `true` | `false` | `…PurposeAppFunctionality` | #4, #5, #7 |
@@ -260,6 +264,8 @@ member types, not a reading of the device.
 #27 (a team's settings) has no row of its own either: its texts, its attachments and the webhook
 URL an administrator types are *Other User Content*, its logo and images *Photos or Videos* like
 #22, its location the *Physical Address* row of #25–#26.
+#28 (an invitation by e-mail) has no row of its own: the invited address is the *Email Address*
+row of #1; a role change and a removal send nothing the server does not already hold.
 
 #16 (terms acceptance) has no row of its own: it is a timestamp on the account created at sign-up,
 covered by the account rows (`EmailAddress`, `Name`, `UserID`) like the account's creation date.
@@ -381,6 +387,15 @@ the administrator types to configure the team — *Other User Content*, declared
 detail of a person, a credential of the account or an identifier of the device; the app stores
 none of it and reads back only its masked form. `app-privacy.json` is **unchanged**.
 
+**An invitation by e-mail adds no data type** (2026-11-15, `MOB-167`, #28; decision O2 of
+`docs/plans/2026-11-15-gestion-equipe-mobile.md`). The address a team's administrator types to
+invite someone is an e-mail address the app collects — *Contact Info → Email Address*, already
+declared, linked, App Functionality, no tracking. That it is the address of a third person does
+not make it *Contacts*: Apple's *Contacts* is the user's address book, which the app never reads
+(no contacts permission, no picker) — the administrator types one address at a time. The policy
+tells the invited person where the address comes from (« Auprès d'autres membres ») and how long
+an unanswered invitation is kept. `app-privacy.json` is **unchanged**.
+
 **The address search adds no *Search History*.** The text typed in the address search of the ad
 editor and of the team creation form (#25, #26 — one picker, `lib/features/geocoding/`)
 goes to our backend, which relays it to Stadia Maps from the server's IP. The backend attaches it
@@ -486,6 +501,11 @@ content*, already declared. `data-safety.csv` is **unchanged**.
 texts and its webhook URL are *Other user-generated content*, its logo and images *Photos*, its
 attachments *Files and docs*, its location the *Address* row above. All optional — nobody has to
 administer a team — and none shared. `data-safety.csv` is **unchanged**.
+
+**An invitation by e-mail** (2026-11-15, `MOB-167`, #28) stays inside the *Email address* row:
+collected, not shared (the e-mail provider that delivers the invitation is a service provider
+acting for us), for app functionality. Not *Contacts*: the address is typed, the address book is
+never read. `data-safety.csv` is **unchanged**.
 
 *Approximate location* is **optional** and **processed ephemerally**: it is read only when the user
 turns on the "around me" filter, sent as `nearLat`/`nearLon`/`nearRadius` on a read request, and
@@ -652,6 +672,7 @@ these ships:
 | If the app gains… | Add |
 |---|---|
 | Profile editing (`PUT /api/users/me`) | nothing new — Name/Email already declared |
+| Picking the invited address **from the device's address book**, or importing several addresses at once (the invitation by e-mail of `MOB-167`, #28, takes one typed address) | Apple `NSPrivacyCollectedDataTypeContacts` and `NSContactsUsageDescription`; Play *Contacts*. The *Email Address* row of #28 only holds while the address is typed |
 | Camera capture for the avatar | `NSCameraUsageDescription` in `Info.plist` (+ its two `InfoPlist.strings`); no new data type — Photos or Videos already covers it |
 | Trip authoring (comments are already declared, #13; ride authoring since `MOB-80`, #21–#22; route authoring since `MOB-79`, #23; post authoring since `MOB-164`, #24; team creation since `MOB-165`, #26; team settings and the team webhook since `MOB-166`, #27) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
 | A screenshot or attachment on a report, or automatic moderation of images or text beyond the word filter | Apple `…PhotosorVideos` already covers images, but re-read §4 for the purpose; Play *Photos*; any third-party moderation service is a new sub-processor for the policy |
@@ -777,6 +798,13 @@ grep -rn "requestAuthorization" lib | grep -v lib/api/generated
 # the team webhook (#27): its URL only ever travels in saveTeamWebhook's body, typed by an
 # administrator; nothing stores it on the device — must print the repository only
 grep -rnE "\.(saveTeamWebhook|testTeamWebhook|deleteTeamWebhook|getTeamWebhook)\(" lib/features lib/core
+
+# invitations by e-mail and member management (#28): the invited address only ever travels in
+# invite's body, typed by an administrator — the client calls must be in the two repositories
+# only (team_invitations_repository.dart, team_repository.dart). No address book: the second grep
+# must print nothing
+grep -rnE "[cC]lient\.(invite|revoke|listInvitations|updateMemberRole|removeMember)\(" lib/features lib/core
+grep -rniE "contacts_service|flutter_contacts|READ_CONTACTS|NSContactsUsageDescription" pubspec.yaml lib android/app/src/main/AndroidManifest.xml ios/Runner/Info.plist
 
 # problem / error reports: the two calls behind §2 #17–#19
 grep -rnE "\.(sendFeedback|reportClientError)\(" lib/features lib/core

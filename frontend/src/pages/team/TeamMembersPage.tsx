@@ -60,8 +60,8 @@ export function TeamMembersPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   // « Inviter » on the team dashboard lands here with the dialog open: router state on the web
-  // (`OPEN_INVITE_STATE`), `?invite=1` from the mobile dashboard, which opens the site in a browser
-  // (mobile `TeamWebPaths.adminMembersInvite`).
+  // (`OPEN_INVITE_STATE`), `?invite=1` in a link — the parameter the mobile app's own members
+  // screen reads too (mobile `teamAdminMembersInviteLocation`, docs/LEDGER_*.md MOB-167).
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const [showAddMember, setShowAddMember] = useState(
