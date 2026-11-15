@@ -2063,8 +2063,7 @@
     "resolveFailed": "Impossible d'obtenir la position de cette adresse. Recherchez-la et choisissez-la de nouveau, ou laissez la position vide.",
     "unavailable": "Le service de recherche d'adresse est indisponible. Réessayez dans un instant, ou laissez la position vide.",
     "none": "Aucune localisation",
-    "saved": "Localisation enregistrée",
-    "clear": "Supprimer la localisation"
+    "saved": "Localisation enregistrée"
   },
   "location": {
     "serviceDisabled": "La localisation est désactivée sur votre appareil.",

@@ -16,6 +16,17 @@ typedef TeamAccessProbe = Future<bool> Function(String teamSlug);
 /// que cela, et l'écran de détail reste juste.
 const Duration kTeamAccessProbeTimeout = Duration(seconds: 4);
 
+/// `GET team` a **refusé** l'équipe à l'appelant : 403, ou 404 — une équipe
+/// privée dont il n'est pas membre répond comme une équipe qui n'existe pas.
+/// Un refus, pas une panne : l'écran qui le lit dit « réservé » plutôt
+/// qu'« Erreur de chargement » et un « Réessayer » qui rendrait le même refus
+/// (docs/LEDGER_*.md MOB-166).
+bool isTeamAccessRefusal(Object error) {
+  if (error is! DioException) return false;
+  final int? status = error.response?.statusCode;
+  return status == 404 || status == 403;
+}
+
 /// L'appelant peut-il consulter l'équipe [teamSlug] — `GET team` lui
 /// répondrait-il ? La question que pose un lien profond avant de reconstruire
 /// la page de l'équipe sous celle d'une de ses entités (docs/LEDGER_*.md
@@ -44,11 +55,8 @@ final teamAccessProbeProvider = Provider<TeamAccessProbe>(
           .read(teamDetailProvider(teamSlug).future)
           .timeout(kTeamAccessProbeTimeout);
       return true;
-    } on DioException catch (error) {
-      final int? status = error.response?.statusCode;
-      return status != 404 && status != 403;
-    } catch (_) {
-      return true;
+    } catch (error) {
+      return !isTeamAccessRefusal(error);
     }
   },
 );

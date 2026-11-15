@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,11 +32,20 @@ class _StubTeams implements TeamRepository {
   /// Si posé, `createTeam` lève cette erreur.
   Object? failWith;
 
+  /// Si posé, `createTeam` attend qu'il soit complété : la requête reste en
+  /// vol.
+  Completer<void>? gate;
+
+  /// Les appels reçus, réponse rendue ou non.
+  int createCalls = 0;
+
   final List<TeamRequest> created = <TeamRequest>[];
   int myTeamsReads = 0;
 
   @override
   Future<TeamDetailDto> createTeam(TeamRequest request) async {
+    createCalls++;
+    await gate?.future;
     final Object? error = failWith;
     if (error != null) throw error;
     created.add(request);
@@ -59,6 +70,10 @@ class _StubPlaces implements PlaceSearchRepository {
   final List<String> resolved = <String>[];
   Object? resolveError;
 
+  /// Si posé, `resolve` attend qu'il soit complété : la position reste en
+  /// cours de lecture.
+  Completer<void>? resolveGate;
+
   @override
   Future<List<GeocodeResultDto>> search(String query) async {
     if (query.trim().length < PlaceSearchRepository.minQueryLength) {
@@ -72,6 +87,7 @@ class _StubPlaces implements PlaceSearchRepository {
   @override
   Future<GeocodeResultDto> resolve(String id) async {
     resolved.add(id);
+    await resolveGate?.future;
     final Object? error = resolveError;
     if (error != null) throw error;
     return const GeocodeResultDto(
@@ -470,6 +486,49 @@ void main() {
       expect(teams.created.single.name, 'Club');
     });
   }
+
+  testWidgets('« Créer » touché deux fois pendant l\'envoi : une seule '
+      'requête', (WidgetTester tester) async {
+    teams.gate = Completer<void>();
+    await open(tester);
+
+    await tester.enterText(find.byKey(keys.teamEditor.nameField), 'Club');
+    await save(tester);
+    await save(tester);
+
+    // La première requête est en vol, la seconde n'est pas partie.
+    expect(teams.createCalls, 1);
+    expect(teams.created, isEmpty);
+
+    teams.gate!.complete();
+    await settle(tester);
+    expect(teams.createCalls, 1);
+    expect(teams.created.single.name, 'Club');
+    expect(find.text('équipe velo-club-du-lac'), findsOneWidget);
+  });
+
+  testWidgets('rien ne part tant que la position de l\'adresse est en '
+      'cours de lecture', (WidgetTester tester) async {
+    places.resolveGate = Completer<void>();
+    await open(tester);
+
+    await tester.enterText(find.byKey(keys.teamEditor.nameField), 'Club');
+    await pickPlace(tester);
+    expect(find.text('Localisation de l\'adresse…'), findsOneWidget);
+
+    await save(tester);
+    expect(teams.createCalls, 0);
+
+    // La position arrive : l'enregistrement part, avec elle.
+    places.resolveGate!.complete();
+    await settle(tester);
+    await save(tester);
+    expect(teams.createCalls, 1);
+    expect(teams.created.single.geometry!.coordinates, <double>[
+      6.1294,
+      45.8992,
+    ]);
+  });
 
   testWidgets('quitter un formulaire modifié demande confirmation', (
     WidgetTester tester,

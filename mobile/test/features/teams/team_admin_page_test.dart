@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -17,14 +18,29 @@ import 'team_fixtures.dart';
 /// Le hub « Gestion de l'équipe » (ledger `MOB-165`) : qui y entre, quelles
 /// lignes chacun voit, et où elles mènent.
 class _Teams implements TeamRepository {
-  _Teams({this.role, this.fail = false});
+  _Teams({this.role, this.fail = false, this.refusedWith});
 
   final String? role;
   bool fail;
+
+  /// Si posé, `getTeam` répond ce statut HTTP : l'équipe se refuse.
+  final int? refusedWith;
   int myTeamsReads = 0;
 
   @override
   Future<TeamDetailDto> getTeam(String slug) async {
+    final int? status = refusedWith;
+    if (status != null) {
+      throw DioException(
+        requestOptions: RequestOptions(path: '/api/teams/$slug'),
+        type: DioExceptionType.badResponse,
+        response: Response<Map<String, Object?>>(
+          requestOptions: RequestOptions(path: '/api/teams/$slug'),
+          statusCode: status,
+          data: <String, Object?>{'code': 'NOT_FOUND'},
+        ),
+      );
+    }
     if (fail) throw StateError('indisponible');
     return fixtureTeam(slug: slug, role: role);
   }
@@ -69,8 +85,13 @@ void main() {
     String? role,
     bool platformAdmin = false,
     bool fail = false,
+    int? refusedWith,
   }) async {
-    final _Teams teams = _Teams(role: role, fail: fail);
+    final _Teams teams = _Teams(
+      role: role,
+      fail: fail,
+      refusedWith: refusedWith,
+    );
     final GoRouter router = GoRouter(
       initialLocation: '/',
       routes: <RouteBase>[
@@ -154,6 +175,21 @@ void main() {
 
     expect(find.byKey(keys.teamAdmin.forbidden), findsOneWidget);
   });
+
+  for (final int status in <int>[403, 404]) {
+    testWidgets('une équipe que le serveur refuse ($status) : le refus, pas '
+        'une erreur à réessayer', (WidgetTester tester) async {
+      await open(tester, refusedWith: status);
+
+      expect(find.byKey(keys.teamAdmin.forbidden), findsOneWidget);
+      expect(find.byKey(keys.teamAdmin.loadError), findsNothing);
+      expect(find.text('Réessayer'), findsNothing);
+
+      await tester.tap(find.byKey(keys.teamAdmin.forbiddenBack));
+      await settle(tester);
+      expect(find.text('équipe'), findsOneWidget);
+    });
+  }
 
   testWidgets('organisateur : les modèles, les lieux et les signalements — '
       'aucune ligne d\'administration', (WidgetTester tester) async {

@@ -2063,8 +2063,7 @@
     "resolveFailed": "Couldn't get the position of this address. Search and pick it again, or leave the position empty.",
     "unavailable": "The address search service is unavailable. Try again in a moment, or leave the position empty.",
     "none": "No location",
-    "saved": "Location saved",
-    "clear": "Remove the location"
+    "saved": "Location saved"
   },
   "location": {
     "serviceDisabled": "Location is turned off on your device.",

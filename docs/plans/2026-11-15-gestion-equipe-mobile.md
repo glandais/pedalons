@@ -216,7 +216,8 @@ change d'import.
 {title, onResolvingChange})` rend `null` (feuille fermée), un `GeocodedPlace` (`name`, `lat`, `lon`,
 `coordinates` dans l'ordre GeoJSON) ou un `GeocodedPlaceFailure` (`GeocodeFailure.unavailable` /
 `failed`, avec son `message`). Clés `geocoder.*` : `label`, `search`, `empty`, `attribution`,
-`resolving`, `resolveFailed`, `unavailable`, `none`, `saved`, `clear`.
+`resolving`, `resolveFailed`, `unavailable`, `none`, `saved` (`clear`, jamais lue, a été retirée
+au lot 2 : `EditorClearButton` ne prend pas de libellé).
 
 Vérifié en codant : le champ de recherche de `search_picker_sheet.dart` est un `PdlSearchField`, qui
 temporise la saisie de 350 ms (`kSearchDebounce`, `core/pdl/pdl_search_field.dart`) ; le site attend

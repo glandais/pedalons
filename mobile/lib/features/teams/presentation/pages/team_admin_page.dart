@@ -11,6 +11,7 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../keys.dart';
+import '../../providers/team_access_probe.dart';
 import '../../providers/team_permission_providers.dart';
 import '../../providers/team_providers.dart';
 import '../team_web_paths.dart';
@@ -34,11 +35,13 @@ class TeamAdminPage extends ConsumerWidget {
 
   final String teamSlug;
 
-  void _back(BuildContext context) {
+  /// [teamReadable] faux : l'équipe elle-même s'est refusée, sa page ne
+  /// dirait qu'« Équipe indisponible » — le retour mène à « Mes équipes ».
+  void _back(BuildContext context, {bool teamReadable = true}) {
     if (context.canPop()) {
       context.pop();
     } else {
-      context.go(Paths.team(teamSlug));
+      context.go(teamReadable ? Paths.team(teamSlug) : Paths.teams());
     }
   }
 
@@ -57,7 +60,30 @@ class TeamAdminPage extends ConsumerWidget {
     final AsyncValue<TeamDetailDto> team = ref.watch(
       teamDetailProvider(teamSlug),
     );
+    Widget forbidden({required bool teamReadable}) => shell(
+      body: PdlEmptyState(
+        key: keys.teamAdmin.forbidden,
+        variant: PdlEmptyVariant.empty,
+        icon: PdlIcons.admin,
+        title: 'teams.manage.forbiddenTitle'.tr(),
+        message: 'teams.manage.forbiddenMessage'.tr(),
+        actions: <Widget>[
+          PdlButton(
+            key: keys.teamAdmin.forbiddenBack,
+            label: 'common.back'.tr(),
+            variant: PdlButtonVariant.outline,
+            onPressed: () => _back(context, teamReadable: teamReadable),
+          ),
+        ],
+      ),
+    );
+
     final Object? error = team.error;
+    // Une équipe que le serveur refuse (403, ou 404 pour une équipe privée
+    // dont on n'est pas membre) : un refus, pas une panne à réessayer.
+    if (error != null && isTeamAccessRefusal(error)) {
+      return forbidden(teamReadable: false);
+    }
     if (error != null) {
       return shell(
         body: PdlEmptyState(
@@ -84,25 +110,7 @@ class TeamAdminPage extends ConsumerWidget {
       );
     }
 
-    if (!organizer) {
-      return shell(
-        body: PdlEmptyState(
-          key: keys.teamAdmin.forbidden,
-          variant: PdlEmptyVariant.empty,
-          icon: PdlIcons.admin,
-          title: 'teams.manage.forbiddenTitle'.tr(),
-          message: 'teams.manage.forbiddenMessage'.tr(),
-          actions: <Widget>[
-            PdlButton(
-              key: keys.teamAdmin.forbiddenBack,
-              label: 'common.back'.tr(),
-              variant: PdlButtonVariant.outline,
-              onPressed: () => _back(context),
-            ),
-          ],
-        ),
-      );
-    }
+    if (!organizer) return forbidden(teamReadable: true);
 
     final List<_AdminRow> rows = <_AdminRow>[
       _AdminRow(

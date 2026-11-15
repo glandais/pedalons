@@ -3,9 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
 import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
+import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
+import 'package:pedalons/features/teams/domain/team_discovery_filters.dart';
 import 'package:pedalons/features/teams/providers/team_change.dart';
 import 'package:pedalons/features/teams/providers/team_dashboard_provider.dart';
+import 'package:pedalons/features/teams/providers/team_discovery_provider.dart';
 import 'package:pedalons/features/teams/providers/team_providers.dart';
 
 import '../rides/ride_fixtures.dart';
@@ -17,6 +20,17 @@ class _Teams implements TeamRepository {
   int teamReads = 0;
   int myTeamsReads = 0;
   int dashboardReads = 0;
+  int discoveryReads = 0;
+
+  @override
+  Future<PageResult<TeamDetailDto>> fetchTeams({
+    required TeamDiscoveryFilters filters,
+    int page = 0,
+    int size = kDefaultPageSize,
+  }) async {
+    discoveryReads++;
+    return const PageResult<TeamDetailDto>(items: <TeamDetailDto>[], total: 0);
+  }
 
   @override
   Future<TeamDetailDto> getTeam(String slug) async {
@@ -82,15 +96,20 @@ void main() {
       onError: (_, _) {},
     );
     container.listen(rideDetailProvider(rideKey), (_, _) {});
+    container.listen(
+      teamDiscoveryProvider(const TeamDiscoveryFilters()),
+      (_, _) {},
+    );
     await settle();
     expect(teams.teamReads, 2);
     expect(teams.myTeamsReads, 1);
     expect(teams.dashboardReads, 1);
+    expect(teams.discoveryReads, 1);
     expect(rides.reads, 1);
   });
 
-  test('la fiche de cette équipe, « Mes équipes » et son tableau de bord '
-      'sont relus ; pas le contenu', () async {
+  test('la fiche de cette équipe, « Mes équipes », son tableau de bord et '
+      'la découverte sont relus ; pas le contenu', () async {
     notifyTeamChanged(container, 'n-peloton');
     await settle();
 
@@ -98,6 +117,8 @@ void main() {
     expect(teams.teamReads, 3);
     expect(teams.myTeamsReads, 2);
     expect(teams.dashboardReads, 2);
+    // L'annuaire porte le nom, le logo et la visibilité de l'équipe.
+    expect(teams.discoveryReads, 2);
     expect(rides.reads, 1);
   });
 
