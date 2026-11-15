@@ -5,3 +5,5 @@ allowBuilds:
   msw: true
   protobufjs: false
   sharp: true
+minimumReleaseAgeExclude:
+  - i18next@27.1.2

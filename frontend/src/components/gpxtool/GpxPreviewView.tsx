@@ -175,7 +175,7 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
         message:
           code === ErrorCode.ROUTE_PLANNER_DISABLED
             ? t('gpxTools.preview.plannerClosedForTeam')
-            : t(`errors.api.${code}`, e instanceof ApiClientError ? e.error.errorDetails : {}),
+            : t(`errors.api.${code}`, (e instanceof ApiClientError && e.error.errorDetails) || {}),
         color: 'red',
       })
     } finally {

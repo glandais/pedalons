@@ -19,6 +19,10 @@ const OPTION_LABEL_KEYS = {
   routes: 'routes.surface.colorBy.routes',
 } as const satisfies Record<LineModeOption, string>
 
+// Read through the whole table, not through the component's `T`: i18next checks a key's variables
+// on the key's literal type, which a generic index leaves unresolved.
+const optionLabelKey = (option: LineModeOption) => OPTION_LABEL_KEYS[option]
+
 interface ColorByControlProps<T extends LineModeOption> {
   value: T
   onChange: (value: T) => void
@@ -54,7 +58,7 @@ export function ColorByControl<T extends LineModeOption>({
           : 'routes.surface.colorBy.label'
       )}
       data-testid={testId}
-      data={options.map((option) => ({ value: option, label: t(OPTION_LABEL_KEYS[option]) }))}
+      data={options.map((option) => ({ value: option, label: t(optionLabelKey(option)) }))}
     />
   )
 }
