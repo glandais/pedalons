@@ -335,10 +335,10 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       (modules `teamTagsAdmin`, `teamPagesAdmin`, `teamAdmin.openTags()` / `openPages()` ;
       semences `teamTags`, `tagLabelled`, `routeTagLabels` dans `patrol_test/api/tags_seed.dart`,
       `teamPages`, `teamPageTitled`, `teamPage` dans `teams_content_seed.dart`). Reste à les
-      faire tourner avant de ranger l'entrée, à pousser les formulaires des stores avec ceux de
-      `MOB-159`, et à mettre à jour la ligne `MOB-24` de « Délibérément dehors » (son
-      « administration d'équipe » est livrée ; elle dit encore que le reste ouvre le site par
-      `team_web_paths.dart`) — laissée telle quelle ici, une autre branche l'édite.
+      faire tourner avant de ranger l'entrée, et à pousser les formulaires des stores avec ceux de
+      `MOB-159`. La ligne `MOB-24` de « Délibérément dehors » est à jour (son « administration
+      d'équipe » en est détachée). Défauts relevés en chemin et non corrigés ici : `API-204`,
+      `WEB-185`, `LEGAL-30`.
 
 - [ ] `MOB-160` **Éditeur riche : test de widget du pont et test Patrol de l'écran plein (S)** —
       l'éditeur riche (l'éditeur Tiptap du site dans une WebView, voir la part livrée) a été essayé
@@ -1067,6 +1067,15 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       à l'import comme le fait déjà `GpxTrackMerger` (`API-112`) pour une fusion explicite.
       `trackDistanceRange` traite déjà chaque trace à part (`WEB-80`).
 
+- [ ] `WEB-185` **Pages d'équipe : la corbeille compte dans le plafond, et la suppression se dit
+      « irréversible » (XS)** — `TeamPagesAdminPage.tsx` compare `pages.length` à
+      `MAX_ADDITIONAL_PAGES`, pages supprimées comprises, et masque « Ajouter une page » alors
+      que le serveur (`countAdditionalPages`, `deleted = false`) accepterait la création ; sa
+      confirmation de suppression dit « Cette action est irréversible » alors que la page se
+      restaure depuis la même liste. Relevé le 15 novembre 2026 (`MOB-169`) : l'app compte ce que
+      le serveur compte et dit que la page peut être restaurée. À faire : compter les pages non
+      supprimées, corriger le texte (fr, en), et désactiver « Restaurer » au plafond comme l'app
+      (`API-204`).
 - [ ] `WEB-7` **Idées de la liste « P2 (à planifier) » qui n'ont pas été retenues** parmi les
       21 tests P2 écrits — quelques-unes peuvent être couvertes au passage par une autre spec, à
       vérifier avant de les écrire :
@@ -1668,6 +1677,13 @@ appareil (`OPS-42`, étape 7 du plan
 
 ### Vie privée : ce que la politique doit encore décrire faute de mieux
 
+- [ ] `API-204` **Restaurer une page d'équipe ne vérifie pas le plafond de 3 (XS)** —
+      `TeamPageService.undeletePage` ne passe pas par `countAdditionalPages`, que la création
+      applique (`TOO_MANY_TEAM_PAGES`) : avec trois pages actives et une page supprimée, la
+      restauration réussit et l'équipe a quatre pages actives. Relevé le 15 novembre 2026 en
+      écrivant la liste des pages de l'app (`MOB-169`), qui désactive « Restaurer » au plafond ; le
+      site ne le fait pas. À faire : le même contrôle dans `undeletePage`, et son test dans le
+      test de ressource des pages.
 - [ ] `API-47` **Les documents joints gardent leurs métadonnées** — PDF (auteur, JPEG embarqués
       avec leur EXIF), fichiers bureautiques (`docProps`), PSD (EXIF/IPTC) sont stockés tels quels ;
       la politique (§1) le dit. À trancher : les nettoyer (dépendance nouvelle pour le PDF), ou
@@ -2130,6 +2146,12 @@ en service (précondition du §5.3 du plan, vérifications de l'étape 6) est so
       objet si la prod passe à un extrait VersaTiles local (`OPS-58`). Parité FR/EN. Décision du
       7 novembre 2026 : noter, ne rien changer pour l'instant.
 
+- [ ] `LEGAL-30` **La politique ne nomme pas les tags parmi le contenu créé (XS)** — la section
+      « Contenu que vous créez » de `privacy/privacy-policy.{fr,en}.md` ne cite pas les tags
+      d'équipe (libellé et couleur), qu'une personne administrant une équipe saisit sur le site
+      et, depuis `MOB-169`, dans l'app (`mobile/store-metadata/data-safety.md`, ligne
+      d'inventaire #31). Relevé le 15 novembre 2026. À trancher : ajouter les tags à la liste, ou
+      juger qu'un vocabulaire d'équipe relève déjà du contenu d'équipe décrit.
 - [ ] `LEGAL-22` **Renvois « depuis votre profil » rendus précis (XS)** — quatre
       phrases renvoient au profil sans dire où, alors que le profil a depuis octobre un sous-écran
       par sujet (`contracts/routes.yaml`, mêmes libellés sur le site et dans l'app) : CGU l.64
@@ -2221,7 +2243,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `WEB-12` | **Mode sombre dérivé au web** | Sans objet | Le tableau de parité est un livrable **pour Flutter**, parce qu'aucune maquette ne fournit le sombre. Mantine l'a déjà |
 | `MOB-22` | **Jeu d'icônes Tabler côté mobile** | Material outline conservé | L'écart ne porte que sur la graisse du trait des icônes de badge de 11 px. `PdlIcons` (`lib/core/theme/pdl_icons.dart`) devrait être le **seul** fichier à nommer `Icons.*` (17 autres fichiers le font encore au 16 octobre 2026) : une fois ce ménage fait, basculer ne touchera qu'un fichier |
 | `MOB-23` | **Écran de profil public d'un membre** | Aucune maquette ne va au-delà de la liste | Une ligne du trombinoscope ouvre le menu signaler/bloquer (`team_members_page.dart`), jamais un profil. Ne pas inventer l'écran |
-| `MOB-24` | **Édition et création de contenu au mobile — hors sorties, modèles de sortie, parcours et publications** (voyages, administration d'équipe, et le **planificateur de parcours sur carte**) | Hors brief : la v2 est une version de consultation et de participation | Les **sorties** en ont été détachées et livrées le 17 octobre 2026 (`MOB-80`, éditeur de sortie, sélecteur de meneur compris), puis les **modèles de sortie** le même jour (`MOB-78`), puis les **parcours** (`MOB-79`, par import d'un fichier GPX : créer, modifier, remplacer le tracé, supprimer, restaurer), puis les **publications** le 14 novembre 2026 (`MOB-164`). Le **planificateur sur carte** (`points`, routage Stadia) en a été détaché le 15 novembre 2026 (`MOB-170`, codé, recette sur appareil à faire) : le mode tactile du site (`WEB-100`, lot 2) et un essai dans la WebView de l'app ont levé la raison de le laisser au site. Le reste ouvre toujours le site depuis le tableau de bord (`team_web_paths.dart`) ; à rouvrir type par type, sur le modèle de `MOB-80` |
+| `MOB-24` | **Édition et création de contenu au mobile — hors sorties, modèles de sortie, parcours et publications** (voyages, et le **planificateur de parcours sur carte**) | Hors brief : la v2 est une version de consultation et de participation | Les **sorties** en ont été détachées et livrées le 17 octobre 2026 (`MOB-80`, éditeur de sortie, sélecteur de meneur compris), puis les **modèles de sortie** le même jour (`MOB-78`), puis les **parcours** (`MOB-79`, par import d'un fichier GPX : créer, modifier, remplacer le tracé, supprimer, restaurer), puis les **publications** le 14 novembre 2026 (`MOB-164`). Le **planificateur sur carte** (`points`, routage Stadia) en a été détaché le 15 novembre 2026 (`MOB-170`, codé, recette sur appareil à faire) : le mode tactile du site (`WEB-100`, lot 2) et un essai dans la WebView de l'app ont levé la raison de le laisser au site. L'**administration d'équipe** en a été détachée le même jour (`MOB-165` à `MOB-169`, codée, tests Patrol à lancer) : plus rien n'ouvre le site depuis le tableau de bord, `team_web_paths.dart` a disparu |
 | `MOB-50` | **Cloche des notifications dans l'en-tête du Profil** | Non (décidé le 4 octobre 2026 avec le propriétaire, refonte `MOB-48`) | La boîte de réception est dans une autre branche du shell : un `push` depuis le Profil empilerait les branches, un `go` y ferait perdre la place. Elle reste à un onglet ; les réglages de notifications sont dans `/profil/notifications`. Ne pas ajouter de cloche au Profil |
 | `MOB-61` | **Recherche et tags des anciennes adresses du fil dans l'app** (`team?tab=publications&type=…&q=…&tags=…`) | Non (décidé le 11 octobre 2026 avec le propriétaire) | Aucune de ces anciennes adresses n'a été partagée : l'app garde le type et la période (`resolveTeamRootSection`, `agendaTarget` dans `team_sections.dart`) et ignore `q` et `tags`, que seul le site reporte (`teamLegacyRedirects.ts`). À rouvrir seulement si une telle adresse circule |
 | `MOB-74` | **Exclure du manifeste Android les pages du site sans écran dans l'app** (`<uri-relative-filter-group android:allow="false">`, API 35+) | Non (11 octobre 2026 ; part écartée de `MOB-59`, renumérotée le 16 octobre 2026) | L'app reçoit ces liens et les passe au navigateur (`isSitePageLocation` dans `openDeepLink`) : il ne reste qu'un bref passage par l'app. L'exclusion ne vaudrait que sous Android 15+, ne se vérifie que sur un appareil avec la vérification des App Links, et un manifeste faux casse tous les liens d'app. À rouvrir si le passage par l'app gêne |

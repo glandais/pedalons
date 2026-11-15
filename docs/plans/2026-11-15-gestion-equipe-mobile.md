@@ -4,9 +4,9 @@
 `MOB-166`, `MOB-167`, `MOB-168`, `MOB-169`, et `WEB-184`, livré). Restent à faire : lancer les
 sept tests Patrol écrits avec eux et jamais lancés (`team_create_test`, `team_settings_test`,
 `team_admin_members_test`, `team_places_test`, `team_reports_test`, `team_tags_admin_test`,
-`team_pages_admin_test` — voir `mobile/patrol_test/README.md`),
-pousser les formulaires des stores (App Store Connect, Play Console) avec ceux de `MOB-159`,
-et mettre à jour la ligne `MOB-24` du ledger (§1).** Ce que les lots ont tranché en codant
+`team_pages_admin_test` — voir `mobile/patrol_test/README.md`)
+et pousser les formulaires des stores (App Store Connect, Play Console) avec ceux de
+`MOB-159`.** Ce que les lots ont tranché en codant
 est noté « Fait » dans les sections 4, 5, 6 et 7. Ledger : `MOB-165` (socle et
 création), `MOB-166` (paramètres et webhook), `MOB-167` (membres et invitations), `MOB-168` (lieux et
 signalements), `MOB-169` (tags et pages), `WEB-184` (libellé `USER_TEAM_LIMIT_REACHED`). Numéros
@@ -872,11 +872,13 @@ liste des écrans y figure.
 
 **Fait (lot 5)** : D20 est annotée dans `plans/archive/2026-10-01-tags.md`, `MOB-54` dans
 `LEDGER_DONE.md` (ses chemins `appScreen: false` sont tous des écrans), `docs/APP_LINKS.md` et
-`mobile/CLAUDE.md` sont à jour ; `MOB-144` reste comme le lot 1 l'a laissée. **`MOB-24` n'est
-pas mise à jour** : une autre branche édite sa ligne, à reprendre après la fusion — sa phrase
-« Le reste ouvre toujours le site depuis le tableau de bord (`team_web_paths.dart`) ; à rouvrir
-type par type, sur le modèle de `MOB-80` » est fausse depuis ce lot, et son titre compte encore
-l'« administration d'équipe » parmi ce qui est dehors.
+`mobile/CLAUDE.md` sont à jour ; `MOB-144` reste comme le lot 1 l'a laissée. La ligne `MOB-24`
+est mise à jour à partir de la version de la branche du planificateur (`MOB-170`), qui l'édite
+aussi : l'« administration d'équipe » sort de son titre, et la phrase sur `team_web_paths.dart`
+laisse place au détachement de l'administration d'équipe. Défauts relevés en chemin, inscrits
+au ledger sans être corrigés ici : `API-204` (restaurer une page ne vérifie pas le plafond de
+3), `WEB-185` (la corbeille compte dans le plafond des pages, la suppression se dit
+« irréversible »), `LEGAL-30` (la politique ne nomme pas les tags).
 
 ## 11. Ce qui reste dehors
 
@@ -888,4 +890,4 @@ l'« administration d'équipe » parmi ce qui est dehors.
   (D8).
 - **Restaurer une équipe supprimée** : administration de plateforme, au site.
 - **Mode mono-équipe** : `MOB-88`.
-- **Planificateur de parcours sur carte** : reste de `MOB-24`.
+- **Planificateur de parcours sur carte** : détaché de `MOB-24` par une autre branche (`MOB-170`).
