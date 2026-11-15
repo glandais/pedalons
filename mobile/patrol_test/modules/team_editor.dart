@@ -3,8 +3,9 @@ import 'package:pedalons/core/material.dart';
 
 import 'module.dart';
 
-/// The team form (ledger `MOB-165`): creating a team from « Mes équipes ». The team settings
-/// (ledger `MOB-166`) will reuse the same screen and the same keys.
+/// The team form: creating a team from « Mes équipes » (ledger `MOB-165`), and its settings —
+/// the same screen in edit mode, with the address, the visibility, the webhook and the danger
+/// zone (ledger `MOB-166`).
 final class TeamEditor extends Module {
   TeamEditor(super.$);
 
@@ -56,4 +57,89 @@ final class TeamEditor extends Module {
   }
 
   bool errorShows(String text) => shows(keys.teamEditor.errorBanner, text);
+
+  // ── Settings (ledger `MOB-166`) ─────────────────────────────────────────
+
+  /// The refusal someone who does not administer the team reads instead of the form.
+  Future<bool> showsForbidden() async {
+    await $(keys.teamEditor.forbidden).waitUntilExists();
+    return !isShown(keys.teamEditor.nameField);
+  }
+
+  /// The address row shows the team's current slug.
+  bool slugShows(String slug) => shows(keys.teamEditor.slugRow, slug);
+
+  /// « Adresse » → the sheet → [slug] → « Enregistrer ». The form must be untouched, or the app
+  /// asks to discard it first.
+  Future<void> changeSlug(String slug) async {
+    await (await scrolledTo(keys.teamEditor.slugRow)).tap();
+    await $(keys.teamEditor.slugField).waitUntilVisible();
+    await $(keys.teamEditor.slugField).enterText(slug);
+    await $(keys.teamEditor.slugSave).tap();
+    await waitUntilGone(keys.teamEditor.slugSave);
+  }
+
+  /// Whether the visibility is only read — a badge, for a team whose administrators may not
+  /// change it.
+  Future<bool> visibilityIsReadOnly() async {
+    await scrolledTo(keys.teamEditor.visibilityRow);
+    return isShown(keys.teamEditor.visibilityBadge);
+  }
+
+  /// The visibility row → its sheet → [visibility] (`TEAM`, `PUBLIC_UNLISTED`, `PUBLIC`).
+  Future<void> pickVisibility(String visibility) async {
+    await (await scrolledTo(keys.teamEditor.visibilityRow)).tap();
+    await $(keys.teamEditor.visibilityOption(visibility)).tap();
+    await waitUntilGone(keys.teamEditor.visibilityOption(visibility));
+  }
+
+  /// Confirms the sheet a destructive step opens — « Rendre privée », « Oui, supprimer l'équipe ».
+  Future<void> confirm() async {
+    await $(keys.profile.confirmDestructiveButton).waitUntilVisible();
+    await $(keys.profile.confirmDestructiveButton).tap();
+    await waitUntilGone(keys.profile.confirmDestructiveButton);
+  }
+
+  /// Whether the confirmation on screen says [text] (« Rendre l'équipe privée ? » has the
+  /// consequence in its message).
+  Future<bool> confirmationShows(String text) async {
+    await $(keys.profile.confirmDestructiveMessage).waitUntilVisible();
+    return shows(keys.profile.confirmDestructiveMessage, text);
+  }
+
+  /// « Supprimer l'équipe », at the very bottom, in the danger zone.
+  Future<void> delete() async {
+    await (await scrolledTo(keys.teamEditor.deleteButton)).tap();
+  }
+
+  // ── Webhook sheet ───────────────────────────────────────────────────────
+
+  /// The « Webhook » row → its sheet, once its URL field is there.
+  Future<void> openWebhook() async {
+    await (await scrolledTo(keys.teamEditor.webhookRow)).tap();
+    await $(keys.teamWebhook.urlField).waitUntilVisible();
+  }
+
+  /// Whether the webhook sheet offers to test or delete a webhook — only once one is saved.
+  bool get webhookIsConfigured => isShown(keys.teamWebhook.testButton);
+
+  Future<void> enterWebhookUrl(String url) async {
+    await $(keys.teamWebhook.urlField).enterText(url);
+  }
+
+  /// « Fermer », in the sheet's header: back to the settings.
+  Future<void> closeWebhook() async {
+    await $(keys.teamWebhook.closeButton).tap();
+    await waitUntilGone(keys.teamWebhook.sheet);
+  }
+
+  Future<void> saveWebhook() async {
+    await $(keys.teamWebhook.saveButton).tap();
+  }
+
+  /// Waits for what the server refused, atop the webhook sheet.
+  Future<bool> webhookErrorShows(String text) async {
+    await $(keys.teamWebhook.errorBanner).waitUntilVisible();
+    return shows(keys.teamWebhook.errorBanner, text);
+  }
 }

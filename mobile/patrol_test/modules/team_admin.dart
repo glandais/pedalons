@@ -42,5 +42,11 @@ final class TeamAdmin extends Module {
     keys.teamAdmin.settings,
   ]);
 
+  /// « Paramètres », the last row — an administrator's — opens the settings in the app (ledger
+  /// `MOB-166`).
+  Future<void> openSettings() async {
+    await (await scrolledTo(keys.teamAdmin.settings)).tap();
+  }
+
   bool _all(List<Key> rows) => rows.every(isShown);
 }

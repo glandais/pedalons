@@ -14,6 +14,22 @@ extension TeamsContentSeed on BackendClient {
               as List)
           .cast<Json>();
 
+  /// Lets the team's administrators change its visibility — a platform attribute, set as the
+  /// platform admin (`PATCH /api/admin/teams/{id}/attributes`), the others left as they are. A
+  /// team is born without it (ledger `MOB-166`).
+  Future<void> allowVisibilityEdit(Json team) async {
+    final admin = await this.admin();
+    final path = '/api/admin/teams/${team['id']}';
+    final current = await get(admin, path);
+    await patch(admin, '$path/attributes', {
+      'visibilityEditable': true,
+      'joinable': current['joinable'],
+      'addMemberAllowed': current['addMemberAllowed'],
+      'enableRoutePlanner': current['enableRoutePlanner'],
+      'publicContentAllowed': current['publicContentAllowed'],
+    });
+  }
+
   // ── Invitations ─────────────────────────────────────────────────────────
 
   /// `POST /api/teams/{slug}/invitations` as [inviter], a team administrator. The team must allow
