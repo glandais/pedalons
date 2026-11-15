@@ -32,7 +32,7 @@ plugins {
     id("org.jetbrains.kotlin.android") version "2.4.21" apply false
     // Reads android/app/google-services.json at build time: that is where the
     // FCM sender id comes from, so a build without it registers no token.
-    id("com.google.gms.google-services") version "4.5.0" apply false
+    id("com.google.gms.google-services") version "4.6.0" apply false
 }
 
 include(":app")
