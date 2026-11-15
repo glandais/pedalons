@@ -61,6 +61,7 @@ class TeamTagsAdminKeys {
 
   // ── Feuille du formulaire ──
   final formSheet = const _TeamTagsKey('formSheet');
+  final formClose = const _TeamTagsKey('formClose');
   final formErrorBanner = const _TeamTagsKey('formErrorBanner');
   final formLabel = const _TeamTagsKey('formLabel');
 

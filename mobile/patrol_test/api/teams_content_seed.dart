@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import 'backend_client.dart';
 
 /// Seeding for teams, comments, posts and notifications beyond what [BackendClient] carries:
@@ -170,6 +172,32 @@ extension TeamsContentSeed on BackendClient {
 
   Future<int> deleteTeamPage(TestUser by, String teamSlug, String pageSlug) =>
       status(by, 'DELETE', '/api/teams/$teamSlug/pages/$pageSlug');
+
+  /// The team's custom pages as [who] reads them (`TeamPageSummaryDto`), in the team's order —
+  /// deleted ones included for an administrator (ledger `MOB-169`). The endpoint answers a bare
+  /// array.
+  Future<List<Json>> teamPages(TestUser who, String teamSlug) async {
+    final response = await http.get<List<dynamic>>(
+      '/api/teams/$teamSlug/pages',
+      options: Options(headers: {'Authorization': 'Bearer ${who.accessToken}'}),
+    );
+    return response.data!.cast<Json>();
+  }
+
+  /// The team's page titled [title], or null — a page created from the app is read back by its
+  /// title, its id and slug being the server's.
+  Future<Json?> teamPageTitled(
+    TestUser who,
+    String teamSlug,
+    String title,
+  ) async => (await teamPages(
+    who,
+    teamSlug,
+  )).where((page) => page['title'] == title).firstOrNull;
+
+  /// One page as [who] reads it (`TeamPageDto`, `media` included).
+  Future<Json> teamPage(TestUser who, String teamSlug, String pageSlug) =>
+      get(who, '/api/teams/$teamSlug/pages/$pageSlug');
 
   /// `GET` one team page as [who]: the HTTP status, 404 when it's none of their business.
   Future<int> teamPageStatus(TestUser who, String teamSlug, String pageSlug) =>

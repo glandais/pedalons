@@ -781,6 +781,26 @@ void main() {
         expect(find.byKey(k.formSheet), findsOneWidget);
       },
     );
+
+    testWidgets('« Fermer » referme la feuille sans rien envoyer, et rend '
+        'les gestes', (WidgetTester tester) async {
+      final _Tags tags = _Tags();
+      await open(
+        tester,
+        teams: _Teams(role: 'ADMIN'),
+        tags: tags,
+      );
+
+      await tester.tap(find.byKey(k.addButton));
+      await settle(tester);
+      await tester.enterText(find.byKey(k.formLabel), 'Brouillon');
+      await tester.tap(find.byKey(k.formClose));
+      await settle(tester);
+
+      expect(find.byKey(k.formSheet), findsNothing);
+      expect(tags.created, isEmpty);
+      expect(enabled(tester, k.addButton), isTrue);
+    });
   });
 
   group('suppression', () {

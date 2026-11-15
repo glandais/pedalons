@@ -65,5 +65,16 @@ final class TeamAdmin extends Module {
     await (await scrolledTo(keys.teamAdmin.reports)).tap();
   }
 
+  /// « Tags » — an administrator's — opens the tag vocabulary in the app (ledger `MOB-169`).
+  Future<void> openTags() async {
+    await (await scrolledTo(keys.teamAdmin.tags)).tap();
+  }
+
+  /// « Pages » — an administrator's — opens the team's custom pages in the app (ledger
+  /// `MOB-169`).
+  Future<void> openPages() async {
+    await (await scrolledTo(keys.teamAdmin.pages)).tap();
+  }
+
   bool _all(List<Key> rows) => rows.every(isShown);
 }

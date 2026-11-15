@@ -152,6 +152,13 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       title: _editing
           ? 'tags.admin.form.editTitle'.tr()
           : 'tags.admin.form.createTitle'.tr(),
+      headerAction: PdlButton(
+        key: keys.teamTags.formClose,
+        label: 'common.close'.tr(),
+        variant: PdlButtonVariant.text,
+        size: PdlButtonSize.sm,
+        onPressed: () => Navigator.of(context).pop(),
+      ),
       bodyPadding: EdgeInsets.zero,
       footer: SafeArea(
         top: false,
