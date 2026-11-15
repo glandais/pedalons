@@ -53,16 +53,64 @@ import '../widgets/team_webhook_sheet.dart';
 /// à l'admin de plateforme) ; quelqu'un d'autre arrivé ici par un lien lit un
 /// refus, tranché avant toute autre chose. De la section « Paramètres
 /// plateforme » du site, seule la visibilité est ici (ledger `MOB-171`).
-class TeamEditorPage extends ConsumerWidget {
+class TeamEditorPage extends ConsumerStatefulWidget {
   const TeamEditorPage({super.key, this.teamSlug});
 
   /// L'équipe dont on modifie les paramètres ; `null` pour une création.
   final String? teamSlug;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final String? slug = teamSlug;
-    if (slug != null) return _settings(context, ref, slug);
+  ConsumerState<TeamEditorPage> createState() => _TeamEditorPageState();
+}
+
+class _TeamEditorPageState extends ConsumerState<TeamEditorPage> {
+  /// La relecture de l'équipe à l'entrée est demandée (docs/LEDGER_*.md
+  /// MOB-172). [teamDetailProvider] n'est jamais libéré : sans elle, le
+  /// formulaire partirait de la fiche lue la dernière fois, et son `PUT`, qui
+  /// réécrit l'équipe, écraserait ce que le site, un autre appareil ou la
+  /// plateforme a changé depuis.
+  bool _entered = false;
+
+  /// La relecture de l'entrée est arrivée : le formulaire peut se monter. Les
+  /// rechargements suivants (après un enregistrement) se font sous lui.
+  bool _fresh = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rereadOnEntry();
+  }
+
+  @override
+  void didUpdateWidget(TeamEditorPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Le routeur garde cet état quand seule l'adresse change (après un
+    // changement de slug) : c'est une autre entrée, l'équipe se relit à sa
+    // nouvelle adresse.
+    if (oldWidget.teamSlug != widget.teamSlug) {
+      _entered = false;
+      _fresh = false;
+      _rereadOnEntry();
+    }
+  }
+
+  void _rereadOnEntry() {
+    final String? slug = widget.teamSlug;
+    if (slug == null) return;
+    // Après l'image en cours : invalider pendant la construction ferait
+    // reconstruire, en plein `build`, la page de l'équipe restée dessous.
+    WidgetsBinding.instance.addPostFrameCallback((Duration _) {
+      // Une entrée plus récente a pris la suite : c'est elle qui relit.
+      if (!mounted || slug != widget.teamSlug) return;
+      ref.invalidate(teamDetailProvider(slug));
+      setState(() => _entered = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String? slug = widget.teamSlug;
+    if (slug != null) return _settings(context, slug);
 
     // Le fuseau de la personne : sa préférence de profil. L'app ne connaît pas
     // le nom IANA du fuseau de l'appareil ; sans préférence, le formulaire
@@ -80,7 +128,7 @@ class TeamEditorPage extends ConsumerWidget {
     );
   }
 
-  Widget _settings(BuildContext context, WidgetRef ref, String slug) {
+  Widget _settings(BuildContext context, String slug) {
     final String title = 'teams.editor.settingsTitle'.tr();
 
     // [teamReadable] faux : l'équipe elle-même s'est refusée, sa page ne
@@ -121,7 +169,20 @@ class TeamEditorPage extends ConsumerWidget {
     );
 
     final AsyncValue<TeamDetailDto> team = ref.watch(teamDetailProvider(slug));
-    final TeamDetailDto? teamValue = team.value;
+    final Widget loading = shell(
+      const Center(child: CircularProgressIndicator.adaptive()),
+    );
+    // Avant la relecture de l'entrée, la fiche en cache ne sert à rien : ni
+    // formulaire, ni refus tranché sur elle.
+    if (!_entered) return loading;
+    if (!_fresh) {
+      if (team.isLoading) return loading;
+      // Arrivée sans erreur : c'est la fiche du formulaire. Une relecture en
+      // échec garde [_fresh] faux, pour que « Réessayer » relise encore avant
+      // de rien monter.
+      if (!team.hasError) _fresh = true;
+    }
+    final TeamDetailDto? teamValue = _fresh ? team.value : null;
     final Object? error = team.error;
     // Une fiche déjà lue reste le formulaire en cours : une relecture en
     // échec (l'équipe vient d'être supprimée, d'être renommée) ne le remplace
@@ -148,9 +209,7 @@ class TeamEditorPage extends ConsumerWidget {
 
     // `null` tant que la fiche charge : ni formulaire, ni refus.
     final bool? admin = ref.watch(isTeamAdminProvider(slug));
-    if (teamValue == null || admin == null) {
-      return shell(const Center(child: CircularProgressIndicator.adaptive()));
-    }
+    if (teamValue == null || admin == null) return loading;
     if (!admin) return forbidden(teamReadable: true);
 
     return _TeamEditorForm(

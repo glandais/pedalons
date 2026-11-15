@@ -1123,4 +1123,41 @@ void main() {
 
     expect(find.byKey(keys.teamWebhook.sheet), findsOneWidget);
   });
+
+  // Ledger MOB-172 : la fiche de l'équipe n'est jamais libérée. Rouvrir les
+  // paramètres après un changement fait ailleurs (le site, la plateforme)
+  // doit le montrer, et ne pas partir de la fiche lue la fois d'avant.
+  testWidgets(
+    'rouvrir les paramètres relit l\'équipe au lieu de partir du cache',
+    (WidgetTester tester) async {
+      final _Teams teams = _Teams(_team(visibilityEditable: false));
+      await open(tester, teams);
+      expect(find.byKey(keys.teamEditor.visibilityBadge), findsOneWidget);
+
+      final GoRouter router = GoRouter.of(
+        tester.element(find.byKey(keys.teamEditor.nameField)),
+      );
+      router.pop();
+      await settle(tester);
+
+      // Changé ailleurs pendant que l'écran était fermé.
+      teams.team = teams.team.copyWith(
+        name: 'Nouveau nom',
+        visibilityEditable: true,
+      );
+      final int readsBefore = teams.teamReads;
+      router.push('/equipes/n-peloton/admin/parametres');
+      await settle(tester);
+
+      expect(teams.teamReads, readsBefore + 1);
+      expect(
+        tester
+            .widget<TextField>(find.byKey(keys.teamEditor.nameField))
+            .controller
+            ?.text,
+        'Nouveau nom',
+      );
+      expect(find.byKey(keys.teamEditor.visibilityBadge), findsNothing);
+    },
+  );
 }
