@@ -61,6 +61,46 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
+- [ ] `MOB-165` **Créer une équipe dans l'app, et le socle de la gestion d'équipe (M)** — l'app ne
+      sait que rejoindre ou quitter une équipe : créer la sienne renvoie au site, et rien n'y dit
+      « cette personne organise ou administre l'équipe » autrement que par des
+      `team.role == 'ADMIN'` en ligne ou par « Mes équipes » (d'où `MOB-96`). Lot 1 du plan
+      [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md) §4 et §5 :
+      droits lus sur la fiche d'équipe (`mobile/lib/features/teams/domain/team_permissions.dart`),
+      routes `teamsNew` et `teamAdmin` en écrans, hub « Gestion de l'équipe », `notifyTeamChanged`,
+      sélecteur de lieu géocodé commun (`mobile/lib/features/geocoding/`), écran de création
+      (`team_editor_page.dart`) et libellé `USER_TEAM_LIMIT_REACHED` (côté site : `WEB-182`).
+
+- [ ] `MOB-166` **Paramètres et webhook de l'équipe dans l'app (L)** — modifier le profil, le slug,
+      le logo, les modules, le fuseau et la visibilité d'une équipe, la supprimer, régler son
+      webhook : tout ouvre le site (`mobile/lib/features/teams/presentation/team_web_paths.dart`).
+      Lot 2 du plan [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md)
+      §6 : le même `team_editor_page.dart` en mode édition sur `teamSettings`, les deux
+      confirmations (équipe rendue privée, changement de fuseau), `team_webhook_sheet.dart`. La
+      section « Paramètres plateforme » reste au site (décision D1 du plan).
+
+- [ ] `MOB-167` **Membres et invitations de l'équipe dans l'app (M)** — changer un rôle, retirer
+      un membre, inviter par e-mail, renvoyer ou annuler une invitation : les boutons « Inviter »
+      et « Gérer les membres » du tableau de bord ouvrent le site. Lot 3 du plan
+      [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md) §7.1 :
+      `team_admin_members_page.dart` sur `teamAdminMembers`, `team_invitations_repository.dart`,
+      à parité stricte avec les règles du site (décision D8).
+
+- [ ] `MOB-168` **Lieux et signalements de l'équipe dans l'app (M)** — les lieux de l'équipe n'ont
+      aucun point d'entrée dans l'app, et l'entrée « signalements » du tableau de bord comme la
+      notification `CONTENT_REPORTED` ouvrent le site. Lot 4 du plan
+      [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md) §7.2 et
+      §7.3 : `mobile/lib/features/places/` sur `teamAdminPlaces`, la file des signalements dans
+      `mobile/lib/features/moderation/` sur `teamAdminReports`.
+
+- [ ] `MOB-169` **Tags et pages personnalisées de l'équipe dans l'app (M)** — l'app pose des tags
+      et lit les pages d'une équipe sans pouvoir administrer ni le vocabulaire ni les pages. Lot 5
+      du plan [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md)
+      §7.4 et §7.5 : administration des tags sur `teamAdminTags` (décision D20 du plan des tags
+      rouverte), liste et éditeur des pages sur `teamAdminPages`, `teamAdminPageNew` et
+      `teamAdminPageEdit` ; `team_web_paths.dart` disparaît, et `MOB-144`, `MOB-24`, D20 et
+      `MOB-54` sont mis à jour.
+
 - [ ] `MOB-160` **Éditeur riche : test de widget du pont et test Patrol de l'écran plein (S)** —
       l'éditeur riche (l'éditeur Tiptap du site dans une WebView, voir la part livrée) a été essayé
       et validé à la main le 15 novembre 2026, mais rien d'automatique ne le couvre : les tests de
@@ -529,6 +569,14 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 (`WEB-13` à `WEB-22`, livrés, avec ce que l'automatisation ne voit pas) : voir
 `frontend/e2e/README.md`.
 
+
+- [ ] `WEB-182` **Le libellé de `USER_TEAM_LIMIT_REACHED` dit autre chose que ce que fait le
+      serveur (XS)** — « Vous avez atteint la limite d'équipes rejoignables » alors que le code
+      n'est levé qu'à la création, quand la personne administre déjà une équipe
+      (`TeamService.createTeam`) ; être membre ne compte pas. À corriger dans
+      `frontend/src/locales/fr/common.json` et `en/common.json`, sans nombre (l'erreur ne porte
+      aucun détail). Plan [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md)
+      §5.2, décision D4 ; côté app : `MOB-165`.
 
 - [ ] `WEB-181` **Lancer le test e2e qui vérifie que le point exact d'une annonce survit à une
       dépublication puis une publication depuis sa fiche (XS)** — le défaut est corrigé (voir la

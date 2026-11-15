@@ -3,9 +3,8 @@
 Écrit le 15 novembre 2026. **État : conçu, rien de codé.** Ledger prévu : `MOB-165` (socle et
 création), `MOB-166` (paramètres et webhook), `MOB-167` (membres et invitations), `MOB-168` (lieux et
 signalements), `MOB-169` (tags et pages), `WEB-182` (libellé `USER_TEAM_LIMIT_REACHED`). Numéros
-relevés libres le 15 novembre 2026 dans un worktree parti de `origin/develop` (plus hauts : `MOB-164`,
-`WEB-181`) — **à recalculer au moment de créer les entrées**, les entrées de ledger ne sont pas
-encore écrites. Branche prévue : `feat/mobile-gestion-equipe`, un commit par lot.
+réservés le 15 novembre 2026, entrées créées le même jour dans `LEDGER_NEXT.md`. Branche prévue :
+`feat/mobile-gestion-equipe`, un commit par lot.
 
 Chemins relatifs à `mobile/lib/` sauf mention contraire.
 
