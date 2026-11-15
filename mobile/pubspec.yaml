@@ -14,10 +14,10 @@ dependencies:
     sdk: flutter
 
   # State management
-  flutter_riverpod: ^3.4.3
+  flutter_riverpod: ^3.5.0
 
   # Routing
-  go_router: ^18.1.3
+  go_router: ^18.1.4
 
   # HTTP client
   dio: ^5.11.1
@@ -29,7 +29,7 @@ dependencies:
 
 
   # WebAuthn/Passkeys
-  passkeys: ^2.22.3
+  passkeys: ^2.24.1
   passkeys_platform_interface: ^2.11.0
 
   # Secure storage
@@ -49,7 +49,7 @@ dependencies:
   timezone: ^0.11.2
 
   # Image caching with auth headers support
-  cached_network_image: ^4.0.6
+  cached_network_image: ^4.0.7
 
   # Maps
   maplibre: ^0.3.7
@@ -73,7 +73,7 @@ dependencies:
 
   # A ride's attachments in the ride editor (any file the member picks, sent to
   # POST /api/teams/{slug}/assets?assetType=ATTACHMENT, ledger MOB-80)
-  file_picker: ^13.3.2
+  file_picker: ^13.3.3
 
   # Coarse location for the "around me" proximity filter
   geolocator: ^14.1.2
