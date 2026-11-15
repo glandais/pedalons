@@ -253,8 +253,6 @@ const api = {
         return chain.toggleOrderedList().run()
       case 'blockquote':
         return chain.toggleBlockquote().run()
-      case 'table':
-        return chain.insertTable({ rows: 3, cols: 2, withHeaderRow: true }).run()
       case 'undo':
         return chain.undo().run()
       case 'redo':

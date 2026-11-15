@@ -383,6 +383,16 @@ class _RichMarkdownEditorFieldState
             () => _cmd('heading'),
             state: 'heading',
           ),
+          if (widget.onInsertImage == null)
+            const SizedBox.shrink()
+          else if (widget.imageBusy)
+            const SizedBox(
+              width: PdlMetrics.tapTarget,
+              height: PdlMetrics.tapTarget,
+              child: Center(child: CircularProgressIndicator.adaptive()),
+            )
+          else
+            tool(PdlIcons.imageAdd, 'rides.editor.toolbar.image', _image),
           tool(
             PdlIcons.formatBullets,
             'rides.editor.toolbar.bullets',
@@ -407,21 +417,6 @@ class _RichMarkdownEditorFieldState
             _link,
             state: 'link',
           ),
-          tool(
-            PdlIcons.formatTable,
-            'rides.editor.toolbar.table',
-            () => _cmd('table'),
-          ),
-          if (widget.onInsertImage == null)
-            const SizedBox.shrink()
-          else if (widget.imageBusy)
-            const SizedBox(
-              width: PdlMetrics.tapTarget,
-              height: PdlMetrics.tapTarget,
-              child: Center(child: CircularProgressIndicator.adaptive()),
-            )
-          else
-            tool(PdlIcons.imageAdd, 'rides.editor.toolbar.image', _image),
         ],
       ),
     );

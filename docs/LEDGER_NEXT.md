@@ -73,11 +73,26 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       (`mobile/lib/features/rides/presentation/widgets/editor/rich_markdown_editor_field.dart`) ; les
       images passent par l'app avec ses en-têtes ; la barre « ^ v ✓ » de WKWebView est masquée dans
       `AppDelegate.swift`. Derrière `--dart-define=RICH_EDITOR=true`, éditeur de publication seulement.
-      Reste avant de l'allumer : essai au doigt sur iPhone (AXe n'atteint pas le contenu d'une WebView
-      dans une vue native Flutter), saisie Gboard réelle, hauteur de la zone (fixe, 360) et défilement
-      vers le curseur au-dessus du clavier, tests de widget (le pont) et Patrol (le champ n'est plus un
-      `TextField`), puis sorties et annonces. Au passage, le site transforme `- [ ] tâche` en
+      La barre d'outils n'existe que pendant la frappe, posée au-dessus du clavier à la place de la barre
+      d'action de l'écran (en haut du champ, le menu Android de la sélection la recouvrait) ; le champ
+      se réduit alors à la place laissée et garde le curseur visible ; après l'ajout d'une image,
+      `MainActivity.showEditorKeyboard` rouvre le clavier sur Android. Reste avant de l'allumer : essai
+      au doigt sur iPhone (AXe n'atteint pas le contenu d'une WebView dans une vue native Flutter), dont
+      le clavier après une image (rien n'est fait sur iOS), saisie Gboard réelle, tests de widget (le
+      pont) et Patrol (le champ n'est plus un `TextField`), puis sorties et annonces. Tableaux :
+      `MOB-161`. Au passage, le site transforme `- [ ] tâche` en
       `- \[ \] tâche` (pas d'extension de cases à cocher) : à porter côté `WEB` si on le garde.
+
+- [ ] `MOB-161` **Éditeur riche : insérer un tableau et en ajouter ou retirer lignes et colonnes (S)** —
+      l'éditeur riche (`MOB-160`) affiche et édite les cellules d'un tableau écrit sur le site, mais
+      n'offre rien pour en créer un ni pour ajouter ou supprimer une ligne ou une colonne : le bouton
+      « Tableau » de sa barre d'outils a été retiré, il insérait une grille 3 × 2 qu'on ne pouvait plus
+      que remplir. À faire : quand le curseur est dans un tableau, des actions de tableau (ligne avant
+      ou après, colonne avant ou après, supprimer la ligne, la colonne, le tableau) dans la barre posée
+      au-dessus du clavier, par les commandes Tiptap (`addRowAfter`, `deleteRow`, `addColumnAfter`,
+      `deleteColumn`, `deleteTable`…) exposées par `pedalons.cmd`
+      (`frontend/src/embed/mobile-editor/main.ts`) et l'état `isActive('table')` envoyé à l'app ; puis
+      remettre l'insertion. Lieu : `rich_markdown_editor_field.dart`.
 
 - [ ] `MOB-133` **Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)** — depuis `API-163`
       (contrat `13.4.0`), `RouteDto`, `RouteDetailDto`, `RideDto` et `RideGroupDto` disent, pour
