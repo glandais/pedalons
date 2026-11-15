@@ -823,6 +823,15 @@ couvert » ; les tests ne tournent qu'en local (`MOB-37`).
   une page sans écran est `appScreen: false`, pas ajoutée à la main à `webOnlyRouteIds` ni à
   `internalRouteTemplates` (la pousser sur le routeur mènerait à une route inconnue). La
   reconnexion que peut demander le navigateur intégré n'est pas traitée ici : ledger `MOB-58`.
+  *Note du 15 novembre 2026* : les chemins d'administration d'équipe que cette entrée déclarait
+  `appScreen: false` sont tous devenus des **écrans de l'app** (`teamSettings` — `MOB-166` —,
+  `teamAdminMembers` — `MOB-167` —, `teamAdminReports` et `teamAdminPlaces` — `MOB-168` —,
+  `teamAdminTags`, `teamAdminPages` et l'éditeur d'une page — `MOB-169` ; les éditeurs de
+  sortie, de publication, de voyage et les modèles l'étaient déjà). `team_web_paths.dart` et
+  son test ont disparu avec le dernier (`MOB-169`), et `webOnlyRouteIds` ne compte plus que
+  `features` et `support` (la page d'assistance, qu'ouvre le lien de contact d'une équipe
+  pleine). Le mécanisme `appScreen: false` et sa règle (« À ne pas défaire ») restent, pour
+  ces deux pages et les suivantes.
 
 - `MOB-58` **Les pages du site s'ouvrent dans le navigateur de l'appareil** (11 octobre 2026,
   contrat inchangé). `openWebPage` (`mobile/lib/core/utils/link_launcher.dart`) ouvrait les pages

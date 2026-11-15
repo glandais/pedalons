@@ -6,7 +6,6 @@ import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
-import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/utils/api_error_handler.dart';
@@ -14,8 +13,6 @@ import '../../../../keys.dart';
 import '../../providers/team_access_probe.dart';
 import '../../providers/team_permission_providers.dart';
 import '../../providers/team_providers.dart';
-import '../team_web_paths.dart';
-import '../widgets/dashboard/dashboard_section.dart' show openTeamWebPage;
 
 /// « Gestion de l'équipe » : le hub d'où partent les écrans d'administration
 /// (docs/LEDGER_*.md MOB-165) — une liste, pas des onglets : l'app n'a pas de
@@ -27,9 +24,9 @@ import '../widgets/dashboard/dashboard_section.dart' show openTeamWebPage;
 /// arrivé ici par un lien lit un refus — rendu par la page, jamais par le
 /// routeur, qui ne lit pas l'authentification.
 ///
-/// Tant que l'écran d'une ligne n'existe pas dans l'app, elle ouvre le site
-/// ([TeamWebPaths]) et le dit ; chaque lot du plan
-/// `docs/plans/2026-11-15-gestion-equipe-mobile.md` en fait passer dans l'app.
+/// **Chaque ligne ouvre un écran de l'app** : les lots du plan
+/// `docs/plans/2026-11-15-gestion-equipe-mobile.md` les y ont amenés un à un,
+/// et plus aucune n'ouvre le site depuis le dernier (ledger `MOB-169`).
 class TeamAdminPage extends ConsumerWidget {
   const TeamAdminPage({super.key, required this.teamSlug});
 
@@ -160,7 +157,6 @@ class TeamAdminPage extends ConsumerWidget {
         ),
     ];
 
-    final PdlColors c = context.pdl;
     return shell(
       slivers: <Widget>[
         SliverPadding(
@@ -172,26 +168,8 @@ class TeamAdminPage extends ConsumerWidget {
                   key: row.key,
                   icon: row.icon,
                   title: row.label,
-                  subtitle: row.webPath == null
-                      ? null
-                      : 'teams.manage.onSite'.tr(),
-                  // Une page du site se signale : elle quitte l'app.
-                  trailing: row.webPath == null
-                      ? null
-                      : Icon(
-                          PdlIcons.openExternal,
-                          size: 20,
-                          color: c.textDimmed,
-                        ),
                   showDivider: true,
-                  onTap: () {
-                    final String? appPath = row.appPath;
-                    if (appPath != null) {
-                      context.push(appPath);
-                    } else {
-                      openTeamWebPage(context, row.webPath!);
-                    }
-                  },
+                  onTap: () => context.push(row.appPath),
                 ),
             ],
           ),
@@ -201,20 +179,17 @@ class TeamAdminPage extends ConsumerWidget {
   }
 }
 
-/// Une ligne du hub : un écran de l'app ([appPath]) ou, tant qu'il n'existe
-/// pas, une page du site ([webPath]).
+/// Une ligne du hub : un écran de l'app.
 class _AdminRow {
   const _AdminRow({
     required this.key,
     required this.icon,
     required this.label,
-    this.appPath,
-    this.webPath,
-  }) : assert((appPath == null) != (webPath == null));
+    required this.appPath,
+  });
 
   final Key key;
   final IconData icon;
   final String label;
-  final String? appPath;
-  final String? webPath;
+  final String appPath;
 }

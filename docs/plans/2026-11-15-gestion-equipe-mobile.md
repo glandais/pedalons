@@ -1,9 +1,13 @@
 # Créer et gérer une équipe dans l'application mobile
 
-Écrit le 15 novembre 2026. **État : lots 1 à 4 écrits le 15 novembre 2026 (`MOB-165`, `MOB-166`,
-`MOB-167` et `MOB-168` — restent leurs tests Patrol à lancer — et `WEB-184`, livré) ; lot 5
-conçu, pas codé.** Ce que les lots 1 à 4 ont tranché en codant est noté « Fait » dans les
-sections 4, 5, 6, 7.1, 7.2 et 7.3. Ledger : `MOB-165` (socle et
+Écrit le 15 novembre 2026. **État : les cinq lots sont écrits (15 novembre 2026 : `MOB-165`,
+`MOB-166`, `MOB-167`, `MOB-168`, `MOB-169`, et `WEB-184`, livré). Restent à faire : lancer les
+sept tests Patrol écrits avec eux et jamais lancés (`team_create_test`, `team_settings_test`,
+`team_admin_members_test`, `team_places_test`, `team_reports_test`, `team_tags_admin_test`,
+`team_pages_admin_test` — voir `mobile/patrol_test/README.md`),
+pousser les formulaires des stores (App Store Connect, Play Console) avec ceux de `MOB-159`,
+et mettre à jour la ligne `MOB-24` du ledger (§1).** Ce que les lots ont tranché en codant
+est noté « Fait » dans les sections 4, 5, 6 et 7. Ledger : `MOB-165` (socle et
 création), `MOB-166` (paramètres et webhook), `MOB-167` (membres et invitations), `MOB-168` (lieux et
 signalements), `MOB-169` (tags et pages), `WEB-184` (libellé `USER_TEAM_LIMIT_REACHED`). Numéros
 réservés le 15 novembre 2026, entrées créées le même jour dans `LEDGER_NEXT.md`. Branche prévue :
@@ -166,7 +170,17 @@ restent `web` seulement jusqu'au lot 5.
 
 `webOnlyRouteIds` se réduit à `features`. `team_web_paths.dart` perd une entrée par lot et disparaît
 au lot 5 (**fait (lot 4)** : il ne reste que `tags` et `pages`, et `webOnlyRouteIds` compte encore
-`teamAdminTags`, `teamAdminPages`, `support` et `features`) ; `test/features/teams/team_web_paths_test.dart` suit. La notification `CONTENT_REPORTED`
+`teamAdminTags`, `teamAdminPages`, `support` et `features`) ; `test/features/teams/team_web_paths_test.dart` suit.
+**Fait (lot 5)** : `team_web_paths.dart` et son test ont disparu, avec ce qui n'existait que
+pour eux — le sous-titre « S'ouvre sur le site » et l'icône de sortie des lignes du hub, la clé
+`teams.manage.onSite`. `webOnlyRouteIds` finit à `features` **et `support`** (lot 3), ce que
+vérifie `test/features/teams/team_admin_routes_test.dart`, qui garde du test disparu ce qui est
+encore vrai. `openTeamWebPage` reste : le lien de contact d'une équipe pleine l'emploie. Les
+tests qui prenaient une page d'administration pour exemple de « page du site sans écran »
+(`link_launcher_test`, `sign_in_resume_test`) prennent le planificateur de parcours
+(`…/parcours/generer`, reste de `MOB-24`) : `support` ne convient pas, son chemin n'étant pas
+sous un préfixe que les liens d'app revendiquent (`isSitePageLocation` ne le connaît pas).
+L'éditeur d'une page est une sous-route **de la liste des pages**, pas du hub. La notification `CONTENT_REPORTED`
 (`notification_display.dart`, `notifications_page.dart`) ouvre l'écran de l'app à partir du lot 4.
 
 La page d'atterrissage d'invitation par jeton (route `invitation`) reste au site.
@@ -823,6 +837,14 @@ la pile e2e.
 Chaque lot est livrable seul : le hub ouvre le site pour ce qui n'est pas encore fait. À la fin du
 lot 5 : mise à jour de `MOB-144`, `MOB-24`, D20 et `MOB-54` (§1), et de `mobile/CLAUDE.md` si la
 liste des écrans y figure.
+
+**Fait (lot 5)** : D20 est annotée dans `plans/archive/2026-10-01-tags.md`, `MOB-54` dans
+`LEDGER_DONE.md` (ses chemins `appScreen: false` sont tous des écrans), `docs/APP_LINKS.md` et
+`mobile/CLAUDE.md` sont à jour ; `MOB-144` reste comme le lot 1 l'a laissée. **`MOB-24` n'est
+pas mise à jour** : une autre branche édite sa ligne, à reprendre après la fusion — sa phrase
+« Le reste ouvre toujours le site depuis le tableau de bord (`team_web_paths.dart`) ; à rouvrir
+type par type, sur le modèle de `MOB-80` » est fausse depuis ce lot, et son titre compte encore
+l'« administration d'équipe » parmi ce qui est dehors.
 
 ## 11. Ce qui reste dehors
 

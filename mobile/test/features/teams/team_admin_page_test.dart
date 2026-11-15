@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/core/material.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
+import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/link_launcher.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
@@ -362,13 +364,6 @@ void main() {
     expect(launched, isEmpty);
   });
 
-  testWidgets('un rôle Organisateur ne quitte plus l\'app : aucune de ses '
-      'lignes n\'ouvre le site', (WidgetTester tester) async {
-    await open(tester, role: 'ORGANIZER');
-
-    expect(find.text('S\'ouvre sur le site'), findsNothing);
-  });
-
   testWidgets('« Pages » ouvre l\'écran de l\'app (MOB-169)', (
     WidgetTester tester,
   ) async {
@@ -386,13 +381,23 @@ void main() {
     expect(launched, isEmpty);
   });
 
-  testWidgets('plus aucune ligne ne quitte l\'app, pour qui administre '
-      'comme pour qui organise (MOB-169)', (WidgetTester tester) async {
-    await open(tester, role: 'ADMIN');
+  for (final String role in <String>['ORGANIZER', 'ADMIN']) {
+    testWidgets('rôle $role : aucune ligne ne se signale comme quittant '
+        'l\'app — toutes y ont leur écran (MOB-169)', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, role: role);
 
-    expect(shownRows(tester), hasLength(7));
-    expect(find.text('S\'ouvre sur le site'), findsNothing);
-  });
+      expect(find.byIcon(PdlIcons.openExternal), findsNothing);
+      for (final Key row in shownRows(tester)) {
+        expect(
+          tester.widget<PdlSettingRow>(find.byKey(row)).subtitle,
+          isNull,
+          reason: '$row',
+        );
+      }
+    });
+  }
 
   testWidgets('la fiche en échec : une erreur, et « Réessayer » la relit', (
     WidgetTester tester,
