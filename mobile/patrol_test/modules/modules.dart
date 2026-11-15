@@ -24,6 +24,7 @@ import 'routes.dart';
 import 'share_sheet.dart';
 import 'team_admin.dart';
 import 'team_editor.dart';
+import 'team_members_admin.dart';
 import 'teams.dart';
 import 'trip.dart';
 
@@ -56,6 +57,7 @@ final class Modules {
   late final shareSheet = ShareSheet(_$);
   late final teamAdmin = TeamAdmin(_$);
   late final teamEditor = TeamEditor(_$);
+  late final teamMembersAdmin = TeamMembersAdmin(_$);
   late final teams = Teams(_$);
   late final trip = Trip(_$);
 }

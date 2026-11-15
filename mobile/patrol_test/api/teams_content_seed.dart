@@ -44,6 +44,42 @@ extension TeamsContentSeed on BackendClient {
     'role': role,
   });
 
+  /// The team's pending invitations, as [admin] — a team administrator — reads them
+  /// (`TeamInvitationDto`).
+  Future<List<Json>> pendingInvitations(
+    TestUser admin,
+    String teamSlug,
+  ) async =>
+      ((await get(
+                admin,
+                '/api/teams/$teamSlug/invitations',
+                query: {'status': 'PENDING'},
+              ))['invitations']
+              as List)
+          .cast<Json>();
+
+  /// The team's members as [admin] reads them (`MemberDto`: `user.id`, `role`), first page.
+  Future<List<Json>> teamMembers(TestUser admin, String teamSlug) async =>
+      ((await get(
+                admin,
+                '/api/teams/$teamSlug/members',
+                query: {'size': 100},
+              ))['members']
+              as List)
+          .cast<Json>();
+
+  /// The role of [member] in the team as [admin] reads it, or null when they are not a member.
+  Future<String?> roleOf(
+    TestUser admin,
+    String teamSlug,
+    TestUser member,
+  ) async {
+    for (final Json m in await teamMembers(admin, teamSlug)) {
+      if ((m['user'] as Json)['id'] == member.id) return m['role'] as String?;
+    }
+    return null;
+  }
+
   /// The invitations waiting for [who], newest first (`MyInvitationDto`).
   Future<List<Json>> myInvitations(TestUser who) async =>
       ((await get(who, '/api/users/me/invitations'))['invitations'] as List)
