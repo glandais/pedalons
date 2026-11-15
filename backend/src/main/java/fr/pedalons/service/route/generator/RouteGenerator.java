@@ -19,6 +19,12 @@ import org.jspecify.annotations.Nullable;
  * immutable. The seed fully determines the output.
  */
 public final class RouteGenerator {
+  /**
+   * A loop needs at least this share of D in road it can ride out and back: its core alone, which
+   * rides no edge twice, is half of D ({@link TailPlanner}).
+   */
+  private static final double ROUND_TRIP_MIN_SHARE = 0.5;
+
   private final GeneratorParameters parameters;
 
   public RouteGenerator(GeneratorParameters parameters) {
@@ -95,10 +101,17 @@ public final class RouteGenerator {
         return failure(GeneratorFailure.DISTANCE_TOO_SHORT, null);
       }
     }
-    double[] near = roadNear(ctx);
+    EdgeDijkstra.Tree reach = reach(ctx, false);
+    double[] near = roadNear(ctx, reach);
     double roadNear = near[0];
     if (roadNear < p.networkTooSmallFactor() * d) {
       return failure(GeneratorFailure.NETWORK_TOO_SMALL, null);
+    }
+    // a loop comes back: the road it can ride is the one reached from the start from which the
+    // start is reached too, one-ways and the ride type included. The components of the graph know
+    // neither, so a start in a pocket left by a one-way would search for seconds to find nothing
+    if (ctx.loop && roundTripM(ctx, reach) < ROUND_TRIP_MIN_SHARE * d) {
+      return failure(GeneratorFailure.NO_ROUTE, "NO_WAY_BACK");
     }
     // too few tracks of the requested type nearby: the familiarity of all kinds replaces it
     if (primaryTracks(graph, request.type()) < p.familiarityMinTracks()
@@ -163,6 +176,60 @@ public final class RouteGenerator {
     };
   }
 
+  /**
+   * The states within D of the start: reached from it, or, backward, from which it is reached.
+   * Metres as weights, the bans of the ride type, one-ways and turns as the search rides them.
+   */
+  private static EdgeDijkstra.Tree reach(QueryContext ctx, boolean backward) {
+    QueryGraph g = ctx.g;
+    IntList sources;
+    if (backward) {
+      sources = new IntList();
+      int n = g.outCount(ctx.start);
+      for (int i = 0; i < n; i++) {
+        int s = g.outState(ctx.start, i) ^ 1;
+        if (g.allowed(s) && !ctx.banned.get(s >>> 1)) {
+          sources.add(s);
+        }
+      }
+    } else {
+      sources = ctx.statesLeaving(ctx.start, ctx.banned);
+    }
+    EdgeDijkstra.Request f =
+        ctx.forward(sources, null, ctx.lengths, ctx.banned, null, ctx.distanceM, -1, 0);
+    EdgeDijkstra.Request r =
+        new EdgeDijkstra.Request(
+            backward,
+            f.sourceStates(),
+            f.sourceCosts(),
+            f.sourceMetres(),
+            null,
+            ctx.lengths,
+            ctx.banned,
+            null,
+            ctx.distanceM,
+            -1,
+            0);
+    return java.util.Objects.requireNonNull(ctx.dijkstra.search(r).tree());
+  }
+
+  /**
+   * Length of the road a loop can ride: the edges with a direction that is both reached from the
+   * start and leads back to it. An upper bound of what any loop uses, tails included.
+   */
+  private static double roundTripM(QueryContext ctx, EdgeDijkstra.Tree out) {
+    QueryGraph g = ctx.g;
+    EdgeDijkstra.Tree back = reach(ctx, true);
+    double total = 0;
+    for (int e = 0; e < g.edgeCount(); e++) {
+      if ((out.reached(2 * e) && back.reached(2 * e))
+          || (out.reached(2 * e + 1) && back.reached(2 * e + 1))) {
+        total += g.length(e);
+      }
+    }
+    return total;
+  }
+
   private static GeneratorResult failure(GeneratorFailure reason, @Nullable String detail) {
     return new GeneratorResult.Failure(reason, detail, GeneratorDiagnostics.empty());
   }
@@ -171,20 +238,8 @@ public final class RouteGenerator {
    * Length of the road, bridges and tails included, that the search can reach from the start and
    * whose middle lies within D/2 of the start or the end (design §5.2 step 6).
    */
-  private static double[] roadNear(QueryContext ctx) {
+  private static double[] roadNear(QueryContext ctx, EdgeDijkstra.Tree tree) {
     QueryGraph g = ctx.g;
-    EdgeDijkstra.Result reach =
-        ctx.dijkstra.search(
-            ctx.forward(
-                ctx.statesLeaving(ctx.start, ctx.banned),
-                null,
-                ctx.lengths,
-                ctx.banned,
-                null,
-                ctx.distanceM,
-                -1,
-                0));
-    EdgeDijkstra.Tree tree = reach.tree();
     double radius = ctx.distanceM / 2;
     double total = 0;
     double primary = 0;

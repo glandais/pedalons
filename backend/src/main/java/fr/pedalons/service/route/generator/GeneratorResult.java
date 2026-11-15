@@ -21,7 +21,7 @@ public sealed interface GeneratorResult {
       implements GeneratorResult {}
 
   /**
-   * @param detail machine-readable refinement such as {@code END_UNREACHABLE} or {@code
+   * @param detail machine-readable refinement such as {@code END_UNREACHABLE}, {@code NO_WAY_BACK} or {@code
    *     TAIL_TOO_LONG}, or null
    */
   record Failure(GeneratorFailure reason, @Nullable String detail, GeneratorDiagnostics diagnostics)

@@ -406,7 +406,7 @@ New `ErrorCode` values, each with a javadoc in the style of the existing ones:
 | `GENERATOR_END_TOO_FAR` | 400 | `BusinessException` | `END_TOO_FAR` |
 | `GENERATOR_DISTANCE_TOO_SHORT` | 400 | `BusinessException` | `DISTANCE_TOO_SHORT` |
 | `GENERATOR_NETWORK_TOO_SMALL` | 400 | `BusinessException` + `RouteGeneratorNetworkDetails` | `NETWORK_TOO_SMALL`, and an empty graph (§3.4 step 6) |
-| `GENERATOR_NO_ROUTE` | 400 | `BusinessException` | `NO_ROUTE`, whatever the `detail` (`END_UNREACHABLE`, `TAIL_TOO_LONG`, `NO_APPROACH`, null), which is logged and not exposed |
+| `GENERATOR_NO_ROUTE` | 400 | `BusinessException` | `NO_ROUTE`, whatever the `detail` (`END_UNREACHABLE`, `TAIL_TOO_LONG`, `NO_APPROACH`, `NO_WAY_BACK`, null), which is logged and not exposed |
 | `ROUTE_GENERATOR_RATE_LIMITED` | 429 + `Retry-After` | `TooManyRequestsException` | §3.5 |
 | `ROUTE_GENERATOR_BUSY` | 503 | `ServiceUnavailableException` | no permit in time, build permit in time, or stopped (§3.5–3.6) |
 | `ROUTE_PLANNER_DISABLED` | 400 | existing | `PlannerAccess.check`, kill switch |

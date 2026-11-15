@@ -950,12 +950,19 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       codées le même jour (§13.9) : un sens roulé seulement à contresens n'est ouvert que s'il a été
       roulé d'un bout à l'autre de l'arête (`NetworkGraphBuilder.aggregate`, 54 arêtes et 10,6 km
       refermés chez la plus grande équipe), et le départ s'accroche d'abord à une route admise qui
-      mène quelque part (`EdgeWeights.leadingOn`, `Snapper.snap` à trois rangs). Restent : les
+      mène quelque part (`EdgeWeights.leadingOn`, `Snapper.snap` à trois rangs). Fait le 15 novembre 2026
+      (§13.11, tests `aStartThatAOneWayLeavesForGoodIsRefusedAtOnce`,
+      `aOnewayOnTheSideOfTheStartIsAvoidedByTheDirectedFlow`,
+      `theCheaperOfTheTwoOrdersOfTheDirectedFlowIsKept`) : une boucle dont le départ n'a pas de
+      retour répond tout de suite `NO_ROUTE` / `NO_WAY_BACK` (10 à 50 ms au lieu de 0,25 à 2,5 s),
+      et le flot de `EdgeDisjointPaths` connaît le sens de chaque côté, dans les deux ordres, le
+      moins cher gardé (207 cœurs acceptés au lieu de 15 sur 24 requêtes de A, 12 réussies au lieu
+      de 11) ; ne pas revenir au flot aveugle sur un graphe à sens uniques. Restent : les
       propositions 3 et 6 à 9 du §13.6 (budget de 10 s, reconstructions, pondérateur, familiarité,
-      banc) ; les deux causes des départs sans proposition, diagnostiquées le 15 novembre (§13.10) et
-      non corrigées : connectivité calculée sans les sens ni le type de sortie (queue forcée jamais
-      planifiée, `NO_ROUTE` sans détail), et flot de `EdgeDisjointPaths` aveugle aux sens, dont
-      la solution est refusée 97 fois sur 100 ; l'`EXPLAIN` de l'empreinte. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
+      banc) ; les composantes par type de sortie sur les arêtes admises (§13.10, correction b :
+      queue forcée jamais planifiée pour un départ sur une antenne du type demandé) ; les départs 4
+      et 5 de l'équipe A, sans proposition à 30 et 50 km pour une raison non expliquée, et les
+      points de demi-tour sans flot (210 appels sur 614) (§13.11) ; l'`EXPLAIN` de l'empreinte. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
       de `PlannerAccess`), les parcours masqués par la modération alimentent le réseau, une copie
       garde la case d'exclusion.
 

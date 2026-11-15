@@ -2200,3 +2200,57 @@ de 15, les sens uniques restants sont inévitables près des ancres. Le levier n
 réglage : il faut un flot qui connaisse le sens de chaque côté (le côté départ sur le graphe
 retourné), ou réparer la solution du flot au lieu de la jeter. C'est probablement la première
 cause du taux de succès de A (11 sur 24 ici, environ 42 % au banc), avant le budget de temps.
+
+### 13.11 Suites du 15 novembre : retour impossible et flot orienté
+
+Deux corrections codées après le §13.10, mesurées sur le même export (équipe A, 24 boucles route).
+
+**Retour impossible, réponse immédiate.** `RouteGenerator` calcule, pour une boucle, la route que
+la recherche peut rouler à l'aller *et* au retour : les arêtes dont un sens est à la fois atteint
+depuis le départ et mène au départ (deux recherches bornées à D, mêmes bans, mêmes sens, mêmes
+virages que la recherche). En dessous de la moitié de D — le cœur d'une boucle, qui ne roule aucune
+arête deux fois, fait au moins cela (`TailPlanner.pair`) — la réponse est `NO_ROUTE`, détail
+`NO_WAY_BACK`. Les départs 2 et 3 répondent en 10 à 50 ms au lieu de 0,25 à 2,5 s. Le détail n'est
+pas exposé (journal seulement, comme les autres), le contrat ne change pas. Un départ sur une trace
+isolée sans cycle répond maintenant `NO_WAY_BACK` là où il répondait `TAIL_TOO_LONG` : même code
+d'erreur, détail plus juste.
+
+**Flot orienté.** Avec des sens uniques, le problème est une paire de chemins orientés
+arête-disjoints A_S → T et T → A_E, qu'aucun flot ne résout exactement (NP-difficile : c'est le
+problème des deux chemins disjoints). `EdgeDisjointPaths` cherche donc chaque passe pour un côté :
+la première pour le côté arrivée (états roulés dans leur sens), la seconde pour le côté départ
+(états roulés à contresens du flot), puis l'ordre inverse, et garde le cœur légal le moins cher des
+deux. Un graphe sans aucun sens restreint garde le flot aveugle d'origine, donc le même calcul
+qu'avant. La seconde passe peut encore échanger un tronçon avec la première, d'où le contrôle a
+posteriori conservé.
+
+| Sur 24 requêtes (A, route) | Flot aveugle | Flot orienté |
+|---|---|---|
+| Cœurs acceptés sortis du flot | 15 | 207 |
+| Cœurs sortis du repli séquentiel | 160 | 11 |
+| Appels sans aucun flot | 220 | 210 |
+| Flot trouvé mais refusé dans les deux ordres | 459 | 197 |
+| Requêtes réussies | 11 | 12 (départ 1 à 80 km) |
+
+Garder le meilleur des deux ordres compte : pour un point de demi-tour à 500 m du départ 4, le
+premier ordre seul rendait une boucle de 113,7 km, le second 5,1 km. Essai écarté : interdire
+l'arête fautive et relancer le flot (2 ou 4 fois) ne récupère que 4 à 5 des 197 refus pour 10 à
+30 % de temps en plus. Les refus restants sont des sens uniques placés du mauvais côté par
+l'échange de tronçons et des virages mesurés sur fenêtre parcourue, que le flot ne modélise pas.
+
+**Ce que ces mesures corrigent dans le §13.10.** Le flot aveugle n'était pas la première cause du
+taux de succès de A : il est accepté quatorze fois plus souvent et une seule requête de plus
+réussit. Les échecs restants des départs 4, 5 et 7 ne viennent pas du repli séquentiel :
+
+- départ 7 : la plus courte boucle sans arête répétée fait 73 km par une sortie et 99 km par les
+  deux autres (la boucle de 35,7 km qu'on y trouve roule deux arêtes deux fois). Les demandes de 30
+  et 50 km n'ont pas de solution hors queue ; celle de 80 km en a une ;
+- départ 4 : de courtes boucles existent (5,1 et 9,2 km), mais les chemins disjoints vers les
+  points de demi-tour à 10 km passent tous par les mêmes boucles de 59,5 ou 62,9 km. Non expliqué :
+  étranglement réel du réseau admis autour du départ, ou défaut du choix des points de demi-tour ;
+- départ 5 : une boucle orientée de 0,8 km existe (sortie par un sens unique), ce n'est donc pas
+  une simple antenne ; à 30 et 50 km aucun point de demi-tour n'a de flot (34 et 64 échecs), à
+  80 km trois propositions. Non expliqué non plus.
+
+Restent ouverts : ces deux départs, les composantes par type (§13.10, correction b) et le temps
+perdu sur les points de demi-tour sans flot (210 appels sur 614).

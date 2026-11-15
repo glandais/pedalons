@@ -153,7 +153,7 @@ class EdgeDisjointPathsTest {
   }
 
   @Test
-  void aOnewayOnTheSideOfTheStartIsCaughtAndTheFallbackFindsALegalPair() {
+  void aOnewayOnTheSideOfTheStartIsAvoidedByTheDirectedFlow() {
     TestNetwork n =
         new TestNetwork(45, 5)
             .node("T", 0, 0)
@@ -173,8 +173,9 @@ class EdgeDisjointPathsTest {
     EdgeDisjointPaths.Solution sol =
         solver.solve(t, p, q, new int[0], new int[0], lengthWeights(qg), null);
     assertNotNull(sol);
-    assertTrue(sol.fallback());
-    assertEquals(1, solver.postCheckFailures);
+    // a flow blind to directions rode T-X-P, the shortest way, and was refused afterwards
+    assertFalse(sol.fallback());
+    assertEquals(0, solver.postCheckFailures);
     int[] core = sol.core();
     assertEquals(2, core.length);
     assertContinuous(qg, core);
@@ -209,5 +210,32 @@ class EdgeDisjointPathsTest {
       assertEquals(a, qg.tail(sol.core()[0]), turning);
       assertEquals(a, qg.head(sol.core()[2]), turning);
     }
+  }
+
+  @Test
+  void theCheaperOfTheTwoOrdersOfTheDirectedFlowIsKept() {
+    // loop at A through T, 500 m away. Back from T: a one-way of 4 km, or a two-way of 20 km.
+    // Searching the way back first takes the road A-T itself, which leaves the way out the 20 km;
+    // searching the way out first takes A-T and comes back by the one-way: 4.5 km
+    TestNetwork n = new TestNetwork(45, 5).node("A", 0, 0).node("T", 500, 0).node("M", 250, 1900);
+    support(n, 1, 2, "A", "T");
+    n.track(10).oneway(Oneway.FORWARD).path("T", "M", "A");
+    n.track(11).oneway(Oneway.FORWARD).path("T", "M", "A");
+    n.track(20).via("T", "A", 250, -9000);
+    NetworkGraph g = n.build();
+    QueryGraph qg = QueryGraph.of(g);
+    int a = n.nodeId(g, "A");
+    EdgeDisjointPaths solver = new EdgeDisjointPaths(qg, MAX_TURN);
+    EdgeDisjointPaths.Solution sol =
+        solver.solve(n.nodeId(g, "T"), a, a, new int[0], new int[0], lengthWeights(qg), null);
+    assertNotNull(sol);
+    assertFalse(sol.fallback());
+    assertContinuous(qg, sol.core());
+    for (int s : sol.core()) {
+      assertTrue(qg.allowed(s));
+    }
+    assertEquals(a, qg.tail(sol.core()[0]));
+    assertEquals(a, qg.head(sol.core()[sol.core().length - 1]));
+    assertTrue(length(qg, sol.core()) < 6000, "core of " + length(qg, sol.core()) + " m");
   }
 }

@@ -17,10 +17,18 @@ import org.jspecify.annotations.Nullable;
  * with <em>truncated</em> potentials π = min(dist₁, D₁) keep the reduced costs of the residual
  * graph non-negative even though pass 1 stops when τ is settled.
  *
- * <p>What the flow does not model is checked afterwards, and a failure falls back to a sequential
- * "shortest path, then shortest path with the first banned": one-ways on either side (the flow rides a
- * state if either of its directions is allowed, the route rides the S side backwards), the same edge used in both directions by
- * the two paths (capacity is per state, not per undirected edge), and the turn at T.
+ * <p>One-ways make the problem a pair of edge-disjoint directed paths A_S → T and T → A_E, which
+ * no flow solves exactly (it is NP-hard). On a graph that has one-ways, each pass is therefore
+ * searched for one side: the first for the E side (states ridden forwards) and the second for the S
+ * side (states ridden backwards), then the other way round, and the cheaper legal core is kept. A
+ * blind flow, which rides a state if either direction is allowed, was refused 97 times out of 100
+ * on real networks (design §13.10). The second pass may still hand a stretch of the first path to
+ * the other side, so the directions are checked afterwards all the same.
+ *
+ * <p>What the flow does not model is checked afterwards too, and a failure falls back to a
+ * sequential "shortest path, then shortest path with the first banned": the same edge used in both
+ * directions by the two paths (capacity is per state, not per undirected edge), the turn at T and
+ * the turns measured on walked windows.
  *
  * <p>Not thread-safe; arrays are reused across calls.
  */
@@ -79,6 +87,20 @@ final class EdgeDisjointPaths {
   private double[] w = new double[0];
   private @Nullable BitSet banned;
   private boolean loop;
+  private int side;
+  private final boolean oneWays;
+
+  /** Which directions of a state a pass of the flow may ride. */
+  private static final int SIDE_ANY = 0;
+
+  private static final int SIDE_E = 1;
+  private static final int SIDE_S = 2;
+
+  /** The passes of a graph without one-way: one flow, blind to a direction that never matters. */
+  private static final int[][] BLIND = {{SIDE_ANY, SIDE_ANY}};
+
+  /** Both orders of a directed flow; the cheaper legal core of the two is kept. */
+  private static final int[][] DIRECTED = {{SIDE_E, SIDE_S}, {SIDE_S, SIDE_E}};
 
   EdgeDisjointPaths(QueryGraph g, double maxTurnDeg) {
     this.g = g;
@@ -90,6 +112,11 @@ final class EdgeDisjointPaths {
     this.sigE = base4 + 2;
     this.tau = base4 + 3;
     this.vertexCount = base4 + 4;
+    boolean restricted = false;
+    for (int s = 0; s < stateCount && !restricted; s += 2) {
+      restricted = g.allowed(s) != g.allowed(s + 1);
+    }
+    this.oneWays = restricted;
   }
 
   /** The arrays are allocated on the first solve: a request that never uses the flow pays nothing. */
@@ -144,26 +171,45 @@ final class EdgeDisjointPaths {
     this.banned = banned;
     this.loop = anchorS == anchorE;
 
-    int[][] paths = flow();
-    if (paths == null) {
+    boolean any = false;
+    int[] best = null;
+    double bestCost = Double.POSITIVE_INFINITY;
+    for (int[] sides : oneWays ? DIRECTED : BLIND) {
+      int[][] paths = flow(sides[0], sides[1]);
+      if (paths == null) {
+        continue;
+      }
+      any = true;
+      int[] core;
+      if (loop) {
+        core = assemble(paths[0], paths[1]);
+        if (core == null) {
+          core = assemble(paths[1], paths[0]);
+        }
+      } else {
+        core = assemble(paths[0], paths[1]); // paths[0] ends at σS, paths[1] at σE
+      }
+      if (core != null && !joinsOk(core, tailS, tailE)) {
+        joinRejected++;
+        core = null;
+      }
+      if (core != null) {
+        double cost = 0;
+        for (int state : core) {
+          cost += w[state];
+        }
+        if (cost < bestCost) {
+          bestCost = cost;
+          best = core;
+        }
+      }
+    }
+    if (best != null) {
+      return new Solution(best, false);
+    }
+    if (!any) {
       infeasible++;
       return null;
-    }
-    int[] core = null;
-    if (loop) {
-      core = assemble(paths[0], paths[1]);
-      if (core == null) {
-        core = assemble(paths[1], paths[0]);
-      }
-    } else {
-      core = assemble(paths[0], paths[1]); // paths[0] ends at σS, paths[1] at σE
-    }
-    if (core != null && !joinsOk(core, tailS, tailE)) {
-      joinRejected++;
-      core = null;
-    }
-    if (core != null) {
-      return new Solution(core, false);
     }
     postCheckFailures++;
     fallbacks++;
@@ -191,12 +237,18 @@ final class EdgeDisjointPaths {
   }
 
   /**
-   * A state the flow may ride. The flow does not know which of the two paths becomes the S side
-   * (ridden backwards by the route) and which the E side, so a state counts if either of its two
-   * directions is allowed; {@link #assemble} then checks the real directions.
+   * A state the current pass may ride. A pass searched for the E side rides a state the way the
+   * route does; one searched for the S side, which the route rides backwards, rides it against its
+   * allowed direction. A blind pass takes either.
    */
   private boolean flowUsable(int s) {
-    return (g.allowed(s) || g.allowed(s ^ 1)) && (banned == null || !banned.get(s >>> 1));
+    boolean ridable =
+        switch (side) {
+          case SIDE_E -> g.allowed(s);
+          case SIDE_S -> g.allowed(s ^ 1);
+          default -> g.allowed(s) || g.allowed(s ^ 1);
+        };
+    return ridable && (banned == null || !banned.get(s >>> 1));
   }
 
   private void addArc(int k, int to, double cost) {
@@ -232,10 +284,12 @@ final class EdgeDisjointPaths {
           }
           addArc(k++, 2 * s2, 0);
         }
-        if (h == anchorS && (sideSOk(s) || (loop && sideEOk(s)))) {
+        boolean asS = side != SIDE_E && sideSOk(s);
+        boolean asE = side != SIDE_S && sideEOk(s);
+        if (h == anchorS && (asS || (loop && asE))) {
           addArc(k++, sigS, 0);
         }
-        if (!loop && h == anchorE && sideEOk(s)) {
+        if (!loop && h == anchorE && asE) {
           addArc(k++, sigE, 0);
         }
       }
@@ -286,10 +340,11 @@ final class EdgeDisjointPaths {
   }
 
   /** Returns the two vertex-level paths ending at σS and σE (or both at σS in a loop). */
-  private int @Nullable [][] flow() {
+  private int @Nullable [][] flow(int side1, int side2) {
     resetPass1();
     resetPass2();
     // pass 1
+    side = side1;
     heap.clear();
     dist1[sigT] = 0;
     touched1.add(sigT);
@@ -331,6 +386,7 @@ final class EdgeDisjointPaths {
     }
 
     // pass 2 on the residual graph, reduced costs
+    side = side2;
     heap.clear();
     dist2[sigT] = 0;
     touched2.add(sigT);

@@ -535,6 +535,31 @@ class RouteGeneratorScenarioTest {
     assertEquals("TAIL_TOO_LONG", f.detail());
   }
 
+  @Test
+  void aStartThatAOneWayLeavesForGoodIsRefusedAtOnce() {
+    // the branch S-A is a one-way towards the square: every road is reached from S, none leads
+    // back to it. The components of the graph, blind to directions, see a plain branch
+    TestNetwork n =
+        base()
+            .node("A", 0, 0)
+            .node("B", 4000, 0)
+            .node("C", 4000, 4000)
+            .node("D", 0, 4000)
+            .node("S", -1500, 0);
+    Ids ids = new Ids();
+    ride(n, ids, 1, "A", "B");
+    ride(n, ids, 2, "B", "C");
+    ride(n, ids, 3, "C", "D");
+    ride(n, ids, 4, "D", "A");
+    n.track(900).oneway(Oneway.FORWARD).path("S", "A");
+    n.track(901).oneway(Oneway.FORWARD).path("S", "A");
+    NetworkGraph g = n.build();
+    GeneratorResult.Failure f = failure(GENERATOR.generate(g, loop(n, -1500, 0, 16000)));
+    assertEquals(GeneratorFailure.NO_ROUTE, f.reason());
+    assertEquals("NO_WAY_BACK", f.detail());
+    assertEquals(0, f.diagnostics().loopCandidates());
+  }
+
   // ---- 6: end different from start ------------------------------------------------------------
 
   @Test
