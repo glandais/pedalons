@@ -255,9 +255,12 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       Tests : `place_form_test`, `team_places_page_test`, `team_reports_page_test`,
       `moderation_queue_repository_test`, `paged_list_notifier_test`, `team_admin_page_test`,
       `team_dashboard_test`, `notifications_page_test`, `team_web_paths_test`,
-      `deep_link_hierarchy_test`, `link_launcher_test`, `sign_in_resume_test`. Reste à écrire
-      et faire tourner Patrol (`team_places_test.dart`, `team_reports_test.dart`) avant de
-      ranger l'entrée, et à pousser les formulaires des stores avec ceux de `MOB-159`.
+      `deep_link_hierarchy_test`, `link_launcher_test`, `sign_in_resume_test`. Tests Patrol
+      écrits, pas encore lancés : `team_places_test.dart` et `team_reports_test.dart` (modules
+      `teamPlaces`, `teamReports`, `teamAdmin.openPlaces()` / `openReports()` ; semences
+      `newPlace`, `places`, `placeNamed`, `place`, `resolvedQueue`, `notificationInTeam` dans
+      `patrol_test/api/teams_content_seed.dart`). Reste à les faire tourner avant de ranger
+      l'entrée, et à pousser les formulaires des stores avec ceux de `MOB-159`.
 
 - [ ] `MOB-169` **Tags et pages personnalisées de l'équipe dans l'app (M)** — l'app pose des tags
       et lit les pages d'une équipe sans pouvoir administrer ni le vocabulaire ni les pages. Lot 5

@@ -1,9 +1,9 @@
 # Créer et gérer une équipe dans l'application mobile
 
-Écrit le 15 novembre 2026. **État : lots 1 à 3 écrits le 15 novembre 2026 (`MOB-165`, `MOB-166`
-et `MOB-167` — restent leurs tests Patrol à lancer — et `WEB-184`, livré) ; lots 4 et 5 conçus,
-pas codés.** Ce que les lots 1 à 3 ont tranché en codant est noté « Fait » dans les sections 4,
-5, 6 et 7.1. Ledger : `MOB-165` (socle et
+Écrit le 15 novembre 2026. **État : lots 1 à 4 écrits le 15 novembre 2026 (`MOB-165`, `MOB-166`,
+`MOB-167` et `MOB-168` — restent leurs tests Patrol à lancer — et `WEB-184`, livré) ; lot 5
+conçu, pas codé.** Ce que les lots 1 à 4 ont tranché en codant est noté « Fait » dans les
+sections 4, 5, 6, 7.1, 7.2 et 7.3. Ledger : `MOB-165` (socle et
 création), `MOB-166` (paramètres et webhook), `MOB-167` (membres et invitations), `MOB-168` (lieux et
 signalements), `MOB-169` (tags et pages), `WEB-184` (libellé `USER_TEAM_LIMIT_REACHED`). Numéros
 réservés le 15 novembre 2026, entrées créées le même jour dans `LEDGER_NEXT.md`. Branche prévue :
@@ -165,7 +165,8 @@ les trois autres (`MOB-54`), et `TeamWebPaths` a gagné `places`, `tags` et `pag
 restent `web` seulement jusqu'au lot 5.
 
 `webOnlyRouteIds` se réduit à `features`. `team_web_paths.dart` perd une entrée par lot et disparaît
-au lot 5 ; `test/features/teams/team_web_paths_test.dart` suit. La notification `CONTENT_REPORTED`
+au lot 5 (**fait (lot 4)** : il ne reste que `tags` et `pages`, et `webOnlyRouteIds` compte encore
+`teamAdminTags`, `teamAdminPages`, `support` et `features`) ; `test/features/teams/team_web_paths_test.dart` suit. La notification `CONTENT_REPORTED`
 (`notification_display.dart`, `notifications_page.dart`) ouvre l'écran de l'app à partir du lot 4.
 
 La page d'atterrissage d'invitation par jeton (route `invitation`) reste au site.

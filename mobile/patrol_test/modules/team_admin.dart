@@ -54,5 +54,16 @@ final class TeamAdmin extends Module {
     await (await scrolledTo(keys.teamAdmin.members)).tap();
   }
 
+  /// « Lieux » — every organizer's — opens the places screen in the app (ledger `MOB-168`).
+  Future<void> openPlaces() async {
+    await (await scrolledTo(keys.teamAdmin.places)).tap();
+  }
+
+  /// « Signalements » — every organizer's — opens the moderation queue in the app (ledger
+  /// `MOB-168`).
+  Future<void> openReports() async {
+    await (await scrolledTo(keys.teamAdmin.reports)).tap();
+  }
+
   bool _all(List<Key> rows) => rows.every(isShown);
 }

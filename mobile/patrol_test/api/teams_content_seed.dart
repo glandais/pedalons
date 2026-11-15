@@ -30,6 +30,68 @@ extension TeamsContentSeed on BackendClient {
     });
   }
 
+  // ── Places (ledger `MOB-168`) ───────────────────────────────────────────
+
+  /// `POST /api/teams/{slug}/places` as [by], an organizer of the team: a start and end point
+  /// the ride and trip editors offer. No position: the address search calls the geocoding
+  /// provider.
+  Future<Json> newPlace(
+    TestUser by,
+    String teamSlug,
+    String name, {
+    String? address,
+    bool startPlace = true,
+    bool endPlace = true,
+  }) => post(by, '/api/teams/$teamSlug/places', {
+    'name': name,
+    'address': ?address,
+    'startPlace': startPlace,
+    'endPlace': endPlace,
+  });
+
+  /// The team's places, as [organizer] reads them (`PlaceDetailDto`) — the first page, fifty.
+  Future<List<Json>> places(TestUser organizer, String teamSlug) async =>
+      ((await get(organizer, '/api/teams/$teamSlug/places'))['places'] as List)
+          .cast<Json>();
+
+  /// The team's place named [name], or null — a place created from the app is read back by its
+  /// name, its id being the server's.
+  Future<Json?> placeNamed(
+    TestUser organizer,
+    String teamSlug,
+    String name,
+  ) async => (await places(
+    organizer,
+    teamSlug,
+  )).where((place) => place['name'] == name).firstOrNull;
+
+  Future<Json> place(TestUser organizer, String teamSlug, String placeId) =>
+      get(organizer, '/api/teams/$teamSlug/places/$placeId');
+
+  // ── Moderation queue (ledger `MOB-168`) ─────────────────────────────────
+
+  /// The team's resolved queue, as [moderator] reads it: the latest decisions
+  /// (`ModerationItemDto`, `status` `REMOVED` or `DISMISSED`).
+  Future<List<Json>> resolvedQueue(TestUser moderator, String teamSlug) async =>
+      ((await get(
+                moderator,
+                '/api/teams/$teamSlug/reports',
+                query: {'status': 'RESOLVED'},
+              ))['items']
+              as List)
+          .cast<Json>();
+
+  /// The notification of [type] about the team [teamSlug] in [who]'s inbox, or null — a
+  /// `CONTENT_REPORTED` notification names the team, not the reported content.
+  Future<Json?> notificationInTeam(
+    TestUser who,
+    String type,
+    String teamSlug,
+  ) async =>
+      (await notifications(who))
+          .where((n) => n['type'] == type && n['teamSlug'] == teamSlug)
+          .firstOrNull;
+
   // ── Invitations ─────────────────────────────────────────────────────────
 
   /// `POST /api/teams/{slug}/invitations` as [inviter], a team administrator. The team must allow
