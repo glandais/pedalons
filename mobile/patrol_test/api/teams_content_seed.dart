@@ -5,6 +5,15 @@ import 'backend_client.dart';
 ///
 /// Mirrors `frontend/e2e/support/` (invitations, pages, comments): same endpoints, same bodies.
 extension TeamsContentSeed on BackendClient {
+  // ── Teams ───────────────────────────────────────────────────────────────
+
+  /// The teams [who] belongs to (`TeamDetailDto`, `role` included) — what a team created from the
+  /// app is read back from, its slug being the server's.
+  Future<List<Json>> myTeams(TestUser who) async =>
+      ((await get(who, '/api/teams', query: {'minRole': 'MEMBER'}))['teams']
+              as List)
+          .cast<Json>();
+
   // ── Invitations ─────────────────────────────────────────────────────────
 
   /// `POST /api/teams/{slug}/invitations` as [inviter], a team administrator. The team must allow
