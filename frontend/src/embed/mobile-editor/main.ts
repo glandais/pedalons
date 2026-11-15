@@ -147,6 +147,11 @@ function sendState() {
   active.heading = editor.isActive('heading', { level: 2 })
   post({ type: 'state', active, focused: editor.isFocused })
 }
+// The app shrinks the WebView while the keyboard is open: the caret must stay in what is left.
+window.addEventListener('resize', () => {
+  if (editor.isFocused) editor.commands.scrollIntoView()
+})
+
 editor.on('transaction', sendState)
 editor.on('focus', sendState)
 editor.on('blur', sendState)

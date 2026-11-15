@@ -45,6 +45,7 @@ class RichMarkdownEditorField extends ConsumerStatefulWidget {
     this.enabled = true,
     this.imageBusy = false,
     this.height = 360,
+    this.onTypingChanged,
   });
 
   final TextEditingController controller;
@@ -55,8 +56,14 @@ class RichMarkdownEditorField extends ConsumerStatefulWidget {
   final bool enabled;
   final bool imageBusy;
 
-  /// La hauteur de la zone d'édition, qui défile en elle-même.
+  /// La hauteur de la zone d'édition, qui défile en elle-même. Pendant la
+  /// frappe, elle se réduit à ce que le clavier laisse visible.
   final double height;
+
+  /// Appelé quand la frappe commence ou s'arrête (l'éditeur a le focus et le
+  /// clavier est ouvert). La barre d'outils est alors posée au-dessus du
+  /// clavier, là où l'écran a sa barre d'action : l'écran la retire.
+  final ValueChanged<bool>? onTypingChanged;
 
   @override
   ConsumerState<RichMarkdownEditorField> createState() =>
@@ -64,7 +71,8 @@ class RichMarkdownEditorField extends ConsumerStatefulWidget {
 }
 
 class _RichMarkdownEditorFieldState
-    extends ConsumerState<RichMarkdownEditorField> {
+    extends ConsumerState<RichMarkdownEditorField>
+    with WidgetsBindingObserver {
   late final WebViewController _web;
   final Dio _images = Dio();
   bool _ready = false;
@@ -75,9 +83,25 @@ class _RichMarkdownEditorFieldState
   String _synced = '';
   Map<String, bool> _active = const <String, bool>{};
 
+  /// La page a le focus (d'après Tiptap).
+  bool _focused = false;
+
+  /// La frappe est en cours : [_focused] et le clavier ouvert. La barre
+  /// d'outils quitte alors le haut du champ pour le dessus du clavier — au
+  /// haut du champ, le menu Android de la sélection (Copier, Traduire…), qui
+  /// se pose au-dessus du texte sélectionné, la recouvrait.
+  bool _typing = false;
+  double _typingInset = 0;
+  final OverlayPortalController _dock = OverlayPortalController();
+  final GlobalKey _editorBox = GlobalKey();
+
+  static const double _dockHeight =
+      PdlMetrics.tapTarget + 2 * PdlSpacing.badgeGap;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _synced = widget.controller.text;
     widget.controller.addListener(_onControllerChanged);
     _web = WebViewController()
@@ -125,9 +149,23 @@ class _RichMarkdownEditorFieldState
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.controller.removeListener(_onControllerChanged);
     _images.close();
     super.dispose();
+  }
+
+  /// Le clavier s'ouvre ou se ferme : voir [_keyboardInset].
+  @override
+  void didChangeMetrics() {
+    if (mounted) setState(() {});
+  }
+
+  /// La hauteur du clavier, lue sur la vue : le [Scaffold] de l'écran la
+  /// retire du [MediaQuery] de son corps, où le champ la lirait toujours nulle.
+  double _keyboardInset() {
+    final FlutterView view = View.of(context);
+    return view.viewInsets.bottom / view.devicePixelRatio;
   }
 
   Future<void> _js(String source) => _web.runJavaScript(source);
@@ -194,7 +232,10 @@ class _RichMarkdownEditorFieldState
         widget.controller.text = markdown;
       case 'state':
         if (!mounted) return;
-        setState(() => _active = (msg['active'] as Map).cast<String, bool>());
+        setState(() {
+          _active = (msg['active'] as Map).cast<String, bool>();
+          _focused = msg['focused'] as bool? ?? false;
+        });
       case 'image':
         await _sendImage(msg['key'] as String, msg['url'] as String);
     }
@@ -243,10 +284,48 @@ class _RichMarkdownEditorFieldState
     await _js('pedalons.insertDirective(${jsonEncode(directive)})');
   }
 
+  /// Suit le passage en frappe et en sort. Appelé pendant build : les effets
+  /// (afficher la barre, prévenir l'écran, défiler) attendent la fin du frame.
+  void _trackTyping(bool typing, double inset) {
+    final bool changed = typing != _typing;
+    final bool moved = typing && inset != _typingInset;
+    _typing = typing;
+    _typingInset = typing ? inset : 0;
+    if (!changed && !moved) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (changed) {
+        typing ? _dock.show() : _dock.hide();
+        widget.onTypingChanged?.call(typing);
+      }
+      // Le champ entier au-dessus du clavier, son haut en haut de l'écran : sa
+      // hauteur est taillée pour que son bas touche la barre d'outils.
+      final BuildContext? box = _editorBox.currentContext;
+      if (typing && box != null) {
+        Scrollable.ensureVisible(box, alignment: 0);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
+    final double inset = _keyboardInset();
+    final bool typing = widget.enabled && _focused && inset > 0;
+    _trackTyping(typing, inset);
+
+    // Pendant la frappe, le champ tient dans ce que le clavier et la barre
+    // d'outils laissent de la page : sinon sa fin, et le curseur qui y est,
+    // passent dessous.
+    double height = widget.height;
+    final ScrollPosition? page = Scrollable.maybeOf(context)?.position;
+    if (typing && page != null && page.hasViewportDimension) {
+      final double room =
+          page.viewportDimension - _dockHeight - PdlSpacing.badgeGap;
+      if (room > 120 && room < height) height = room;
+    }
+
     Widget tool(
       IconData icon,
       String labelKey,
@@ -267,103 +346,133 @@ class _RichMarkdownEditorFieldState
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: <Widget>[
-              tool(
-                PdlIcons.formatBold,
-                'rides.editor.toolbar.bold',
-                () => _cmd('bold'),
-                state: 'bold',
-              ),
-              tool(
-                PdlIcons.formatItalic,
-                'rides.editor.toolbar.italic',
-                () => _cmd('italic'),
-                state: 'italic',
-              ),
-              tool(
-                PdlIcons.formatHeading,
-                'rides.editor.toolbar.heading',
-                () => _cmd('heading'),
-                state: 'heading',
-              ),
-              tool(
-                PdlIcons.formatBullets,
-                'rides.editor.toolbar.bullets',
-                () => _cmd('bulletList'),
-                state: 'bulletList',
-              ),
-              tool(
-                PdlIcons.formatNumbers,
-                'rides.editor.toolbar.numbers',
-                () => _cmd('orderedList'),
-                state: 'orderedList',
-              ),
-              tool(
-                PdlIcons.formatQuote,
-                'rides.editor.toolbar.quote',
-                () => _cmd('blockquote'),
-                state: 'blockquote',
-              ),
-              tool(
-                PdlIcons.link,
-                'rides.editor.toolbar.link',
-                _link,
-                state: 'link',
-              ),
-              tool(
-                PdlIcons.formatTable,
-                'rides.editor.toolbar.table',
-                () => _cmd('table'),
-              ),
-              if (widget.onInsertImage == null)
-                const SizedBox.shrink()
-              else if (widget.imageBusy)
-                const SizedBox(
-                  width: PdlMetrics.tapTarget,
-                  height: PdlMetrics.tapTarget,
-                  child: Center(child: CircularProgressIndicator.adaptive()),
-                )
-              else
-                tool(PdlIcons.imageAdd, 'rides.editor.toolbar.image', _image),
-            ],
+    final Widget toolbar = SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: <Widget>[
+          tool(
+            PdlIcons.formatBold,
+            'rides.editor.toolbar.bold',
+            () => _cmd('bold'),
+            state: 'bold',
+          ),
+          tool(
+            PdlIcons.formatItalic,
+            'rides.editor.toolbar.italic',
+            () => _cmd('italic'),
+            state: 'italic',
+          ),
+          tool(
+            PdlIcons.formatHeading,
+            'rides.editor.toolbar.heading',
+            () => _cmd('heading'),
+            state: 'heading',
+          ),
+          tool(
+            PdlIcons.formatBullets,
+            'rides.editor.toolbar.bullets',
+            () => _cmd('bulletList'),
+            state: 'bulletList',
+          ),
+          tool(
+            PdlIcons.formatNumbers,
+            'rides.editor.toolbar.numbers',
+            () => _cmd('orderedList'),
+            state: 'orderedList',
+          ),
+          tool(
+            PdlIcons.formatQuote,
+            'rides.editor.toolbar.quote',
+            () => _cmd('blockquote'),
+            state: 'blockquote',
+          ),
+          tool(
+            PdlIcons.link,
+            'rides.editor.toolbar.link',
+            _link,
+            state: 'link',
+          ),
+          tool(
+            PdlIcons.formatTable,
+            'rides.editor.toolbar.table',
+            () => _cmd('table'),
+          ),
+          if (widget.onInsertImage == null)
+            const SizedBox.shrink()
+          else if (widget.imageBusy)
+            const SizedBox(
+              width: PdlMetrics.tapTarget,
+              height: PdlMetrics.tapTarget,
+              child: Center(child: CircularProgressIndicator.adaptive()),
+            )
+          else
+            tool(PdlIcons.imageAdd, 'rides.editor.toolbar.image', _image),
+        ],
+      ),
+    );
+
+    return OverlayPortal(
+      controller: _dock,
+      overlayChildBuilder: (BuildContext overlay) => Positioned(
+        left: 0,
+        right: 0,
+        bottom: MediaQuery.viewInsetsOf(overlay).bottom,
+        child: Material(
+          color: c.surface,
+          child: Container(
+            height: _dockHeight,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: c.border)),
+            ),
+            child: toolbar,
           ),
         ),
-        const SizedBox(height: PdlSpacing.badgeGap),
-        Container(
-          height: widget.height,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            borderRadius: PdlRadii.mdAll,
-            border: Border.all(
-              color: widget.errorText == null ? c.border : c.danger,
-            ),
-          ),
-          child: WebViewWidget(
-            controller: _web,
-            // Glisser verticalement dans le texte le fait défiler, pas la page.
-            gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-              Factory<VerticalDragGestureRecognizer>(
-                VerticalDragGestureRecognizer.new,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (!typing) ...<Widget>[
+            toolbar,
+            const SizedBox(height: PdlSpacing.badgeGap),
+          ],
+          Container(
+            key: _editorBox,
+            height: height,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: PdlRadii.mdAll,
+              border: Border.all(
+                color: widget.errorText == null ? c.border : c.danger,
               ),
-            },
-          ),
-        ),
-        if (widget.errorText != null)
-          Padding(
-            padding: const EdgeInsets.only(top: PdlSpacing.badgeGap),
-            child: Text(
-              widget.errorText!,
-              style: t.sub.copyWith(color: c.danger),
+            ),
+            child: WebViewWidget(
+              controller: _web,
+              // Glisser verticalement dans le texte le fait défiler, pas la page.
+              // Avec le seuil de l'appareil, celui du défileur de la page : avec
+              // celui par défaut, plus long, la page gagnait toujours le geste et
+              // la WebView ne recevait aucun mouvement.
+              gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+                Factory<VerticalDragGestureRecognizer>(
+                  () => VerticalDragGestureRecognizer()
+                    ..gestureSettings = MediaQuery.maybeGestureSettingsOf(
+                      context,
+                    ),
+                ),
+              },
             ),
           ),
-      ],
+          if (widget.errorText != null)
+            Padding(
+              padding: const EdgeInsets.only(top: PdlSpacing.badgeGap),
+              child: Text(
+                widget.errorText!,
+                style: t.sub.copyWith(color: c.danger),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
