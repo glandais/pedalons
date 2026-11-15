@@ -325,6 +325,21 @@ describe('restorePlannerState', () => {
     )
   })
 
+  it('keeps a source of the route generator marked as such, and only that one (WEB-179)', () => {
+    const route = createRoute(TRACK, 80)
+    const generated = { ...sourceOf(TRACK, 80), generated: true as const }
+    const state = serializePlannerState(route, [generated], RouterProfile.GRAVEL)!
+    expect(state.sources[0].generated).toBe(true)
+    const restored = restorePlannerState(state)
+    expect(restored.sources[0].generated).toBe(true)
+    expect(serializePlannerState(restored.route, restored.sources, RouterProfile.GRAVEL)).toEqual(
+      state
+    )
+
+    const file = serializePlannerState(route, [sourceOf(TRACK, 80)], RouterProfile.GRAVEL)!
+    expect('generated' in file.sources[0]).toBe(false)
+  })
+
   it('refuses an unknown version', async () => {
     const route = await drawn([A], [B])
     const state = serializePlannerState(route, [], RouterProfile.GRAVEL)!

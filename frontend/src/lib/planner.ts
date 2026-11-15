@@ -150,6 +150,11 @@ export interface PlannerSource {
    * only with the source untrimmed, so that it still stands for the source's whole line.
    */
   shape?: string
+  /**
+   * A proposal of the team route generator, not a file (docs/LEDGER_*.md WEB-179): the planner
+   * state says so, and its imported pieces then count as a drawing in the planner quota.
+   */
+  generated?: true
 }
 
 /**

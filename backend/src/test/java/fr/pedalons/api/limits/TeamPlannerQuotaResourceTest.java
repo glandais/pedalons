@@ -1,6 +1,7 @@
 package fr.pedalons.api.limits;
 
 import static fr.pedalons.service.route.planner.PlannerStateFixtures.drawn;
+import static fr.pedalons.service.route.planner.PlannerStateFixtures.generatedOnly;
 import static fr.pedalons.service.route.planner.PlannerStateFixtures.importedOnly;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
@@ -215,6 +216,16 @@ class TeamPlannerQuotaResourceTest extends AbstractResourceTest {
     create(USER1, stateRequest("Morceaux importés", importedOnly()), null).statusCode(201);
 
     assertEquals(0, saves());
+  }
+
+  @Test
+  void aStateOfGeneratedPieces_countsOne_andIsRefusedAtTheQuota() {
+    // A proposal of the route generator counts as a drawing (docs/LEDGER_*.md WEB-179, §10.3)
+    create(USER1, stateRequest("Générée", generatedOnly()), null).statusCode(201);
+    assertEquals(1, saves());
+
+    fill(TEAM_QUOTA - 1);
+    create(USER1, stateRequest("Générée de trop", generatedOnly()), null).statusCode(403);
   }
 
   @Test

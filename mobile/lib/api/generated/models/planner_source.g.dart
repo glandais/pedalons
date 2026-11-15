@@ -13,6 +13,7 @@ _PlannerSource _$PlannerSourceFromJson(Map<String, dynamic> json) =>
       ele: json['ele'] as String?,
       climb: json['climb'] as String?,
       shape: json['shape'] as String?,
+      generated: json['generated'] as bool?,
     );
 
 Map<String, dynamic> _$PlannerSourceToJson(_PlannerSource instance) =>
@@ -22,4 +23,5 @@ Map<String, dynamic> _$PlannerSourceToJson(_PlannerSource instance) =>
       'ele': instance.ele,
       'climb': instance.climb,
       'shape': instance.shape,
+      'generated': instance.generated,
     };

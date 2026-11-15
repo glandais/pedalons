@@ -301,7 +301,7 @@ test('a member sees no button and is sent back to the list; a team without the p
   context,
   page,
 }) => {
-  const { owner, team, member, road1 } = await seeded()
+  const { team, member, road1 } = await seeded()
 
   // The member
   await signIn(context, member)
@@ -311,12 +311,15 @@ test('a member sees no button and is sent back to the list; a team without the p
   await page.goto(GENERATE_PATH(team.slug))
   await expect(page).toHaveURL(`/equipes/${team.slug}/parcours`)
 
-  // The organizer of a team whose planner is off
-  const plain = await newTeam(owner, unique('Équipe sans tracé'))
-  const route = await newRoute(owner, plain.slug, unique('Sans tracé'), windingTrack(60))
+  // The organizer of a team whose planner is off. A team is born with it on (docs/LEDGER_*.md
+  // BILL-10), and a free user owns one team: another owner, and the platform admin's switch
+  const plainOwner = await newUser('generator-plain')
+  const plain = await newTeam(plainOwner, unique('Équipe sans tracé'))
+  const route = await newRoute(plainOwner, plain.slug, unique('Sans tracé'), windingTrack(60))
+  await setTeamAttributes(plain, { enableRoutePlanner: false })
   const ownerContext = await browser.newContext()
   const ownerPage = await ownerContext.newPage()
-  await signIn(ownerContext, owner)
+  await signIn(ownerContext, plainOwner)
   await ownerPage.goto(`/equipes/${plain.slug}/parcours`)
   await expect(ownerPage.getByRole('heading', { name: 'Parcours', level: 2 })).toBeVisible()
   await expect(ownerPage.getByRole('link', { name: 'Générer un parcours' })).toHaveCount(0)

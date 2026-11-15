@@ -115,6 +115,8 @@ export interface PlannerSnapshot {
 export interface ImportGpxOptions {
   /** False: the save sends the planner state, never the file itself. Default true. */
   keepFile?: boolean
+  /** The file is a proposal of the route generator (WEB-179): its sources are marked so. */
+  generated?: boolean
 }
 
 /** What the planner tells about a file it imported, for the view to report. */
@@ -669,7 +671,9 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
         if (referenced.size + response.tracks.length > MAX_PLANNER_SOURCES) {
           throw new PlannerRefusedError(IMPORT_TOO_MANY_KEY)
         }
-        const sources = response.tracks.map(sourceFromImport)
+        const sources = response.tracks
+          .map(sourceFromImport)
+          .map((source) => (options?.generated ? { ...source, generated: true as const } : source))
         const firstId = sourcesRef.current.length
         const imported = routeFromSources(sources, firstId)
         const next =

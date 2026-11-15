@@ -19,10 +19,16 @@ final class Ad extends Module {
     }
   }
 
-  bool get hasMoreMenu => isShown(keys.ad.moreButton);
-
-  /// Opens the `⋯` menu: what it offers is read with the [Moderation] module.
+  /// Opens the `⋯` menu: what it offers is read with the [Moderation] module, or below for the
+  /// « Gérer l'annonce » menu of its author (ledger `MOB-158`).
   Future<void> openMoreMenu() async {
     await $(keys.ad.moreButton).tap();
   }
+
+  /// The « Gérer l'annonce » menu is open: it always offers the deletion to whoever may manage.
+  Future<void> waitUntilManageMenuIsShown() async {
+    await $(keys.adManage.delete).waitUntilVisible();
+  }
+
+  bool get manageMenuOffersReport => isShown(keys.adManage.report);
 }

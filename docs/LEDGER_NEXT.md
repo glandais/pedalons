@@ -707,9 +707,14 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       ligne importée (pas d'ancres reroutées par Stadia). Dépend d'`API-198`. Plan [`2026-11-13-generateur-boucles-equipe.md`](plans/2026-11-13-generateur-boucles-equipe.md) §7.
       Codé le 14 novembre 2026 (conception [`…-lot4.md`](plans/2026-11-13-generateur-boucles-equipe-lot4.md)) :
       page `routeGenerate`, bouton dans la liste et troisième source de l'éditeur, case d'exclusion,
-      Vitest verts. Restent : lancer `e2e/route-generator.e2e.ts` (écrit, jamais exécuté), vérifier à
-      l'œil l'ordre des couches de la carte (non couvert, carte bouchonnée en Vitest), puis ranger
-      l'entrée.
+      Vitest verts. Recette du 15 novembre 2026 : la spec e2e a tourné et trouvé trois défauts, corrigés
+      — un parcours généré ne comptait pas dans le quota du planificateur (décision §10.3), la source
+      porte désormais `generated` et `PlannerState.drawn()` la compte (contrat `14.16.0`, test
+      `TeamPlannerQuotaResourceTest.aStateOfGeneratedPieces_countsOne_andIsRefusedAtTheQuota`) ; la page
+      ne préchargeait pas le sélecteur d'équipes de son `TeamLayout` ; deux specs supposaient une
+      équipe née sans planificateur (faux depuis `BILL-10`). Restent : faire tourner ce test backend et
+      relancer `route-generator.e2e.ts` et `routes-render -g routeGenerate` sur des images
+      reconstruites, vérifier à l'œil l'ordre des couches de la carte, puis ranger l'entrée.
 
 ### Heure de départ : audit du 7 novembre 2026
 

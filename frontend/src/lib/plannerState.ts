@@ -230,6 +230,7 @@ function build(
       ...(climb !== undefined && { climb }),
       ascendScale: Math.min(MAX_ASCEND_SCALE, Math.max(MIN_ASCEND_SCALE, scale)),
       ...(shape !== undefined && { shape }),
+      ...(src.generated && { generated: true }),
     }
   }
   // Past the bound only because a source went whole for its shape: a pass without it may fit
@@ -362,7 +363,14 @@ function sourceFromDto(dto: PlannerSourceDto): PlannerSource {
     if (dto.ele === undefined || cumul.length !== coords.length) {
       throw new PlannerStateFormatError('source climb')
     }
-    return { coords, cumul, ascendScale: 1, serverClimb: true, ...shapeOf(dto) }
+    return {
+      coords,
+      cumul,
+      ascendScale: 1,
+      serverClimb: true,
+      ...shapeOf(dto),
+      ...generatedOf(dto),
+    }
   }
   const scale = dto.ascendScale
   return {
@@ -370,8 +378,11 @@ function sourceFromDto(dto: PlannerSourceDto): PlannerSource {
     cumul: cumulativeClimb(coords),
     ascendScale: Number.isFinite(scale) && scale > 0 ? scale : 1,
     ...shapeOf(dto),
+    ...generatedOf(dto),
   }
 }
+
+const generatedOf = (dto: PlannerSourceDto) => (dto.generated ? { generated: true as const } : {})
 
 /**
  * The route a saved state describes, and the sources it refers to. No request: the points are the

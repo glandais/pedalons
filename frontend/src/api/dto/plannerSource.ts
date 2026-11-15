@@ -21,4 +21,6 @@ export interface PlannerSource {
    * @maxLength 2000000
    */
   shape?: string
+  /** The source is a proposal of the team route generator, not a file: its imported pieces count as a drawing (PlannerState.drawn, the planner quota). Absent: false */
+  generated?: boolean
 }

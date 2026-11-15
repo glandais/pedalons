@@ -18,7 +18,17 @@ import { notifications } from '@mantine/notifications'
 import type { GeoPoint, PlannerState } from '@/api/dto'
 import { useHistoryOverlay } from '@/hooks/useHistoryOverlay'
 import { useMediaMatch } from '@/hooks/useResponsive'
-import { useRoutePlanner, type PlannerSnapshot } from '@/hooks/useRoutePlanner'
+import {
+  useRoutePlanner,
+  type ImportGpxOptions,
+  type PlannerSnapshot,
+} from '@/hooks/useRoutePlanner'
+
+/**
+ * A generated route (WEB-179): a replacing import that keeps no file, so the save sends the planner
+ * state, and whose source is marked as the generator's, so that state counts in the planner quota.
+ */
+const GENERATED_IMPORT: ImportGpxOptions = { keepFile: false, generated: true }
 import { PlannerQuotaModal } from './PlannerQuotaModal'
 import { invalidatePlannerQuota } from '@/lib/plannerQuota'
 import { useUnits } from '@/hooks/useUnits'
@@ -484,7 +494,7 @@ export function RoutePlannerField({
   const { importGpx } = planner
   const [fitRequest, setFitRequest] = useState(0)
   const runImport = useCallback(
-    async (file: File, mode: 'replace' | 'append', options?: { keepFile?: boolean }) => {
+    async (file: File, mode: 'replace' | 'append', options?: ImportGpxOptions) => {
       const info = await importGpx(file, mode, options)
       if (!info) return
       setFitRequest((n) => n + 1)
@@ -517,7 +527,7 @@ export function RoutePlannerField({
       { type: 'application/gpx+xml' }
     )
     if (route.points.length >= 2) setPendingGenerated(file)
-    else void runImport(file, 'replace', { keepFile: false })
+    else void runImport(file, 'replace', GENERATED_IMPORT)
   }, [importRequest, onImportHandled, route.points.length, runImport])
   const openFilePicker = useCallback(() => fileInputRef.current?.click(), [])
   const handleFileChosen = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -611,7 +621,7 @@ export function RoutePlannerField({
         onConfirm={() => {
           const file = pendingGenerated
           setPendingGenerated(null)
-          if (file) void runImport(file, 'replace', { keepFile: false })
+          if (file) void runImport(file, 'replace', GENERATED_IMPORT)
         }}
         title={t('routeGenerator.replaceTrack.title')}
         message={t('routeGenerator.replaceTrack.text')}

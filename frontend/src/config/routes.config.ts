@@ -995,8 +995,10 @@ export const routesConfig: RoutesConfig = [
     parentId: 'routes',
     breadcrumb: { type: 'static', i18nKey: tRegister('routeGenerator.title') },
     // The generation itself is client-only (a POST under a rate limit): only the counts that pick
-    // the default type are prefetched
-    prefetch: teamScopedPrefetch((qc, p) => prefetchRouteGenerator(qc, p.teamSlug!)),
+    // the default type and the places are prefetched, with the switcher of its TeamLayout
+    prefetch: teamScopedPrefetch((qc, p) =>
+      withTeamSwitcher(qc, prefetchRouteGenerator(qc, p.teamSlug!))
+    ),
     showBackLink: true,
   },
   {

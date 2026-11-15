@@ -600,12 +600,12 @@ const screens: Record<string, Screen> = {
     guards: titled('Créer un nouveau parcours'),
   },
   routeGenerate: {
-    roles: [],
-    sees: async () => {},
-    // The dataset's team keeps its route planner off (a platform admin's switch), and the generator
-    // needs it: the page sends every signed-in role back to the team's routes. The page itself is
-    // covered by route-generator.e2e.ts, on a team with the planner on.
-    otherwise: redirects(SIGNED_IN, routeList('the dataset team has no route planner')),
+    // A team is born with its route planner on (docs/LEDGER_*.md BILL-10), the dataset's included.
+    // The generator itself is covered by route-generator.e2e.ts; here, the page's SSR and prefetch.
+    roles: ORGANIZERS,
+    sees: heading('Générer un parcours'),
+    denied: denies(BELOW_ORGANIZER, routeList(NOT_ORGANIZER)),
+    guards: titled('Générer un parcours'),
   },
   route: { roles: EVERYONE, sees: (main, d) => heading(d.route.name)(main) },
   routeMap: {

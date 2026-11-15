@@ -148,6 +148,21 @@ public final class PlannerStateFixtures {
         List.of(imported(0, SOURCE_POINTS - 1)));
   }
 
+  /**
+   * {@link #importedOnly()} whose source is a proposal of the route generator (docs/LEDGER_*.md
+   * WEB-179): it counts as a drawing.
+   */
+  public static PlannerState generatedOnly() {
+    PlannerState imported = importedOnly();
+    PlannerSource s = source();
+    return new PlannerState(
+        imported.version(),
+        imported.profile(),
+        List.of(new PlannerSource(s.line(), s.ele(), s.ascendScale(), s.climb(), s.shape(), true)),
+        imported.junctions(),
+        imported.pieces());
+  }
+
   // ------------------------------------------------------------------ raw shapes (API-149, C)
 
   /**

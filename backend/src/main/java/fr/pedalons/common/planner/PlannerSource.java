@@ -45,12 +45,29 @@ public record PlannerSource(
                     + " it by projecting its junctions (from and to still index line); absent or"
                     + " inconsistent with line: line")
         @Size(max = GpxLimits.MAX_PLANNER_STATE_CHARS)
-        String shape)
+        String shape,
+    @Nullable
+        @Schema(
+            description =
+                "The source is a proposal of the team route generator, not a file: its imported"
+                    + " pieces count as a drawing (PlannerState.drawn, the planner quota). Absent:"
+                    + " false")
+        Boolean generated)
     implements Serializable {
+
+  /** Not from the generator: every source before WEB-179. */
+  public PlannerSource(
+      String line,
+      @Nullable String ele,
+      double ascendScale,
+      @Nullable String climb,
+      @Nullable String shape) {
+    this(line, ele, ascendScale, climb, shape, null);
+  }
 
   /** Without the raw track: the shape this record had before API-149 (phase C). */
   public PlannerSource(
       String line, @Nullable String ele, double ascendScale, @Nullable String climb) {
-    this(line, ele, ascendScale, climb, null);
+    this(line, ele, ascendScale, climb, null, null);
   }
 }

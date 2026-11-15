@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import java.io.Serializable;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Editing state of the route planner (docs/LEDGER_*.md WEB-100, C4a): the pieces of the track and
@@ -29,8 +30,20 @@ public record PlannerState(
         List<@Valid PlannerPiece> pieces)
     implements Serializable {
 
-  /** Whether the user drew any of it: one routed or straight piece (docs/LEDGER_*.md API-127). */
+  /**
+   * Whether the user drew any of it: one routed or straight piece (docs/LEDGER_*.md API-127), or a
+   * piece of a proposal of the route generator, which counts as a drawing (docs/LEDGER_*.md WEB-179,
+   * owner's decision §10.3 of the generator's plan).
+   */
   public boolean drawn() {
-    return pieces.stream().anyMatch(p -> p.mode() != PlannerPieceMode.IMPORTED);
+    return pieces.stream()
+        .anyMatch(p -> p.mode() != PlannerPieceMode.IMPORTED || generatedSource(p.source()));
+  }
+
+  private boolean generatedSource(@Nullable Integer index) {
+    return index != null
+        && index >= 0
+        && index < sources.size()
+        && Boolean.TRUE.equals(sources.get(index).generated());
   }
 }

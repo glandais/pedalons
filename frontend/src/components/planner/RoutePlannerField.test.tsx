@@ -702,7 +702,7 @@ describe('RoutePlannerField', () => {
       await waitFor(() => expect(importGpxMock).toHaveBeenCalledTimes(1))
       const [file, mode, options] = importGpxMock.mock.calls[0]
       expect(mode).toBe('replace')
-      expect(options).toEqual({ keepFile: false })
+      expect(options).toEqual({ keepFile: false, generated: true })
       expect((file as File).name).toBe('parcours-genere.gpx')
       const text = await (file as File).text()
       expect(text).toContain('<name>Parcours généré de 82 km</name>')
@@ -730,7 +730,7 @@ describe('RoutePlannerField', () => {
       expect(importGpxMock).not.toHaveBeenCalled()
       fireEvent.click(screen.getByRole('button', { name: 'planner.import.replace' }))
       await waitFor(() => expect(importGpxMock).toHaveBeenCalledTimes(1))
-      expect(importGpxMock.mock.calls[0][2]).toEqual({ keepFile: false })
+      expect(importGpxMock.mock.calls[0][2]).toEqual({ keepFile: false, generated: true })
     })
 
     it('imports nothing when the question is cancelled', async () => {
