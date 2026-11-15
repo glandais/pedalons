@@ -416,7 +416,8 @@ export function RoutesMapView({
     }))
   }, [routesData, winds, windColors])
   const routesLitLast = useMemo(
-    () => routeGeoJSONs.toSorted((a, b) => litRank(a) - litRank(b)),
+    // Not toSorted: Chrome < 110 and Safari < 16 lack it (docs/LEDGER_*.md WEB-182).
+    () => [...routeGeoJSONs].sort((a, b) => litRank(a) - litRank(b)),
     [routeGeoJSONs, litRank]
   )
   const kmTraces = useMemo(

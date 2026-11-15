@@ -186,6 +186,18 @@ describe('RoutesMapView', () => {
     expect(state.sources.some((s) => s.id === 'routes-wind-credit')).toBe(false)
   })
 
+  it('draws on a browser without Array.prototype.toSorted (WEB-182)', () => {
+    const toSorted = Object.getOwnPropertyDescriptor(Array.prototype, 'toSorted')!
+    // @ts-expect-error -- simulates Chrome < 110, where the method does not exist
+    delete Array.prototype.toSorted
+    try {
+      show()
+      expect(linePaint('s1')['line-color']).toBe(routeColor(0))
+    } finally {
+      Object.defineProperty(Array.prototype, 'toSorted', toSorted)
+    }
+  })
+
   it("draws each trace's chevrons on its line's own source, cut once", () => {
     show()
     expect(state.sources.some((s) => String(s.id).startsWith('route-arrows-'))).toBe(false)
