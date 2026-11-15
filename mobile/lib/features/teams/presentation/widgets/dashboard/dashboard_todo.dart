@@ -12,7 +12,6 @@ import '../../../../../core/theme/pdl_typography.dart';
 import '../../../../../core/utils/formatters.dart';
 import '../../../../../keys.dart';
 import '../../../../rides/domain/group_title.dart';
-import '../../team_web_paths.dart';
 import 'dashboard_section.dart';
 
 /// « À traiter » : ce qui attend un organisateur — brouillons, sorties sans
@@ -200,7 +199,8 @@ class DashboardTodo extends StatelessWidget {
       urgent: true,
       detail: lines.isEmpty ? null : lines.join('\n'),
       actionLabel: 'teams.dashboard.todo.reportsAction'.tr(),
-      onAction: () => openTeamWebPage(context, TeamWebPaths.reports(teamSlug)),
+      // La file de signalements de l'app (docs/LEDGER_*.md MOB-168).
+      onAction: () => context.push(Paths.teamAdminReports(teamSlug)),
     );
   }
 

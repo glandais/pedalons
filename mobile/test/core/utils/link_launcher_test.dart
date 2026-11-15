@@ -147,12 +147,19 @@ void main() {
   });
 
   group('isSitePageLocation', () {
-    // Les pages du site qu'ouvre le tableau de bord, dans les deux locales :
+    // Les pages du site qu'ouvre le hub, dans les deux locales :
     // `/equipes/.*` les donne à l'app sous Android (docs/LEDGER_*.md MOB-59).
     final List<String> sitePages = <String>[
-      ...PathVariants.teamAdminReports('vc').values,
+      ...PathVariants.teamAdminTags('vc').values,
       ...PathVariants.teamAdminPages('vc').values,
     ];
+
+    test('la file de signalements s\'ouvre dans l\'app (MOB-168)', () {
+      for (final String page in PathVariants.teamAdminReports('vc').values) {
+        expect(isSitePageLocation(page), isFalse, reason: page);
+        expect(internalLocationFor(page), page, reason: page);
+      }
+    });
 
     test('la gestion des membres s\'ouvre dans l\'app (MOB-167)', () {
       for (final String page in PathVariants.teamAdminMembers('vc').values) {

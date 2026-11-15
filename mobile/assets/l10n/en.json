@@ -2409,6 +2409,61 @@
       "hint": "You no longer see their comments, posts and ads. They don't know you blocked them.",
       "emptyTitle": "No blocked users",
       "emptyMessage": "To block someone, tap ⋯ on one of their comments or ads, or their name in the member list."
+    },
+    "targetType": {
+      "COMMENT": "Comment",
+      "POST": "Post",
+      "AD": "Ad",
+      "RIDE": "Ride",
+      "TRIP": "Trip",
+      "ROUTE": "Route",
+      "MEMBER": "Member",
+      "other": "Content"
+    },
+    "status": {
+      "REMOVED": "Removed",
+      "DISMISSED": "Dismissed"
+    },
+    "queue": {
+      "title": "Reports",
+      "description": "Content reported by the team's members. Who reported it is not disclosed.",
+      "tabs": {
+        "open": "To review",
+        "resolved": "Resolved"
+      },
+      "empty": {
+        "open": {
+          "title": "No pending reports",
+          "description": "Reported content will show up here, waiting for your decision."
+        },
+        "resolved": {
+          "title": "No resolved reports",
+          "description": "The latest decisions will show up here."
+        }
+      },
+      "reportCount": {
+        "zero": "{} report",
+        "one": "{} report",
+        "other": "{} reports"
+      },
+      "hidden": "Hidden from members",
+      "lastReported": "Last reported: {date}",
+      "commentOn": "Comment on “{name}”",
+      "contentGone": "The content no longer exists.",
+      "author": "Author: {name}",
+      "member": "Reported member: {name}",
+      "memberHint": "To remove this member from the team, an administrator uses member management.",
+      "messages": "Details from the reporters",
+      "actions": {
+        "remove": "Remove the content",
+        "dismiss": "Dismiss the report"
+      },
+      "removeConfirm": {
+        "title": "Remove this content?",
+        "message": "The content will be removed for everyone, and all its reports will be closed."
+      },
+      "removed": "Content removed.",
+      "dismissed": "Report dismissed: the content stays visible."
     }
   },
   "feedback": {

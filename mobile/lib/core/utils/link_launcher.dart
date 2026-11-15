@@ -97,6 +97,7 @@ final Map<String, List<String>> internalRouteTemplates = <String, List<String>>{
   'teamSettings': PathVariants.teamSettings(_slot).values.toList(),
   'teamAdminMembers': PathVariants.teamAdminMembers(_slot).values.toList(),
   'teamAdminPlaces': PathVariants.teamAdminPlaces(_slot).values.toList(),
+  'teamAdminReports': PathVariants.teamAdminReports(_slot).values.toList(),
   'teamAgenda': PathVariants.teamAgenda(_slot).values.toList(),
   'teamPosts': PathVariants.teamPosts(_slot).values.toList(),
   'teamRides': PathVariants.teamRides(_slot).values.toList(),

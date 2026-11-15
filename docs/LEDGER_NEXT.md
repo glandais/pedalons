@@ -210,9 +210,54 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md) §7.2 et
       §7.3 : `mobile/lib/features/places/` sur `teamAdminPlaces`, la file des signalements dans
       `mobile/lib/features/moderation/` sur `teamAdminReports`.
-      **Lieux : code écrit le 15 novembre 2026** — `teamAdminPlaces` écran de l'app et lien
-      profond, sous le hub ; écarts notés « Fait (lot 4) » dans le §7.2 du plan. Restent les
-      signalements, puis les tests Patrol.
+      Contrat d'API inchangé.
+      **Code écrit le 15 novembre 2026** (`check.sh` vert) : `teamAdminPlaces` et
+      `teamAdminReports` écrans de l'app et liens profonds, sous le hub
+      (`_teamAdminPlacesRoute`, `_teamAdminReportsRoute`, `config/router.dart`).
+      **Lieux** — `team_places_page.dart`, réservé à qui organise l'équipe : liste paginée
+      (`teamPlacesProvider`), recherche par nom ou adresse, ligne (nom, adresse, badges
+      « Départ » / « Arrivée », « Voir sur la carte » hors de l'app), modifier et supprimer
+      (confirmation) ; formulaire en feuille (`place_form_sheet.dart`, `PlaceForm`) : nom,
+      adresse, lien, localisation par le sélecteur commun (effaçable), deux usages ;
+      `places_repository.dart`. **Signalements** — `team_reports_page.dart`, réservé à qui
+      organise l'équipe et à l'admin de plateforme : onglets « À traiter » / « Traités »
+      (`teamReportsProvider`), une carte par cible (type, nombre, « Masqué aux membres »,
+      décision rendue, date, contenu en lien vers son écran ou « Le contenu n'existe plus. »,
+      auteur ou membre signalé, extrait, motifs, précisions), « Supprimer le contenu »
+      (confirmé, absent pour un membre) et « Rejeter le signalement »
+      (`ModerationRepository.listTeamReports` / `resolveTeamReports`), renvoi vers la gestion
+      des membres pour un membre signalé. Les lignes « Lieux » et « Signalements » du hub,
+      « Examiner » du tableau de bord et la notification `CONTENT_REPORTED` ouvrent les écrans ;
+      `TeamWebPaths.places` et `reports`, et `NotificationDisplay.webPath()`, n'existent plus.
+      Déclarations des stores : lignes d'inventaire #29 (lieux : l'adresse saisie et la
+      position sous la ligne *Physical Address* existante — décision O1) et #30 (décisions de
+      modération, sous *Other User Content* comme les signalements) de
+      `mobile/store-metadata/data-safety.md`, commentaires de `PrivacyInfo.xcprivacy` ; aucun
+      type de donnée nouveau, `app-privacy.json` et `data-safety.csv` inchangés ; la politique
+      de confidentialité vaut telle quelle pour l'app.
+      **À ne pas défaire** : (1) le `PUT` d'un lieu **réécrit tout** — une adresse, un lien
+      ou une position absents sont effacés (`PlaceService.updatePlaceFromRequest`) : le
+      formulaire reprend le lieu entier, position comprise (`place_form_test`,
+      `team_places_page_test`) ; (2) les deux refus sont tranchés **avant** toute requête : la
+      liste des lieux et la file ne sont écoutées que par le corps rendu à qui en a le droit ;
+      (3) les personnes qui signalent restent anonymes — `ModerationItemDto.reporters` n'est
+      jamais lu, et l'app n'appelle pas la file de plateforme (`listAdminReports`), qui les
+      porte ; (4) le lien d'un contenu signalé ne se construit que pour un type que l'app
+      connaît (`moderationContentPath`) ; (5) le lien « Gestion des membres » d'un membre
+      signalé n'est rendu qu'à qui peut ouvrir l'écran ; (6) une écriture se reporte **à sa
+      place** quand c'est possible — un lieu modifié ou supprimé par
+      `PagedListNotifier.replaceItem` / `removeItem` (qui relit la dernière page chargée pour
+      ne pas sauter la ligne que le décalage d'offset y fait glisser), une décision par la
+      relecture de la file de cette équipe et de son tableau de bord seuls
+      (`refreshAfterModerationDecision`), jamais par `notifyTeamChanged` ; (7) pendant une
+      écriture, tout ce qui en lancerait une autre est inactif. **Écarts avec le plan** : notés
+      « Fait (lot 4) » dans ses §7.2 et §7.3.
+      Tests : `place_form_test`, `team_places_page_test`, `team_reports_page_test`,
+      `moderation_queue_repository_test`, `paged_list_notifier_test`, `team_admin_page_test`,
+      `team_dashboard_test`, `notifications_page_test`, `team_web_paths_test`,
+      `deep_link_hierarchy_test`, `link_launcher_test`, `sign_in_resume_test`. Reste à écrire
+      et faire tourner Patrol (`team_places_test.dart`, `team_reports_test.dart`) avant de
+      ranger l'entrée, et à pousser les formulaires des stores avec ceux de `MOB-159`.
 
 - [ ] `MOB-169` **Tags et pages personnalisées de l'équipe dans l'app (M)** — l'app pose des tags
       et lit les pages d'une équipe sans pouvoir administrer ni le vocabulaire ni les pages. Lot 5

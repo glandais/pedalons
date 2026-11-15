@@ -14,7 +14,8 @@ from:
 - **App**: Pédalons, `fr.pedalons.mobile`, version `1.0.0+57` (`mobile/pubspec.yaml`)
 - **Backend**: `https://www.pedalons.fr` (`mobile/lib/config/app_config.dart`)
 - **Last verified against the code**: 2026-11-15 (route planner, `MOB-170` —
-  `lib/features/routes/data/planner_bridge.dart`; the same day, a team's places, `MOB-168` —
+  `lib/features/routes/data/planner_bridge.dart`; the same day, a team's moderation queue, `MOB-168` —
+  `lib/features/moderation/presentation/pages/team_reports_page.dart`, #30, and a team's places,
   `lib/features/places/`, #29; the same day, member management and invitations by e-mail,
   `MOB-167` — `lib/features/teams/presentation/pages/team_admin_members_page.dart` and
   `lib/features/teams/presentation/widgets/team_invite_sheet.dart`, #28; the same day, team
@@ -122,6 +123,11 @@ The capabilities added, and their exact boundary:
   (≤ 1,000 characters, `content_reports.excerpt`) and, later, the moderator's decision. The
   reporter's identity is readable by `PLATFORM_ADMIN` only. Nothing new is read from the device:
   no screenshot, no attachment, no contact.
+  Since `MOB-168` (2026-11-15) the app also shows a team's **moderation queue** to its organizers
+  (#30): `listTeamReports` → `GET /api/teams/{slug}/reports` only reads, and
+  `resolveTeamReports` → `POST /api/teams/{slug}/reports/resolve` sends a **decision** — the
+  target, the team and one of two actions (remove the content, dismiss the report). No text is
+  typed, and the team queue never carries who reported.
 - **Problem reports and automatic error reports** (2026-09-27) — `api.feedback`
   (`lib/api/generated/clients/feedback_client.dart`): `sendFeedback` → `POST /api/feedback` with a
   kind (bug / suggestion), the member's **free text** (10–5,000 characters) and, unless the member
@@ -207,6 +213,7 @@ Everything below leaves the device to `https://www.pedalons.fr` unless stated ot
 | 27 | **Team settings written by administrators** | Team settings (`lib/features/teams/presentation/pages/team_editor_page.dart` in edit mode) → `PUT /api/teams/{slug}`: what #26 sends — name, markdown description, time zone, module switches, the optional location picked through the address search of #25–#26 (a cleared location is sent as `geometry: null` and erased) — plus the team's **visibility** when the platform lets its administrators change it, and the team's **logo, images and attachments** through the path of #22 (`image_picker`, still images only; `file_picker`). `PATCH /api/teams/{slug}/slug` changes the team's address, `DELETE /api/teams/{slug}` deletes the team, `GET …/timezone/change-preview` only reads. **And the team's webhook** (`team_webhook_sheet.dart` → `PUT`/`DELETE /api/teams/{slug}/webhook`, `POST …/webhook/test`): an **https URL the administrator types** (a Slack, Discord or Mattermost incoming-webhook address, or any public https endpoint), a language and an on/off switch. The URL is a secret: the server stores it and only ever returns it masked (`TeamWebhookDto.maskedUrl`); the app keeps no copy, shows nothing but the masked form, and never calls the URL itself — the server posts the team's announcements to it (privacy policy, « Canaux de discussion d'équipe »). The team's administrators and the platform administrator only. Name, description, attachments and the webhook URL are *Other User Content*, the logo and images *Photos or Videos*, the location the *Physical Address* row of #25–#26 | Yes | Yes (written by a team's administrator, stored against the team) |
 | 28 | **Invitations sent by a team's administrators, and member management** | *Manage members* (`lib/features/teams/presentation/pages/team_admin_members_page.dart`), the team's administrators and the platform administrator only. **An e-mail address the administrator types** in the invitation sheet (`team_invite_sheet.dart` → `POST /api/teams/{slug}/invitations`: the address and the role offered) — the address of **someone else**, who may have no account. It is typed by hand: the app reads no address book and requests no contacts permission. The server stores the address, the role, who invited and the invitation's status and dates, e-mails the invitation, and returns the pending invitations to the team's administrators (`GET …/invitations?status=PENDING`), who can resend one (the same `POST`, same address and role) or cancel it (`DELETE …/invitations/{id}`); nobody joins without accepting (privacy policy, « Invitations dans une équipe »). The app keeps no copy of the address once the sheet is closed. **Declared under the existing e-mail row** (decision of 2026-11-15, O2 of `docs/plans/2026-11-15-gestion-equipe-mobile.md`): Apple *Email Address*, Play *Personal info → Email address* — see §4 and §5. The screen also changes a member's role (`PUT /api/teams/{slug}/members/{userId}`) and removes a member (`DELETE …/members/{userId}`): a role and an identifier the server already holds, nothing typed. Its member search (`GET …/members?search=`, by name or e-mail for an administrator) is the search the member directory already sent | Yes | Yes (the invitation is stored against the team and the inviting account; the invited address becomes an account's only if that person signs up) |
 | 29 | **A team's places written by organizers** | *Places* (`lib/features/places/presentation/pages/team_places_page.dart` and its form sheet, `place_form_sheet.dart`) → `POST /api/teams/{slug}/places`, `PUT`/`DELETE …/places/{id}`: the start and end points the ride and trip editors offer — a **name**, an optional **postal address the organizer types**, an optional link (a map URL), two switches (usable as a start, as an end) **and an optional position** picked through the address search of #25–#27 (`lib/features/geocoding/`; the device never calls the provider, and its own position is **not** read). The `PUT` rewrites the whole place: a cleared address, link or position is sent as `null` and erased. The server stores the place against the team and returns it to the team's organizers (the list, `GET …/places`) and, on a ride or a trip, to whoever may read that ride. The team's organizers and administrators and the platform administrator only. **Declared as an address** (decision O1 of `docs/plans/2026-11-15-gestion-equipe-mobile.md`: a meeting point can be someone's home): the typed address and the position are the existing Apple *Physical Address* and Play *Personal info → Address* rows — see §4 and §5. The name and the link are *Other User Content* like #21 | Yes | Yes (written by an organizer, stored against the team) |
+| 30 | **Moderation decisions by a team's organizers** | *Reports* (`lib/features/moderation/presentation/pages/team_reports_page.dart`), the team's organizers and administrators and the platform administrator only. The screen **reads** the team's queue (`GET /api/teams/{slug}/reports`): per reported target, its type, the number of reports, the reasons, the reporters' free-text messages, the copy of the reported text (#14) and the name of the content's author or of the reported member — **never who reported**, which a team's queue does not carry. It **sends** a decision (`POST /api/teams/{slug}/reports/resolve`): the target's type and identifier, the team, and `REMOVE_CONTENT` or `DISMISS` — a choice between two buttons, nothing typed. The server records the decision, who took it and when on the reports of #14, and deletes the content when asked to. Nothing is kept on the device. The decision is part of the reports already declared: *Other User Content*, with the *App Functionality* purpose (and Play's *Fraud prevention, security, and compliance*) of #14 — see §4 and §5 | Yes | Yes (the decision is stored with the moderator's account) |
 | 10 | **Approximate location** | `geolocator` at `LocationAccuracy.low`, while in use, only when the user turns on the "around me" filter — becomes the `nearLat`/`nearLon`/`nearRadius` query parameters | Yes, as query parameters of a read request | **No** — not stored server-side, not written to the account |
 
 Stored **on device only**, never transmitted:
@@ -244,7 +251,7 @@ value is invented.
 | `NSPrivacyCollectedDataTypeName` | `true` | `false` | `…PurposeAppFunctionality` | #3 |
 | `NSPrivacyCollectedDataTypePhysicalAddress` | `true` | `false` | `…PurposeAppFunctionality` | #25 (the position of an ad), #26 (the location of a team), #29 (the address and the position of a team's place) |
 | `NSPrivacyCollectedDataTypeUserID` | `true` | `false` | `…PurposeAppFunctionality` | #4, #5, #7 |
-| `NSPrivacyCollectedDataTypeOtherUserContent` | `true` | `false` | `…PurposeAppFunctionality` | #6, #13, #14, #15, #20, #21, #22 (attachments), #23, #24, #25 (the ad itself), #26 (a team's name and description) |
+| `NSPrivacyCollectedDataTypeOtherUserContent` | `true` | `false` | `…PurposeAppFunctionality` | #6, #13, #14, #15, #20, #21, #22 (attachments), #23, #24, #25 (the ad itself), #26 (a team's name and description), #29 (a place's name and link), #30 (a moderation decision) |
 | `NSPrivacyCollectedDataTypeOtherDataTypes` | `true` | `false` | `…PurposeAppFunctionality` | #8 |
 | `NSPrivacyCollectedDataTypePhotosorVideos` | `true` | `false` | `…PurposeAppFunctionality` | #9, #22 (images), #24 (a post's photos), #25 (an ad's photos) |
 | `NSPrivacyCollectedDataTypeCoarseLocation` | **`false`** | `false` | `…PurposeAppFunctionality` | #10 |
@@ -270,6 +277,8 @@ URL an administrator types are *Other User Content*, its logo and images *Photos
 row of #1; a role change and a removal send nothing the server does not already hold.
 #29 (a team's places) has no row of its own: a place's typed address and its position are the
 *Physical Address* row of #25–#27, its name and link *Other User Content*.
+#30 (a moderation decision) has no row of its own: it completes the reports of #14, *Other User
+Content*; reading the queue collects nothing.
 
 #16 (terms acceptance) has no row of its own: it is a timestamp on the account created at sign-up,
 covered by the account rows (`EmailAddress`, `Name`, `UserID`) like the account's creation date.
@@ -400,6 +409,16 @@ not make it *Contacts*: Apple's *Contacts* is the user's address book, which the
 tells the invited person where the address comes from (« Auprès d'autres membres ») and how long
 an unanswered invitation is kept. `app-privacy.json` is **unchanged**.
 
+**A team's moderation queue adds no data type** (2026-11-15, `MOB-168`, #30). An organizer
+reads what members reported and decides: remove the content, or dismiss the report. The decision
+is a choice about user-generated content, stored with the reports it closes — the *Other User
+Content* already declared for reports, linked, App Functionality, no tracking. It is the half of
+the reporting feature the app did not have: App Review guideline 1.2 asks for a mechanism to act
+on reports, which until now lived on the site only. Reading the queue is a display of data the
+server already holds, not a collection; the reporters stay anonymous to the team (the queue
+carries none) and the privacy policy already says so (« Signalements et blocages »).
+`app-privacy.json` is **unchanged**.
+
 **A team's place is the same *Physical Address*** (2026-11-15, `MOB-168`, #29; decision O1 of
 `docs/plans/2026-11-15-gestion-equipe-mobile.md`). An organizer who records a start or end point
 may type its postal address and may attach a position through the same address search. Both are
@@ -515,6 +534,11 @@ content*, already declared. `data-safety.csv` is **unchanged**.
 texts and its webhook URL are *Other user-generated content*, its logo and images *Photos*, its
 attachments *Files and docs*, its location the *Address* row above. All optional — nobody has to
 administer a team — and none shared. `data-safety.csv` is **unchanged**.
+
+**A team's moderation queue** (2026-11-15, `MOB-168`, #30) stays inside the *Other
+user-generated content* row of the reports (#14): a decision is two buttons, collected, not
+shared, for *App functionality* and *Fraud prevention, security, and compliance*. Optional —
+only a team's organizers see the queue. `data-safety.csv` is **unchanged**.
 
 **A team's places** (2026-11-15, `MOB-168`, #29) stay inside rows already declared: the address
 an organizer types for a start or end point and the position picked for it are the *Address* row
@@ -811,6 +835,13 @@ grep -n "google_fonts" pubspec.yaml
 
 # reports and blocks: the calls behind §2 #14 and #15, and nothing that reads a file or the camera
 grep -rnE "\.(reportContent|blockUser|unblockUser|listMyBlockedUsers)\(" lib/features lib/core
+
+# a team's moderation queue (#30): read and decided from moderation_repository.dart only; the
+# decision's body is ModerationDecisionRequest — a target, an action, the team, no free text.
+# The platform queue (listAdminReports / resolveAdminReports, with the reporters) must not be
+# called by the app: the second grep must print nothing
+grep -rnE "[cC]lient\.(listTeamReports|resolveTeamReports)\(" lib/features lib/core
+grep -rnE "\.(listAdminReports|resolveAdminReports)\(" lib/features lib/core
 
 # the notification permission must be asked from a screen, never at launch
 grep -rn "requestAuthorization" lib | grep -v lib/api/generated

@@ -62,6 +62,7 @@ class Keys {
   final postManage = PostManageKeys();
   final comments = CommentKeys();
   final moderation = ModerationKeys();
+  final teamReports = TeamReportsKeys();
   final notifications = NotificationsKeys();
   final device = DeviceVerifyKeys();
   final home = HomeKeys();

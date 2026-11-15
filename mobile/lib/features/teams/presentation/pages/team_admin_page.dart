@@ -149,7 +149,7 @@ class TeamAdminPage extends ConsumerWidget {
         key: keys.teamAdmin.reports,
         icon: PdlIcons.report,
         label: 'teams.manage.reports'.tr(),
-        webPath: TeamWebPaths.reports(teamSlug),
+        appPath: Paths.teamAdminReports(teamSlug),
       ),
       if (admin)
         _AdminRow(

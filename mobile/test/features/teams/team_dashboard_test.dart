@@ -10,6 +10,7 @@ import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pdl_icons.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/formatters.dart';
+import 'package:pedalons/core/utils/link_launcher.dart';
 import 'package:pedalons/features/auth/data/auth_repository.dart';
 import 'package:pedalons/features/auth/data/secure_storage.dart';
 import 'package:pedalons/features/auth/domain/auth_state.dart';
@@ -82,6 +83,11 @@ void main() {
                 path: PathVariants.rideTemplates(':teamSlug')['fr']!,
                 builder: (BuildContext _, GoRouterState state) =>
                     Text('liste modèles ${state.pathParameters['teamSlug']}'),
+              ),
+              GoRoute(
+                path: PathVariants.teamAdminReports(':teamSlug')['fr']!,
+                builder: (BuildContext _, GoRouterState state) =>
+                    Text('signalements ${state.pathParameters['teamSlug']}'),
               ),
               GoRoute(
                 path: PathVariants.teamAdminMembers(':teamSlug')['fr']!,
@@ -329,6 +335,24 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Examiner'), findsOneWidget);
+    });
+
+    testWidgets('« Examiner » ouvre la file de signalements de l\'app '
+        '(MOB-168)', (WidgetTester tester) async {
+      final List<Uri> launched = <Uri>[];
+      debugLinkOpener = (Uri url) async {
+        launched.add(url);
+        return true;
+      };
+      addTearDown(() => debugLinkOpener = null);
+      final TeamDashboardDto d = _dashboard(role: 'ORGANIZER');
+      await renderBody(tester, d, routed: true);
+
+      await tester.tap(find.text('Examiner'));
+      await settle(tester);
+
+      expect(find.text('signalements ${d.team.slug}'), findsOneWidget);
+      expect(launched, isEmpty);
     });
 
     testWidgets('une catégorie sans attente n\'a pas de tuile', (

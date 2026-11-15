@@ -137,6 +137,8 @@
                 <data android:pathPattern="/equipes/.*/admin/lieux" />
                 <data android:pathPattern="/teams/.*/admin/members" />
                 <data android:pathPattern="/equipes/.*/admin/membres" />
+                <data android:pathPattern="/teams/.*/admin/reports" />
+                <data android:pathPattern="/equipes/.*/admin/signalements" />
                 <data android:pathPattern="/teams/.*/admin/settings" />
                 <data android:pathPattern="/equipes/.*/admin/parametres" />
                 <data android:pathPattern="/teams/.*/rides/new" />

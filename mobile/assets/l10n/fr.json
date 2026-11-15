@@ -2409,6 +2409,61 @@
       "hint": "Vous ne voyez plus leurs commentaires, publications et annonces. Ces personnes ne savent pas que vous les avez bloquées.",
       "emptyTitle": "Aucune personne bloquée",
       "emptyMessage": "Pour bloquer quelqu'un, touchez ⋯ sur l'un de ses commentaires ou de ses annonces, ou son nom dans la liste des membres."
+    },
+    "targetType": {
+      "COMMENT": "Commentaire",
+      "POST": "Publication",
+      "AD": "Annonce",
+      "RIDE": "Sortie",
+      "TRIP": "Voyage",
+      "ROUTE": "Parcours",
+      "MEMBER": "Membre",
+      "other": "Contenu"
+    },
+    "status": {
+      "REMOVED": "Supprimé",
+      "DISMISSED": "Rejeté"
+    },
+    "queue": {
+      "title": "Signalements",
+      "description": "Les contenus signalés par les membres de l'équipe. L'identité des personnes qui signalent n'est pas communiquée.",
+      "tabs": {
+        "open": "À traiter",
+        "resolved": "Traités"
+      },
+      "empty": {
+        "open": {
+          "title": "Aucun signalement en attente",
+          "description": "Les contenus signalés apparaîtront ici en attendant votre décision."
+        },
+        "resolved": {
+          "title": "Aucun signalement traité",
+          "description": "Les dernières décisions apparaîtront ici."
+        }
+      },
+      "reportCount": {
+        "zero": "{} signalement",
+        "one": "{} signalement",
+        "other": "{} signalements"
+      },
+      "hidden": "Masqué aux membres",
+      "lastReported": "Dernier signalement : {date}",
+      "commentOn": "Commentaire sur « {name} »",
+      "contentGone": "Le contenu n'existe plus.",
+      "author": "Par {name}",
+      "member": "Membre signalé : {name}",
+      "memberHint": "Pour retirer ce membre de l'équipe, passez par la gestion des membres (rôle Administrateur).",
+      "messages": "Précisions des signalements",
+      "actions": {
+        "remove": "Supprimer le contenu",
+        "dismiss": "Rejeter le signalement"
+      },
+      "removeConfirm": {
+        "title": "Supprimer ce contenu ?",
+        "message": "Le contenu sera supprimé pour tout le monde, et tous ses signalements seront clos."
+      },
+      "removed": "Contenu supprimé.",
+      "dismissed": "Signalement rejeté : le contenu reste visible."
     }
   },
   "feedback": {

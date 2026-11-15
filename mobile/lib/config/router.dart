@@ -25,6 +25,7 @@ import '../features/device/presentation/pages/device_verify_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 import '../features/legal/presentation/pages/legal_page.dart';
 import '../features/moderation/presentation/pages/blocked_users_page.dart';
+import '../features/moderation/presentation/pages/team_reports_page.dart';
 import '../features/navigation/presentation/shell/main_shell.dart';
 import '../features/notifications/presentation/pages/notification_settings_page.dart';
 import '../features/notifications/presentation/pages/notifications_page.dart';
@@ -338,6 +339,11 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   // Les lieux de l'équipe, sous le hub (ledger `MOB-168`).
   _DeepLinkHierarchy(
     patterns: PathVariants.teamAdminPlaces(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _teamAdminAncestor],
+  ),
+  // La file de signalements de l'équipe, sous le hub (ledger `MOB-168`).
+  _DeepLinkHierarchy(
+    patterns: PathVariants.teamAdminReports(':teamSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamAdminAncestor],
   ),
   // Les modèles de sortie : la liste sous l'équipe, le formulaire sous la
@@ -858,6 +864,7 @@ GoRoute _teamTree(String locale) {
           _teamSettingsRoute(locale),
           _teamAdminMembersRoute(locale),
           _teamAdminPlacesRoute(locale),
+          _teamAdminReportsRoute(locale),
         ],
       ),
       // Les modèles de sortie : la liste, et dessous son formulaire de
@@ -999,6 +1006,22 @@ GoRoute _teamAdminPlacesRoute(String locale) {
     parentNavigatorKey: _rootNavigatorKey,
     builder: (context, state) =>
         TeamPlacesPage(teamSlug: state.pathParameters['teamSlug']!),
+  );
+}
+
+/// La file de signalements de l'équipe, sous le hub (ledger `MOB-168`) : la
+/// notification `CONTENT_REPORTED` y mène.
+GoRoute _teamAdminReportsRoute(String locale) {
+  final hubBase = PathVariants.teamAdmin(':teamSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(
+      PathVariants.teamAdminReports(':teamSlug'),
+      locale,
+      hubBase,
+    ),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) =>
+        TeamReportsPage(teamSlug: state.pathParameters['teamSlug']!),
   );
 }
 

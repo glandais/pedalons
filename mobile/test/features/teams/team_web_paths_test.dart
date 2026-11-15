@@ -4,7 +4,7 @@ import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_admin_members_page.dart';
 import 'package:pedalons/features/teams/presentation/team_web_paths.dart';
 
-/// Les pages du site qu'ouvre le tableau de bord viennent de
+/// Les pages du site qu'ouvre le hub « Gestion de l'équipe » viennent de
 /// `contracts/routes.yaml` (docs/LEDGER_*.md MOB-54), dans la langue de l'app.
 /// Créer et modifier une sortie se font dans l'app depuis `MOB-80`, les
 /// modèles de sortie depuis `MOB-78`, la gestion des membres depuis
@@ -36,11 +36,14 @@ void main() {
     expect(Paths.support(), '/support');
   });
 
-  test('chaque page du tableau de bord est une page du site sans écran', () {
+  test('la file de signalements est un écran de l\'app (MOB-168)', () {
+    expect(webOnlyRouteIds, isNot(contains('teamAdminReports')));
+  });
+
+  test('chaque page que le hub ouvre encore sur le site est sans écran', () {
     // `appScreen: false` dans le contrat : le lien part dans le navigateur,
     // jamais sur le routeur de l'app.
     for (final String id in <String>[
-      'teamAdminReports',
       // Ouvertes par le hub « Gestion de l'équipe » tant que leur écran
       // n'existe pas (MOB-165).
       'teamAdminTags',

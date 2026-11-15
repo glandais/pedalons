@@ -93,18 +93,19 @@ void main() {
     tearDown(() => debugLinkOpener = null);
 
     test('part au navigateur, la pile et le lien en attente intacts', () async {
-      // Les signalements, encore au site (ledger `MOB-168`) ; la gestion des
-      // membres, qui servait ici, est un écran de l'app depuis `MOB-167`.
-      final reports = PathVariants.teamAdminReports('velo-club')['fr']!;
+      // Les pages de l'équipe, encore au site (ledger `MOB-169`) ; la gestion
+      // des membres puis les signalements, qui servaient ici, sont des écrans
+      // de l'app depuis `MOB-167` et `MOB-168`.
+      final sitePage = PathVariants.teamAdminPages('velo-club')['fr']!;
 
       for (final signedIn in [true, false]) {
         opened.clear();
-        openDeepLink(router, reports, signedIn: signedIn, pending: pending);
+        openDeepLink(router, sitePage, signedIn: signedIn, pending: pending);
         await Future<void>.delayed(Duration.zero);
 
         expect(router.calls, isEmpty, reason: 'signedIn: $signedIn');
         expect(pending.location, isNull, reason: 'signedIn: $signedIn');
-        expect(opened.single.path, reports);
+        expect(opened.single.path, sitePage);
       }
     });
   });

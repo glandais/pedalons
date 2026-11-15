@@ -120,6 +120,11 @@ void main() {
               Text('membres de ${state.pathParameters['teamSlug']}'),
         ),
         GoRoute(
+          path: '/equipes/:teamSlug/admin/signalements',
+          builder: (BuildContext _, GoRouterState state) =>
+              Text('signalements de ${state.pathParameters['teamSlug']}'),
+        ),
+        GoRoute(
           path: '/equipes/:teamSlug/admin/lieux',
           builder: (BuildContext _, GoRouterState state) =>
               Text('lieux de ${state.pathParameters['teamSlug']}'),
@@ -314,6 +319,29 @@ void main() {
     expect(launched, isEmpty);
   });
 
+  testWidgets('« Signalements » ouvre l\'écran de l\'app, pour qui '
+      'organise (MOB-168)', (WidgetTester tester) async {
+    final List<Uri> launched = <Uri>[];
+    debugLinkOpener = (Uri url) async {
+      launched.add(url);
+      return true;
+    };
+    await open(tester, role: 'ORGANIZER');
+
+    await tester.tap(find.byKey(keys.teamAdmin.reports));
+    await settle(tester);
+
+    expect(find.text('signalements de n-peloton'), findsOneWidget);
+    expect(launched, isEmpty);
+  });
+
+  testWidgets('un rôle Organisateur ne quitte plus l\'app : aucune de ses '
+      'lignes n\'ouvre le site', (WidgetTester tester) async {
+    await open(tester, role: 'ORGANIZER');
+
+    expect(find.text('S\'ouvre sur le site'), findsNothing);
+  });
+
   testWidgets('les lignes sans écran ouvrent le site, et le disent', (
     WidgetTester tester,
   ) async {
@@ -324,15 +352,12 @@ void main() {
     };
     await open(tester, role: 'ADMIN');
 
-    // Trois lignes sur sept quittent l'app : les modèles, les lieux, les
-    // membres et les paramètres y ont un écran.
-    expect(find.text('S\'ouvre sur le site'), findsNWidgets(3));
+    // Deux lignes sur sept quittent l'app, les tags et les pages : les
+    // modèles, les lieux, les membres, les signalements et les paramètres y
+    // ont un écran.
+    expect(find.text('S\'ouvre sur le site'), findsNWidgets(2));
 
-    for (final Key row in <Key>[
-      keys.teamAdmin.tags,
-      keys.teamAdmin.pages,
-      keys.teamAdmin.reports,
-    ]) {
+    for (final Key row in <Key>[keys.teamAdmin.tags, keys.teamAdmin.pages]) {
       await tester.tap(find.byKey(row));
       await settle(tester);
     }
@@ -342,7 +367,6 @@ void main() {
       <String>[
         '/equipes/n-peloton/admin/tags',
         '/equipes/n-peloton/admin/pages',
-        '/equipes/n-peloton/admin/signalements',
       ],
     );
     // Toujours sur le hub.

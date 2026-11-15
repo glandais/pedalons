@@ -467,7 +467,7 @@ routes:
   # app screen since MOB-165: the hub « Gestion de l'équipe », where the site only redirects to
   # the ride templates. Each page below becomes an app screen with its own lot (MOB-166 to
   # MOB-169; `teamSettings` since MOB-166, `teamAdminMembers` since MOB-167, `teamAdminPlaces`
-  # since MOB-168); until then it is `mobile: true` + `appScreen: false`,
+  # and `teamAdminReports` since MOB-168); until then it is `mobile: true` + `appScreen: false`,
   # and the hub opens it on the site (docs/LEDGER_*.md MOB-54). Flip a page in the commit of its screen: drop `appScreen`,
   # add `deeplink: true`.
   - id: teamAdmin
@@ -534,8 +534,9 @@ routes:
     web: true
     mobile: true
     deeplink: true
-  # `mobile: true` + `appScreen: false` on the organizer's page below: the app's team dashboard
-  # and its hub open it on the site (mobile/…/team_web_paths.dart, docs/LEDGER_*.md MOB-54).
+  # The team's moderation queue: an app screen since MOB-168, under the hub. The dashboard's
+  # « À traiter » item and the `CONTENT_REPORTED` notification open it; a platform admin reaches
+  # it without being a member.
   - id: teamAdminReports
     path:
       en: /teams/{teamSlug}/admin/reports
@@ -544,7 +545,7 @@ routes:
       - teamSlug
     web: true
     mobile: true
-    appScreen: false
+    deeplink: true
   - id: teamSettings
     path:
       en: /teams/{teamSlug}/admin/settings

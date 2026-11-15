@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/pdl/pdl.dart';
@@ -238,7 +239,8 @@ void main() {
     );
   });
 
-  test('un signalement nomme l\'équipe et mène à la file du site', () {
+  test('un signalement nomme l\'équipe et mène à la file de l\'app '
+      '(MOB-168)', () {
     final NotificationDto reported = _notification(
       type: NotificationType.contentReported,
       subject: NotificationSubjectType.report,
@@ -247,12 +249,12 @@ void main() {
     );
     // Aucun acteur : le signaleur est anonyme pour l'équipe.
     expect(reported.title(), 'Nouveau signalement dans Gaby');
-    // La file n'existe que sur le web : pas de route interne, une page du
-    // site — celle que le serveur met dans le push.
-    expect(reported.path(), isNull);
-    // Dans la langue de l'app (route `teamAdminReports`, MOB-54).
-    expect(reported.webPath(), '/equipes/gaby/admin/signalements');
-    expect(_notification().webPath(), isNull);
+    // La file de l'équipe, un écran de l'app : le chemin que le serveur met
+    // dans le push, dans la langue de l'app (route `teamAdminReports`).
+    expect(reported.path(), '/equipes/gaby/admin/signalements');
+    setCurrentLocale('en');
+    addTearDown(() => setCurrentLocale('fr'));
+    expect(reported.path(), '/teams/gaby/admin/reports');
   });
 
   testWidgets('les types de la phase 5 ont leur phrase, pas leur code', (

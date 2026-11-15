@@ -140,20 +140,9 @@ extension NotificationDisplay on NotificationDto {
     // invitations en attente s'acceptent, et la page de l'équipe elle-même
     // peut être fermée à qui n'en est pas encore membre.
     NotificationSubjectType.team => Paths.teams(),
-    // La file de signalements n'a pas d'écran dans l'app : voir [webPath].
-    NotificationSubjectType.report => null,
-    NotificationSubjectType.$unknown => null,
-  };
-
-  /// La page **du site** que la notification ouvre, quand l'app n'a pas
-  /// d'écran pour elle — `null` sinon.
-  ///
-  /// Un signalement se décide dans la file de l'équipe, qui n'existe que sur
-  /// le web : c'est le lien même que le serveur met dans le push. La route
-  /// `teamAdminReports` est `appScreen: false` dans `contracts/routes.yaml` :
-  /// son chemin est généré côté mobile, sans écran derrière.
-  String? webPath() => switch (subjectTypeEnum) {
+    // Un signalement se décide dans la file de l'équipe, un écran de l'app
+    // depuis `MOB-168` : c'est aussi le lien que le serveur met dans le push.
     NotificationSubjectType.report => Paths.teamAdminReports(teamSlug),
-    _ => null,
+    NotificationSubjectType.$unknown => null,
   };
 }

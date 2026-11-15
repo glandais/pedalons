@@ -559,6 +559,55 @@ admin de plateforme y arrive par notification sans être membre).
   signalement » : `resolveTeamReports`. Pour un membre signalé, le renvoi vers l'écran Membres.
 - Après écriture : file, tableau de bord (« À traiter »), notifications.
 
+**Fait (lot 4)** — ce que le code a tranché :
+
+- **Accès** : `TeamReportsPage(teamSlug:)`
+  (`features/moderation/presentation/pages/team_reports_page.dart`), sous-route du hub
+  (`_teamAdminReportsRoute`). Le refus (`keys.teamReports.forbidden`, 403 et 404 de `GET team`
+  compris) est tranché par la page publique ; la file n'est lue que par le corps rendu à qui
+  organise ou administre la plateforme. L'admin de plateforme non membre y entre parce que
+  `isTeamOrganizerProvider` lit la fiche et son rôle de plateforme (§4.1) : il lui faut donc
+  que `GET team` lui réponde, ce que le serveur fait.
+- **File** : `teamReportsProvider` (`providers/team_reports_provider.dart`), un
+  `FutureProvider` par équipe et par onglet — la file n'est pas paginée au contrat. L'onglet
+  est un état de l'écran, pas un paramètre de la route (le site le met dans l'URL).
+- **Carte** : le type de cible, le nombre de signalements, « Masqué aux membres » et la
+  décision rendue en badges ; la date du dernier signalement ; le nom du contenu en lien vers
+  son écran (`moderationContentPath` : `Paths.post`, `ride`, `trip`, `route`, `ad`, par
+  `pushLocation`) — en texte seul pour un type de contenu que l'app ne connaît pas, plutôt
+  qu'un lien vers une route qui n'existe pas ; l'auteur ou le membre signalé ; l'extrait (six
+  lignes au plus) ; les motifs ; les précisions. `reporters` n'est jamais lu.
+  `moderation.targetType.POST` dit « Publication » (le site : « Post ») : le lexique de la
+  charte, et ce que dit déjà le tableau de bord (« Publication signalée »).
+- **Décisions** : `ModerationRepository.resolveTeamReports`, corps `{targetType, targetId,
+  action, teamSlug}` comme au site — `targetType` part tel que la file l'a donné. « Supprimer
+  le contenu » se confirme (`confirmDestructive`, textes du site), « Rejeter le signalement »
+  part aussitôt, comme au site. Une décision à la fois : pendant qu'elle court, les boutons des
+  autres cartes sont inactifs. Un refus du serveur se lit dans un bandeau, la carte reste.
+- **Membre signalé** : le texte de renvoi dit « la gestion des membres » (le site : « la page
+  Membres ») ; le lien « Gestion des membres » (`Paths.teamAdminMembers`) n'est rendu qu'à qui
+  administre l'équipe ou la plateforme — un organisateur y lirait un refus.
+- **Après une décision** : `refreshAfterModerationDecision`
+  (`providers/moderation_refresh.dart`) relit la file de l'équipe (ses deux onglets — celle à
+  l'écran garde ses cartes pendant la relecture), **le tableau de bord seul**
+  (`teamDashboardProvider(slug)`, pas `notifyTeamChanged` : ni la fiche, ni « Mes équipes », ni
+  la découverte ne dépendent d'un signalement, et les invalider viderait la liste des équipes
+  pour rien), et le contenu quand il a changé pour ses lecteurs : supprimé, ses listes
+  (`refreshAfterReport`) et son détail ; rejeté alors qu'il était masqué, ses listes.
+  **Les notifications ne sont pas relues** : une décision n'en marque aucune comme lue côté
+  serveur, la pastille ne change pas.
+- **Entrées** : la ligne « Signalements » du hub, « Examiner » du tableau de bord
+  (`dashboard_todo.dart`, `context.push`) et la notification `CONTENT_REPORTED`
+  (`NotificationDisplay.path()` rend `Paths.teamAdminReports` ; `webPath()` et son traitement
+  dans `notifications_page.dart` ont disparu) ouvrent l'écran. Le push, qui porte ce même
+  chemin, l'ouvre aussi : la route est un lien profond. `TeamWebPaths.reports` et
+  `TeamWebPaths.places` n'existent plus ; restent `tags` et `pages` (lot 5).
+- **Déclarations des stores** : lignes #29 (lieux, sous *Physical Address* — O1) et #30
+  (décisions de modération, sous *Other User Content* comme les signalements) de
+  `data-safety.md`, commentaires de `PrivacyInfo.xcprivacy` ; aucun type de donnée nouveau. La
+  politique de confidentialité (« Lieux », « Signalements et blocages ») vaut telle quelle
+  pour l'app.
+
 ### 7.4 Tags (lot 5, `MOB-169`)
 
 Page sur `teamAdminTags` dans `features/tags/`, accès admin.
