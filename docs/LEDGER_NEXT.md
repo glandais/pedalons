@@ -226,6 +226,17 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       parcours ni aperçus GPX ; un écran qui crée directement le parcours depuis une proposition
       d'`API-198`. Plan [`2026-11-13-generateur-boucles-equipe.md`](plans/2026-11-13-generateur-boucles-equipe.md) §8.
 
+- [ ] `MOB-170` **Tracer et modifier un parcours sur la carte dans l'app (M)** — l'app ne crée un
+      parcours que par l'envoi d'un fichier GPX (`MOB-79`) : rien ne s'y trace, les points de
+      parcours ne s'y modifient pas, la case « Ne pas utiliser pour générer des parcours » et le
+      quota du planificateur (`BILL-10`) n'y existent pas. Le planificateur du site est embarqué
+      dans une WebView plein écran, sur le modèle de `MOB-160` ; le formulaire reste natif, la page
+      ne connaît ni jeton ni URL et passe par un pont (`GpxPickStep`, `route_track_section.dart`,
+      `route_form.dart`, nouvel écran `RoutePlannerScreen`). Hors génération de parcours
+      (`MOB-154`). Dépend de `WEB-183`. Essai préalable concluant le 15 novembre 2026 (Pixel 6a,
+      simulateur iOS, iPhone). Plan
+      [`2026-11-15-planificateur-parcours-mobile.md`](plans/2026-11-15-planificateur-parcours-mobile.md).
+
 ### Heure de départ : audit du 7 novembre 2026
 
 Audit de la visibilité de la date et de l'heure de départ (sortie, groupe, voyage, étape) sur les
@@ -701,6 +712,14 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       (`lib/entityTeam.ts`), statut SSR (`config/ssrTeamStatus.ts`), `noindex` sur
       `permissions.indexable`. Reste à faire tourner les specs e2e écrites
       (`private-team-public-content.e2e.ts`, `flow-rides.e2e.ts`) avant de ranger l'entrée.
+
+- [ ] `WEB-183` **Planificateur de parcours embarquable dans l'app (M)** — le plein écran tactile
+      du planificateur vit dans `components/planner/RoutePlannerField.tsx` et ses appels au
+      routeur passent par le client du site : l'app ne peut pas le réutiliser. Extraire ce plein
+      écran en un composant à deux hôtes, rendre le transport injectable, et construire
+      `src/embed/mobile-planner/` vers `mobile/assets/planner/` (script classique, worker MapLibre
+      chargé en Blob). Le site ne change pas de comportement. Sert `MOB-170`. Plan
+      [`2026-11-15-planificateur-parcours-mobile.md`](plans/2026-11-15-planificateur-parcours-mobile.md) §4.1.
 
 - [ ] `WEB-179` **Panneau « Générer un parcours » (M)** — départ, arrivée, rose des vents, distance, fréquentation, trois
       propositions sur la carte avec le réseau de l'équipe en fond, ouverture dans l'éditeur comme
@@ -1899,7 +1918,7 @@ redevient une entrée de sa section sous le même identifiant.
 | `WEB-12` | **Mode sombre dérivé au web** | Sans objet | Le tableau de parité est un livrable **pour Flutter**, parce qu'aucune maquette ne fournit le sombre. Mantine l'a déjà |
 | `MOB-22` | **Jeu d'icônes Tabler côté mobile** | Material outline conservé | L'écart ne porte que sur la graisse du trait des icônes de badge de 11 px. `PdlIcons` (`lib/core/theme/pdl_icons.dart`) devrait être le **seul** fichier à nommer `Icons.*` (17 autres fichiers le font encore au 16 octobre 2026) : une fois ce ménage fait, basculer ne touchera qu'un fichier |
 | `MOB-23` | **Écran de profil public d'un membre** | Aucune maquette ne va au-delà de la liste | Une ligne du trombinoscope ouvre le menu signaler/bloquer (`team_members_page.dart`), jamais un profil. Ne pas inventer l'écran |
-| `MOB-24` | **Édition et création de contenu au mobile — hors sorties, modèles de sortie, parcours et publications** (voyages, administration d'équipe, et le **planificateur de parcours sur carte**) | Hors brief : la v2 est une version de consultation et de participation | Les **sorties** en ont été détachées et livrées le 17 octobre 2026 (`MOB-80`, éditeur de sortie, sélecteur de meneur compris), puis les **modèles de sortie** le même jour (`MOB-78`), puis les **parcours** (`MOB-79`, par import d'un fichier GPX : créer, modifier, remplacer le tracé, supprimer, restaurer), puis les **publications** le 14 novembre 2026 (`MOB-164`). Le **planificateur sur carte** (`points`, routage Stadia) reste dehors : il ne vit qu'au site, où il a l'écran, la carte et la souris pour poser et déplacer des points, et l'app n'a pas de besoin qui le justifie — on y prépare un tracé, on y envoie un fichier. Le reste ouvre toujours le site depuis le tableau de bord (`team_web_paths.dart`) ; à rouvrir type par type, sur le modèle de `MOB-80` |
+| `MOB-24` | **Édition et création de contenu au mobile — hors sorties, modèles de sortie, parcours et publications** (voyages, administration d'équipe, et le **planificateur de parcours sur carte**) | Hors brief : la v2 est une version de consultation et de participation | Les **sorties** en ont été détachées et livrées le 17 octobre 2026 (`MOB-80`, éditeur de sortie, sélecteur de meneur compris), puis les **modèles de sortie** le même jour (`MOB-78`), puis les **parcours** (`MOB-79`, par import d'un fichier GPX : créer, modifier, remplacer le tracé, supprimer, restaurer), puis les **publications** le 14 novembre 2026 (`MOB-164`). Le **planificateur sur carte** (`points`, routage Stadia) en a été détaché le 15 novembre 2026 (`MOB-170`, à faire) : le mode tactile du site (`WEB-100`, lot 2) et un essai dans la WebView de l'app ont levé la raison de le laisser au site. Le reste ouvre toujours le site depuis le tableau de bord (`team_web_paths.dart`) ; à rouvrir type par type, sur le modèle de `MOB-80` |
 | `MOB-50` | **Cloche des notifications dans l'en-tête du Profil** | Non (décidé le 4 octobre 2026 avec le propriétaire, refonte `MOB-48`) | La boîte de réception est dans une autre branche du shell : un `push` depuis le Profil empilerait les branches, un `go` y ferait perdre la place. Elle reste à un onglet ; les réglages de notifications sont dans `/profil/notifications`. Ne pas ajouter de cloche au Profil |
 | `MOB-61` | **Recherche et tags des anciennes adresses du fil dans l'app** (`team?tab=publications&type=…&q=…&tags=…`) | Non (décidé le 11 octobre 2026 avec le propriétaire) | Aucune de ces anciennes adresses n'a été partagée : l'app garde le type et la période (`resolveTeamRootSection`, `agendaTarget` dans `team_sections.dart`) et ignore `q` et `tags`, que seul le site reporte (`teamLegacyRedirects.ts`). À rouvrir seulement si une telle adresse circule |
 | `MOB-74` | **Exclure du manifeste Android les pages du site sans écran dans l'app** (`<uri-relative-filter-group android:allow="false">`, API 35+) | Non (11 octobre 2026 ; part écartée de `MOB-59`, renumérotée le 16 octobre 2026) | L'app reçoit ces liens et les passe au navigateur (`isSitePageLocation` dans `openDeepLink`) : il ne reste qu'un bref passage par l'app. L'exclusion ne vaudrait que sous Android 15+, ne se vérifie que sur un appareil avec la vérification des App Links, et un manifeste faux casse tous les liens d'app. À rouvrir si le passage par l'app gêne |
