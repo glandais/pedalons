@@ -34,11 +34,21 @@ final myTeamsListProvider = StateNotifierProvider.autoDispose
       ) {
         final bool reloading =
             next.isLoading && previous != null && !previous.isLoading;
+        if (!reloading) return;
+        // Le rechargement de [myTeamsProvider] après une invalidation
+        // (`notifyTeamChanged`) se fait souvent pendant le build d'un écran
+        // qui l'écoute : modifier cette liste dans la foulée lève « Tried to
+        // modify a provider while the widget tree was building ». D'où le
+        // report à la micro-tâche suivante, une fois le build fini.
         // Déjà en train de se recharger (le tirer-pour-rafraîchir de l'écran
         // recharge les deux) : pas de second appel.
-        if (reloading && !notifier.isRefreshing) {
-          unawaited(notifier.refresh());
-        }
+        unawaited(
+          Future<void>.microtask(() async {
+            if (notifier.mounted && !notifier.isRefreshing) {
+              await notifier.refresh();
+            }
+          }),
+        );
       });
       return notifier;
     });
