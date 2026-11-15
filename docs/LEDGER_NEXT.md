@@ -78,10 +78,12 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       disputait le défilement avec elle. Les images passent par l'app avec ses en-têtes ; une image
       touchée montre les tailles XS à L du site ; un lien se pose sur le texte sélectionné
       (`markdown_link_sheet.dart`) ; le clavier s'ouvre à l'ouverture et après une image ou un lien
-      (`MainActivity.showEditorKeyboard`, Android) ; la barre « ^ v ✓ » de WKWebView est masquée dans
-      `AppDelegate.swift`. Les textes d'invite sont ceux du site. **Reste** : essai au doigt sur
-      iPhone (AXe n'atteint pas le contenu d'une WebView dans une vue native Flutter), dont le clavier
-      à l'ouverture et après une image (rien n'est fait sur iOS) ; saisie Gboard réelle ; test de
+      (`MainActivity.showEditorKeyboard` sur Android ; sur iOS, `AppDelegate.letWebViewFocusShowKeyboard`
+      fait passer tout focus de WKWebView pour un geste de la personne — vérifié à l'ouverture sur un
+      iPhone, iOS 27.2, le 15 novembre 2026) ; la barre « ^ v ✓ » de WKWebView est masquée dans
+      `AppDelegate.swift`. Les textes d'invite sont ceux du site. **Reste** : le reste de l'essai au
+      doigt sur iPhone (AXe n'atteint pas le contenu d'une WebView dans une vue native Flutter) — le
+      clavier après une image, la barre « ^ v ✓ », un lien, les tailles d'image ; saisie Gboard réelle ; test de
       widget du pont et test Patrol de l'écran plein (les tests de widget écrivent dans le contrôleur
       du champ, la WebView n'y existe pas). Tableaux : `MOB-161`. Au passage, le site transforme
       `- [ ] tâche` en `- \[ \] tâche` (pas d'extension de cases à cocher) : à porter côté `WEB` si
