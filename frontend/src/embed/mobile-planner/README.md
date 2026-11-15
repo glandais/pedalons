@@ -12,19 +12,25 @@ pnpm dev:mobile-planner       # the built page in a desktop browser, with a fake
 The output is committed. **Rebuild it after any change to the planner** (`components/planner/`,
 `hooks/useRoutePlanner.ts`, `lib/planner*.ts`, the map components, the catalogues).
 
+`mobile/check.sh` fails on a stale bundle: the build writes `mobile/tool/planner_bundle.sha256`,
+the SHA-256 of every source file of ours that went into the bundle (the module graph, generated
+`api/dto` included), of the config, of the page and of the files built, and the check compares
+them with the tree (`shasum -a 256 -c`). Hashes, not dates: a checkout does not keep dates. A
+dependency bump alone (`node_modules`) is not seen.
+
 ## What is shared with the site
 
 Everything but the host. `PlannerApp.tsx` renders the same pieces as the site's form field
 (`components/planner/RoutePlannerField.tsx`):
 
-| Piece | Role |
-|---|---|
-| `useRoutePlanner` | The planner's state |
-| `usePlannerEditing` | What happens around the map: route point form, profile hover, clear and remove with their « undo », GPX import |
-| `PlannerTouchFullscreen` | The touch fullscreen: toolbar, elevation strip, bottom bar |
-| `PlannerEditingDialogs` | Replace-or-append choice of an import, route point form |
-| `RoutePlanner` | The map |
-| `lib/plannerSubmit.ts` | The rule of what is saved (`done.payload`) |
+| Piece                    | Role                                                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `useRoutePlanner`        | The planner's state                                                                                            |
+| `usePlannerEditing`      | What happens around the map: route point form, profile hover, clear and remove with their « undo », GPX import |
+| `PlannerTouchFullscreen` | The touch fullscreen: toolbar, elevation strip, bottom bar                                                     |
+| `PlannerEditingDialogs`  | Replace-or-append choice of an import, route point form                                                        |
+| `RoutePlanner`           | The map                                                                                                        |
+| `lib/plannerSubmit.ts`   | The rule of what is saved (`done.payload`)                                                                     |
 
 Three things differ, each injected rather than forked:
 
@@ -61,32 +67,35 @@ with `runJavaScript`. Types: `bridge.ts`.
 
 ### Flutter → page
 
-| Call | When |
-|---|---|
-| `load(input)` | After `ready`. A second call starts over on a fresh state. |
-| `response({ id, status, body, retryAfter? })` | Answers a `request`. |
-| `gpx({ name, base64 } \| null)` | Answers `pickGpx`; `null` when the picker was left. |
-| `position({ lng, lat } \| null)` | Answers `locate`; `null` when there is no position. |
+| Call                                          | When                                                                                                                                                                                                                                                                                  |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `load(input)`                                 | After `ready`. A second call starts over on a fresh state.                                                                                                                                                                                                                            |
+| `response({ id, status, body, retryAfter? })` | Answers a `request`.                                                                                                                                                                                                                                                                  |
+| `gpx({ name, base64, id? } \| null)`          | Answers `pickGpx`; `null` when the picker was left or the file refused by the app. `id` is the app's name for the file it kept: `done` gives it back.                                                                                                                                 |
+| `position({ lng, lat } \| null)`              | Answers `locate`; `null` when there is no position.                                                                                                                                                                                                                                   |
+| `test({ place?, done? })`                     | **Test only**, inert unless `load` carried `testCommands: true`: places the points of `place` (`{ lng, lat }[]`) one after the other as straight lines — no touch on the map, no routing request —, then, with `done: true`, does what « Terminer » does. For the app's Patrol suite. |
 
 `load` input:
 
-| Field | |
-|---|---|
-| `state?` | `PlannerState` of the route (`GET …/planner-state`). Wins over `track`. |
-| `track?` | `[lng, lat, ele, dist][]` of the route; frames the map, and is what opens when there is no `state`. |
-| `ascend?` | D+ (m) stored for `track`. |
-| `waypoints?`, `waypointsTotal?` | `WaypointDto[]` of the route and the length (m) stored with them. |
-| `routeName?` | Toolbar title. |
-| `teamSlug` | Sent with every routing call. |
-| `teamLocation?` | `[lng, lat]`: where the map opens without a track. |
-| `create?` | `true`: the route does not exist yet, the whole drawing is sent. `false`: an untouched track sends nothing. Default: `true` when neither `state` nor `track` is given. **Pass it explicitly when reopening a drawing not saved yet.** |
-| `styles` | The basemaps of `ConfigDto.mapStyles`. For an entry whose `url` is on our API, replace `url` by `style` (the document, object or JSON text); same for `darkVariant` → `darkStyle`. Third-party URLs stay as they are. |
-| `terrain?` | `ConfigDto.terrain`; absent, the relief switches are hidden. |
-| `defaultCenter?` | `ConfigDto.defaultCenter`: where the map opens with neither track nor team location. |
-| `theme` | `'light'` or `'dark'`. |
-| `locale` | `'fr'` or `'en'` (anything else: French). |
-| `units` | `'METRIC'` or `'IMPERIAL'`. |
-| `quota?` | Accepted, not read: the app disables its own entry point when the quota is spent. |
+| Field                           |                                                                                                                                                                                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `state?`                        | `PlannerState` of the route (`GET …/planner-state`). Wins over `track`.                                                                                                                                                               |
+| `track?`                        | `[lng, lat, ele, dist][]` of the route; frames the map, and is what opens when there is no `state`.                                                                                                                                   |
+| `ascend?`                       | D+ (m) stored for `track`.                                                                                                                                                                                                            |
+| `waypoints?`, `waypointsTotal?` | `WaypointDto[]` of the route and the length (m) stored with them.                                                                                                                                                                     |
+| `routeName?`                    | Toolbar title.                                                                                                                                                                                                                        |
+| `teamSlug`                      | Sent with every routing call.                                                                                                                                                                                                         |
+| `teamLocation?`                 | `[lng, lat]`: where the map opens without a track.                                                                                                                                                                                    |
+| `create?`                       | `true`: the route does not exist yet, the whole drawing is sent. `false`: an untouched track sends nothing. Default: `true` when neither `state` nor `track` is given. **Pass it explicitly when reopening a drawing not saved yet.** |
+| `styles`                        | The basemaps of `ConfigDto.mapStyles`. For an entry whose `url` is on our API, replace `url` by `style` (the document, object or JSON text); same for `darkVariant` → `darkStyle`. Third-party URLs stay as they are.                 |
+| `terrain?`                      | `ConfigDto.terrain`; absent, the relief switches are hidden.                                                                                                                                                                          |
+| `defaultCenter?`                | `ConfigDto.defaultCenter`: where the map opens with neither track nor team location.                                                                                                                                                  |
+| `theme`                         | `'light'` or `'dark'`.                                                                                                                                                                                                                |
+| `locale`                        | `'fr'` or `'en'` (anything else: French).                                                                                                                                                                                             |
+| `units`                         | `'METRIC'` or `'IMPERIAL'`.                                                                                                                                                                                                           |
+| `quota?`                        | Accepted, not read: the app disables its own entry point when the quota is spent.                                                                                                                                                     |
+| `locate?` | `true` draws « Me localiser », which sends `locate`. Absent or false, no button: the app passes it only once its store declarations cover that use of the position. |
+| `testCommands?`                 | `true` enables `window.pedalonsPlanner.test` (the app's Patrol suite). Never set by the app outside a test.                                                                                                                           |
 
 `response`: `status` is the HTTP status, `0` when no answer came (network down, path refused by
 the app). `body` is the decoded JSON or its text. `retryAfter` is the `Retry-After` header in
@@ -96,29 +105,29 @@ messages by code (`lib/plannerErrors.ts`, `lib/plannerQuota.ts`) are the site's.
 
 ### Page → Flutter
 
-| Message | Flutter does |
-|---|---|
-| `{ type: 'ready' }` | Calls `load`. |
-| `{ type: 'request', id, method, path, body? }` | Sends it with its own HTTP client and answers with `response`. |
-| `{ type: 'cancel', id }` | Cancels that request; no `response` is expected (a late one is dropped). |
-| `{ type: 'pickGpx' }` | Opens the file picker, keeps the file, answers with `gpx`. |
-| `{ type: 'locate' }` | Answers with `position`. |
-| `{ type: 'busy', busy }` | A calculation is in flight: nothing to save yet. |
-| `{ type: 'dirty', dirty }` | Whether anything changed since `load` — what a « leave without saving? » asks about. |
+| Message                                                                | Flutter does                                                                                                                                           |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `{ type: 'ready' }`                                                    | Calls `load`.                                                                                                                                          |
+| `{ type: 'request', id, method, path, body? }`                         | Sends it with its own HTTP client and answers with `response`.                                                                                         |
+| `{ type: 'cancel', id }`                                               | Cancels that request; no `response` is expected (a late one is dropped).                                                                               |
+| `{ type: 'pickGpx' }`                                                  | Opens the file picker, keeps the file, answers with `gpx`.                                                                                             |
+| `{ type: 'locate' }`                                                   | Answers with `position`.                                                                                                                               |
+| `{ type: 'busy', busy }`                                               | A calculation is in flight: nothing to save yet.                                                                                                       |
+| `{ type: 'dirty', dirty }`                                             | Whether anything changed since `load` — what a « leave without saving? » asks about.                                                                   |
 | `{ type: 'quotaRefused', scope, limit, current, resetsOn, teamName? }` | A calculation was refused with `PLANNER_QUOTA_REACHED`: open the quota dialog, read the team again. The page shows the refusal in its status line too. |
-| `{ type: 'done', payload, stats, dirty, nameSuggestion?, notice? }` | « Terminer »: close the screen, hand the result to the form. Not sent while `busy`. |
-| `{ type: 'close', dirty }` | The back arrow: leave without a result. The page asks nothing; confirming is the app's. |
-| `{ type: 'error', message }` | An uncaught failure of the page, for the app's log. |
+| `{ type: 'done', payload, stats, dirty, nameSuggestion?, notice? }`    | « Terminer »: close the screen, hand the result to the form. Not sent while `busy`.                                                                    |
+| `{ type: 'close', dirty }`                                             | The back arrow: leave without a result. The page asks nothing; confirming is the app's.                                                                |
+| `{ type: 'error', message }`                                           | An uncaught failure of the page, for the app's log.                                                                                                    |
 
 `request` is only ever one of:
 
-| `method` `path` | `body` |
-|---|---|
-| `POST /api/router` | `RouterRequest` |
-| `POST /api/router/elevation` | `LineElevationRequest` |
+| `method` `path`               | `body`                                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `POST /api/router`            | `RouterRequest`                                                                                                    |
+| `POST /api/router/elevation`  | `LineElevationRequest`                                                                                             |
 | `POST /api/router/import-gpx` | `{ multipart: { fields: { teamSlug? }, file: { name, base64, contentType } } }` — the file part is named `gpxFile` |
-| `GET /api/geocode/search?q=…` | — |
-| `GET /api/geocode/place?id=…` | — |
+| `GET /api/geocode/search?q=…` | —                                                                                                                  |
+| `GET /api/geocode/place?id=…` | —                                                                                                                  |
 
 The query string is part of `path`, already encoded. The app should refuse anything else.
 
@@ -127,8 +136,11 @@ The query string is part of `path`, already encoded. The app should refuse anyth
 - `payload` — the fragment to merge into the route request, computed by `plannerPayload`
   (`lib/plannerSubmit.ts`): `plannerState`, **or** `points`, **or** `file: true`, **or** none of
   them, plus `waypoints` when the route points were touched. `file: true` means the route is,
-  untouched, the file the app picked last: upload that file, as the site does. An empty payload on
-  an existing route means « send no track ».
+  untouched, a file the app picked: upload that file, as the site does. `fileId` is the `id` the
+  app gave it in `gpx` — not always the last file picked: one the server refused to import, or
+  turned down in the replace-or-append question, leaves the earlier one in place. Without an `id`
+  the app can only assume the last one. An empty payload on an existing route means « send no
+  track ».
 - `stats` — `{ distance, ascend, pointCount, line }`: metres, metres of climb, control points, and
   the drawn line as a polyline of precision 6 (latitude then longitude) for the preview card.
 - `nameSuggestion` — the name of the last file imported, for a name field still empty.

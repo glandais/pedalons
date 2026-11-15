@@ -183,6 +183,37 @@ class RouteEditorKeys {
   final tagsRow = const _RouteEditorKey('tagsRow');
   final saveButton = const _RouteEditorKey('saveButton');
   final errorBanner = const _RouteEditorKey('errorBanner');
+
+  // Le planificateur embarqué (ledger `MOB-170`).
+
+  /// « Tracer sur la carte », à l'étape 1 de la création.
+  final drawButton = const _RouteEditorKey('drawButton');
+
+  /// « Modifier le tracé », dans la section Tracé.
+  final trackEditButton = const _RouteEditorKey('trackEditButton');
+
+  /// Pourquoi « Tracer sur la carte » est désactivé : le quota du mois.
+  final quotaMessage = const _RouteEditorKey('quotaMessage');
+
+  /// La feuille d'un refus `PLANNER_QUOTA_REACHED`, et son « Fermer ».
+  final quotaSheet = const _RouteEditorKey('quotaSheet');
+  final quotaClose = const _RouteEditorKey('quotaClose');
+
+  /// La carte d'aperçu d'un tracé dessiné.
+  final plannerPreview = const _RouteEditorKey('plannerPreview');
+
+  /// « Des modifications faites sur la carte n'ont pas été reprises ».
+  final plannerUnvalidated = const _RouteEditorKey('plannerUnvalidated');
+
+  /// L'état d'édition n'a pas pu être relu, ou le tracé a été enregistré sans
+  /// ses points de contrôle.
+  final plannerWarning = const _RouteEditorKey('plannerWarning');
+
+  /// L'écran plein du planificateur.
+  final plannerScreen = const _RouteEditorKey('plannerScreen');
+
+  /// « Ne pas utiliser pour générer des parcours ».
+  final excludedFromGenerator = const _RouteEditorKey('excludedFromGenerator');
 }
 
 class _RouteManageKey extends ValueKey<String> {

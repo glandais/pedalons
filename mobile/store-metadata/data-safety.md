@@ -13,7 +13,8 @@ from:
 
 - **App**: Pédalons, `fr.pedalons.mobile`, version `1.0.0+57` (`mobile/pubspec.yaml`)
 - **Backend**: `https://www.pedalons.fr` (`mobile/lib/config/app_config.dart`)
-- **Last verified against the code**: 2026-11-14 (ad editor, `MOB-158` — `lib/features/ads/`, and
+- **Last verified against the code**: 2026-11-15 (route planner, `MOB-170` —
+  `lib/features/routes/data/planner_bridge.dart`; before that 2026-11-14: ad editor, `MOB-158` — `lib/features/ads/`, and
   the declaration of an ad's position as an address, `MOB-159`, #25; post editor, `MOB-164` —
   `lib/features/posts/`; before that 2026-10-17: route editor and GPX import, `MOB-79` —
   `lib/features/routes/`; before that 2026-09-27: problem reports and automatic error reports,
@@ -63,9 +64,21 @@ The capabilities added, and their exact boundary:
   track), as the `gpxFile` part of a multipart request beside the route's name, description,
   surface, visibility and tags (#23). The exact boundary: the file is one the organizer chose to
   publish as a **team route** for the members to ride; the app never reads the device's position
-  for it and draws or edits nothing on a map (the route planner stays on the web); and the
+  for it; and the
   **server** keeps only the track and its waypoints — timestamps, sensor measurements and the file's
   metadata are removed before anything is stored (`GpxSanitizer`; policy § *GPX files you import*).
+- **Route planner** (2026-11-15, `MOB-170`) — the same editor lets an organizer **draw** the
+  track on a map: the site's planner, shipped in the app's assets and shown in a WebView
+  (`assets/planner/`, `lib/features/routes/data/planner_bridge.dart`). The page holds no session
+  and reaches no server of ours by itself: the app sends its requests, on a closed list — the
+  points the organizer placed, to `POST /api/router` and `/api/router/elevation` to compute the
+  track between them; a GPX chosen in the planner, to `POST /api/router/import-gpx`; what is typed
+  in its place search, to `GET /api/geocode/search` (the search already declared for ads, #25).
+  What is saved is the route (#23), by the same two requests as a GPX import. **The planner does
+  not read the device's position**: its « Me localiser » button is switched off in the app
+  (`kPlannerLocate`, `lib/features/routes/data/planner_load.dart`) — turning it on is a new use
+  of #10 and needs the purpose strings, this file and both store forms updated first. The page
+  fetches map tiles from the basemap providers directly, as the app's native maps do.
 - **`geolocator`** — `LocationAccuracy.low` only, while the app is in use. The coordinates become
   the `nearLat`/`nearLon`/`nearRadius` query parameters of an existing list endpoint and are never
   written to disk nor attached to the account. `NSLocationWhenInUseUsageDescription` (fr + en);
@@ -122,8 +135,8 @@ and `mobile/android/`:
   `geolocator`'s own), and no MapLibre user-location layer.
 - No FIT import, and no GPX import outside the route editor: the only file the app reads to send
   coordinates is the GPX an organizer picks to create or replace a team route (`MOB-79`, #23). No
-  reading of the device's position for it, no recording of a ride, no track drawn or edited on a
-  map. Everywhere else route files are download-only: fetched to `getTemporaryDirectory()` and
+  reading of the device's position for it, no recording of a ride. A track is drawn or edited on a
+  map only in the route planner (`MOB-170`), from points the organizer places by hand. Everywhere else route files are download-only: fetched to `getTemporaryDirectory()` and
   handed to the OS share sheet (`lib/features/routes/presentation/widgets/route_download_actions.dart`).
   Coordinates flow server → device, except for that one organizer's GPX.
 - No analytics, crash-reporting, advertising or attribution SDK (no Crashlytics/Sentry/Amplitude/

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
@@ -72,8 +73,50 @@ function forbidSiteModules(): Plugin {
   }
 }
 
+/**
+ * What the bundle was built from, for `mobile/check.sh` to tell a stale one: every source file of
+ * ours that went into it (the module graph, so a new import is covered by the file that imports
+ * it), this config, the page, and the files written — each with its SHA-256, in the format
+ * `shasum -a 256 -c` reads, paths from the repository root. Content hashes, not dates: a checkout
+ * does not keep dates. Dependencies (`node_modules`) are not covered.
+ */
+const repoRoot = path.resolve(import.meta.dirname, '..')
+const manifestFile = path.resolve(repoRoot, 'mobile/tool/planner_bundle.sha256')
+
+function recordSources(): Plugin {
+  const sources = new Set<string>()
+  return {
+    name: 'record-sources',
+    generateBundle() {
+      for (const id of this.getModuleIds()) {
+        const file = id.split('?')[0]
+        if (!file || !path.isAbsolute(file) || file.includes('/node_modules/')) continue
+        if (!file.startsWith(import.meta.dirname + path.sep) || !fs.existsSync(file)) continue
+        sources.add(file)
+      }
+    },
+    closeBundle() {
+      if (!fs.existsSync(path.join(outDir, 'planner.js'))) return
+      const files = [
+        ...sources,
+        path.resolve(import.meta.dirname, 'vite.mobile-planner.config.ts'),
+        path.resolve(import.meta.dirname, 'src/embed/mobile-planner/public/index.html'),
+        ...fs.readdirSync(outDir).map((f) => path.join(outDir, f)),
+      ]
+      const lines = [...new Set(files)]
+        .map((file) => {
+          const hash = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+          return `${hash}  ${path.relative(repoRoot, file).split(path.sep).join('/')}`
+        })
+        .sort((a, b) => (a.slice(66) < b.slice(66) ? -1 : 1))
+      fs.writeFileSync(manifestFile, lines.join('\n') + '\n')
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), forbidSiteModules(), inlineWorkerSource()],
+  // `recordSources` last: it hashes what `inlineWorkerSource` wrote
+  plugins: [react(), forbidSiteModules(), inlineWorkerSource(), recordSources()],
   resolve: {
     alias: [
       // The router, and through the route table every page of the site, stay out of the bundle:

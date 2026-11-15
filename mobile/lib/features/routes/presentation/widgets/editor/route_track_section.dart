@@ -5,13 +5,19 @@ import '../../../../../api/generated/export.dart';
 import '../../../../../core/material.dart';
 import '../../../../../core/pdl/pdl.dart';
 import '../../../../../core/preferences/user_preferences_provider.dart';
+import '../../../../../core/theme/pdl_colors.dart';
 import '../../../../../core/theme/pdl_icons.dart';
 import '../../../../../core/theme/pdl_tokens.dart';
+import '../../../../../core/theme/pdl_typography.dart';
 import '../../../../../core/utils/formatters.dart';
 import '../../../../../keys.dart';
 import '../../../../rides/presentation/widgets/editor/editor_section.dart';
 import '../../../domain/gpx_check.dart';
+import '../../../domain/planner_quota.dart';
+import '../../../domain/planner_result.dart';
 import 'gpx_refused_banner.dart';
+import 'planner_preview_card.dart';
+import 'planner_quota_message.dart';
 
 /// La section « Tracé » de l'éditeur de parcours (ledger `MOB-79`).
 ///
@@ -21,6 +27,15 @@ import 'gpx_refused_banner.dart';
 ///   le GPX », et l'avertissement qu'un nouveau fichier remplace tout le
 ///   tracé. Un fichier choisi ([picked]) se montre avec « Garder le tracé
 ///   actuel » ([onCancelReplace]).
+///
+/// Avec le planificateur ([onDraw] non nul, ledger `MOB-170`) : « Tracer sur
+/// la carte » à la création, « Modifier le tracé » à côté de « Remplacer le
+/// GPX » en modification — désactivé, avec sa raison, si le quota du mois est
+/// épuisé ([quotaSpent]). Un tracé dessiné ([drawn]) se montre en carte
+/// d'aperçu ([PlannerPreviewCard]) ; un fichier choisi ensuite passe devant.
+/// [unvalidated] : la carte a été quittée sans « Terminer » après des
+/// retouches. [plannerWarning] : un avertissement du planificateur (état non
+/// relu).
 ///
 /// [refused] : le fichier a été refusé (à la lecture, ou par le serveur à
 /// l'envoi) — son bandeau ouvre la section. [busy] : lecture ou envoi en
@@ -34,6 +49,11 @@ class RouteTrackSection extends ConsumerWidget {
     required this.busy,
     required this.onPick,
     this.onCancelReplace,
+    this.onDraw,
+    this.quotaSpent,
+    this.drawn,
+    this.unvalidated = false,
+    this.plannerWarning,
   });
 
   final RouteDetailDto? current;
@@ -42,6 +62,14 @@ class RouteTrackSection extends ConsumerWidget {
   final bool busy;
   final VoidCallback onPick;
   final VoidCallback? onCancelReplace;
+
+  /// Ouvre le planificateur ; nul, il n'est pas proposé (planificateur fermé
+  /// à l'équipe, ou parcours à plusieurs traces).
+  final VoidCallback? onDraw;
+  final PlannerQuotaRefusal? quotaSpent;
+  final PlannerResult? drawn;
+  final bool unvalidated;
+  final String? plannerWarning;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -64,35 +92,101 @@ class RouteTrackSection extends ConsumerWidget {
             ),
             const SizedBox(height: PdlSpacing.chipGap),
           ],
+          if (plannerWarning != null) ...<Widget>[
+            PdlBanner(
+              key: keys.routeEditor.plannerWarning,
+              tone: PdlBannerTone.warn,
+              icon: PdlIcons.warning,
+              message: plannerWarning!,
+            ),
+            const SizedBox(height: PdlSpacing.chipGap),
+          ],
           if (route == null)
             ..._creation(file)
           else
             ..._edition(context, ref, route, file),
+          if (unvalidated) ...<Widget>[
+            const SizedBox(height: PdlSpacing.chipGap),
+            PdlBanner(
+              key: keys.routeEditor.plannerUnvalidated,
+              tone: PdlBannerTone.warn,
+              icon: PdlIcons.warning,
+              message: 'routes.editor.trackUnvalidated'.tr(),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  List<Widget> _creation(GpxFile? file) => <Widget>[
-    if (file != null)
-      _pickedRow(
-        file,
-        subtitle: 'routes.editor.trackComputed'.tr(),
-        semanticLabel: 'routes.editor.trackChange'.tr(),
+  /// Le tracé dessiné à montrer : aucun quand un fichier choisi passe devant.
+  PlannerResult? get _shownDrawing => picked == null ? drawn : null;
+
+  /// « Tracer sur la carte » ou, une fois un tracé dessiné (ou en
+  /// modification), « Modifier le tracé » — et la raison d'un quota épuisé.
+  List<Widget> _drawButton({required bool edit}) {
+    final VoidCallback? draw = onDraw;
+    if (draw == null) return const <Widget>[];
+    final PlannerQuotaRefusal? quota = quotaSpent;
+    return <Widget>[
+      Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: PdlButton(
+          key: edit
+              ? keys.routeEditor.trackEditButton
+              : keys.routeEditor.drawButton,
+          label: edit
+              ? 'routes.editor.trackEdit'.tr()
+              : 'routes.editor.drawButton'.tr(),
+          icon: PdlIcons.map,
+          variant: PdlButtonVariant.outline,
+          size: PdlButtonSize.sm,
+          enabled: !busy && quota == null,
+          onPressed: draw,
+        ),
       ),
-    Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: PdlButton(
-        key: keys.routeEditor.trackChangeButton,
-        label: 'routes.editor.trackChange'.tr(),
-        icon: PdlIcons.fileAdd,
-        variant: PdlButtonVariant.text,
-        size: PdlButtonSize.sm,
-        enabled: !busy,
-        onPressed: onPick,
+      if (quota != null) ...<Widget>[
+        const SizedBox(height: PdlSpacing.badgeGap),
+        PlannerQuotaMessage(
+          key: keys.routeEditor.quotaMessage,
+          refusal: quota,
+          help: true,
+        ),
+      ],
+      const SizedBox(height: PdlSpacing.chipGap),
+    ];
+  }
+
+  List<Widget> _creation(GpxFile? file) {
+    final PlannerResult? drawing = _shownDrawing;
+    return <Widget>[
+      if (file != null)
+        _pickedRow(
+          file,
+          subtitle: 'routes.editor.trackComputed'.tr(),
+          semanticLabel: 'routes.editor.trackChange'.tr(),
+        ),
+      if (drawing != null) ...<Widget>[
+        PlannerPreviewCard(stats: drawing.stats),
+        const SizedBox(height: PdlSpacing.chipGap),
+      ],
+      ..._drawButton(edit: drawing != null),
+      Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: PdlButton(
+          key: keys.routeEditor.trackChangeButton,
+          label: drawing == null
+              ? 'routes.editor.trackChange'.tr()
+              : 'routes.editor.importButton'.tr(),
+          icon: PdlIcons.fileAdd,
+          variant: PdlButtonVariant.text,
+          size: PdlButtonSize.sm,
+          enabled: !busy,
+          onPressed: onPick,
+        ),
       ),
-    ),
-  ];
+    ];
+  }
 
   List<Widget> _edition(
     BuildContext context,
@@ -151,6 +245,18 @@ class RouteTrackSection extends ConsumerWidget {
         ),
         const SizedBox(height: PdlSpacing.chipGap),
       ],
+      if (_shownDrawing case final PlannerResult drawing) ...<Widget>[
+        PlannerPreviewCard(stats: drawing.stats),
+        if (drawing.hasTrack) ...<Widget>[
+          const SizedBox(height: PdlSpacing.badgeGap),
+          Text(
+            'routes.editor.trackDrawnReplacing'.tr(),
+            style: context.pdlText.sub.copyWith(color: context.pdl.textDimmed),
+          ),
+        ],
+        const SizedBox(height: PdlSpacing.chipGap),
+      ],
+      ..._drawButton(edit: true),
       Align(
         alignment: AlignmentDirectional.centerStart,
         child: PdlButton(

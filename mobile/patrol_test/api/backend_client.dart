@@ -136,7 +136,8 @@ final class BackendClient {
   /// any other [visibility], and the admin-only [joinable] / [addMemberAllowed] /
   /// [publicContentAllowed] attributes, are applied afterwards as the platform admin — as
   /// `newTeam` does in the web suite. [publicContentAllowed] lets a private team publish content
-  /// readable by link (docs/LEDGER_*.md MOB-137).
+  /// readable by link (docs/LEDGER_*.md MOB-137). [enableRoutePlanner] opens the route planner
+  /// to the team (docs/LEDGER_*.md MOB-170).
   Future<Json> newTeam(
     TestUser owner,
     String label, {
@@ -144,6 +145,7 @@ final class BackendClient {
     bool? joinable,
     bool? addMemberAllowed,
     bool? publicContentAllowed,
+    bool? enableRoutePlanner,
   }) async {
     final request = _teamRequest(unique(label));
     var team = await post(owner, '/api/teams', request);
@@ -155,7 +157,8 @@ final class BackendClient {
     }
     if (joinable != null ||
         addMemberAllowed != null ||
-        publicContentAllowed != null) {
+        publicContentAllowed != null ||
+        enableRoutePlanner != null) {
       final admin = await this.admin();
       final path = '/api/admin/teams/${team['id']}';
       final current = await get(admin, path);
@@ -163,7 +166,8 @@ final class BackendClient {
         'visibilityEditable': current['visibilityEditable'],
         'joinable': joinable ?? current['joinable'],
         'addMemberAllowed': addMemberAllowed ?? current['addMemberAllowed'],
-        'enableRoutePlanner': current['enableRoutePlanner'],
+        'enableRoutePlanner':
+            enableRoutePlanner ?? current['enableRoutePlanner'],
         'publicContentAllowed':
             publicContentAllowed ?? current['publicContentAllowed'],
       });

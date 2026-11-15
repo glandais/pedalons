@@ -9,6 +9,7 @@ import 'package:pedalons/features/routes/data/route_repository.dart';
 import 'package:pedalons/features/routes/domain/gpx_check.dart';
 
 import '../../support/content_permissions.dart';
+import 'route_fixtures.dart' show fixturePlannerStateJson;
 
 /// L'écriture d'un parcours sur le fil (ledger `MOB-79`).
 ///
@@ -182,6 +183,128 @@ void main() {
     final Map<String, dynamic> route =
         jsonDecode(fields(form)['route']!) as Map<String, dynamic>;
     expect(route['name'], 'Boucle du Vercors');
+  });
+
+  // Le tracé du planificateur embarqué (ledger `MOB-170`) : il voyage dans le
+  // champ `route`, sans partie fichier.
+  group('tracé du planificateur', () {
+    final RouteRequest drawn = request.copyWith(
+      plannerState: PlannerState.fromJson(fixturePlannerStateJson),
+      waypoints: const <WaypointRequest>[
+        WaypointRequest(
+          position: GeoPoint(lng: 5, lat: 45),
+          type: 'WATER',
+          name: 'Fontaine',
+        ),
+      ],
+      excludedFromGenerator: true,
+    );
+
+    test(
+      'créer sans fichier : `plannerState` dans `route`, pas de `gpxFile`',
+      () async {
+        adapter.body = _route(slug: 'boucle').toJson();
+
+        await repo.createRoute('x', drawn);
+
+        final RequestOptions sent = adapter.requests.single;
+        expect(sent.method, 'POST');
+        expect(sent.path, '/api/teams/x/routes');
+        expect(sent.contentType, startsWith('multipart/form-data'));
+        final FormData form = sent.data as FormData;
+        expect(form.files, isEmpty);
+        expect(fields(form).keys, <String>['route']);
+        final Map<String, dynamic> route =
+            jsonDecode(fields(form)['route']!) as Map<String, dynamic>;
+        expect(route['points'], isNull);
+        final Map<String, dynamic> state =
+            route['plannerState'] as Map<String, dynamic>;
+        expect(state['version'], 1);
+        expect(state['profile'], 'FASTBIKE');
+        expect(
+          (state['junctions'] as List<dynamic>).map(
+            (dynamic j) => (j as Map<String, dynamic>)['kind'],
+          ),
+          <String>['CONTROL', 'CONTROL'],
+        );
+        expect(
+          ((state['pieces'] as List<dynamic>).single
+              as Map<String, dynamic>)['mode'],
+          'DIRECT',
+        );
+        expect(
+          ((route['waypoints'] as List<dynamic>).single
+              as Map<String, dynamic>)['name'],
+          'Fontaine',
+        );
+        expect(route['excludedFromGenerator'], isTrue);
+        // `tagIds` part toujours (MOB-79).
+        expect(route['tagIds'], <String>['a']);
+      },
+    );
+
+    test(
+      'modifier : PUT, `points` sans `plannerState`, pas de fichier',
+      () async {
+        adapter.body = _route().toJson();
+
+        await repo.updateRoute(
+          'x',
+          'col',
+          request.copyWith(
+            points: const <GeoPoint>[
+              GeoPoint(lng: 5, lat: 45),
+              GeoPoint(lng: 5.01, lat: 45.01),
+            ],
+          ),
+        );
+
+        final RequestOptions sent = adapter.requests.single;
+        expect(sent.method, 'PUT');
+        final FormData form = sent.data as FormData;
+        expect(form.files, isEmpty);
+        final Map<String, dynamic> route =
+            jsonDecode(fields(form)['route']!) as Map<String, dynamic>;
+        expect(route['plannerState'], isNull);
+        expect(route['points'], <dynamic>[
+          <String, dynamic>{'lng': 5.0, 'lat': 45.0},
+          <String, dynamic>{'lng': 5.01, 'lat': 45.01},
+        ]);
+      },
+    );
+
+    test(
+      'un import laissé intact : le fichier gardé part en `gpxFile`',
+      () async {
+        adapter.body = _route(slug: 'boucle').toJson();
+
+        await repo.createRoute('x', request, gpx: gpx);
+
+        final FormData form = adapter.requests.single.data as FormData;
+        final MapEntry<String, MultipartFile> file = form.files.single;
+        expect(file.key, 'gpxFile');
+        expect(file.value.filename, 'col-test.gpx');
+        expect(file.value.contentType?.mimeType, 'application/gpx+xml');
+        final Map<String, dynamic> route =
+            jsonDecode(fields(form)['route']!) as Map<String, dynamic>;
+        expect(route['plannerState'], isNull);
+        expect(route['points'], isNull);
+      },
+    );
+
+    test('`planner-state` : GET, l\'état ou rien', () async {
+      adapter.body = <String, Object?>{'state': fixturePlannerStateJson};
+      expect(
+        await repo.getPlannerState('x', 'col'),
+        PlannerState.fromJson(fixturePlannerStateJson),
+      );
+      final RequestOptions sent = adapter.requests.single;
+      expect(sent.method, 'GET');
+      expect(sent.path, '/api/teams/x/routes/col/planner-state');
+
+      adapter.body = <String, Object?>{};
+      expect(await repo.getPlannerState('x', 'col'), isNull);
+    });
   });
 
   test("changer l'adresse : PATCH …/slug avec le nouveau slug", () async {

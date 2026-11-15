@@ -1,7 +1,7 @@
 # Route planner in the mobile app
 
 Ledger `MOB-170` (app) and `WEB-183` (the site's side: shared fullscreen component and embed
-build). Written 15 November 2026. Status: **lot 2 (site) coded the same day, lot 3 (app) not coded**. **No contract change**
+build). Written 15 November 2026. Status: **lots 2 (site) and 3 (app) coded the same day; device check and Patrol run still to do**. **No contract change**
 and no backend change: the generated Dart client already exposes everything the planner calls.
 
 Goal: creating and editing a route in the app does what the site does — drawing on the map
@@ -26,7 +26,7 @@ press, 44 px targets), and the spike of §2 shows that this mode runs inside the
 | MapLibre worker | Loaded from a **Blob** built from its source; a worker URL cannot be loaded from `file://`. §2. |
 | Basemap styles | Flutter reads the style JSON and hands the **object** to the page: `/api/map/styles/*` sends no CORS header and the page's origin is `null`. §2. |
 | Place search | Through `/api/geocode/*` over the bridge, not Stadia from the page: no key in the bundle. |
-| « Me localiser » | The existing one-shot coarse position, no puck, no new permission (`MOB-131` stands). |
+| « Me localiser » | **Off in the app** (`kPlannerLocate`, `load.locate`). The bridge can serve the existing one-shot coarse position with no new permission, but the purpose declared to the stores is sorting by distance only: turning it on means new purpose strings, `data-safety.md` and both store forms (`MOB-131`). |
 | Personal GPX tools | Out: the app has no GPX previews (`MOB-154`). |
 | Multi-track route | GPX only, as on the site. |
 | Leaving with unsaved changes | The app keeps its `PopScope` confirmation, which the site does not have. |
@@ -182,6 +182,12 @@ untouched is uploaded as a file, as on the site.
    by Flutter. The debug page `mobile/lib/dev/planner_embed_page.dart` (`/dev/planificateur`) is
    kept: it is the bridge's minimal reference until lot 3.
 3. **App** (`MOB-170`, M): screen, bridge, source choice, preview, send, quota, exclusion checkbox.
+   **Coded 15 November 2026.** The WebView lives as long as the form (`PlannerBridge` is held by
+   the editor page, `RoutePlannerScreen` only attaches a widget to it). Added to the protocol:
+   `gpx.id` and `done.payload.fileId` (the file the route still is may not be the last one picked),
+   `load.locate`, and a test-only `test({place, done})` behind `load.testCommands`. A banner in the
+   track section says when the planner was left with changes and without « Terminer »: without
+   it, a save after Android back would silently drop the drawing.
    Three points lot 2 left to lot 3:
    - **Reopening.** `done` returns no state, and a payload is relative to the state the page
      opened on: destroying the WebView between two openings would let an untouched reopening wipe
@@ -201,9 +207,10 @@ untouched is uploaded as a file, as on the site.
 - App: unit tests of the bridge (closed path list, cancellation, base64 multipart) and of the
   request merge; `route_repository_write_test` extended to a `plannerState` request;
   `route_editor_page_test` for the two entry points, the quota states and the checkbox.
-- Patrol: a test command on the bridge places points without touching the map, then the saved
-  route is checked through the API. **To settle first**: whether the e2e stack has a stub router;
-  without one this test bills Stadia requests.
+- Patrol: `route_planner_test.dart` — a test command on the bridge places points **as straight
+  lines**, then the saved route is checked through the API. The e2e stack has no stub router (it
+  calls Stadia when `STADIAMAPS_API_KEY` is set and fails every routing request without it), so
+  the test must never need a routed leg. Written, not run yet.
 - `mobile/check.sh` fails when `mobile/assets/planner/` is older than the sources it is built from.
 - By hand on Android and iOS: drag, insert on the line, long-press menu, pinch, edge auto-pan,
   waypoint form, keyboard in the search box.

@@ -64,6 +64,17 @@ export interface PlannerLoad {
    * an untouched track sends nothing. Default: true when neither `state` nor `track` is given.
    */
   create?: boolean
+  /**
+   * True shows « Me localiser », which asks the app for the device's position (`locate`). Absent or
+   * false, the button is not drawn: the app's stores declare what it reads the position for, and
+   * the planner is not in that declaration (ledger MOB-170).
+   */
+  locate?: boolean
+  /**
+   * Test only (the app's Patrol suite): true makes `window.pedalonsPlanner.test` act. Absent or
+   * false, that call does nothing.
+   */
+  testCommands?: boolean
 }
 
 /** The request fragment of `lib/plannerSubmit.ts`, as it crosses the bridge. */
@@ -72,6 +83,8 @@ export interface DonePayload {
   plannerState?: PlannerState
   /** The route is, untouched, the file the app picked last: the app uploads that file. */
   file?: true
+  /** The `id` the app gave that file in `gpx`, when it gave one: which of the files it kept. */
+  fileId?: string
   waypoints?: WaypointRequest[]
 }
 
@@ -162,8 +175,18 @@ function channel<T>() {
   }
 }
 
+/**
+ * A test-only command (`PlannerLoad.testCommands`): control points placed as straight lines, in
+ * order, without a touch on the map and without a routing request, then « Terminer ».
+ */
+export interface TestCommand {
+  place?: { lng: number; lat: number }[]
+  done?: boolean
+}
+
 const gpxChannel = channel<File | null>()
 const positionChannel = channel<{ lng: number; lat: number } | null>()
+const testChannel = channel<TestCommand>()
 
 /** The answer to `pickGpx`: the file chosen in the app's picker, null when the picker was left. */
 export const onGpx = gpxChannel.subscribe
@@ -171,6 +194,9 @@ export const emitGpx = gpxChannel.emit
 /** The answer to `locate`: the app's position, null when it has none to give. */
 export const onPosition = positionChannel.subscribe
 export const emitPosition = positionChannel.emit
+/** A test-only command, when `load` enabled them. */
+export const onTest = testChannel.subscribe
+export const emitTest = testChannel.emit
 
 // ── Requests ────────────────────────────────────────────────────────────────────────────────────
 
@@ -285,12 +311,24 @@ export function fileToBase64(file: Blob): Promise<string> {
   })
 }
 
-/** The file the app picked, rebuilt from its base64 bytes. */
-export function fileFromBase64(name: string, base64: string): File {
+// The app keeps every file it hands over, under an id: `done` names the one the route still is,
+// which is not always the last one picked (a later file refused by the server, or turned down in
+// the replace-or-append question, leaves the earlier one in place).
+const fileIds = new WeakMap<Blob, string>()
+
+/** The id the app gave `file` in `gpx`, if it gave one. */
+export function fileIdOf(file: Blob): string | undefined {
+  return fileIds.get(file)
+}
+
+/** The file the app picked, rebuilt from its base64 bytes; `id` is the app's name for it. */
+export function fileFromBase64(name: string, base64: string, id?: string): File {
   const binary = atob(base64)
   const bytes = new Uint8Array(binary.length)
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-  return new File([bytes], name, { type: 'application/gpx+xml' })
+  const file = new File([bytes], name, { type: 'application/gpx+xml' })
+  if (id) fileIds.set(file, id)
+  return file
 }
 
 // ── The planner's calls ─────────────────────────────────────────────────────────────────────────

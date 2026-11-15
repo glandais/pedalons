@@ -13,6 +13,8 @@ TeamDetailDto fixtureRouteTeam({
   String? role,
   String visibility = 'PUBLIC',
   bool enableRoutes = true,
+  bool enableRoutePlanner = false,
+  PlannerQuotaDto? plannerQuota,
 }) => TeamDetailDto(
   allowedContentVisibilities: contentVisibilitiesFor(visibility),
   defaultContentVisibility: visibility,
@@ -35,7 +37,8 @@ TeamDetailDto fixtureRouteTeam({
   addMemberAllowed: true,
   enableMemberDirectory: false,
   postsAsTeamByDefault: true,
-  enableRoutePlanner: false,
+  enableRoutePlanner: enableRoutePlanner,
+  plannerQuota: plannerQuota,
   memberCount: 40,
   upcomingRideCount: 3,
   routeCount: 12,
@@ -51,6 +54,8 @@ RouteDetailDto fixtureRouteDetail({
   bool deleted = false,
   String createdBy = 'u9',
   ContentPermissionsDto permissions = kNoPermissions,
+  List<TrackDto> tracks = const <TrackDto>[],
+  bool? excludedFromGenerator,
 }) => RouteDetailDto(
   permissions: permissions,
   id: 'r1',
@@ -73,11 +78,38 @@ RouteDetailDto fixtureRouteDetail({
   createdBy: PublicUserDto(id: createdBy, displayName: 'Créatrice'),
   createdAt: '2026-01-01T10:00:00Z',
   updatedAt: '2026-01-01T10:00:00Z',
-  tracks: const <TrackDto>[],
+  tracks: tracks,
   waypoints: const <WaypointDto>[],
   deleted: deleted,
   tags: const <TagDto>[],
+  excludedFromGenerator: excludedFromGenerator,
 );
+
+/// Une trace de deux points `[lng, lat, altitude, distance cumulée]`.
+const TrackDto fixtureTrack = TrackDto(
+  line: GeoJsonLineString(
+    type: GeoJsonLineStringTypeType.lineString,
+    coordinates: <List<double>>[
+      <double>[5, 45, 200, 0],
+      <double>[5.01, 45.01, 230, 1400],
+    ],
+  ),
+  climbs: <ClimbDto>[],
+);
+
+/// Un état d'édition du planificateur, tel que l'API le sert.
+const Map<String, dynamic> fixturePlannerStateJson = <String, dynamic>{
+  'version': 1,
+  'profile': 'FASTBIKE',
+  'sources': <dynamic>[],
+  'junctions': <dynamic>[
+    <String, dynamic>{'kind': 'CONTROL', 'lng': 5.0, 'lat': 45.0},
+    <String, dynamic>{'kind': 'CONTROL', 'lng': 5.01, 'lat': 45.01},
+  ],
+  'pieces': <dynamic>[
+    <String, dynamic>{'mode': 'DIRECT'},
+  ],
+};
 
 /// Un GPX minimal dont la première trace s'appelle [trackName].
 String fixtureGpx({String trackName = 'Col de test'}) =>

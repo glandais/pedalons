@@ -5,7 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pedalons/api/generated/export.dart' show SurfaceType;
 import 'package:pedalons/app.dart';
+import 'package:pedalons/core/geo/polyline_index.dart' show LngLat;
 import 'package:pedalons/features/routes/data/gpx_file_source.dart';
+import 'package:pedalons/features/routes/data/planner_bridge.dart';
 import 'package:pedalons/features/routes/domain/gpx_check.dart';
 
 import 'module.dart';
@@ -82,6 +84,63 @@ final class RouteEditor extends Module {
     return !isShown(keys.routeEditor.saveButton) &&
         !isShown(keys.routeEditor.pickButton);
   }
+
+  // ── The planner (ledger `MOB-170`) ─────────────────────────────────────
+  //
+  // The planner is the site's, in a WebView: Patrol finds nothing in it by key, and a tap on the
+  // map would need pixels. The page has a test-only command instead (`pedalonsPlanner.test`,
+  // inert unless `load` carries `testCommands`), which [placeAndFinish] sends through the app's
+  // own bridge. Points are placed as **straight lines**: no routing request, so the test runs the
+  // same with or without a routing key on the e2e stack. Everything after — the `done` message,
+  // the preview card, the request and what the server stores — is the real thing.
+
+  /// Makes the next planner opened accept the test command. Call before opening it.
+  void enablePlannerTestCommands() => PlannerBridge.debugTestCommands = true;
+
+  bool get offersDraw => isShown(keys.routeEditor.drawButton);
+
+  /// « Tracer sur la carte » (step 1) → the fullscreen planner, loaded.
+  Future<void> drawOnMap() async {
+    await $(keys.routeEditor.drawButton).tap();
+    await _plannerLoaded();
+  }
+
+  /// « Modifier le tracé » (the Tracé section of the form) → the fullscreen planner.
+  Future<void> editTrack() async {
+    await (await scrolledTo(keys.routeEditor.trackEditButton)).tap();
+    await _plannerLoaded();
+  }
+
+  Future<void> _plannerLoaded() async {
+    await $(keys.routeEditor.plannerScreen).waitUntilVisible();
+    final deadline = DateTime.now().add(const Duration(seconds: 30));
+    while (!(PlannerBridge.debugCurrent?.loaded.value ?? false)) {
+      if (DateTime.now().isAfter(deadline)) {
+        throw TestFailure('the planner page never took its `load`');
+      }
+      await $.pump(const Duration(milliseconds: 200));
+    }
+  }
+
+  /// Places [points] (`(lng, lat)`) after the ones already there, as straight lines, then does
+  /// what « Terminer » does: the planner closes and the form shows the drawn track. With no
+  /// point, only « Terminer ».
+  Future<void> placeAndFinish(List<(double, double)> points) async {
+    await PlannerBridge.debugCurrent!.debugPlace(<LngLat>[
+      for (final (lng, lat) in points) LngLat(lng, lat),
+    ]);
+    await waitUntilGone(
+      keys.routeEditor.plannerScreen,
+      timeout: const Duration(seconds: 30),
+    );
+  }
+
+  /// The preview card of a drawn track is on screen.
+  Future<void> waitUntilDrawnTrackShown() async {
+    await $(keys.routeEditor.plannerPreview).waitUntilVisible();
+  }
+
+  bool get showsDrawnTrack => isShown(keys.routeEditor.plannerPreview);
 
   // ── The form ───────────────────────────────────────────────────────────
 

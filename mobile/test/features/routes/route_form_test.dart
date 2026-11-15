@@ -2,9 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/features/rides/domain/ride_form.dart'
     show kRideMarkdownMaxLength;
+import 'package:pedalons/features/routes/domain/planner_result.dart';
 import 'package:pedalons/features/routes/domain/route_form.dart';
 
 import '../../support/content_permissions.dart';
+import 'route_fixtures.dart'
+    show fixturePlannerStateJson, fixtureRouteDetail, fixtureRouteTeam;
 
 /// Le formulaire d'un parcours (ledger `MOB-79`) : ce qui part au serveur, qui
 /// réécrit le parcours en entier.
@@ -139,6 +142,215 @@ void main() {
           .copyWith(name: 'abc', tagIds: <String>['a', 'b'])
           .toRequest();
       expect(request.tagIds, <String>['a', 'b']);
+    });
+
+    test('sans planificateur : la requête de MOB-79, rien de plus', () {
+      final Map<String, dynamic> json = RouteForm.initial(_team())
+          .copyWith(name: 'abc')
+          .toRequest()
+          .toJson();
+      expect(json['points'], isNull);
+      expect(json['plannerState'], isNull);
+      expect(json['waypoints'], isNull);
+      expect(json['excludedFromGenerator'], isNull);
+    });
+  });
+
+  // Ce que le planificateur embarqué rend (`done.payload`) fusionné dans la
+  // requête : la règle est celle de la page, recopiée telle quelle (ledger
+  // `MOB-170`).
+  group('RouteForm.toRequest(planner:)', () {
+    final RouteForm form = RouteForm.initial(_team()).copyWith(name: 'Boucle');
+
+    PlannerResult result(Map<String, dynamic> payload, {String? notice}) =>
+        PlannerResult.fromMessage(<String, dynamic>{
+          'type': 'done',
+          'payload': payload,
+          'stats': <String, dynamic>{
+            'distance': 1000,
+            'ascend': 10,
+            'pointCount': 2,
+            'line': '',
+          },
+          'dirty': true,
+          'notice': ?notice,
+        });
+
+    const List<Map<String, dynamic>> points = <Map<String, dynamic>>[
+      <String, dynamic>{'lng': 5.0, 'lat': 45.0},
+      <String, dynamic>{'lng': 5.01, 'lat': 45.01},
+    ];
+    const List<Map<String, dynamic>> waypoints = <Map<String, dynamic>>[
+      <String, dynamic>{
+        'position': <String, dynamic>{'lng': 5.0, 'lat': 45.0},
+        'type': 'WATER',
+        'name': 'Fontaine',
+      },
+    ];
+
+    test('`plannerState` : l\'état part, pas de points', () {
+      final PlannerResult drawn = result(<String, dynamic>{
+        'plannerState': fixturePlannerStateJson,
+      });
+      final RouteRequest request = form.toRequest(planner: drawn);
+      expect(
+        request.plannerState,
+        PlannerState.fromJson(fixturePlannerStateJson),
+      );
+      expect(request.points, isNull);
+      expect(request.waypoints, isNull);
+      expect(drawn.hasTrack, isTrue);
+      expect(drawn.file, isFalse);
+      // Le reste du formulaire n'a pas bougé.
+      expect(request.name, 'Boucle');
+      expect(request.tagIds, isEmpty);
+    });
+
+    test('`points` : les points partent, pas d\'état ; `tooLarge` se lit', () {
+      final PlannerResult drawn = result(<String, dynamic>{
+        'points': points,
+      }, notice: 'tooLarge');
+      final RouteRequest request = form.toRequest(planner: drawn);
+      expect(request.plannerState, isNull);
+      expect(request.points, const <GeoPoint>[
+        GeoPoint(lng: 5, lat: 45),
+        GeoPoint(lng: 5.01, lat: 45.01),
+      ]);
+      expect(drawn.tooLarge, isTrue);
+    });
+
+    test('jamais les deux : l\'état gagne sur des points', () {
+      final RouteRequest request = form.toRequest(
+        planner: result(<String, dynamic>{
+          'plannerState': fixturePlannerStateJson,
+          'points': points,
+        }),
+      );
+      expect(request.plannerState, isNotNull);
+      expect(request.points, isNull);
+    });
+
+    test('`file: true` : rien dans la requête, le fichier part à part', () {
+      final PlannerResult drawn = result(<String, dynamic>{
+        'file': true,
+        'fileId': '3',
+      });
+      final RouteRequest request = form.toRequest(planner: drawn);
+      expect(request.plannerState, isNull);
+      expect(request.points, isNull);
+      expect(drawn.file, isTrue);
+      expect(drawn.fileId, '3');
+      expect(drawn.hasTrack, isTrue);
+    });
+
+    test('fragment vide (parcours laissé tel quel) : aucun tracé', () {
+      final PlannerResult drawn = result(<String, dynamic>{});
+      final RouteRequest request = form.toRequest(planner: drawn);
+      expect(request.plannerState, isNull);
+      expect(request.points, isNull);
+      expect(request.waypoints, isNull);
+      expect(drawn.hasTrack, isFalse);
+      expect(drawn.isEmpty, isTrue);
+    });
+
+    test(
+      '`waypoints` seulement quand ils sont là — seuls, ou avec le tracé',
+      () {
+        final PlannerResult alone = result(<String, dynamic>{
+          'waypoints': waypoints,
+        });
+        final RouteRequest request = form.toRequest(planner: alone);
+        expect(request.waypoints!.single.name, 'Fontaine');
+        expect(request.waypoints!.single.type, 'WATER');
+        expect(request.plannerState, isNull);
+        expect(alone.hasTrack, isFalse);
+        expect(alone.isEmpty, isFalse);
+
+        final RouteRequest both = form.toRequest(
+          planner: result(<String, dynamic>{
+            'plannerState': fixturePlannerStateJson,
+            'waypoints': waypoints,
+          }),
+        );
+        expect(both.plannerState, isNotNull);
+        expect(both.waypoints, hasLength(1));
+        // Une liste vide veut dire « plus aucun point » : elle part.
+        expect(
+          form
+              .toRequest(
+                planner: result(<String, dynamic>{'waypoints': <dynamic>[]}),
+              )
+              .waypoints,
+          isEmpty,
+        );
+      },
+    );
+
+    test('un fragment hors contrat lève, il n\'est pas deviné', () {
+      expect(
+        () => result(<String, dynamic>{
+          'plannerState': <String, dynamic>{'version': 1},
+        }),
+        throwsA(anything),
+      );
+    });
+  });
+
+  group('« Ne pas utiliser pour générer des parcours »', () {
+    test('planificateur fermé : jamais envoyé, le serveur garde sa valeur', () {
+      expect(RouteForm.initial(_team()).excludedFromGenerator, isNull);
+      expect(
+        RouteForm.fromRoute(fixtureRouteDetail(excludedFromGenerator: true))
+            .toRequest()
+            .excludedFromGenerator,
+        isNull,
+      );
+    });
+
+    test('planificateur ouvert : la valeur du parcours, faux par défaut', () {
+      expect(
+        RouteForm.initial(fixtureRouteTeam(enableRoutePlanner: true))
+            .toRequest()
+            .excludedFromGenerator,
+        isFalse,
+      );
+      expect(
+        RouteForm.fromRoute(
+          fixtureRouteDetail(excludedFromGenerator: true),
+          planner: true,
+        ).excludedFromGenerator,
+        isTrue,
+      );
+      final RouteForm unset = RouteForm.fromRoute(
+        fixtureRouteDetail(),
+        planner: true,
+      );
+      expect(unset.excludedFromGenerator, isFalse);
+      expect(
+        unset
+            .copyWith(excludedFromGenerator: true)
+            .toRequest()
+            .excludedFromGenerator,
+        isTrue,
+      );
+    });
+  });
+
+  group('decodePolyline6', () {
+    test('latitude d\'abord, précision 6', () {
+      final List<List<double>> line = <List<double>>[
+        for (final p in decodePolyline6('_sqytA_sdpH_pR_pR'))
+          <double>[p.lng, p.lat],
+      ];
+      expect(line, <List<double>>[
+        <double>[5, 45],
+        <double>[5.01, 45.01],
+      ]);
+    });
+
+    test('vide ou tronquée : ce qui a pu être lu', () {
+      expect(decodePolyline6(''), isEmpty);
+      expect(decodePolyline6('_sqytA_sdpH_pR'), hasLength(1));
     });
   });
 

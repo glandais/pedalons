@@ -7,14 +7,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../api/pedalons_api_client.dart';
+import '../../../../config/app_config.dart';
+import '../../../../config/locale_context.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/config/config_provider.dart';
+import '../../../../core/geo/location_service.dart';
 import '../../../../core/material.dart' hide Visibility;
 import '../../../../core/pdl/pdl.dart';
+import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../keys.dart';
+import '../../../auth/domain/auth_state.dart';
+import '../../../auth/providers/auth_provider.dart';
 import '../../../profile/presentation/widgets/confirm_sheet.dart';
 import '../../../rides/presentation/widgets/editor/editor_media_actions.dart';
 import '../../../rides/presentation/widgets/editor/editor_section.dart';
@@ -29,19 +37,29 @@ import '../../../visibility/domain/incompatible_visibility.dart';
 import '../../../visibility/presentation/visibility_field.dart';
 import '../../../visibility/presentation/visibility_refusal.dart';
 import '../../data/gpx_file_source.dart';
+import '../../data/planner_bridge.dart';
+import '../../data/planner_load.dart';
+import '../../data/planner_web_view.dart';
 import '../../data/route_repository.dart';
 import '../../domain/gpx_check.dart';
+import '../../domain/planner_quota.dart';
+import '../../domain/planner_result.dart';
 import '../../domain/route_form.dart';
 import '../../providers/route_changes.dart';
 import '../../providers/route_detail_provider.dart';
 import '../../providers/route_editor_providers.dart';
 import '../widgets/editor/gpx_pick_step.dart';
+import '../widgets/editor/planner_quota_message.dart';
 import '../widgets/editor/route_track_section.dart';
+import 'route_planner_screen.dart';
 
-/// Créer ([routeSlug] nul) ou modifier un parcours par import d'un fichier GPX
-/// — le pendant mobile de `CreateRoutePage` / `EditRoutePage` du site
-/// (docs/LEDGER_*.md MOB-79). **Le tracé ne se dessine pas dans l'app** : le
-/// planificateur reste au site (`points` n'est jamais envoyé).
+/// Créer ([routeSlug] nul) ou modifier un parcours — le pendant mobile de
+/// `CreateRoutePage` / `EditRoutePage` du site (docs/LEDGER_*.md MOB-79). Le
+/// tracé vient d'un fichier GPX ou, là où l'équipe a le planificateur
+/// (`enableRoutePlanner`), du **planificateur du site embarqué** dans une
+/// WebView plein écran (`RoutePlannerScreen`, ledger `MOB-170`) : rien du
+/// planificateur n'est réécrit en Dart, et ce qui part du tracé est le
+/// fragment que la page a calculé (`RouteForm.toRequest`).
 ///
 /// Ouvert aux organisateurs et administrateurs de l'équipe (et à l'admin de
 /// plateforme), module parcours actif : la règle de `RouteAccessChecker`.
@@ -96,7 +114,10 @@ class RouteEditorPage extends ConsumerWidget {
     final AsyncValue<TeamDetailDto> team = ref.watch(
       teamDetailProvider(teamSlug),
     );
-    final Object? teamError = team.error;
+    // Une relecture de l'équipe qui échoue (le quota relu après un refus ou un
+    // enregistrement, ledger `MOB-170`) ne remplace pas un formulaire ouvert
+    // par un écran d'erreur : l'équipe déjà lue reste.
+    final Object? teamError = team.hasValue ? null : team.error;
     if (teamError != null) {
       return loadError(
         teamError,
@@ -207,6 +228,17 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
   /// Le dernier fichier refusé, localement ou par le serveur.
   GpxRefused? _refused;
 
+  // ── Planificateur embarqué (docs/LEDGER_*.md MOB-170) ───────────────────
+
+  /// Le pont et sa page. Créé à la première ouverture du planificateur, il
+  /// **vit jusqu'à la fin du formulaire** : l'écran plein s'y rattache à
+  /// chaque ouverture, et `load` n'est envoyé qu'une fois.
+  PlannerBridge? _planner;
+
+  /// Le dernier « Terminer » : ce qui partira du tracé, et son aperçu. Un
+  /// fichier choisi ensuite dans le formulaire ([_gpx]) passe devant.
+  PlannerResult? _drawn;
+
   /// Le nom pris du GPX : tant que le champ le porte tel quel, une aide le
   /// dit, et un autre fichier peut le remplacer.
   String? _suggestedName;
@@ -227,7 +259,7 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
     final RouteDetailDto? route = _route;
     final RouteForm initial = route == null
         ? RouteForm.initial(widget.team)
-        : RouteForm.fromRoute(route);
+        : RouteForm.fromRoute(route, planner: widget.team.enableRoutePlanner);
     _form = initial;
     _initialJson = _json(initial);
     _name = TextEditingController(text: _form.name)
@@ -247,6 +279,7 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
 
   @override
   void dispose() {
+    _planner?.dispose();
     _name.dispose();
     _markdown.dispose();
     super.dispose();
@@ -254,7 +287,20 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
 
   static String _json(RouteForm form) => jsonEncode(form.toRequest().toJson());
 
-  bool get _dirty => !_saved && (_gpx != null || _json(_form) != _initialJson);
+  /// Un tracé dessiné compte, même quitté sans « Terminer » : il vit encore
+  /// dans la page, et partir du formulaire le perdrait.
+  bool get _dirty =>
+      !_saved &&
+      (_gpx != null ||
+          _drawn != null ||
+          (_planner?.dirty.value ?? false) ||
+          _json(_form) != _initialJson);
+
+  /// Ce que l'enregistrement prendra du planificateur : rien quand un fichier
+  /// choisi dans le formulaire passe devant.
+  PlannerResult? get _plannerSource => _gpx == null ? _drawn : null;
+
+  bool get _plannerBusy => _planner?.busy.value ?? false;
 
   void _update(RouteForm next) {
     if (identical(next, _form)) return;
@@ -345,6 +391,89 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
     }
   }
 
+  // ── Planificateur ──────────────────────────────────────────────────────
+
+  void _onPlannerChanged() {
+    if (mounted) setState(() {});
+  }
+
+  PlannerBridge _createPlanner() {
+    final RouteDetailDto? route = _route;
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
+    final String routeName = _name.text;
+    final PlannerBridge bridge = PlannerBridge(
+      dio: ref.read(dioProvider),
+      picker: () => ref.read(gpxFilePickerProvider),
+      location: ref.read(locationServiceProvider),
+      webViewFactory: ref.read(plannerWebViewFactoryProvider),
+      load: () async => buildPlannerLoad(
+        team: widget.team,
+        route: route,
+        routeName: routeName,
+        config: await ref.read(appConfigProvider.future),
+        // Les documents de style sont publics : le client sans session.
+        dio: ref.read(baseDioProvider),
+        apiBaseUrl: AppConfig.apiBaseUrl,
+        readState: () => ref
+            .read(routeRepositoryProvider)
+            .getPlannerState(_teamSlug, route!.slug),
+        dark: dark,
+        locale: getCurrentLocale(),
+        units: ref.read(unitSystemProvider),
+      ),
+      onDone: _onPlannerDone,
+      onQuotaRefused: _onQuotaRefused,
+    );
+    for (final Listenable state in <Listenable>[
+      bridge.busy,
+      bridge.dirty,
+      bridge.unvalidated,
+      bridge.stateReadFailed,
+    ]) {
+      state.addListener(_onPlannerChanged);
+    }
+    return bridge;
+  }
+
+  /// « Tracer sur la carte », « Modifier le tracé » : l'écran plein, sur la
+  /// page gardée en vie.
+  Future<void> _openPlanner() async {
+    if (_saving || _reading) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _error = null);
+    await openRoutePlanner(context, _planner ??= _createPlanner());
+  }
+
+  /// « Terminer » dans le planificateur.
+  void _onPlannerDone(PlannerResult result) {
+    if (!mounted) return;
+    // Le nom du fichier importé ne remplit qu'un nom vide.
+    final String? suggestion = result.nameSuggestion;
+    if (suggestion != null && _name.text.trim().isEmpty) {
+      final String name = suggestion.length > kRouteNameMaxLength
+          ? suggestion.substring(0, kRouteNameMaxLength)
+          : suggestion;
+      _suggestedName = name;
+      _name.text = name;
+    }
+    setState(() {
+      _drawn = result.isEmpty ? null : result;
+      // Le tracé dessiné devient la source : le fichier choisi avant, non.
+      if (result.hasTrack) {
+        _gpx = null;
+        _refused = null;
+      }
+    });
+  }
+
+  /// Un refus de quota — d'un calcul dans la page, ou de l'enregistrement :
+  /// sa feuille, et l'équipe relue pour que le bouton d'entrée le sache.
+  Future<void> _onQuotaRefused(PlannerQuotaRefusal refusal) async {
+    if (!mounted) return;
+    ref.invalidate(teamDetailProvider(_teamSlug));
+    await showPlannerQuotaSheet(context, refusal);
+  }
+
   /// « Garder le tracé actuel » : renonce au fichier choisi.
   void _cancelReplace() => setState(() {
     _gpx = null;
@@ -421,12 +550,25 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
   );
 
   Future<void> _save() async {
-    if (_saving || _uploading || _reading) return;
-    final GpxFile? gpx = _gpx;
+    // Un calcul en vol dans le planificateur n'est pas encore dans son
+    // résultat : enregistrer maintenant le laisserait tomber.
+    if (_saving || _uploading || _reading || _plannerBusy) return;
     final RouteDetailDto? route = _route;
-    // La création part toujours d'un fichier : le formulaire n'est pas
-    // affiché avant.
-    if (route == null && gpx == null) return;
+    final PlannerResult? drawn = _plannerSource;
+    // Le fichier choisi dans le formulaire, ou celui que le planificateur a
+    // importé et laissé intact (`file: true`) : le pont l'a gardé.
+    final GpxFile? gpx =
+        _gpx ?? (drawn != null && drawn.file ? _planner?.fileFor(drawn) : null);
+    // La création part d'un fichier ou d'un tracé d'au moins deux points (le
+    // formulaire n'est pas affiché avant) ; et un résultat `file` sans son
+    // fichier n'a rien à envoyer.
+    final bool noTrack =
+        route == null && gpx == null && !(drawn?.hasTrack ?? false);
+    final bool fileLost = (drawn?.file ?? false) && gpx == null;
+    if (noTrack || fileLost) {
+      setState(() => _error = 'routes.editor.pointsRequired'.tr());
+      return;
+    }
     FocusScope.of(context).unfocus();
     if (!_form.isValid) {
       setState(() {
@@ -441,12 +583,15 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
       _refused = null;
     });
     final RouteRepository routes = ref.read(routeRepositoryProvider);
-    final RouteRequest request = _form.toRequest();
+    final RouteRequest request = _form.toRequest(planner: drawn);
     try {
       final RouteDto saved = route == null
-          ? await routes.createRoute(_teamSlug, request, gpx: gpx!)
+          ? await routes.createRoute(_teamSlug, request, gpx: gpx)
           : await routes.updateRoute(_teamSlug, route.slug, request, gpx: gpx);
       if (!mounted) return;
+      // Un tracé dessiné a compté dans le quota de l'équipe : elle est relue
+      // après chaque enregistrement, comme au site.
+      ref.invalidate(teamDetailProvider(_teamSlug));
       notifyRouteChanged(
         ref,
         teamSlug: _teamSlug,
@@ -456,7 +601,12 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         SnackBar(
           content: Text(
-            route == null
+            // L'avertissement du site, une fois l'enregistrement réussi
+            // seulement : « Tracé enregistré sans ses points de contrôle… »
+            // dit aussi que c'est enregistré.
+            (drawn?.tooLarge ?? false)
+                ? 'routes.planner.stateTooLarge'.tr()
+                : route == null
                 ? 'routes.editor.created'.tr()
                 : 'routes.editor.saved'.tr(),
           ),
@@ -491,11 +641,23 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
         );
         return;
       }
+      // Le quota s'est épuisé entre-temps (docs/LEDGER_*.md BILL-10) : rien
+      // n'est enregistré ni perdu, le tracé reste dans le formulaire — pour
+      // un import de GPX, ou pour le mois prochain.
+      final PlannerQuotaRefusal? quota = plannerQuotaRefusalOf(error);
+      if (quota != null) {
+        setState(() => _saving = false);
+        await _onQuotaRefused(quota);
+        return;
+      }
       final GpxRefusal? refusal = _refusalOf(error, stackTrace);
       setState(() {
         _saving = false;
         if (refusal != null && gpx != null) {
           _refused = GpxRefused(gpx.name, refusal);
+          // Le fichier venait du planificateur : son résultat part avec lui
+          // (le tracé, lui, est toujours dans la page).
+          if (drawn?.file ?? false) _drawn = null;
           // Le fichier refusé est oublié : un nouvel appui sur Créer ou
           // Enregistrer ne le renverrait que pour un second refus. En
           // modification on revient au tracé actuel, en création à l'étape 1
@@ -544,9 +706,37 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
     final PdlTypography t = context.pdlText;
     final RouteDetailDto? route = _route;
     final bool creating = route == null;
-    // La création commence par le choix du fichier : pas de formulaire avant.
-    final bool picking = creating && _gpx == null;
+    // La création commence par le tracé — un fichier, ou un dessin d'au moins
+    // deux points : pas de formulaire avant.
+    final bool picking =
+        creating && _gpx == null && !(_drawn?.hasTrack ?? false);
     final bool busy = _saving || _uploading || _reading;
+
+    // Le planificateur : ouvert à l'équipe par l'admin de plateforme, pour un
+    // parcours neuf ou à une seule trace. Quota du mois épuisé : l'entrée
+    // reste en vue, désactivée, avec sa raison — mais un planificateur déjà
+    // ouvert n'est pas repris (le tracé y vit, son refus s'y lit).
+    final TeamDetailDto team = widget.team;
+    final bool plannerOpen =
+        team.enableRoutePlanner && (route == null || isSingleTrack(route));
+    final PlannerQuotaDto? quota = team.plannerQuota;
+    final bool platformAdmin = ref.watch(
+      authProvider.select(
+        (AuthState s) => s.user?.platformRole == 'PLATFORM_ADMIN',
+      ),
+    );
+    final PlannerQuotaRefusal? quotaSpent =
+        plannerOpen &&
+            _planner == null &&
+            isPlannerQuotaSpent(quota, platformAdmin: platformAdmin)
+        ? PlannerQuotaRefusal(
+            team: true,
+            limit: quota!.limit!,
+            resetsOn: quota.resetsOn,
+            teamName: team.name,
+          )
+        : null;
+    final VoidCallback? onDraw = plannerOpen ? _openPlanner : null;
 
     final List<TagWithUsageDto> vocabulary =
         ref
@@ -583,7 +773,7 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
                         : 'routes.editor.save'.tr(),
                     loading: _saving,
                     loadingLabel: 'routes.editor.saving'.tr(),
-                    enabled: !_uploading && !_reading,
+                    enabled: !_uploading && !_reading && !_plannerBusy,
                     onPressed: _save,
                   ),
                 ],
@@ -614,6 +804,8 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
                     onPick: _pickGpx,
                     busy: _reading,
                     refused: _refused,
+                    onDraw: onDraw,
+                    quotaSpent: quotaSpent,
                   )
                 else ...<Widget>[
                   // ── Tracé ──
@@ -628,6 +820,13 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
                       onCancelReplace: route == null || _gpx == null
                           ? null
                           : _cancelReplace,
+                      onDraw: onDraw,
+                      quotaSpent: quotaSpent,
+                      drawn: _drawn,
+                      unvalidated: _planner?.unvalidated.value ?? false,
+                      plannerWarning: (_planner?.stateReadFailed.value ?? false)
+                          ? 'routes.planner.stateReadFailed'.tr()
+                          : null,
                     ),
                   ),
 
@@ -687,6 +886,25 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
                       ],
                     ),
                   ),
+                  // ── Générateur de parcours ── Là où le planificateur est
+                  // ouvert seulement, comme au site.
+                  if (_form.excludedFromGenerator case final bool excluded)
+                    PdlSettingRow(
+                      padding: EdgeInsets.zero,
+                      title: 'routes.editor.excludedFromGenerator'.tr(),
+                      subtitle: 'routes.editor.excludedFromGeneratorHint'.tr(),
+                      trailing: PdlSwitch(
+                        key: keys.routeEditor.excludedFromGenerator,
+                        value: excluded,
+                        semanticLabel: 'routes.editor.excludedFromGenerator'
+                            .tr(),
+                        onChanged: busy
+                            ? null
+                            : (bool on) => _update(
+                                _form.copyWith(excludedFromGenerator: on),
+                              ),
+                      ),
+                    ),
                   // Les valeurs que le backend permet à ce parcours : moins
                   // « Équipe » s'il sert publiquement, et parfois aucune
                   // (docs/LEDGER_*.md MOB-137).

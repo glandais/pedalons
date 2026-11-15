@@ -1391,7 +1391,22 @@
       "tagsPickerHint": "Up to 10 tags.",
       "description": "Description",
       "markdownPlaceholder": "Description",
-      "media": "Media"
+      "media": "Media",
+      "pickTitlePlanner": "Upload or draw the route",
+      "pickMessagePlanner": "Upload a GPX file exported from a mapping tool or a bike computer, or draw the route on the map.",
+      "importButton": "Upload GPX file",
+      "drawButton": "Draw on map",
+      "trackEdit": "Edit the track",
+      "trackDrawn": "Drawn on the map",
+      "trackDrawnReplacing": "Will replace the track on save",
+      "trackPoints": {
+        "one": "Track of {} point",
+        "other": "Track of {} points"
+      },
+      "trackUnvalidated": "Changes made on the map were not taken: open the map again and tap “Done” to keep them.",
+      "pointsRequired": "At least 2 control points are required",
+      "excludedFromGenerator": "Don't use to generate routes",
+      "excludedFromGeneratorHint": "For an event route or a road open only exceptionally: its roads are only proposed if another route of the team rides them."
     },
     "manage": {
       "edit": "Edit route",
@@ -1442,6 +1457,19 @@
       "fitFile": "FIT file, for bike computers",
       "connectDevice": "Connect a bike computer",
       "connectDeviceHint": "Garmin, Karoo… to send the route without a file"
+    },
+    "planner": {
+      "loadError": "The planner could not open.",
+      "stateReadFailed": "The saved control points could not be read: the track opens as an import.",
+      "stateTooLarge": "Track saved without its control points: there are too many to read it back as it is.",
+      "quota": {
+        "title": "This month's saves are all used",
+        "team": "{teamName} is on the free plan, which allows {limit} saves of routes drawn on the map per month. They are all used this month.",
+        "personal": "You are not a member of any unlocked team: in the GPX tools, drawing on the map is limited to {limit} saves per month, all used this month.",
+        "alternative": "GPX import is still available, and the count starts again on {month} 1.",
+        "teamLift": "To lift the limit, a team administrator can contact us.",
+        "personalLift": "Joining an unlocked team lifts this limit."
+      }
     }
   },
   "tags": {

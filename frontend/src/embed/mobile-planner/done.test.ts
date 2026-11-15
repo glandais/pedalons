@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { PlannerState, WaypointRequest } from '@/api/dto'
 import type { PlannerSnapshot } from '@/hooks/useRoutePlanner'
 import { decode2 } from '@/lib/polyline'
+import { fileFromBase64 } from './bridge'
 import { doneMessage } from './done'
 
 const STATE = { version: 1 } as PlannerState
@@ -54,6 +55,14 @@ describe('doneMessage', () => {
     const message = done({ file }, true)
     expect(message.payload).toEqual({ file: true })
     expect(JSON.stringify(message)).not.toContain('gpx/')
+  })
+
+  it('names the file the app kept, by the id the app gave it', () => {
+    const kept = fileFromBase64('col.gpx', btoa('<gpx/>'), '2')
+    expect(done({ file: kept }, true).payload).toEqual({ file: true, fileId: '2' })
+    // A file handed over without an id: `file` alone, the app falls back on the last one picked
+    const anonymous = fileFromBase64('col.gpx', btoa('<gpx/>'))
+    expect(done({ file: anonymous }, true).payload).toEqual({ file: true })
   })
 
   it('the route points ride along only when touched', () => {

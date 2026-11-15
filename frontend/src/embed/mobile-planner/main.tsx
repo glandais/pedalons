@@ -32,11 +32,13 @@ import {
   bridgeTransport,
   emitGpx,
   emitPosition,
+  emitTest,
   fileFromBase64,
   post,
   settleResponse,
   type BridgeResponse,
   type PlannerLoad,
+  type TestCommand,
 } from './bridge'
 import { PlannerApp } from './PlannerApp'
 import { toMapConfig } from './styles'
@@ -47,9 +49,11 @@ interface PedalonsPlannerApi {
   /** Answers a `request`. */
   response(response: BridgeResponse): void
   /** Answers `pickGpx`: the file picked, null when the picker was left. */
-  gpx(file: { name: string; base64: string } | null): void
+  gpx(file: { name: string; base64: string; id?: string } | null): void
   /** Answers `locate`: the position, null when the app has none to give. */
   position(position: { lng: number; lat: number } | null): void
+  /** Test only: does nothing unless the last `load` carried `testCommands: true`. */
+  test(command: TestCommand): void
 }
 
 declare global {
@@ -90,6 +94,7 @@ const queryClient = new QueryClient({
 
 let root: Root | undefined
 let loads = 0
+let testCommands = false
 
 async function load(input: PlannerLoad): Promise<void> {
   await i18nReady
@@ -99,6 +104,7 @@ async function load(input: PlannerLoad): Promise<void> {
   if (i18n.language !== locale) await i18n.changeLanguage(locale)
   usePreferencesStore.setState({ unitSystem: input.units === 'IMPERIAL' ? 'IMPERIAL' : 'METRIC' })
   queryClient.setQueryData(getGetConfigQueryKey(), toMapConfig(input))
+  testCommands = input.testCommands === true
 
   const container = document.getElementById('planner')
   if (!container) throw new Error('#planner is missing')
@@ -125,8 +131,11 @@ window.pedalonsPlanner = {
     load(input).catch((error: unknown) => post({ type: 'error', message: String(error) }))
   },
   response: settleResponse,
-  gpx: (file) => emitGpx(file ? fileFromBase64(file.name, file.base64) : null),
+  gpx: (file) => emitGpx(file ? fileFromBase64(file.name, file.base64, file.id) : null),
   position: emitPosition,
+  test: (command) => {
+    if (testCommands) emitTest(command)
+  },
 }
 
 // A worker cannot be loaded by URL from `file://`: its source comes as a string, turned into a

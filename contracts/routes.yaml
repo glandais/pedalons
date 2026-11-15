@@ -712,8 +712,8 @@ routes:
     deeplink: true
 
   # --- Team routes (GPX) ---
-  # `routeNew` and `routeEdit` are app screens since MOB-79 (GPX upload; the route planner
-  # stays web-only) (docs/LEDGER_*.md MOB-79).
+  # `routeNew` and `routeEdit` are app screens since MOB-79 (GPX upload) and draw the track on
+  # the map since MOB-170 (the site's planner, embedded) (docs/LEDGER_*.md MOB-79, MOB-170).
   - id: routes
     path:
       en: /teams/{teamSlug}/routes

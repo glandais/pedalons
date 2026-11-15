@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { ActionIcon, Text } from '@mantine/core'
@@ -13,13 +13,19 @@ import { RoutePlanner } from '@/components/planner/RoutePlanner'
 import { usePlannerEditing } from '@/components/planner/usePlannerEditing'
 import { useRoutePlanner } from '@/hooks/useRoutePlanner'
 import { BridgeLocateControl, BridgeSearchControl } from './BridgeMapControls'
-import { onGpx, post, type PlannerLoad } from './bridge'
+import { onGpx, onTest, post, type PlannerLoad } from './bridge'
 import { doneMessage } from './done'
 
 /** The planner's two outward-reaching controls, over the bridge. */
 const BRIDGE_MAP_CONTROLS: PlannerMapControls = {
   Search: BridgeSearchControl,
   Locate: BridgeLocateControl,
+}
+
+/** The same without « Me localiser », for an app that does not offer the position (`load.locate`). */
+const BRIDGE_MAP_CONTROLS_NO_LOCATE: PlannerMapControls = {
+  Search: BridgeSearchControl,
+  Locate: () => null,
 }
 
 const pickGpx = () => post({ type: 'pickGpx' })
@@ -105,9 +111,38 @@ export function PlannerApp({ load }: { load: PlannerLoad }) {
     )
   }
 
+  // Test only (`load.testCommands`, the app's Patrol suite): points placed one after the other as
+  // straight lines (no routing request), each once the previous one is in the route, then
+  // « Terminer ». Without the flag nothing is subscribed and the queue stays empty.
+  const { addControlPoint } = planner
+  const doneRef = useRef(done)
+  useEffect(() => {
+    doneRef.current = done
+  })
+  const [testSteps, setTestSteps] = useState<({ lng: number; lat: number } | 'done')[]>([])
+  useEffect(() => {
+    if (!load.testCommands) return
+    return onTest((command) =>
+      setTestSteps((steps) => [
+        ...steps,
+        ...(command.place ?? []),
+        ...(command.done ? (['done'] as const) : []),
+      ])
+    )
+  }, [load.testCommands])
+  useEffect(() => {
+    if (isLoading || testSteps.length === 0) return
+    const [step, ...rest] = testSteps
+    setTestSteps(rest)
+    if (step === 'done') doneRef.current()
+    else if (step) addControlPoint(step, true)
+  }, [testSteps, isLoading, addControlPoint])
+
   return (
     <MapPanelContext.Provider value={panelState}>
-      <PlannerMapControlsContext.Provider value={BRIDGE_MAP_CONTROLS}>
+      <PlannerMapControlsContext.Provider
+        value={load.locate ? BRIDGE_MAP_CONTROLS : BRIDGE_MAP_CONTROLS_NO_LOCATE}
+      >
         <PlannerTouchFullscreen
           planner={planner}
           editing={editing}

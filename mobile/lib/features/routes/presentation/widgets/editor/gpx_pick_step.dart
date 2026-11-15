@@ -9,11 +9,18 @@ import '../../../../../core/theme/pdl_tokens.dart';
 import '../../../../../core/theme/pdl_typography.dart';
 import '../../../../../keys.dart';
 import '../../../domain/gpx_check.dart';
+import '../../../domain/planner_quota.dart';
 import 'gpx_refused_banner.dart';
+import 'planner_quota_message.dart';
 
-/// L'étape 1 de la création d'un parcours : envoyer un fichier GPX (ledger
-/// `MOB-79`). Le tracé ne se dessine pas dans l'app, et l'écran le dit avant
-/// de proposer le sélecteur.
+/// L'étape 1 de la création d'un parcours : d'où vient le tracé (ledgers
+/// `MOB-79`, `MOB-170`).
+///
+/// * Planificateur fermé à l'équipe ([onDraw] nul) : envoyer un fichier GPX,
+///   et l'écran dit que le tracé ne se dessine pas dans l'app.
+/// * Planificateur ouvert : « Importer un fichier GPX » ou « Tracer sur la
+///   carte ». Quota du mois épuisé ([quotaSpent]) : le second reste en vue,
+///   désactivé, avec sa raison — l'import reste.
 ///
 /// [busy] : le fichier choisi est en cours de lecture. [refused] : le
 /// précédent a été refusé, son bandeau passe au-dessus ; « Choisir un autre
@@ -24,17 +31,27 @@ class GpxPickStep extends StatelessWidget {
     required this.onPick,
     required this.busy,
     this.refused,
+    this.onDraw,
+    this.quotaSpent,
   });
 
   final VoidCallback onPick;
   final bool busy;
   final GpxRefused? refused;
 
+  /// Ouvre le planificateur ; nul, il n'est pas proposé.
+  final VoidCallback? onDraw;
+
+  /// Le quota épuisé qui ferme « Tracer sur la carte », s'il l'est.
+  final PlannerQuotaRefusal? quotaSpent;
+
   @override
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
     final PdlTypography t = context.pdlText;
     final GpxRefused? refusal = refused;
+    final VoidCallback? draw = onDraw;
+    final PlannerQuotaRefusal? quota = quotaSpent;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -53,20 +70,46 @@ class GpxPickStep extends StatelessWidget {
               PdlEmptyState(
                 variant: PdlEmptyVariant.empty,
                 icon: PdlIcons.gpx,
-                title: 'routes.editor.pickTitle'.tr(),
-                message: 'routes.editor.pickMessage'.tr(),
+                title: draw == null
+                    ? 'routes.editor.pickTitle'.tr()
+                    : 'routes.editor.pickTitlePlanner'.tr(),
+                message: draw == null
+                    ? 'routes.editor.pickMessage'.tr()
+                    : 'routes.editor.pickMessagePlanner'.tr(),
                 padding: EdgeInsets.zero,
               ),
               const SizedBox(height: PdlSpacing.section),
               PdlButton(
                 key: keys.routeEditor.pickButton,
-                label: 'routes.editor.pickButton'.tr(),
+                label: draw == null
+                    ? 'routes.editor.pickButton'.tr()
+                    : 'routes.editor.importButton'.tr(),
                 icon: PdlIcons.fileAdd,
                 fullWidth: true,
                 loading: busy,
                 loadingLabel: 'routes.editor.reading'.tr(),
                 onPressed: onPick,
               ),
+              if (draw != null) ...<Widget>[
+                const SizedBox(height: PdlSpacing.chipGap),
+                PdlButton(
+                  key: keys.routeEditor.drawButton,
+                  label: 'routes.editor.drawButton'.tr(),
+                  icon: PdlIcons.map,
+                  variant: PdlButtonVariant.outline,
+                  fullWidth: true,
+                  enabled: !busy && quota == null,
+                  onPressed: draw,
+                ),
+                if (quota != null) ...<Widget>[
+                  const SizedBox(height: PdlSpacing.chipGap),
+                  PlannerQuotaMessage(
+                    key: keys.routeEditor.quotaMessage,
+                    refusal: quota,
+                    help: true,
+                  ),
+                ],
+              ],
               const SizedBox(height: PdlSpacing.chipGap),
               Text(
                 'routes.editor.pickHint'.tr(),

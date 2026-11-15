@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -6,10 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/config/locale_context.dart';
+import 'package:pedalons/core/config/config_provider.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/material.dart' hide Visibility;
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/routes/data/gpx_file_source.dart';
+import 'package:pedalons/features/routes/data/planner_web_view.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
 import 'package:pedalons/features/routes/domain/gpx_check.dart';
 import 'package:pedalons/features/routes/presentation/pages/route_editor_page.dart';
@@ -40,7 +44,23 @@ class _StubRoutes implements RouteRepository {
   /// Si posé, `createRoute` / `updateRoute` lèvent cette erreur.
   Object? failWith;
 
-  final List<({String team, RouteRequest request, GpxFile gpx})> created = [];
+  final List<({String team, RouteRequest request, GpxFile? gpx})> created = [];
+
+  /// L'état d'édition servi ; [plannerStateFails] fait échouer sa lecture.
+  PlannerState? plannerState;
+  bool plannerStateFails = false;
+  int plannerStateReads = 0;
+
+  @override
+  Future<PlannerState?> getPlannerState(
+    String teamSlug,
+    String routeSlug,
+  ) async {
+    plannerStateReads++;
+    if (plannerStateFails) throw StateError('planner-state');
+    return plannerState;
+  }
+
   final List<({String slug, RouteRequest request, GpxFile? gpx})> updated = [];
 
   @override
@@ -71,7 +91,7 @@ class _StubRoutes implements RouteRepository {
   Future<RouteDto> createRoute(
     String teamSlug,
     RouteRequest request, {
-    required GpxFile gpx,
+    GpxFile? gpx,
   }) async {
     final Object? error = failWith;
     if (error != null) throw error;
@@ -101,8 +121,15 @@ class _StubTeams implements TeamRepository {
 
   final TeamDetailDto team;
 
+  /// Combien de fois l'équipe a été lue : une relecture après un refus de
+  /// quota ou un enregistrement se compte ici.
+  int reads = 0;
+
   @override
-  Future<TeamDetailDto> getTeam(String slug) async => team;
+  Future<TeamDetailDto> getTeam(String slug) async {
+    reads++;
+    return team;
+  }
 
   @override
   Future<List<TeamDetailDto>> getMyTeams() async =>
@@ -111,6 +138,65 @@ class _StubTeams implements TeamRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
+
+/// La page du planificateur d'un test de widget : **jamais une WebView**. Elle
+/// note ce que l'app lui envoie ([calls]) et joue les messages de la page
+/// ([emit]) — le pendant de `RouteMap.debugSkipNativeMap`.
+class _FakePlannerWeb implements PlannerWebView {
+  late void Function(String raw) _onMessage;
+
+  /// Combien de pages ont été créées : une seule par formulaire.
+  int created = 0;
+  bool disposed = false;
+  final List<({String method, Object? argument})> calls =
+      <({String method, Object? argument})>[];
+
+  PlannerWebView create({required void Function(String raw) onMessage}) {
+    created++;
+    _onMessage = onMessage;
+    return this;
+  }
+
+  void emit(Map<String, dynamic> message) => _onMessage(jsonEncode(message));
+
+  List<Object?> argumentsOf(String method) => <Object?>[
+    for (final ({String method, Object? argument}) c in calls)
+      if (c.method == method) c.argument,
+  ];
+
+  @override
+  Future<void> call(String method, Object? argument) async {
+    // Ce qui part doit passer `jsonEncode`, comme vers la vraie page.
+    calls.add((method: method, argument: jsonDecode(jsonEncode(argument))));
+  }
+
+  @override
+  void setBackgroundColor(Color color) {}
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.expand();
+
+  @override
+  void dispose() => disposed = true;
+}
+
+const ConfigDto _config = ConfigDto(
+  webAuthnRpId: 'localhost',
+  appName: 'Pédalons',
+  singleTeam: false,
+  enableGpxPlanner: true,
+  mapStyles: <MapStyleDto>[
+    MapStyleDto(
+      id: 'route',
+      label: 'Route',
+      group: 'Vectoriel',
+      url: 'https://cdn.test/route.json',
+    ),
+  ],
+  tileServerBaseUrl: 'https://tiles.test',
+  defaultCenter: MapCenterDto(lat: 46.6, lon: 2.5, zoom: 5),
+  gpsAutoSyncEnabled: false,
+);
 
 /// Un sélecteur qui rend, dans l'ordre, les fichiers qu'on lui a préparés.
 class _FakePicker implements GpxFilePicker {
@@ -157,6 +243,7 @@ void main() {
   }
 
   late GoRouter router;
+  late _StubTeams teams;
 
   Future<void> open(
     WidgetTester tester, {
@@ -167,7 +254,19 @@ void main() {
     bool enableRoutes = true,
     String? routeSlug,
     bool replaceGpx = false,
+    bool planner = false,
+    PlannerQuotaDto? quota,
+    _FakePlannerWeb? web,
   }) async {
+    teams = _StubTeams(
+      fixtureRouteTeam(
+        role: role,
+        visibility: teamVisibility,
+        enableRoutes: enableRoutes,
+        enableRoutePlanner: planner,
+        plannerQuota: quota,
+      ),
+    );
     // Un écran haut : le formulaire est long, et seul ce qui est construit
     // se trouve.
     tester.view.physicalSize = const Size(1200, 4000);
@@ -179,7 +278,10 @@ void main() {
       routes: <RouteBase>[
         GoRoute(
           path: '/',
-          builder: (BuildContext _, GoRouterState _) => const Text('accueil'),
+          // Un `Scaffold` : c'est lui qui montre le bandeau d'après
+          // l'enregistrement, une fois l'éditeur parti.
+          builder: (BuildContext _, GoRouterState _) =>
+              const Scaffold(body: Text('accueil')),
         ),
         GoRoute(
           path: '/editor',
@@ -202,16 +304,11 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           routeRepositoryProvider.overrideWithValue(routes),
-          teamRepositoryProvider.overrideWithValue(
-            _StubTeams(
-              fixtureRouteTeam(
-                role: role,
-                visibility: teamVisibility,
-                enableRoutes: enableRoutes,
-              ),
-            ),
-          ),
+          teamRepositoryProvider.overrideWithValue(teams),
           gpxFilePickerProvider.overrideWith((Ref _) => picker),
+          appConfigProvider.overrideWith((Ref _) async => _config),
+          if (web != null)
+            plannerWebViewFactoryProvider.overrideWithValue(web.create),
           teamTagsProvider.overrideWith(
             (Ref ref, ({String teamSlug, TagTarget type}) key) async =>
                 <TagWithUsageDto>[],
@@ -996,6 +1093,742 @@ void main() {
         findsOneWidget,
       );
       expect(find.byKey(keys.routeEditor.errorBanner), findsNothing);
+    });
+  });
+
+  group('planificateur (MOB-170)', () {
+    // Large : la transition d'un écran plein dure plus qu'un demi-tour de
+    // formulaire, et un écran en train de partir est encore trouvé.
+    Future<void> pumps(WidgetTester tester, [int n = 24]) async {
+      for (int i = 0; i < n; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+    }
+
+    Map<String, dynamic> done({
+      Map<String, dynamic> payload = const <String, dynamic>{
+        'plannerState': fixturePlannerStateJson,
+      },
+      int pointCount = 2,
+      bool dirty = true,
+      String? nameSuggestion,
+      String? notice,
+    }) => <String, dynamic>{
+      'type': 'done',
+      'payload': payload,
+      'stats': <String, dynamic>{
+        'distance': 18000,
+        'ascend': 240,
+        'pointCount': pointCount,
+        // (45, 5) puis (45.01, 5.01), précision 6, latitude d'abord.
+        'line': '_sqytA_sdpH_pR_pR',
+      },
+      'dirty': dirty,
+      'nameSuggestion': ?nameSuggestion,
+      'notice': ?notice,
+    };
+
+    RouteDetailDto singleTrack({bool? excludedFromGenerator}) =>
+        fixtureRouteDetail(
+          permissions: permissionsFor(member: true, role: 'ORGANIZER'),
+          tracks: const <TrackDto>[fixtureTrack],
+          excludedFromGenerator: excludedFromGenerator,
+        );
+
+    /// Ouvre le planificateur depuis l'étape 1 et laisse la page dire `ready`.
+    Future<void> draw(WidgetTester tester, _FakePlannerWeb web) async {
+      await tester.tap(find.byKey(keys.routeEditor.drawButton));
+      await pumps(tester);
+      web.emit(<String, dynamic>{'type': 'ready'});
+      await pumps(tester);
+    }
+
+    testWidgets('fermé à l\'équipe : ni « Tracer sur la carte », ni case', (
+      WidgetTester tester,
+    ) async {
+      final _StubRoutes routes = _StubRoutes(detail: singleTrack());
+      await open(
+        tester,
+        routes: routes,
+        picker: _FakePicker(<GpxFile?>[]),
+        routeSlug: 'col-de-la-croix',
+      );
+
+      expect(find.byKey(keys.routeEditor.trackReplaceButton), findsOneWidget);
+      expect(find.byKey(keys.routeEditor.trackEditButton), findsNothing);
+      expect(find.byKey(keys.routeEditor.drawButton), findsNothing);
+      expect(find.byKey(keys.routeEditor.excludedFromGenerator), findsNothing);
+
+      await tester.tap(find.byKey(keys.routeEditor.saveButton));
+      await pumps(tester);
+      // La requête de MOB-79, telle quelle : rien du planificateur.
+      final RouteRequest request = routes.updated.single.request;
+      expect(request.excludedFromGenerator, isNull);
+      expect(request.plannerState, isNull);
+      expect(request.points, isNull);
+      expect(request.waypoints, isNull);
+    });
+
+    testWidgets('création : les deux entrées, puis tracer, aperçu, envoi', (
+      WidgetTester tester,
+    ) async {
+      final _StubRoutes routes = _StubRoutes();
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: routes,
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        web: web,
+      );
+
+      expect(find.text('Importer un fichier GPX'), findsOneWidget);
+      expect(find.text('Tracer sur la carte'), findsOneWidget);
+      expect(
+        find.textContaining('Le tracé ne se dessine pas dans l\'app'),
+        findsNothing,
+      );
+      // La page n'est créée qu'à la première ouverture.
+      expect(web.created, 0);
+
+      await draw(tester, web);
+      expect(find.byKey(keys.routeEditor.plannerScreen), findsOneWidget);
+      final Map<String, dynamic> load =
+          web.argumentsOf('load').single! as Map<String, dynamic>;
+      expect(load['create'], isTrue);
+      expect(load['teamSlug'], 'n-peloton');
+      expect(load['theme'], 'light');
+      expect(load['locale'], 'fr');
+      expect(load['units'], 'METRIC');
+      expect(load['defaultCenter'], <String, dynamic>{
+        'lat': 46.6,
+        'lon': 2.5,
+        'zoom': 5.0,
+      });
+      // Un style d'un CDN tiers reste une adresse.
+      expect((load['styles'] as List<dynamic>).single, <String, dynamic>{
+        'id': 'route',
+        'label': 'Route',
+        'group': 'Vectoriel',
+        'url': 'https://cdn.test/route.json',
+      });
+      expect(load.containsKey('state'), isFalse);
+      expect(load.containsKey('track'), isFalse);
+      expect(load.containsKey('testCommands'), isFalse);
+      expect(routes.plannerStateReads, 0);
+
+      web.emit(done(nameSuggestion: 'Tour du lac'));
+      await pumps(tester);
+
+      // De retour dans le formulaire : l'aperçu, le nom proposé.
+      expect(find.byKey(keys.routeEditor.plannerScreen), findsNothing);
+      expect(find.byKey(keys.routeEditor.plannerPreview), findsOneWidget);
+      expect(find.textContaining('18,0'), findsOneWidget);
+      expect(find.textContaining('240'), findsOneWidget);
+      expect(find.text('Tracé de 2 points'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(find.byKey(keys.routeEditor.nameField))
+            .controller!
+            .text,
+        'Tour du lac',
+      );
+      expect(find.byKey(keys.routeEditor.trackEditButton), findsOneWidget);
+
+      final int readsBefore = teams.reads;
+      await tester.tap(find.byKey(keys.routeEditor.saveButton));
+      await pumps(tester);
+
+      final created = routes.created.single;
+      expect(created.gpx, isNull);
+      expect(created.request.name, 'Tour du lac');
+      expect(
+        created.request.plannerState,
+        PlannerState.fromJson(fixturePlannerStateJson),
+      );
+      expect(created.request.points, isNull);
+      expect(created.request.waypoints, isNull);
+      expect(created.request.excludedFromGenerator, isFalse);
+      // L'équipe est relue après l'enregistrement : son quota a bougé.
+      expect(teams.reads, greaterThan(readsBefore));
+      expect(find.text('fiche nouveau-parcours'), findsOneWidget);
+      expect(web.disposed, isTrue);
+    });
+
+    testWidgets('rouvrir : la même page, `load` une seule fois', (
+      WidgetTester tester,
+    ) async {
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: _StubRoutes(),
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        web: web,
+      );
+      await draw(tester, web);
+      web.emit(done());
+      await pumps(tester);
+
+      await tester.tap(find.byKey(keys.routeEditor.trackEditButton));
+      await pumps(tester);
+
+      expect(find.byKey(keys.routeEditor.plannerScreen), findsOneWidget);
+      expect(web.created, 1);
+      expect(web.argumentsOf('load'), hasLength(1));
+      expect(web.disposed, isFalse);
+    });
+
+    testWidgets('un nom déjà tapé n\'est pas remplacé par celui du fichier', (
+      WidgetTester tester,
+    ) async {
+      final _StubRoutes routes = _StubRoutes();
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: routes,
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        web: web,
+      );
+      await draw(tester, web);
+      web.emit(done());
+      await pumps(tester);
+      await tester.enterText(
+        find.byKey(keys.routeEditor.nameField),
+        'Ma boucle',
+      );
+
+      await tester.tap(find.byKey(keys.routeEditor.trackEditButton));
+      await pumps(tester);
+      web.emit(done(nameSuggestion: 'Tour du lac'));
+      await pumps(tester);
+
+      expect(
+        tester
+            .widget<TextField>(find.byKey(keys.routeEditor.nameField))
+            .controller!
+            .text,
+        'Ma boucle',
+      );
+    });
+
+    testWidgets('moins de deux points à la création : toujours l\'étape 1', (
+      WidgetTester tester,
+    ) async {
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: _StubRoutes(),
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        web: web,
+      );
+      await draw(tester, web);
+      // Un seul point posé : la page ne rend aucun fragment.
+      web.emit(done(payload: const <String, dynamic>{}, pointCount: 1));
+      await pumps(tester);
+
+      expect(find.byKey(keys.routeEditor.pickStep), findsOneWidget);
+      expect(find.byKey(keys.routeEditor.saveButton), findsNothing);
+    });
+
+    testWidgets('quota épuisé : le bouton reste, désactivé, avec sa raison', (
+      WidgetTester tester,
+    ) async {
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: _StubRoutes(),
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        quota: const PlannerQuotaDto(
+          used: 20,
+          limit: 20,
+          resetsOn: '2026-12-01',
+        ),
+        web: web,
+      );
+
+      expect(find.byKey(keys.routeEditor.drawButton), findsOneWidget);
+      expect(find.byKey(keys.routeEditor.quotaMessage), findsOneWidget);
+      expect(
+        find.textContaining(
+          'N-Peloton utilise l\'offre gratuite, qui permet 20 enregistrements',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('le compteur repart le 1er décembre'),
+        findsOneWidget,
+      );
+      // L'import reste.
+      expect(find.byKey(keys.routeEditor.pickButton), findsOneWidget);
+
+      await tester.tap(find.byKey(keys.routeEditor.drawButton));
+      await pumps(tester);
+      expect(web.created, 0);
+      expect(find.byKey(keys.routeEditor.plannerScreen), findsNothing);
+    });
+
+    testWidgets('quota sans limite ou non atteint : le bouton est ouvert', (
+      WidgetTester tester,
+    ) async {
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: _StubRoutes(),
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        quota: const PlannerQuotaDto(
+          used: 19,
+          limit: 20,
+          resetsOn: '2026-12-01',
+        ),
+        web: web,
+      );
+
+      expect(find.byKey(keys.routeEditor.quotaMessage), findsNothing);
+      await tester.tap(find.byKey(keys.routeEditor.drawButton));
+      await pumps(tester);
+      expect(web.created, 1);
+    });
+
+    testWidgets('un calcul en vol bloque l\'enregistrement', (
+      WidgetTester tester,
+    ) async {
+      final _StubRoutes routes = _StubRoutes();
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: routes,
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        web: web,
+      );
+      await draw(tester, web);
+      web.emit(done(nameSuggestion: 'Tour du lac'));
+      await pumps(tester);
+
+      web.emit(<String, dynamic>{'type': 'busy', 'busy': true});
+      await pumps(tester, 2);
+      await tester.tap(find.byKey(keys.routeEditor.saveButton));
+      await pumps(tester);
+      expect(routes.created, isEmpty);
+
+      web.emit(<String, dynamic>{'type': 'busy', 'busy': false});
+      await pumps(tester, 2);
+      await tester.tap(find.byKey(keys.routeEditor.saveButton));
+      await pumps(tester);
+      expect(routes.created, hasLength(1));
+    });
+
+    testWidgets('`quotaRefused` de la page : la feuille, l\'équipe relue', (
+      WidgetTester tester,
+    ) async {
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: _StubRoutes(),
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        web: web,
+      );
+      await draw(tester, web);
+      final int readsBefore = teams.reads;
+
+      web.emit(<String, dynamic>{
+        'type': 'quotaRefused',
+        'scope': 'TEAM',
+        'limit': 20,
+        'current': 20,
+        'resetsOn': '2026-12-01',
+        'teamName': 'N-Peloton',
+      });
+      await pumps(tester);
+
+      expect(find.byKey(keys.routeEditor.quotaSheet), findsOneWidget);
+      expect(
+        find.text('Enregistrements du mois tous utilisés'),
+        findsOneWidget,
+      );
+
+      // Fermer la feuille ne ferme pas le planificateur.
+      await tester.tap(find.byKey(keys.routeEditor.quotaClose));
+      await pumps(tester);
+      expect(find.byKey(keys.routeEditor.quotaSheet), findsNothing);
+      expect(find.byKey(keys.routeEditor.plannerScreen), findsOneWidget);
+
+      // L'équipe est relue dès que le formulaire, dessous, revient à
+      // l'écran (un écran couvert n'écoute pas).
+      web.emit(<String, dynamic>{'type': 'close', 'dirty': false});
+      await pumps(tester);
+      expect(teams.reads, greaterThan(readsBefore));
+    });
+
+    testWidgets('PLANNER_QUOTA_REACHED à l\'enregistrement : la feuille', (
+      WidgetTester tester,
+    ) async {
+      final _StubRoutes routes = _StubRoutes();
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: routes,
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        web: web,
+      );
+      await draw(tester, web);
+      web.emit(done(nameSuggestion: 'Tour du lac'));
+      await pumps(tester);
+
+      final RequestOptions options = RequestOptions(
+        path: '/api/teams/x/routes',
+      );
+      routes.failWith = DioException(
+        requestOptions: options,
+        response: Response<dynamic>(
+          requestOptions: options,
+          statusCode: 403,
+          data: <String, dynamic>{
+            'code': 'PLANNER_QUOTA_REACHED',
+            'errorDetails': <String, dynamic>{
+              'type': 'PLANNER_QUOTA_REACHED',
+              'scope': 'TEAM',
+              'limit': 20,
+              'current': 20,
+              'resetsOn': '2026-12-01',
+              'teamName': 'N-Peloton',
+            },
+          },
+        ),
+      );
+      await tester.tap(find.byKey(keys.routeEditor.saveButton));
+      await pumps(tester);
+
+      expect(find.byKey(keys.routeEditor.quotaSheet), findsOneWidget);
+      // Ni message générique, ni tracé perdu.
+      expect(find.byKey(keys.routeEditor.errorBanner), findsNothing);
+      await tester.tap(find.byKey(keys.routeEditor.quotaClose));
+      await pumps(tester);
+      expect(find.byKey(keys.routeEditor.plannerPreview), findsOneWidget);
+    });
+
+    testWidgets('un fichier importé intact part en fichier (`file: true`)', (
+      WidgetTester tester,
+    ) async {
+      final _StubRoutes routes = _StubRoutes();
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      final GpxFile first = write('premier.gpx', fixtureGpx());
+      final GpxFile second = write('second.gpx', fixtureGpx());
+      await open(
+        tester,
+        routes: routes,
+        picker: _FakePicker(<GpxFile?>[first, second]),
+        planner: true,
+        web: web,
+      );
+      await draw(tester, web);
+
+      // Deux fichiers choisis dans la page ; le parcours reste le premier.
+      web.emit(<String, dynamic>{'type': 'pickGpx'});
+      await settle(tester);
+      await settle(tester);
+      web.emit(<String, dynamic>{'type': 'pickGpx'});
+      await settle(tester);
+      await settle(tester);
+      final List<Object?> sent = web.argumentsOf('gpx');
+      expect(sent, hasLength(2));
+      final Map<String, dynamic> one = sent.first! as Map<String, dynamic>;
+      expect(one['name'], 'premier.gpx');
+      expect(utf8.decode(base64Decode(one['base64'] as String)), fixtureGpx());
+
+      web.emit(
+        done(
+          payload: <String, dynamic>{'file': true, 'fileId': one['id']},
+          nameSuggestion: 'Col de test',
+        ),
+      );
+      await pumps(tester);
+      await tester.tap(find.byKey(keys.routeEditor.saveButton));
+      await pumps(tester);
+
+      final created = routes.created.single;
+      expect(created.gpx, first);
+      expect(created.request.plannerState, isNull);
+      expect(created.request.points, isNull);
+    });
+
+    testWidgets(
+      'quitter le formulaire avec un tracé non repris : la question',
+      (WidgetTester tester) async {
+        final _FakePlannerWeb web = _FakePlannerWeb();
+        await open(
+          tester,
+          routes: _StubRoutes(detail: singleTrack()),
+          picker: _FakePicker(<GpxFile?>[]),
+          planner: true,
+          web: web,
+          routeSlug: 'col-de-la-croix',
+        );
+        await tester.tap(find.byKey(keys.routeEditor.trackEditButton));
+        await pumps(tester);
+        web.emit(<String, dynamic>{'type': 'ready'});
+        await pumps(tester);
+
+        // Des retouches, puis la flèche de la page : l'écran part sans
+        // question, la page reste.
+        web.emit(<String, dynamic>{'type': 'dirty', 'dirty': true});
+        web.emit(<String, dynamic>{'type': 'close', 'dirty': true});
+        await pumps(tester);
+        expect(find.byKey(keys.routeEditor.plannerScreen), findsNothing);
+        expect(web.disposed, isFalse);
+        expect(find.byKey(keys.routeEditor.plannerUnvalidated), findsOneWidget);
+
+        // Le formulaire, lui, demande avant de partir.
+        final NavigatorState navigator = tester.state<NavigatorState>(
+          find.byType(Navigator).last,
+        );
+        await navigator.maybePop();
+        await pumps(tester);
+        expect(find.text('Abandonner les modifications ?'), findsOneWidget);
+        expect(find.byKey(keys.routeEditor.nameField), findsOneWidget);
+      },
+    );
+
+    group('modification', () {
+      Future<_FakePlannerWeb> openEdit(
+        WidgetTester tester,
+        _StubRoutes routes,
+      ) async {
+        final _FakePlannerWeb web = _FakePlannerWeb();
+        await open(
+          tester,
+          routes: routes,
+          picker: _FakePicker(<GpxFile?>[]),
+          planner: true,
+          web: web,
+          routeSlug: 'col-de-la-croix',
+        );
+        return web;
+      }
+
+      Future<void> edit(WidgetTester tester, _FakePlannerWeb web) async {
+        await tester.tap(find.byKey(keys.routeEditor.trackEditButton));
+        await pumps(tester);
+        web.emit(<String, dynamic>{'type': 'ready'});
+        await pumps(tester);
+      }
+
+      testWidgets('« Modifier le tracé » à côté de « Remplacer le GPX »', (
+        WidgetTester tester,
+      ) async {
+        final _StubRoutes routes = _StubRoutes(detail: singleTrack())
+          ..plannerState = PlannerState.fromJson(fixturePlannerStateJson);
+        final _FakePlannerWeb web = await openEdit(tester, routes);
+
+        expect(find.text('Modifier le tracé'), findsOneWidget);
+        expect(find.byKey(keys.routeEditor.trackReplaceButton), findsOneWidget);
+        // L'état n'est lu qu'à l'ouverture du planificateur.
+        expect(routes.plannerStateReads, 0);
+
+        await edit(tester, web);
+        expect(routes.plannerStateReads, 1);
+        final Map<String, dynamic> load =
+            web.argumentsOf('load').single! as Map<String, dynamic>;
+        expect(load['create'], isFalse);
+        expect(load['routeName'], 'Col de la Croix');
+        expect(load['ascend'], 800);
+        expect(load['waypointsTotal'], 50000);
+        expect(load['waypoints'], isEmpty);
+        expect(load['track'], <dynamic>[
+          <dynamic>[5.0, 45.0, 200.0, 0.0],
+          <dynamic>[5.01, 45.01, 230.0, 1400.0],
+        ]);
+        // L'état, sans les `null` que les DTO écrivent pour un champ absent.
+        expect(load['state'], fixturePlannerStateJson);
+      });
+
+      testWidgets('tracé retouché : l\'état part, sans fichier', (
+        WidgetTester tester,
+      ) async {
+        final _StubRoutes routes = _StubRoutes(detail: singleTrack());
+        final _FakePlannerWeb web = await openEdit(tester, routes);
+        await edit(tester, web);
+        web.emit(
+          done(
+            payload: <String, dynamic>{
+              'plannerState': fixturePlannerStateJson,
+              'waypoints': <dynamic>[
+                <String, dynamic>{
+                  'position': <String, dynamic>{'lng': 5.0, 'lat': 45.0},
+                  'type': 'WATER',
+                  'name': 'Fontaine',
+                },
+              ],
+            },
+          ),
+        );
+        await pumps(tester);
+
+        expect(find.byKey(keys.routeEditor.plannerPreview), findsOneWidget);
+        expect(
+          find.text('Remplacera le tracé à l\'enregistrement'),
+          findsOneWidget,
+        );
+        await tester.tap(find.byKey(keys.routeEditor.saveButton));
+        await pumps(tester);
+
+        final update = routes.updated.single;
+        expect(update.gpx, isNull);
+        expect(update.request.plannerState, isNotNull);
+        expect(update.request.points, isNull);
+        expect(update.request.waypoints!.single.name, 'Fontaine');
+      });
+
+      testWidgets('tracé laissé tel quel : rien ne part du tracé', (
+        WidgetTester tester,
+      ) async {
+        final _StubRoutes routes = _StubRoutes(detail: singleTrack());
+        final _FakePlannerWeb web = await openEdit(tester, routes);
+        await edit(tester, web);
+        web.emit(done(payload: const <String, dynamic>{}, dirty: false));
+        await pumps(tester);
+
+        expect(find.byKey(keys.routeEditor.plannerPreview), findsNothing);
+        await tester.tap(find.byKey(keys.routeEditor.saveButton));
+        await pumps(tester);
+
+        final update = routes.updated.single;
+        expect(update.gpx, isNull);
+        expect(update.request.plannerState, isNull);
+        expect(update.request.points, isNull);
+        expect(update.request.waypoints, isNull);
+      });
+
+      testWidgets('état trop grand : les points, puis l\'avertissement', (
+        WidgetTester tester,
+      ) async {
+        final _StubRoutes routes = _StubRoutes(detail: singleTrack());
+        final _FakePlannerWeb web = await openEdit(tester, routes);
+        await edit(tester, web);
+        web.emit(
+          done(
+            payload: <String, dynamic>{
+              'points': <dynamic>[
+                <String, dynamic>{'lng': 5.0, 'lat': 45.0},
+                <String, dynamic>{'lng': 5.01, 'lat': 45.01},
+              ],
+            },
+            notice: 'tooLarge',
+          ),
+        );
+        await pumps(tester);
+        await tester.tap(find.byKey(keys.routeEditor.saveButton));
+        await pumps(tester);
+
+        final update = routes.updated.single;
+        expect(update.request.plannerState, isNull);
+        expect(update.request.points, hasLength(2));
+        expect(
+          find.textContaining('Tracé enregistré sans ses points de contrôle'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('état illisible : le tracé s\'ouvre en import, et le dit', (
+        WidgetTester tester,
+      ) async {
+        final _StubRoutes routes = _StubRoutes(detail: singleTrack())
+          ..plannerStateFails = true;
+        final _FakePlannerWeb web = await openEdit(tester, routes);
+        await edit(tester, web);
+
+        final Map<String, dynamic> load =
+            web.argumentsOf('load').single! as Map<String, dynamic>;
+        expect(load.containsKey('state'), isFalse);
+        expect(load['track'], isNotEmpty);
+        expect(load['create'], isFalse);
+
+        web.emit(<String, dynamic>{'type': 'close', 'dirty': false});
+        await pumps(tester);
+        expect(find.byKey(keys.routeEditor.plannerWarning), findsOneWidget);
+        expect(
+          find.textContaining(
+            'Les points de contrôle enregistrés n\'ont pas pu être relus',
+          ),
+          findsWidgets,
+        );
+        expect(find.byKey(keys.routeEditor.plannerUnvalidated), findsNothing);
+      });
+
+      testWidgets('plusieurs traces : le GPX seulement', (
+        WidgetTester tester,
+      ) async {
+        final _StubRoutes routes = _StubRoutes(
+          detail: fixtureRouteDetail(
+            permissions: permissionsFor(member: true, role: 'ORGANIZER'),
+            tracks: const <TrackDto>[fixtureTrack, fixtureTrack],
+          ),
+        );
+        await openEdit(tester, routes);
+
+        expect(find.byKey(keys.routeEditor.trackReplaceButton), findsOneWidget);
+        expect(find.byKey(keys.routeEditor.trackEditButton), findsNothing);
+        // La case, elle, ne dépend que de l'équipe.
+        expect(
+          find.byKey(keys.routeEditor.excludedFromGenerator),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('quota épuisé : « Modifier le tracé » désactivé', (
+        WidgetTester tester,
+      ) async {
+        final _FakePlannerWeb web = _FakePlannerWeb();
+        await open(
+          tester,
+          routes: _StubRoutes(detail: singleTrack()),
+          picker: _FakePicker(<GpxFile?>[]),
+          planner: true,
+          quota: const PlannerQuotaDto(
+            used: 21,
+            limit: 20,
+            resetsOn: '2026-12-01',
+          ),
+          web: web,
+          routeSlug: 'col-de-la-croix',
+        );
+
+        expect(find.byKey(keys.routeEditor.quotaMessage), findsOneWidget);
+        await tester.tap(find.byKey(keys.routeEditor.trackEditButton));
+        await pumps(tester);
+        expect(web.created, 0);
+      });
+
+      testWidgets('« Ne pas utiliser pour générer des parcours »', (
+        WidgetTester tester,
+      ) async {
+        final _StubRoutes routes = _StubRoutes(
+          detail: singleTrack(excludedFromGenerator: true),
+        );
+        await openEdit(tester, routes);
+
+        expect(
+          find.text('Ne pas utiliser pour générer des parcours'),
+          findsOneWidget,
+        );
+        final Finder box = find.byKey(keys.routeEditor.excludedFromGenerator);
+        expect(tester.widget<PdlSwitch>(box).value, isTrue);
+
+        await tester.tap(box);
+        await pumps(tester, 2);
+        expect(tester.widget<PdlSwitch>(box).value, isFalse);
+        await tester.tap(find.byKey(keys.routeEditor.saveButton));
+        await pumps(tester);
+
+        expect(routes.updated.single.request.excludedFromGenerator, isFalse);
+      });
     });
   });
 }

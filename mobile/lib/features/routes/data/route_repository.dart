@@ -225,7 +225,10 @@ class RouteRepository {
 
   // ── Écriture (docs/LEDGER_*.md MOB-79) ─────────────────────────────────
 
-  /// Crée un parcours de [teamSlug] depuis le fichier [gpx].
+  /// Crée un parcours de [teamSlug] depuis le fichier [gpx], ou — sans
+  /// fichier — depuis le tracé que porte [request] (`plannerState` ou
+  /// `points` du planificateur embarqué, ledger `MOB-170`) : aucune partie
+  /// fichier ne part alors.
   ///
   /// **La forme sur le fil est celle du site** : la requête en champ `route`
   /// (JSON), le fichier en partie `gpxFile` (`application/gpx+xml`). Le client
@@ -236,18 +239,19 @@ class RouteRepository {
   Future<RouteDto> createRoute(
     String teamSlug,
     RouteRequest request, {
-    required GpxFile gpx,
+    GpxFile? gpx,
   }) {
     return _routesClient.createRoute(
       teamSlug: teamSlug,
       route: request,
-      gpxFile: _gpxPart(gpx),
+      gpxFile: gpx == null ? null : _gpxPart(gpx),
     );
   }
 
   /// Réécrit le parcours [routeSlug]. Le serveur veut la requête **entière**.
   /// Avec [gpx], le nouveau fichier remplace tout le tracé ; sans, aucune
-  /// partie fichier ne part et le tracé reste.
+  /// partie fichier ne part : le tracé reste, ou devient celui que porte
+  /// [request] (`plannerState` ou `points`).
   Future<RouteDto> updateRoute(
     String teamSlug,
     String routeSlug,
@@ -297,6 +301,19 @@ class RouteRepository {
   /// inter-équipes n'en ont pas (plan des tags, D7).
   static List<String>? _tags(RouteFilters filters) =>
       filters.tagIds.isEmpty ? null : filters.tagIds;
+
+  /// L'état d'édition enregistré du parcours (points de contrôle, pièces),
+  /// `null` s'il n'y en a pas. Lu juste avant d'ouvrir le planificateur,
+  /// jamais gardé en cache : c'est l'état sur lequel le prochain
+  /// enregistrement s'appuie.
+  Future<PlannerState?> getPlannerState(
+    String teamSlug,
+    String routeSlug,
+  ) async {
+    final PlannerStateResponse response = await _routesClient
+        .getRoutePlannerState(teamSlug: teamSlug, routeSlug: routeSlug);
+    return response.state;
+  }
 
   static String? _search(RouteFilters filters) {
     final String? search = filters.search?.trim();

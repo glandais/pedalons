@@ -1,7 +1,7 @@
 import type { PlannerSnapshot } from '@/hooks/useRoutePlanner'
 import { plannerPayload } from '@/lib/plannerSubmit'
 import { encode2 } from '@/lib/polyline'
-import type { DonePayload, Outgoing } from './bridge'
+import { fileIdOf, type DonePayload, type Outgoing } from './bridge'
 
 interface DoneInput {
   snapshot: PlannerSnapshot
@@ -32,10 +32,11 @@ export function doneMessage({
   nameSuggestion,
 }: DoneInput): Extract<Outgoing, { type: 'done' }> {
   const track = plannerPayload(snapshot, create)
+  const fileId = track.file && fileIdOf(track.file)
   const payload: DonePayload = {
     ...(track.points && { points: track.points }),
     ...(track.plannerState && { plannerState: track.plannerState }),
-    ...(track.file && { file: true as const }),
+    ...(track.file && { file: true as const, ...(fileId && { fileId }) }),
     ...(track.waypoints && { waypoints: track.waypoints }),
   }
   return {
