@@ -1,10 +1,10 @@
 # Créer et gérer une équipe dans l'application mobile
 
 Écrit le 15 novembre 2026. **État : lot 1 écrit le 15 novembre 2026 (`MOB-165` — reste son test
-Patrol à lancer — et `WEB-182`, livré) ; lots 2 à 5 conçus, pas codés.** Ce que le lot 1 a tranché en
+Patrol à lancer — et `WEB-184`, livré) ; lots 2 à 5 conçus, pas codés.** Ce que le lot 1 a tranché en
 codant est noté « Fait » dans les sections 4 et 5. Ledger : `MOB-165` (socle et
 création), `MOB-166` (paramètres et webhook), `MOB-167` (membres et invitations), `MOB-168` (lieux et
-signalements), `MOB-169` (tags et pages), `WEB-182` (libellé `USER_TEAM_LIMIT_REACHED`). Numéros
+signalements), `MOB-169` (tags et pages), `WEB-184` (libellé `USER_TEAM_LIMIT_REACHED`). Numéros
 réservés le 15 novembre 2026, entrées créées le même jour dans `LEDGER_NEXT.md`. Branche prévue :
 `feat/mobile-gestion-equipe`, un commit par lot.
 
@@ -269,7 +269,7 @@ fuseau de l'appareil demanderait un plugin natif (`flutter_timezone`) : à déci
   non supprimée du domaine ; être membre ne compte pas, et l'erreur ne porte **aucun
   `errorDetails`** : le texte reste sans nombre. Proposition : « Vous administrez déjà une équipe :
   il n'est pas possible d'en créer une autre. »
-- **Site (`WEB-182`)** : même correction à `frontend/src/locales/fr/common.json:720` et
+- **Site (`WEB-184`)** : même correction à `frontend/src/locales/fr/common.json:720` et
   `en/common.json:704`. Le plan de monétisation (`plans/2026-10-17-monetisation.md`) prévoit une
   limite par offre : le texte sera à revoir alors.
 
@@ -465,7 +465,7 @@ la pile e2e.
 
 | Lot | Contenu | Ledger | Taille |
 |---|---|---|---|
-| 1 | Droits, routes, hub, `notifyTeamChanged`, sélecteur de lieu commun, création d'équipe, libellé `USER_TEAM_LIMIT_REACHED` (app et site) | `MOB-165`, `WEB-182` | M |
+| 1 | Droits, routes, hub, `notifyTeamChanged`, sélecteur de lieu commun, création d'équipe, libellé `USER_TEAM_LIMIT_REACHED` (app et site) | `MOB-165`, `WEB-184` | M |
 | 2 | Paramètres (slug, médias, visibilité, fuseau, suppression) et webhook | `MOB-166` | L |
 | 3 | Membres et invitations | `MOB-167` | M |
 | 4 | Lieux et signalements | `MOB-168` | M |

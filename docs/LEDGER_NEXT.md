@@ -81,7 +81,7 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       « Gérer l'équipe » dans l'en-tête d'équipe ; écran de création (`team_editor_page.dart`,
       `TeamForm` — `fromTeam` déjà là pour `MOB-166`) ouvert par « Créer une équipe » dans la barre
       et l'état vide de « Mes équipes » ; `errors.api.USER_TEAM_LIMIT_REACHED` (côté site :
-      `WEB-182`). Déclarations des stores : ligne d'inventaire #26 de
+      `WEB-184`). Déclarations des stores : ligne d'inventaire #26 de
       `mobile/store-metadata/data-safety.md`, la localisation d'équipe sous *Physical Address* /
       *Address* (arbitrage O1 du plan), commentaires de `PrivacyInfo.xcprivacy` ; aucun type de
       donnée nouveau, `app-privacy.json` et `data-safety.csv` inchangés.
