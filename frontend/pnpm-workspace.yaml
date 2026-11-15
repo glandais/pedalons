@@ -7,3 +7,11 @@ allowBuilds:
   sharp: true
 minimumReleaseAgeExclude:
   - i18next@27.1.2
+  - '@mantine/core@9.8.1'
+  - '@mantine/dates@9.8.1'
+  - '@mantine/form@9.8.1'
+  - '@mantine/hooks@9.8.1'
+  - '@mantine/notifications@9.8.1'
+  - '@mantine/schedule@9.8.1'
+  - '@mantine/store@9.8.1'
+  - '@mantine/tiptap@9.8.1'
