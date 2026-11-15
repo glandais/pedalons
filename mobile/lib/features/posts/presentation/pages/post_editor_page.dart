@@ -561,7 +561,9 @@ class _PostEditorFormState extends ConsumerState<_PostEditorForm>
                       ? RichMarkdownEditorField(
                           controller: _markdown,
                           title: 'posts.editor.body'.tr(),
-                          hintText: 'posts.editor.markdownPlaceholder'.tr(),
+                          // Celui du site (`posts.create.descriptionPlaceholder`) :
+                          // le markdown ne se tape plus.
+                          hintText: 'posts.editor.richPlaceholder'.tr(),
                           images: _form.media.assets.images,
                           enabled: !_saving,
                           imageBusy: _uploading,
