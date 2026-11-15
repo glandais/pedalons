@@ -225,6 +225,12 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
   /// suppression ou un changement d'adresse.
   bool get _blocked => _locating || _uploading || _deleting || _renaming;
 
+  /// La saisie est figée : pendant un enregistrement, et pendant un
+  /// changement d'adresse — réussi, il mène à la nouvelle adresse et
+  /// abandonnerait sans rien demander ce qui aurait été saisi entre-temps
+  /// (revue du lot 2, ledger `MOB-166`).
+  bool get _frozen => _saving || _renaming;
+
   @override
   void initState() {
     super.initState();
@@ -314,10 +320,13 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
     }
   }
 
-  void _clearPlace() => setState(() {
-    _pickedPlaceName = null;
-    _form = _form.copyWith(location: () => null);
-  });
+  void _clearPlace() {
+    if (_frozen) return;
+    setState(() {
+      _pickedPlaceName = null;
+      _form = _form.copyWith(location: () => null);
+    });
+  }
 
   String _locationTitle() {
     if (_locating) return 'geocoder.resolving'.tr();
@@ -560,7 +569,7 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
         key: key,
         value: value,
         semanticLabel: label,
-        onChanged: _saving || !available ? null : onChanged,
+        onChanged: _frozen || !available ? null : onChanged,
       ),
     );
   }
@@ -627,7 +636,7 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
                 TextField(
                   key: keys.teamEditor.nameField,
                   controller: _name,
-                  enabled: !_saving,
+                  enabled: !_frozen,
                   textCapitalization: TextCapitalization.words,
                   inputFormatters: <TextInputFormatter>[
                     LengthLimitingTextInputFormatter(kTeamNameMaxLength),
@@ -669,7 +678,7 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
                     title: 'teams.editor.description'.tr(),
                     hintText: 'teams.editor.descriptionPlaceholder'.tr(),
                     images: _form.media.assets.images,
-                    enabled: !_saving,
+                    enabled: !_frozen,
                     imageBusy: _uploading,
                     onInsertImage: team == null ? null : addImage,
                     errorText: _form.markdownValid
@@ -706,7 +715,8 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
                             dimension: 20,
                             child: CircularProgressIndicator.adaptive(),
                           )
-                        : _form.location == null
+                        // Figée, la position ne s'efface pas : pas de croix.
+                        : _form.location == null || _frozen
                         ? null
                         : EditorClearButton(
                             key: keys.teamEditor.locationClear,

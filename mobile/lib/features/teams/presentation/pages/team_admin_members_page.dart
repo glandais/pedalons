@@ -209,11 +209,13 @@ class _AdminMembersState extends ConsumerState<_AdminMembers> {
       );
   }
 
-  /// Les membres ont changé : la liste (toutes ses variantes de filtres, et
-  /// le trombinoscope avec elles), puis la fiche et le tableau de bord —
-  /// nombre de membres, répartition par rôle, nouveaux membres.
-  void _membersChanged(ProviderContainer container) {
-    container.invalidate(teamMembersProvider);
+  /// Les membres ont changé : les listes de **cette équipe** le reportent à
+  /// leur place — celle-ci sous tous ses filtres, et le trombinoscope resté
+  /// ouvert dessous — sans se vider ni revenir en haut ; puis la fiche et le
+  /// tableau de bord — nombre de membres, répartition par rôle, nouveaux
+  /// membres.
+  void _membersChanged(ProviderContainer container, TeamMembersChange change) {
+    notifyTeamMembersChanged(container, change);
     notifyTeamChanged(container, _slug);
   }
 
@@ -230,7 +232,9 @@ class _AdminMembersState extends ConsumerState<_AdminMembers> {
   }
 
   /// Une écriture, une à la fois. `true` si elle a réussi ; son échec se lit
-  /// dans le bandeau.
+  /// dans le bandeau. Tant qu'elle court, tout ce qui en lancerait une autre
+  /// est inactif — les lignes, leur `⋯`, « Inviter par e-mail », les cartes
+  /// d'invitation : un second geste ne se perd pas en silence.
   Future<bool> _write(Future<void> Function() action) async {
     if (_writing) return false;
     setState(() {
@@ -277,7 +281,14 @@ class _AdminMembersState extends ConsumerState<_AdminMembers> {
         userId: member.user.id,
         role: picked,
       );
-      _membersChanged(container);
+      _membersChanged(
+        container,
+        TeamMembersChange.roleChanged(
+          _slug,
+          userId: member.user.id,
+          role: picked,
+        ),
+      );
     });
     if (done) _snack(messenger, 'teams.adminMembers.roleUpdated'.tr());
   }
@@ -302,7 +313,10 @@ class _AdminMembersState extends ConsumerState<_AdminMembers> {
     final bool done = await _write(() async {
       // L'identifiant de la **personne**, pas celui de l'adhésion.
       await repository.removeMember(_slug, userId: member.user.id);
-      _membersChanged(container);
+      _membersChanged(
+        container,
+        TeamMembersChange.removed(_slug, userId: member.user.id),
+      );
     });
     if (done) _snack(messenger, 'teams.adminMembers.removed'.tr());
   }
@@ -364,7 +378,7 @@ class _AdminMembersState extends ConsumerState<_AdminMembers> {
         // l'équipe compte une personne de plus.
         if (error.response?.statusCode == 409) {
           container.invalidate(teamInvitationsProvider(_slug));
-          _membersChanged(container);
+          _membersChanged(container, TeamMembersChange.unknown(_slug));
         }
         rethrow;
       }
@@ -487,7 +501,7 @@ class _AdminMembersState extends ConsumerState<_AdminMembers> {
                   label: 'teams.adminMembers.invite.open'.tr(),
                   icon: PdlIcons.personAdd,
                   size: PdlButtonSize.sm,
-                  enabled: !_inviteBlockedByLimit,
+                  enabled: !_inviteBlockedByLimit && !_writing,
                   onPressed: _openInvite,
                 ),
             ],
@@ -700,7 +714,12 @@ class _AdminMembersState extends ConsumerState<_AdminMembers> {
               showDivider: index < state.items.length - 1,
               // Sa propre ligne ne s'ouvre pas : on ne change pas son rôle,
               // on ne se retire pas, on ne se signale pas.
-              onTap: isCurrentUser ? null : () => _openMemberMenu(member),
+              // Ni pendant une écriture : le geste suivant serait perdu. Le
+              // `⋯` reste alors à sa place, inactif.
+              hasMenu: !isCurrentUser,
+              onTap: isCurrentUser || _writing
+                  ? null
+                  : () => _openMemberMenu(member),
             );
           },
         ),
@@ -726,12 +745,17 @@ class _AdminMemberRow extends StatelessWidget {
     super.key,
     required this.member,
     required this.isCurrentUser,
+    required this.hasMenu,
     this.showDivider = true,
     this.onTap,
   });
 
   final MemberDto member;
   final bool isCurrentUser;
+
+  /// La ligne a une feuille (toutes sauf la sienne) : son `⋯` est rendu, actif
+  /// quand [onTap] l'est.
+  final bool hasMenu;
   final bool showDivider;
   final VoidCallback? onTap;
 
@@ -766,12 +790,12 @@ class _AdminMemberRow extends StatelessWidget {
               label: AppFormatters.roleName(role),
               tone: TeamRole.fromJson(role).tone(c),
             ),
-      trailing: onTap == null
-          ? null
-          : ModerationMoreButton(
+      trailing: hasMenu
+          ? ModerationMoreButton(
               key: keys.teamAdminMembers.rowMore(user.id),
-              onPressed: onTap!,
-            ),
+              onPressed: onTap,
+            )
+          : null,
       showDivider: showDivider,
     );
   }

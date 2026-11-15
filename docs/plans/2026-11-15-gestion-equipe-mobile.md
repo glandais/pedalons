@@ -335,7 +335,10 @@ modules ; `toRequest()` construit un `TeamRequest` propre (le site, lui, y recop
   feuille d'équipe dit « L'ancienne adresse redirigera vers la nouvelle ».
   Pendant l'appel (`_renaming`, compris dans `_blocked`), « Enregistrer », la ligne d'adresse
   et la suppression sont inactifs : un PUT partirait vers l'ancienne adresse, un second appui
-  lancerait un second changement. Après lui, seules les fiches de l'ancienne et de la nouvelle
+  lancerait un second changement. La **saisie est figée** aussi (`_frozen` : le nom, la
+  description, les interrupteurs, la croix de la localisation) : réussi, le changement mène à
+  la nouvelle adresse et jetterait sans rien demander ce qui aurait été saisi entre-temps
+  (revue du lot 3). Après lui, seules les fiches de l'ancienne et de la nouvelle
   adresse sont relues — pas les contenus déjà lus : `TeamService.getTeam` résout un ancien slug
   d'équipe par sa redirection pour tous les endpoints d'équipe (revue du lot 2).
 - **Visibilité** : `widgets/team_visibility_sheet.dart` (`showTeamVisibilitySheet`). Non
@@ -447,18 +450,33 @@ Données : `features/teams/data/team_invitations_repository.dart` et le provider
   précèdent Signaler et Bloquer. Le rôle se choisit dans une seconde feuille
   (`widgets/team_role_sheet.dart`) et part aussitôt, sans « Enregistrer » ; choisir le rôle
   actuel n'envoie rien. La confirmation du retrait nomme la personne (le site : « ce membre »).
-- **Après un changement de rôle ou un retrait** : toute la famille `teamMembersProvider` est
-  invalidée (la liste repart de sa première page, le trombinoscope est relu aussi), puis
-  `notifyTeamChanged`. Un message « Rôle mis à jour », absent du site, confirme le changement.
+- **Après un changement de rôle ou un retrait** : le changement est **reporté à sa place**
+  dans les listes de membres de cette équipe — celle de l'écran sous tous ses filtres, et le
+  trombinoscope resté ouvert dessous — par `notifyTeamMembersChanged(container,
+  TeamMembersChange)` (`providers/team_members_provider.dart`,
+  `TeamMembersNotifier.apply`) : la ligne retirée part, le badge de rôle est réécrit, sans
+  squelettes ni retour en haut, puis `notifyTeamChanged`. Sous un filtre de rôle, la personne
+  quitte la liste si son rôle n'est plus celui du filtre, et la liste est relue (ses lignes
+  restant à l'écran) si elle vient d'y entrer. Les listes des autres équipes ne bougent pas.
+  (Revue du lot 3 : la première écriture invalidait toute la famille `teamMembersProvider`, et
+  la liste repartait de sa première page.) Un message « Rôle mis à jour », absent du site,
+  confirme le changement.
+- **Pendant une écriture**, les lignes, leur `⋯` (resté à sa place, inactif), « Inviter par
+  e-mail » et les cartes d'invitation sont inactifs : `_write` refuse une seconde écriture, et
+  un geste confirmé puis jeté en silence serait pire qu'un bouton grisé (revue du lot 3).
 - **Une invitation ne passe pas par `notifyTeamChanged`** : ni la fiche ni le tableau de bord
   n'en dépendent ; seule `teamInvitationsProvider` est relue (comme le site). Exception : un
   **409 à l'annulation** — l'invitation a peut-être été acceptée — relit les invitations, les
-  membres, la fiche et le tableau de bord, et le bandeau dit
+  membres (`TeamMembersChange.unknown` : les listes de l'équipe sont relues sans se vider), la
+  fiche et le tableau de bord, et le bandeau dit
   `errors.api.TEAM_INVITE_NOT_PENDING`.
 - **Feuille d'invitation** (`widgets/team_invite_sheet.dart`, `showTeamInviteSheet`) : le rôle
   se choisit par trois puces. « Envoyer l'invitation » reste actif et les erreurs de champ
   n'apparaissent qu'après une tentative (§2.3), là où le site désactive le bouton. En cas
   d'erreur du serveur la feuille reste ouverte avec un **bandeau** (le site : un toast).
+  Les 250 caractères de l'adresse se lisent sur l'adresse **rognée**, celle qui part, et une
+  adresse trop longue se dit sur le champ (`…invite.emailTooLong`) au lieu d'être coupée à la
+  saisie (revue du lot 3).
 - **Clés d'erreur** : `TEAM_INVITE_SELF`, `TEAM_INVITE_RATE_LIMITED` et
   `TEAM_INVITE_DELIVERY_FAILED` manquaient à `fr.json` et `en.json` (l'app aurait dit
   « Erreur ») : ajoutées, textes du site. `TEAM_INVITE_ALREADY_MEMBER` et

@@ -29,7 +29,9 @@ enum _Choice { delete, report, block }
 class ModerationMoreButton extends StatelessWidget {
   const ModerationMoreButton({super.key, required this.onPressed});
 
-  final VoidCallback onPressed;
+  /// `null` : le bouton reste à sa place, inactif — pendant une écriture,
+  /// par exemple.
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {

@@ -17,10 +17,12 @@ import 'package:pedalons/features/auth/data/auth_repository.dart';
 import 'package:pedalons/features/auth/data/secure_storage.dart';
 import 'package:pedalons/features/auth/domain/auth_state.dart';
 import 'package:pedalons/features/auth/providers/auth_provider.dart';
+import 'package:pedalons/features/moderation/presentation/moderation_menu.dart';
 import 'package:pedalons/features/teams/data/team_invitations_repository.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/features/teams/domain/member_filters.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_admin_members_page.dart';
+import 'package:pedalons/features/teams/providers/team_members_provider.dart';
 import 'package:pedalons/features/teams/providers/team_permission_providers.dart';
 import 'package:pedalons/keys.dart';
 
@@ -57,6 +59,12 @@ class _Teams implements TeamRepository {
   Object? roleError;
   Object? removeError;
 
+  /// Si posé, `removeMember` attend qu'il soit complété.
+  Completer<void>? removeGate;
+
+  /// L'équipe de chaque lecture de membres, dans l'ordre.
+  final List<String> memberSlugs = <String>[];
+
   int teamReads = 0;
   final List<({String? search, TeamRole? role, int page})> memberCalls =
       <({String? search, TeamRole? role, int page})>[];
@@ -85,6 +93,7 @@ class _Teams implements TeamRepository {
     int size = kDefaultPageSize,
   }) async {
     memberCalls.add((search: filters.search, role: filters.role, page: page));
+    memberSlugs.add(filters.teamSlug);
     final List<MemberDto> found = <MemberDto>[
       for (final MemberDto m in members)
         if ((filters.role == null || m.role == filters.role!.json) &&
@@ -111,6 +120,7 @@ class _Teams implements TeamRepository {
 
   @override
   Future<void> removeMember(String slug, {required String userId}) async {
+    await removeGate?.future;
     final Object? error = removeError;
     if (error != null) throw error;
     removals.add((slug: slug, userId: userId));
@@ -584,9 +594,8 @@ void main() {
 
   group('changer un rôle', () {
     testWidgets('envoie l\'identifiant de la personne — pas celui de '
-        'l\'adhésion — et le rôle choisi, puis relit', (
-      WidgetTester tester,
-    ) async {
+        'l\'adhésion — et le rôle choisi ; la ligne change à sa place, la '
+        'liste n\'est pas rechargée', (WidgetTester tester) async {
       final _Teams teams = _Teams(role: 'ADMIN');
       await open(tester, teams: teams);
       final int memberReads = teams.memberCalls.length;
@@ -604,11 +613,88 @@ void main() {
         (slug: 'n-peloton', userId: 'u0', role: TeamRole.organizer),
       ]);
       expect(teams.roleUpdates.single.userId, isNot('m0'));
-      // La liste et la fiche (compteurs du tableau de bord) sont relues.
-      expect(teams.memberCalls.length, greaterThan(memberReads));
+      // Le badge de la ligne dit le nouveau rôle, sans relecture de la
+      // liste : ni squelettes, ni retour en haut.
+      expect(badgeOf(tester, 'u0'), 'Organisateur');
+      expect(teams.memberCalls.length, memberReads);
+      // La fiche (compteurs du tableau de bord) est relue.
       expect(teams.teamReads, greaterThan(teamReads));
       expect(find.text('Rôle mis à jour'), findsOneWidget);
       expect(find.byKey(k.errorBanner), findsNothing);
+    });
+
+    testWidgets('sous un filtre de rôle, la personne dont le rôle change '
+        'quitte la liste, sans rechargement', (WidgetTester tester) async {
+      final _Teams teams = _Teams(role: 'ADMIN');
+      await open(tester, teams: teams);
+      await tester.tap(find.byKey(k.roleChip('MEMBER')));
+      await settle(tester);
+      expect(find.byKey(k.row('u0')), findsOneWidget);
+      final int memberReads = teams.memberCalls.length;
+
+      await tester.tap(find.byKey(k.row('u0')));
+      await settle(tester);
+      await tester.tap(find.byKey(k.changeRoleAction));
+      await settle(tester);
+      await tester.tap(find.byKey(k.roleOption('ORGANIZER')));
+      await settle(tester);
+
+      expect(find.byKey(k.row('u0')), findsNothing);
+      expect(teams.memberCalls.length, memberReads);
+    });
+
+    testWidgets('les autres listes de l\'équipe suivent, celles des autres '
+        'équipes ne bougent pas', (WidgetTester tester) async {
+      final _Teams teams = _Teams(role: 'ADMIN');
+      await open(tester, teams: teams);
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(TeamAdminMembersPage)),
+        listen: false,
+      );
+      // Le trombinoscope resté ouvert dessous, la même équipe sous le filtre
+      // « Organisateur », et la liste d'une autre équipe.
+      const MemberFilters directory = MemberFilters(
+        teamSlug: 'n-peloton',
+        search: 'bob',
+      );
+      const MemberFilters organizers = MemberFilters(
+        teamSlug: 'n-peloton',
+        role: TeamRole.organizer,
+      );
+      const MemberFilters other = MemberFilters(teamSlug: 'autre-equipe');
+      for (final MemberFilters filters in <MemberFilters>[
+        directory,
+        organizers,
+        other,
+      ]) {
+        container.listen(teamMembersProvider(filters), (_, _) {});
+      }
+      await settle(tester);
+      final int reads = teams.memberCalls.length;
+      final int otherReads = teams.memberSlugs
+          .where((String slug) => slug == 'autre-equipe')
+          .length;
+
+      await tester.tap(find.byKey(k.row('u0')));
+      await settle(tester);
+      await tester.tap(find.byKey(k.changeRoleAction));
+      await settle(tester);
+      await tester.tap(find.byKey(k.roleOption('ORGANIZER')));
+      await settle(tester);
+
+      // Le trombinoscope : la ligne est réécrite à sa place.
+      expect(
+        container.read(teamMembersProvider(directory)).items.single.role,
+        'ORGANIZER',
+      );
+      // Sous « Organisateur », la personne vient d'entrer : cette liste-là,
+      // et elle seule, est relue.
+      expect(teams.memberCalls.length, reads + 1);
+      expect(teams.memberCalls.last.role, TeamRole.organizer);
+      expect(
+        teams.memberSlugs.where((String slug) => slug == 'autre-equipe').length,
+        otherReads,
+      );
     });
 
     testWidgets('choisir le rôle actuel n\'envoie rien', (
@@ -647,7 +733,8 @@ void main() {
   });
 
   group('retirer', () {
-    testWidgets('confirmé : envoie l\'identifiant de la personne, puis relit', (
+    testWidgets('confirmé : envoie l\'identifiant de la personne ; la ligne '
+        'quitte la liste, qui n\'est pas rechargée', (
       WidgetTester tester,
     ) async {
       final _Teams teams = _Teams(role: 'ADMIN');
@@ -670,9 +757,71 @@ void main() {
         (slug: 'n-peloton', userId: 'u0'),
       ]);
       expect(teams.removals.single.userId, isNot('m0'));
-      expect(teams.memberCalls.length, greaterThan(memberReads));
+      expect(find.byKey(k.row('u0')), findsNothing);
+      for (final String id in <String>['u1', 'u2', 'u3']) {
+        expect(find.byKey(k.row(id)), findsOneWidget);
+      }
+      expect(teams.memberCalls.length, memberReads);
       expect(teams.teamReads, greaterThan(teamReads));
       expect(find.text('Membre retiré de l\'équipe'), findsOneWidget);
+    });
+
+    testWidgets('pendant un retrait, les lignes, leur ⋯ et « Inviter par '
+        'e-mail » sont inactifs : aucun second geste n\'est perdu en '
+        'silence', (WidgetTester tester) async {
+      final _Teams teams = _Teams(role: 'ADMIN')
+        ..removeGate = Completer<void>();
+      final _Invitations invitations = _Invitations(<TeamInvitationDto>[
+        _invitation,
+      ]);
+      await open(tester, teams: teams, invitations: invitations);
+
+      bool moreEnabled(String userId) =>
+          tester
+              .widget<ModerationMoreButton>(find.byKey(k.rowMore(userId)))
+              .onPressed !=
+          null;
+
+      await tester.tap(find.byKey(k.row('u0')));
+      await settle(tester);
+      await tester.tap(find.byKey(k.removeAction));
+      await settle(tester);
+      await tester.tap(find.byKey(keys.profile.confirmDestructiveButton));
+      await settle(tester);
+      // La requête est partie, sa réponse se fait attendre.
+      expect(teams.removals, isEmpty);
+
+      // Le ⋯ reste à sa place, inactif ; « Inviter » et les cartes aussi.
+      expect(moreEnabled('u2'), isFalse);
+      expect(moreEnabled('u3'), isFalse);
+      expect(enabled(tester, k.inviteButton), isFalse);
+      expect(enabled(tester, k.invitationRevoke('inv1')), isFalse);
+
+      // Toucher une autre ligne n'ouvre pas sa feuille : pas de « Retirer »
+      // confirmé puis jeté.
+      await tester.tap(find.byKey(k.row('u2')), warnIfMissed: false);
+      await settle(tester);
+      expect(find.byKey(k.removeAction), findsNothing);
+      await tester.tap(find.byKey(k.inviteButton), warnIfMissed: false);
+      await settle(tester);
+      expect(find.byKey(k.inviteSheet), findsNothing);
+
+      teams.removeGate!.complete();
+      await settle(tester);
+      expect(teams.removals.single, (slug: 'n-peloton', userId: 'u0'));
+      expect(find.byKey(k.row('u0')), findsNothing);
+
+      // L'écriture finie, les gestes reviennent — et partent.
+      expect(moreEnabled('u2'), isTrue);
+      expect(enabled(tester, k.inviteButton), isTrue);
+      teams.removeGate = null;
+      await tester.tap(find.byKey(k.row('u2')));
+      await settle(tester);
+      await tester.tap(find.byKey(k.removeAction));
+      await settle(tester);
+      await tester.tap(find.byKey(keys.profile.confirmDestructiveButton));
+      await settle(tester);
+      expect(teams.removals.last, (slug: 'n-peloton', userId: 'u2'));
     });
 
     testWidgets('annulé : rien ne part', (WidgetTester tester) async {
@@ -790,19 +939,47 @@ void main() {
       expect(find.byKey(k.inviteSheet), findsOneWidget);
     });
 
-    testWidgets('une adresse de plus de 250 caractères ne se saisit pas', (
-      WidgetTester tester,
-    ) async {
-      await open(tester, teams: _Teams(role: 'ADMIN'));
+    testWidgets('une adresse de plus de 250 caractères ne part pas, et le '
+        'champ le dit', (WidgetTester tester) async {
+      final _Invitations invitations = _Invitations();
+      await open(
+        tester,
+        teams: _Teams(role: 'ADMIN'),
+        invitations: invitations,
+      );
       await openSheet(tester);
 
       await tester.enterText(
         find.byKey(k.inviteEmailField),
-        '${'a' * 300}@example.org',
+        '${'a' * 239}@example.org',
       );
+      await tester.tap(find.byKey(k.inviteSubmit));
       await settle(tester);
 
-      expect(typed(tester), hasLength(250));
+      expect(invitations.invites, isEmpty);
+      expect(find.byKey(k.inviteSheet), findsOneWidget);
+      expect(find.text('250 caractères au plus'), findsOneWidget);
+      // La saisie n'est pas coupée : c'est à la personne de la corriger.
+      expect(typed(tester), hasLength(251));
+    });
+
+    testWidgets('la borne se lit sur l\'adresse rognée : 250 caractères '
+        'entourés d\'espaces partent', (WidgetTester tester) async {
+      final _Invitations invitations = _Invitations();
+      await open(
+        tester,
+        teams: _Teams(role: 'ADMIN'),
+        invitations: invitations,
+      );
+      await openSheet(tester);
+
+      final String address = '${'a' * 238}@example.org';
+      expect(address, hasLength(250));
+      await tester.enterText(find.byKey(k.inviteEmailField), '  $address  ');
+      await tester.tap(find.byKey(k.inviteSubmit));
+      await settle(tester);
+
+      expect(invitations.invites.single.email, address);
     });
 
     testWidgets('envoi : l\'adresse rognée, « Membre » par défaut, la feuille '
@@ -1025,7 +1202,7 @@ void main() {
     });
 
     testWidgets('409 à l\'annulation : déjà acceptée, annulée ou expirée — '
-        'les invitations et les membres sont relus', (
+        'les invitations, les membres et la fiche sont relus', (
       WidgetTester tester,
     ) async {
       final _Teams teams = _Teams(role: 'ADMIN');
@@ -1035,6 +1212,7 @@ void main() {
       await open(tester, teams: teams, invitations: invitations);
       final int lists = invitations.lists;
       final int memberReads = teams.memberCalls.length;
+      final int teamReads = teams.teamReads;
 
       await tester.tap(find.byKey(k.invitationRevoke('inv1')));
       await settle(tester);
@@ -1044,7 +1222,11 @@ void main() {
       await settle(tester);
 
       expect(invitations.lists, greaterThan(lists));
+      // Peut-être acceptée : l'équipe compte alors une personne de plus.
       expect(teams.memberCalls.length, greaterThan(memberReads));
+      expect(teams.teamReads, greaterThan(teamReads));
+      // La liste est relue sans se vider : les lignes restent à l'écran.
+      expect(find.byKey(k.row('u0')), findsOneWidget);
       expect(find.byKey(k.pendingSection), findsNothing);
       expect(find.text('Invitation annulée.'), findsNothing);
       expect(

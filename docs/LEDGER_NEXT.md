@@ -190,7 +190,14 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       liste des invitations est relue, sauf sur un 409 à l'annulation (peut-être acceptée :
       membres, fiche et tableau de bord relus aussi) ; (6) l'adresse invitée se **saisit** — la
       lire dans le carnet d'adresses demanderait une déclaration *Contacts*
-      (`data-safety.md` §8). **Écarts avec le plan** : notés « Fait (lot 3) » dans son §7.1.
+      (`data-safety.md` §8) ; (7) un changement de rôle ou un retrait est **reporté à sa place**
+      dans les listes de membres de l'équipe (`notifyTeamMembersChanged`,
+      `TeamMembersNotifier.apply`, `PagedListNotifier.replaceItem` / `removeItem`) — ne pas
+      revenir à l'invalidation de toute la famille `teamMembersProvider`, qui vidait la liste
+      et ramenait en haut une personne au travail au fond d'une grande équipe ; (8) pendant une
+      écriture, tout ce qui en lancerait une autre est inactif (lignes, `⋯`, « Inviter par
+      e-mail », cartes d'invitation) : aucun geste n'est perdu en silence (revue du lot 3, le
+      15 novembre 2026). **Écarts avec le plan** : notés « Fait (lot 3) » dans son §7.1.
       Tests : `team_admin_members_page_test`, `team_member_admin_repository_test`,
       `team_admin_page_test`, `team_dashboard_test`, `team_web_paths_test`,
       `deep_link_hierarchy_test`, `link_launcher_test`, `sign_in_resume_test`. Reste à faire

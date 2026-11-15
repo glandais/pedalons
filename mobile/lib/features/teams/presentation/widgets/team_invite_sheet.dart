@@ -1,5 +1,4 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../api/generated/export.dart';
@@ -86,13 +85,20 @@ class _TeamInviteSheetState extends ConsumerState<TeamInviteSheet> {
     if (!looksLikeEmail(email)) {
       return 'teams.adminMembers.invite.emailInvalid'.tr();
     }
+    if (email.length > kInvitationEmailMaxLength) {
+      return 'teams.adminMembers.invite.emailTooLong'.tr(
+        namedArgs: <String, String>{'max': '$kInvitationEmailMaxLength'},
+      );
+    }
     return null;
   }
 
   Future<void> _submit() async {
     if (_sending) return;
     final String email = _email.text.trim();
-    if (!looksLikeEmail(email)) {
+    // La borne se lit sur l'adresse **rognée**, celle qui part : un espace
+    // collé avec elle ne la raccourcit pas.
+    if (!looksLikeEmail(email) || email.length > kInvitationEmailMaxLength) {
       setState(() => _attempted = true);
       return;
     }
@@ -185,9 +191,6 @@ class _TeamInviteSheetState extends ConsumerState<TeamInviteSheet> {
               autocorrect: false,
               enableSuggestions: false,
               autofillHints: const <String>[],
-              inputFormatters: <TextInputFormatter>[
-                LengthLimitingTextInputFormatter(kInvitationEmailMaxLength),
-              ],
               onSubmitted: (String _) => _submit(),
               decoration: InputDecoration(
                 labelText: 'teams.adminMembers.invite.email'.tr(),

@@ -450,7 +450,8 @@
         "role": "Rôle",
         "send": "Envoyer l'invitation",
         "sending": "Envoi…",
-        "sent": "Invitation envoyée à {email}."
+        "sent": "Invitation envoyée à {email}.",
+        "emailTooLong": "{max} caractères au plus"
       },
       "pending": {
         "title": "Invitations en attente",

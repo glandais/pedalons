@@ -897,6 +897,7 @@ void main() {
         'second changement, ni suppression', (WidgetTester tester) async {
       final _Teams teams = _Teams(_team())..slugGate = Completer<void>();
       await open(tester, teams);
+      expect(find.byKey(keys.teamEditor.locationClear), findsOneWidget);
 
       await changeSlug(tester, 'peloton-du-nord');
       // La requête est partie, sa réponse se fait attendre.
@@ -935,6 +936,31 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       expect(teams.deleted, isEmpty);
       expect(find.byKey(keys.profile.confirmDestructiveButton), findsNothing);
+
+      // La saisie est figée : réussi, le changement mène à la nouvelle
+      // adresse et jetterait sans rien demander ce qui serait saisi ici.
+      expect(
+        tester.widget<TextField>(find.byKey(keys.teamEditor.nameField)).enabled,
+        isFalse,
+      );
+      expect(
+        tester
+            .widget<RichMarkdownEditorField>(
+              find.byType(RichMarkdownEditorField),
+            )
+            .enabled,
+        isFalse,
+      );
+      for (final Key key in <Key>[
+        keys.teamEditor.enableRoutes,
+        keys.teamEditor.enablePosts,
+        keys.teamEditor.enableAds,
+        keys.teamEditor.enableMemberDirectory,
+      ]) {
+        expect(tester.widget<PdlSwitch>(find.byKey(key)).onChanged, isNull);
+      }
+      // La position ne s'efface pas non plus : pas de croix.
+      expect(find.byKey(keys.teamEditor.locationClear), findsNothing);
 
       teams.slugGate!.complete();
       await settle(tester);
