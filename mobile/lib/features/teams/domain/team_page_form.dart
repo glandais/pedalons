@@ -113,5 +113,11 @@ class TeamPageForm {
 
   bool get markdownValid => media.markdown.length <= kRideMarkdownMaxLength;
 
-  bool get isValid => titleValid && markdownValid;
+  /// La visibilité est une valeur que cette version de l'app connaît. Une
+  /// page dont le serveur rend une visibilité plus récente que l'app se lit
+  /// [Visibility.$unknown], qui se sérialiserait en la chaîne `"null"` : elle
+  /// ne part pas — il faut en choisir une autre, ou mettre l'app à jour.
+  bool get visibilityValid => visibility != Visibility.$unknown;
+
+  bool get isValid => titleValid && markdownValid && visibilityValid;
 }

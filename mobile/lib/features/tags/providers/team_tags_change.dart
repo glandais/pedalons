@@ -93,6 +93,20 @@ void notifyTeamTagsChanged(ProviderContainer container, TeamTagChange change) {
   }
 }
 
+/// Relit le vocabulaire de [teamSlug] — celui de l'écran d'administration et
+/// celui du type [type] — sans rien d'autre : une écriture que le serveur a
+/// refusée parce que le tag n'est plus là, ou plus tel qu'on le croyait
+/// (`isGoneOrConflictError`). La ligne restée à l'écran ne répondrait plus à
+/// rien ; les contenus, eux, n'ont pas changé par cette écriture.
+void refreshTeamTagVocabulary(
+  ProviderContainer container,
+  String teamSlug,
+  TagTarget type,
+) {
+  container.invalidate(teamAllTagsProvider(teamSlug));
+  container.invalidate(teamTagsProvider((teamSlug: teamSlug, type: type)));
+}
+
 void _invalidateFeed(ProviderContainer container) {
   container.invalidate(publicationFeedProvider);
   container.invalidate(publicationFeedCountProvider);

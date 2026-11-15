@@ -250,8 +250,9 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       ne pas sauter la ligne que le décalage d'offset y fait glisser), une décision par la
       relecture de la file de cette équipe et de son tableau de bord seuls
       (`refreshAfterModerationDecision`), jamais par `notifyTeamChanged` ; (7) pendant une
-      écriture, tout ce qui en lancerait une autre est inactif. **Écarts avec le plan** : notés
-      « Fait (lot 4) » dans ses §7.2 et §7.3.
+      écriture, tout ce qui en lancerait une autre est inactif, et une feuille ou une
+      confirmation ne s'ouvre qu'une fois (`_sheetOpen`, lieux et signalements). **Écarts avec
+      le plan** : notés « Fait (lot 4) » dans ses §7.2 et §7.3.
       Tests : `place_form_test`, `team_places_page_test`, `team_reports_page_test`,
       `moderation_queue_repository_test`, `paged_list_notifier_test`, `team_admin_page_test`,
       `team_dashboard_test`, `notifications_page_test`, `team_web_paths_test`,
@@ -317,7 +318,14 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       nommées) — jamais `notifyTeamChanged`, qui viderait la liste des équipes pour rien ;
       (9) un geste à la fois, et le drapeau est posé **avant** d'ouvrir une feuille ou une
       confirmation : un double appui n'envoie qu'une requête ; (10) pendant un changement
-      d'adresse d'une page, la saisie est figée et « Enregistrer » inactif. **Écarts avec le
+      d'adresse d'une page, la saisie est figée et « Enregistrer » inactif ; (11) l'éditeur
+      d'une page **relit la page à son ouverture** et bâtit le formulaire sur cette lecture,
+      jamais sur une copie en cache — le PUT effacerait ce qui a changé ailleurs — puis ne suit
+      plus les relectures ; (12) « Restaurer » est inactif à trois pages : le serveur ne
+      vérifie pas la limite à la restauration (lacune signalée à part) ; (13) une visibilité
+      que l'app ne connaît pas ne part pas (`TeamPageForm.visibilityValid`) ; (14) pendant une
+      relecture de la liste des pages, les gestes des lignes attendent, et un 404 ou un 409
+      sur une écriture de page ou de tag fait relire la liste. **Écarts avec le
       plan et avec le site** : notés « Fait (lot 5) » dans les §4.2, §7.4 et §7.5 du plan.
       Tests : `tag_form_test`, `team_tags_admin_page_test`, `team_page_form_test`,
       `team_pages_admin_page_test`, `team_page_editor_page_test`, `team_admin_page_test`,

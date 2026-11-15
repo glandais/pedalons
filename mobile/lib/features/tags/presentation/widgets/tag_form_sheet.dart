@@ -130,6 +130,16 @@ class _TagFormSheetState extends ConsumerState<TagFormSheet> {
       );
       if (mounted) navigator.pop(saved);
     } catch (error, stackTrace) {
+      // Le tag à modifier n'est plus là, ou un autre porte désormais ce
+      // libellé : le vocabulaire de l'écran dessous est relu, la feuille
+      // reste ouverte avec son bandeau.
+      if (isGoneOrConflictError(error)) {
+        refreshTeamTagVocabulary(
+          container,
+          widget.teamSlug,
+          tag == null ? widget.type : TagTarget.fromJson(tag.type),
+        );
+      }
       if (!mounted) return;
       setState(() {
         _saving = false;

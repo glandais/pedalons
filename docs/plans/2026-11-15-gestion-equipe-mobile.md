@@ -612,7 +612,9 @@ admin de plateforme y arrive par notification sans être membre).
   autres cartes sont inactifs, et c'est le bouton de la décision prise qui tourne. Un refus du
   serveur se lit dans un bandeau, la carte reste — sauf un 404 ou un 409 (quelqu'un d'autre
   vient de décider, le contenu a disparu) : les deux onglets sont alors relus, la carte ne
-  reste pas à l'écran sans plus répondre à rien (`isGoneOrConflictError`, revue du lot 4).
+  reste pas à l'écran sans plus répondre à rien (`isGoneOrConflictError`, revue du lot 4). Un
+  double appui sur « Supprimer le contenu » n'ouvre qu'une confirmation (`_sheetOpen`, revue
+  finale).
 - **Membre signalé** : le texte de renvoi dit « la gestion des membres » (le site : « la page
   Membres ») ; le lien « Gestion des membres » (`Paths.teamAdminMembers`) n'est rendu qu'à qui
   administre l'équipe ou la plateforme — un organisateur y lirait un refus.
@@ -695,6 +697,14 @@ Page sur `teamAdminTags` dans `features/tags/`, accès admin.
   ce type déjà lus** (fils ou liste, compte filtré, fiches, modèles de sortie pour un tag de
   sortie, tableau de bord de l'équipe) : une carte garderait sinon un tag supprimé, et un
   éditeur en renverrait l'id (`TAG_INVALID`). Un tag créé ne fait relire que le vocabulaire.
+- **Un tag supprimé ou modifié ailleurs** : un 404 ou un 409 sur une écriture fait relire le
+  vocabulaire (`refreshTeamTagVocabulary`) en plus du bandeau — la ligne ne reste pas à l'écran
+  sans plus répondre à rien (revue finale).
+- **Un tag supprimé resté choisi dans un filtre de liste est sans effet**, et rien n'est à
+  purger : le serveur ignore un identifiant inconnu, et un filtre où il ne reste rien vaut
+  « pas de filtre », jamais « rien ne correspond » (`TagService`, plan des tags D18) ; côté
+  app, la puce ne compte que les identifiants encore au vocabulaire (`tagFilterLabel`), et la
+  feuille de choix les purge à la validation (revue finale, vérifié en lecture).
 - **Clés d'erreur** : `TAG_LABEL_TAKEN`, `TAG_LABEL_INVALID`, `TAG_LIMIT_REACHED` et
   `TAG_INVALID` manquaient à `fr.json` et `en.json` (l'app aurait dit « Erreur ») : ajoutées,
   textes du site.
@@ -740,7 +750,12 @@ Page sur `teamAdminTags` dans `features/tags/`, accès admin.
   « Ajouter une page », alors que le serveur (`countAdditionalPages`, `deleted = false`)
   accepterait la création. L'app compte ce que compte le serveur (`liveTeamPageCount`) :
   « 2 pages sur 3 maximum », bouton présent. `TOO_MANY_TEAM_PAGES` reste lu dans le bandeau de
-  l'éditeur — restaurer une page ne vérifie pas la limite, une équipe peut en avoir quatre.
+  l'éditeur.
+- **« Restaurer » est inactif quand l'équipe a déjà ses trois pages**, et la ligne dit pourquoi
+  (`teams.pages.restoreFull`) : `TeamPageService.undeletePage` ne vérifie pas la limite, une
+  restauration mènerait l'équipe à quatre pages. Le garde-fou est celui de l'app seule — le
+  site, lui, restaure sans compter ; **la lacune du serveur est signalée à part** (revue
+  finale).
 - **Une page supprimée** porte « Supprimé » et n'offre que « Restaurer » (et monter /
   descendre) : ni « Modifier », ni une seconde suppression, que le site propose encore.
 - **La confirmation de suppression dit que la page se restaure** (« vous pourrez la restaurer
@@ -749,7 +764,10 @@ Page sur `teamAdminTags` dans `features/tags/`, accès admin.
 - **Liste non paginée** (trois pages) : `teamAdminPagesProvider(slug)`, relue en entier après une
   écriture, ses lignes restant à l'écran. Un geste à la fois (`_busy`, posé avant la
   confirmation : un double appui n'envoie qu'une requête) ; un refus du serveur se lit dans un
-  bandeau.
+  bandeau. **Pendant une relecture, les gestes des lignes sont inactifs** : l'ordre envoyé par
+  « monter » se calcule sur les lignes à l'écran, et celles d'avant la relecture pourraient
+  oublier une page. Un 404 ou un 409 sur une écriture — la page a changé ailleurs — fait relire
+  la liste en plus du bandeau (`isGoneOrConflictError`, revue finale).
 - **Éditeur** : `TeamPageForm` (`domain/team_page_form.dart`). `fromPage` reprend la page
   entière et `toRequest()` renvoie le titre (rogné), **tous** les médias (texte, logo, images,
   pièces jointes) et la visibilité — le PUT réécrit tout (`TeamPageService.updatePage`), et le
@@ -758,6 +776,20 @@ Page sur `teamAdminTags` dans `features/tags/`, accès admin.
   `MediaEditor` du site. Le titre **n'est pas coupé à la saisie** : au-delà de 100 caractères,
   le champ le dit (revue du lot 3). Pas de compteur de caractères (D3). L'aide du titre dit où
   la page apparaît dans l'app (« À propos » de l'équipe) — le site parle d'un onglet.
+- **La page est relue à l'ouverture de l'éditeur**, même déjà lue : `teamPageProvider` n'est
+  pas `autoDispose`, il garde ce que l'écran de lecture a chargé, et un formulaire bâti sur cette
+  copie effacerait par son PUT ce qui a changé ailleurs entre-temps (une pièce jointe ajoutée au
+  site). L'écran invalide donc la page à son entrée (et à chaque nouvelle adresse, le routeur
+  gardant son état après un changement de slug), attend la lecture fraîche, bâtit le formulaire
+  dessus, puis **ne suit plus** les relectures : la saisie n'est pas réécrite. L'éditeur de
+  publication a le même défaut avec `postDetailProvider` — hors de ce lot, à reprendre (revue
+  finale).
+- **Une visibilité que cette version ne connaît pas ne part pas** : `Visibility.$unknown` se
+  sérialiserait en la chaîne `"null"`. Le formulaire est alors invalide
+  (`TeamPageForm.visibilityValid`), le bandeau le dit (`teams.pages.editor.visibilityUnknown`),
+  et le champ, qui montre les valeurs permises, en fait choisir une. Les autres éditeurs
+  (sortie, modèle, parcours, publication, voyage) envoient encore `toJson()` sans ce garde-fou
+  (revue finale).
 - **Visibilité** : `VisibilityField` avec `VisibilityKind.teamPage` —
   `team.allowedContentVisibilities.teamPage` à la création (« Équipe » par défaut, sinon la
   première valeur donnée), `page.permissions.allowedVisibilities` en édition. L'aide du site

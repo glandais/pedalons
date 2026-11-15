@@ -88,6 +88,17 @@ void main() {
       expect(form.copyWith(title: 'a' * 101).titleValid, isFalse);
     });
 
+    test('une visibilité que cette version ne connaît pas rend le '
+        'formulaire invalide : elle ne se sérialise pas', () {
+      final TeamPageForm form = TeamPageForm.fromPage(
+        page(visibility: 'FRIENDS'),
+      );
+      expect(form.visibility, Visibility.$unknown);
+      expect(form.visibilityValid, isFalse);
+      expect(form.isValid, isFalse);
+      expect(form.copyWith(visibility: Visibility.team).isValid, isTrue);
+    });
+
     test('la requête de création : titre rogné, médias, visibilité', () {
       final TeamPageForm form = TeamPageForm.initial(fixtureTeam())
           .copyWith(title: '  FAQ ', visibility: Visibility.public);

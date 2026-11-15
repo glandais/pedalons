@@ -39,16 +39,73 @@ import 'team_custom_page.dart' show teamPageProvider;
 /// Le refus est tranché **avant** de lire la page ; modifier exige ensuite le
 /// droit que le backend calcule pour cette page (`permissions.canEdit`,
 /// ledger `MOB-137`).
-class TeamPageEditorPage extends ConsumerWidget {
+///
+/// **La page est relue à l'ouverture de l'écran**, même si l'app l'a déjà
+/// lue : `teamPageProvider` garde ce que l'écran de lecture a chargé, et le
+/// PUT réécrit tout — un formulaire bâti sur une copie d'avant effacerait ce
+/// qui a changé entre-temps ailleurs (une pièce jointe ajoutée au site). Le
+/// formulaire, une fois bâti sur cette lecture fraîche, ne suit plus les
+/// relectures : il ne se réécrit pas sous la saisie.
+class TeamPageEditorPage extends ConsumerStatefulWidget {
   const TeamPageEditorPage({super.key, required this.teamSlug, this.pageSlug});
 
   final String teamSlug;
   final String? pageSlug;
 
+  @override
+  ConsumerState<TeamPageEditorPage> createState() => _TeamPageEditorPageState();
+}
+
+class _TeamPageEditorPageState extends ConsumerState<TeamPageEditorPage> {
+  /// La relecture d'entrée a été demandée : avant, une valeur en cache ne
+  /// vaut pas.
+  bool _entered = false;
+
+  /// La page fraîchement lue sur laquelle le formulaire est bâti. Une fois
+  /// là, elle ne change plus pour cet écran.
+  TeamPageDto? _page;
+
+  String get teamSlug => widget.teamSlug;
+  String? get pageSlug => widget.pageSlug;
+
   bool get _isEdit => pageSlug != null;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    _rereadOnEntry();
+  }
+
+  @override
+  void didUpdateWidget(TeamPageEditorPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Le routeur garde cet état quand seule l'adresse de la page change
+    // (après un changement de slug) : c'est une autre entrée, la page se
+    // relit à sa nouvelle adresse.
+    if (oldWidget.teamSlug != teamSlug || oldWidget.pageSlug != pageSlug) {
+      _entered = false;
+      _page = null;
+      _rereadOnEntry();
+    }
+  }
+
+  /// Demande la relecture de la page à modifier, pour l'adresse en cours.
+  void _rereadOnEntry() {
+    final String? slug = pageSlug;
+    if (slug == null) return;
+    final String team = teamSlug;
+    // Après l'image en cours : invalider pendant la construction ferait
+    // reconstruire, en plein `build`, l'écran de lecture resté dessous.
+    WidgetsBinding.instance.addPostFrameCallback((Duration _) {
+      // Une entrée plus récente a pris la suite : c'est elle qui relit.
+      if (!mounted || team != teamSlug || slug != pageSlug) return;
+      ref.invalidate(teamPageProvider((teamSlug: team, pageSlug: slug)));
+      setState(() => _entered = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final String title = _isEdit
         ? 'teams.pages.editor.editTitle'.tr()
         : 'teams.pages.editor.createTitle'.tr();
@@ -131,17 +188,29 @@ class TeamPageEditorPage extends ConsumerWidget {
     // n'administre pas l'équipe ne déclenche aucune requête de page.
     if (!admin) return forbidden(teamReadable: true);
 
-    // 3. La page à modifier.
+    // 3. La page à modifier : celle de la relecture d'entrée, jamais une
+    // copie gardée en cache.
     final String? slug = pageSlug;
-    TeamPageDto? page;
+    TeamPageDto? page = _page;
     if (slug != null) {
-      final ({String teamSlug, String pageSlug}) key = (
-        teamSlug: teamSlug,
-        pageSlug: slug,
-      );
-      final AsyncValue<TeamPageDto> detail = ref.watch(teamPageProvider(key));
-      page = detail.value;
       if (page == null) {
+        final ({String teamSlug, String pageSlug}) key = (
+          teamSlug: teamSlug,
+          pageSlug: slug,
+        );
+        if (!_entered) {
+          return shell(
+            const Center(child: CircularProgressIndicator.adaptive()),
+          );
+        }
+        final AsyncValue<TeamPageDto> detail = ref.watch(teamPageProvider(key));
+        // En cours de relecture, la valeur qu'il porte encore est celle
+        // d'avant : on attend la fraîche.
+        if (detail.isLoading) {
+          return shell(
+            const Center(child: CircularProgressIndicator.adaptive()),
+          );
+        }
         final Object? pageError = detail.error;
         if (pageError != null) {
           return loadError(
@@ -149,11 +218,19 @@ class TeamPageEditorPage extends ConsumerWidget {
             () => ref.invalidate(teamPageProvider(key)),
           );
         }
-        return shell(const Center(child: CircularProgressIndicator.adaptive()));
+        page = detail.value;
+        if (page == null) {
+          return shell(
+            const Center(child: CircularProgressIndicator.adaptive()),
+          );
+        }
       }
       // Puis le droit que le backend calcule pour **cette** page
       // (docs/LEDGER_*.md MOB-137) : c'est lui qui tranche.
       if (!page.permissions.canEdit) return forbidden(teamReadable: true);
+      // Le formulaire est bâti : les relectures suivantes (un enregistrement
+      // les provoque) ne le concernent plus.
+      _page = page;
     }
 
     return _TeamPageEditorForm(
@@ -349,7 +426,9 @@ class _TeamPageEditorFormState extends ConsumerState<_TeamPageEditorForm>
     if (!_form.isValid) {
       setState(() {
         _showErrors = true;
-        _error = 'routes.editor.invalid'.tr();
+        _error = _form.visibilityValid
+            ? 'routes.editor.invalid'.tr()
+            : 'teams.pages.editor.visibilityUnknown'.tr();
       });
       return;
     }

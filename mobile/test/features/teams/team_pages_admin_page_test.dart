@@ -12,6 +12,7 @@ import 'package:pedalons/core/material.dart' hide Visibility;
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_pages_admin_page.dart';
+import 'package:pedalons/features/teams/providers/team_pages_provider.dart';
 import 'package:pedalons/features/teams/providers/team_permission_providers.dart';
 import 'package:pedalons/features/visibility/presentation/visibility_badge.dart';
 import 'package:pedalons/keys.dart';
@@ -67,6 +68,9 @@ class _Pages implements TeamPagesClient {
   /// Si posé, les écritures attendent qu'il soit complété.
   Completer<void>? writeGate;
 
+  /// Si posé, `listPages` attend qu'il soit complété.
+  Completer<void>? listGate;
+
   int listCalls = 0;
   final List<List<String>> reorders = <List<String>>[];
   final List<String> deleted = <String>[];
@@ -81,6 +85,7 @@ class _Pages implements TeamPagesClient {
   @override
   Future<List<TeamPageSummaryDto>> listPages({required String teamSlug}) async {
     listCalls++;
+    await listGate?.future;
     return pages;
   }
 
@@ -463,8 +468,11 @@ void main() {
       );
 
       expect(count(tester), '2 pages sur 3 maximum');
-      // Trois lignes, mais deux pages qui comptent : on peut en ajouter une.
+      // Trois lignes, mais deux pages qui comptent : on peut en ajouter une,
+      // ou restaurer celle-ci.
       expect(find.byKey(k.addButton), findsOneWidget);
+      expect(actionEnabled(tester, k.rowRestore('pg2')), isTrue);
+      expect(find.byKey(k.rowRestoreHint('pg2')), findsNothing);
       expect(find.byKey(k.rowDeleted('pg2')), findsOneWidget);
       expect(find.byKey(k.rowRestore('pg2')), findsOneWidget);
       expect(find.byKey(k.rowDelete('pg2')), findsNothing);
@@ -721,6 +729,112 @@ void main() {
       expect(find.byKey(k.rowRestore('pg2')), findsNothing);
       expect(find.byKey(k.rowDelete('pg2')), findsOneWidget);
       expect(count(tester), '2 pages sur 3 maximum');
+    });
+  });
+
+  group('revue finale', () {
+    const TeamPageSummaryDto trashed = TeamPageSummaryDto(
+      id: 'pg4',
+      title: 'Ancienne page',
+      slug: 'ancienne-page',
+      visibility: 'TEAM',
+      order: 3,
+      deleted: true,
+    );
+
+    testWidgets('trois pages et une supprimée : « Restaurer » est inactif — '
+        'le serveur ne vérifie pas la limite —, et la ligne dit pourquoi', (
+      WidgetTester tester,
+    ) async {
+      final _Pages pages = _Pages(<TeamPageSummaryDto>[
+        _faq,
+        _rules,
+        _gear,
+        trashed,
+      ]);
+      await open(
+        tester,
+        teams: _Teams(role: 'ADMIN'),
+        pages: pages,
+      );
+
+      expect(count(tester), '3 pages sur 3 maximum');
+      expect(actionEnabled(tester, k.rowRestore('pg4')), isFalse);
+      expect(
+        tester.widget<Text>(find.byKey(k.rowRestoreHint('pg4'))).data,
+        'L\'équipe a déjà ses 3 pages : supprimez-en une pour restaurer '
+        'celle-ci.',
+      );
+
+      await tester.tap(find.byKey(k.rowRestore('pg4')), warnIfMissed: false);
+      await settle(tester);
+      expect(pages.restored, isEmpty);
+      // Elle se déplace toujours.
+      expect(actionEnabled(tester, k.rowMoveUp('pg4')), isTrue);
+    });
+
+    for (final int status in <int>[404, 409]) {
+      testWidgets('une page que quelqu\'un d\'autre vient de changer '
+          '($status) : le bandeau, et la liste est relue', (
+        WidgetTester tester,
+      ) async {
+        final _Pages pages = _Pages()
+          ..writeError = _apiError(status, 'NOT_FOUND');
+        await open(
+          tester,
+          teams: _Teams(role: 'ADMIN'),
+          pages: pages,
+        );
+        // Entre-temps, la page a disparu de la liste du serveur.
+        pages.pages = <TeamPageSummaryDto>[_faq, _gear];
+
+        await tester.tap(find.byKey(k.rowDelete('pg2')));
+        await settle(tester);
+        await tester.tap(find.byKey(keys.profile.confirmDestructiveButton));
+        await settle(tester);
+
+        expect(find.byKey(k.errorBanner), findsOneWidget);
+        expect(pages.listCalls, 2);
+        expect(find.byKey(k.row('pg2')), findsNothing);
+        expect(find.byKey(k.row('pg1')), findsOneWidget);
+      });
+    }
+
+    testWidgets('pendant une relecture de la liste, les gestes des lignes '
+        'attendent : un ordre ne part pas d\'après des lignes d\'avant', (
+      WidgetTester tester,
+    ) async {
+      final _Pages pages = _Pages();
+      await open(
+        tester,
+        teams: _Teams(role: 'ADMIN'),
+        pages: pages,
+      );
+      final ProviderContainer container = ProviderScope.containerOf(
+        tester.element(find.byType(TeamPagesAdminPage)),
+        listen: false,
+      );
+
+      pages.listGate = Completer<void>();
+      container.invalidate(teamAdminPagesProvider('n-peloton'));
+      await settle(tester);
+
+      // Les lignes restent à l'écran, inactives.
+      expect(find.byKey(k.row('pg1')), findsOneWidget);
+      for (final Key key in <Key>[
+        k.rowMoveDown('pg1'),
+        k.rowMoveUp('pg3'),
+        k.rowDelete('pg2'),
+      ]) {
+        expect(actionEnabled(tester, key), isFalse);
+      }
+      await tester.tap(find.byKey(k.rowMoveDown('pg1')), warnIfMissed: false);
+      await settle(tester);
+      expect(pages.reorders, isEmpty);
+
+      pages.listGate!.complete();
+      await settle(tester);
+      expect(actionEnabled(tester, k.rowMoveDown('pg1')), isTrue);
     });
   });
 }

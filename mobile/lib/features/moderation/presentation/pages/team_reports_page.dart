@@ -180,6 +180,10 @@ class _ReportsState extends ConsumerState<_Reports> {
   /// La décision en cours sur cette carte : c'est son bouton qui tourne.
   ModerationAction? _resolvingAction;
 
+  /// La confirmation d'une suppression est ouverte. Posé **avant** de
+  /// l'ouvrir : un double appui n'en ouvre pas deux.
+  bool _sheetOpen = false;
+
   /// Ce que le serveur a refusé à une décision.
   String? _error;
 
@@ -198,15 +202,21 @@ class _ReportsState extends ConsumerState<_Reports> {
   /// Applique [action] à tous les signalements ouverts de la cible. Supprimer
   /// se confirme ; rejeter part aussitôt, comme au site.
   Future<void> _decide(ModerationItemDto item, ModerationAction action) async {
-    if (_resolving != null) return;
+    if (_resolving != null || _sheetOpen) return;
     final bool removes = action == ModerationAction.removeContent;
     if (removes) {
-      final bool confirmed = await confirmDestructive(
-        context,
-        title: 'moderation.queue.removeConfirm.title'.tr(),
-        message: 'moderation.queue.removeConfirm.message'.tr(),
-        confirmLabel: 'moderation.queue.actions.remove'.tr(),
-      );
+      _sheetOpen = true;
+      final bool confirmed;
+      try {
+        confirmed = await confirmDestructive(
+          context,
+          title: 'moderation.queue.removeConfirm.title'.tr(),
+          message: 'moderation.queue.removeConfirm.message'.tr(),
+          confirmLabel: 'moderation.queue.actions.remove'.tr(),
+        );
+      } finally {
+        _sheetOpen = false;
+      }
       if (!confirmed || !mounted || _resolving != null) return;
     }
 

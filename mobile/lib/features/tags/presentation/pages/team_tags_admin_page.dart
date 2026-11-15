@@ -241,6 +241,16 @@ class _TagsState extends ConsumerState<_Tags> {
             : 'tags.admin.deletedUnused'.tr(),
       );
     } catch (error, stackTrace) {
+      // Le tag n'est plus là — quelqu'un d'autre vient de le supprimer : la
+      // ligne restée à l'écran ne répondrait plus à rien. Le vocabulaire est
+      // relu ; le bandeau dit pourquoi.
+      if (isGoneOrConflictError(error)) {
+        refreshTeamTagVocabulary(
+          container,
+          _slug,
+          TagTarget.fromJson(tag.type),
+        );
+      }
       if (mounted) setState(() => _error = getErrorMessage(error, stackTrace));
     } finally {
       if (mounted) setState(() => _busy = false);

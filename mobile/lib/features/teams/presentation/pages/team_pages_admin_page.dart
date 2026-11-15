@@ -177,6 +177,12 @@ class _PagesState extends ConsumerState<_Pages> {
       notifyTeamPagesChanged(container, _slug, pageSlugs: pageSlugs);
       _snack(messenger, done);
     } catch (error, stackTrace) {
+      // La page n'est plus là, ou plus dans l'état attendu — quelqu'un
+      // d'autre vient d'agir : la ligne restée à l'écran ne répondrait plus à
+      // rien. La liste est relue ; le bandeau dit pourquoi.
+      if (isGoneOrConflictError(error)) {
+        notifyTeamPagesChanged(container, _slug, pageSlugs: pageSlugs);
+      }
       if (mounted) setState(() => _error = getErrorMessage(error, stackTrace));
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -255,6 +261,10 @@ class _PagesState extends ConsumerState<_Pages> {
     // Les pages à la corbeille ne comptent pas : le serveur ne les compte pas
     // non plus.
     final bool canAdd = pages != null && live < kTeamPageLimit;
+    // Pendant une relecture, les lignes à l'écran sont celles d'avant : un
+    // ordre envoyé d'après elles pourrait oublier une page. Les gestes
+    // attendent la liste à jour.
+    final bool rowsEnabled = !_busy && !async.isLoading;
 
     return PdlScreenScaffold(
       appBar: widget.appBar,
@@ -317,7 +327,7 @@ class _PagesState extends ConsumerState<_Pages> {
             ),
           ),
         ),
-        ..._pageSlivers(async, pages, canAdd),
+        ..._pageSlivers(async, pages, canAdd, rowsEnabled),
         const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
       ],
     );
@@ -327,6 +337,7 @@ class _PagesState extends ConsumerState<_Pages> {
     AsyncValue<List<TeamPageSummaryDto>> async,
     List<TeamPageSummaryDto>? pages,
     bool canAdd,
+    bool rowsEnabled,
   ) {
     if (pages == null) {
       return <Widget>[
@@ -375,7 +386,10 @@ class _PagesState extends ConsumerState<_Pages> {
             return _PageRow(
               key: keys.teamPages.row(page.id),
               page: page,
-              enabled: !_busy,
+              enabled: rowsEnabled,
+              // Restaurer ne vérifie pas la limite côté serveur : l'app ne
+              // propose pas d'en faire une quatrième page.
+              canRestore: canAdd,
               showDivider: index < pages.length - 1,
               // La première ne monte pas, la dernière ne descend pas.
               onMoveUp: index == 0 ? null : () => _move(pages, index, up: true),
@@ -402,6 +416,7 @@ class _PageRow extends StatelessWidget {
     super.key,
     required this.page,
     required this.enabled,
+    required this.canRestore,
     required this.showDivider,
     required this.onMoveUp,
     required this.onMoveDown,
@@ -412,6 +427,11 @@ class _PageRow extends StatelessWidget {
 
   final TeamPageSummaryDto page;
   final bool enabled;
+
+  /// L'équipe a encore de la place pour une page : une page supprimée peut
+  /// être restaurée. Sinon « Restaurer » est inactif, et la ligne dit
+  /// pourquoi.
+  final bool canRestore;
   final bool showDivider;
 
   /// `null` : la ligne est déjà au bout, le bouton n'est pas rendu.
@@ -461,6 +481,16 @@ class _PageRow extends StatelessWidget {
                   DeletedBadge(key: keys.teamPages.rowDeleted(page.id)),
               ],
             ),
+            if (page.deleted && !canRestore) ...<Widget>[
+              const SizedBox(height: PdlSpacing.badgeGap),
+              Text(
+                'teams.pages.restoreFull'.tr(
+                  namedArgs: <String, String>{'max': '$kTeamPageLimit'},
+                ),
+                key: keys.teamPages.rowRestoreHint(page.id),
+                style: t.xs.copyWith(color: c.textDimmed),
+              ),
+            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
@@ -488,7 +518,7 @@ class _PageRow extends StatelessWidget {
                     icon: PdlIcons.restore,
                     tooltip: 'teams.pages.restoreSemantic'.tr(namedArgs: named),
                     color: c.success,
-                    onPressed: enabled ? onRestore : null,
+                    onPressed: enabled && canRestore ? onRestore : null,
                   )
                 else ...<Widget>[
                   RowIconAction(

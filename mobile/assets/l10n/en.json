@@ -479,6 +479,7 @@
       "editSemantic": "Edit {name}",
       "deleteSemantic": "Delete {name}",
       "restoreSemantic": "Restore {name}",
+      "restoreFull": "The team already has its {max} pages: delete one to restore this one.",
       "deleteConfirm": {
         "title": "Delete page",
         "message": "Do you really want to delete the page “{name}”? Members will no longer see it; you can restore it from this list."
@@ -498,7 +499,8 @@
         "visibilityHint": "Public pages are visible to everyone, unlisted pages to anyone with the link, team pages only to members.",
         "create": "Create page",
         "created": "Page created",
-        "saved": "Page updated"
+        "saved": "Page updated",
+        "visibilityUnknown": "This version of the app does not know this page's visibility: choose another one to save, or update the app."
       }
     },
     "discovery": {

@@ -293,6 +293,10 @@ class TeamPagesAdminKeys {
       _TeamPagesKey('rowDelete_$pageId');
   ValueKey<String> rowRestore(String pageId) =>
       _TeamPagesKey('rowRestore_$pageId');
+
+  /// Pourquoi « Restaurer » est inactif : l'équipe a déjà ses trois pages.
+  ValueKey<String> rowRestoreHint(String pageId) =>
+      _TeamPagesKey('rowRestoreHint_$pageId');
 }
 
 class _TeamPageEditorKey extends ValueKey<String> {

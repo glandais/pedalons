@@ -905,6 +905,31 @@ void main() {
       await settle(tester);
     });
 
+    testWidgets('un double appui sur « Supprimer le contenu » n\'ouvre '
+        'qu\'une confirmation et n\'envoie qu\'une décision', (
+      WidgetTester tester,
+    ) async {
+      final _Moderation moderation = _Moderation();
+      await open(
+        tester,
+        teams: _Teams(role: 'ORGANIZER'),
+        moderation: moderation,
+      );
+
+      await tester.tap(find.byKey(k.removeButton('POST_t1')));
+      await tester.tap(
+        find.byKey(k.removeButton('POST_t1')),
+        warnIfMissed: false,
+      );
+      await settle(tester);
+
+      expect(find.byKey(keys.profile.confirmDestructiveButton), findsOneWidget);
+      await tester.tap(find.byKey(keys.profile.confirmDestructiveButton));
+      await settle(tester);
+      expect(moderation.decisions, hasLength(1));
+      expect(find.byKey(keys.profile.confirmDestructiveButton), findsNothing);
+    });
+
     for (final int status in <int>[404, 409]) {
       testWidgets('une cible déjà traitée par quelqu\'un d\'autre ($status) : '
           'le bandeau, et la file est relue — la carte ne reste pas', (

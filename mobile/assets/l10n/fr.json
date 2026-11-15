@@ -479,6 +479,7 @@
       "editSemantic": "Modifier {name}",
       "deleteSemantic": "Supprimer {name}",
       "restoreSemantic": "Restaurer {name}",
+      "restoreFull": "L'équipe a déjà ses {max} pages : supprimez-en une pour restaurer celle-ci.",
       "deleteConfirm": {
         "title": "Supprimer la page",
         "message": "Voulez-vous vraiment supprimer la page « {name} » ? Les membres ne la verront plus ; vous pourrez la restaurer depuis cette liste."
@@ -498,7 +499,8 @@
         "visibilityHint": "Les pages publiques sont visibles par tout le monde, les pages non répertoriées par toute personne qui a le lien, les pages d'équipe uniquement par les membres.",
         "create": "Créer la page",
         "created": "Page créée",
-        "saved": "Page mise à jour"
+        "saved": "Page mise à jour",
+        "visibilityUnknown": "Cette version de l'application ne connaît pas la visibilité de cette page : choisissez-en une autre pour enregistrer, ou mettez l'application à jour."
       }
     },
     "discovery": {

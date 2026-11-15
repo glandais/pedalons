@@ -13,6 +13,8 @@ import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/rides/presentation/widgets/editor/rich_markdown_editor_field.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
+import 'package:pedalons/features/teams/presentation/pages/team_custom_page.dart'
+    show teamPageProvider;
 import 'package:pedalons/features/teams/presentation/pages/team_page_editor_page.dart';
 import 'package:pedalons/features/teams/providers/team_permission_providers.dart';
 import 'package:pedalons/features/teams/providers/team_pages_provider.dart';
@@ -713,6 +715,100 @@ void main() {
       await save(tester);
 
       expect(pages.listCalls, 2);
+    });
+  });
+
+  group('revue finale', () {
+    testWidgets('l\'éditeur relit la page à son ouverture, même si l\'app '
+        'l\'a déjà lue : le formulaire part de la page d\'aujourd\'hui', (
+      WidgetTester tester,
+    ) async {
+      final _Pages pages = _Pages();
+      await open(tester, pages: pages, pageSlug: 'reglement');
+      expect(pages.reads, <String>['reglement']);
+      expect(titleText(tester), 'Règlement');
+
+      // Retour à la liste : la page reste en cache.
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+      expect(find.text('liste'), findsOneWidget);
+
+      // Entre-temps, quelqu'un lui a ajouté une pièce jointe au site.
+      const AssetDto added = AssetDto(
+        id: 'att2',
+        fileName: 'charte.pdf',
+        contentType: 'application/pdf',
+        url: '/api/download/team/att2',
+      );
+      pages.page = pages.page.copyWith(
+        title: 'Règlement 2027',
+        media: _media.copyWith(
+          assets: _media.assets.copyWith(
+            attachments: <AssetDto>[_attachment, added],
+          ),
+        ),
+      );
+
+      router.go(Paths.teamAdminPageEdit('n-peloton', 'reglement'));
+      await settle(tester);
+
+      expect(pages.reads, <String>['reglement', 'reglement']);
+      expect(titleText(tester), 'Règlement 2027');
+
+      // Le formulaire intact renvoie la pièce jointe ajoutée ailleurs.
+      await save(tester);
+      expect(
+        ((pages.updated.single.body['media']!
+                as Map<String, Object?>)['assets']!
+            as Map<String, Object?>)['attachments'],
+        hasLength(2),
+      );
+    });
+
+    testWidgets('une relecture sous le formulaire ne réécrit pas la saisie', (
+      WidgetTester tester,
+    ) async {
+      final _Pages pages = _Pages();
+      final ProviderContainer container = await open(
+        tester,
+        pages: pages,
+        pageSlug: 'reglement',
+      );
+
+      await tester.enterText(find.byKey(k.titleField), 'En cours');
+      await tester.pump();
+      pages.page = pages.page.copyWith(title: 'Changé ailleurs');
+      container.invalidate(
+        teamPageProvider((teamSlug: 'n-peloton', pageSlug: 'reglement')),
+      );
+      await settle(tester);
+
+      expect(titleText(tester), 'En cours');
+    });
+
+    testWidgets('une visibilité que cette version ne connaît pas ne part '
+        'pas : le bandeau le dit, et en choisir une autre enregistre', (
+      WidgetTester tester,
+    ) async {
+      final _Pages pages = _Pages(
+        page: _rules(
+          visibility: 'FRIENDS',
+          allowed: const <Visibility>[Visibility.team, Visibility.public],
+        ),
+      );
+      await open(tester, pages: pages, pageSlug: 'reglement');
+
+      await save(tester);
+      expect(pages.updated, isEmpty);
+      expect(
+        find.textContaining('ne connaît pas la visibilité de cette page'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(keys.visibility.option('TEAM')));
+      await settle(tester);
+      await save(tester);
+      expect(pages.updated.single.body['visibility'], 'TEAM');
     });
   });
 

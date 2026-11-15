@@ -1055,6 +1055,54 @@ void main() {
       expect(routes.read().value, isEmpty);
     });
   });
+
+  group('revue finale', () {
+    testWidgets('un tag que quelqu\'un d\'autre vient de supprimer (404) : '
+        'le bandeau, et le vocabulaire est relu — la ligne ne reste pas', (
+      WidgetTester tester,
+    ) async {
+      final _Tags tags = _Tags()..deleteError = _apiError(404, 'NOT_FOUND');
+      await open(
+        tester,
+        teams: _Teams(role: 'ADMIN'),
+        tags: tags,
+      );
+      final int lists = tags.listCalls.length;
+      tags.tags = <TagWithUsageDto>[_longue, _col];
+
+      await tester.tap(find.byKey(k.rowDelete('t1')));
+      await settle(tester);
+      await tester.tap(find.byKey(keys.profile.confirmDestructiveButton));
+      await settle(tester);
+
+      expect(find.byKey(k.errorBanner), findsOneWidget);
+      expect(tags.listCalls.length, greaterThan(lists));
+      expect(find.byKey(k.row('t1')), findsNothing);
+      expect(find.byKey(k.row('t2')), findsOneWidget);
+    });
+
+    testWidgets('un tag modifié qui n\'existe plus (404) : la feuille reste '
+        'ouverte avec son bandeau, le vocabulaire dessous est relu', (
+      WidgetTester tester,
+    ) async {
+      final _Tags tags = _Tags()..writeError = _apiError(404, 'NOT_FOUND');
+      await open(
+        tester,
+        teams: _Teams(role: 'ADMIN'),
+        tags: tags,
+      );
+      final int lists = tags.listCalls.length;
+
+      await tester.tap(find.byKey(k.rowEdit('t1')));
+      await settle(tester);
+      await tester.enterText(find.byKey(k.formLabel), 'Gravier');
+      await submit(tester);
+
+      expect(find.byKey(k.formSheet), findsOneWidget);
+      expect(find.byKey(k.formErrorBanner), findsOneWidget);
+      expect(tags.listCalls.length, greaterThan(lists));
+    });
+  });
 }
 
 /// Un vocabulaire dont la première lecture échoue.
