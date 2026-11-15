@@ -87,9 +87,9 @@ class _RichMarkdownEditorFieldState
   bool _focused = false;
 
   /// La frappe est en cours : [_focused] et le clavier ouvert. La barre
-  /// d'outils quitte alors le haut du champ pour le dessus du clavier — au
-  /// haut du champ, le menu Android de la sélection (Copier, Traduire…), qui
-  /// se pose au-dessus du texte sélectionné, la recouvrait.
+  /// d'outils n'existe qu'alors, posée au-dessus du clavier : elle ne sert qu'à
+  /// la frappe, et au haut du champ le menu Android de la sélection (Copier,
+  /// Traduire…), qui se pose au-dessus du texte sélectionné, la recouvrait.
   bool _typing = false;
   double _typingInset = 0;
   final OverlayPortalController _dock = OverlayPortalController();
@@ -433,10 +433,6 @@ class _RichMarkdownEditorFieldState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          if (!typing) ...<Widget>[
-            toolbar,
-            const SizedBox(height: PdlSpacing.badgeGap),
-          ],
           Container(
             key: _editorBox,
             height: height,
