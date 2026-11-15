@@ -340,6 +340,17 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       d'équipe » en est détachée). Défauts relevés en chemin et non corrigés ici : `API-204`,
       `WEB-185`, `LEGAL-30`.
 
+- [ ] `MOB-172` **Les paramètres d'une équipe partent de la fiche en cache (S)** — l'écran des
+      paramètres (`mobile/lib/features/teams/presentation/pages/team_editor_page.dart`, mode
+      modification) remplit son formulaire, une fois, avec `teamDetailProvider(slug)`, qui n'est
+      jamais libéré : ce qu'un autre appareil, le site ou la plateforme a changé depuis la dernière
+      lecture n'y est pas, et l'enregistrement (`PUT`, qui réécrit l'équipe) peut l'écraser. Relevé
+      le 16 novembre 2026 par la première passe iOS de `patrol_test/team_settings_test.dart`, second
+      cas : après `allowVisibilityEdit` côté serveur, l'écran rouvert montre encore la visibilité en
+      lecture seule. À faire comme l'éditeur d'une page (`_rereadOnEntry` dans
+      `team_page_editor_page.dart`, `MOB-169`) : invalider la fiche à l'entrée, après l'image en
+      cours, et ne monter le formulaire qu'une fois la relecture arrivée.
+
 - [ ] `MOB-160` **Éditeur riche : test de widget du pont et test Patrol de l'écran plein (S)** —
       l'éditeur riche (l'éditeur Tiptap du site dans une WebView, voir la part livrée) a été essayé
       et validé à la main le 15 novembre 2026, mais rien d'automatique ne le couvre : les tests de
