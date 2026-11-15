@@ -4,6 +4,10 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.view.View
+import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
+import android.webkit.WebView
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -18,6 +22,36 @@ class MainActivity : FlutterActivity() {
             else -> result.notImplemented()
           }
         }
+    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, EDITOR_CHANNEL)
+        .setMethodCallHandler { call, result ->
+          when (call.method) {
+            "showKeyboard" -> result.success(showEditorKeyboard())
+            else -> result.notImplemented()
+          }
+        }
+  }
+
+  /**
+   * Rouvre le clavier sur l'éditeur riche des publications (la WebView de
+   * `rich_markdown_editor_field.dart`), après l'ajout d'une image : le sélecteur
+   * de photos l'a fermé, et un `focus()` en JavaScript, sans geste de la personne,
+   * ne le rouvre pas. La WebView reprend le focus Android, puis le clavier est
+   * demandé pour elle — le texte, lui, a déjà son curseur, posé par la page.
+   * L'éditeur est la seule WebView de l'app.
+   */
+  private fun showEditorKeyboard(): Boolean {
+    val webView = findWebView(window.decorView) ?: return false
+    webView.requestFocus()
+    val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+    return imm.showSoftInput(webView, InputMethodManager.SHOW_IMPLICIT)
+  }
+
+  private fun findWebView(view: View): WebView? {
+    if (view is WebView) return view
+    if (view is ViewGroup) {
+      for (i in 0 until view.childCount) findWebView(view.getChildAt(i))?.let { return it }
+    }
+    return null
   }
 
   /**
@@ -66,5 +100,6 @@ class MainActivity : FlutterActivity() {
 
   private companion object {
     const val BROWSER_CHANNEL = "fr.pedalons.mobile/browser"
+    const val EDITOR_CHANNEL = "fr.pedalons.mobile/rich_editor"
   }
 }

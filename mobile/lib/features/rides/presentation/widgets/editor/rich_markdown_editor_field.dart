@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -94,6 +95,10 @@ class _RichMarkdownEditorFieldState
   double _typingInset = 0;
   final OverlayPortalController _dock = OverlayPortalController();
   final GlobalKey _editorBox = GlobalKey();
+
+  static const MethodChannel _editorChannel = MethodChannel(
+    'fr.pedalons.mobile/rich_editor',
+  );
 
   static const double _dockHeight =
       PdlMetrics.tapTarget + 2 * PdlSpacing.badgeGap;
@@ -282,6 +287,16 @@ class _RichMarkdownEditorFieldState
     // La nouvelle image n'est dans [widget.images] qu'au prochain build : la
     // page la redemande à `setImages`, dans didUpdateWidget.
     await _js('pedalons.insertDirective(${jsonEncode(directive)})');
+    // Le sélecteur de photos a fermé le clavier, et le focus que la page vient
+    // de reprendre en JavaScript ne le rouvre pas : Android le demande pour la
+    // WebView (MainActivity.showEditorKeyboard).
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        await _editorChannel.invokeMethod<bool>('showKeyboard');
+      } on PlatformException {
+        // Le clavier reste fermé : un toucher dans le texte le rouvre.
+      }
+    }
   }
 
   /// Suit le passage en frappe et en sort. Appelé pendant build : les effets
