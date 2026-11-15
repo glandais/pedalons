@@ -130,7 +130,7 @@ class TeamAdminPage extends ConsumerWidget {
           key: keys.teamAdmin.tags,
           icon: PdlIcons.tag,
           label: 'teams.manage.tags'.tr(),
-          webPath: TeamWebPaths.tags(teamSlug),
+          appPath: Paths.teamAdminTags(teamSlug),
         ),
         _AdminRow(
           key: keys.teamAdmin.pages,

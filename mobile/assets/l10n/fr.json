@@ -1630,7 +1630,80 @@
     "pickerTitle": "Filtrer par tag",
     "pickerHint": "Un contenu apparaît s'il porte au moins un des tags choisis.",
     "apply": "Appliquer",
-    "clear": "Effacer"
+    "clear": "Effacer",
+    "admin": {
+      "title": "Tags",
+      "add": "Nouveau tag",
+      "description": "Chaque type de contenu a ses propres tags. Qui peut modifier un contenu choisit ses tags parmi ceux-ci ; seul le rôle Administrateur de l'équipe les crée, renomme ou supprime.",
+      "forbiddenTitle": "Réservé au rôle Administrateur",
+      "forbiddenMessage": "Seul le rôle Administrateur de l'équipe peut gérer ses tags.",
+      "kind": {
+        "RIDE": "Sorties",
+        "POST": "Publications",
+        "TRIP": "Voyages",
+        "ROUTE": "Parcours",
+        "AD": "Annonces"
+      },
+      "kindCount": "{kind} ({count})",
+      "unused": "Inutilisé",
+      "usage": {
+        "one": "{} contenu",
+        "other": "{} contenus"
+      },
+      "limit": "{used} / {max} tags pour ce type",
+      "empty": {
+        "title": "Aucun tag",
+        "RIDE": "Créez des tags pour classer les sorties et les filtrer dans leur liste.",
+        "POST": "Créez des tags pour classer les publications et les filtrer dans leur liste.",
+        "TRIP": "Créez des tags pour classer les voyages et les filtrer dans leur liste.",
+        "ROUTE": "Créez des tags pour classer les parcours et les filtrer dans leur liste.",
+        "AD": "Créez des tags pour classer les annonces et les filtrer dans leur liste."
+      },
+      "noKind": {
+        "title": "Aucune section active",
+        "description": "Les tags s'appliquent aux sorties, publications, voyages, parcours et annonces : activez l'une de ces sections dans les paramètres de l'équipe."
+      },
+      "editSemantic": "Modifier le tag « {label} »",
+      "deleteSemantic": "Supprimer le tag « {label} »",
+      "deleteConfirm": {
+        "title": "Supprimer le tag ?",
+        "unused": "Aucun contenu ne le porte. Cette suppression est définitive.",
+        "used": {
+          "one": "Il sera retiré du contenu qui le porte. Cette suppression est définitive.",
+          "other": "Il sera retiré des {} contenus qui le portent. Cette suppression est définitive."
+        },
+        "confirm": "Supprimer"
+      },
+      "created": "Tag créé",
+      "updated": "Tag modifié",
+      "deletedUnused": "Tag supprimé",
+      "deleted": {
+        "one": "Tag supprimé et retiré de {} contenu",
+        "other": "Tag supprimé et retiré de {} contenus"
+      },
+      "form": {
+        "createTitle": "Nouveau tag",
+        "editTitle": "Modifier le tag",
+        "label": "Libellé",
+        "labelPlaceholder": "Ex. : Gravel, Sortie longue…",
+        "labelHint": "{max} caractères au plus, unique pour ce type (sans tenir compte de la casse)",
+        "labelError": "Entre 1 et {max} caractères",
+        "color": "Couleur",
+        "preview": "Aperçu :",
+        "create": "Créer"
+      }
+    },
+    "color": {
+      "INDIGO": "Indigo",
+      "BLUE": "Bleu",
+      "GREEN": "Vert",
+      "RED": "Rouge",
+      "YELLOW": "Jaune",
+      "ORANGE": "Orange",
+      "GRAPE": "Violet",
+      "TEAL": "Turquoise",
+      "GRAY": "Gris"
+    }
   },
   "calendar": {
     "title": "Calendrier",
@@ -2118,6 +2191,10 @@
       "SESSION_EXPIRED": "Votre session a expiré, veuillez vous reconnecter",
       "SLUG_TAKEN": "Cette URL personnalisée est déjà utilisée",
       "STATUS_INVALID": "Ce changement de statut n'est pas autorisé",
+      "TAG_INVALID": "Un des tags choisis n'existe plus ou ne s'applique pas à ce contenu.",
+      "TAG_LABEL_INVALID": "Le libellé d'un tag doit faire entre 1 et 32 caractères.",
+      "TAG_LABEL_TAKEN": "Un tag porte déjà ce libellé pour ce type de contenu.",
+      "TAG_LIMIT_REACHED": "Cette équipe a atteint le maximum de 100 tags pour ce type de contenu.",
       "TEAM_CREATION_DISABLED": "La création d'équipes est désactivée sur cette plateforme",
       "USER_TEAM_LIMIT_REACHED": "Vous administrez déjà une équipe : il n'est pas possible d'en créer une autre.",
       "TEAM_MEMBER_LIMIT_REACHED": "L'équipe a atteint {limit} membres, la limite de l'offre gratuite. Pour aller au-delà, un administrateur de l'équipe peut nous contacter.",

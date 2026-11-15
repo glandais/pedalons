@@ -16,11 +16,15 @@ import '../../../../keys.dart';
 ///
 /// L'action est un **contour rouge, jamais un aplat** : un aplat rouge pleine
 /// largeur se touche par réflexe.
+///
+/// [leading] montre, au-dessus du message, ce que l'action vise quand un nom
+/// ne suffit pas à le reconnaître — la puce d'un tag.
 Future<bool> confirmDestructive(
   BuildContext context, {
   required String title,
   required String message,
   required String confirmLabel,
+  Widget? leading,
 }) async {
   final bool? confirmed = await PdlSheet.show<bool>(
     context: context,
@@ -42,10 +46,20 @@ Future<bool> confirmDestructive(
             PdlSpacing.section,
             0,
           ),
-          child: Text(
-            message,
-            key: keys.profile.confirmDestructiveMessage,
-            style: t.sub,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (leading != null) ...<Widget>[
+                leading,
+                const SizedBox(height: PdlSpacing.chipGap),
+              ],
+              Text(
+                message,
+                key: keys.profile.confirmDestructiveMessage,
+                style: t.sub,
+              ),
+            ],
           ),
         ),
         footer: SafeArea(

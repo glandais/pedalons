@@ -126,7 +126,9 @@
 		     PhysicalAddress row (data-safety.md #29);
 		     the decision a team's organizer takes on reported content (remove it, or dismiss
 		     the report: POST /api/teams/{slug}/reports/resolve, data-safety.md #30, ledger
-		     MOB-168) — it completes the content reports above.
+		     MOB-168) — it completes the content reports above;
+		     the label of a tag a team's administrator writes for the team's contents
+		     (POST /api/teams/{slug}/tags, PATCH …/tags/{id}, data-safety.md #31, ledger MOB-169).
 		     All user-generated, all stored against the account, used only to run the app and moderate
 		     it. -->
 		<dict>

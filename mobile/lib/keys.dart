@@ -79,5 +79,6 @@ class Keys {
   final feed = FeedKeys();
   final adsList = AdsListKeys();
   final tags = TagKeys();
+  final teamTags = TeamTagsAdminKeys();
   final visibility = VisibilityKeys();
 }

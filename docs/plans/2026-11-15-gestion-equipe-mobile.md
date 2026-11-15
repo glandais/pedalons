@@ -625,6 +625,56 @@ Page sur `teamAdminTags` dans `features/tags/`, accès admin.
   bandeau, feuille ouverte.
 - Après écriture : `team_tags_provider.dart` et les compteurs de tags des listes.
 
+**Fait (lot 5)** — ce que le code a tranché :
+
+- **Accès** : `TeamTagsAdminPage(teamSlug:, type:)`
+  (`features/tags/presentation/pages/team_tags_admin_page.dart`), sous-route du hub
+  (`_teamAdminTagsRoute`). Le refus (`keys.teamTags.forbidden`, 403 et 404 de `GET team` compris)
+  est tranché par la page publique ; le vocabulaire n'est lu que par le corps rendu à qui
+  administre. Un organisateur lit le refus : il pose des tags, il n'en crée pas (plan des tags,
+  D4).
+- **Une seule lecture** : `teamAllTagsProvider(slug)` (`GET …/tags` sans `type`), comme
+  `useTeamTagsData` du site — changer de type ne coûte aucune requête et chaque puce porte son
+  compte (« Sorties (2) »). Le `?type=` du site (`ride`, `post`, `trip`, `route`, `ad`) ouvre le
+  type nommé ; le type choisi ensuite est un état de l'écran, pas de la route.
+- **La liste n'est pas paginée** (100 tags par type au plus) : après une écriture elle est relue
+  en entier, ses lignes restant à l'écran — l'ordre est celui du serveur (par libellé), un tag
+  renommé y prend donc sa nouvelle place sans que l'app trie rien.
+- **« n / 100 tags pour ce type » est au-dessus des lignes**, pas dessous comme au site : sous
+  cent lignes, il ne se lirait qu'au bout du défilement, et il explique un « Nouveau tag »
+  inactif.
+- **Formulaire** (`presentation/widgets/tag_form_sheet.dart`, `showTagFormSheet`,
+  `domain/tag_form.dart`) : « Créer » / « Enregistrer » reste actif et l'erreur du libellé
+  n'apparaît qu'après une tentative (§2.3), là où le site désactive le bouton. Le libellé **n'est
+  pas coupé à la saisie** (le site pose `maxLength`) : les 32 caractères se lisent sur le libellé
+  rogné, celui qui part, et un libellé trop long se dit sur le champ (revue du lot 3). La
+  modification envoie `label` **et** `color`, même inchangés. Les pastilles de couleur sont
+  `tagFamily(couleur).soft(c).fill` — le code couleur du thème, aucune table locale ; `TagColor`
+  n'est pas une valeur de `contracts/brand-colors.yaml` (ses neuf valeurs sont les neuf
+  familles).
+- **Zéro se dit à part** : la règle de pluriel française range 0 avec « un » ; « Inutilisé » et
+  « Tag supprimé » (aucun contenu détaché — le site dit « retiré de 0 contenu ») sont des clés à
+  elles (`tags.admin.unused`, `.deletedUnused`).
+- **Confirmation de suppression** : `confirmDestructive` a gagné un paramètre `leading`, qui
+  montre la puce du tag au-dessus du message.
+- **Un geste à la fois** : `_busy` est posé **avant** d'ouvrir une feuille ou une confirmation —
+  un double appui n'en ouvre qu'une — et rend inactifs « Nouveau tag » et les boutons des lignes
+  jusqu'à la fin de l'écriture.
+- **Après une écriture** : `notifyTeamTagsChanged(container, TeamTagChange)`
+  (`providers/team_tags_change.dart`), le pendant de `invalidateTeamTags` du site — le
+  vocabulaire de l'écran, celui du type (`teamTagsProvider`, lu par les filtres et les
+  éditeurs), et, après un renommage, une nouvelle couleur ou une suppression, **les contenus de
+  ce type déjà lus** (fils ou liste, compte filtré, fiches, modèles de sortie pour un tag de
+  sortie, tableau de bord de l'équipe) : une carte garderait sinon un tag supprimé, et un
+  éditeur en renverrait l'id (`TAG_INVALID`). Un tag créé ne fait relire que le vocabulaire.
+- **Clés d'erreur** : `TAG_LABEL_TAKEN`, `TAG_LABEL_INVALID`, `TAG_LIMIT_REACHED` et
+  `TAG_INVALID` manquaient à `fr.json` et `en.json` (l'app aurait dit « Erreur ») : ajoutées,
+  textes du site.
+- **Déclarations des stores** : ligne #31 de `data-safety.md` (le libellé d'un tag, *Other User
+  Content*), commentaire de `PrivacyInfo.xcprivacy` ; aucun type de donnée nouveau. La politique
+  de confidentialité ne nomme pas les tags dans « Contenu que vous créez » — elle ne le faisait
+  pas non plus quand seul le site les administrait : à compléter côté politique.
+
 ### 7.5 Pages personnalisées (lot 5, `MOB-169`)
 
 - **Liste** sur `teamAdminPages`, accès admin : « n pages sur 3 maximum », « Ajouter une page »

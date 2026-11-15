@@ -1630,7 +1630,80 @@
     "pickerTitle": "Filter by tag",
     "pickerHint": "An item shows up when it carries at least one of the chosen tags.",
     "apply": "Apply",
-    "clear": "Clear"
+    "clear": "Clear",
+    "admin": {
+      "title": "Tags",
+      "add": "New tag",
+      "description": "Each kind of content has its own tags. Whoever can edit a content picks its tags from these; only the team's admins create, rename or delete them.",
+      "forbiddenTitle": "Administrators only",
+      "forbiddenMessage": "Only the team's administrators can manage its tags.",
+      "kind": {
+        "RIDE": "Rides",
+        "POST": "Posts",
+        "TRIP": "Trips",
+        "ROUTE": "Routes",
+        "AD": "Classifieds"
+      },
+      "kindCount": "{kind} ({count})",
+      "unused": "Unused",
+      "usage": {
+        "one": "{} content",
+        "other": "{} contents"
+      },
+      "limit": "{used} / {max} tags for this kind",
+      "empty": {
+        "title": "No tags",
+        "RIDE": "Create tags to sort rides and filter their list.",
+        "POST": "Create tags to sort posts and filter their list.",
+        "TRIP": "Create tags to sort trips and filter their list.",
+        "ROUTE": "Create tags to sort routes and filter their list.",
+        "AD": "Create tags to sort classifieds and filter their list."
+      },
+      "noKind": {
+        "title": "No active section",
+        "description": "Tags apply to rides, posts, trips, routes and classifieds: turn one of these sections on in the team settings."
+      },
+      "editSemantic": "Edit tag “{label}”",
+      "deleteSemantic": "Delete tag “{label}”",
+      "deleteConfirm": {
+        "title": "Delete this tag?",
+        "unused": "No content carries it. This cannot be undone.",
+        "used": {
+          "one": "It will be removed from the content carrying it. This cannot be undone.",
+          "other": "It will be removed from the {} contents carrying it. This cannot be undone."
+        },
+        "confirm": "Delete"
+      },
+      "created": "Tag created",
+      "updated": "Tag updated",
+      "deletedUnused": "Tag deleted",
+      "deleted": {
+        "one": "Tag deleted and removed from {} content",
+        "other": "Tag deleted and removed from {} contents"
+      },
+      "form": {
+        "createTitle": "New tag",
+        "editTitle": "Edit tag",
+        "label": "Label",
+        "labelPlaceholder": "E.g. Gravel, Long ride…",
+        "labelHint": "At most {max} characters, unique for this kind (case-insensitive)",
+        "labelError": "Between 1 and {max} characters",
+        "color": "Colour",
+        "preview": "Preview:",
+        "create": "Create"
+      }
+    },
+    "color": {
+      "INDIGO": "Indigo",
+      "BLUE": "Blue",
+      "GREEN": "Green",
+      "RED": "Red",
+      "YELLOW": "Yellow",
+      "ORANGE": "Orange",
+      "GRAPE": "Purple",
+      "TEAL": "Teal",
+      "GRAY": "Gray"
+    }
   },
   "calendar": {
     "title": "Calendar",
@@ -2118,6 +2191,10 @@
       "SESSION_EXPIRED": "Your session has expired, please sign in again",
       "SLUG_TAKEN": "This custom URL is already in use",
       "STATUS_INVALID": "This status change is not allowed",
+      "TAG_INVALID": "One of the chosen tags no longer exists or does not apply to this content.",
+      "TAG_LABEL_INVALID": "A tag label must be 1 to 32 characters long.",
+      "TAG_LABEL_TAKEN": "A tag already has this label for this kind of content.",
+      "TAG_LIMIT_REACHED": "This team has reached the maximum of 100 tags for this kind of content.",
       "TEAM_CREATION_DISABLED": "Team creation is disabled on this platform",
       "USER_TEAM_LIMIT_REACHED": "You already administer a team: you cannot create another one.",
       "TEAM_MEMBER_LIMIT_REACHED": "The team has reached {limit} members, the limit of the free plan. To go beyond it, a team administrator can contact us.",

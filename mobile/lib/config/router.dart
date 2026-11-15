@@ -31,6 +31,7 @@ import '../features/notifications/presentation/pages/notification_settings_page.
 import '../features/notifications/presentation/pages/notifications_page.dart';
 import '../features/posts/domain/post_neighbours.dart';
 import '../features/places/presentation/pages/team_places_page.dart';
+import '../features/tags/presentation/pages/team_tags_admin_page.dart';
 import '../features/posts/presentation/pages/post_detail_page.dart';
 import '../features/posts/presentation/pages/post_editor_page.dart';
 import '../features/profile/presentation/pages/profile_account_page.dart';
@@ -344,6 +345,11 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   // La file de signalements de l'équipe, sous le hub (ledger `MOB-168`).
   _DeepLinkHierarchy(
     patterns: PathVariants.teamAdminReports(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _teamAdminAncestor],
+  ),
+  // Les tags de l'équipe, sous le hub (ledger `MOB-169`).
+  _DeepLinkHierarchy(
+    patterns: PathVariants.teamAdminTags(':teamSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamAdminAncestor],
   ),
   // Les modèles de sortie : la liste sous l'équipe, le formulaire sous la
@@ -865,6 +871,7 @@ GoRoute _teamTree(String locale) {
           _teamAdminMembersRoute(locale),
           _teamAdminPlacesRoute(locale),
           _teamAdminReportsRoute(locale),
+          _teamAdminTagsRoute(locale),
         ],
       ),
       // Les modèles de sortie : la liste, et dessous son formulaire de
@@ -1022,6 +1029,20 @@ GoRoute _teamAdminReportsRoute(String locale) {
     parentNavigatorKey: _rootNavigatorKey,
     builder: (context, state) =>
         TeamReportsPage(teamSlug: state.pathParameters['teamSlug']!),
+  );
+}
+
+/// Les tags de l'équipe, sous le hub (ledger `MOB-169`). `?type=` ouvre le
+/// type de contenu nommé, comme au site.
+GoRoute _teamAdminTagsRoute(String locale) {
+  final hubBase = PathVariants.teamAdmin(':teamSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(PathVariants.teamAdminTags(':teamSlug'), locale, hubBase),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => TeamTagsAdminPage(
+      teamSlug: state.pathParameters['teamSlug']!,
+      type: state.uri.queryParameters['type'],
+    ),
   );
 }
 

@@ -3,8 +3,8 @@ import '../../../config/paths.dart';
 /// Les pages **du site** qu'ouvre le hub « Gestion de l'équipe »
 /// (`team_admin_page.dart`).
 ///
-/// Gérer les tags et les pages de l'équipe : l'application n'a encore d'écran
-/// pour aucun de ces gestes. Ses
+/// Gérer les pages de l'équipe : l'application n'en a pas encore l'écran. Ses
+/// **tags** sont un écran de l'app depuis `MOB-169` (`Paths.teamAdminTags`), ses
 /// **paramètres** sont un écran de l'app depuis `MOB-166`
 /// (`Paths.teamSettings`), la **gestion des membres** depuis `MOB-167`
 /// (`Paths.teamAdminMembers`), ses **lieux** et sa **file de signalements**
@@ -25,8 +25,6 @@ import '../../../config/paths.dart';
 /// `mobile: true` + `appScreen: false` : un renommage côté web les suit, et
 /// ils sont dans la langue de l'app (docs/LEDGER_*.md MOB-54).
 abstract final class TeamWebPaths {
-  // Les deux pages que seul le hub ouvre (ledger `MOB-165`).
-  static String tags(String teamSlug) => Paths.teamAdminTags(teamSlug);
-
+  // La page que seul le hub ouvre encore (ledger `MOB-165`).
   static String pages(String teamSlug) => Paths.teamAdminPages(teamSlug);
 }

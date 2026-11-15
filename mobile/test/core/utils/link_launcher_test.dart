@@ -150,9 +150,20 @@ void main() {
     // Les pages du site qu'ouvre le hub, dans les deux locales :
     // `/equipes/.*` les donne à l'app sous Android (docs/LEDGER_*.md MOB-59).
     final List<String> sitePages = <String>[
-      ...PathVariants.teamAdminTags('vc').values,
       ...PathVariants.teamAdminPages('vc').values,
     ];
+
+    test('les tags de l\'équipe s\'ouvrent dans l\'app (MOB-169)', () {
+      for (final String page in PathVariants.teamAdminTags('vc').values) {
+        expect(isSitePageLocation(page), isFalse, reason: page);
+        expect(internalLocationFor(page), page, reason: page);
+        expect(
+          internalLocationFor('$page?type=route'),
+          '$page?type=route',
+          reason: page,
+        );
+      }
+    });
 
     test('la file de signalements s\'ouvre dans l\'app (MOB-168)', () {
       for (final String page in PathVariants.teamAdminReports('vc').values) {

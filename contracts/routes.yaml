@@ -489,7 +489,9 @@ routes:
     web: true
     mobile: true
     deeplink: true
-  # Vocabulary of the team's tags, one tab per kind of content (docs/LEDGER_*.md WEB-40).
+  # Vocabulary of the team's tags, one tab per kind of content (docs/LEDGER_*.md WEB-40): an app
+  # screen since MOB-169, under the hub. `?type=ride|post|trip|route|ad` opens that kind, on the
+  # site as in the app.
   - id: teamAdminTags
     path:
       en: /teams/{teamSlug}/admin/tags
@@ -498,7 +500,7 @@ routes:
       - teamSlug
     web: true
     mobile: true
-    appScreen: false
+    deeplink: true
   - id: teamAdminPages
     path:
       en: /teams/{teamSlug}/admin/pages

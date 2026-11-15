@@ -5,8 +5,6 @@
       {
         "appID": "7Q49262697.fr.pedalons.mobile",
         "paths": [
-          "NOT /teams/*/admin/tags",
-          "NOT /equipes/*/admin/tags",
           "NOT /teams/*/admin/pages",
           "NOT /equipes/*/admin/pages",
           "NOT /teams/*/admin/pages/new",
@@ -92,6 +90,8 @@
           "/equipes/*/admin",
           "/teams/*/admin/places",
           "/equipes/*/admin/lieux",
+          "/teams/*/admin/tags",
+          "/equipes/*/admin/tags",
           "/teams/*/admin/members",
           "/equipes/*/admin/membres",
           "/teams/*/admin/reports",

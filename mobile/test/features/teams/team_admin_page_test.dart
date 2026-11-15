@@ -129,6 +129,11 @@ void main() {
           builder: (BuildContext _, GoRouterState state) =>
               Text('lieux de ${state.pathParameters['teamSlug']}'),
         ),
+        GoRoute(
+          path: '/equipes/:teamSlug/admin/tags',
+          builder: (BuildContext _, GoRouterState state) =>
+              Text('tags de ${state.pathParameters['teamSlug']}'),
+        ),
       ],
     );
     await tester.pumpWidget(
@@ -335,6 +340,23 @@ void main() {
     expect(launched, isEmpty);
   });
 
+  testWidgets('« Tags » ouvre l\'écran de l\'app (MOB-169)', (
+    WidgetTester tester,
+  ) async {
+    final List<Uri> launched = <Uri>[];
+    debugLinkOpener = (Uri url) async {
+      launched.add(url);
+      return true;
+    };
+    await open(tester, role: 'ADMIN');
+
+    await tester.tap(find.byKey(keys.teamAdmin.tags));
+    await settle(tester);
+
+    expect(find.text('tags de n-peloton'), findsOneWidget);
+    expect(launched, isEmpty);
+  });
+
   testWidgets('un rôle Organisateur ne quitte plus l\'app : aucune de ses '
       'lignes n\'ouvre le site', (WidgetTester tester) async {
     await open(tester, role: 'ORGANIZER');
@@ -352,22 +374,17 @@ void main() {
     };
     await open(tester, role: 'ADMIN');
 
-    // Deux lignes sur sept quittent l'app, les tags et les pages : les
-    // modèles, les lieux, les membres, les signalements et les paramètres y
-    // ont un écran.
-    expect(find.text('S\'ouvre sur le site'), findsNWidgets(2));
+    // Une ligne sur sept quitte encore l'app, les pages : les modèles, les
+    // lieux, les tags, les membres, les signalements et les paramètres y ont
+    // un écran.
+    expect(find.text('S\'ouvre sur le site'), findsOneWidget);
 
-    for (final Key row in <Key>[keys.teamAdmin.tags, keys.teamAdmin.pages]) {
-      await tester.tap(find.byKey(row));
-      await settle(tester);
-    }
+    await tester.tap(find.byKey(keys.teamAdmin.pages));
+    await settle(tester);
 
     expect(
       <String>[for (final Uri url in launched) url.path],
-      <String>[
-        '/equipes/n-peloton/admin/tags',
-        '/equipes/n-peloton/admin/pages',
-      ],
+      <String>['/equipes/n-peloton/admin/pages'],
     );
     // Toujours sur le hub.
     expect(find.byKey(keys.teamAdmin.rideTemplates), findsOneWidget);

@@ -845,7 +845,6 @@ class PathVariants {
 const Set<String> webOnlyRouteIds = <String>{
   'features',
   'support',
-  'teamAdminTags',
   'teamAdminPages',
 };
 
@@ -854,8 +853,6 @@ const Set<String> webOnlyRouteIds = <String>{
 /// to the app, which opens it in the browser (docs/LEDGER_*.md MOB-59). The
 /// AASA excludes the same pages (`NOT …`); the Android manifest cannot.
 const List<String> sitePagePathPatterns = <String>[
-  r'^/teams/[^/]+/admin/tags/?$',
-  r'^/equipes/[^/]+/admin/tags/?$',
   r'^/teams/[^/]+/admin/pages/?$',
   r'^/equipes/[^/]+/admin/pages/?$',
   r'^/teams/[^/]+/admin/pages/new/?$',

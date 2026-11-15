@@ -44,9 +44,8 @@ void main() {
     // `appScreen: false` dans le contrat : le lien part dans le navigateur,
     // jamais sur le routeur de l'app.
     for (final String id in <String>[
-      // Ouvertes par le hub « Gestion de l'équipe » tant que leur écran
+      // Ouverte par le hub « Gestion de l'équipe » tant que son écran
       // n'existe pas (MOB-165).
-      'teamAdminTags',
       'teamAdminPages',
     ]) {
       expect(webOnlyRouteIds, contains(id));
@@ -57,6 +56,10 @@ void main() {
       '(MOB-165)', () {
     expect(webOnlyRouteIds, isNot(contains('teamsNew')));
     expect(webOnlyRouteIds, isNot(contains('teamAdmin')));
+  });
+
+  test('les tags de l\'équipe sont un écran de l\'app (MOB-169)', () {
+    expect(webOnlyRouteIds, isNot(contains('teamAdminTags')));
   });
 
   test('les paramètres de l\'équipe sont un écran de l\'app (MOB-166)', () {
@@ -70,7 +73,6 @@ void main() {
   test('les pages que le hub ouvre sur le site sont dans la langue de '
       'l\'app', () {
     setCurrentLocale('fr');
-    expect(TeamWebPaths.tags('velo-club'), '/equipes/velo-club/admin/tags');
     expect(TeamWebPaths.pages('velo-club'), '/equipes/velo-club/admin/pages');
     setCurrentLocale('en');
     expect(TeamWebPaths.pages('velo-club'), '/teams/velo-club/admin/pages');

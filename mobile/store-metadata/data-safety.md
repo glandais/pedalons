@@ -14,7 +14,10 @@ from:
 - **App**: Pédalons, `fr.pedalons.mobile`, version `1.0.0+57` (`mobile/pubspec.yaml`)
 - **Backend**: `https://www.pedalons.fr` (`mobile/lib/config/app_config.dart`)
 - **Last verified against the code**: 2026-11-15 (route planner, `MOB-170` —
-  `lib/features/routes/data/planner_bridge.dart`; the same day, a team's moderation queue, `MOB-168` —
+  `lib/features/routes/data/planner_bridge.dart`; the same day, a team's tag vocabulary, `MOB-169` —
+  `lib/features/tags/presentation/pages/team_tags_admin_page.dart` and
+  `lib/features/tags/presentation/widgets/tag_form_sheet.dart`, #31; the same day, a team's
+  moderation queue, `MOB-168` —
   `lib/features/moderation/presentation/pages/team_reports_page.dart`, #30, and a team's places,
   `lib/features/places/`, #29; the same day, member management and invitations by e-mail,
   `MOB-167` — `lib/features/teams/presentation/pages/team_admin_members_page.dart` and
@@ -214,6 +217,7 @@ Everything below leaves the device to `https://www.pedalons.fr` unless stated ot
 | 28 | **Invitations sent by a team's administrators, and member management** | *Manage members* (`lib/features/teams/presentation/pages/team_admin_members_page.dart`), the team's administrators and the platform administrator only. **An e-mail address the administrator types** in the invitation sheet (`team_invite_sheet.dart` → `POST /api/teams/{slug}/invitations`: the address and the role offered) — the address of **someone else**, who may have no account. It is typed by hand: the app reads no address book and requests no contacts permission. The server stores the address, the role, who invited and the invitation's status and dates, e-mails the invitation, and returns the pending invitations to the team's administrators (`GET …/invitations?status=PENDING`), who can resend one (the same `POST`, same address and role) or cancel it (`DELETE …/invitations/{id}`); nobody joins without accepting (privacy policy, « Invitations dans une équipe »). The app keeps no copy of the address once the sheet is closed. **Declared under the existing e-mail row** (decision of 2026-11-15, O2 of `docs/plans/2026-11-15-gestion-equipe-mobile.md`): Apple *Email Address*, Play *Personal info → Email address* — see §4 and §5. The screen also changes a member's role (`PUT /api/teams/{slug}/members/{userId}`) and removes a member (`DELETE …/members/{userId}`): a role and an identifier the server already holds, nothing typed. Its member search (`GET …/members?search=`, by name or e-mail for an administrator) is the search the member directory already sent | Yes | Yes (the invitation is stored against the team and the inviting account; the invited address becomes an account's only if that person signs up) |
 | 29 | **A team's places written by organizers** | *Places* (`lib/features/places/presentation/pages/team_places_page.dart` and its form sheet, `place_form_sheet.dart`) → `POST /api/teams/{slug}/places`, `PUT`/`DELETE …/places/{id}`: the start and end points the ride and trip editors offer — a **name**, an optional **postal address the organizer types**, an optional link (a map URL), two switches (usable as a start, as an end) **and an optional position** picked through the address search of #25–#27 (`lib/features/geocoding/`; the device never calls the provider, and its own position is **not** read). The `PUT` rewrites the whole place: a cleared address, link or position is sent as `null` and erased. The server stores the place against the team and returns it to the team's organizers (the list, `GET …/places`) and, on a ride or a trip, to whoever may read that ride. The team's organizers and administrators and the platform administrator only. **Declared as an address** (decision O1 of `docs/plans/2026-11-15-gestion-equipe-mobile.md`: a meeting point can be someone's home): the typed address and the position are the existing Apple *Physical Address* and Play *Personal info → Address* rows — see §4 and §5. The name and the link are *Other User Content* like #21 | Yes | Yes (written by an organizer, stored against the team) |
 | 30 | **Moderation decisions by a team's organizers** | *Reports* (`lib/features/moderation/presentation/pages/team_reports_page.dart`), the team's organizers and administrators and the platform administrator only. The screen **reads** the team's queue (`GET /api/teams/{slug}/reports`): per reported target, its type, the number of reports, the reasons, the reporters' free-text messages, the copy of the reported text (#14) and the name of the content's author or of the reported member — **never who reported**, which a team's queue does not carry. It **sends** a decision (`POST /api/teams/{slug}/reports/resolve`): the target's type and identifier, the team, and `REMOVE_CONTENT` or `DISMISS` — a choice between two buttons, nothing typed. The server records the decision, who took it and when on the reports of #14, and deletes the content when asked to. Nothing is kept on the device. The decision is part of the reports already declared: *Other User Content*, with the *App Functionality* purpose (and Play's *Fraud prevention, security, and compliance*) of #14 — see §4 and §5 | Yes | Yes (the decision is stored with the moderator's account) |
+| 31 | **A team's tags written by administrators** | *Tags* (`lib/features/tags/presentation/pages/team_tags_admin_page.dart` and its form sheet, `tag_form_sheet.dart`), the team's administrators and the platform administrator only → `POST /api/teams/{slug}/tags` (the kind of content, a **label the administrator types**, 32 characters at most, and one of nine colour names), `PATCH …/tags/{id}` (label and colour), `DELETE …/tags/{id}`. The vocabulary the editors and the list filters already read (`GET …/tags`); the screen reads it whole, with each tag's usage count. The server stores a tag against the team, not against the account that wrote it, and returns it with the contents that carry it to whoever may read them. Nothing is kept on the device. A label is a word or two that classifies content — *Other User Content* like #21; a colour and a kind are a choice among fixed values, nothing typed | Yes | Yes (written by a team's administrator, stored against the team) |
 | 10 | **Approximate location** | `geolocator` at `LocationAccuracy.low`, while in use, only when the user turns on the "around me" filter — becomes the `nearLat`/`nearLon`/`nearRadius` query parameters | Yes, as query parameters of a read request | **No** — not stored server-side, not written to the account |
 
 Stored **on device only**, never transmitted:
@@ -251,7 +255,7 @@ value is invented.
 | `NSPrivacyCollectedDataTypeName` | `true` | `false` | `…PurposeAppFunctionality` | #3 |
 | `NSPrivacyCollectedDataTypePhysicalAddress` | `true` | `false` | `…PurposeAppFunctionality` | #25 (the position of an ad), #26 (the location of a team), #29 (the address and the position of a team's place) |
 | `NSPrivacyCollectedDataTypeUserID` | `true` | `false` | `…PurposeAppFunctionality` | #4, #5, #7 |
-| `NSPrivacyCollectedDataTypeOtherUserContent` | `true` | `false` | `…PurposeAppFunctionality` | #6, #13, #14, #15, #20, #21, #22 (attachments), #23, #24, #25 (the ad itself), #26 (a team's name and description), #29 (a place's name and link), #30 (a moderation decision) |
+| `NSPrivacyCollectedDataTypeOtherUserContent` | `true` | `false` | `…PurposeAppFunctionality` | #6, #13, #14, #15, #20, #21, #22 (attachments), #23, #24, #25 (the ad itself), #26 (a team's name and description), #29 (a place's name and link), #30 (a moderation decision), #31 (a tag's label) |
 | `NSPrivacyCollectedDataTypeOtherDataTypes` | `true` | `false` | `…PurposeAppFunctionality` | #8 |
 | `NSPrivacyCollectedDataTypePhotosorVideos` | `true` | `false` | `…PurposeAppFunctionality` | #9, #22 (images), #24 (a post's photos), #25 (an ad's photos) |
 | `NSPrivacyCollectedDataTypeCoarseLocation` | **`false`** | `false` | `…PurposeAppFunctionality` | #10 |
@@ -279,6 +283,8 @@ row of #1; a role change and a removal send nothing the server does not already 
 *Physical Address* row of #25–#27, its name and link *Other User Content*.
 #30 (a moderation decision) has no row of its own: it completes the reports of #14, *Other User
 Content*; reading the queue collects nothing.
+#31 (a team's tags) has no row of its own: a tag's label is *Other User Content*, its colour and
+its kind a choice among fixed values.
 
 #16 (terms acceptance) has no row of its own: it is a timestamp on the account created at sign-up,
 covered by the account rows (`EmailAddress`, `Name`, `UserID`) like the account's creation date.
@@ -419,6 +425,15 @@ server already holds, not a collection; the reporters stay anonymous to the team
 carries none) and the privacy policy already says so (« Signalements et blocages »).
 `app-privacy.json` is **unchanged**.
 
+**A team's tag vocabulary adds no data type** (2026-11-15, `MOB-169`, #31). An administrator
+names the tags the team's contents can carry — « Gravel », « Sortie longue » — and gives each a
+colour. A label is user-generated text, stored against the team and shown with the contents:
+the *Other User Content* already declared, linked, App Functionality, no tracking. The editors
+of the app already **applied** these tags (#21, #23, #24, #25); only writing the vocabulary is
+new. The privacy policy's « Contenu que vous créez » does not name tags — it did not when the
+site alone administered them either; a line there would cover both clients, and is the
+policy's to add, not this file's. `app-privacy.json` is **unchanged**.
+
 **A team's place is the same *Physical Address*** (2026-11-15, `MOB-168`, #29; decision O1 of
 `docs/plans/2026-11-15-gestion-equipe-mobile.md`). An organizer who records a start or end point
 may type its postal address and may attach a position through the same address search. Both are
@@ -539,6 +554,10 @@ administer a team — and none shared. `data-safety.csv` is **unchanged**.
 user-generated content* row of the reports (#14): a decision is two buttons, collected, not
 shared, for *App functionality* and *Fraud prevention, security, and compliance*. Optional —
 only a team's organizers see the queue. `data-safety.csv` is **unchanged**.
+
+**A team's tag vocabulary** (2026-11-15, `MOB-169`, #31) stays inside the *Other
+user-generated content* row: a tag's label, collected, not shared, for app functionality.
+Optional — only a team's administrators write tags. `data-safety.csv` is **unchanged**.
 
 **A team's places** (2026-11-15, `MOB-168`, #29) stay inside rows already declared: the address
 an organizer types for a start or end point and the position picked for it are the *Address* row
@@ -718,7 +737,7 @@ these ships:
 | Profile editing (`PUT /api/users/me`) | nothing new — Name/Email already declared |
 | Picking the invited address **from the device's address book**, or importing several addresses at once (the invitation by e-mail of `MOB-167`, #28, takes one typed address) | Apple `NSPrivacyCollectedDataTypeContacts` and `NSContactsUsageDescription`; Play *Contacts*. The *Email Address* row of #28 only holds while the address is typed |
 | Camera capture for the avatar | `NSCameraUsageDescription` in `Info.plist` (+ its two `InfoPlist.strings`); no new data type — Photos or Videos already covers it |
-| Trip authoring (comments are already declared, #13; ride authoring since `MOB-80`, #21–#22; route authoring since `MOB-79`, #23; post authoring since `MOB-164`, #24; team creation since `MOB-165`, #26; team settings and the team webhook since `MOB-166`, #27; a team's places since `MOB-168`, #29) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
+| Trip authoring (comments are already declared, #13; ride authoring since `MOB-80`, #21–#22; route authoring since `MOB-79`, #23; post authoring since `MOB-164`, #24; team creation since `MOB-165`, #26; team settings and the team webhook since `MOB-166`, #27; a team's places since `MOB-168`, #29; a team's tag vocabulary since `MOB-169`, #31) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
 | A screenshot or attachment on a report, or automatic moderation of images or text beyond the word filter | Apple `…PhotosorVideos` already covers images, but re-read §4 for the purpose; Play *Photos*; any third-party moderation service is a new sub-processor for the policy |
 | GPX **import** from the device | Delivered by `MOB-79` for a team route an organizer publishes (#23): Play *Files and docs* and Apple `…OtherUserContent`, both declared; no Precise Location: the file may come from a recorded ride, but it is published as a route for the members, no device position is read and the server keeps only the geometry (timestamps, sensor data and metadata are stripped before storing). **Precise Location (Apple `…PreciseLocation`, Play *Location → Precise location*) becomes due** if the app imports **activities** as the user's own history, if the server starts keeping timestamps, or if the app records a ride. Any other import (FIT, a GPX outside the route editor) is a new audit |
 | Offering the **device's position** as the position of an ad, the location of a team or the position of a team's place ("use my location"), or any other stored position read from the device | Apple `NSPrivacyCollectedDataTypePreciseLocation`, linked; Play *Location → Precise location*, collected, not ephemeral. The *Physical Address* / *Address* rows of #25, #26 and #29 only hold while the position is an address the member types |
@@ -869,6 +888,11 @@ grep -rn "pickGeocodedPlace(" lib | grep -v lib/features/geocoding
 # updatePlace's body — the client calls must be in places_repository.dart only (the ride and
 # trip editors only read places: listPlaces, getPlace)
 grep -rnE "\.(createPlace|updatePlace|deletePlace)\(" lib/features lib/core
+
+# a team's tag vocabulary (#31): a label only ever travels in createTeamTag / updateTeamTag's
+# body, typed by an administrator — the client calls must be in tag_form_sheet.dart
+# (create, update) and team_tags_admin_page.dart (delete) only
+grep -rnE "\.(createTeamTag|updateTeamTag|deleteTeamTag)\(" lib/features lib/core
 
 # manifest is well-formed
 plutil -lint ios/Runner/PrivacyInfo.xcprivacy
