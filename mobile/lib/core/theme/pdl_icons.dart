@@ -107,9 +107,13 @@ abstract final class PdlIcons {
   static const IconData weatherFog = Icons.foggy;
   static const IconData weatherDrizzle = Icons.grain;
   static const IconData weatherRain = Icons.water_drop_outlined;
-  static const IconData weatherHeavyRain = Icons.umbrella_outlined;
+
+  // Pas de parapluie : le glyphe Material se lit mal en petit (ledger
+  // `MOB-156`). La forte pluie est la goutte de la pluie, pleine ; l'averse,
+  // un nuage qui lâche ses gouttes.
+  static const IconData weatherHeavyRain = Icons.water_drop;
   static const IconData weatherFreezingRain = Icons.severe_cold;
-  static const IconData weatherShowers = Icons.umbrella_outlined;
+  static const IconData weatherShowers = Icons.cloudy_snowing;
   static const IconData weatherSnow = Icons.ac_unit;
   static const IconData weatherThunderstorm = Icons.thunderstorm_outlined;
   static const IconData weatherUnknown = Icons.cloud_outlined;
