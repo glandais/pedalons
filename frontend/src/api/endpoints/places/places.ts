@@ -93,6 +93,10 @@ export const getListPlacesQueryOptions = <
 export type ListPlacesQueryResult = NonNullable<Awaited<ReturnType<typeof listPlaces>>>
 export type ListPlacesQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get all places for a team
+ * @summary List places
+ */
 export function useListPlaces<
   TData = Awaited<ReturnType<typeof listPlaces>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -113,6 +117,10 @@ export function useListPlaces<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get all places for a team
+ * @summary List places
+ */
 export function useListPlaces<
   TData = Awaited<ReturnType<typeof listPlaces>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -133,6 +141,10 @@ export function useListPlaces<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get all places for a team
+ * @summary List places
+ */
 export function useListPlaces<
   TData = Awaited<ReturnType<typeof listPlaces>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -146,9 +158,9 @@ export function useListPlaces<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get all places for a team
  * @summary List places
  */
-
 export function useListPlaces<
   TData = Awaited<ReturnType<typeof listPlaces>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -171,6 +183,7 @@ export function useListPlaces<
 }
 
 /**
+ * Get all places for a team
  * @summary List places
  */
 export const prefetchListPlacesQuery = async <
@@ -258,6 +271,7 @@ export type CreatePlaceMutationError = ErrorType<ErrorResponse>
 export type CreatePlaceMutationVariables = { teamSlug: string; data: BodyType<PlaceRequest> }
 
 /**
+ * Create a new place for the team
  * @summary Create place
  */
 export const useCreatePlace = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -350,6 +364,7 @@ export type UpdatePlaceMutationVariables = {
 }
 
 /**
+ * Update an existing place
  * @summary Update place
  */
 export const useUpdatePlace = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -423,6 +438,10 @@ export const getGetPlaceQueryOptions = <
 export type GetPlaceQueryResult = NonNullable<Awaited<ReturnType<typeof getPlace>>>
 export type GetPlaceQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get a specific place by ID
+ * @summary Get place details
+ */
 export function useGetPlace<
   TData = Awaited<ReturnType<typeof getPlace>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -443,6 +462,10 @@ export function useGetPlace<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get a specific place by ID
+ * @summary Get place details
+ */
 export function useGetPlace<
   TData = Awaited<ReturnType<typeof getPlace>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -463,6 +486,10 @@ export function useGetPlace<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get a specific place by ID
+ * @summary Get place details
+ */
 export function useGetPlace<
   TData = Awaited<ReturnType<typeof getPlace>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -476,9 +503,9 @@ export function useGetPlace<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get a specific place by ID
  * @summary Get place details
  */
-
 export function useGetPlace<
   TData = Awaited<ReturnType<typeof getPlace>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -501,6 +528,7 @@ export function useGetPlace<
 }
 
 /**
+ * Get a specific place by ID
  * @summary Get place details
  */
 export const prefetchGetPlaceQuery = async <
@@ -582,6 +610,7 @@ export type DeletePlaceMutationError = ErrorType<ErrorResponse>
 export type DeletePlaceMutationVariables = { teamSlug: string; placeId: string }
 
 /**
+ * Soft delete a place
  * @summary Delete place
  */
 export const useDeletePlace = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

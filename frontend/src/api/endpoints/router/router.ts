@@ -85,6 +85,7 @@ export type RouteMutationError = ErrorType<ErrorResponse | void>
 export type RouteMutationVariables = { data: BodyType<RouterRequest> }
 
 /**
+ * Calculate a route between two points using the Stadia Maps routing API. Each call is billed against a monthly quota, so the checks come first: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Once the planner quota the save would draw on is spent — the team's with teamSlug, the caller's own without — the calculation is refused with PLANNER_QUOTA_REACHED (403); past the caller's calculations of the UTC day, whatever the plan, with ROUTING_DAILY_LIMIT_REACHED (429, Retry-After). Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503).
  * @summary Calculate route
  */
 export const useRoute = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -171,6 +172,7 @@ export type LineElevationMutationError = ErrorType<ErrorResponse>
 export type LineElevationMutationVariables = { data: BodyType<LineElevationRequest> }
 
 /**
+ * Processes each straight line with the FAST elevations, as a routed leg, and returns its densified track with the ascent accumulated up to each point. Nothing is stored and the routing provider is not called. Same rights as the route calculation: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled.
  * @summary Read the relief of straight lines
  */
 export const useLineElevation = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -265,6 +267,7 @@ export type ImportGpxMutationError = ErrorType<ErrorResponse>
 export type ImportGpxMutationVariables = { data: BodyType<ImportGpxBody> }
 
 /**
+ * Processes a GPX file with the FAST elevations and returns its tracks as polylines, with the ascent accumulated up to each point. Nothing is stored and the routing provider is not called. Same rights as the route calculation: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled.
  * @summary Load a GPX file into the route editor
  */
 export const useImportGpx = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

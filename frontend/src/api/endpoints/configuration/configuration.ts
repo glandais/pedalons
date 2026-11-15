@@ -69,6 +69,10 @@ export const getGetConfigQueryOptions = <
 export type GetConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getConfig>>>
 export type GetConfigQueryError = ErrorType<unknown>
 
+/**
+ * Get frontend configuration including auth and app settings
+ * @summary Get application configuration
+ */
 export function useGetConfig<
   TData = Awaited<ReturnType<typeof getConfig>>,
   TError = ErrorType<unknown>,
@@ -87,6 +91,10 @@ export function useGetConfig<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get frontend configuration including auth and app settings
+ * @summary Get application configuration
+ */
 export function useGetConfig<
   TData = Awaited<ReturnType<typeof getConfig>>,
   TError = ErrorType<unknown>,
@@ -105,6 +113,10 @@ export function useGetConfig<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get frontend configuration including auth and app settings
+ * @summary Get application configuration
+ */
 export function useGetConfig<
   TData = Awaited<ReturnType<typeof getConfig>>,
   TError = ErrorType<unknown>,
@@ -116,9 +128,9 @@ export function useGetConfig<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get frontend configuration including auth and app settings
  * @summary Get application configuration
  */
-
 export function useGetConfig<
   TData = Awaited<ReturnType<typeof getConfig>>,
   TError = ErrorType<unknown>,
@@ -139,6 +151,7 @@ export function useGetConfig<
 }
 
 /**
+ * Get frontend configuration including auth and app settings
  * @summary Get application configuration
  */
 export const prefetchGetConfigQuery = async <
@@ -207,6 +220,10 @@ export const getGetStyleQueryOptions = <
 export type GetStyleQueryResult = NonNullable<Awaited<ReturnType<typeof getStyle>>>
 export type GetStyleQueryError = ErrorType<void>
 
+/**
+ * Returns the MapLibre style document for a raster basemap whose provider serves tiles only. The URL is the one already carried by MapStyleDto.url — clients hand it to the map engine rather than building it themselves.
+ * @summary Get a generated map style
+ */
 export function useGetStyle<TData = Awaited<ReturnType<typeof getStyle>>, TError = ErrorType<void>>(
   id: string,
   options: {
@@ -223,6 +240,10 @@ export function useGetStyle<TData = Awaited<ReturnType<typeof getStyle>>, TError
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Returns the MapLibre style document for a raster basemap whose provider serves tiles only. The URL is the one already carried by MapStyleDto.url — clients hand it to the map engine rather than building it themselves.
+ * @summary Get a generated map style
+ */
 export function useGetStyle<TData = Awaited<ReturnType<typeof getStyle>>, TError = ErrorType<void>>(
   id: string,
   options?: {
@@ -239,6 +260,10 @@ export function useGetStyle<TData = Awaited<ReturnType<typeof getStyle>>, TError
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Returns the MapLibre style document for a raster basemap whose provider serves tiles only. The URL is the one already carried by MapStyleDto.url — clients hand it to the map engine rather than building it themselves.
+ * @summary Get a generated map style
+ */
 export function useGetStyle<TData = Awaited<ReturnType<typeof getStyle>>, TError = ErrorType<void>>(
   id: string,
   options?: {
@@ -248,9 +273,9 @@ export function useGetStyle<TData = Awaited<ReturnType<typeof getStyle>>, TError
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Returns the MapLibre style document for a raster basemap whose provider serves tiles only. The URL is the one already carried by MapStyleDto.url — clients hand it to the map engine rather than building it themselves.
  * @summary Get a generated map style
  */
-
 export function useGetStyle<TData = Awaited<ReturnType<typeof getStyle>>, TError = ErrorType<void>>(
   id: string,
   options?: {
@@ -269,6 +294,7 @@ export function useGetStyle<TData = Awaited<ReturnType<typeof getStyle>>, TError
 }
 
 /**
+ * Returns the MapLibre style document for a raster basemap whose provider serves tiles only. The URL is the one already carried by MapStyleDto.url — clients hand it to the map engine rather than building it themselves.
  * @summary Get a generated map style
  */
 export const prefetchGetStyleQuery = async <

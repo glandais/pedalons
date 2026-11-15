@@ -92,6 +92,10 @@ export const getListPagesQueryOptions = <
 export type ListPagesQueryResult = NonNullable<Awaited<ReturnType<typeof listPages>>>
 export type ListPagesQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get list of additional pages for a team
+ * @summary List team pages
+ */
 export function useListPages<
   TData = Awaited<ReturnType<typeof listPages>>,
   TError = ErrorType<ErrorResponse>,
@@ -111,6 +115,10 @@ export function useListPages<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get list of additional pages for a team
+ * @summary List team pages
+ */
 export function useListPages<
   TData = Awaited<ReturnType<typeof listPages>>,
   TError = ErrorType<ErrorResponse>,
@@ -130,6 +138,10 @@ export function useListPages<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get list of additional pages for a team
+ * @summary List team pages
+ */
 export function useListPages<
   TData = Awaited<ReturnType<typeof listPages>>,
   TError = ErrorType<ErrorResponse>,
@@ -142,9 +154,9 @@ export function useListPages<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get list of additional pages for a team
  * @summary List team pages
  */
-
 export function useListPages<
   TData = Awaited<ReturnType<typeof listPages>>,
   TError = ErrorType<ErrorResponse>,
@@ -166,6 +178,7 @@ export function useListPages<
 }
 
 /**
+ * Get list of additional pages for a team
  * @summary List team pages
  */
 export const prefetchListPagesQuery = async <
@@ -252,6 +265,7 @@ export type CreatePageMutationError = ErrorType<ErrorResponse>
 export type CreatePageMutationVariables = { teamSlug: string; data: BodyType<TeamPageRequest> }
 
 /**
+ * Create a new team page. Requires admin permissions. Maximum 3 additional pages per team.
  * @summary Create page
  */
 export const useCreatePage = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -342,6 +356,7 @@ export type ReorderPagesMutationVariables = {
 }
 
 /**
+ * Reorder team pages. Requires admin permissions.
  * @summary Reorder pages
  */
 export const useReorderPages = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -434,6 +449,7 @@ export type UpdatePageMutationVariables = {
 }
 
 /**
+ * Update page information. Requires admin permissions.
  * @summary Update page
  */
 export const useUpdatePage = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -507,6 +523,10 @@ export const getGetPageQueryOptions = <
 export type GetPageQueryResult = NonNullable<Awaited<ReturnType<typeof getPage>>>
 export type GetPageQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get detailed page information
+ * @summary Get page details
+ */
 export function useGetPage<
   TData = Awaited<ReturnType<typeof getPage>>,
   TError = ErrorType<ErrorResponse>,
@@ -527,6 +547,10 @@ export function useGetPage<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed page information
+ * @summary Get page details
+ */
 export function useGetPage<
   TData = Awaited<ReturnType<typeof getPage>>,
   TError = ErrorType<ErrorResponse>,
@@ -547,6 +571,10 @@ export function useGetPage<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed page information
+ * @summary Get page details
+ */
 export function useGetPage<
   TData = Awaited<ReturnType<typeof getPage>>,
   TError = ErrorType<ErrorResponse>,
@@ -560,9 +588,9 @@ export function useGetPage<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get detailed page information
  * @summary Get page details
  */
-
 export function useGetPage<
   TData = Awaited<ReturnType<typeof getPage>>,
   TError = ErrorType<ErrorResponse>,
@@ -585,6 +613,7 @@ export function useGetPage<
 }
 
 /**
+ * Get detailed page information
  * @summary Get page details
  */
 export const prefetchGetPageQuery = async <
@@ -666,6 +695,7 @@ export type DeletePageMutationError = ErrorType<ErrorResponse>
 export type DeletePageMutationVariables = { teamSlug: string; pageSlug: string }
 
 /**
+ * Delete a team page. Requires admin permissions.
  * @summary Delete page
  */
 export const useDeletePage = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -758,6 +788,7 @@ export type ChangePageSlugMutationVariables = {
 }
 
 /**
+ * Change page URL slug. Requires admin permissions.
  * @summary Change page slug
  */
 export const useChangePageSlug = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -839,6 +870,7 @@ export type UndeletePageMutationError = ErrorType<ErrorResponse>
 export type UndeletePageMutationVariables = { teamSlug: string; pageSlug: string }
 
 /**
+ * Restore a soft-deleted team page. Requires admin permissions.
  * @summary Restore page
  */
 export const useUndeletePage = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

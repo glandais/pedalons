@@ -72,6 +72,10 @@ export const getGetSitemapQueryOptions = <
 export type GetSitemapQueryResult = NonNullable<Awaited<ReturnType<typeof getSitemap>>>
 export type GetSitemapQueryError = ErrorType<unknown>
 
+/**
+ * Public teams and their public content, as an anonymous visitor sees it, for the site the request arrived on (a pinned host lists its one team). Classified ads and routes are never listed. Anonymous by construction: the caller's session does not widen it.
+ * @summary Get the indexable pages of this site
+ */
 export function useGetSitemap<
   TData = Awaited<ReturnType<typeof getSitemap>>,
   TError = ErrorType<unknown>,
@@ -90,6 +94,10 @@ export function useGetSitemap<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Public teams and their public content, as an anonymous visitor sees it, for the site the request arrived on (a pinned host lists its one team). Classified ads and routes are never listed. Anonymous by construction: the caller's session does not widen it.
+ * @summary Get the indexable pages of this site
+ */
 export function useGetSitemap<
   TData = Awaited<ReturnType<typeof getSitemap>>,
   TError = ErrorType<unknown>,
@@ -108,6 +116,10 @@ export function useGetSitemap<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Public teams and their public content, as an anonymous visitor sees it, for the site the request arrived on (a pinned host lists its one team). Classified ads and routes are never listed. Anonymous by construction: the caller's session does not widen it.
+ * @summary Get the indexable pages of this site
+ */
 export function useGetSitemap<
   TData = Awaited<ReturnType<typeof getSitemap>>,
   TError = ErrorType<unknown>,
@@ -119,9 +131,9 @@ export function useGetSitemap<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Public teams and their public content, as an anonymous visitor sees it, for the site the request arrived on (a pinned host lists its one team). Classified ads and routes are never listed. Anonymous by construction: the caller's session does not widen it.
  * @summary Get the indexable pages of this site
  */
-
 export function useGetSitemap<
   TData = Awaited<ReturnType<typeof getSitemap>>,
   TError = ErrorType<unknown>,
@@ -142,6 +154,7 @@ export function useGetSitemap<
 }
 
 /**
+ * Public teams and their public content, as an anonymous visitor sees it, for the site the request arrived on (a pinned host lists its one team). Classified ads and routes are never listed. Anonymous by construction: the caller's session does not widen it.
  * @summary Get the indexable pages of this site
  */
 export const prefetchGetSitemapQuery = async <

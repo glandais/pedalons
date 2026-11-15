@@ -94,6 +94,10 @@ export const getGetMembersQueryOptions = <
 export type GetMembersQueryResult = NonNullable<Awaited<ReturnType<typeof getMembers>>>
 export type GetMembersQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Paginated list of team members. Administrators always see it; so do organisers, who need a member list to designate a ride group's leader. Everyone else needs the team to have set enableMemberDirectory. What is returned is graded too: 'role' and 'joinedAt' are null unless the caller is an administrator or the directory is open, 'search' only matches an e-mail address for an administrator, and 'role' is refused with a 403 to a caller who does not get the roles.
+ * @summary Get team members
+ */
 export function useGetMembers<
   TData = Awaited<ReturnType<typeof getMembers>>,
   TError = ErrorType<ErrorResponse>,
@@ -114,6 +118,10 @@ export function useGetMembers<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Paginated list of team members. Administrators always see it; so do organisers, who need a member list to designate a ride group's leader. Everyone else needs the team to have set enableMemberDirectory. What is returned is graded too: 'role' and 'joinedAt' are null unless the caller is an administrator or the directory is open, 'search' only matches an e-mail address for an administrator, and 'role' is refused with a 403 to a caller who does not get the roles.
+ * @summary Get team members
+ */
 export function useGetMembers<
   TData = Awaited<ReturnType<typeof getMembers>>,
   TError = ErrorType<ErrorResponse>,
@@ -134,6 +142,10 @@ export function useGetMembers<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Paginated list of team members. Administrators always see it; so do organisers, who need a member list to designate a ride group's leader. Everyone else needs the team to have set enableMemberDirectory. What is returned is graded too: 'role' and 'joinedAt' are null unless the caller is an administrator or the directory is open, 'search' only matches an e-mail address for an administrator, and 'role' is refused with a 403 to a caller who does not get the roles.
+ * @summary Get team members
+ */
 export function useGetMembers<
   TData = Awaited<ReturnType<typeof getMembers>>,
   TError = ErrorType<ErrorResponse>,
@@ -147,9 +159,9 @@ export function useGetMembers<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Paginated list of team members. Administrators always see it; so do organisers, who need a member list to designate a ride group's leader. Everyone else needs the team to have set enableMemberDirectory. What is returned is graded too: 'role' and 'joinedAt' are null unless the caller is an administrator or the directory is open, 'search' only matches an e-mail address for an administrator, and 'role' is refused with a 403 to a caller who does not get the roles.
  * @summary Get team members
  */
-
 export function useGetMembers<
   TData = Awaited<ReturnType<typeof getMembers>>,
   TError = ErrorType<ErrorResponse>,
@@ -172,6 +184,7 @@ export function useGetMembers<
 }
 
 /**
+ * Paginated list of team members. Administrators always see it; so do organisers, who need a member list to designate a ride group's leader. Everyone else needs the team to have set enableMemberDirectory. What is returned is graded too: 'role' and 'joinedAt' are null unless the caller is an administrator or the directory is open, 'search' only matches an e-mail address for an administrator, and 'role' is refused with a 403 to a caller who does not get the roles.
  * @summary Get team members
  */
 export const prefetchGetMembersQuery = async <
@@ -259,6 +272,7 @@ export type AddMemberMutationError = ErrorType<ErrorResponse>
 export type AddMemberMutationVariables = { teamSlug: string; data: BodyType<AddMemberRequest> }
 
 /**
+ * Add a member to the team. Requires ADMIN role on team.
  * @summary Add team member
  */
 export const useAddMember = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -339,6 +353,7 @@ export type JoinTeamMutationError = ErrorType<ErrorResponse | void>
 export type JoinTeamMutationVariables = { teamSlug: string }
 
 /**
+ * Request to join a team
  * @summary Join team
  */
 export const useJoinTeam = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -419,6 +434,7 @@ export type LeaveTeamMutationError = ErrorType<ErrorResponse | void>
 export type LeaveTeamMutationVariables = { teamSlug: string }
 
 /**
+ * Leave a team
  * @summary Leave team
  */
 export const useLeaveTeam = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -513,6 +529,7 @@ export type UpdateMemberRoleMutationVariables = {
 }
 
 /**
+ * Update a team member's role. Requires ADMIN role.
  * @summary Update member role
  */
 export const useUpdateMemberRole = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -594,6 +611,7 @@ export type RemoveMemberMutationError = ErrorType<ErrorResponse>
 export type RemoveMemberMutationVariables = { teamSlug: string; memberId: string }
 
 /**
+ * Remove a member from the team. Requires ADMIN role.
  * @summary Remove team member
  */
 export const useRemoveMember = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

@@ -87,6 +87,10 @@ export const getListAdminReportsQueryOptions = <
 export type ListAdminReportsQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminReports>>>
 export type ListAdminReportsQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Reports of every team of the domain, grouped by target, with the reporters. OPEN lists every target waiting for a decision; RESOLVED the 100 most recently decided.
+ * @summary List the platform moderation queue
+ */
 export function useListAdminReports<
   TData = Awaited<ReturnType<typeof listAdminReports>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -106,6 +110,10 @@ export function useListAdminReports<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Reports of every team of the domain, grouped by target, with the reporters. OPEN lists every target waiting for a decision; RESOLVED the 100 most recently decided.
+ * @summary List the platform moderation queue
+ */
 export function useListAdminReports<
   TData = Awaited<ReturnType<typeof listAdminReports>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -125,6 +133,10 @@ export function useListAdminReports<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Reports of every team of the domain, grouped by target, with the reporters. OPEN lists every target waiting for a decision; RESOLVED the 100 most recently decided.
+ * @summary List the platform moderation queue
+ */
 export function useListAdminReports<
   TData = Awaited<ReturnType<typeof listAdminReports>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -137,9 +149,9 @@ export function useListAdminReports<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Reports of every team of the domain, grouped by target, with the reporters. OPEN lists every target waiting for a decision; RESOLVED the 100 most recently decided.
  * @summary List the platform moderation queue
  */
-
 export function useListAdminReports<
   TData = Awaited<ReturnType<typeof listAdminReports>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -161,6 +173,7 @@ export function useListAdminReports<
 }
 
 /**
+ * Reports of every team of the domain, grouped by target, with the reporters. OPEN lists every target waiting for a decision; RESOLVED the 100 most recently decided.
  * @summary List the platform moderation queue
  */
 export const prefetchListAdminReportsQuery = async <
@@ -248,6 +261,7 @@ export type ResolveAdminReportsMutationError = ErrorType<ErrorResponse | void>
 export type ResolveAdminReportsMutationVariables = { data: BodyType<ModerationDecisionRequest> }
 
 /**
+ * Applies the decision to every open report of one queue item: the target in the team named by teamSlug, or in every team when teamSlug is omitted. REMOVE_CONTENT deletes the content (not allowed on a member); DISMISS keeps it, and shows it again if reports had hidden it.
  * @summary Decide about a reported target, in any team
  */
 export const useResolveAdminReports = <

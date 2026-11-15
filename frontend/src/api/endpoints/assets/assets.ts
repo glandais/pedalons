@@ -88,9 +88,7 @@ export type UploadAssetMutationVariables = {
   params: UploadAssetParams
 }
 
-/**
- * @summary Create asset
- */
+/** @summary Create asset */
 export const useUploadAsset = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<

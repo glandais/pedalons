@@ -108,6 +108,7 @@ export type ReportContentMutationError = ErrorType<ErrorResponse | void>
 export type ReportContentMutationVariables = { data: BodyType<ReportRequest> }
 
 /**
+ * Files a report in a team, about a comment, a publication, an ad, a route or a member the caller can read there. Idempotent: reporting the same target again changes nothing. The target disappears from the caller's lists at once; the team's organizers and administrators are notified, without the caller's name.
  * @summary Report content or a member
  */
 export const useReportContent = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -180,6 +181,10 @@ export const getListTeamReportsQueryOptions = <
 export type ListTeamReportsQueryResult = NonNullable<Awaited<ReturnType<typeof listTeamReports>>>
 export type ListTeamReportsQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Reports grouped by target, without the reporters' identities. OPEN lists every target waiting for a decision; RESOLVED the 100 most recently decided. Reports about the caller — their content, or themselves — are left out.
+ * @summary List the team's moderation queue
+ */
 export function useListTeamReports<
   TData = Awaited<ReturnType<typeof listTeamReports>>,
   TError = ErrorType<ErrorResponse>,
@@ -200,6 +205,10 @@ export function useListTeamReports<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Reports grouped by target, without the reporters' identities. OPEN lists every target waiting for a decision; RESOLVED the 100 most recently decided. Reports about the caller — their content, or themselves — are left out.
+ * @summary List the team's moderation queue
+ */
 export function useListTeamReports<
   TData = Awaited<ReturnType<typeof listTeamReports>>,
   TError = ErrorType<ErrorResponse>,
@@ -220,6 +229,10 @@ export function useListTeamReports<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Reports grouped by target, without the reporters' identities. OPEN lists every target waiting for a decision; RESOLVED the 100 most recently decided. Reports about the caller — their content, or themselves — are left out.
+ * @summary List the team's moderation queue
+ */
 export function useListTeamReports<
   TData = Awaited<ReturnType<typeof listTeamReports>>,
   TError = ErrorType<ErrorResponse>,
@@ -233,9 +246,9 @@ export function useListTeamReports<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Reports grouped by target, without the reporters' identities. OPEN lists every target waiting for a decision; RESOLVED the 100 most recently decided. Reports about the caller — their content, or themselves — are left out.
  * @summary List the team's moderation queue
  */
-
 export function useListTeamReports<
   TData = Awaited<ReturnType<typeof listTeamReports>>,
   TError = ErrorType<ErrorResponse>,
@@ -258,6 +271,7 @@ export function useListTeamReports<
 }
 
 /**
+ * Reports grouped by target, without the reporters' identities. OPEN lists every target waiting for a decision; RESOLVED the 100 most recently decided. Reports about the caller — their content, or themselves — are left out.
  * @summary List the team's moderation queue
  */
 export const prefetchListTeamReportsQuery = async <
@@ -350,6 +364,7 @@ export type ResolveTeamReportsMutationVariables = {
 }
 
 /**
+ * Applies the decision to every open report of the target. REMOVE_CONTENT deletes the content (not allowed on a member); DISMISS keeps it, and shows it again if reports had hidden it.
  * @summary Decide about a reported target
  */
 export const useResolveTeamReports = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -415,6 +430,10 @@ export type ListMyBlockedUsersQueryResult = NonNullable<
 >
 export type ListMyBlockedUsersQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * Most recent first.
+ * @summary List the members I blocked
+ */
 export function useListMyBlockedUsers<
   TData = Awaited<ReturnType<typeof listMyBlockedUsers>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -433,6 +452,10 @@ export function useListMyBlockedUsers<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Most recent first.
+ * @summary List the members I blocked
+ */
 export function useListMyBlockedUsers<
   TData = Awaited<ReturnType<typeof listMyBlockedUsers>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -453,6 +476,10 @@ export function useListMyBlockedUsers<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Most recent first.
+ * @summary List the members I blocked
+ */
 export function useListMyBlockedUsers<
   TData = Awaited<ReturnType<typeof listMyBlockedUsers>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -464,9 +491,9 @@ export function useListMyBlockedUsers<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Most recent first.
  * @summary List the members I blocked
  */
-
 export function useListMyBlockedUsers<
   TData = Awaited<ReturnType<typeof listMyBlockedUsers>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -487,6 +514,7 @@ export function useListMyBlockedUsers<
 }
 
 /**
+ * Most recent first.
  * @summary List the members I blocked
  */
 export const prefetchListMyBlockedUsersQuery = async <
@@ -565,6 +593,7 @@ export type UnblockUserMutationError = ErrorType<ErrorResponse | void>
 export type UnblockUserMutationVariables = { userId: string }
 
 /**
+ * Idempotent.
  * @summary Unblock a member
  */
 export const useUnblockUser = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -645,6 +674,7 @@ export type BlockUserMutationError = ErrorType<ErrorResponse | void>
 export type BlockUserMutationVariables = { userId: string }
 
 /**
+ * Hides the member's comments, posts and ads from the caller, and the comment notifications they cause. Idempotent.
  * @summary Block a member
  */
 export const useBlockUser = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(

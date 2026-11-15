@@ -93,6 +93,10 @@ export const getListInvitationsQueryOptions = <
 export type ListInvitationsQueryResult = NonNullable<Awaited<ReturnType<typeof listInvitations>>>
 export type ListInvitationsQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Administrators only. This is where a mistyped address shows up: since the creation call cannot tell the admin that an address is unknown, the pending list is what makes a typo visible and revocable.
+ * @summary List a team's invitations
+ */
 export function useListInvitations<
   TData = Awaited<ReturnType<typeof listInvitations>>,
   TError = ErrorType<ErrorResponse>,
@@ -113,6 +117,10 @@ export function useListInvitations<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Administrators only. This is where a mistyped address shows up: since the creation call cannot tell the admin that an address is unknown, the pending list is what makes a typo visible and revocable.
+ * @summary List a team's invitations
+ */
 export function useListInvitations<
   TData = Awaited<ReturnType<typeof listInvitations>>,
   TError = ErrorType<ErrorResponse>,
@@ -133,6 +141,10 @@ export function useListInvitations<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Administrators only. This is where a mistyped address shows up: since the creation call cannot tell the admin that an address is unknown, the pending list is what makes a typo visible and revocable.
+ * @summary List a team's invitations
+ */
 export function useListInvitations<
   TData = Awaited<ReturnType<typeof listInvitations>>,
   TError = ErrorType<ErrorResponse>,
@@ -146,9 +158,9 @@ export function useListInvitations<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Administrators only. This is where a mistyped address shows up: since the creation call cannot tell the admin that an address is unknown, the pending list is what makes a typo visible and revocable.
  * @summary List a team's invitations
  */
-
 export function useListInvitations<
   TData = Awaited<ReturnType<typeof listInvitations>>,
   TError = ErrorType<ErrorResponse>,
@@ -171,6 +183,7 @@ export function useListInvitations<
 }
 
 /**
+ * Administrators only. This is where a mistyped address shows up: since the creation call cannot tell the admin that an address is unknown, the pending list is what makes a typo visible and revocable.
  * @summary List a team's invitations
  */
 export const prefetchListInvitationsQuery = async <
@@ -258,6 +271,7 @@ export type InviteMutationError = ErrorType<ErrorResponse>
 export type InviteMutationVariables = { teamSlug: string; data: BodyType<CreateInvitationRequest> }
 
 /**
+ * Sends an invitation to join the team. The response is the same whether or not an account already exists for the address — only the wording of the e-mail differs — because answering differently would give anyone who administers a team an account-existence probe for the whole domain. Re-inviting the same address is not an error: the previous pending invitation is revoked and a fresh one issued, which is how 'resend' works. Nobody becomes a member until they accept.
  * @summary Invite an e-mail address
  */
 export const useInvite = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -339,6 +353,7 @@ export type RevokeMutationError = ErrorType<ErrorResponse>
 export type RevokeMutationVariables = { teamSlug: string; invitationId: string }
 
 /**
+ * Withdraws a pending invitation. This is also the recourse when an invitation should no longer stand — the inviter having left the team, say — since acceptance does not re-check who sent it.
  * @summary Revoke an invitation
  */
 export const useRevoke = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

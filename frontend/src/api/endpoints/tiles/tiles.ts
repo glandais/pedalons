@@ -49,6 +49,7 @@ export type MintMutationResult = NonNullable<Awaited<ReturnType<typeof mint>>>
 export type MintMutationError = ErrorType<ErrorResponse | void>
 
 /**
+ * Short-lived token authorizing the caller's own vector tile requests, to be passed as the 't' query parameter of the .mvt endpoints. Meant for clients whose map renderer has its own HTTP stack and can carry neither an Authorization header nor a session cookie. It grants nothing but tiles: no other endpoint accepts it.
  * @summary Mint a tile token
  */
 export const useMint = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(

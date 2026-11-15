@@ -107,6 +107,7 @@ export type AcceptMutationError = ErrorType<ErrorResponse>
 export type AcceptMutationVariables = { data: BodyType<AcceptInvitationRequest> }
 
 /**
+ * Joins the team the token names. Requires a session: accepting is consenting, and a consent attaches to an account — a public accept handing back a session would make the invitation link a login credential. Idempotent: replaying it, or accepting when already a member, returns the existing membership without changing its role, so an invitation as MEMBER never demotes an administrator.
  * @summary Accept an invitation
  */
 export const useAccept = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -193,6 +194,7 @@ export type PreviewMutationError = ErrorType<ErrorResponse>
 export type PreviewMutationVariables = { data: BodyType<AcceptInvitationRequest> }
 
 /**
+ * What the invitation says, for whoever holds its token. Public, because an invitation opened in a signed-out browser has to be able to name the team and the person inviting — otherwise the page can only show a bare login form with no explanation of why. Nothing here goes beyond what the e-mail already said, and the invited address comes back masked.
  * @summary Read an invitation
  */
 export const usePreview = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -258,6 +260,10 @@ export type ListMyInvitationsQueryResult = NonNullable<
 >
 export type ListMyInvitationsQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * Live invitations addressed to the current user, newest first. Teams they already belong to are left out.
+ * @summary My pending invitations
+ */
 export function useListMyInvitations<
   TData = Awaited<ReturnType<typeof listMyInvitations>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -276,6 +282,10 @@ export function useListMyInvitations<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Live invitations addressed to the current user, newest first. Teams they already belong to are left out.
+ * @summary My pending invitations
+ */
 export function useListMyInvitations<
   TData = Awaited<ReturnType<typeof listMyInvitations>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -294,6 +304,10 @@ export function useListMyInvitations<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Live invitations addressed to the current user, newest first. Teams they already belong to are left out.
+ * @summary My pending invitations
+ */
 export function useListMyInvitations<
   TData = Awaited<ReturnType<typeof listMyInvitations>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -305,9 +319,9 @@ export function useListMyInvitations<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Live invitations addressed to the current user, newest first. Teams they already belong to are left out.
  * @summary My pending invitations
  */
-
 export function useListMyInvitations<
   TData = Awaited<ReturnType<typeof listMyInvitations>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -328,6 +342,7 @@ export function useListMyInvitations<
 }
 
 /**
+ * Live invitations addressed to the current user, newest first. Teams they already belong to are left out.
  * @summary My pending invitations
  */
 export const prefetchListMyInvitationsQuery = async <
@@ -408,6 +423,7 @@ export type AcceptMyInvitationMutationError = ErrorType<ErrorResponse>
 export type AcceptMyInvitationMutationVariables = { invitationId: string }
 
 /**
+ * Same effect as redeeming the token, for an invitation reached from this list.
  * @summary Accept one of my invitations
  */
 export const useAcceptMyInvitation = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

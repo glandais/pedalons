@@ -88,6 +88,10 @@ export const getAdminListTeamsQueryOptions = <
 export type AdminListTeamsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListTeams>>>
 export type AdminListTeamsQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get a paginated list of all teams
+ * @summary List all teams
+ */
 export function useAdminListTeams<
   TData = Awaited<ReturnType<typeof adminListTeams>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -107,6 +111,10 @@ export function useAdminListTeams<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get a paginated list of all teams
+ * @summary List all teams
+ */
 export function useAdminListTeams<
   TData = Awaited<ReturnType<typeof adminListTeams>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -126,6 +134,10 @@ export function useAdminListTeams<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get a paginated list of all teams
+ * @summary List all teams
+ */
 export function useAdminListTeams<
   TData = Awaited<ReturnType<typeof adminListTeams>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -138,9 +150,9 @@ export function useAdminListTeams<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get a paginated list of all teams
  * @summary List all teams
  */
-
 export function useAdminListTeams<
   TData = Awaited<ReturnType<typeof adminListTeams>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -162,6 +174,7 @@ export function useAdminListTeams<
 }
 
 /**
+ * Get a paginated list of all teams
  * @summary List all teams
  */
 export const prefetchAdminListTeamsQuery = async <
@@ -231,6 +244,10 @@ export const getAdminGetTeamQueryOptions = <
 export type AdminGetTeamQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetTeam>>>
 export type AdminGetTeamQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get detailed team information
+ * @summary Get team details
+ */
 export function useAdminGetTeam<
   TData = Awaited<ReturnType<typeof adminGetTeam>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -250,6 +267,10 @@ export function useAdminGetTeam<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed team information
+ * @summary Get team details
+ */
 export function useAdminGetTeam<
   TData = Awaited<ReturnType<typeof adminGetTeam>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -269,6 +290,10 @@ export function useAdminGetTeam<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed team information
+ * @summary Get team details
+ */
 export function useAdminGetTeam<
   TData = Awaited<ReturnType<typeof adminGetTeam>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -281,9 +306,9 @@ export function useAdminGetTeam<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get detailed team information
  * @summary Get team details
  */
-
 export function useAdminGetTeam<
   TData = Awaited<ReturnType<typeof adminGetTeam>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -305,6 +330,7 @@ export function useAdminGetTeam<
 }
 
 /**
+ * Get detailed team information
  * @summary Get team details
  */
 export const prefetchAdminGetTeamQuery = async <
@@ -396,6 +422,7 @@ export type AdminUpdateTeamAttributesMutationVariables = {
 }
 
 /**
+ * Update platform-controlled team governance attributes
  * @summary Update team governance attributes
  */
 export const useAdminUpdateTeamAttributes = <
@@ -481,6 +508,7 @@ export type AdminToggleTeamDeletedMutationError = ErrorType<void | ErrorResponse
 export type AdminToggleTeamDeletedMutationVariables = { teamId: string }
 
 /**
+ * Toggle team soft-delete status (archive/restore)
  * @summary Toggle team deleted
  */
 export const useAdminToggleTeamDeleted = <

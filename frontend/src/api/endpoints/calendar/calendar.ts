@@ -90,6 +90,10 @@ export const getGetEventsQueryOptions = <
 export type GetEventsQueryResult = NonNullable<Awaited<ReturnType<typeof getEvents>>>
 export type GetEventsQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * Get calendar events for all teams the user belongs to
+ * @summary Get calendar events
+ */
 export function useGetEvents<
   TData = Awaited<ReturnType<typeof getEvents>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -109,6 +113,10 @@ export function useGetEvents<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get calendar events for all teams the user belongs to
+ * @summary Get calendar events
+ */
 export function useGetEvents<
   TData = Awaited<ReturnType<typeof getEvents>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -128,6 +136,10 @@ export function useGetEvents<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get calendar events for all teams the user belongs to
+ * @summary Get calendar events
+ */
 export function useGetEvents<
   TData = Awaited<ReturnType<typeof getEvents>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -140,9 +152,9 @@ export function useGetEvents<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get calendar events for all teams the user belongs to
  * @summary Get calendar events
  */
-
 export function useGetEvents<
   TData = Awaited<ReturnType<typeof getEvents>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -164,6 +176,7 @@ export function useGetEvents<
 }
 
 /**
+ * Get calendar events for all teams the user belongs to
  * @summary Get calendar events
  */
 export const prefetchGetEventsQuery = async <
@@ -227,6 +240,10 @@ export const getGetGlobalIcsFeedQueryOptions = <
 export type GetGlobalIcsFeedQueryResult = NonNullable<Awaited<ReturnType<typeof getGlobalIcsFeed>>>
 export type GetGlobalIcsFeedQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get ICS calendar feed for all user's teams (requires token)
+ * @summary Get global ICS feed
+ */
 export function useGetGlobalIcsFeed<
   TData = Awaited<ReturnType<typeof getGlobalIcsFeed>>,
   TError = ErrorType<ErrorResponse>,
@@ -246,6 +263,10 @@ export function useGetGlobalIcsFeed<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get ICS calendar feed for all user's teams (requires token)
+ * @summary Get global ICS feed
+ */
 export function useGetGlobalIcsFeed<
   TData = Awaited<ReturnType<typeof getGlobalIcsFeed>>,
   TError = ErrorType<ErrorResponse>,
@@ -265,6 +286,10 @@ export function useGetGlobalIcsFeed<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get ICS calendar feed for all user's teams (requires token)
+ * @summary Get global ICS feed
+ */
 export function useGetGlobalIcsFeed<
   TData = Awaited<ReturnType<typeof getGlobalIcsFeed>>,
   TError = ErrorType<ErrorResponse>,
@@ -277,9 +302,9 @@ export function useGetGlobalIcsFeed<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get ICS calendar feed for all user's teams (requires token)
  * @summary Get global ICS feed
  */
-
 export function useGetGlobalIcsFeed<
   TData = Awaited<ReturnType<typeof getGlobalIcsFeed>>,
   TError = ErrorType<ErrorResponse>,
@@ -301,6 +326,7 @@ export function useGetGlobalIcsFeed<
 }
 
 /**
+ * Get ICS calendar feed for all user's teams (requires token)
  * @summary Get global ICS feed
  */
 export const prefetchGetGlobalIcsFeedQuery = async <
@@ -360,6 +386,10 @@ export const getGetTokenQueryOptions = <
 export type GetTokenQueryResult = NonNullable<Awaited<ReturnType<typeof getToken>>>
 export type GetTokenQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * Get or create the user's calendar token for ICS feed access
+ * @summary Get calendar token
+ */
 export function useGetToken<
   TData = Awaited<ReturnType<typeof getToken>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -378,6 +408,10 @@ export function useGetToken<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get or create the user's calendar token for ICS feed access
+ * @summary Get calendar token
+ */
 export function useGetToken<
   TData = Awaited<ReturnType<typeof getToken>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -396,6 +430,10 @@ export function useGetToken<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get or create the user's calendar token for ICS feed access
+ * @summary Get calendar token
+ */
 export function useGetToken<
   TData = Awaited<ReturnType<typeof getToken>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -407,9 +445,9 @@ export function useGetToken<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get or create the user's calendar token for ICS feed access
  * @summary Get calendar token
  */
-
 export function useGetToken<
   TData = Awaited<ReturnType<typeof getToken>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -430,6 +468,7 @@ export function useGetToken<
 }
 
 /**
+ * Get or create the user's calendar token for ICS feed access
  * @summary Get calendar token
  */
 export const prefetchGetTokenQuery = async <
@@ -491,6 +530,7 @@ export type RegenerateTokenMutationResult = NonNullable<Awaited<ReturnType<typeo
 export type RegenerateTokenMutationError = ErrorType<ErrorResponse | void>
 
 /**
+ * Regenerate the user's calendar token, invalidating the old one
  * @summary Regenerate calendar token
  */
 export const useRegenerateToken = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -558,6 +598,10 @@ export const getGetTeamEventsQueryOptions = <
 export type GetTeamEventsQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamEvents>>>
 export type GetTeamEventsQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get calendar events for a specific team
+ * @summary Get team calendar events
+ */
 export function useGetTeamEvents<
   TData = Awaited<ReturnType<typeof getTeamEvents>>,
   TError = ErrorType<ErrorResponse>,
@@ -578,6 +622,10 @@ export function useGetTeamEvents<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get calendar events for a specific team
+ * @summary Get team calendar events
+ */
 export function useGetTeamEvents<
   TData = Awaited<ReturnType<typeof getTeamEvents>>,
   TError = ErrorType<ErrorResponse>,
@@ -598,6 +646,10 @@ export function useGetTeamEvents<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get calendar events for a specific team
+ * @summary Get team calendar events
+ */
 export function useGetTeamEvents<
   TData = Awaited<ReturnType<typeof getTeamEvents>>,
   TError = ErrorType<ErrorResponse>,
@@ -611,9 +663,9 @@ export function useGetTeamEvents<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get calendar events for a specific team
  * @summary Get team calendar events
  */
-
 export function useGetTeamEvents<
   TData = Awaited<ReturnType<typeof getTeamEvents>>,
   TError = ErrorType<ErrorResponse>,
@@ -636,6 +688,7 @@ export function useGetTeamEvents<
 }
 
 /**
+ * Get calendar events for a specific team
  * @summary Get team calendar events
  */
 export const prefetchGetTeamEventsQuery = async <
@@ -708,6 +761,10 @@ export const getGetTeamIcsFeedQueryOptions = <
 export type GetTeamIcsFeedQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamIcsFeed>>>
 export type GetTeamIcsFeedQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get ICS calendar feed for a specific team (requires token)
+ * @summary Get team ICS feed
+ */
 export function useGetTeamIcsFeed<
   TData = Awaited<ReturnType<typeof getTeamIcsFeed>>,
   TError = ErrorType<ErrorResponse>,
@@ -728,6 +785,10 @@ export function useGetTeamIcsFeed<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get ICS calendar feed for a specific team (requires token)
+ * @summary Get team ICS feed
+ */
 export function useGetTeamIcsFeed<
   TData = Awaited<ReturnType<typeof getTeamIcsFeed>>,
   TError = ErrorType<ErrorResponse>,
@@ -748,6 +809,10 @@ export function useGetTeamIcsFeed<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get ICS calendar feed for a specific team (requires token)
+ * @summary Get team ICS feed
+ */
 export function useGetTeamIcsFeed<
   TData = Awaited<ReturnType<typeof getTeamIcsFeed>>,
   TError = ErrorType<ErrorResponse>,
@@ -761,9 +826,9 @@ export function useGetTeamIcsFeed<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get ICS calendar feed for a specific team (requires token)
  * @summary Get team ICS feed
  */
-
 export function useGetTeamIcsFeed<
   TData = Awaited<ReturnType<typeof getTeamIcsFeed>>,
   TError = ErrorType<ErrorResponse>,
@@ -786,6 +851,7 @@ export function useGetTeamIcsFeed<
 }
 
 /**
+ * Get ICS calendar feed for a specific team (requires token)
  * @summary Get team ICS feed
  */
 export const prefetchGetTeamIcsFeedQuery = async <

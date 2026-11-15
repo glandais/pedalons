@@ -97,6 +97,10 @@ export type DownloadDataExportQueryResult = NonNullable<
 >
 export type DownloadDataExportQueryError = ErrorType<void | Blob>
 
+/**
+ * Download a prepared data export archive using the token from the notification email. Only its owner, signed in, may download it. The token is a query parameter, which the access log masks; a path segment would be logged in clear.
+ * @summary Download a personal data export
+ */
 export function useDownloadDataExport<
   TData = Awaited<ReturnType<typeof downloadDataExport>>,
   TError = ErrorType<void | Blob>,
@@ -116,6 +120,10 @@ export function useDownloadDataExport<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Download a prepared data export archive using the token from the notification email. Only its owner, signed in, may download it. The token is a query parameter, which the access log masks; a path segment would be logged in clear.
+ * @summary Download a personal data export
+ */
 export function useDownloadDataExport<
   TData = Awaited<ReturnType<typeof downloadDataExport>>,
   TError = ErrorType<void | Blob>,
@@ -137,6 +145,10 @@ export function useDownloadDataExport<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Download a prepared data export archive using the token from the notification email. Only its owner, signed in, may download it. The token is a query parameter, which the access log masks; a path segment would be logged in clear.
+ * @summary Download a personal data export
+ */
 export function useDownloadDataExport<
   TData = Awaited<ReturnType<typeof downloadDataExport>>,
   TError = ErrorType<void | Blob>,
@@ -149,9 +161,9 @@ export function useDownloadDataExport<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Download a prepared data export archive using the token from the notification email. Only its owner, signed in, may download it. The token is a query parameter, which the access log masks; a path segment would be logged in clear.
  * @summary Download a personal data export
  */
-
 export function useDownloadDataExport<
   TData = Awaited<ReturnType<typeof downloadDataExport>>,
   TError = ErrorType<void | Blob>,
@@ -173,6 +185,7 @@ export function useDownloadDataExport<
 }
 
 /**
+ * Download a prepared data export archive using the token from the notification email. Only its owner, signed in, may download it. The token is a query parameter, which the access log masks; a path segment would be logged in clear.
  * @summary Download a personal data export
  */
 export const prefetchDownloadDataExportQuery = async <
@@ -258,6 +271,7 @@ export type UpdateMeMutationError = ErrorType<ErrorResponse | void>
 export type UpdateMeMutationVariables = { data: BodyType<UpdateUserRequest> }
 
 /**
+ * Update the current user's profile
  * @summary Update current user
  */
 export const useUpdateMe = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -315,6 +329,10 @@ export const getGetMeQueryOptions = <
 export type GetMeQueryResult = NonNullable<Awaited<ReturnType<typeof getMe>>>
 export type GetMeQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * Get the current authenticated user's profile.
+ * @summary Get current user
+ */
 export function useGetMe<
   TData = Awaited<ReturnType<typeof getMe>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -333,6 +351,10 @@ export function useGetMe<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get the current authenticated user's profile.
+ * @summary Get current user
+ */
 export function useGetMe<
   TData = Awaited<ReturnType<typeof getMe>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -351,6 +373,10 @@ export function useGetMe<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get the current authenticated user's profile.
+ * @summary Get current user
+ */
 export function useGetMe<
   TData = Awaited<ReturnType<typeof getMe>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -362,9 +388,9 @@ export function useGetMe<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get the current authenticated user's profile.
  * @summary Get current user
  */
-
 export function useGetMe<
   TData = Awaited<ReturnType<typeof getMe>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -385,6 +411,7 @@ export function useGetMe<
 }
 
 /**
+ * Get the current authenticated user's profile.
  * @summary Get current user
  */
 export const prefetchGetMeQuery = async <
@@ -450,6 +477,7 @@ export type DeleteCurrentUserMutationResult = NonNullable<
 export type DeleteCurrentUserMutationError = ErrorType<ErrorResponse | void>
 
 /**
+ * Delete the current user's account. The teams they administer and are the only member of are deleted with it; see GET /api/users/me/deletion-impact.
  * @summary Delete current user
  */
 export const useDeleteCurrentUser = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -536,6 +564,7 @@ export type UploadAvatarMutationError = ErrorType<ErrorResponse | void>
 export type UploadAvatarMutationVariables = { data: BodyType<UploadAvatarBody> }
 
 /**
+ * Upload a new avatar image for the current user. Image will be resized to 256x256.
  * @summary Upload user avatar
  */
 export const useUploadAvatar = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -596,6 +625,7 @@ export type DeleteAvatarMutationResult = NonNullable<Awaited<ReturnType<typeof d
 export type DeleteAvatarMutationError = ErrorType<ErrorResponse | void>
 
 /**
+ * Remove the current user's avatar
  * @summary Delete user avatar
  */
 export const useDeleteAvatar = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -651,6 +681,10 @@ export type GetMyDeletionImpactQueryResult = NonNullable<
 >
 export type GetMyDeletionImpactQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * What deleting the current user's account would do to their teams: the teams deleted with it (they administer them alone), and the teams that refuse the deletion (SOLE_TEAM_ADMIN, or SOLE_MIGRATED_TEAM_ADMIN for a team migrated from biketeam). Read-only.
+ * @summary Preview the deletion of the current user
+ */
 export function useGetMyDeletionImpact<
   TData = Awaited<ReturnType<typeof getMyDeletionImpact>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -671,6 +705,10 @@ export function useGetMyDeletionImpact<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * What deleting the current user's account would do to their teams: the teams deleted with it (they administer them alone), and the teams that refuse the deletion (SOLE_TEAM_ADMIN, or SOLE_MIGRATED_TEAM_ADMIN for a team migrated from biketeam). Read-only.
+ * @summary Preview the deletion of the current user
+ */
 export function useGetMyDeletionImpact<
   TData = Awaited<ReturnType<typeof getMyDeletionImpact>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -691,6 +729,10 @@ export function useGetMyDeletionImpact<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * What deleting the current user's account would do to their teams: the teams deleted with it (they administer them alone), and the teams that refuse the deletion (SOLE_TEAM_ADMIN, or SOLE_MIGRATED_TEAM_ADMIN for a team migrated from biketeam). Read-only.
+ * @summary Preview the deletion of the current user
+ */
 export function useGetMyDeletionImpact<
   TData = Awaited<ReturnType<typeof getMyDeletionImpact>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -702,9 +744,9 @@ export function useGetMyDeletionImpact<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * What deleting the current user's account would do to their teams: the teams deleted with it (they administer them alone), and the teams that refuse the deletion (SOLE_TEAM_ADMIN, or SOLE_MIGRATED_TEAM_ADMIN for a team migrated from biketeam). Read-only.
  * @summary Preview the deletion of the current user
  */
-
 export function useGetMyDeletionImpact<
   TData = Awaited<ReturnType<typeof getMyDeletionImpact>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -725,6 +767,7 @@ export function useGetMyDeletionImpact<
 }
 
 /**
+ * What deleting the current user's account would do to their teams: the teams deleted with it (they administer them alone), and the teams that refuse the deletion (SOLE_TEAM_ADMIN, or SOLE_MIGRATED_TEAM_ADMIN for a team migrated from biketeam). Read-only.
  * @summary Preview the deletion of the current user
  */
 export const prefetchGetMyDeletionImpactQuery = async <
@@ -788,6 +831,10 @@ export type ListPairedDevicesQueryResult = NonNullable<
 >
 export type ListPairedDevicesQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * The devices (Karoo, Garmin) paired with the current account by code and still able to renew their access, newest first. The GPS services the account is connected to are on the profile (connectedServices), not here.
+ * @summary List paired devices
+ */
 export function useListPairedDevices<
   TData = Awaited<ReturnType<typeof listPairedDevices>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -806,6 +853,10 @@ export function useListPairedDevices<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The devices (Karoo, Garmin) paired with the current account by code and still able to renew their access, newest first. The GPS services the account is connected to are on the profile (connectedServices), not here.
+ * @summary List paired devices
+ */
 export function useListPairedDevices<
   TData = Awaited<ReturnType<typeof listPairedDevices>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -824,6 +875,10 @@ export function useListPairedDevices<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The devices (Karoo, Garmin) paired with the current account by code and still able to renew their access, newest first. The GPS services the account is connected to are on the profile (connectedServices), not here.
+ * @summary List paired devices
+ */
 export function useListPairedDevices<
   TData = Awaited<ReturnType<typeof listPairedDevices>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -835,9 +890,9 @@ export function useListPairedDevices<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The devices (Karoo, Garmin) paired with the current account by code and still able to renew their access, newest first. The GPS services the account is connected to are on the profile (connectedServices), not here.
  * @summary List paired devices
  */
-
 export function useListPairedDevices<
   TData = Awaited<ReturnType<typeof listPairedDevices>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -858,6 +913,7 @@ export function useListPairedDevices<
 }
 
 /**
+ * The devices (Karoo, Garmin) paired with the current account by code and still able to renew their access, newest first. The GPS services the account is connected to are on the profile (connectedServices), not here.
  * @summary List paired devices
  */
 export const prefetchListPairedDevicesQuery = async <
@@ -936,6 +992,7 @@ export type UnpairDeviceMutationError = ErrorType<ErrorResponse | void>
 export type UnpairDeviceMutationVariables = { deviceId: string }
 
 /**
+ * Revoke the pairing of one device: its access token is refused at once (401), its renewal fails, and it must be paired again.
  * @summary Unpair a device
  */
 export const useUnpairDevice = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -999,6 +1056,7 @@ export type RequestExportMutationResult = NonNullable<Awaited<ReturnType<typeof 
 export type RequestExportMutationError = ErrorType<ErrorResponse | void>
 
 /**
+ * Queue a GDPR export of the current user's data. The archive is built in the background and a download link is emailed when it is ready. Limited to one export per hour.
  * @summary Request a personal data export
  */
 export const useRequestExport = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -1052,6 +1110,10 @@ export const getGetLatestExportQueryOptions = <
 export type GetLatestExportQueryResult = NonNullable<Awaited<ReturnType<typeof getLatestExport>>>
 export type GetLatestExportQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * Status of the current user's most recent export request, if any.
+ * @summary Get the latest data export
+ */
 export function useGetLatestExport<
   TData = Awaited<ReturnType<typeof getLatestExport>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1070,6 +1132,10 @@ export function useGetLatestExport<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Status of the current user's most recent export request, if any.
+ * @summary Get the latest data export
+ */
 export function useGetLatestExport<
   TData = Awaited<ReturnType<typeof getLatestExport>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1088,6 +1154,10 @@ export function useGetLatestExport<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Status of the current user's most recent export request, if any.
+ * @summary Get the latest data export
+ */
 export function useGetLatestExport<
   TData = Awaited<ReturnType<typeof getLatestExport>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1099,9 +1169,9 @@ export function useGetLatestExport<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Status of the current user's most recent export request, if any.
  * @summary Get the latest data export
  */
-
 export function useGetLatestExport<
   TData = Awaited<ReturnType<typeof getLatestExport>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1122,6 +1192,7 @@ export function useGetLatestExport<
 }
 
 /**
+ * Status of the current user's most recent export request, if any.
  * @summary Get the latest data export
  */
 export const prefetchGetLatestExportQuery = async <
@@ -1190,6 +1261,10 @@ export const getGetExportQueryOptions = <
 export type GetExportQueryResult = NonNullable<Awaited<ReturnType<typeof getExport>>>
 export type GetExportQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * Status of one of the current user's export requests.
+ * @summary Get a data export
+ */
 export function useGetExport<
   TData = Awaited<ReturnType<typeof getExport>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1209,6 +1284,10 @@ export function useGetExport<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Status of one of the current user's export requests.
+ * @summary Get a data export
+ */
 export function useGetExport<
   TData = Awaited<ReturnType<typeof getExport>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1228,6 +1307,10 @@ export function useGetExport<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Status of one of the current user's export requests.
+ * @summary Get a data export
+ */
 export function useGetExport<
   TData = Awaited<ReturnType<typeof getExport>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1240,9 +1323,9 @@ export function useGetExport<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Status of one of the current user's export requests.
  * @summary Get a data export
  */
-
 export function useGetExport<
   TData = Awaited<ReturnType<typeof getExport>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1264,6 +1347,7 @@ export function useGetExport<
 }
 
 /**
+ * Status of one of the current user's export requests.
  * @summary Get a data export
  */
 export const prefetchGetExportQuery = async <
@@ -1334,6 +1418,10 @@ export type ListMyParticipationsQueryResult = NonNullable<
 >
 export type ListMyParticipationsQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * The rides and trips the current user is registered to, soonest first. Only publications the user may still see are returned: leaving a team removes its outings from this list.
+ * @summary List my participations
+ */
 export function useListMyParticipations<
   TData = Awaited<ReturnType<typeof listMyParticipations>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1355,6 +1443,10 @@ export function useListMyParticipations<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The rides and trips the current user is registered to, soonest first. Only publications the user may still see are returned: leaving a team removes its outings from this list.
+ * @summary List my participations
+ */
 export function useListMyParticipations<
   TData = Awaited<ReturnType<typeof listMyParticipations>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1376,6 +1468,10 @@ export function useListMyParticipations<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The rides and trips the current user is registered to, soonest first. Only publications the user may still see are returned: leaving a team removes its outings from this list.
+ * @summary List my participations
+ */
 export function useListMyParticipations<
   TData = Awaited<ReturnType<typeof listMyParticipations>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1390,9 +1486,9 @@ export function useListMyParticipations<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The rides and trips the current user is registered to, soonest first. Only publications the user may still see are returned: leaving a team removes its outings from this list.
  * @summary List my participations
  */
-
 export function useListMyParticipations<
   TData = Awaited<ReturnType<typeof listMyParticipations>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1416,6 +1512,7 @@ export function useListMyParticipations<
 }
 
 /**
+ * The rides and trips the current user is registered to, soonest first. Only publications the user may still see are returned: leaving a team removes its outings from this list.
  * @summary List my participations
  */
 export const prefetchListMyParticipationsQuery = async <
@@ -1505,6 +1602,7 @@ export type UpdateMyPreferencesMutationError = ErrorType<ErrorResponse | void>
 export type UpdateMyPreferencesMutationVariables = { data: BodyType<UserPreferencesRequest> }
 
 /**
+ * Set the current user's unit system, colour scheme and language. A partial update: fields omitted (or sent null) are left unchanged. These live on the server so that a member who picks imperial units on their phone sees them on the web too, and so that reinstalling the app does not lose them.
  * @summary Update display preferences
  */
 export const useUpdateMyPreferences = <
@@ -1573,6 +1671,10 @@ export type GetMyProfileSummaryQueryResult = NonNullable<
 >
 export type GetMyProfileSummaryQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.
+ * @summary Summarise the current user's profile
+ */
 export function useGetMyProfileSummary<
   TData = Awaited<ReturnType<typeof getMyProfileSummary>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1593,6 +1695,10 @@ export function useGetMyProfileSummary<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.
+ * @summary Summarise the current user's profile
+ */
 export function useGetMyProfileSummary<
   TData = Awaited<ReturnType<typeof getMyProfileSummary>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1613,6 +1719,10 @@ export function useGetMyProfileSummary<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.
+ * @summary Summarise the current user's profile
+ */
 export function useGetMyProfileSummary<
   TData = Awaited<ReturnType<typeof getMyProfileSummary>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1624,9 +1734,9 @@ export function useGetMyProfileSummary<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.
  * @summary Summarise the current user's profile
  */
-
 export function useGetMyProfileSummary<
   TData = Awaited<ReturnType<typeof getMyProfileSummary>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -1647,6 +1757,7 @@ export function useGetMyProfileSummary<
 }
 
 /**
+ * What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.
  * @summary Summarise the current user's profile
  */
 export const prefetchGetMyProfileSummaryQuery = async <

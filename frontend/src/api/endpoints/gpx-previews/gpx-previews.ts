@@ -98,6 +98,10 @@ export const getListMyPreviewsQueryOptions = <
 export type ListMyPreviewsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyPreviews>>>
 export type ListMyPreviewsQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * Returns the current user's previews still within the 30-day retention window, most recent first
+ * @summary List the current user's analysed GPX files
+ */
 export function useListMyPreviews<
   TData = Awaited<ReturnType<typeof listMyPreviews>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -117,6 +121,10 @@ export function useListMyPreviews<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Returns the current user's previews still within the 30-day retention window, most recent first
+ * @summary List the current user's analysed GPX files
+ */
 export function useListMyPreviews<
   TData = Awaited<ReturnType<typeof listMyPreviews>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -136,6 +144,10 @@ export function useListMyPreviews<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Returns the current user's previews still within the 30-day retention window, most recent first
+ * @summary List the current user's analysed GPX files
+ */
 export function useListMyPreviews<
   TData = Awaited<ReturnType<typeof listMyPreviews>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -148,9 +160,9 @@ export function useListMyPreviews<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Returns the current user's previews still within the 30-day retention window, most recent first
  * @summary List the current user's analysed GPX files
  */
-
 export function useListMyPreviews<
   TData = Awaited<ReturnType<typeof listMyPreviews>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -172,6 +184,7 @@ export function useListMyPreviews<
 }
 
 /**
+ * Returns the current user's previews still within the 30-day retention window, most recent first
  * @summary List the current user's analysed GPX files
  */
 export const prefetchListMyPreviewsQuery = async <
@@ -268,6 +281,7 @@ export type CreatePreviewMutationError = ErrorType<ErrorResponse | void>
 export type CreatePreviewMutationVariables = { data: BodyType<CreatePreviewBody> }
 
 /**
+ * Uploads a GPX file, runs the elevation and climb pipeline, and stores the result under an unguessable identifier for 30 days
  * @summary Analyse a GPX file
  */
 export const useCreatePreview = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -358,6 +372,7 @@ export type CreatePreviewFromPointsMutationVariables = {
 }
 
 /**
+ * Builds a preview from a route drawn with the planner (no GPX file; drawn = true), runs the elevation and climb pipeline, and stores the result under an unguessable identifier for 30 days
  * @summary Create an analysed GPX file from planner points
  */
 export const useCreatePreviewFromPoints = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -455,6 +470,7 @@ export type MergePreviewsMutationError = ErrorType<ErrorResponse | void>
 export type MergePreviewsMutationVariables = { data: BodyType<MergePreviewsBody> }
 
 /**
+ * Uploads 2 to 10 GPX files (10 MB together at most) and merges all their tracks into a single track, choosing the order of the tracks and the direction each one is ridden in so that the summed straight-line gaps between them are as short as possible. The result then runs the same pipeline as a single upload and is stored the same way, for 30 days
  * @summary Merge several GPX files into one analysed GPX file
  */
 export const useMergePreviews = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -553,6 +569,7 @@ export type UpdatePreviewMutationVariables = {
 }
 
 /**
+ * Rename the preview and, when a new GPX file or planner points are provided, replay the pipeline to replace its track. Only the creator may edit.
  * @summary Update an analysed GPX file
  */
 export const useUpdatePreview = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -623,6 +640,10 @@ export const getGetPreviewQueryOptions = <
 export type GetPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof getPreview>>>
 export type GetPreviewQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Anyone holding the link may read the preview: the unguessable identifier is what grants access. Creating and deleting require an account.
+ * @summary Get an analysed GPX file
+ */
 export function useGetPreview<
   TData = Awaited<ReturnType<typeof getPreview>>,
   TError = ErrorType<ErrorResponse>,
@@ -642,6 +663,10 @@ export function useGetPreview<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Anyone holding the link may read the preview: the unguessable identifier is what grants access. Creating and deleting require an account.
+ * @summary Get an analysed GPX file
+ */
 export function useGetPreview<
   TData = Awaited<ReturnType<typeof getPreview>>,
   TError = ErrorType<ErrorResponse>,
@@ -661,6 +686,10 @@ export function useGetPreview<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Anyone holding the link may read the preview: the unguessable identifier is what grants access. Creating and deleting require an account.
+ * @summary Get an analysed GPX file
+ */
 export function useGetPreview<
   TData = Awaited<ReturnType<typeof getPreview>>,
   TError = ErrorType<ErrorResponse>,
@@ -673,9 +702,9 @@ export function useGetPreview<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Anyone holding the link may read the preview: the unguessable identifier is what grants access. Creating and deleting require an account.
  * @summary Get an analysed GPX file
  */
-
 export function useGetPreview<
   TData = Awaited<ReturnType<typeof getPreview>>,
   TError = ErrorType<ErrorResponse>,
@@ -697,6 +726,7 @@ export function useGetPreview<
 }
 
 /**
+ * Anyone holding the link may read the preview: the unguessable identifier is what grants access. Creating and deleting require an account.
  * @summary Get an analysed GPX file
  */
 export const prefetchGetPreviewQuery = async <
@@ -776,6 +806,7 @@ export type DeletePreviewMutationError = ErrorType<ErrorResponse>
 export type DeletePreviewMutationVariables = { previewId: string }
 
 /**
+ * Only the creator may delete
  * @summary Delete an analysed GPX file
  */
 export const useDeletePreview = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -866,6 +897,7 @@ export type CopyGpxPreviewMutationVariables = {
 }
 
 /**
+ * Creates a new preview owned by the caller from any preview they have the link of, under the given name: same track, surface and waypoints, and the average speed and departure date when still to come. The planner state is private to the creator: only a copy by the creator keeps it. A copy counts no planner save, whatever the personal quota. Kept 30 days from its creation; the source is left as it is.
  * @summary Copy an analysed GPX file
  */
 export const useCopyGpxPreview = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -940,6 +972,10 @@ export type DownloadGpxPreviewFitQueryResult = NonNullable<
 >
 export type DownloadGpxPreviewFitQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Whoever holds the preview identifier may download it.
+ * @summary Download an analysed GPX file as FIT
+ */
 export function useDownloadGpxPreviewFit<
   TData = Awaited<ReturnType<typeof downloadGpxPreviewFit>>,
   TError = ErrorType<ErrorResponse>,
@@ -961,6 +997,10 @@ export function useDownloadGpxPreviewFit<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Whoever holds the preview identifier may download it.
+ * @summary Download an analysed GPX file as FIT
+ */
 export function useDownloadGpxPreviewFit<
   TData = Awaited<ReturnType<typeof downloadGpxPreviewFit>>,
   TError = ErrorType<ErrorResponse>,
@@ -982,6 +1022,10 @@ export function useDownloadGpxPreviewFit<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Whoever holds the preview identifier may download it.
+ * @summary Download an analysed GPX file as FIT
+ */
 export function useDownloadGpxPreviewFit<
   TData = Awaited<ReturnType<typeof downloadGpxPreviewFit>>,
   TError = ErrorType<ErrorResponse>,
@@ -996,9 +1040,9 @@ export function useDownloadGpxPreviewFit<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Whoever holds the preview identifier may download it.
  * @summary Download an analysed GPX file as FIT
  */
-
 export function useDownloadGpxPreviewFit<
   TData = Awaited<ReturnType<typeof downloadGpxPreviewFit>>,
   TError = ErrorType<ErrorResponse>,
@@ -1022,6 +1066,7 @@ export function useDownloadGpxPreviewFit<
 }
 
 /**
+ * Whoever holds the preview identifier may download it.
  * @summary Download an analysed GPX file as FIT
  */
 export const prefetchDownloadGpxPreviewFitQuery = async <
@@ -1106,6 +1151,7 @@ export type UploadToGpsServiceMutationError = ErrorType<ErrorResponse | void>
 export type UploadToGpsServiceMutationVariables = { previewId: string; serviceType: GpsServiceType }
 
 /**
+ * Uploads the preview to the current user's connected Garmin, Hammerhead or Wahoo
  * @summary Send an analysed GPX file to a GPS service
  */
 export const useUploadToGpsService = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -1180,6 +1226,10 @@ export type DownloadGpxPreviewGpxQueryResult = NonNullable<
 >
 export type DownloadGpxPreviewGpxQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Whoever holds the preview identifier may download it.
+ * @summary Download an analysed GPX file as GPX
+ */
 export function useDownloadGpxPreviewGpx<
   TData = Awaited<ReturnType<typeof downloadGpxPreviewGpx>>,
   TError = ErrorType<ErrorResponse>,
@@ -1201,6 +1251,10 @@ export function useDownloadGpxPreviewGpx<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Whoever holds the preview identifier may download it.
+ * @summary Download an analysed GPX file as GPX
+ */
 export function useDownloadGpxPreviewGpx<
   TData = Awaited<ReturnType<typeof downloadGpxPreviewGpx>>,
   TError = ErrorType<ErrorResponse>,
@@ -1222,6 +1276,10 @@ export function useDownloadGpxPreviewGpx<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Whoever holds the preview identifier may download it.
+ * @summary Download an analysed GPX file as GPX
+ */
 export function useDownloadGpxPreviewGpx<
   TData = Awaited<ReturnType<typeof downloadGpxPreviewGpx>>,
   TError = ErrorType<ErrorResponse>,
@@ -1236,9 +1294,9 @@ export function useDownloadGpxPreviewGpx<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Whoever holds the preview identifier may download it.
  * @summary Download an analysed GPX file as GPX
  */
-
 export function useDownloadGpxPreviewGpx<
   TData = Awaited<ReturnType<typeof downloadGpxPreviewGpx>>,
   TError = ErrorType<ErrorResponse>,
@@ -1262,6 +1320,7 @@ export function useDownloadGpxPreviewGpx<
 }
 
 /**
+ * Whoever holds the preview identifier may download it.
  * @summary Download an analysed GPX file as GPX
  */
 export const prefetchDownloadGpxPreviewGpxQuery = async <
@@ -1337,6 +1396,10 @@ export type GetPreviewPlannerStateQueryResult = NonNullable<
 >
 export type GetPreviewPlannerStateQueryError = ErrorType<ErrorResponse>
 
+/**
+ * The control points, routed pieces and imported ranges the preview was last saved with, for its edit page. Only the creator may read it. 'state' is absent when there is none to read back.
+ * @summary Get the planner state of an analysed GPX file
+ */
 export function useGetPreviewPlannerState<
   TData = Awaited<ReturnType<typeof getPreviewPlannerState>>,
   TError = ErrorType<ErrorResponse>,
@@ -1358,6 +1421,10 @@ export function useGetPreviewPlannerState<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The control points, routed pieces and imported ranges the preview was last saved with, for its edit page. Only the creator may read it. 'state' is absent when there is none to read back.
+ * @summary Get the planner state of an analysed GPX file
+ */
 export function useGetPreviewPlannerState<
   TData = Awaited<ReturnType<typeof getPreviewPlannerState>>,
   TError = ErrorType<ErrorResponse>,
@@ -1379,6 +1446,10 @@ export function useGetPreviewPlannerState<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The control points, routed pieces and imported ranges the preview was last saved with, for its edit page. Only the creator may read it. 'state' is absent when there is none to read back.
+ * @summary Get the planner state of an analysed GPX file
+ */
 export function useGetPreviewPlannerState<
   TData = Awaited<ReturnType<typeof getPreviewPlannerState>>,
   TError = ErrorType<ErrorResponse>,
@@ -1393,9 +1464,9 @@ export function useGetPreviewPlannerState<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The control points, routed pieces and imported ranges the preview was last saved with, for its edit page. Only the creator may read it. 'state' is absent when there is none to read back.
  * @summary Get the planner state of an analysed GPX file
  */
-
 export function useGetPreviewPlannerState<
   TData = Awaited<ReturnType<typeof getPreviewPlannerState>>,
   TError = ErrorType<ErrorResponse>,
@@ -1419,6 +1490,7 @@ export function useGetPreviewPlannerState<
 }
 
 /**
+ * The control points, routed pieces and imported ranges the preview was last saved with, for its edit page. Only the creator may read it. 'state' is absent when there is none to read back.
  * @summary Get the planner state of an analysed GPX file
  */
 export const prefetchGetPreviewPlannerStateQuery = async <
@@ -1514,6 +1586,7 @@ export type CreateRouteFromPreviewMutationVariables = {
 }
 
 /**
+ * Creates a team route from the preview's original upload. A preview that was drawn in the route planner (drawn = true) is refused with ROUTE_PLANNER_DISABLED when the team has no route planner; an imported GPX file can become a route of any team.
  * @summary Save an analysed GPX file as a route
  */
 export const useCreateRouteFromPreview = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -1595,6 +1668,10 @@ export type GetGpxPreviewThumbnailQueryResult = NonNullable<
 >
 export type GetGpxPreviewThumbnailQueryError = ErrorType<ErrorResponse>
 
+/**
+ * The preview's map thumbnail, resized to the requested size and encoded in the best format the Accept header allows. Whoever holds the preview identifier may read it.
+ * @summary Download the map thumbnail of an analysed GPX file
+ */
 export function useGetGpxPreviewThumbnail<
   TData = Awaited<ReturnType<typeof getGpxPreviewThumbnail>>,
   TError = ErrorType<ErrorResponse>,
@@ -1617,6 +1694,10 @@ export function useGetGpxPreviewThumbnail<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The preview's map thumbnail, resized to the requested size and encoded in the best format the Accept header allows. Whoever holds the preview identifier may read it.
+ * @summary Download the map thumbnail of an analysed GPX file
+ */
 export function useGetGpxPreviewThumbnail<
   TData = Awaited<ReturnType<typeof getGpxPreviewThumbnail>>,
   TError = ErrorType<ErrorResponse>,
@@ -1639,6 +1720,10 @@ export function useGetGpxPreviewThumbnail<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The preview's map thumbnail, resized to the requested size and encoded in the best format the Accept header allows. Whoever holds the preview identifier may read it.
+ * @summary Download the map thumbnail of an analysed GPX file
+ */
 export function useGetGpxPreviewThumbnail<
   TData = Awaited<ReturnType<typeof getGpxPreviewThumbnail>>,
   TError = ErrorType<ErrorResponse>,
@@ -1654,9 +1739,9 @@ export function useGetGpxPreviewThumbnail<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The preview's map thumbnail, resized to the requested size and encoded in the best format the Accept header allows. Whoever holds the preview identifier may read it.
  * @summary Download the map thumbnail of an analysed GPX file
  */
-
 export function useGetGpxPreviewThumbnail<
   TData = Awaited<ReturnType<typeof getGpxPreviewThumbnail>>,
   TError = ErrorType<ErrorResponse>,
@@ -1681,6 +1766,7 @@ export function useGetGpxPreviewThumbnail<
 }
 
 /**
+ * The preview's map thumbnail, resized to the requested size and encoded in the best format the Accept header allows. Whoever holds the preview identifier may read it.
  * @summary Download the map thumbnail of an analysed GPX file
  */
 export const prefetchGetGpxPreviewThumbnailQuery = async <
@@ -1755,6 +1841,10 @@ export type GetPreviewWeatherQueryResult = NonNullable<
 >
 export type GetPreviewWeatherQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * The forecast along the track when the preview has a departure date: at the start, then at each estimated passage (the average speed given, else 25 km/h). Anyone holding the link may read it. Read from the server's cache only — the forecast is refreshed in the background, never on request — and always 200: the state is in status (OUT_OF_RANGE without a date or once it is past). Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
+ * @summary Get the weather of an analysed GPX file
+ */
 export function useGetPreviewWeather<
   TData = Awaited<ReturnType<typeof getPreviewWeather>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1774,6 +1864,10 @@ export function useGetPreviewWeather<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The forecast along the track when the preview has a departure date: at the start, then at each estimated passage (the average speed given, else 25 km/h). Anyone holding the link may read it. Read from the server's cache only — the forecast is refreshed in the background, never on request — and always 200: the state is in status (OUT_OF_RANGE without a date or once it is past). Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
+ * @summary Get the weather of an analysed GPX file
+ */
 export function useGetPreviewWeather<
   TData = Awaited<ReturnType<typeof getPreviewWeather>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1793,6 +1887,10 @@ export function useGetPreviewWeather<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The forecast along the track when the preview has a departure date: at the start, then at each estimated passage (the average speed given, else 25 km/h). Anyone holding the link may read it. Read from the server's cache only — the forecast is refreshed in the background, never on request — and always 200: the state is in status (OUT_OF_RANGE without a date or once it is past). Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
+ * @summary Get the weather of an analysed GPX file
+ */
 export function useGetPreviewWeather<
   TData = Awaited<ReturnType<typeof getPreviewWeather>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1805,9 +1903,9 @@ export function useGetPreviewWeather<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The forecast along the track when the preview has a departure date: at the start, then at each estimated passage (the average speed given, else 25 km/h). Anyone holding the link may read it. Read from the server's cache only — the forecast is refreshed in the background, never on request — and always 200: the state is in status (OUT_OF_RANGE without a date or once it is past). Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
  * @summary Get the weather of an analysed GPX file
  */
-
 export function useGetPreviewWeather<
   TData = Awaited<ReturnType<typeof getPreviewWeather>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1829,6 +1927,7 @@ export function useGetPreviewWeather<
 }
 
 /**
+ * The forecast along the track when the preview has a departure date: at the start, then at each estimated passage (the average speed given, else 25 km/h). Anyone holding the link may read it. Read from the server's cache only — the forecast is refreshed in the background, never on request — and always 200: the state is in status (OUT_OF_RANGE without a date or once it is past). Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
  * @summary Get the weather of an analysed GPX file
  */
 export const prefetchGetPreviewWeatherQuery = async <

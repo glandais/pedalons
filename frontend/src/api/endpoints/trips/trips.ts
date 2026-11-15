@@ -112,6 +112,7 @@ export type CreateTripMutationError = ErrorType<ErrorResponse>
 export type CreateTripMutationVariables = { teamSlug: string; data: BodyType<TripRequest> }
 
 /**
+ * Create a new trip with optional stages
  * @summary Create trip
  */
 export const useCreateTrip = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -204,6 +205,7 @@ export type UpdateTripMutationVariables = {
 }
 
 /**
+ * Update trip information. Requires organizer permissions.
  * @summary Update trip
  */
 export const useUpdateTrip = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -277,6 +279,10 @@ export const getGetTripQueryOptions = <
 export type GetTripQueryResult = NonNullable<Awaited<ReturnType<typeof getTrip>>>
 export type GetTripQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get detailed trip information including stages and participants
+ * @summary Get trip details
+ */
 export function useGetTrip<
   TData = Awaited<ReturnType<typeof getTrip>>,
   TError = ErrorType<ErrorResponse>,
@@ -297,6 +303,10 @@ export function useGetTrip<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed trip information including stages and participants
+ * @summary Get trip details
+ */
 export function useGetTrip<
   TData = Awaited<ReturnType<typeof getTrip>>,
   TError = ErrorType<ErrorResponse>,
@@ -317,6 +327,10 @@ export function useGetTrip<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed trip information including stages and participants
+ * @summary Get trip details
+ */
 export function useGetTrip<
   TData = Awaited<ReturnType<typeof getTrip>>,
   TError = ErrorType<ErrorResponse>,
@@ -330,9 +344,9 @@ export function useGetTrip<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get detailed trip information including stages and participants
  * @summary Get trip details
  */
-
 export function useGetTrip<
   TData = Awaited<ReturnType<typeof getTrip>>,
   TError = ErrorType<ErrorResponse>,
@@ -355,6 +369,7 @@ export function useGetTrip<
 }
 
 /**
+ * Get detailed trip information including stages and participants
  * @summary Get trip details
  */
 export const prefetchGetTripQuery = async <
@@ -436,6 +451,7 @@ export type DeleteTripMutationError = ErrorType<ErrorResponse>
 export type DeleteTripMutationVariables = { teamSlug: string; tripSlug: string }
 
 /**
+ * Soft delete a trip. Requires organizer permissions.
  * @summary Delete trip
  */
 export const useDeleteTrip = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -509,6 +525,10 @@ export const getDownloadTripIcsQueryOptions = <
 export type DownloadTripIcsQueryResult = NonNullable<Awaited<ReturnType<typeof downloadTripIcs>>>
 export type DownloadTripIcsQueryError = ErrorType<ErrorResponse>
 
+/**
+ * One all-day VEVENT per stage, to add the trip on its own to a calendar. Readable by whoever may read the trip; no calendar token.
+ * @summary Download trip as a calendar file
+ */
 export function useDownloadTripIcs<
   TData = Awaited<ReturnType<typeof downloadTripIcs>>,
   TError = ErrorType<ErrorResponse>,
@@ -529,6 +549,10 @@ export function useDownloadTripIcs<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * One all-day VEVENT per stage, to add the trip on its own to a calendar. Readable by whoever may read the trip; no calendar token.
+ * @summary Download trip as a calendar file
+ */
 export function useDownloadTripIcs<
   TData = Awaited<ReturnType<typeof downloadTripIcs>>,
   TError = ErrorType<ErrorResponse>,
@@ -549,6 +573,10 @@ export function useDownloadTripIcs<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * One all-day VEVENT per stage, to add the trip on its own to a calendar. Readable by whoever may read the trip; no calendar token.
+ * @summary Download trip as a calendar file
+ */
 export function useDownloadTripIcs<
   TData = Awaited<ReturnType<typeof downloadTripIcs>>,
   TError = ErrorType<ErrorResponse>,
@@ -562,9 +590,9 @@ export function useDownloadTripIcs<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * One all-day VEVENT per stage, to add the trip on its own to a calendar. Readable by whoever may read the trip; no calendar token.
  * @summary Download trip as a calendar file
  */
-
 export function useDownloadTripIcs<
   TData = Awaited<ReturnType<typeof downloadTripIcs>>,
   TError = ErrorType<ErrorResponse>,
@@ -587,6 +615,7 @@ export function useDownloadTripIcs<
 }
 
 /**
+ * One all-day VEVENT per stage, to add the trip on its own to a calendar. Readable by whoever may read the trip; no calendar token.
  * @summary Download trip as a calendar file
  */
 export const prefetchDownloadTripIcsQuery = async <
@@ -668,6 +697,7 @@ export type JoinTripMutationError = ErrorType<ErrorResponse | void>
 export type JoinTripMutationVariables = { teamSlug: string; tripSlug: string }
 
 /**
+ * Join a trip as a participant
  * @summary Join trip
  */
 export const useJoinTrip = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -749,6 +779,7 @@ export type LeaveTripMutationError = ErrorType<ErrorResponse | void>
 export type LeaveTripMutationVariables = { teamSlug: string; tripSlug: string }
 
 /**
+ * Leave a trip as a participant
  * @summary Leave trip
  */
 export const useLeaveTrip = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -834,6 +865,10 @@ export type GetTripParticipantsQueryResult = NonNullable<
 >
 export type GetTripParticipantsQueryError = ErrorType<ErrorResponse>
 
+/**
+ * One page of the people registered to the trip, earliest registrations first, searchable by display name. The trip detail only embeds the first few; this is the whole list, with its total. Members of the team only (and platform administrators): member names are never sent to anyone else.
+ * @summary List trip participants
+ */
 export function useGetTripParticipants<
   TData = Awaited<ReturnType<typeof getTripParticipants>>,
   TError = ErrorType<ErrorResponse>,
@@ -857,6 +892,10 @@ export function useGetTripParticipants<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * One page of the people registered to the trip, earliest registrations first, searchable by display name. The trip detail only embeds the first few; this is the whole list, with its total. Members of the team only (and platform administrators): member names are never sent to anyone else.
+ * @summary List trip participants
+ */
 export function useGetTripParticipants<
   TData = Awaited<ReturnType<typeof getTripParticipants>>,
   TError = ErrorType<ErrorResponse>,
@@ -880,6 +919,10 @@ export function useGetTripParticipants<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * One page of the people registered to the trip, earliest registrations first, searchable by display name. The trip detail only embeds the first few; this is the whole list, with its total. Members of the team only (and platform administrators): member names are never sent to anyone else.
+ * @summary List trip participants
+ */
 export function useGetTripParticipants<
   TData = Awaited<ReturnType<typeof getTripParticipants>>,
   TError = ErrorType<ErrorResponse>,
@@ -894,9 +937,9 @@ export function useGetTripParticipants<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * One page of the people registered to the trip, earliest registrations first, searchable by display name. The trip detail only embeds the first few; this is the whole list, with its total. Members of the team only (and platform administrators): member names are never sent to anyone else.
  * @summary List trip participants
  */
-
 export function useGetTripParticipants<
   TData = Awaited<ReturnType<typeof getTripParticipants>>,
   TError = ErrorType<ErrorResponse>,
@@ -920,6 +963,7 @@ export function useGetTripParticipants<
 }
 
 /**
+ * One page of the people registered to the trip, earliest registrations first, searchable by display name. The trip detail only embeds the first few; this is the whole list, with its total. Members of the team only (and platform administrators): member names are never sent to anyone else.
  * @summary List trip participants
  */
 export const prefetchGetTripParticipantsQuery = async <
@@ -1013,6 +1057,7 @@ export type ChangeTripSlugMutationVariables = {
 }
 
 /**
+ * Change trip URL slug. Requires organizer permissions.
  * @summary Change trip slug
  */
 export const useChangeTripSlug = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -1107,6 +1152,7 @@ export type ChangeTripStatusMutationVariables = {
 }
 
 /**
+ * Change the trip's status and nothing else — what a list row can do without the full trip. Same side effects as a status change through the update. Requires organizer permissions. The stages follow the trip.
  * @summary Change trip status
  */
 export const useChangeTripStatus = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -1188,6 +1234,7 @@ export type UndeleteTripMutationError = ErrorType<ErrorResponse>
 export type UndeleteTripMutationVariables = { teamSlug: string; tripSlug: string }
 
 /**
+ * Restore a soft-deleted trip. Requires organizer permissions.
  * @summary Restore trip
  */
 export const useUndeleteTrip = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -1261,6 +1308,10 @@ export const getGetTripWeatherQueryOptions = <
 export type GetTripWeatherQueryResult = NonNullable<Awaited<ReturnType<typeof getTripWeather>>>
 export type GetTripWeatherQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * The forecast for the trip, stage by stage: along each stage's route at its estimated passages (stage speed, else 25 km/h), each stage with its own state. Read from the server's cache only — the forecast is refreshed in the background, never on request. Readable by whoever may read the trip, and then always 200: the state is in status. Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
+ * @summary Get trip weather
+ */
 export function useGetTripWeather<
   TData = Awaited<ReturnType<typeof getTripWeather>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1281,6 +1332,10 @@ export function useGetTripWeather<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The forecast for the trip, stage by stage: along each stage's route at its estimated passages (stage speed, else 25 km/h), each stage with its own state. Read from the server's cache only — the forecast is refreshed in the background, never on request. Readable by whoever may read the trip, and then always 200: the state is in status. Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
+ * @summary Get trip weather
+ */
 export function useGetTripWeather<
   TData = Awaited<ReturnType<typeof getTripWeather>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1301,6 +1356,10 @@ export function useGetTripWeather<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The forecast for the trip, stage by stage: along each stage's route at its estimated passages (stage speed, else 25 km/h), each stage with its own state. Read from the server's cache only — the forecast is refreshed in the background, never on request. Readable by whoever may read the trip, and then always 200: the state is in status. Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
+ * @summary Get trip weather
+ */
 export function useGetTripWeather<
   TData = Awaited<ReturnType<typeof getTripWeather>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1314,9 +1373,9 @@ export function useGetTripWeather<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The forecast for the trip, stage by stage: along each stage's route at its estimated passages (stage speed, else 25 km/h), each stage with its own state. Read from the server's cache only — the forecast is refreshed in the background, never on request. Readable by whoever may read the trip, and then always 200: the state is in status. Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
  * @summary Get trip weather
  */
-
 export function useGetTripWeather<
   TData = Awaited<ReturnType<typeof getTripWeather>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1339,6 +1398,7 @@ export function useGetTripWeather<
 }
 
 /**
+ * The forecast for the trip, stage by stage: along each stage's route at its estimated passages (stage speed, else 25 km/h), each stage with its own state. Read from the server's cache only — the forecast is refreshed in the background, never on request. Readable by whoever may read the trip, and then always 200: the state is in status. Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
  * @summary Get trip weather
  */
 export const prefetchGetTripWeatherQuery = async <

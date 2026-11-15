@@ -85,6 +85,7 @@ export type OauthAuthorizeMutationError = ErrorType<ErrorResponse | void>
 export type OauthAuthorizeMutationVariables = { data: BodyType<OAuthAuthorizeRequest> }
 
 /**
+ * Called by the site's consent screen once the signed-in user pressed « Autoriser »: mints a single-use authorization code and returns the redirect_uri to send the browser to. Not for applications — they send the browser to /oauth/authorize.
  * @summary Approve an OAuth authorization request
  */
 export const useOauthAuthorize = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -191,6 +192,7 @@ export type OauthTokenMutationError = ErrorType<OAuthErrorResponse>
 export type OauthTokenMutationVariables = { data: BodyType<OauthTokenBody> }
 
 /**
+ * The OAuth 2.0 token endpoint (RFC 6749 §3.2), form-encoded. grant_type=authorization_code takes code, client_id, redirect_uri (both as sent to /oauth/authorize) and code_verifier (PKCE); a code is good once, for five minutes. grant_type=refresh_token takes refresh_token, which rotates: keep the one of the answer. Access tokens last 15 minutes, a refresh token 90 days after its last use, until the user revokes the application from their profile.
  * @summary Exchange an authorization code, or refresh an access token
  */
 export const useOauthToken = <TError = ErrorType<OAuthErrorResponse>, TContext = unknown>(

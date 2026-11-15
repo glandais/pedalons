@@ -93,6 +93,10 @@ export const getListTemplatesQueryOptions = <
 export type ListTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listTemplates>>>
 export type ListTemplatesQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get paginated list of ride templates for a team
+ * @summary List ride templates
+ */
 export function useListTemplates<
   TData = Awaited<ReturnType<typeof listTemplates>>,
   TError = ErrorType<ErrorResponse>,
@@ -113,6 +117,10 @@ export function useListTemplates<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get paginated list of ride templates for a team
+ * @summary List ride templates
+ */
 export function useListTemplates<
   TData = Awaited<ReturnType<typeof listTemplates>>,
   TError = ErrorType<ErrorResponse>,
@@ -133,6 +141,10 @@ export function useListTemplates<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get paginated list of ride templates for a team
+ * @summary List ride templates
+ */
 export function useListTemplates<
   TData = Awaited<ReturnType<typeof listTemplates>>,
   TError = ErrorType<ErrorResponse>,
@@ -146,9 +158,9 @@ export function useListTemplates<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get paginated list of ride templates for a team
  * @summary List ride templates
  */
-
 export function useListTemplates<
   TData = Awaited<ReturnType<typeof listTemplates>>,
   TError = ErrorType<ErrorResponse>,
@@ -171,6 +183,7 @@ export function useListTemplates<
 }
 
 /**
+ * Get paginated list of ride templates for a team
  * @summary List ride templates
  */
 export const prefetchListTemplatesQuery = async <
@@ -261,6 +274,7 @@ export type CreateTemplateMutationVariables = {
 }
 
 /**
+ * Create a new ride template. Requires organizer permissions.
  * @summary Create ride template
  */
 export const useCreateTemplate = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -353,6 +367,7 @@ export type UpdateTemplateMutationVariables = {
 }
 
 /**
+ * Update ride template information. Requires organizer permissions.
  * @summary Update ride template
  */
 export const useUpdateTemplate = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -429,6 +444,10 @@ export const getGetTemplateQueryOptions = <
 export type GetTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getTemplate>>>
 export type GetTemplateQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get detailed ride template information
+ * @summary Get ride template
+ */
 export function useGetTemplate<
   TData = Awaited<ReturnType<typeof getTemplate>>,
   TError = ErrorType<ErrorResponse>,
@@ -449,6 +468,10 @@ export function useGetTemplate<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed ride template information
+ * @summary Get ride template
+ */
 export function useGetTemplate<
   TData = Awaited<ReturnType<typeof getTemplate>>,
   TError = ErrorType<ErrorResponse>,
@@ -469,6 +492,10 @@ export function useGetTemplate<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed ride template information
+ * @summary Get ride template
+ */
 export function useGetTemplate<
   TData = Awaited<ReturnType<typeof getTemplate>>,
   TError = ErrorType<ErrorResponse>,
@@ -482,9 +509,9 @@ export function useGetTemplate<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get detailed ride template information
  * @summary Get ride template
  */
-
 export function useGetTemplate<
   TData = Awaited<ReturnType<typeof getTemplate>>,
   TError = ErrorType<ErrorResponse>,
@@ -507,6 +534,7 @@ export function useGetTemplate<
 }
 
 /**
+ * Get detailed ride template information
  * @summary Get ride template
  */
 export const prefetchGetTemplateQuery = async <
@@ -588,6 +616,7 @@ export type DeleteTemplateMutationError = ErrorType<ErrorResponse>
 export type DeleteTemplateMutationVariables = { teamSlug: string; templateSlug: string }
 
 /**
+ * Soft delete a ride template. Requires organizer permissions.
  * @summary Delete ride template
  */
 export const useDeleteTemplate = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

@@ -94,6 +94,10 @@ export const getListTeamTagsQueryOptions = <
 export type ListTeamTagsQueryResult = NonNullable<Awaited<ReturnType<typeof listTeamTags>>>
 export type ListTeamTagsQueryError = ErrorType<ErrorResponse>
 
+/**
+ * The team's tags, sorted by label, each with its usage count. Open to whoever can see the team.
+ * @summary List team tags
+ */
 export function useListTeamTags<
   TData = Awaited<ReturnType<typeof listTeamTags>>,
   TError = ErrorType<ErrorResponse>,
@@ -114,6 +118,10 @@ export function useListTeamTags<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The team's tags, sorted by label, each with its usage count. Open to whoever can see the team.
+ * @summary List team tags
+ */
 export function useListTeamTags<
   TData = Awaited<ReturnType<typeof listTeamTags>>,
   TError = ErrorType<ErrorResponse>,
@@ -134,6 +142,10 @@ export function useListTeamTags<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The team's tags, sorted by label, each with its usage count. Open to whoever can see the team.
+ * @summary List team tags
+ */
 export function useListTeamTags<
   TData = Awaited<ReturnType<typeof listTeamTags>>,
   TError = ErrorType<ErrorResponse>,
@@ -147,9 +159,9 @@ export function useListTeamTags<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The team's tags, sorted by label, each with its usage count. Open to whoever can see the team.
  * @summary List team tags
  */
-
 export function useListTeamTags<
   TData = Awaited<ReturnType<typeof listTeamTags>>,
   TError = ErrorType<ErrorResponse>,
@@ -172,6 +184,7 @@ export function useListTeamTags<
 }
 
 /**
+ * The team's tags, sorted by label, each with its usage count. Open to whoever can see the team.
  * @summary List team tags
  */
 export const prefetchListTeamTagsQuery = async <
@@ -259,6 +272,7 @@ export type CreateTeamTagMutationError = ErrorType<ErrorResponse>
 export type CreateTeamTagMutationVariables = { teamSlug: string; data: BodyType<TagCreateRequest> }
 
 /**
+ * Requires team admin permissions.
  * @summary Create a team tag
  */
 export const useCreateTeamTag = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -351,6 +365,7 @@ export type UpdateTeamTagMutationVariables = {
 }
 
 /**
+ * Absent fields are unchanged; the kind never changes. Requires team admin.
  * @summary Rename or recolour a team tag
  */
 export const useUpdateTeamTag = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -432,6 +447,7 @@ export type DeleteTeamTagMutationError = ErrorType<ErrorResponse>
 export type DeleteTeamTagMutationVariables = { teamSlug: string; tagId: string }
 
 /**
+ * Detaches the tag from every content and deletes it for good. Requires team admin.
  * @summary Delete a team tag
  */
 export const useDeleteTeamTag = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

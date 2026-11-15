@@ -88,6 +88,10 @@ export const getListUsersQueryOptions = <
 export type ListUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listUsers>>>
 export type ListUsersQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get a paginated list of all users
+ * @summary List all users
+ */
 export function useListUsers<
   TData = Awaited<ReturnType<typeof listUsers>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -107,6 +111,10 @@ export function useListUsers<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get a paginated list of all users
+ * @summary List all users
+ */
 export function useListUsers<
   TData = Awaited<ReturnType<typeof listUsers>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -126,6 +134,10 @@ export function useListUsers<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get a paginated list of all users
+ * @summary List all users
+ */
 export function useListUsers<
   TData = Awaited<ReturnType<typeof listUsers>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -138,9 +150,9 @@ export function useListUsers<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get a paginated list of all users
  * @summary List all users
  */
-
 export function useListUsers<
   TData = Awaited<ReturnType<typeof listUsers>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -162,6 +174,7 @@ export function useListUsers<
 }
 
 /**
+ * Get a paginated list of all users
  * @summary List all users
  */
 export const prefetchListUsersQuery = async <
@@ -231,6 +244,10 @@ export const getGetAdminUserQueryOptions = <
 export type GetAdminUserQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminUser>>>
 export type GetAdminUserQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get detailed user information
+ * @summary Get user details
+ */
 export function useGetAdminUser<
   TData = Awaited<ReturnType<typeof getAdminUser>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -250,6 +267,10 @@ export function useGetAdminUser<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed user information
+ * @summary Get user details
+ */
 export function useGetAdminUser<
   TData = Awaited<ReturnType<typeof getAdminUser>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -269,6 +290,10 @@ export function useGetAdminUser<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed user information
+ * @summary Get user details
+ */
 export function useGetAdminUser<
   TData = Awaited<ReturnType<typeof getAdminUser>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -281,9 +306,9 @@ export function useGetAdminUser<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get detailed user information
  * @summary Get user details
  */
-
 export function useGetAdminUser<
   TData = Awaited<ReturnType<typeof getAdminUser>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -305,6 +330,7 @@ export function useGetAdminUser<
 }
 
 /**
+ * Get detailed user information
  * @summary Get user details
  */
 export const prefetchGetAdminUserQuery = async <
@@ -396,6 +422,7 @@ export type AssignPlatformRoleMutationVariables = {
 }
 
 /**
+ * Assign or remove a platform role from a user
  * @summary Assign platform role
  */
 export const useAssignPlatformRole = <TError = ErrorType<void | ErrorResponse>, TContext = unknown>(

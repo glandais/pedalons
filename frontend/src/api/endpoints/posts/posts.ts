@@ -108,6 +108,7 @@ export type CreatePostMutationError = ErrorType<ErrorResponse>
 export type CreatePostMutationVariables = { teamSlug: string; data: BodyType<PostRequest> }
 
 /**
+ * Create a new post with optional groups
  * @summary Create post
  */
 export const useCreatePost = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -200,6 +201,7 @@ export type UpdatePostMutationVariables = {
 }
 
 /**
+ * Update post information. Requires organizer permissions.
  * @summary Update post
  */
 export const useUpdatePost = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -273,6 +275,10 @@ export const getGetPostQueryOptions = <
 export type GetPostQueryResult = NonNullable<Awaited<ReturnType<typeof getPost>>>
 export type GetPostQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get detailed post information including groups
+ * @summary Get post details
+ */
 export function useGetPost<
   TData = Awaited<ReturnType<typeof getPost>>,
   TError = ErrorType<ErrorResponse>,
@@ -293,6 +299,10 @@ export function useGetPost<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed post information including groups
+ * @summary Get post details
+ */
 export function useGetPost<
   TData = Awaited<ReturnType<typeof getPost>>,
   TError = ErrorType<ErrorResponse>,
@@ -313,6 +323,10 @@ export function useGetPost<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed post information including groups
+ * @summary Get post details
+ */
 export function useGetPost<
   TData = Awaited<ReturnType<typeof getPost>>,
   TError = ErrorType<ErrorResponse>,
@@ -326,9 +340,9 @@ export function useGetPost<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get detailed post information including groups
  * @summary Get post details
  */
-
 export function useGetPost<
   TData = Awaited<ReturnType<typeof getPost>>,
   TError = ErrorType<ErrorResponse>,
@@ -351,6 +365,7 @@ export function useGetPost<
 }
 
 /**
+ * Get detailed post information including groups
  * @summary Get post details
  */
 export const prefetchGetPostQuery = async <
@@ -432,6 +447,7 @@ export type DeletePostMutationError = ErrorType<ErrorResponse>
 export type DeletePostMutationVariables = { teamSlug: string; postSlug: string }
 
 /**
+ * Soft delete a post. Requires organizer permissions.
  * @summary Delete post
  */
 export const useDeletePost = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -524,6 +540,7 @@ export type ChangePostSlugMutationVariables = {
 }
 
 /**
+ * Change post URL slug. Requires organizer permissions.
  * @summary Change post slug
  */
 export const useChangePostSlug = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -618,6 +635,7 @@ export type ChangePostStatusMutationVariables = {
 }
 
 /**
+ * Change the post's status and nothing else — what a list row can do without the full post. Same side effects as a status change through the update. Requires organizer permissions.
  * @summary Change post status
  */
 export const useChangePostStatus = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -699,6 +717,7 @@ export type UndeletePostMutationError = ErrorType<ErrorResponse>
 export type UndeletePostMutationVariables = { teamSlug: string; postSlug: string }
 
 /**
+ * Restore a soft-deleted post. Requires organizer permissions.
  * @summary Restore post
  */
 export const useUndeletePost = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

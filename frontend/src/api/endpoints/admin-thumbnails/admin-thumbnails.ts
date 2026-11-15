@@ -90,6 +90,7 @@ export type AdminRegenerateThumbnailsMutationVariables = {
 }
 
 /**
+ * Redraw the light and dark map thumbnails of routes, rides and trips from the geometry already stored, selected by drawing date, stored size or absence. Synchronous; run it with dryRun first.
  * @summary Regenerate map thumbnails
  */
 export const useAdminRegenerateThumbnails = <

@@ -91,6 +91,7 @@ export type AdminRetryElevationRefreshMutationVariables = {
 }
 
 /**
+ * Start again the HD recomputation of the routes and GPX-tool previews whose request used up its attempts (they stay on the fast profile, state FAST). Their attempts are reset and their due times spread one minute apart, oldest first, so the worker is not flooded; the targets go back to PENDING. Idempotent: a second call finds nothing. Run it with dryRun first.
  * @summary Retry abandoned HD elevation recomputations
  */
 export const useAdminRetryElevationRefresh = <

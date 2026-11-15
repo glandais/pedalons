@@ -75,6 +75,10 @@ export const getDeviceGetMeQueryOptions = <
 export type DeviceGetMeQueryResult = NonNullable<Awaited<ReturnType<typeof deviceGetMe>>>
 export type DeviceGetMeQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get authenticated user's status including connected GPS services
+ * @summary Get current user status
+ */
 export function useDeviceGetMe<
   TData = Awaited<ReturnType<typeof deviceGetMe>>,
   TError = ErrorType<ErrorResponse>,
@@ -93,6 +97,10 @@ export function useDeviceGetMe<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get authenticated user's status including connected GPS services
+ * @summary Get current user status
+ */
 export function useDeviceGetMe<
   TData = Awaited<ReturnType<typeof deviceGetMe>>,
   TError = ErrorType<ErrorResponse>,
@@ -111,6 +119,10 @@ export function useDeviceGetMe<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get authenticated user's status including connected GPS services
+ * @summary Get current user status
+ */
 export function useDeviceGetMe<
   TData = Awaited<ReturnType<typeof deviceGetMe>>,
   TError = ErrorType<ErrorResponse>,
@@ -122,9 +134,9 @@ export function useDeviceGetMe<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get authenticated user's status including connected GPS services
  * @summary Get current user status
  */
-
 export function useDeviceGetMe<
   TData = Awaited<ReturnType<typeof deviceGetMe>>,
   TError = ErrorType<ErrorResponse>,
@@ -145,6 +157,7 @@ export function useDeviceGetMe<
 }
 
 /**
+ * Get authenticated user's status including connected GPS services
  * @summary Get current user status
  */
 export const prefetchDeviceGetMeQuery = async <

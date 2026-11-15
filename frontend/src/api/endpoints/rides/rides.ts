@@ -112,6 +112,7 @@ export type CreateRideMutationError = ErrorType<ErrorResponse>
 export type CreateRideMutationVariables = { teamSlug: string; data: BodyType<RideRequest> }
 
 /**
+ * Create a new ride with optional groups
  * @summary Create ride
  */
 export const useCreateRide = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -204,6 +205,7 @@ export type UpdateRideMutationVariables = {
 }
 
 /**
+ * Update ride information. Requires organizer permissions.
  * @summary Update ride
  */
 export const useUpdateRide = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -277,6 +279,10 @@ export const getGetRideQueryOptions = <
 export type GetRideQueryResult = NonNullable<Awaited<ReturnType<typeof getRide>>>
 export type GetRideQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get detailed ride information including groups
+ * @summary Get ride details
+ */
 export function useGetRide<
   TData = Awaited<ReturnType<typeof getRide>>,
   TError = ErrorType<ErrorResponse>,
@@ -297,6 +303,10 @@ export function useGetRide<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed ride information including groups
+ * @summary Get ride details
+ */
 export function useGetRide<
   TData = Awaited<ReturnType<typeof getRide>>,
   TError = ErrorType<ErrorResponse>,
@@ -317,6 +327,10 @@ export function useGetRide<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed ride information including groups
+ * @summary Get ride details
+ */
 export function useGetRide<
   TData = Awaited<ReturnType<typeof getRide>>,
   TError = ErrorType<ErrorResponse>,
@@ -330,9 +344,9 @@ export function useGetRide<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get detailed ride information including groups
  * @summary Get ride details
  */
-
 export function useGetRide<
   TData = Awaited<ReturnType<typeof getRide>>,
   TError = ErrorType<ErrorResponse>,
@@ -355,6 +369,7 @@ export function useGetRide<
 }
 
 /**
+ * Get detailed ride information including groups
  * @summary Get ride details
  */
 export const prefetchGetRideQuery = async <
@@ -436,6 +451,7 @@ export type DeleteRideMutationError = ErrorType<ErrorResponse>
 export type DeleteRideMutationVariables = { teamSlug: string; rideSlug: string }
 
 /**
+ * Soft delete a ride. Requires organizer permissions.
  * @summary Delete ride
  */
 export const useDeleteRide = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -522,6 +538,7 @@ export type JoinGroupMutationError = ErrorType<ErrorResponse | void>
 export type JoinGroupMutationVariables = { teamSlug: string; rideSlug: string; groupId: string }
 
 /**
+ * Join a ride group
  * @summary Join ride group
  */
 export const useJoinGroup = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -608,6 +625,7 @@ export type LeaveGroupMutationError = ErrorType<ErrorResponse | void>
 export type LeaveGroupMutationVariables = { teamSlug: string; rideSlug: string; groupId: string }
 
 /**
+ * Leave a ride group
  * @summary Leave ride group
  */
 export const useLeaveGroup = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -694,6 +712,7 @@ export type SwitchGroupMutationError = ErrorType<ErrorResponse>
 export type SwitchGroupMutationVariables = { teamSlug: string; rideSlug: string; groupId: string }
 
 /**
+ * Moves the caller from their group of the ride to this one, in one transaction: on any refusal the registration stays where it was. The same checks as join for the group joined (full, already left, ride cancelled or not readable). Switching to the group already joined changes nothing (200). The organisers are told of the new group as of a join.
  * @summary Switch ride group
  */
 export const useSwitchGroup = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -767,6 +786,10 @@ export const getDownloadRideIcsQueryOptions = <
 export type DownloadRideIcsQueryResult = NonNullable<Awaited<ReturnType<typeof downloadRideIcs>>>
 export type DownloadRideIcsQueryError = ErrorType<ErrorResponse>
 
+/**
+ * One VEVENT for the ride, to add it on its own to a calendar. Readable by whoever may read the ride; no calendar token. It starts when the caller's group leaves when they are registered, at the ride's start otherwise; LOCATION is the start place's name, when the ride has one.
+ * @summary Download ride as a calendar file
+ */
 export function useDownloadRideIcs<
   TData = Awaited<ReturnType<typeof downloadRideIcs>>,
   TError = ErrorType<ErrorResponse>,
@@ -787,6 +810,10 @@ export function useDownloadRideIcs<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * One VEVENT for the ride, to add it on its own to a calendar. Readable by whoever may read the ride; no calendar token. It starts when the caller's group leaves when they are registered, at the ride's start otherwise; LOCATION is the start place's name, when the ride has one.
+ * @summary Download ride as a calendar file
+ */
 export function useDownloadRideIcs<
   TData = Awaited<ReturnType<typeof downloadRideIcs>>,
   TError = ErrorType<ErrorResponse>,
@@ -807,6 +834,10 @@ export function useDownloadRideIcs<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * One VEVENT for the ride, to add it on its own to a calendar. Readable by whoever may read the ride; no calendar token. It starts when the caller's group leaves when they are registered, at the ride's start otherwise; LOCATION is the start place's name, when the ride has one.
+ * @summary Download ride as a calendar file
+ */
 export function useDownloadRideIcs<
   TData = Awaited<ReturnType<typeof downloadRideIcs>>,
   TError = ErrorType<ErrorResponse>,
@@ -820,9 +851,9 @@ export function useDownloadRideIcs<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * One VEVENT for the ride, to add it on its own to a calendar. Readable by whoever may read the ride; no calendar token. It starts when the caller's group leaves when they are registered, at the ride's start otherwise; LOCATION is the start place's name, when the ride has one.
  * @summary Download ride as a calendar file
  */
-
 export function useDownloadRideIcs<
   TData = Awaited<ReturnType<typeof downloadRideIcs>>,
   TError = ErrorType<ErrorResponse>,
@@ -845,6 +876,7 @@ export function useDownloadRideIcs<
 }
 
 /**
+ * One VEVENT for the ride, to add it on its own to a calendar. Readable by whoever may read the ride; no calendar token. It starts when the caller's group leaves when they are registered, at the ride's start otherwise; LOCATION is the start place's name, when the ride has one.
  * @summary Download ride as a calendar file
  */
 export const prefetchDownloadRideIcsQuery = async <
@@ -930,6 +962,10 @@ export type GetRideParticipantsQueryResult = NonNullable<
 >
 export type GetRideParticipantsQueryError = ErrorType<ErrorResponse>
 
+/**
+ * One page of the people registered to the ride, or to one of its groups, earliest registrations first, searchable by display name. The ride detail only embeds the first few; this is the whole list, with its total. Members of the team only (and platform administrators): member names are never sent to anyone else.
+ * @summary List ride participants
+ */
 export function useGetRideParticipants<
   TData = Awaited<ReturnType<typeof getRideParticipants>>,
   TError = ErrorType<ErrorResponse>,
@@ -953,6 +989,10 @@ export function useGetRideParticipants<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * One page of the people registered to the ride, or to one of its groups, earliest registrations first, searchable by display name. The ride detail only embeds the first few; this is the whole list, with its total. Members of the team only (and platform administrators): member names are never sent to anyone else.
+ * @summary List ride participants
+ */
 export function useGetRideParticipants<
   TData = Awaited<ReturnType<typeof getRideParticipants>>,
   TError = ErrorType<ErrorResponse>,
@@ -976,6 +1016,10 @@ export function useGetRideParticipants<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * One page of the people registered to the ride, or to one of its groups, earliest registrations first, searchable by display name. The ride detail only embeds the first few; this is the whole list, with its total. Members of the team only (and platform administrators): member names are never sent to anyone else.
+ * @summary List ride participants
+ */
 export function useGetRideParticipants<
   TData = Awaited<ReturnType<typeof getRideParticipants>>,
   TError = ErrorType<ErrorResponse>,
@@ -990,9 +1034,9 @@ export function useGetRideParticipants<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * One page of the people registered to the ride, or to one of its groups, earliest registrations first, searchable by display name. The ride detail only embeds the first few; this is the whole list, with its total. Members of the team only (and platform administrators): member names are never sent to anyone else.
  * @summary List ride participants
  */
-
 export function useGetRideParticipants<
   TData = Awaited<ReturnType<typeof getRideParticipants>>,
   TError = ErrorType<ErrorResponse>,
@@ -1016,6 +1060,7 @@ export function useGetRideParticipants<
 }
 
 /**
+ * One page of the people registered to the ride, or to one of its groups, earliest registrations first, searchable by display name. The ride detail only embeds the first few; this is the whole list, with its total. Members of the team only (and platform administrators): member names are never sent to anyone else.
  * @summary List ride participants
  */
 export const prefetchGetRideParticipantsQuery = async <
@@ -1109,6 +1154,7 @@ export type ChangeRideSlugMutationVariables = {
 }
 
 /**
+ * Change ride URL slug. Requires organizer permissions.
  * @summary Change ride slug
  */
 export const useChangeRideSlug = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -1203,6 +1249,7 @@ export type ChangeRideStatusMutationVariables = {
 }
 
 /**
+ * Change the ride's status and nothing else — what a list row can do without the full ride. Same side effects as a status change through the update. Requires organizer permissions.
  * @summary Change ride status
  */
 export const useChangeRideStatus = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -1284,6 +1331,7 @@ export type UndeleteRideMutationError = ErrorType<ErrorResponse>
 export type UndeleteRideMutationVariables = { teamSlug: string; rideSlug: string }
 
 /**
+ * Restore a soft-deleted ride. Requires organizer permissions.
  * @summary Restore ride
  */
 export const useUndeleteRide = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -1357,6 +1405,10 @@ export const getGetRideWeatherQueryOptions = <
 export type GetRideWeatherQueryResult = NonNullable<Awaited<ReturnType<typeof getRideWeather>>>
 export type GetRideWeatherQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * The forecast for the ride: at the meeting point when it leaves, then along each group's route at its estimated passages (group speed, else 25 km/h). Read from the server's cache only — the forecast is refreshed in the background, never on request. Readable by whoever may read the ride, and then always 200: the state is in status. Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
+ * @summary Get ride weather
+ */
 export function useGetRideWeather<
   TData = Awaited<ReturnType<typeof getRideWeather>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1377,6 +1429,10 @@ export function useGetRideWeather<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The forecast for the ride: at the meeting point when it leaves, then along each group's route at its estimated passages (group speed, else 25 km/h). Read from the server's cache only — the forecast is refreshed in the background, never on request. Readable by whoever may read the ride, and then always 200: the state is in status. Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
+ * @summary Get ride weather
+ */
 export function useGetRideWeather<
   TData = Awaited<ReturnType<typeof getRideWeather>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1397,6 +1453,10 @@ export function useGetRideWeather<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The forecast for the ride: at the meeting point when it leaves, then along each group's route at its estimated passages (group speed, else 25 km/h). Read from the server's cache only — the forecast is refreshed in the background, never on request. Readable by whoever may read the ride, and then always 200: the state is in status. Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
+ * @summary Get ride weather
+ */
 export function useGetRideWeather<
   TData = Awaited<ReturnType<typeof getRideWeather>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1410,9 +1470,9 @@ export function useGetRideWeather<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The forecast for the ride: at the meeting point when it leaves, then along each group's route at its estimated passages (group speed, else 25 km/h). Read from the server's cache only — the forecast is refreshed in the background, never on request. Readable by whoever may read the ride, and then always 200: the state is in status. Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
  * @summary Get ride weather
  */
-
 export function useGetRideWeather<
   TData = Awaited<ReturnType<typeof getRideWeather>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1435,6 +1495,7 @@ export function useGetRideWeather<
 }
 
 /**
+ * The forecast for the ride: at the meeting point when it leaves, then along each group's route at its estimated passages (group speed, else 25 km/h). Read from the server's cache only — the forecast is refreshed in the background, never on request. Readable by whoever may read the ride, and then always 200: the state is in status. Cache-Control: private, no-cache with an ETag (revalidate with If-None-Match, 304 when unchanged); no-store when status is UNAVAILABLE.
  * @summary Get ride weather
  */
 export const prefetchGetRideWeatherQuery = async <

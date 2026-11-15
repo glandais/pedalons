@@ -94,6 +94,7 @@ export type ConfirmEmailChangeMutationError = ErrorType<ErrorResponse>
 export type ConfirmEmailChangeMutationVariables = { data: BodyType<VerifyTokenRequest> }
 
 /**
+ * Apply an address change from its link. Opens no session: a signed-in client refreshes its user.
  * @summary Confirm a new address
  */
 export const useConfirmEmailChange = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -182,6 +183,7 @@ export type RequestEmailChangeMutationError = ErrorType<void | ErrorResponse>
 export type RequestEmailChangeMutationVariables = { data: BodyType<EmailChangeRequest> }
 
 /**
+ * Change the signed-in user's email address. Sends a verification link to the new address; the change applies once that link is followed.
  * @summary Request email change
  */
 export const useRequestEmailChange = <TError = ErrorType<void | ErrorResponse>, TContext = unknown>(
@@ -268,6 +270,7 @@ export type ForgotPasswordMutationError = ErrorType<void>
 export type ForgotPasswordMutationVariables = { data: BodyType<ForgotPasswordRequest> }
 
 /**
+ * Send a 6-digit code to the user's email to reset their password
  * @summary Request password reset
  */
 export const useForgotPassword = <TError = ErrorType<void>, TContext = unknown>(
@@ -356,6 +359,7 @@ export type LoginWithPasswordMutationError = ErrorType<ErrorResponse>
 export type LoginWithPasswordMutationVariables = { data: BodyType<LoginRequest> }
 
 /**
+ * Authenticate using email and password
  * @summary Login with password
  */
 export const useLoginWithPassword = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -413,6 +417,7 @@ export type LogoutMutationResult = NonNullable<Awaited<ReturnType<typeof logout>
 export type LogoutMutationError = ErrorType<unknown>
 
 /**
+ * Logout and invalidate the refresh token
  * @summary Logout
  */
 export const useLogout = <TError = ErrorType<unknown>, TContext = unknown>(
@@ -460,6 +465,7 @@ export type LogoutAllMutationResult = NonNullable<Awaited<ReturnType<typeof logo
 export type LogoutAllMutationError = ErrorType<ErrorResponse | void>
 
 /**
+ * Logout from all devices by invalidating all refresh tokens
  * @summary Logout all sessions
  */
 export const useLogoutAll = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -536,6 +542,7 @@ export type RequestOtpMutationError = ErrorType<void>
 export type RequestOtpMutationVariables = { data: BodyType<OtpRequest> }
 
 /**
+ * Send a 6-digit OTP code to the user's email for passwordless login
  * @summary Request OTP
  */
 export const useRequestOtp = <TError = ErrorType<void>, TContext = unknown>(
@@ -622,6 +629,7 @@ export type VerifyOtpMutationError = ErrorType<ErrorResponse>
 export type VerifyOtpMutationVariables = { data: BodyType<VerifyOtpRequest> }
 
 /**
+ * Verify OTP code and authenticate
  * @summary Verify OTP
  */
 export const useVerifyOtp = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -679,6 +687,7 @@ export type RefreshMutationResult = NonNullable<Awaited<ReturnType<typeof refres
 export type RefreshMutationError = ErrorType<ErrorResponse>
 
 /**
+ * Get a new access token from the refresh token (cookie on the web, X-Refresh-Token header on mobile). The refresh token is rotated: the new one comes back in the cookie, or in refreshToken for the header flow, and the one presented is then only honoured for a short grace, without rotating again (refreshToken absent). Presented after that grace, it is rotated again from itself: the successor it had (lost by the client) is dropped, and it is refused once the new one is presented.
  * @summary Refresh access token
  */
 export const useRefresh = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -755,6 +764,7 @@ export type RegisterMutationError = ErrorType<ErrorResponse>
 export type RegisterMutationVariables = { data: BodyType<RegisterRequest> }
 
 /**
+ * Register a new user. A verification email will be sent.
  * @summary Register new user
  */
 export const useRegister = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -841,6 +851,7 @@ export type ResetPasswordMutationError = ErrorType<ErrorResponse>
 export type ResetPasswordMutationVariables = { data: BodyType<ResetPasswordRequest> }
 
 /**
+ * Verify the reset token and set a new password
  * @summary Reset password
  */
 export const useResetPassword = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -927,6 +938,7 @@ export type ActivateAccountMutationError = ErrorType<ErrorResponse>
 export type ActivateAccountMutationVariables = { data: BodyType<ActivateAccountRequest> }
 
 /**
+ * Complete a sign-up from its verification link: the password is chosen here, then the new account is signed in.
  * @summary Activate an account
  */
 export const useActivateAccount = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -1015,6 +1027,7 @@ export type PreviewEmailLinkMutationError = ErrorType<ErrorResponse>
 export type PreviewEmailLinkMutationVariables = { data: BodyType<VerifyTokenRequest> }
 
 /**
+ * The address a sign-up or address-change link verifies, and what following it does. Does not spend the link: the page shows the address before anything happens.
  * @summary Read a verification link
  */
 export const usePreviewEmailLink = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

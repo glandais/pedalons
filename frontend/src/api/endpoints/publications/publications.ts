@@ -89,6 +89,10 @@ export type ListAllPublicationsQueryResult = NonNullable<
 >
 export type ListAllPublicationsQueryError = ErrorType<unknown>
 
+/**
+ * Get publications from all accessible teams (user's teams + public teams)
+ * @summary List all publications
+ */
 export function useListAllPublications<
   TData = Awaited<ReturnType<typeof listAllPublications>>,
   TError = ErrorType<unknown>,
@@ -110,6 +114,10 @@ export function useListAllPublications<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get publications from all accessible teams (user's teams + public teams)
+ * @summary List all publications
+ */
 export function useListAllPublications<
   TData = Awaited<ReturnType<typeof listAllPublications>>,
   TError = ErrorType<unknown>,
@@ -131,6 +139,10 @@ export function useListAllPublications<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get publications from all accessible teams (user's teams + public teams)
+ * @summary List all publications
+ */
 export function useListAllPublications<
   TData = Awaited<ReturnType<typeof listAllPublications>>,
   TError = ErrorType<unknown>,
@@ -143,9 +155,9 @@ export function useListAllPublications<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get publications from all accessible teams (user's teams + public teams)
  * @summary List all publications
  */
-
 export function useListAllPublications<
   TData = Awaited<ReturnType<typeof listAllPublications>>,
   TError = ErrorType<unknown>,
@@ -167,6 +179,7 @@ export function useListAllPublications<
 }
 
 /**
+ * Get publications from all accessible teams (user's teams + public teams)
  * @summary List all publications
  */
 export const prefetchListAllPublicationsQuery = async <
@@ -237,6 +250,10 @@ export type CountAllPublicationsQueryResult = NonNullable<
 >
 export type CountAllPublicationsQueryError = ErrorType<unknown>
 
+/**
+ * How many publications match the filters, with none of them read. Accepts exactly the same filters as the listing, minus pagination, so a count and the list it opens can never disagree.
+ * @summary Count all publications
+ */
 export function useCountAllPublications<
   TData = Awaited<ReturnType<typeof countAllPublications>>,
   TError = ErrorType<unknown>,
@@ -258,6 +275,10 @@ export function useCountAllPublications<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * How many publications match the filters, with none of them read. Accepts exactly the same filters as the listing, minus pagination, so a count and the list it opens can never disagree.
+ * @summary Count all publications
+ */
 export function useCountAllPublications<
   TData = Awaited<ReturnType<typeof countAllPublications>>,
   TError = ErrorType<unknown>,
@@ -279,6 +300,10 @@ export function useCountAllPublications<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * How many publications match the filters, with none of them read. Accepts exactly the same filters as the listing, minus pagination, so a count and the list it opens can never disagree.
+ * @summary Count all publications
+ */
 export function useCountAllPublications<
   TData = Awaited<ReturnType<typeof countAllPublications>>,
   TError = ErrorType<unknown>,
@@ -293,9 +318,9 @@ export function useCountAllPublications<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * How many publications match the filters, with none of them read. Accepts exactly the same filters as the listing, minus pagination, so a count and the list it opens can never disagree.
  * @summary Count all publications
  */
-
 export function useCountAllPublications<
   TData = Awaited<ReturnType<typeof countAllPublications>>,
   TError = ErrorType<unknown>,
@@ -319,6 +344,7 @@ export function useCountAllPublications<
 }
 
 /**
+ * How many publications match the filters, with none of them read. Accepts exactly the same filters as the listing, minus pagination, so a count and the list it opens can never disagree.
  * @summary Count all publications
  */
 export const prefetchCountAllPublicationsQuery = async <
@@ -392,6 +418,10 @@ export const getListPublicationsQueryOptions = <
 export type ListPublicationsQueryResult = NonNullable<Awaited<ReturnType<typeof listPublications>>>
 export type ListPublicationsQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get paginated list of publications for a team with optional filtering
+ * @summary List publications
+ */
 export function useListPublications<
   TData = Awaited<ReturnType<typeof listPublications>>,
   TError = ErrorType<ErrorResponse>,
@@ -412,6 +442,10 @@ export function useListPublications<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get paginated list of publications for a team with optional filtering
+ * @summary List publications
+ */
 export function useListPublications<
   TData = Awaited<ReturnType<typeof listPublications>>,
   TError = ErrorType<ErrorResponse>,
@@ -432,6 +466,10 @@ export function useListPublications<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get paginated list of publications for a team with optional filtering
+ * @summary List publications
+ */
 export function useListPublications<
   TData = Awaited<ReturnType<typeof listPublications>>,
   TError = ErrorType<ErrorResponse>,
@@ -445,9 +483,9 @@ export function useListPublications<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get paginated list of publications for a team with optional filtering
  * @summary List publications
  */
-
 export function useListPublications<
   TData = Awaited<ReturnType<typeof listPublications>>,
   TError = ErrorType<ErrorResponse>,
@@ -470,6 +508,7 @@ export function useListPublications<
 }
 
 /**
+ * Get paginated list of publications for a team with optional filtering
  * @summary List publications
  */
 export const prefetchListPublicationsQuery = async <
@@ -547,6 +586,10 @@ export type CountPublicationsQueryResult = NonNullable<
 >
 export type CountPublicationsQueryError = ErrorType<ErrorResponse>
 
+/**
+ * How many of the team's publications match the filters, with none of them read. Accepts exactly the same filters as the listing, minus pagination, so a count and the list it opens can never disagree.
+ * @summary Count publications
+ */
 export function useCountPublications<
   TData = Awaited<ReturnType<typeof countPublications>>,
   TError = ErrorType<ErrorResponse>,
@@ -567,6 +610,10 @@ export function useCountPublications<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * How many of the team's publications match the filters, with none of them read. Accepts exactly the same filters as the listing, minus pagination, so a count and the list it opens can never disagree.
+ * @summary Count publications
+ */
 export function useCountPublications<
   TData = Awaited<ReturnType<typeof countPublications>>,
   TError = ErrorType<ErrorResponse>,
@@ -587,6 +634,10 @@ export function useCountPublications<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * How many of the team's publications match the filters, with none of them read. Accepts exactly the same filters as the listing, minus pagination, so a count and the list it opens can never disagree.
+ * @summary Count publications
+ */
 export function useCountPublications<
   TData = Awaited<ReturnType<typeof countPublications>>,
   TError = ErrorType<ErrorResponse>,
@@ -600,9 +651,9 @@ export function useCountPublications<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * How many of the team's publications match the filters, with none of them read. Accepts exactly the same filters as the listing, minus pagination, so a count and the list it opens can never disagree.
  * @summary Count publications
  */
-
 export function useCountPublications<
   TData = Awaited<ReturnType<typeof countPublications>>,
   TError = ErrorType<ErrorResponse>,
@@ -625,6 +676,7 @@ export function useCountPublications<
 }
 
 /**
+ * How many of the team's publications match the filters, with none of them read. Accepts exactly the same filters as the listing, minus pagination, so a count and the list it opens can never disagree.
  * @summary Count publications
  */
 export const prefetchCountPublicationsQuery = async <

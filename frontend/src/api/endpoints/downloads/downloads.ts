@@ -102,6 +102,10 @@ export type DownloadPublicAssetQueryResult = NonNullable<
 >
 export type DownloadPublicAssetQueryError = ErrorType<unknown>
 
+/**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download a file
+ */
 export function useDownloadPublicAsset<
   TData = Awaited<ReturnType<typeof downloadPublicAsset>>,
   TError = ErrorType<unknown>,
@@ -125,6 +129,10 @@ export function useDownloadPublicAsset<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download a file
+ */
 export function useDownloadPublicAsset<
   TData = Awaited<ReturnType<typeof downloadPublicAsset>>,
   TError = ErrorType<unknown>,
@@ -148,6 +156,10 @@ export function useDownloadPublicAsset<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download a file
+ */
 export function useDownloadPublicAsset<
   TData = Awaited<ReturnType<typeof downloadPublicAsset>>,
   TError = ErrorType<unknown>,
@@ -162,9 +174,9 @@ export function useDownloadPublicAsset<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
  * @summary Download a file
  */
-
 export function useDownloadPublicAsset<
   TData = Awaited<ReturnType<typeof downloadPublicAsset>>,
   TError = ErrorType<unknown>,
@@ -188,6 +200,7 @@ export function useDownloadPublicAsset<
 }
 
 /**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
  * @summary Download a file
  */
 export const prefetchDownloadPublicAssetQuery = async <
@@ -266,6 +279,10 @@ export const getDownloadAvatarQueryOptions = <
 export type DownloadAvatarQueryResult = NonNullable<Awaited<ReturnType<typeof downloadAvatar>>>
 export type DownloadAvatarQueryError = ErrorType<unknown>
 
+/**
+ * Serves an avatar under the URL the API gave for it (avatarUrl), in the best format the Accept header allows. Avatars are stored at 256 px: a larger size is served at 256.
+ * @summary Download a user's avatar
+ */
 export function useDownloadAvatar<
   TData = Awaited<ReturnType<typeof downloadAvatar>>,
   TError = ErrorType<unknown>,
@@ -286,6 +303,10 @@ export function useDownloadAvatar<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Serves an avatar under the URL the API gave for it (avatarUrl), in the best format the Accept header allows. Avatars are stored at 256 px: a larger size is served at 256.
+ * @summary Download a user's avatar
+ */
 export function useDownloadAvatar<
   TData = Awaited<ReturnType<typeof downloadAvatar>>,
   TError = ErrorType<unknown>,
@@ -306,6 +327,10 @@ export function useDownloadAvatar<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Serves an avatar under the URL the API gave for it (avatarUrl), in the best format the Accept header allows. Avatars are stored at 256 px: a larger size is served at 256.
+ * @summary Download a user's avatar
+ */
 export function useDownloadAvatar<
   TData = Awaited<ReturnType<typeof downloadAvatar>>,
   TError = ErrorType<unknown>,
@@ -319,9 +344,9 @@ export function useDownloadAvatar<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Serves an avatar under the URL the API gave for it (avatarUrl), in the best format the Accept header allows. Avatars are stored at 256 px: a larger size is served at 256.
  * @summary Download a user's avatar
  */
-
 export function useDownloadAvatar<
   TData = Awaited<ReturnType<typeof downloadAvatar>>,
   TError = ErrorType<unknown>,
@@ -344,6 +369,7 @@ export function useDownloadAvatar<
 }
 
 /**
+ * Serves an avatar under the URL the API gave for it (avatarUrl), in the best format the Accept header allows. Avatars are stored at 256 px: a larger size is served at 256.
  * @summary Download a user's avatar
  */
 export const prefetchDownloadAvatarQuery = async <
@@ -431,6 +457,10 @@ export type DownloadPublicImageQueryResult = NonNullable<
 >
 export type DownloadPublicImageQueryError = ErrorType<unknown>
 
+/**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download an image
+ */
 export function useDownloadPublicImage<
   TData = Awaited<ReturnType<typeof downloadPublicImage>>,
   TError = ErrorType<unknown>,
@@ -454,6 +484,10 @@ export function useDownloadPublicImage<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download an image
+ */
 export function useDownloadPublicImage<
   TData = Awaited<ReturnType<typeof downloadPublicImage>>,
   TError = ErrorType<unknown>,
@@ -477,6 +511,10 @@ export function useDownloadPublicImage<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download an image
+ */
 export function useDownloadPublicImage<
   TData = Awaited<ReturnType<typeof downloadPublicImage>>,
   TError = ErrorType<unknown>,
@@ -491,9 +529,9 @@ export function useDownloadPublicImage<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
  * @summary Download an image
  */
-
 export function useDownloadPublicImage<
   TData = Awaited<ReturnType<typeof downloadPublicImage>>,
   TError = ErrorType<unknown>,
@@ -517,6 +555,7 @@ export function useDownloadPublicImage<
 }
 
 /**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
  * @summary Download an image
  */
 export const prefetchDownloadPublicImageQuery = async <
@@ -612,6 +651,10 @@ export type DownloadUnlistedAssetQueryResult = NonNullable<
 >
 export type DownloadUnlistedAssetQueryError = ErrorType<unknown>
 
+/**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download a file
+ */
 export function useDownloadUnlistedAsset<
   TData = Awaited<ReturnType<typeof downloadUnlistedAsset>>,
   TError = ErrorType<unknown>,
@@ -635,6 +678,10 @@ export function useDownloadUnlistedAsset<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download a file
+ */
 export function useDownloadUnlistedAsset<
   TData = Awaited<ReturnType<typeof downloadUnlistedAsset>>,
   TError = ErrorType<unknown>,
@@ -658,6 +705,10 @@ export function useDownloadUnlistedAsset<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download a file
+ */
 export function useDownloadUnlistedAsset<
   TData = Awaited<ReturnType<typeof downloadUnlistedAsset>>,
   TError = ErrorType<unknown>,
@@ -674,9 +725,9 @@ export function useDownloadUnlistedAsset<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
  * @summary Download a file
  */
-
 export function useDownloadUnlistedAsset<
   TData = Awaited<ReturnType<typeof downloadUnlistedAsset>>,
   TError = ErrorType<unknown>,
@@ -702,6 +753,7 @@ export function useDownloadUnlistedAsset<
 }
 
 /**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
  * @summary Download a file
  */
 export const prefetchDownloadUnlistedAssetQuery = async <
@@ -799,6 +851,10 @@ export type DownloadUnlistedImageQueryResult = NonNullable<
 >
 export type DownloadUnlistedImageQueryError = ErrorType<unknown>
 
+/**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download an image
+ */
 export function useDownloadUnlistedImage<
   TData = Awaited<ReturnType<typeof downloadUnlistedImage>>,
   TError = ErrorType<unknown>,
@@ -822,6 +878,10 @@ export function useDownloadUnlistedImage<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download an image
+ */
 export function useDownloadUnlistedImage<
   TData = Awaited<ReturnType<typeof downloadUnlistedImage>>,
   TError = ErrorType<unknown>,
@@ -845,6 +905,10 @@ export function useDownloadUnlistedImage<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download an image
+ */
 export function useDownloadUnlistedImage<
   TData = Awaited<ReturnType<typeof downloadUnlistedImage>>,
   TError = ErrorType<unknown>,
@@ -861,9 +925,9 @@ export function useDownloadUnlistedImage<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
  * @summary Download an image
  */
-
 export function useDownloadUnlistedImage<
   TData = Awaited<ReturnType<typeof downloadUnlistedImage>>,
   TError = ErrorType<unknown>,
@@ -889,6 +953,7 @@ export function useDownloadUnlistedImage<
 }
 
 /**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
  * @summary Download an image
  */
 export const prefetchDownloadUnlistedImageQuery = async <
@@ -984,6 +1049,10 @@ export type DownloadTeamAssetQueryResult = NonNullable<
 >
 export type DownloadTeamAssetQueryError = ErrorType<unknown>
 
+/**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download a file
+ */
 export function useDownloadTeamAsset<
   TData = Awaited<ReturnType<typeof downloadTeamAsset>>,
   TError = ErrorType<unknown>,
@@ -1005,6 +1074,10 @@ export function useDownloadTeamAsset<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download a file
+ */
 export function useDownloadTeamAsset<
   TData = Awaited<ReturnType<typeof downloadTeamAsset>>,
   TError = ErrorType<unknown>,
@@ -1026,6 +1099,10 @@ export function useDownloadTeamAsset<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download a file
+ */
 export function useDownloadTeamAsset<
   TData = Awaited<ReturnType<typeof downloadTeamAsset>>,
   TError = ErrorType<unknown>,
@@ -1040,9 +1117,9 @@ export function useDownloadTeamAsset<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
  * @summary Download a file
  */
-
 export function useDownloadTeamAsset<
   TData = Awaited<ReturnType<typeof downloadTeamAsset>>,
   TError = ErrorType<unknown>,
@@ -1066,6 +1143,7 @@ export function useDownloadTeamAsset<
 }
 
 /**
+ * Streams a file attached to a team's content — a route's GPX or FIT, a document — under the URL the API gave for it (AssetDto.url and the like): follow that URL rather than build one. Access is checked against the asset on every request, whatever the visibility segment of the path.
  * @summary Download a file
  */
 export const prefetchDownloadTeamAssetQuery = async <
@@ -1154,6 +1232,10 @@ export type DownloadTeamImageQueryResult = NonNullable<
 >
 export type DownloadTeamImageQueryError = ErrorType<unknown>
 
+/**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download an image
+ */
 export function useDownloadTeamImage<
   TData = Awaited<ReturnType<typeof downloadTeamImage>>,
   TError = ErrorType<unknown>,
@@ -1175,6 +1257,10 @@ export function useDownloadTeamImage<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download an image
+ */
 export function useDownloadTeamImage<
   TData = Awaited<ReturnType<typeof downloadTeamImage>>,
   TError = ErrorType<unknown>,
@@ -1196,6 +1282,10 @@ export function useDownloadTeamImage<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
+ * @summary Download an image
+ */
 export function useDownloadTeamImage<
   TData = Awaited<ReturnType<typeof downloadTeamImage>>,
   TError = ErrorType<unknown>,
@@ -1210,9 +1300,9 @@ export function useDownloadTeamImage<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
  * @summary Download an image
  */
-
 export function useDownloadTeamImage<
   TData = Awaited<ReturnType<typeof downloadTeamImage>>,
   TError = ErrorType<unknown>,
@@ -1236,6 +1326,7 @@ export function useDownloadTeamImage<
 }
 
 /**
+ * Serves an image attached to a team's content, resized to fit a square of the requested size and encoded in the best format the Accept header allows (AVIF, WebP, JPEG). Access is checked against the asset on every request, whatever the visibility segment of the path.
  * @summary Download an image
  */
 export const prefetchDownloadTeamImageQuery = async <

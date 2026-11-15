@@ -89,6 +89,10 @@ export type GetAvailableServicesQueryResult = NonNullable<
 >
 export type GetAvailableServicesQueryError = ErrorType<void>
 
+/**
+ * Get list of GPS service types configured for this domain
+ * @summary Get available GPS services
+ */
 export function useGetAvailableServices<
   TData = Awaited<ReturnType<typeof getAvailableServices>>,
   TError = ErrorType<void>,
@@ -109,6 +113,10 @@ export function useGetAvailableServices<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get list of GPS service types configured for this domain
+ * @summary Get available GPS services
+ */
 export function useGetAvailableServices<
   TData = Awaited<ReturnType<typeof getAvailableServices>>,
   TError = ErrorType<void>,
@@ -129,6 +137,10 @@ export function useGetAvailableServices<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get list of GPS service types configured for this domain
+ * @summary Get available GPS services
+ */
 export function useGetAvailableServices<
   TData = Awaited<ReturnType<typeof getAvailableServices>>,
   TError = ErrorType<void>,
@@ -142,9 +154,9 @@ export function useGetAvailableServices<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get list of GPS service types configured for this domain
  * @summary Get available GPS services
  */
-
 export function useGetAvailableServices<
   TData = Awaited<ReturnType<typeof getAvailableServices>>,
   TError = ErrorType<void>,
@@ -167,6 +179,7 @@ export function useGetAvailableServices<
 }
 
 /**
+ * Get list of GPS service types configured for this domain
  * @summary Get available GPS services
  */
 export const prefetchGetAvailableServicesQuery = async <
@@ -242,6 +255,10 @@ export const getHandleCallbackQueryOptions = <
 export type HandleCallbackQueryResult = NonNullable<Awaited<ReturnType<typeof handleCallback>>>
 export type HandleCallbackQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Handles OAuth callback from GPS service and redirects to the frontend page chosen by the returnTo of the connect call (the profile by default). OAuth 2.0 brings code and state; OAuth 1.0a (Garmin, when the domain's credential says so) brings oauth_token and oauth_verifier.
+ * @summary OAuth callback
+ */
 export function useHandleCallback<
   TData = Awaited<ReturnType<typeof handleCallback>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -262,6 +279,10 @@ export function useHandleCallback<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Handles OAuth callback from GPS service and redirects to the frontend page chosen by the returnTo of the connect call (the profile by default). OAuth 2.0 brings code and state; OAuth 1.0a (Garmin, when the domain's credential says so) brings oauth_token and oauth_verifier.
+ * @summary OAuth callback
+ */
 export function useHandleCallback<
   TData = Awaited<ReturnType<typeof handleCallback>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -282,6 +303,10 @@ export function useHandleCallback<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Handles OAuth callback from GPS service and redirects to the frontend page chosen by the returnTo of the connect call (the profile by default). OAuth 2.0 brings code and state; OAuth 1.0a (Garmin, when the domain's credential says so) brings oauth_token and oauth_verifier.
+ * @summary OAuth callback
+ */
 export function useHandleCallback<
   TData = Awaited<ReturnType<typeof handleCallback>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -295,9 +320,9 @@ export function useHandleCallback<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Handles OAuth callback from GPS service and redirects to the frontend page chosen by the returnTo of the connect call (the profile by default). OAuth 2.0 brings code and state; OAuth 1.0a (Garmin, when the domain's credential says so) brings oauth_token and oauth_verifier.
  * @summary OAuth callback
  */
-
 export function useHandleCallback<
   TData = Awaited<ReturnType<typeof handleCallback>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -320,6 +345,7 @@ export function useHandleCallback<
 }
 
 /**
+ * Handles OAuth callback from GPS service and redirects to the frontend page chosen by the returnTo of the connect call (the profile by default). OAuth 2.0 brings code and state; OAuth 1.0a (Garmin, when the domain's credential says so) brings oauth_token and oauth_verifier.
  * @summary OAuth callback
  */
 export const prefetchHandleCallbackQuery = async <
@@ -395,6 +421,10 @@ export const getGetConnectUrlQueryOptions = <
 export type GetConnectUrlQueryResult = NonNullable<Awaited<ReturnType<typeof getConnectUrl>>>
 export type GetConnectUrlQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * Get the OAuth authorization URL to connect a GPS service
+ * @summary Get OAuth authorization URL
+ */
 export function useGetConnectUrl<
   TData = Awaited<ReturnType<typeof getConnectUrl>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -415,6 +445,10 @@ export function useGetConnectUrl<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get the OAuth authorization URL to connect a GPS service
+ * @summary Get OAuth authorization URL
+ */
 export function useGetConnectUrl<
   TData = Awaited<ReturnType<typeof getConnectUrl>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -435,6 +469,10 @@ export function useGetConnectUrl<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get the OAuth authorization URL to connect a GPS service
+ * @summary Get OAuth authorization URL
+ */
 export function useGetConnectUrl<
   TData = Awaited<ReturnType<typeof getConnectUrl>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -448,9 +486,9 @@ export function useGetConnectUrl<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get the OAuth authorization URL to connect a GPS service
  * @summary Get OAuth authorization URL
  */
-
 export function useGetConnectUrl<
   TData = Awaited<ReturnType<typeof getConnectUrl>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -473,6 +511,7 @@ export function useGetConnectUrl<
 }
 
 /**
+ * Get the OAuth authorization URL to connect a GPS service
  * @summary Get OAuth authorization URL
  */
 export const prefetchGetConnectUrlQuery = async <
@@ -563,6 +602,7 @@ export type SetGpsAutoSyncMutationVariables = {
 }
 
 /**
+ * Turns on or off, for one connected service, the automatic sending of the routes of the rides the user is registered in (from 7 days before the departure until a day after it), kept in sync with their changes. Turning it off removes from the service the upcoming routes it sent. A RECONNECT_REQUIRED state is only cleared by connecting the service again.
  * @summary Turn the automatic route sync on or off
  */
 export const useSetGpsAutoSync = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -643,6 +683,7 @@ export type DisconnectMutationError = ErrorType<ErrorResponse | void>
 export type DisconnectMutationVariables = { serviceType: GpsServiceType }
 
 /**
+ * Disconnect a connected GPS service
  * @summary Disconnect GPS service
  */
 export const useDisconnect = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -729,6 +770,7 @@ export type UploadRouteMutationVariables = {
 }
 
 /**
+ * Upload a route to a connected GPS service
  * @summary Upload route to GPS service
  */
 export const useUploadRoute = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(

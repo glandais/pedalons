@@ -106,6 +106,10 @@ export const getListAllRoutesQueryOptions = <
 export type ListAllRoutesQueryResult = NonNullable<Awaited<ReturnType<typeof listAllRoutes>>>
 export type ListAllRoutesQueryError = ErrorType<unknown>
 
+/**
+ * Get paginated list of routes from all accessible teams (user's teams + public teams)
+ * @summary List all routes
+ */
 export function useListAllRoutes<
   TData = Awaited<ReturnType<typeof listAllRoutes>>,
   TError = ErrorType<unknown>,
@@ -125,6 +129,10 @@ export function useListAllRoutes<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get paginated list of routes from all accessible teams (user's teams + public teams)
+ * @summary List all routes
+ */
 export function useListAllRoutes<
   TData = Awaited<ReturnType<typeof listAllRoutes>>,
   TError = ErrorType<unknown>,
@@ -144,6 +152,10 @@ export function useListAllRoutes<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get paginated list of routes from all accessible teams (user's teams + public teams)
+ * @summary List all routes
+ */
 export function useListAllRoutes<
   TData = Awaited<ReturnType<typeof listAllRoutes>>,
   TError = ErrorType<unknown>,
@@ -156,9 +168,9 @@ export function useListAllRoutes<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get paginated list of routes from all accessible teams (user's teams + public teams)
  * @summary List all routes
  */
-
 export function useListAllRoutes<
   TData = Awaited<ReturnType<typeof listAllRoutes>>,
   TError = ErrorType<unknown>,
@@ -180,6 +192,7 @@ export function useListAllRoutes<
 }
 
 /**
+ * Get paginated list of routes from all accessible teams (user's teams + public teams)
  * @summary List all routes
  */
 export const prefetchListAllRoutesQuery = async <
@@ -248,6 +261,10 @@ export type GetAllRoutesBoundsQueryResult = NonNullable<
 >
 export type GetAllRoutesBoundsQueryError = ErrorType<unknown>
 
+/**
+ * Extent enclosing the routes of all accessible teams, so a map can open framed on them. Accepts the same filters as the route list, minus sorting and pagination. Yields a null box when no route matches.
+ * @summary All routes bounding box
+ */
 export function useGetAllRoutesBounds<
   TData = Awaited<ReturnType<typeof getAllRoutesBounds>>,
   TError = ErrorType<unknown>,
@@ -267,6 +284,10 @@ export function useGetAllRoutesBounds<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Extent enclosing the routes of all accessible teams, so a map can open framed on them. Accepts the same filters as the route list, minus sorting and pagination. Yields a null box when no route matches.
+ * @summary All routes bounding box
+ */
 export function useGetAllRoutesBounds<
   TData = Awaited<ReturnType<typeof getAllRoutesBounds>>,
   TError = ErrorType<unknown>,
@@ -288,6 +309,10 @@ export function useGetAllRoutesBounds<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Extent enclosing the routes of all accessible teams, so a map can open framed on them. Accepts the same filters as the route list, minus sorting and pagination. Yields a null box when no route matches.
+ * @summary All routes bounding box
+ */
 export function useGetAllRoutesBounds<
   TData = Awaited<ReturnType<typeof getAllRoutesBounds>>,
   TError = ErrorType<unknown>,
@@ -300,9 +325,9 @@ export function useGetAllRoutesBounds<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Extent enclosing the routes of all accessible teams, so a map can open framed on them. Accepts the same filters as the route list, minus sorting and pagination. Yields a null box when no route matches.
  * @summary All routes bounding box
  */
-
 export function useGetAllRoutesBounds<
   TData = Awaited<ReturnType<typeof getAllRoutesBounds>>,
   TError = ErrorType<unknown>,
@@ -324,6 +349,7 @@ export function useGetAllRoutesBounds<
 }
 
 /**
+ * Extent enclosing the routes of all accessible teams, so a map can open framed on them. Accepts the same filters as the route list, minus sorting and pagination. Yields a null box when no route matches.
  * @summary All routes bounding box
  */
 export const prefetchGetAllRoutesBoundsQuery = async <
@@ -390,6 +416,10 @@ export const getCountAllRoutesQueryOptions = <
 export type CountAllRoutesQueryResult = NonNullable<Awaited<ReturnType<typeof countAllRoutes>>>
 export type CountAllRoutesQueryError = ErrorType<unknown>
 
+/**
+ * How many routes of all accessible teams match the filters, with none of them read. Accepts exactly the same filters as the route list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
+ * @summary Count all routes
+ */
 export function useCountAllRoutes<
   TData = Awaited<ReturnType<typeof countAllRoutes>>,
   TError = ErrorType<unknown>,
@@ -409,6 +439,10 @@ export function useCountAllRoutes<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * How many routes of all accessible teams match the filters, with none of them read. Accepts exactly the same filters as the route list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
+ * @summary Count all routes
+ */
 export function useCountAllRoutes<
   TData = Awaited<ReturnType<typeof countAllRoutes>>,
   TError = ErrorType<unknown>,
@@ -428,6 +462,10 @@ export function useCountAllRoutes<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * How many routes of all accessible teams match the filters, with none of them read. Accepts exactly the same filters as the route list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
+ * @summary Count all routes
+ */
 export function useCountAllRoutes<
   TData = Awaited<ReturnType<typeof countAllRoutes>>,
   TError = ErrorType<unknown>,
@@ -440,9 +478,9 @@ export function useCountAllRoutes<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * How many routes of all accessible teams match the filters, with none of them read. Accepts exactly the same filters as the route list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
  * @summary Count all routes
  */
-
 export function useCountAllRoutes<
   TData = Awaited<ReturnType<typeof countAllRoutes>>,
   TError = ErrorType<unknown>,
@@ -464,6 +502,7 @@ export function useCountAllRoutes<
 }
 
 /**
+ * How many routes of all accessible teams match the filters, with none of them read. Accepts exactly the same filters as the route list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
  * @summary Count all routes
  */
 export const prefetchCountAllRoutesQuery = async <
@@ -550,6 +589,10 @@ export const getAllRoutesTileQueryOptions = <
 export type AllRoutesTileQueryResult = NonNullable<Awaited<ReturnType<typeof allRoutesTile>>>
 export type AllRoutesTileQueryError = ErrorType<void>
 
+/**
+ * Mapbox vector tile holding the routes of all accessible teams, layer 'routes'. Accepts the same filters as the route list, minus sorting and pagination, which a tile has no use for. Fetched directly by the map renderer, outside the authenticated HTTP stack: a browser authenticates with its session cookie, any other client with the 't' tile token.
+ * @summary All routes vector tile
+ */
 export function useAllRoutesTile<
   TData = Awaited<ReturnType<typeof allRoutesTile>>,
   TError = ErrorType<void>,
@@ -572,6 +615,10 @@ export function useAllRoutesTile<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Mapbox vector tile holding the routes of all accessible teams, layer 'routes'. Accepts the same filters as the route list, minus sorting and pagination, which a tile has no use for. Fetched directly by the map renderer, outside the authenticated HTTP stack: a browser authenticates with its session cookie, any other client with the 't' tile token.
+ * @summary All routes vector tile
+ */
 export function useAllRoutesTile<
   TData = Awaited<ReturnType<typeof allRoutesTile>>,
   TError = ErrorType<void>,
@@ -594,6 +641,10 @@ export function useAllRoutesTile<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Mapbox vector tile holding the routes of all accessible teams, layer 'routes'. Accepts the same filters as the route list, minus sorting and pagination, which a tile has no use for. Fetched directly by the map renderer, outside the authenticated HTTP stack: a browser authenticates with its session cookie, any other client with the 't' tile token.
+ * @summary All routes vector tile
+ */
 export function useAllRoutesTile<
   TData = Awaited<ReturnType<typeof allRoutesTile>>,
   TError = ErrorType<void>,
@@ -609,9 +660,9 @@ export function useAllRoutesTile<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Mapbox vector tile holding the routes of all accessible teams, layer 'routes'. Accepts the same filters as the route list, minus sorting and pagination, which a tile has no use for. Fetched directly by the map renderer, outside the authenticated HTTP stack: a browser authenticates with its session cookie, any other client with the 't' tile token.
  * @summary All routes vector tile
  */
-
 export function useAllRoutesTile<
   TData = Awaited<ReturnType<typeof allRoutesTile>>,
   TError = ErrorType<void>,
@@ -636,6 +687,7 @@ export function useAllRoutesTile<
 }
 
 /**
+ * Mapbox vector tile holding the routes of all accessible teams, layer 'routes'. Accepts the same filters as the route list, minus sorting and pagination, which a tile has no use for. Fetched directly by the map renderer, outside the authenticated HTTP stack: a browser authenticates with its session cookie, any other client with the 't' tile token.
  * @summary All routes vector tile
  */
 export const prefetchAllRoutesTileQuery = async <
@@ -710,6 +762,10 @@ export const getListRoutesQueryOptions = <
 export type ListRoutesQueryResult = NonNullable<Awaited<ReturnType<typeof listRoutes>>>
 export type ListRoutesQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get paginated list of routes for a team with optional filters and sorting
+ * @summary List routes
+ */
 export function useListRoutes<
   TData = Awaited<ReturnType<typeof listRoutes>>,
   TError = ErrorType<ErrorResponse>,
@@ -730,6 +786,10 @@ export function useListRoutes<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get paginated list of routes for a team with optional filters and sorting
+ * @summary List routes
+ */
 export function useListRoutes<
   TData = Awaited<ReturnType<typeof listRoutes>>,
   TError = ErrorType<ErrorResponse>,
@@ -750,6 +810,10 @@ export function useListRoutes<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get paginated list of routes for a team with optional filters and sorting
+ * @summary List routes
+ */
 export function useListRoutes<
   TData = Awaited<ReturnType<typeof listRoutes>>,
   TError = ErrorType<ErrorResponse>,
@@ -763,9 +827,9 @@ export function useListRoutes<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get paginated list of routes for a team with optional filters and sorting
  * @summary List routes
  */
-
 export function useListRoutes<
   TData = Awaited<ReturnType<typeof listRoutes>>,
   TError = ErrorType<ErrorResponse>,
@@ -788,6 +852,7 @@ export function useListRoutes<
 }
 
 /**
+ * Get paginated list of routes for a team with optional filters and sorting
  * @summary List routes
  */
 export const prefetchListRoutesQuery = async <
@@ -883,6 +948,7 @@ export type CreateRouteMutationError = ErrorType<ErrorResponse>
 export type CreateRouteMutationVariables = { teamSlug: string; data: BodyType<CreateRouteBody> }
 
 /**
+ * Create a new route by uploading a GPX file
  * @summary Create route
  */
 export const useCreateRoute = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -955,6 +1021,10 @@ export const getGetRoutesBoundsQueryOptions = <
 export type GetRoutesBoundsQueryResult = NonNullable<Awaited<ReturnType<typeof getRoutesBounds>>>
 export type GetRoutesBoundsQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Extent enclosing the team's routes, so a map can open framed on them. Accepts the same filters as the route list, minus sorting and pagination. Yields a null box when no route matches.
+ * @summary Team routes bounding box
+ */
 export function useGetRoutesBounds<
   TData = Awaited<ReturnType<typeof getRoutesBounds>>,
   TError = ErrorType<ErrorResponse>,
@@ -975,6 +1045,10 @@ export function useGetRoutesBounds<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Extent enclosing the team's routes, so a map can open framed on them. Accepts the same filters as the route list, minus sorting and pagination. Yields a null box when no route matches.
+ * @summary Team routes bounding box
+ */
 export function useGetRoutesBounds<
   TData = Awaited<ReturnType<typeof getRoutesBounds>>,
   TError = ErrorType<ErrorResponse>,
@@ -995,6 +1069,10 @@ export function useGetRoutesBounds<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Extent enclosing the team's routes, so a map can open framed on them. Accepts the same filters as the route list, minus sorting and pagination. Yields a null box when no route matches.
+ * @summary Team routes bounding box
+ */
 export function useGetRoutesBounds<
   TData = Awaited<ReturnType<typeof getRoutesBounds>>,
   TError = ErrorType<ErrorResponse>,
@@ -1008,9 +1086,9 @@ export function useGetRoutesBounds<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Extent enclosing the team's routes, so a map can open framed on them. Accepts the same filters as the route list, minus sorting and pagination. Yields a null box when no route matches.
  * @summary Team routes bounding box
  */
-
 export function useGetRoutesBounds<
   TData = Awaited<ReturnType<typeof getRoutesBounds>>,
   TError = ErrorType<ErrorResponse>,
@@ -1033,6 +1111,7 @@ export function useGetRoutesBounds<
 }
 
 /**
+ * Extent enclosing the team's routes, so a map can open framed on them. Accepts the same filters as the route list, minus sorting and pagination. Yields a null box when no route matches.
  * @summary Team routes bounding box
  */
 export const prefetchGetRoutesBoundsQuery = async <
@@ -1105,6 +1184,10 @@ export const getGetRoutesBulkQueryOptions = <
 export type GetRoutesBulkQueryResult = NonNullable<Awaited<ReturnType<typeof getRoutesBulk>>>
 export type GetRoutesBulkQueryError = ErrorType<ErrorResponse>
 
+/**
+ * The detail of every requested 'slug' that exists and the caller may read, in one round-trip — built for the screens that load several routes together (a ride's stages, a comparison view), which would otherwise cost one request per route. Each row is exactly what the single-route endpoint returns, geometry included (track surfaces too, read for the whole batch at once). Unknown slugs and slugs the caller may not read are silently left out of the answer rather than failing the whole batch. Set 'geometry' to false for the screens that only need each route's name and figures. The response also carries the bounding box of the track geometry actually sent back (waypoints are excluded, so an imported meeting-point or car-park waypoint far off the track cannot widen it), so a map can frame the batch without a second request.
+ * @summary Get several routes' details at once
+ */
 export function useGetRoutesBulk<
   TData = Awaited<ReturnType<typeof getRoutesBulk>>,
   TError = ErrorType<ErrorResponse>,
@@ -1125,6 +1208,10 @@ export function useGetRoutesBulk<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The detail of every requested 'slug' that exists and the caller may read, in one round-trip — built for the screens that load several routes together (a ride's stages, a comparison view), which would otherwise cost one request per route. Each row is exactly what the single-route endpoint returns, geometry included (track surfaces too, read for the whole batch at once). Unknown slugs and slugs the caller may not read are silently left out of the answer rather than failing the whole batch. Set 'geometry' to false for the screens that only need each route's name and figures. The response also carries the bounding box of the track geometry actually sent back (waypoints are excluded, so an imported meeting-point or car-park waypoint far off the track cannot widen it), so a map can frame the batch without a second request.
+ * @summary Get several routes' details at once
+ */
 export function useGetRoutesBulk<
   TData = Awaited<ReturnType<typeof getRoutesBulk>>,
   TError = ErrorType<ErrorResponse>,
@@ -1145,6 +1232,10 @@ export function useGetRoutesBulk<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The detail of every requested 'slug' that exists and the caller may read, in one round-trip — built for the screens that load several routes together (a ride's stages, a comparison view), which would otherwise cost one request per route. Each row is exactly what the single-route endpoint returns, geometry included (track surfaces too, read for the whole batch at once). Unknown slugs and slugs the caller may not read are silently left out of the answer rather than failing the whole batch. Set 'geometry' to false for the screens that only need each route's name and figures. The response also carries the bounding box of the track geometry actually sent back (waypoints are excluded, so an imported meeting-point or car-park waypoint far off the track cannot widen it), so a map can frame the batch without a second request.
+ * @summary Get several routes' details at once
+ */
 export function useGetRoutesBulk<
   TData = Awaited<ReturnType<typeof getRoutesBulk>>,
   TError = ErrorType<ErrorResponse>,
@@ -1158,9 +1249,9 @@ export function useGetRoutesBulk<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The detail of every requested 'slug' that exists and the caller may read, in one round-trip — built for the screens that load several routes together (a ride's stages, a comparison view), which would otherwise cost one request per route. Each row is exactly what the single-route endpoint returns, geometry included (track surfaces too, read for the whole batch at once). Unknown slugs and slugs the caller may not read are silently left out of the answer rather than failing the whole batch. Set 'geometry' to false for the screens that only need each route's name and figures. The response also carries the bounding box of the track geometry actually sent back (waypoints are excluded, so an imported meeting-point or car-park waypoint far off the track cannot widen it), so a map can frame the batch without a second request.
  * @summary Get several routes' details at once
  */
-
 export function useGetRoutesBulk<
   TData = Awaited<ReturnType<typeof getRoutesBulk>>,
   TError = ErrorType<ErrorResponse>,
@@ -1183,6 +1274,7 @@ export function useGetRoutesBulk<
 }
 
 /**
+ * The detail of every requested 'slug' that exists and the caller may read, in one round-trip — built for the screens that load several routes together (a ride's stages, a comparison view), which would otherwise cost one request per route. Each row is exactly what the single-route endpoint returns, geometry included (track surfaces too, read for the whole batch at once). Unknown slugs and slugs the caller may not read are silently left out of the answer rather than failing the whole batch. Set 'geometry' to false for the screens that only need each route's name and figures. The response also carries the bounding box of the track geometry actually sent back (waypoints are excluded, so an imported meeting-point or car-park waypoint far off the track cannot widen it), so a map can frame the batch without a second request.
  * @summary Get several routes' details at once
  */
 export const prefetchGetRoutesBulkQuery = async <
@@ -1255,6 +1347,10 @@ export const getCountRoutesQueryOptions = <
 export type CountRoutesQueryResult = NonNullable<Awaited<ReturnType<typeof countRoutes>>>
 export type CountRoutesQueryError = ErrorType<ErrorResponse>
 
+/**
+ * How many of the team's routes match the filters, with none of them read. Accepts exactly the same filters as the route list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
+ * @summary Count routes
+ */
 export function useCountRoutes<
   TData = Awaited<ReturnType<typeof countRoutes>>,
   TError = ErrorType<ErrorResponse>,
@@ -1275,6 +1371,10 @@ export function useCountRoutes<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * How many of the team's routes match the filters, with none of them read. Accepts exactly the same filters as the route list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
+ * @summary Count routes
+ */
 export function useCountRoutes<
   TData = Awaited<ReturnType<typeof countRoutes>>,
   TError = ErrorType<ErrorResponse>,
@@ -1295,6 +1395,10 @@ export function useCountRoutes<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * How many of the team's routes match the filters, with none of them read. Accepts exactly the same filters as the route list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
+ * @summary Count routes
+ */
 export function useCountRoutes<
   TData = Awaited<ReturnType<typeof countRoutes>>,
   TError = ErrorType<ErrorResponse>,
@@ -1308,9 +1412,9 @@ export function useCountRoutes<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * How many of the team's routes match the filters, with none of them read. Accepts exactly the same filters as the route list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
  * @summary Count routes
  */
-
 export function useCountRoutes<
   TData = Awaited<ReturnType<typeof countRoutes>>,
   TError = ErrorType<ErrorResponse>,
@@ -1333,6 +1437,7 @@ export function useCountRoutes<
 }
 
 /**
+ * How many of the team's routes match the filters, with none of them read. Accepts exactly the same filters as the route list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
  * @summary Count routes
  */
 export const prefetchCountRoutesQuery = async <
@@ -1433,6 +1538,10 @@ export const getRoutesTileQueryOptions = <
 export type RoutesTileQueryResult = NonNullable<Awaited<ReturnType<typeof routesTile>>>
 export type RoutesTileQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Mapbox vector tile holding the team's routes, layer 'routes'. Accepts the same filters as the route list, minus sorting and pagination, which a tile has no use for. Fetched directly by the map renderer, outside the authenticated HTTP stack: a browser authenticates with its session cookie, any other client with the 't' tile token.
+ * @summary Team routes vector tile
+ */
 export function useRoutesTile<
   TData = Awaited<ReturnType<typeof routesTile>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1456,6 +1565,10 @@ export function useRoutesTile<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Mapbox vector tile holding the team's routes, layer 'routes'. Accepts the same filters as the route list, minus sorting and pagination, which a tile has no use for. Fetched directly by the map renderer, outside the authenticated HTTP stack: a browser authenticates with its session cookie, any other client with the 't' tile token.
+ * @summary Team routes vector tile
+ */
 export function useRoutesTile<
   TData = Awaited<ReturnType<typeof routesTile>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1479,6 +1592,10 @@ export function useRoutesTile<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Mapbox vector tile holding the team's routes, layer 'routes'. Accepts the same filters as the route list, minus sorting and pagination, which a tile has no use for. Fetched directly by the map renderer, outside the authenticated HTTP stack: a browser authenticates with its session cookie, any other client with the 't' tile token.
+ * @summary Team routes vector tile
+ */
 export function useRoutesTile<
   TData = Awaited<ReturnType<typeof routesTile>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1495,9 +1612,9 @@ export function useRoutesTile<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Mapbox vector tile holding the team's routes, layer 'routes'. Accepts the same filters as the route list, minus sorting and pagination, which a tile has no use for. Fetched directly by the map renderer, outside the authenticated HTTP stack: a browser authenticates with its session cookie, any other client with the 't' tile token.
  * @summary Team routes vector tile
  */
-
 export function useRoutesTile<
   TData = Awaited<ReturnType<typeof routesTile>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1523,6 +1640,7 @@ export function useRoutesTile<
 }
 
 /**
+ * Mapbox vector tile holding the team's routes, layer 'routes'. Accepts the same filters as the route list, minus sorting and pagination, which a tile has no use for. Fetched directly by the map renderer, outside the authenticated HTTP stack: a browser authenticates with its session cookie, any other client with the 't' tile token.
  * @summary Team routes vector tile
  */
 export const prefetchRoutesTileQuery = async <
@@ -1626,6 +1744,7 @@ export type UpdateRouteMutationVariables = {
 }
 
 /**
+ * Update route metadata (name, markdown, etc.) and optionally replace the GPX file. If a new GPX file is provided, the old track data and climbs will be replaced.
  * @summary Update route
  */
 export const useUpdateRoute = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -1699,6 +1818,10 @@ export const getGetRouteQueryOptions = <
 export type GetRouteQueryResult = NonNullable<Awaited<ReturnType<typeof getRoute>>>
 export type GetRouteQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get detailed route information including GPS coordinates and statistics. The track is returned exactly as stored — already resampled and Douglas-Peucker-filtered at import, which lands it at roughly one point every 90 m. Every coordinate carries longitude, latitude, elevation and cumulative distance in meters, so a client can draw both the line and its elevation profile from this one payload.
+ * @summary Get route details
+ */
 export function useGetRoute<
   TData = Awaited<ReturnType<typeof getRoute>>,
   TError = ErrorType<ErrorResponse>,
@@ -1719,6 +1842,10 @@ export function useGetRoute<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed route information including GPS coordinates and statistics. The track is returned exactly as stored — already resampled and Douglas-Peucker-filtered at import, which lands it at roughly one point every 90 m. Every coordinate carries longitude, latitude, elevation and cumulative distance in meters, so a client can draw both the line and its elevation profile from this one payload.
+ * @summary Get route details
+ */
 export function useGetRoute<
   TData = Awaited<ReturnType<typeof getRoute>>,
   TError = ErrorType<ErrorResponse>,
@@ -1739,6 +1866,10 @@ export function useGetRoute<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed route information including GPS coordinates and statistics. The track is returned exactly as stored — already resampled and Douglas-Peucker-filtered at import, which lands it at roughly one point every 90 m. Every coordinate carries longitude, latitude, elevation and cumulative distance in meters, so a client can draw both the line and its elevation profile from this one payload.
+ * @summary Get route details
+ */
 export function useGetRoute<
   TData = Awaited<ReturnType<typeof getRoute>>,
   TError = ErrorType<ErrorResponse>,
@@ -1752,9 +1883,9 @@ export function useGetRoute<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get detailed route information including GPS coordinates and statistics. The track is returned exactly as stored — already resampled and Douglas-Peucker-filtered at import, which lands it at roughly one point every 90 m. Every coordinate carries longitude, latitude, elevation and cumulative distance in meters, so a client can draw both the line and its elevation profile from this one payload.
  * @summary Get route details
  */
-
 export function useGetRoute<
   TData = Awaited<ReturnType<typeof getRoute>>,
   TError = ErrorType<ErrorResponse>,
@@ -1777,6 +1908,7 @@ export function useGetRoute<
 }
 
 /**
+ * Get detailed route information including GPS coordinates and statistics. The track is returned exactly as stored — already resampled and Douglas-Peucker-filtered at import, which lands it at roughly one point every 90 m. Every coordinate carries longitude, latitude, elevation and cumulative distance in meters, so a client can draw both the line and its elevation profile from this one payload.
  * @summary Get route details
  */
 export const prefetchGetRouteQuery = async <
@@ -1858,6 +1990,7 @@ export type DeleteRouteMutationError = ErrorType<ErrorResponse>
 export type DeleteRouteMutationVariables = { teamSlug: string; routeSlug: string }
 
 /**
+ * Soft delete a route. Requires route creator or team admin permissions.
  * @summary Delete route
  */
 export const useDeleteRoute = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -1950,6 +2083,7 @@ export type DuplicateRouteMutationVariables = {
 }
 
 /**
+ * Creates a copy of the route in the same team under the given name, with every other attribute of the source: visibility, surface type, tags, description, planner state, waypoints, surfaces, and a copy of its logo, images and attachments (new asset ids, the description's asset directives rewritten). Comments, rides and statistics are not copied. Requires organizer permissions on the source.
  * @summary Duplicate route
  */
 export const useDuplicateRoute = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -2027,6 +2161,10 @@ export type GetRoutePlannerStateQueryResult = NonNullable<
 >
 export type GetRoutePlannerStateQueryError = ErrorType<ErrorResponse>
 
+/**
+ * The control points, routed pieces and imported ranges the route was last saved with, for its edit page. Reserved to those who may edit the route. 'state' is absent when there is none to read back (never saved with one, track replaced since by a path that does not carry it, several tracks): the editor then opens the saved track as an import.
+ * @summary Get the planner state of a route
+ */
 export function useGetRoutePlannerState<
   TData = Awaited<ReturnType<typeof getRoutePlannerState>>,
   TError = ErrorType<ErrorResponse>,
@@ -2049,6 +2187,10 @@ export function useGetRoutePlannerState<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The control points, routed pieces and imported ranges the route was last saved with, for its edit page. Reserved to those who may edit the route. 'state' is absent when there is none to read back (never saved with one, track replaced since by a path that does not carry it, several tracks): the editor then opens the saved track as an import.
+ * @summary Get the planner state of a route
+ */
 export function useGetRoutePlannerState<
   TData = Awaited<ReturnType<typeof getRoutePlannerState>>,
   TError = ErrorType<ErrorResponse>,
@@ -2071,6 +2213,10 @@ export function useGetRoutePlannerState<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The control points, routed pieces and imported ranges the route was last saved with, for its edit page. Reserved to those who may edit the route. 'state' is absent when there is none to read back (never saved with one, track replaced since by a path that does not carry it, several tracks): the editor then opens the saved track as an import.
+ * @summary Get the planner state of a route
+ */
 export function useGetRoutePlannerState<
   TData = Awaited<ReturnType<typeof getRoutePlannerState>>,
   TError = ErrorType<ErrorResponse>,
@@ -2086,9 +2232,9 @@ export function useGetRoutePlannerState<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The control points, routed pieces and imported ranges the route was last saved with, for its edit page. Reserved to those who may edit the route. 'state' is absent when there is none to read back (never saved with one, track replaced since by a path that does not carry it, several tracks): the editor then opens the saved track as an import.
  * @summary Get the planner state of a route
  */
-
 export function useGetRoutePlannerState<
   TData = Awaited<ReturnType<typeof getRoutePlannerState>>,
   TError = ErrorType<ErrorResponse>,
@@ -2113,6 +2259,7 @@ export function useGetRoutePlannerState<
 }
 
 /**
+ * The control points, routed pieces and imported ranges the route was last saved with, for its edit page. Reserved to those who may edit the route. 'state' is absent when there is none to read back (never saved with one, track replaced since by a path that does not carry it, several tracks): the editor then opens the saved track as an import.
  * @summary Get the planner state of a route
  */
 export const prefetchGetRoutePlannerStateQuery = async <
@@ -2198,6 +2345,7 @@ export type CreatePreviewFromRouteMutationError = ErrorType<ErrorResponse | void
 export type CreatePreviewFromRouteMutationVariables = { teamSlug: string; routeSlug: string }
 
 /**
+ * Creates a GPX preview owned by the caller from a route they can read: same title, track, planner state and waypoints. Nothing is created in the team and the route is left unchanged. Any signed-in account that can read the route may call it.
  * @summary Create an analysed GPX file from a route
  */
 export const useCreatePreviewFromRoute = <
@@ -2293,6 +2441,7 @@ export type ChangeRouteSlugMutationVariables = {
 }
 
 /**
+ * Change route URL slug. Requires organizer permissions.
  * @summary Change route slug
  */
 export const useChangeRouteSlug = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -2374,6 +2523,7 @@ export type UndeleteRouteMutationError = ErrorType<ErrorResponse>
 export type UndeleteRouteMutationVariables = { teamSlug: string; routeSlug: string }
 
 /**
+ * Restore a soft-deleted route. Requires route creator or team admin permissions.
  * @summary Restore route
  */
 export const useUndeleteRoute = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -2447,6 +2597,10 @@ export const getGetRouteUsagesQueryOptions = <
 export type GetRouteUsagesQueryResult = NonNullable<Awaited<ReturnType<typeof getRouteUsages>>>
 export type GetRouteUsagesQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Rides and trips that reference this route, directly or via a group/stage. Results are visibility filtered for the caller.
+ * @summary List route usages
+ */
 export function useGetRouteUsages<
   TData = Awaited<ReturnType<typeof getRouteUsages>>,
   TError = ErrorType<ErrorResponse>,
@@ -2467,6 +2621,10 @@ export function useGetRouteUsages<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Rides and trips that reference this route, directly or via a group/stage. Results are visibility filtered for the caller.
+ * @summary List route usages
+ */
 export function useGetRouteUsages<
   TData = Awaited<ReturnType<typeof getRouteUsages>>,
   TError = ErrorType<ErrorResponse>,
@@ -2487,6 +2645,10 @@ export function useGetRouteUsages<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Rides and trips that reference this route, directly or via a group/stage. Results are visibility filtered for the caller.
+ * @summary List route usages
+ */
 export function useGetRouteUsages<
   TData = Awaited<ReturnType<typeof getRouteUsages>>,
   TError = ErrorType<ErrorResponse>,
@@ -2500,9 +2662,9 @@ export function useGetRouteUsages<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Rides and trips that reference this route, directly or via a group/stage. Results are visibility filtered for the caller.
  * @summary List route usages
  */
-
 export function useGetRouteUsages<
   TData = Awaited<ReturnType<typeof getRouteUsages>>,
   TError = ErrorType<ErrorResponse>,
@@ -2525,6 +2687,7 @@ export function useGetRouteUsages<
 }
 
 /**
+ * Rides and trips that reference this route, directly or via a group/stage. Results are visibility filtered for the caller.
  * @summary List route usages
  */
 export const prefetchGetRouteUsagesQuery = async <

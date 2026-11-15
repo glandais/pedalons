@@ -93,6 +93,10 @@ export type ListMyNotificationsQueryResult = NonNullable<
 >
 export type ListMyNotificationsQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * The current user's notifications, newest first. Each carries a type and structured fields, not rendered text: the client words it in its own language.
+ * @summary List my notifications
+ */
 export function useListMyNotifications<
   TData = Awaited<ReturnType<typeof listMyNotifications>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -114,6 +118,10 @@ export function useListMyNotifications<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The current user's notifications, newest first. Each carries a type and structured fields, not rendered text: the client words it in its own language.
+ * @summary List my notifications
+ */
 export function useListMyNotifications<
   TData = Awaited<ReturnType<typeof listMyNotifications>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -135,6 +143,10 @@ export function useListMyNotifications<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The current user's notifications, newest first. Each carries a type and structured fields, not rendered text: the client words it in its own language.
+ * @summary List my notifications
+ */
 export function useListMyNotifications<
   TData = Awaited<ReturnType<typeof listMyNotifications>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -147,9 +159,9 @@ export function useListMyNotifications<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The current user's notifications, newest first. Each carries a type and structured fields, not rendered text: the client words it in its own language.
  * @summary List my notifications
  */
-
 export function useListMyNotifications<
   TData = Awaited<ReturnType<typeof listMyNotifications>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -171,6 +183,7 @@ export function useListMyNotifications<
 }
 
 /**
+ * The current user's notifications, newest first. Each carries a type and structured fields, not rendered text: the client words it in its own language.
  * @summary List my notifications
  */
 export const prefetchListMyNotificationsQuery = async <
@@ -261,6 +274,7 @@ export type UpdateMyNotificationPreferencesMutationVariables = {
 }
 
 /**
+ * A partial update: only the cells sent change. The full matrix is returned.
  * @summary Update my notification preferences
  */
 export const useUpdateMyNotificationPreferences = <
@@ -332,6 +346,10 @@ export type GetMyNotificationPreferencesQueryResult = NonNullable<
 >
 export type GetMyNotificationPreferencesQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * Every notification type on every channel this server can deliver on. The inbox is not listed: it always receives everything.
+ * @summary Get my notification preferences
+ */
 export function useGetMyNotificationPreferences<
   TData = Awaited<ReturnType<typeof getMyNotificationPreferences>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -352,6 +370,10 @@ export function useGetMyNotificationPreferences<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Every notification type on every channel this server can deliver on. The inbox is not listed: it always receives everything.
+ * @summary Get my notification preferences
+ */
 export function useGetMyNotificationPreferences<
   TData = Awaited<ReturnType<typeof getMyNotificationPreferences>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -372,6 +394,10 @@ export function useGetMyNotificationPreferences<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Every notification type on every channel this server can deliver on. The inbox is not listed: it always receives everything.
+ * @summary Get my notification preferences
+ */
 export function useGetMyNotificationPreferences<
   TData = Awaited<ReturnType<typeof getMyNotificationPreferences>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -385,9 +411,9 @@ export function useGetMyNotificationPreferences<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Every notification type on every channel this server can deliver on. The inbox is not listed: it always receives everything.
  * @summary Get my notification preferences
  */
-
 export function useGetMyNotificationPreferences<
   TData = Awaited<ReturnType<typeof getMyNotificationPreferences>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -410,6 +436,7 @@ export function useGetMyNotificationPreferences<
 }
 
 /**
+ * Every notification type on every channel this server can deliver on. The inbox is not listed: it always receives everything.
  * @summary Get my notification preferences
  */
 export const prefetchGetMyNotificationPreferencesQuery = async <
@@ -483,9 +510,7 @@ export type MarkAllNotificationsReadMutationResult = NonNullable<
 
 export type MarkAllNotificationsReadMutationError = ErrorType<ErrorResponse | void>
 
-/**
- * @summary Mark all my notifications read
- */
+/** @summary Mark all my notifications read */
 export const useMarkAllNotificationsRead = <
   TError = ErrorType<ErrorResponse | void>,
   TContext = unknown,
@@ -555,6 +580,10 @@ export type CountMyUnreadNotificationsQueryResult = NonNullable<
 >
 export type CountMyUnreadNotificationsQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * The badge on the bell. Cheap by design: clients poll it (on focus, at most once a minute) rather than reloading the list.
+ * @summary Count my unread notifications
+ */
 export function useCountMyUnreadNotifications<
   TData = Awaited<ReturnType<typeof countMyUnreadNotifications>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -575,6 +604,10 @@ export function useCountMyUnreadNotifications<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The badge on the bell. Cheap by design: clients poll it (on focus, at most once a minute) rather than reloading the list.
+ * @summary Count my unread notifications
+ */
 export function useCountMyUnreadNotifications<
   TData = Awaited<ReturnType<typeof countMyUnreadNotifications>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -595,6 +628,10 @@ export function useCountMyUnreadNotifications<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The badge on the bell. Cheap by design: clients poll it (on focus, at most once a minute) rather than reloading the list.
+ * @summary Count my unread notifications
+ */
 export function useCountMyUnreadNotifications<
   TData = Awaited<ReturnType<typeof countMyUnreadNotifications>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -608,9 +645,9 @@ export function useCountMyUnreadNotifications<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The badge on the bell. Cheap by design: clients poll it (on focus, at most once a minute) rather than reloading the list.
  * @summary Count my unread notifications
  */
-
 export function useCountMyUnreadNotifications<
   TData = Awaited<ReturnType<typeof countMyUnreadNotifications>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -633,6 +670,7 @@ export function useCountMyUnreadNotifications<
 }
 
 /**
+ * The badge on the bell. Cheap by design: clients poll it (on focus, at most once a minute) rather than reloading the list.
  * @summary Count my unread notifications
  */
 export const prefetchCountMyUnreadNotificationsQuery = async <
@@ -715,6 +753,7 @@ export type MarkNotificationReadMutationError = ErrorType<ErrorResponse | void>
 export type MarkNotificationReadMutationVariables = { notificationId: string }
 
 /**
+ * Idempotent: marking an already-read notification read succeeds.
  * @summary Mark a notification read
  */
 export const useMarkNotificationRead = <
@@ -806,6 +845,7 @@ export type RegisterPushDeviceMutationError = ErrorType<ErrorResponse | void>
 export type RegisterPushDeviceMutationVariables = { data: BodyType<PushDeviceRegistration> }
 
 /**
+ * Called at every app launch and whenever FCM rotates the token. Idempotent: a token already known is refreshed, and moved to the current user if it was someone else's.
  * @summary Register a device for push notifications
  */
 export const useRegisterPushDevice = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -894,6 +934,7 @@ export type UnregisterPushDeviceMutationError = ErrorType<ErrorResponse | void>
 export type UnregisterPushDeviceMutationVariables = { data: BodyType<PushDeviceUnregistration> }
 
 /**
+ * Called on sign-out. Idempotent, and silent about tokens that are not the caller's. The token is in the body so that it never reaches the access log.
  * @summary Stop sending push notifications to a device
  */
 export const useUnregisterPushDevice = <

@@ -83,6 +83,10 @@ export const getListPasskeysQueryOptions = <
 export type ListPasskeysQueryResult = NonNullable<Awaited<ReturnType<typeof listPasskeys>>>
 export type ListPasskeysQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * List all passkeys registered for the current user
+ * @summary List passkeys
+ */
 export function useListPasskeys<
   TData = Awaited<ReturnType<typeof listPasskeys>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -101,6 +105,10 @@ export function useListPasskeys<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * List all passkeys registered for the current user
+ * @summary List passkeys
+ */
 export function useListPasskeys<
   TData = Awaited<ReturnType<typeof listPasskeys>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -119,6 +127,10 @@ export function useListPasskeys<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * List all passkeys registered for the current user
+ * @summary List passkeys
+ */
 export function useListPasskeys<
   TData = Awaited<ReturnType<typeof listPasskeys>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -130,9 +142,9 @@ export function useListPasskeys<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * List all passkeys registered for the current user
  * @summary List passkeys
  */
-
 export function useListPasskeys<
   TData = Awaited<ReturnType<typeof listPasskeys>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -153,6 +165,7 @@ export function useListPasskeys<
 }
 
 /**
+ * List all passkeys registered for the current user
  * @summary List passkeys
  */
 export const prefetchListPasskeysQuery = async <
@@ -237,6 +250,7 @@ export type AuthenticateMutationError = ErrorType<void | ErrorResponse>
 export type AuthenticateMutationVariables = { data: BodyType<AuthenticateBody> }
 
 /**
+ * Authenticate using a passkey
  * @summary Authenticate with passkey
  */
 export const useAuthenticate = <TError = ErrorType<void | ErrorResponse>, TContext = unknown>(
@@ -327,6 +341,7 @@ export type GetAuthenticationOptionsMutationVariables = {
 }
 
 /**
+ * Get WebAuthn options for authenticating with a passkey
  * @summary Get authentication options
  */
 export const useGetAuthenticationOptions = <TError = ErrorType<void>, TContext = unknown>(
@@ -418,6 +433,7 @@ export type RegisterPasskeyMutationVariables = {
 }
 
 /**
+ * Verify and register a new passkey for the current user
  * @summary Register passkey
  */
 export const useRegisterPasskey = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -485,6 +501,10 @@ export type GetRegistrationOptionsQueryResult = NonNullable<
 >
 export type GetRegistrationOptionsQueryError = ErrorType<ErrorResponse | void>
 
+/**
+ * Get WebAuthn options for registering a new passkey
+ * @summary Get registration options
+ */
 export function useGetRegistrationOptions<
   TData = Awaited<ReturnType<typeof getRegistrationOptions>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -505,6 +525,10 @@ export function useGetRegistrationOptions<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get WebAuthn options for registering a new passkey
+ * @summary Get registration options
+ */
 export function useGetRegistrationOptions<
   TData = Awaited<ReturnType<typeof getRegistrationOptions>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -525,6 +549,10 @@ export function useGetRegistrationOptions<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get WebAuthn options for registering a new passkey
+ * @summary Get registration options
+ */
 export function useGetRegistrationOptions<
   TData = Awaited<ReturnType<typeof getRegistrationOptions>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -538,9 +566,9 @@ export function useGetRegistrationOptions<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get WebAuthn options for registering a new passkey
  * @summary Get registration options
  */
-
 export function useGetRegistrationOptions<
   TData = Awaited<ReturnType<typeof getRegistrationOptions>>,
   TError = ErrorType<ErrorResponse | void>,
@@ -563,6 +591,7 @@ export function useGetRegistrationOptions<
 }
 
 /**
+ * Get WebAuthn options for registering a new passkey
  * @summary Get registration options
  */
 export const prefetchGetRegistrationOptionsQuery = async <
@@ -640,6 +669,7 @@ export type DeletePasskeyMutationError = ErrorType<ErrorResponse | void>
 export type DeletePasskeyMutationVariables = { id: string }
 
 /**
+ * Delete a passkey
  * @summary Delete passkey
  */
 export const useDeletePasskey = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(

@@ -88,6 +88,10 @@ export const getDeviceListRoutesQueryOptions = <
 export type DeviceListRoutesQueryResult = NonNullable<Awaited<ReturnType<typeof deviceListRoutes>>>
 export type DeviceListRoutesQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get routes for authenticated user. Prioritizes routes from upcoming rides, then latest routes from user's teams.
+ * @summary List routes for user
+ */
 export function useDeviceListRoutes<
   TData = Awaited<ReturnType<typeof deviceListRoutes>>,
   TError = ErrorType<ErrorResponse>,
@@ -107,6 +111,10 @@ export function useDeviceListRoutes<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get routes for authenticated user. Prioritizes routes from upcoming rides, then latest routes from user's teams.
+ * @summary List routes for user
+ */
 export function useDeviceListRoutes<
   TData = Awaited<ReturnType<typeof deviceListRoutes>>,
   TError = ErrorType<ErrorResponse>,
@@ -126,6 +134,10 @@ export function useDeviceListRoutes<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get routes for authenticated user. Prioritizes routes from upcoming rides, then latest routes from user's teams.
+ * @summary List routes for user
+ */
 export function useDeviceListRoutes<
   TData = Awaited<ReturnType<typeof deviceListRoutes>>,
   TError = ErrorType<ErrorResponse>,
@@ -138,9 +150,9 @@ export function useDeviceListRoutes<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get routes for authenticated user. Prioritizes routes from upcoming rides, then latest routes from user's teams.
  * @summary List routes for user
  */
-
 export function useDeviceListRoutes<
   TData = Awaited<ReturnType<typeof deviceListRoutes>>,
   TError = ErrorType<ErrorResponse>,
@@ -162,6 +174,7 @@ export function useDeviceListRoutes<
 }
 
 /**
+ * Get routes for authenticated user. Prioritizes routes from upcoming rides, then latest routes from user's teams.
  * @summary List routes for user
  */
 export const prefetchDeviceListRoutesQuery = async <
@@ -236,6 +249,10 @@ export type DeviceDownloadFitQueryResult = NonNullable<
 >
 export type DeviceDownloadFitQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Download route as FIT file for GPS devices
+ * @summary Download FIT file
+ */
 export function useDeviceDownloadFit<
   TData = Awaited<ReturnType<typeof deviceDownloadFit>>,
   TError = ErrorType<ErrorResponse>,
@@ -256,6 +273,10 @@ export function useDeviceDownloadFit<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Download route as FIT file for GPS devices
+ * @summary Download FIT file
+ */
 export function useDeviceDownloadFit<
   TData = Awaited<ReturnType<typeof deviceDownloadFit>>,
   TError = ErrorType<ErrorResponse>,
@@ -276,6 +297,10 @@ export function useDeviceDownloadFit<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Download route as FIT file for GPS devices
+ * @summary Download FIT file
+ */
 export function useDeviceDownloadFit<
   TData = Awaited<ReturnType<typeof deviceDownloadFit>>,
   TError = ErrorType<ErrorResponse>,
@@ -289,9 +314,9 @@ export function useDeviceDownloadFit<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Download route as FIT file for GPS devices
  * @summary Download FIT file
  */
-
 export function useDeviceDownloadFit<
   TData = Awaited<ReturnType<typeof deviceDownloadFit>>,
   TError = ErrorType<ErrorResponse>,
@@ -314,6 +339,7 @@ export function useDeviceDownloadFit<
 }
 
 /**
+ * Download route as FIT file for GPS devices
  * @summary Download FIT file
  */
 export const prefetchDeviceDownloadFitQuery = async <
@@ -389,6 +415,10 @@ export type DeviceDownloadGpxQueryResult = NonNullable<
 >
 export type DeviceDownloadGpxQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Download route as GPX file for GPS devices
+ * @summary Download GPX file
+ */
 export function useDeviceDownloadGpx<
   TData = Awaited<ReturnType<typeof deviceDownloadGpx>>,
   TError = ErrorType<ErrorResponse>,
@@ -409,6 +439,10 @@ export function useDeviceDownloadGpx<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Download route as GPX file for GPS devices
+ * @summary Download GPX file
+ */
 export function useDeviceDownloadGpx<
   TData = Awaited<ReturnType<typeof deviceDownloadGpx>>,
   TError = ErrorType<ErrorResponse>,
@@ -429,6 +463,10 @@ export function useDeviceDownloadGpx<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Download route as GPX file for GPS devices
+ * @summary Download GPX file
+ */
 export function useDeviceDownloadGpx<
   TData = Awaited<ReturnType<typeof deviceDownloadGpx>>,
   TError = ErrorType<ErrorResponse>,
@@ -442,9 +480,9 @@ export function useDeviceDownloadGpx<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Download route as GPX file for GPS devices
  * @summary Download GPX file
  */
-
 export function useDeviceDownloadGpx<
   TData = Awaited<ReturnType<typeof deviceDownloadGpx>>,
   TError = ErrorType<ErrorResponse>,
@@ -467,6 +505,7 @@ export function useDeviceDownloadGpx<
 }
 
 /**
+ * Download route as GPX file for GPS devices
  * @summary Download GPX file
  */
 export const prefetchDeviceDownloadGpxQuery = async <
@@ -553,6 +592,7 @@ export type DeviceSyncRouteMutationVariables = {
 }
 
 /**
+ * Upload route to a cloud GPS service (e.g., Hammerhead, Garmin Connect, Wahoo)
  * @summary Sync route to cloud service
  */
 export const useDeviceSyncRoute = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

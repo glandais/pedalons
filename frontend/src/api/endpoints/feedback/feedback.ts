@@ -78,6 +78,7 @@ export type SendFeedbackMutationError = ErrorType<ErrorResponse | void>
 export type SendFeedbackMutationVariables = { data: BodyType<FeedbackRequest> }
 
 /**
+ * Files the member's report with the technical context their client attached. It reaches the maintainers as an issue of a private repository, naming the member by id only; tokens and e-mail addresses are redacted from the context and the log.
  * @summary Report a bug or suggest something
  */
 export const useSendFeedback = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -166,6 +167,7 @@ export type ReportClientErrorMutationError = ErrorType<ErrorResponse | void>
 export type ReportClientErrorMutationVariables = { data: BodyType<ErrorReportRequest> }
 
 /**
+ * Sent by a client, without the member's intervention, when it catches an unhandled error. The same error reported by many clients becomes one issue. Always 204 once valid, including past the per-member quota, where it is dropped: a client must never retry nor surface this call's failure.
  * @summary Report an unhandled error
  */
 export const useReportClientError = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(

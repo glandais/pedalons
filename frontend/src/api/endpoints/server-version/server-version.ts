@@ -72,6 +72,10 @@ export const getGetVersionQueryOptions = <
 export type GetVersionQueryResult = NonNullable<Awaited<ReturnType<typeof getVersion>>>
 export type GetVersionQueryError = ErrorType<unknown>
 
+/**
+ * Get the API contract version the server implements, plus the git commit and build time it was built from
+ * @summary Get server version
+ */
 export function useGetVersion<
   TData = Awaited<ReturnType<typeof getVersion>>,
   TError = ErrorType<unknown>,
@@ -90,6 +94,10 @@ export function useGetVersion<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get the API contract version the server implements, plus the git commit and build time it was built from
+ * @summary Get server version
+ */
 export function useGetVersion<
   TData = Awaited<ReturnType<typeof getVersion>>,
   TError = ErrorType<unknown>,
@@ -108,6 +116,10 @@ export function useGetVersion<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get the API contract version the server implements, plus the git commit and build time it was built from
+ * @summary Get server version
+ */
 export function useGetVersion<
   TData = Awaited<ReturnType<typeof getVersion>>,
   TError = ErrorType<unknown>,
@@ -119,9 +131,9 @@ export function useGetVersion<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get the API contract version the server implements, plus the git commit and build time it was built from
  * @summary Get server version
  */
-
 export function useGetVersion<
   TData = Awaited<ReturnType<typeof getVersion>>,
   TError = ErrorType<unknown>,
@@ -142,6 +154,7 @@ export function useGetVersion<
 }
 
 /**
+ * Get the API contract version the server implements, plus the git commit and build time it was built from
  * @summary Get server version
  */
 export const prefetchGetVersionQuery = async <

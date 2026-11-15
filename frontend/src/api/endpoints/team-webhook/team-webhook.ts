@@ -110,6 +110,7 @@ export type SaveTeamWebhookMutationVariables = {
 }
 
 /**
+ * The message format is read from the URL: Slack, Discord, or a structured JSON document for anything else. Only https URLs to public addresses are accepted. Omitting the URL keeps the current one.
  * @summary Create or change the team's webhook
  */
 export const useSaveTeamWebhook = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -180,6 +181,10 @@ export const getGetTeamWebhookQueryOptions = <
 export type GetTeamWebhookQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamWebhook>>>
 export type GetTeamWebhookQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * The webhook with its URL masked — the URL is a secret. `configured` is false when the team has none.
+ * @summary Get the team's webhook
+ */
 export function useGetTeamWebhook<
   TData = Awaited<ReturnType<typeof getTeamWebhook>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -199,6 +204,10 @@ export function useGetTeamWebhook<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The webhook with its URL masked — the URL is a secret. `configured` is false when the team has none.
+ * @summary Get the team's webhook
+ */
 export function useGetTeamWebhook<
   TData = Awaited<ReturnType<typeof getTeamWebhook>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -218,6 +227,10 @@ export function useGetTeamWebhook<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The webhook with its URL masked — the URL is a secret. `configured` is false when the team has none.
+ * @summary Get the team's webhook
+ */
 export function useGetTeamWebhook<
   TData = Awaited<ReturnType<typeof getTeamWebhook>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -230,9 +243,9 @@ export function useGetTeamWebhook<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The webhook with its URL masked — the URL is a secret. `configured` is false when the team has none.
  * @summary Get the team's webhook
  */
-
 export function useGetTeamWebhook<
   TData = Awaited<ReturnType<typeof getTeamWebhook>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -254,6 +267,7 @@ export function useGetTeamWebhook<
 }
 
 /**
+ * The webhook with its URL masked — the URL is a secret. `configured` is false when the team has none.
  * @summary Get the team's webhook
  */
 export const prefetchGetTeamWebhookQuery = async <
@@ -333,9 +347,7 @@ export type DeleteTeamWebhookMutationResult = NonNullable<
 export type DeleteTeamWebhookMutationError = ErrorType<void | ErrorResponse>
 export type DeleteTeamWebhookMutationVariables = { teamSlug: string }
 
-/**
- * @summary Remove the team's webhook
- */
+/** @summary Remove the team's webhook */
 export const useDeleteTeamWebhook = <TError = ErrorType<void | ErrorResponse>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
@@ -414,6 +426,7 @@ export type TestTeamWebhookMutationError = ErrorType<ErrorResponse | void>
 export type TestTeamWebhookMutationVariables = { teamSlug: string }
 
 /**
+ * Posts a test message now and reports how the endpoint answered.
  * @summary Send a test message to the team's webhook
  */
 export const useTestTeamWebhook = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(

@@ -94,6 +94,10 @@ export const getListTeamsQueryOptions = <
 export type ListTeamsQueryResult = NonNullable<Awaited<ReturnType<typeof listTeams>>>
 export type ListTeamsQueryError = ErrorType<unknown>
 
+/**
+ * Get a paginated list of public teams with optional search
+ * @summary List public teams
+ */
 export function useListTeams<
   TData = Awaited<ReturnType<typeof listTeams>>,
   TError = ErrorType<unknown>,
@@ -113,6 +117,10 @@ export function useListTeams<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get a paginated list of public teams with optional search
+ * @summary List public teams
+ */
 export function useListTeams<
   TData = Awaited<ReturnType<typeof listTeams>>,
   TError = ErrorType<unknown>,
@@ -132,6 +140,10 @@ export function useListTeams<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get a paginated list of public teams with optional search
+ * @summary List public teams
+ */
 export function useListTeams<
   TData = Awaited<ReturnType<typeof listTeams>>,
   TError = ErrorType<unknown>,
@@ -144,9 +156,9 @@ export function useListTeams<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get a paginated list of public teams with optional search
  * @summary List public teams
  */
-
 export function useListTeams<
   TData = Awaited<ReturnType<typeof listTeams>>,
   TError = ErrorType<unknown>,
@@ -168,6 +180,7 @@ export function useListTeams<
 }
 
 /**
+ * Get a paginated list of public teams with optional search
  * @summary List public teams
  */
 export const prefetchListTeamsQuery = async <
@@ -253,6 +266,7 @@ export type CreateTeamMutationError = ErrorType<ErrorResponse | void>
 export type CreateTeamMutationVariables = { data: BodyType<TeamRequest> }
 
 /**
+ * Create a new team. The current user will be set as the team owner.
  * @summary Create team
  */
 export const useCreateTeam = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -340,6 +354,7 @@ export type UpdateTeamMutationError = ErrorType<ErrorResponse>
 export type UpdateTeamMutationVariables = { teamSlug: string; data: BodyType<TeamRequest> }
 
 /**
+ * Update team information. Requires ADMIN role.
  * @summary Update team
  */
 export const useUpdateTeam = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -410,6 +425,10 @@ export const getGetTeamQueryOptions = <
 export type GetTeamQueryResult = NonNullable<Awaited<ReturnType<typeof getTeam>>>
 export type GetTeamQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Get detailed team information by URL slug
+ * @summary Get team by slug
+ */
 export function useGetTeam<
   TData = Awaited<ReturnType<typeof getTeam>>,
   TError = ErrorType<ErrorResponse>,
@@ -429,6 +448,10 @@ export function useGetTeam<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed team information by URL slug
+ * @summary Get team by slug
+ */
 export function useGetTeam<
   TData = Awaited<ReturnType<typeof getTeam>>,
   TError = ErrorType<ErrorResponse>,
@@ -448,6 +471,10 @@ export function useGetTeam<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed team information by URL slug
+ * @summary Get team by slug
+ */
 export function useGetTeam<
   TData = Awaited<ReturnType<typeof getTeam>>,
   TError = ErrorType<ErrorResponse>,
@@ -460,9 +487,9 @@ export function useGetTeam<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get detailed team information by URL slug
  * @summary Get team by slug
  */
-
 export function useGetTeam<
   TData = Awaited<ReturnType<typeof getTeam>>,
   TError = ErrorType<ErrorResponse>,
@@ -484,6 +511,7 @@ export function useGetTeam<
 }
 
 /**
+ * Get detailed team information by URL slug
  * @summary Get team by slug
  */
 export const prefetchGetTeamQuery = async <
@@ -560,6 +588,7 @@ export type DeleteTeamMutationError = ErrorType<ErrorResponse>
 export type DeleteTeamMutationVariables = { teamSlug: string }
 
 /**
+ * Soft delete a team. Requires OWNER role.
  * @summary Delete team
  */
 export const useDeleteTeam = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -630,6 +659,10 @@ export const getGetTeamDashboardQueryOptions = <
 export type GetTeamDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamDashboard>>>
 export type GetTeamDashboardQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Everything a « Tableau de bord » shows, in one call, graded by the caller's role. A visitor (anonymous, or signed in without belonging to the team) gets the public part only: upcoming rides, latest posts and new routes, under the usual visibility rules (PUBLIC entities only), with role, myUpcoming, latestAds, organizer and admin null. A member gets the member sections, an organizer the organizer block too, an administrator the admin block too. Each section is a short page of the matching list, and is null when the team has disabled its module. The teams switcher, the unread notification count and the calendar token are not part of it.
+ * @summary Get the team dashboard
+ */
 export function useGetTeamDashboard<
   TData = Awaited<ReturnType<typeof getTeamDashboard>>,
   TError = ErrorType<ErrorResponse>,
@@ -649,6 +682,10 @@ export function useGetTeamDashboard<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Everything a « Tableau de bord » shows, in one call, graded by the caller's role. A visitor (anonymous, or signed in without belonging to the team) gets the public part only: upcoming rides, latest posts and new routes, under the usual visibility rules (PUBLIC entities only), with role, myUpcoming, latestAds, organizer and admin null. A member gets the member sections, an organizer the organizer block too, an administrator the admin block too. Each section is a short page of the matching list, and is null when the team has disabled its module. The teams switcher, the unread notification count and the calendar token are not part of it.
+ * @summary Get the team dashboard
+ */
 export function useGetTeamDashboard<
   TData = Awaited<ReturnType<typeof getTeamDashboard>>,
   TError = ErrorType<ErrorResponse>,
@@ -668,6 +705,10 @@ export function useGetTeamDashboard<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Everything a « Tableau de bord » shows, in one call, graded by the caller's role. A visitor (anonymous, or signed in without belonging to the team) gets the public part only: upcoming rides, latest posts and new routes, under the usual visibility rules (PUBLIC entities only), with role, myUpcoming, latestAds, organizer and admin null. A member gets the member sections, an organizer the organizer block too, an administrator the admin block too. Each section is a short page of the matching list, and is null when the team has disabled its module. The teams switcher, the unread notification count and the calendar token are not part of it.
+ * @summary Get the team dashboard
+ */
 export function useGetTeamDashboard<
   TData = Awaited<ReturnType<typeof getTeamDashboard>>,
   TError = ErrorType<ErrorResponse>,
@@ -680,9 +721,9 @@ export function useGetTeamDashboard<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Everything a « Tableau de bord » shows, in one call, graded by the caller's role. A visitor (anonymous, or signed in without belonging to the team) gets the public part only: upcoming rides, latest posts and new routes, under the usual visibility rules (PUBLIC entities only), with role, myUpcoming, latestAds, organizer and admin null. A member gets the member sections, an organizer the organizer block too, an administrator the admin block too. Each section is a short page of the matching list, and is null when the team has disabled its module. The teams switcher, the unread notification count and the calendar token are not part of it.
  * @summary Get the team dashboard
  */
-
 export function useGetTeamDashboard<
   TData = Awaited<ReturnType<typeof getTeamDashboard>>,
   TError = ErrorType<ErrorResponse>,
@@ -704,6 +745,7 @@ export function useGetTeamDashboard<
 }
 
 /**
+ * Everything a « Tableau de bord » shows, in one call, graded by the caller's role. A visitor (anonymous, or signed in without belonging to the team) gets the public part only: upcoming rides, latest posts and new routes, under the usual visibility rules (PUBLIC entities only), with role, myUpcoming, latestAds, organizer and admin null. A member gets the member sections, an organizer the organizer block too, an administrator the admin block too. Each section is a short page of the matching list, and is null when the team has disabled its module. The teams switcher, the unread notification count and the calendar token are not part of it.
  * @summary Get the team dashboard
  */
 export const prefetchGetTeamDashboardQuery = async <
@@ -793,6 +835,7 @@ export type ChangeTeamSlugMutationVariables = {
 }
 
 /**
+ * Change team URL slug. Requires ADMIN role.
  * @summary Change team slug
  */
 export const useChangeTeamSlug = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -865,6 +908,10 @@ export const getGetTeamTimezoneQueryOptions = <
 export type GetTeamTimezoneQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamTimezone>>>
 export type GetTeamTimezoneQueryError = ErrorType<ErrorResponse>
 
+/**
+ * The IANA zone of the given point, else the team's own: the zone the backend will read an event's wall times in once that point is its start (docs/LEDGER_*.md API-60). For the editors' field labels only — the backend resolves the zone of a saved entity itself. Organisers and above.
+ * @summary Zone of a point for the team
+ */
 export function useGetTeamTimezone<
   TData = Awaited<ReturnType<typeof getTeamTimezone>>,
   TError = ErrorType<ErrorResponse>,
@@ -885,6 +932,10 @@ export function useGetTeamTimezone<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The IANA zone of the given point, else the team's own: the zone the backend will read an event's wall times in once that point is its start (docs/LEDGER_*.md API-60). For the editors' field labels only — the backend resolves the zone of a saved entity itself. Organisers and above.
+ * @summary Zone of a point for the team
+ */
 export function useGetTeamTimezone<
   TData = Awaited<ReturnType<typeof getTeamTimezone>>,
   TError = ErrorType<ErrorResponse>,
@@ -905,6 +956,10 @@ export function useGetTeamTimezone<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * The IANA zone of the given point, else the team's own: the zone the backend will read an event's wall times in once that point is its start (docs/LEDGER_*.md API-60). For the editors' field labels only — the backend resolves the zone of a saved entity itself. Organisers and above.
+ * @summary Zone of a point for the team
+ */
 export function useGetTeamTimezone<
   TData = Awaited<ReturnType<typeof getTeamTimezone>>,
   TError = ErrorType<ErrorResponse>,
@@ -918,9 +973,9 @@ export function useGetTeamTimezone<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * The IANA zone of the given point, else the team's own: the zone the backend will read an event's wall times in once that point is its start (docs/LEDGER_*.md API-60). For the editors' field labels only — the backend resolves the zone of a saved entity itself. Organisers and above.
  * @summary Zone of a point for the team
  */
-
 export function useGetTeamTimezone<
   TData = Awaited<ReturnType<typeof getTeamTimezone>>,
   TError = ErrorType<ErrorResponse>,
@@ -943,6 +998,7 @@ export function useGetTeamTimezone<
 }
 
 /**
+ * The IANA zone of the given point, else the team's own: the zone the backend will read an event's wall times in once that point is its start (docs/LEDGER_*.md API-60). For the editors' field labels only — the backend resolves the zone of a saved entity itself. Organisers and above.
  * @summary Zone of a point for the team
  */
 export const prefetchGetTeamTimezoneQuery = async <
@@ -1023,6 +1079,10 @@ export type PreviewTeamTimezoneChangeQueryResult = NonNullable<
 >
 export type PreviewTeamTimezoneChangeQueryError = ErrorType<ErrorResponse>
 
+/**
+ * What saving the team with this zone would do, without writing anything (docs/LEDGER_*.md API-60, plan §9): its upcoming rides, trips, stages and posts that no place or route locates keep their wall time in the new zone, the past ones keep their instant. Team admins only.
+ * @summary Preview a change of the team's zone
+ */
 export function usePreviewTeamTimezoneChange<
   TData = Awaited<ReturnType<typeof previewTeamTimezoneChange>>,
   TError = ErrorType<ErrorResponse>,
@@ -1045,6 +1105,10 @@ export function usePreviewTeamTimezoneChange<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * What saving the team with this zone would do, without writing anything (docs/LEDGER_*.md API-60, plan §9): its upcoming rides, trips, stages and posts that no place or route locates keep their wall time in the new zone, the past ones keep their instant. Team admins only.
+ * @summary Preview a change of the team's zone
+ */
 export function usePreviewTeamTimezoneChange<
   TData = Awaited<ReturnType<typeof previewTeamTimezoneChange>>,
   TError = ErrorType<ErrorResponse>,
@@ -1067,6 +1131,10 @@ export function usePreviewTeamTimezoneChange<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * What saving the team with this zone would do, without writing anything (docs/LEDGER_*.md API-60, plan §9): its upcoming rides, trips, stages and posts that no place or route locates keep their wall time in the new zone, the past ones keep their instant. Team admins only.
+ * @summary Preview a change of the team's zone
+ */
 export function usePreviewTeamTimezoneChange<
   TData = Awaited<ReturnType<typeof previewTeamTimezoneChange>>,
   TError = ErrorType<ErrorResponse>,
@@ -1082,9 +1150,9 @@ export function usePreviewTeamTimezoneChange<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * What saving the team with this zone would do, without writing anything (docs/LEDGER_*.md API-60, plan §9): its upcoming rides, trips, stages and posts that no place or route locates keep their wall time in the new zone, the past ones keep their instant. Team admins only.
  * @summary Preview a change of the team's zone
  */
-
 export function usePreviewTeamTimezoneChange<
   TData = Awaited<ReturnType<typeof previewTeamTimezoneChange>>,
   TError = ErrorType<ErrorResponse>,
@@ -1109,6 +1177,7 @@ export function usePreviewTeamTimezoneChange<
 }
 
 /**
+ * What saving the team with this zone would do, without writing anything (docs/LEDGER_*.md API-60, plan §9): its upcoming rides, trips, stages and posts that no place or route locates keep their wall time in the new zone, the past ones keep their instant. Team admins only.
  * @summary Preview a change of the team's zone
  */
 export const prefetchPreviewTeamTimezoneChangeQuery = async <

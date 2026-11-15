@@ -111,6 +111,7 @@ export type DeviceCompleteMutationError = ErrorType<ErrorResponse | void>
 export type DeviceCompleteMutationVariables = { data: BodyType<CompleteRequest> }
 
 /**
+ * Called by frontend after user authenticates via OTP
  * @summary Complete device authorization
  */
 export const useDeviceComplete = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -197,6 +198,7 @@ export type DeviceDenyMutationError = ErrorType<ErrorResponse | void>
 export type DeviceDenyMutationVariables = { data: BodyType<DenyRequest> }
 
 /**
+ * The signed-in user refuses to pair the device showing this code: the code expires at once, and the device polling /token is told TOKEN_EXPIRED
  * @summary Deny device authorization
  */
 export const useDeviceDeny = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -283,6 +285,7 @@ export type DeviceMutationError = ErrorType<ErrorResponse>
 export type DeviceMutationVariables = { data: BodyType<DeviceRequest> }
 
 /**
+ * Start device code flow - returns user code and verification URL
  * @summary Request device code
  */
 export const useDevice = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -369,6 +372,7 @@ export type DeviceTokenMutationError = ErrorType<ErrorResponse>
 export type DeviceTokenMutationVariables = { data: BodyType<DeviceTokenRequest> }
 
 /**
+ * Exchange device code or refresh token for access tokens. Returns 'authorization_pending' error while waiting for user.
  * @summary Exchange code for tokens
  */
 export const useDeviceToken = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -436,6 +440,10 @@ export const getVerifyQueryOptions = <
 export type VerifyQueryResult = NonNullable<Awaited<ReturnType<typeof verify>>>
 export type VerifyQueryError = ErrorType<ErrorResponse>
 
+/**
+ * Frontend uses this to verify user code before showing auth flow
+ * @summary Check user code validity
+ */
 export function useVerify<
   TData = Awaited<ReturnType<typeof verify>>,
   TError = ErrorType<ErrorResponse>,
@@ -455,6 +463,10 @@ export function useVerify<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Frontend uses this to verify user code before showing auth flow
+ * @summary Check user code validity
+ */
 export function useVerify<
   TData = Awaited<ReturnType<typeof verify>>,
   TError = ErrorType<ErrorResponse>,
@@ -474,6 +486,10 @@ export function useVerify<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Frontend uses this to verify user code before showing auth flow
+ * @summary Check user code validity
+ */
 export function useVerify<
   TData = Awaited<ReturnType<typeof verify>>,
   TError = ErrorType<ErrorResponse>,
@@ -486,9 +502,9 @@ export function useVerify<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Frontend uses this to verify user code before showing auth flow
  * @summary Check user code validity
  */
-
 export function useVerify<
   TData = Awaited<ReturnType<typeof verify>>,
   TError = ErrorType<ErrorResponse>,
@@ -510,6 +526,7 @@ export function useVerify<
 }
 
 /**
+ * Frontend uses this to verify user code before showing auth flow
  * @summary Check user code validity
  */
 export const prefetchVerifyQuery = async <

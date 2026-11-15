@@ -107,6 +107,10 @@ export const getListTripCommentsQueryOptions = <
 export type ListTripCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof listTripComments>>>
 export type ListTripCommentsQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Top-level comments with their replies. Passing neither page nor size returns the whole tree, as before this endpoint took parameters; passing either paginates the top-level comments. parentId switches to listing the replies of a single comment.
+ * @summary List trip comments
+ */
 export function useListTripComments<
   TData = Awaited<ReturnType<typeof listTripComments>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -128,6 +132,10 @@ export function useListTripComments<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Top-level comments with their replies. Passing neither page nor size returns the whole tree, as before this endpoint took parameters; passing either paginates the top-level comments. parentId switches to listing the replies of a single comment.
+ * @summary List trip comments
+ */
 export function useListTripComments<
   TData = Awaited<ReturnType<typeof listTripComments>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -149,6 +157,10 @@ export function useListTripComments<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Top-level comments with their replies. Passing neither page nor size returns the whole tree, as before this endpoint took parameters; passing either paginates the top-level comments. parentId switches to listing the replies of a single comment.
+ * @summary List trip comments
+ */
 export function useListTripComments<
   TData = Awaited<ReturnType<typeof listTripComments>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -163,9 +175,9 @@ export function useListTripComments<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Top-level comments with their replies. Passing neither page nor size returns the whole tree, as before this endpoint took parameters; passing either paginates the top-level comments. parentId switches to listing the replies of a single comment.
  * @summary List trip comments
  */
-
 export function useListTripComments<
   TData = Awaited<ReturnType<typeof listTripComments>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -189,6 +201,7 @@ export function useListTripComments<
 }
 
 /**
+ * Top-level comments with their replies. Passing neither page nor size returns the whole tree, as before this endpoint took parameters; passing either paginates the top-level comments. parentId switches to listing the replies of a single comment.
  * @summary List trip comments
  */
 export const prefetchListTripCommentsQuery = async <
@@ -282,9 +295,7 @@ export type CreateTripCommentMutationVariables = {
   data: BodyType<CommentRequest>
 }
 
-/**
- * @summary Create trip comment
- */
+/** @summary Create trip comment */
 export const useCreateTripComment = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<
@@ -373,9 +384,7 @@ export type DeleteTripCommentMutationVariables = {
   commentId: string
 }
 
-/**
- * @summary Delete trip comment
- */
+/** @summary Delete trip comment */
 export const useDeleteTripComment = <TError = ErrorType<void | ErrorResponse>, TContext = unknown>(
   options?: {
     mutation?: UseMutationOptions<

@@ -99,6 +99,10 @@ export const getListAdsQueryOptions = <
 export type ListAdsQueryResult = NonNullable<Awaited<ReturnType<typeof listAds>>>
 export type ListAdsQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get paginated list of ads for a team with optional filtering
+ * @summary List ads
+ */
 export function useListAds<
   TData = Awaited<ReturnType<typeof listAds>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -119,6 +123,10 @@ export function useListAds<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get paginated list of ads for a team with optional filtering
+ * @summary List ads
+ */
 export function useListAds<
   TData = Awaited<ReturnType<typeof listAds>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -139,6 +147,10 @@ export function useListAds<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get paginated list of ads for a team with optional filtering
+ * @summary List ads
+ */
 export function useListAds<
   TData = Awaited<ReturnType<typeof listAds>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -152,9 +164,9 @@ export function useListAds<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get paginated list of ads for a team with optional filtering
  * @summary List ads
  */
-
 export function useListAds<
   TData = Awaited<ReturnType<typeof listAds>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -177,6 +189,7 @@ export function useListAds<
 }
 
 /**
+ * Get paginated list of ads for a team with optional filtering
  * @summary List ads
  */
 export const prefetchListAdsQuery = async <
@@ -264,6 +277,7 @@ export type CreateAdMutationError = ErrorType<ErrorResponse>
 export type CreateAdMutationVariables = { teamSlug: string; data: BodyType<AdRequest> }
 
 /**
+ * Create a new ad. Any team member can create ads.
  * @summary Create ad
  */
 export const useCreateAd = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -336,6 +350,10 @@ export const getCountAdsQueryOptions = <
 export type CountAdsQueryResult = NonNullable<Awaited<ReturnType<typeof countAds>>>
 export type CountAdsQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * How many of the team's classifieds match the filters, with none of them read. Accepts exactly the same filters as the classifieds list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
+ * @summary Count ads
+ */
 export function useCountAds<
   TData = Awaited<ReturnType<typeof countAds>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -356,6 +374,10 @@ export function useCountAds<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * How many of the team's classifieds match the filters, with none of them read. Accepts exactly the same filters as the classifieds list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
+ * @summary Count ads
+ */
 export function useCountAds<
   TData = Awaited<ReturnType<typeof countAds>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -376,6 +398,10 @@ export function useCountAds<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * How many of the team's classifieds match the filters, with none of them read. Accepts exactly the same filters as the classifieds list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
+ * @summary Count ads
+ */
 export function useCountAds<
   TData = Awaited<ReturnType<typeof countAds>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -389,9 +415,9 @@ export function useCountAds<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * How many of the team's classifieds match the filters, with none of them read. Accepts exactly the same filters as the classifieds list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
  * @summary Count ads
  */
-
 export function useCountAds<
   TData = Awaited<ReturnType<typeof countAds>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -414,6 +440,7 @@ export function useCountAds<
 }
 
 /**
+ * How many of the team's classifieds match the filters, with none of them read. Accepts exactly the same filters as the classifieds list, minus sorting and pagination, so the figure and the list it opens can never disagree. Meant for a filter sheet that wants to announce its result count before the user commits to it.
  * @summary Count ads
  */
 export const prefetchCountAdsQuery = async <
@@ -506,6 +533,7 @@ export type UpdateAdMutationVariables = {
 }
 
 /**
+ * Update ad information. Only the creator or an admin can update.
  * @summary Update ad
  */
 export const useUpdateAd = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -578,6 +606,10 @@ export const getGetAdQueryOptions = <
 export type GetAdQueryResult = NonNullable<Awaited<ReturnType<typeof getAd>>>
 export type GetAdQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get detailed ad information
+ * @summary Get ad details
+ */
 export function useGetAd<
   TData = Awaited<ReturnType<typeof getAd>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -598,6 +630,10 @@ export function useGetAd<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed ad information
+ * @summary Get ad details
+ */
 export function useGetAd<
   TData = Awaited<ReturnType<typeof getAd>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -618,6 +654,10 @@ export function useGetAd<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed ad information
+ * @summary Get ad details
+ */
 export function useGetAd<
   TData = Awaited<ReturnType<typeof getAd>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -631,9 +671,9 @@ export function useGetAd<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get detailed ad information
  * @summary Get ad details
  */
-
 export function useGetAd<
   TData = Awaited<ReturnType<typeof getAd>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -656,6 +696,7 @@ export function useGetAd<
 }
 
 /**
+ * Get detailed ad information
  * @summary Get ad details
  */
 export const prefetchGetAdQuery = async <
@@ -737,6 +778,7 @@ export type DeleteAdMutationError = ErrorType<ErrorResponse>
 export type DeleteAdMutationVariables = { teamSlug: string; slug: string }
 
 /**
+ * Soft delete an ad. Only the creator or an admin can delete.
  * @summary Delete ad
  */
 export const useDeleteAd = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -829,6 +871,7 @@ export type ContactAdAuthorMutationVariables = {
 }
 
 /**
+ * Relays a message to the author of an ad. Neither party's address appears anywhere in this API: the server sends the email and sets Reply-To to the caller, so the author can answer directly. Writing therefore discloses the caller's address to the author — a one-way disclosure the caller chose — while the author's address is never disclosed at all. Requires the same access as reading the ad.
  * @summary Contact an ad's author
  */
 export const useContactAdAuthor = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -901,6 +944,10 @@ export const getGetAdEditQueryOptions = <
 export type GetAdEditQueryResult = NonNullable<Awaited<ReturnType<typeof getAdEdit>>>
 export type GetAdEditQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get detailed ad information
+ * @summary Get ad details for edit
+ */
 export function useGetAdEdit<
   TData = Awaited<ReturnType<typeof getAdEdit>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -921,6 +968,10 @@ export function useGetAdEdit<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed ad information
+ * @summary Get ad details for edit
+ */
 export function useGetAdEdit<
   TData = Awaited<ReturnType<typeof getAdEdit>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -941,6 +992,10 @@ export function useGetAdEdit<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed ad information
+ * @summary Get ad details for edit
+ */
 export function useGetAdEdit<
   TData = Awaited<ReturnType<typeof getAdEdit>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -954,9 +1009,9 @@ export function useGetAdEdit<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get detailed ad information
  * @summary Get ad details for edit
  */
-
 export function useGetAdEdit<
   TData = Awaited<ReturnType<typeof getAdEdit>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -979,6 +1034,7 @@ export function useGetAdEdit<
 }
 
 /**
+ * Get detailed ad information
  * @summary Get ad details for edit
  */
 export const prefetchGetAdEditQuery = async <
@@ -1071,6 +1127,7 @@ export type ChangeAdSlugMutationVariables = {
 }
 
 /**
+ * Change ad URL slug. Requires admin permissions.
  * @summary Change ad slug
  */
 export const useChangeAdSlug = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -1163,6 +1220,7 @@ export type ChangeAdStatusMutationVariables = {
 }
 
 /**
+ * Change the ad's status and nothing else — what a list row can do without the full ad. Same side effects as a status change through the update. Requires the team admin or the ad's author.
  * @summary Change ad status
  */
 export const useChangeAdStatus = <TError = ErrorType<ErrorResponse>, TContext = unknown>(
@@ -1244,6 +1302,7 @@ export type UndeleteAdMutationError = ErrorType<ErrorResponse>
 export type UndeleteAdMutationVariables = { teamSlug: string; slug: string }
 
 /**
+ * Restore a soft-deleted ad. Only the creator or an admin can restore.
  * @summary Restore ad
  */
 export const useUndeleteAd = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

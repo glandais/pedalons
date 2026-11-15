@@ -96,6 +96,10 @@ export const getListDomainsQueryOptions = <
 export type ListDomainsQueryResult = NonNullable<Awaited<ReturnType<typeof listDomains>>>
 export type ListDomainsQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get a paginated list of all domains
+ * @summary List all domains
+ */
 export function useListDomains<
   TData = Awaited<ReturnType<typeof listDomains>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -115,6 +119,10 @@ export function useListDomains<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get a paginated list of all domains
+ * @summary List all domains
+ */
 export function useListDomains<
   TData = Awaited<ReturnType<typeof listDomains>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -134,6 +142,10 @@ export function useListDomains<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get a paginated list of all domains
+ * @summary List all domains
+ */
 export function useListDomains<
   TData = Awaited<ReturnType<typeof listDomains>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -146,9 +158,9 @@ export function useListDomains<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get a paginated list of all domains
  * @summary List all domains
  */
-
 export function useListDomains<
   TData = Awaited<ReturnType<typeof listDomains>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -170,6 +182,7 @@ export function useListDomains<
 }
 
 /**
+ * Get a paginated list of all domains
  * @summary List all domains
  */
 export const prefetchListDomainsQuery = async <
@@ -255,6 +268,7 @@ export type CreateDomainMutationError = ErrorType<ErrorResponse | void>
 export type CreateDomainMutationVariables = { data: BodyType<CreateDomainRequest> }
 
 /**
+ * Create a new domain
  * @summary Create domain
  */
 export const useCreateDomain = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -315,6 +329,10 @@ export const getGetStatsQueryOptions = <
 export type GetStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getStats>>>
 export type GetStatsQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get overall platform statistics
+ * @summary Get platform statistics
+ */
 export function useGetStats<
   TData = Awaited<ReturnType<typeof getStats>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -333,6 +351,10 @@ export function useGetStats<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get overall platform statistics
+ * @summary Get platform statistics
+ */
 export function useGetStats<
   TData = Awaited<ReturnType<typeof getStats>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -351,6 +373,10 @@ export function useGetStats<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get overall platform statistics
+ * @summary Get platform statistics
+ */
 export function useGetStats<
   TData = Awaited<ReturnType<typeof getStats>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -362,9 +388,9 @@ export function useGetStats<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get overall platform statistics
  * @summary Get platform statistics
  */
-
 export function useGetStats<
   TData = Awaited<ReturnType<typeof getStats>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -385,6 +411,7 @@ export function useGetStats<
 }
 
 /**
+ * Get overall platform statistics
  * @summary Get platform statistics
  */
 export const prefetchGetStatsQuery = async <
@@ -473,6 +500,7 @@ export type UpdateDomainMutationVariables = {
 }
 
 /**
+ * Update domain information
  * @summary Update domain
  */
 export const useUpdateDomain = <TError = ErrorType<void | ErrorResponse>, TContext = unknown>(
@@ -543,6 +571,10 @@ export const getGetDomainQueryOptions = <
 export type GetDomainQueryResult = NonNullable<Awaited<ReturnType<typeof getDomain>>>
 export type GetDomainQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get detailed domain information
+ * @summary Get domain details
+ */
 export function useGetDomain<
   TData = Awaited<ReturnType<typeof getDomain>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -562,6 +594,10 @@ export function useGetDomain<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed domain information
+ * @summary Get domain details
+ */
 export function useGetDomain<
   TData = Awaited<ReturnType<typeof getDomain>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -581,6 +617,10 @@ export function useGetDomain<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get detailed domain information
+ * @summary Get domain details
+ */
 export function useGetDomain<
   TData = Awaited<ReturnType<typeof getDomain>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -593,9 +633,9 @@ export function useGetDomain<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get detailed domain information
  * @summary Get domain details
  */
-
 export function useGetDomain<
   TData = Awaited<ReturnType<typeof getDomain>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -617,6 +657,7 @@ export function useGetDomain<
 }
 
 /**
+ * Get detailed domain information
  * @summary Get domain details
  */
 export const prefetchGetDomainQuery = async <
@@ -688,6 +729,10 @@ export type ListDomainAliasesQueryResult = NonNullable<
 >
 export type ListDomainAliasesQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get all dedicated hostnames (aliases) pinned to teams of a domain
+ * @summary List domain aliases
+ */
 export function useListDomainAliases<
   TData = Awaited<ReturnType<typeof listDomainAliases>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -707,6 +752,10 @@ export function useListDomainAliases<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get all dedicated hostnames (aliases) pinned to teams of a domain
+ * @summary List domain aliases
+ */
 export function useListDomainAliases<
   TData = Awaited<ReturnType<typeof listDomainAliases>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -726,6 +775,10 @@ export function useListDomainAliases<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get all dedicated hostnames (aliases) pinned to teams of a domain
+ * @summary List domain aliases
+ */
 export function useListDomainAliases<
   TData = Awaited<ReturnType<typeof listDomainAliases>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -738,9 +791,9 @@ export function useListDomainAliases<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get all dedicated hostnames (aliases) pinned to teams of a domain
  * @summary List domain aliases
  */
-
 export function useListDomainAliases<
   TData = Awaited<ReturnType<typeof listDomainAliases>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -762,6 +815,7 @@ export function useListDomainAliases<
 }
 
 /**
+ * Get all dedicated hostnames (aliases) pinned to teams of a domain
  * @summary List domain aliases
  */
 export const prefetchListDomainAliasesQuery = async <
@@ -853,6 +907,7 @@ export type CreateDomainAliasMutationVariables = {
 }
 
 /**
+ * Create a dedicated hostname pinned to a team of the domain
  * @summary Create domain alias
  */
 export const useCreateDomainAlias = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -947,6 +1002,7 @@ export type UpdateDomainAliasMutationVariables = {
 }
 
 /**
+ * Update a dedicated hostname's pinned team or branding
  * @summary Update domain alias
  */
 export const useUpdateDomainAlias = <TError = ErrorType<ErrorResponse | void>, TContext = unknown>(
@@ -1030,6 +1086,7 @@ export type DeleteDomainAliasMutationError = ErrorType<void | ErrorResponse>
 export type DeleteDomainAliasMutationVariables = { domainId: string; aliasId: string }
 
 /**
+ * Delete a dedicated hostname
  * @summary Delete domain alias
  */
 export const useDeleteDomainAlias = <TError = ErrorType<void | ErrorResponse>, TContext = unknown>(
@@ -1117,6 +1174,7 @@ export type ToggleDomainAliasActiveMutationError = ErrorType<void | ErrorRespons
 export type ToggleDomainAliasActiveMutationVariables = { domainId: string; aliasId: string }
 
 /**
+ * Enable or disable a dedicated hostname
  * @summary Toggle domain alias active status
  */
 export const useToggleDomainAliasActive = <
@@ -1195,6 +1253,10 @@ export type ListDomainGpsCredentialsQueryResult = NonNullable<
 >
 export type ListDomainGpsCredentialsQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Get all GPS credentials for a domain
+ * @summary List GPS credentials
+ */
 export function useListDomainGpsCredentials<
   TData = Awaited<ReturnType<typeof listDomainGpsCredentials>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1216,6 +1278,10 @@ export function useListDomainGpsCredentials<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get all GPS credentials for a domain
+ * @summary List GPS credentials
+ */
 export function useListDomainGpsCredentials<
   TData = Awaited<ReturnType<typeof listDomainGpsCredentials>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1237,6 +1303,10 @@ export function useListDomainGpsCredentials<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Get all GPS credentials for a domain
+ * @summary List GPS credentials
+ */
 export function useListDomainGpsCredentials<
   TData = Awaited<ReturnType<typeof listDomainGpsCredentials>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1251,9 +1321,9 @@ export function useListDomainGpsCredentials<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Get all GPS credentials for a domain
  * @summary List GPS credentials
  */
-
 export function useListDomainGpsCredentials<
   TData = Awaited<ReturnType<typeof listDomainGpsCredentials>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -1277,6 +1347,7 @@ export function useListDomainGpsCredentials<
 }
 
 /**
+ * Get all GPS credentials for a domain
  * @summary List GPS credentials
  */
 export const prefetchListDomainGpsCredentialsQuery = async <
@@ -1370,6 +1441,7 @@ export type CreateDomainGpsCredentialMutationVariables = {
 }
 
 /**
+ * Create a new GPS credential for a domain
  * @summary Create GPS credential
  */
 export const useCreateDomainGpsCredential = <
@@ -1467,6 +1539,7 @@ export type UpdateDomainGpsCredentialMutationVariables = {
 }
 
 /**
+ * Update a GPS credential for a domain
  * @summary Update GPS credential
  */
 export const useUpdateDomainGpsCredential = <
@@ -1557,6 +1630,7 @@ export type DeleteDomainGpsCredentialMutationError = ErrorType<void | ErrorRespo
 export type DeleteDomainGpsCredentialMutationVariables = { domainId: string; credentialId: string }
 
 /**
+ * Delete a GPS credential for a domain
  * @summary Delete GPS credential
  */
 export const useDeleteDomainGpsCredential = <
@@ -1642,6 +1716,7 @@ export type ToggleDomainActiveMutationError = ErrorType<void | ErrorResponse>
 export type ToggleDomainActiveMutationVariables = { domainId: string }
 
 /**
+ * Enable or disable a domain
  * @summary Toggle domain active status
  */
 export const useToggleDomainActive = <TError = ErrorType<void | ErrorResponse>, TContext = unknown>(

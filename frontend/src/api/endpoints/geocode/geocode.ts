@@ -84,6 +84,10 @@ export const getResolvePlaceQueryOptions = <
 export type ResolvePlaceQueryResult = NonNullable<Awaited<ReturnType<typeof resolvePlace>>>
 export type ResolvePlaceQueryError = ErrorType<void | ErrorResponse>
 
+/**
+ * Returns the place whose id a search result carried, with lat and lon always set. Call it only for the result the user picked, never for every suggestion: each call is billed by the provider. The id is a query parameter because it contains ':'. An id that is not shaped like a provider id, or that the provider does not know, is a 404 (NOT_FOUND); a provider failure or spent quota is a 503 (GEOCODING_UNAVAILABLE) — the client should then let the user search and pick again, or leave the position empty.
+ * @summary Resolve the position of a picked place
+ */
 export function useResolvePlace<
   TData = Awaited<ReturnType<typeof resolvePlace>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -103,6 +107,10 @@ export function useResolvePlace<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Returns the place whose id a search result carried, with lat and lon always set. Call it only for the result the user picked, never for every suggestion: each call is billed by the provider. The id is a query parameter because it contains ':'. An id that is not shaped like a provider id, or that the provider does not know, is a 404 (NOT_FOUND); a provider failure or spent quota is a 503 (GEOCODING_UNAVAILABLE) — the client should then let the user search and pick again, or leave the position empty.
+ * @summary Resolve the position of a picked place
+ */
 export function useResolvePlace<
   TData = Awaited<ReturnType<typeof resolvePlace>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -122,6 +130,10 @@ export function useResolvePlace<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Returns the place whose id a search result carried, with lat and lon always set. Call it only for the result the user picked, never for every suggestion: each call is billed by the provider. The id is a query parameter because it contains ':'. An id that is not shaped like a provider id, or that the provider does not know, is a 404 (NOT_FOUND); a provider failure or spent quota is a 503 (GEOCODING_UNAVAILABLE) — the client should then let the user search and pick again, or leave the position empty.
+ * @summary Resolve the position of a picked place
+ */
 export function useResolvePlace<
   TData = Awaited<ReturnType<typeof resolvePlace>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -134,9 +146,9 @@ export function useResolvePlace<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Returns the place whose id a search result carried, with lat and lon always set. Call it only for the result the user picked, never for every suggestion: each call is billed by the provider. The id is a query parameter because it contains ':'. An id that is not shaped like a provider id, or that the provider does not know, is a 404 (NOT_FOUND); a provider failure or spent quota is a 503 (GEOCODING_UNAVAILABLE) — the client should then let the user search and pick again, or leave the position empty.
  * @summary Resolve the position of a picked place
  */
-
 export function useResolvePlace<
   TData = Awaited<ReturnType<typeof resolvePlace>>,
   TError = ErrorType<void | ErrorResponse>,
@@ -158,6 +170,7 @@ export function useResolvePlace<
 }
 
 /**
+ * Returns the place whose id a search result carried, with lat and lon always set. Call it only for the result the user picked, never for every suggestion: each call is billed by the provider. The id is a query parameter because it contains ':'. An id that is not shaped like a provider id, or that the provider does not know, is a 404 (NOT_FOUND); a provider failure or spent quota is a 503 (GEOCODING_UNAVAILABLE) — the client should then let the user search and pick again, or leave the position empty.
  * @summary Resolve the position of a picked place
  */
 export const prefetchResolvePlaceQuery = async <
@@ -224,6 +237,10 @@ export const getSearchPlacesQueryOptions = <
 export type SearchPlacesQueryResult = NonNullable<Awaited<ReturnType<typeof searchPlaces>>>
 export type SearchPlacesQueryError = ErrorType<void>
 
+/**
+ * Returns at most 5 places matching the query, or an empty list when the query is shorter than 3 characters or the provider is unreachable. A result's lat and lon are null when the provider gave no position for it (the usual case): once the user picks it, resolve its position with GET /api/geocode/place?id=. Never resolve every suggestion: each resolution is billed. Results come from the Stadia Maps geocoder: a client displaying them must credit 'Stadia Maps, © OpenStreetMap contributors & others'.
+ * @summary Search places by name
+ */
 export function useSearchPlaces<
   TData = Awaited<ReturnType<typeof searchPlaces>>,
   TError = ErrorType<void>,
@@ -243,6 +260,10 @@ export function useSearchPlaces<
   },
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Returns at most 5 places matching the query, or an empty list when the query is shorter than 3 characters or the provider is unreachable. A result's lat and lon are null when the provider gave no position for it (the usual case): once the user picks it, resolve its position with GET /api/geocode/place?id=. Never resolve every suggestion: each resolution is billed. Results come from the Stadia Maps geocoder: a client displaying them must credit 'Stadia Maps, © OpenStreetMap contributors & others'.
+ * @summary Search places by name
+ */
 export function useSearchPlaces<
   TData = Awaited<ReturnType<typeof searchPlaces>>,
   TError = ErrorType<void>,
@@ -262,6 +283,10 @@ export function useSearchPlaces<
   },
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Returns at most 5 places matching the query, or an empty list when the query is shorter than 3 characters or the provider is unreachable. A result's lat and lon are null when the provider gave no position for it (the usual case): once the user picks it, resolve its position with GET /api/geocode/place?id=. Never resolve every suggestion: each resolution is billed. Results come from the Stadia Maps geocoder: a client displaying them must credit 'Stadia Maps, © OpenStreetMap contributors & others'.
+ * @summary Search places by name
+ */
 export function useSearchPlaces<
   TData = Awaited<ReturnType<typeof searchPlaces>>,
   TError = ErrorType<void>,
@@ -274,9 +299,9 @@ export function useSearchPlaces<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
+ * Returns at most 5 places matching the query, or an empty list when the query is shorter than 3 characters or the provider is unreachable. A result's lat and lon are null when the provider gave no position for it (the usual case): once the user picks it, resolve its position with GET /api/geocode/place?id=. Never resolve every suggestion: each resolution is billed. Results come from the Stadia Maps geocoder: a client displaying them must credit 'Stadia Maps, © OpenStreetMap contributors & others'.
  * @summary Search places by name
  */
-
 export function useSearchPlaces<
   TData = Awaited<ReturnType<typeof searchPlaces>>,
   TError = ErrorType<void>,
@@ -298,6 +323,7 @@ export function useSearchPlaces<
 }
 
 /**
+ * Returns at most 5 places matching the query, or an empty list when the query is shorter than 3 characters or the provider is unreachable. A result's lat and lon are null when the provider gave no position for it (the usual case): once the user picks it, resolve its position with GET /api/geocode/place?id=. Never resolve every suggestion: each resolution is billed. Results come from the Stadia Maps geocoder: a client displaying them must credit 'Stadia Maps, © OpenStreetMap contributors & others'.
  * @summary Search places by name
  */
 export const prefetchSearchPlacesQuery = async <
