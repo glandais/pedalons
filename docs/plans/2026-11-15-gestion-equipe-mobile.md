@@ -478,8 +478,7 @@ liste des écrans y figure.
 ## 11. Ce qui reste dehors
 
 - **Paramètres plateforme** (palier, note, `joinable`, `addMemberAllowed`, `visibilityEditable`,
-  traceur, contenu public par lien) : au site (D1). À inscrire dans « Délibérément dehors » sous un
-  numéro `MOB`.
+  traceur, contenu public par lien) : au site (D1), ledger `MOB-171` dans « Délibérément dehors ».
 - **Page d'atterrissage d'invitation par jeton** (route `invitation`) : au site ; l'app garde la
   carte des invitations en attente.
 - **Rétrograder un admin, ajouter un membre sans invitation** (`addMember`) : le site ne le fait pas
