@@ -704,6 +704,70 @@ Page sur `teamAdminTags` dans `features/tags/`, accès admin.
 - Après écriture : `notifyTeamChanged` (la fiche d'équipe porte `pages[]`, lue par « À propos ») et
   la page elle-même.
 
+**Fait (lot 5)** — ce que le code a tranché :
+
+- **Accès** : `TeamPagesAdminPage(teamSlug:)` (`features/teams/presentation/pages/
+  team_pages_admin_page.dart`), sous-route du hub (`_teamAdminPagesRoute`), et
+  `TeamPageEditorPage(teamSlug:, pageSlug:)` (`team_page_editor_page.dart`), sous-routes **de la
+  liste** (`teamAdminPageNew` déclarée avant `teamAdminPageEdit`) : ouvert par un lien, l'éditeur
+  reconstruit équipe, hub et liste dessous. Le refus (403 et 404 de `GET team` compris) est
+  tranché avant toute requête de pages ; l'éditeur ne lit la page qu'à qui administre, puis
+  exige `page.permissions.canEdit`. Une page introuvable rend une erreur à réessayer (le site
+  renvoie à la liste).
+- **Ce que le site envoie à `reorderPages`** : `pages.map((p) => p.id)`, la liste **entière** de
+  `GET …/pages` — pages supprimées comprises, puisqu'un admin les y lit. Le serveur
+  (`TeamPageService.reorderPages`) pose `pageOrder = i` sur chaque identifiant reçu
+  (`findByIdOptional`, corbeille comprise) et ne touche pas aux autres : une liste partielle
+  laisserait deux pages au même rang. L'app envoie donc la même liste entière, deux voisines
+  échangées (`movedTeamPageIds`, `domain/team_page_form.dart`) ; une page supprimée garde son
+  rang et se déplace comme les autres.
+- **Les pages à la corbeille ne comptent pas dans les trois.** Le site compte `pages.length`,
+  corbeille comprise : avec deux pages et une supprimée il dit « 3 pages sur 3 maximum » et cache
+  « Ajouter une page », alors que le serveur (`countAdditionalPages`, `deleted = false`)
+  accepterait la création. L'app compte ce que compte le serveur (`liveTeamPageCount`) :
+  « 2 pages sur 3 maximum », bouton présent. `TOO_MANY_TEAM_PAGES` reste lu dans le bandeau de
+  l'éditeur — restaurer une page ne vérifie pas la limite, une équipe peut en avoir quatre.
+- **Une page supprimée** porte « Supprimé » et n'offre que « Restaurer » (et monter /
+  descendre) : ni « Modifier », ni une seconde suppression, que le site propose encore.
+- **La confirmation de suppression dit que la page se restaure** (« vous pourrez la restaurer
+  depuis cette liste »), là où le site écrit « Cette action est irréversible » — ce qui est faux
+  d'une suppression douce que le même écran défait.
+- **Liste non paginée** (trois pages) : `teamAdminPagesProvider(slug)`, relue en entier après une
+  écriture, ses lignes restant à l'écran. Un geste à la fois (`_busy`, posé avant la
+  confirmation : un double appui n'envoie qu'une requête) ; un refus du serveur se lit dans un
+  bandeau.
+- **Éditeur** : `TeamPageForm` (`domain/team_page_form.dart`). `fromPage` reprend la page
+  entière et `toRequest()` renvoie le titre (rogné), **tous** les médias (texte, logo, images,
+  pièces jointes) et la visibilité — le PUT réécrit tout (`TeamPageService.updatePage`), et le
+  test de page vérifie le corps exact d'un formulaire intact. Les médias passent par
+  `EditorMediaActions` et `RideMediaSection`, envoyés contre l'équipe : logo compris, comme le
+  `MediaEditor` du site. Le titre **n'est pas coupé à la saisie** : au-delà de 100 caractères,
+  le champ le dit (revue du lot 3). Pas de compteur de caractères (D3). L'aide du titre dit où
+  la page apparaît dans l'app (« À propos » de l'équipe) — le site parle d'un onglet.
+- **Visibilité** : `VisibilityField` avec `VisibilityKind.teamPage` —
+  `team.allowedContentVisibilities.teamPage` à la création (« Équipe » par défaut, sinon la
+  première valeur donnée), `page.permissions.allowedVisibilities` en édition. L'aide du site
+  (« Les pages publiques sont visibles par tout le monde… ») suit le champ, sauf en équipe
+  privée, où celle du champ dit déjà ce que vaut « Public ».
+- **Adresse** : `changePageSlug`, puis `context.go(Paths.teamAdminPageEdit(…, nouveau))`.
+  Pendant l'appel (`_renaming`), la saisie est figée et « Enregistrer » inactif, comme aux
+  paramètres de l'équipe.
+- **Après un enregistrement** : retour à la liste des pages (`pop`, sinon `go`), comme au site.
+- **`notifyTeamPagesChanged`, pas `notifyTeamChanged`** (`providers/team_pages_provider.dart`) :
+  la liste d'administration, **la fiche de l'équipe seule** (`teamDetailProvider(slug)`, dont
+  « À propos » lit `pages[]`) et le contenu des pages nommées (`teamPageProvider`, l'ancienne et
+  la nouvelle adresse après un changement de slug). Ni « Mes équipes », ni le tableau de bord,
+  ni la découverte ne montrent une page : les relire viderait la liste des équipes pour rien —
+  le même arbitrage que pour les signalements (§7.3).
+- **Messages** : « Page créée », « Page mise à jour », « Page supprimée », « Page restaurée »,
+  « Pages réordonnées » (le site : « … avec succès »).
+- **Déclarations des stores** : ligne #32 de `data-safety.md` (titre, texte et pièces jointes
+  sous *Other User Content*, logo et images sous *Photos or Videos*), commentaires de
+  `PrivacyInfo.xcprivacy` ; aucun type de donnée ni appel de sélecteur nouveau — l'éditeur est
+  un appelant de plus de `EditorMediaActions`, le script de vérification attend toujours deux
+  appels à `file_picker` et deux à `image_picker`. La politique de confidentialité nomme déjà
+  ces pages (« Pages d'équipe »).
+
 ## 8. Déclarations des stores
 
 Aucun nouveau type de donnée, mais la règle de `mobile/store-metadata/README.md` impose de mettre à

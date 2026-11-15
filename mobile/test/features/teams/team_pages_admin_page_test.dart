@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/api/pedalons_api_client.dart';
 import 'package:pedalons/config/locale_context.dart';
+import 'package:pedalons/config/paths.dart';
 import 'package:pedalons/core/material.dart' hide Visibility;
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
@@ -20,8 +21,9 @@ import 'team_fixtures.dart';
 
 /// « Pages de l'équipe » (ledger `MOB-169`) : qui y entre — et qu'aucune
 /// requête de pages ne part pour les autres —, les états de la liste (aucune
-/// page, une, trois, une page supprimée), les requêtes exactes de monter et
-/// descendre, la suppression, la restauration, et ce qui est relu ensuite.
+/// page, une, trois, une page supprimée), ses entrées vers l'éditeur, les
+/// requêtes exactes de monter et descendre, la suppression, la restauration,
+/// et ce qui est relu ensuite.
 class _Teams implements TeamRepository {
   _Teams({this.role, this.refusedWith, this.gate});
 
@@ -201,6 +203,18 @@ void main() {
           builder: (BuildContext _, GoRouterState _) =>
               const TeamPagesAdminPage(teamSlug: 'n-peloton'),
         ),
+        GoRoute(
+          path: Paths.teamAdminPageNew(':teamSlug'),
+          builder: (BuildContext _, GoRouterState state) =>
+              Text('nouvelle page de ${state.pathParameters['teamSlug']}'),
+        ),
+        GoRoute(
+          path: Paths.teamAdminPageEdit(':teamSlug', ':pageSlug'),
+          builder: (BuildContext _, GoRouterState state) => Text(
+            'éditeur de ${state.pathParameters['pageSlug']} '
+            '(${state.pathParameters['teamSlug']})',
+          ),
+        ),
       ],
     );
     await tester.pumpWidget(
@@ -354,6 +368,12 @@ void main() {
         findsOneWidget,
       );
       expect(count(tester), '0 page sur 3 maximum');
+      // Un seul « Ajouter une page » : celui de l'état vide.
+      expect(find.byKey(k.addButton), findsNothing);
+
+      await tester.tap(find.byKey(k.emptyAddButton));
+      await settle(tester);
+      expect(find.text('nouvelle page de n-peloton'), findsOneWidget);
     });
 
     testWidgets('une page : son titre, sa visibilité, ni « monter » ni '
@@ -374,9 +394,26 @@ void main() {
       );
       expect(find.byKey(k.rowMoveUp('pg1')), findsNothing);
       expect(find.byKey(k.rowMoveDown('pg1')), findsNothing);
+      expect(find.byKey(k.rowEdit('pg1')), findsOneWidget);
       expect(find.byKey(k.rowDelete('pg1')), findsOneWidget);
       expect(find.byKey(k.rowRestore('pg1')), findsNothing);
       expect(find.byKey(k.rowDeleted('pg1')), findsNothing);
+
+      // Sous la limite : « Ajouter une page » ouvre l'éditeur.
+      await tester.tap(find.byKey(k.addButton));
+      await settle(tester);
+      expect(find.text('nouvelle page de n-peloton'), findsOneWidget);
+    });
+
+    testWidgets('« Modifier » ouvre l\'éditeur de la page', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, teams: _Teams(role: 'ADMIN'));
+
+      await tester.tap(find.byKey(k.rowEdit('pg2')));
+      await settle(tester);
+
+      expect(find.text('éditeur de reglement (n-peloton)'), findsOneWidget);
     });
 
     testWidgets('trois pages, dans l\'ordre de l\'équipe : la première ne '
@@ -384,6 +421,8 @@ void main() {
       await open(tester, teams: _Teams(role: 'ADMIN'));
 
       expect(count(tester), '3 pages sur 3 maximum');
+      // À trois pages, il n'y a plus rien à ajouter.
+      expect(find.byKey(k.addButton), findsNothing);
       expect(shownOrder(tester, <String>['pg1', 'pg2', 'pg3']), <String>[
         'pg1',
         'pg2',
@@ -424,9 +463,12 @@ void main() {
       );
 
       expect(count(tester), '2 pages sur 3 maximum');
+      // Trois lignes, mais deux pages qui comptent : on peut en ajouter une.
+      expect(find.byKey(k.addButton), findsOneWidget);
       expect(find.byKey(k.rowDeleted('pg2')), findsOneWidget);
       expect(find.byKey(k.rowRestore('pg2')), findsOneWidget);
       expect(find.byKey(k.rowDelete('pg2')), findsNothing);
+      expect(find.byKey(k.rowEdit('pg2')), findsNothing);
       // Elle garde son rang, et se déplace comme les autres.
       expect(find.byKey(k.rowMoveUp('pg2')), findsOneWidget);
       expect(find.byKey(k.rowMoveDown('pg2')), findsOneWidget);

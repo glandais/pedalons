@@ -41,6 +41,7 @@ class Keys {
   final teamAdminMembers = TeamAdminMembersKeys();
   final teamPlaces = TeamPlacesKeys();
   final teamPages = TeamPagesAdminKeys();
+  final teamPageEditor = TeamPageEditorKeys();
   final teamEditor = TeamEditorKeys();
   final teamWebhook = TeamWebhookKeys();
   final ride = RideDetailKeys();

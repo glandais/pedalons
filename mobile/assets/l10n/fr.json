@@ -474,8 +474,10 @@
       },
       "emptyTitle": "Aucune page",
       "emptyMessage": "Créez des pages personnalisées pour la FAQ, les règles ou toute information sur l'équipe.",
+      "add": "Ajouter une page",
       "moveUpSemantic": "Monter {name}",
       "moveDownSemantic": "Descendre {name}",
+      "editSemantic": "Modifier {name}",
       "deleteSemantic": "Supprimer {name}",
       "restoreSemantic": "Restaurer {name}",
       "deleteConfirm": {
@@ -484,7 +486,21 @@
       },
       "deleted": "Page supprimée",
       "restored": "Page restaurée",
-      "reordered": "Pages réordonnées"
+      "reordered": "Pages réordonnées",
+      "editor": {
+        "createTitle": "Créer une page",
+        "editTitle": "Modifier la page",
+        "title": "Titre de la page",
+        "titlePlaceholder": "ex : FAQ, Règlement, Équipement",
+        "titleHint": "Le nom sous lequel la page apparaît dans « À propos » de l'équipe.",
+        "titleError": "Entre 1 et {max} caractères",
+        "content": "Contenu",
+        "contentPlaceholder": "Rédigez le contenu de votre page ici…",
+        "visibilityHint": "Les pages publiques sont visibles par tout le monde, les pages non répertoriées par toute personne qui a le lien, les pages d'équipe uniquement par les membres.",
+        "create": "Créer la page",
+        "created": "Page créée",
+        "saved": "Page mise à jour"
+      }
     },
     "discovery": {
       "title": "Découvrir des équipes",

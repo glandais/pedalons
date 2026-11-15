@@ -128,7 +128,10 @@
 		     the report: POST /api/teams/{slug}/reports/resolve, data-safety.md #30, ledger
 		     MOB-168) — it completes the content reports above;
 		     the label of a tag a team's administrator writes for the team's contents
-		     (POST /api/teams/{slug}/tags, PATCH …/tags/{id}, data-safety.md #31, ledger MOB-169).
+		     (POST /api/teams/{slug}/tags, PATCH …/tags/{id}, data-safety.md #31, ledger MOB-169);
+		     the title, the text and the attachments of a team's custom page, written by a
+		     team's administrator (POST /api/teams/{slug}/pages, PUT …/pages/{pageSlug},
+		     data-safety.md #32, ledger MOB-169).
 		     All user-generated, all stored against the account, used only to run the app and moderate
 		     it. -->
 		<dict>
@@ -147,7 +150,8 @@
 		     POST /api/users/me/avatar (image_picker), and a ride's logo and images an organizer picks
 		     in the ride editor, like a route's images and a post's photos in their editors, and a
 		     team's logo and images in the team settings (POST /api/teams/{slug}/assets,
-		     data-safety.md #27). Stored against the account. -->
+		     data-safety.md #27), and a team page's logo and images in its editor
+		     (data-safety.md #32). Stored against the account. -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>

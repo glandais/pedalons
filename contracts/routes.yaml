@@ -465,11 +465,10 @@ routes:
   # --- Team admin ---
   # The team's administration (docs/plans/2026-11-15-gestion-equipe-mobile.md). `teamAdmin` is an
   # app screen since MOB-165: the hub « Gestion de l'équipe », where the site only redirects to
-  # the ride templates. Each page below becomes an app screen with its own lot (MOB-166 to
-  # MOB-169; `teamSettings` since MOB-166, `teamAdminMembers` since MOB-167, `teamAdminPlaces`
-  # and `teamAdminReports` since MOB-168); until then it is `mobile: true` + `appScreen: false`,
-  # and the hub opens it on the site (docs/LEDGER_*.md MOB-54). Flip a page in the commit of its screen: drop `appScreen`,
-  # add `deeplink: true`.
+  # the ride templates. Every page below is an app screen too, each since its own lot
+  # (`teamSettings` since MOB-166, `teamAdminMembers` since MOB-167, `teamAdminPlaces` and
+  # `teamAdminReports` since MOB-168, `teamAdminTags`, `teamAdminPages` and the page editor since
+  # MOB-169): the hub no longer opens the site for any of them.
   - id: teamAdmin
     path:
       en: /teams/{teamSlug}/admin
@@ -511,6 +510,8 @@ routes:
     web: true
     mobile: true
     deeplink: true
+  # The editor of a custom page: app screens since MOB-169, under the pages list. Declared
+  # `new` before `edit` in the app's router, like the other editors.
   - id: teamAdminPageNew
     path:
       en: /teams/{teamSlug}/admin/pages/new
@@ -518,6 +519,8 @@ routes:
     params:
       - teamSlug
     web: true
+    mobile: true
+    deeplink: true
   - id: teamAdminPageEdit
     path:
       en: /teams/{teamSlug}/admin/pages/{pageSlug}/edit
@@ -526,6 +529,8 @@ routes:
       - teamSlug
       - pageSlug
     web: true
+    mobile: true
+    deeplink: true
   # Members and invitations: an app screen since MOB-167, under the hub. `?invite=1` opens the
   # invitation dialog, on the site as in the app.
   - id: teamAdminMembers

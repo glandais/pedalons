@@ -5,10 +5,6 @@
       {
         "appID": "7Q49262697.fr.pedalons.mobile",
         "paths": [
-          "NOT /teams/*/admin/pages/new",
-          "NOT /equipes/*/admin/pages/nouvelle",
-          "NOT /teams/*/admin/pages/*/edit",
-          "NOT /equipes/*/admin/pages/*/modifier",
           "NOT /teams/*/rides/*/groups/*/map",
           "NOT /equipes/*/sorties/*/groupes/*/carte",
           "NOT /teams/*/rides/*/map",
@@ -92,6 +88,10 @@
           "/equipes/*/admin/tags",
           "/teams/*/admin/pages",
           "/equipes/*/admin/pages",
+          "/teams/*/admin/pages/new",
+          "/equipes/*/admin/pages/nouvelle",
+          "/teams/*/admin/pages/*/edit",
+          "/equipes/*/admin/pages/*/modifier",
           "/teams/*/admin/members",
           "/equipes/*/admin/membres",
           "/teams/*/admin/reports",

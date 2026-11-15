@@ -268,6 +268,11 @@ class TeamPagesAdminKeys {
   /// « n pages sur 3 maximum ».
   final count = const _TeamPagesKey('count');
 
+  /// « Ajouter une page », en tête de liste (absent à trois pages) et dans
+  /// l'état vide.
+  final addButton = const _TeamPagesKey('addButton');
+  final emptyAddButton = const _TeamPagesKey('emptyAddButton');
+
   final empty = const _TeamPagesKey('empty');
   final listError = const _TeamPagesKey('listError');
 
@@ -283,10 +288,38 @@ class TeamPagesAdminKeys {
       _TeamPagesKey('rowMoveUp_$pageId');
   ValueKey<String> rowMoveDown(String pageId) =>
       _TeamPagesKey('rowMoveDown_$pageId');
+  ValueKey<String> rowEdit(String pageId) => _TeamPagesKey('rowEdit_$pageId');
   ValueKey<String> rowDelete(String pageId) =>
       _TeamPagesKey('rowDelete_$pageId');
   ValueKey<String> rowRestore(String pageId) =>
       _TeamPagesKey('rowRestore_$pageId');
+}
+
+class _TeamPageEditorKey extends ValueKey<String> {
+  const _TeamPageEditorKey(String value) : super('teamPageEditor_$value');
+}
+
+/// L'éditeur d'une page personnalisée de l'équipe (ledger `MOB-169`).
+class TeamPageEditorKeys {
+  final loadError = const _TeamPageEditorKey('loadError');
+
+  /// Le refus rendu à qui n'administre pas l'équipe, ou ne peut pas modifier
+  /// cette page, et son « Retour ».
+  final forbidden = const _TeamPageEditorKey('forbidden');
+  final forbiddenBack = const _TeamPageEditorKey('forbiddenBack');
+
+  final errorBanner = const _TeamPageEditorKey('errorBanner');
+  final titleField = const _TeamPageEditorKey('titleField');
+
+  /// La ligne d'adresse (modification seulement), et sa feuille.
+  final slugRow = const _TeamPageEditorKey('slugRow');
+  final slugField = const _TeamPageEditorKey('slugField');
+  final slugSave = const _TeamPageEditorKey('slugSave');
+
+  final markdownField = const _TeamPageEditorKey('markdownField');
+  final visibility = const _TeamPageEditorKey('visibility');
+  final visibilityHint = const _TeamPageEditorKey('visibilityHint');
+  final saveButton = const _TeamPageEditorKey('saveButton');
 }
 
 class _TeamEditorKey extends ValueKey<String> {

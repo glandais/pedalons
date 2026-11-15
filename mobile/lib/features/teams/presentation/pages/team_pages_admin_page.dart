@@ -26,8 +26,7 @@ import '../../providers/team_providers.dart';
 
 /// « Pages de l'équipe » — le pendant mobile de `TeamPagesAdminPage` du site
 /// (docs/LEDGER_*.md MOB-169) : les pages personnalisées de l'équipe (trois au
-/// plus), à réordonner, supprimer et restaurer ; l'éditeur d'une page a son
-/// écran.
+/// plus), à créer, modifier, réordonner, supprimer et restaurer.
 ///
 /// **Réservé à l'administration de l'équipe** (et à l'admin de plateforme). Le
 /// refus est tranché **avant** que la moindre requête de pages ne parte — la
@@ -224,6 +223,16 @@ class _PagesState extends ConsumerState<_Pages> {
         client.undeletePage(teamSlug: _slug, pageSlug: page.slug),
   );
 
+  void _openNew() {
+    if (_busy) return;
+    context.push(Paths.teamAdminPageNew(_slug));
+  }
+
+  void _openEdit(TeamPageSummaryDto page) {
+    if (_busy) return;
+    context.push(Paths.teamAdminPageEdit(_slug, page.slug));
+  }
+
   Future<void> _refresh() async {
     ref.invalidate(teamAdminPagesProvider(_slug));
     try {
@@ -245,6 +254,7 @@ class _PagesState extends ConsumerState<_Pages> {
     final int live = pages == null ? 0 : liveTeamPageCount(pages);
     // Les pages à la corbeille ne comptent pas : le serveur ne les compte pas
     // non plus.
+    final bool canAdd = pages != null && live < kTeamPageLimit;
 
     return PdlScreenScaffold(
       appBar: widget.appBar,
@@ -274,19 +284,40 @@ class _PagesState extends ConsumerState<_Pages> {
                   const SizedBox(height: PdlSpacing.chipGap),
                 ],
                 if (pages != null)
-                  Text(
-                    'teams.pages.count'.plural(
-                      live,
-                      namedArgs: <String, String>{'max': '$kTeamPageLimit'},
-                    ),
-                    key: keys.teamPages.count,
-                    style: t.sub.copyWith(color: c.textDimmed),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          'teams.pages.count'.plural(
+                            live,
+                            namedArgs: <String, String>{
+                              'max': '$kTeamPageLimit',
+                            },
+                          ),
+                          key: keys.teamPages.count,
+                          style: t.sub.copyWith(color: c.textDimmed),
+                        ),
+                      ),
+                      // À trois pages, le bouton disparaît : il n'y a plus
+                      // rien à ajouter.
+                      if (canAdd && pages.isNotEmpty) ...<Widget>[
+                        const SizedBox(width: PdlSpacing.chipGap),
+                        PdlButton(
+                          key: keys.teamPages.addButton,
+                          label: 'teams.pages.add'.tr(),
+                          icon: PdlIcons.add,
+                          size: PdlButtonSize.sm,
+                          enabled: !_busy,
+                          onPressed: _openNew,
+                        ),
+                      ],
+                    ],
                   ),
               ],
             ),
           ),
         ),
-        ..._pageSlivers(async, pages),
+        ..._pageSlivers(async, pages, canAdd),
         const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
       ],
     );
@@ -295,6 +326,7 @@ class _PagesState extends ConsumerState<_Pages> {
   List<Widget> _pageSlivers(
     AsyncValue<List<TeamPageSummaryDto>> async,
     List<TeamPageSummaryDto>? pages,
+    bool canAdd,
   ) {
     if (pages == null) {
       return <Widget>[
@@ -319,6 +351,15 @@ class _PagesState extends ConsumerState<_Pages> {
             icon: PdlIcons.page,
             title: 'teams.pages.emptyTitle'.tr(),
             message: 'teams.pages.emptyMessage'.tr(),
+            actions: <Widget>[
+              PdlButton(
+                key: keys.teamPages.emptyAddButton,
+                label: 'teams.pages.add'.tr(),
+                icon: PdlIcons.add,
+                enabled: !_busy,
+                onPressed: _openNew,
+              ),
+            ],
           ),
         ),
       ];
@@ -341,6 +382,7 @@ class _PagesState extends ConsumerState<_Pages> {
               onMoveDown: index == pages.length - 1
                   ? null
                   : () => _move(pages, index, up: false),
+              onEdit: () => _openEdit(page),
               onDelete: () => _delete(page),
               onRestore: () => _restore(page),
             );
@@ -352,8 +394,9 @@ class _PagesState extends ConsumerState<_Pages> {
 }
 
 /// Une ligne de la liste : le titre, la visibilité (et « Supprimé » pour une
-/// page à la corbeille), puis les gestes — monter, descendre, supprimer ; une
-/// page supprimée n'offre que d'être restaurée, et de changer de rang.
+/// page à la corbeille), puis les gestes — monter, descendre, modifier,
+/// supprimer ; une page supprimée n'offre que d'être restaurée, et de changer
+/// de rang.
 class _PageRow extends StatelessWidget {
   const _PageRow({
     super.key,
@@ -362,6 +405,7 @@ class _PageRow extends StatelessWidget {
     required this.showDivider,
     required this.onMoveUp,
     required this.onMoveDown,
+    required this.onEdit,
     required this.onDelete,
     required this.onRestore,
   });
@@ -373,6 +417,7 @@ class _PageRow extends StatelessWidget {
   /// `null` : la ligne est déjà au bout, le bouton n'est pas rendu.
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onRestore;
 
@@ -445,7 +490,14 @@ class _PageRow extends StatelessWidget {
                     color: c.success,
                     onPressed: enabled ? onRestore : null,
                   )
-                else
+                else ...<Widget>[
+                  RowIconAction(
+                    key: keys.teamPages.rowEdit(page.id),
+                    icon: PdlIcons.edit,
+                    tooltip: 'teams.pages.editSemantic'.tr(namedArgs: named),
+                    color: c.textDimmed,
+                    onPressed: enabled ? onEdit : null,
+                  ),
                   RowIconAction(
                     key: keys.teamPages.rowDelete(page.id),
                     icon: PdlIcons.delete,
@@ -453,6 +505,7 @@ class _PageRow extends StatelessWidget {
                     color: c.danger,
                     onPressed: enabled ? onDelete : null,
                   ),
+                ],
               ],
             ),
           ],

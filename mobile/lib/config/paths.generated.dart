@@ -346,6 +346,24 @@ class Paths {
     }
   }
 
+  static String teamAdminPageNew(String teamSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/admin/pages/nouvelle';
+      default:
+        return '/teams/$teamSlug/admin/pages/new';
+    }
+  }
+
+  static String teamAdminPageEdit(String teamSlug, String pageSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/admin/pages/$pageSlug/modifier';
+      default:
+        return '/teams/$teamSlug/admin/pages/$pageSlug/edit';
+    }
+  }
+
   static String teamAdminMembers(String teamSlug) {
     switch (getCurrentLocale()) {
       case 'fr':
@@ -727,6 +745,17 @@ class PathVariants {
     'en': '/teams/$teamSlug/admin/pages',
     'fr': '/equipes/$teamSlug/admin/pages',
   };
+  static Map<String, String> teamAdminPageNew(String teamSlug) => {
+    'en': '/teams/$teamSlug/admin/pages/new',
+    'fr': '/equipes/$teamSlug/admin/pages/nouvelle',
+  };
+  static Map<String, String> teamAdminPageEdit(
+    String teamSlug,
+    String pageSlug,
+  ) => {
+    'en': '/teams/$teamSlug/admin/pages/$pageSlug/edit',
+    'fr': '/equipes/$teamSlug/admin/pages/$pageSlug/modifier',
+  };
   static Map<String, String> teamAdminMembers(String teamSlug) => {
     'en': '/teams/$teamSlug/admin/members',
     'fr': '/equipes/$teamSlug/admin/membres',
@@ -849,10 +878,6 @@ const Set<String> webOnlyRouteIds = <String>{'features', 'support'};
 /// to the app, which opens it in the browser (docs/LEDGER_*.md MOB-59). The
 /// AASA excludes the same pages (`NOT …`); the Android manifest cannot.
 const List<String> sitePagePathPatterns = <String>[
-  r'^/teams/[^/]+/admin/pages/new/?$',
-  r'^/equipes/[^/]+/admin/pages/nouvelle/?$',
-  r'^/teams/[^/]+/admin/pages/[^/]+/edit/?$',
-  r'^/equipes/[^/]+/admin/pages/[^/]+/modifier/?$',
   r'^/teams/[^/]+/rides/[^/]+/groups/[^/]+/map/?$',
   r'^/equipes/[^/]+/sorties/[^/]+/groupes/[^/]+/carte/?$',
   r'^/teams/[^/]+/rides/[^/]+/map/?$',

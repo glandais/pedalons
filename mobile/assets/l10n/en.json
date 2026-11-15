@@ -474,8 +474,10 @@
       },
       "emptyTitle": "No pages yet",
       "emptyMessage": "Create custom pages for FAQ, rules, or any team information.",
+      "add": "Add a page",
       "moveUpSemantic": "Move {name} up",
       "moveDownSemantic": "Move {name} down",
+      "editSemantic": "Edit {name}",
       "deleteSemantic": "Delete {name}",
       "restoreSemantic": "Restore {name}",
       "deleteConfirm": {
@@ -484,7 +486,21 @@
       },
       "deleted": "Page deleted",
       "restored": "Page restored",
-      "reordered": "Pages reordered"
+      "reordered": "Pages reordered",
+      "editor": {
+        "createTitle": "Create a page",
+        "editTitle": "Edit page",
+        "title": "Page title",
+        "titlePlaceholder": "e.g. FAQ, Team rules, Equipment",
+        "titleHint": "The name the page is listed under in the team's “About”.",
+        "titleError": "Between 1 and {max} characters",
+        "content": "Content",
+        "contentPlaceholder": "Write your page content here…",
+        "visibilityHint": "Public pages are visible to everyone, unlisted pages to anyone with the link, team pages only to members.",
+        "create": "Create page",
+        "created": "Page created",
+        "saved": "Page updated"
+      }
     },
     "discovery": {
       "title": "Discover teams",

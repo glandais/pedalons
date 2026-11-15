@@ -139,6 +139,10 @@
                 <data android:pathPattern="/equipes/.*/admin/tags" />
                 <data android:pathPattern="/teams/.*/admin/pages" />
                 <data android:pathPattern="/equipes/.*/admin/pages" />
+                <data android:pathPattern="/teams/.*/admin/pages/new" />
+                <data android:pathPattern="/equipes/.*/admin/pages/nouvelle" />
+                <data android:pathPattern="/teams/.*/admin/pages/.*/edit" />
+                <data android:pathPattern="/equipes/.*/admin/pages/.*/modifier" />
                 <data android:pathPattern="/teams/.*/admin/members" />
                 <data android:pathPattern="/equipes/.*/admin/membres" />
                 <data android:pathPattern="/teams/.*/admin/reports" />

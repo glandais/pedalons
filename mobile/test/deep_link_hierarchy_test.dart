@@ -218,6 +218,23 @@ final List<_LinkCase> _cases = [
     PathVariants.team(_teamSlug),
     PathVariants.teamAdmin(_teamSlug),
   ]),
+  // L'éditeur d'une page, sous la liste des pages (ledger `MOB-169`).
+  _LinkCase('teamAdminPageNew', PathVariants.teamAdminPageNew(_teamSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+    PathVariants.teamAdmin(_teamSlug),
+    PathVariants.teamAdminPages(_teamSlug),
+  ]),
+  _LinkCase(
+    'teamAdminPageEdit',
+    PathVariants.teamAdminPageEdit(_teamSlug, 'reglement'),
+    [
+      PathVariants.teams(),
+      PathVariants.team(_teamSlug),
+      PathVariants.teamAdmin(_teamSlug),
+      PathVariants.teamAdminPages(_teamSlug),
+    ],
+  ),
   // Les modèles de sortie (ledger `MOB-78`) : la liste sous l'équipe, le
   // formulaire sous la liste.
   _LinkCase('rideTemplates', PathVariants.rideTemplates(_teamSlug), [

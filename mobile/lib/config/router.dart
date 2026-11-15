@@ -56,6 +56,7 @@ import '../features/teams/presentation/pages/team_admin_page.dart';
 import '../features/teams/presentation/pages/team_custom_page.dart';
 import '../features/teams/presentation/pages/team_editor_page.dart';
 import '../features/teams/presentation/pages/team_home_page.dart';
+import '../features/teams/presentation/pages/team_page_editor_page.dart';
 import '../features/teams/presentation/pages/team_pages_admin_page.dart';
 import '../features/teams/presentation/pages/teams_discover_page.dart';
 import '../features/teams/presentation/pages/teams_page.dart';
@@ -114,6 +115,8 @@ String _rideAncestor(Map<String, String> p, String locale) =>
     PathVariants.ride(p['teamSlug']!, p['rideSlug']!)[locale]!;
 String _teamAdminAncestor(Map<String, String> p, String locale) =>
     PathVariants.teamAdmin(p['teamSlug']!)[locale]!;
+String _teamAdminPagesAncestor(Map<String, String> p, String locale) =>
+    PathVariants.teamAdminPages(p['teamSlug']!)[locale]!;
 String _rideTemplatesAncestor(Map<String, String> p, String locale) =>
     PathVariants.rideTemplates(p['teamSlug']!)[locale]!;
 String _profileAncestor(Map<String, String> p, String locale) =>
@@ -353,10 +356,29 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
     patterns: PathVariants.teamAdminTags(':teamSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamAdminAncestor],
   ),
-  // Les pages de l'équipe, sous le hub (ledger `MOB-169`).
+  // Les pages de l'équipe, sous le hub, et l'éditeur d'une page sous leur
+  // liste — l'enregistrement y revient (ledger `MOB-169`).
   _DeepLinkHierarchy(
     patterns: PathVariants.teamAdminPages(':teamSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamAdminAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.teamAdminPageNew(':teamSlug'),
+    ancestors: [
+      _teamsAncestor,
+      _teamAncestor,
+      _teamAdminAncestor,
+      _teamAdminPagesAncestor,
+    ],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.teamAdminPageEdit(':teamSlug', ':pageSlug'),
+    ancestors: [
+      _teamsAncestor,
+      _teamAncestor,
+      _teamAdminAncestor,
+      _teamAdminPagesAncestor,
+    ],
   ),
   // Les modèles de sortie : la liste sous l'équipe, le formulaire sous la
   // liste — l'enregistrement y revient par `pop` (ledger `MOB-78`).
@@ -1061,6 +1083,43 @@ GoRoute _teamAdminPagesRoute(String locale) {
     parentNavigatorKey: _rootNavigatorKey,
     builder: (context, state) =>
         TeamPagesAdminPage(teamSlug: state.pathParameters['teamSlug']!),
+    // `nouvelle` avant `:pageSlug/modifier`, comme les autres éditeurs.
+    routes: [_teamAdminPageNewRoute(locale), _teamAdminPageEditRoute(locale)],
+  );
+}
+
+/// L'éditeur d'une nouvelle page, sous la liste des pages : ouvert par un
+/// lien, la liste se reconstruit dessous et l'enregistrement y revient
+/// (ledger `MOB-169`).
+GoRoute _teamAdminPageNewRoute(String locale) {
+  final listBase = PathVariants.teamAdminPages(':teamSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(
+      PathVariants.teamAdminPageNew(':teamSlug'),
+      locale,
+      listBase,
+    ),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) =>
+        TeamPageEditorPage(teamSlug: state.pathParameters['teamSlug']!),
+  );
+}
+
+/// L'éditeur d'une page existante, sous la liste des pages (ledger
+/// `MOB-169`).
+GoRoute _teamAdminPageEditRoute(String locale) {
+  final listBase = PathVariants.teamAdminPages(':teamSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(
+      PathVariants.teamAdminPageEdit(':teamSlug', ':pageSlug'),
+      locale,
+      listBase,
+    ),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) => TeamPageEditorPage(
+      teamSlug: state.pathParameters['teamSlug']!,
+      pageSlug: state.pathParameters['pageSlug'],
+    ),
   );
 }
 
