@@ -116,3 +116,30 @@ figure.asset-thumbnail img {
 .ProseMirror-selectednode img {
   outline: 3px solid var(--accent);
 }
+
+/* The size buttons, shown on the selected image only (one tap on it). */
+.asset-controls {
+  display: none;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.ProseMirror-selectednode .asset-controls {
+  display: flex;
+}
+
+.asset-controls button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+}
+
+.asset-controls button.active {
+  border: 2px solid var(--accent);
+  color: var(--accent);
+}

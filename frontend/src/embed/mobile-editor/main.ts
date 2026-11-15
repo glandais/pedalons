@@ -17,6 +17,7 @@ import { markdownEditorExtensions } from '@/components/common/tiptap/markdownExt
 import { markdownToEditor } from '@/components/common/tiptap/markdownUtils'
 import {
   ASSET_DIRECTIVE_REGEX,
+  IMAGE_SIZES,
   getImageSizeWidth,
   parseAssetDirective,
   parseDirectiveAttributes,
@@ -80,10 +81,22 @@ function requestImage(img: HTMLImageElement, assetId: string, size: ImageSize) {
   if (list.length === 1) post({ type: 'image', key, url })
 }
 
-/** The shared `::asset{}` node, drawn as a plain `<figure>`. */
+// The site's labels (`AssetNodeView`): letters, the same in every language.
+const SIZE_LABELS: Record<ImageSize, string> = {
+  icon: 'XS',
+  thumbnail: 'S',
+  medium: 'M',
+  full: 'L',
+}
+
+/**
+ * The shared `::asset{}` node, drawn as a plain `<figure>`. A selected image (one tap on it) shows
+ * the site's size buttons under it — under rather than over, as the site does: an XS image is
+ * narrower than the buttons, and a finger needs them larger than a pointer does.
+ */
 const AssetNode = AssetNodeBase.extend({
   addNodeView() {
-    return ({ node }) => {
+    return ({ node, getPos, editor: nodeEditor }) => {
       const dom = document.createElement('figure')
       dom.className = `asset asset-${String(node.attrs.size)}`
       dom.contentEditable = 'false'
@@ -92,7 +105,38 @@ const AssetNode = AssetNodeBase.extend({
       img.draggable = false
       dom.appendChild(img)
       requestImage(img, String(node.attrs.id), node.attrs.size as ImageSize)
-      return { dom }
+
+      const controls = document.createElement('div')
+      controls.className = 'asset-controls'
+      for (const size of IMAGE_SIZES) {
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.textContent = SIZE_LABELS[size]
+        if (size === node.attrs.size) button.className = 'active'
+        button.addEventListener('click', () => {
+          const pos = getPos()
+          if (typeof pos !== 'number') return
+          // The node is drawn again at its new size; the selection stays on it.
+          nodeEditor
+            .chain()
+            .command(({ tr }) => {
+              tr.setNodeMarkup(pos, undefined, { ...node.attrs, size })
+              tr.setSelection(NodeSelection.create(tr.doc, pos))
+              return true
+            })
+            .run()
+        })
+        controls.appendChild(button)
+      }
+      dom.appendChild(controls)
+
+      return {
+        dom,
+        // The buttons are the page's, not the editor's: a tap on one must not move the selection.
+        stopEvent: (event: Event) =>
+          event.target instanceof Element && event.target.closest('.asset-controls') !== null,
+        ignoreMutation: () => true,
+      }
     }
   },
 })
