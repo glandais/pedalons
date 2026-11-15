@@ -137,7 +137,11 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       équipes » ; `notifyTeamChanged` reçoit `contentScopeChanged` quand la visibilité ou le
       fuseau a changé, et l'ancienne **et** la nouvelle adresse après un changement de slug ;
       (5) de la section « Paramètres plateforme » du site, seule la visibilité est dans l'app
-      (`MOB-171`). **Écarts avec le plan** : notés « Fait (lot 2) » dans son §6. Tests :
+      (`MOB-171`) ; (6) pendant un changement d'adresse (`_renaming`, dans `_blocked`) rien
+      d'autre ne part — ni PUT vers l'ancienne adresse, ni second changement, ni suppression —,
+      relu le 15 novembre 2026 ; les contenus déjà lus sous l'ancienne adresse ne sont **pas**
+      invalidés, à dessein : `TeamService.getTeam` résout l'ancien slug par sa redirection pour
+      tous les endpoints d'équipe. **Écarts avec le plan** : notés « Fait (lot 2) » dans son §6. Tests :
       `team_settings_page_test`, `team_webhook_sheet_test`, `team_form_test`,
       `team_admin_page_test`, `team_editor_page_test`, `team_change_test`, `team_web_paths_test`,
       `deep_link_hierarchy_test`, `link_launcher_test`. Reste à faire tourner Patrol

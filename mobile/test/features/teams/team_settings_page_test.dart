@@ -50,6 +50,10 @@ class _Teams implements TeamRepository {
   /// Si posé, `updateTeam` attend qu'il soit complété.
   Completer<void>? gate;
 
+  /// Si posé, `changeTeamSlug` attend qu'il soit complété.
+  Completer<void>? slugGate;
+  int slugCalls = 0;
+
   /// Si posé, l'aperçu du changement de fuseau attend qu'il soit complété.
   Completer<void>? previewGate;
   bool previewFails = false;
@@ -108,6 +112,8 @@ class _Teams implements TeamRepository {
 
   @override
   Future<TeamDetailDto> changeTeamSlug(String slug, String newSlug) async {
+    slugCalls++;
+    await slugGate?.future;
     final Object? error = failWith;
     if (error != null) throw error;
     slugChanges.add((slug, newSlug));
@@ -885,6 +891,83 @@ void main() {
       expect(find.byKey(keys.teamEditor.nameField), findsOneWidget);
       // L'ancienne et la nouvelle fiche ont été lues.
       expect(teams.teamReads, greaterThanOrEqualTo(readsBefore + 2));
+    });
+
+    testWidgets('pendant le changement d\'adresse : ni enregistrement, ni '
+        'second changement, ni suppression', (WidgetTester tester) async {
+      final _Teams teams = _Teams(_team())..slugGate = Completer<void>();
+      await open(tester, teams);
+
+      await changeSlug(tester, 'peloton-du-nord');
+      // La requête est partie, sa réponse se fait attendre.
+      expect(teams.slugCalls, 1);
+      expect(teams.slugChanges, isEmpty);
+      // La ligne le montre.
+      expect(
+        find.descendant(
+          of: find.byKey(keys.teamEditor.slugRow),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+      );
+
+      // « Enregistrer » n'envoie pas de PUT vers l'ancienne adresse.
+      await tester.tap(find.byKey(keys.teamEditor.saveButton));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(teams.updateCalls, 0);
+
+      // La ligne d'adresse, inactive, ne rouvre pas sa feuille : pas de second
+      // changement.
+      await tester.tap(
+        find.byKey(keys.teamEditor.slugRow),
+        warnIfMissed: false,
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(keys.teamEditor.slugField), findsNothing);
+      expect(teams.slugCalls, 1);
+
+      // « Supprimer l'équipe » n'ouvre pas sa confirmation.
+      await tester.ensureVisible(find.byKey(keys.teamEditor.deleteButton));
+      await tester.tap(
+        find.byKey(keys.teamEditor.deleteButton),
+        warnIfMissed: false,
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(teams.deleted, isEmpty);
+      expect(find.byKey(keys.profile.confirmDestructiveButton), findsNothing);
+
+      teams.slugGate!.complete();
+      await settle(tester);
+      expect(teams.slugChanges, <(String, String)>[
+        ('n-peloton', 'peloton-du-nord'),
+      ]);
+      expect(teams.updateCalls, 0);
+      expect(find.text('peloton-du-nord'), findsOneWidget);
+    });
+
+    testWidgets('un changement d\'adresse refusé : la ligne se rouvre', (
+      WidgetTester tester,
+    ) async {
+      final _Teams teams = _Teams(_team())
+        ..slugGate = Completer<void>()
+        ..failWith = _apiError(409, 'SLUG_TAKEN');
+      await open(tester, teams);
+
+      await changeSlug(tester, 'peloton-du-nord');
+      teams.slugGate!.complete();
+      await settle(tester);
+
+      expect(find.byKey(keys.teamEditor.errorBanner), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(keys.teamEditor.slugRow),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsNothing,
+      );
+      await tester.tap(find.byKey(keys.teamEditor.slugRow));
+      await settle(tester);
+      expect(find.byKey(keys.teamEditor.slugField), findsOneWidget);
     });
 
     testWidgets('un formulaire modifié : l\'abandon se confirme d\'abord', (

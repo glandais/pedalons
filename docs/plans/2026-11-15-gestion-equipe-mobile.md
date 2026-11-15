@@ -333,6 +333,11 @@ modules ; `toRequest()` construit un `TeamRequest` propre (le site, lui, y recop
 - **Slug** : la feuille commune a gagné un paramètre `hint` — l'ancienne adresse d'une équipe
   **redirige** vers la nouvelle (`slugService.createTeamRedirect`), celle d'un contenu non ; la
   feuille d'équipe dit « L'ancienne adresse redirigera vers la nouvelle ».
+  Pendant l'appel (`_renaming`, compris dans `_blocked`), « Enregistrer », la ligne d'adresse
+  et la suppression sont inactifs : un PUT partirait vers l'ancienne adresse, un second appui
+  lancerait un second changement. Après lui, seules les fiches de l'ancienne et de la nouvelle
+  adresse sont relues — pas les contenus déjà lus : `TeamService.getTeam` résout un ancien slug
+  d'équipe par sa redirection pour tous les endpoints d'équipe (revue du lot 2).
 - **Visibilité** : `widgets/team_visibility_sheet.dart` (`showTeamVisibilitySheet`). Non
   modifiable, la ligne porte un `VisibilityBadge` et une phrase qui dit pourquoi
   (`teams.editor.visibilityLocked`), absente du site.

@@ -82,6 +82,8 @@ void main() {
       await openLink($, Paths.teamSettings(slug));
       await modules.teamEditor.waitUntilShown();
       await modules.teamEditor.changeSlug(newSlug);
+      // The request is answered after the sheet closes: wait for the new address on its row.
+      await modules.teamEditor.waitUntilSlugShows(newSlug);
       await modules.teamEditor.waitUntilShown();
       expect(modules.teamEditor.slugShows(newSlug), isTrue);
       expect((await backend.team(owner, newSlug))['name'], renamed);

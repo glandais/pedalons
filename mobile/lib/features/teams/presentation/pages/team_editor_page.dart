@@ -216,9 +216,14 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
 
   TeamDetailDto? get _team => widget.team;
 
-  /// Rien ne part pendant une lecture de position, un envoi de fichier ou
-  /// une suppression.
-  bool get _blocked => _locating || _uploading || _deleting;
+  /// L'adresse (slug) de l'équipe est en cours de changement : un
+  /// enregistrement partirait vers l'ancienne adresse, un second appui
+  /// lancerait un second changement.
+  bool _renaming = false;
+
+  /// Rien ne part pendant une lecture de position, un envoi de fichier, une
+  /// suppression ou un changement d'adresse.
+  bool get _blocked => _locating || _uploading || _deleting || _renaming;
 
   @override
   void initState() {
@@ -436,6 +441,7 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
 
   Future<void> _editSlug() async {
     final TeamDetailDto team = _team!;
+    if (_saving || _blocked) return;
     if (_dirty && !await _confirmDiscard()) return;
     if (!mounted) return;
     final String? slug = await showSlugEditSheet(
@@ -446,7 +452,12 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
       hint: 'teams.editor.slugHint'.tr(),
     );
     if (slug == null || slug == team.slug || !mounted) return;
-    setState(() => _error = null);
+    // Une feuille a rendu la main : un autre geste a pu partir.
+    if (_saving || _blocked) return;
+    setState(() {
+      _renaming = true;
+      _error = null;
+    });
     final TeamRepository teams = ref.read(teamRepositoryProvider);
     final ProviderContainer container = ProviderScope.containerOf(
       context,
@@ -466,6 +477,8 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
       context.go(Paths.teamSettings(updated.slug));
     } catch (error, stackTrace) {
       if (mounted) setState(() => _error = getErrorMessage(error, stackTrace));
+    } finally {
+      if (mounted) setState(() => _renaming = false);
     }
   }
 
@@ -499,6 +512,8 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
       confirmLabel: 'teams.editor.danger.confirmDelete'.tr(),
     );
     if (!confirmed || !mounted) return;
+    // La confirmation a rendu la main : un autre geste a pu partir.
+    if (_saving || _blocked) return;
     setState(() {
       _deleting = true;
       _error = null;
@@ -633,6 +648,13 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
                     icon: PdlIcons.link,
                     title: 'rides.editor.slug'.tr(),
                     subtitle: team.slug,
+                    // Le changement d'adresse en cours se voit sur sa ligne.
+                    trailing: _renaming
+                        ? const SizedBox.square(
+                            dimension: 20,
+                            child: CircularProgressIndicator.adaptive(),
+                          )
+                        : null,
                     onTap: busy ? null : _editSlug,
                   ),
                 const SizedBox(height: PdlSpacing.section),
@@ -829,7 +851,7 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
                     actionKey: keys.teamEditor.deleteButton,
                     busy: _deleting,
                     busyLabel: 'teams.editor.danger.deleting'.tr(),
-                    onAction: _saving || _locating || _uploading
+                    onAction: _saving || _locating || _uploading || _renaming
                         ? null
                         : _delete,
                   ),

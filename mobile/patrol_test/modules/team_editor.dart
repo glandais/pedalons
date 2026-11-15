@@ -71,12 +71,31 @@ final class TeamEditor extends Module {
 
   /// « Adresse » → the sheet → [slug] → « Enregistrer ». The form must be untouched, or the app
   /// asks to discard it first.
+  ///
+  /// Returns once the sheet is closed — the request is then still in flight, on the old form:
+  /// follow with [waitUntilSlugShows] before reading anything.
   Future<void> changeSlug(String slug) async {
     await (await scrolledTo(keys.teamEditor.slugRow)).tap();
     await $(keys.teamEditor.slugField).waitUntilVisible();
     await $(keys.teamEditor.slugField).enterText(slug);
     await $(keys.teamEditor.slugSave).tap();
     await waitUntilGone(keys.teamEditor.slugSave);
+  }
+
+  /// Waits until the address row shows [slug]: the change was answered and the screen came back
+  /// on the settings of the new address. The old form's fields are still there meanwhile, so
+  /// [waitUntilShown] alone would return at once and read the old address.
+  Future<void> waitUntilSlugShows(
+    String slug, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    while (!slugShows(slug)) {
+      if (DateTime.now().isAfter(deadline)) {
+        throw TestFailure('the address row does not show $slug after $timeout');
+      }
+      await $.pump(const Duration(milliseconds: 200));
+    }
   }
 
   /// Whether the visibility is only read — a badge, for a team whose administrators may not
