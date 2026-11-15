@@ -16,6 +16,7 @@ import '../../../../core/utils/api_error_handler.dart';
 import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../../../geocoding/presentation/geocoded_place_picker.dart';
 import '../../../profile/presentation/widgets/confirm_sheet.dart';
 import '../../../rides/presentation/widgets/editor/editor_media_actions.dart';
 import '../../../rides/presentation/widgets/editor/editor_section.dart';
@@ -28,10 +29,8 @@ import '../../../tags/presentation/tag_filter.dart';
 import '../../../tags/providers/team_tags_provider.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../data/ad_repository.dart';
-import '../../data/place_search_repository.dart';
 import '../../domain/ad_form.dart';
 import '../../providers/ad_providers.dart';
-import '../widgets/ad_place_picker.dart';
 
 /// Publier ([adSlug] nul) ou modifier une annonce — le pendant mobile de
 /// `CreateAdPage` / `EditAdPage` du site (docs/LEDGER_*.md MOB-158) : titre,
@@ -296,54 +295,38 @@ class _AdEditorFormState extends ConsumerState<_AdEditorForm>
 
   // ── Position ───────────────────────────────────────────────────────────
 
-  /// Choisit une adresse, puis lit sa position — une seule fois, pour
-  /// l'adresse choisie (ledger `API-129`). Un échec laisse la position
-  /// précédente en place, et le dit.
+  /// Choisit une adresse et sa position par le sélecteur commun
+  /// ([pickGeocodedPlace]). Un échec laisse la position précédente en place,
+  /// et le dit.
   Future<void> _pickPlace() async {
     if (_locating || _saving) return;
-    final GeocodeResultDto? picked = await showAdPlacePicker(context, ref);
-    if (picked == null || !mounted) return;
-
-    double? lat = picked.lat;
-    double? lon = picked.lon;
-    if (lat == null || lon == null) {
-      setState(() {
-        _locating = true;
-        _error = null;
-      });
-      try {
-        final GeocodeResultDto place = await ref
-            .read(placeSearchRepositoryProvider)
-            .resolve(picked.id);
-        lat = place.lat;
-        lon = place.lon;
-      } catch (error, stackTrace) {
+    final GeocodedPick? pick = await pickGeocodedPlace(
+      context,
+      ref,
+      title: 'ads.editor.placePickerTitle'.tr(),
+      onResolvingChange: (bool resolving) {
         if (!mounted) return;
         setState(() {
-          _locating = false;
-          _error =
-              resolveApiError(error, stackTrace).code == 'GEOCODING_UNAVAILABLE'
-              ? 'ads.editor.placeUnavailable'.tr()
-              : 'ads.editor.placeResolveFailed'.tr();
+          _locating = resolving;
+          if (resolving) _error = null;
         });
+      },
+    );
+    if (!mounted) return;
+    switch (pick) {
+      case null:
         return;
-      }
-      if (!mounted) return;
+      case GeocodedPlaceFailure(:final GeocodeFailure reason):
+        setState(() => _error = reason.message);
+      case GeocodedPlace():
+        setState(() {
+          _pickedPlaceName = pick.name;
+          // GeoJSON : [longitude, latitude].
+          _form = _form.copyWith(
+            location: () => adLocationOf(pick.coordinates),
+          );
+        });
     }
-    if (lat == null || lon == null) {
-      setState(() {
-        _locating = false;
-        _error = 'ads.editor.placeResolveFailed'.tr();
-      });
-      return;
-    }
-    final List<double> coordinates = <double>[lon, lat];
-    setState(() {
-      _locating = false;
-      _pickedPlaceName = picked.displayName;
-      // GeoJSON : [longitude, latitude].
-      _form = _form.copyWith(location: () => adLocationOf(coordinates));
-    });
   }
 
   void _clearPlace() => setState(() {
@@ -476,7 +459,7 @@ class _AdEditorFormState extends ConsumerState<_AdEditorForm>
   // ── Écran ──────────────────────────────────────────────────────────────
 
   String _positionTitle() {
-    if (_locating) return 'ads.editor.placeResolving'.tr();
+    if (_locating) return 'geocoder.resolving'.tr();
     final String? picked = _pickedPlaceName;
     if (picked != null) return picked;
     return _form.location == null

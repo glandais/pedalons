@@ -1056,12 +1056,6 @@
       "positionSaved": "Position enregistrée",
       "positionHint": "Les membres ne voient qu'un secteur d'environ 1 km, jamais le point exact.",
       "placePickerTitle": "Position sur la carte",
-      "placeSearch": "Rechercher une adresse…",
-      "placeEmpty": "Aucune adresse. Tapez au moins 3 caractères.",
-      "placeAttribution": "Adresses : Stadia Maps, © les contributeurs OpenStreetMap et autres",
-      "placeResolving": "Localisation de l'adresse…",
-      "placeResolveFailed": "Impossible d'obtenir la position de cette adresse. Recherchez-la et choisissez-la de nouveau, ou laissez la position vide.",
-      "placeUnavailable": "Le service de recherche d'adresse est indisponible. Réessayez dans un instant, ou laissez la position vide.",
       "tagsPickerTitle": "Tags de l'annonce",
       "statusHint": "Un brouillon n'est visible que de vous et du rôle Administrateur de l'équipe."
     },
@@ -2015,6 +2009,18 @@
     "nextPageError": "Impossible de charger la suite.\nVérifiez votre connexion.",
     "endOfList": "Vous avez tout vu",
     "progressNamed": "{loaded} {noun} sur {total}"
+  },
+  "geocoder": {
+    "label": "Localisation",
+    "search": "Rechercher une adresse…",
+    "empty": "Aucune adresse. Tapez au moins 3 caractères.",
+    "attribution": "Adresses : Stadia Maps, © les contributeurs OpenStreetMap et autres",
+    "resolving": "Localisation de l'adresse…",
+    "resolveFailed": "Impossible d'obtenir la position de cette adresse. Recherchez-la et choisissez-la de nouveau, ou laissez la position vide.",
+    "unavailable": "Le service de recherche d'adresse est indisponible. Réessayez dans un instant, ou laissez la position vide.",
+    "none": "Aucune localisation",
+    "saved": "Localisation enregistrée",
+    "clear": "Supprimer la localisation"
   },
   "location": {
     "serviceDisabled": "La localisation est désactivée sur votre appareil.",

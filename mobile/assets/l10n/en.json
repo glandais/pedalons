@@ -1056,12 +1056,6 @@
       "positionSaved": "Position saved",
       "positionHint": "Members only see an area about 1 km across, never the exact point.",
       "placePickerTitle": "Position on the map",
-      "placeSearch": "Search for an address…",
-      "placeEmpty": "No address. Type at least 3 characters.",
-      "placeAttribution": "Addresses: Stadia Maps, © OpenStreetMap contributors & others",
-      "placeResolving": "Locating the address…",
-      "placeResolveFailed": "Couldn't get the position of this address. Search and pick it again, or leave the position empty.",
-      "placeUnavailable": "The address search service is unavailable. Try again in a moment, or leave the position empty.",
       "tagsPickerTitle": "Ad tags",
       "statusHint": "A draft is only visible to you and to team administrators."
     },
@@ -2015,6 +2009,18 @@
     "nextPageError": "Could not load more.\nCheck your connection.",
     "endOfList": "You have seen everything",
     "progressNamed": "{loaded} {noun} of {total}"
+  },
+  "geocoder": {
+    "label": "Location",
+    "search": "Search for an address…",
+    "empty": "No address. Type at least 3 characters.",
+    "attribution": "Addresses: Stadia Maps, © OpenStreetMap contributors & others",
+    "resolving": "Locating the address…",
+    "resolveFailed": "Couldn't get the position of this address. Search and pick it again, or leave the position empty.",
+    "unavailable": "The address search service is unavailable. Try again in a moment, or leave the position empty.",
+    "none": "No location",
+    "saved": "Location saved",
+    "clear": "Remove the location"
   },
   "location": {
     "serviceDisabled": "Location is turned off on your device.",

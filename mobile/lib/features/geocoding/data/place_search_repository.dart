@@ -7,9 +7,9 @@ final placeSearchRepositoryProvider = Provider<PlaceSearchRepository>((ref) {
   return PlaceSearchRepository(ref.watch(apiClientProvider).geocode);
 });
 
-/// La recherche d'adresse du formulaire d'annonce (ledger `MOB-158`), par le
-/// relais du serveur (`/api/geocode/*`) : c'est lui qui parle au fournisseur,
-/// jamais l'appareil.
+/// La recherche d'adresse des formulaires — annonce (ledger `MOB-158`),
+/// équipe (ledger `MOB-165`) — par le relais du serveur (`/api/geocode/*`) :
+/// c'est lui qui parle au fournisseur, jamais l'appareil.
 class PlaceSearchRepository {
   PlaceSearchRepository(this._client);
 
