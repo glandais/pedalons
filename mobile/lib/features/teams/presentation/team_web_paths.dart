@@ -3,11 +3,12 @@ import '../../../config/paths.dart';
 /// Les pages **du site** qu'ouvrent le tableau de bord d'un organisateur et
 /// le hub « Gestion de l'équipe » (`team_admin_page.dart`).
 ///
-/// Traiter un signalement, gérer les lieux, les tags et les pages de
-/// l'équipe : l'application n'a encore d'écran pour aucun de ces gestes. Ses
+/// Traiter un signalement, gérer les tags et les pages de l'équipe :
+/// l'application n'a encore d'écran pour aucun de ces gestes. Ses
 /// **paramètres** sont un écran de l'app depuis `MOB-166`
 /// (`Paths.teamSettings`), la **gestion des membres** depuis `MOB-167`
-/// (`Paths.teamAdminMembers`). Ils arrivent lot par lot (ledgers `MOB-166` à `MOB-169`,
+/// (`Paths.teamAdminMembers`), ses **lieux** depuis `MOB-168`
+/// (`Paths.teamAdminPlaces`). Ils arrivent lot par lot (ledgers `MOB-166` à `MOB-169`,
 /// plan `docs/plans/2026-11-15-gestion-equipe-mobile.md`) ; chaque lot retire
 /// ici son entrée, et ce fichier disparaît avec le dernier.
 /// Créer et modifier une **sortie** se fait dans l'app depuis `MOB-80`
@@ -25,9 +26,7 @@ import '../../../config/paths.dart';
 abstract final class TeamWebPaths {
   static String reports(String teamSlug) => Paths.teamAdminReports(teamSlug);
 
-  // Les trois pages que seul le hub ouvre (ledger `MOB-165`).
-  static String places(String teamSlug) => Paths.teamAdminPlaces(teamSlug);
-
+  // Les deux pages que seul le hub ouvre (ledger `MOB-165`).
   static String tags(String teamSlug) => Paths.teamAdminTags(teamSlug);
 
   static String pages(String teamSlug) => Paths.teamAdminPages(teamSlug);

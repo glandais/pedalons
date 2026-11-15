@@ -40,7 +40,11 @@
 		     POST /api/teams, geometry): the same address search, the same reasoning; stored against
 		     the team and returned with it, not blurred (data-safety.md #26, ledger MOB-165); a
 		     team's administrator may change or clear it in the team settings (PUT /api/teams/{slug},
-		     data-safety.md #27, ledger MOB-166). -->
+		     data-safety.md #27, ledger MOB-166).
+		     Also the postal address an organizer types for one of the team's places (a ride's
+		     start or end point) and the position picked for it through the same address search
+		     (POST/PUT /api/teams/{slug}/places, address and geometry; data-safety.md #29, ledger
+		     MOB-168). -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypePhysicalAddress</string>
@@ -116,7 +120,10 @@
 		     the settings a team's administrator rewrites (PUT /api/teams/{slug}, the attachments of
 		     the team's description) and the https URL of the team's chat webhook, typed by the
 		     administrator, stored by the server and only ever returned masked
-		     (PUT /api/teams/{slug}/webhook, data-safety.md #27).
+		     (PUT /api/teams/{slug}/webhook, data-safety.md #27);
+		     the name and the link of a team's place, written by an organizer
+		     (POST/PUT /api/teams/{slug}/places) — its address and position are the
+		     PhysicalAddress row (data-safety.md #29).
 		     All user-generated, all stored against the account, used only to run the app and moderate
 		     it. -->
 		<dict>

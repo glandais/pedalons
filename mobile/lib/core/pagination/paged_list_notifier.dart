@@ -146,6 +146,73 @@ abstract class PagedListNotifier<T> extends StateNotifier<PagedListState<T>> {
   /// Pull-to-refresh: drop everything and reload from page 0.
   Future<void> refresh() => loadFirstPage(refreshing: true);
 
+  /// Replace, where it stands, the loaded item whose [itemKey] is [key] — an
+  /// item the screen just rewrote. Nothing is fetched and nothing moves: the
+  /// reader keeps their place in the list. `false` when no loaded item has
+  /// that key (it is on a page not loaded yet, or not in this result set).
+  bool replaceItem(Object key, T item) {
+    final int index = state.items.indexWhere((T i) => itemKey(i) == key);
+    if (index < 0) return false;
+    state = state.copyWith(
+      items: <T>[
+        for (int i = 0; i < state.items.length; i++)
+          i == index ? item : state.items[i],
+      ],
+    );
+    return true;
+  }
+
+  /// Drop the loaded item whose [itemKey] is [key] — an item the screen just
+  /// deleted, or that left this result set — without reloading the list.
+  /// `false` when no loaded item has that key.
+  ///
+  /// The API paginates by offset: with one row less on the server, the first
+  /// row of the next page slides into the last loaded one, and the next page
+  /// request would skip it. So when pages remain, the last loaded page is
+  /// read again and whatever is new in it is appended. A next page already in
+  /// flight was cut on the old offsets: the list is refreshed instead.
+  ///
+  /// For a list served in one piece: a sectioned list ([PageResult
+  /// .firstSectionTotal]) is refreshed, its section boundary having moved.
+  Future<bool> removeItem(Object key) async {
+    final List<T> items = <T>[
+      for (final T item in state.items)
+        if (itemKey(item) != key) item,
+    ];
+    if (items.length == state.items.length) return false;
+    if (state.isSectioned || _requestInFlight) {
+      await refresh();
+      return true;
+    }
+
+    final int? total = state.total == null
+        ? null
+        : (state.total! - 1).clamp(0, state.total!);
+    final bool hasMore =
+        total != null && state.loadedPages * pageSize < total && state.hasMore;
+    state = state.copyWith(items: items, total: total, hasMore: hasMore);
+    if (!hasMore || state.loadedPages == 0) return true;
+
+    final generation = _generation;
+    _requestInFlight = true;
+    try {
+      final result = await fetchPage(state.loadedPages - 1);
+      if (!mounted || generation != _generation) return true;
+      final List<int> kept = _keptIndexes(state.items, result.items);
+      state = state.copyWith(
+        items: <T>[...state.items, for (final int i in kept) result.items[i]],
+        total: result.total,
+        hasMore: _hasMoreAfter(state.loadedPages, result),
+      );
+    } catch (_) {
+      // The list stays as it is: at worst one row is missing until the next
+      // refresh, and the removal itself is on screen.
+    } finally {
+      if (generation == _generation) _requestInFlight = false;
+    }
+    return true;
+  }
+
   /// Called from the item builder to start the next page early.
   ///
   /// The load is deferred to a microtask because the builder runs during

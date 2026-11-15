@@ -486,6 +486,48 @@ Données : `features/teams/data/team_invitations_repository.dart` et le provider
   par défaut). Adresse et lien vides partent absents. `createPlace` / `updatePlace`.
 - Après écriture : invalider aussi la recherche de lieux des éditeurs de sortie et de voyage.
 
+**Fait (lot 4)** — ce que le code a tranché :
+
+- **Le PUT réécrit tout le lieu, et un champ effacé part nul.**
+  `PlaceService.updatePlaceFromRequest` pose le nom, l'adresse, le lien, les deux usages et la
+  position **sans condition** : une adresse, un lien ou une position absents ou nuls sont
+  effacés. `PlaceForm.fromPlace` reprend donc le lieu entier, position comprise, et
+  `toRequest()` envoie `address`, `link` et `geometry` à `null` quand ils sont vides — le client
+  généré sérialise `null` (pas de `includeIfNull: false`), que le serveur lit comme une
+  absence ; le site omet les clés (`blankToUndefined`, `point ?? undefined`) : même effet, comme
+  pour l'équipe au lot 2. La position se convertit en `PlaceRequestGeometry` dans
+  `features/places/domain/place_form.dart`, ordre `[longitude, latitude]`.
+- **Accès** : `TeamPlacesPage(teamSlug:)`, sous-route du hub (`_teamAdminPlacesRoute`). Le refus
+  (`keys.teamPlaces.forbidden`, 403 et 404 de `GET team` compris) est tranché par la page
+  publique ; la liste n'est écoutée que par le corps rendu à qui organise — un membre ou une
+  équipe refusée ne déclenchent aucune requête de lieux. Le site, lui, rend la liste à tout le
+  monde et laisse le serveur la refuser.
+- **Liste** : `teamPlacesProvider` (`PagedListNotifier`, 20 par page, défilement infini en place
+  de la pagination numérotée du site), recherche dans la barre épinglée. La liste montre tous
+  les lieux, départ et arrivée confondus — `RideEditorRepository.searchPlaces`, qui filtre par
+  usage, reste aux éditeurs.
+- **Ligne** : deux boutons (modifier, supprimer) plutôt qu'un menu : deux gestes seulement, et
+  chacun à 44 px. « Voir sur la carte » ouvre le lien par `openLink`, hors de l'app.
+- **Formulaire** (`presentation/widgets/place_form_sheet.dart`, `showPlaceFormSheet`) :
+  « Ajouter » / « Enregistrer » reste actif et les erreurs de champ n'apparaissent qu'après une
+  tentative (§2.3), là où le site désactive le bouton ; inactif seulement pendant la lecture de
+  la position. Nom, adresse et lien sont rognés avant l'envoi (le site les envoie tels quels).
+  Qu'un lien soit une adresse web, c'est le serveur qui le dit (`@URL`) : son refus se lit dans
+  le bandeau, la saisie gardée. Pas de confirmation d'abandon, comme la fenêtre du site.
+- **Messages** : « Lieu créé », « Lieu mis à jour », « Lieu supprimé » (le site : « … avec
+  succès »), dans le ton d'« Équipe créée ».
+- **Après une écriture** : `notifyPlacesChanged(container, PlaceChange)`
+  (`providers/places_provider.dart`). La liste **n'est pas rechargée quand ce n'est pas
+  nécessaire** : un lieu supprimé quitte la liste, un lieu modifié est remplacé à sa place
+  (`PagedListNotifier.replaceItem` / `removeItem`, ajoutés à `core/pagination/` — `removeItem`
+  relit la dernière page chargée quand il en reste, pour ne pas sauter la ligne que le décalage
+  d'offset y fait glisser) ; un lieu créé, ou modifié sous une recherche, fait relire la liste,
+  ses lignes restant à l'écran. Côté éditeurs de sortie et de voyage, **la recherche de lieux n'a
+  pas de cache** (la feuille interroge le serveur à chaque ouverture) : ce qui est relu est
+  `editorPlaceProvider`, le lieu déjà choisi dont ils tirent le nom et le fuseau.
+- **Pendant une suppression**, « Ajouter un lieu » et les boutons des lignes sont inactifs :
+  aucun geste n'est perdu en silence.
+
 ### 7.3 Signalements (lot 4, `MOB-168`)
 
 `features/moderation/` : page sur `teamAdminReports`, accès organisateur ou admin de plateforme (un

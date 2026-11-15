@@ -203,6 +203,9 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md) §7.2 et
       §7.3 : `mobile/lib/features/places/` sur `teamAdminPlaces`, la file des signalements dans
       `mobile/lib/features/moderation/` sur `teamAdminReports`.
+      **Lieux : code écrit le 15 novembre 2026** — `teamAdminPlaces` écran de l'app et lien
+      profond, sous le hub ; écarts notés « Fait (lot 4) » dans le §7.2 du plan. Restent les
+      signalements, puis les tests Patrol.
 
 - [ ] `MOB-169` **Tags et pages personnalisées de l'équipe dans l'app (M)** — l'app pose des tags
       et lit les pages d'une équipe sans pouvoir administrer ni le vocabulaire ni les pages. Lot 5

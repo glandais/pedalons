@@ -2179,6 +2179,51 @@
     "none": "No location",
     "saved": "Location saved"
   },
+  "places": {
+    "title": "Places",
+    "add": "Add a place",
+    "searchPlaceholder": "Search places…",
+    "emptyTitle": "No places defined yet",
+    "emptyMessage": "Add places for ride start/end points.",
+    "noResults": "No places found",
+    "count": {
+      "zero": "No place",
+      "one": "{} place",
+      "other": "{} places"
+    },
+    "noun": {
+      "one": "place",
+      "other": "places"
+    },
+    "start": "Start",
+    "end": "End",
+    "viewLink": "View on map",
+    "editSemantic": "Edit {name}",
+    "deleteSemantic": "Delete {name}",
+    "deleteConfirm": {
+      "title": "Delete place",
+      "message": "Are you sure you want to delete this place? This action cannot be undone.",
+      "confirm": "Delete"
+    },
+    "created": "Place created",
+    "updated": "Place updated",
+    "deleted": "Place deleted",
+    "form": {
+      "editTitle": "Edit place",
+      "name": "Name",
+      "namePlaceholder": "Enter place name",
+      "nameError": "Between 1 and 200 characters",
+      "address": "Address",
+      "addressPlaceholder": "Enter address (optional)",
+      "link": "Link",
+      "linkPlaceholder": "https://maps.google.com/...",
+      "optionalError": "Between 3 and 200 characters, or leave empty",
+      "locationHint": "Optional: it gives its time zone to a ride starting from this place.",
+      "startPlace": "Can be used as start",
+      "endPlace": "Can be used as end",
+      "create": "Add"
+    }
+  },
   "location": {
     "serviceDisabled": "Location is turned off on your device.",
     "denied": "Without access to your location, sorting by distance isn't possible.",

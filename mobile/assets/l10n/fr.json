@@ -2179,6 +2179,51 @@
     "none": "Aucune localisation",
     "saved": "Localisation enregistrée"
   },
+  "places": {
+    "title": "Lieux",
+    "add": "Ajouter un lieu",
+    "searchPlaceholder": "Rechercher un lieu…",
+    "emptyTitle": "Aucun lieu défini",
+    "emptyMessage": "Ajoutez des lieux pour les départs/arrivées de sorties.",
+    "noResults": "Aucun lieu trouvé",
+    "count": {
+      "zero": "Aucun lieu",
+      "one": "{} lieu",
+      "other": "{} lieux"
+    },
+    "noun": {
+      "one": "lieu",
+      "other": "lieux"
+    },
+    "start": "Départ",
+    "end": "Arrivée",
+    "viewLink": "Voir sur la carte",
+    "editSemantic": "Modifier {name}",
+    "deleteSemantic": "Supprimer {name}",
+    "deleteConfirm": {
+      "title": "Supprimer le lieu",
+      "message": "Voulez-vous vraiment supprimer ce lieu ? Cette action est irréversible.",
+      "confirm": "Supprimer"
+    },
+    "created": "Lieu créé",
+    "updated": "Lieu mis à jour",
+    "deleted": "Lieu supprimé",
+    "form": {
+      "editTitle": "Modifier le lieu",
+      "name": "Nom",
+      "namePlaceholder": "Entrez le nom du lieu",
+      "nameError": "Entre 1 et 200 caractères",
+      "address": "Adresse",
+      "addressPlaceholder": "Entrez l'adresse (optionnel)",
+      "link": "Lien",
+      "linkPlaceholder": "https://maps.google.com/...",
+      "optionalError": "Entre 3 et 200 caractères, ou laissez vide",
+      "locationHint": "Facultative : elle donne son fuseau horaire à une sortie qui part de ce lieu.",
+      "startPlace": "Peut servir de départ",
+      "endPlace": "Peut servir d'arrivée",
+      "create": "Ajouter"
+    }
+  },
   "location": {
     "serviceDisabled": "La localisation est désactivée sur votre appareil.",
     "denied": "Sans accès à votre position, le tri par proximité n'est pas possible.",

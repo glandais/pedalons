@@ -161,6 +161,13 @@ void main() {
       }
     });
 
+    test('les lieux de l\'équipe s\'ouvrent dans l\'app (MOB-168)', () {
+      for (final String page in PathVariants.teamAdminPlaces('vc').values) {
+        expect(isSitePageLocation(page), isFalse, reason: page);
+        expect(internalLocationFor(page), page, reason: page);
+      }
+    });
+
     test('reconnaît les pages du site sans écran, requête comprise', () {
       for (final String page in sitePages) {
         expect(isSitePageLocation(page), isTrue, reason: page);

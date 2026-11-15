@@ -226,5 +226,125 @@ void main() {
       await pumpEventQueue();
       expect(notifier.requestedPages, [0, 1]);
     });
+
+    // Une écriture reportée dans la liste sans la recharger : la personne
+    // garde sa place (docs/LEDGER_*.md MOB-168).
+    group('in place', () {
+      test('replaceItem swaps one loaded item and fetches nothing', () async {
+        final notifier = _FakeNotifier(
+          (page) async => _page(['a', 'b', 'c'], 3),
+        );
+        await pumpEventQueue();
+
+        expect(notifier.replaceItem('b', 'B'), isTrue);
+
+        expect(notifier.state.items, ['a', 'B', 'c']);
+        expect(notifier.state.total, 3);
+        expect(notifier.requestedPages, [0]);
+      });
+
+      test('replaceItem says so when the item is not loaded', () async {
+        final notifier = _FakeNotifier(
+          (page) async => _page(['a', 'b', 'c'], 3),
+        );
+        await pumpEventQueue();
+
+        expect(notifier.replaceItem('z', 'Z'), isFalse);
+        expect(notifier.state.items, ['a', 'b', 'c']);
+      });
+
+      test('removeItem drops the item and the total, with no request when '
+          'everything is loaded', () async {
+        final notifier = _FakeNotifier(
+          (page) async => _page(['a', 'b', 'c'], 3),
+        );
+        await pumpEventQueue();
+
+        expect(await notifier.removeItem('b'), isTrue);
+
+        expect(notifier.state.items, ['a', 'c']);
+        expect(notifier.state.total, 2);
+        expect(notifier.state.hasMore, isFalse);
+        expect(notifier.state.isLoadingInitial, isFalse);
+        expect(notifier.requestedPages, [0]);
+      });
+
+      test('removeItem says so when the item is not loaded', () async {
+        final notifier = _FakeNotifier(
+          (page) async => _page(['a', 'b', 'c'], 3),
+        );
+        await pumpEventQueue();
+
+        expect(await notifier.removeItem('z'), isFalse);
+        expect(notifier.state.total, 3);
+      });
+
+      test('removeItem with pages left re-reads the last loaded page: the '
+          'row that slid into it is not skipped', () async {
+        // The server's list, one row shorter once 'b' is gone.
+        var all = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+        final notifier = _FakeNotifier(
+          (page) async =>
+              _page(all.skip(page * 3).take(3).toList(), all.length),
+        );
+        await pumpEventQueue();
+        expect(notifier.state.items, ['a', 'b', 'c']);
+
+        all = ['a', 'c', 'd', 'e', 'f', 'g'];
+        expect(await notifier.removeItem('b'), isTrue);
+
+        // Page 0 again: 'd' slid from page 1 into it.
+        expect(notifier.requestedPages, [0, 0]);
+        expect(notifier.state.items, ['a', 'c', 'd']);
+        expect(notifier.state.total, 6);
+        expect(notifier.state.hasMore, isTrue);
+
+        await notifier.loadNextPage();
+        expect(notifier.state.items, ['a', 'c', 'd', 'e', 'f', 'g']);
+        expect(notifier.state.hasMore, isFalse);
+      });
+
+      test('removeItem keeps the removal when the re-read fails', () async {
+        var fail = false;
+        final notifier = _FakeNotifier((page) async {
+          if (fail) throw StateError('offline');
+          return _page(['a', 'b', 'c'], 7);
+        });
+        await pumpEventQueue();
+
+        fail = true;
+        expect(await notifier.removeItem('b'), isTrue);
+
+        expect(notifier.state.items, ['a', 'c']);
+        expect(notifier.state.total, 6);
+        expect(notifier.state.initialError, isNull);
+        expect(notifier.state.nextError, isNull);
+      });
+
+      test('removeItem while a page is in flight refreshes the list: that '
+          'page was cut on the old offsets', () async {
+        final completers = <int, Completer<PageResult<String>>>{};
+        var call = 0;
+        final notifier = _FakeNotifier((page) {
+          final index = call++;
+          if (index == 0) return Future.value(_page(['a', 'b', 'c'], 7));
+          return (completers[index] = Completer()).future;
+        });
+        await pumpEventQueue();
+
+        unawaited(notifier.loadNextPage());
+        await pumpEventQueue();
+        final removal = notifier.removeItem('b');
+        await pumpEventQueue();
+        // The stale next page, then the refresh.
+        completers[1]!.complete(_page(['d', 'e', 'f'], 7));
+        completers[2]!.complete(_page(['a', 'c', 'd'], 6));
+        expect(await removal, isTrue);
+
+        expect(notifier.requestedPages, [0, 1, 0]);
+        expect(notifier.state.items, ['a', 'c', 'd']);
+        expect(notifier.state.total, 6);
+      });
+    });
   });
 }

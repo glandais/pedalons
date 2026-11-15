@@ -14,7 +14,8 @@ from:
 - **App**: Pédalons, `fr.pedalons.mobile`, version `1.0.0+57` (`mobile/pubspec.yaml`)
 - **Backend**: `https://www.pedalons.fr` (`mobile/lib/config/app_config.dart`)
 - **Last verified against the code**: 2026-11-15 (route planner, `MOB-170` —
-  `lib/features/routes/data/planner_bridge.dart`; the same day, member management and invitations by e-mail,
+  `lib/features/routes/data/planner_bridge.dart`; the same day, a team's places, `MOB-168` —
+  `lib/features/places/`, #29; the same day, member management and invitations by e-mail,
   `MOB-167` — `lib/features/teams/presentation/pages/team_admin_members_page.dart` and
   `lib/features/teams/presentation/widgets/team_invite_sheet.dart`, #28; the same day, team
   settings and the team webhook, `MOB-166` —
@@ -205,6 +206,7 @@ Everything below leaves the device to `https://www.pedalons.fr` unless stated ot
 | 26 | **Teams created by members** | Team creation form (`lib/features/teams/presentation/pages/team_editor_page.dart`) → `POST /api/teams`: the team's name, its markdown description, its time zone (an IANA name the member picks; the default is the account's time-zone preference, #8, else `Europe/Paris` — the app reads no time zone from the device) and the module switches — any signed-in member, who becomes the team's administrator. No logo, photo or attachment at creation: an upload needs the team to exist. **And a location**, optional: the member searches an address through the same relay as #25 (`lib/features/geocoding/`, `GET /api/geocode/search` then `GET /api/geocode/place` for the picked one; the device never calls the provider) and the picked address's coordinates are sent as `geometry`. The server stores the point against the team and returns it with the team to whoever may read it (`TeamDetailDto.geometry`) — not blurred, unlike an ad's. The device's own position is **not** read. **Declared as an address** (decision of 2026-11-15, O1 of `docs/plans/2026-11-15-gestion-equipe-mobile.md`): the existing Apple *Physical Address* and Play *Personal info → Address* rows — see §4 and §5. Name and description are *Other User Content* like #21 | Yes | Yes (the team's creator is its administrator) |
 | 27 | **Team settings written by administrators** | Team settings (`lib/features/teams/presentation/pages/team_editor_page.dart` in edit mode) → `PUT /api/teams/{slug}`: what #26 sends — name, markdown description, time zone, module switches, the optional location picked through the address search of #25–#26 (a cleared location is sent as `geometry: null` and erased) — plus the team's **visibility** when the platform lets its administrators change it, and the team's **logo, images and attachments** through the path of #22 (`image_picker`, still images only; `file_picker`). `PATCH /api/teams/{slug}/slug` changes the team's address, `DELETE /api/teams/{slug}` deletes the team, `GET …/timezone/change-preview` only reads. **And the team's webhook** (`team_webhook_sheet.dart` → `PUT`/`DELETE /api/teams/{slug}/webhook`, `POST …/webhook/test`): an **https URL the administrator types** (a Slack, Discord or Mattermost incoming-webhook address, or any public https endpoint), a language and an on/off switch. The URL is a secret: the server stores it and only ever returns it masked (`TeamWebhookDto.maskedUrl`); the app keeps no copy, shows nothing but the masked form, and never calls the URL itself — the server posts the team's announcements to it (privacy policy, « Canaux de discussion d'équipe »). The team's administrators and the platform administrator only. Name, description, attachments and the webhook URL are *Other User Content*, the logo and images *Photos or Videos*, the location the *Physical Address* row of #25–#26 | Yes | Yes (written by a team's administrator, stored against the team) |
 | 28 | **Invitations sent by a team's administrators, and member management** | *Manage members* (`lib/features/teams/presentation/pages/team_admin_members_page.dart`), the team's administrators and the platform administrator only. **An e-mail address the administrator types** in the invitation sheet (`team_invite_sheet.dart` → `POST /api/teams/{slug}/invitations`: the address and the role offered) — the address of **someone else**, who may have no account. It is typed by hand: the app reads no address book and requests no contacts permission. The server stores the address, the role, who invited and the invitation's status and dates, e-mails the invitation, and returns the pending invitations to the team's administrators (`GET …/invitations?status=PENDING`), who can resend one (the same `POST`, same address and role) or cancel it (`DELETE …/invitations/{id}`); nobody joins without accepting (privacy policy, « Invitations dans une équipe »). The app keeps no copy of the address once the sheet is closed. **Declared under the existing e-mail row** (decision of 2026-11-15, O2 of `docs/plans/2026-11-15-gestion-equipe-mobile.md`): Apple *Email Address*, Play *Personal info → Email address* — see §4 and §5. The screen also changes a member's role (`PUT /api/teams/{slug}/members/{userId}`) and removes a member (`DELETE …/members/{userId}`): a role and an identifier the server already holds, nothing typed. Its member search (`GET …/members?search=`, by name or e-mail for an administrator) is the search the member directory already sent | Yes | Yes (the invitation is stored against the team and the inviting account; the invited address becomes an account's only if that person signs up) |
+| 29 | **A team's places written by organizers** | *Places* (`lib/features/places/presentation/pages/team_places_page.dart` and its form sheet, `place_form_sheet.dart`) → `POST /api/teams/{slug}/places`, `PUT`/`DELETE …/places/{id}`: the start and end points the ride and trip editors offer — a **name**, an optional **postal address the organizer types**, an optional link (a map URL), two switches (usable as a start, as an end) **and an optional position** picked through the address search of #25–#27 (`lib/features/geocoding/`; the device never calls the provider, and its own position is **not** read). The `PUT` rewrites the whole place: a cleared address, link or position is sent as `null` and erased. The server stores the place against the team and returns it to the team's organizers (the list, `GET …/places`) and, on a ride or a trip, to whoever may read that ride. The team's organizers and administrators and the platform administrator only. **Declared as an address** (decision O1 of `docs/plans/2026-11-15-gestion-equipe-mobile.md`: a meeting point can be someone's home): the typed address and the position are the existing Apple *Physical Address* and Play *Personal info → Address* rows — see §4 and §5. The name and the link are *Other User Content* like #21 | Yes | Yes (written by an organizer, stored against the team) |
 | 10 | **Approximate location** | `geolocator` at `LocationAccuracy.low`, while in use, only when the user turns on the "around me" filter — becomes the `nearLat`/`nearLon`/`nearRadius` query parameters | Yes, as query parameters of a read request | **No** — not stored server-side, not written to the account |
 
 Stored **on device only**, never transmitted:
@@ -240,7 +242,7 @@ value is invented.
 |---|---|---|---|---|
 | `NSPrivacyCollectedDataTypeEmailAddress` | `true` | `false` | `…PurposeAppFunctionality` | inventory #1, #28 (the address an administrator invites) |
 | `NSPrivacyCollectedDataTypeName` | `true` | `false` | `…PurposeAppFunctionality` | #3 |
-| `NSPrivacyCollectedDataTypePhysicalAddress` | `true` | `false` | `…PurposeAppFunctionality` | #25 (the position of an ad), #26 (the location of a team) |
+| `NSPrivacyCollectedDataTypePhysicalAddress` | `true` | `false` | `…PurposeAppFunctionality` | #25 (the position of an ad), #26 (the location of a team), #29 (the address and the position of a team's place) |
 | `NSPrivacyCollectedDataTypeUserID` | `true` | `false` | `…PurposeAppFunctionality` | #4, #5, #7 |
 | `NSPrivacyCollectedDataTypeOtherUserContent` | `true` | `false` | `…PurposeAppFunctionality` | #6, #13, #14, #15, #20, #21, #22 (attachments), #23, #24, #25 (the ad itself), #26 (a team's name and description) |
 | `NSPrivacyCollectedDataTypeOtherDataTypes` | `true` | `false` | `…PurposeAppFunctionality` | #8 |
@@ -266,6 +268,8 @@ URL an administrator types are *Other User Content*, its logo and images *Photos
 #22, its location the *Physical Address* row of #25–#26.
 #28 (an invitation by e-mail) has no row of its own: the invited address is the *Email Address*
 row of #1; a role change and a removal send nothing the server does not already hold.
+#29 (a team's places) has no row of its own: a place's typed address and its position are the
+*Physical Address* row of #25–#27, its name and link *Other User Content*.
 
 #16 (terms acceptance) has no row of its own: it is a timestamp on the account created at sign-up,
 covered by the account rows (`EmailAddress`, `Name`, `UserID`) like the account's creation date.
@@ -396,8 +400,18 @@ not make it *Contacts*: Apple's *Contacts* is the user's address book, which the
 tells the invited person where the address comes from (« Auprès d'autres membres ») and how long
 an unanswered invitation is kept. `app-privacy.json` is **unchanged**.
 
+**A team's place is the same *Physical Address*** (2026-11-15, `MOB-168`, #29; decision O1 of
+`docs/plans/2026-11-15-gestion-equipe-mobile.md`). An organizer who records a start or end point
+may type its postal address and may attach a position through the same address search. Both are
+an address the organizer designates — a car park, a café, sometimes a member's home — and
+nothing measured on the device: *Physical Address*, not *Precise Location*, for the reasons given
+for #25 and #26. The row was already declared for a position; a **typed** address is what Apple
+names first under it, so nothing widens. The place's name and link are *Other User Content*. No
+new data type, so `app-privacy.json` is **unchanged**. The place list's own search
+(`GET …/places?search=`) is a list search like the others: see the next paragraph.
+
 **The address search adds no *Search History*.** The text typed in the address search of the ad
-editor and of the team creation form (#25, #26 — one picker, `lib/features/geocoding/`)
+editor, of the team form and of a place's form (#25, #26, #29 — one picker, `lib/features/geocoding/`)
 goes to our backend, which relays it to Stadia Maps from the server's IP. The backend attaches it
 to no account and writes it nowhere: an in-memory cache keyed by the normalised query, shared by
 all accounts, for 24 hours (`GeocodingLookup`). Stadia Maps has no code in the app. The app's
@@ -501,6 +515,12 @@ content*, already declared. `data-safety.csv` is **unchanged**.
 texts and its webhook URL are *Other user-generated content*, its logo and images *Photos*, its
 attachments *Files and docs*, its location the *Address* row above. All optional — nobody has to
 administer a team — and none shared. `data-safety.csv` is **unchanged**.
+
+**A team's places** (2026-11-15, `MOB-168`, #29) stay inside rows already declared: the address
+an organizer types for a start or end point and the position picked for it are the *Address* row
+above, the place's name and link *Other user-generated content*. Optional — nobody has to
+record a place, and a place needs neither address nor position — and not shared, for the same
+reasons. `data-safety.csv` is **unchanged**.
 
 **An invitation by e-mail** (2026-11-15, `MOB-167`, #28) stays inside the *Email address* row:
 collected, not shared (the e-mail provider that delivers the invitation is a service provider
@@ -630,8 +650,8 @@ rather than this table when it changes.
 publishes them to a private GitHub repository: GitHub is a sub-processor of the *backend*, named in
 the privacy policy (§4 and the US transfer in §5), not a third party of the app binary.
 
-**Stadia Maps is never contacted by the app.** The address search of the ad editor and of the team
-creation form (#25, #26) goes to our
+**Stadia Maps is never contacted by the app.** The address search of the ad editor, of the team
+form and of a place's form (#25, #26, #29) goes to our
 backend (`/api/geocode/*`), which calls Stadia Maps from the server: it sees the typed text, the
 language and the server's IP address, never the device's nor an account identifier. Like GitHub,
 it is a sub-processor of the *backend*, named in the privacy policy.
@@ -660,7 +680,7 @@ a dependency. Do not bring it back — it would re-open a US transfer for a type
 | Performance Data | Nothing measured: no timings, no frame stats. (Crash Data *is* declared since 2026-09-27, #18.) |
 | Purchase History / Payment Info | No purchases in the app. |
 | Emails or Text Messages, Contacts, Audio, Browsing History | No corresponding capability. |
-| Search History | The app has text searches, the address search of the ad editor and of the team creation form among them (#25, #26), but none is kept against the account: see §4, *The address search adds no Search History*, and the unverified point about production access logs there. |
+| Search History | The app has text searches, the address search of the ad editor, of the team form and of a place's form among them (#25, #26, #29), but none is kept against the account: see §4, *The address search adds no Search History*, and the unverified point about production access logs there. |
 
 ---
 
@@ -674,10 +694,10 @@ these ships:
 | Profile editing (`PUT /api/users/me`) | nothing new — Name/Email already declared |
 | Picking the invited address **from the device's address book**, or importing several addresses at once (the invitation by e-mail of `MOB-167`, #28, takes one typed address) | Apple `NSPrivacyCollectedDataTypeContacts` and `NSContactsUsageDescription`; Play *Contacts*. The *Email Address* row of #28 only holds while the address is typed |
 | Camera capture for the avatar | `NSCameraUsageDescription` in `Info.plist` (+ its two `InfoPlist.strings`); no new data type — Photos or Videos already covers it |
-| Trip authoring (comments are already declared, #13; ride authoring since `MOB-80`, #21–#22; route authoring since `MOB-79`, #23; post authoring since `MOB-164`, #24; team creation since `MOB-165`, #26; team settings and the team webhook since `MOB-166`, #27) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
+| Trip authoring (comments are already declared, #13; ride authoring since `MOB-80`, #21–#22; route authoring since `MOB-79`, #23; post authoring since `MOB-164`, #24; team creation since `MOB-165`, #26; team settings and the team webhook since `MOB-166`, #27; a team's places since `MOB-168`, #29) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
 | A screenshot or attachment on a report, or automatic moderation of images or text beyond the word filter | Apple `…PhotosorVideos` already covers images, but re-read §4 for the purpose; Play *Photos*; any third-party moderation service is a new sub-processor for the policy |
 | GPX **import** from the device | Delivered by `MOB-79` for a team route an organizer publishes (#23): Play *Files and docs* and Apple `…OtherUserContent`, both declared; no Precise Location: the file may come from a recorded ride, but it is published as a route for the members, no device position is read and the server keeps only the geometry (timestamps, sensor data and metadata are stripped before storing). **Precise Location (Apple `…PreciseLocation`, Play *Location → Precise location*) becomes due** if the app imports **activities** as the user's own history, if the server starts keeping timestamps, or if the app records a ride. Any other import (FIT, a GPX outside the route editor) is a new audit |
-| Offering the **device's position** as the position of an ad or the location of a team ("use my location"), or any other stored position read from the device | Apple `NSPrivacyCollectedDataTypePreciseLocation`, linked; Play *Location → Precise location*, collected, not ephemeral. The *Physical Address* / *Address* rows of #25 and #26 only hold while the position is an address the member types |
+| Offering the **device's position** as the position of an ad, the location of a team or the position of a team's place ("use my location"), or any other stored position read from the device | Apple `NSPrivacyCollectedDataTypePreciseLocation`, linked; Play *Location → Precise location*, collected, not ephemeral. The *Physical Address* / *Address* rows of #25, #26 and #29 only hold while the position is an address the member types |
 | Keeping what a member searches (address search, list searches) against their account, or logging request URLs with their query | Apple `NSPrivacyCollectedDataTypeSearchHistory`; Play *App activity → In-app search history* |
 | Live location / "record a ride" / follow-me on the map / a MapLibre user-location puck | Apple `NSPrivacyCollectedDataTypePreciseLocation` (and flip Coarse Location's `Linked` if it becomes persisted); Play *Location → Precise location* and drop the *processed ephemerally* flag; stop stripping `ACCESS_FINE_LOCATION`; `NSLocationAlwaysAndWhenInUseUsageDescription` if it ever runs in the background |
 | Storing the user's position server-side (saved "home area", proximity history) | flip Apple `NSPrivacyCollectedDataTypeCoarseLocation` → `Linked: true` and clear Play's *processed ephemerally* |
@@ -809,10 +829,15 @@ grep -rniE "contacts_service|flutter_contacts|READ_CONTACTS|NSContactsUsageDescr
 # problem / error reports: the two calls behind §2 #17–#19
 grep -rnE "\.(sendFeedback|reportClientError)\(" lib/features lib/core
 
-# the address picker (#25, #26, #27): exactly two callers — the ad editor and the team form
-# (creation and settings, one screen) — and the device's position is read by neither (the
-# location grep above stays as it was)
+# the address picker (#25, #26, #27, #29): exactly three callers — the ad editor, the team form
+# (creation and settings, one screen) and the form of a team's place (place_form_sheet.dart) —
+# and the device's position is read by none (the location grep above stays as it was)
 grep -rn "pickGeocodedPlace(" lib | grep -v lib/features/geocoding
+
+# a team's places (#29): the typed address and the position only ever travel in createPlace /
+# updatePlace's body — the client calls must be in places_repository.dart only (the ride and
+# trip editors only read places: listPlaces, getPlace)
+grep -rnE "\.(createPlace|updatePlace|deletePlace)\(" lib/features lib/core
 
 # manifest is well-formed
 plutil -lint ios/Runner/PrivacyInfo.xcprivacy

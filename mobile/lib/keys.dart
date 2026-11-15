@@ -13,6 +13,7 @@ import 'features/legal/keys.dart';
 import 'features/moderation/keys.dart';
 import 'features/notifications/keys.dart';
 import 'features/participants/keys.dart';
+import 'features/places/keys.dart';
 import 'features/posts/keys.dart';
 import 'features/profile/keys.dart';
 import 'features/rides/keys.dart';
@@ -38,6 +39,7 @@ class Keys {
   final teamAgenda = TeamAgendaKeys();
   final teamAdmin = TeamAdminKeys();
   final teamAdminMembers = TeamAdminMembersKeys();
+  final teamPlaces = TeamPlacesKeys();
   final teamEditor = TeamEditorKeys();
   final teamWebhook = TeamWebhookKeys();
   final ride = RideDetailKeys();

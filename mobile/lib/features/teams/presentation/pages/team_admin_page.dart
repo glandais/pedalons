@@ -123,7 +123,7 @@ class TeamAdminPage extends ConsumerWidget {
         key: keys.teamAdmin.places,
         icon: PdlIcons.place,
         label: 'teams.manage.places'.tr(),
-        webPath: TeamWebPaths.places(teamSlug),
+        appPath: Paths.teamAdminPlaces(teamSlug),
       ),
       if (admin) ...<_AdminRow>[
         _AdminRow(

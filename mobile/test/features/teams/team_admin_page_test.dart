@@ -119,6 +119,11 @@ void main() {
           builder: (BuildContext _, GoRouterState state) =>
               Text('membres de ${state.pathParameters['teamSlug']}'),
         ),
+        GoRoute(
+          path: '/equipes/:teamSlug/admin/lieux',
+          builder: (BuildContext _, GoRouterState state) =>
+              Text('lieux de ${state.pathParameters['teamSlug']}'),
+        ),
       ],
     );
     await tester.pumpWidget(
@@ -293,6 +298,22 @@ void main() {
     expect(launched, isEmpty);
   });
 
+  testWidgets('« Lieux » ouvre l\'écran de l\'app, pour qui organise '
+      '(MOB-168)', (WidgetTester tester) async {
+    final List<Uri> launched = <Uri>[];
+    debugLinkOpener = (Uri url) async {
+      launched.add(url);
+      return true;
+    };
+    await open(tester, role: 'ORGANIZER');
+
+    await tester.tap(find.byKey(keys.teamAdmin.places));
+    await settle(tester);
+
+    expect(find.text('lieux de n-peloton'), findsOneWidget);
+    expect(launched, isEmpty);
+  });
+
   testWidgets('les lignes sans écran ouvrent le site, et le disent', (
     WidgetTester tester,
   ) async {
@@ -303,12 +324,11 @@ void main() {
     };
     await open(tester, role: 'ADMIN');
 
-    // Quatre lignes sur sept quittent l'app : les modèles, les membres et les
-    // paramètres y ont un écran.
-    expect(find.text('S\'ouvre sur le site'), findsNWidgets(4));
+    // Trois lignes sur sept quittent l'app : les modèles, les lieux, les
+    // membres et les paramètres y ont un écran.
+    expect(find.text('S\'ouvre sur le site'), findsNWidgets(3));
 
     for (final Key row in <Key>[
-      keys.teamAdmin.places,
       keys.teamAdmin.tags,
       keys.teamAdmin.pages,
       keys.teamAdmin.reports,
@@ -320,7 +340,6 @@ void main() {
     expect(
       <String>[for (final Uri url in launched) url.path],
       <String>[
-        '/equipes/n-peloton/admin/lieux',
         '/equipes/n-peloton/admin/tags',
         '/equipes/n-peloton/admin/pages',
         '/equipes/n-peloton/admin/signalements',
