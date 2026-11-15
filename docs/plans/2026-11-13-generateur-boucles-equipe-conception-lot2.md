@@ -2158,3 +2158,45 @@ l'accepte seulement quand le point admis le plus proche est sur un morceau de ro
 court, qu'il mesure lui-même sur les clés de nœuds brutes, avec un facteur 2 de marge (le
 constructeur fusionne des nœuds et replie des rues jumelles). Si un départ déplacé d'un kilomètre
 ne convient pas au produit, borner la distance dans `Snapper.snap` plutôt que retirer la règle.
+
+### 13.10 Diagnostic du 15 novembre : les départs sans candidat (§13.5 point 4)
+
+Sondes jetables sur le même export, équipe A, boucles route de 30, 50 et 80 km depuis les 8 départs
+du banc. Deux constats, le premier explique les départs 2, 3 et 5, le second pèse sur tous.
+
+**1. La connectivité est calculée sur un graphe que la recherche ne parcourt pas.** Les composantes
+2-arête-connexes de `NetworkGraph` (et donc `TailPlanner.forced`, `isHub`, le filtre de composante
+de `LoopFamily`, le contrôle `NETWORK_TOO_SMALL`) valent pour le graphe entier, sans sens et tous
+types confondus. La recherche, elle, ne roule que les arêtes admises pour le type, dans les sens
+ouverts. Les trois départs sont dans la grande composante (12 514 km de cycles), donc aucune queue
+forcée n'est planifiée, alors que pour la demande ils n'ont pas de cycle :
+
+| Départ | Ce que voit la recherche | Preuve |
+|---|---|---|
+| 2 | Poche de dix nœuds de petite route (support 5 à 7) dont on sort par un sens unique ; tous les autres accès sont des chemins, une piste et des marches, non admis en route (support 45 à 175 : c'est un lieu de départ gravel) | 44 334 nœuds atteints à l'aller, 9 au retour ; en gravel et en VTT, 3 propositions aux trois distances |
+| 3 | Circuit à sens unique de cinq arêtes (support 1 ou 2) : on en sort, aucune trace n'y rentre | 44 382 nœuds à l'aller, 7 au retour ; échec pour les trois types |
+| 5 | Départ sur une longue antenne pour le type route : les cycles ne commencent qu'au-delà de la queue permise (`tailMaxShare` × D = 7,5 km à 50 km) | à 30 et 50 km, aucun point de demi-tour n'a deux chemins disjoints (131 échecs du flot) ; à 80 km (queue de 12 km), 3 propositions |
+
+Ces requêtes brûlent 0,25 à 2,5 s pour répondre `NO_ROUTE` sans détail. Deux corrections possibles,
+de la moins chère à la plus juste : (a) tester le retour avant de chercher (une recherche arrière
+depuis le départ, déjà faite par `AnchorPair` : si elle n'atteint presque rien, répondre tout de
+suite avec un détail dédié, ou accrocher le départ ailleurs comme au §13.9) ; (b) calculer ponts et
+composantes par type de sortie sur les arêtes admises, pour que `forced` planifie la bonne queue
+(départ 5) — trois jeux de composantes par graphe, à peser dans le cache. Le banc y a sa part : il
+tire ses départs du premier point des traces de tous types et les demande en route.
+
+**2. Le flot de Suurballe n'aboutit presque jamais sur données réelles.** Sur 730 appels de
+`EdgeDisjointPaths.solve`, 256 n'ont pas de flot et 474 en ont un, dont 15 seulement passent le
+contrôle a posteriori ; la cause dominante est le sens unique côté départ (`assemble`, 763 refus,
+deux essais par appel pour une boucle), loin devant le côté arrivée (138). Le flot ignore les sens (`flowUsable` accepte un état dès qu'un de ses deux sens est
+ouvert) et le chemin côté départ est roulé à l'envers : avec 14 % d'arêtes à sens restreint
+(9 659 sur 69 458), une paire de chemins de 25 km en contient presque toujours une. Le repli
+séquentiel prend le relais et n'aboutit qu'une fois sur trois (160 sur 459), avec des longueurs
+mal tenues : c'est lui qui donne les `DISTANCE_OUT_OF_TOLERANCE` des départs 4 et 7 à 30 et 50 km.
+
+Essai fait sur une copie jetable : renchérir les arêtes à sens restreint dans le flot (× 3, × 10,
+× 1 000) ne donne que 12 succès sur 24 au lieu de 11 ; à × 1 000 le flot aboutit 50 fois au lieu
+de 15, les sens uniques restants sont inévitables près des ancres. Le levier n'est donc pas un
+réglage : il faut un flot qui connaisse le sens de chaque côté (le côté départ sur le graphe
+retourné), ou réparer la solution du flot au lieu de la jeter. C'est probablement la première
+cause du taux de succès de A (11 sur 24 ici, environ 42 % au banc), avant le budget de temps.

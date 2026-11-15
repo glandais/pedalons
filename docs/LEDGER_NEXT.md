@@ -952,8 +952,10 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       refermés chez la plus grande équipe), et le départ s'accroche d'abord à une route admise qui
       mène quelque part (`EdgeWeights.leadingOn`, `Snapper.snap` à trois rangs). Restent : les
       propositions 3 et 6 à 9 du §13.6 (budget de 10 s, reconstructions, pondérateur, familiarité,
-      banc) ; les départs sans aucune proposition du §13.5 point 4, que le départ sorti de son îlot
-      rejoint (§13.9) ; l'`EXPLAIN` de l'empreinte. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
+      banc) ; les deux causes des départs sans proposition, diagnostiquées le 15 novembre (§13.10) et
+      non corrigées : connectivité calculée sans les sens ni le type de sortie (queue forcée jamais
+      planifiée, `NO_ROUTE` sans détail), et flot de `EdgeDisjointPaths` aveugle aux sens, dont
+      la solution est refusée 97 fois sur 100 ; l'`EXPLAIN` de l'empreinte. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
       de `PlannerAccess`), les parcours masqués par la modération alimentent le réseau, une copie
       garde la case d'exclusion.
 
