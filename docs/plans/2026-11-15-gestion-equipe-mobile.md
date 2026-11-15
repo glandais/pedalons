@@ -1,8 +1,9 @@
 # Créer et gérer une équipe dans l'application mobile
 
-Écrit le 15 novembre 2026. **État : lot 1 écrit le 15 novembre 2026 (`MOB-165` — reste son test
-Patrol à lancer — et `WEB-184`, livré) ; lots 2 à 5 conçus, pas codés.** Ce que le lot 1 a tranché en
-codant est noté « Fait » dans les sections 4 et 5. Ledger : `MOB-165` (socle et
+Écrit le 15 novembre 2026. **État : lots 1 et 2 écrits le 15 novembre 2026 (`MOB-165` et
+`MOB-166` — restent leurs tests Patrol à lancer — et `WEB-184`, livré) ; lots 3 à 5 conçus, pas
+codés.** Ce que les lots 1 et 2 ont tranché en codant est noté « Fait » dans les sections 4, 5
+et 6. Ledger : `MOB-165` (socle et
 création), `MOB-166` (paramètres et webhook), `MOB-167` (membres et invitations), `MOB-168` (lieux et
 signalements), `MOB-169` (tags et pages), `WEB-184` (libellé `USER_TEAM_LIMIT_REACHED`). Numéros
 réservés le 15 novembre 2026, entrées créées le même jour dans `LEDGER_NEXT.md`. Branche prévue :
@@ -150,7 +151,12 @@ lot par lot. Dans `config/router.dart` :
   clé ;
 - les écrans d'édition sont des `GoRoute` à `parentNavigatorKey: _rootNavigatorKey` ;
 - chaque route reçoit son entrée dans `_deepLinkHierarchies` (ancêtres : teams, team, `teamAdmin`),
-  couverte par `test/deep_link_hierarchy_test.dart`.
+  couverte par `test/deep_link_hierarchy_test.dart`. **Fait (lot 2)** : `_teamAdminAncestor` existe
+  (`config/router.dart`), et `teamSettings` est une **sous-route** du hub (`_teamSettingsRoute`,
+  dans les `routes:` de la `GoRoute` de `teamAdmin`, comme le formulaire d'un modèle sous sa
+  liste) : un `go` vers elle reconstruit le hub dessous. Les écrans des lots 3 à 5 se déclarent de
+  la même façon. Une route qui devient un écran s'ajoute aussi à `internalRouteTemplates`
+  (`core/utils/link_launcher.dart`), sans quoi `link_launcher_test` échoue.
 
 **Fait (lot 1)** : `teamAdminPlaces`, `teamAdminTags` et `teamAdminPages` n'avaient pas de builder
 Dart ; le hub les ouvrant sur le site, elles sont passées `mobile: true, appScreen: false` comme
@@ -311,6 +317,42 @@ en entier (logo, images, pièces jointes), `geometry`, `timezone`, `postsAsTeamB
 modules ; `toRequest()` construit un `TeamRequest` propre (le site, lui, y recopie tout le
 `TeamDetailDto`).
 
+**Fait (lot 2)** — ce que le code a tranché :
+
+- **Effacer la localisation passe par le PUT.** `TeamService.updateTeam` fait
+  `team.setGeometry(request.geometry())` sans condition : une position nulle **ou absente** efface
+  celle de l'équipe (seuls `timezone` et `postsAsTeamByDefault` sont « laissés tels quels » par
+  omission). L'app envoie `geometry: null`, le site omet la clé (`point ?? undefined`) : même
+  effet. C'est aussi pourquoi un formulaire intact doit renvoyer la position.
+- **Accès** : `TeamEditorPage(teamSlug:)`. Le refus (`keys.teamEditor.forbidden`) est rendu avant
+  le formulaire ; une fiche que le serveur refuse (403, ou 404 pour une équipe privée) rend le
+  même refus, pas « Erreur de chargement » — `isTeamAccessRefusal`
+  (`providers/team_access_probe.dart`), que le hub emploie aussi ; son « Retour » mène alors à
+  « Mes équipes ». Une fiche déjà lue reste le formulaire en cours même si sa relecture échoue
+  (équipe supprimée, adresse changée).
+- **Slug** : la feuille commune a gagné un paramètre `hint` — l'ancienne adresse d'une équipe
+  **redirige** vers la nouvelle (`slugService.createTeamRedirect`), celle d'un contenu non ; la
+  feuille d'équipe dit « L'ancienne adresse redirigera vers la nouvelle ».
+- **Visibilité** : `widgets/team_visibility_sheet.dart` (`showTeamVisibilitySheet`). Non
+  modifiable, la ligne porte un `VisibilityBadge` et une phrase qui dit pourquoi
+  (`teams.editor.visibilityLocked`), absente du site.
+- **Fuseau** : `widgets/team_timezone_change_sheet.dart` (`confirmTeamTimezoneChange`,
+  `timezoneChangeLines`). L'aperçu est lu **à l'ouverture de la feuille**, pas dès que le fuseau
+  change dans le formulaire comme au site : une requête de moins par essai de fuseau, et « Changer
+  le fuseau » inactif entre-temps de toute façon. Un type d'événement que l'app ne connaît pas
+  (`TimezoneChangeEntityType.$unknown`) prend un exemple neutre (`…example.other`).
+- **Confirmation « Rendre l'équipe privée »** : `confirmDestructive` (bouton en contour rouge), là
+  où le site a une variante « avertissement » : l'app n'a pas de troisième ton de confirmation.
+- **Suppression** : texte du site, sans gras (`confirmDestructive` prend une chaîne) ;
+  `PdlDangerZone` a gagné `actionKey`. Après elle, `notifyTeamChanged(…, contentScopeChanged:
+  true)` : le contenu de l'équipe a disparu avec elle.
+- **Message de succès** : « Équipe mise à jour » (le site : « … avec succès »), dans le ton
+  d'« Équipe créée ».
+- **`errors.api.INVALID_TIMEZONE`** manquait à `fr.json` et `en.json` (l'app aurait dit
+  « Erreur ») : ajoutée, texte du site.
+- **Pas d'« Annuler »** à côté d'« Enregistrer » : le retour de la barre, avec sa confirmation
+  d'abandon, comme les autres éditeurs de l'app.
+
 ### 6.2 Webhook
 
 `features/teams/presentation/widgets/team_webhook_sheet.dart`, `PdlFullSheet` ouverte par une ligne
@@ -330,6 +372,19 @@ modules ; `toRequest()` construit un `TeamRequest` propre (le site, lui, y recop
 
 Le bloc webhook du tableau de bord (`dashboard_admin.dart`) reste tel quel ; il est rafraîchi par
 `notifyTeamChanged`.
+
+**Fait (lot 2)** : `showTeamWebhookSheet(context, teamSlug)`, clés `keys.teamWebhook.*`.
+
+- La feuille **reste ouverte** après « Enregistrer » et après la suppression, comme la section du
+  site : un `PdlBanner` y dit « Webhook enregistré » / « Webhook supprimé » — un snackbar serait
+  rendu sous la feuille. Elle repart alors de l'état enregistré (champ vide, adresse masquée).
+- « `url` omis » : le client généré sérialise `url: null` (pas de `includeIfNull: false`), que
+  `TeamWebhookService.save` lit comme une absence (`url == null || isBlank`). Même chose pour
+  `geometry` ci-dessus.
+- Après un message de test, la feuille relit le webhook : « Dernier envoi » a changé.
+- La langue se choisit par un `PdlSegmented` (Français / English), pas une liste.
+- Le libellé du type (Slack…) et du statut du dernier envoi réemploient
+  `teams.dashboard.admin.webhook.kind.*` / `.status.*`.
 
 ## 7. Membres, lieux, signalements, tags, pages
 

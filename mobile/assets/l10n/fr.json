@@ -280,6 +280,78 @@
       "onSite": "S'ouvre sur le site"
     },
     "editor": {
+      "settingsTitle": "Paramètres de l'équipe",
+      "saved": "Équipe mise à jour",
+      "forbiddenTitle": "Réservé au rôle Administrateur",
+      "forbiddenMessage": "Seul le rôle Administrateur de l'équipe peut modifier ses paramètres.",
+      "slugHint": "Lettres minuscules, chiffres et tirets. L'ancienne adresse redirigera vers la nouvelle.",
+      "visibility": "Visibilité de l'équipe",
+      "visibilityHint": "Contrôle qui peut trouver et rejoindre cette équipe.",
+      "visibilityLocked": "Seule l'administration de la plateforme peut changer la visibilité de cette équipe.",
+      "goPrivate": {
+        "title": "Rendre l'équipe privée ?",
+        "message": "Tout le contenu de l'équipe (sorties, parcours, publications, voyages, modèles et pages) passera en « Équipe uniquement » : il ne sera plus lisible que par ses membres, et les liens déjà partagés ne mèneront plus nulle part. Rouvrir l'équipe ensuite ne le rouvre pas : chaque contenu devra l'être un par un.",
+        "confirm": "Rendre privée"
+      },
+      "timezoneChange": {
+        "title": "Changer le fuseau horaire",
+        "question": "Passer l'équipe de l'heure {ofFrom} à l'heure {ofTo} ?",
+        "upcoming": {
+          "one": "{} rendez-vous à venir sans lieu de départ : {example}",
+          "other": "{} rendez-vous à venir sans lieu de départ, par exemple {example}"
+        },
+        "example": {
+          "RIDE": "la sortie « {title} » du {date} restera à {time}, désormais heure {ofCity}.",
+          "TRIP": "le voyage « {title} » du {date} restera à {time}, désormais heure {ofCity}.",
+          "TRIP_STAGE": "l'étape « {title} » du voyage « {trip} », le {date}, restera à {time}, désormais heure {ofCity}.",
+          "POST": "la publication « {title} » du {date} restera à {time}, désormais heure {ofCity}.",
+          "other": "« {title} » du {date} restera à {time}, désormais heure {ofCity}."
+        },
+        "none": "Aucun rendez-vous à venir sans lieu de départ : aucune heure ne change.",
+        "past": {
+          "one": "{} rendez-vous passé sans lieu de départ garde son heure réelle, désormais affichée heure {ofCity}.",
+          "other": "{} rendez-vous passés sans lieu de départ gardent leur heure réelle, désormais affichée heure {ofCity}."
+        },
+        "located": "Les sorties, voyages et étapes situés par un lieu de départ ou un parcours ne changent pas.",
+        "error": "Impossible de calculer les conséquences de ce changement. Veuillez réessayer.",
+        "confirm": "Changer le fuseau"
+      },
+      "danger": {
+        "title": "Zone de danger",
+        "description": "La suppression d'une équipe est définitive : il n'y a pas de retour en arrière.",
+        "delete": "Supprimer l'équipe",
+        "deleting": "Suppression…",
+        "deleteTitle": "Supprimer l'équipe ?",
+        "deleteWarning": "Voulez-vous vraiment supprimer {teamName} ? Cette action est irréversible et supprimera toutes les données de l'équipe, y compris les sorties et les parcours.",
+        "confirmDelete": "Oui, supprimer l'équipe",
+        "deleted": "Équipe supprimée"
+      },
+      "webhook": {
+        "title": "Webhook",
+        "rowHint": "Publier les annonces de l'équipe dans Slack, Discord, Mattermost ou sur une adresse https.",
+        "description": "Publiez automatiquement les annonces de l'équipe (sorties, voyages et publications, annulations, changements de date ou de point de départ) dans Slack, Discord, Mattermost ou sur n'importe quelle adresse https. Le format est déduit de l'URL.",
+        "loadError": "Impossible de lire le webhook de l'équipe.",
+        "current": "Adresse actuelle",
+        "urlLabel": "URL du webhook",
+        "urlHint": "L'URL fournie par Slack, Discord, Mattermost ou votre service. Elle reste secrète : elle ne sera plus jamais affichée en entier.",
+        "urlKeepHint": "Laissez vide pour garder l'adresse actuelle, ou collez une nouvelle URL pour la remplacer.",
+        "urlPlaceholder": "https://hooks.slack.com/services/…",
+        "languageLabel": "Langue",
+        "languageHint": "Langue des messages envoyés.",
+        "enabledLabel": "Envoyer les annonces",
+        "enabledHint": "Désactivé, le webhook est conservé mais plus rien n'est envoyé.",
+        "lastAttempt": "Dernier envoi",
+        "saved": "Webhook enregistré",
+        "test": "Envoyer un message de test",
+        "testing": "Envoi…",
+        "testSuccess": "Message de test reçu (HTTP {status}).",
+        "testFailedStatus": "Le message de test a été refusé (HTTP {status}). {error}",
+        "testFailed": "Le message de test n'a pas abouti : {error}",
+        "remove": "Supprimer le webhook",
+        "removeTitle": "Supprimer le webhook ?",
+        "removeWarning": "Les annonces de l'équipe ne seront plus publiées à cette adresse. Pour la rétablir, il faudra saisir l'URL de nouveau.",
+        "removed": "Webhook supprimé"
+      },
       "createTitle": "Créer une équipe",
       "create": "Créer l'équipe",
       "created": "Équipe créée",
@@ -1991,6 +2063,7 @@
       "DEVICE_CODE_RATE_LIMITED": "Trop de codes d'appareil erronés récemment. Réessayez dans quelques minutes.",
       "INVALID_FORMAT": "Le format du fichier est invalide",
       "INVALID_SLUG": "L'URL personnalisée est invalide",
+      "INVALID_TIMEZONE": "Ce fuseau horaire n'est pas reconnu",
       "INVALID_VISIBILITY": "Le paramètre de visibilité est invalide",
       "LAST_ADMIN": "L'équipe doit garder au moins une personne pour l'administrer",
       "SOLE_TEAM_ADMIN": "Vous êtes la seule personne à administrer une équipe qui compte d'autres membres. Confiez l'administration à un autre membre, ou supprimez l'équipe, avant de supprimer votre compte.",

@@ -32,7 +32,6 @@ void main() {
     for (final String id in <String>[
       'teamAdminReports',
       'teamAdminMembers',
-      'teamSettings',
       // Ouvertes par le hub « Gestion de l'équipe » tant que leur écran
       // n'existe pas (MOB-165).
       'teamAdminPlaces',
@@ -47,6 +46,10 @@ void main() {
       '(MOB-165)', () {
     expect(webOnlyRouteIds, isNot(contains('teamsNew')));
     expect(webOnlyRouteIds, isNot(contains('teamAdmin')));
+  });
+
+  test('les paramètres de l\'équipe sont un écran de l\'app (MOB-166)', () {
+    expect(webOnlyRouteIds, isNot(contains('teamSettings')));
   });
 
   test('les pages que le hub ouvre sur le site sont dans la langue de '

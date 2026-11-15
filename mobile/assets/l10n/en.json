@@ -280,6 +280,78 @@
       "onSite": "Opens on the website"
     },
     "editor": {
+      "settingsTitle": "Team settings",
+      "saved": "Team updated",
+      "forbiddenTitle": "Administrators only",
+      "forbiddenMessage": "Only the team's administrators can change its settings.",
+      "slugHint": "Lowercase letters, digits and hyphens. The old address will redirect to the new one.",
+      "visibility": "Team visibility",
+      "visibilityHint": "Controls who can find and join this team.",
+      "visibilityLocked": "Only the platform's administration can change this team's visibility.",
+      "goPrivate": {
+        "title": "Make the team private?",
+        "message": "All of the team's content (rides, routes, posts, trips, templates and pages) will become “Team only”: only its members will be able to read it, and links already shared will lead nowhere. Reopening the team afterwards does not reopen its content: each item will have to be reopened one by one.",
+        "confirm": "Make private"
+      },
+      "timezoneChange": {
+        "title": "Change the time zone",
+        "question": "Move the team from {ofFrom} time to {ofTo} time?",
+        "upcoming": {
+          "one": "{} upcoming event without a start place: {example}",
+          "other": "{} upcoming events without a start place, for example {example}"
+        },
+        "example": {
+          "RIDE": "the ride “{title}” on {date} will stay at {time}, now {ofCity} time.",
+          "TRIP": "the trip “{title}” on {date} will stay at {time}, now {ofCity} time.",
+          "TRIP_STAGE": "the stage “{title}” of the trip “{trip}”, on {date}, will stay at {time}, now {ofCity} time.",
+          "POST": "the post “{title}” on {date} will stay at {time}, now {ofCity} time.",
+          "other": "“{title}” on {date} will stay at {time}, now {ofCity} time."
+        },
+        "none": "No upcoming event without a start place: no time changes.",
+        "past": {
+          "one": "{} past event without a start place keeps its real time, now shown in {ofCity} time.",
+          "other": "{} past events without a start place keep their real time, now shown in {ofCity} time."
+        },
+        "located": "Rides, trips and stages located by a start place or a route do not change.",
+        "error": "The consequences of this change could not be worked out. Please try again.",
+        "confirm": "Change the time zone"
+      },
+      "danger": {
+        "title": "Danger zone",
+        "description": "Deleting a team is permanent: there is no going back.",
+        "delete": "Delete the team",
+        "deleting": "Deleting…",
+        "deleteTitle": "Delete the team?",
+        "deleteWarning": "Do you really want to delete {teamName}? This cannot be undone and will delete all of the team's data, including its rides and routes.",
+        "confirmDelete": "Yes, delete the team",
+        "deleted": "Team deleted"
+      },
+      "webhook": {
+        "title": "Webhook",
+        "rowHint": "Post the team's announcements to Slack, Discord, Mattermost or any https address.",
+        "description": "Automatically post the team's announcements (rides, trips and posts, cancellations, changes of date or start place) to Slack, Discord, Mattermost or any https address. The format is worked out from the URL.",
+        "loadError": "The team's webhook could not be read.",
+        "current": "Current address",
+        "urlLabel": "Webhook URL",
+        "urlHint": "The URL given by Slack, Discord, Mattermost or your service. It stays secret: it will never be shown in full again.",
+        "urlKeepHint": "Leave empty to keep the current address, or paste a new URL to replace it.",
+        "urlPlaceholder": "https://hooks.slack.com/services/…",
+        "languageLabel": "Language",
+        "languageHint": "Language of the messages sent.",
+        "enabledLabel": "Send announcements",
+        "enabledHint": "When off, the webhook is kept but nothing is sent any more.",
+        "lastAttempt": "Last attempt",
+        "saved": "Webhook saved",
+        "test": "Send a test message",
+        "testing": "Sending…",
+        "testSuccess": "Test message received (HTTP {status}).",
+        "testFailedStatus": "The test message was refused (HTTP {status}). {error}",
+        "testFailed": "The test message did not go through: {error}",
+        "remove": "Delete the webhook",
+        "removeTitle": "Delete the webhook?",
+        "removeWarning": "The team's announcements will no longer be posted to this address. To restore it, the URL will have to be entered again.",
+        "removed": "Webhook deleted"
+      },
       "createTitle": "Create a team",
       "create": "Create the team",
       "created": "Team created",
@@ -1991,6 +2063,7 @@
       "DEVICE_CODE_RATE_LIMITED": "Too many wrong device codes lately. Try again in a few minutes.",
       "INVALID_FORMAT": "The file format is invalid",
       "INVALID_SLUG": "The custom URL is invalid",
+      "INVALID_TIMEZONE": "This time zone is not recognised",
       "INVALID_VISIBILITY": "The visibility setting is invalid",
       "LAST_ADMIN": "Cannot remove the last admin from the team",
       "SOLE_TEAM_ADMIN": "You are the only admin of a team that has other members. Make someone else an admin, or delete the team, before deleting your account.",

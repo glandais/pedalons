@@ -212,6 +212,48 @@ void main() {
       expect(request.postsAsTeamByDefault, isFalse);
     });
 
+    test('un formulaire intact se réécrit à l\'identique : sa requête ne '
+        'dépend que de l\'équipe', () {
+      final TeamForm form = TeamForm.fromTeam(team);
+
+      // Aucune modification : la requête d'un formulaire relu est la même,
+      // c'est ce que l'écran compare pour dire « modifié ».
+      expect(form.toRequest(), TeamForm.fromTeam(team).toRequest());
+      expect(form.copyWith().toRequest(), form.toRequest());
+      expect(form.isValid, isTrue);
+    });
+
+    test('changer la visibilité ou le fuseau ne touche à rien d\'autre', () {
+      final TeamForm form = TeamForm.fromTeam(team);
+      final TeamRequest request = form
+          .copyWith(visibility: Visibility.team, timezone: 'Pacific/Auckland')
+          .toRequest();
+
+      expect(request.visibility, 'TEAM');
+      expect(request.timezone, 'Pacific/Auckland');
+      expect(
+        request.copyWith(visibility: 'PUBLIC', timezone: 'Europe/Brussels'),
+        form.toRequest(),
+      );
+    });
+
+    test('une position effacée part en `geometry: null`, clé présente : le '
+        'PUT l\'efface', () {
+      // `TeamService.updateTeam` fait `setGeometry(request.geometry())` : une
+      // position nulle **ou absente** efface celle de l'équipe. Rien n'est
+      // « laissé tel quel » par omission, d'où le PUT qui renvoie tout.
+      final TeamRequest request = TeamForm.fromTeam(team)
+          .copyWith(location: () => null)
+          .toRequest();
+      final Map<String, Object?> json = request.toJson();
+
+      expect(json.containsKey('geometry'), isTrue);
+      expect(json['geometry'], isNull);
+      // Le reste de l'équipe est toujours là.
+      expect(request.media, team.about);
+      expect(request.timezone, 'Europe/Brussels');
+    });
+
     test('une équipe sans position repart sans position', () {
       final TeamRequest request = TeamForm.fromTeam(
         team.copyWith(geometry: null),

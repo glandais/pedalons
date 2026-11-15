@@ -35,7 +35,9 @@
 		     (data-safety.md §4 and §7, ledger MOB-159).
 		     Also the location a member gives a team they create (team creation form,
 		     POST /api/teams, geometry): the same address search, the same reasoning; stored against
-		     the team and returned with it, not blurred (data-safety.md #26, ledger MOB-165). -->
+		     the team and returned with it, not blurred (data-safety.md #26, ledger MOB-165); a
+		     team's administrator may change or clear it in the team settings (PUT /api/teams/{slug},
+		     data-safety.md #27, ledger MOB-166). -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypePhysicalAddress</string>
@@ -107,7 +109,11 @@
 		     PhysicalAddress row below (data-safety.md #25);
 		     teams a member creates in the team creation form (POST /api/teams: name, description,
 		     time zone, module switches) — the team's location is the PhysicalAddress row too
-		     (data-safety.md #26).
+		     (data-safety.md #26);
+		     the settings a team's administrator rewrites (PUT /api/teams/{slug}, the attachments of
+		     the team's description) and the https URL of the team's chat webhook, typed by the
+		     administrator, stored by the server and only ever returned masked
+		     (PUT /api/teams/{slug}/webhook, data-safety.md #27).
 		     All user-generated, all stored against the account, used only to run the app and moderate
 		     it. -->
 		<dict>
@@ -124,8 +130,9 @@
 		</dict>
 		<!-- Profile picture picked from the photo library and uploaded to
 		     POST /api/users/me/avatar (image_picker), and a ride's logo and images an organizer picks
-		     in the ride editor, like a route's images and a post's photos in their editors
-		     (POST /api/teams/{slug}/assets). Stored against the account. -->
+		     in the ride editor, like a route's images and a post's photos in their editors, and a
+		     team's logo and images in the team settings (POST /api/teams/{slug}/assets,
+		     data-safety.md #27). Stored against the account. -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>

@@ -207,6 +207,11 @@ final invitationsClientProvider = Provider<InvitationsClient>((ref) {
   return ref.watch(apiClientProvider).invitations;
 });
 
+/// Le webhook sortant d'une équipe (docs/LEDGER_*.md MOB-166).
+final teamWebhookClientProvider = Provider<TeamWebhookClient>((ref) {
+  return ref.watch(apiClientProvider).teamWebhook;
+});
+
 final moderationClientProvider = Provider<ModerationClient>((ref) {
   return ref.watch(apiClientProvider).moderation;
 });

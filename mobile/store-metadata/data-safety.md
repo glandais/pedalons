@@ -14,7 +14,10 @@ from:
 - **App**: Pédalons, `fr.pedalons.mobile`, version `1.0.0+57` (`mobile/pubspec.yaml`)
 - **Backend**: `https://www.pedalons.fr` (`mobile/lib/config/app_config.dart`)
 - **Last verified against the code**: 2026-11-15 (route planner, `MOB-170` —
-  `lib/features/routes/data/planner_bridge.dart`; the same day, team creation form, `MOB-165` —
+  `lib/features/routes/data/planner_bridge.dart`; the same day, team settings and the team webhook, `MOB-166` —
+  the same `team_editor_page.dart` in edit mode and
+  `lib/features/teams/presentation/widgets/team_webhook_sheet.dart`, #27; the same day, team
+  creation form, `MOB-165` —
   `lib/features/teams/presentation/pages/team_editor_page.dart`, and the shared address picker,
   `lib/features/geocoding/`, #26; before that 2026-11-14: ad editor, `MOB-158` — `lib/features/ads/`, and
   the declaration of an ad's position as an address, `MOB-159`, #25; post editor, `MOB-164` —
@@ -47,7 +50,9 @@ The capabilities added, and their exact boundary:
 - **`image_picker`** — photo library only, to feed `POST /api/users/me/avatar` and, since
   `MOB-80` (2026-10-17), a ride's logo and images in the **ride editor** (organizers only,
   `POST /api/teams/{slug}/assets`, see #22) — the same path serves the route editor (#23) and,
-  since `MOB-164` (2026-11-14), the photos of a post in the **post editor** (#24). No camera
+  since `MOB-164` (2026-11-14), the photos of a post in the **post editor** (#24), and, since
+  `MOB-166` (2026-11-15), a team's logo and the images of its description in the **team
+  settings** (the team's administrators only, #27). No camera
   capture (`NSCameraUsageDescription` is deliberately absent, so iOS cannot grant it).
   `NSPhotoLibraryUsageDescription` exists in `mobile/ios/Runner/Info.plist`, localized in
   `Runner/{en,fr}.lproj/InfoPlist.strings`.
@@ -59,7 +64,9 @@ The capabilities added, and their exact boundary:
   `gpx` has no uniform type identifier on iOS), checked locally for a `.gpx` extension and an
   opening `<gpx` element before anything is sent (`lib/features/routes/domain/gpx_check.dart`).
   No storage permission is requested on either platform: the picker grants access to the one file
-  picked.
+  picked. *Add a file* is one call site (`EditorMediaActions.addAttachments`) shared by the ride,
+  route, post and ad editors and, since `MOB-166` (2026-11-15), by the **team settings**, where an
+  administrator attaches a file to the team's description (#27).
 - **GPX import** (2026-10-17, `MOB-79`) — the route editor (organizers and administrators of the
   team only, `lib/features/routes/presentation/pages/route_editor_page.dart`) sends the chosen file
   with `POST /api/teams/{slug}/routes` (creation) or `PUT …/routes/{routeSlug}` (when replacing the
@@ -131,8 +138,8 @@ Verified absent from `mobile/pubspec.yaml`, `mobile/pubspec.lock`, `mobile/lib/`
 and `mobile/android/`:
 
 - No `camera`, `photo_manager`, `image_cropper` — the media entry points are the system photo
-  picker and, for ride attachments and the GPX of a route only, the system document picker
-  (`file_picker`).
+  picker and, for the attachments of an editor (ride, route, post, ad, team settings) and the GPX
+  of a route only, the system document picker (`file_picker`).
 - No precise location, no background location, no `permission_handler` (permission prompts are
   `geolocator`'s own), and no MapLibre user-location layer.
 - No FIT import, and no GPX import outside the route editor: the only file the app reads to send
@@ -193,6 +200,7 @@ Everything below leaves the device to `https://www.pedalons.fr` unless stated ot
 | 24 | **Posts written by organizers** | Post editor (`lib/features/posts/presentation/pages/post_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/posts`: title, markdown text, date, visibility, tags, signature (team or author), and photos and attachments through the path of #22. Organizers and administrators of the team only | Yes | Yes |
 | 25 | **Ads written by members** | Ad editor (`lib/features/ads/presentation/pages/ad_editor_page.dart`) → `POST`/`PUT /api/teams/{slug}/classifieds`: title, type, price, markdown description, a free-text place, tags, photos and attachments through the path of #22 — any member of the team. **And a position**: the member searches an address (`GET /api/geocode/search`, the typed text goes to the Pédalons server, which relays it to Stadia Maps; the device never calls the provider) and the picked address's coordinates are sent as `locationGeometry`. The server stores the **exact** point against the ad and its author and shows other members a ~1 km sector only. The device's own position is **not** read. **Declared as an address** (decision of 2026-11-14, ledger `MOB-159`): Apple *Physical Address*, Play *Personal info → Address* — see §4 and §5, and §7 for why it is not a location. The rest of the ad is *Other User Content* and *Photos or Videos* like #21–#22 | Yes | Yes |
 | 26 | **Teams created by members** | Team creation form (`lib/features/teams/presentation/pages/team_editor_page.dart`) → `POST /api/teams`: the team's name, its markdown description, its time zone (an IANA name the member picks; the default is the account's time-zone preference, #8, else `Europe/Paris` — the app reads no time zone from the device) and the module switches — any signed-in member, who becomes the team's administrator. No logo, photo or attachment at creation: an upload needs the team to exist. **And a location**, optional: the member searches an address through the same relay as #25 (`lib/features/geocoding/`, `GET /api/geocode/search` then `GET /api/geocode/place` for the picked one; the device never calls the provider) and the picked address's coordinates are sent as `geometry`. The server stores the point against the team and returns it with the team to whoever may read it (`TeamDetailDto.geometry`) — not blurred, unlike an ad's. The device's own position is **not** read. **Declared as an address** (decision of 2026-11-15, O1 of `docs/plans/2026-11-15-gestion-equipe-mobile.md`): the existing Apple *Physical Address* and Play *Personal info → Address* rows — see §4 and §5. Name and description are *Other User Content* like #21 | Yes | Yes (the team's creator is its administrator) |
+| 27 | **Team settings written by administrators** | Team settings (`lib/features/teams/presentation/pages/team_editor_page.dart` in edit mode) → `PUT /api/teams/{slug}`: what #26 sends — name, markdown description, time zone, module switches, the optional location picked through the address search of #25–#26 (a cleared location is sent as `geometry: null` and erased) — plus the team's **visibility** when the platform lets its administrators change it, and the team's **logo, images and attachments** through the path of #22 (`image_picker`, still images only; `file_picker`). `PATCH /api/teams/{slug}/slug` changes the team's address, `DELETE /api/teams/{slug}` deletes the team, `GET …/timezone/change-preview` only reads. **And the team's webhook** (`team_webhook_sheet.dart` → `PUT`/`DELETE /api/teams/{slug}/webhook`, `POST …/webhook/test`): an **https URL the administrator types** (a Slack, Discord or Mattermost incoming-webhook address, or any public https endpoint), a language and an on/off switch. The URL is a secret: the server stores it and only ever returns it masked (`TeamWebhookDto.maskedUrl`); the app keeps no copy, shows nothing but the masked form, and never calls the URL itself — the server posts the team's announcements to it (privacy policy, « Canaux de discussion d'équipe »). The team's administrators and the platform administrator only. Name, description, attachments and the webhook URL are *Other User Content*, the logo and images *Photos or Videos*, the location the *Physical Address* row of #25–#26 | Yes | Yes (written by a team's administrator, stored against the team) |
 | 10 | **Approximate location** | `geolocator` at `LocationAccuracy.low`, while in use, only when the user turns on the "around me" filter — becomes the `nearLat`/`nearLon`/`nearRadius` query parameters | Yes, as query parameters of a read request | **No** — not stored server-side, not written to the account |
 
 Stored **on device only**, never transmitted:
@@ -249,6 +257,9 @@ split: title, text, tags and attachments are *Other User Content*, photos are *P
 #26 (a team created in the app) has no row of its own: its name and description are *Other User
 Content*, its location is the *Physical Address* row of #25, and its time zone is a setting the
 member types, not a reading of the device.
+#27 (a team's settings) has no row of its own either: its texts, its attachments and the webhook
+URL an administrator types are *Other User Content*, its logo and images *Photos or Videos* like
+#22, its location the *Physical Address* row of #25–#26.
 
 #16 (terms acceptance) has no row of its own: it is a timestamp on the account created at sign-up,
 covered by the account rows (`EmailAddress`, `Name`, `UserID`) like the account's creation date.
@@ -363,6 +374,13 @@ would make the two forms disagree on what a typed address is. Unlike an ad's, th
 blurred: it is returned with the team to its readers. No new data type, so `app-privacy.json` is
 **unchanged**.
 
+**Team settings and the team webhook add no data type** (2026-11-15, `MOB-166`, #27). An
+administrator rewrites what #26 created, adds a logo, images and attachments through the upload
+path the editors already use, and may type the https URL of a chat webhook. The URL is content
+the administrator types to configure the team — *Other User Content*, declared — not a contact
+detail of a person, a credential of the account or an identifier of the device; the app stores
+none of it and reads back only its masked form. `app-privacy.json` is **unchanged**.
+
 **The address search adds no *Search History*.** The text typed in the address search of the ad
 editor and of the team creation form (#25, #26 — one picker, `lib/features/geocoding/`)
 goes to our backend, which relays it to Stadia Maps from the server's IP. The backend attaches it
@@ -463,6 +481,11 @@ The same *Address* row covers the **location a member gives a team they create**
 `MOB-165`, #26): optional as well — nobody has to create a team, and a team needs no location —
 and not shared, for the same reasons. The team's name and description are *Other user-generated
 content*, already declared. `data-safety.csv` is **unchanged**.
+
+**Team settings** (2026-11-15, `MOB-166`, #27) stay inside rows already declared: the team's
+texts and its webhook URL are *Other user-generated content*, its logo and images *Photos*, its
+attachments *Files and docs*, its location the *Address* row above. All optional — nobody has to
+administer a team — and none shared. `data-safety.csv` is **unchanged**.
 
 *Approximate location* is **optional** and **processed ephemerally**: it is read only when the user
 turns on the "around me" filter, sent as `nearLat`/`nearLon`/`nearRadius` on a read request, and
@@ -609,7 +632,7 @@ a dependency. Do not bring it back — it would re-open a US transfer for a type
 | Not declared | Why |
 |---|---|
 | Precise Location | Only `ACCESS_COARSE_LOCATION` is requested and only `LocationAccuracy.low` is used; `ACCESS_FINE_LOCATION` is stripped from the merged manifest. No background location, no ride recording, no user-location puck. Route coordinates are **downloaded** for display; describing where a *route* is is not describing where the *user* is. **The GPX an organizer imports (`MOB-79`, #23) does not change that**: the file may come from a ride the organizer recorded, but it is published as a team route for the members, the app reads no device position to produce it, and the server keeps only the geometry — timestamps, sensor measurements and file metadata are removed before storing (`GpxSanitizer`, policy § *GPX files you import*) — so what is collected is neither a location history nor a log of movements. **The position of an ad (`MOB-158`, #25) does not change that either**: it is an address the member types and picks, declared as *Physical Address* / *Address* (§4, §5); the device's position is not read to produce it. |
-| Videos | `image_picker` is restricted to still images (`pickImage`) for the avatar and a ride's logo and images; no video is ever read. |
+| Videos | `image_picker` is restricted to still images (`pickImage`) for the avatar and for the logo and images of an editor (ride, route, post, ad, team settings); no video is ever read. |
 | Camera | No `NSCameraUsageDescription` and no camera permission — the photo library is the only entry point. |
 | Fitness / Health | No HealthKit, no Motion & Fitness, no activity recording. |
 | Advertising ID | No advertising identifier is read or sent. The declared *Device ID* row covers the FCM registration token only (#11). The passkey `deviceName` is still the constant string `"Mobile"`. |
@@ -630,7 +653,7 @@ these ships:
 |---|---|
 | Profile editing (`PUT /api/users/me`) | nothing new — Name/Email already declared |
 | Camera capture for the avatar | `NSCameraUsageDescription` in `Info.plist` (+ its two `InfoPlist.strings`); no new data type — Photos or Videos already covers it |
-| Trip authoring (comments are already declared, #13; ride authoring since `MOB-80`, #21–#22; route authoring since `MOB-79`, #23; post authoring since `MOB-164`, #24; team creation since `MOB-165`, #26) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
+| Trip authoring (comments are already declared, #13; ride authoring since `MOB-80`, #21–#22; route authoring since `MOB-79`, #23; post authoring since `MOB-164`, #24; team creation since `MOB-165`, #26; team settings and the team webhook since `MOB-166`, #27) | nothing new — Apple `NSPrivacyCollectedDataTypeOtherUserContent` and Play *Other user-generated content* are both declared; widen the manifest comment and §2 |
 | A screenshot or attachment on a report, or automatic moderation of images or text beyond the word filter | Apple `…PhotosorVideos` already covers images, but re-read §4 for the purpose; Play *Photos*; any third-party moderation service is a new sub-processor for the policy |
 | GPX **import** from the device | Delivered by `MOB-79` for a team route an organizer publishes (#23): Play *Files and docs* and Apple `…OtherUserContent`, both declared; no Precise Location: the file may come from a recorded ride, but it is published as a route for the members, no device position is read and the server keeps only the geometry (timestamps, sensor data and metadata are stripped before storing). **Precise Location (Apple `…PreciseLocation`, Play *Location → Precise location*) becomes due** if the app imports **activities** as the user's own history, if the server starts keeping timestamps, or if the app records a ride. Any other import (FIT, a GPX outside the route editor) is a new audit |
 | Offering the **device's position** as the position of an ad or the location of a team ("use my location"), or any other stored position read from the device | Apple `NSPrivacyCollectedDataTypePreciseLocation`, linked; Play *Location → Precise location*, collected, not ephemeral. The *Physical Address* / *Address* rows of #25 and #26 only hold while the position is an address the member types |
@@ -716,8 +739,15 @@ grep -rniE "LocationAccuracy|getCurrentPosition|getPositionStream" lib | grep -v
 # (retryableOptions), it sends nothing new.
 grep -rn "MultipartFile\|FormData" lib | grep -v lib/api/generated
 
-# file_picker: exactly two calls — the ride editor's attachments (#22) and a route's GPX (#23)
+# file_picker: exactly two picks — the editors' attachments (EditorMediaActions.addAttachments,
+# #22; the ride, route, post and ad editors and the team settings, #27, share it) and a route's
+# GPX (#23). The third match, FilePicker.saveFile in core/utils/share_file.dart, reads nothing:
+# it is the system save dialog a download is written through
 grep -rn "FilePicker\." lib
+
+# image_picker: exactly two calls — the avatar (#9) and the editors' logo and images
+# (EditorMediaActions._pickImage, #22, #27) — both `pickImage`, never a video or the camera
+grep -rn "ImagePicker()" lib
 
 # Every mutating operation the app can actually reach, to confirm §2 is still complete.
 # App code calls generated retrofit clients, so grepping for `.post(` in lib/ finds almost
@@ -744,11 +774,16 @@ grep -rnE "\.(reportContent|blockUser|unblockUser|listMyBlockedUsers)\(" lib/fea
 # the notification permission must be asked from a screen, never at launch
 grep -rn "requestAuthorization" lib | grep -v lib/api/generated
 
+# the team webhook (#27): its URL only ever travels in saveTeamWebhook's body, typed by an
+# administrator; nothing stores it on the device — must print the repository only
+grep -rnE "\.(saveTeamWebhook|testTeamWebhook|deleteTeamWebhook|getTeamWebhook)\(" lib/features lib/core
+
 # problem / error reports: the two calls behind §2 #17–#19
 grep -rnE "\.(sendFeedback|reportClientError)\(" lib/features lib/core
 
-# the address picker (#25, #26): exactly two callers — the ad editor and the team creation form —
-# and the device's position is read by neither (the location grep above stays as it was)
+# the address picker (#25, #26, #27): exactly two callers — the ad editor and the team form
+# (creation and settings, one screen) — and the device's position is read by neither (the
+# location grep above stays as it was)
 grep -rn "pickGeocodedPlace(" lib | grep -v lib/features/geocoding
 
 # manifest is well-formed

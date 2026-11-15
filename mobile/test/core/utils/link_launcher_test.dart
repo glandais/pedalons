@@ -152,7 +152,7 @@ void main() {
     final List<String> sitePages = <String>[
       ...PathVariants.teamAdminMembers('vc').values,
       ...PathVariants.teamAdminReports('vc').values,
-      ...PathVariants.teamSettings('vc').values,
+      ...PathVariants.teamAdminPages('vc').values,
     ];
 
     test('reconnaît les pages du site sans écran, requête comprise', () {
@@ -303,8 +303,9 @@ void main() {
 
     // `…/sorties/nouvelle` était l'exemple jusqu'à `MOB-80`, puis
     // `…/articles/nouveau` jusqu'à `MOB-164` et `…/voyages/nouveau` jusqu'à
-    // `MOB-162`, qui en ont fait des écrans de l'app. Restent sans écran les
-    // pages d'administration de l'équipe.
+    // `MOB-162`, qui en ont fait des écrans de l'app, puis les paramètres de
+    // l'équipe jusqu'à `MOB-166`. Restent sans écran les autres pages
+    // d'administration de l'équipe.
     testWidgets('une page du site part au navigateur, pas sur le routeur '
         '(MOB-59)', (WidgetTester tester) async {
       final List<Uri> launched = <Uri>[];
@@ -315,13 +316,13 @@ void main() {
 
       final GoRouter router = await _pumpMarkdown(
         tester,
-        'Voir les [réglages](https://www.pedalons.fr/equipes/vc/admin/parametres).',
+        'Voir les [pages](https://www.pedalons.fr/equipes/vc/admin/pages).',
       );
 
-      await _tapLink(tester, 'réglages');
+      await _tapLink(tester, 'pages');
 
       expect(router.routerDelegate.currentConfiguration.matches, hasLength(1));
-      expect(launched.single.path, '/equipes/vc/admin/parametres');
+      expect(launched.single.path, '/equipes/vc/admin/pages');
     });
 
     testWidgets('« nouveau voyage » ouvre l\'éditeur de l\'app (MOB-162)', (

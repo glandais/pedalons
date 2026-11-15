@@ -107,6 +107,8 @@ String _tripAncestor(Map<String, String> p, String locale) =>
     PathVariants.trip(p['teamSlug']!, p['tripSlug']!)[locale]!;
 String _rideAncestor(Map<String, String> p, String locale) =>
     PathVariants.ride(p['teamSlug']!, p['rideSlug']!)[locale]!;
+String _teamAdminAncestor(Map<String, String> p, String locale) =>
+    PathVariants.teamAdmin(p['teamSlug']!)[locale]!;
 String _rideTemplatesAncestor(Map<String, String> p, String locale) =>
     PathVariants.rideTemplates(p['teamSlug']!)[locale]!;
 String _profileAncestor(Map<String, String> p, String locale) =>
@@ -320,6 +322,11 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   _DeepLinkHierarchy(
     patterns: PathVariants.teamAdmin(':teamSlug'),
     ancestors: [_teamsAncestor, _teamAncestor],
+  ),
+  // Les paramètres de l'équipe, sous le hub (ledger `MOB-166`).
+  _DeepLinkHierarchy(
+    patterns: PathVariants.teamSettings(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _teamAdminAncestor],
   ),
   // Les modèles de sortie : la liste sous l'équipe, le formulaire sous la
   // liste — l'enregistrement y revient par `pop` (ledger `MOB-78`).
@@ -835,6 +842,7 @@ GoRoute _teamTree(String locale) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) =>
             TeamAdminPage(teamSlug: state.pathParameters['teamSlug']!),
+        routes: [_teamSettingsRoute(locale)],
       ),
       // Les modèles de sortie : la liste, et dessous son formulaire de
       // création et de modification (ledger `MOB-78`).
@@ -930,6 +938,18 @@ GoRoute _teamTree(String locale) {
       ),
       _tripShellRoute(locale, teamBase),
     ],
+  );
+}
+
+/// Les paramètres de l'équipe, sous le hub « Gestion de l'équipe » : `go` vers
+/// eux reconstruit le hub dessous (ledger `MOB-166`).
+GoRoute _teamSettingsRoute(String locale) {
+  final hubBase = PathVariants.teamAdmin(':teamSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(PathVariants.teamSettings(':teamSlug'), locale, hubBase),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) =>
+        TeamEditorPage(teamSlug: state.pathParameters['teamSlug']!),
   );
 }
 

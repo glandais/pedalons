@@ -156,7 +156,7 @@ class TeamAdminPage extends ConsumerWidget {
           key: keys.teamAdmin.settings,
           icon: PdlIcons.settings,
           label: 'teams.manage.settings'.tr(),
-          webPath: TeamWebPaths.settings(teamSlug),
+          appPath: Paths.teamSettings(teamSlug),
         ),
     ];
 

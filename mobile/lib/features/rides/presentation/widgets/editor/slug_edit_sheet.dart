@@ -14,12 +14,15 @@ import '../../../../../keys.dart';
 ///
 /// Partagée par l'éditeur de sortie (ledger `MOB-80`) et celui de parcours
 /// (`MOB-79`) ; [fieldKey] et [saveKey] donnent leurs clés au champ et au
-/// bouton (celles de l'éditeur de sortie par défaut).
+/// bouton (celles de l'éditeur de sortie par défaut). [hint] remplace l'aide
+/// sous le champ : l'ancienne adresse d'une **équipe** redirige vers la
+/// nouvelle, celle d'un contenu ne mène plus nulle part.
 Future<String?> showSlugEditSheet(
   BuildContext context,
   String current, {
   Key? fieldKey,
   Key? saveKey,
+  String? hint,
 }) {
   final TextEditingController controller = TextEditingController(text: current);
   return PdlSheet.show<String>(
@@ -51,7 +54,7 @@ Future<String?> showSlugEditSheet(
               ),
               const SizedBox(height: PdlSpacing.chipGap),
               Text(
-                'rides.editor.slugHint'.tr(),
+                hint ?? 'rides.editor.slugHint'.tr(),
                 style: sheetContext.pdlText.xs.copyWith(
                   color: sheetContext.pdl.textDimmed,
                 ),

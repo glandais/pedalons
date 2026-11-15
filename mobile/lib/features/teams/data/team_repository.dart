@@ -97,6 +97,42 @@ class TeamRepository {
     return _teamsClient.createTeam(body: request);
   }
 
+  /// Réécrit l'équipe (docs/LEDGER_*.md MOB-166). **Le PUT réécrit tous les
+  /// champs** : la requête vient de `TeamForm.fromTeam(…).toRequest()`, qui
+  /// reprend la présentation entière ; une position absente **efface** celle
+  /// de l'équipe (`TeamService.updateTeam` : `setGeometry(request.geometry())`).
+  Future<TeamDetailDto> updateTeam(String slug, TeamRequest request) {
+    return _teamsClient.updateTeam(teamSlug: slug, body: request);
+  }
+
+  /// Change l'adresse de l'équipe ; l'ancienne y redirige. `SLUG_TAKEN`,
+  /// `INVALID_SLUG`.
+  Future<TeamDetailDto> changeTeamSlug(String slug, String newSlug) {
+    return _teamsClient.changeTeamSlug(
+      teamSlug: slug,
+      body: SlugChangeRequest(slug: newSlug),
+    );
+  }
+
+  /// Supprime l'équipe. Refusé pour une équipe venue de biketeam
+  /// (`MIGRATED_TEAM`).
+  Future<void> deleteTeam(String slug) {
+    return _teamsClient.deleteTeam(teamSlug: slug);
+  }
+
+  /// Ce que ferait un changement de fuseau, sans rien écrire (ledger
+  /// `API-60`) : les rendez-vous à venir sans lieu de départ gardent leur
+  /// heure murale, les passés leur instant.
+  Future<TeamTimezoneChangePreviewDto> previewTimezoneChange(
+    String slug,
+    String timezone,
+  ) {
+    return _teamsClient.previewTeamTimezoneChange(
+      teamSlug: slug,
+      timezone: timezone,
+    );
+  }
+
   /// Le tableau de bord de l'équipe : toutes ses sections, filtrées par le
   /// rôle de l'appelant, en **un seul appel** (`GET …/dashboard`).
   Future<TeamDashboardDto> getDashboard(String slug) {

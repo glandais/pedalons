@@ -214,10 +214,8 @@ class DashboardAdmin extends ConsumerWidget {
                   icon: PdlIcons.settings,
                   variant: PdlButtonVariant.text,
                   size: PdlButtonSize.sm,
-                  onPressed: () => openTeamWebPage(
-                    context,
-                    TeamWebPaths.settings(team.slug),
-                  ),
+                  // Un écran de l'app (ledger `MOB-166`).
+                  onPressed: () => context.push(Paths.teamSettings(team.slug)),
                 ),
               ],
             ),

@@ -28,6 +28,7 @@ class PdlDangerZone extends StatelessWidget {
     required this.onAction,
     this.busy = false,
     this.busyLabel,
+    this.actionKey,
     this.padding = const EdgeInsets.symmetric(
       horizontal: PdlSpacing.section,
       vertical: PdlSpacing.section,
@@ -40,6 +41,9 @@ class PdlDangerZone extends StatelessWidget {
   final VoidCallback? onAction;
   final bool busy;
   final String? busyLabel;
+
+  /// La clé du bouton, pour les tests de bout en bout.
+  final Key? actionKey;
   final EdgeInsetsGeometry padding;
 
   @override
@@ -61,6 +65,7 @@ class PdlDangerZone extends StatelessWidget {
           Text(consequence, style: t.sub),
           const SizedBox(height: 12),
           PdlButton(
+            key: actionKey,
             label: actionLabel,
             loadingLabel: busyLabel,
             loading: busy,

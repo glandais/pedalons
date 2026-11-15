@@ -103,11 +103,46 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 - [ ] `MOB-166` **Paramètres et webhook de l'équipe dans l'app (L)** — modifier le profil, le slug,
       le logo, les modules, le fuseau et la visibilité d'une équipe, la supprimer, régler son
-      webhook : tout ouvre le site (`mobile/lib/features/teams/presentation/team_web_paths.dart`).
+      webhook : tout ouvrait le site (`mobile/lib/features/teams/presentation/team_web_paths.dart`).
       Lot 2 du plan [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md)
-      §6 : le même `team_editor_page.dart` en mode édition sur `teamSettings`, les deux
-      confirmations (équipe rendue privée, changement de fuseau), `team_webhook_sheet.dart`. La
-      section « Paramètres plateforme » reste au site (décision D1 du plan).
+      §6. Contrat d'API inchangé.
+      **Code écrit le 15 novembre 2026** (`check.sh` vert, 2513 tests) : `teamSettings` écran de
+      l'app et lien profond, sous le hub (`_teamAdminAncestor`, `config/router.dart`) ; le même
+      `team_editor_page.dart` en mode édition (`TeamEditorPage(teamSlug:)`), réservé à
+      l'administration de l'équipe et à l'admin de plateforme, le refus tranché avant le
+      formulaire ; adresse (`changeTeamSlug`, puis `go` vers les paramètres de la nouvelle
+      adresse), logo, images et pièces jointes (`EditorMediaActions`), visibilité en feuille à
+      trois choix si `visibilityEditable` ou admin de plateforme, sinon en badge
+      (`team_visibility_sheet.dart`), zone de danger (`deleteTeam`) ; les deux confirmations du
+      site dans son ordre — équipe rendue privée, puis changement de fuseau sur l'aperçu du
+      serveur (`team_timezone_change_sheet.dart`, `previewTeamTimezoneChange`) ; webhook en
+      `PdlFullSheet` (`team_webhook_sheet.dart`, `team_webhook_repository.dart`,
+      `teamWebhookClientProvider`). La ligne « Paramètres » du hub et le bouton « Paramètres » du
+      tableau de bord ouvrent l'écran ; `TeamWebPaths.settings` n'existe plus. Le hub et les
+      paramètres rendent le refus, pas « Erreur de chargement », quand `GET team` répond 403 ou
+      404 (`isTeamAccessRefusal`). `errors.api.INVALID_TIMEZONE`, absente de l'app, est ajoutée.
+      Déclarations des stores : ligne d'inventaire #27 de `mobile/store-metadata/data-safety.md`
+      (paramètres, logo, images, pièces jointes, URL du webhook), commentaires de
+      `PrivacyInfo.xcprivacy` ; aucun type de donnée nouveau, `app-privacy.json` et
+      `data-safety.csv` inchangés.
+      **À ne pas défaire** : (1) le PUT réécrit tous les champs —
+      `TeamForm.fromTeam(…).toRequest()` renvoie la présentation entière (logo, images, pièces
+      jointes), la position, le fuseau, la visibilité et tous les interrupteurs ; une position
+      absente ou nulle **efface** celle de l'équipe (`TeamService.updateTeam` :
+      `setGeometry(request.geometry())`), c'est ainsi qu'elle s'efface, au site comme dans l'app ;
+      (2) l'URL du webhook est un secret : le champ part vide, seule `maskedUrl` s'affiche, et un
+      champ laissé vide garde l'adresse (`url` nul) ; (3) « Changer le fuseau » reste inactif tant
+      que l'aperçu n'est pas lu, et l'exemple se lit dans l'**ancien** fuseau ; (4) après un
+      enregistrement on **va** (`go`) à la page de l'équipe, après une suppression à « Mes
+      équipes » ; `notifyTeamChanged` reçoit `contentScopeChanged` quand la visibilité ou le
+      fuseau a changé, et l'ancienne **et** la nouvelle adresse après un changement de slug ;
+      (5) de la section « Paramètres plateforme » du site, seule la visibilité est dans l'app
+      (`MOB-171`). **Écarts avec le plan** : notés « Fait (lot 2) » dans son §6. Tests :
+      `team_settings_page_test`, `team_webhook_sheet_test`, `team_form_test`,
+      `team_admin_page_test`, `team_editor_page_test`, `team_change_test`, `team_web_paths_test`,
+      `deep_link_hierarchy_test`, `link_launcher_test`. Reste à faire tourner Patrol
+      (`team_settings_test.dart`) avant de ranger l'entrée, et à pousser les formulaires des
+      stores avec ceux de `MOB-159`.
 
 - [ ] `MOB-167` **Membres et invitations de l'équipe dans l'app (M)** — changer un rôle, retirer
       un membre, inviter par e-mail, renvoyer ou annuler une invitation : les boutons « Inviter »

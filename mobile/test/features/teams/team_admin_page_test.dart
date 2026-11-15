@@ -109,6 +109,11 @@ void main() {
           builder: (BuildContext _, GoRouterState state) =>
               Text('modèles de ${state.pathParameters['teamSlug']}'),
         ),
+        GoRoute(
+          path: '/equipes/:teamSlug/admin/parametres',
+          builder: (BuildContext _, GoRouterState state) =>
+              Text('paramètres de ${state.pathParameters['teamSlug']}'),
+        ),
       ],
     );
     await tester.pumpWidget(
@@ -249,6 +254,23 @@ void main() {
     expect(launched, isEmpty);
   });
 
+  testWidgets('« Paramètres » ouvre l\'écran de l\'app (MOB-166)', (
+    WidgetTester tester,
+  ) async {
+    final List<Uri> launched = <Uri>[];
+    debugLinkOpener = (Uri url) async {
+      launched.add(url);
+      return true;
+    };
+    await open(tester, role: 'ADMIN');
+
+    await tester.tap(find.byKey(keys.teamAdmin.settings));
+    await settle(tester);
+
+    expect(find.text('paramètres de n-peloton'), findsOneWidget);
+    expect(launched, isEmpty);
+  });
+
   testWidgets('les lignes sans écran ouvrent le site, et le disent', (
     WidgetTester tester,
   ) async {
@@ -259,8 +281,9 @@ void main() {
     };
     await open(tester, role: 'ADMIN');
 
-    // Six lignes sur sept quittent l'app : seuls les modèles y ont un écran.
-    expect(find.text('S\'ouvre sur le site'), findsNWidgets(6));
+    // Cinq lignes sur sept quittent l'app : les modèles et les paramètres y
+    // ont un écran.
+    expect(find.text('S\'ouvre sur le site'), findsNWidgets(5));
 
     for (final Key row in <Key>[
       keys.teamAdmin.places,
@@ -268,7 +291,6 @@ void main() {
       keys.teamAdmin.pages,
       keys.teamAdmin.members,
       keys.teamAdmin.reports,
-      keys.teamAdmin.settings,
     ]) {
       await tester.tap(find.byKey(row));
       await settle(tester);
@@ -282,7 +304,6 @@ void main() {
         '/equipes/n-peloton/admin/pages',
         '/equipes/n-peloton/admin/membres',
         '/equipes/n-peloton/admin/signalements',
-        '/equipes/n-peloton/admin/parametres',
       ],
     );
     // Toujours sur le hub.

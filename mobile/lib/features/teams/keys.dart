@@ -265,4 +265,75 @@ class TeamEditorKeys {
   final enableMemberDirectory = const _TeamEditorKey('enableMemberDirectory');
   final postsAsTeamByDefault = const _TeamEditorKey('postsAsTeamByDefault');
   final saveButton = const _TeamEditorKey('saveButton');
+
+  // ── Paramètres (ledger `MOB-166`) ──
+
+  /// La fiche de l'équipe n'a pas pu être lue.
+  final loadError = const _TeamEditorKey('loadError');
+
+  /// Le refus rendu à qui n'administre pas l'équipe, et son « Retour ».
+  final forbidden = const _TeamEditorKey('forbidden');
+  final forbiddenBack = const _TeamEditorKey('forbiddenBack');
+
+  /// L'adresse (slug) : sa ligne, puis le champ et le bouton de sa feuille.
+  final slugRow = const _TeamEditorKey('slugRow');
+  final slugField = const _TeamEditorKey('slugField');
+  final slugSave = const _TeamEditorKey('slugSave');
+
+  /// La visibilité : sa ligne, son badge quand elle ne se modifie pas, et
+  /// les choix de sa feuille (`TEAM`, `PUBLIC_UNLISTED`, `PUBLIC`).
+  final visibilityRow = const _TeamEditorKey('visibilityRow');
+  final visibilityBadge = const _TeamEditorKey('visibilityBadge');
+  ValueKey<String> visibilityOption(String visibility) =>
+      _TeamEditorKey('visibilityOption_$visibility');
+
+  /// La feuille « Changer le fuseau horaire » : ce qu'elle annonce, son
+  /// échec, et ses boutons.
+  final timezoneChangeSheet = const _TeamEditorKey('timezoneChangeSheet');
+  final timezoneChangeUpcoming = const _TeamEditorKey('timezoneChangeUpcoming');
+  final timezoneChangeError = const _TeamEditorKey('timezoneChangeError');
+  final timezoneChangeRetry = const _TeamEditorKey('timezoneChangeRetry');
+  final timezoneChangeConfirm = const _TeamEditorKey('timezoneChangeConfirm');
+
+  final webhookRow = const _TeamEditorKey('webhookRow');
+
+  /// « Supprimer l'équipe », dans la zone de danger.
+  final deleteButton = const _TeamEditorKey('deleteButton');
+}
+
+class _TeamWebhookKey extends ValueKey<String> {
+  const _TeamWebhookKey(String value) : super('teamWebhook_$value');
+}
+
+/// La feuille du webhook d'une équipe (ledger `MOB-166`).
+class TeamWebhookKeys {
+  final sheet = const _TeamWebhookKey('sheet');
+
+  /// « Fermer », dans l'en-tête de la feuille.
+  final closeButton = const _TeamWebhookKey('closeButton');
+  final loadError = const _TeamWebhookKey('loadError');
+
+  /// L'adresse actuelle, **masquée** — jamais l'URL entière.
+  final maskedUrl = const _TeamWebhookKey('maskedUrl');
+  final urlField = const _TeamWebhookKey('urlField');
+
+  /// Un segment de la langue — `fr`, `en`.
+  ValueKey<String> language(String code) => _TeamWebhookKey('language_$code');
+  final enabledSwitch = const _TeamWebhookKey('enabledSwitch');
+
+  /// Le dernier envoi : son statut.
+  final lastStatus = const _TeamWebhookKey('lastStatus');
+
+  /// Ce que le serveur a refusé, ou ce qui n'a pas pu être lu.
+  final errorBanner = const _TeamWebhookKey('errorBanner');
+
+  /// « Webhook enregistré », « Webhook supprimé ».
+  final noticeBanner = const _TeamWebhookKey('noticeBanner');
+
+  /// Le résultat du message de test, avec son code HTTP.
+  final testResult = const _TeamWebhookKey('testResult');
+
+  final saveButton = const _TeamWebhookKey('saveButton');
+  final testButton = const _TeamWebhookKey('testButton');
+  final removeButton = const _TeamWebhookKey('removeButton');
 }
