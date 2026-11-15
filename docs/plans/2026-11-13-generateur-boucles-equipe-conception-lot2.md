@@ -2254,3 +2254,41 @@ réussit. Les échecs restants des départs 4, 5 et 7 ne viennent pas du repli s
 
 Restent ouverts : ces deux départs, les composantes par type (§13.10, correction b) et le temps
 perdu sur les points de demi-tour sans flot (210 appels sur 614).
+
+### 13.12 Banc du 15 novembre : avant et après les quatre correctifs
+
+`RealDataGeneratorBench` sur les neuf équipes de l'export, mêmes requêtes des deux côtés (120 par
+équipe au plus, pas de coupure par temps global, budget de 5 s par requête), au commit en production
+(`43b15bb9d`) et au commit `c03e3193a`. Les deux passages ont tourné en même temps sur la même
+machine : les temps sont pessimistes de la même façon. Le tirage des départs garde son biais (§13.10).
+
+| Équipe | Requêtes | Réussies avant | Réussies après | Arrêts sur budget avant → après |
+|---|---|---|---|---|
+| A (69 458 arêtes) | 120 | 55 | 53 | 8 → 15 |
+| `903379379966724603` | 120 | 19 | 22 | 0 → 0 |
+| `902861823942084536` | 77 | 0 | 6 | 0 → 0 |
+| `902614221043964356` | 120 | 4 | 4 | 0 → 0 |
+| `904316204013810796` | 120 | 2 | 2 | 0 → 0 |
+| quatre petites équipes | 22 | 0 | 0 | 0 → 0 |
+| **Total** | **579** | **80** | **87** | **8 → 15** |
+
+- Les trois équipes qui gagnent le doivent au flot orienté : là où le flot aveugle ne sortait
+  aucun candidat (64 échecs sur 64), il en sort 12 à 16.
+- A perd deux requêtes : 8 réussites deviennent des arrêts sur budget, 4 arrêts deviennent des
+  réussites, 2 échecs réussissent, 3 échecs deviennent des arrêts. Le flot orienté calcule deux
+  flots par point de demi-tour : sur les 47 requêtes réussies des deux côtés, la médiane passe de
+  1,6 à 2,1 s, et le budget de 5 s mord plus souvent. Aucune relance sans budget (plafond 20 s)
+  ne récupère un échec, ni avant ni après.
+- Le gain de temps du retour impossible n'apparaît pas dans cet échantillon : ses 23 requêtes de A
+  échouaient déjà en quelques millisecondes (`NETWORK_TOO_SMALL` avant l'accroche du §13.9).
+- Le contrôleur n'a refusé aucun candidat rendu. L'oracle de test signale 32 candidats sur A
+  (36 avant ; les sens uniques roulés à contresens passent de 62 à 33 relevés) et des relevés
+  nouveaux, non analysés : 6 candidats de `902861823942084536` pour un virage sur jonction, et sur
+  A un passage répété hors queue et trois échantillons gravel sur une arête qu'aucune observation
+  n'admet.
+- L'oracle lui-même est devenu lent sur A (13,7 s par parcours contrôlé, à cause de
+  `admittedPieceLength` ajouté au §13.9) : le passage dure 25 minutes au lieu de 10.
+
+Suite proposée : le temps de A part dans les flots sans issue, dont la seconde passe épuise le
+graphe. Un calcul de ponts par requête sur les seules arêtes admises (`BridgeFinder`, linéaire,
+pas de cache) permettrait d'écarter ces points de demi-tour avant le flot et de rendre du budget.
