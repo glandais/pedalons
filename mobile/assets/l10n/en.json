@@ -464,6 +464,28 @@
         "revoked": "Invitation cancelled."
       }
     },
+    "pages": {
+      "title": "Team pages",
+      "forbiddenTitle": "Administrators only",
+      "forbiddenMessage": "Only the team's administrators can manage its pages.",
+      "count": {
+        "one": "{} page of {max} maximum",
+        "other": "{} pages of {max} maximum"
+      },
+      "emptyTitle": "No pages yet",
+      "emptyMessage": "Create custom pages for FAQ, rules, or any team information.",
+      "moveUpSemantic": "Move {name} up",
+      "moveDownSemantic": "Move {name} down",
+      "deleteSemantic": "Delete {name}",
+      "restoreSemantic": "Restore {name}",
+      "deleteConfirm": {
+        "title": "Delete page",
+        "message": "Do you really want to delete the page “{name}”? Members will no longer see it; you can restore it from this list."
+      },
+      "deleted": "Page deleted",
+      "restored": "Page restored",
+      "reordered": "Pages reordered"
+    },
     "discovery": {
       "title": "Discover teams",
       "noun": {

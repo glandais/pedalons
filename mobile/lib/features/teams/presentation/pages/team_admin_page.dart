@@ -136,7 +136,7 @@ class TeamAdminPage extends ConsumerWidget {
           key: keys.teamAdmin.pages,
           icon: PdlIcons.page,
           label: 'teams.manage.pages'.tr(),
-          webPath: TeamWebPaths.pages(teamSlug),
+          appPath: Paths.teamAdminPages(teamSlug),
         ),
         _AdminRow(
           key: keys.teamAdmin.members,

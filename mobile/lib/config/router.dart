@@ -56,6 +56,7 @@ import '../features/teams/presentation/pages/team_admin_page.dart';
 import '../features/teams/presentation/pages/team_custom_page.dart';
 import '../features/teams/presentation/pages/team_editor_page.dart';
 import '../features/teams/presentation/pages/team_home_page.dart';
+import '../features/teams/presentation/pages/team_pages_admin_page.dart';
 import '../features/teams/presentation/pages/teams_discover_page.dart';
 import '../features/teams/presentation/pages/teams_page.dart';
 import '../features/teams/presentation/widgets/team_sections.dart';
@@ -350,6 +351,11 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   // Les tags de l'équipe, sous le hub (ledger `MOB-169`).
   _DeepLinkHierarchy(
     patterns: PathVariants.teamAdminTags(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _teamAdminAncestor],
+  ),
+  // Les pages de l'équipe, sous le hub (ledger `MOB-169`).
+  _DeepLinkHierarchy(
+    patterns: PathVariants.teamAdminPages(':teamSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamAdminAncestor],
   ),
   // Les modèles de sortie : la liste sous l'équipe, le formulaire sous la
@@ -872,6 +878,7 @@ GoRoute _teamTree(String locale) {
           _teamAdminPlacesRoute(locale),
           _teamAdminReportsRoute(locale),
           _teamAdminTagsRoute(locale),
+          _teamAdminPagesRoute(locale),
         ],
       ),
       // Les modèles de sortie : la liste, et dessous son formulaire de
@@ -1043,6 +1050,17 @@ GoRoute _teamAdminTagsRoute(String locale) {
       teamSlug: state.pathParameters['teamSlug']!,
       type: state.uri.queryParameters['type'],
     ),
+  );
+}
+
+/// Les pages personnalisées de l'équipe, sous le hub (ledger `MOB-169`).
+GoRoute _teamAdminPagesRoute(String locale) {
+  final hubBase = PathVariants.teamAdmin(':teamSlug')[locale]!;
+  return GoRoute(
+    path: _underTeam(PathVariants.teamAdminPages(':teamSlug'), locale, hubBase),
+    parentNavigatorKey: _rootNavigatorKey,
+    builder: (context, state) =>
+        TeamPagesAdminPage(teamSlug: state.pathParameters['teamSlug']!),
   );
 }
 

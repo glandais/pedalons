@@ -249,6 +249,46 @@ class TeamAdminKeys {
   final settings = const _TeamAdminKey('settings');
 }
 
+class _TeamPagesKey extends ValueKey<String> {
+  const _TeamPagesKey(String value) : super('teamPages_$value');
+}
+
+/// « Pages de l'équipe » : la liste des pages personnalisées, dans la gestion
+/// de l'équipe (ledger `MOB-169`).
+class TeamPagesAdminKeys {
+  final loadError = const _TeamPagesKey('loadError');
+
+  /// Le refus rendu à qui n'administre pas l'équipe, et son « Retour ».
+  final forbidden = const _TeamPagesKey('forbidden');
+  final forbiddenBack = const _TeamPagesKey('forbiddenBack');
+
+  /// Ce que le serveur a refusé à une écriture.
+  final errorBanner = const _TeamPagesKey('errorBanner');
+
+  /// « n pages sur 3 maximum ».
+  final count = const _TeamPagesKey('count');
+
+  final empty = const _TeamPagesKey('empty');
+  final listError = const _TeamPagesKey('listError');
+
+  /// La ligne d'une page, par son id : titre, visibilité, « Supprimé », et
+  /// ses gestes.
+  ValueKey<String> row(String pageId) => _TeamPagesKey('row_$pageId');
+  ValueKey<String> rowTitle(String pageId) => _TeamPagesKey('rowTitle_$pageId');
+  ValueKey<String> rowVisibility(String pageId) =>
+      _TeamPagesKey('rowVisibility_$pageId');
+  ValueKey<String> rowDeleted(String pageId) =>
+      _TeamPagesKey('rowDeleted_$pageId');
+  ValueKey<String> rowMoveUp(String pageId) =>
+      _TeamPagesKey('rowMoveUp_$pageId');
+  ValueKey<String> rowMoveDown(String pageId) =>
+      _TeamPagesKey('rowMoveDown_$pageId');
+  ValueKey<String> rowDelete(String pageId) =>
+      _TeamPagesKey('rowDelete_$pageId');
+  ValueKey<String> rowRestore(String pageId) =>
+      _TeamPagesKey('rowRestore_$pageId');
+}
+
 class _TeamEditorKey extends ValueKey<String> {
   const _TeamEditorKey(String value) : super('teamEditor_$value');
 }

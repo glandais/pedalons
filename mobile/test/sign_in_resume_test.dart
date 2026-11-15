@@ -93,10 +93,11 @@ void main() {
     tearDown(() => debugLinkOpener = null);
 
     test('part au navigateur, la pile et le lien en attente intacts', () async {
-      // Les pages de l'équipe, encore au site (ledger `MOB-169`) ; la gestion
-      // des membres puis les signalements, qui servaient ici, sont des écrans
-      // de l'app depuis `MOB-167` et `MOB-168`.
-      final sitePage = PathVariants.teamAdminPages('velo-club')['fr']!;
+      // Le planificateur de parcours, resté au site (ledger `MOB-24`) : une
+      // route `web` seulement, sans constructeur Dart. La gestion des membres,
+      // les signalements puis les pages de l'équipe, qui servaient ici, sont
+      // des écrans de l'app depuis `MOB-167`, `MOB-168` et `MOB-169`.
+      const sitePage = '/equipes/velo-club/parcours/generer';
 
       for (final signedIn in [true, false]) {
         opened.clear();

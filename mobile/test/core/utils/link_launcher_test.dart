@@ -147,11 +147,22 @@ void main() {
   });
 
   group('isSitePageLocation', () {
-    // Les pages du site qu'ouvre le hub, dans les deux locales :
-    // `/equipes/.*` les donne à l'app sous Android (docs/LEDGER_*.md MOB-59).
-    final List<String> sitePages = <String>[
-      ...PathVariants.teamAdminPages('vc').values,
+    // Des pages restées au site, dans les deux locales — le planificateur de
+    // parcours (ledger `MOB-24`), des routes `web` seulement, sans
+    // constructeur Dart : `/equipes/.*` les donne à l'app sous Android
+    // (docs/LEDGER_*.md MOB-59). Le hub « Gestion de l'équipe », lui, n'ouvre
+    // plus le site (ledger `MOB-169`).
+    const List<String> sitePages = <String>[
+      '/teams/vc/routes/generate',
+      '/equipes/vc/parcours/generer',
     ];
+
+    test('les pages de l\'équipe s\'ouvrent dans l\'app (MOB-169)', () {
+      for (final String page in PathVariants.teamAdminPages('vc').values) {
+        expect(isSitePageLocation(page), isFalse, reason: page);
+        expect(internalLocationFor(page), page, reason: page);
+      }
+    });
 
     test('les tags de l\'équipe s\'ouvrent dans l\'app (MOB-169)', () {
       for (final String page in PathVariants.teamAdminTags('vc').values) {
@@ -335,8 +346,9 @@ void main() {
     // `…/sorties/nouvelle` était l'exemple jusqu'à `MOB-80`, puis
     // `…/articles/nouveau` jusqu'à `MOB-164` et `…/voyages/nouveau` jusqu'à
     // `MOB-162`, qui en ont fait des écrans de l'app, puis les paramètres de
-    // l'équipe jusqu'à `MOB-166`. Restent sans écran les autres pages
-    // d'administration de l'équipe.
+    // l'équipe jusqu'à `MOB-166` et ses pages jusqu'à `MOB-169`, le dernier
+    // écran d'administration à arriver. Reste au site le planificateur de
+    // parcours (ledger `MOB-24`).
     testWidgets('une page du site part au navigateur, pas sur le routeur '
         '(MOB-59)', (WidgetTester tester) async {
       final List<Uri> launched = <Uri>[];
@@ -347,13 +359,13 @@ void main() {
 
       final GoRouter router = await _pumpMarkdown(
         tester,
-        'Voir les [pages](https://www.pedalons.fr/equipes/vc/admin/pages).',
+        'Ouvrir le [planificateur](https://www.pedalons.fr/equipes/vc/parcours/generer).',
       );
 
-      await _tapLink(tester, 'pages');
+      await _tapLink(tester, 'planificateur');
 
       expect(router.routerDelegate.currentConfiguration.matches, hasLength(1));
-      expect(launched.single.path, '/equipes/vc/admin/pages');
+      expect(launched.single.path, '/equipes/vc/parcours/generer');
     });
 
     testWidgets('« nouveau voyage » ouvre l\'éditeur de l\'app (MOB-162)', (

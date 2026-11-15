@@ -842,19 +842,13 @@ class PathVariants {
 
 /// Builders of [PathVariants] for pages of the **site** the app has no screen
 /// for (`appScreen: false`): their path only serves to open them in a browser.
-const Set<String> webOnlyRouteIds = <String>{
-  'features',
-  'support',
-  'teamAdminPages',
-};
+const Set<String> webOnlyRouteIds = <String>{'features', 'support'};
 
 /// Pages of the **site** a deeplink wildcard captures although the app has no
 /// screen for them, as anchored regular expressions. The OS hands such a link
 /// to the app, which opens it in the browser (docs/LEDGER_*.md MOB-59). The
 /// AASA excludes the same pages (`NOT …`); the Android manifest cannot.
 const List<String> sitePagePathPatterns = <String>[
-  r'^/teams/[^/]+/admin/pages/?$',
-  r'^/equipes/[^/]+/admin/pages/?$',
   r'^/teams/[^/]+/admin/pages/new/?$',
   r'^/equipes/[^/]+/admin/pages/nouvelle/?$',
   r'^/teams/[^/]+/admin/pages/[^/]+/edit/?$',

@@ -134,6 +134,11 @@ void main() {
           builder: (BuildContext _, GoRouterState state) =>
               Text('tags de ${state.pathParameters['teamSlug']}'),
         ),
+        GoRoute(
+          path: '/equipes/:teamSlug/admin/pages',
+          builder: (BuildContext _, GoRouterState state) =>
+              Text('pages de ${state.pathParameters['teamSlug']}'),
+        ),
       ],
     );
     await tester.pumpWidget(
@@ -364,7 +369,7 @@ void main() {
     expect(find.text('S\'ouvre sur le site'), findsNothing);
   });
 
-  testWidgets('les lignes sans écran ouvrent le site, et le disent', (
+  testWidgets('« Pages » ouvre l\'écran de l\'app (MOB-169)', (
     WidgetTester tester,
   ) async {
     final List<Uri> launched = <Uri>[];
@@ -374,20 +379,19 @@ void main() {
     };
     await open(tester, role: 'ADMIN');
 
-    // Une ligne sur sept quitte encore l'app, les pages : les modèles, les
-    // lieux, les tags, les membres, les signalements et les paramètres y ont
-    // un écran.
-    expect(find.text('S\'ouvre sur le site'), findsOneWidget);
-
     await tester.tap(find.byKey(keys.teamAdmin.pages));
     await settle(tester);
 
-    expect(
-      <String>[for (final Uri url in launched) url.path],
-      <String>['/equipes/n-peloton/admin/pages'],
-    );
-    // Toujours sur le hub.
-    expect(find.byKey(keys.teamAdmin.rideTemplates), findsOneWidget);
+    expect(find.text('pages de n-peloton'), findsOneWidget);
+    expect(launched, isEmpty);
+  });
+
+  testWidgets('plus aucune ligne ne quitte l\'app, pour qui administre '
+      'comme pour qui organise (MOB-169)', (WidgetTester tester) async {
+    await open(tester, role: 'ADMIN');
+
+    expect(shownRows(tester), hasLength(7));
+    expect(find.text('S\'ouvre sur le site'), findsNothing);
   });
 
   testWidgets('la fiche en échec : une erreur, et « Réessayer » la relit', (

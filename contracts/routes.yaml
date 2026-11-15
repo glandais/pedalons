@@ -501,6 +501,7 @@ routes:
     web: true
     mobile: true
     deeplink: true
+  # The team's custom pages (three at most): an app screen since MOB-169, under the hub.
   - id: teamAdminPages
     path:
       en: /teams/{teamSlug}/admin/pages
@@ -509,7 +510,7 @@ routes:
       - teamSlug
     web: true
     mobile: true
-    appScreen: false
+    deeplink: true
   - id: teamAdminPageNew
     path:
       en: /teams/{teamSlug}/admin/pages/new

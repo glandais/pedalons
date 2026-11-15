@@ -40,16 +40,8 @@ void main() {
     expect(webOnlyRouteIds, isNot(contains('teamAdminReports')));
   });
 
-  test('chaque page que le hub ouvre encore sur le site est sans écran', () {
-    // `appScreen: false` dans le contrat : le lien part dans le navigateur,
-    // jamais sur le routeur de l'app.
-    for (final String id in <String>[
-      // Ouverte par le hub « Gestion de l'équipe » tant que son écran
-      // n'existe pas (MOB-165).
-      'teamAdminPages',
-    ]) {
-      expect(webOnlyRouteIds, contains(id));
-    }
+  test('les pages de l\'équipe sont un écran de l\'app (MOB-169)', () {
+    expect(webOnlyRouteIds, isNot(contains('teamAdminPages')));
   });
 
   test('créer une équipe et le hub de gestion sont des écrans de l\'app '
