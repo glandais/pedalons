@@ -52,7 +52,7 @@ export function RideTemplateEditor({
   submitButtonText,
 }: RideTemplateEditorProps) {
   const { t } = useTranslation()
-  const { config, speedToDisplay, speedFromDisplay } = useUnits()
+  const { config, decimalSeparator, speedToDisplay, speedFromDisplay } = useUnits()
 
   const form = useForm<RideTemplateRequest>({
     validate: zodFormValidator<RideTemplateRequest>(CreateTemplateBody),
@@ -221,6 +221,7 @@ export function RideTemplateEditor({
                     })}
                     min={0}
                     suffix={` ${config.speedUnit}`}
+                    decimalSeparator={decimalSeparator}
                     value={speedToDisplay(form.values.groups[index]?.averageSpeed) ?? ''}
                     onChange={(val) =>
                       form.setFieldValue(`groups.${index}.averageSpeed`, speedFromDisplay(val))

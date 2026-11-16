@@ -35,7 +35,7 @@ export function DepartureFields({
   description,
 }: DepartureFieldsProps) {
   const { t } = useTranslation()
-  const { config, speedToDisplay, speedFromDisplay } = useUnits()
+  const { config, decimalSeparator, speedToDisplay, speedFromDisplay } = useUnits()
   const { timezone: readerZone } = useEffectiveTimezone()
   const shownZone = zone ?? readerZone
   const maxDate = addDaysToWallTime(
@@ -62,6 +62,7 @@ export function DepartureFields({
         min={Math.ceil(speedToDisplay(MIN_AVERAGE_SPEED_KMH) ?? MIN_AVERAGE_SPEED_KMH)}
         max={Math.floor(speedToDisplay(MAX_AVERAGE_SPEED_KMH) ?? MAX_AVERAGE_SPEED_KMH)}
         suffix={` ${config.speedUnit}`}
+        decimalSeparator={decimalSeparator}
         value={speedToDisplay(value.averageSpeed) ?? ''}
         onChange={(val) => onChange({ ...value, averageSpeed: speedFromDisplay(val) })}
       />

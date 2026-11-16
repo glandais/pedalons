@@ -120,7 +120,7 @@ export function TripEditor({
     [t]
   )
 
-  const { config, speedToDisplay, speedFromDisplay } = useUnits()
+  const { config, decimalSeparator, speedToDisplay, speedFromDisplay } = useUnits()
 
   const form = useForm<TripRequest>({
     validate: zodFormValidator<TripRequest>(tripSchema),
@@ -544,6 +544,7 @@ export function TripEditor({
                       })}
                       min={0}
                       suffix={` ${config.speedUnit}`}
+                      decimalSeparator={decimalSeparator}
                       value={speedToDisplay(form.values.stages[index]?.averageSpeed) ?? ''}
                       onChange={(val) =>
                         form.setFieldValue(`stages.${index}.averageSpeed`, speedFromDisplay(val))

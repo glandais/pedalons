@@ -96,7 +96,7 @@ export function RideEditor({
   timezone,
 }: RideEditorProps) {
   const { t } = useTranslation()
-  const { config, speedToDisplay, speedFromDisplay } = useUnits()
+  const { config, decimalSeparator, speedToDisplay, speedFromDisplay } = useUnits()
   const [showRoutePickerModal, setShowRoutePickerModal] = useState(false)
   const [showCreateRouteModal, setShowCreateRouteModal] = useState(false)
   const [pickerTarget, setPickerTarget] = useState<Target | null>(null)
@@ -496,6 +496,7 @@ export function RideEditor({
                     })}
                     min={0}
                     suffix={` ${config.speedUnit}`}
+                    decimalSeparator={decimalSeparator}
                     value={speedToDisplay(form.values.groups[index]?.averageSpeed) ?? ''}
                     onChange={(val) =>
                       form.setFieldValue(`groups.${index}.averageSpeed`, speedFromDisplay(val))

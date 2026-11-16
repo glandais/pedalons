@@ -13,6 +13,7 @@ import {
   formatTemperature,
   formatTemperatureRange,
   speedText,
+  decimalSeparator as decimalSeparatorOf,
   getUnitConfig,
   speedToDisplay as speedToDisplayFn,
   speedFromDisplay as speedFromDisplayFn,
@@ -125,6 +126,9 @@ export function useUnits() {
     [unitSystem, language]
   )
 
+  /** The language's decimal separator, for a NumberInput's `decimalSeparator`. */
+  const decimalSeparator = useMemo(() => decimalSeparatorOf(language), [language])
+
   // Converters for form inputs
   const speedToDisplay = useCallback(
     (kmh: number | undefined) => speedToDisplayFn(kmh, unitSystem),
@@ -174,6 +178,7 @@ export function useUnits() {
     formatElevation: formatElevationFn,
     formatSpeed: formatSpeedFn,
     // Converters for form inputs (to/from display units)
+    decimalSeparator,
     speedToDisplay,
     speedFromDisplay,
     distanceToDisplay,

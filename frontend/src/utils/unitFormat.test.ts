@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { formatAmount } from './priceFormat'
 import {
+  decimalSeparator,
+  speedToDisplay,
   formatFileSize,
   formatNumber,
   formatPrecipitation,
@@ -85,5 +87,20 @@ describe('thousands separator', () => {
 
   it('stays a comma in English', () => {
     expect(formatNumber(1240, 'en')).toBe('1,240')
+  })
+})
+
+describe('speedToDisplay', () => {
+  it('reads a speed to the tenth (WEB-187)', () => {
+    expect(speedToDisplay(25, 'IMPERIAL')).toBe(15.5)
+    expect(speedToDisplay(25, 'METRIC')).toBe(25)
+    expect(speedToDisplay(undefined, 'IMPERIAL')).toBeUndefined()
+  })
+})
+
+describe('decimalSeparator', () => {
+  it('follows the language', () => {
+    expect(decimalSeparator('fr')).toBe(',')
+    expect(decimalSeparator('en')).toBe('.')
   })
 })

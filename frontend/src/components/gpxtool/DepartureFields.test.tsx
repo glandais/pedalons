@@ -113,7 +113,7 @@ describe('DepartureFields', () => {
     units.system = 'IMPERIAL'
     const onChange = renderFields({ averageSpeed: 40 })
     const input = screen.getByRole('textbox', { name: /Vitesse moyenne/ }) as HTMLInputElement
-    expect(input.value).toBe('24.85 mph')
+    expect(input.value).toBe('24.9 mph')
     fireEvent.change(input, { target: { value: '20' } })
     const sent = onChange.mock.calls.at(-1)?.[0].averageSpeed as number
     expect(sent).toBeCloseTo(32.19, 1)

@@ -19,7 +19,7 @@ import {
   ScriptableLineSegmentContext,
 } from 'chart.js'
 import { useTranslation } from 'react-i18next'
-import { Box, Text, useMantineTheme } from '@mantine/core'
+import { Box, Flex, Text, useMantineTheme } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
 import {
   NEUTRAL_COLOR,
@@ -29,6 +29,7 @@ import {
   getPointClimbGradient,
 } from '../map/mapUtils'
 import { crosshairPlugin, type ChartWithCrosshair } from './chartCrosshair'
+import { elevationAfterBuildTicks } from './elevationAxis'
 import { waypointAt, waypointMarkersPlugin } from './waypointMarkersPlugin'
 import { sortWaypoints, waypointTypeOf, waypointsNear } from '@/lib/waypoints'
 import type { WaypointDto } from '@/api/dto'
@@ -136,7 +137,14 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
     const { t } = useTranslation()
     const colorScheme = useResolvedColorScheme()
     const theme = useMantineTheme()
-    const { config, distance: distanceFormat, elevation, formatDistance, grade } = useUnits()
+    const {
+      config,
+      distance: distanceFormat,
+      elevation,
+      formatDistance,
+      formatElevation,
+      grade,
+    } = useUnits()
     const { relativeWind: relativeWindLabel } = useWeatherLabels()
     const chartRef = useRef<ChartJS<'line'>>(null)
 
@@ -476,7 +484,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
             },
             title: {
               display: true,
-              text: `Distance (${config.distanceUnit})`,
+              text: t('map.profile.distanceAxis', { unit: config.distanceUnit }),
               color: chartColors.text,
             },
             ticks: {
@@ -495,13 +503,16 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
             display: true,
             min: yBounds?.min,
             max: yBounds?.max,
+            // Round ticks in feet too, labelled in the reader's unit and format (WEB-187)
+            afterBuildTicks: elevationAfterBuildTicks(config.elevationMultiplier),
             title: {
               display: true,
-              text: `Elevation (${config.elevationUnit})`,
+              text: t('map.profile.elevationAxis', { unit: config.elevationUnit }),
               color: chartColors.text,
             },
             ticks: {
               color: chartColors.text,
+              callback: (value: string | number) => formatElevation(Number(value)),
               // The bounds are the route's raw min/max (-0.5 m…), never round numbers — let
               // Chart.js label only the round ticks it picks inside the range.
               includeBounds: false,
@@ -552,6 +563,7 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
         distanceFormat,
         elevation,
         formatDistance,
+        formatElevation,
         grade,
         zoomEnabled,
         route.distance,
@@ -605,19 +617,23 @@ export const ElevationChart = forwardRef<ElevationChartHandle, ElevationChartPro
     // 2.0, which requires naming the source) and Mapterhorn with its sources, the structures and the
     // surface from OpenStreetMap (ODbL), all through osm-route-details (API-150); the credit sits
     // on the profile it covers.
+    // The credit above the canvas, not over it: at 390 px it runs onto two lines, which covered
+    // the axis's top label and the curve's summit (WEB-187).
     return (
-      <Box pos="relative" h="100%" w="100%">
-        <Line
-          key={zoomPlugin ? 'zoom' : 'static'}
-          ref={chartRef}
-          data={chartData}
-          options={chartOptions}
-          plugins={plugins}
-        />
-        <Text pos="absolute" top={2} right={8} c="dimmed" fz={10} style={{ pointerEvents: 'none' }}>
+      <Flex direction="column" h="100%" w="100%">
+        <Text c="dimmed" fz={10} ta="right" px={8} lh={1.3}>
           {t('map.elevationCredit')}
         </Text>
-      </Box>
+        <Box pos="relative" style={{ flex: 1, minHeight: 0 }}>
+          <Line
+            key={zoomPlugin ? 'zoom' : 'static'}
+            ref={chartRef}
+            data={chartData}
+            options={chartOptions}
+            plugins={plugins}
+          />
+        </Box>
+      </Flex>
     )
   }
 )

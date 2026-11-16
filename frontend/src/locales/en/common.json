@@ -1208,6 +1208,8 @@
   "map.noRoutes": "No routes available",
   "map.noTrackData": "No track data available for this route",
   "map.popup.close": "Close",
+  "map.profile.distanceAxis": "Distance ({{unit}})",
+  "map.profile.elevationAxis": "Elevation ({{unit}})",
   "map.resetBearing": "Reset bearing to north",
   "map.search.noResults": "No places found",
   "map.search.placeholder": "Search for a place…",

@@ -1249,6 +1249,8 @@
   "map.noRoutes": "Aucun parcours disponible",
   "map.noTrackData": "Aucune donnée de tracé disponible pour ce parcours",
   "map.popup.close": "Fermer",
+  "map.profile.distanceAxis": "Distance ({{unit}})",
+  "map.profile.elevationAxis": "Altitude ({{unit}})",
   "map.resetBearing": "Orienter au nord",
   "map.search.noResults": "Aucun lieu trouvé",
   "map.search.placeholder": "Rechercher un lieu…",

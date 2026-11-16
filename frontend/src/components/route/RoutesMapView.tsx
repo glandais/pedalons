@@ -36,6 +36,7 @@ import {
   routeToGeoJSON,
 } from '../map/mapUtils'
 import { crosshairPlugin, type ChartWithCrosshair } from './chartCrosshair'
+import { elevationAfterBuildTicks } from './elevationAxis'
 import { PedalonsMap } from '../map/PedalonsMap'
 import { HideTrackControl } from '../map/HideTrackControl'
 import { MapFullscreenControl } from '../map/MapFullscreenControl'
@@ -131,7 +132,7 @@ export function RoutesMapView({
   const mapHeight = useMapHeight(variant)
   const colorScheme = useResolvedColorScheme()
   const theme = useMantineTheme()
-  const { config, distance, formatDistance, elevation } = useUnits()
+  const { config, distance, formatDistance, formatElevation, elevation } = useUnits()
   const mapRef = useRef<MapRef>(null)
 
   // Chart colors based on color scheme
@@ -537,7 +538,7 @@ export function RoutesMapView({
           display: true,
           title: {
             display: true,
-            text: `Distance (${config.distanceUnit})`,
+            text: t('map.profile.distanceAxis', { unit: config.distanceUnit }),
             color: chartColors.text,
           },
           ticks: {
@@ -552,13 +553,16 @@ export function RoutesMapView({
           display: true,
           min: yBounds?.min,
           max: yBounds?.max,
+          // Round ticks in feet too, labelled in the reader's unit and format (WEB-187)
+          afterBuildTicks: elevationAfterBuildTicks(config.elevationMultiplier),
           title: {
             display: true,
-            text: `Elevation (${config.elevationUnit})`,
+            text: t('map.profile.elevationAxis', { unit: config.elevationUnit }),
             color: chartColors.text,
           },
           ticks: {
             color: chartColors.text,
+            callback: (value: string | number) => formatElevation(Number(value)),
             // The bounds are the route's raw min/max, never round numbers — let Chart.js label
             // only the round ticks it picks inside the range.
             includeBounds: false,
@@ -576,7 +580,7 @@ export function RoutesMapView({
       // false, not a zero duration, which still builds an animation per point property.
       animation: false,
     }),
-    [chartColors, highlightedRoute, config, distance, elevation, yBounds]
+    [chartColors, highlightedRoute, config, distance, elevation, formatElevation, yBounds, t]
   )
 
   if (isLoading) {

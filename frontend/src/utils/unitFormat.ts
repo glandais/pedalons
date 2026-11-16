@@ -207,7 +207,17 @@ export function speedToDisplay(
   kmh: number | undefined,
   unitSystem: UnitSystem
 ): number | undefined {
-  return toDisplay(kmh, getUnitConfig(unitSystem).speedMultiplier)
+  // To the tenth: 25 km/h reads 15.5 mph, not 15.53 (docs/LEDGER_*.md WEB-187). The stored speed
+  // only changes if the field is edited.
+  if (kmh === undefined) return undefined
+  return round(kmh * getUnitConfig(unitSystem).speedMultiplier, 1)
+}
+
+/** The decimal separator of a language, for a number field: « , » in French, « . » in English. */
+export function decimalSeparator(locale: string): string {
+  return (
+    new Intl.NumberFormat(locale).formatToParts(1.5).find((p) => p.type === 'decimal')?.value ?? '.'
+  )
 }
 
 export function speedFromDisplay(
