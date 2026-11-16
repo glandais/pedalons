@@ -9,7 +9,7 @@ verified: 2026-11-16
 
 `ISSUE-1` **Piles web illisibles** : le bundle est minifié et l'empreinte ne garde que le nom
 du chunk. L'option de build existe : `FRONTEND_SOURCEMAP` dans le `.env` de la stack, que
-`build.sh` passe en `VITE_BUILD_SOURCEMAP`. Elle est à `false` en production et à `true` sur
-staging, qui **sert** aujourd'hui ses `.map` (voir `ISSUE-10`). Restent : ne pas
-servir les `.map` mais les archiver avec l'image, l'activer en production, puis automatiser la
-symbolisation côté serveur.
+`build.sh` passe en `VITE_BUILD_SOURCEMAP`. Elle est à `true` sur staging comme en production
+(relu le 16 novembre 2026), qui **servent** toutes deux leurs `.map` — assumé, le dépôt étant
+public (`ISSUE-10`, écartée) : une pile lue dans le navigateur est donc déjà lisible. Reste :
+automatiser la symbolisation côté serveur des piles remontées par les clients.

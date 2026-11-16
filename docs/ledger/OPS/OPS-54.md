@@ -15,7 +15,8 @@ qui part en prod, la restauration doit recompiler, et l'hôte porte JDK, Maven, 
 caches. Proposition, rien de décidé : GHCR public, un workflow `images.yml` qui pousse
 `<sha12>` en multi-arch avec attestation de provenance, `scripts/deploy.sh` qui tire et
 déploie par digest (repli `--local` sur `build.sh`). Prérequis : une image unique pour tous
-les environnements, donc les sourcemaps hors de l'image servie (`ISSUE-10`, `ISSUE-1`).
+les environnements — acquis pour les sourcemaps, servies partout par décision du
+16 novembre 2026 (`ISSUE-10`, écartée).
 Laisse `AUD-1` dehors. Étude, découpage et décisions :
 [`2026-10-25-public-registry.md`](../../plans/2026-10-25-public-registry.md). Taille : M (deux à
 trois jours).

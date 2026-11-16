@@ -71,13 +71,14 @@ commit encore dans le registry, au-delà des cinq builds locaux.
 | `scripts/_image_tag.sh` | Le tag par commit n'est **jamais déplacé** : c'est ce qui fait rouler Swarm et garde la spec précédente pour `docker service rollback`. `ENV_NAME` est dans le tag « parce que prod et staging partagent le magasin d'images de l'hôte ». |
 | `scripts/deploy.sh` | Exige que `pedalons-<svc>:${ENV_NAME}<suffix>` existe localement, exporte `BACKEND_IMAGE_SUFFIX` / `FRONTEND_IMAGE_SUFFIX`, `docker stack deploy`, attend la convergence (compare l'image de la spec et celle des conteneurs à la référence attendue), puis garde `KEEP_BUILDS=5` builds par image. Swarm avertit qu'il ne peut pas résoudre l'image sur un registry. |
 | `docker-compose.yml` | `image: pedalons-backend:${ENV_NAME}${BACKEND_IMAGE_SUFFIX:-}`, idem frontend. Toutes les autres images viennent déjà d'un registry public (Docker Hub, `ghcr.io/imgproxy`…), goatcounter épinglée par digest. |
-| `frontend/Dockerfile` | Deux build-args propres à un environnement : `VITE_BUILD_SOURCEMAP` (`FRONTEND_SOURCEMAP` du `.env` : `true` en staging, `false` en prod) et `FRONTEND_PREFETCH_AUDIT` (outil de diagnostic, `false` partout par défaut). Rien d'autre ne vient du `.env` au build. |
+| `frontend/Dockerfile` | Deux build-args propres à un environnement : `VITE_BUILD_SOURCEMAP` (`FRONTEND_SOURCEMAP` du `.env` : `true` en staging comme en prod, relu le 16 novembre 2026) et `FRONTEND_PREFETCH_AUDIT` (outil de diagnostic, `false` partout par défaut). Rien d'autre ne vient du `.env` au build. |
 | Backend (Jib) | Aucun secret dans l'image : tout ce qui est sensible est lu à l'exécution (`${ENCRYPTION_KEY:}`, `STADIAMAPS_API_KEY`, `PEDALONS_BIKETEAM_*`…), les clés JWT sont montées depuis `data/keys`. |
 | `.github/workflows/` | `ci.yml` (tests, filtré par chemins), `e2e.yml` (nuit, construit ses images), `codeql.yml`, `karoo-release.yml`, `mobile-release.yml`. Aucun ne pousse d'image ni ne déploie — à dessein (`AUD-1`). |
 | Restauration (`OPERATIONS.md`, Restoring) | Les images ne sont pas dans les sauvegardes : on les reconstruit avec `./build.sh` au commit noté dans le `MANIFEST`. |
-| Ledger | `ISSUE-10` (staging sert ses `.map`), `ISSUE-1` (archiver les sourcemaps avec l'image plutôt que les servir), `AUD-1` (pas de CD, à rouvrir avec un registry). |
+| Ledger | `ISSUE-10` (les `.map` servis en staging et en prod : assumé, écartée le 16 novembre 2026), `ISSUE-1` (symboliser côté serveur les piles remontées par les clients), `AUD-1` (pas de CD, à rouvrir avec un registry). |
 
-Conséquence directe : **l'image dépend de l'environnement par un seul point**, les sourcemaps.
+Conséquence directe : **l'image ne dépend de l'environnement que par un seul point**, les sourcemaps —
+et ce point est tranché depuis le 16 novembre 2026 : servies partout (§4.2).
 `FRONTEND_PREFETCH_AUDIT` est un outil de poste qu'on n'active pas sur un hôte. Tout le reste est
 déjà configuré à l'exécution, ce qui rend une image unique pour tous les environnements possible
 sans toucher au code applicatif.
@@ -123,7 +124,7 @@ dépendance le sont déjà. Une image publique n'ajoute que :
 - **les couches de base** (`ubi9/openjdk-25-runtime`, `node:26-alpine`) et leurs versions — déductibles
   du dépôt aussi ;
 - **le bundle compilé**, lisible sans sourcemap à partir du source public ;
-- **les sourcemaps si elles y sont** — elles ne révèlent rien que le dépôt ne montre, mais §4.2.
+- **les sourcemaps** — elles y sont (§4.2) et ne révèlent rien que le dépôt ne montre.
 
 Vérifié ce qui **ne doit pas** y être et n'y est pas aujourd'hui :
 
@@ -140,21 +141,15 @@ l'oubli futur plutôt que l'état présent.
 
 ### 4.2 Une image pour tous les environnements
 
-**Sourcemaps.** C'est la seule différence réelle entre l'image de staging et celle de prod. Trois
-voies :
-
-1. **Image sans `.map`, sourcemaps en artefact à part** (recommandé). Le build les produit
-   (`VITE_BUILD_SOURCEMAP=true`), une étape les extrait de `dist/client/assets/*.map` et les publie
-   comme artefact du workflow, ou comme une seconde image `pedalons-frontend:<sha12>-sourcemaps`
-   (`FROM scratch`, rien que les `.map`), puis l'image servie est construite sans. C'est exactement
-   ce que demande `ISSUE-1` (« ne pas servir les `.map` mais les archiver avec l'image ») et cela
-   règle `ISSUE-10` du même coup. Coût : une cible `sourcemaps` dans le `Dockerfile` (multi-stage,
-   même stage `build`, donc un seul `pnpm build`).
-2. **Les garder dans l'image unique**, donc servies aussi en prod. Le dépôt étant public, c'est
-   défendable (`ISSUE-10` l'envisage) ; mais c'est 408 fichiers et plusieurs Mo servis pour rien, et
-   la décision « staging oui, prod non » disparaît.
-3. **Deux tags par commit**, `<sha12>` et `<sha12>-debug`. Ramène la divergence staging/prod qu'on
-   cherche à supprimer.
+**Sourcemaps.** C'était la seule différence prévue entre l'image de staging et celle de prod.
+**Tranché le 16 novembre 2026 par le propriétaire : elles restent dans l'image unique, servies
+partout** (`ISSUE-10`, écartée). Le dépôt est public, un `.map` ne révèle rien que GitHub ne
+montre déjà, et les deux hôtes construisent déjà avec `FRONTEND_SOURCEMAP=true`. L'image publiée
+est donc construite avec `VITE_BUILD_SOURCEMAP=true`, sans cible ni artefact à part. Coût
+accepté : environ 400 fichiers et plusieurs Mo de plus dans l'image, servis seulement à qui les
+demande. Deux voies écartées du même coup : sortir les `.map` de l'image pour les archiver à part
+(une étape de build de plus, pour cacher un source public), et deux tags par commit (`<sha12>`,
+`<sha12>-debug`), qui ramèneraient la divergence staging/prod qu'on cherche à supprimer.
 
 **`FRONTEND_PREFETCH_AUDIT`** : outil de diagnostic, à `false` sur tous les hôtes. L'image publiée
 le laisse à `false` ; qui veut l'audit construit localement (`build.sh`, inchangé). Rien à faire
@@ -232,8 +227,7 @@ jobs:
       - checkout, cp privacy/*.md (comme build.sh)
       - docker/setup-buildx-action, docker/login-action
       - docker/build-push-action : platforms amd64+arm64, tags :<sha12>,
-          cache-from/to: type=gha, provenance + sbom
-      - cible sourcemaps → artefact ou image -sourcemaps (§4.2)
+          build-arg VITE_BUILD_SOURCEMAP=true (§4.2), cache-from/to: type=gha, provenance + sbom
       - contrôle du contenu (§4.1), attest-build-provenance
 ```
 
@@ -370,7 +364,7 @@ passer par staging ; rien ne l'impose non plus, comme aujourd'hui.
 | `.github/workflows/e2e.yml` | Option : la nuit, tester les images publiées du commit plutôt que d'en reconstruire — on testerait l'artefact livré. Mais l'e2e veut parfois tester un build avec des options de poste ; à garder tel quel au début. |
 | `.github/dependabot.yml` | Rien : les images de base sont dans le `Dockerfile` et `application.properties`, déjà suivies. |
 | Hôtes | Plus besoin de JDK, Maven, Node, pnpm pour déployer (ils peuvent rester pour le repli). Le cache Jib (`target/jib-cache`) et le cache buildx cessent de grossir sur l'hôte. |
-| Ledger | `OPS-54` (cette étude) ; à la livraison, `ISSUE-10` et une partie d'`ISSUE-1` ; `AUD-1` reste dehors, sa raison est à mettre à jour (« sans registry » devient faux). |
+| Ledger | `OPS-54` (cette étude) ; `ISSUE-10` est écartée et n'en dépend plus ; `AUD-1` reste dehors, sa raison est à mettre à jour (« sans registry » devient faux). |
 
 ---
 
@@ -406,8 +400,8 @@ Lus le 25 octobre 2026, à revérifier au moment de l'implémentation :
 
 Chaque étape est livrable seule et ne casse pas le flux actuel jusqu'à la 5.
 
-1. **Image unique** (S) — cible `sourcemaps` dans `frontend/Dockerfile`, `frontend/.env` exclu de
-   l'image, l'image servie sans `.map`. `build.sh` inchangé dans son usage. Règle `ISSUE-10`.
+1. **Image unique** (XS) — `frontend/.env` exclu de l'image, sourcemaps toujours construites
+   (§4.2). `build.sh` inchangé dans son usage.
 2. **`images.yml`** (S) — build + push multi-arch sur `develop`, labels OCI, contrôle du contenu,
    attestations. Rendre les deux paquets publics à la main une fois (un paquet GHCR naît privé
    s'il n'est pas lié à un dépôt public — à vérifier) et les lier au dépôt.
@@ -434,7 +428,7 @@ Total hors optionnels : de l'ordre de deux à trois jours.
 3. **Déclencheur** : à chaque push sur `develop` après CI verte (recommandé), ou seulement sur tag
    git (`deploy/*`), ce qui ferait de la livraison un geste explicite côté GitHub mais garderait
    un délai d'attente à chaque déploiement.
-4. **Sourcemaps** : hors de l'image et archivées (recommandé, `ISSUE-1`), ou servies partout.
+4. **Sourcemaps** : **décidé le 16 novembre 2026**, servies partout, dans l'image unique (§4.2).
 5. **`arm64`** : utile tant que le poste est Apple Silicon ; quasi gratuit (§4.3).
 6. **Vérifier l'attestation au déploiement** : oui (recommandé) — demande `gh` ou `cosign` sur
    l'hôte.

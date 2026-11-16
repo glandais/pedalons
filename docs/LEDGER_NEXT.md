@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **175 entrées ouvertes** et des 69 entrées écartées. Chaque entrée a son fichier
+Index des **174 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -219,7 +219,6 @@ Aucune entrée ouverte. Contexte du domaine : [`ledger/MOD/README.md`](ledger/MO
 
 Contexte du domaine : [`ledger/ISSUE/README.md`](ledger/ISSUE/README.md).
 
-- [ ] [`ISSUE-10`](ledger/ISSUE/ISSUE-10.md) Staging sert publiquement ses sourcemaps
 - [ ] [`ISSUE-5`](ledger/ISSUE/ISSUE-5.md) Visiteurs non connectés
 - [ ] [`ISSUE-4`](ledger/ISSUE/ISSUE-4.md) Boucler avec le membre
 - [ ] [`ISSUE-3`](ledger/ISSUE/ISSUE-3.md) Plantages natifs
@@ -373,6 +372,7 @@ identifiant.
 - [`NOTIF-6`](ledger/NOTIF/NOTIF-6.md) Isolat de fond du push (`onBackgroundMessage`)
 - [`NOTIF-5`](ledger/NOTIF/NOTIF-5.md) Badge iOS du push
 - [`MOD-5`](ledger/MOD/MOD-5.md) Contenu masqué d'un compte effacé
+- [`ISSUE-10`](ledger/ISSUE/ISSUE-10.md) Staging et la production servent publiquement leurs sourcemaps
 - [`BRAND-3`](ledger/BRAND/BRAND-3.md) Test de concordance des tables de couleurs web et mobile
 - [`AUD-33`](ledger/AUD/AUD-33.md) Pagination des routes côté Karoo
 - [`AUD-1`](ledger/AUD/AUD-1.md) Déploiement automatique (CD) depuis GitHub

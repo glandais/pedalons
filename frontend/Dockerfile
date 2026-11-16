@@ -43,7 +43,8 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm-store \
 # above is dependency-only, so editing source never busts the install layers.
 COPY . .
 
-# Sourcemaps are opt-in per environment (staging: true, prod: false/unset) — see build.sh.
+# Sourcemaps are opt-in per environment — see build.sh. Staging and prod both ship them, on
+# purpose: the repository is public (docs/LEDGER_*.md ISSUE-10).
 ARG VITE_BUILD_SOURCEMAP=false
 ENV VITE_BUILD_SOURCEMAP=$VITE_BUILD_SOURCEMAP
 

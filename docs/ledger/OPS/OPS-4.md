@@ -14,7 +14,9 @@ partent par le relais SMTP de Scaleway TEM. Params des quatre : `appName`, `invi
 `teamName`, `invitationUrl`, `expiresInDays`. Un envoi réel par TEM est constaté le
 16 octobre 2026 : deux invitations créées après la bascule, toutes deux `ACCEPTED` (la
 dernière le 3 octobre), aucun `TEAM_INVITE_DELIVERY_FAILED` dans les journaux sur sept jours —
-sans savoir laquelle des quatre variantes est partie ni à quoi elle ressemblait. **Reste** :
+sans savoir laquelle des quatre variantes est partie ni à quoi elle ressemblait. Relu le
+16 novembre 2026 : aucune invitation créée depuis, `team_invitations` ne compte toujours que
+ces deux lignes après la bascule. **Reste** :
 recevoir chacune des quatre (fr/en × compte existant/inscription) et en vérifier le rendu,
 dans la même séance qu'`OPS-3`. Si le relais refuse le message, `POST …/invitations` répond
 **500 `TEAM_INVITE_DELIVERY_FAILED`** — délibérément, plutôt qu'un `INTERNAL_ERROR` opaque —
