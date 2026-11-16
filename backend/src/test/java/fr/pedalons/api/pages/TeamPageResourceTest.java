@@ -302,6 +302,31 @@ class TeamPageResourceTest extends AbstractResourceTest {
   }
 
   @Test
+  void undeletePage_atMax_shouldReturn400() {
+    // setUp has 1 page; bin a second one, then fill the cap of 3 with two more.
+    TeamPage binned = dataService.createAdditionalPage(team1, user1, "In The Bin", 2);
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .delete("/api/teams/" + team1Slug + "/pages/" + binned.getSlug())
+        .then()
+        .statusCode(204);
+    dataService.createAdditionalPage(team1, user1, "Page 2", 3);
+    dataService.createAdditionalPage(team1, user1, "Page 3", 4);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .contentType("application/json")
+        .when()
+        .post("/api/teams/" + team1Slug + "/pages/" + binned.getSlug() + "/undelete")
+        .then()
+        .statusCode(400)
+        .body("code", equalTo("TOO_MANY_TEAM_PAGES"));
+  }
+
+  @Test
   void deletePage_asMember_shouldReturn403() {
     given()
         .auth()

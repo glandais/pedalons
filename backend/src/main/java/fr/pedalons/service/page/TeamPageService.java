@@ -155,6 +155,11 @@ public class TeamPageService extends TeamEntityService<TeamPage, TeamPageReposit
   public TeamPageDto undeletePage(String teamSlug, String pageSlug) {
     Team team = teamService.getTeam(teamSlug);
     TeamPage page = findBySlugIncludeDeleted(team, pageSlug);
+    // Same cap as createPage: restoring a page from the bin must not take the team past it.
+    if (page.isDeleted()
+        && teamPageRepository.countAdditionalPages(team.getId()) >= MAX_ADDITIONAL_PAGES) {
+      throw new BusinessException(ErrorCode.TOO_MANY_TEAM_PAGES);
+    }
     page.setDeleted(false);
     teamPageRepository.persist(page);
     return TeamPageDto.from(page, assetService, detailPermissions(page));

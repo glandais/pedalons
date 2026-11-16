@@ -19162,6 +19162,16 @@
               }
             }
           },
+          "400" : {
+            "description" : "Maximum pages reached",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401" : {
             "description" : "Unauthorized",
             "content" : {
@@ -27080,7 +27090,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "15.0.0",
+    "version" : "15.0.1",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

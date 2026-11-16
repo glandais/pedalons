@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **568 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **570 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -149,6 +149,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`WEB-188`](ledger/WEB/WEB-188.md) Pages groupe et étape au téléphone : segments coupés, encadré vide, titre plein écran tronqué — 2026-11-16
 - [x] [`WEB-187`](ledger/WEB/WEB-187.md) Profil d'altitude : crédit sur l'axe à 390 px, axe non traduit, mètres sous « ft » en impérial — 2026-11-16
 - [x] [`WEB-186`](ledger/WEB/WEB-186.md) Météo sur la carte : le clic de souris sur une pastille n'ouvre pas la bulle, et la bulle sort du cadre — 2026-11-16
+- [x] [`WEB-185`](ledger/WEB/WEB-185.md) Pages d'équipe : la corbeille compte dans le plafond, et la suppression se dit « irréversible » — 2026-11-17
 - [x] [`WEB-184`](ledger/WEB/WEB-184.md) Le libellé de `USER_TEAM_LIMIT_REACHED` dit ce que fait le serveur — 2026-11-15
 - [x] [`WEB-183`](ledger/WEB/WEB-183.md) Planificateur embarquable dans l'app : recette iOS et poids du bundle — en partie, le reste est ouvert
 - [x] [`WEB-182`](ledger/WEB/WEB-182.md) La carte d'une sortie ou d'un voyage ne plante plus sur un navigateur ancien — 2026-11-15
@@ -304,6 +305,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 - [x] [`API-208`](ledger/API/API-208.md) `fit-kotlin-sdk-jvm` aligné sur vcyclist par son BOM — 2026-11-16
 - [x] [`API-206`](ledger/API/API-206.md) Générateur de parcours sur un graphe OSM : les lots 0 à 3 d'`API-207` — 2026-11-16
+- [x] [`API-204`](ledger/API/API-204.md) Restaurer une page d'équipe ne vérifie pas le plafond de 3 — 2026-11-17
 - [x] [`API-199`](ledger/API/API-199.md) L'API consommable de l'extérieur : contrat servi par l'API, téléchargements dans le contrat, OAuth 2.0 minimal par le site — 2026-11-14
 - [x] [`API-198`](ledger/API/API-198.md) Générateur de parcours sur le réseau de l'équipe — 2026-11-16
 - [x] [`API-197`](ledger/API/API-197.md) Dupliquer un aperçu GPX — 2026-11-13

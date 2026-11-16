@@ -12,6 +12,7 @@ import fr.pedalons.domain.team.Team;
 import fr.pedalons.domain.team.TeamPage;
 import fr.pedalons.domain.user.User;
 import fr.pedalons.dto.common.asset.MediaDto;
+import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.pages.request.ReorderPagesRequest;
 import fr.pedalons.dto.pages.request.TeamPageRequest;
 import fr.pedalons.dto.pages.response.TeamPageDto;
@@ -306,6 +307,23 @@ class TeamPageServiceTest extends AbstractBaseTest {
 
       assertFalse(result.deleted());
       assertEquals(page.getSlug(), result.slug());
+    }
+
+    @Test
+    void shouldThrowWhenRestoringPastMaxPages() {
+      TeamPage binned = dataService.createAdditionalPage(team, admin, "In The Bin", 1);
+      queryContext.setUserForTest(admin);
+      teamPageService.deletePage(team.getSlug(), binned.getSlug());
+      dataService.createAdditionalPage(team, admin, "Page 1", 2);
+      dataService.createAdditionalPage(team, admin, "Page 2", 3);
+      dataService.createAdditionalPage(team, admin, "Page 3", 4);
+
+      queryContext.setUserForTest(admin);
+      BusinessException e =
+          assertThrows(
+              BusinessException.class,
+              () -> teamPageService.undeletePage(team.getSlug(), binned.getSlug()));
+      assertEquals(ErrorCode.TOO_MANY_TEAM_PAGES, e.getErrorCode());
     }
 
     @Test

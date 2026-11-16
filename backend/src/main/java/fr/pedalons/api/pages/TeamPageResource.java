@@ -192,6 +192,10 @@ public class TeamPageResource {
         description = "Page restored successfully",
         content = @Content(schema = @Schema(implementation = TeamPageDto.class))),
     @APIResponse(
+        responseCode = "400",
+        description = "Maximum pages reached",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
         responseCode = "401",
         description = "Unauthorized",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),

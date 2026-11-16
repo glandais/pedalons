@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **175 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
+Index des **173 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -84,7 +84,6 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
-- [ ] [`WEB-185`](ledger/WEB/WEB-185.md) Pages d'équipe : la corbeille compte dans le plafond, et la suppression se dit « irréversible » (XS)
 - [ ] [`WEB-81`](ledger/WEB/WEB-81.md) GPX à plusieurs traces : profil empilé et synchro faussée (S, priorité basse)
 - [ ] [`WEB-7`](ledger/WEB/WEB-7.md) Idées de la liste « P2 (à planifier) » qui n'ont pas été retenues
 
@@ -169,7 +168,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 
 ### Vie privée : ce que la politique doit encore décrire faute de mieux
 
-- [ ] [`API-204`](ledger/API/API-204.md) Restaurer une page d'équipe ne vérifie pas le plafond de 3 (XS)
 - [ ] [`API-47`](ledger/API/API-47.md) Les documents joints gardent leurs métadonnées
 
 ## OPS — Exploitation

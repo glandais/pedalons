@@ -75,7 +75,10 @@ export function TeamPagesAdminPage() {
     return <Navigate to={paths.team(team.slug)} replace />
   }
 
-  const canAddMore = (pages?.length ?? 0) < MAX_ADDITIONAL_PAGES
+  // The server caps the pages that are not deleted (`countAdditionalPages`): one in the bin
+  // neither blocks a creation nor may be restored once the cap is reached.
+  const activeCount = pages?.filter((p) => !p.deleted).length ?? 0
+  const canAddMore = activeCount < MAX_ADDITIONAL_PAGES
 
   const handleDelete = (page: TeamPageSummaryDto) => {
     setPageToDelete(page)
@@ -170,7 +173,7 @@ export function TeamPagesAdminPage() {
           <Box>
             <Title order={2}>{t('teams.pages.title')}</Title>
             <Text size="sm" c="dimmed" mt="xs">
-              {t('teams.pages.subtitle', { count: pages?.length ?? 0, max: MAX_ADDITIONAL_PAGES })}
+              {t('teams.pages.subtitle', { count: activeCount, max: MAX_ADDITIONAL_PAGES })}
             </Text>
           </Box>
           {canAddMore && (
@@ -214,12 +217,19 @@ export function TeamPagesAdminPage() {
                       color="var(--mantine-color-dimmed)"
                       style={{ flexShrink: 0 }}
                     />
-                    <Group gap="xs" style={{ minWidth: 0 }}>
-                      <Text size="lg" fw={500} truncate>
-                        {page.title}
-                      </Text>
-                      <VisibilityBadge visibility={page.visibility} />
-                    </Group>
+                    <Stack gap={2} style={{ minWidth: 0 }}>
+                      <Group gap="xs" style={{ minWidth: 0 }}>
+                        <Text size="lg" fw={500} truncate>
+                          {page.title}
+                        </Text>
+                        <VisibilityBadge visibility={page.visibility} />
+                      </Group>
+                      {page.deleted && !canAddMore && (
+                        <Text size="sm" c="dimmed">
+                          {t('teams.pages.restoreFull', { max: MAX_ADDITIONAL_PAGES })}
+                        </Text>
+                      )}
+                    </Stack>
                   </Group>
                   <Group gap="xs" ml="md">
                     <ActionIcon
@@ -236,6 +246,7 @@ export function TeamPagesAdminPage() {
                         variant="subtle"
                         color="green"
                         onClick={() => handleRestore(page)}
+                        disabled={!canAddMore}
                         loading={undeleteMutation.isPending}
                         title={t('actions.restore')}
                       >
