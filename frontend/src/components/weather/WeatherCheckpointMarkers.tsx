@@ -246,12 +246,9 @@ export function WeatherCheckpointMarkers({
           key={open.checkpoint.index}
           longitude={open.longitude}
           latitude={open.latitude}
-          anchor="bottom"
-          // Above its badge, shifted with it when it shares its spot
-          offset={[
-            shifts.get(open.checkpoint.index)?.[0] ?? 0,
-            (shifts.get(open.checkpoint.index)?.[1] ?? 0) - 34,
-          ]}
+          // No fixed anchor: MapLibre picks the side that keeps the popup inside the map, above
+          // its badge when there is room (docs/LEDGER_*.md WEB-186)
+          offset={popupOffset(shifts.get(open.checkpoint.index))}
           closeOnClick={false}
           // The detail takes the focus itself (the effect above), not the close button
           focusAfterOpen={false}
@@ -274,6 +271,29 @@ export function WeatherCheckpointMarkers({
 /** The capsule drawn on the map, and the touch target around it (WCAG 2.5.8, 44 px aimed). */
 const BADGE_HEIGHT = 22
 const BADGE_TARGET = 44
+
+/**
+ * The popup's offset for each anchor MapLibre may pick, shifted with its badge when that one
+ * shares its spot. The capsule spans 6 to 28 px above its point: above it, the popup clears its
+ * top; below it, the point; beside it, its 44 px target, level with its middle.
+ */
+function popupOffset(shift: readonly [number, number] | undefined) {
+  const [dx, dy] = shift ?? [0, 0]
+  const above: [number, number] = [dx, dy - 34]
+  const below: [number, number] = [dx, dy + 6]
+  const middle = dy - 6 - BADGE_HEIGHT / 2
+  return {
+    center: above,
+    bottom: above,
+    'bottom-left': above,
+    'bottom-right': above,
+    top: below,
+    'top-left': below,
+    'top-right': below,
+    left: [dx + BADGE_TARGET / 2 + 6, middle] as [number, number],
+    right: [dx - BADGE_TARGET / 2 - 6, middle] as [number, number],
+  }
+}
 const NO_SHIFTS: BadgeLayout<number> = new Map()
 
 function CheckpointBadge({

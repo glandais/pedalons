@@ -61,7 +61,14 @@ export function HoverMarker({
   testId,
 }: MarkerProps & { style?: CSSProperties; testId?: string }) {
   return (
-    <Marker longitude={longitude} latitude={latitude} anchor="center" style={style}>
+    // A mere echo of the pointer: it follows it, so it must never take its clicks from what lies
+    // under it — a weather badge on the track (docs/LEDGER_*.md WEB-186)
+    <Marker
+      longitude={longitude}
+      latitude={latitude}
+      anchor="center"
+      style={{ pointerEvents: 'none', ...style }}
+    >
       <Box
         w={24}
         h={24}

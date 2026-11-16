@@ -105,8 +105,8 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
   const stillRiding = ride.status !== Status.CANCELLED && !isOver(ride)
 
   return (
-    <Paper withBorder radius="md" style={{ overflow: 'hidden' }} h="100%">
-      <Flex direction={{ base: 'column', sm: 'row' }} h="100%">
+    <Paper withBorder radius="md" style={{ overflow: 'hidden' }}>
+      <Flex direction={{ base: 'column', sm: 'row' }}>
         {/* The thumbnail opens the ride too; the name stays the link assistive tech reads. */}
         <Box
           component={PrefetchLink}

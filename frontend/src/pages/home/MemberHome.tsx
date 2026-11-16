@@ -76,7 +76,7 @@ export function MemberHome() {
       <Stack gap="xl">
         <Grid gap="lg">
           <Grid.Col span={{ base: 12, md: 7, lg: 8 }}>
-            <Box component="section" aria-labelledby={NEXT_RIDE_HEADING_ID} h="100%">
+            <Box component="section" aria-labelledby={NEXT_RIDE_HEADING_ID}>
               {nextRide ? (
                 <NextRideCard ride={nextRide} headingId={NEXT_RIDE_HEADING_ID} />
               ) : participations.isLoading ? (
