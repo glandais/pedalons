@@ -12,6 +12,12 @@
 _e2e_mobile_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 _e2e_env_value() { grep -E "^$1=" "$_e2e_mobile_dir/../.env.e2e" | cut -d= -f2-; }
 
+# Sourced from zsh, BASH_SOURCE is empty and ../.env.e2e is looked up in the wrong place: every
+# port comes back empty and the app crashes at launch on « Invalid port ». Refuse that.
+if [[ -z "$(_e2e_env_value HTTP_PORT 2>/dev/null)" ]]; then
+  echo "e2e: no HTTP_PORT read from $_e2e_mobile_dir/../.env.e2e — source this file from bash" >&2
+  return 1 2>/dev/null || exit 1
+fi
 E2E_API_URL="http://localhost:$(_e2e_env_value HTTP_PORT)"
 E2E_MAILPIT_URL="http://localhost:$(_e2e_env_value E2E_MAILPIT_PORT)"
 E2E_ADMIN_EMAIL="$(_e2e_env_value PEDALONS_BOOTSTRAP_ADMIN_EMAIL)"

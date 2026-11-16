@@ -14,9 +14,13 @@
 #   scripts/recette.sh dev                 Vite on the working tree, plain http on :5174, API = the stack
 #   scripts/recette.sh web-android [--dev] [path]   the app (or `dev`) in Chrome on the phone, CDP :9222
 #   scripts/recette.sh look <desktop|iphone|pixel|cdp> <url|path> <shot.png> [options]   screenshot + boxes
-#   scripts/recette.sh mobile [--ios] [args…]   flutter run on the Android phone (or the iPhone)
-#                                          against the stack — refuses while the store's app is installed
-#                                          (RECETTE_REPLACE_APP=1: replace it)
+#   scripts/recette.sh mobile [--ios|--iphone] [args…]   flutter run against the stack: on the Android
+#                                          phone, on the iOS simulator (--ios, the iOS default), or on the
+#                                          plugged-in iPhone (--iphone) — a phone refuses while the store's
+#                                          app is installed (RECETTE_REPLACE_APP=1: replace it)
+#   scripts/recette.sh web-ios [--dev] [path]   the app (or `dev`) in Safari on the iOS simulator
+#   scripts/recette.sh webview-android     the app's WebView (route planner) on CDP :9333, for `look`
+#   scripts/recette.sh sim-shot <shot.png>  a screenshot of the iOS simulator
 #   scripts/recette.sh relay [start|stop|status]   the stack on the local network for the iPhone (:8191)
 #   scripts/recette.sh unplug              remove every adb port forward from the phone
 #
@@ -32,10 +36,15 @@
 #
 # The phone is the one physical Android device adb sees (emulators excluded), or the serial in
 # RECETTE_DEVICE; the iPhone, the one physical iOS device devicectl sees connected, or the UDID in
-# RECETTE_IOS_DEVICE. An iPhone has no `adb reverse`: `mobile --ios` relays the stack onto the
+# RECETTE_IOS_DEVICE. The iOS default is the simulator: it shares this Mac's loopback, so the app
+# and Safari reach the stack on `localhost` like Patrol does, in debug, with nothing to relay. It
+# is the one already booted, else RECETTE_SIM (a UDID), else "iPhone 17 Pro Max" — never a second
+# one booted. An iPhone has no `adb reverse`: `mobile --iphone` relays the stack onto the
 # local network (`relay`, port 8191, every interface, until `relay stop`) and points the app at
-# this Mac's Bonjour name. Without Rosetta it builds --profile: flutter's iproxy is x86_64. Every account is on the reserved .test domain and every mail ends in mailpit:
-# nothing here is a secret. `reset` wipes it all. See frontend/e2e/README.md.
+# this Mac's Bonjour name. Without Rosetta it builds --profile: flutter's iproxy is x86_64.
+#
+# Every account is on the reserved .test domain and every mail ends in mailpit: nothing here is a
+# secret. `reset` wipes it all. See frontend/e2e/README.md.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -293,6 +302,22 @@ web_android() {
   echo "  The phone's own Chrome profile, all its tabs: find the page by URL, sign out between accounts."
 }
 
+# The app's WebView on the Android phone (the route planner), over CDP like Chrome: a debug build
+# exposes webview_devtools_remote_<pid>. `look cdp --page planner …` then reads it on this port.
+WEBVIEW_CDP_PORT="${RECETTE_WEBVIEW_CDP_PORT:-9333}"
+webview_android() {
+  local serial pid
+  serial="$(phone)"
+  pid="$("$ADB" -s "$serial" shell pidof "$APP_ID" | tr -d '\r')"
+  if [[ -z "$pid" ]]; then
+    echo "recette: $APP_ID does not run on $serial — scripts/recette.sh mobile, then open the screen" >&2
+    exit 1
+  fi
+  "$ADB" -s "$serial" forward "tcp:$WEBVIEW_CDP_PORT" "localabstract:webview_devtools_remote_$pid" >/dev/null
+  echo "recette: the app's WebView on CDP http://localhost:$WEBVIEW_CDP_PORT"
+  echo "  RECETTE_CDP_PORT=$WEBVIEW_CDP_PORT scripts/recette.sh look cdp --page planner - <shot.png> [--boxes css]"
+}
+
 # frontend/e2e/recette/look.mjs: a device (or the phone over CDP), a screenshot, element boxes.
 # `--base dev` resolves a path against `dev` instead of the stack's app.
 look() {
@@ -301,7 +326,7 @@ look() {
     [[ "${2:-}" == dev ]] && base="$DEV_URL" || base="${2:-}"
     shift 2
   fi
-  RECETTE_BASE_URL="$base" RECETTE_CDP_PORT="$CDP_PORT" \
+  RECETTE_BASE_URL="$base" RECETTE_CDP_PORT="${RECETTE_CDP_PORT:-$CDP_PORT}" \
     exec node "$ROOT/frontend/e2e/recette/look.mjs" "$@"
 }
 
@@ -470,12 +495,99 @@ mobile_ios() {
   return $status
 }
 
-mobile() {
-  if [[ "${1:-}" == --ios ]]; then
-    shift
-    mobile_ios "$@"
-    return
+# The iOS simulator: the one booted (reused, never a second), else RECETTE_SIM, else the
+# "iPhone 17 Pro Max" — booted and waited for when it is not up yet.
+simulator() {
+  local udid
+  udid="$(xcrun simctl list devices booted -j | python3 -c '
+import json, sys
+booted = [d["udid"] for r in json.load(sys.stdin)["devices"].values() for d in r if d.get("state") == "Booted"]
+print(booted[0] if len(booted) == 1 else "")')"
+  if [[ -z "$udid" ]]; then
+    udid="${RECETTE_SIM:-}"
+    if [[ -z "$udid" ]]; then
+      udid="$(xcrun simctl list devices available -j | python3 -c '
+import json, sys
+devices = [d for r in json.load(sys.stdin)["devices"].values() for d in r]
+print(next((d["udid"] for d in devices if d["name"] == "iPhone 17 Pro Max"), ""))')"
+    fi
+    if [[ -z "$udid" ]]; then
+      echo "recette: no booted simulator and no \"iPhone 17 Pro Max\" — set RECETTE_SIM to a UDID" >&2
+      exit 1
+    fi
+    if xcrun simctl list devices booted | grep -q "(Booted)"; then
+      echo "recette: several simulators booted — set RECETTE_SIM, and shut the others down" >&2
+      exit 1
+    fi
+    if pgrep -f qemu-system >/dev/null || "$ADB" devices 2>/dev/null | grep -q '^emulator-'; then
+      echo "recette: an Android emulator runs — one virtual device at a time: stop it first" >&2
+      exit 1
+    fi
+    echo "recette: booting simulator $udid" >&2
+    xcrun simctl boot "$udid" 2>/dev/null || true
   fi
+  # The window: Simulator.app, or DeviceHub under Xcode 27, which has no Simulator.app.
+  open -a Simulator --args -CurrentDeviceUDID "$udid" >/dev/null 2>&1 ||
+    open "$(xcode-select -p)/../Applications/DeviceHub.app" >/dev/null 2>&1 || true
+  xcrun simctl bootstatus "$udid" -b >/dev/null
+  echo "$udid"
+}
+
+# flutter run on the iOS simulator: debug, hot reload, the API on localhost like the Patrol suite
+# (mobile/tool/e2e_env.sh's dart-defines).
+mobile_sim() {
+  require_stack
+  local udid
+  udid="$(simulator)"
+  export E2E_PLATFORM=ios PATROL_DEVICE="$udid"
+  # shellcheck source=../mobile/tool/e2e_env.sh
+  source "$ROOT/mobile/tool/e2e_env.sh"
+  cd "$ROOT/mobile"
+  echo "recette: app on simulator $udid, API $E2E_API_URL"
+  # shellcheck disable=SC2086 # E2E_DART_DEFINES holds several flags, none with a space.
+  exec flutter run -d "$udid" $E2E_DART_DEFINES "$@"
+}
+
+# Safari on the simulator: real WebKit, which Playwright's iPhone emulation (Chromium) is not.
+web_ios() {
+  require_stack
+  local base="$APP_URL"
+  if [[ "${1:-}" == --dev ]]; then
+    shift
+    base="$DEV_URL"
+    if ! curl -fs -o /dev/null "$DEV_URL/"; then
+      echo "recette: nothing answers on $DEV_URL — scripts/recette.sh dev, in another shell" >&2
+      exit 1
+    fi
+  fi
+  local udid path="${1:-/}"
+  udid="$(simulator)"
+  # On a loaded machine Safari takes longer to come up than openurl waits: the page still loads.
+  xcrun simctl openurl "$udid" "$base$path" 2>/dev/null ||
+    echo "recette: openurl timed out (slow simulator) — the page usually loads anyway" >&2
+  echo "recette: Safari on simulator $udid opened $base$path — scripts/recette.sh sim-shot <shot.png>"
+}
+
+sim_shot() {
+  local shot="${1:?usage: scripts/recette.sh sim-shot <shot.png>}" udid
+  udid="$(simulator)"
+  xcrun simctl io "$udid" screenshot "$shot" >/dev/null
+  echo "$shot"
+}
+
+mobile() {
+  case "${1:-}" in
+    --ios)
+      shift
+      mobile_sim "$@"
+      return
+      ;;
+    --iphone)
+      shift
+      mobile_ios "$@"
+      return
+      ;;
+  esac
   require_stack
   local serial
   serial="$(phone)"
@@ -507,11 +619,14 @@ case "$cmd" in
   dev) dev ;;
   web-android) web_android "$@" ;;
   look) look "$@" ;;
+  web-ios) web_ios "$@" ;;
+  webview-android) webview_android ;;
+  sim-shot) sim_shot "$@" ;;
   mobile) mobile "$@" ;;
   relay) relay "$@" ;;
   unplug) unplug ;;
   *)
-    sed -n '2,38p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    sed -n '2,47p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
     exit 1
     ;;
 esac

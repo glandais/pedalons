@@ -108,7 +108,31 @@ scripts/recette.sh unplug        # take the adb forwards back
   store is on the phone (`pm list packages -i`), unless `RECETTE_REPLACE_APP=1` or a yes on a
   terminal; reinstall it from the store after the recette. On iOS the same refusal applies to an
   app not `builtByDeveloper` (App Store, TestFlight), read with `devicectl device info apps`.
-- **`mobile --ios`, the plugged-in iPhone**: iOS has no `adb reverse`, so the iPhone cannot reach the
+- **iOS tests run on the simulator**: `mobile --ios` is `flutter run` on the booted simulator (or
+  `RECETTE_SIM`, else « iPhone 17 Pro Max », never a second one booted, nor beside an Android
+  emulator) in debug, with Patrol's dart-defines: it shares this Mac's loopback, so the API is
+  `localhost:8190` and nothing is relayed. `web-ios [--dev] [path]` opens Safari there — real
+  WebKit, unlike `look iphone` (Chromium's emulation) — and `sim-shot <shot.png>` captures it.
+- **Driving the simulator**: `axe` (Homebrew) — `axe describe-ui` gives labels and frames in
+  points (a capture is ~3 px per point), `axe tap --label …` hits a native control. A Flutter field
+  takes focus more reliably with `axe touch --down`, then `--up` ~120 ms later, than with
+  `axe tap -x -y` (the password field especially); `axe type` types, `axe key 40` is Return,
+  `axe key-combo --modifiers 227 --key 4` then `axe key 42` empties a field. In the planner's
+  WebView, `axe tap` focuses the search input and `axe touch` drops points on the map.
+- **Simulator limits**: the planner's first load takes over 20 s — not a blank page yet; an
+  injected edge swipe never triggers iOS's back gesture (test that one by hand); the Mac's keyboard
+  is attached, so no software keyboard and no « keyboard open » case. A crashed launch leaves a
+  « Report a problem » sheet on the next one: close it, don't send it. The simulator keeps the
+  last e2e session (« Settings owner »…): sign out before taking a `@recette.test` account.
+- **Comparing planner bundles without rebuilding the app**: `pnpm dev:mobile-planner` (port 5199),
+  opened in the simulator's Safari (`xcrun simctl openurl <udid> http://localhost:5199/?v=<n>`, a
+  changing parameter against the cache) is the WebView's own WebKit.
+- **The planner's WebView on the Pixel**: `scripts/recette.sh webview-android` forwards the debug
+  build's `webview_devtools_remote_<pid>` to 9333; then `RECETTE_CDP_PORT=9333 scripts/recette.sh
+  look cdp --page planner - <shot.png> --boxes …` measures it where it is (`-`: no navigation).
+- `mobile/tool/e2e_env.sh` is bash only: sourced from zsh it cannot find `.env.e2e` and now stops
+  rather than leave the app with empty ports (« Invalid port »). `recette.sh` runs under bash.
+- **`mobile --iphone`, the plugged-in iPhone**, when the simulator is not enough: iOS has no `adb reverse`, so the iPhone cannot reach the
   stack on its own `localhost`. `scripts/recette-lan-relay.py` relays it onto the local network,
   port 8191 on every interface, until `scripts/recette.sh relay stop` — it outlives `flutter run`,
   since the installed app keeps calling the API (an existing relay is reused) —, rewriting `Host` to

@@ -1,5 +1,5 @@
 """The e2e stack on the local network, for a device that cannot reach this machine's loopback — a
-physical iPhone (no `adb reverse` on iOS). `scripts/recette.sh mobile --ios` starts it.
+physical iPhone (no `adb reverse` on iOS). `scripts/recette.sh mobile --iphone` starts it.
 
     /usr/bin/python3 scripts/recette-lan-relay.py <listen port> <target port>
 
