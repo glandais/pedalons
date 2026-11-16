@@ -67,7 +67,9 @@ Features that differentiate and deepen engagement.
 
 ### Discovery & Search
 - [ ] Global full-text search (priority: my teams → public) — ledger `API-19`
-- [ ] All trips view with search filters
+- [x] All trips view with search filters — the home feed filtered by kind and membership
+      (`/?type=trip&role=all`: every team's trips one may read, upcoming or earlier); the
+      agenda does the same for one's own teams. Free-text search stays with `API-19`
 - [ ] User favorite routes + dedicated tab
 
 ### Route Features
