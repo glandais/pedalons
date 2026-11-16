@@ -61,284 +61,13 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 ## MOB — Application mobile
 
-- [ ] `MOB-165` **Créer une équipe dans l'app, et le socle de la gestion d'équipe (M)** — l'app ne
-      savait que rejoindre ou quitter une équipe : créer la sienne renvoyait au site, et rien n'y
-      disait « cette personne organise ou administre l'équipe » autrement que par des
-      `team.role == 'ADMIN'` en ligne ou par « Mes équipes » (d'où `MOB-96`). Lot 1 du plan
-      [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md) §4 et §5 ;
-      revient sur `MOB-144` (« créer une équipe depuis l'app : non »). Contrat d'API inchangé.
-      **Code écrit le 15 novembre 2026** (`check.sh` vert, 2456 tests) :
-      droits lus sur la fiche d'équipe (`mobile/lib/features/teams/domain/team_permissions.dart`,
-      `isTeamOrganizerProvider`, `isTeamAdminProvider`, `isPlatformAdminProvider` —
-      `team_permission_providers.dart` ; `null` tant que la fiche charge) ; `notifyTeamChanged`
-      (`team_change.dart`) ; sélecteur de lieu géocodé commun
-      (`mobile/lib/features/geocoding/`, `pickGeocodedPlace`, clés `geocoder.*`), sur lequel
-      l'éditeur d'annonce est passé — `ad_place_picker.dart` et `ads/data/place_search_repository.dart`
-      n'existent plus ; `teamsNew` et `teamAdmin` écrans de l'app et liens profonds ; hub « Gestion de
-      l'équipe » (`team_admin_page.dart`) aux sept lignes du site, celles d'administration rendues
-      aux seuls administrateurs, six d'entre elles ouvrant encore le site (`TeamWebPaths`,
-      `teamAdminPlaces`, `teamAdminTags` et `teamAdminPages` passées `mobile: true, appScreen: false`) ;
-      « Gérer l'équipe » dans l'en-tête d'équipe ; écran de création (`team_editor_page.dart`,
-      `TeamForm` — `fromTeam` déjà là pour `MOB-166`) ouvert par « Créer une équipe » dans la barre
-      et l'état vide de « Mes équipes » ; `errors.api.USER_TEAM_LIMIT_REACHED` (côté site :
-      `WEB-184`). Déclarations des stores : ligne d'inventaire #26 de
-      `mobile/store-metadata/data-safety.md`, la localisation d'équipe sous *Physical Address* /
-      *Address* (arbitrage O1 du plan), commentaires de `PrivacyInfo.xcprivacy` ; aucun type de
-      donnée nouveau, `app-privacy.json` et `data-safety.csv` inchangés.
-      **À ne pas défaire** : (1) les droits d'équipe se lisent sur `teamDetailProvider`, pas sur
-      « Mes équipes » — un admin de plateforme non membre n'y est pas ; (2) `teamsNew` est déclarée
-      **avant** le shell et avant `:teamSlug` (`…/equipes/nouvelle` est aussi l'équipe de slug
-      `nouvelle`), hors de la branche Équipes, où une route directe ne peut pas viser le navigateur
-      racine ; (3) après la création on **va** (`go`) à la page de l'équipe, on ne l'empile pas sur
-      l'éditeur plein écran (`MOB-44`) ; (4) la position d'une suggestion d'adresse n'est lue que
-      pour celle qui est choisie (`API-129`), et rien ne s'enregistre tant qu'elle court.
-      **Écart avec le plan** : le fuseau de départ est la préférence de fuseau du profil, sinon
-      `Europe/Paris`, et non le fuseau de l'appareil, dont l'app ne connaît pas le nom IANA (un
-      plugin natif serait à ajouter : à décider). Tests : `team_permissions_test`,
-      `team_change_test`, `geocoded_place_picker_test`, `ad_editor_page_test`, `team_form_test`,
-      `team_editor_page_test`, `team_admin_page_test`, `team_header_manage_test`, `teams_page_test`
-      (« Créer une équipe »), `team_web_paths_test`, `deep_link_hierarchy_test`,
-      `link_launcher_test`. Reste à faire tourner Patrol (`team_create_test.dart`) avant de ranger
-      l'entrée, et à pousser les formulaires des stores avec ceux de `MOB-159`.
-
-- [ ] `MOB-166` **Paramètres et webhook de l'équipe dans l'app (L)** — modifier le profil, le slug,
-      le logo, les modules, le fuseau et la visibilité d'une équipe, la supprimer, régler son
-      webhook : tout ouvrait le site (`mobile/lib/features/teams/presentation/team_web_paths.dart`).
-      Lot 2 du plan [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md)
-      §6. Contrat d'API inchangé.
-      **Code écrit le 15 novembre 2026** (`check.sh` vert, 2513 tests) : `teamSettings` écran de
-      l'app et lien profond, sous le hub (`_teamAdminAncestor`, `config/router.dart`) ; le même
-      `team_editor_page.dart` en mode édition (`TeamEditorPage(teamSlug:)`), réservé à
-      l'administration de l'équipe et à l'admin de plateforme, le refus tranché avant le
-      formulaire ; adresse (`changeTeamSlug`, puis `go` vers les paramètres de la nouvelle
-      adresse), logo, images et pièces jointes (`EditorMediaActions`), visibilité en feuille à
-      trois choix si `visibilityEditable` ou admin de plateforme, sinon en badge
-      (`team_visibility_sheet.dart`), zone de danger (`deleteTeam`) ; les deux confirmations du
-      site dans son ordre — équipe rendue privée, puis changement de fuseau sur l'aperçu du
-      serveur (`team_timezone_change_sheet.dart`, `previewTeamTimezoneChange`) ; webhook en
-      `PdlFullSheet` (`team_webhook_sheet.dart`, `team_webhook_repository.dart`,
-      `teamWebhookClientProvider`). La ligne « Paramètres » du hub et le bouton « Paramètres » du
-      tableau de bord ouvrent l'écran ; `TeamWebPaths.settings` n'existe plus. Le hub et les
-      paramètres rendent le refus, pas « Erreur de chargement », quand `GET team` répond 403 ou
-      404 (`isTeamAccessRefusal`). `errors.api.INVALID_TIMEZONE`, absente de l'app, est ajoutée.
-      Déclarations des stores : ligne d'inventaire #27 de `mobile/store-metadata/data-safety.md`
-      (paramètres, logo, images, pièces jointes, URL du webhook), commentaires de
-      `PrivacyInfo.xcprivacy` ; aucun type de donnée nouveau, `app-privacy.json` et
-      `data-safety.csv` inchangés.
-      **À ne pas défaire** : (1) le PUT réécrit tous les champs —
-      `TeamForm.fromTeam(…).toRequest()` renvoie la présentation entière (logo, images, pièces
-      jointes), la position, le fuseau, la visibilité et tous les interrupteurs ; une position
-      absente ou nulle **efface** celle de l'équipe (`TeamService.updateTeam` :
-      `setGeometry(request.geometry())`), c'est ainsi qu'elle s'efface, au site comme dans l'app ;
-      (2) l'URL du webhook est un secret : le champ part vide, seule `maskedUrl` s'affiche, et un
-      champ laissé vide garde l'adresse (`url` nul) ; (3) « Changer le fuseau » reste inactif tant
-      que l'aperçu n'est pas lu, et l'exemple se lit dans l'**ancien** fuseau ; (4) après un
-      enregistrement on **va** (`go`) à la page de l'équipe, après une suppression à « Mes
-      équipes » ; `notifyTeamChanged` reçoit `contentScopeChanged` quand la visibilité ou le
-      fuseau a changé, et l'ancienne **et** la nouvelle adresse après un changement de slug ;
-      (5) de la section « Paramètres plateforme » du site, seule la visibilité est dans l'app
-      (`MOB-171`) ; (6) pendant un changement d'adresse (`_renaming`, dans `_blocked`) rien
-      d'autre ne part — ni PUT vers l'ancienne adresse, ni second changement, ni suppression —,
-      relu le 15 novembre 2026 ; les contenus déjà lus sous l'ancienne adresse ne sont **pas**
-      invalidés, à dessein : `TeamService.getTeam` résout l'ancien slug par sa redirection pour
-      tous les endpoints d'équipe. **Écarts avec le plan** : notés « Fait (lot 2) » dans son §6. Tests :
-      `team_settings_page_test`, `team_webhook_sheet_test`, `team_form_test`,
-      `team_admin_page_test`, `team_editor_page_test`, `team_change_test`, `team_web_paths_test`,
-      `deep_link_hierarchy_test`, `link_launcher_test`. Reste à faire tourner Patrol
-      (`team_settings_test.dart`) avant de ranger l'entrée, et à pousser les formulaires des
-      stores avec ceux de `MOB-159`.
-
-- [ ] `MOB-167` **Membres et invitations de l'équipe dans l'app (M)** — changer un rôle, retirer
-      un membre, inviter par e-mail, renvoyer ou annuler une invitation : les boutons « Inviter »
-      et « Gérer les membres » du tableau de bord ouvraient le site. Lot 3 du plan
-      [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md) §7.1, à
-      parité stricte avec les règles du site (décision D8). Contrat d'API inchangé.
-      **Code écrit le 15 novembre 2026** (`check.sh` vert, 2573 tests) : `teamAdminMembers`
-      écran de l'app et lien profond, sous le hub (`_teamAdminMembersRoute`,
-      `config/router.dart`) ; `team_admin_members_page.dart`, réservé à l'administration de
-      l'équipe et à l'admin de plateforme — compteur « n / limite membres », « Inviter par
-      e-mail » (absent sans `addMemberAllowed`, inactif pour une équipe pleine sauf admin de
-      plateforme, avec la notice de l'offre gratuite et le lien de contact vers la page
-      d'assistance du site), invitations en attente en cartes (« Renvoyer », « Annuler
-      l'invitation »), recherche par nom ou e-mail et puces de rôle, liste paginée
-      (`teamMembersProvider`, filtres propres : `adminMemberFiltersProvider`) ; la feuille d'une
-      ligne est le menu de modération précédé de « Modifier le rôle » et « Retirer de
-      l'équipe » (`ModerationMenuEntry`, `team_role_sheet.dart`) ; feuille d'invitation
-      (`team_invite_sheet.dart`), `?invite=1` l'ouvre avec l'écran ;
-      `team_invitations_repository.dart`, `teamInvitationsClientProvider`,
-      `teamInvitationsProvider`, `TeamRepository.updateMemberRole` / `removeMember`. La ligne
-      « Gestion des membres » du hub et les boutons « Inviter » et « Gérer les membres » du
-      tableau de bord ouvrent l'écran ; `TeamWebPaths.adminMembers` et `adminMembersInvite`
-      n'existent plus. `errors.api.TEAM_INVITE_SELF`, `TEAM_INVITE_RATE_LIMITED` et
-      `TEAM_INVITE_DELIVERY_FAILED`, absentes de l'app, sont ajoutées (textes du site).
-      `support` passe `mobile: true, appScreen: false` dans `contracts/routes.yaml` : le lien
-      de contact ouvre la page du site. Déclarations des stores : ligne d'inventaire #28 de
-      `mobile/store-metadata/data-safety.md` (l'adresse e-mail d'une personne invitée, sous la
-      ligne *Email Address* existante — décision O2), commentaire de `PrivacyInfo.xcprivacy` ;
-      aucun type de donnée nouveau, `app-privacy.json` et `data-safety.csv` inchangés ; la
-      politique de confidentialité (« Invitations dans une équipe ») vaut telle quelle pour
-      l'app.
-      **À ne pas défaire** : (1) le `memberId` de `PUT` / `DELETE …/members/{memberId}` est
-      l'identifiant de la **personne** (`member.user.id`), pas celui de l'adhésion
-      (`member.id`) — `team_member_admin_repository_test` et le test de page lisent
-      l'identifiant envoyé ; (2) le refus est tranché **avant** toute requête : les membres et
-      les invitations ne sont écoutés que par le corps rendu à qui administre (`_AdminMembers`),
-      jamais par la page publique (invariant `API-144`) ; (3) pas de « Modifier le rôle » sur la
-      ligne d'une personne qui administre, ni rien sur sa propre ligne — le site ne rétrograde
-      pas un admin (D8) ; (4) les filtres de cet écran ne sont pas ceux du trombinoscope, resté
-      ouvert dessous ; (5) une invitation ne change ni la fiche ni le tableau de bord : seule la
-      liste des invitations est relue, sauf sur un 409 à l'annulation (peut-être acceptée :
-      membres, fiche et tableau de bord relus aussi) ; (6) l'adresse invitée se **saisit** — la
-      lire dans le carnet d'adresses demanderait une déclaration *Contacts*
-      (`data-safety.md` §8) ; (7) un changement de rôle ou un retrait est **reporté à sa place**
-      dans les listes de membres de l'équipe (`notifyTeamMembersChanged`,
-      `TeamMembersNotifier.apply`, `PagedListNotifier.replaceItem` / `removeItem`) — ne pas
-      revenir à l'invalidation de toute la famille `teamMembersProvider`, qui vidait la liste
-      et ramenait en haut une personne au travail au fond d'une grande équipe ; (8) pendant une
-      écriture, tout ce qui en lancerait une autre est inactif (lignes, `⋯`, « Inviter par
-      e-mail », cartes d'invitation) : aucun geste n'est perdu en silence (revue du lot 3, le
-      15 novembre 2026). **Écarts avec le plan** : notés « Fait (lot 3) » dans son §7.1.
-      Tests : `team_admin_members_page_test`, `team_member_admin_repository_test`,
-      `team_admin_page_test`, `team_dashboard_test`, `team_web_paths_test`,
-      `deep_link_hierarchy_test`, `link_launcher_test`, `sign_in_resume_test`. Reste à faire
-      tourner Patrol (`team_admin_members_test.dart`) avant de ranger l'entrée, et à pousser les
-      formulaires des stores avec ceux de `MOB-159`.
-
-- [ ] `MOB-168` **Lieux et signalements de l'équipe dans l'app (M)** — les lieux de l'équipe n'ont
-      aucun point d'entrée dans l'app, et l'entrée « signalements » du tableau de bord comme la
-      notification `CONTENT_REPORTED` ouvrent le site. Lot 4 du plan
-      [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md) §7.2 et
-      §7.3 : `mobile/lib/features/places/` sur `teamAdminPlaces`, la file des signalements dans
-      `mobile/lib/features/moderation/` sur `teamAdminReports`.
-      Contrat d'API inchangé.
-      **Code écrit le 15 novembre 2026** (`check.sh` vert) : `teamAdminPlaces` et
-      `teamAdminReports` écrans de l'app et liens profonds, sous le hub
-      (`_teamAdminPlacesRoute`, `_teamAdminReportsRoute`, `config/router.dart`).
-      **Lieux** — `team_places_page.dart`, réservé à qui organise l'équipe : liste paginée
-      (`teamPlacesProvider`), recherche par nom ou adresse, ligne (nom, adresse, badges
-      « Départ » / « Arrivée », « Voir sur la carte » hors de l'app), modifier et supprimer
-      (confirmation) ; formulaire en feuille (`place_form_sheet.dart`, `PlaceForm`) : nom,
-      adresse, lien, localisation par le sélecteur commun (effaçable), deux usages ;
-      `places_repository.dart`. **Signalements** — `team_reports_page.dart`, réservé à qui
-      organise l'équipe et à l'admin de plateforme : onglets « À traiter » / « Traités »
-      (`teamReportsProvider`), une carte par cible (type, nombre, « Masqué aux membres »,
-      décision rendue, date, contenu en lien vers son écran ou « Le contenu n'existe plus. »,
-      auteur ou membre signalé, extrait, motifs, précisions), « Supprimer le contenu »
-      (confirmé, absent pour un membre) et « Rejeter le signalement »
-      (`ModerationRepository.listTeamReports` / `resolveTeamReports`), renvoi vers la gestion
-      des membres pour un membre signalé. Les lignes « Lieux » et « Signalements » du hub,
-      « Examiner » du tableau de bord et la notification `CONTENT_REPORTED` ouvrent les écrans ;
-      `TeamWebPaths.places` et `reports`, et `NotificationDisplay.webPath()`, n'existent plus.
-      Déclarations des stores : lignes d'inventaire #29 (lieux : l'adresse saisie et la
-      position sous la ligne *Physical Address* existante — décision O1) et #30 (décisions de
-      modération, sous *Other User Content* comme les signalements) de
-      `mobile/store-metadata/data-safety.md`, commentaires de `PrivacyInfo.xcprivacy` ; aucun
-      type de donnée nouveau, `app-privacy.json` et `data-safety.csv` inchangés ; la politique
-      de confidentialité vaut telle quelle pour l'app.
-      **À ne pas défaire** : (1) le `PUT` d'un lieu **réécrit tout** — une adresse, un lien
-      ou une position absents sont effacés (`PlaceService.updatePlaceFromRequest`) : le
-      formulaire reprend le lieu entier, position comprise (`place_form_test`,
-      `team_places_page_test`) ; (2) les deux refus sont tranchés **avant** toute requête : la
-      liste des lieux et la file ne sont écoutées que par le corps rendu à qui en a le droit ;
-      (3) les personnes qui signalent restent anonymes — `ModerationItemDto.reporters` n'est
-      jamais lu, et l'app n'appelle pas la file de plateforme (`listAdminReports`), qui les
-      porte ; (4) le lien d'un contenu signalé ne se construit que pour un type que l'app
-      connaît (`moderationContentPath`) ; (5) le lien « Gestion des membres » d'un membre
-      signalé n'est rendu qu'à qui peut ouvrir l'écran ; (6) une écriture se reporte **à sa
-      place** quand c'est possible — un lieu modifié ou supprimé par
-      `PagedListNotifier.replaceItem` / `removeItem` (qui relit la dernière page chargée pour
-      ne pas sauter la ligne que le décalage d'offset y fait glisser), une décision par la
-      relecture de la file de cette équipe et de son tableau de bord seuls
-      (`refreshAfterModerationDecision`), jamais par `notifyTeamChanged` ; (7) pendant une
-      écriture, tout ce qui en lancerait une autre est inactif, et une feuille ou une
-      confirmation ne s'ouvre qu'une fois (`_sheetOpen`, lieux et signalements). **Écarts avec
-      le plan** : notés « Fait (lot 4) » dans ses §7.2 et §7.3.
-      Tests : `place_form_test`, `team_places_page_test`, `team_reports_page_test`,
-      `moderation_queue_repository_test`, `paged_list_notifier_test`, `team_admin_page_test`,
-      `team_dashboard_test`, `notifications_page_test`, `team_web_paths_test`,
-      `deep_link_hierarchy_test`, `link_launcher_test`, `sign_in_resume_test`. Tests Patrol
-      écrits, pas encore lancés : `team_places_test.dart` et `team_reports_test.dart` (modules
-      `teamPlaces`, `teamReports`, `teamAdmin.openPlaces()` / `openReports()` ; semences
-      `newPlace`, `places`, `placeNamed`, `place`, `resolvedQueue`, `notificationInTeam` dans
-      `patrol_test/api/teams_content_seed.dart`). Reste à les faire tourner avant de ranger
-      l'entrée, et à pousser les formulaires des stores avec ceux de `MOB-159`.
-
-- [ ] `MOB-169` **Tags et pages personnalisées de l'équipe dans l'app (M)** — l'app pose des tags
-      et lit les pages d'une équipe sans pouvoir administrer ni le vocabulaire ni les pages. Lot 5
-      du plan [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md)
-      §7.4 et §7.5 : administration des tags sur `teamAdminTags` (décision D20 du plan des tags
-      rouverte), liste et éditeur des pages sur `teamAdminPages`, `teamAdminPageNew` et
-      `teamAdminPageEdit` ; `team_web_paths.dart` disparaît, et `MOB-144`, `MOB-24`, D20 et
-      `MOB-54` sont mis à jour.
-      Contrat d'API inchangé.
-      **Code écrit le 15 novembre 2026** (`check.sh` vert) : `teamAdminTags`, `teamAdminPages`,
-      `teamAdminPageNew` et `teamAdminPageEdit` écrans de l'app et liens profonds — les tags et
-      la liste des pages sous le hub (`_teamAdminTagsRoute`, `_teamAdminPagesRoute`), l'éditeur
-      d'une page sous la liste (`config/router.dart`).
-      **Tags** — `features/tags/presentation/pages/team_tags_admin_page.dart`, réservé à qui
-      administre l'équipe : une puce par type de contenu avec son compte (un type est proposé si
-      sa section est active ou s'il porte encore des tags ; `?type=` comme au site ; « Aucune
-      section active »), une ligne par tag (puce, « Inutilisé » ou « n contenus », modifier,
-      supprimer après une confirmation qui montre la puce et dit de combien de contenus il sera
-      retiré), « n / 100 tags pour ce type », « Nouveau tag » inactif à 100 ; formulaire en
-      feuille (`tag_form_sheet.dart`, `TagForm`) : libellé, neuf couleurs, aperçu.
-      **Pages** — `features/teams/presentation/pages/team_pages_admin_page.dart` (« n pages sur 3
-      maximum », une ligne par page avec sa visibilité, monter et descendre par boutons —
-      décision D6 —, modifier, supprimer après confirmation, restaurer) et
-      `team_page_editor_page.dart` (`TeamPageForm` : titre, adresse en modification, texte riche,
-      logo, images et pièces jointes envoyés contre l'équipe, visibilité), réservés à qui
-      administre l'équipe ; modifier exige `page.permissions.canEdit`.
-      Les lignes « Tags » et « Pages » du hub ouvrent les écrans : **plus aucune ligne du hub
-      n'ouvre le site**. `team_web_paths.dart`, son test, et le sous-titre « S'ouvre sur le site »
-      du hub ont disparu ; `webOnlyRouteIds` ne compte plus que `features` et `support`.
-      Déclarations des stores : lignes d'inventaire #31 (le libellé d'un tag, *Other User
-      Content*) et #32 (une page : titre, texte et pièces jointes sous *Other User Content*,
-      logo et images sous *Photos or Videos*) de `mobile/store-metadata/data-safety.md`,
-      commentaires de `PrivacyInfo.xcprivacy` ; aucun type de donnée ni appel de sélecteur
-      nouveau, `app-privacy.json` et `data-safety.csv` inchangés. La politique de confidentialité
-      nomme les pages d'équipe ; elle ne nomme pas les tags (elle ne le faisait pas quand seul
-      le site les administrait) — à compléter côté politique.
-      **À ne pas défaire** : (1) les trois refus sont tranchés **avant** toute requête — le
-      vocabulaire, la liste des pages et la page à modifier ne sont lus que par le corps rendu
-      à qui administre ; un organisateur lit un refus, il pose des tags sans en créer ; (2) le
-      `PUT` d'une page **réécrit tout** — titre, visibilité et tous les médias (texte, logo,
-      images, pièces jointes) : le formulaire reprend la page entière
-      (`team_page_form_test`, `team_page_editor_page_test`, corps exact) ; (3) les visibilités
-      d'une page viennent du backend (`team.allowedContentVisibilities.teamPage` à la création,
-      `page.permissions.allowedVisibilities` en modification, ledger `MOB-137`), jamais de
-      `team.visibility` ni du rôle ; (4) `reorderPages` reçoit **la liste entière** des
-      identifiants, pages supprimées comprises, comme le site — le serveur ne range que ce
-      qu'il reçoit ; (5) les pages à la corbeille ne comptent pas dans les trois (le serveur ne
-      les compte pas ; le site, si) ; (6) un tag modifié envoie `label` **et** `color`, jamais
-      le type ; (7) les pastilles de couleur d'un tag viennent du thème
-      (`tagFamily(…).soft(c).fill`), sans table locale ; (8) après une écriture, seul ce qui
-      en dépend est relu : `notifyTeamTagsChanged` (le vocabulaire de l'écran, celui du type,
-      et les contenus du type après un renommage ou une suppression) et
-      `notifyTeamPagesChanged` (la liste, **la fiche de l'équipe seule**, le contenu des pages
-      nommées) — jamais `notifyTeamChanged`, qui viderait la liste des équipes pour rien ;
-      (9) un geste à la fois, et le drapeau est posé **avant** d'ouvrir une feuille ou une
-      confirmation : un double appui n'envoie qu'une requête ; (10) pendant un changement
-      d'adresse d'une page, la saisie est figée et « Enregistrer » inactif ; (11) l'éditeur
-      d'une page **relit la page à son ouverture** et bâtit le formulaire sur cette lecture,
-      jamais sur une copie en cache — le PUT effacerait ce qui a changé ailleurs — puis ne suit
-      plus les relectures ; (12) « Restaurer » est inactif à trois pages : le serveur ne
-      vérifie pas la limite à la restauration (lacune signalée à part) ; (13) une visibilité
-      que l'app ne connaît pas ne part pas (`TeamPageForm.visibilityValid`) ; (14) pendant une
-      relecture de la liste des pages, les gestes des lignes attendent, et un 404 ou un 409
-      sur une écriture de page ou de tag fait relire la liste. **Écarts avec le
-      plan et avec le site** : notés « Fait (lot 5) » dans les §4.2, §7.4 et §7.5 du plan.
-      Tests : `tag_form_test`, `team_tags_admin_page_test`, `team_page_form_test`,
-      `team_pages_admin_page_test`, `team_page_editor_page_test`, `team_admin_page_test`,
-      `team_admin_routes_test` (qui remplace `team_web_paths_test`),
-      `deep_link_hierarchy_test`, `link_launcher_test`, `sign_in_resume_test`. Tests Patrol
-      écrits, pas encore lancés : `team_tags_admin_test.dart` et `team_pages_admin_test.dart`
-      (modules `teamTagsAdmin`, `teamPagesAdmin`, `teamAdmin.openTags()` / `openPages()` ;
-      semences `teamTags`, `tagLabelled`, `routeTagLabels` dans `patrol_test/api/tags_seed.dart`,
-      `teamPages`, `teamPageTitled`, `teamPage` dans `teams_content_seed.dart`). Reste à les
-      faire tourner avant de ranger l'entrée, et à pousser les formulaires des stores avec ceux de
-      `MOB-159`. La ligne `MOB-24` de « Délibérément dehors » est à jour (son « administration
-      d'équipe » en est détachée). Défauts relevés en chemin et non corrigés ici : `API-204`,
-      `WEB-185`, `LEGAL-30`.
+- [ ] `MOB-174` **`maplibre_ios` appelle `setState` sur une carte déjà démontée (S)** — quitter une carte avant que son style ait fini de charger fait lever « setState() called after dispose() » à
+      `MapLibreMapStateIos._didFinishLoadingStyle` (`maplibre_ios` 0.3.7, `lib/src/map_state.dart:487`, sans garde `mounted`, inchangé en 0.3.7+1, dernière de la série 0.3) : une assertion en debug, fatale pour Patrol
+      (`ad_location_map_test`, rouge une fois dans la suite iOS du 16 novembre 2026, vert seul), et en release un `Null check` non rattrapé dans le rappel natif, qui remonte comme erreur. Le paquet
+      n'expose aucun signal « style chargé » que `PdlMap` relaierait. Pistes : signaler en amont (`maplibre.org`, dépôt `flutter-maplibre`) et attendre la 0.4 ; ou un correctif local
+      d'une ligne (`if (!mounted) return;`) par `dependency_overrides` vers une copie du paquet (le dépôt n'en vendorise aucun aujourd'hui). Pas vu sur Android le même jour.
+      **Décision du 16 novembre 2026** : rien n'est fait pour l'instant, l'entrée seule garde le constat.
+      Si `ad_location_map_test` retombe dans une suite Patrol iOS sur cette assertion, c'est ce défaut.
 
 - [ ] `MOB-160` **Éditeur riche : test de widget du pont et test Patrol de l'écran plein (S)** —
       l'éditeur riche (l'éditeur Tiptap du site dans une WebView, voir la part livrée) a été essayé
@@ -459,8 +188,6 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       parcours n'existent plus depuis `MOB-134` : la carte de ces écrans est celle de `RouteSection`
       (44 % de l'écran), à regarder avec `MOB-135`.
 
-
-
 - [ ] `MOB-95` **La météo sur la carte : recette sur appareil des paliers 1 à 3 (S)** — rien ne se
       teste sans carte native (`MOB-91` à `MOB-94`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md)) :
       pastilles et goutte sur un vrai parcours à plusieurs traces ; toucher d'une pastille et
@@ -488,19 +215,6 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       reste aux membres (`buildTeamSections`), alors que le site l'ouvre à l'administrateur de la
       plateforme.
 
-- [ ] `MOB-137` **Contenu public d'une équipe privée : éditeurs et écrans de détail sur les droits
-      calculés (S)** — les éditeurs de sortie, de modèle et de parcours masquent la visibilité dès
-      que l'équipe est privée (`teamOnly`, `ride_editor_page.dart`, `ride_template_editor_page.dart`,
-      `route_editor_page.dart`) et recopient donc une règle du serveur ; un lien profond vers
-      l'entité d'une équipe non consultable pose « Équipe indisponible » sous l'écran de détail.
-      Lire `allowedContentVisibilities` et `permissions` (`API-176`), confirmer l'alignement des
-      parcours, corriger le retour arrière. Plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/2026-11-11-visibilite-contenu-equipe-privee.md) §6.
-      **Code écrit le 11 novembre 2026** (`check.sh` vert, 1800+ tests) : champ partagé
-      `features/visibility/`, écrans de détail sur `permissions`, sonde d'accès à l'équipe avant
-      de reconstruire la pile d'un lien (`team_access_probe.dart`), contenus de détail invalidés
-      quand l'appartenance change. Reste à faire tourner Patrol
-      (`private_team_public_ride_test.dart`) avant de ranger l'entrée.
-
 - [ ] `MOB-154` **Générer un parcours depuis l'app (M, plus tard)** — l'app n'a ni éditeur de
       parcours ni aperçus GPX ; un écran qui crée directement le parcours depuis une proposition
       du générateur (`API-206`, contrat `15.0.0` : curseur `discovery`, part sur les routes de
@@ -524,9 +238,9 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
       Tests : `planner_bridge_test.dart`, `route_form_test.dart`,
       `route_repository_write_test.dart`, `route_editor_page_test.dart`. Reste avant de ranger
       l'entrée : la recette sur appareil (rouvrir après « Terminer », retour Android et balayage
-      iOS, clavier de la recherche, gros GPX, thème sombre, quota refusé en cours de tracé) et le
-      test Patrol `route_planner_test.dart`, écrit et jamais lancé (points posés en ligne droite :
-      aucun appel au routeur, donc aucune clé Stadia requise). « Me localiser » est éteint dans
+      iOS, clavier de la recherche, gros GPX, thème sombre, quota refusé en cours de tracé) — le test Patrol `route_planner_test.dart` (points posés en ligne droite :
+      aucun appel au routeur, donc aucune clé Stadia requise) est vert le 16 novembre 2026 sur le
+      simulateur iOS et l'émulateur Android. « Me localiser » est éteint dans
       l'app (`kPlannerLocate`) : l'allumer change l'usage déclaré de la position
       (`data-safety.md` n° 10, `NSLocationWhenInUseUsageDescription`), décision à prendre avec
       `MOB-131`.
@@ -720,7 +434,8 @@ n'ont aucun appelant d'écran).
 - [ ] `MOB-77` **Éditeur de sortie, modèles et parcours : recette sur appareil et tests Patrol (S)** — `MOB-80` est
       couvert par les tests unitaires et de widget, et par `ride_editor_test` et
       `ride_editor_member_test` (Patrol, verts le 17 octobre 2026 sur le simulateur iOS et sur
-      l'émulateur Android). Reste la recette à la main : créer une sortie depuis le tableau de bord (modèle compris), y
+      l'émulateur Android, de nouveau le 16 novembre 2026 avec `ride_templates_test` et
+      `route_editor_test`). Reste la recette à la main : créer une sortie depuis le tableau de bord (modèle compris), y
       ajouter une image depuis la photothèque et une pièce jointe depuis le sélecteur de fichiers,
       la modifier depuis sa fiche, la publier puis la supprimer et la restaurer — en organisateur,
       et vérifier qu'un simple membre ne voit ni le crayon ni le menu « Gérer la sortie ». Clés dans
@@ -809,11 +524,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
 `frontend/e2e/README.md`.
 
 
-- [ ] `WEB-181` **Lancer le test e2e qui vérifie que le point exact d'une annonce survit à une
-      dépublication puis une publication depuis sa fiche (XS)** — le défaut est corrigé (voir la
-      part livrée sous le même ID) et couvert par vitest ; le cas de bout en bout
-      `frontend/e2e/flow-ads.e2e.ts` (« ad place », `unpublishing then publishing from the ad page
-      keeps the exact point underneath`) est écrit et typé, pas encore lancé sur la pile e2e.
 - [ ] `WEB-163` **Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)** — depuis `API-163`
       (contrat `13.4.0`), `RouteDto`, `RouteDetailDto`, `RideDto` et `RideGroupDto` disent, pour
       chacun des services de la personne en synchro automatique, si le parcours y est déjà (`state`,
@@ -856,9 +566,8 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       étape sans parcours.
 
 - [ ] `WEB-119` **La météo sur la carte : recette navigateur des paliers 1 à 3 (S)** — `WEB-115` à
-      `WEB-118`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). Sur la pile e2e :
-      `pnpm e2e routes-render -g 'rideMap /'` (la sortie solo `soloRide` ajoutée au jeu de données,
-      jamais encore lancée). À la main : contraste du gris travers sur fond sombre et satellite ;
+      `WEB-118`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). `routes-render -g 'rideMap /'` (la sortie solo `soloRide` comprise) est vert le 16 novembre
+      2026 sur la pile e2e. À la main : contraste du gris travers sur fond sombre et satellite ;
       crédit Open-Meteo et sa mise à jour au changement de mode ; un vrai parcours à plusieurs
       traces ; pastilles nombreuses (carte d'ensemble d'un voyage de beaucoup d'étapes, une seule
       bulle ouverte) ; bulle non coupée par le profil ; focus de la bulle (rendu après « Fermer »,
@@ -991,20 +700,6 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       manquante jusqu'au passage suivant du planner, `STALE` quelques minutes) et le rendu mobile du
       web. Pas d'écran mobile : l'app n'a pas d'aperçus GPX.
 
-- [ ] `WEB-166` **Contenu public d'une équipe privée : pages de détail sans `GET team`, éditeurs
-      sur les droits calculés (M)** — une page de détail exige le DTO de l'équipe (« non trouvé » ou
-      renvoi vers `/teams` sinon) et le SSR pose un 404 sur tout échec de `GET team`
-      (`entry-server.tsx`) : le lien d'une sortie publique d'une équipe privée n'ouvrirait rien.
-      Cinq éditeurs recopient la règle `team.visibility !== 'TEAM'`, `TeamPageForm` l'ignore, et
-      passer une équipe en privé bascule son contenu sans prévenir. Composant de visibilité partagé,
-      pages de détail sur `permissions` et le résumé d'équipe embarqué, `noindex` sur
-      `permissions.indexable`, confirmations (alignement des parcours, passage en privé),
-      interrupteur `publicContentAllowed`. Dépend d'`API-176`. Plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/2026-11-11-visibilite-contenu-equipe-privee.md) §5.
-      **Code écrit le 11 novembre 2026** (`pnpm check` et Vitest verts, 1880 tests) : sélecteur
-      partagé `components/visibility/`, pages de détail sur le résumé d'équipe embarqué
-      (`lib/entityTeam.ts`), statut SSR (`config/ssrTeamStatus.ts`), `noindex` sur
-      `permissions.indexable`. Reste à faire tourner les specs e2e écrites
-      (`private-team-public-content.e2e.ts`, `flow-rides.e2e.ts`) avant de ranger l'entrée.
 
 - [ ] `WEB-183` **Planificateur de parcours embarquable dans l'app (M)** — le plein écran tactile
       du planificateur vit dans `components/planner/RoutePlannerField.tsx` et ses appels au
@@ -1019,9 +714,8 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       navigateur `pnpm dev:mobile-planner`, protocole du pont dans
       `src/embed/mobile-planner/README.md` ; Vitest verts (`bridge.test.ts`, `done.test.ts`).
       Recette sur Pixel 6a par la page de debug `/dev/planificateur` : prêt en 0,7 s, les huit
-      fonds s'affichent, ceux de notre API compris. Reste avant de ranger l'entrée : faire tourner
-      les specs e2e du planificateur (l'extraction touche `RoutePlannerField.tsx`), recetter sur
-      iOS, et alléger le bundle (2,6 Mo : catalogues entiers, paquet de recherche Stadia, CSS du
+      fonds s'affichent, ceux de notre API compris. Specs e2e du planificateur (`gpx-planner.e2e.ts`) vertes le 16 novembre 2026, desktop et mobile.
+      Reste avant de ranger l'entrée : recetter sur iOS, et alléger le bundle (2,6 Mo : catalogues entiers, paquet de recherche Stadia, CSS du
       site).
 
 - [ ] `WEB-179` **Panneau « Générer un parcours » (M)** — départ, arrivée, rose des vents, distance, curseur « routes de
@@ -1139,13 +833,6 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       la dernière étape) est passé : pendant cette dernière étape, la carte du voyage dans le fil, l'agenda ou le
       tableau de bord perd sa ligne météo alors que la page la montre. Juger sur la fin (`PublicationEndCalculator`,
       comme `RideWeatherLookup`), sans requête de plus par voyage (`PublicationQueryCountTest`).
-- [ ] `API-161` **Météo de départ d'une étape et inscription refusée à un voyage terminé (S, contrat
-      13.3.0)** — pour `WEB-155`. `TripStageWeatherDto.departure` (lu au premier point de prévision de
-      l'étape, `TripWeatherService.departure`) donne à l'étape l'encadré « Jour » et la température au
-      départ de la météo du groupe ; `TripService.joinTrip` lève `TRIP_FINISHED` (409) une fois la
-      dernière étape partie (`Trip.isFinished`, la règle de `TripDto.finished`), un voyage en cours reste
-      ouvert. Code fait (commit `cc62f846a`) ; reste à passer `TripServiceTest`,
-      `TripWeatherResourceTest`, `RideWeatherCalculatorTest` et `TripResourceTest`.
 
 - [ ] `API-154` **Plafonds de la météo des aperçus GPX qui restent ouverts (S)** — suite d'`API-153`
       (voir aussi `SEC-48`). Ce qui est posé : 20 aperçus datés à venir par compte, 500 aperçus
@@ -1165,7 +852,7 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       `RouteDetailsTrack` (ledger `API-150`). Décision du 7 novembre 2026.
 - [ ] `API-151` **Finir le passage à osm-route-details : vérifications, recalcul du parc (M)** (scindé d'`API-150`) — le code est livré, mais le parc garde ses profils v2 et ses
       revêtements v1 tant que le recalcul ne l'a pas atteint. Reste :
-      - **Avant la bascule** : e2e (`scripts/e2e.sh`, pas relancés depuis la phase B), banc manuel D+ v2 contre v3 sur 30 parcours réels (§8 du plan), dont
+      - **Avant la bascule** : e2e repassés le 16 novembre 2026 (suite complète verte, un seul échec, fragile et local), banc manuel D+ v2 contre v3 sur 30 parcours réels (§8 du plan), dont
         l'écart va dans les notes de version. Regarder aussi le crédit web, deux fois plus long, en
         surimpression en haut à droite du profil (`ElevationChart`).
       - **Bascule tout d'un coup** (décision du 7 novembre 2026) : D et E partent ensemble, les
@@ -1219,42 +906,6 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       avec type et distance (vcyclist 6.11) pour que les points d'une sortie enregistrée ne se
       perdent plus au nettoyage.
 
-- [ ] `API-176` **Contenu public d'une équipe privée, par lien, et droits calculés par le backend
-      (M, contrat `13.6.0`, migration `V87`)** — une équipe privée ne peut annoncer aucune sortie
-      par lien (`TeamEntityService.validateVisibility`, clause d'équipe de
-      `TeamEntityRepository.getPublicEntity`) ; un parcours peut repasser en « Équipe » sous une
-      sortie publique (`RouteService.updateRoute` ne vérifie rien) ; et le contrat n'expose aucun
-      droit, que les clients redérivent du rôle et de la visibilité. Trois lots : drapeau
-      `Team.publicContentAllowed` posé par l'administrateur de la plateforme, règle unique
-      d'écriture, lecture du détail par lien (listes et sitemap inchangés) ; champs calculés
-      (`allowedContentVisibilities`, `defaultContentVisibility`, bloc `permissions` des entités,
-      `accessible` du résumé d'équipe) ; invariant « un conteneur non Équipe n'utilise que des
-      parcours non Équipe » dans les deux sens (`INCOMPATIBLE_VISIBILITY`, `alignVisibility`).
-      Décisions du 11 novembre 2026 et audit des règles en place : plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/2026-11-11-visibilite-contenu-equipe-privee.md).
-      Suites : `WEB-166`, `MOB-137`.
-      **Lot 1 fait le 11 novembre 2026** (contrat `13.6.0`, `V87`) : drapeau, règle
-      `ContentVisibilityRules`, lecture du détail par lien ; `V87` remet aussi en « Équipe » le
-      contenu des équipes privées, et les images d'un contenu public d'équipe privée sortent en
-      `noindex`. Couvert par `PrivateTeamPublicContentResourceTest`, `ContentVisibilityRulesTest`,
-      `AssetImageUrlTest`, `AdminTeamResourceTest`. Aucune équipe n'a le drapeau : rien ne change
-      tant que le site (`WEB-166`) n'est pas livré.
-      **Lot 2 fait le 11 novembre 2026** (contrat `13.7.0`) : bloc `permissions` des entités,
-      `accessible` du résumé d'équipe, `allowedContentVisibilities` et `defaultContentVisibility`
-      de l'équipe, champs requis ; les `*AccessChecker` et le bloc lisent la même règle
-      (`ContentPermissionsConsistencyTest`). Avec lui : `joinTrip` refuse un voyage non publié
-      pour tout le monde, le logo d'une équipe privée est public quand elle a le drapeau, et le préfixe d'image indexable est réservé à une entité « Public » d'une équipe
-      « Public ».
-      **Lot 3 fait le 11 novembre 2026** (contrat `13.8.0`) : un seul
-      composant, `RouteVisibilityCompatibility`, tient l'invariant dans les deux sens, à la place
-      des deux `getRoute` de `RideService` et `TripService`. Une sortie ou un voyage non « Équipe »
-      (création, modification, restauration) qui porte un parcours « Équipe » est refusé
-      (`INCOMPATIBLE_VISIBILITY`, `errorDetails.routes`) ; rejouée avec `alignVisibility`, la
-      requête monte ces parcours en « Non répertorié ». Un parcours ne repasse pas en « Équipe »
-      tant qu'une sortie ou un voyage non « Équipe » non supprimé l'utilise, brouillon compris
-      (`errorDetails.usages`, pas d'alignement) ; son `allowedVisibilities` de détail le dit.
-      `PUBLIC_RIDE_PRIVATE_ROUTE` et `PUBLIC_TRIP_PRIVATE_ROUTE` ne sont plus émis. Couvert par
-      `RouteVisibilityCompatibilityTest`, `IncompatibleVisibilityResourceTest`. Restent les lots
-      4 et 5 (`WEB-166`, `MOB-137`).
 
 - [ ] `API-177` **Le rôle de l'appelant dans l'équipe, lu une fois par requête (S)** — sur un
       détail, `PedalonsQueryContext.getContext` lit le rôle pour `@CheckAccess`
@@ -2057,7 +1708,7 @@ n'a pas de sévérité tant que son test de validation n'a pas tourné.
 | `SEC-48` | — | Nov. V5 | À valider | Un appel facturé à un fournisseur n'a pas de quota par compte. Aperçus GPX datés (API-153) : 20 à venir par compte, sans plafond de points de prévision par aperçu ; reste ouvert : pas de plafond journalier sur les PUT qui changent le tracé, ni de priorité des sorties |
 | `SEC-49` | — | Nov. V6 | À valider | Un quota d'envoi suit le motif compter-puis-insérer (même famille que `SEC-35` et `SEC-39`) |
 | `SEC-50` | — | Nov. V7 | À valider | La désactivation d'un domaine ne s'applique pas à tous les chemins de résolution |
-| `SEC-51` | — | Audit des permissions du 11 novembre 2026 (plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/2026-11-11-visibilite-contenu-equipe-privee.md), A4) | Faible | Une réponse de l'API distingue deux cas qu'elle devrait confondre pour un appelant sans droit |
+| `SEC-51` | — | Audit des permissions du 11 novembre 2026 (plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/archive/2026-11-11-visibilite-contenu-equipe-privee.md), A4) | Faible | Une réponse de l'API distingue deux cas qu'elle devrait confondre pour un appelant sans droit |
 | `SEC-52` | — | Lot 3b du générateur de parcours (16 novembre 2026) | Faible | La clé de cloisonnement du moteur de parcours circule en clair sur le réseau partagé des piles, et le moteur n'a pas de liste de clés admises : un conteneur de ce réseau peut l'appeler avec une clé à lui. Chiffrer le réseau ou configurer la liste du moteur (`docker-compose.shared.yml`) ; taille S |
 
 ---
@@ -2251,8 +1902,8 @@ redevient une entrée de sa section sous le même identifiant.
 | `MOB-88` | **Mode mono-équipe dans l'app** (masquer l'onglet Équipes, ouvrir l'équipe épinglée, lire `pinnedTeamSlugProvider`) | Non (24 octobre 2026) | L'app ne sert que `pedalons.fr`, et ce domaine n'est jamais mono-équipe : le mode n'y a pas de cas d'usage. `pinnedTeamSlugProvider` (`core/config/config_provider.dart`) reste sans lecteur. Le web garde son `hideWhenSingleTeam`, qui sert les autres domaines. À rouvrir si l'app devait un jour servir un domaine mono-équipe |
 | `MOB-89` | **Pages personnalisées d'équipe en puces de section, comme les onglets du web** | Non (24 octobre 2026) | Au mobile, elles restent une liste dans « À propos », une ligne par page qui ouvre son écran (`team_about_page.dart`), comme le demandait la note de conception (`plans/archive/audit-ux/BRIEF.md`, onglet À propos). Avec plusieurs pages, la rangée de puces déborderait. Le web garde ses onglets : sa rangée a la place et n'a pas de menu de débordement (`WEB-25`). Le filtrage des pages réservées aux membres se fait côté backend (`isListed` dans `TeamDetailDto`). L'autre volet de l'entrée, la visibilité de « Membres », n'avait rien à changer au mobile : c'est sa règle que le web reprend (`WEB-112`) |
 | `WEB-171` | **Mention de fuseau en ligne sur le site, comme dans l'app** (« heure de Tokyo (ven. 01:00 chez vous) ») | Non (12 novembre 2026, écart voulu V5 du [tri de l'audit des cartes](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) §3) | Même texte, deux formes : une ligne visible dans l'app (`ZoneMentionLine`, `core/widgets/zone_mention_line.dart`), une icône globe à infobulle sur le site (`ZoneMentionIcon`, `components/common/Rendezvous.tsx`). Au doigt il n'y a pas de survol, d'où la ligne ; au bureau, l'infobulle garde la carte courte. BRANDING §8.3 fixe le texte, pas la forme. La date d'une publication n'en relève pas : c'est la règle des dates de carte (KIT §9) |
-| `MOB-144` | **Créer une équipe depuis l'app** (la création d'**annonce**, écartée avec elle, a été livrée le 14 novembre 2026 : `MOB-158`) | **Rouverte le 15 novembre 2026** : la création d'équipe est écrite dans l'app (`MOB-165`, plan [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md)). Le « non » du 12 novembre 2026 (écart voulu VL11 du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §3) ne tient plus | Plus rien n'est dehors sous cet identifiant : « Mes équipes » porte « Créer une équipe », la liste des annonces « Créer ». La ligne reste le temps que `MOB-165` soit rangée, pour qui cherche la décision d'origine |
-| `MOB-171` | **Paramètres plateforme d'une équipe dans l'app** (palier et sa note, `joinable`, `addMemberAllowed`, `visibilityEditable`, traceur de parcours, contenu public par lien) | Non (15 novembre 2026, décision D1 du plan [`2026-11-15-gestion-equipe-mobile.md`](plans/2026-11-15-gestion-equipe-mobile.md)) | Ces réglages ne se modifient qu'en administration de plateforme, que l'app n'a pas : ils restent au site (`TeamForm.tsx`, `PATCH /api/admin/teams/{id}/attributes`). Les Paramètres d'équipe de l'app (`MOB-166`) ne montrent que la visibilité, modifiable si `visibilityEditable` ou pour l'administration de la plateforme. Seul écart fonctionnel voulu entre l'app et le site sur la gestion d'équipe |
+| `MOB-144` | **Créer une équipe depuis l'app** (la création d'**annonce**, écartée avec elle, a été livrée le 14 novembre 2026 : `MOB-158`) | **Rouverte le 15 novembre 2026** : la création d'équipe est écrite dans l'app (`MOB-165`, plan [`2026-11-15-gestion-equipe-mobile.md`](plans/archive/2026-11-15-gestion-equipe-mobile.md)). Le « non » du 12 novembre 2026 (écart voulu VL11 du [tri de l'audit des listes](plans/2026-11-10-etat-des-lieux-affichage/audit-listes/tri.md) §3) ne tient plus | Plus rien n'est dehors sous cet identifiant : « Mes équipes » porte « Créer une équipe », la liste des annonces « Créer ». La ligne reste le temps que `MOB-165` soit rangée, pour qui cherche la décision d'origine |
+| `MOB-171` | **Paramètres plateforme d'une équipe dans l'app** (palier et sa note, `joinable`, `addMemberAllowed`, `visibilityEditable`, traceur de parcours, contenu public par lien) | Non (15 novembre 2026, décision D1 du plan [`2026-11-15-gestion-equipe-mobile.md`](plans/archive/2026-11-15-gestion-equipe-mobile.md)) | Ces réglages ne se modifient qu'en administration de plateforme, que l'app n'a pas : ils restent au site (`TeamForm.tsx`, `PATCH /api/admin/teams/{id}/attributes`). Les Paramètres d'équipe de l'app (`MOB-166`) ne montrent que la visibilité, modifiable si `visibilityEditable` ou pour l'administration de la plateforme. Seul écart fonctionnel voulu entre l'app et le site sur la gestion d'équipe |
 
 ---
 

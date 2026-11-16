@@ -96,7 +96,8 @@ void main() {
       // The search goes to the server: by name, then one that matches nothing.
       await modules.teamPlaces.search('Gare routière');
       await modules.teamPlaces.waitUntilPlaceIsGone(cafeId);
-      expect(modules.teamPlaces.showsPlace(stationId), isTrue);
+      // The café can leave before the station is back: the search reloads the list.
+      await modules.teamPlaces.waitUntilPlaceIsShown(stationId);
       await modules.teamPlaces.search('zzz-aucun-lieu');
       await modules.teamPlaces.waitUntilSearchIsEmpty();
       await modules.teamPlaces.search('');

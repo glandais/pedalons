@@ -25,7 +25,7 @@ import '../../providers/team_providers.dart';
 /// routeur, qui ne lit pas l'authentification.
 ///
 /// **Chaque ligne ouvre un écran de l'app** : les lots du plan
-/// `docs/plans/2026-11-15-gestion-equipe-mobile.md` les y ont amenés un à un,
+/// `docs/plans/archive/2026-11-15-gestion-equipe-mobile.md` les y ont amenés un à un,
 /// et plus aucune n'ouvre le site depuis le dernier (ledger `MOB-169`).
 class TeamAdminPage extends ConsumerWidget {
   const TeamAdminPage({super.key, required this.teamSlug});

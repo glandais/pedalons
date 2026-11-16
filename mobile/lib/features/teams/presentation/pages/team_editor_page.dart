@@ -510,6 +510,9 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
   Future<void> _editSlug() async {
     final TeamDetailDto team = _team!;
     if (_saving || _blocked) return;
+    // Même raison que pour la suppression : la feuille rendrait le focus au
+    // champ du formulaire en se refermant.
+    FocusScope.of(context).unfocus();
     if (_dirty && !await _confirmDiscard()) return;
     if (!mounted) return;
     final String? slug = await showSlugEditSheet(
@@ -571,6 +574,10 @@ class _TeamEditorFormState extends ConsumerState<_TeamEditorForm>
   Future<void> _delete() async {
     final TeamDetailDto team = _team!;
     if (_saving || _blocked) return;
+    // Avant la confirmation : en se refermant, elle rendrait le focus au champ
+    // qui l'avait, le clavier remonterait sur « Mes équipes » et la SnackBar
+    // n'y aurait plus la place (Patrol `team_settings_test`).
+    FocusScope.of(context).unfocus();
     final bool confirmed = await confirmDestructive(
       context,
       title: 'teams.editor.danger.deleteTitle'.tr(),

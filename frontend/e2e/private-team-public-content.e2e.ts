@@ -18,7 +18,7 @@ import { hydrated, pageAs, pageHydrated } from './support/ui'
 
 /**
  * The public content of a private team (docs/LEDGER_*.md WEB-166, API-176; plan
- * `docs/plans/2026-11-11-visibilite-contenu-equipe-privee.md` §5).
+ * `docs/plans/archive/2026-11-11-visibilite-contenu-equipe-privee.md` §5).
  *
  * A platform admin lets a private team publish by link (`publicContentAllowed`, decision D2). Its
  * public ride is then readable by anyone holding the link, rendered from the ride's embedded team

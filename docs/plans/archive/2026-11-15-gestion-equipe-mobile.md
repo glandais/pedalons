@@ -1,12 +1,10 @@
 # Créer et gérer une équipe dans l'application mobile
 
 Écrit le 15 novembre 2026. **État : les cinq lots sont écrits (15 novembre 2026 : `MOB-165`,
-`MOB-166`, `MOB-167`, `MOB-168`, `MOB-169`, et `WEB-184`, livré). Restent à faire : lancer les
-sept tests Patrol écrits avec eux et jamais lancés (`team_create_test`, `team_settings_test`,
+`MOB-166`, `MOB-167`, `MOB-168`, `MOB-169`, et `WEB-184`, livré). Les sept tests Patrol écrits avec eux (`team_create_test`, `team_settings_test`,
 `team_admin_members_test`, `team_places_test`, `team_reports_test`, `team_tags_admin_test`,
-`team_pages_admin_test` — voir `mobile/patrol_test/README.md`)
-et pousser les formulaires des stores (App Store Connect, Play Console) avec ceux de
-`MOB-159`.** Ce que les lots ont tranché en codant
+`team_pages_admin_test`) sont verts le 16 novembre 2026 sur iOS et Android, et les formulaires
+des stores sont partis avec ceux de `MOB-159` le même jour : plan exécuté, archivé.** Ce que les lots ont tranché en codant
 est noté « Fait » dans les sections 4, 5, 6 et 7. Ledger : `MOB-165` (socle et
 création), `MOB-166` (paramètres et webhook), `MOB-167` (membres et invitations), `MOB-168` (lieux et
 signalements), `MOB-169` (tags et pages), `WEB-184` (libellé `USER_TEAM_LIMIT_REACHED`). Numéros
