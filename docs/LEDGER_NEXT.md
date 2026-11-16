@@ -879,13 +879,6 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       magika 0.7.0, qui ne l'amène plus (`SEC-53`) : guava n'arrive plus qu'en test, en 33.6.0-jre, par
       `quarkus-junit` → `maven-embedder`, hors de l'image.
 
-- [ ] `API-208` **Retirer la déclaration explicite de `fit-kotlin-sdk-jvm` (S)** — `backend/pom.xml`
-      la déclare en 21.218.0 pour compiler `TrackAttachmentSanitizer` et `FitClockBackfill` (et cinq
-      tests) contre `com.garmin.fit` : `vcyclist-fit` la publie en scope `runtime` (`implementation`
-      Gradle, voulu). Sa version doit suivre celle de vcyclist à la main, et Dependabot la monte seule
-      (PR 445). À retirer quand vcyclist publiera de quoi l'aligner (scope `compile` ou BOM importé),
-      en même temps que la montée de `vcyclist.version`.
-
 - [ ] `API-139` **`GET /api/admin/teams` compte les membres ligne par ligne (S)** —
       `AdminTeamService.listTeams` appelle `userTeamRepository.count` pour chaque équipe de la page
       (`service/admin/AdminTeamService.java`, dans le `map` des lignes) : une requête par ligne, contre l'invariant des

@@ -4635,6 +4635,18 @@ voyage plafonné à 12 étapes par `kTripTrackStageCap`) lisent la géométrie c
 
 Ce qui reste ouvert (`MAX_BULK_SLUGS` comme seul garde-fou) est `API-27`.
 
+- `API-208` **`fit-kotlin-sdk-jvm` aligné sur vcyclist par son BOM** (16 novembre 2026, contrat
+  inchangé) — `backend/pom.xml` déclarait le SDK en 21.218.0 en dur pour compiler
+  `TrackAttachmentSanitizer` et `FitClockBackfill` contre `com.garmin.fit` (vcyclist-fit le publie en
+  `runtime`, `implementation` Gradle voulu), et Dependabot le montait seul (PR 445, 21.221.0). vcyclist
+  6.14.0 publie `vcyclist-bom` (les `vcyclist-*` et le `fit-kotlin-sdk` contre lequel ils sont
+  construits), importé dans le `dependencyManagement` ; `vcyclist-engine-jvm`, `vcyclist-map` et
+  `fit-kotlin-sdk-jvm` n'ont plus de `<version>`. 6.14.0 n'ajoute que le BOM. Vérifié par
+  `mvn dependency:tree` (tout en 6.14.0, le SDK en 21.218.0) et `test-compile`. **À ne pas défaire** :
+  la déclaration de `fit-kotlin-sdk-jvm` reste (le scope `runtime` hérité n'y suffit pas à compiler),
+  sans version ; `vcyclist-bom` est le seul BOM à gérer des artefacts `io.github.glandais` ;
+  Dependabot ne suit plus que `vcyclist.version`.
+
 ---
 
 ### `API-66` Compteurs d'activité sur `TeamDetailDto` (contrat `10.6.0`)
