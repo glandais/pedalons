@@ -651,9 +651,8 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       la build 98, une 1.1.3), nouveautés de `mobile/metadata/version/1.2.0/` réécrites pour couvrir
       aussi l'écriture dans l'app (publications, annonces, voyages, éditeur riche, tracé de
       parcours, gestion d'équipe) et poussées par `asc metadata apply` ; `asc validate` : aucune
-      erreur ni alerte. Reste : les déclarations de `MOB-159` (App Privacy et Sécurité des
-      données, entrées de `MOB-165` à `MOB-169` comprises), soumettre, puis publier à la main après
-      l'approbation. Écart assumé le 16 novembre : soumission possible avant le 28 novembre malgré
+      erreur ni alerte. Déclarations de `MOB-159` faites le même jour. Reste : soumettre,
+      puis publier à la main après l'approbation. Écart assumé le 16 novembre : soumission possible avant le 28 novembre malgré
       les recherches encore présentes dans le journal d'accès (`MOB-159`, point 3).
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
@@ -680,15 +679,13 @@ n'ont aucun appelant d'écran).
 - [ ] `MOB-159` **Éditeur d'annonce : déclarer l'adresse sur les deux stores, recette sur appareil et
       test Patrol (S)** — la déclaration est **tranchée et écrite dans le dépôt** (voir la part
       livrée sous le même ID) ; reste ce qui se fait hors du dépôt ou sur un appareil.
-      **Avant la prochaine soumission** : (1) App Store Connect → App Privacy, ajouter *Contact Info
-      → Physical Address* (lié, sans suivi, App Functionality) — `app-privacy.json` le porte en
-      `PHYSICAL_ADDRESS`, jeton déduit des autres entrées et **jamais passé par `asc`** : le
-      vérifier à l'application, comme `OTHER_DATA` l'avait été ; (2) Play Console → Sécurité des
-      données, importer `data-safety.csv` (*Informations personnelles → Adresse* : collectée, non
-      partagée, non éphémère, facultative, fonctionnement de l'appli). (3) Rien à faire, seulement une date : le journal d'accès ne garde plus le texte des recherches depuis le
-      14 novembre (voir la part livrée), mais les lignes écrites avant ne s'effacent par rotation
-      que le **28 novembre 2026** — ne pas soumettre avant en affirmant « pas de *Search History* »,
-      ou l'assumer. Ensuite, à la main, en simple membre,
+      **Déclarations faites le 16 novembre 2026** : App Store Connect → App Privacy publiée avec
+      *Contact Info → Physical Address* (lié, sans suivi, App Functionality), douze types comme
+      `data-safety.md` §4 ; Play Console → Sécurité des données, `data-safety.csv` importé à la main
+      (*Informations personnelles → Adresse*) et envoyé en examen. Elles couvrent aussi les entrées
+      d'inventaire #26 à #32 de `MOB-165` à `MOB-169`, qui n'ajoutent aucun type. Le journal d'accès
+      garde des recherches écrites avant le 14 novembre jusqu'au 28 novembre 2026 : écart assumé le
+      16 novembre, la 1.2.0 peut être soumise avant. Ensuite, à la main, en simple membre,
       clair et sombre : publier une annonce avec photo et position, la retrouver en brouillon, la
       publier, la modifier, la dépublier, la supprimer ; en administrateur, modifier l'annonce
       d'une autre personne **sans toucher à la position** et vérifier côté auteur que le point
