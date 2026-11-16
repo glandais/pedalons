@@ -63,8 +63,13 @@ services:
   # POST /api/admin/route-generator/overlays/refresh with force on each environment
   # (docs/OPERATIONS.md "The route generator"). The team overlays live under the volume below,
   # encrypted with a key of each environment, which this stack never sees stored.
+  # API-207, lot 6: 1.9.1 (api 1.9 unchanged) maps the graph and loads only the tiles around a
+  # request, under one memory budget (ORD_GENERATOR__MEMORY_BUDGET_MB, 800 by default): it serves
+  # the graph of France (four files, about 4.1 GB) where 1.9.0 needed 15 GB. Measured in a 2G
+  # container with 18 team overlays: 1.10 GB of anonymous memory at most, without the altitude
+  # asked alongside (docs/LEDGER_*.md OPS-61).
   osm-route-details:
-    image: ghcr.io/glandais/osm-route-details:1.9.0
+    image: ghcr.io/glandais/osm-route-details:1.9.1
     networks:
       - shared
     environment:
@@ -79,6 +84,10 @@ services:
       ORD_CACHE__MEMORY_STREETS_MB: "256"
       # Meme glibc, meme cause que pour le backend (docs/LEDGER_*.md OPS-56).
       MALLOC_ARENA_MAX: "2"
+      # Large blocks (windows, team builds) go back to the kernel when freed: 1.74 GB of anonymous
+      # memory without it, 1.10 with (osm-route-details, lot 6). The image sets it too; kept here
+      # so that it shows next to the limit it protects.
+      MALLOC_MMAP_THRESHOLD_: "1048576"
     volumes:
       - osm-route-details-data:/var/cache/osm-route-details
       - ./data/osm-route-details-graph:/var/lib/osm-route-details/graph:ro

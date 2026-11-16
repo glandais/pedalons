@@ -850,15 +850,23 @@ logs it.
   of that (`allowed_namespaces`, an encrypted network) is open in ledger `SEC-52`. The engine's port
   9090 (`/metrics`) is never published.
 
-**The graph, in the shared stack.** `docker-compose.shared.yml` runs `osm-route-details:1.9.0`
+**The graph, in the shared stack.** `docker-compose.shared.yml` runs `osm-route-details:1.9.1`
 with `./data/osm-route-details-graph` mounted **read only**. A graph is four files built on a
 workstation (the graph, the `road` and `gravel` views, the covered polygon: about 125 + 65 + 92 MB
-for Pays de la Loire), named from one stem: `<name>.ordg`, `<name>.road.ordv`,
+for Pays de la Loire, 1.85 + 0.87 + 1.43 GB for France), named from one stem: `<name>.ordg`, `<name>.road.ordv`,
 `<name>.gravel.ordv`, `<name>.poly`. The stem is `ORD_GRAPH_NAME` in `~/shared/.env`, which `scripts/deploy.sh --shared`
 already reads; without it the generator is off (the service starts and serves the altitude, and the
 generator answers `data_unavailable`, so `GENERATOR_UNAVAILABLE`). `scripts/deploy.sh --shared`
 creates `./data/osm-route-details-graph` before `docker stack deploy`: Swarm does not create the source of a
 bind mount, and a task whose source is missing does not start (the altitude would go with it).
+
+**Building a graph** (workstation, in a checkout of osm-route-details; France takes about
+80 s and 4.4 GB of memory for the graph, 47 s and 6.2 GB for the views, never on the server):
+`ord-graph-build build --pbf <extract>.osm.pbf --region <name>` then `ord-graph-build views --graph
+<file>.ordg --views road,gravel`; the polygon is the `.poly` Geofabrik publishes beside the extract.
+Since 1.9.1 the service maps the files and loads only the tiles around a request, under
+`ORD_GENERATOR__MEMORY_BUDGET_MB` (800 by default): the size of the graph no longer drives its memory,
+but the page cache must be able to hold the tiles in use, so keep the files on a local disk.
 
 1. Copy the four files, mode 0444, into `~/shared/data/osm-route-details-graph/` **under a new
    name** (for instance the date of the data: `pdl-2026-11-16`); never over the files of the graph
@@ -901,7 +909,7 @@ No failure deletes an overlay: the old one serves until it expires, seven nights
   instance). Swagger UI in `%dev`, or `curl` with an admin's token. Use it after a deploy that
   changes the format of what is sent (the digest then differs for everyone), after a new graph, a
   rotated key, a restored database, or to try the engine on the e2e or workstation stack.
-- **First start**: the engine ready (image 1.9.0, graph files, `ORD_GRAPH_NAME`), the key in each
+- **First start**: the engine ready (image 1.9.1, graph files, `ORD_GRAPH_NAME`), the key in each
   `.env`, the backend deployed; then run the trigger with `force`, rather than wait for the night.
   Until a team's overlay exists it gets `GENERATOR_NETWORK_NOT_READY` below discovery.
 - **Follow it**: the log lines `Route generator overlays: …` (one `INFO` per deposit with the team's

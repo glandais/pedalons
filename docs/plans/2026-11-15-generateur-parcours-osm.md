@@ -601,6 +601,32 @@ registre `API-206` et `OPS-60` (livrés), `WEB-179`, `SEC-52` (ouverts).
 - **À ne pas refaire** : les migrations `V91` et `V93`, déjà livrées, ne se retouchent pas, même
   pour corriger un lien dans un commentaire : leur somme de contrôle Flyway changerait.
 
+## 12 sexies. Lot 6 : la France entière (17 novembre 2026)
+
+Conception et relevés dans osm-route-details : `docs/design/technique/ord-loops-lot6.md` et
+`ord-loops-lot6-mesures.md` ; registre `API-207`, mise en service `OPS-61`.
+
+- **Mesuré d'abord** : graphe de la France (extrait du 15 novembre 2026) de 18,4 millions de nœuds
+  et 23,5 millions d'arêtes, 1,85 Go, construit en 80 s (pic 4,4 Go) ; vues « route » 8,0 millions
+  d'arêtes (0,87 Go) et « gravel » 13,2 millions (1,43 Go). Les extrapolations du lot 0 bis
+  tenaient. Le moteur 1.9.0, qui recopiait graphe et vues à plat, demandait 8 Go pour une requête
+  et 15 Go en service : hors d'atteinte du conteneur de 2G.
+- **Fait** (osm-route-details `1.9.1`, api 1.9 et formats de fichiers inchangés) : le graphe de
+  base est lu dans le fichier projeté ; le moteur ne monte que la fenêtre de tuiles autour de la
+  requête, renumérotée, dans un cache borné par un budget unique (800 Mo par défaut) ; les données
+  d'une équipe se construisent autour de son seul réseau (65 Mo au pic pour la plus grosse, au lieu
+  de 748) ; le contrôleur ne reconstruit plus ses tables à chaque requête.
+- **Prouvé** : mêmes parcours que le moteur à plat sur les 969 requêtes du banc de la région (0
+  différence, 0 violation) et sur 69 générations de la France par HTTP contre le service 1.9.0 ;
+  service France en conteneur Docker de 2 Gio puis 1,5 Gio, 18 équipes sous deux clés : 1,10 Go
+  d'anonyme au plus, aucun arrêt pour mémoire, aucun 503 ni 504 en série et à 4 clients ;
+  démarrage en 8,5 s, fenêtre à froid sous 0,75 s, à chaud 2 à 4 % plus lent que le moteur à plat.
+- **Pas prouvé** : l'altitude sollicitée dans le même conteneur ; un disque lent ; les distances
+  au-delà de 200 km (le moteur est conçu jusqu'à 400, le contrat reste à 200) ; les derniers
+  relevés en conteneur sont ceux de l'agent qui a codé, relus mais pas rejoués.
+- **Reste au propriétaire** : la limite du conteneur (2G ou 3G), le budget du générateur, et
+  relever ou non la distance maximale.
+
 ## 13. Risques
 
 - **La qualité d'OSM hors des routes roulées** : accès privés mal tagués, chemins disparus. Le
