@@ -82,8 +82,8 @@ export interface Dataset {
  * fires the queries its data calls for — a group's route, the places a ride form has selected, a
  * stage's route — and a query that never fires is a prefetch nobody audits. So the team has a
  * logo, a location and a picture; the ride its own route, a start and an end place, a group with a
- * route of its own, a leader and a rider, and a group with none of them; the trip two stages with a
- * route each, the first with its places, and a rider; the ad a picture and a location; the post and
+ * route of its own, a leader and a rider, and a group with none of them; the trip three stages with a
+ * route each, the first with its places, the third leaving from the first's, and a rider; the ad a picture and a location; the post and
  * the page a picture; the template two groups; the rides, trips, posts, routes and ads a tag each;
  * every commentable entity a comment.
  *
@@ -93,17 +93,13 @@ export interface Dataset {
  * eight months, unpaginated — after a few runs on the same database, thousands on the same week,
  * which `@mantine/schedule` lays out in quadratic time: a 20 s server render, and a timeout.
  */
-export async function buildDataset(label: string): Promise<Dataset> {
-  const [owner, outsider, member, organizer, teamAdmin, platformAdmin] = await Promise.all([
-    newUser(`Fondatrice ${label}`),
-    newUser(`Passante ${label}`),
-    newUser(`Membre ${label}`),
-    newUser(`Organisatrice ${label}`),
-    newUser(`Admin équipe ${label}`),
-    newUser(`Admin plateforme ${label}`),
-  ])
-  await setPlatformRole(platformAdmin.user.id, 'PLATFORM_ADMIN')
-  const created = await newTeam(owner, `Écrans ${label}`, { visibility: 'PUBLIC' })
+export async function buildDataset(
+  label: string,
+  { accounts, teamName = `Écrans ${label}` }: DatasetOptions = {}
+): Promise<Dataset> {
+  const { owner, outsider, member, organizer, teamAdmin, platformAdmin } =
+    accounts ?? (await freshAccounts(label))
+  const created = await newTeam(owner, teamName, { visibility: 'PUBLIC' })
   await addMember(platformAdmin, created.slug, member, 'MEMBER')
   await addMember(platformAdmin, created.slug, organizer, 'ORGANIZER')
   await addMember(platformAdmin, created.slug, teamAdmin, 'ADMIN')
@@ -181,6 +177,8 @@ export async function buildDataset(label: string): Promise<Dataset> {
           endPlaceId: place.id,
         },
         { name: `Seconde étape ${label}`, routeSlug: otherRoute.slug },
+        // Same start as the first: two stages sharing a departure (one weather point, docs/LEDGER_*.md WEB-190).
+        { name: `Troisième étape ${label}`, routeSlug: route.slug, startPlaceId: place.id },
       ],
       { visibility: 'PUBLIC', tagIds: [tags.TRIP.id] }
     ),
@@ -260,6 +258,32 @@ export async function buildDataset(label: string): Promise<Dataset> {
       previewId: preview.id,
     },
   }
+}
+
+/** Who the dataset is built for: its owner, and a session for every signed-in role. */
+export type DatasetAccounts = Dataset['sessions'] & { owner: AuthResponse }
+
+export interface DatasetOptions {
+  /**
+   * Accounts that already exist (the stable ones of the manual recette, `recette/seed.recette.ts`),
+   * `platformAdmin` already holding the role. Without them, fresh ones are created and a fresh
+   * platform admin is promoted — which {@link releaseDataset} takes back.
+   */
+  accounts?: DatasetAccounts
+  teamName?: string
+}
+
+async function freshAccounts(label: string): Promise<DatasetAccounts> {
+  const [owner, outsider, member, organizer, teamAdmin, platformAdmin] = await Promise.all([
+    newUser(`Fondatrice ${label}`),
+    newUser(`Passante ${label}`),
+    newUser(`Membre ${label}`),
+    newUser(`Organisatrice ${label}`),
+    newUser(`Admin équipe ${label}`),
+    newUser(`Admin plateforme ${label}`),
+  ])
+  await setPlatformRole(platformAdmin.user.id, 'PLATFORM_ADMIN')
+  return { owner, outsider, member, organizer, teamAdmin, platformAdmin }
 }
 
 /** One tag of every kind the team's content takes, created by its admin. */

@@ -230,7 +230,10 @@ export default defineConfig(({ mode, isSsrBuild }) => {
     },
     server: {
       port: 5173,
-      https: loadHttpsCerts(),
+      // VITE_DEV_HTTP: plain http, for a phone reaching the dev server over `adb reverse` — it
+      // does not trust the mkcert CA, and `localhost` is a secure origin anyway
+      // (scripts/recette.sh dev).
+      https: env.VITE_DEV_HTTP ? undefined : loadHttpsCerts(),
       proxy: {
         '/api': {
           target: apiTarget,

@@ -32,6 +32,7 @@ notifications alike. Rephrase rather than agree: « Vous participez » not « Vo
 | Security findings still open | the `SEC` section of [docs/LEDGER_NEXT.md](docs/LEDGER_NEXT.md) (context in [docs/ledger/SEC/README.md](docs/ledger/SEC/README.md)); the September 2026 audit (H/M/L/V IDs, verified controls) is archived in [docs/plans/archive/2026-09-security-audit.md](docs/plans/archive/2026-09-security-audit.md) |
 | Infrastructure, CI/CD and code-quality audit (February 2026, statuses partly refreshed on 2026-09-29) — some rows still open; not the security reference | [docs/plans/2026-02-14-project-audit.md](docs/plans/2026-02-14-project-audit.md) |
 | TLA+/Lean models of backend concurrency (October 2026), what each established, how to rerun them | [docs/formal/README.md](docs/formal/README.md) |
+| Manual recette by a person or an agent (stable `.test` accounts, the e2e stack local or on optiplex, Chrome on the Android phone over CDP, the app on the Android phone or the iPhone) | `scripts/recette.sh` + [frontend/e2e/README.md](frontend/e2e/README.md#manual-recette-scriptsrecettesh) |
 | Deployment, backups, restore (the runbook) | [docs/OPERATIONS.md](docs/OPERATIONS.md) |
 | What the product does, for whom | [docs/PRODUCT_SHEET.md](docs/PRODUCT_SHEET.md) |
 | Biketeam → Pédalons migration, team by team, server to server over HTTPS (contract with biketeam, operations) | [docs/plans/2026-09-22-biketeam-live-migration.md](docs/plans/2026-09-22-biketeam-live-migration.md) + [docs/MIGRATE_BIKETEAM.md](docs/MIGRATE_BIKETEAM.md) |

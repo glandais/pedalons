@@ -73,6 +73,78 @@ field, give the dataset that field.
   calendars' month windows) can be covered on the 4th and have a gap on the 27th; that is a unit
   test's job (`useCalendarDateRange.test.ts`), not this one's.
 
+## Manual recette: `scripts/recette.sh`
+
+The same stack, for a person or an agent testing by hand, in desktop Chrome, in Chrome on a real
+Android phone, and in the app on it:
+
+```bash
+scripts/recette.sh up            # the e2e stack
+scripts/recette.sh seed          # stable accounts + « Équipe Recette », built once (idempotent)
+scripts/recette.sh accounts      # who to sign in as: address, password, role
+scripts/recette.sh web-android /equipes/equipe-recette   # Chrome on the phone, CDP on localhost:9222
+scripts/recette.sh mobile        # flutter run on the phone, API on the stack
+scripts/recette.sh unplug        # take the adb forwards back
+```
+
+- **Accounts are stable, not secret**: `fondation@`, `admin-equipe@`, `organisation@`, `membre@` and
+  `hors-equipe@recette.test`, all with the password `recette-pedalons`; the platform admin is the
+  bootstrap `admin@e2e.test` (`e2e-admin-password`). `.e2e/recette.json` lists them. OTPs and links
+  are in mailpit. Never use a real account or a real password for a recette.
+- **The team is `routes-render`'s dataset** (`buildDataset`, given these accounts): a public team
+  with a ride and its groups, routes, a trip, a post, an ad, a page, a template, tags, comments.
+  When the dataset grows for the SSR check, the recette gets it too.
+- **The seed runs through Playwright** (`playwright.recette.config.ts`, `e2e/recette/*.recette.ts`,
+  which the suite never matches) for the global-setup and the helpers — so it writes on the stack:
+  same courtesy as a test run when another session uses it.
+- **The phone reaches the stack on its own `localhost`** (`adb reverse` of the app and mailpit
+  ports): same URLs as on the workstation, a secure origin without a certificate. It is the one
+  physical device adb sees, or `RECETTE_DEVICE`.
+- **Chrome on the phone is its own profile**: `connectOverCDP` gives `browser.contexts()[0]`,
+  the phone owner's cookies and tabs included — sign out before switching accounts.
+- **`mobile` replaces the store's app**: a debug build is not signed like the Play Store's, so
+  `flutter run` fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE` and then uninstalls the installed
+  app, its session and local data with it. `mobile` therefore stops while an app installed by a
+  store is on the phone (`pm list packages -i`), unless `RECETTE_REPLACE_APP=1` or a yes on a
+  terminal; reinstall it from the store after the recette. On iOS the same refusal applies to an
+  app not `builtByDeveloper` (App Store, TestFlight), read with `devicectl device info apps`.
+- **`mobile --ios`, the plugged-in iPhone**: iOS has no `adb reverse`, so the iPhone cannot reach the
+  stack on its own `localhost`. `scripts/recette-lan-relay.py` relays it onto the local network,
+  port 8191 on every interface, until `scripts/recette.sh relay stop` — it outlives `flutter run`,
+  since the installed app keeps calling the API (an existing relay is reused) —, rewriting `Host` to
+  `localhost:8190` so the backend finds its one domain (no alias in the database). The app's
+  `API_BASE_URL` is this Mac's Bonjour name (`scutil --get LocalHostName`.local): the iPhone must be on
+  the same network, and iOS asks once for the local network. The relay runs on Apple's
+  `/usr/bin/python3` on purpose: the macOS firewall lets signed built-in software accept
+  connections, and silently drops those to Homebrew's node (handshake accepted, request lost).
+  **Without Rosetta it builds `--profile`**: flutter attaches to a debug app through its bundled
+  `iproxy`, an x86_64 binary, so the attach fails and a debug app cannot run unattached; a profile
+  build runs on its own, without hot reload. `sudo softwareupdate --install-rosetta` brings debug
+  back (then `--debug`). The `phone` MCP server does not see an iPhone (no WebDriverAgent): the
+  iOS recette is done by hand.
+- **A fix not built yet**: `scripts/recette.sh dev` serves the working tree with Vite (hot reload,
+  plain http on 5174 through `VITE_DEV_HTTP`, since the phone does not trust the mkcert CA) against
+  the stack's API; `web-android --dev [path]` opens it on the phone (`adb reverse` of 5174 too).
+  Mail links still point at the stack's own app (8190).
+- **A look at a screen**: `scripts/recette.sh look <desktop|iphone|pixel|cdp> <url|path> <shot.png>
+  [--boxes <css>]… [--click <text>] [--wait <css>] [--full] [--width <px>]`, with `--base dev`
+  first to aim at `dev`. It takes a screenshot and prints the boxes of the matched elements as one
+  JSON line (`e2e/recette/look.mjs`). `iphone` is Chromium's emulation (393 px, touch): there is no
+  WebKit nor Chrome on iOS to drive here. `cdp` is the phone's real Chrome: its only context is the
+  phone's own profile with all its tabs, so the page is found by URL, never `pages()[0]`.
+- **Reset**: `scripts/recette.sh reset` empties the stack; `seed` again afterwards.
+- **On another machine**: `RECETTE_HOST=optiplex scripts/recette.sh up` syncs the working tree
+  there, starts the stack there and opens an SSH tunnel bringing ports 8190 and 18025 to this
+  machine's loopback — everything else above is unchanged. `build [frontend|backend]` after a code
+  change (sync + build over there), then `up`; `tunnel` alone reopens the tunnel to a stack already
+  up (`tunnel close` closes it); `down` closes it and stops the stack. **The tunnel is shared by
+  every session of this machine**: `tunnel close` and `down` refuse while something uses it (an
+  established connection other than ssh's own, or a phone still `adb reverse`d to 8190) — ask its
+  user, or `--force`. While the tunnel is open the
+  host is remembered (`.e2e/recette-host`): later commands need no `RECETTE_HOST`. The local `tribly-e2e` must
+  be down (same ports). The Stadia Maps key travels on ssh's stdin. Details of the machine: the
+  `pedalons-e2e-optiplex` skill.
+
 ## In CI
 
 `.github/workflows/e2e.yml` runs the whole suite **every night on `develop`** and **on demand**

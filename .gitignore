@@ -103,6 +103,7 @@ frontend/*.pem
 # Playwright (frontend/e2e): saved sessions, seed, traces and HTML report
 frontend/e2e/.auth/
 frontend/e2e/.results/
+frontend/e2e/.results-recette/
 frontend/e2e/.report/
 
 # Store screenshots: demo account passwords and raw/framed captures
