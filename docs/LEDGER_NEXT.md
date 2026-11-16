@@ -645,15 +645,16 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       Une fois l'accès obtenu : promouvoir la release `alpha` depuis la Console plutôt que
       `fastlane deploy`, qui renverrait le même versionCode. Fiche (textes 1.1.0) et captures
       refaites sur l'app du 25 octobre poussées par `fastlane listing` le 25 octobre 2026.
-- [ ] `MOB-110` **Publier la 1.1.3 en bêta, puis sur l'App Store (XS)** — embarque la flèche
-      orientée du vent à la place du point cardinal écrit, et Flutter 3.47.9. `pubspec.yaml` est en
-      `1.1.3`, la fiche et les nouveautés dans `mobile/metadata/version/1.1.3/` (fiche recopiée de
-      la 1.1.2 ; nouveautés complétées de `MOB-111` à `MOB-115`). Version 1.1.3 créée dans App Store
-      Connect le 7 novembre 2026 (`MANUAL`, id `14f5c3e9-ceb2-42e5-9666-c5202da0134c`), nouveautés
-      poussées par `asc metadata apply` ; description, mots-clés et détail de revue recopiés de la
-      1.1.2 par App Store Connect. Build 97 attaché le même jour (`asc versions attach-build`) ;
-      `asc validate` : aucune erreur ni alerte. Reste : soumettre, puis publier à la main après
-      l'approbation.
+- [ ] `MOB-110` **Publier la 1.2.0 sur l'App Store (XS)** — la version App Store Connect 1.1.3,
+      jamais soumise, est devenue la 1.2.0 (`MOB-147`, id `14f5c3e9-ceb2-42e5-9666-c5202da0134c`,
+      `MANUAL`). Le 16 novembre 2026 : **build 107** attachée (tag `mobile.1.2.0.107`, à la place de
+      la build 98, une 1.1.3), nouveautés de `mobile/metadata/version/1.2.0/` réécrites pour couvrir
+      aussi l'écriture dans l'app (publications, annonces, voyages, éditeur riche, tracé de
+      parcours, gestion d'équipe) et poussées par `asc metadata apply` ; `asc validate` : aucune
+      erreur ni alerte. Reste : les déclarations de `MOB-159` (App Privacy et Sécurité des
+      données, entrées de `MOB-165` à `MOB-169` comprises), soumettre, puis publier à la main après
+      l'approbation. Écart assumé le 16 novembre : soumission possible avant le 28 novembre malgré
+      les recherches encore présentes dans le journal d'accès (`MOB-159`, point 3).
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
 
