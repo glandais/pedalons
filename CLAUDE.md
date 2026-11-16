@@ -23,12 +23,13 @@ notifications alike. Rephrase rather than agree: « Vous participez » not « Vo
 
 | Question | Read |
 |---|---|
-| What's left to do, and what was deliberately ruled out | **[docs/LEDGER_NEXT.md](docs/LEDGER_NEXT.md)** — start here |
-| What was delivered, and the decisions not to undo | [docs/LEDGER_DONE.md](docs/LEDGER_DONE.md) |
+| What's left to do, and what was deliberately ruled out | **[docs/LEDGER_NEXT.md](docs/LEDGER_NEXT.md)** — start here: a generated index, one line per entry, each linking to its file `docs/ledger/<PREFIX>/<ID>.md` |
+| What was delivered, and the decisions not to undo | [docs/LEDGER_DONE.md](docs/LEDGER_DONE.md), the generated index of delivered entries; the text is in each entry's file |
+| How the ledger works (entry format, commands, prefix table) | [docs/ledger/README.md](docs/ledger/README.md) |
 | Product roadmap (P0 → Icebox): ideas with no ledger entry yet, nothing delivered | [docs/BACKLOG.md](docs/BACKLOG.md) |
 | Notifications (event pipeline, channels, what's left) | design in [docs/plans/archive/2026-09-18-notifications.md](docs/plans/archive/2026-09-18-notifications.md) (delivered, archived); what's left is `NOTIF-1`…`NOTIF-4`, `NOTIF-11` and `NOTIF-12`, what shipped `NOTIF-9` |
 | Why the mobile app / the site / the API look the way they do | [docs/plans/archive/](docs/plans/archive/) — executed plans, kept for their arbitrations |
-| Security findings still open | the `SEC` section of [docs/LEDGER_NEXT.md](docs/LEDGER_NEXT.md); the September 2026 audit (H/M/L/V IDs, verified controls) is archived in [docs/plans/archive/2026-09-security-audit.md](docs/plans/archive/2026-09-security-audit.md) |
+| Security findings still open | the `SEC` section of [docs/LEDGER_NEXT.md](docs/LEDGER_NEXT.md) (context in [docs/ledger/SEC/README.md](docs/ledger/SEC/README.md)); the September 2026 audit (H/M/L/V IDs, verified controls) is archived in [docs/plans/archive/2026-09-security-audit.md](docs/plans/archive/2026-09-security-audit.md) |
 | Infrastructure, CI/CD and code-quality audit (February 2026, statuses partly refreshed on 2026-09-29) — some rows still open; not the security reference | [docs/plans/2026-02-14-project-audit.md](docs/plans/2026-02-14-project-audit.md) |
 | TLA+/Lean models of backend concurrency (October 2026), what each established, how to rerun them | [docs/formal/README.md](docs/formal/README.md) |
 | Deployment, backups, restore (the runbook) | [docs/OPERATIONS.md](docs/OPERATIONS.md) |
@@ -40,32 +41,38 @@ notifications alike. Rephrase rather than agree: « Vous participez » not « Vo
 | Who may read or write a team entity (audit of 2026-11-11), and the plan to let a private team publish one by link with backend-computed permissions — delivered (contract `13.6.0`–`13.8.0`, e2e and Patrol green on 2026-11-16) | [docs/plans/archive/2026-11-11-visibilite-contenu-equipe-privee.md](docs/plans/archive/2026-11-11-visibilite-contenu-equipe-privee.md) (ledger `API-176`, `WEB-166`, `MOB-137`) |
 | The design brief the v2 came from (state *before* v2) | [docs/plans/archive/audit-ux/](docs/plans/archive/audit-ux/) |
 
-### Task workflow: `LEDGER_NEXT` → `LEDGER_DONE`
+### Task workflow: one file per ledger entry
 
-Every ledger entry carries a **stable ID, `PREFIX-n`** (`API-21`, `MOB-7`, `NOTIF-9`…). The prefix
+Every ledger entry carries a **stable ID, `PREFIX-n`** (`API-21`, `MOB-7`, `NOTIF-9`…) and lives in
+its own file, `docs/ledger/<PREFIX>/<ID>.md`, with a small frontmatter (`id`, `title`,
+`status: open | done | out`, optional `size` and `group`, `verified` or `done` dates). The prefix
 names the domain (`MOB`, `WEB`, `API`, `OPS`, `NOTIF`, `MOD`, `ISSUE`, `MIG`, `BRAND`, `SEC`, `AUD`,
-`LEGAL` — the table and the full rules are at the top of `LEDGER_NEXT.md`), and each ledger has one
-section per prefix, in the same order. References cite the **ID only**, never a title, a section or
-which of the two files holds it: « ledger `WEB-3` » in docs, `docs/LEDGER_*.md WEB-14` in code
-comments. `grep -rn 'WEB-14'` finds the entry and everything that points at it.
+`LEGAL`, `BILL` — the table and the full rules are in [docs/ledger/README.md](docs/ledger/README.md)).
+`docs/LEDGER_NEXT.md` and `docs/LEDGER_DONE.md` are **generated indexes — never hand-edit them**.
+References cite the **ID only**, never a title or a file: « ledger `WEB-3` » in docs,
+`docs/LEDGER_*.md WEB-14` in code comments (still right: both indexes name every ID).
+`grep -rn 'WEB-14'` finds the entry and everything that points at it. Read the index first, then
+only the entry files you need — never the whole directory.
 
-- **Creating a task**: add it to [docs/LEDGER_NEXT.md](docs/LEDGER_NEXT.md), in its prefix's section,
-  with the next free number of that prefix across **both** files
-  (`grep -ohE 'API-[0-9]+' docs/LEDGER_*.md | sort -t- -k2 -n | tail -1`, plus one), as a `- [ ]`
-  item that names the degradation it removes, where it lives in the code, and a size when known. A
-  large task gets its own plan in `docs/plans/` and a one-paragraph entry that links to it. Something
-  deliberately **not** done goes to « Délibérément dehors » with its reason, keeping its domain
-  prefix — never silently dropped.
-- **Resolving a task**: move the entry, in the same commit as the work, to
-  [docs/LEDGER_DONE.md](docs/LEDGER_DONE.md) **under the same ID**, in the same prefix's section —
-  rewritten in the past tense, with the date, the API version if the contract changed, the test that
-  covers it, and the decisions that must not be undone. Keep whatever part is still open in
-  `LEDGER_NEXT.md` (a split keeps the ID on one part and takes a new number for the other).
-  References need no update: they never named the file.
-- **IDs are never renumbered or reused**, and a prefix is never renamed; a new domain adds a prefix
-  to the table and a section to both files. Section headings inside a prefix are free to change.
+- **Creating a task**: `node scripts/ledger.mjs new API "Title" --size S` creates the file with the
+  next free number of that prefix. Under « Reste à faire », name the degradation it removes and
+  where it lives in the code. A large task gets its own plan in `docs/plans/` and a one-paragraph
+  entry that links to it. Something deliberately **not** done gets `status: out` with its reason
+  under « Écarté » — never silently dropped.
+- **Resolving a task**: in the same commit as the work, set `status: done` and `done: <date>`,
+  drop `verified`, and rewrite the text under « Livré » in the past tense, with the API version if
+  the contract changed, the test that covers it, and the decisions that must not be undone. If a
+  part is still open, keep `status: open` and both sections in the same file (a split into two
+  subjects keeps the ID on one and takes a new number for the other).
+- **Rereading an open entry against the code** updates its `verified` date, changed or not;
+  `node scripts/ledger.mjs stale` lists the ones not reread for thirty days.
+- **Always finish with `node scripts/ledger.mjs index`** and commit the two indexes with the entry;
+  `node scripts/ledger.mjs check` (run by CI) fails on a stale index, a malformed entry, a dead link
+  or a code comment citing an ID that does not exist.
+- **IDs are never renumbered or reused**, an entry file is never deleted, and a prefix is never
+  renamed; a new domain adds a row to the prefix table of `docs/ledger/README.md`.
 - A plan in `docs/plans/` that is fully executed moves to `docs/plans/archive/` (with its row in the
-  archive README); its leftovers go to `LEDGER_NEXT.md`.
+  archive README); its leftovers become ledger entries.
 
 Four invariants that cut across modules, each of which a plausible-looking change would break:
 

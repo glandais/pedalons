@@ -160,6 +160,23 @@ jobs:
         working-directory: ./frontend
         run: pnpm test run
 
+  # Le ledger (docs/ledger/, un fichier par entrée) : index à jour, entrées bien formées, liens
+  # vivants, et aucun commentaire de code qui cite un identifiant inexistant. Sans dépendance, il
+  # tourne à chaque fois : un renvoi peut casser depuis n'importe quel module.
+  ledger:
+    name: Ledger
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+
+      - name: Check the ledger
+        run: node scripts/ledger.mjs check
+
   mobile:
     name: Mobile (Flutter)
     needs: [changes]

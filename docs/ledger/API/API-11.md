@@ -1,0 +1,13 @@
+---
+id: API-11
+title: "Commentaires d'étape"
+status: done
+group: "Petites évolutions d'API"
+done: 2026-10-02
+---
+
+## Livré
+
+| ID | Livré | Écrans |
+|---|---|---|
+| `API-11` | **Commentaires d'étape** (2026-10-02) — **API 10.2.0** : `GET/POST /api/teams/{teamSlug}/stages/{stageSlug}/comments` et `DELETE …/{commentId}` (tag `Trip Stage Comments`), et `TripStageDto.commentCount`, nullable, absent pour qui ne peut pas lire les commentaires comme `TripDto.commentCount`. **Le chemin ne nomme pas le voyage** : le slug d'étape est unique dans l'équipe (`uk_team_entity_slug`, la règle qu'utilisait déjà `TripStageAccessChecker`) ; l'étape est lue comme son voyage (`TripService.findStageBySlug` : une étape d'un voyage brouillon, supprimé ou invisible, ou une étape supprimée, répond 404). Le fil est **propre à l'étape**, distinct de celui du voyage. Le compte de chaque étape vient du même `CommentCountLookup.forEntities` que celui du voyage, deux requêtes pour tout le détail. **Une étape n'est pas une publication**, et `CommentThreads.publicationOf` la ramène à son voyage partout où le reste de l'application en attend une : la notification `COMMENT_ON_MY_PUBLICATION` va à l'**auteur du voyage** et ouvre le voyage (`subjectType` `TRIP` — pas de `NotificationSubjectType` d'étape, qui demanderait un second slug dans l'événement stocké), un signalement de commentaire est lu selon la visibilité du voyage, et la file de modération ouvre le voyage ; les voyages de ces étapes y sont chargés par une requête de plus, seulement s'il y en a. Web : `CommentSection` sur `StageDetailPage` (membres seulement) et préchargement SSR dans `prefetchStageDetail`. Mobile : `CommentEntity.stage`, le fil sur l'écran 25 à la place du renvoi « Commenter ce voyage ». À ne pas défaire : un fil par étape, la notification et la modération rapportées au voyage. Tests : `TripStageCommentResourceTest` (le contrat commun d'`AbstractCommentResourceTest`, brouillon et étape supprimée en 404, fil distinct de celui du voyage, `commentCount` par étape), `NotificationPhase5Test.topLevelCommentOnAStage_notifiesTheTripAuthor_andOpensTheTrip`, `ModerationResourceTest.reportedCommentOnAStage_opensItsTrip` (verts au 16 octobre 2026) ; `trip_screens_test.dart` (« le fil est celui de l'étape, pas celui du voyage ») ; e2e (verts au 16 octobre 2026) : `flow-trips.e2e.ts` « a member comments on a stage… » (fil propre à l'étape, comptes, notification de l'auteur du voyage), `outsider.e2e.ts` (l'étape publique ajoutée aux entités commentées : rien dans le document serveur ni par l'API pour un visiteur ou un non-membre, et le contrôle positif du membre vérifie le préchargement SSR du fil), Patrol `stage_comments_test` | 25 |

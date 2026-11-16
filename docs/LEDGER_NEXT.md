@@ -1,1846 +1,380 @@
-# La suite — ce qui reste à faire
+# La suite : ce qui reste à faire
 
-Écrit le 27 juillet 2026 (sous le nom `NEXT.md`), au moment où la v2 mobile est terminée et le
-portage web livré à trois tâches près, et tenu à jour depuis (dernière relecture d'ensemble :
-16 novembre 2026, entrée par entrée contre le code). Ce fichier remplace les feuilles de route des plans archivés : ceux-ci gardent le
-**pourquoi** des décisions, celui-ci porte le **reste à faire**, et
-[`LEDGER_DONE.md`](LEDGER_DONE.md) ce qui est livré.
+<!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Rien ici ne bloque quoi que ce soit. C'est la propriété qui compte : la v2 est livrable en l'état,
-et chaque ligne ci-dessous supprime une dégradation nommée plutôt que de réparer une panne.
-
-**Contrat d'API au 16 novembre 2026 : `15.0.0`.** Toute évolution d'API listée ici demande un bump de
-`pedalons.api.version` dans `backend/src/main/resources/application.properties`, puis la
-régénération des deux clients (compétence `contract-first-api`).
-
-## La nomenclature
-
-**Chaque entrée porte un identifiant `PRÉFIXE-n`** (`API-21`, `MOB-7`…) : c'est lui qu'on cite,
-jamais un titre ni une position dans le fichier.
-
-- **L'identifiant ne change jamais.** Il suit l'entrée quand elle est reformulée, déplacée, ou
-  livrée : une entrée livrée passe dans [`LEDGER_DONE.md`](LEDGER_DONE.md) **sous le même
-  identifiant**, une entrée écartée passe dans « Délibérément dehors » sous le même identifiant.
-- **Un numéro ne sert qu'une fois.** Nouvelle entrée : le plus grand numéro du préfixe dans les deux
-  fichiers, plus un — `grep -ohE 'API-[0-9]+' docs/LEDGER_*.md | sort -t- -k2 -n | tail -1`. Une
-  entrée scindée garde son numéro pour une part et en prend un neuf pour l'autre ; un numéro
-  abandonné n'est pas recyclé.
-- **Un renvoi cite l'identifiant seul** — « ledger `WEB-3` » dans une doc, `docs/LEDGER_*.md WEB-14`
-  dans un commentaire de code — sans dire s'il est dans `LEDGER_NEXT.md` ou `LEDGER_DONE.md` :
-  c'est ce qui permet de livrer une entrée sans toucher à ceux qui la citent. `grep -rn 'WEB-14'`
-  retrouve l'entrée et tous ses renvois.
-- **Le préfixe dit où ranger l'entrée**, dans les deux fichiers : chacun a une section par préfixe,
-  dans le même ordre. Les sous-titres à l'intérieur d'une section sont libres et peuvent changer.
-
-| Préfixe | Domaine |
-|---|---|
-| `MOB` | Application mobile (Flutter) — dont la recette sur appareil |
-| `WEB` | Site web (React, SSR) — dont la suite e2e Playwright |
-| `API` | Contrat d'API et backend |
-| `OPS` | Exploitation, déploiement, recette du backend en conditions réelles |
-| `NOTIF` | Notifications (in-app, e-mail, push, webhook d'équipe) |
-| `MOD` | Modération et signalement de contenu |
-| `ISSUE` | « Signaler un problème » et remontée des erreurs vers GitHub |
-| `MIG` | Migration biketeam → Pédalons |
-| `BRAND` | Charte, code couleur métier |
-| `SEC` | Sécurité applicative — dont les suites de l'audit de septembre 2026 ([`plans/archive/2026-09-security-audit.md`](plans/archive/2026-09-security-audit.md)) |
-| `AUD` | Suivi de l'audit d'infrastructure de février ([`plans/2026-02-14-project-audit.md`](plans/2026-02-14-project-audit.md)) |
-| `LEGAL` | Politique de confidentialité, CGU, déclarations des stores |
-| `BILL` | Monétisation : paliers, facturation Qonto, suivi des abonnements, droits par équipe ([`plans/2026-10-17-monetisation.md`](plans/2026-10-17-monetisation.md)) |
-
-Un préfixe nouveau s'ajoute à cette table (et une section aux deux fichiers) ; un préfixe existant
-ne se renomme pas.
-
-Sources : [`plans/archive/`](plans/archive/) (les trois plans du 26 juillet, avec leur §4/§5, et
-les plans exécutés depuis),
-[`plans/archive/audit-ux/BRIEF.md`](plans/archive/audit-ux/BRIEF.md) (l'entrant de design),
-[`plans/2026-02-14-project-audit.md`](plans/2026-02-14-project-audit.md) (audit d'infrastructure,
-encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-09-security-audit.md) (audit de sécurité de septembre 2026, archivé).
-
----
+Index des **173 entrées ouvertes** et des 69 entrées écartées. Chaque entrée a son fichier
+dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
+[`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
 ## MOB — Application mobile
 
-- [ ] `MOB-174` **`maplibre_ios` appelle `setState` sur une carte déjà démontée (S)** — quitter une carte avant que son style ait fini de charger fait lever « setState() called after dispose() » à
-      `MapLibreMapStateIos._didFinishLoadingStyle` (`maplibre_ios` 0.3.7, `lib/src/map_state.dart:487`, sans garde `mounted`, inchangé en 0.3.7+1, dernière de la série 0.3) : une assertion en debug, fatale pour Patrol
-      (`ad_location_map_test`, rouge une fois dans la suite iOS du 16 novembre 2026, vert seul), et en release un `Null check` non rattrapé dans le rappel natif, qui remonte comme erreur. Le paquet
-      n'expose aucun signal « style chargé » que `PdlMap` relaierait. Pistes : signaler en amont (`maplibre.org`, dépôt `flutter-maplibre`) et attendre la 0.4 ; ou un correctif local
-      d'une ligne (`if (!mounted) return;`) par `dependency_overrides` vers une copie du paquet (le dépôt n'en vendorise aucun aujourd'hui). Pas vu sur Android le même jour.
-      **Décision du 16 novembre 2026** : rien n'est fait pour l'instant, l'entrée seule garde le constat.
-      Si `ad_location_map_test` retombe dans une suite Patrol iOS sur cette assertion, c'est ce défaut.
+Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
-- [ ] `MOB-160` **Éditeur riche : test de widget du pont et test Patrol de l'écran plein (S)** —
-      l'éditeur riche (l'éditeur Tiptap du site dans une WebView, voir la part livrée) a été essayé
-      et validé à la main le 15 novembre 2026, mais rien d'automatique ne le couvre : les tests de
-      widget écrivent dans le contrôleur du champ, la WebView n'y existe pas. À faire : un test de
-      widget du pont (`RichMarkdownEditorField`,
-      `mobile/lib/features/rides/presentation/widgets/editor/rich_markdown_editor_field.dart`) et un
-      test Patrol de l'écran plein. Tableaux : `MOB-161`. Au passage, le site transforme
-      `- [ ] tâche` en `- \[ \] tâche` (pas d'extension de cases à cocher) : à porter côté `WEB` si
-      on le garde.
-
-- [ ] `MOB-161` **Éditeur riche : insérer un tableau et en ajouter ou retirer lignes et colonnes (S)** —
-      l'éditeur riche (`MOB-160`) affiche et édite les cellules d'un tableau écrit sur le site, mais
-      n'offre rien pour en créer un ni pour ajouter ou supprimer une ligne ou une colonne : le bouton
-      « Tableau » de sa barre d'outils a été retiré, il insérait une grille 3 × 2 qu'on ne pouvait plus
-      que remplir. À faire : quand le curseur est dans un tableau, des actions de tableau (ligne avant
-      ou après, colonne avant ou après, supprimer la ligne, la colonne, le tableau) dans la barre posée
-      au-dessus du clavier, par les commandes Tiptap (`addRowAfter`, `deleteRow`, `addColumnAfter`,
-      `deleteColumn`, `deleteTable`…) exposées par `pedalons.cmd`
-      (`frontend/src/embed/mobile-editor/main.ts`) et l'état `isActive('table')` envoyé à l'app ; puis
-      remettre l'insertion. Lieu : `rich_markdown_editor_field.dart`.
-
-- [ ] `MOB-133` **Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)** — depuis `API-163`
-      (contrat `13.4.0`), `RouteDto`, `RouteDetailDto`, `RideDto` et `RideGroupDto` disent, pour
-      chacun des services de la personne en synchro automatique, si le parcours y est déjà (`state`,
-      `syncedAt`) ; l'app ne le lit pas, et « Envoyer vers l'appareil » ne dit pas que Pédalons s'en
-      charge déjà. Lieu : depuis `MOB-134`, un parcours ne s'envoie plus que par la feuille du bouton
-      « GPS », section « Vers un appareil » (`features/routes/presentation/gps_sheet.dart`, une ligne
-      par service), que le bouton ouvre partout — fiche parcours, étape, sortie, page groupe, carte de
-      son groupe, accueil, tableau de bord ; `TripStageDto.route` pour l'étape. Même
-      vocabulaire d'état que l'interrupteur (`profile.gps.autoSync.*`). Pendant web : `WEB-163`.
-
-- [ ] `MOB-151` **Plugins Android qui appliquent encore le Kotlin Gradle Plugin (S)** — le build Android sous
-      Flutter 3.50 avertit que `firebase_core` et `patrol` appliquent KGP et qu'une version future de Flutter
-      refusera de construire (« migrate to Built-in Kotlin »). L'app, elle, est déjà migrée
-      (`mobile/android/gradle.properties`). À faire : monter ces deux dépendances dès qu'une version migrée
-      existe, et revérifier l'avertissement à chaque `flutter upgrade`.
-
-- [ ] `MOB-149` **Basculer l'app sur `material_ui` / `cupertino_ui` quand les dépendances y seront (M)** —
-      (entrée citée `MOB-147` par les commits `7d2467533` et `d4f4c4796` : le numéro était déjà pris par la
-      version 1.2.0, elle a été renumérotée le 13 novembre 2026.)
-      Flutter 3.50 déprécie `package:flutter/material.dart` et `cupertino.dart`, ainsi que les délégués de
-      `flutter_localizations` ; le retrait n'est pas daté. `material_ui` est une autre implémentation : tant que
-      `markdown_widget`, `maplibre`, `photo_view` et `easy_localization` importent l'ancien Material, basculer
-      l'app seule fait cohabiter deux `Theme` et deux `MaterialLocalizations` (essai du 12 novembre 2026 :
-      55 tests en échec, « No MaterialLocalizations found » sous le `SelectionArea` de `markdown_widget`). En
-      attendant, tout passe par le barrel `mobile/lib/core/material.dart`, seul porteur de l'`ignore`. À faire
-      le moment venu : changer l'export du barrel (ou le supprimer avec `dart fix --apply
-      --code=migrate_design_widgets`), remplacer les délégués de traduction dans `app.dart`, vérifier le thème
-      sombre du markdown et les libellés Material en français. Revérifier à chaque `flutter upgrade` quelles
-      dépendances ont migré (`grep -rl "package:flutter/material.dart"` dans leur `lib/`).
-
-      **Relevé amont du 12 novembre 2026** (dernières versions de pub.dev, dépôts GitHub) :
-
-      | Dépendance | Ce qu'elle tire de l'ancien Material | Avancement |
-      |---|---|---|
-      | `markdown_widget` 2.3.2+8 | `SelectionArea`, `Theme.of`, `InkWell`, `Scaffold` (18 fichiers) — c'est elle qui casse les 55 tests | rien : ni issue ni PR, dernier commit le 17 janvier 2026 |
-      | `easy_localization` 3.0.8 | fournit les délégués `GlobalMaterialLocalizations` dépréciés | PR #791 « Handle new Delegates » ouverte le 19 octobre 2026, non fusionnée ; dernier commit le 19 janvier 2026 |
-      | `maplibre` 0.3.7 | `Theme.of`, `IconButton` dans ses widgets d'interface (échelle, attribution, boutons) | PR #672 fusionnée le 7 novembre 2026 (plus aucun import Material), pas publiée : 0.3.7+1 et 0.4.0-pre.2 les ont encore |
-      | `photo_view` 0.15.0 | `CircularProgressIndicator` et `Icons.broken_image` par défaut | rien : dernier commit le 4 septembre 2024 |
-      | `octo_image` 2.1.5 (via `cached_network_image` ; l'app verrouille 2.1.2) | `CircularProgressIndicator` et `Icons.error` par défaut | issue #50 ouverte, mainteneurs en attente (réponse du 30 octobre, d'avant la dépréciation) ; la 2.1.5 du 12 novembre n'a pas migré |
-
-      Le verrou dur est `markdown_widget`, dormant : attendre, le forker (18 fichiers d'imports) ou le
-      remplacer. `easy_localization` se contourne (`app.dart` passe sa propre liste de délégués au lieu de
-      `context.localizationDelegates`) ; `maplibre` pèse peu, l'app ayant ses propres `pdl_map_scale` et
-      `pdl_map_attribution` (usage de `MapControlButtons` non vérifié) ; `photo_view` et `octo_image` ne
-      touchent que leurs indicateurs par défaut (à vérifier : `pdl_image_viewer.dart` fournit-il les siens ?).
-      Ne bloquent pas : `go_router` et `cached_network_image`, déjà migrés, et `flutter_riverpod` (migré depuis la 3.5.0, que
-      l'app verrouille depuis novembre 2026) ; `scrollable_positioned_list` (dépôt archivé), `flutter_highlight`,
-      `maplibre_android`, `maplibre_ios`, `firebase_messaging_platform_interface` et les paquets `*_web`, qui
-      importent l'ancien Material sans thème, traduction ni widget. `patrol` et `patrol_finders` l'importaient encore au relevé (`patrol_finders` 3.7.0 ; l'app
-      verrouille `patrol` 4.11.0 et `patrol_finders` 3.6.0), sans issue amont : effet sur les e2e à évaluer avant la bascule.
-
-- [ ] `MOB-146` **Listes homogènes : recette sur appareil de `MOB-143` (S)** — les quinze règles de listes (`plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md` §10)
-  sont codées et vérifiées par tests et par les captures de la galerie `/dev/listes`, pas sur une app qui tourne. À
-  regarder : mode sombre, texte agrandi (l'invite de recherche est coupée à côté de « Créer »), anglais, feuilles de
-  portée et de prix, défilement à travers la frontière « À venir » / « Plus tôt », vue en lignes de l'agenda, liens
-  profonds `?w=past`, les trois choix de période « Plus tôt » compris (fil et agenda, petit écran). La suite Patrol,
-  elle, est passée le 12 novembre 2026 sur la pile e2e (commit `12bec34c4`, avant « Plus tôt ») :
-  69 sur 69 sur l'émulateur Android, 68 sur 69 sur le simulateur iOS puis 69 une fois `calendar_test` mis au pas — sous
-  les lignes de période et de vue, la liste de l'Agenda d'équipe en vue Calendrier n'est plus qu'une bande en bas de
-  l'écran, et le test fait défiler cette liste-là pour y trouver sa carte (`patrol_test/modules/calendar.dart`). À
-  regarder sur appareil : cette bande est-elle assez haute pour être utilisable. Pendant côté site : `WEB-176`.
-- [ ] `MOB-141` **Cartes homogènes : recette sur appareil de `MOB-139` (S)** — les règles communes des cartes sont
-      codées et vérifiées par tests et par captures de la galerie (`flutter test`, hors appareil), jamais sur simulateur
-      ni sur appareil : mode sombre, texte agrandi, petit écran, anglais, impérial, feuilles (GPS, signaler / bloquer,
-      confirmation de suppression d'un commentaire), cache réel des images. La suite Patrol, elle, a tourné le 12 novembre
-      2026 sur la pile e2e : 69 sur 69 sur le simulateur iOS, 69 sur 69 sur l'émulateur Android, et de nouveau en fin
-      de journée sur `12bec34c4` (voir `MOB-146`). Reste donc le regard
-      sur l'écran, à faire avec `MOB-135`. Points ouverts dans [`tri.md`](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) : espace des milliers,
-      « Groupe B » ou « B », indigo dans les teintes d'avatar.
-- [ ] `MOB-135` **Refonte des écrans de détail : recette sur appareil de `MOB-134` (S)** — la refonte est livrée
-      (`MOB-134`) sans avoir été regardée à l'œil : les écrans voyage, parcours et étape (lots 9 à 11) n'ont
-      **jamais été vus à l'écran** hors des tests (la sortie à plusieurs groupes l'a été une fois sur simulateur, au
-      lot 8). Les tests Patrol adaptés à la lecture (`ride_group_page_test`, `ride_leader_test`,
-      `ride_participants_map_test`, `ride_past_cancelled_test`, `ride_solo_group_test`, `report_members_test`,
-      `trip_join_leave_test`, `user_timezone_test`, modules `ride`, `trip`, `routes`, `detail_menus`) ont tourné : sur
-      la branche le 10 novembre 2026 (deux assistants corrigés, `trip.dart` et `share_sheet.dart`), puis sur `develop`
-      le 12 novembre, 69 sur 69 sur iOS et sur Android. Reste le regard sur appareil : petit
-      écran, texte à 130 %, mode sombre, impérial, anglais en 12 h, fuseau différent ; feuille GPS Android
-      (enregistrer, envoyer) et iOS (partager) ; « Connecter un compteur » vers `/profil/appareils` ;
-      `?tab=weather` depuis un lien profond à froid, qui défile jusqu'à la météo ; puces de groupe épinglées ; ce
-      que `MOB-68` et `MOB-52` laissaient à voir de la page groupe et de la météo. **Captures des stores à
-      refaire** (`mobile/screenshots/`, iPhone, iPad et Play, fr et en) : `01-home` (bouton « GPS » de la carte
-      « Ma prochaine sortie »), `01-trip` (iPad), `02-ride` (cartes de groupe), `03-weather` (la page groupe n'a
-      plus d'onglet Météo : `rideGroupWeather` la fait défiler jusqu'à sa section), `04-route` (page qui
-      défile) ; à revoir `05-dashboard` (bouton « GPS » de « Mes prochaines sorties »). Le mode captures compile
-      et pointe sur des écrans existants. Plan
-      [`2026-11-10-refonte-ecrans-detail-mobile.md`](plans/2026-11-10-refonte-ecrans-detail-mobile.md), lot 12.
-- [ ] `MOB-130` **Contrôles de carte : recette sur appareil de `MOB-129` (S)** — rien ne se voit sans
-      carte native (l'échelle et le crédit n'existent pas en test de widget), plan
-      [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md). À vérifier, iPhone SE compris et texte à 130 % : l'échelle et le ⓘ au-dessus
-      de la carte du bas (interrupteur + légende du vent) et de la carte flottante de l'onglet
-      Parcours ; la colonne juste au-dessus du ⓘ, zone sûre basse comprise (indicateur d'accueil,
-      barre de gestes Android) ; « Fermer » sous l'encoche, en portrait et en paysage, sans toucher la
-      pilule ; le crédit déplié, qui s'étend vers le haut sur la colonne ; « Autour de moi » en
-      échec, en paysage. La vignette d'étape de la page Météo et la feuille à crans de la fiche
-      parcours n'existent plus depuis `MOB-134` : la carte de ces écrans est celle de `RouteSection`
-      (44 % de l'écran), à regarder avec `MOB-135`.
-
-- [ ] `MOB-95` **La météo sur la carte : recette sur appareil des paliers 1 à 3 (S)** — rien ne se
-      teste sans carte native (`MOB-91` à `MOB-94`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md)) :
-      pastilles et goutte sur un vrai parcours à plusieurs traces ; toucher d'une pastille et
-      déplacement de la carte autour ; flèches justes sur une carte tournée à deux doigts ; pastille
-      en sombre et à 130 % de texte ; contraste du gris travers sur fond sombre ; le ⓘ des crédits
-      et ses liens, défilement de la page sur la carte, curseur lisible sur le tracé coloré ; voyage :
-      lisibilité avec beaucoup d'étapes, toutes au trait « mis en avant » ; étape : légende au-dessus
-      du réticule, place de la puce. Depuis `MOB-134`, plus d'onglet Météo ni de vignette qui
-      s'ouvre au toucher, plus d'en-tête de fiche parcours (`route_sheet_header.dart` retiré), et
-      toucher un point de la frise fait remonter la page jusqu'à la carte (tranché).
-- [ ] `MOB-86` **Points de parcours : recette sur appareil** — à faire sur Android et iOS, rien ne
-      se teste sans carte native : `icon-image: ['get','icon']` et l'`interpolate` de `icon-size`
-      posés en `layout` (jusqu'ici les expressions n'étaient qu'en `paint`) ; types des `properties`
-      rendues par `featuresInRect` ; `padding` d'`animateCamera` sur iOS (le point doit se centrer
-      au-dessus de la feuille) ; coût de 500 images d'étiquettes au premier chargement ;
-      contraste des noms en sombre sur fond satellite ; bande haute du profil sur écran étroit.
-      Repli si les expressions en `layout` cassent : une `SymbolStyleLayer` par type, `icon-image`
-      constant et filtre `['==',['get','icon'],id]`. Livré par `MOB-84`.
-
-- [ ] `MOB-154` **Générer un parcours depuis l'app (M, plus tard)** — l'app n'a ni éditeur de
-      parcours ni aperçus GPX ; un écran qui crée directement le parcours depuis une proposition
-      du générateur (`API-206`, contrat `15.0.0` : curseur `discovery`, part sur les routes de
-      l'équipe). Plan [`2026-11-13-generateur-boucles-equipe.md`](plans/archive/2026-11-13-generateur-boucles-equipe.md) §8.
-
-- [ ] `MOB-170` **Tracer et modifier un parcours sur la carte dans l'app : recette sur appareil (S)** —
-      le code est livré (voir la part livrée sous le même identifiant) et le test Patrol
-      `route_planner_test.dart` est vert le 16 novembre 2026 sur le simulateur iOS et l'émulateur
-      Android. Reste la recette sur appareil : rouvrir après « Terminer », retour Android et balayage
-      iOS, clavier de la recherche, gros GPX, thème sombre, quota refusé en cours de tracé. « Me
-      localiser » est éteint dans l'app (`kPlannerLocate`) : l'allumer change l'usage déclaré de la
-      position (`data-safety.md` n° 10, `NSLocationWhenInUseUsageDescription`), décision à prendre
-      avec `MOB-131`. Plan
-      [`2026-11-15-planificateur-parcours-mobile.md`](plans/2026-11-15-planificateur-parcours-mobile.md).
-
-
-### Recette sur une application qui tourne
-
-Rien de ce qui suit n'est couvert par les tests automatisés — soit parce que c'est du rendu, soit
-parce que ça dépend d'un vrai fournisseur (mail, tuiles, GPS), soit parce que c'est un comportement
-de première ouverture. `flutter analyze` est propre, les tests mobiles (`mobile/check.sh`) passent :
-ce qui suit est ce qu'ils ne peuvent pas dire.
-
-À faire une fois **en clair** et une fois **en sombre** (le mode sombre est *dérivé*, aucune maquette
-ne le fournit : c'est là que les erreurs de contraste apparaissent), sur un compte membre de
-`n-peloton` *et* sur `gaby` (l'échantillon d'états vides). Les volumes diffèrent selon la base : la
-base locale migrée compte 1 999 membres, 2 585 parcours et ~665 sorties sur `n-peloton` (7 membres
-sur `gaby`) ; en prod, au 16 octobre 2026, `n-peloton` compte 2 696 parcours et 557 sorties mais
-5 membres seulement — la migration biketeam (11-15 octobre) n'a pas apporté ses membres — et `gaby`
-1 membre et 106 parcours.
-
-**Passe partielle du 27 juillet 2026** : audit de code complet sur les douze écrans, plus un passage
-en direct sur simulateur (thème sombre, compte `n-peloton` — un seul compte suffit, il est admin des
-deux équipes `n-peloton` et `gaby`). Un défaut trouvé et corrigé (`MOB-21`, le `GROUP_FULL` ne
-nommait pas le groupe). Restent à faire en conditions réelles, non couvrables par la lecture de
-code : bascule de fuseau horaire sur l'appareil, ouverture d'un deeplink app tuée, mesure de fps
-(parcours et liste de 200), rendu du text scaling ×1,3/×2,0, et la capture d'écran de preuve pour le
-jeton ICS. Thème clair et compte `gaby` pas repassés en revue depuis.
-
-**Recette du 4 octobre 2026** (prod, équipe `gaby-test1`, jeu de données « Recette — … », clair et
-sombre) : seize entrées livrées, trois défauts mineurs (`MOB-44` à `MOB-46`, corrigés le même jour).
-Restaient celles qu'il faut un gros volume pour juger (`MOB-5`, `MOB-13`, `MOB-20`), `MOB-15` pas
-faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` en prod, `MOB-5` et
-`MOB-20` se recettent en prod ; `MOB-13` reste sur la base locale migrée.
-
-- [ ] `MOB-5` **Exploration de parcours (21)** — vue liste et vue carte, en prod sur `n-peloton`
-      (2 696 parcours). Le mobile rend désormais les
-      vraies tuiles `.mvt`, comme le web (jeton signé, API 2.3.0) : vérifier qu'au-delà de quelques
-      centaines de tracés la carte les montre **tous**, sans plafond ni pilule de troncature, et
-      qu'aucune requête ne part au tap sur un tracé. À faire **en build release au moins une fois** :
-      `featuresAtPoint` a un antécédent de `ClassNotFoundException` Android corrigé en maplibre
-      0.3.5, que le mode debug ne montre pas. Vérifier aussi le renouvellement du jeton : laisser la
-      carte ouverte au-delà de la durée de vie, les tuiles doivent continuer d'arriver et les
-      marqueurs rester **au-dessus** de la masse. Bascule automatique en compact au-delà de 200
-      résultats.
-- [ ] `MOB-47` **Contact du vendeur : l'échec d'envoi (500) de bout en bout** — reste de `MOB-12`,
-      recetté le 4 octobre 2026 sauf ce cas. Le comportement de l'app est déjà tenu par un test de
-      widget (`ad_detail_page_test.dart`, « un 500 est un échec franc, et le brouillon survit » :
-      `AD_CONTACT_DELIVERY_FAILED` nomme l'échec, aucune confirmation, brouillon gardé,
-      « Réessayer »). Ce qui manque est le chemin réel, que la prod ne sait pas provoquer : un test
-      Patrol sur la pile e2e (`ad_contact_test` ne couvre que l'envoi réussi, `opted_out` et
-      `rate_limited`), avec le mode chaos de mailpit (`axllent/mailpit`,
-      `docker-compose.e2e.yml`, à activer sur ce service) pour que le relais SMTP refuse l'envoi à
-      la demande. Remplace la recette manuelle (pendant web : `page.route`).
-- [ ] `MOB-13` **Trombinoscope (34)** — sur `n-peloton`, le pied annonce le total exact (1 999) à
-      chaque page. C'est le point où le mobile chargeait 20 membres sur 1 999 **sans le dire**. À
-      recetter sur la **pile locale migrée** : en prod, `n-peloton` n'a que 5 membres.
-- [ ] `MOB-15` **Profil (33)** — la recette sur appareil du profil refondu (`MOB-48` : vue
-      d'ensemble puis sous-pages `/profil/<sujet>`), seule entrée qui la décrit ; `MOB-62` n'en
-      garde que les finitions. **Vue d'ensemble** : ligne Mon compte, tirer pour rafraîchir,
-      ouverture de chaque sous-page et retour ; la cible de 44 px de `PdlChip` vaut pour toutes les
-      puces de filtre de l'app. **Préférences** : les quatre réglages (unités, fuseau horaire,
-      thème, langue) s'appliquent **immédiatement, sans bouton**, et la ligne d'état de la vue
-      d'ensemble suit au retour ; un échec revient à la valeur précédente. **Confidentialité** :
-      « Être contacté par les membres », même règle ; Utilisateurs bloqués s'ouvre en
-      Profil › Confidentialité › Bloqués, y compris par lien profond, et le retour ramène à
-      Confidentialité. **Connexion et sécurité** : ajouter une seconde clé d'accès **n'écrase plus
-      les autres**, « Déconnecter tous les appareils » est câblé. **Notifications** : une ligne par
-      type, une puce par canal déclaré par le serveur — à recetter dans les deux états, aucun canal
-      configurable (le défaut en dev ; la ligne d'état dit alors que tout reste dans l'app) et push
-      actif (le cas en prod). La cloche reste sur l'Accueil (`MOB-50`). Les mêmes parcours sont
-      automatisés dans Patrol, verts depuis le 6 octobre 2026 (`MOB-49`).
-- [ ] `MOB-20` **Performance** — liste de 200 items : rester au-dessus de 55 fps (en prod, les
-      parcours ou les sorties de `n-peloton` suffisent). Si le
-      `BackdropFilter` des barres épinglées coûte trop cher, le repli prévu (non implémenté à ce
-      jour — `blurToolbar` est une constante fixe à 12, aucune branche conditionnelle) serait **un
-      seul jeton** à faire tomber à 0 (`PdlMotion.blurToolbar`, surface opaque), aucun écran à
-      rouvrir.
-- [ ] `MOB-52` **Météo : recette sur appareil de ce que `MOB-68` ne couvre pas (S)** — la météo des
-      sorties de `MOB-51` a été refondue par `MOB-67` et `MOB-69`, puis par `MOB-134` : une seule
-      section Météo (`WeatherSection`) sur la page groupe, la sortie solo ou sans groupe et l'étape ;
-      `stage_weather_page.dart` et `stage_weather_card.dart` sont retirés, et avec eux les clés
-      `keys.ride.weather*` en double. Leur recette est celle de `MOB-135`. À trancher avec le
-      propriétaire : garder la ligne « Météo dès le … » (`NOT_YET_AVAILABLE`) sur les cartes du fil,
-      qui ajoute une ligne à toutes les sorties à plus de 7 jours (`RideWeatherSummaryLine.shows`).
-
-### Fiches des stores
-
-- [ ] `MOB-64` **Publier Pédalons sur Google Play (S)** — la fiche est poussée sur Google Play
-      (`fastlane listing`, 11 octobre 2026) : description FR/EN reprise de l'App Store, sept cartes
-      1080 × 1920 capturées sur l'émulateur (`screenshots/capture-android.sh`, `koubou/play.yaml`,
-      `assemble-play.sh`) et une bannière refaite (`koubou/feature.yaml`). État au 15 octobre 2026
-      (fiche et images identiques au dépôt, vérifié par l'API) : aucune version en production ; le
-      test fermé (`alpha`, liste de diffusion « Test Pedalons ») reçoit chaque bêta 1.1.0 de
-      `publish_beta.sh` (la build en test est celle du dernier passage du script), la première
-      approuvée le 15 octobre (la Console coche « Publier une version de test fermé »).
-      **Bloquant** : le compte développeur est personnel, la Console refuse de demander l'accès en
-      production avant **douze testeurs inscrits au test fermé pendant quatorze jours d'affilée**
-      (zéro inscrit au 15 octobre), et ces testeurs doivent **réellement utiliser l'app** : la
-      demande d'accès porte sur l'usage et les retours obtenus pendant le test. Les testeurs passent
-      depuis le 15 octobre par le
-      Google Group `pedalons-testeurs@googlegroups.com` (ouvert à tous, publication réservée aux
-      gestionnaires), déclaré sur le canal Alpha : chacun rejoint
-      https://groups.google.com/g/pedalons-testeurs puis accepte
-      https://play.google.com/apps/testing/fr.pedalons.mobile ; seul un testeur qui a accepté le
-      second lien compte. En viser une quinzaine : sous douze, les quatorze jours repartent de zéro.
-      Le canal n'est ouvert que dans un pays, et l'adresse de commentaires y est `dev@pedalons.fr`
-      (TestFlight : `gabriel.landais@gmail.com`). Les formulaires de *Contenu de l'application*
-      sont tous traités (neuf les 11 et 12 avril 2026 : informations de connexion, classification
-      du contenu, cible et contenu, annonces, identifiant publicitaire…), et la sécurité des
-      données a été repoussée par `fastlane data_safety` le 25 octobre 2026, à envoyer en examen
-      depuis *Vue d'ensemble de la publication*.
-      Une fois l'accès obtenu : promouvoir la release `alpha` depuis la Console plutôt que
-      `fastlane deploy`, qui renverrait le même versionCode. Fiche (textes 1.1.0) et captures
-      refaites sur l'app du 25 octobre poussées par `fastlane listing` le 25 octobre 2026.
-- [ ] `MOB-110` **Publier la 1.2.0 sur l'App Store (XS)** — la version App Store Connect 1.1.3,
-      jamais soumise, est devenue la 1.2.0 (`MOB-147`, id `14f5c3e9-ceb2-42e5-9666-c5202da0134c`,
-      `MANUAL`). Le 16 novembre 2026 : **build 107** attachée (tag `mobile.1.2.0.107`, à la place de
-      la build 98, une 1.1.3), nouveautés de `mobile/metadata/version/1.2.0/` réécrites pour couvrir
-      aussi l'écriture dans l'app (publications, annonces, voyages, éditeur riche, tracé de
-      parcours, gestion d'équipe) et poussées par `asc metadata apply` ; `asc validate` : aucune
-      erreur ni alerte. Déclarations de `MOB-159` faites le même jour, version soumise à la
-      revue le 16 novembre (`WAITING_FOR_REVIEW`). Reste : publier à la main après l'approbation
-      (`asc versions release --version-id 14f5c3e9-ceb2-42e5-9666-c5202da0134c --confirm`). Écart assumé le 16 novembre : soumission possible avant le 28 novembre malgré
-      les recherches encore présentes dans le journal d'accès (`MOB-159`, point 3).
-
-### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
-
-`mobile/patrol_test/` couvre les P0 de l'audit de couverture e2e (`WEB-26`) transposés à l'app et
-les scénarios livrés depuis (77 fichiers de test au 16 novembre 2026 ; la liste à jour est dans
-`mobile/patrol_test/README.md`, « Coverage »). Ce que chacun laisse de côté est dit dans son entrée
-livrée. Hors périmètre, parce que l'app ne l'a pas : la connexion par code e-mailé (`requestOtp` / `verifyOtp` d'`auth_provider.dart`
-n'ont aucun appelant d'écran).
-
-- [ ] `MOB-26` **Clés d'accès** — une clé ajoutée depuis le profil (`passkeys_section.dart`) connecte
-      depuis `login_page.dart` ; une clé supprimée ne connecte plus (`flow-account.e2e.ts`). Demande
-      un authentificateur sur le simulateur ou l'émulateur.
-      **Bloqué sur la stack e2e** (évalué le 29 septembre 2026) : le RP ID y est `localhost` en HTTP,
-      alors qu'iOS n'accepte une clé que pour un domaine associé (`webcredentials:`, fichier
-      `apple-app-site-association` servi en HTTPS de confiance) et que `Runner.entitlements` ne
-      déclare que `www.pedalons.fr` ; la correspondance Face ID du simulateur ne se pilote pas depuis
-      Patrol ; Android bute de même sur `assetlinks.json`. Il faudrait un nom d'hôte HTTPS pour la
-      stack (certificat mkcert ajouté au simulateur), `PEDALONS_WEBAUTHN_RP_ID` et
-      `--dart-define=WEBAUTHN_RP_ID` réglés dessus, une variante d'entitlements de debug
-      (`?mode=developer`) et un pas « visage reconnu » lancé par l'hôte.
-- [ ] `MOB-159` **Éditeur d'annonce : déclarer l'adresse sur les deux stores, recette sur appareil et
-      test Patrol (S)** — la déclaration est **tranchée et écrite dans le dépôt** (voir la part
-      livrée sous le même ID) ; reste ce qui se fait hors du dépôt ou sur un appareil.
-      **Déclarations faites le 16 novembre 2026** : App Store Connect → App Privacy publiée avec
-      *Contact Info → Physical Address* (lié, sans suivi, App Functionality), douze types comme
-      `data-safety.md` §4 ; Play Console → Sécurité des données, `data-safety.csv` importé à la main
-      (*Informations personnelles → Adresse*) et envoyé en examen. Elles couvrent aussi les entrées
-      d'inventaire #26 à #32 de `MOB-165` à `MOB-169`, qui n'ajoutent aucun type. Le journal d'accès
-      garde des recherches écrites avant le 14 novembre jusqu'au 28 novembre 2026 : écart assumé le
-      16 novembre, la 1.2.0 peut être soumise avant. Ensuite, à la main, en simple membre,
-      clair et sombre : publier une annonce avec photo et position, la retrouver en brouillon, la
-      publier, la modifier, la dépublier, la supprimer ; en administrateur, modifier l'annonce
-      d'une autre personne **sans toucher à la position** et vérifier côté auteur que le point
-      exact est intact ; vérifier que le lien `…/annonces/nouvelle` ouvre l'éditeur (iOS et
-      Android). Un test Patrol `ad_editor_test`. Clés dans `keys.adEditor` / `keys.adManage`.
-- [ ] `MOB-163` **Éditeur de voyage : recette sur appareil, test Patrol et restes (S)** — `MOB-162`
-      n'est couvert que par les tests unitaires et de widget : ni les feuilles de choix (lieu,
-      parcours), ni l'envoi réel, ni l'éditeur riche d'une étape n'ont tourné sur un appareil. À la
-      main, en organisateur, clair et sombre : créer un voyage depuis le tableau de bord, lui donner
-      trois étapes avec parcours et lieux, en déplacer une, en retirer une, l'enregistrer en
-      brouillon, le reprendre depuis « À traiter », le publier, l'annuler, le supprimer et le
-      restaurer ; vérifier qu'un simple membre ne voit ni le crayon ni « Gérer le voyage », et que
-      `…/voyages/nouveau` ouvre l'éditeur (iOS et Android). Un test Patrol `trip_editor_test` sur le
-      modèle de `ride_editor_test`. Clés dans `keys.tripEditor` / `keys.tripManage`. Restes connus,
-      à trancher à la recette : la description d'une étape est du texte seul (les images posées au
-      site sont gardées, l'app n'en ajoute pas) ; la mention « heure de … » n'est montrée que pour
-      le départ du voyage, pas par étape (le site résout un fuseau par étape, `TripEditor`) ;
-      l'Agenda de l'équipe n'offre que « créer une sortie », le voyage se crée depuis le tableau de
-      bord.
-- [ ] `MOB-157` **Éditeur de publication : recette sur appareil et test Patrol (S)** — `MOB-164` n'est
-      couvert que par les tests unitaires et de widget : ni le sélecteur de photos ni l'envoi réel
-      n'ont tourné. À la main, en organisateur, clair et sombre : créer une publication depuis le
-      tableau de bord, y insérer une photo de la photothèque dans le texte, l'enregistrer en
-      brouillon, la reprendre depuis « À traiter », la publier, la dépublier, la supprimer et la
-      restaurer ; vérifier qu'un simple membre ne voit ni le crayon ni « Gérer la publication », et
-      que le lien `…/articles/nouveau` ouvre l'éditeur (iOS et Android). Un test Patrol
-      `post_editor_test` sur le modèle de `ride_editor_test`. Clés dans `keys.postEditor` /
-      `keys.postManage`. Les listes de publications n'ont pas de bouton « Ajouter » (seul le
-      tableau de bord en a un) : à trancher à la recette.
-- [ ] `MOB-77` **Éditeur de sortie, modèles et parcours : recette sur appareil (S)** — `MOB-80` est
-      couvert par les tests unitaires et de widget, et par `ride_editor_test` et
-      `ride_editor_member_test` (Patrol, verts le 17 octobre 2026 sur le simulateur iOS et sur
-      l'émulateur Android, de nouveau le 16 novembre 2026 avec `ride_templates_test` et
-      `route_editor_test`). Reste la recette à la main : créer une sortie depuis le tableau de bord (modèle compris), y
-      ajouter une image depuis la photothèque et une pièce jointe depuis le sélecteur de fichiers,
-      la modifier depuis sa fiche, la publier puis la supprimer et la restaurer — en organisateur,
-      et vérifier qu'un simple membre ne voit ni le crayon ni le menu « Gérer la sortie ». Clés dans
-      `keys.rideEditor` / `keys.rideManage`. **Modèles de sortie (`MOB-78`)** : les tests Patrol
-      `ride_templates_test` et `ride_templates_member_test` sont verts (17 octobre 2026, simulateur
-      iOS et émulateur Android) ; reste la recette à la main des modèles
-      (« Gérer les modèles » du tableau de bord et de la feuille « Charger un modèle », liste,
-      création, modification, suppression, création d'une sortie numérotée « Nom #n »), en
-      organisateur, et le refus d'un simple membre. Clés dans `keys.rideTemplates` /
-      `keys.rideTemplateEditor`. Le formulaire *Data safety* de Google Play
-      (ligne *Fichiers et documents*) est poussé depuis le 16 novembre 2026, avec la 1.2.0.
-      **Parcours (`MOB-79`)** : `route_editor_test` et `route_editor_member_test` sont verts (18 octobre
-      2026, simulateur iOS et émulateur Android) ; reste la recette à la main avec le vrai sélecteur (Fichiers d'iOS, SAF d'Android), des GPX de
-      plusieurs outils et d'un compteur, nom repris du GPX, remplacer le GPX, supprimer et
-      restaurer, refus d'un simple membre. Clés dans `keys.routeEditor` / `keys.routeManage`. Le
-      sélecteur natif n'est jamais exercé par Patrol (le fichier arrive par
-      `gpxFilePickerProvider`) : la recette à la main est le seul garde. La ligne *Fichiers et
-      documents* de Google Play couvre aussi le GPX (`data-safety.md` #23).
-- [ ] `MOB-37` **Les tests Patrol ne tournent qu'en local** — aucun workflow de `.github/` ne les
-      lance : `ci.yml` ne passe que les tests unitaires. Il faudrait un runner macOS (simulateur) ou un
-      émulateur Android, plus la stack e2e (`scripts/e2e.sh up`) dans le job. La piste la moins chère
-      est un émulateur Android sur `ubuntu-latest`, à côté de la stack : le pendant web (`AUD-3`,
-      `e2e.yml`) y tourne chaque nuit en environ 1 h, stack comprise, et `mobile-release.yml`
-      construit déjà l'APK sur GitHub Actions.
-- [ ] `MOB-75` **`patrol_test/README.md` en retard sur la suite (XS)** — la table
-      « Coverage » n'a pas de ligne pour `ride_group_page_test` (`MOB-67`, `MOB-68`), alors que
-      `ride_solo_group_test` et `ride_participants_map_test` en ont une ; « Not covered yet » cite
-      encore le jeton d'accès expiré (`MOB-38`), couvert par `expired_access_token_test.dart`.
-
-- [ ] `MOB-62` **Profil refondu (`MOB-48`, `WEB-57`) : finitions (S)** —
-      reste de `MOB-49`, dont les tests Patrol sont verts depuis le 6 octobre 2026.
-      - La recette sur appareil du profil refondu est portée par `MOB-15`.
-      - La bascule d'une puce de canal n'est exercée nulle part : la pile e2e ne déclare aucun canal
-        (e-mail coupé, pas de FCM, `NOTIF-4`).
-      - Mineurs (XS, revérifiés le 16 octobre 2026) : la ligne d'état de Mon compte (« Photo, nom
-        affiché, suppression du compte ») et la carte d'identité (« Photo, nom et compte ») se
-        répètent un peu ; `Moderation.goBack()` (`patrol_test/modules/moderation.dart`) n'a plus
-        d'appelant et repose sur `$.tester.pageBack()`, que `PdlAppBar` ne satisfait pas — à
-        retirer. Clés de traduction sans appel littéral ni clé construite (`fr.json` et `en.json`) :
-        `profile.security`, `profile.community`, `profile.passkeys.enabled` / `notConfigured` /
-        `replace`, `notifications.preferences.inAppAlwaysOn`.
+- [ ] [`MOB-174`](ledger/MOB/MOB-174.md) `maplibre_ios` appelle `setState` sur une carte déjà démontée (S)
+- [ ] [`MOB-170`](ledger/MOB/MOB-170.md) Tracer et modifier un parcours sur la carte dans l'app : recette sur appareil (S)
+- [ ] [`MOB-161`](ledger/MOB/MOB-161.md) Éditeur riche : insérer un tableau et en ajouter ou retirer lignes et colonnes (S)
+- [ ] [`MOB-160`](ledger/MOB/MOB-160.md) Éditeur riche : test de widget du pont et test Patrol de l'écran plein (S)
+- [ ] [`MOB-154`](ledger/MOB/MOB-154.md) Générer un parcours depuis l'app (M, plus tard)
+- [ ] [`MOB-151`](ledger/MOB/MOB-151.md) Plugins Android qui appliquent encore le Kotlin Gradle Plugin (S)
+- [ ] [`MOB-149`](ledger/MOB/MOB-149.md) Basculer l'app sur `material_ui` / `cupertino_ui` quand les dépendances y seront (M)
+- [ ] [`MOB-146`](ledger/MOB/MOB-146.md) Listes homogènes : recette sur appareil de `MOB-143` (S)
+- [ ] [`MOB-141`](ledger/MOB/MOB-141.md) Cartes homogènes : recette sur appareil de `MOB-139` (S)
+- [ ] [`MOB-135`](ledger/MOB/MOB-135.md) Refonte des écrans de détail : recette sur appareil de `MOB-134` (S)
+- [ ] [`MOB-133`](ledger/MOB/MOB-133.md) Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)
+- [ ] [`MOB-130`](ledger/MOB/MOB-130.md) Contrôles de carte : recette sur appareil de `MOB-129` (S)
+- [ ] [`MOB-95`](ledger/MOB/MOB-95.md) La météo sur la carte : recette sur appareil des paliers 1 à 3 (S)
+- [ ] [`MOB-86`](ledger/MOB/MOB-86.md) Points de parcours : recette sur appareil
 
 ### APK hors Play
 
-- [ ] `MOB-73` **Vérifier l'APK sur un Android sans Google Play Services** — l'APK de
-      `mobile-release.yml` (`MOB-72`, publié dans la release `mobile-latest`) n'a encore tourné sur
-      aucun appareil sans GMS. Sur un émulateur d'image `default` (sans Google APIs) ou un vrai
-      appareil (/e/OS, Huawei) : démarrage (Firebase doit échouer en silence, `main.dart`),
-      connexion par mot de passe et réinitialisation, carte, localisation (`geolocator`, appelé sans
-      option dans `location_service.dart`, doit basculer sur `LocationManager`), écran des
-      notifications sans jeton FCM, lien profond `www.pedalons.fr` (empreinte `26:24:…` de
-      `assetlinks.json`, servie en prod). Les **passkeys** passent par Credential Manager, qui n'a
-      souvent aucun fournisseur sans GMS : le bouton de connexion est déjà masqué quand
-      `PasskeyService.isSupported()` répond non (`passkey_service.dart`, `login_page.dart`) ; vérifier qu'il renvoie
-      bien faux sans fournisseur, et qu'ailleurs un échec donne un message clair plutôt qu'une erreur
-      brute. À décider ensuite : l'écran des notifications devrait-il dire que le push est
-      impossible, et faut-il signaler une nouvelle version aux installations par APK (rien ne les
-      met à jour aujourd'hui). Taille : S pour la recette, inconnue pour les suites.
+- [ ] [`MOB-73`](ledger/MOB/MOB-73.md) Vérifier l'APK sur un Android sans Google Play Services
 
----
+### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
+
+- [ ] [`MOB-163`](ledger/MOB/MOB-163.md) Éditeur de voyage : recette sur appareil, test Patrol et restes (S)
+- [ ] [`MOB-159`](ledger/MOB/MOB-159.md) Éditeur d'annonce : déclarer l'adresse sur les deux stores, recette sur appareil et test Patrol (S)
+- [ ] [`MOB-157`](ledger/MOB/MOB-157.md) Éditeur de publication : recette sur appareil et test Patrol (S)
+- [ ] [`MOB-77`](ledger/MOB/MOB-77.md) Éditeur de sortie, modèles et parcours : recette sur appareil (S)
+- [ ] [`MOB-75`](ledger/MOB/MOB-75.md) `patrol_test/README.md` en retard sur la suite (XS)
+- [ ] [`MOB-62`](ledger/MOB/MOB-62.md) Profil refondu (`MOB-48`, `WEB-57`) : finitions (S)
+- [ ] [`MOB-37`](ledger/MOB/MOB-37.md) Les tests Patrol ne tournent qu'en local
+- [ ] [`MOB-26`](ledger/MOB/MOB-26.md) Clés d'accès
+
+### Fiches des stores
+
+- [ ] [`MOB-110`](ledger/MOB/MOB-110.md) Publier la 1.2.0 sur l'App Store (XS)
+- [ ] [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play (S)
+
+### Recette sur une application qui tourne
+
+- [ ] [`MOB-52`](ledger/MOB/MOB-52.md) Météo : recette sur appareil de ce que `MOB-68` ne couvre pas (S)
+- [ ] [`MOB-47`](ledger/MOB/MOB-47.md) Contact du vendeur : l'échec d'envoi (500) de bout en bout
+- [ ] [`MOB-20`](ledger/MOB/MOB-20.md) Performance
+- [ ] [`MOB-15`](ledger/MOB/MOB-15.md) Profil (33)
+- [ ] [`MOB-13`](ledger/MOB/MOB-13.md) Trombinoscope (34)
+- [ ] [`MOB-5`](ledger/MOB/MOB-5.md) Exploration de parcours (21)
 
 ## WEB — Site web
 
-La recette du web est automatisée par une suite Playwright depuis le 25 septembre 2026
-(`WEB-13` à `WEB-22`, livrés, avec ce que l'automatisation ne voit pas) : voir
-`frontend/e2e/README.md`.
+Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
-
-- [ ] `WEB-163` **Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)** — depuis `API-163`
-      (contrat `13.4.0`), `RouteDto`, `RouteDetailDto`, `RideDto` et `RideGroupDto` disent, pour
-      chacun des services de la personne en synchro automatique, si le parcours y est déjà (`state`,
-      `syncedAt`) ; le site ne le lit pas, et « Envoyer vers l'appareil » ne dit pas que Pédalons
-      s'en charge déjà. Lieux : `components/ride/RideGroupRouteActions.tsx`,
-      `components/route/RouteDetailView.tsx`, et la carte d'étape
-      (`components/trip/TripStageCard.tsx`, via `TripStageDto.route`). Même vocabulaire d'état que
-      l'interrupteur (`gps.autoSync.state.*`). Pendant mobile : `MOB-133`.
-- [ ] `WEB-161` **Contrôles de carte : recette à l'œil de `WEB-157` (S)** — scindé de `WEB-158`
-      (les e2e sont passés le 10 novembre 2026), plan [`archive/2026-11-10-controles-carte.md`](plans/archive/2026-11-10-controles-carte.md).
-      À l'œil, clair et sombre : l'ordre des deux colonnes ; la liste de la recherche par-dessus le zoom ;
-      infobulles et panneaux du bon côté ; l'échelle et le crédit au-dessus du profil d'un groupe (aux
-      bornes 110 et 200 px) et d'une sortie à plusieurs parcours, puis au ras du bas en plein écran ;
-      la barre du planificateur sur une carte étroite, une erreur longue tronquée, la mini-carte
-      au-dessus du crédit ; au doigt, la colonne en bas à droite, la recherche sur toute la largeur,
-      les consignes sous elle, le résumé sur deux lignes en erreur, l'état pressé du bouton résumé ;
-      les cartes compactes avec des boutons de 36 px ; le bleu d'état actif de maplibre-theme en clair.
-- [ ] `WEB-170` **Servir la police Inter sur le site (S à M)** — la charte et le thème demandent Inter (BRANDING §4.1,
-      `frontend/src/lib/theme.ts`), mais aucun fichier de police n'est servi : chaque visiteur voit la police de son système.
-      Relevé le 12 novembre 2026 en cherchant pourquoi « 1 240 m » se lisait « 1240 m » (la police du système dessine
-      l'espace fine insécable à moins de 2 px). Réglé autrement depuis (`WEB-167`) : les milliers s'écrivent avec une espace
-      normale (`normalGroupSpaces`, `unitFormat.ts`), sans police d'appoint. Charger Inter (sous-ensemble latin, quatre graisses, `font-display: swap`)
-      change l'aspect de tout le site et demande une passe visuelle large.
-- [ ] `WEB-176` **Listes homogènes : recette en navigateur de `WEB-175` (S)** — même réserve que `MOB-146` : vérifié
-  par tests et par les captures de `dev/lists.html`. À regarder sur le site servi : barres à 390 px, sections
-  « À venir » / « Plus tôt » d'une page à l'autre, calendrier (mois vide, choix d'une équipe), erreur sans notification,
-  anciens liens `?w=past`, « Plus tôt » au fil et à l'agenda (trois segments à 390 px, champs de l'agenda alignés),
-  carte des parcours. La suite Playwright, elle, est passée le 12 novembre 2026 sur la pile e2e (commit `12bec34c4`,
-  avant « Plus tôt » ; 2 016 tests, projets `desktop` et `mobile`) une fois ses tests mis à jour : second bouton
-  « Créer … » d'une liste vide, compteur par section de l'agenda, « Créer un parcours » (`flow-ads`, `flow-posts`,
-  `flow-rides`, `flow-routes`, `flow-trips`).
-- [ ] `WEB-172` **Cartes homogènes : recette en navigateur de `WEB-167` (S)** — même réserve que `MOB-141` côté site :
-      vérifié par tests unitaires et par captures de la galerie de développement, pas sur le site servi (SSR, hydratation,
-      mode sombre, largeurs intermédiaires). La suite Playwright a tourné le 12 novembre 2026 sur la pile e2e : 1 981
-      passés ; trois échecs dus au chantier, corrigés et relancés verts ; les 23 autres étaient ceux du nightly de `develop`
-      du même jour (formulaire de parcours, préchargement de l'édition d'un parcours et des paramètres d'équipe, contenu
-      réservé vu de l'extérieur, page personnalisée, planificateur et son quota) et ne venaient pas des cartes : traités
-      le soir même (`BILL-12`, et les tests alignés sur `BILL-10`, `WEB-166` et `WEB-175`), la suite est verte sur
-      `12bec34c4`. Reste le regard sur le site servi.
-- [ ] `WEB-165` **Aligner le web sur les décisions des cibles mobiles (M, à cadrer)** — heure de son groupe en gros,
-      bouton « GPS » unique, tuiles dans le même ordre (« Changer pour A » est livré par `WEB-167`,
-      `rides.detail.groups.switchTo`) :
-      [`maquettes/KIT.md`](plans/2026-11-10-etat-des-lieux-affichage/maquettes/KIT.md) §8. Hors périmètre de `MOB-134`.
-- [ ] `WEB-160` **Recette à l'œil de `WEB-155` (S)** — scindé de `WEB-156` (les e2e sont passés le
-      10 novembre 2026). Voyage de plus de quatre étapes (`SiblingNav` en liste), largeur téléphone
-      (carte au-dessus, flèches sans débordement), mode sombre des cartes enfant mises en évidence,
-      étape sans parcours.
-
-- [ ] `WEB-119` **La météo sur la carte : recette navigateur des paliers 1 à 3 (S)** — `WEB-115` à
-      `WEB-118`, plan [`2026-10-24-weather-on-map.md`](plans/archive/2026-10-24-weather-on-map.md). `routes-render -g 'rideMap /'` (la sortie solo `soloRide` comprise) est vert le 16 novembre
-      2026 sur la pile e2e. À la main : contraste du gris travers sur fond sombre et satellite ;
-      crédit Open-Meteo et sa mise à jour au changement de mode ; un vrai parcours à plusieurs
-      traces ; pastilles nombreuses (carte d'ensemble d'un voyage de beaucoup d'étapes, une seule
-      bulle ouverte) ; bulle non coupée par le profil ; focus de la bulle (rendu après « Fermer »,
-      titre lu à l'ouverture, non pris quand une ligne du tableau l'ouvre) ; clic de pastille sans
-      effet sur la sélection de waypoint ; flèches sur une carte tournée ; cible de 44 px ; plein
-      écran du groupe, de la sortie solo et de l'étape au téléphone (barre à trois modes, bande de
-      légende).
-- [ ] `WEB-36` **Un tap juste après l'affichage d'une page, sous charge, est ignoré (M)** — le HTML
-      du SSR est à l'écran et cliquable avant que React l'ait adopté ; avec l'hydratation
-      concurrente de React 19, un clic qui tombe pendant le rendu d'hydratation, avant son commit,
-      n'atteint pas son gestionnaire et **n'est pas rejoué** (mesuré par la sonde de `WEB-35` : 3 clics
-      sur 40 dans les premières centaines de millisecondes, pile e2e chargée, sur le burger de
-      `Layout.tsx`). Rien ne se passe, sans message : l'utilisateur retape. `WEB-35` ne corrige que
-      les tests (ils attendent le commit). Pistes : capturer les clics sur `document` entre
-      l'affichage et `HydrationMarker` puis les rejouer sur leur cible au commit (attention aux
-      doubles déclenchements et aux liens, que le navigateur suit déjà sans JS), ou raccourcir la
-      fenêtre (hydratation par îlots, moins de travail au premier rendu). Mesurer d'abord sur un
-      vrai téléphone moyen de gamme, hors pile e2e. La mesure est à refaire après `WEB-95`
-      (chargement initial de 836 à 406 Ko gzip, sans gain sur le TBT) et `WEB-96` (carte montée en
-      différé), qui raccourcit justement cette fenêtre. Un rejeu doit rester compatible avec la CSP
-      (`SEC-31`, `SEC-40`) : nonce, aucun script inline libre.
-- [ ] `WEB-56` **Profil refondu (`WEB-55`, `WEB-57`) : recette navigateur (S)** — les e2e sont
-      passés (voir la part livrée sous le même identifiant). Plus rien à trancher : Utilisateurs
-      bloqués est sous Confidentialité (`/profil/vie-privee/bloques`), la zone de danger suit le
-      jeton `danger` et les cases des notifications ont leur cible de 44 px sur téléphone
-      (`WEB-55`). Reste la **recette à l'œil** : mise en page, point de rupture `md`, mode sombre (la
-      bordure `danger-outline` de la zone de danger y compris) ; sur un téléphone, une touche
-      n'importe où dans la cellule coche la case des notifications (le `<label>` enveloppe le `div`
-      racine du `Checkbox` Mantine : HTML pas strictement valide, toléré par les navigateurs). Avec
-      un fuseau non enregistré, Préférences montre celui du navigateur, que le serveur ne connaît
-      pas (`WEB-54`). Les mineurs relevés au passage sont sortis dans `WEB-98` ; les renvois
-      imprécis des textes légaux (« depuis votre profil ») relèvent de la section `LEGAL`.
-
-- [ ] `WEB-120` **Signaler à un administrateur de la plateforme les pages qu'il est seul à voir
-      (XS, facultatif)** — depuis `API-137`, le détail d'une équipe lui donne toutes ses pages
-      (brouillons, réservées aux membres, masquées par la modération) alors que son `role` est son
-      vrai rôle. Le menu de l'équipe (`useNavItems.teamNavItems`) les liste sans les distinguer :
-      un badge « Brouillon » / « Membres » / « Masquée » éviterait qu'il les croie publiques.
-
-- [ ] `WEB-98` **Deux clés i18n mortes et un e-mail qui nomme un réglage sans lien (XS)** —
-      `auth.login.tabs.passkey` et `auth.passkey.login` ne servent plus nulle part dans
-      `frontend/src` (`frontend/src/locales/{fr,en}/common.json` ;
-      le mobile a son propre catalogue) : les supprimer des deux langues. L'e-mail de contact d'une
-      annonce (`backend/src/main/resources/templates/mail/ad-contact.{fr,en}.{txt,html}`) dit
-      « désactivez « Accepter les messages des membres » dans Profil › Confidentialité » sans lien, le
-      gabarit ne recevant que `params.adUrl` : passer l'URL absolue de `/profile/privacy` (sur le
-      domaine de l'équipe, comme `adUrl`) et en faire un lien dans la version HTML.
-
-- [ ] `WEB-61` **Météo des sorties : recette navigateur de ce que `WEB-94` n'a pas vu (S)** —
-      `WEB-94` a refait la météo de la page d'un groupe (`GroupWeatherSection` pleine largeur sous
-      la grille statistiques/carte) et l'a vérifiée dans un navigateur sur une vraie sortie (clair,
-      sombre, 390 px) ; la disposition d'origine (bloc entre l'en-tête et la carte, frise
-      horizontale des points) n'existe plus sur cette page. Reste à voir dans un navigateur :
-      `RideWeatherSection` sur le détail d'une sortie à plusieurs groupes, la ligne météo des
-      cartes de groupe (`GroupWeatherLine`), et la météo des étapes (`WEB-67`) : bloc de la page
-      d'étape, ligne des cartes d'étape ; mode sombre et téléphone pour chacune. À trancher avec le
-      propriétaire : le libellé de l'alerte
-      (`rides.weather.summary.rainAlert`, aujourd'hui « Pluie 70 % vers 10:00 » ; la maquette disait
-      « Averse 70 % »). Aucun e2e ne couvre la météo : la pile e2e coupe le fournisseur, il
-      faudrait remplir le cache par SQL.
-
-- [ ] `WEB-78` **Page d'un groupe de sortie (`WEB-77`) : recette navigateur des états restants
-      (S)** — les e2e sont passés (voir la part livrée sous le même identifiant) et `WEB-94` a
-      vérifié la section météo de la page dans un navigateur (clair, sombre, 390 px). Restent à
-      voir à l'œil : la colonne de carte collante à partir de 64em, le sélecteur de groupe (4 puis
-      `Select`), un groupe supprimé (état vide), un inscrit dans un autre groupe, en mode sombre et
-      sur téléphone. Recoupe `WEB-61`.
-
-- [ ] `WEB-96` **La carte s'initialise au chargement et bloque le fil principal (S)** — audit
-      Lighthouse mobile de la page sortie (16 octobre 2026) : `map-vendor` (MapLibre, 280 Ko gzip)
-      produit les deux plus longues tâches de la page (1,16 s et 1,11 s) et la majeure partie des
-      ~0,7–3 s de TBT, avant même que la carte soit à l'écran. `WEB-95` a sorti le reste du
-      chargement initial ; il reste à ne monter `PedalonsMap` que lorsque son conteneur devient
-      visible (IntersectionObserver), place réservée, sur les pages sortie, groupe de sortie
-      (`RouteMapPanel`, ex-`GroupRouteMap`), étape, parcours et voyage. Aujourd'hui `RideDetailPage`, `TripDetailPage` et
-      `RouteMapPanel` chargent la carte en `React.lazy` mais la montent dès le rendu.
-
-- [ ] `WEB-100` **Éditeur de parcours web, desktop et web mobile (L, en quatre lots)** — le plan est
-      [`plans/2026-10-17-editeur-parcours-web.md`](plans/2026-10-17-editeur-parcours-web.md), et
-      **le suivi fin se fait dans le plan**, pas ici. L'éditeur (`RoutePlanner.tsx`,
-      `useRoutePlanner.ts`, `lib/planner.ts`) est utilisable à la souris, difficilement au doigt
-      (carte en `70dvh` dans un formulaire qui défile, mode tactile figé au montage, cibles de
-      29 px), lance des calculs concurrents sans annulation, et n'a ni profil altimétrique
-      d'édition, ni inverser / aller-retour / retour au départ. Lots : robustesse,
-      disposition et web mobile, standard attendu, différenciation. Le routage passe chez Stadia
-      Maps (livré), facturé à la requête. Le lot 1 (robustesse) est fait côté frontend le
-      17 octobre 2026, et son volet backend (`A10`) aussi : codes `ROUTING_*`, `teamSlug` sur
-      `/api/router`, colonne `drawn` (`V72`, contrat `11.6.0`). Le lot 2 (disposition et web
-      mobile) est fait le 17 octobre 2026, reste sa recette sur un vrai téléphone.
-      Les lots 3 et 4 restent ouverts, avec leur volet backend (endpoint de recalage de B2) qui
-      reste sous cet ID ; C4 (état d'édition et import d'un fichier, contrats `11.10.0` et
-      `11.11.0`, `V75`) est fait le 19 octobre 2026. B1 (profil d'édition, `B1a` et `B1b`, contrat
-      `11.12.0`) est fait le 19 octobre 2026. C1a (« non revêtu » en direct, contrat `11.13.0`) et C1b (surface détaillée après
-      l'enregistrement, contrat `11.14.0`, `V76`) aussi, et C1c (rattrapage des anciens parcours,
-      suggestion de `surfaceType`, `V77`, pas de contrat ; affichage mobile `MOB-81`) : C1 est livré. C3 (points de parcours) est conçu le 20 octobre 2026
-      dans [l'étude des points de parcours](research/2026-10-20-points-de-parcours.md) et découpé dans le plan (C3a à C3h) ; C3b (vcyclist 6.11), C3c (backend, contrat `11.16.0`, `V78`), C3d (web, consultation) et C3e (web, éditeur) sont faits le 20 octobre 2026. Reste de C3a : basculer `pedalons.gps.garmin.course-points.enabled` (désactivé) après un essai de la Courses API sur un Edge, et essayer Wahoo.
-
-- [ ] `WEB-133` **La météo des aperçus GPX : recette navigateur (S)** — `WEB-132`, `API-153`. La pile e2e
-      (`scripts/e2e.sh`) coupe le fournisseur météo, donc rien de la prévision n'a été vu dans un
-      navigateur ; seuls les tests Vitest et la compilation ont tourné, et `frontend/e2e/flow-gpx-tools.e2e.ts`
-      n'a pas été étendu. À voir sur une pile avec le fournisseur (ou sur le dev) : déposer un fichier
-      depuis le hub, lui donner une date et une vitesse par sa page de modification, puis la page de l'aperçu (attente d'environ une
-      minute, puis la prévision, qui arrive par tours de worker sur un long tracé) ; la même page ouverte
-      sans compte depuis le lien ; la mention « heure de Tokyo » sur un tracé hors du fuseau de la
-      personne ; une vitesse en miles par heure ; l'édition (date effacée, vitesse effacée, tracé
-      déplacé de fuseau) ; le mode Météo de la carte et son plein écran ; l'état « Ce départ est
-      passé » ; le message du refus au vingt et unième aperçu daté (aujourd'hui un 400 générique, sans texte
-      dédié). Non vu non plus : la bande d'altitude d'un aperçu après le rattrapage HD (elle reste
-      manquante jusqu'au passage suivant du planner, `STALE` quelques minutes) et le rendu mobile du
-      web. Pas d'écran mobile : l'app n'a pas d'aperçus GPX.
-
-
-- [ ] `WEB-183` **Planificateur embarquable dans l'app : recette iOS et poids du bundle (S)** — le
-      code est livré (voir la part livrée sous le même identifiant) et sert `MOB-170`. Restent : la
-      recette sur iOS, et alléger le bundle (2,6 Mo : catalogues entiers, paquet de recherche Stadia,
-      CSS du site). Plan
-      [`2026-11-15-planificateur-parcours-mobile.md`](plans/2026-11-15-planificateur-parcours-mobile.md) §4.1.
-
-- [ ] `WEB-179` **Panneau « Générer un parcours » (M)** — départ, arrivée, rose des vents, distance, curseur « routes de
-      l'équipe → découverte », trois propositions sur la carte avec le réseau de l'équipe en fond, ouverture dans l'éditeur
-      comme ligne importée (pas d'ancres reroutées par Stadia). Dépend d'`API-206`. Plan [`2026-11-13-generateur-boucles-equipe.md`](plans/archive/2026-11-13-generateur-boucles-equipe.md) §7.
-      Codé le 14 novembre 2026 (conception [`…-lot4.md`](plans/archive/2026-11-13-generateur-boucles-equipe-lot4.md)) :
-      page `routeGenerate`, bouton dans la liste et troisième source de l'éditeur, case d'exclusion.
-      Recette du 15 novembre 2026 : la spec e2e a tourné et trouvé trois défauts, corrigés — un parcours généré ne
-      comptait pas dans le quota du planificateur, la source porte désormais `generated` et `PlannerState.drawn()` la
-      compte (contrat `14.16.0`, test `TeamPlannerQuotaResourceTest.aStateOfGeneratedPieces_countsOne_andIsRefusedAtTheQuota`) ;
-      la page ne préchargeait pas le sélecteur d'équipes de son `TeamLayout` ; deux specs supposaient une équipe née sans
-      planificateur (faux depuis `BILL-10`).
-      Adapté le 16 novembre 2026 (lot 3b, contrat `15.0.0`, [`2026-11-16-generateur-parcours-osm-lot3b.md`](plans/2026-11-16-generateur-parcours-osm-lot3b.md) §8) :
-      curseur à cinq crans (paramètre `dec`, défaut 0,25) à la place de la fréquentation, 200 km au plus, part sur les routes
-      de l'équipe par proposition, ligne de D+ seulement quand le moteur l'a donné, avis « routes prises en compte jusqu'au… »
-      et couverture partielle, messages de `GENERATOR_OUT_OF_COVERAGE`, `GENERATOR_NETWORK_NOT_READY` et `GENERATOR_UNAVAILABLE` ;
-      suite Vitest entière verte (253 fichiers, 2 459 tests après fusion de `develop`). Recette du 16 novembre 2026 : génération
-      réelle sur un poste avec le graphe (backend, moteur et site ensemble : trois propositions, D+, part d'équipe, avis de
-      date, « hors zone », « indisponible ») ; `e2e/route-generator.e2e.ts` (10 passés, 2 ignorés sur mobile par construction)
-      et `routes-render -g routeGenerate` (12 passés) sur des images reconstruites, l'appel réel attendant « indisponible »
-      puisque la pile e2e n'a pas de graphe. « Ouvrir dans l'éditeur » est couvert par l'e2e (le candidat se charge sans appel au
-      routeur) mais n'a pas été cliqué sur une proposition réelle. Reste : l'ordre des couches de la carte jugé à l'œil sur
-      plusieurs fonds, puis ranger l'entrée.
-
-### Heure de départ : audit du 7 novembre 2026
-
-Pendant web de `MOB-111` à `MOB-116` ; la règle commune est `BRAND-8`.
-
-- [ ] `WEB-139` **Aperçu de partage (OG/SSR) : la date disparaît dès qu'il y a une description (S)** —
-      `config/routeMeta.ts` ne met la date d'une sortie (sans heure) que si `media.markdown`
-      est vide, de même pour un voyage ; une étape n'a aucune date (`stageMeta`), aucun titre
-      OG n'en porte, et le formatage passe par `Intl.DateTimeFormat` plutôt que `dateFormat.ts`.
+- [ ] [`WEB-183`](ledger/WEB/WEB-183.md) Planificateur embarquable dans l'app : recette iOS et poids du bundle (S)
+- [ ] [`WEB-179`](ledger/WEB/WEB-179.md) Panneau « Générer un parcours » (M)
+- [ ] [`WEB-176`](ledger/WEB/WEB-176.md) Listes homogènes : recette en navigateur de `WEB-175` (S)
+- [ ] [`WEB-172`](ledger/WEB/WEB-172.md) Cartes homogènes : recette en navigateur de `WEB-167` (S)
+- [ ] [`WEB-170`](ledger/WEB/WEB-170.md) Servir la police Inter sur le site (S à M)
+- [ ] [`WEB-165`](ledger/WEB/WEB-165.md) Aligner le web sur les décisions des cibles mobiles (M, à cadrer)
+- [ ] [`WEB-163`](ledger/WEB/WEB-163.md) Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)
+- [ ] [`WEB-161`](ledger/WEB/WEB-161.md) Contrôles de carte : recette à l'œil de `WEB-157` (S)
+- [ ] [`WEB-160`](ledger/WEB/WEB-160.md) Recette à l'œil de `WEB-155` (S)
+- [ ] [`WEB-133`](ledger/WEB/WEB-133.md) La météo des aperçus GPX : recette navigateur (S)
+- [ ] [`WEB-120`](ledger/WEB/WEB-120.md) Signaler à un administrateur de la plateforme les pages qu'il est seul à voir (XS, facultatif)
+- [ ] [`WEB-119`](ledger/WEB/WEB-119.md) La météo sur la carte : recette navigateur des paliers 1 à 3 (S)
+- [ ] [`WEB-100`](ledger/WEB/WEB-100.md) Éditeur de parcours web, desktop et web mobile (L, en quatre lots)
+- [ ] [`WEB-98`](ledger/WEB/WEB-98.md) Deux clés i18n mortes et un e-mail qui nomme un réglage sans lien (XS)
+- [ ] [`WEB-96`](ledger/WEB/WEB-96.md) La carte s'initialise au chargement et bloque le fil principal (S)
+- [ ] [`WEB-78`](ledger/WEB/WEB-78.md) Page d'un groupe de sortie (`WEB-77`) : recette navigateur des états restants (S)
+- [ ] [`WEB-61`](ledger/WEB/WEB-61.md) Météo des sorties : recette navigateur de ce que `WEB-94` n'a pas vu (S)
+- [ ] [`WEB-56`](ledger/WEB/WEB-56.md) Profil refondu (`WEB-55`, `WEB-57`) : recette navigateur (S)
+- [ ] [`WEB-36`](ledger/WEB/WEB-36.md) Un tap juste après l'affichage d'une page, sous charge, est ignoré (M)
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
 
-L'audit ([archivé](plans/archive/2026-09-27-e2e-coverage-audit.md), `WEB-26`) est exécuté : P0, P1
-et P2 écrits, 54 défauts relevés, tous corrigés ou tranchés — le dernier, `WEB-6`, le 29 septembre. Le canal e-mail des
-notifications n'a pas de test e2e : c'est `NOTIF-4`.
-
-- [ ] `WEB-81` **GPX à plusieurs traces : profil empilé et synchro faussée (S, priorité basse)** —
-      la distance cumulée de chaque point (`p[3]`) repart à 0 à chaque trace
-      (`GpxProcessingService.toTrackPoints` reprend `path.getDist()` trace par trace ;
-      `RouteSampleLookup.chain` doit d'ailleurs ajouter un décalage pour les mettre bout à bout). Le
-      web aplatit les traces sans ce décalage (`ElevationChart.tsx`, `useMapChartZoomSync`, l'index
-      de survol de `RouteTrackMap`) : les profils s'empilent sur le même axe et une plage de
-      distances désigne plusieurs traces à la fois. Le mobile est à vérifier aussi
-      (`pdl_elevation_profile.dart`, `route_cursor_controller.dart`). Non reproduit sur un vrai
-      fichier, et aucun cas en prod : 0 parcours à plus d'une trace sur 5 527 au 16 octobre 2026.
-      L'import d'un fichier à plusieurs `<trk>` reste possible (`tracksAsPaths`). À trancher :
-      enchaîner côté client comme `RouteSampleLookup`, côté API (contrat), ou fusionner les traces
-      à l'import comme le fait déjà `GpxTrackMerger` (`API-112`) pour une fusion explicite.
-      `trackDistanceRange` traite déjà chaque trace à part (`WEB-80`).
-
-- [ ] `WEB-185` **Pages d'équipe : la corbeille compte dans le plafond, et la suppression se dit
-      « irréversible » (XS)** — `TeamPagesAdminPage.tsx` compare `pages.length` à
-      `MAX_ADDITIONAL_PAGES`, pages supprimées comprises, et masque « Ajouter une page » alors
-      que le serveur (`countAdditionalPages`, `deleted = false`) accepterait la création ; sa
-      confirmation de suppression dit « Cette action est irréversible » alors que la page se
-      restaure depuis la même liste. Relevé le 15 novembre 2026 (`MOB-169`) : l'app compte ce que
-      le serveur compte et dit que la page peut être restaurée. À faire : compter les pages non
-      supprimées, corriger le texte (fr, en), et désactiver « Restaurer » au plafond comme l'app
-      (`API-204`).
-- [ ] `WEB-7` **Idées de la liste « P2 (à planifier) » qui n'ont pas été retenues** parmi les
-      21 tests P2 écrits — quelques-unes peuvent être couvertes au passage par une autre spec, à
-      vérifier avant de les écrire :
-  - Sorties : modale des participants avec le meneur marqué ; publication programmée dans le passé
-    refusée ; calendrier au-delà de la fenêtre préchargée ; recherche dans les modèles.
-  - Articles et voyages : commentaire d'un compte supprimé ; modale des participants d'un voyage ;
-    étape d'une équipe dont le module est coupé.
-  - Parcours : « cul-de-sac » (`RouteDeadEnd`) ; unités impériales dans les filtres ;
-    « Enregistrer comme parcours » limité aux équipes éligibles (la visibilité du bouton est
-    couverte par `flow-gpx-tools`, pas la liste des équipes) ; carte d'équipe sans fuite des
-    tuiles TEAM ; hub GPX face à un fichier illisible. Le plein écran et son retour sont couverts
-    par `routes-render` (`fullscreenMap`).
-  - Équipe : promotion en ADMIN et filtre par rôle ; page publique, suppression et restauration
-    d'une page, plafond de 3 (les pages supprimées comptent-elles ?).
-  - Annonces : brouillon d'autrui introuvable par son URL ; défauts du formulaire (DRAFT par
-    défaut, Annuler) ; signalement puis redirection.
-  - Transverse : navigation mobile (tiroir, entrée Admin selon le rôle, fil d'Ariane « Plus ») ;
-    restauration du défilement au retour.
-
----
-
-## API — Contrat d'API et backend
-
-- [ ] `API-200` **OAuth des applications externes : l'écran de consentement dans l'app mobile (M)** —
-      `API-199` n'ouvre le flux que par le site : `/oauth/authorize` (`contracts/routes.yaml`,
-      `oauthAuthorize`) est `mobile: false`, `deeplink: false`, donc sur un téléphone où l'app est
-      installée le lien s'ouvre dans le navigateur, où la personne n'a souvent pas de session et doit
-      se connecter avant de consentir. À faire : un écran de consentement dans l'app (mêmes mots que
-      `OAuthAuthorizePage`, même appel `POST /api/oauth/authorize`), la route en `deeplink: true`, et
-      le retour vers le `redirect_uri` par `url_launcher` — un deep link d'une autre app compris.
-      Décidé « plus tard » par le propriétaire le 14 novembre 2026.
-- [ ] `API-203` **Ce qu'un jeton d'application ou d'appareil peut faire sans le membre (S, décision
-      d'abord)** — relecture sécurité d'`API-199` : un jeton qui porte `sid` (application OAuth,
-      Karoo, Garmin) vaut la session du membre, donc il peut demander un changement d'e-mail
-      (`POST /api/auth/email/change-request`, confirmé depuis la *nouvelle* adresse : prise de
-      compte), enregistrer ou supprimer une clé d'accès, approuver un appairage
-      (`/api/device/oauth/complete`), déconnecter les autres sessions, exporter les données,
-      supprimer le compte, et tout `@Admin` si le membre l'est. Seule l'approbation d'une autre
-      application est déjà refusée. Le plus court : refuser les jetons à `sid` sur ces opérations
-      (un filtre lié par nom, comme `@TileTokenAuth`) ; des scopes restent écartés (`API-201`).
-- [ ] `API-202` **Une application externe dans un navigateur ne peut pas appeler l'API (S, décision
-      d'abord)** — `quarkus.http.cors.origins` ne liste que les origines du site : une page servie par
-      une autre origine obtient son code (`API-199`, simple navigation) mais ni l'échange sur
-      `/api/oauth/token` ni les appels d'API ne passent le CORS. Les applications serveur et natives
-      ne sont pas concernées. Ouvrir le CORS à toute origine pour les requêtes **sans** cookie
-      (`Authorization: Bearer` seul, `allow-credentials` réservé aux origines du site) est
-      faisable, mais `CrossSiteRequestFilter` et le cookie `refresh_token` reposent sur la liste
-      actuelle : à décider avec une relecture sécurité, pas en passant.
-
-
-- [ ] `API-173` **La ligne météo d'un voyage dans les listes s'arrête au départ de sa dernière étape (S)** — reste
-      de `API-170` : la page du voyage et celle de l'étape gardent leur météo jusqu'à la fin estimée de l'étape,
-      mais `TripWeatherLookup.forTrips` écarte encore un voyage dès que `TripListSummary.endDate` (le **départ** de
-      la dernière étape) est passé : pendant cette dernière étape, la carte du voyage dans le fil, l'agenda ou le
-      tableau de bord perd sa ligne météo alors que la page la montre. Juger sur la fin (`PublicationEndCalculator`,
-      comme `RideWeatherLookup`), sans requête de plus par voyage (`PublicationQueryCountTest`).
-
-- [ ] `API-154` **Plafonds de la météo des aperçus GPX qui restent ouverts (S)** — suite d'`API-153`
-      (voir aussi `SEC-48`). Ce qui est posé : 20 aperçus datés à venir par compte, 500 aperçus
-      par passage du planner (le plus proche d'abord), vitesse de 10 à 60 km/h ; pas de plafond de
-      points de prévision par aperçu (choix du propriétaire), donc un long tracé demande une cellule
-      tous les 15 km. Ce qui manque : un plafond journalier sur les `PUT` qui changent le tracé d'un
-      aperçu daté (chacun redemande des cellules), une priorité des sorties sur les aperçus dans le
-      worker (`WeatherFetchWorker` sert le passage le plus proche d'abord, sans distinguer l'origine),
-      et un cache d'échantillons à 1 000 entrées (`weather-preview-samples`) qui, au-delà, relit
-      `tracks` à chaque passage. Dans `service/gpx/PreviewDepartures.checkQuota` et `WeatherPlanner`.
-- [ ] `API-152` **D+ du service écrit dans le `Path` par une API publique de vcyclist (XS)** —
-      `RouteDetailsTrack` pose le D+ et le D- d'osm-route-details avec les setters Kotlin
-      `internal` de vcyclist, appelés depuis Java sous leur nom généré
-      (`setElevationGainFiltered$io_github_glandais_gpx`) : une montée de version de vcyclist peut
-      le casser à la compilation. Ajouter côté vcyclist une méthode publique (par exemple
-      `ElevationGainJvm.report(path, gainM, lossM)`), puis y passer dans le helper unique de
-      `RouteDetailsTrack` (ledger `API-150`). Décision du 7 novembre 2026.
-- [ ] `API-151` **Passage à osm-route-details : banc de D+ et crédit web (S)** (scindé d'`API-150`) — la
-      bascule (7 novembre 2026), le recalcul du parc en prod puis en staging (`API-174`) et la phase F
-      (`OPS-59`, `API-155`, `API-156`) sont faits ; les e2e sont repassés le 16 novembre 2026. Reste :
-      - le banc manuel D+ v2 contre v3 sur 30 parcours réels (§8 du plan), dont l'écart va dans les
-        notes de version ;
-      - regarder le crédit web, deux fois plus long, en surimpression en haut à droite du profil
-        (`ElevationChart`).
-
-      Les traces abandonnées par le recalcul se reprennent par `POST /api/admin/elevation-refresh/retry`
-      (procédure dans `docs/OPERATIONS.md`). Plan : [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md).
-
-- [ ] `API-148` **Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)** —
-      `opentelemetry-api` 1.62.0 (CVE-2026-118259, `tracestate`) n'est **pas** forcé :
-      `quarkus-scheduler` l'amène sans `quarkus-opentelemetry` ni SDK, donc le propagateur n'est pas
-      appelé, et le passer seul en 1.67 le décalerait de `opentelemetry-api-incubator` 1.62.0-alpha.
-      Alerte Dependabot n° 232 classée « code vulnérable non utilisé » le 5 novembre 2026. La branche
-      4.0 de Quarkus embarque le SDK 1.67.0 : à la montée, vérifier la version résolue des deux. Restent
-      aussi dans `backend/pom.xml` les surcharges `jackson3.version` et `log4j-api.version`, à retirer
-      dès qu'un BOM Quarkus les dépasse. La surcharge de `guava` est partie le 16 novembre 2026 avec
-      magika 0.7.0, qui ne l'amène plus (`SEC-53`) : guava n'arrive plus qu'en test, en 33.6.0-jre, par
-      `quarkus-junit` → `maven-embedder`, hors de l'image.
-
-- [ ] `API-139` **`GET /api/admin/teams` compte les membres ligne par ligne (S)** —
-      `AdminTeamService.listTeams` appelle `userTeamRepository.count` pour chaque équipe de la page
-      (`service/admin/AdminTeamService.java`, dans le `map` des lignes) : une requête par ligne, contre l'invariant des
-      lookups par page. Correctif : un `count` groupé par `team.id` pour toute la page, et un
-      `AdminTeamQueryCountTest` qui échoue si la ligne revient. Relevé pendant `API-137`.
-
-- [ ] `API-140` **`/api/admin/teams` sans domaine forcé : décision produit à prendre** —
-      l'endpoint accepte un `domainId` arbitraire ou nul, et nul liste les équipes de **tous** les
-      domaines (`AdminTeamService.listTeams`). Le filtre de domaine de la console d'administration
-      laisse penser que c'est voulu (un opérateur pour toute la plateforme), mais rien ne le dit, et
-      c'est le seul endroit où une requête sort de son domaine. Trancher : super-administration
-      multi-domaine assumée (et alors l'écrire, et le dire dans la console), ou domaine de la
-      requête imposé. Rien n'est changé en attendant. Relevé pendant `API-137`.
-
-- [ ] `API-136` **Retirer `participations` du résumé du profil (S)** — depuis `WEB-110`, ni le site
-      ni l'app ne lisent `ProfileSummaryDto.participations` (`ProfileParticipationSummaryDto` : compteurs
-      à venir / passées et prochaine sortie), que `GET /api/users/me/profile-summary` calcule encore à
-      chaque ouverture du profil. Le retirer du contrat (montée de version majeure) ;
-      `GET /api/users/me/participations` reste, l'accueil mobile le lit.
-
-- [ ] `API-135` **Garder le type et la distance des `course_point` d'une pièce jointe FIT (S)** — un
-      parcours ne s'importe qu'en GPX (C3c de `WEB-100`, écart E1) ; le seul lecteur de FIT est
-      `TrackAttachmentSanitizer`, pour les **pièces jointes**, qui n'ont pas de ligne `gpx_waypoints`.
-      Il lit déjà les `course_point` en points de passage (position et nom) ; restent leur type et
-      leur distance (vcyclist 6.11), et leur réécriture dans le FIT nettoyé — le Javadoc de la classe
-      dit que l'écrivain FIT de vcyclist n'a pas de course point, à revérifier contre
-      `GpxProcessingService`, qui en écrit.
-
-- [ ] `API-177` **Le rôle de l'appelant dans l'équipe, lu une fois par requête (S)** — sur un
-      détail, `PedalonsQueryContext.getContext` lit le rôle pour `@CheckAccess`
-      (`findByUserAndTeam`) sans le garder, puis `TeamEntityService.detailPermissions` le relit
-      pour le bloc `permissions` (`API-176`) : une requête de trop par détail, indépendante de la
-      taille de page. Le mémoïser par équipe dans le contexte de requête, en l'invalidant quand la
-      requête change l'appartenance (rejoindre, quitter, changer un rôle). Touche le contexte de
-      sécurité de tous les endpoints d'équipe : à faire à part, avec les `…QueryCountTest` pour
-      mesurer.
-
-- [ ] `API-207` **Générateur de parcours au-delà du réseau de l'équipe (L, proposition, décision
-      d'abord)** — le générateur d'`API-198` ne propose que des routes déjà roulées par l'équipe :
-      41 % de réussite pour la plus grande, 14 % pour une moyenne, 0 à 2 % pour les autres, dont
-      les parcours sont des lignes sans boucle ; ses formes (point de retournement, polygone
-      régulier) ne sont pas celles qu'une personne trace, et la part de chemins n'est pas une
-      consigne. Proposition : graphe vélo préparé hors ligne à partir d'un extrait OSM, fichier en
-      cellules lu par `mmap`, moteur Rust à côté d'osm-route-details, génération « squelette puis
-      chair » sur les formes mesurées des vrais parcours, surcouches recalculées chaque nuit depuis
-      `network_edges` (fréquentation, goût appris par classe de route), part de non-revêtu tenue.
-      Revient sur trois points mis dehors par le plan d'`API-198` (importer OSM, sortir des routes
-      de l'équipe, agrégat entre équipes) : six décisions du propriétaire au §11, lot 0 de mesure
-      avant tout code. Plan [`2026-11-15-generateur-parcours-osm.md`](plans/2026-11-15-generateur-parcours-osm.md).
-      Les lots 0 à 3 (graphe, surcouche, moteur, service 1.9, backend `15.0.0` avec dépôt nocturne,
-      recherche Java retirée) sont livrés sous `API-206`. La mise en service (image 1.9 et fichiers du
-      graphe dans la pile partagée, clé par environnement, première passe à la main) est faite
-      depuis le 16 novembre 2026 (`OPS-60`). Restent : `SEC-52`, la fin de la recette du site (`WEB-179`), puis les lots 4
-      à 7 : formes organiques (squelette puis chair, §5), off-road (§6), graphe de la France entière
-      (une seule région couverte, les Pays de la Loire, au 16 novembre 2026), catalogue. L'app
-      (`MOB-154`) reste dehors.
-      **Repris dans le moteur le 16 novembre 2026** (osm-route-details `v1.9.0`) : la levée de la règle du demi-tour étalé
-      dans les 200 premiers et derniers mètres du parcours, que la recherche Java avait reçue la veille après un relevé en
-      production (aucun parcours vers le nord-ouest depuis la place de la plus grande équipe, conception du lot 2
-      d'`API-198`, §13.14), est portée dans le moteur et, par un code séparé, dans son contrôleur. Campagne rejouée : aucune
-      violation, strict inchangé (91 sur 323), équipe d'abord 300 au lieu de 299. **Non vérifié** : la requête de
-      production elle-même (50 km, cap nord-ouest, place de l'équipe), qui n'est pas dans le banc.
+- [ ] [`WEB-185`](ledger/WEB/WEB-185.md) Pages d'équipe : la corbeille compte dans le plafond, et la suppression se dit « irréversible » (XS)
+- [ ] [`WEB-81`](ledger/WEB/WEB-81.md) GPX à plusieurs traces : profil empilé et synchro faussée (S, priorité basse)
+- [ ] [`WEB-7`](ledger/WEB/WEB-7.md) Idées de la liste « P2 (à planifier) » qui n'ont pas été retenues
 
 ### Heure de départ : audit du 7 novembre 2026
 
-- [ ] `API-160` **iCal : une étape n'a pas d'heure de départ (à trancher)** — scindé d'`API-157`. Les
-      étapes sont des événements en journée entière (`CalendarService.java`, `allDay=true` ;
-      `PublicationIcsService`), choix établi par `API-85` et `API-90` : l'heure de départ de l'étape
-      n'apparaît pas dans l'agenda. Décider si une étape devient un événement horodaté (départ →
-      arrivée estimée) ou reste en journée entière avec l'heure dans le titre ou la description.
-- [ ] `API-196` **Garmin : fuseau de la sortie, lieu, équipe, état — ce que `details=true` donnerait (M)** —
-      scindé d'`API-159`, dont la part sans changement de contrat est livrée. L'app Garmin lit
-      encore le départ à l'heure de l'Edge (`FormatUtils.formatDeparture`), ne montre ni le lieu de
-      départ, ni l'équipe, ni « Annulé » / « En cours » / « Terminée », ni « Aujourd'hui » /
-      « Demain » : le Karoo les tient de `GET /api/device/routes?details=true` (`API-194`), que
-      Garmin n'envoie pas pour garder sa réponse à l'octet. Les demander alourdit la réponse : à
-      mesurer en mémoire sur les 14 Edge avant de l'activer, avec les étapes (`API-192`). Reste
-      aussi une recette sur un Edge réel des menus dessinés (`PdlMenu.mc`) : seuls les 530, 540 et
-      1050 ont été vus, au simulateur, et aucun badge orange, rouge ou gris faute de données ; et
-      le fond d'un menu ouvert ne suit pas une bascule jour/nuit avant sa réouverture.
+- [ ] [`WEB-139`](ledger/WEB/WEB-139.md) Aperçu de partage (OG/SSR) : la date disparaît dès qu'il y a une description (S)
 
-### Extension Karoo : ce que le découpage de novembre 2026 a figé sans le corriger
+## API — Contrat d'API et backend
 
-Le découpage de `MainActivity.kt` (`AUD-22`) a conservé le comportement tel quel, défauts compris :
-chacun est tenu par un test marqué `CHARACTERIZATION:` dans `karoo/app/src/test/`. En corriger un,
-c'est changer ce test exprès, dans le même commit.
+Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 
-- [ ] `API-186` **Karoo : une synchro qui échoue ou réussit à tort (S)** — `PedalonsRepository.syncRoute`
-      prend le jeton d'accès courant sans le rafraîchir : s'il a expiré depuis le chargement des
-      parcours, l'écran affiche « Envoi impossible » sans qu'aucune requête parte, et un 401 donne ce même échec
-      au lieu d'une déconnexion. À l'inverse une réponse 200 portant `success: false` s'affiche
-      « Parcours envoyé » et marque le parcours comme déjà sur le Karoo. Une synchro n'est pas
-      annulée quand on quitte l'écran, et tant qu'une synchro tourne toute autre demande est ignorée,
-      quelle que soit la ligne. L'absence de Hammerhead est reconnue à la sous-chaîne
-      `GPS_SERVICE_NOT_CONNECTED` dans le corps brut de l'erreur (un seul endroit désormais), pas au
-      `code` d'`ErrorResponse`. Tests : `SyncTest`, `PedalonsRepositoryTest`.
-- [ ] `API-187` **Karoo : les touches agissent sous l'écran affiché (S)** — pendant le squelette de
-      rechargement, l'écran d'erreur ou l'écran de connexion, Suivant, Précédent, Sélection et Retour
-      continuent de piloter la navigation cachée dessous (`browse/BrowseState.kt`,
-      `MainViewModel.onKey`) : après un rechargement en échec, Sélection ouvre « Prochaines
-      sorties » sans rien montrer, une seconde peut lancer une synchro, et Retour dépile cet écran
-      caché au lieu de fermer l'app — alors que le bouton tactile Retour de ces mêmes écrans la ferme.
-      Avant la connexion au Karoo System Service, les touches sont avalées sans effet.
-- [ ] `API-188` **Karoo : erreurs de chargement traitées différemment selon le chemin (S)** — un 401
-      ou un rafraîchissement de jeton refusé déconnecte au premier chargement, mais affiche l'erreur
-      générique et garde les jetons sur « Réessayer » et sur le rechargement de l'accueil ; un échec
-      dont l'exception n'a pas de message n'est pas vu comme une erreur (écran « aucun parcours » au
-      premier chargement, ancien contenu gardé sans rien dire au rechargement) ; « Réessayer » ne
-      ramène pas à l'accueil alors que le rechargement le fait ; si `/api/device/me` échoue au
-      lancement, les parcours se chargent comme si Hammerhead était relié. Libellés : l'écran
-      d'erreur ignore le message reçu et ne distingue pas une panne du serveur d'une absence de
-      réseau (« Chargement impossible » dans les deux cas ; ses mots et ceux du bouton sont faits
-      sous `API-194`), la description du QR (« QR Code ») n'est pas traduite, et une sortie sans
-      parcours ouvre une liste vide sans texte (`browse/ui/RideEntriesScreen.kt`). Tests :
-      `StartupAndAuthFlowTest`, `MainViewModelTest`.
-- [ ] `API-189` **Karoo : l'étape Hammerhead ne rend jamais la main (S)** — `HammerheadLinkWatcher`
-      relit `/api/device/me` toutes les 5 s sans limite de durée, et ne déconnecte ni sur un 401 ni
-      sur un rafraîchissement refusé : seule « Déconnexion » en sort. Ouverte par une synchro en
-      échec, l'étape une fois terminée ne relance ni la synchro ni le chargement (on reste sur
-      l'échec), et la quitter par Retour ferme toute l'app. À rapprocher d'`API-63` (recette de
-      l'onboarding) avant d'y toucher.
-- [ ] `API-190` **Karoo : finir le filet de tests (S)** — (1) le démarrage envoyait en double
-      rafraîchissements de jeton et chargements ; le `MainViewModel` les enchaîne désormais, mais les
-      tests ne tiennent encore que des plafonds et la cible exacte (un de chaque) reste `@Ignore` dans
-      `StartupAndAuthFlowTest` : l'activer. (2) `MainViewModelTest` attend en temps réel
-      (`Thread.sleep`) les fils du `MockEngine` : lui donner le dispatcher de test. (3) Les captures
-      de référence n'ont été enregistrées et comparées que sur un poste Linux en JDK 25 : vérifier au
-      premier passage de la CI (JDK 17) qu'elles s'y reproduisent au pixel. (4) Recette sur un Karoo
-      branché en adb, que la JVM ne remplace pas : vrai moteur `ktor-client-karoo`, vraies touches,
-      et à la fermeture de l'app le retrait du consommateur `UserProfile` avant `disconnect()`
-      (surveiller logcat). (5) Restes de relecture : `PollingContent` n'est atteint par aucun
-      chemin (gardé pour sa capture), `PedalonsApiClient.engineFactoryForTests` est un point d'entrée
-      de test dans le code livré, `karoo-ext-testing` (doublures du Karoo System Service) permettrait
-      de s'en passer mais a été écarté le 12 novembre 2026 (bibliothèque d'un mois, `0.1.1`).
+- [ ] [`API-207`](ledger/API/API-207.md) Générateur de parcours au-delà du réseau de l'équipe (L, proposition, décision d'abord)
+- [ ] [`API-203`](ledger/API/API-203.md) Ce qu'un jeton d'application ou d'appareil peut faire sans le membre (S, décision d'abord)
+- [ ] [`API-202`](ledger/API/API-202.md) Une application externe dans un navigateur ne peut pas appeler l'API (S, décision d'abord)
+- [ ] [`API-200`](ledger/API/API-200.md) OAuth des applications externes : l'écran de consentement dans l'app mobile (M)
+- [ ] [`API-177`](ledger/API/API-177.md) Le rôle de l'appelant dans l'équipe, lu une fois par requête (S)
+- [ ] [`API-173`](ledger/API/API-173.md) La ligne météo d'un voyage dans les listes s'arrête au départ de sa dernière étape (S)
+- [ ] [`API-154`](ledger/API/API-154.md) Plafonds de la météo des aperçus GPX qui restent ouverts (S)
+- [ ] [`API-152`](ledger/API/API-152.md) D+ du service écrit dans le `Path` par une API publique de vcyclist (XS)
+- [ ] [`API-151`](ledger/API/API-151.md) Passage à osm-route-details : banc de D+ et crédit web (S)
+- [ ] [`API-148`](ledger/API/API-148.md) Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)
+- [ ] [`API-140`](ledger/API/API-140.md) `/api/admin/teams` sans domaine forcé : décision produit à prendre
+- [ ] [`API-139`](ledger/API/API-139.md) `GET /api/admin/teams` compte les membres ligne par ligne (S)
+- [ ] [`API-136`](ledger/API/API-136.md) Retirer `participations` du résumé du profil (S)
+- [ ] [`API-135`](ledger/API/API-135.md) Garder le type et la distance des `course_point` d'une pièce jointe FIT (S)
 
-### `API-63` Onboarding d'un Karoo refait de bout en bout (M, backend + web + mobile + Karoo)
+### Cache, fraîcheur et images — quatre briques indépendantes
 
-Associer un Karoo laisse l'utilisateur sans Hammerhead sans qu'il le sache : l'app mobile ne le
-propose jamais, le web le propose trop tard (le Karoo a déjà affiché son second QR), et ce QR mène
-au profil sans rien expliquer. Le plan [`2026-10-02-karoo-onboarding.md`](plans/2026-10-02-karoo-onboarding.md)
-refait le parcours : un seul QR, l'étape Hammerhead enchaînée sur le téléphone après l'autorisation,
-un retour d'OAuth paramétré (`returnTo`, contrat `10.4.0`) et un Karoo qui suit `/api/device/me`
-au lieu de redemander. Hammerhead y est **obligatoire** (décision du 2 octobre 2026).
-
-**Code livré et en prod, tous les tests automatisés verts : reste la recette manuelle.** Backend
-(`GpsResourceTest`), e2e web (`flow-device.e2e.ts`) et Patrol (`device_link_test`,
-`device_hammerhead_test`, `device_link_signed_out_test`, `device_manual_code_test`) sont verts.
-Reste la recette sur Karoo et téléphone du §4 du plan (six scénarios), à faire sur la version courante (`karoo.1.0.15` au 16 novembre 2026),
-qui embarque aussi « Prochaines sorties » (`API-118`) et l'état de synchro GPS (`API-121`). Les
-connexions Hammerhead créées en prod (trois au 16 octobre 2026) montrent un usage réel, pas que la
-recette a été faite ; l'entrée passe dans `LEDGER_DONE.md` une fois celle-ci faite.
-
-- [ ] `API-72` **Contraintes CHECK des enums vérifiées contre Flyway (S)** — les tests construisent
-      le schéma depuis les entités (`%test.quarkus.flyway.migrate-at-start=false`) : un enum persisté
-      en `varchar` qui gagne une valeur sans migration passe toute la suite et casse en prod (`API-71`).
-      Un test qui applique `db/migration` sur une base PostGIS vierge (TestContainers) et compare chaque
-      contrainte `…_check` aux valeurs de l'enum Java correspondant (`AuthTokenType`, `AssetType`,
-      `GpsSyncError`, `service_type`, `platform_role`, `unit_system`, `theme`, `visibility`,
-      `status`…) supprimerait cette classe de défaut. Elle s'étend : V71 a ajouté
-      `ck_gps_route_syncs_last_error` (`GpsSyncError`), et `API-103` tomberait dans ce piège. Au
-      16 octobre 2026, les CHECK de la prod sont alignés sur les enums Java.
-
-### Météo : ce qui suit `API-74`
-
-La météo des **sorties** est livrée (`API-74`, `WEB-60`, `MOB-51`, contrat `10.9.0`), celle des
-**étapes de voyage** aussi (`API-76`, `WEB-67`, `MOB-57`, contrat `10.11.0`), et la ligne des
-cartes de voyage (`API-82`, contrat `10.13.0`). Le plan
-[`2026-10-05-weather.md`](plans/archive/2026-10-05-weather.md) est archivé : il garde les
-arbitrages, ce qui suit est ici (et les recettes des sorties, `WEB-61`, `MOB-52`, `OPS-29`).
-
-- [ ] `API-77` **Météo sur Karoo et Garmin (M)** — `DeviceRideDto` ne porte rien ; à concevoir
-      (résumé seul, ou points de passage) avec les contraintes de taille des deux apps. Les aperçus
-      de lien (`og:`) ne portent **jamais** de météo. Le DTO appareil a grossi depuis
-      (« Prochaines sorties », `API-118` ; état de synchro, `API-121`), ce qui pèse sur le budget
-      de taille Garmin ; la vue « Prochaines sorties » est un endroit naturel pour l'afficher.
-- [ ] `API-103` **Pas de réglage d'unités pour le Royaume-Uni (S, contrat + web + mobile)** —
-      `UnitSystem` ne connaît que `METRIC` et `IMPERIAL`. Un cycliste britannique compte en miles,
-      en mph et souvent en pieds, mais en °C et en mm : « Impérial » lui donne des °F et
-      « Métrique » des km. Piste : une troisième valeur `UK` (mi, mph, ft, °C, mm), qui ne fait
-      qu'ajouter une valeur au contrat (le mobile traite déjà une valeur inconnue comme `METRIC`,
-      via `$unknown`), plutôt que des réglages par grandeur à la Garmin. Lieux :
-      `enums/UnitSystem.java`, `frontend/src/utils/unitFormat.ts` (`getUnitConfig`,
-      `temperatureToDisplay`) et les clés `*_imperial` de `useUnits`, `mobile/lib/core/units/unit_system.dart`,
-      les sélecteurs de préférences des deux clients, et une migration Flyway qui élargit
-      `users_unit_system_check` (aujourd'hui `METRIC`/`IMPERIAL`), faute de quoi la mise en prod
-      casse (piège `API-72`). À ne faire que si le public sort de la France : au 16 octobre 2026,
-      un seul domaine (`www.pedalons.fr`) et aucun utilisateur en `IMPERIAL`.
-      Le vent en m/s (prévisions scandinaves) relève de la même logique de préréglage, sans
-      demande à ce jour.
-
-### Les chantiers d'infrastructure d'API
-
-Quatre chantiers ont été chiffrés au §4 du
-[document d'API archivé](plans/archive/2026-07-26-api-v2-livraison-et-suites.md) (contrat, modèle,
-déclenchement, risques). Seul le push a été livré depuis (`NOTIF-9`) ; les trois autres n'ont pas été
-commencés, si ce n'est l'`ETag` privé de la météo, qui sert de modèle à `API-22`. Résumé et ordre
-recommandé :
-
-#### `API-21` Pagination par curseur — **à faire avant d'étendre le scroll infini** (L)
-
-C'est le seul des quatre qui a une **contrainte d'ordre** : il touche `BaseRepository.getPage`,
-`PedalonsQuery` et tous les `…ListResponse`. L'offset actuel duplique et saute des éléments dès que
-la liste bouge sous le curseur — sur `n-peloton` ce n'est pas un cas limite.
-
-Trois règles à tenir : `cursor` et `page` mutuellement exclusifs (les deux ⇒ **400**, pas un
-comportement silencieux) ; `nextCursor` renvoyé **toujours**, y compris en mode offset (c'est le
-chemin de migration des clients) ; `total` reste calculé — les compteurs de tête de liste en
-dépendent, et le pied de liste mobile (« 60 membres sur 1 999 ») l'exige. La clé de tri doit
-**toujours** se terminer par `id`, sinon elle n'est pas totale. Le tri variable des parcours
-(`sortBy` × `sortDir` × un `price` nullable) est le point délicat : un test par critère.
-
-Note : le plan mobile a explicitement retenu l'offset **et** l'a justifié (le curseur ne fournit pas
-le `total` que le pied de liste maquetté exige). Livrer le curseur ne suffit donc pas à faire basculer
-le mobile — la cohabitation ci-dessus est ce qui rend la bascule possible.
-
-#### Cache, fraîcheur et images — quatre briques indépendantes
-
-- [ ] `API-22` **`ETag` / `If-None-Match` (M)** — le verrou est que les champs « moi »
-      (`registered`, `registeredGroupId`, `full`, `commentCount`) rendent les réponses dépendantes
-      de l'appelant. Un `ETag` calculé sur le contenu métier seul serait faux et un cache partagé
-      servirait à Alice la réponse de Bob. Recommandation actée : intégrer `userId` au calcul et
-      servir `Cache-Control: private` — le gain visé est le cache **du client**, pas d'un CDN.
-      La mécanique existe déjà pour la météo (`API-74`) : `ETag` faible, `If-None-Match` → 304 et
-      `Cache-Control: private, no-cache` (`RideResource`, `TripResource`, `RideWeatherAnswer`), à
-      prendre pour modèle. Reste à l'étendre aux détails sortie, parcours et voyage, puis aux
-      listes, avec `userId` dans le calcul.
-- [ ] `API-23` **`updatedAt` en liste + `?updatedSince=` (M)** — c'est ce qui rend une synchro
-      incrémentale possible. **À décider avant de coder** : `updatedSince` ne dit rien des
-      suppressions. Soit des tombstones (`deleted_at` interrogeable), soit une resynchronisation
-      périodique complète.
-- [ ] `API-24` **URLs d'images signées (M)** — HMAC sur `(chemin, expiration)`. Piège : une URL qui
-      expire pendant qu'une image est en cache donne une image cassée **sans erreur lisible** ;
-      prévoir la renégociation client. Même brique que l'imgproxy non signé (`AUD-9`).
-- [ ] `API-25` **`blurHash` (S)** — 30 octets par image, calculés une fois à l'upload. Le seul point
-      à trancher : faire de `thumbnailUrl` un objet `{url, blurHash, width, height}` est un
-      **MAJOR** (changement de type sur un champ livré en 1.3.0) ; un champ frère
-      `thumbnailBlurHash` ne l'est pas. Pour les images existantes, le backfill par lots
-      d'`AssetMetadataBackfillScheduler` (`API-43`) est un schéma réutilisable.
-
-Ensemble, elles débloquent le chargement progressif du parcours, de vrais placeholders colorés à la
-place des squelettes, et le **hors-ligne — qui n'est dans aucune maquette et devrait l'être avant
-d'être promis**.
-
-#### `API-26` Carte multi-entités `GET /api/map/features` (M)
-
-Une `FeatureCollection` légère par bbox et par types (`RIDE`, `ROUTE`, `PLACE`, `AD`), plus
-`…/places/bounds`. Le point dur est de **ne pas contourner les règles de visibilité** : une union de
-requêtes projetées, une par type, jamais du HQL brut sur `team_entities`. Plafond dur de features et
-refus explicite des bbox trop grandes, sinon `types=ROUTE` sur le monde renvoie plus de 5 500
-features (5 527 parcours en prod au 16 octobre 2026). Cet
-endpoint doit rester **non paginé et borné**.
-
-Les features `type=AD` sortent **floutées** et doivent se rendre en **secteur, jamais en punaise** —
-une carte qui mélange les types est précisément l'endroit où l'on dessinerait tout le monde avec le
-même marqueur.
-
-À noter : ce n'est **pas** un prérequis de la vue carte des parcours, qui fonctionne déjà par les
-tuiles MVT. C'est ce qui permet d'y **ajouter** les autres entités.
-
-#### `API-27` Coût du lot de géométries — ce qui reste après 2.0.0
-
-Le paramètre `simplify` et `…/elevation-profile` ont été supprimés en 2.0.0 (`API-40`).
-
-`MAX_BULK_SLUGS = 50` est désormais le *seul* garde-fou du
-lot, sur un endpoint `@PermitAll` que seule borne la limite globale par client (`SEC-28`, en nombre
-de requêtes, pas en poids). Un lot réaliste de 50 parcours pèse
-3,2 Mo ; les 50 plus lourds de la base pèsent 64 Mo (chiffres à remesurer : la base compte deux
-fois plus de parcours depuis l'import de n-peloton). Ce cas suppose un appelant qui sait lesquels
-sont les plus lourds et les nomme tous : c'est un sujet de **rate limiting**, pas de contrat. Le
-levier si ça devient sensible est de descendre `MAX_BULK_SLUGS` vers ~15 (les appelants réels
-plafonnent à 12, `kTripTrackStageCap`), pas de réintroduire un paramètre de finesse.
-
-### Petites évolutions d'API qui suppriment chacune une dégradation nommée
-
-Extrait du §5.2 du plan mobile. Aucune ne bloque un écran ; chacune retire un repli visible.
-Beaucoup sont des ajouts d'un champ — le rapport valeur/effort y est bon. Les numéros reprennent
-ceux du plan (`API-1`, l'URL de tuile authentifiable, est livré).
-
-| ID | Manque | Écrans | Dégradation actuelle |
-|---|---|---|---|
-| `API-8` | Voisins de publication (`prev`/`next`) — absents de tout le contrat `11.5.1` (balayage de tous les schémas le 16 octobre 2026) | 31 | Navigation rendue seulement depuis un fil déjà chargé |
-| `API-17` | `?format=polyline` sur la géométrie de parcours | — | La géométrie stockée est déjà allégée à l'import (`API-40` : 681 points et 65 Ko pour le parcours médian) ; ~÷4 sur le poids, au prix d'un décodeur Dart. **À rouvrir seulement sur une mesure réelle** — aucune n'a été faite au 16 octobre 2026 ; sans mesure, candidat à « Délibérément dehors » (décision du propriétaire) |
-| `API-18` | Voyage comme événement multi-jour au calendrier (`CalendarEventType`, toujours `RIDE`/`TRIP_STAGE`) | 22 | Un voyage sans étape est absent du calendrier ; avec des étapes, elles y sont, le voyage en tant qu'objet non |
-| `API-19` | `GET /api/search?q&types=&limit` unifié | — | Plus aucune recherche transverse : `GET /api/users/search` a été **supprimé** en `3.0.0` (`API-39`). La seule recherche de personnes est celle du trombinoscope d'une équipe |
-
-Le meneur de groupe (`API-41`, livré en 1.5.0), l'URL de tuile (`API-1`) et la pagination du
-calendrier (`API-20`) sont dans
-[`LEDGER_DONE.md`](LEDGER_DONE.md). Les **gabarits de sortie n'ont volontairement pas de meneur** —
-décision produit : `RideTemplateGroupRequest` reste sans champ.
+- [ ] [`API-27`](ledger/API/API-27.md) Coût du lot de géométries — ce qui reste après 2.0.0
+- [ ] [`API-26`](ledger/API/API-26.md) Carte multi-entités `GET /api/map/features` (M)
+- [ ] [`API-25`](ledger/API/API-25.md) `blurHash` (S)
+- [ ] [`API-24`](ledger/API/API-24.md) URLs d'images signées (M)
+- [ ] [`API-23`](ledger/API/API-23.md) `updatedAt` en liste + `?updatedSince=` (M)
+- [ ] [`API-22`](ledger/API/API-22.md) `ETag` / `If-None-Match` (M)
 
 ### Envoi automatique des parcours vers les services GPS : ce qui reste après `API-120`
 
-Le cœur d'`API-120` (contrat `11.5.0`, migration `V71`, planificateur et worker, envois manuels
-suivis dans `gps_route_syncs`) est livré et tourne en prod depuis le 16 octobre 2026 : 3 connexions
-en envoi automatique (Hammerhead, Wahoo, Garmin OAuth 1.0a), 5 parcours envoyés sans erreur.
-`GPS_SYNC_ENABLED` vaut `true` en prod et en staging ; la politique le décrit depuis le
-16 octobre 2026 (`LEGAL-21`), et `docs/OPERATIONS.md` le documente ; reste la recette sur
-appareil (`OPS-42`, étape 7 du plan
-[`2026-10-16-gps-route-autosync.md`](plans/2026-10-16-gps-route-autosync.md)).
+- [ ] [`API-164`](ledger/API/API-164.md) `RideGroupDto.gpsSyncStatuses` vide quand la route du groupe est supprimée ou masquée (S)
+- [ ] [`API-126`](ledger/API/API-126.md) L'envoi manuel vers un service GPS traite 401, 412 et 429 comme la synchronisation (S)
+- [ ] [`API-125`](ledger/API/API-125.md) Les restes d'`API-120` : nom envoyé, envoi manuel d'une route suivie, étape 0 (S)
+- [ ] [`API-122`](ledger/API/API-122.md) L'état « déjà chez le service GPS » de « Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge (S)
 
-- [ ] `API-125` **Les restes d'`API-120` : nom envoyé, envoi manuel d'une route suivie,
-  étape 0 (S)** — trois écarts que la livraison a laissés ouverts :
-  - **Le nom envoyé ne suit pas la règle des clients** (`WEB-83`, livrée) : `GpsSyncNames.autoName`
-    met le nom brut du groupe (« 2026-10-18 · A · … » pour un groupe nommé « A »), quand le site et
-    l'app écrivent « Groupe A » devant un nom d'un ou deux caractères. Une seule règle à partager :
-    celle de `groupTitle` (`frontend/src/utils/groupTitle.ts`, `group_title.dart`).
-  - **Un envoi manuel d'une route que la synchronisation tient renvoie le nom automatique**
-    (« date · groupe · route », `GpsRouteSyncExecutor` ne prend `route.getName()` que sans nom
-    voulu) plutôt que celui de la route : trancher lequel est voulu, et le dire.
-  - **L'étape 0 du plan n'a pas été faite comme prévue** : les envois réels de prod établissent la
-    création chez les trois services ; restent supposés le code d'un `PUT`/`DELETE` sur un parcours
-    supprimé par l'utilisateur (404 ?), le renommage par `PUT` chez Hammerhead, la réponse du `PUT`
-    Garmin, un second `POST` Wahoo avec le même `external_id`, et l'absence de limite de débit
-    Hammerhead. Les observer (sur les comptes de test ou dans les journaux de prod), puis les
-    consigner au §5 du plan et ajuster le tableau du §4.4.
-- [ ] `API-126` **L'envoi manuel vers un service GPS traite 401, 412 et 429 comme la
-  synchronisation (S)** — la synchronisation tire déjà de `GpsCallResult.ofFailure` une connexion
-  « à reconnecter » (401, 412) ou une pause qui respecte `Retry-After` (429) ; l'envoi manuel (web,
-  mobile, Karoo : `GpsRouteSyncService.uploadManually`, puis `GpsCallResult.toUploadResult`) les
-  réduit à un message « Upload failed: 401/412/429 », sans marquer la connexion ni retenir la pause.
-  Le membre recommence sans savoir qu'il doit reconnecter le service. Vaut pour les trois services,
-  OAuth 1.0a Garmin compris ; le reste de la conformité Garmin est `API-61`.
-- [ ] `API-164` **`RideGroupDto.gpsSyncStatuses` vide quand la route du groupe est supprimée ou
-  masquée (S)** — cas marginal laissé par `API-163`. `RideGroupDto.from` / `fromRow` interrogent
-  `GpsSyncLookup` sur la route propre du groupe dès qu'elle existe (`effectiveRouteId`), sans le
-  filtre de visibilité du planificateur (`MemberRouteVisibility.routeVisible`) : quand la route du
-  groupe est supprimée ou masquée et que le planificateur envoie donc celle de la sortie, le champ
-  du groupe reste vide alors que le parcours est bien chez le service. Faire suivre au DTO la même
-  route effective que le planificateur, visibilité comprise, sans requête par groupe
-  (`…QueryCountTest`).
-- [ ] `API-122` **L'état « déjà chez le service GPS » de « Prochaines sorties » éprouvé sur un
-  vrai Karoo et un vrai Edge (S)** — l'affichage livré par `API-121` (contrat `11.5.0`, embarqué
-  dans `karoo.1.0.13` et `garmin.1.0.1`) n'a aucun test côté appareils. Même écran que `API-119` :
-  une seule séance pour les deux. La prod a de vraies lignes synchronisées depuis le 16 octobre
-  2026. À vérifier sur Karoo : chaque libellé (déjà sur le Karoo, ancienne version, mise à jour en
-  attente, envoi en échec, reconnecter) sur une ligne au repos, et une ligne synchronisée depuis le
-  Karoo qui reste « Déjà sur le Karoo » après la synchro d'une autre ligne et un retour à la liste.
-  Sur Edge (ou simulateur) : le libellé en tête du sous-titre, lisible sur petit écran. Puis la
-  version courante contre un serveur `11.4.0` (rien d'affiché) — sur une pile locale, la prod étant
-  bien au-delà (`15.0.0` au 16 novembre 2026) ; le cas des apps précédentes est celui d'`API-119`.
+### Extension Karoo : ce que le découpage de novembre 2026 a figé sans le corriger
+
+- [ ] [`API-190`](ledger/API/API-190.md) Karoo : finir le filet de tests (S)
+- [ ] [`API-189`](ledger/API/API-189.md) Karoo : l'étape Hammerhead ne rend jamais la main (S)
+- [ ] [`API-188`](ledger/API/API-188.md) Karoo : erreurs de chargement traitées différemment selon le chemin (S)
+- [ ] [`API-187`](ledger/API/API-187.md) Karoo : les touches agissent sous l'écran affiché (S)
+- [ ] [`API-186`](ledger/API/API-186.md) Karoo : une synchro qui échoue ou réussit à tort (S)
+- [ ] [`API-72`](ledger/API/API-72.md) Contraintes CHECK des enums vérifiées contre Flyway (S)
+- [ ] [`API-63`](ledger/API/API-63.md) Onboarding d'un Karoo refait de bout en bout (M, backend + web + mobile + Karoo)
 
 ### Garmin
 
-- [ ] `API-61` **Mettre l'intégration Garmin OAuth 2.0 en conformité** — **bloqué** : le programme
-      Garmin Connect Developer n'admet aucune nouvelle application tant qu'il est en pause (toujours
-      sans date de réouverture au 16 octobre 2026) ; en attendant, les domaines passent par OAuth
-      1.0a avec les applications déjà déclarées (`API-62`), qui marchent en prod. À reprendre quand
-      l'application OAuth 2.0 pourra être créée, d'après la doc Garmin
-      (Courses API 1.0.1, OAuth2 PKCE, Start Guide 1.2). Ce qu'il reste, tout dans
-      `infrastructure/gps/GarminClient.java` et `service/gps/GpsService.java` :
-      - **`externalUserId` toujours null** : la réponse du jeton n'a pas de `user_id` ; il faut
-        `GET https://apis.garmin.com/wellness-api/rest/user/id` après l'échange (identifiant
-        principal selon Garmin, celui que portent les webhooks).
-      - **Déconnexion sans prévenir Garmin** : `GpsService.disconnect` (et l'effacement du compte)
-        doit appeler `DELETE https://apis.garmin.com/wellness-api/rest/user/registration`, que
-        Garmin exige dès qu'une app propose une déconnexion.
-      - **Codes d'erreur** : la synchronisation automatique (`API-120`) distingue déjà 401 et 412
-        (connexion à reconnecter) et 429 (pause selon `Retry-After`) ; l'envoi manuel les confond
-        encore (`API-126`). Reste, propre à Garmin : un 401 (jeton révoqué) devrait
-        supprimer la connexion plutôt que la laisser « à reconnecter » ; la revue de production
-        vérifie la gestion des quotas.
-      - **Marge de rafraîchissement** : `GpsServiceConnection.isTokenExpired()` prend 300 s, Garmin
-        recommande au moins 600 s (jeton de 86 400 s ; refresh token de 90 jours, renouvelé à
-        chaque refresh — déjà géré).
-      - **Taille des parcours** : ~10 000 points au plus, 100 m au plus entre deux, un point tous
-        les 100 m recommandé — rien ne le vérifie ni ne rééchantillonne.
-      - **Webhooks** désinscription et changement de permissions (Start Guide §2.6) : sans eux une
-        connexion révoquée côté Garmin reste « connectée » jusqu'au premier 401.
-      - **`activityType`** toujours `ROAD_CYCLING` (biketeam le tirait du type de carte), et le D+
-        de `GarminCourseConverter` saute un point à 0 m exactement (`prevEle != 0` sert de « pas
-        d'altitude »).
+- [ ] [`API-119`](ledger/API/API-119.md) « Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge (S)
+- [ ] [`API-111`](ledger/API/API-111.md) App Garmin sur les montres qui suivent un parcours
+- [ ] [`API-110`](ledger/API/API-110.md) App Garmin : rendre les Edge plus anciens éligibles
+- [ ] [`API-61`](ledger/API/API-61.md) Mettre l'intégration Garmin OAuth 2.0 en conformité
 
-      Les points 401, quotas, taille et `activityType` valent aussi en OAuth 1.0a. Une fois
-      l'application créée, basculer le domaine se fait dans l'admin (protocole du credential
-      Garmin) : les connexions OAuth 1.0a sont alors abandonnées à leur prochain envoi et chacun
-      reconnecte Garmin. Taille : M.
-- [ ] `API-110` **App Garmin : rendre les Edge plus anciens éligibles** — `manifest.xml` exige
-      `minApiLevel="3.3.0"` sans raison trouvée dans le code : avec `3.1.0`, `edgeexplore`
-      (240×400), `edge520plus` et `edge820` (200×265) compilent (essai du 15 octobre 2026 sur une
-      copie, SDK 9.2.0), et la référence de l'Edge 1030 restée en API 3.2.5 recevrait aussi l'app.
-      Rien n'a tourné à l'exécution : vérifier sur appareil ou simulateur l'appairage, les listes et
-      le téléchargement FIT, et la lisibilité du petit écran 200×265 (QR code compris). Ajouter les
-      ids au manifest **et** à `DEVICES` du `Makefile`, corriger au passage le commentaire du
-      manifest (« API 3.2.0+ »), et la ligne « Connect IQ API 3.3.0 or higher (`minApiLevel`) » de
-      `garmin-app/README.md`. La 1.0.2 a ajouté l'Edge 1060 ; la version courante est la 1.0.3 (16 novembre 2026).
-      Hors d'atteinte : `edge130`/`edge130plus` (pas de type `watch-app`), `edge_1000`/`edge_520`
-      (API 2.4). Taille : S.
-- [ ] `API-111` **App Garmin sur les montres qui suivent un parcours** — l'app ne cible que les
-      Edge, alors qu'elle compile sans changement (essai du 15 octobre 2026) pour Venu X1, fenix 6
-      Pro à 9, epix 2, Enduro 3/4, Forerunner 245 à 970, Instinct 2/3/E, MARQ. Ce qui manque est
-      l'interface : les décalages fixes de `VerticalLayout.mc` (`AUD-27`) sont rognés sur un écran
-      rond, le QR de `LoginView.mc` doit tenir dans le carré inscrit (~0,7 × le diamètre), et la
-      navigation doit marcher aux boutons seuls (fenix 6, FR 745/945, Instinct). Ordre proposé :
-      `venux1` (rectangulaire, tactile) ; puis fenix 7/8, epix 2, Enduro, FR 265/965/970 ; les
-      Instinct à petit écran (163–176 px, 96–128 Ko) en dernier ou jamais. Avant tout ajout,
-      vérifier modèle par modèle que la montre navigue un parcours (non confirmé par une source
-      Garmin) ; Venu 2–4, vivoactive et FR 165/170/55 restent dehors tant que ce n'est pas établi.
-      Les GPS de randonnée (GPSMAP, Montana, Oregon) sont exclus : API trop basse, et ils prennent
-      le GPX, pas le FIT (doc `PersistedContent` du SDK). Taille : M (L avec les Instinct).
-- [ ] `API-119` **« Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge (S)** — la
-      liste des groupes inscrits et le chargement direct de leur trace (`API-118`, contrat `11.4.0`,
-      embarqués dans `karoo.1.0.13` et `garmin.1.0.1`) n'ont aucun test côté appareils (le backend
-      est couvert par `DeviceRegisteredGroupsResourceTest` et `DeviceRoutesQueryCountTest`). Même
-      séance qu'`API-122`. À vérifier sur Karoo :
-      l'entrée en tête, la synchro Hammerhead depuis la ligne et son état affiché, le retour à
-      l'accueil. Sur Edge (ou simulateur) : l'entrée et « Aucune inscription », la barre de
-      progression, le FIT présent dans les parcours, et « Autre téléchargement en cours » sur un
-      second clic pendant un téléchargement. Puis les apps publiées précédentes, antérieures à
-      `API-118` (`karoo.1.0.12`, `garmin.1.0.0`), contre la prod (`15.0.0` au 16 novembre 2026 ; champs inconnus
-      ignorés).
+### Heure de départ : audit du 7 novembre 2026
+
+- [ ] [`API-196`](ledger/API/API-196.md) Garmin : fuseau de la sortie, lieu, équipe, état — ce que `details=true` donnerait (M)
+- [ ] [`API-160`](ledger/API/API-160.md) iCal : une étape n'a pas d'heure de départ (à trancher)
+
+### Les chantiers d'infrastructure d'API
+
+- [ ] [`API-21`](ledger/API/API-21.md) Pagination par curseur — **à faire avant d'étendre le scroll infini (L)
+
+### Météo : ce qui suit `API-74`
+
+- [ ] [`API-103`](ledger/API/API-103.md) Pas de réglage d'unités pour le Royaume-Uni (S, contrat + web + mobile)
+- [ ] [`API-77`](ledger/API/API-77.md) Météo sur Karoo et Garmin (M)
+
+### Petites évolutions d'API qui suppriment chacune une dégradation nommée
+
+- [ ] [`API-19`](ledger/API/API-19.md) `GET /api/search?q&types=&limit` unifié
+- [ ] [`API-18`](ledger/API/API-18.md) Voyage comme événement multi-jour au calendrier (`CalendarEventType`, toujours `RIDE`/`TRIP_STAGE`)
+- [ ] [`API-17`](ledger/API/API-17.md) `?format=polyline` sur la géométrie de parcours
+- [ ] [`API-8`](ledger/API/API-8.md) Voisins de publication (`prev`/`next`) — absents de tout le contrat `11.5.1` (balayage de tous les schémas le…
 
 ### Vie privée : ce que la politique doit encore décrire faute de mieux
 
-- [ ] `API-204` **Restaurer une page d'équipe ne vérifie pas le plafond de 3 (XS)** —
-      `TeamPageService.undeletePage` ne passe pas par `countAdditionalPages`, que la création
-      applique (`TOO_MANY_TEAM_PAGES`) : avec trois pages actives et une page supprimée, la
-      restauration réussit et l'équipe a quatre pages actives. Relevé le 15 novembre 2026 en
-      écrivant la liste des pages de l'app (`MOB-169`), qui désactive « Restaurer » au plafond ; le
-      site ne le fait pas. À faire : le même contrôle dans `undeletePage`, et son test dans le
-      test de ressource des pages.
-- [ ] `API-47` **Les documents joints gardent leurs métadonnées** — PDF (auteur, JPEG embarqués
-      avec leur EXIF), fichiers bureautiques (`docProps`), PSD (EXIF/IPTC) sont stockés tels quels ;
-      la politique (§1) le dit. À trancher : les nettoyer (dépendance nouvelle pour le PDF), ou
-      garder la phrase. Taille : M à L. exiftool **n'aide pas** (mesuré le 29 septembre 2026,
-      `API-54`) : il ajoute une mise à jour incrémentale réversible, le dictionnaire Info reste dans
-      les octets, et l'EXIF des JPEG embarqués est intact. Seule voie : réécriture complète (PDFBox)
-      en faisant réencoder les JPEG embarqués comme les images (`API-43`). L'enjeu est mince : au
-      16 octobre 2026, la prod compte 8 PDF parmi ses pièces jointes, et aucun fichier bureautique
-      ni PSD ; garder la phrase (« Délibérément dehors ») reste une issue (décision du propriétaire).
+- [ ] [`API-204`](ledger/API/API-204.md) Restaurer une page d'équipe ne vérifie pas le plafond de 3 (XS)
+- [ ] [`API-47`](ledger/API/API-47.md) Les documents joints gardent leurs métadonnées
 
----
+## OPS — Exploitation
 
-## OPS — Exploitation, déploiement, recette du backend
-
-### Recette du backend en conditions réelles
-
-Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par un vrai relais SMTP.
-
-- [ ] `OPS-3` **Le relais de contact en production : regarder un message reçu** — les gabarits
-      `ad-contact.{fr,en}` sont rendus par le backend (`templates/mail/`) et partent par le relais
-      SMTP de Scaleway TEM comme tout le reste. L'envoi par TEM est constaté le 16 octobre 2026 :
-      11 contacts d'annonce en base depuis la bascule du 22 septembre (le dernier le 4 octobre),
-      aucune erreur du mailer dans les journaux de prod sur sept jours. **Reste** : un envoi réel
-      vers une boîte du propriétaire, pour lire les en-têtes et le corps — le `Reply-To` doit porter
-      l'adresse de l'auteur et le corps ne doit jamais l'imprimer. Se fait dans la même séance
-      qu'`OPS-4`. Taille : XS.
-- [ ] `OPS-4` **Les quatre gabarits d'invitation en production : les recevoir** —
-      `team-invitation.{fr,en}` et `team-invitation-signup.{fr,en}` vivent dans `templates/mail/` et
-      partent par le relais SMTP de Scaleway TEM. Params des quatre : `appName`, `inviterName`,
-      `teamName`, `invitationUrl`, `expiresInDays`. Un envoi réel par TEM est constaté le
-      16 octobre 2026 : deux invitations créées après la bascule, toutes deux `ACCEPTED` (la
-      dernière le 3 octobre), aucun `TEAM_INVITE_DELIVERY_FAILED` dans les journaux sur sept jours —
-      sans savoir laquelle des quatre variantes est partie ni à quoi elle ressemblait. **Reste** :
-      recevoir chacune des quatre (fr/en × compte existant/inscription) et en vérifier le rendu,
-      dans la même séance qu'`OPS-3`. Si le relais refuse le message, `POST …/invitations` répond
-      **500 `TEAM_INVITE_DELIVERY_FAILED`** — délibérément, plutôt qu'un `INTERNAL_ERROR` opaque —
-      et la transaction est annulée : aucune invitation fantôme ne subsiste. Taille : XS.
-- [ ] `OPS-44` **Un test automatisé pour « `AdDto` ne porte aucun champ de contact »** —
-      l'invariant (relais d'e-mail, aucune adresse dans l'API) n'est gardé que par le `grep` et le
-      script Python du §5.3 du
-      [document d'API](plans/archive/2026-07-26-api-v2-livraison-et-suites.md), à lancer à la main
-      (rejoués le 16 octobre 2026 sur le contrat `11.5.1` : `OPS-5`). Le jour où un champ de
-      contact y entre, une adresse personnelle est publiée à toute une équipe, irrévocablement, et
-      aucun build ne le voit. En faire un test backend qui lit le schéma OpenAPI généré (ou les
-      composants du record `AdDto`) et échoue sur `contact|email|phone|mail|tel`. Taille : XS.
-- [ ] `OPS-29` **Météo des sorties en production : ce qui reste (S)** — la recette technique est
-      faite (V61 passée le 6 octobre 2026 sur `de205e4d`) et tient le 16 octobre : 63 cellules en
-      prod et 12 en staging, fraîches, toutes à `attempts = 0`. Seuls échecs dans les journaux sur
-      48 h : des `Open-Meteo answered 503: The service is overloaded` intermittents (6 en prod,
-      au moins 4 en staging), sans dommage puisque le cache reste frais. Restent : **régler les
-      budgets de staging**, dont le `.env` n'a toujours aucune clé `OPEN_METEO_*` ni `WEATHER_*` —
-      prod et staging sortent par la même adresse IP et, à leurs défauts (5 000 appels par jour
-      chacun, `application.properties`), atteignent ensemble les 10 000 appels par jour du plan
-      gratuit (voir [OPERATIONS](OPERATIONS.md#ride-weather-open-meteo)) ; **voir** la météo d'une
-      sortie à J+2 sur le web — sur la page de groupe refaite par `WEB-94` et `API-123` — et dans
-      l'app (les sorties à venir sont en visibilité `TEAM`, non vérifiables sans session).
-      **À trancher par le propriétaire** : l'offre gratuite d'Open-Meteo est réservée à un usage non
-      commercial ; si Pédalons ne s'y range pas, un plan payant ne demande que `OPEN_METEO_URL` et
-      `OPEN_METEO_API_KEY`.
-
-### Exploitation
-
-- [ ] `OPS-58` **osm-route-details dans la pile partagée : à régler** — en service depuis le
-      7 novembre 2026 en staging et en prod (osm-surface retiré, `OPS-59`). Faits depuis : limite
-      mémoire à 2 Go (`docker-compose.shared.yml`), service dans les cibles Prometheus (`:9090`),
-      image `1.9.0` avec le graphe du générateur (`OPS-60`). La saturation mesurée le 10 novembre
-      2026 (977 Mo sur 1 Go, ~475 Mo de swap, requêtes de 20 à 45 s) venait du
-      `RouteDetailsBackfill`, retiré le même jour (`API-174`) ; au 16 novembre 2026 la prod est à
-      621 Mo après treize dépôts de surcouche et deux générations, pic à 662 Mo
-      (`docs/OPERATIONS.md`). Reste : l'extrait VersaTiles France en fichier local, le volume de
-      cache à dimensionner (IGN, Mapterhorn, VersaTiles), et suivre la mémoire quelques semaines
-      avant de dire la limite juste — si elle remonte sans charge, c'est une fuite à remonter dans
-      osm-route-details. Plan :
-      [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md) §11.
-
-- [ ] `OPS-21` **Ce que le monitoring ne voit pas encore** — PostgreSQL (connexions, taille, bloat,
-      requêtes lentes : un `postgres_exporter` par environnement, sur `pedalons-shared`), le
-      frontend SSR (ni métriques Node ni temps de rendu : seul Caddy le voit, par hôte), et les
-      erreurs côté client web et mobile (un GlitchTip, compatible Sentry, pèserait une base et un
-      Redis de plus : à ne faire que si le besoin se confirme). Taille : M.
-- [ ] `OPS-30` **Check Healthchecks du rafraîchissement des données des relecteurs des stores**
-      (scindé de `OPS-28`) — `~/.config/pedalons/store-demo.env` n'a pas de `STORE_DEMO_PING_URL` :
-      le cron tourne sans que personne ne voie qu'il échoue, et il a échoué sans bruit du 3 au
-      6 octobre 2026, puis de nouveau après le contrat 11.0.0, jusqu'à ce que `MOB-63` atteigne
-      `~/prod` (passage du 16 octobre à 05:00 : `✔ refreshed`). Créer le check (quotidien, 05:00
-      Europe/Paris, avec une marge) et ajouter son URL au fichier
-      ([`OPERATIONS.md`](OPERATIONS.md#store-reviewers-demo-data)). Taille : XS.
-- [ ] `OPS-46` **(Optionnel) Alerte sur la taille du cache de tuiles du backend** — le
-      cache d'élévation IGN (`~/prod/data/cache/ign-lidar-hd-mnt/` et `ign-lidar-hd-mns/`) pesait
-      6,8 Go le 16 octobre 2026, trois semaines après `API-104`, et n'a ni plafond ni éviction ; la
-      veille manuelle d'`OPS-31` n'a rien trouvé d'alarmant (disque à 15 %), mais personne ne
-      regardera la prochaine fois. Une alerte Prometheus sur la taille du répertoire (ou un plafond
-      dans le code du cache) remplacerait cette veille. Depuis la phase E d'`API-150`, le backend
-      ne lit ni n'écrit plus ce cache, et le cache IGN d'osm-route-details est plafonné à 20 Go : une
-      fois la prod passée et les répertoires supprimés (`docs/OPERATIONS.md`), cette entrée va dans
-      « Délibérément dehors ». Taille : XS à S.
-- [ ] `OPS-34` **Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`** — le
-      rapport du 15 octobre 2026 sur pedalons.fr listait 122 URL non indexées. Les trois entrées
-      sont en production, et les vérifications à la main sont faites le 16 octobre :
-      `https://pedalons.fr/robots.txt` (redirigé vers www) porte les `Allow` d'images et la ligne
-      `Sitemap`, une page servie sous `/teams/…` a son `<link rel="canonical">` vers `/equipes`, et
-      `/api/version` répond `X-Robots-Tag: noindex`. **Reste** : dans la Search Console, cliquer
-      « Valider la correction » sur les motifs « Introuvable (404) », « Page en double sans URL
-      canonique sélectionnée par l'utilisateur » et « Explorée, actuellement non indexée », puis
-      revenir sur le rapport quelques semaines plus tard. Le 404 d'`auth.pedalons.fr` est traité à
-      part (`OPS-47`). Taille : XS (surtout de l'attente).
-- [ ] `OPS-47` **Un `robots.txt` pour `auth.pedalons.fr`** (extrait d'`OPS-34`) — la
-      Search Console signale le sous-domaine en 404 : il répond 404 à sa racine comme à
-      `/robots.txt`. Il sert encore — le Caddyfile de l'hôte l'envoie vers `127.0.0.1:8091` et le
-      conteneur `strava-auth-proxy-proxy-1` tourne (constaté le 16 octobre 2026) —, donc pas de
-      retrait du DNS : lui servir un `robots.txt` `Disallow: /`, depuis son bloc du Caddyfile ou
-      depuis le proxy. Taille : XS.
-- [ ] `OPS-41` **Mesure d'audience du site : consigner la recette, puis relire au bout d'un mois
-      (S)** — plan [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md) (§8, étapes
-      5 et 6 ; scindé d'`OPS-36`). Le déploiement et l'activation sont faits et constatés le
-      16 octobre 2026 (au ledger des livraisons sous le même identifiant). **Reste** :
-      - les vérifications de l'étape 6, à faire ou refaire et à **consigner dans `OPERATIONS.md`**,
-        où rien n'est écrit : une visite sans DNT comptée sous son gabarit, la même sous DNT non ;
-        aucune IP de visiteur dans le journal du conteneur ; aucune ligne `/count` dans le journal
-        de Caddy, **bloc par bloc** — le Caddyfile de l'hôte en a neuf (clubs et alias), et seule
-        la présence de `log_skip @count` est constatée, pas son effet sur chacun ; `store` sans
-        session après un redémarrage ; une panne de base simulée sans ligne `hit =` dans Loki ; la
-        purge de rétention passée le lendemain ; le tunnel SSH jusqu'au tableau de bord ;
-      - **confirmer par écrit la précondition du §5.3** — aucun membre réel n'avait accepté la
-        politique précédente (comptes hors test et équipe, inscrits bêta, équipes migrées de
-        biketeam, invitations acceptées) ; sinon l'e-mail du §11 à chaque membre. Aucune trace de
-        cette vérification, alors que le compteur tourne déjà ;
-      - mettre à jour l'en-tête du plan, qui dit encore « Rien n'est en production » ;
-      - relire les chiffres contre les cinq questions du §1 du plan (prévu vers le 15 novembre 2026,
-        pas fait au 16),
-        puis l'archiver (`docs/plans/archive/`, avec sa ligne dans le README des archives).
-      Taille : S, surtout manuel sur l'hôte.
-- [ ] `OPS-42` **Envoi automatique des parcours : la recette sur appareil, faite après
-      l'allumage (S)** — `GPS_SYNC_ENABLED` est à `true` en prod et en staging depuis le 16 octobre
-      2026, avant la recette que le plan
-      [`2026-10-16-gps-route-autosync.md`](plans/2026-10-16-gps-route-autosync.md) prévoyait
-      (étape 7). Les premiers envois réels (3 connexions, 5 parcours, aucune erreur) établissent la
-      création chez les trois services ; reste à voir, sur un Karoo, un Edge et un ELEMNT, le
-      parcours arriver, changer avec sa route, disparaître après la sortie, à la désinscription, à
-      la désactivation et à la déconnexion, et l'état « à reconnecter » après une révocation chez
-      le service. Ce qui y est seulement supposé est sous `API-125`. Le drapeau est documenté
-      (« Automatic route sync to GPS services » dans `docs/OPERATIONS.md`) et la politique le
-      décrit (`LEGAL-21`).
-- [ ] `OPS-54` **Images Docker publiées sur un registry public, construites par la CI (étude)**
-      — chaque hôte construit aujourd'hui ses propres images (`./build.sh` dans `~/prod`,
-      `~/staging`), sous un tag par environnement : ce que staging a recetté n'est pas l'artefact
-      qui part en prod, la restauration doit recompiler, et l'hôte porte JDK, Maven, pnpm et leurs
-      caches. Proposition, rien de décidé : GHCR public, un workflow `images.yml` qui pousse
-      `<sha12>` en multi-arch avec attestation de provenance, `scripts/deploy.sh` qui tire et
-      déploie par digest (repli `--local` sur `build.sh`). Prérequis : une image unique pour tous
-      les environnements, donc les sourcemaps hors de l'image servie (`ISSUE-10`, `ISSUE-1`).
-      Laisse `AUD-1` dehors. Étude, découpage et décisions :
-      [`2026-10-25-public-registry.md`](plans/2026-10-25-public-registry.md). Taille : M (deux à
-      trois jours).
-- [ ] `OPS-56` **Vérifier en prod le plateau du heap après `OPS-55`** (scindé d'`OPS-55`) — une fois
-      vcyclist 6.12.0 et `pedalons.elevation.tile-cache-size=20` déployés (réglage retiré depuis par
-      `API-150`, qui sort les tuiles MNT du heap : plateau à remesurer une fois la prod passée), relever
-      `jvm_gc_live_data_size_bytes` après quelques recalculs HD : attendu autour de 400 MiB, contre
-      570 MiB avant (old gen de 820 MiB avec `BACKEND_MEMORY=2G`). Si `BackendHeapFull` ne sonne
-      plus, envisager de revenir à la limite par défaut. Reste ouvert aussi : le recalcul HD alloue
-      beaucoup d'objets éphémères (l'old gen a touché 835 MiB en local pendant le recalcul de
-      « Nantes – Houtkerque », pour 137 MiB vivants ensuite) ; à creuser seulement si un OOM revient.
-      **Relevé du 1er novembre 2026** (tâche de 21 h, 10 imports GPX ou recalculs HD) : le heap vivant
-      plafonne à 355–381 MiB, l'histogramme (`~/heap-histo/` sur le serveur) met la hausse sur
-      182 MB de `double[]`. Mais `ContainerNearMemoryLimit` a sonné de 15 h 20 à 15 h 42 UTC : working
-      set à 1,86 GiB sur 2 GiB, pour un heap engagé de 822 MiB (des déchets en attente du full GC),
-      253 MiB de non-heap et **≈ 620 MiB de RSS hors de tout ce que la JVM compte** — un heap plein
-      (1,2 GiB à 60 %) aurait fini en kill du cgroup, sans dump. Fait le même jour :
-      `JAVA_MAX_MEM_RATIO=50` dans le `.env` de prod (heap max 1 GiB), et
-      `JAVA_TOOL_OPTIONS=-XX:NativeMemoryTracking=summary` dans celui du staging (le `.env` est lu par
-      bash et par Swarm : pas d'espace dans une valeur, d'où `JAVA_TOOL_OPTIONS` plutôt que
-      `JAVA_OPTS_APPEND`). **Reste** : lire `jcmd 1 VM.native_memory summary` sur le staging après
-      un import GPX, et le comparer au `VmRSS` du processus — l'écart est ce que ni le heap ni NMT ne
-      voient (runtime ONNX de Magika, arènes malloc) ; au démarrage, 424 MiB de RSS pour 359 MiB
-      suivis. **Lu le même jour après un gros import GPX** : 811 MiB de RSS pour 568 MiB suivis ;
-      l'écart, ≈ 243 MiB, est dans 87 arènes malloc glibc (298 MiB de RSS ; hôte de 12 cœurs, jusqu'à
-      96 arènes), où alloue aussi le runtime ONNX de Magika. Refait avec `MALLOC_ARENA_MAX=2` : 701 MiB
-      de RSS pour 626 suivis, 2 arènes et 81 MiB, pic de 1 019 MiB contre 1 181. D'où
-      `MALLOC_ARENA_MAX=2` dans l'image (`application.properties`, commit `f7b21e5c`), déployée en
-      prod et en staging le 1er novembre ; le `.env` du staging est revenu à son état d'avant.
-      **Reste** : si `ContainerNearMemoryLimit` ne sonne plus pendant quelques jours, retirer
-      `JAVA_MAX_MEM_RATIO=50` du `.env` de la prod (le ratio commun de 60 laisse 820 MiB hors heap
-      sur 2 GiB, ce qui suffit maintenant).
-      Taille : XS.
-
----
-
-### Extension Karoo : catalogue Hammerhead
-
-- [ ] `OPS-33` **Publier l'extension Karoo dans l'Extension Library de Hammerhead** (scindé
-      d'`OPS-32`) — l'app ne s'installe aujourd'hui que par sideload. Créer le compte développeur
-      sur dashboard.hammerhead.io, y déclarer l'URL du manifest (la GitHub directe,
-      `releases/download/karoo-latest/manifest.json`, modifiable là-bas à tout moment), vérifier
-      que l'app apparaît dans l'Extension Library des Karoo liés au compte, puis la soumettre à SRAM
-      (accord de licence SDK, plusieurs semaines). Le processus est décrit dans `karoo/PUBLISH.md`.
-      Non vérifié à cette occasion : à quelle fréquence le Karoo relit le manifest, et s'il garde
-      le tag `navigation`, hors des quatre que documente karoo-ext. (S, surtout de l'attente)
+Contexte du domaine : [`ledger/OPS/README.md`](ledger/OPS/README.md).
 
 ### App Garmin : Connect IQ Store
 
-- [ ] `OPS-35` **Publier l'app Garmin sur le Connect IQ Store** — la 1.0.0 (13 Edge) est soumise
-      à la revue le 15 octobre 2026, remplacée en revue par la 1.0.1 (« Prochaines sorties »,
-      tag `garmin.1.0.1`) le 16 octobre, **approuvée** (constaté le 23 octobre) ; la 1.0.2 (Edge 1060,
-      « Prochaines sorties » ouvre le détail du parcours, cinq captures 480×800, tag `garmin.1.0.2`)
-      est soumise et approuvée le 23 octobre, avec l'image du héros FR/EN ; la 1.0.3 (menus dessinés par l'app, mode jour/nuit, `API-159`, captures et descriptions refaites, icônes de la boutique embarquée, tag `garmin.1.0.3`) est soumise le 14 novembre après essai sur un Edge, approbation à constater. Fiche FR/EN tirée de `garmin-app/metadata/` ; page du store :
-      `https://apps.garmin.com/fr-FR/apps/262ea335-a5b7-4a6a-bb30-fc6f5db9b115`. Le formulaire et
-      ses pièges (signature « échouée » au premier dépôt, migration désactivée, cinq captures au
-      plus) sont dans `garmin-app/PUBLISH.md`. Reste : un essai sur un vrai Edge depuis le store, et un mot aux
-      inscrits de la bêta. La carte Garmin de `/applications` (site et app mobile) pointe sur la
-      fiche du store depuis le 23 octobre ; côté mobile, elle arrive avec la prochaine version. Ne bloque pas mais se verra sur l'appareil :
-      `AUD-26`. `AUD-25` limite l'app à pedalons.fr. Taille : XS, surtout de l'attente.
+- [ ] [`OPS-35`](ledger/OPS/OPS-35.md) Publier l'app Garmin sur le Connect IQ Store
+
+### Exploitation
+
+- [ ] [`OPS-58`](ledger/OPS/OPS-58.md) osm-route-details dans la pile partagée : à régler
+- [ ] [`OPS-56`](ledger/OPS/OPS-56.md) Vérifier en prod le plateau du heap après `OPS-55`
+- [ ] [`OPS-54`](ledger/OPS/OPS-54.md) Images Docker publiées sur un registry public, construites par la CI (étude)
+- [ ] [`OPS-47`](ledger/OPS/OPS-47.md) Un `robots.txt` pour `auth.pedalons.fr`
+- [ ] [`OPS-46`](ledger/OPS/OPS-46.md) (Optionnel) Alerte sur la taille du cache de tuiles du backend
+- [ ] [`OPS-42`](ledger/OPS/OPS-42.md) Envoi automatique des parcours : la recette sur appareil, faite après l'allumage (S)
+- [ ] [`OPS-41`](ledger/OPS/OPS-41.md) Mesure d'audience du site : consigner la recette, puis relire au bout d'un mois (S)
+- [ ] [`OPS-34`](ledger/OPS/OPS-34.md) Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`
+- [ ] [`OPS-30`](ledger/OPS/OPS-30.md) Check Healthchecks du rafraîchissement des données des relecteurs des stores
+- [ ] [`OPS-21`](ledger/OPS/OPS-21.md) Ce que le monitoring ne voit pas encore
+
+### Extension Karoo : catalogue Hammerhead
+
+- [ ] [`OPS-33`](ledger/OPS/OPS-33.md) Publier l'extension Karoo dans l'Extension Library de Hammerhead
+
+### Recette du backend en conditions réelles
+
+- [ ] [`OPS-44`](ledger/OPS/OPS-44.md) Un test automatisé pour « `AdDto` ne porte aucun champ de contact »
+- [ ] [`OPS-29`](ledger/OPS/OPS-29.md) Météo des sorties en production : ce qui reste (S)
+- [ ] [`OPS-4`](ledger/OPS/OPS-4.md) Les quatre gabarits d'invitation en production : les recevoir
+- [ ] [`OPS-3`](ledger/OPS/OPS-3.md) Le relais de contact en production : regarder un message reçu
 
 ## NOTIF — Notifications
 
-Les phases 1 à 5 de [`plans/archive/2026-09-18-notifications.md`](plans/archive/2026-09-18-notifications.md)
-sont en production, le Web Push aussi depuis le 29 septembre 2026 ; ce qui en est livré, et les
-pièges à ne pas rejouer, sont sous `NOTIF-9` (le ledger du chantier y a été rapatrié le
-29 septembre 2026). Restent deux points qui ne sont pas du code (`NOTIF-1`, `NOTIF-2`), et quatre
-qui le sont (`NOTIF-3`, `NOTIF-4`, `NOTIF-11`, `NOTIF-12`) :
+Contexte du domaine : [`ledger/NOTIF/README.md`](ledger/NOTIF/README.md).
 
-- [ ] `NOTIF-1` **Recette du webhook d'équipe** contre un vrai Slack, un vrai Discord et un vrai
-      Mattermost (bouton « Envoyer un test ») — vérifier au passage qu'un `@channel` dans un nom de
-      sortie ne notifie personne sur Mattermost. Peu pressant : aucune équipe n'a de webhook, ni en
-      production ni en staging (`team_webhooks` vide au 16 octobre 2026).
-- [ ] `NOTIF-2` **Décision produit sur l'e-mail** : `PEDALONS_NOTIFICATIONS_EMAIL_ENABLED` reste à
-      `false` en production (décision du 21 septembre 2026, « pas pour le moment »). L'activer,
-      c'est écrire aux équipes entières, en connaissant les défauts (annulations, voyages publiés).
-- [ ] `NOTIF-3` **Webhook d'équipe : le *DNS rebinding* n'est pas couvert** — `WebhookHttpClient`
-      refuse toute résolution vers une adresse interne, mais `HttpClient` résout de nouveau à la
-      connexion : un nom qui change de réponse entre les deux passe. Le fermer voudrait dire
-      épingler l'adresse vérifiée pour la connexion (voir la javadoc de `WebhookHttpClient`).
-- [ ] `NOTIF-4` **Le canal e-mail des notifications n'a pas de test e2e** : il est coupé en
-      production comme sur la stack e2e (`NOTIF-2`). Laissé ouvert par l'audit de couverture e2e
-      (`WEB-26`).
-- [ ] `NOTIF-11` **Rejouer `CoalesceRace` sur le correctif exact de `NOTIF-10`** : dans le modèle
-      ([`formal/notif/`](formal/notif/)), la variante la plus proche du correctif livré (`FIX=2`) viole
-      encore l'invariant ; la relecture du code n'a trouvé aucun entrelacement perdant, mais le modèle
-      n'a pas été adapté (réinsertion quand la clé a été rendue). L'adapter, et ajouter le test de la
-      variante « fusion dans la ligne en attente pendant qu'une réservation est tentée ». Taille : S.
-- [ ] `NOTIF-12` **Le mobile enregistre ses push par une API dépréciée** : firebase_messaging 17
-      (20 octobre 2026) déprécie `getToken()` / `onTokenRefresh` au profit de `register()` /
-      `onRegistered`, qui rendent un *Firebase Installation ID* (cible « direct-send ») et non plus
-      un jeton FCM. `PushGateway` (`mobile/lib/features/notifications/services/push_gateway.dart`)
-      garde l'ancienne API sous `// ignore: deprecated_member_use`, parce que `FcmRestClient`
-      n'envoie qu'à `message.token`. Migrer suppose que le backend sache cibler un FID (et accepte
-      les deux pendant la transition, les installations existantes ayant enregistré un jeton), puis
-      que le mobile bascule ; à faire avant que Firebase retire l'API. Taille : M, backend + mobile.
+- [ ] [`NOTIF-12`](ledger/NOTIF/NOTIF-12.md) Le mobile enregistre ses push par une API dépréciée
+- [ ] [`NOTIF-11`](ledger/NOTIF/NOTIF-11.md) Rejouer `CoalesceRace` sur le correctif exact de `NOTIF-10`
+- [ ] [`NOTIF-4`](ledger/NOTIF/NOTIF-4.md) Le canal e-mail des notifications n'a pas de test e2e
+- [ ] [`NOTIF-3`](ledger/NOTIF/NOTIF-3.md) Webhook d'équipe : le *DNS rebinding* n'est pas couvert
+- [ ] [`NOTIF-2`](ledger/NOTIF/NOTIF-2.md) Décision produit sur l'e-mail
+- [ ] [`NOTIF-1`](ledger/NOTIF/NOTIF-1.md) Recette du webhook d'équipe
 
----
+## MOD — Modération et signalement de contenu
 
-## MOD — Modération et signalement
+Aucune entrée ouverte. Contexte du domaine : [`ledger/MOD/README.md`](ledger/MOD/README.md).
 
-Livrée le 24 septembre 2026 (`MOD-6`). Les quatre défauts mineurs notés à la livraison sont corrigés
-(`MOD-1` à `MOD-4`).
+## ISSUE — « Signaler un problème » et remontée des erreurs vers GitHub
 
----
+Contexte du domaine : [`ledger/ISSUE/README.md`](ledger/ISSUE/README.md).
 
-## ISSUE — Signaler un problème → issues GitHub
+- [ ] [`ISSUE-10`](ledger/ISSUE/ISSUE-10.md) Staging sert publiquement ses sourcemaps
+- [ ] [`ISSUE-5`](ledger/ISSUE/ISSUE-5.md) Visiteurs non connectés
+- [ ] [`ISSUE-4`](ledger/ISSUE/ISSUE-4.md) Boucler avec le membre
+- [ ] [`ISSUE-3`](ledger/ISSUE/ISSUE-3.md) Plantages natifs
+- [ ] [`ISSUE-2`](ledger/ISSUE/ISSUE-2.md) Côté mobile
+- [ ] [`ISSUE-1`](ledger/ISSUE/ISSUE-1.md) Piles web illisibles
 
-En service en production depuis le 29 septembre 2026 (`ISSUE-6`, API 4.6.0). Suites possibles, non
-faites :
+## MIG — Migration biketeam → Pédalons
 
-- [ ] `ISSUE-1` **Piles web illisibles** : le bundle est minifié et l'empreinte ne garde que le nom
-      du chunk. L'option de build existe : `FRONTEND_SOURCEMAP` dans le `.env` de la stack, que
-      `build.sh` passe en `VITE_BUILD_SOURCEMAP`. Elle est à `false` en production et à `true` sur
-      staging, qui **sert** aujourd'hui ses `.map` (voir `ISSUE-10`). Restent : ne pas
-      servir les `.map` mais les archiver avec l'image, l'activer en production, puis automatiser la
-      symbolisation côté serveur.
-- [ ] `ISSUE-10` **Staging sert publiquement ses sourcemaps** — `FRONTEND_SOURCEMAP=true`
-      dans le `.env` de staging : le conteneur frontend contient 408 `.js.map`, servis en 200 sous
-      `/assets/` (constaté le 16 octobre 2026). Décider : les retirer de l'image servie et les
-      archiver à part (`ISSUE-1`), ou l'assumer, le dépôt étant public. Taille : XS.
-- [ ] `ISSUE-2` **Côté mobile**, si le build release passe à `--obfuscate`, conserver les
-      `--split-debug-info` par build, sans quoi les piles Dart deviennent inexploitables et
-      l'empreinte change à chaque version. La consigne vaut pour les trois chemins de build
-      release : `publish_test.sh`, `publish_beta.sh` et le workflow `mobile-release.yml`.
-- [ ] `ISSUE-3` **Plantages natifs** (Kotlin/Swift) : non couverts, seuls les handlers Dart
-      remontent.
-- [ ] `ISSUE-4` **Boucler avec le membre** : le prévenir quand l'issue de son signalement est fermée
-      (webhook GitHub → notification), joindre une capture d'écran, corréler avec les logs serveur
-      par request-id.
-- [ ] `ISSUE-5` **Visiteurs non connectés** : ni signalement ni remontée automatique (l'endpoint
-      exige une session). Une erreur sur la page de connexion n'arrive donc que par e-mail.
-
----
-
-## MIG — Migration biketeam
-
-Configurée en production des deux côtés ; des migrations sans bascule (alors des « essais »,
-`dryRun`) y ont réussi sur `gaby` et `n-peloton` du 11 au 15 octobre 2026. Depuis le 11 novembre
-2026 il n'y a plus ni essai ni `reset` : toute migration est incrémentale, et la bascule est un
-bouton à part côté biketeam (`MIG-16`). Reste le passage réel
-([plan](plans/2026-09-22-biketeam-live-migration.md) §10). Source :
-[`MIGRATE_BIKETEAM.md`](MIGRATE_BIKETEAM.md).
-
-### Mise en production
-
-- [ ] `MIG-1` **Passage réel** : les secrets sont posés des deux côtés et les essais sont faits
-      (part livrée sous le même identifiant) ; reste la bascule de chaque équipe : une dernière
-      migration, puis le bouton « Basculer vers Pédalons » de son admin sur biketeam, qui enregistre
-      la table d'URL de la dernière migration réussie et redirige (`MIG-16` ; aucune bascule en
-      production au 16 octobre 2026). **Avant** : déployer le retrait de `dryRun`/`reset`, Pédalons
-      d'abord, biketeam ensuite (plan §10, point 5). Pour chaque équipe qui a un domaine personnalisé chez biketeam, vérifier que
-      la redirection fonctionne : elle se règle au proxy, au cas par cas (plan §13, décision 11).
-- [ ] `MIG-2` **Redirections 302 → 301** : une fois les bascules stabilisées, poser
-      `PEDALONS_REDIRECT_STATUS=301` côté biketeam. Pas avant : un 301 est mis en cache par les
-      navigateurs et ne se rattrape pas.
-- [ ] `MIG-3` **Liens internes non réécrits** : les liens vers `prendslaroue.fr` dans les pages
-      d'équipe (FAQ, descriptions) restent pointés vers biketeam et redirigent tant qu'il tourne. À
-      corriger — à la main, par l'équipe, ou par une réécriture depuis la table d'URL — **avant**
-      l'arrêt de biketeam.
-- [ ] `MIG-6` **Données exportées mais non importées** : la ville et le pays de l'équipe arrivent
-      dans l'instantané (`BiketeamSnapshot`) sans être utilisés (plan §13, décision 14) ; à
-      décider. Le fuseau de l'équipe (`API-60`), lui, est repris tel quel de biketeam depuis le
-      7 octobre 2026 (`BiketeamMigrationService`) : la ville et le pays n'ont plus cet usage. Les
-      tags de parcours, qui en faisaient partie, sont importés depuis le 1er octobre 2026
-      (`MIG-14`).
-- [ ] `MIG-7` **Avant l'arrêt de biketeam** : outre les liens internes (`MIG-3`), les logos
-      `/{t}/image` ne sont pas redirigés et restent servis par biketeam (plan, écarts biketeam,
-      point 16).
-- [ ] `MIG-8` **Après l'arrêt de biketeam** : retirer la migration en direct (endpoints internes,
-      worker, les cinq variables, la page `biketeamMigration`, les codes `BIKETEAM_*`, peut-être
-      `biketeam_migrations`), **sans** retirer `biketeam_migration_map`, dont dépendent encore
-      `UserTeamRepository.findMigratedTeamsAdministeredAlone` (décision 22) et
-      `BiketeamTargetResolver`. Archiver alors le plan, qui reste jusque-là le contrat en vigueur.
+Contexte du domaine : [`ledger/MIG/README.md`](ledger/MIG/README.md).
 
 ### Autour de la migration
 
-- [ ] `MIG-9` **Purge physique des équipes à la corbeille** (reset de migration biketeam) — chantier
-      séparé. Un `reset` de la migration en direct mettait l'équipe Pédalons à la corbeille et
-      libérait son slug, rien de plus : lignes `team_entities`, assets et fichiers
-      S3 restent. Chaque reset en laissait un exemplaire de plus ; l'option est supprimée depuis le
-      11 novembre 2026 (`MIG-16`), il ne s'en crée donc plus, mais ceux qui existent restent. **Quand** : si le volume le
-      justifie, ou avec une politique de rétention générale de la corbeille. Décision du 2026-09-22
-      ([plan](plans/2026-09-22-biketeam-live-migration.md) §13, décision 10). Le cas s'est produit
-      en production : au 16 octobre 2026, trois équipes y sont à la corbeille, dont la copie de
-      `n-peloton` laissée par le reset du 15 octobre, avec 3 328 lignes `team_entities` en tout, sans
-      compter les assets S3.
-- [ ] `MIG-17` **Supprimer les colonnes `dry_run` et `reset` de `biketeam_migrations`** — plus rien
-      ne les lit ni ne les écrit depuis `MIG-16` (l'entité `BiketeamMigrationJob` ne les porte
-      plus) ; `V88__biketeam_migration_options_default.sql` leur a seulement donné un défaut, parce
-      que la version précédente, qui partage la base pendant un déploiement *rolling* et y revient
-      en cas de retour arrière, les écrit encore. À faire dans une version **ultérieure** à celle de
-      `MIG-16`, une fois celle-ci en production sans retour arrière possible : une migration Flyway
-      `alter table biketeam_migrations drop column dry_run, drop column reset`, et la requête de
-      [`MIGRATE_BIKETEAM.md`](MIGRATE_BIKETEAM.md) qui les mentionne. Taille : XS. Sans objet si
-      `MIG-8` retire la table avant.
-- [ ] `MIG-18` **Une équipe migrée ne peut plus être retirée de Pédalons** — dégradation née de
-      `MIG-16` : `TeamService.delete` refuse toute équipe issue de biketeam (`MIGRATED_TEAM`,
-      `MIG-5`), admins de plateforme compris, et le reset, seule voie qui la mettait à la corbeille
-      (sans passer par `TeamService`), n'existe plus. Une copie faite « pour voir » — avec la
-      visibilité de l'équipe biketeam, donc possiblement listée dans la découverte — reste tant
-      qu'on n'intervient pas en base ; `MIG-5` justifiait le refus par les redirections de biketeam,
-      or une équipe migrée mais **non basculée** n'en reçoit aucune, et Pédalons ne sait pas si
-      biketeam a basculé. À décider par le propriétaire : laisser ainsi (visibilité `TEAM` à la
-      main en attendant), autoriser la suppression à un admin de plateforme, ou faire dire à
-      biketeam qu'une équipe est basculée. La mise de côté d'une équipe migrée déjà à la corbeille
-      (`BiketeamLiveMigrationWorker.setAside`) reste en place pour ce jour-là et pour les équipes
-      qui y sont déjà.
+- [ ] [`MIG-18`](ledger/MIG/MIG-18.md) Une équipe migrée ne peut plus être retirée de Pédalons
+- [ ] [`MIG-17`](ledger/MIG/MIG-17.md) Supprimer les colonnes `dry_run` et `reset` de `biketeam_migrations`
+- [ ] [`MIG-9`](ledger/MIG/MIG-9.md) Purge physique des équipes à la corbeille
 
----
+### Mise en production
+
+- [ ] [`MIG-8`](ledger/MIG/MIG-8.md) Après l'arrêt de biketeam
+- [ ] [`MIG-7`](ledger/MIG/MIG-7.md) Avant l'arrêt de biketeam
+- [ ] [`MIG-6`](ledger/MIG/MIG-6.md) Données exportées mais non importées
+- [ ] [`MIG-3`](ledger/MIG/MIG-3.md) Liens internes non réécrits
+- [ ] [`MIG-2`](ledger/MIG/MIG-2.md) Redirections 302 → 301
+- [ ] [`MIG-1`](ledger/MIG/MIG-1.md) Passage réel
 
 ## BRAND — Charte
 
-Le code couleur métier a une source unique depuis `BRAND-2`.
+Aucune entrée ouverte. Contexte du domaine : [`ledger/BRAND/README.md`](ledger/BRAND/README.md).
 
+## SEC — Sécurité applicative
 
----
+Contexte du domaine : [`ledger/SEC/README.md`](ledger/SEC/README.md).
 
-## SEC — Audit de sécurité
+- [ ] [`SEC-52`](ledger/SEC/SEC-52.md) La clé de cloisonnement du moteur de parcours circule en clair sur le réseau partagé des piles, et le moteur…
+- [ ] [`SEC-51`](ledger/SEC/SEC-51.md) Une réponse de l'API distingue deux cas qu'elle devrait confondre pour un appelant sans droit
+- [ ] [`SEC-50`](ledger/SEC/SEC-50.md) La désactivation d'un domaine ne s'applique pas à tous les chemins de résolution
+- [ ] [`SEC-49`](ledger/SEC/SEC-49.md) Un quota d'envoi suit le motif compter-puis-insérer (même famille que `SEC-35` et `SEC-39`)
+- [ ] [`SEC-48`](ledger/SEC/SEC-48.md) Un appel facturé à un fournisseur n'a pas de quota par compte. Aperçus GPX datés (API-153) : 20 à venir par…
+- [ ] [`SEC-47`](ledger/SEC/SEC-47.md) Un retour de connexion à un service tiers n'est pas lié au navigateur qui l'a lancé
+- [ ] [`SEC-46`](ledger/SEC/SEC-46.md) Un chemin d'envoi de trace échappe à la borne de taille posée par `SEC-6`
+- [ ] [`SEC-45`](ledger/SEC/SEC-45.md) Une bibliothèque d'analyse de fichiers de trace n'est pas protégée contre l'expansion d'entités
+- [ ] [`SEC-44`](ledger/SEC/SEC-44.md) Une entrée pré-authentification n'est pas bornée en mémoire avant validation
+- [ ] [`SEC-43`](ledger/SEC/SEC-43.md) Un ancien point d'API contourne la règle « personne ne rejoint une équipe sans un clic à soi »
+- [ ] [`SEC-42`](ledger/SEC/SEC-42.md) Un envoi de fichier refusé laisse sa copie temporaire sur le disque du backend
+- [ ] [`SEC-41`](ledger/SEC/SEC-41.md) Une demande en cours sur un attribut d'identité survit à la récupération du compte
+- [ ] [`SEC-40`](ledger/SEC/SEC-40.md) La CSP complète du site n'est encore que rapportée (`Content-Security-Policy-Report-Only`) : lire les…
+- [ ] [`SEC-39`](ledger/SEC/SEC-39.md) Deux autres émissions de jetons par e-mail gardent le motif compter-puis-insérer que `SEC-35` a fermé pour…
+- [ ] [`SEC-14`](ledger/SEC/SEC-14.md) Images externes dans le markdown ; le parseur XML et le paramètre non encodé sont livrés sous `SEC-21`
+- [ ] [`SEC-13`](ledger/SEC/SEC-13.md) Durcissement des workflows GitHub Actions — permissions minimales posées sur les quatre workflows d'alors…
+- [ ] [`SEC-12`](ledger/SEC/SEC-12.md) Voir la table des constats faibles de l'audit ; L1 et L5 à L9 sont livrés sous `SEC-20`, L12 et L13 sous…
 
-Cette section fait seule foi pour les constats de sécurité ouverts. L'audit de septembre 2026 est
-archivé ([`plans/archive/2026-09-security-audit.md`](plans/archive/2026-09-security-audit.md), statuts figés au 9 octobre 2026) ; la colonne
-« Audit » garde l'identifiant du constat dans ce document. Le dépôt est public : une entrée ne
-porte **aucun détail exploitable** (scénario, preuve, point d'entrée) tant que le constat est
-ouvert, seulement sa sévérité et une phrase. Corrigé, il passe dans `LEDGER_DONE.md` sous son
-identifiant, avec son détail.
+## AUD — Suivi de l'audit d'infrastructure de février
 
-L'audit de novembre 2026 ([`research/2026-11-01-audit-securite.md`](research/2026-11-01-audit-securite.md),
-révision `1780210c`, version expurgée ; détail hors du dépôt) suit la même règle : sa colonne
-« Audit » cite `Nov. Cn` pour un constat confirmé et `Nov. Vn` pour une piste à valider. Une piste
-n'a pas de sévérité tant que son test de validation n'a pas tourné.
+Contexte du domaine : [`ledger/AUD/README.md`](ledger/AUD/README.md).
 
-| ID | Priorité (audit) | Audit | Sévérité | Constat |
-|---|---|---|---|---|
-| `SEC-12` | — | L3, L10 | Faible | Voir la table des constats faibles de l'audit ; L1 et L5 à L9 sont livrés sous `SEC-20`, L12 et L13 sous `SEC-22`, L14 sous `SEC-23`, L4 sous `SEC-24` |
-| `SEC-13` | — | L11 | Faible | Durcissement des workflows GitHub Actions — permissions minimales posées sur les quatre workflows d'alors (`09c65ecd`, `e8fbc3be`, `8bf6fa9f` ; `karoo-release.yml` limite son seul job à `contents: write`), et sur le cinquième, `mobile-release.yml` (`80122a0d`, même limite) ; reste l'épinglage des actions par SHA, à commencer par les actions tierces des deux workflows qui décodent le keystore : `karoo-release.yml` et `mobile-release.yml` (`subosito/flutter-action`, `softprops/action-gh-release`). Le suivi `github-actions` de Dependabot tiendra les SHA à jour |
-| `SEC-14` | — | Info | — | Images externes dans le markdown ; le parseur XML et le paramètre non encodé sont livrés sous `SEC-21` |
-| `SEC-40` | — | Suite de `SEC-31` | Moyenne | La CSP complète du site n'est encore que rapportée (`Content-Security-Policy-Report-Only`) : lire les rapports `[csp-report]` de staging et de prod, puis passer `CSP_MODE=enforce` (procédure dans [`OPERATIONS.md`](OPERATIONS.md#content-security-policy)). Avant de basculer, vérifier dans un vrai navigateur sur staging, console ouverte et rapports lus : la carte (chaque fond, relief, mode sombre, tracé GPX), la visionneuse PDF d'une pièce jointe, un post markdown avec images externes, la PWA (installation, service worker, inscription au web push en prod), la connexion par passkey, la connexion et la synchronisation Strava, l'éditeur Tiptap. Durcir aussi la route de rapports (budget par client et dédoublonnage, le budget global de 120 lignes/min peut être épuisé par des rapports forgés) et le cache de dix minutes des hôtes raster (un changement de fournisseur de carte sans redémarrage du frontend reste bloqué jusque-là). Restera ensuite : les réponses non HTML (scripts, worker de carte) ne portent que les quatre directives de `SEC-30`. Taille : S |
-| `SEC-39` | — | Suite de `SEC-35` | Faible | Deux autres émissions de jetons par e-mail gardent le motif compter-puis-insérer que `SEC-35` a fermé pour les codes à usage unique ; même remède, en respectant l'ordre des verrous compte puis jeton |
-| `SEC-41` | 1 | Nov. C1 | Moyenne | Une demande en cours sur un attribut d'identité survit à la récupération du compte |
-| `SEC-42` | — | Nov. C2 | Faible | Un envoi de fichier refusé laisse sa copie temporaire sur le disque du backend |
-| `SEC-43` | — | Nov. C3 | Faible | Un ancien point d'API contourne la règle « personne ne rejoint une équipe sans un clic à soi » |
-| `SEC-44` | 2 | Nov. V1 | À valider | Une entrée pré-authentification n'est pas bornée en mémoire avant validation |
-| `SEC-45` | 3 | Nov. V2 | À valider | Une bibliothèque d'analyse de fichiers de trace n'est pas protégée contre l'expansion d'entités |
-| `SEC-46` | — | Nov. V3 | À valider | Un chemin d'envoi de trace échappe à la borne de taille posée par `SEC-6` |
-| `SEC-47` | — | Nov. V4 | À valider | Un retour de connexion à un service tiers n'est pas lié au navigateur qui l'a lancé |
-| `SEC-48` | — | Nov. V5 | À valider | Un appel facturé à un fournisseur n'a pas de quota par compte. Aperçus GPX datés (API-153) : 20 à venir par compte, sans plafond de points de prévision par aperçu. Calculs d'itinéraire : 300 par compte et par jour depuis `BILL-10` (`pedalons.limits.router-daily-per-user`). Reste ouvert : pas de plafond journalier sur les PUT qui changent le tracé, ni de priorité des sorties |
-| `SEC-49` | — | Nov. V6 | À valider | Un quota d'envoi suit le motif compter-puis-insérer (même famille que `SEC-35` et `SEC-39`) |
-| `SEC-50` | — | Nov. V7 | À valider | La désactivation d'un domaine ne s'applique pas à tous les chemins de résolution |
-| `SEC-51` | — | Audit des permissions du 11 novembre 2026 (plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/archive/2026-11-11-visibilite-contenu-equipe-privee.md), A4) | Faible | Une réponse de l'API distingue deux cas qu'elle devrait confondre pour un appelant sans droit |
-| `SEC-52` | — | Lot 3b du générateur de parcours (16 novembre 2026) | Faible | La clé de cloisonnement du moteur de parcours circule en clair sur le réseau partagé des piles, et le moteur n'a pas de liste de clés admises : un conteneur de ce réseau peut l'appeler avec une clé à lui. Chiffrer le réseau ou configurer la liste du moteur (`docker-compose.shared.yml`) ; taille S |
-
----
-
-## AUD — Audit d'infrastructure de février
-
-[`plans/2026-02-14-project-audit.md`](plans/2026-02-14-project-audit.md) fait foi pour le détail et
-les statuts ; cette table les suit, revérifiés dans le code le 16 novembre 2026 (en prod le 16 octobre). Quand une
-ligne est corrigée : ✅ dans l'audit, ligne déplacée dans `LEDGER_DONE.md` sous son identifiant. La
-colonne « Audit » garde l'identifiant de l'audit (section « Problèmes » ; `P…` = plan d'action).
-Deux gestes d'exploitation de l'audit sont sous `OPS` : I13 (`OPS-7`) et I20 (`OPS-8`). I3 (pas de
-déploiement automatique, `AUD-1`) et K10 (routes Karoo non paginées, `AUD-33`) sont
-dans « Délibérément dehors ».
-
-| ID | Thème | Audit | Gravité | Constat |
-|---|---|---|---|---|
-| `AUD-6` | Docker | I10 | Important | `forwardedHeaders.insecure=true` sur Traefik (atténué par les règles `DOCKER-USER` qui ne laissent que Caddy le joindre : sous Swarm il écoute sur toutes les interfaces, voir [`OPERATIONS.md`](OPERATIONS.md#only-caddy-may-reach-traefik)) — voir V3, `SEC-16` |
-| `AUD-30` | Docker | I14 | Mineur | Aucune limite **CPU** dans les compose (la mémoire est bornée : `AUD-7`). À poser une fois les charges mesurées : une limite trop basse sur le backend rallonge le démarrage (Flyway, Magika) au-delà du `start_period`, et le JVM dimensionne ses threads de GC sur elle |
-| `AUD-8` | Docker | I15 | Important | VCL Varnish réduite à un `backend default` et une règle de contournement du cache (`API-43`) : ni purge, ni grace, ni ban |
-| `AUD-9` | Docker | I17 | Important | imgproxy sans signature d'URL (ni `IMGPROXY_KEY` ni `IMGPROXY_SALT`) — même brique que les URLs signées (`API-24`) |
-| `AUD-10` | Docker | I19 | Important | Aucune procédure de rotation des secrets dans `OPERATIONS.md` (clés JWT, `ENCRYPTION_KEY`, mots de passe postgres et MinIO, SMTP, compte de service FCM, clé age). La rotation d'`ENCRYPTION_KEY` doit **rechiffrer** les jetons des services GPS, que la synchronisation automatique (`API-120`) utilise en continu : une clé changée sans rechiffrement les rend illisibles |
-| `AUD-15` | Backend | B9, B11 | Important | `FetchType.EAGER` sur neuf `@ManyToOne` (`Ride`, `RideGroup`, `Trip`, `TripStage`, `UserTeam`) |
-| `AUD-20` | Mobile | M11 | Important | Lints Flutter par défaut seulement (`analysis_options.yaml`) |
-| `AUD-21` | Mobile | M13 | Mineur | Pas de hors-ligne — voir `API-22` à `API-25` |
-| `AUD-24` | Karoo | K9 | Important | Pas de `slow_down` (RFC 8628 — le backend n'en émet aucun à ce jour, voir `AUD-27`) : `auth/DeviceCodeLogin.kt` termine la connexion en erreur sur tout code 400 autre que `AUTHORIZATION_PENDING` et `TOKEN_EXPIRED`, et un `interval` de 0 interroge en boucle serrée (aucun test ne le couvre). K7 est livré sous `AUD-34`, K13 sous `AUD-32` ; K10 est écarté sous `AUD-33` |
-| `AUD-25` | Garmin | G1 | Critique | `BASE_URL` de production en dur (`ApiClient.mc`) : bloque le multi-tenant |
-| `AUD-26` | Garmin | G4, G7, G10 | Important | `loadResource()` dans `onUpdate()` ; état comparé à une chaîne localisée ; `_tokenCallback` partagé entre refresh et polling. G5 (AM/PM en dur) est livré depuis le 12 novembre 2026 (`Rez.Strings.AM` / `PM`, `FormatUtils.mc`) |
-| `AUD-27` | Garmin | G8, G9 | Important | Pas de `slow_down` (le backend n'en émet aucun à ce jour — relevé le 30 septembre 2026 : `grep slow_down backend/` ne trouve rien ; `SEC-4` a limité `/complete` et `/verify`, pas `/token`, dont le `device_code` de 256 bits n'a rien à deviner : le point ne mordra que si `/token` est un jour freiné) ; offsets fixes dans les layouts. G6 est livré sous `AUD-31` |
-| `AUD-29` | Appareils | §9.2 | — | Le polling du device flow s'arrête à la **première erreur réseau** : toute erreur qui n'est ni « en attente » ni « expiré » le coupe, sur Karoo (`auth/DeviceCodeLogin.kt`, `run`) comme sur Garmin (`PedalonsApp.onPollResponse`). Un flow interrompu ne reprend pas : Karoo ne garde rien, Garmin enregistre le `device_code` (`AuthManager.saveDeviceCode`) mais `getDeviceCode()` n'a aucun appelant. À faire : relancer le polling après une erreur passagère, implémenter la reprise ou retirer le stockage ; comportement sur appareil à valider à la main |
-
-Suivis ailleurs : les lignes de sécurité S2 à S12 ont été versées dans l'audit de sécurité de septembre, donc sous
-`SEC` (H5 livré sous `SEC-4`, M7 = `SEC-27`, M8 = `SEC-25`, M9 = `SEC-11`, M10 = `SEC-28`, L12 et L13 livrés sous `SEC-22`, L14 sous `SEC-23` ; S8 et S12 y sont rangées comme
-conformes). K12 (= S13, jetons Karoo en clair) est L10, dans `SEC-12` ; P2-44 (en-têtes CSP/HSTS) est
-V4, tranché sous `SEC-16` et corrigé sous `SEC-30` ; F12 (sitemap) est livré sous `WEB-31`.
-
----
+- [ ] [`AUD-30`](ledger/AUD/AUD-30.md) Aucune limite **CPU** dans les compose (la mémoire est bornée : `AUD-7`). À poser une fois les charges…
+- [ ] [`AUD-29`](ledger/AUD/AUD-29.md) Le polling du device flow s'arrête à la **première erreur réseau** : toute erreur qui n'est ni « en attente »…
+- [ ] [`AUD-27`](ledger/AUD/AUD-27.md) Pas de `slow_down` (le backend n'en émet aucun à ce jour — relevé le 30 septembre 2026 : `grep slow_down…
+- [ ] [`AUD-26`](ledger/AUD/AUD-26.md) `loadResource()` dans `onUpdate()` ; état comparé à une chaîne localisée ; `_tokenCallback` partagé entre…
+- [ ] [`AUD-25`](ledger/AUD/AUD-25.md) `BASE_URL` de production en dur (`ApiClient.mc`) : bloque le multi-tenant
+- [ ] [`AUD-24`](ledger/AUD/AUD-24.md) Pas de `slow_down` (RFC 8628 — le backend n'en émet aucun à ce jour, voir `AUD-27`)…
+- [ ] [`AUD-21`](ledger/AUD/AUD-21.md) Pas de hors-ligne — voir `API-22` à `API-25`
+- [ ] [`AUD-20`](ledger/AUD/AUD-20.md) Lints Flutter par défaut seulement (`analysis_options.yaml`)
+- [ ] [`AUD-15`](ledger/AUD/AUD-15.md) `FetchType.EAGER` sur neuf `@ManyToOne` (`Ride`, `RideGroup`, `Trip`, `TripStage`, `UserTeam`)
+- [ ] [`AUD-10`](ledger/AUD/AUD-10.md) Aucune procédure de rotation des secrets dans `OPERATIONS.md` (clés JWT, `ENCRYPTION_KEY`, mots de passe…
+- [ ] [`AUD-9`](ledger/AUD/AUD-9.md) imgproxy sans signature d'URL (ni `IMGPROXY_KEY` ni `IMGPROXY_SALT`) — même brique que les URLs signées…
+- [ ] [`AUD-8`](ledger/AUD/AUD-8.md) VCL Varnish réduite à un `backend default` et une règle de contournement du cache (`API-43`) : ni purge, ni…
+- [ ] [`AUD-6`](ledger/AUD/AUD-6.md) `forwardedHeaders.insecure=true` sur Traefik (atténué par les règles `DOCKER-USER` qui ne laissent que Caddy…
 
 ## LEGAL — Politique de confidentialité
 
-Le plan des points ouverts est [archivé](plans/archive/2026-09-29-privacy-policy-open-points.md).
-Toute modification de
-`privacy/privacy-policy.{fr,en}.md` se fait **en parité FR/EN**, et le texte étant un asset de
-l'app mobile, un changement n'y apparaît qu'avec la build suivante.
+Contexte du domaine : [`ledger/LEGAL/README.md`](ledger/LEGAL/README.md).
 
-La politique réécrite pour la mesure d'audience (`LEGAL-19`) est en ligne ; ce qui reste de la mise
-en service (précondition du §5.3 du plan, vérifications de l'étape 6) est sous `OPS-41`.
-
-- [ ] `LEGAL-28` **La politique ne parle pas des applications externes autorisées par OAuth (S)** —
-      depuis `API-199` un membre peut ouvrir son compte à une application tierce
-      (`/oauth/authorize`) : `privacy/privacy-policy.{fr,en}.md` §6 n'en dit rien (ni l'accès donné,
-      ni son retrait depuis le profil, ni les codes d'autorisation supprimés après cinq minutes ou
-      par le nettoyage nocturne). À écrire en parité FR/EN ; visible dans l'app à la build suivante.
-
-- [ ] `LEGAL-26` **Revêtement des parcours : ODbL et mention de VersaTiles côté serveur (S)** —
-      deux points relevés par `API-150`, à instruire. (1) Le backend stocke par parcours des plages
-      typées tirées d'OSM (`TrackSurfaceDocument.ways` : structure, revêtement, type de voie) ; le
-      contrat d'osm-route-details (§4.7) rappelle qu'un client qui accumule ses réponses en base de
-      segments relève du partage à l'identique de l'ODbL (déjà vrai avec osm-surface depuis
-      `OPS-57`) : dire si c'est une base dérivée et ce que ça implique, ou réduire ce qui est gardé.
-      (2) La politique ne cite VersaTiles que comme fond de carte côté client, alors que le serveur
-      (osm-surface puis osm-route-details) lui demande des tuiles sur l'emprise des parcours ; sans
-      objet si la prod passe à un extrait VersaTiles local (`OPS-58`). Parité FR/EN. Décision du
-      7 novembre 2026 : noter, ne rien changer pour l'instant.
-
-- [ ] `LEGAL-30` **La politique ne nomme pas les tags parmi le contenu créé (XS)** — la section
-      « Contenu que vous créez » de `privacy/privacy-policy.{fr,en}.md` ne cite pas les tags
-      d'équipe (libellé et couleur), qu'une personne administrant une équipe saisit sur le site
-      et, depuis `MOB-169`, dans l'app (`mobile/store-metadata/data-safety.md`, ligne
-      d'inventaire #31). Relevé le 15 novembre 2026. À trancher : ajouter les tags à la liste, ou
-      juger qu'un vocabulaire d'équipe relève déjà du contenu d'équipe décrit.
-- [ ] `LEGAL-22` **Renvois « depuis votre profil » rendus précis (XS)** — quatre
-      phrases renvoient au profil sans dire où, alors que le profil a depuis octobre un sous-écran
-      par sujet (`contracts/routes.yaml`, mêmes libellés sur le site et dans l'app) : CGU l.64
-      (débloquer → **Profil → Confidentialité → Utilisateurs bloqués**) et l.83 (supprimer son
-      compte → **Profil → Mon compte → Zone de danger**), politique l.20 (contact au sujet des
-      annonces → **Profil → Confidentialité**) et l.170 (« Déconnecter tous les appareils » →
-      **Profil → Connexion et sécurité**). `privacy/terms-of-service.{fr,en}.md` et
-      `privacy/privacy-policy.{fr,en}.md`, en parité FR/EN, comme le fait déjà `support.{fr,en}.md`.
-
----
+- [ ] [`LEGAL-30`](ledger/LEGAL/LEGAL-30.md) La politique ne nomme pas les tags parmi le contenu créé (XS)
+- [ ] [`LEGAL-28`](ledger/LEGAL/LEGAL-28.md) La politique ne parle pas des applications externes autorisées par OAuth (S)
+- [ ] [`LEGAL-26`](ledger/LEGAL/LEGAL-26.md) Revêtement des parcours : ODbL et mention de VersaTiles côté serveur (S)
+- [ ] [`LEGAL-22`](ledger/LEGAL/LEGAL-22.md) Renvois « depuis votre profil » rendus précis (XS)
 
 ## BILL — Monétisation
 
-Le plan est [`plans/2026-10-17-monetisation.md`](plans/2026-10-17-monetisation.md) : qui paie
-(l'équipe, jamais le membre), trois paliers (Peloton gratuit ≤ 25 membres, Club 80 €/an HT,
-Fédération sur devis), **abonnement annuel seul, facturé et encaissé par Qonto** (facture émise
-par l'API, payée par virement, carte plus tard), un moteur d'abonnement écrit chez nous
-(renouvellement, relances, grâce), et une seule fonction `TeamEntitlements` qui combine
-l'abonnement avec les drapeaux de gouvernance existants (`enableRoutePlanner`,
-`addMemberAllowed`…). **Presque rien n'est décidé** : seuls le seuil du gratuit (Q3, 25 membres) et les équipes offertes
-(Q7) sont tranchés, avec les limites de l'offre gratuite livrées sous `BILL-10` ; les autres
-questions du §11 sont au propriétaire.
+Contexte du domaine : [`ledger/BILL/README.md`](ledger/BILL/README.md).
 
-- [ ] `BILL-1` **Décider, vérifier, puis poser le socle (M)** — trancher ce qui reste du §11 du plan
-      (objectif, prix, date de bascule et première période, échéance commune ou non, droits avant
-      paiement, carte, devis, majeure ou mineure, TVA et mentions avec l'expert-comptable,
-      rétractation ; le seuil du gratuit et les équipes offertes sont tranchés) ; vérifier dans le
-      bac à sable Qonto ce que le §9 laisse ouvert (clé d'API suffisante pour les factures et les
-      webhooks, rapprochement automatique des virements, avoirs) ; puis le lot 1 du §10 : la
-      prochaine migration Flyway (`team_subscriptions`, `billing_invoices`, `billing_events`),
-      `TeamSubscription`, `TeamEntitlements` et son résolveur, `entitlements` dans `TeamDetailDto`
-      (`tier`, `memberLimit` et `plannerQuota` y sont déjà, par `BILL-10`), `AdminTeamDto` et
-      `PATCH /api/admin/teams/{id}/subscription`, `BILLING_ENABLED=false`, et la migration de
-      lancement qui pose « Club offert jusqu'au 31 mars 2027 » sur toute équipe existante —
-      **aucun refus actif à ce stade**. Les lots suivants (`BILL-2` à `BILL-9`, §10 du plan) ne
-      sont créés ici qu'une fois `BILL-1` tranché. Prérequis avant le premier euro encaissé :
-      Open-Meteo en plan payant (`OPS-29`), conditions VersaTiles relues (§8 du plan ; le géocodage
-      est chez Stadia Maps depuis `OPS-49`, un plan payant déjà, plus rien à relire côté
-      Nominatim), et aucun environnement hors prod capable d'émettre une facture.
-- [ ] `BILL-11` **Recette des limites de l'offre gratuite (S)** — les e2e Playwright écrits avec
-      `BILL-10` sont passés le 12 novembre 2026 sur la pile e2e, après un défaut corrigé (`BILL-12`)
-      et des tests mis au pas d'une équipe née avec le planificateur ouvert (`flow-routes`, et
-      l'équipe de la suite du planificateur débloquée dans `e2e/support/domains.ts`, dont l'unique
-      compte épuisait le quota personnel). Reste une recette manuelle sur la pile locale : passer une équipe en Gratuit depuis le formulaire, refus du 26ᵉ membre (web et
-      mobile), modale du quota personnel dans les outils GPX. Plan :
-      [`plans/archive/2026-11-11-limites-offre-gratuite.md`](plans/archive/2026-11-11-limites-offre-gratuite.md).
-
----
+- [ ] [`BILL-11`](ledger/BILL/BILL-11.md) Recette des limites de l'offre gratuite (S)
+- [ ] [`BILL-1`](ledger/BILL/BILL-1.md) Décider, vérifier, puis poser le socle (M)
 
 ## Délibérément dehors
 
 À relire avant de rouvrir l'un de ces points : chacun a été écarté avec un motif, et plusieurs
-sont des invariants que le code garde. Chacun garde l'identifiant de son domaine : rouvert, il
-redevient une entrée de sa section sous le même identifiant.
+sont des invariants que le code garde. Rouvert, il redevient une entrée ouverte sous le même
+identifiant.
 
-| ID | Sujet | Décision | Ce que ça implique |
-|---|---|---|---|
-| `API-205` | **Finir le générateur Java d'équipe** (scindé d'`API-198`) : budget de 10 s, reconstructions reportées et `build-wait` à 60 s, pondérateur du cache, familiarité (β), corrections du banc (propositions 3 et 6 à 9 de la conception du lot 2, §13.6) ; composantes par type de sortie sur les arêtes admises (§13.10, correction b) ; départs 4 et 5 de la plus grande équipe sans proposition à 30 et 50 km, points de demi-tour sans flot (§13.11) ; `EXPLAIN` de l'empreinte | Non (15 novembre 2026, décision du propriétaire, plan [`2026-11-15-generateur-parcours-osm.md`](plans/2026-11-15-generateur-parcours-osm.md) §11.10) | La recherche Java est une preuve de concept, utilisée par le propriétaire seul, et sera retirée quand le moteur d'`API-207` fera au moins aussi bien sur le même banc en mode strict : régler ses seuils et son cache serait du travail jeté. Elle garde donc ses défauts connus (11 à 17 % de requêtes arrêtées à 5 s et réponse « occupé » trompeuse pour la plus grande équipe, 30 à 50 s d'attente après l'enregistrement d'un parcours, curseur de familiarité qui ne sépare que f = 0). Ce que ces défauts apprennent (départs sans candidat, flot orienté, accroche) est à reprendre comme **cas du banc** du nouveau moteur, pas comme correctifs. La recherche Java est retirée le 16 novembre 2026 (`API-206`), avec son cache, ses réglages et ses tests : il n'y a plus rien à rouvrir ici, et un défaut du générateur se traite désormais dans le moteur d'osm-route-details. |
-| `API-201` | **OAuth : enregistrer les applications, vérifier `redirect_uri`, des scopes** | Non (14 novembre 2026, décision du propriétaire) : le flux d'`API-199` est minimal, tout domaine, URL ou deep link est accepté | Rien ne garantit qui reçoit le code : ce qui en tient lieu est l'écran de consentement, qui montre le `client_id` déclaré et l'adresse de retour, et PKCE `S256` obligatoire. Les jetons donnent tout ce que donne la session du membre. Ne pas rendre PKCE facultatif ni approuver sans clic tant que ce point n'est pas rouvert : ce sont les deux seuls garde-fous. À rouvrir si l'API s'ouvre à des tiers qu'on ne connaît pas |
-| `API-183` | **Renvoyer tout le parc aux services GPS après `API-182`** | Non fait : le rattrapage réécrit les `route.fit` en place, sans nouvelle révision de contenu | Les parcours déjà poussés chez Wahoo avant `API-181` gardent un FIT à l'horodatage unique. Rien ne dit qu'un ELEMNT en souffre, et une révision sur chaque parcours renverrait tout le parc à chaque compte connecté. À rouvrir sur un retour Wahoo ; un parcours se renvoie déjà en le réenregistrant. |
-| `API-29` | **Liste d'attente (`waitlisted`)** | N'existe pas en base ; ni colonne, ni statut, ni rang sur `RideParticipation` | « Complet » est un **état terminal**. Ne pas câbler un `waitlisted: false` en dur : un champ toujours faux rend la vraie fonctionnalité indétectable en revue |
-| `API-30` | **Repli sur `createdBy` pour le meneur** | **Interdit partout** — base, DTO, client | `createdBy` vaut le créateur de la **sortie**, donc le même nom sur tous ses groupes : un repli serait faux presque partout, et faux de la façon qui ne se signale pas. C'est le défaut que `leader_id` corrige. Gardé par `groupLeader_isNotTheRideCreator` |
-| `API-31` | **Position exacte d'une annonce** | Floutée à ~1 km, **et la sonde de proximité quantifiée sur la même grille** | Flouter la sortie ne suffit pas : répéter « cette annonce est-elle à moins de R de C ? » en déplaçant C multilatère la position réelle. D'où le rayon arrondi au multiple de cellule (3 km servis comme 3,33 km) : l'interface annonce un **ordre de grandeur**, pas une valeur exacte. Et **jamais de punaise**. La quantification seule ne suffisait pas (audit M2) : depuis `SEC-8`, le filtre mesure aussi depuis la position **floutée** de l'annonce, jamais l'exacte |
-| `API-32` | **Champ de contact libre sur une annonce** | Écarté au profit du relais e-mail | C'était la solution la moins chère, et elle publie une donnée personnelle **irrévocablement** à toute l'équipe (jusqu'à 1 999 personnes) : ce qui a été lu ne se dépublie pas. Retirer le champ plus tard ne répare rien |
-| `API-33` | **`GET /api/rides` et listes mono-type** | Non créées ; `/api/publications?type=RIDE` est la surface canonique | Deux surfaces = deux jeux de filtres à garder cohérents. `RideListResponse` / `TripListResponse` existent encore comme records retournés par **aucun endpoint** (schémas orphelins du contrat, que rien ne référence) : ils auraient pu partir avec l'une des MAJOR 9.0.0 à 15.0.0, et y sont encore au 16 novembre 2026. À supprimer avec la prochaine MAJOR, pas pour eux seuls |
-| `API-34` | **`acceptTerms` obligatoire à l'inscription (contrat `4.1.0`)** | Laissé en mineure | Historique : la rupture n'a touché que les builds mobiles d'avant 4.1.0, qui ne circulent plus (le mobile est republié avec le contrat, choix d'`API-42`) |
-| `API-127` | **Contourner `ROUTE_PLANNER_DISABLED` d'un aperçu tracé** | Non étanche, assumé (décision 3 d'`A10`) | Seul le dessin est gouverné. `downloadGpx` d'un aperçu est public : exporter le GPX d'un aperçu tracé puis le réimporter comme fichier (`drawn=false`) le fait entrer dans une équipe sans planificateur. Ne pas présenter le contrôle comme un verrou ; les aperçus antérieurs à `V72` sont aussi `drawn=false` |
-| `API-93` | **Statistiques de voyage stockées en base** (BACKLOG « Trip stats (save in DB) ») | Non (décidé le 9 octobre 2026 avec le propriétaire) | `TripDto.totalDistance` et `totalElevationGain` (contrat `1.3.0`) sont calculés à la lecture, une requête par page (`TripSummaryRepository.loadStageAggregates`), et suffisent aux écrans web et mobile. Une colonne dénormalisée devrait suivre chaque modification d'étape ou de parcours, comme la fin stockée (`API-85`, `API-87`). À rouvrir sur une mesure réelle de coût |
-| `API-89` | **Fin stockée pendant le déploiement à chaud** | Acceptée le 6 octobre 2026 (`API-85`) | Pendant la minute où l'ancien et le nouveau backend partagent la base, une sortie ou un voyage **modifié** par l'ancien garde sa fin précédente, non nulle, que le remplissage au démarrage (`PublicationEndBackfill`, lignes vides seulement) ne corrige pas ; seules les lignes **créées** par l'ancien profitent du repli départ + 3 h. Fenêtre d'une minute, corrigée au prochain enregistrement. À rouvrir si un déploiement long ou un retour arrière le rendait visible |
-| `API-54` | **exiftool pour retirer les métadonnées des images** | Écarté le 29 septembre 2026, après mesure sur un corpus synthétique (métadonnées marquées, pixels comparés) | exiftool (micro-service ou WASM) retire ce qu'il connaît au lieu de ne garder que ce qui est autorisé : il a laissé passer un chunk PNG privé et les octets après le trailer GIF, et refusé un WebP valide. Il ne nettoie pas les PDF, il a des CVE répétées (dont CVE-2026-7580, qui touche la 13.50) et il ajoute un conteneur. En WASM (zeroperl sur Chicory), sa sortie est identique mais il prend 17 à 19 s par image. imgproxy, écarté le même jour parce qu'il n'a pas de mode sans perte, a finalement été retenu : la perte d'un réencodage a été acceptée pour un code plus simple, qui ne laisse rien passer par construction et lit aussi HEIC, AVIF, TIFF et JPEG XL (`API-43`) |
-| `API-52` | **Durcir `ImageMetadataStripper`** | Sans objet depuis le 29 septembre 2026 | Le nettoyeur maison sans perte a été supprimé : le stockage fait réencoder chaque image par imgproxy (`API-43`), qui n'écrit que les pixels. Ne pas le réintroduire pour gagner la qualité perdue : c'est lui dont les branches gardaient par défaut ce qu'elles ne connaissaient pas |
-| `API-67` | **« Mes équipes » d'un admin de plateforme** | Comportement actuel gardé (décidé le 4 octobre 2026 avec le propriétaire) | `GET /api/teams?minRole=MEMBER` renvoie à un admin de plateforme toutes les équipes du domaine, qu'il voit donc toutes dans « Mes équipes » à l'accueil (web et mobile, `WEB-42`, `MOB-42`). Ne pas restreindre la requête à ses adhésions réelles sans rouvrir ce point |
-| `API-165` | **Envoi automatique d'un voyage sans étape (sa route globale)** | Non (10 novembre 2026, livraison d'`API-162`) | Seule une étape a un départ daté qui borne la fenêtre (7 jours avant, retrait 24 h après) ; la route globale d'un voyage n'en a pas, et l'envoyer en plus des étapes doublerait le parcours chez le service. Une étape sans route, sans GPX ou dont la route n'est pas visible n'envoie rien, **sans repli sur la route du voyage** |
-| `API-166` | **Envoi groupé de toutes les étapes dès que la première entre dans la fenêtre** | Non (10 novembre 2026, `API-162`) | Chaque étape a sa propre fenêtre : un voyage de deux semaines déposerait d'un coup une quinzaine de parcours, dont la plupart resteraient des jours chez le service. À rouvrir si la recette montre qu'on veut tout le voyage sur le compteur avant de partir |
-| `API-167` | **Aligner le séparateur des sorties (` · `) sur celui des étapes (` - `)** | Non (10 novembre 2026, `API-162`) | Le nom envoyé fait partie de l'empreinte de chaque ligne (`asset_id` du GPX et nom envoyé, `API-120`) : changer le séparateur des sorties renverrait tous les parcours de toutes les connexions au tick suivant. Incohérence assumée ; à faire seulement avec un autre changement qui renvoie déjà tout |
-| `API-192` | **Les étapes de voyage dans l'app Garmin** (scindé d'`API-168`) | Non (13 novembre 2026, [plan](plans/archive/2026-11-13-karoo-alignement.md)) | Le serveur sait les donner (`registeredStages`, sur `stages=true`) et le Karoo les affiche (`API-168`). L'app Garmin ne les demande pas : sa réponse est restée la même à l'octet, son budget de mémoire n'est pas touché. Les lui donner, c'est une ligne de plus dans son menu et une réponse plus lourde à mesurer sur les 13 appareils ; à reprendre avec ses formats (`API-159`) |
-| `API-175` | **Retirer la colonne `elevation_refresh.backfill` et la priorité qui la lit** | Non (13 novembre 2026, décision du propriétaire) | Le backfill des tronçons du réseau d'équipe (`API-198`, lot 1, `NetworkEdgesBackfill`) écrit de nouveau `backfill = true` et sert ces lignes par un appel « tronçons seuls ». La colonne, son index et la priorité du worker (demandes normales d'abord, puis lignes `backfill`) restent donc utiles. À rouvrir si ce backfill est retiré à son tour |
-| `WEB-44` | **Passkey en tête du formulaire de connexion** | Ordre actuel gardé (décidé le 4 octobre 2026 avec le propriétaire) | `LoginForm` (`WEB-42`) garde email et mot de passe en tête, puis « ou », puis la passkey et le code par e-mail. Le bouton passkey n'apparaît qu'après hydratation (`browserSupportsWebAuthn`) : en tête, il décalerait le haut de l'accueil rendu côté serveur |
-| `WEB-54` | **Calendrier rendu côté serveur dans le mauvais fuseau, sans préférence `timezone`** | Accepté tel quel (décidé le 4 octobre 2026, à la dissolution de `frontend/docs/SSR-BUGS.md`) | Sans préférence `timezone`, le serveur ne connaît pas le fuseau du visiteur et rend en UTC : une sortie à 00 h 30, heure de Paris, s'affiche dans la case de la **veille**, puis change de case au rendu qui suit l'hydratation, avec le vrai fuseau (`useEffectiveTimezone`, `getServerSnapshot` en UTC ; `CalendarView`). Ce n'est pas une erreur d'hydratation : le rendu d'hydratation lit UTC des deux côtés, et le mois de la grille est calé sur `hourAlignedNow()` dans le même fuseau. Régler une préférence `timezone` supprime l'effet. Seule autre issue : ne pas rendre la grille côté serveur quand le fuseau est deviné, ce qui perd tout l'intérêt de son préchargement |
-| `WEB-58` | **Redirection des anciennes adresses du profil** (`/profil#notifications`, `/profil#gps`, `/profil/participations`) | Non (4 octobre 2026, refonte du profil `WEB-55` / `MOB-48`) | Aucun lien extérieur publié ne cite ces adresses, et les e-mails envoyés avant la refonte visaient `/profil`, toujours servi. Les liens internes (e-mails `NotificationLinks.PREFERENCES_PATH`, `FeaturesPromoCard`, aide, politique) visent les nouvelles routes `/profil/<sujet>`. À rouvrir seulement si une de ces adresses a été publiée |
-| `WEB-65` | **Tableau de bord pour un admin de plateforme non membre** | Tableau complet, décidé le 6 octobre 2026 avec le propriétaire (remplace la décision du 5 octobre, « les non-membres gardent la page publique », dépassée par l'Agenda d'équipe `API-86`, `WEB-68`, `MOB-60`) | Le fil a disparu et le tableau de bord est rendu à tout le monde, web et mobile ensemble. `TeamDashboardService` traite un admin de plateforme en `ADMIN` (`platformAdmin || …`) : non membre, il reçoit le tableau ADMIN complet (blocs organisateur et admin), comme il voit toutes les équipes dans « Mes équipes » (`API-67`). C'est voulu : ne pas le ramener à la partie publique, ni dans le service ni dans un client |
-| `API-124` | **`dominantHeadwindAzimuthDeg()` (vcyclist g31) dans `WindEstimator`** | Écarté de la migration gpx2web → vcyclist (renuméroté le 16 octobre 2026 : il portait par erreur `API-102`, déjà pris) | Rendrait un azimut compas directement exploitable et supprimerait `findDirectionFromVector` (le repli `-v.getY()` du repère Mercator, voir §4 de [`plans/2026-07-28-migration-vcyclist.md`](plans/2026-07-28-migration-vcyclist.md)) — mais c'est un changement de comportement, pas une migration à iso-fonctionnalité. La méthode existait toujours en vcyclist 6.9.1 (le backend est en 6.14.0 au 16 novembre 2026, non revérifié) |
-| `API-113` | **Import d'un GPX par URL dans les outils GPX** (repris de biketeam) | Non (décidé le 15 octobre 2026 avec le propriétaire, à la reprise des outils GPX de biketeam) | Choix produit : seuls la fusion (`API-112`), la carte sans tracé (`WEB-89`) et le partage d'un aperçu (`WEB-88`) sont repris. Et un serveur qui télécharge l'URL qu'un membre lui donne est une surface SSRF (réseau interne de la stack, métadonnées d'hébergeur, redirections) à borner hôte par hôte. Le membre télécharge le fichier puis le dépose. À rouvrir seulement avec une liste d'hôtes autorisés et un client HTTP sans redirection vers une adresse privée |
-| `API-114` | **Import depuis OpenRunner ou VisuGPX** (repris de biketeam) | Non (décidé le 15 octobre 2026 avec le propriétaire, avec `API-113`) | Même choix produit, et c'est un import par URL vers des hôtes tiers (même risque SSRF, plus un format de page ou d'API non contractuel qui casse sans prévenir). L'export GPX de ces services suivi d'un dépôt suffit |
-| `WEB-8` | **Scroll infini côté web** | Non porté | Incompatible avec la règle structurante du frontend (filtres et pagination dans la query string, donc toute vue partageable). `usePaginatedQuery` précharge déjà la page suivante **et** la précédente |
-| `WEB-9` | **Gabarits tactiles portés au web** | Non portés | Feuilles à crans, barre d'onglets basse, app bar interpolée, chips en remplacement des `Select` : ils résolvent une contrainte que le desktop n'a pas, et produiraient des composants hors Mantine |
-| `WEB-10` | **Minimum de 44 px sur les boutons web** | Règle **tactile** uniquement | Le web descend à 36 px au-dessus de 768 px. Ne pas prendre `pedalons.css` pour une spécification web |
-| `WEB-159` | **Interrupteur Pente · Revêtement · Météo dans l'en-tête du profil en surimpression (web)** | Non (décidé le 10 novembre 2026 avec le propriétaire, sur maquette — canevas « Contrôles des cartes ») | Ce profil ne fait que 110 px sur un petit écran : un en-tête le rognerait. L'interrupteur reste sous la carte (`ColorModeControls`), BRANDING §3.8. À rouvrir avec une hauteur minimale de profil relevée et le cadrage de la carte revu |
-| `MOB-131` | **« Me localiser » sur les cartes de l'app** | Non (maquetté puis retiré de `MOB-129`, 10 novembre 2026) | L'app ne déclare que la position approximative, demandée une fois pour « Autour de moi » (`AndroidManifest.xml`, `Info.plist`, `store-metadata/data-safety.md` : pas de puck MapLibre). L'ajouter rouvre ces trois déclarations et les fiches des stores |
-| `MOB-136` | **Adresse sous le nom des lieux de départ et d'arrivée** (« Place de Jaude, 63000 Clermont-Ferrand ») | Non (décidé le 10 novembre 2026 avec le propriétaire, après la refonte `MOB-134`) | Sur les écrans de détail, un lieu est un lien d'itinéraire qui ne montre que son nom (`PdlPlaceRow.link`, `ridePlaceLinks`, `stage_detail_page.dart`, `trip_detail_page.dart`) : le bloc de départ reste court, et le lien mène à l'adresse. `PlaceDetailDto.address` ne sert plus qu'à ouvrir l'itinéraire faute de coordonnées |
-| `WEB-11` | **Jetons `--pdl-*` au web** | Non introduits | Le site a déjà la charte en thème Mantine ; une seconde couche de variables créerait deux sources de vérité |
-| `WEB-12` | **Mode sombre dérivé au web** | Sans objet | Le tableau de parité est un livrable **pour Flutter**, parce qu'aucune maquette ne fournit le sombre. Mantine l'a déjà |
-| `MOB-22` | **Jeu d'icônes Tabler côté mobile** | Material outline conservé | L'écart ne porte que sur la graisse du trait des icônes de badge de 11 px. `PdlIcons` (`lib/core/theme/pdl_icons.dart`) devrait être le **seul** fichier à nommer `Icons.*` (17 autres fichiers le font encore au 16 octobre 2026) : une fois ce ménage fait, basculer ne touchera qu'un fichier |
-| `MOB-23` | **Écran de profil public d'un membre** | Aucune maquette ne va au-delà de la liste | Une ligne du trombinoscope ouvre le menu signaler/bloquer (`team_members_page.dart`), jamais un profil. Ne pas inventer l'écran |
-| `MOB-24` | **Édition et création de contenu au mobile — hors sorties, modèles de sortie, parcours et publications** (voyages, et le **planificateur de parcours sur carte**) | Hors brief : la v2 est une version de consultation et de participation | Les **sorties** en ont été détachées et livrées le 17 octobre 2026 (`MOB-80`, éditeur de sortie, sélecteur de meneur compris), puis les **modèles de sortie** le même jour (`MOB-78`), puis les **parcours** (`MOB-79`, par import d'un fichier GPX : créer, modifier, remplacer le tracé, supprimer, restaurer), puis les **publications** le 14 novembre 2026 (`MOB-164`). Le **planificateur sur carte** (`points`, routage Stadia) en a été détaché le 15 novembre 2026 (`MOB-170`, codé, recette sur appareil à faire) : le mode tactile du site (`WEB-100`, lot 2) et un essai dans la WebView de l'app ont levé la raison de le laisser au site. L'**administration d'équipe** en a été détachée le même jour (`MOB-165` à `MOB-169`, codée, tests Patrol à lancer) : plus rien n'ouvre le site depuis le tableau de bord, `team_web_paths.dart` a disparu |
-| `MOB-50` | **Cloche des notifications dans l'en-tête du Profil** | Non (décidé le 4 octobre 2026 avec le propriétaire, refonte `MOB-48`) | La boîte de réception est dans une autre branche du shell : un `push` depuis le Profil empilerait les branches, un `go` y ferait perdre la place. Elle reste à un onglet ; les réglages de notifications sont dans `/profil/notifications`. Ne pas ajouter de cloche au Profil |
-| `MOB-61` | **Recherche et tags des anciennes adresses du fil dans l'app** (`team?tab=publications&type=…&q=…&tags=…`) | Non (décidé le 11 octobre 2026 avec le propriétaire) | Aucune de ces anciennes adresses n'a été partagée : l'app garde le type et la période (`resolveTeamRootSection`, `agendaTarget` dans `team_sections.dart`) et ignore `q` et `tags`, que seul le site reporte (`teamLegacyRedirects.ts`). À rouvrir seulement si une telle adresse circule |
-| `MOB-74` | **Exclure du manifeste Android les pages du site sans écran dans l'app** (`<uri-relative-filter-group android:allow="false">`, API 35+) | Non (11 octobre 2026 ; part écartée de `MOB-59`, renumérotée le 16 octobre 2026) | L'app reçoit ces liens et les passe au navigateur (`isSitePageLocation` dans `openDeepLink`) : il ne reste qu'un bref passage par l'app. L'exclusion ne vaudrait que sous Android 15+, ne se vérifie que sur un appareil avec la vérification des App Links, et un manifeste faux casse tous les liens d'app. À rouvrir si le passage par l'app gêne |
-| `OPS-18` | **Rotation des secrets exposés par les sauvegardes en clair** (`ENCRYPTION_KEY`, clé JWT, compte de service FCM) | Non (décidé le 29 septembre 2026, avec `OPS-13`) | Les 30 copies antérieures à `OPS-13` les contenaient en clair sur l'hôte de sauvegarde. Rotation jugée disproportionnée : ces copies sont supprimées et le SSD trimé. Reste un résidu physique possible sur le SSD de l'hôte ; à rouvrir si le matériel est perdu ou volé |
-| `NOTIF-5` | **Badge iOS du push** | Écarté, côté serveur comme côté app | Serveur : il faudrait recompter les non-lues à l'envoi, et `NotificationMessage` ne porte ni le domaine ni ce compteur. App : `flutter_local_notifications` ne pose un badge qu'en affichant une notification, et en arrière-plan c'est le système qui affiche celle de FCM — une dépendance de plus pour un compteur que la cloche montre déjà. D'où l'absence de `content-available` (voir `NOTIF-9`) |
-| `NOTIF-6` | **Isolat de fond du push (`onBackgroundMessage`)** | Non écrit | Le serveur envoie `notification` **et** `data` : le système affiche la bannière sans l'app, un isolat n'aurait rien à faire de plus |
-| `NOTIF-7` | **Temps réel des notifications (SSE)** | Non fait : sondage de `unread-count` | Un flux SSE « si le besoin se confirme » ([plan](plans/archive/2026-09-18-notifications.md) §9) ; la cloche sonde au plus une fois par minute |
-| `NOTIF-8` | **Tests Vitest de la cloche et de la page Notifications** | Écartés le 29 septembre 2026 | La recette navigateur les a validées ; le mobile a son test de widget (`notifications_page_test.dart`) |
-| `MOD-5` | **Contenu masqué d'un compte effacé** | Reste masqué | L'effacement supprime les signalements visant le membre, mais ne touche pas `moderationHiddenAt` sur ses sorties, parcours, posts et voyages. Ce contenu, masqué par 3 signalements, n'a plus d'entrée dans la file et reste invisible pour les membres. C'est voulu : le démasquer republierait un contenu signalé 3 fois |
-| `LEGAL-14` | **Notification des changements de politique dans l'app** | Non : l'e-mail seul, comme le dit le §11 (décidé le 29 septembre 2026, scindé de `LEGAL-13`) | Aucun type de notification « politique mise à jour ». Un changement important se signale par e-mail à chaque membre ; ne pas ajouter de promesse au §11 sans créer le type d'abord |
-| `LEGAL-16` | **Journal des accès des admins plateforme** | Non (décidé le 29 septembre 2026, avec `LEGAL-13`) | Il n'y a qu'un admin plateforme, le responsable du traitement lui-même : un journal ne surveillerait que lui. Le §4 dit qui a accès et pourquoi, sans promettre de traçabilité. À rouvrir dès qu'un second compte reçoit `PLATFORM_ADMIN` : écrire le journal (intercepteur sur `@Admin`) **avant** d'en parler au §4 |
-| `LEGAL-17` | **Responsable du traitement par domaine** | Non : un seul responsable pour tous les sites (décidé le 29 septembre 2026, avec `LEGAL-13`) | Le §12 le dit, et que les clubs ne sont pas responsables du traitement. Un club qui voudrait l'être demanderait des champs sur `Domain`, une page légale générée par domaine et un accord de sous-traitance : à rouvrir si un club le demande, pas avant |
-| `OPS-37` | **Plausible CE pour la mesure d'audience** | Écarté le 15 octobre 2026 au profit de GoatCounter ([`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md)) | Plausible CE demande ClickHouse : une seconde base à sauvegarder, surveiller et mettre à jour, plus gourmande en mémoire que le reste de la pile, pour quelques milliers de visites par mois. À rouvrir si l'audience change d'ordre de grandeur |
-| `OPS-38` | **Matomo pour la mesure d'audience** | Écarté le 15 octobre 2026 au profit de GoatCounter | PHP et MySQL, absents de la pile ; cookies par défaut, à désactiver pour l'exemption CNIL ; des greffons à suivre. Sa présence sur la liste CNIL des outils exemptables n'apporte rien ici : la configuration exemptée de GoatCounter remplit les mêmes conditions |
-| `OPS-39` | **Mesure d'audience par les journaux d'accès** (GoAccess, `goatcounter import` des journaux Caddy) | Écartée le 15 octobre 2026 | Les journaux vivent sur l'hôte, hors dépôt ; ils ne voient que le premier chargement d'une page, pas les navigations côté client du routeur ; ils portent les chemins concrets (`/outils-gpx/{previewId}`, les slugs des sorties, parcours et pages), qu'il faudrait réécrire après coup au lieu de ne jamais les envoyer |
-| `LEGAL-20` | **Mesure d'audience par un service SaaS** (Plausible, Fathom…) | Écartée le 15 octobre 2026 | Un sous-traitant de plus au §4 de la politique, souvent un transfert hors UE au §5, un domaine tiers que les bloqueurs coupent, un contrat à suivre. L'auto-hébergement chez Scaleway reste couvert par le sous-traitant déjà déclaré |
-| `OPS-40` | **Compter des visites plutôt que des pages vues** (un site GoatCounter par domaine et par alias, purge nocturne de `hits.session`) | Non : pages vues seulement, sessions coupées, un seul site (décidé le 15 octobre 2026, [`2026-10-15-web-analytics.md`](plans/2026-10-15-web-analytics.md) §7) | Avec un site unique, une session relierait la navigation d'un site de club à l'autre (condition 3 de la CNIL) ; un site par hôte couplerait la création d'un domaine (`AdminDomainResource`) à GoatCounter, et l'empreinte de session gardée 24 mois sur chaque page vue ferait un quasi-identifiant sur un petit club. À rouvrir si une question réelle ne se résout pas en pages vues, en écrivant d'abord la purge et la création couplée |
-| `API-116` | **Couper la mesure d'audience pour un club** (drapeau par `Domain`, comme `enableGpxPlanner`) | Non, pas avant qu'un club le demande (décidé le 15 octobre 2026, plan §7) | La mesure est exemptée de consentement et chaque visiteur peut s'y opposer (DNT, GPC, interrupteur) ; un drapeau par domaine ajouterait un champ, une migration et une case d'admin sans demande. À rouvrir sur la demande d'un club : le drapeau rejoindrait `analytics` dans `/api/config` (`API-117`), résolu par domaine |
-| `WEB-91` | **Statistiques d'audience pour les admins de club** | Non : tableau de bord pour le seul responsable du traitement, par tunnel SSH (décidé le 15 octobre 2026, plan §7) | La condition 1 de l'exemption CNIL limite la finalité à l'éditeur ; il n'y a qu'un site GoatCounter pour tous les hôtes, si bien qu'il faudrait soit un site par domaine, soit une page Pédalons qui lirait l'API de GoatCounter (aujourd'hui sans jeton) en filtrant par hôte et par slug ; et sur une petite équipe privée, un admin qui connaît ses membres pourrait rapprocher une page vue d'une personne. À rouvrir sur une demande réelle, après relecture de la condition 1 |
-| `WEB-103` | **Altitudes FAST d'un tracé rouvert sans état** (reste de B1b de `WEB-100`) | Non (décidé le 19 octobre 2026 avec le propriétaire) | Un appel à chaque ouverture et un échange de source délicat (le FAST simplifie avec d'autres sommets que `initialTrack`), pour un chiffre plus éloigné de celui de l'enregistrement : les portions non retouchées gardent un D+ HD recalé sur `elevationGain`, vers lequel le tracé enregistré converge. Les tracés importés (C4b) ont déjà leur source en FAST |
-| `WEB-104` | **Plafond de tuiles MNT et limite de débit propres à `POST /api/router/elevation`** (B1b de `WEB-100`) | Non, risque accepté comme celui d'`import-gpx` (C4b) | Les bornes plafonnent la distance (50 lignes, 200 km), pas les tuiles : 50 lignes de quelques mètres dans 50 tuiles z12 distinctes font 50 téléchargements à froid, écrits dans le cache d'osm-route-details depuis `API-150`. Seul `SEC-28` (proxy) limite le débit. À rouvrir sur une mesure réelle (plafond de tuiles distinctes par requête, limite par utilisateur) |
-| `WEB-105` | **Surface dans les exports GPX et FIT, second passage de costing sur l'inconnu** (C1b de `WEB-100`) | Non (décidé le 19 octobre 2026 avec le propriétaire) | FIT n'a pas de champ standard pour la surface, une extension GPX serait ignorée des appareils, et les fichiers stockés seraient à réécrire après chaque calcul en arrière-plan. Un second passage (piéton ou auto) sur les plages inconnues coûterait 20 crédits de plus par tranche : « inconnu » est une réponse honnête |
-| `WEB-109` | **POI suggérés le long d'un parcours** (C3 de `WEB-100`, question W9) | Non (décidé le 20 octobre 2026 avec le propriétaire) | Les tuiles VersaTiles ne le permettent pas (couche `pois` au seul zoom 14, sans cols ni sommets) ; il faudrait Overpass en cache ou un extrait OSM (M à L, une dépendance). Détail dans le plan de `WEB-100`, §11. À rouvrir si un club le demande |
-| `BRAND-3` | **Test de concordance des tables de couleurs web et mobile** | Écarté au profit du générateur (`BRAND-2`) | Un test qui parse les deux fichiers et vérifie qu'ils concordent détecte sans unifier, et repose sur des expressions régulières sur du TypeScript et du Dart |
-| `AUD-1` | **Déploiement automatique (CD) depuis GitHub** (audit de février, I3, « Critique ») | Non (16 octobre 2026, relecture du ledger) : le déploiement reste lancé à la main par `scripts/deploy.sh` | Le « Critique » de février visait des images poussées à la main sans retour arrière : `AUD-2` a apporté le tag par commit et le rollback Swarm, `AUD-3` la suite e2e nocturne. Les cinq workflows (`ci.yml`, `codeql.yml`, `e2e.yml`, `karoo-release.yml`, `mobile-release.yml`) ne déploient rien, à dessein : les hôtes sont en Swarm mono-nœud sans registry, et un déploiement depuis la CI demanderait soit un runner auto-hébergé, écarté par `AUD-3` parce qu'il exécuterait le code d'une PR externe chez nous, soit une clé SSH de l'hôte dans les secrets GitHub. À rouvrir avec un registry et un second nœud, ou si les déploiements deviennent assez fréquents pour qu'un oubli coûte |
-| `AUD-33` | **Pagination des routes côté Karoo** (audit de février, K10, scindé d'`AUD-24`) | Non (16 octobre 2026) : bornée côté serveur à la place | `PedalonsApiClient.getRoutes` lit une seule page, mais `DeviceRouteService` plafonne la réponse à 20 sorties, 20 routes, 20 groupes et 20 étapes (`MAX_*_IN_RESPONSE`, commits `9f23df4d` et `007bdf3a`, `API-118`), pour tenir sous la limite de 100 Ko d'une réponse sur le Karoo — le risque que K10 nommait. À rouvrir si un écran de l'appareil doit montrer plus que ces plafonds |
-| `MOB-85` | **Nom du point sous l'info-bulle du profil** (« Ravitaillement : Café du Port », comme au web) | Non repris au mobile (`MOB-84`, E13) | La bulle tient sur une ligne et porte déjà trois valeurs ; toucher le repère ouvre la fiche du point. À rouvrir si la recette montre qu'on cherche le nom au glissement |
-| `MOB-88` | **Mode mono-équipe dans l'app** (masquer l'onglet Équipes, ouvrir l'équipe épinglée, lire `pinnedTeamSlugProvider`) | Non (24 octobre 2026) | L'app ne sert que `pedalons.fr`, et ce domaine n'est jamais mono-équipe : le mode n'y a pas de cas d'usage. `pinnedTeamSlugProvider` (`core/config/config_provider.dart`) reste sans lecteur. Le web garde son `hideWhenSingleTeam`, qui sert les autres domaines. À rouvrir si l'app devait un jour servir un domaine mono-équipe |
-| `MOB-89` | **Pages personnalisées d'équipe en puces de section, comme les onglets du web** | Non (24 octobre 2026) | Au mobile, elles restent une liste dans « À propos », une ligne par page qui ouvre son écran (`team_about_page.dart`), comme le demandait la note de conception (`plans/archive/audit-ux/BRIEF.md`, onglet À propos). Avec plusieurs pages, la rangée de puces déborderait. Le web garde ses onglets : sa rangée a la place et n'a pas de menu de débordement (`WEB-25`). Le filtrage des pages réservées aux membres se fait côté backend (`isListed` dans `TeamDetailDto`). L'autre volet de l'entrée, la visibilité de « Membres », n'avait rien à changer au mobile : c'est sa règle que le web reprend (`WEB-112`) |
-| `WEB-171` | **Mention de fuseau en ligne sur le site, comme dans l'app** (« heure de Tokyo (ven. 01:00 chez vous) ») | Non (12 novembre 2026, écart voulu V5 du [tri de l'audit des cartes](plans/2026-11-10-etat-des-lieux-affichage/audit-cartes/tri.md) §3) | Même texte, deux formes : une ligne visible dans l'app (`ZoneMentionLine`, `core/widgets/zone_mention_line.dart`), une icône globe à infobulle sur le site (`ZoneMentionIcon`, `components/common/Rendezvous.tsx`). Au doigt il n'y a pas de survol, d'où la ligne ; au bureau, l'infobulle garde la carte courte. BRANDING §8.3 fixe le texte, pas la forme. La date d'une publication n'en relève pas : c'est la règle des dates de carte (KIT §9) |
-| `MOB-171` | **Paramètres plateforme d'une équipe dans l'app** (palier et sa note, `joinable`, `addMemberAllowed`, `visibilityEditable`, traceur de parcours, contenu public par lien) | Non (15 novembre 2026, décision D1 du plan [`2026-11-15-gestion-equipe-mobile.md`](plans/archive/2026-11-15-gestion-equipe-mobile.md)) | Ces réglages ne se modifient qu'en administration de plateforme, que l'app n'a pas : ils restent au site (`TeamForm.tsx`, `PATCH /api/admin/teams/{id}/attributes`). Les Paramètres d'équipe de l'app (`MOB-166`) ne montrent que la visibilité, modifiable si `visibilityEditable` ou pour l'administration de la plateforme. Seul écart fonctionnel voulu entre l'app et le site sur la gestion d'équipe |
-
----
-
-## Les autres sources
-
-Ce fichier ne couvre que les suites de la v2 et des chantiers qui l'ont suivie. D'autres sources
-restent ouvertes :
-
-- [`BACKLOG.md`](BACKLOG.md) — la roadmap produit (P0 → Icebox) : les idées qui n'ont pas encore
-  d'entrée ici. Une idée qui reçoit un identifiant quitte ce fichier-là ; rien de livré n'y reste.
-- [`plans/2026-02-14-project-audit.md`](plans/2026-02-14-project-audit.md) — audit d'infrastructure,
-  CI/CD et qualité des modules, statuts rafraîchis le 29 septembre 2026. Ses lignes ouvertes sont
-  suivies sous `AUD`.
-- [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-09-security-audit.md) — audit de sécurité de septembre 2026, archivé le
-  9 octobre 2026 ; ses ouverts sont suivis sous `SEC`, qui fait foi. L'audit de février reste la
-  référence pour l'infrastructure.
-- [`plans/2026-07-28-migration-vcyclist.md`](plans/2026-07-28-migration-vcyclist.md) — remplacer
-  gpx2web par vcyclist dans le backend. **Exécuté** (fusionné le 14 octobre 2026) et déployé,
-  aujourd'hui contre **vcyclist 6.14.0 depuis Maven Central** : un manque côté vcyclist se corrige
-  par une release amont. Contrat d'API **inchangé** par construction : les cols gardent leur forme
-  JSONB actuelle via des records maison, donc ni bump de `pedalons.api.version` ni migration
-  Flyway. Ce qui change pour les parcours **réimportés** : détection des cols et direction de vent,
-  puis, avec les releases suivantes, les ponts, les tunnels et le D+ (`API-104`, `API-106`) ; une
-  ré-importation biketeam recalcule aussi les parcours d'un ancien pipeline (`API-107`), et les
-  requêtes vers l'IGN suivent un seul rythme (`API-105`). Suivi sous `OPS-31` ; plan à archiver.
-- [`plans/2026-07-25-privacy-improvement-opportunities.md`](plans/2026-07-25-privacy-improvement-opportunities.md) —
-  les options d'amélioration de la vie privée et leur justification ; ce qui en reste ouvert, le
-  chiffrement des jetons Karoo, est suivi sous `SEC-12`. L'audit de juillet et la mise à jour de
-  septembre qui ont réécrit la politique sont archivés.
+- [`MOB-171`](ledger/MOB/MOB-171.md) Paramètres plateforme d'une équipe dans l'app
+- [`MOB-136`](ledger/MOB/MOB-136.md) Adresse sous le nom des lieux de départ et d'arrivée
+- [`MOB-131`](ledger/MOB/MOB-131.md) « Me localiser » sur les cartes de l'app
+- [`MOB-89`](ledger/MOB/MOB-89.md) Pages personnalisées d'équipe en puces de section, comme les onglets du web
+- [`MOB-88`](ledger/MOB/MOB-88.md) Mode mono-équipe dans l'app
+- [`MOB-85`](ledger/MOB/MOB-85.md) Nom du point sous l'info-bulle du profil
+- [`MOB-74`](ledger/MOB/MOB-74.md) Exclure du manifeste Android les pages du site sans écran dans l'app
+- [`MOB-61`](ledger/MOB/MOB-61.md) Recherche et tags des anciennes adresses du fil dans l'app
+- [`MOB-50`](ledger/MOB/MOB-50.md) Cloche des notifications dans l'en-tête du Profil
+- [`MOB-24`](ledger/MOB/MOB-24.md) Édition et création de contenu au mobile — hors sorties, modèles de sortie, parcours et publications
+- [`MOB-23`](ledger/MOB/MOB-23.md) Écran de profil public d'un membre
+- [`MOB-22`](ledger/MOB/MOB-22.md) Jeu d'icônes Tabler côté mobile
+- [`WEB-171`](ledger/WEB/WEB-171.md) Mention de fuseau en ligne sur le site, comme dans l'app
+- [`WEB-159`](ledger/WEB/WEB-159.md) Interrupteur Pente · Revêtement · Météo dans l'en-tête du profil en surimpression (web)
+- [`WEB-109`](ledger/WEB/WEB-109.md) POI suggérés le long d'un parcours
+- [`WEB-105`](ledger/WEB/WEB-105.md) Surface dans les exports GPX et FIT, second passage de costing sur l'inconnu
+- [`WEB-104`](ledger/WEB/WEB-104.md) Plafond de tuiles MNT et limite de débit propres à `POST /api/router/elevation`
+- [`WEB-103`](ledger/WEB/WEB-103.md) Altitudes FAST d'un tracé rouvert sans état
+- [`WEB-91`](ledger/WEB/WEB-91.md) Statistiques d'audience pour les admins de club
+- [`WEB-65`](ledger/WEB/WEB-65.md) Tableau de bord pour un admin de plateforme non membre
+- [`WEB-58`](ledger/WEB/WEB-58.md) Redirection des anciennes adresses du profil
+- [`WEB-54`](ledger/WEB/WEB-54.md) Calendrier rendu côté serveur dans le mauvais fuseau, sans préférence `timezone`
+- [`WEB-44`](ledger/WEB/WEB-44.md) Passkey en tête du formulaire de connexion
+- [`WEB-12`](ledger/WEB/WEB-12.md) Mode sombre dérivé au web
+- [`WEB-11`](ledger/WEB/WEB-11.md) Jetons `--pdl-*` au web
+- [`WEB-10`](ledger/WEB/WEB-10.md) Minimum de 44 px sur les boutons web
+- [`WEB-9`](ledger/WEB/WEB-9.md) Gabarits tactiles portés au web
+- [`WEB-8`](ledger/WEB/WEB-8.md) Scroll infini côté web
+- [`API-205`](ledger/API/API-205.md) Finir le générateur Java d'équipe
+- [`API-201`](ledger/API/API-201.md) OAuth : enregistrer les applications, vérifier `redirect_uri`, des scopes
+- [`API-192`](ledger/API/API-192.md) Les étapes de voyage dans l'app Garmin
+- [`API-183`](ledger/API/API-183.md) Renvoyer tout le parc aux services GPS après `API-182`
+- [`API-175`](ledger/API/API-175.md) Retirer la colonne `elevation_refresh.backfill` et la priorité qui la lit
+- [`API-167`](ledger/API/API-167.md) Aligner le séparateur des sorties (` · `) sur celui des étapes (` - `)
+- [`API-166`](ledger/API/API-166.md) Envoi groupé de toutes les étapes dès que la première entre dans la fenêtre
+- [`API-165`](ledger/API/API-165.md) Envoi automatique d'un voyage sans étape (sa route globale)
+- [`API-127`](ledger/API/API-127.md) Contourner `ROUTE_PLANNER_DISABLED` d'un aperçu tracé
+- [`API-124`](ledger/API/API-124.md) `dominantHeadwindAzimuthDeg()` (vcyclist g31) dans `WindEstimator`
+- [`API-116`](ledger/API/API-116.md) Couper la mesure d'audience pour un club
+- [`API-114`](ledger/API/API-114.md) Import depuis OpenRunner ou VisuGPX
+- [`API-113`](ledger/API/API-113.md) Import d'un GPX par URL dans les outils GPX
+- [`API-93`](ledger/API/API-93.md) Statistiques de voyage stockées en base
+- [`API-89`](ledger/API/API-89.md) Fin stockée pendant le déploiement à chaud
+- [`API-67`](ledger/API/API-67.md) « Mes équipes » d'un admin de plateforme
+- [`API-54`](ledger/API/API-54.md) exiftool pour retirer les métadonnées des images
+- [`API-52`](ledger/API/API-52.md) Durcir `ImageMetadataStripper`
+- [`API-34`](ledger/API/API-34.md) `acceptTerms` obligatoire à l'inscription (contrat `4.1.0`)
+- [`API-33`](ledger/API/API-33.md) `GET /api/rides` et listes mono-type
+- [`API-32`](ledger/API/API-32.md) Champ de contact libre sur une annonce
+- [`API-31`](ledger/API/API-31.md) Position exacte d'une annonce
+- [`API-30`](ledger/API/API-30.md) Repli sur `createdBy` pour le meneur
+- [`API-29`](ledger/API/API-29.md) Liste d'attente (`waitlisted`)
+- [`OPS-40`](ledger/OPS/OPS-40.md) Compter des visites plutôt que des pages vues
+- [`OPS-39`](ledger/OPS/OPS-39.md) Mesure d'audience par les journaux d'accès
+- [`OPS-38`](ledger/OPS/OPS-38.md) Matomo pour la mesure d'audience
+- [`OPS-37`](ledger/OPS/OPS-37.md) Plausible CE pour la mesure d'audience
+- [`OPS-18`](ledger/OPS/OPS-18.md) Rotation des secrets exposés par les sauvegardes en clair
+- [`NOTIF-8`](ledger/NOTIF/NOTIF-8.md) Tests Vitest de la cloche et de la page Notifications
+- [`NOTIF-7`](ledger/NOTIF/NOTIF-7.md) Temps réel des notifications (SSE)
+- [`NOTIF-6`](ledger/NOTIF/NOTIF-6.md) Isolat de fond du push (`onBackgroundMessage`)
+- [`NOTIF-5`](ledger/NOTIF/NOTIF-5.md) Badge iOS du push
+- [`MOD-5`](ledger/MOD/MOD-5.md) Contenu masqué d'un compte effacé
+- [`BRAND-3`](ledger/BRAND/BRAND-3.md) Test de concordance des tables de couleurs web et mobile
+- [`AUD-33`](ledger/AUD/AUD-33.md) Pagination des routes côté Karoo
+- [`AUD-1`](ledger/AUD/AUD-1.md) Déploiement automatique (CD) depuis GitHub
+- [`LEGAL-20`](ledger/LEGAL/LEGAL-20.md) Mesure d'audience par un service SaaS
+- [`LEGAL-17`](ledger/LEGAL/LEGAL-17.md) Responsable du traitement par domaine
+- [`LEGAL-16`](ledger/LEGAL/LEGAL-16.md) Journal des accès des admins plateforme
+- [`LEGAL-14`](ledger/LEGAL/LEGAL-14.md) Notification des changements de politique dans l'app

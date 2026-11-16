@@ -1,0 +1,12 @@
+---
+id: AUD-16
+title: "Le device flow a ses tests backend"
+status: done
+done: 2026-10-01
+---
+
+## Livré
+
+| ID | Thème | Audit | Gravité | Livré |
+|---|---|---|---|---|
+| `AUD-16` | Backend | B12 | Important | **Le device flow a ses tests backend** (2026-10-01) — `DeviceOAuthFlowTest` parcourt RFC 8628 par HTTP comme Karoo et Garmin : émission (code à six caractères sans 0/O ni 1/I, URL de vérification du domaine et de l'appareil, `expiresIn` 600, `interval` 5, `device_code` gardé seulement haché), polling `AUTHORIZATION_PENDING` répété, approbation puis échange (jetons du bon utilisateur, session `karoo Device`, jeton d'accès accepté par `/api/device/me`, refresh qui marche), `device_code` consommé une seule fois (`TOKEN_INVALID` au rejeu, aucune seconde session), code expiré avant ou après approbation (`TOKEN_EXPIRED` au polling, rien d'émis), code inconnu, `grantType` inconnu ou `deviceCode` vide, code d'un autre domaine que le compte ne peut pas approuver. Il complète `DeviceOAuthConfirmationTest` (`SEC-2`), `DeviceOAuthThrottleTest` (`SEC-4`) et `DeviceRefreshRotationTest` (`SEC-11`). **Un défaut corrigé au passage** : `completeDeviceCodeFlow` ne regardait pas si le code était déjà approuvé, si bien qu'un second compte confirmant le même code avant le polling suivant s'y substituait et l'appareil s'ouvrait sur son compte. La première approbation tient désormais jusqu'à l'échange ; le même utilisateur qui confirme deux fois reçoit 200 sans effet, un autre `TOKEN_INVALID` (400, déjà au contrat : pas de changement de version). Le site ne rappelle jamais `/complete` sur un code que `/verify` dit approuvé. À ne pas défaire : ne pas laisser une seconde approbation réécrire `user`. Écrit sans avoir été lancé : `mvn test -Dtest='DeviceOAuth*Test'`. **Suite de relecture (2026-10-01)** : la règle était un check-then-act sans verrou — deux comptes confirmant le même code au même instant lisaient tous deux `authorized = false` et le second écrasait `user`. `completeDeviceCodeFlow` lit désormais le code par `DeviceCodeRepository.findValidByUserCodeForUpdate` (`PESSIMISTIC_WRITE`, `SELECT … FOR UPDATE`, toujours filtré par `domainId`) : la seconde approbation attend la première et voit le code approuvé. À ne pas défaire : ne pas revenir à une lecture sans verrou dans ce chemin. `DeviceOAuthFlowTest`, `DeviceOAuthConfirmationTest`, `DeviceOAuthThrottleTest` lancés le 1er octobre : 28 tests verts (la concurrence elle-même n'a pas de test). |

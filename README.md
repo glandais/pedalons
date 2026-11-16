@@ -194,7 +194,7 @@ tribly/
 ├── contracts/        # OpenAPI specification, UI routes (routes.yaml), brand colours
 ├── services/         # Docker service configs (Varnish, monitoring)
 ├── scripts/          # dev-env, deploy, backup/restore, e2e, code generation
-├── docs/             # Ledgers (LEDGER_NEXT.md), plans, the operations runbook
+├── docs/             # Ledger (docs/ledger/, indexed by LEDGER_NEXT.md), plans, the operations runbook
 ├── privacy/          # Privacy policy, terms and support pages (served by the site, bundled in the app)
 ├── assets/           # Logo and icon sources (see docs/BRANDING.md)
 ├── data/             # Runtime data of the stack (keys, storage, cache, tileserver)

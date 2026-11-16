@@ -178,6 +178,6 @@ left today.
 
 Tracked in the ledger: passkeys (`MOB-26`, blocked on the e2e stack's plain-HTTP `localhost`), an
 expired access token end to end (`MOB-38`), and running this suite in CI (`MOB-37`). What each
-scenario above leaves aside is listed under « Non couvert » in its `LEDGER_DONE.md` entry. A test
-that closes an open entry moves it to `LEDGER_DONE.md` under the same ID, in the same commit, and
-adds a row to « Coverage » above.
+scenario above leaves aside is listed under « Non couvert » in its ledger entry
+(`docs/ledger/MOB/<ID>.md`). A test that closes an open entry sets it to `status: done` in the same
+commit (see `docs/ledger/README.md`), and adds a row to « Coverage » above.
