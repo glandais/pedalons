@@ -13,6 +13,6 @@ verified: 2026-11-16
 pastilles (en degrés Fahrenheit) et la goutte sur un vrai parcours, le toucher d'une pastille et sa feuille de détail,
 le gris du vent de travers lisible sur le fond sombre, la légende et son crédit Open-Meteo, le voyage au trait coloré
 et l'étape avec ses pastilles et sa légende. Un défaut sorti dans `MOB-175` : la carte ne se déplace pas autour de la
-pastille touchée, qui reste sous la feuille. **Restent** : les flèches sur une carte tournée à deux doigts, la
-pastille à 130 % de texte, les liens du ⓘ, le curseur sur le tracé coloré, un parcours à plusieurs traces, un voyage
+pastille touchée, qui reste sous la feuille. La pastille à 130 % de texte et le gris du vent de travers sur fond clair ont été vus au second passage.
+**Restent** : les flèches sur une carte tournée à deux doigts, les liens du ⓘ, le curseur sur le tracé coloré, un parcours à plusieurs traces, un voyage
 de beaucoup d'étapes, et iOS.

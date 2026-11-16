@@ -39,3 +39,9 @@ restauration : conformes. Parcours : import d'un GPX par le vrai sélecteur (nom
 GPX par un tracé de 686 km, suppression et « Restaurer » proposé : conformes. **Restent** : une image de la
 photothèque dans une sortie, la modification depuis la fiche, les modèles de sortie (`MOB-78`), des GPX de plusieurs
 outils et d'un compteur, le regard d'un simple membre, le clair et iOS.
+
+**Second passage du 16 novembre 2026 sur un Pixel 6a (Android, 1.2.0 build 107, prod, administrateur de l'équipe « Gaby »), en clair** — modèles de sortie (`MOB-78`) : « Gérer les modèles » du tableau de bord,
+liste vide, création, sortie créée « Recette modele #7 » puis compteur passé à #8, modification, suppression, lien
+`…/admin/modeles-sortie` : conformes. Sortie : image de la photothèque et modification depuis la fiche : conformes.
+**Restent** : « Charger un modèle » depuis l'éditeur, des GPX de plusieurs outils et d'un compteur, le regard d'un
+simple membre, et iOS.

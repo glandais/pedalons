@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **564 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **566 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -145,6 +145,8 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 ## WEB — Site web
 
 - [x] [`WEB-189`](ledger/WEB/WEB-189.md) Accueil : la carte « Ma prochaine sortie » s'étire à la hauteur de la colonne voisine — 2026-11-16
+- [x] [`WEB-188`](ledger/WEB/WEB-188.md) Pages groupe et étape au téléphone : segments coupés, encadré vide, titre plein écran tronqué — 2026-11-16
+- [x] [`WEB-187`](ledger/WEB/WEB-187.md) Profil d'altitude : crédit sur l'axe à 390 px, axe non traduit, mètres sous « ft » en impérial — 2026-11-16
 - [x] [`WEB-186`](ledger/WEB/WEB-186.md) Météo sur la carte : le clic de souris sur une pastille n'ouvre pas la bulle, et la bulle sort du cadre — 2026-11-16
 - [x] [`WEB-184`](ledger/WEB/WEB-184.md) Le libellé de `USER_TEAM_LIMIT_REACHED` dit ce que fait le serveur — 2026-11-15
 - [x] [`WEB-183`](ledger/WEB/WEB-183.md) Planificateur embarquable dans l'app : recette iOS et poids du bundle — en partie, le reste est ouvert
