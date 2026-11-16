@@ -32,3 +32,10 @@ restaurer, refus d'un simple membre. Clés dans `keys.routeEditor` / `keys.route
 sélecteur natif n'est jamais exercé par Patrol (le fichier arrive par
 `gpxFilePickerProvider`) : la recette à la main est le seul garde. La ligne *Fichiers et
 documents* de Google Play couvre aussi le GPX (`data-safety.md` #23).
+
+**Recette du 16 novembre 2026 sur un Pixel 6a (Android, app 1.2.0 build 107, prod, administrateur de l'équipe privée « Gaby », sombre)** — sortie : création par le lien `…/sorties/nouvelle`, pièce jointe par le sélecteur de
+fichiers d'Android (SAF), feuille de choix du parcours, second groupe, brouillon, publication, suppression et
+restauration : conformes. Parcours : import d'un GPX par le vrai sélecteur (nom repris du fichier), remplacement du
+GPX par un tracé de 686 km, suppression et « Restaurer » proposé : conformes. **Restent** : une image de la
+photothèque dans une sortie, la modification depuis la fiche, les modèles de sortie (`MOB-78`), des GPX de plusieurs
+outils et d'un compteur, le regard d'un simple membre, le clair et iOS.
