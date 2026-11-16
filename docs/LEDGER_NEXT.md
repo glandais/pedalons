@@ -651,8 +651,9 @@ faite, et le 500 du contact vendeur (`MOB-47`). Depuis l'import de `n-peloton` e
       la build 98, une 1.1.3), nouveautés de `mobile/metadata/version/1.2.0/` réécrites pour couvrir
       aussi l'écriture dans l'app (publications, annonces, voyages, éditeur riche, tracé de
       parcours, gestion d'équipe) et poussées par `asc metadata apply` ; `asc validate` : aucune
-      erreur ni alerte. Déclarations de `MOB-159` faites le même jour. Reste : soumettre,
-      puis publier à la main après l'approbation. Écart assumé le 16 novembre : soumission possible avant le 28 novembre malgré
+      erreur ni alerte. Déclarations de `MOB-159` faites le même jour, version soumise à la
+      revue le 16 novembre (`WAITING_FOR_REVIEW`). Reste : publier à la main après l'approbation
+      (`asc versions release --version-id 14f5c3e9-ceb2-42e5-9666-c5202da0134c --confirm`). Écart assumé le 16 novembre : soumission possible avant le 28 novembre malgré
       les recherches encore présentes dans le journal d'accès (`MOB-159`, point 3).
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
