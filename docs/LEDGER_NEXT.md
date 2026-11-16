@@ -1278,9 +1278,9 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       de l'équipe, agrégat entre équipes) : six décisions du propriétaire au §11, lot 0 de mesure
       avant tout code. Plan [`2026-11-15-generateur-parcours-osm.md`](plans/2026-11-15-generateur-parcours-osm.md).
       Les lots 0 à 3 (graphe, surcouche, moteur, service 1.9, backend `15.0.0` avec dépôt nocturne,
-      recherche Java retirée) sont livrés sous `API-206`. Restent : la mise en service, qui n'est pas
-      du code (`OPS-60` : image 1.9 et fichiers du graphe dans la pile partagée, clé par
-      environnement, première passe à la main ; `SEC-52`), l'e2e du site (`WEB-179`), puis les lots 4
+      recherche Java retirée) sont livrés sous `API-206`. La mise en service (image 1.9 et fichiers du
+      graphe dans la pile partagée, clé par environnement, première passe à la main) est faite
+      depuis le 16 novembre 2026 (`OPS-60`). Restent : `SEC-52`, la fin de la recette du site (`WEB-179`), puis les lots 4
       à 7 : formes organiques (squelette puis chair, §5), off-road (§6), graphe de la France entière
       (une seule région couverte, les Pays de la Loire, au 16 novembre 2026), catalogue. L'app
       (`MOB-154`) reste dehors.
@@ -1869,8 +1869,6 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       inscrits de la bêta. La carte Garmin de `/applications` (site et app mobile) pointe sur la
       fiche du store depuis le 23 octobre ; côté mobile, elle arrive avec la prochaine version. Ne bloque pas mais se verra sur l'appareil :
       `AUD-26` (AM/PM en dur). `AUD-25` limite l'app à pedalons.fr. Taille : XS, surtout de l'attente.
-
-- [ ] `OPS-60` **Générateur de parcours : image 1.9 et graphe dans la pile partagée, clé dans chaque environnement (S, exploitation)** — le backend du lot 3b (`API-206`) appelle le moteur d'osm-route-details api 1.9. À faire à la main, sans que rien ne soit déployé par le code : image `1.9.0` dans `docker-compose.shared.yml` (publiée le 16 novembre 2026, tag `v1.9.0` ; essayée en conteneur limité à 2G avec le graphe : 305 Mo résidents après une génération), les quatre fichiers du graphe dans `~/shared/data/osm-route-details-graph/` sous un nom neuf, `ORD_GRAPH_NAME` dans `~/shared/.env`, `ROUTE_GENERATOR_NAMESPACE_KEY` distincte dans le `.env` de chaque environnement (32 octets aléatoires en base64url), puis le déclencheur `POST /api/admin/route-generator/overlays/refresh` avec `force`. Mesurer la mémoire du service (2G) avec le graphe et une altitude à froid. Procédure : `docs/OPERATIONS.md`.
 
 ## NOTIF — Notifications
 

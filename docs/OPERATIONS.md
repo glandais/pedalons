@@ -125,7 +125,7 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | traefik | 256M | |
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
-| osm-route-details (shared) | 2G | ledger `OPS-58` and, with the route generator's graph (about 1.07 GiB at worst measured outside a container), `OPS-60`: its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; 1G was measured too tight on 2026-11-10 (~1.4 GB with swap under the backfill), still being watched |
+| osm-route-details (shared) | 2G | ledger `OPS-58`; with the route generator's graph in service since 2026-11-16 (ledger `OPS-60`): 238 MB after start, 621 MB after thirteen overlay deposits and two generations, peak 662 MB (about 1.07 GiB at worst measured outside a container). Its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; 1G was measured too tight on 2026-11-10 (~1.4 GB with swap under the backfill), still being watched |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
 **The backend has no `-Xmx`.** The image's entrypoint (`run-java.sh`, from the Jib base image
@@ -913,8 +913,10 @@ No failure deletes an overlay: the old one serves until it expires, seven nights
   `pedalons_route_generator_generate`, `…_overlay_deposit` and `…_overlay_pass`, and the gauge
   `pedalons_route_generator_overlay_last_success` (the epoch second of the last pass that was not cut
   short: alert when it is older than two days).
-- **Memory of the shared service**: 2G measured at 1.07 GiB at worst outside a container, without a
-  cold altitude request alongside; watch it (`OPS-60`).
+- **Memory of the shared service**: 2G. In production on 2026-11-16 (ledger `OPS-60`): 238 MB after
+  the start with the graph, 621 MB after thirteen deposits and two generations, peak 662 MB; 1.07 GiB
+  at worst outside a container. Not measured with a cold `full` altitude request alongside: keep
+  watching it (ledger `OPS-58`).
 
 **The DEM tiles left on disk.** Since phase E the backend reads none: `mapterhorn`,
 `ign-lidar-hd-mnt` and `ign-lidar-hd-mns` in each environment's `data/cache` (about 7 GB in

@@ -576,7 +576,7 @@ Loire, une équipe hors région n'a plus de générateur du tout.
 ## 12 quinquies. Lot 3b : le backend appelle le moteur (16 novembre 2026)
 
 Note de conception et écarts : [`2026-11-16-generateur-parcours-osm-lot3b.md`](2026-11-16-generateur-parcours-osm-lot3b.md) ;
-registre `API-206` (livré), `WEB-179`, `OPS-60`, `SEC-52` (ouverts).
+registre `API-206` et `OPS-60` (livrés), `WEB-179`, `SEC-52` (ouverts).
 
 - **Fait** : `POST /api/teams/{teamSlug}/route-generator` appelle le moteur d'osm-route-details
   api 1.9 (`RouteGeneratorGateway`), droits, limite de débit et interrupteur du planificateur
@@ -593,14 +593,11 @@ registre `API-206` (livré), `WEB-179`, `OPS-60`, `SEC-52` (ouverts).
   sans nouvel essai ; bouton gardé pour une équipe hors région ; planificateur coupé → surcouche
   effacée ; ni `allowed_namespaces` ni réseau chiffré pour l'instant (`SEC-52`) ; pas de bouton du
   déclencheur sur le site.
-- **À lancer par le propriétaire** : les tests backend (jamais lancés), une génération réelle sur
-  un poste avec le graphe, `route-generator.e2e.ts`, puis la mise en service de la pile partagée
-  (`OPS-60`). Commandes et attendus : §17 de la note.
-- **Ordre de fusion** (décision du 16 novembre 2026) : osm-route-details n'est fusionné et tagué
-  `v1.9.0` qu'une fois tout validé ; cette branche attend l'image `1.9.0` avant d'entrer dans
-  `develop`, puisque `docker-compose.shared.yml` la nomme et que la CI e2e la tire. Dans l'ordre :
-  tests backend et essai de bout en bout en local, fusion et tag d'osm-route-details, fusion de
-  cette branche, mise en service de la pile partagée avec le fichier de graphe (`OPS-60`).
+- **Fait le 16 novembre 2026**, dans l'ordre décidé ce jour-là (osm-route-details n'est fusionné
+  et tagué qu'une fois tout validé) : tests backend verts (5 042) et essai de bout en bout sur un
+  poste, fusion et tag `v1.9.0` d'osm-route-details, `route-generator.e2e.ts`, fusion de la
+  branche dans `develop`, mise en service de la pile partagée avec le graphe (`OPS-60`). Détail :
+  §18 de la note.
 - **À ne pas refaire** : les migrations `V91` et `V93`, déjà livrées, ne se retouchent pas, même
   pour corriger un lien dans un commentaire : leur somme de contrôle Flyway changerait.
 

@@ -495,4 +495,5 @@ Ce qui suit corrige les réserves des §14 à §17 écrites avant la publication
   parcours ; elle est portée dans le moteur et son contrôleur (ledger `API-207`). Le bundle du planificateur embarqué
   (`mobile/assets/planner/`) est reconstruit, il dépend du client d'API du site. L'entrée du générateur passe d'`API-204`,
   pris entre-temps, à `API-207`.
-- **Reste hors code** : `OPS-60` (pile partagée, graphe, une clé par environnement, première passe à la main) et `SEC-52`.
+- **Mise en service faite le 16 novembre 2026** (`OPS-60` : pile partagée en 1.9 avec le graphe, une clé par environnement,
+  première passe à la main sur staging et prod). Reste hors code : `SEC-52`.
