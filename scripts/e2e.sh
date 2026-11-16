@@ -24,8 +24,9 @@ set -a
 set +a
 
 compose() {
-  # docker-compose.yml requires the key at interpolation, `down` and `logs` included.
+  # docker-compose.yml requires the keys at interpolation, `down` and `logs` included.
   ensure_routing_key
+  ensure_namespace_key
   docker compose -p "$ENV_NAME" --project-directory "$ROOT" --env-file "$ENV_FILE" \
     -f "$ROOT/docker-compose.yml" -f "$ROOT/docker-compose.e2e.yml" "$@"
 }
@@ -77,6 +78,23 @@ ensure_routing_key() {
   fi
 }
 
+# The route generator's namespace key of this environment (lot 3b): the shell's, else the one kept
+# in .e2e/namespace-key, else a fresh one drawn there (32 random bytes, base64url, no padding),
+# mode 0600 and never printed. .e2e/ is gitignored and .env.e2e holds none, so nothing is committed.
+ensure_namespace_key() {
+  [ -z "${_NAMESPACE_KEY_CHECKED:-}" ] || return 0
+  _NAMESPACE_KEY_CHECKED=1
+  if [ -z "${ROUTE_GENERATOR_NAMESPACE_KEY:-}" ]; then
+    local file="$STATE_DIR/namespace-key"
+    if [ ! -s "$file" ]; then
+      mkdir -p "$STATE_DIR"
+      (umask 077 && head -c32 /dev/urandom | base64 | tr '+/' '-_' | tr -d '=\n' >"$file")
+    fi
+    ROUTE_GENERATOR_NAMESPACE_KEY="$(cat "$file")"
+  fi
+  export ROUTE_GENERATOR_NAMESPACE_KEY
+}
+
 ensure_images() {
   local backend=0 frontend=0 missing=""
   docker image inspect "pedalons-backend:$ENV_NAME" >/dev/null 2>&1 || backend=1
@@ -117,6 +135,7 @@ up() {
   prepare_state
   ensure_shared_network
   ensure_routing_key
+  ensure_namespace_key
   ensure_images
   compose --profile app up -d --remove-orphans
   # varnishd resolves imgproxy's address once, when it loads its VCL: an `up` that recreates
@@ -132,6 +151,7 @@ up() {
 run_tests() {
   # `test` alone, after an `up` in another shell: decide E2E_NO_ROUTING the same way.
   ensure_routing_key
+  ensure_namespace_key
   (cd "$ROOT/frontend" && pnpm exec playwright test "$@")
 }
 
@@ -156,6 +176,7 @@ case "$cmd" in
   logs) compose logs -f "$@" ;;
   compose)
     ensure_routing_key
+    ensure_namespace_key
     compose "$@"
     ;;
   *)

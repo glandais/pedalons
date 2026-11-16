@@ -34,7 +34,7 @@ Coverage instrumentation is opt-in (it slows every run by ~10-15%):
 |---------|------|---------|
 | imgproxy | 38080 | Image optimization/transformation (WebP, AVIF, JXL) |
 | tileserver | 18080 | Internal map renderer for route thumbnails (never handed to clients) |
-| osm-route-details | 18003 | Elevations of `GpxPipeline`: FAST → profile `fast`, HD → profile `full`; down → FAST keeps the file's elevations (`elevationFallback`), HD retries. An HD write also stores the surface from the same answer (`TrackSurfaceDocument` v2, projection in `RouteDetailsSurfaces`), unless `pedalons.surface.enabled` is off, in which case `elevation_pipeline` stays null (`RouteDetailsGateway`, configKey `osm-route-details`, no key) — ledger `API-150` / `OPS-58` |
+| osm-route-details | 18003 | Elevations of `GpxPipeline`: FAST → profile `fast`, HD → profile `full`; down → FAST keeps the file's elevations (`elevationFallback`), HD retries. An HD write also stores the surface from the same answer (`TrackSurfaceDocument` v2, projection in `RouteDetailsSurfaces`), unless `pedalons.surface.enabled` is off, in which case `elevation_pipeline` stays null (`RouteDetailsGateway`, configKey `osm-route-details`, no key) — ledger `API-150` / `OPS-58`. Since api 1.9 it is also the route generator's engine (`RouteGeneratorGateway`, same URL, headers `Ord-Namespace-Key` = `ROUTE_GENERATOR_NAMESPACE_KEY` and `Ord-Team`; team overlays deposited at night by `RouteGeneratorOverlayJob`) — ledger `API-206`, `docs/OPERATIONS.md` « The route generator » |
 | MinIO | 9000 (console 9001) | S3 storage for assets |
 | mailpit | 1025 (UI 8025) | SMTP sink — no mail leaves a workstation |
 
@@ -164,6 +164,10 @@ Custom exception hierarchy mapped to HTTP responses by `GlobalExceptionMapper`:
 `failFull`, `partial`, `fallbackAfterError`, `terrain`, `apiVersion`, `noEdges`, `edgesOf`) that `reset()` clears.
 Edges (api 1.7, ledger `API-198`): route `full` calls only, gated by the capabilities (≥ 1.7 with `data.edges`) in the
 gateway, previews and the planner never; the fake answers 1.7 with synthetic edges, `lastOptions` records what was asked.
+The generator (api 1.9, ledger `API-206`) has its own `@Mock`, `FakeRouteGeneratorGateway`: it overrides only the
+`exchange` seam and runs an engine in memory (overlays per key and team, `GENERATE_PROBLEMS`/`DEPOSIT_PROBLEMS` queues,
+`CALLS`, `DEPOSITS`, `apiVersion`, `generatorEnabled`, `tamper`), so JSON, RFC 9457 problems and NDJSON framing run as
+in production; static switches again, cleared by `reset()`.
 
 **Critical rules**:
 - Never `@Transactional` on test methods that use RestAssured (HTTP can't see uncommitted data)

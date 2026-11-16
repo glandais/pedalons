@@ -12,16 +12,14 @@ _RouteGeneratorResponse _$RouteGeneratorResponseFromJson(
   candidates: (json['candidates'] as List<dynamic>)
       .map((e) => GeneratedRouteDto.fromJson(e as Map<String, dynamic>))
       .toList(),
-  network: RouteGeneratorNetworkDto.fromJson(
-    json['network'] as Map<String, dynamic>,
-  ),
-  familiarityFallback: json['familiarityFallback'] as bool,
+  partialCoverage: json['partialCoverage'] as bool,
+  networkPreparedAt: json['networkPreparedAt'] as String?,
 );
 
 Map<String, dynamic> _$RouteGeneratorResponseToJson(
   _RouteGeneratorResponse instance,
 ) => <String, dynamic>{
   'candidates': instance.candidates.map((e) => e.toJson()).toList(),
-  'network': instance.network.toJson(),
-  'familiarityFallback': instance.familiarityFallback,
+  'partialCoverage': instance.partialCoverage,
+  'networkPreparedAt': instance.networkPreparedAt,
 };

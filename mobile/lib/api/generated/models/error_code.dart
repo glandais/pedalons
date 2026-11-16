@@ -98,8 +98,12 @@ enum ErrorCode {
   generatorDistanceTooShort('GENERATOR_DISTANCE_TOO_SHORT'),
   @JsonValue('GENERATOR_NETWORK_TOO_SMALL')
   generatorNetworkTooSmall('GENERATOR_NETWORK_TOO_SMALL'),
-  @JsonValue('GENERATOR_NETWORK_TOO_LARGE')
-  generatorNetworkTooLarge('GENERATOR_NETWORK_TOO_LARGE'),
+  @JsonValue('GENERATOR_OUT_OF_COVERAGE')
+  generatorOutOfCoverage('GENERATOR_OUT_OF_COVERAGE'),
+  @JsonValue('GENERATOR_NETWORK_NOT_READY')
+  generatorNetworkNotReady('GENERATOR_NETWORK_NOT_READY'),
+  @JsonValue('GENERATOR_UNAVAILABLE')
+  generatorUnavailable('GENERATOR_UNAVAILABLE'),
   @JsonValue('GENERATOR_NO_ROUTE')
   generatorNoRoute('GENERATOR_NO_ROUTE'),
   @JsonValue('ROUTE_GENERATOR_RATE_LIMITED')

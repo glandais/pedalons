@@ -5,23 +5,23 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'generated_route_dto.dart';
-import 'route_generator_network_dto.dart';
+import 'instant.dart';
 
 part 'route_generator_response.freezed.dart';
 part 'route_generator_response.g.dart';
 
-/// Routes proposed by the team's route generator
+/// Routes proposed by the route generator
 @Freezed()
 abstract class RouteGeneratorResponse with _$RouteGeneratorResponse {
   const factory RouteGeneratorResponse({
     /// One to three routes, best first, different from each other
     required List<GeneratedRouteDto> candidates,
 
-    /// What the team's network is made of
-    required RouteGeneratorNetworkDto network,
+    /// True when part of the area around the start leaves the region the generator covers: proposals are rarer there
+    required bool partialCoverage,
 
-    /// True when the team rides too few routes of the requested type nearby, so the familiarity of all kinds was used instead
-    required bool familiarityFallback,
+    /// When the team's roads were last prepared for the generator (the night before at best). Absent when the request did not use them (discovery)
+    String? networkPreparedAt,
   }) = _RouteGeneratorResponse;
 
   factory RouteGeneratorResponse.fromJson(Map<String, Object?> json) =>

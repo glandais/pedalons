@@ -3,7 +3,7 @@ import type { GeoPoint } from './geoPoint.ts'
 import type { RouteGeneratorType } from './routeGeneratorType.ts'
 
 /**
- * What to ask the team's route generator for
+ * What to ask the route generator for
  */
 export interface RouteGeneratorRequest {
   /** Start. Absent: the team's location (400 VALIDATION if it has none) */
@@ -13,19 +13,22 @@ export interface RouteGeneratorRequest {
   /** Wished direction, only used when the end is closer than half the distance (a loop included) */
   bearing?: CompassPoint
   /**
-   * Wished distance in kilometres, 10 to 300
+   * Wished distance in kilometres, 10 to 200
    * @minimum 10
-   * @maximum 300
+   * @maximum 200
    */
   distanceKm: number
   /**
-   * 0 prefers roads the team rides rarely, 1 the ones it rides often. Absent: 0.5
+   * From the team's roads (0, only the roads the team rides) to discovery (1, no preference for them); rounded to the hundredth by the engine. Absent: 0.25
    * @minimum 0
    * @maximum 1
    */
-  familiarity?: number
+  discovery?: number
   /** What to ride. Absent: ROAD */
   type?: RouteGeneratorType
-  /** Makes "other proposals" reproducible: the same seed gives the same routes. Absent: 0 */
+  /**
+   * Makes "other proposals" reproducible: the same seed gives the same routes. Absent: 0
+   * @minimum 0
+   */
   seed?: number
 }

@@ -1,5 +1,6 @@
 package fr.pedalons.infrastructure.routedetails;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,6 +34,38 @@ class RouteDetailsCapabilitiesTest {
     assertFalse(caps("garbage", true).supportsEdges());
     assertFalse(caps(null, true).supportsEdges());
     assertFalse(new RouteDetailsCapabilities("1.7", null, null, null).supportsEdges());
+  }
+
+  @Test
+  void theGeneratorSectionOfApi19_isRead() throws IOException {
+    String json =
+        """
+        {"api_version":"1.9","data":{"surface_detail":true},
+         "generator":{"enabled":true,"ride_types":["road","gravel","mtb"],"ascent":false,
+           "graph":{"id":"graph-x","data_date":"2026-11-01","data_timestamp":1,"tool_version":"1"},
+           "limits":{"distance_m_min":5000,"distance_m_max":200000,"budget_ms":8000,
+             "deposit":{"max_document_bytes":16777216,"max_tracks":10000,"budget_s":900}},
+           "overlay_ttl_days":14,"future_key":1}}
+        """;
+    RouteDetailsCapabilities c = new ObjectMapper().readValue(json, RouteDetailsCapabilities.class);
+    assertTrue(c.generatorEnabled());
+    assertEquals("graph-x", c.generator().graph().id());
+    assertEquals(200_000, c.generator().limits().distanceMMax());
+    assertEquals(16_777_216L, c.generator().limits().deposit().maxDocumentBytes());
+    assertEquals(14L, c.generator().overlayTtlDays());
+  }
+
+  @Test
+  void theGeneratorNeedsApi19_andItsOwnSwitch() {
+    RouteDetailsCapabilities.GeneratorSection on =
+        new RouteDetailsCapabilities.GeneratorSection(true, null, null, null, 14L, false);
+    RouteDetailsCapabilities.GeneratorSection off =
+        new RouteDetailsCapabilities.GeneratorSection(
+            false, "not_configured", null, null, null, false);
+    assertTrue(new RouteDetailsCapabilities("1.9", null, null, null, on).generatorEnabled());
+    assertFalse(new RouteDetailsCapabilities("1.8", null, null, null, on).generatorEnabled());
+    assertFalse(new RouteDetailsCapabilities("1.9", null, null, null, off).generatorEnabled());
+    assertFalse(new RouteDetailsCapabilities("1.9", null, null, null, null).generatorEnabled());
   }
 
   @Test

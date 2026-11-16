@@ -2,15 +2,8 @@ import { useTranslation } from 'react-i18next'
 import { Box, Button, Card, Group, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core'
 import type { GeneratedRouteDto, RouteGeneratorType } from '@/api/dto'
 import { useUnits } from '@/hooks/useUnits'
-import { SHARED_MIN_METERS, familiarityBand } from '@/lib/routeGenerator'
-import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
+import { SHARED_MIN_METERS } from '@/lib/routeGenerator'
 import { routeColor } from '@/lib/routeColors'
-
-const BAND_KEYS: Record<ReturnType<typeof familiarityBand>, TranslationKey> = {
-  low: tRegister('routeGenerator.card.band.low'),
-  mid: tRegister('routeGenerator.card.band.mid'),
-  high: tRegister('routeGenerator.card.band.high'),
-}
 
 interface GeneratedRouteCardProps {
   candidate: GeneratedRouteDto
@@ -83,11 +76,13 @@ export function GeneratedRouteCard({
             <Text fw={600}>{distance(candidate.distanceM)}</Text>
           </Group>
         </UnstyledButton>
-        <Text size="sm">
-          {t('routeGenerator.card.ascent', { ascent: elevation(candidate.ascentM) })}
-        </Text>
+        {candidate.ascentM !== undefined && (
+          <Text size="sm">
+            {t('routeGenerator.card.ascent', { ascent: elevation(candidate.ascentM) })}
+          </Text>
+        )}
         <Text size="sm" c="dimmed">
-          {t(BAND_KEYS[familiarityBand(candidate.familiarity)])}
+          {t('routeGenerator.card.teamShare', { share: percent(candidate.teamShare * 100) })}
         </Text>
         {candidate.sharedM >= SHARED_MIN_METERS && (
           <Text size="sm" c="dimmed">

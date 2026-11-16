@@ -17,9 +17,9 @@ T _$identity<T>(T value) => value;
 mixin _$RouteGeneratorResponse {
 
 /// One to three routes, best first, different from each other
- List<GeneratedRouteDto> get candidates;/// What the team's network is made of
- RouteGeneratorNetworkDto get network;/// True when the team rides too few routes of the requested type nearby, so the familiarity of all kinds was used instead
- bool get familiarityFallback;
+ List<GeneratedRouteDto> get candidates;/// True when part of the area around the start leaves the region the generator covers: proposals are rarer there
+ bool get partialCoverage;/// When the team's roads were last prepared for the generator (the night before at best). Absent when the request did not use them (discovery)
+ String? get networkPreparedAt;
 /// Create a copy of RouteGeneratorResponse
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -33,20 +33,20 @@ $RouteGeneratorResponseCopyWith<RouteGeneratorResponse> get copyWith => _$RouteG
 @override
 bool operator ==(Object other) {
   final _this = this as RouteGeneratorResponse;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouteGeneratorResponse&&const DeepCollectionEquality().equals(other.candidates, _this.candidates)&&(identical(other.network, _this.network) || other.network == _this.network)&&(identical(other.familiarityFallback, _this.familiarityFallback) || other.familiarityFallback == _this.familiarityFallback));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouteGeneratorResponse&&const DeepCollectionEquality().equals(other.candidates, _this.candidates)&&(identical(other.partialCoverage, _this.partialCoverage) || other.partialCoverage == _this.partialCoverage)&&(identical(other.networkPreparedAt, _this.networkPreparedAt) || other.networkPreparedAt == _this.networkPreparedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RouteGeneratorResponse;
-  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.candidates),_this.network,_this.familiarityFallback);
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.candidates),_this.partialCoverage,_this.networkPreparedAt);
 }
 
 @override
 String toString() {
   final _this = this as RouteGeneratorResponse;
-  return 'RouteGeneratorResponse(candidates: ${_this.candidates}, network: ${_this.network}, familiarityFallback: ${_this.familiarityFallback})';
+  return 'RouteGeneratorResponse(candidates: ${_this.candidates}, partialCoverage: ${_this.partialCoverage}, networkPreparedAt: ${_this.networkPreparedAt})';
 }
 
 
@@ -57,11 +57,11 @@ abstract mixin class $RouteGeneratorResponseCopyWith<$Res>  {
   factory $RouteGeneratorResponseCopyWith(RouteGeneratorResponse value, $Res Function(RouteGeneratorResponse) _then) = _$RouteGeneratorResponseCopyWithImpl;
 @useResult
 $Res call({
- List<GeneratedRouteDto> candidates, RouteGeneratorNetworkDto network, bool familiarityFallback
+ List<GeneratedRouteDto> candidates, bool partialCoverage, String? networkPreparedAt
 });
 
 
-$RouteGeneratorNetworkDtoCopyWith<$Res> get network;
+
 
 }
 /// @nodoc
@@ -74,24 +74,15 @@ class _$RouteGeneratorResponseCopyWithImpl<$Res>
 
 /// Create a copy of RouteGeneratorResponse
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? candidates = null,Object? network = null,Object? familiarityFallback = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? candidates = null,Object? partialCoverage = null,Object? networkPreparedAt = freezed,}) {
   return _then(RouteGeneratorResponse(
 candidates: null == candidates ? _self.candidates : candidates // ignore: cast_nullable_to_non_nullable
-as List<GeneratedRouteDto>,network: null == network ? _self.network : network // ignore: cast_nullable_to_non_nullable
-as RouteGeneratorNetworkDto,familiarityFallback: null == familiarityFallback ? _self.familiarityFallback : familiarityFallback // ignore: cast_nullable_to_non_nullable
-as bool,
+as List<GeneratedRouteDto>,partialCoverage: null == partialCoverage ? _self.partialCoverage : partialCoverage // ignore: cast_nullable_to_non_nullable
+as bool,networkPreparedAt: freezed == networkPreparedAt ? _self.networkPreparedAt : networkPreparedAt // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
-/// Create a copy of RouteGeneratorResponse
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$RouteGeneratorNetworkDtoCopyWith<$Res> get network {
-  
-  return $RouteGeneratorNetworkDtoCopyWith<$Res>(_self.network, (value) {
-    return _then(_self.copyWith(network: value));
-  });
-}
+
 }
 
 
@@ -173,10 +164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<GeneratedRouteDto> candidates,  RouteGeneratorNetworkDto network,  bool familiarityFallback)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<GeneratedRouteDto> candidates,  bool partialCoverage,  String? networkPreparedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RouteGeneratorResponse() when $default != null:
-return $default(_that.candidates,_that.network,_that.familiarityFallback);case _:
+return $default(_that.candidates,_that.partialCoverage,_that.networkPreparedAt);case _:
   return orElse();
 
 }
@@ -194,10 +185,10 @@ return $default(_that.candidates,_that.network,_that.familiarityFallback);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<GeneratedRouteDto> candidates,  RouteGeneratorNetworkDto network,  bool familiarityFallback)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<GeneratedRouteDto> candidates,  bool partialCoverage,  String? networkPreparedAt)  $default,) {final _that = this;
 switch (_that) {
 case _RouteGeneratorResponse():
-return $default(_that.candidates,_that.network,_that.familiarityFallback);case _:
+return $default(_that.candidates,_that.partialCoverage,_that.networkPreparedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -214,10 +205,10 @@ return $default(_that.candidates,_that.network,_that.familiarityFallback);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<GeneratedRouteDto> candidates,  RouteGeneratorNetworkDto network,  bool familiarityFallback)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<GeneratedRouteDto> candidates,  bool partialCoverage,  String? networkPreparedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _RouteGeneratorResponse() when $default != null:
-return $default(_that.candidates,_that.network,_that.familiarityFallback);case _:
+return $default(_that.candidates,_that.partialCoverage,_that.networkPreparedAt);case _:
   return null;
 
 }
@@ -229,7 +220,7 @@ return $default(_that.candidates,_that.network,_that.familiarityFallback);case _
 @JsonSerializable()
 
 class _RouteGeneratorResponse implements RouteGeneratorResponse {
-  const _RouteGeneratorResponse({required  List<GeneratedRouteDto> candidates, required this.network, required this.familiarityFallback}): _candidates = candidates;
+  const _RouteGeneratorResponse({required  List<GeneratedRouteDto> candidates, required this.partialCoverage, this.networkPreparedAt}): _candidates = candidates;
   factory _RouteGeneratorResponse.fromJson(Map<String, dynamic> json) => _$RouteGeneratorResponseFromJson(json);
 
 /// One to three routes, best first, different from each other
@@ -241,10 +232,10 @@ class _RouteGeneratorResponse implements RouteGeneratorResponse {
   return EqualUnmodifiableListView(_candidates);
 }
 
-/// What the team's network is made of
-@override final  RouteGeneratorNetworkDto network;
-/// True when the team rides too few routes of the requested type nearby, so the familiarity of all kinds was used instead
-@override final  bool familiarityFallback;
+/// True when part of the area around the start leaves the region the generator covers: proposals are rarer there
+@override final  bool partialCoverage;
+/// When the team's roads were last prepared for the generator (the night before at best). Absent when the request did not use them (discovery)
+@override final  String? networkPreparedAt;
 
 /// Create a copy of RouteGeneratorResponse
 /// with the given fields replaced by the non-null parameter values.
@@ -259,18 +250,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouteGeneratorResponse&&const DeepCollectionEquality().equals(other.candidates, _candidates)&&(identical(other.network, network) || other.network == network)&&(identical(other.familiarityFallback, familiarityFallback) || other.familiarityFallback == familiarityFallback));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouteGeneratorResponse&&const DeepCollectionEquality().equals(other.candidates, _candidates)&&(identical(other.partialCoverage, partialCoverage) || other.partialCoverage == partialCoverage)&&(identical(other.networkPreparedAt, networkPreparedAt) || other.networkPreparedAt == networkPreparedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_candidates),network,familiarityFallback);
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_candidates),partialCoverage,networkPreparedAt);
 }
 
 @override
 String toString() {
-    return 'RouteGeneratorResponse(candidates: $candidates, network: $network, familiarityFallback: $familiarityFallback)';
+    return 'RouteGeneratorResponse(candidates: $candidates, partialCoverage: $partialCoverage, networkPreparedAt: $networkPreparedAt)';
 }
 
 
@@ -281,11 +272,11 @@ abstract mixin class _$RouteGeneratorResponseCopyWith<$Res> implements $RouteGen
   factory _$RouteGeneratorResponseCopyWith(_RouteGeneratorResponse value, $Res Function(_RouteGeneratorResponse) _then) = __$RouteGeneratorResponseCopyWithImpl;
 @override @useResult
 $Res call({
- List<GeneratedRouteDto> candidates, RouteGeneratorNetworkDto network, bool familiarityFallback
+ List<GeneratedRouteDto> candidates, bool partialCoverage, String? networkPreparedAt
 });
 
 
-@override $RouteGeneratorNetworkDtoCopyWith<$Res> get network;
+
 
 }
 /// @nodoc
@@ -298,25 +289,16 @@ class __$RouteGeneratorResponseCopyWithImpl<$Res>
 
 /// Create a copy of RouteGeneratorResponse
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? candidates = null,Object? network = null,Object? familiarityFallback = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? candidates = null,Object? partialCoverage = null,Object? networkPreparedAt = freezed,}) {
   return _then(_RouteGeneratorResponse(
 candidates: null == candidates ? _self._candidates : candidates // ignore: cast_nullable_to_non_nullable
-as List<GeneratedRouteDto>,network: null == network ? _self.network : network // ignore: cast_nullable_to_non_nullable
-as RouteGeneratorNetworkDto,familiarityFallback: null == familiarityFallback ? _self.familiarityFallback : familiarityFallback // ignore: cast_nullable_to_non_nullable
-as bool,
+as List<GeneratedRouteDto>,partialCoverage: null == partialCoverage ? _self.partialCoverage : partialCoverage // ignore: cast_nullable_to_non_nullable
+as bool,networkPreparedAt: freezed == networkPreparedAt ? _self.networkPreparedAt : networkPreparedAt // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
-/// Create a copy of RouteGeneratorResponse
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$RouteGeneratorNetworkDtoCopyWith<$Res> get network {
-  
-  return $RouteGeneratorNetworkDtoCopyWith<$Res>(_self.network, (value) {
-    return _then(_self.copyWith(network: value));
-  });
-}
+
 }
 
 // dart format on

@@ -88,18 +88,26 @@ public enum ErrorCode {
   /** Route generator, HTTP 400: the distance is shorter than the way from the start to the end. */
   GENERATOR_DISTANCE_TOO_SHORT,
   /**
-   * Route generator, HTTP 400, with {@link RouteGeneratorNetworkDetails}: the roads the team rides
-   * around the start do not add up to what this distance needs, or the team has no analysed route
-   * yet (the details say how many are still being analysed).
+   * Route generator, HTTP 400: the roads the team rides around the start do not add up to what
+   * this distance needs (or the team rides none).
    */
   GENERATOR_NETWORK_TOO_SMALL,
   /**
-   * Route generator, HTTP 400: the team's routes hold more street edge observations than the
-   * generator can turn into a graph in the memory it has ({@code
-   * pedalons.route-generator.max-observations}); nothing in the request changes it.
+   * Route generator, HTTP 400: the start or the end is outside the region the generator covers
+   * (lot 3b).
    */
-  GENERATOR_NETWORK_TOO_LARGE,
-  /** Route generator, HTTP 400: no route made of the team's roads fits the request. */
+  GENERATOR_OUT_OF_COVERAGE,
+  /**
+   * Route generator, HTTP 400: the team's roads are not prepared for the generator yet (they are
+   * every night); a request towards discovery (cursor 1) needs no preparation.
+   */
+  GENERATOR_NETWORK_NOT_READY,
+  /**
+   * Route generator, HTTP 503: the engine is switched off, unreachable, its graph unavailable or
+   * not configured for this environment.
+   */
+  GENERATOR_UNAVAILABLE,
+  /** Route generator, HTTP 400: no route fits the request. */
   GENERATOR_NO_ROUTE,
   /**
    * The caller asked the route generator too often (30 per 15 minutes) — HTTP 429 with a
@@ -107,7 +115,7 @@ public enum ErrorCode {
    */
   ROUTE_GENERATOR_RATE_LIMITED,
   /**
-   * The route generator has no free CPU or memory slot for the request, or ran out of its time
+   * The route generator has no free slot for the request, or ran out of its time
    * budget — HTTP 503; the caller may try again.
    */
   ROUTE_GENERATOR_BUSY,

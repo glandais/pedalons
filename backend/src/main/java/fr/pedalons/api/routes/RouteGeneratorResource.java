@@ -26,7 +26,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @RolesAllowed("user")
-@Tag(name = "Route generator", description = "Routes made only of the roads a team already rides")
+@Tag(name = "Route generator", description = "Routes that favour the roads a team already rides")
 public class RouteGeneratorResource {
 
   @Inject RouteGeneratorService routeGeneratorService;
@@ -34,21 +34,26 @@ public class RouteGeneratorResource {
   @POST
   @Operation(
       operationId = "generateRoutes",
-      summary = "Propose routes made of the team's own roads",
+      summary = "Propose routes that favour the team's own roads",
       description =
-          "Proposes one to three routes, loops or one-way, whose every metre lies on a road that a"
-              + " route of the team already rides. Same rights as the route planner: the caller"
-              + " must be allowed to create routes in the team and the team must have its route"
-              + " planner on (ROUTE_PLANNER_DISABLED otherwise). Nothing is stored, no routing"
-              + " provider is called and no quota is drawn. Failures have their own codes, all 400:"
-              + " GENERATOR_START_TOO_FAR and GENERATOR_END_TOO_FAR (no road of the team within 2"
-              + " km), GENERATOR_DISTANCE_TOO_SHORT, GENERATOR_NETWORK_TOO_SMALL (with"
-              + " RouteGeneratorNetworkDetails: also sent while the team's routes are still being"
-              + " analysed), GENERATOR_NETWORK_TOO_LARGE (the team's routes are more than the"
-              + " generator can hold in memory; no request succeeds until the limit is raised)"
-              + " and GENERATOR_NO_ROUTE. At most 30 requests per user in 15 minutes"
-              + " (ROUTE_GENERATOR_RATE_LIMITED, 429 with Retry-After); ROUTE_GENERATOR_BUSY (503)"
-              + " when the server has no free slot or the run took too long.")
+          "Proposes one to three routes, loops or one-way, from the roads a route of the team"
+              + " already rides (prepared every night for the generator) and the rest of the map:"
+              + " the cursor `discovery` goes from the team's roads only (0) to no preference (1),"
+              + " default 0.25. The engine is osm-route-details and covers one region for now"
+              + " (GENERATOR_OUT_OF_COVERAGE elsewhere); each route was checked by an independent"
+              + " checker of the engine and by a geometric sanity check here. Ascent and descent"
+              + " are computed from the fast elevation profile and are absent when it was not"
+              + " ready in time. Same rights as the route planner: the caller must be allowed to"
+              + " create routes in the team and the team must have its route planner on"
+              + " (ROUTE_PLANNER_DISABLED otherwise). Nothing is stored, no routing provider is"
+              + " called and no quota is drawn. Failures have their own codes, all 400:"
+              + " GENERATOR_START_TOO_FAR and GENERATOR_END_TOO_FAR (no suitable road near),"
+              + " GENERATOR_DISTANCE_TOO_SHORT, GENERATOR_NETWORK_TOO_SMALL,"
+              + " GENERATOR_OUT_OF_COVERAGE, GENERATOR_NETWORK_NOT_READY (the team's roads are not"
+              + " prepared yet; discovery needs no preparation) and GENERATOR_NO_ROUTE. At most 30"
+              + " requests per user in 15 minutes (ROUTE_GENERATOR_RATE_LIMITED, 429 with"
+              + " Retry-After); ROUTE_GENERATOR_BUSY (503) when the engine has no free slot or took"
+              + " too long, GENERATOR_UNAVAILABLE (503) when it is off or unreachable.")
   @APIResponses({
     @APIResponse(
         responseCode = "200",
@@ -59,7 +64,8 @@ public class RouteGeneratorResource {
         description =
             "Invalid request, planner disabled (ROUTE_PLANNER_DISABLED), or no route"
                 + " (GENERATOR_START_TOO_FAR, GENERATOR_END_TOO_FAR, GENERATOR_DISTANCE_TOO_SHORT,"
-                + " GENERATOR_NETWORK_TOO_SMALL, GENERATOR_NETWORK_TOO_LARGE, GENERATOR_NO_ROUTE)",
+                + " GENERATOR_NETWORK_TOO_SMALL, GENERATOR_OUT_OF_COVERAGE,"
+                + " GENERATOR_NETWORK_NOT_READY, GENERATOR_NO_ROUTE)",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "401",
@@ -80,7 +86,9 @@ public class RouteGeneratorResource {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "503",
-        description = "No free slot, or time budget spent (ROUTE_GENERATOR_BUSY)",
+        description =
+            "The engine has no free slot or took too long (ROUTE_GENERATOR_BUSY), or is off or"
+                + " unreachable (GENERATOR_UNAVAILABLE)",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   public Response generate(

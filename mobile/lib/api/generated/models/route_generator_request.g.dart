@@ -17,7 +17,7 @@ _RouteGeneratorRequest _$RouteGeneratorRequestFromJson(
       ? null
       : GeoPoint.fromJson(json['end'] as Map<String, dynamic>),
   bearing: json['bearing'] as String?,
-  familiarity: (json['familiarity'] as num?)?.toDouble(),
+  discovery: (json['discovery'] as num?)?.toDouble(),
   type: json['type'] as String?,
   seed: (json['seed'] as num?)?.toInt(),
 );
@@ -29,7 +29,7 @@ Map<String, dynamic> _$RouteGeneratorRequestToJson(
   'start': instance.start?.toJson(),
   'end': instance.end?.toJson(),
   'bearing': instance.bearing,
-  'familiarity': instance.familiarity,
+  'discovery': instance.discovery,
   'type': instance.type,
   'seed': instance.seed,
 };

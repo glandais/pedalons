@@ -4,7 +4,6 @@ import type { ErrorValidationDetails } from './errorValidationDetails.ts'
 import type { IncompatibleVisibilityDetails } from './incompatibleVisibilityDetails.ts'
 import type { NotFoundDetails } from './notFoundDetails.ts'
 import type { PlannerQuotaDetails } from './plannerQuotaDetails.ts'
-import type { RouteGeneratorNetworkDetails } from './routeGeneratorNetworkDetails.ts'
 import type { TeamMemberLimitDetails } from './teamMemberLimitDetails.ts'
 
 /**
@@ -27,8 +26,5 @@ export type ErrorDetails =
       type?: ErrorCode
     })
   | (PlannerQuotaDetails & {
-      type?: ErrorCode
-    })
-  | (RouteGeneratorNetworkDetails & {
       type?: ErrorCode
     })

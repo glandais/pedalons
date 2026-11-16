@@ -40,10 +40,6 @@ ErrorDetails _$ErrorDetailsFromJson(
           return ErrorDetailsPlannerQuotaReached.fromJson(
             json
           );
-                case 'GENERATOR_NETWORK_TOO_SMALL':
-          return ErrorDetailsGeneratorNetworkTooSmall.fromJson(
-            json
-          );
         
           default:
             throw CheckedFromJsonException(
@@ -102,7 +98,7 @@ extension ErrorDetailsPatterns on ErrorDetails {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ErrorDetailsValidation value)?  validation,TResult Function( ErrorDetailsNotFound value)?  notFound,TResult Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,TResult Function( ErrorDetailsTeamMemberLimitReached value)?  teamMemberLimitReached,TResult Function( ErrorDetailsPlannerQuotaReached value)?  plannerQuotaReached,TResult Function( ErrorDetailsGeneratorNetworkTooSmall value)?  generatorNetworkTooSmall,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ErrorDetailsValidation value)?  validation,TResult Function( ErrorDetailsNotFound value)?  notFound,TResult Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,TResult Function( ErrorDetailsTeamMemberLimitReached value)?  teamMemberLimitReached,TResult Function( ErrorDetailsPlannerQuotaReached value)?  plannerQuotaReached,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
@@ -111,8 +107,7 @@ return notFound(_that);case ErrorDetailsAssetNotAvailable() when assetNotAvailab
 return assetNotAvailable(_that);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
 return incompatibleVisibility(_that);case ErrorDetailsTeamMemberLimitReached() when teamMemberLimitReached != null:
 return teamMemberLimitReached(_that);case ErrorDetailsPlannerQuotaReached() when plannerQuotaReached != null:
-return plannerQuotaReached(_that);case ErrorDetailsGeneratorNetworkTooSmall() when generatorNetworkTooSmall != null:
-return generatorNetworkTooSmall(_that);case _:
+return plannerQuotaReached(_that);case _:
   return orElse();
 
 }
@@ -130,7 +125,7 @@ return generatorNetworkTooSmall(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ErrorDetailsValidation value)  validation,required TResult Function( ErrorDetailsNotFound value)  notFound,required TResult Function( ErrorDetailsAssetNotAvailable value)  assetNotAvailable,required TResult Function( ErrorDetailsIncompatibleVisibility value)  incompatibleVisibility,required TResult Function( ErrorDetailsTeamMemberLimitReached value)  teamMemberLimitReached,required TResult Function( ErrorDetailsPlannerQuotaReached value)  plannerQuotaReached,required TResult Function( ErrorDetailsGeneratorNetworkTooSmall value)  generatorNetworkTooSmall,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ErrorDetailsValidation value)  validation,required TResult Function( ErrorDetailsNotFound value)  notFound,required TResult Function( ErrorDetailsAssetNotAvailable value)  assetNotAvailable,required TResult Function( ErrorDetailsIncompatibleVisibility value)  incompatibleVisibility,required TResult Function( ErrorDetailsTeamMemberLimitReached value)  teamMemberLimitReached,required TResult Function( ErrorDetailsPlannerQuotaReached value)  plannerQuotaReached,}){
 final _that = this;
 switch (_that) {
 case ErrorDetailsValidation():
@@ -139,8 +134,7 @@ return notFound(_that);case ErrorDetailsAssetNotAvailable():
 return assetNotAvailable(_that);case ErrorDetailsIncompatibleVisibility():
 return incompatibleVisibility(_that);case ErrorDetailsTeamMemberLimitReached():
 return teamMemberLimitReached(_that);case ErrorDetailsPlannerQuotaReached():
-return plannerQuotaReached(_that);case ErrorDetailsGeneratorNetworkTooSmall():
-return generatorNetworkTooSmall(_that);}
+return plannerQuotaReached(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -154,7 +148,7 @@ return generatorNetworkTooSmall(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ErrorDetailsValidation value)?  validation,TResult? Function( ErrorDetailsNotFound value)?  notFound,TResult? Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult? Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,TResult? Function( ErrorDetailsTeamMemberLimitReached value)?  teamMemberLimitReached,TResult? Function( ErrorDetailsPlannerQuotaReached value)?  plannerQuotaReached,TResult? Function( ErrorDetailsGeneratorNetworkTooSmall value)?  generatorNetworkTooSmall,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ErrorDetailsValidation value)?  validation,TResult? Function( ErrorDetailsNotFound value)?  notFound,TResult? Function( ErrorDetailsAssetNotAvailable value)?  assetNotAvailable,TResult? Function( ErrorDetailsIncompatibleVisibility value)?  incompatibleVisibility,TResult? Function( ErrorDetailsTeamMemberLimitReached value)?  teamMemberLimitReached,TResult? Function( ErrorDetailsPlannerQuotaReached value)?  plannerQuotaReached,}){
 final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
@@ -163,8 +157,7 @@ return notFound(_that);case ErrorDetailsAssetNotAvailable() when assetNotAvailab
 return assetNotAvailable(_that);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
 return incompatibleVisibility(_that);case ErrorDetailsTeamMemberLimitReached() when teamMemberLimitReached != null:
 return teamMemberLimitReached(_that);case ErrorDetailsPlannerQuotaReached() when plannerQuotaReached != null:
-return plannerQuotaReached(_that);case ErrorDetailsGeneratorNetworkTooSmall() when generatorNetworkTooSmall != null:
-return generatorNetworkTooSmall(_that);case _:
+return plannerQuotaReached(_that);case _:
   return null;
 
 }
@@ -181,7 +174,7 @@ return generatorNetworkTooSmall(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( List<FieldError> fieldErrors)?  validation,TResult Function( String entityType,  String searchedBy,  String id)?  notFound,TResult Function( String assetId)?  assetNotAvailable,TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,TResult Function( int limit,  int current)?  teamMemberLimitReached,TResult Function( String scope,  int limit,  int current,  String resetsOn,  String? teamName)?  plannerQuotaReached,TResult Function( int routeCount,  int pendingRouteCount,  int excludedRouteCount,  double totalLengthM,  bool incomplete)?  generatorNetworkTooSmall,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( List<FieldError> fieldErrors)?  validation,TResult Function( String entityType,  String searchedBy,  String id)?  notFound,TResult Function( String assetId)?  assetNotAvailable,TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,TResult Function( int limit,  int current)?  teamMemberLimitReached,TResult Function( String scope,  int limit,  int current,  String resetsOn,  String? teamName)?  plannerQuotaReached,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
 return validation(_that.fieldErrors);case ErrorDetailsNotFound() when notFound != null:
@@ -189,8 +182,7 @@ return notFound(_that.entityType,_that.searchedBy,_that.id);case ErrorDetailsAss
 return assetNotAvailable(_that.assetId);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
 return incompatibleVisibility(_that.routes,_that.usages);case ErrorDetailsTeamMemberLimitReached() when teamMemberLimitReached != null:
 return teamMemberLimitReached(_that.limit,_that.current);case ErrorDetailsPlannerQuotaReached() when plannerQuotaReached != null:
-return plannerQuotaReached(_that.scope,_that.limit,_that.current,_that.resetsOn,_that.teamName);case ErrorDetailsGeneratorNetworkTooSmall() when generatorNetworkTooSmall != null:
-return generatorNetworkTooSmall(_that.routeCount,_that.pendingRouteCount,_that.excludedRouteCount,_that.totalLengthM,_that.incomplete);case _:
+return plannerQuotaReached(_that.scope,_that.limit,_that.current,_that.resetsOn,_that.teamName);case _:
   return orElse();
 
 }
@@ -208,7 +200,7 @@ return generatorNetworkTooSmall(_that.routeCount,_that.pendingRouteCount,_that.e
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( List<FieldError> fieldErrors)  validation,required TResult Function( String entityType,  String searchedBy,  String id)  notFound,required TResult Function( String assetId)  assetNotAvailable,required TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)  incompatibleVisibility,required TResult Function( int limit,  int current)  teamMemberLimitReached,required TResult Function( String scope,  int limit,  int current,  String resetsOn,  String? teamName)  plannerQuotaReached,required TResult Function( int routeCount,  int pendingRouteCount,  int excludedRouteCount,  double totalLengthM,  bool incomplete)  generatorNetworkTooSmall,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( List<FieldError> fieldErrors)  validation,required TResult Function( String entityType,  String searchedBy,  String id)  notFound,required TResult Function( String assetId)  assetNotAvailable,required TResult Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)  incompatibleVisibility,required TResult Function( int limit,  int current)  teamMemberLimitReached,required TResult Function( String scope,  int limit,  int current,  String resetsOn,  String? teamName)  plannerQuotaReached,}) {final _that = this;
 switch (_that) {
 case ErrorDetailsValidation():
 return validation(_that.fieldErrors);case ErrorDetailsNotFound():
@@ -216,8 +208,7 @@ return notFound(_that.entityType,_that.searchedBy,_that.id);case ErrorDetailsAss
 return assetNotAvailable(_that.assetId);case ErrorDetailsIncompatibleVisibility():
 return incompatibleVisibility(_that.routes,_that.usages);case ErrorDetailsTeamMemberLimitReached():
 return teamMemberLimitReached(_that.limit,_that.current);case ErrorDetailsPlannerQuotaReached():
-return plannerQuotaReached(_that.scope,_that.limit,_that.current,_that.resetsOn,_that.teamName);case ErrorDetailsGeneratorNetworkTooSmall():
-return generatorNetworkTooSmall(_that.routeCount,_that.pendingRouteCount,_that.excludedRouteCount,_that.totalLengthM,_that.incomplete);}
+return plannerQuotaReached(_that.scope,_that.limit,_that.current,_that.resetsOn,_that.teamName);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -231,7 +222,7 @@ return generatorNetworkTooSmall(_that.routeCount,_that.pendingRouteCount,_that.e
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( List<FieldError> fieldErrors)?  validation,TResult? Function( String entityType,  String searchedBy,  String id)?  notFound,TResult? Function( String assetId)?  assetNotAvailable,TResult? Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,TResult? Function( int limit,  int current)?  teamMemberLimitReached,TResult? Function( String scope,  int limit,  int current,  String resetsOn,  String? teamName)?  plannerQuotaReached,TResult? Function( int routeCount,  int pendingRouteCount,  int excludedRouteCount,  double totalLengthM,  bool incomplete)?  generatorNetworkTooSmall,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( List<FieldError> fieldErrors)?  validation,TResult? Function( String entityType,  String searchedBy,  String id)?  notFound,TResult? Function( String assetId)?  assetNotAvailable,TResult? Function( List<IncompatibleRouteDto> routes,  List<IncompatibleRouteUsageDto> usages)?  incompatibleVisibility,TResult? Function( int limit,  int current)?  teamMemberLimitReached,TResult? Function( String scope,  int limit,  int current,  String resetsOn,  String? teamName)?  plannerQuotaReached,}) {final _that = this;
 switch (_that) {
 case ErrorDetailsValidation() when validation != null:
 return validation(_that.fieldErrors);case ErrorDetailsNotFound() when notFound != null:
@@ -239,8 +230,7 @@ return notFound(_that.entityType,_that.searchedBy,_that.id);case ErrorDetailsAss
 return assetNotAvailable(_that.assetId);case ErrorDetailsIncompatibleVisibility() when incompatibleVisibility != null:
 return incompatibleVisibility(_that.routes,_that.usages);case ErrorDetailsTeamMemberLimitReached() when teamMemberLimitReached != null:
 return teamMemberLimitReached(_that.limit,_that.current);case ErrorDetailsPlannerQuotaReached() when plannerQuotaReached != null:
-return plannerQuotaReached(_that.scope,_that.limit,_that.current,_that.resetsOn,_that.teamName);case ErrorDetailsGeneratorNetworkTooSmall() when generatorNetworkTooSmall != null:
-return generatorNetworkTooSmall(_that.routeCount,_that.pendingRouteCount,_that.excludedRouteCount,_that.totalLengthM,_that.incomplete);case _:
+return plannerQuotaReached(_that.scope,_that.limit,_that.current,_that.resetsOn,_that.teamName);case _:
   return null;
 
 }
@@ -743,94 +733,6 @@ as int,current: null == current ? _self.current : current // ignore: cast_nullab
 as int,resetsOn: null == resetsOn ? _self.resetsOn : resetsOn // ignore: cast_nullable_to_non_nullable
 as String,teamName: freezed == teamName ? _self.teamName : teamName // ignore: cast_nullable_to_non_nullable
 as String?,
-  ));
-}
-
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class ErrorDetailsGeneratorNetworkTooSmall implements ErrorDetails {
-  const ErrorDetailsGeneratorNetworkTooSmall({required this.routeCount, required this.pendingRouteCount, required this.excludedRouteCount, required this.totalLengthM, required this.incomplete,  String? $type}): $type = $type ?? 'GENERATOR_NETWORK_TOO_SMALL';
-  factory ErrorDetailsGeneratorNetworkTooSmall.fromJson(Map<String, dynamic> json) => _$ErrorDetailsGeneratorNetworkTooSmallFromJson(json);
-
-/// Routes the network is made of
- final  int routeCount;
-/// Routes whose roads are still being analysed and are not in the network yet
- final  int pendingRouteCount;
-/// Routes ticked "ne pas utiliser pour générer des parcours"
- final  int excludedRouteCount;
-/// Length of the whole network of the team, in metres
- final  double totalLengthM;
-/// True when pendingRouteCount is above zero: the network may still grow
- final  bool incomplete;
-
-@JsonKey(name: 'type')
-final String $type;
-
-
-/// Create a copy of ErrorDetails
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$ErrorDetailsGeneratorNetworkTooSmallCopyWith<ErrorDetailsGeneratorNetworkTooSmall> get copyWith => _$ErrorDetailsGeneratorNetworkTooSmallCopyWithImpl<ErrorDetailsGeneratorNetworkTooSmall>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$ErrorDetailsGeneratorNetworkTooSmallToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is ErrorDetailsGeneratorNetworkTooSmall&&(identical(other.routeCount, routeCount) || other.routeCount == routeCount)&&(identical(other.pendingRouteCount, pendingRouteCount) || other.pendingRouteCount == pendingRouteCount)&&(identical(other.excludedRouteCount, excludedRouteCount) || other.excludedRouteCount == excludedRouteCount)&&(identical(other.totalLengthM, totalLengthM) || other.totalLengthM == totalLengthM)&&(identical(other.incomplete, incomplete) || other.incomplete == incomplete));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode {
-    return Object.hash(runtimeType,routeCount,pendingRouteCount,excludedRouteCount,totalLengthM,incomplete);
-}
-
-@override
-String toString() {
-    return 'ErrorDetails.generatorNetworkTooSmall(routeCount: $routeCount, pendingRouteCount: $pendingRouteCount, excludedRouteCount: $excludedRouteCount, totalLengthM: $totalLengthM, incomplete: $incomplete)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $ErrorDetailsGeneratorNetworkTooSmallCopyWith<$Res> implements $ErrorDetailsCopyWith<$Res> {
-  factory $ErrorDetailsGeneratorNetworkTooSmallCopyWith(ErrorDetailsGeneratorNetworkTooSmall value, $Res Function(ErrorDetailsGeneratorNetworkTooSmall) _then) = _$ErrorDetailsGeneratorNetworkTooSmallCopyWithImpl;
-@useResult
-$Res call({
- int routeCount, int pendingRouteCount, int excludedRouteCount, double totalLengthM, bool incomplete
-});
-
-
-
-
-}
-/// @nodoc
-class _$ErrorDetailsGeneratorNetworkTooSmallCopyWithImpl<$Res>
-    implements $ErrorDetailsGeneratorNetworkTooSmallCopyWith<$Res> {
-  _$ErrorDetailsGeneratorNetworkTooSmallCopyWithImpl(this._self, this._then);
-
-  final ErrorDetailsGeneratorNetworkTooSmall _self;
-  final $Res Function(ErrorDetailsGeneratorNetworkTooSmall) _then;
-
-/// Create a copy of ErrorDetails
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? routeCount = null,Object? pendingRouteCount = null,Object? excludedRouteCount = null,Object? totalLengthM = null,Object? incomplete = null,}) {
-  return _then(ErrorDetailsGeneratorNetworkTooSmall(
-routeCount: null == routeCount ? _self.routeCount : routeCount // ignore: cast_nullable_to_non_nullable
-as int,pendingRouteCount: null == pendingRouteCount ? _self.pendingRouteCount : pendingRouteCount // ignore: cast_nullable_to_non_nullable
-as int,excludedRouteCount: null == excludedRouteCount ? _self.excludedRouteCount : excludedRouteCount // ignore: cast_nullable_to_non_nullable
-as int,totalLengthM: null == totalLengthM ? _self.totalLengthM : totalLengthM // ignore: cast_nullable_to_non_nullable
-as double,incomplete: null == incomplete ? _self.incomplete : incomplete // ignore: cast_nullable_to_non_nullable
-as bool,
   ));
 }
 

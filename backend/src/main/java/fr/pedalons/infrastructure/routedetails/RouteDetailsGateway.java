@@ -129,7 +129,13 @@ public class RouteDetailsGateway {
       }
       throw paused(failure, profile);
     } catch (ProcessingException e) {
-      throw paused(RouteDetailsErrors.noAnswer(e), profile);
+      RouteDetailsException failure = RouteDetailsErrors.noAnswer(e);
+      // A call cut short by our own interrupt (a caller giving up on a late call) says nothing
+      // about the service: no pause for every other caller
+      if (RouteDetailsErrors.isInterrupt(e)) {
+        throw failure;
+      }
+      throw paused(failure, profile);
     }
     if (response == null) {
       // A 200 with an empty body: the client reads it as null, the same answer would come back.
@@ -223,6 +229,16 @@ public class RouteDetailsGateway {
       return Optional.ofNullable(cached);
     }
     return Optional.ofNullable(fetchCapabilities());
+  }
+
+  /**
+   * The capabilities read again now, whatever the cache holds: the nightly overlay job and the
+   * manual trigger must see a graph that changed this hour. Never throws.
+   */
+  public Optional<RouteDetailsCapabilities> freshCapabilities() {
+    capabilitiesFetchedAt = null;
+    capabilitiesFailedAt = null;
+    return capabilities();
   }
 
   /**

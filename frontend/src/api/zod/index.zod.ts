@@ -1,6 +1,7 @@
 export * from './admin-domains/admin-domains.zod.ts'
 export * from './admin-elevation/admin-elevation.zod.ts'
 export * from './admin-reports/admin-reports.zod.ts'
+export * from './admin-route-generator/admin-route-generator.zod.ts'
 export * from './admin-teams/admin-teams.zod.ts'
 export * from './admin-thumbnails/admin-thumbnails.zod.ts'
 export * from './admin-users/admin-users.zod.ts'

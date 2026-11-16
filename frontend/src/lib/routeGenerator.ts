@@ -5,7 +5,6 @@ import {
   ErrorCode,
   RouteGeneratorType,
   type GeoPoint,
-  type RouteGeneratorNetworkDetails,
   type RouteGeneratorRequest,
 } from '@/api/dto'
 import { ApiClientError, apiErrorCode, isNetworkError } from '@/lib/apiError'
@@ -20,7 +19,7 @@ export interface GeneratorParams {
   end?: string
   bearing?: CompassPoint
   distanceKm: number
-  familiarity: number
+  discovery: number
   type?: RouteGeneratorType
   seed: number
 }
@@ -72,8 +71,8 @@ export function readGeneratedHandoff(state: unknown): GeneratedHandoff | undefin
 
 /**
  * The end is far when the straight line from the start is at least half the wished distance: the
- * backend's rule (`QueryContext.bearingApplies = chord < D/2`, measured between the snapped nodes),
- * which then ignores the bearing. The client compares the clicked points, so close to the threshold
+ * engine's rule (contract `BearingV1`: the bearing is only used when the end is closer than half
+ * the distance), which then ignores the bearing. The client compares the clicked points, so close to the threshold
  * the two may disagree, which is harmless.
  */
 export function isEndFar(
@@ -117,7 +116,7 @@ export function routeGeneratorRequest(
   const far = isEndFar(start ?? resolvedStart, end, params.distanceKm)
   const request: RouteGeneratorRequest = {
     distanceKm: params.distanceKm,
-    familiarity: params.familiarity,
+    discovery: params.discovery,
     type: params.type ?? type,
     seed: params.seed,
   }
@@ -125,15 +124,6 @@ export function routeGeneratorRequest(
   if (end) request.end = end
   if (params.bearing && !far) request.bearing = params.bearing
   return request
-}
-
-export type FamiliarityBand = 'low' | 'mid' | 'high'
-
-/** The mean familiarity of a route, in words: a percentage of a log-normalised count means nothing. */
-export function familiarityBand(familiarity: number): FamiliarityBand {
-  if (familiarity < 1 / 3) return 'low'
-  if (familiarity < 2 / 3) return 'mid'
-  return 'high'
 }
 
 /** The shared out-and-back stretch is mentioned from this length. */
@@ -180,7 +170,9 @@ export function generatedRouteName(distanceText: string, t: TFunction): string {
 const GENERATOR_ERROR_KEYS: Partial<Record<ErrorCode, TranslationKey>> = {
   [ErrorCode.GENERATOR_START_TOO_FAR]: tRegister('routeGenerator.errors.startTooFar'),
   [ErrorCode.GENERATOR_END_TOO_FAR]: tRegister('routeGenerator.errors.endTooFar'),
-  [ErrorCode.GENERATOR_NETWORK_TOO_LARGE]: tRegister('routeGenerator.errors.networkTooLarge'),
+  [ErrorCode.GENERATOR_OUT_OF_COVERAGE]: tRegister('routeGenerator.errors.outOfCoverage'),
+  [ErrorCode.GENERATOR_NETWORK_NOT_READY]: tRegister('routeGenerator.errors.networkNotReady'),
+  [ErrorCode.GENERATOR_UNAVAILABLE]: tRegister('routeGenerator.errors.unavailable'),
   [ErrorCode.ROUTE_GENERATOR_BUSY]: tRegister('routeGenerator.errors.busy'),
   [ErrorCode.ROUTE_PLANNER_DISABLED]: tRegister('routeGenerator.errors.disabled'),
 }
@@ -192,7 +184,8 @@ const GENERATOR_NON_RETRYABLE: ReadonlySet<ErrorCode> = new Set([
   ErrorCode.GENERATOR_DISTANCE_TOO_SHORT,
   ErrorCode.GENERATOR_NO_ROUTE,
   ErrorCode.GENERATOR_NETWORK_TOO_SMALL,
-  ErrorCode.GENERATOR_NETWORK_TOO_LARGE,
+  ErrorCode.GENERATOR_OUT_OF_COVERAGE,
+  ErrorCode.GENERATOR_NETWORK_NOT_READY,
   ErrorCode.ROUTE_GENERATOR_RATE_LIMITED,
   ErrorCode.ROUTE_PLANNER_DISABLED,
 ])
@@ -202,14 +195,6 @@ export function isRetryableGeneratorError(error: unknown): boolean {
   if (isNetworkError(error)) return true
   const code = apiErrorCode(error)
   return code === undefined || !GENERATOR_NON_RETRYABLE.has(code)
-}
-
-function networkDetails(error: unknown): RouteGeneratorNetworkDetails | undefined {
-  if (!(error instanceof ApiClientError)) return undefined
-  const details = error.error.errorDetails as { type?: string } | undefined
-  return details?.type === 'GENERATOR_NETWORK_TOO_SMALL'
-    ? (details as RouteGeneratorNetworkDetails)
-    : undefined
 }
 
 /**
@@ -224,11 +209,6 @@ export function generatorErrorMessage(
   if (isNetworkError(error)) return t('routeGenerator.errors.network')
   const code = apiErrorCode(error)
   if (code === ErrorCode.GENERATOR_NETWORK_TOO_SMALL) {
-    const details = networkDetails(error)
-    if (details?.incomplete) {
-      return t('routeGenerator.errors.networkPending', { count: details.pendingRouteCount })
-    }
-    if (details && details.routeCount === 0) return t('routeGenerator.errors.networkEmpty')
     return t('routeGenerator.errors.networkTooSmall', { distance })
   }
   if (code === ErrorCode.GENERATOR_DISTANCE_TOO_SHORT) {

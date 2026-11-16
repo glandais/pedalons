@@ -70,7 +70,7 @@ const candidate = (over: Partial<GeneratedRouteDto> = {}): GeneratedRouteDto => 
   distanceM: 82000,
   ascentM: 640,
   descentM: 640,
-  familiarity: 0.5,
+  teamShare: 0.5,
   unpavedShare: 0,
   sharedM: 0,
   crossings: 0,
@@ -80,24 +80,17 @@ const candidate = (over: Partial<GeneratedRouteDto> = {}): GeneratedRouteDto => 
 
 const response = (over: Partial<RouteGeneratorResponse> = {}): RouteGeneratorResponse => ({
   candidates: [
-    candidate({ distanceM: 82000, ascentM: 640, familiarity: 0.5, sharedM: 1200 }),
-    candidate({ distanceM: 79000, ascentM: 700, familiarity: 0.9, sharedM: 40 }),
-    candidate({ distanceM: 85000, ascentM: 500, familiarity: 0.1 }),
+    candidate({ distanceM: 82000, ascentM: 640, teamShare: 0.8, sharedM: 1200 }),
+    candidate({ distanceM: 79000, ascentM: 700, teamShare: 1, sharedM: 40 }),
+    candidate({ distanceM: 85000, ascentM: 500, teamShare: 0.3 }),
   ],
-  network: {
-    totalLengthM: 1e6,
-    routeCount: 10,
-    pendingRouteCount: 0,
-    excludedRouteCount: 0,
-    incomplete: false,
-  },
-  familiarityFallback: false,
+  partialCoverage: false,
   ...over,
 })
 
 const DEFAULTS: RouteGeneratorPanelParams = {
   distanceKm: 50,
-  familiarity: 0.5,
+  discovery: 0.25,
   seed: 0,
   selected: 0,
   go: false,
@@ -280,7 +273,7 @@ describe('RouteGeneratorPanel (WEB-179)', () => {
     await waitFor(() => expect(generateMock).toHaveBeenCalledTimes(1))
     const [slug, body, options] = generateMock.mock.calls[0]
     expect(slug).toBe('club')
-    expect(body).toEqual({ distanceKm: 50, familiarity: 0.5, type: 'ROAD', seed: 0 })
+    expect(body).toEqual({ distanceKm: 50, discovery: 0.25, type: 'ROAD', seed: 0 })
     expect(options).toEqual({ skipErrorToast: true })
   })
 
@@ -326,11 +319,11 @@ describe('RouteGeneratorPanel (WEB-179)', () => {
     expect(within(first).getByText('Proposition 1')).toBeTruthy()
     expect(within(first).getByText(/82([,.]0)?\s?km/)).toBeTruthy()
     expect(within(first).getByText(/Dénivelé positif 640/)).toBeTruthy()
-    expect(within(first).getByText('Routes prises de temps en temps')).toBeTruthy()
+    expect(within(first).getByText(/80\s?% sur les routes de l'équipe/)).toBeTruthy()
     expect(within(first).getByText(/Tronçon commun aller-retour/)).toBeTruthy()
-    expect(within(second).getByText("Routes habituelles de l'équipe")).toBeTruthy()
+    expect(within(second).getByText(/100\s?% sur les routes de l'équipe/)).toBeTruthy()
     expect(within(second).queryByText(/Tronçon commun/)).toBeNull()
-    expect(within(third).getByText("Routes peu prises par l'équipe")).toBeTruthy()
+    expect(within(third).getByText(/30\s?% sur les routes de l'équipe/)).toBeTruthy()
     expect(within(third).queryByText(/Non revêtu/)).toBeNull()
   })
 
@@ -400,44 +393,58 @@ describe('RouteGeneratorPanel (WEB-179)', () => {
     expect(screen.queryByRole('button', { name: 'Réessayer' })).toBeNull()
   })
 
-  it('says what is missing when the team roads are still being analysed', async () => {
+  it.each([
+    ['GENERATOR_OUT_OF_COVERAGE', /hors de la région que couvre le générateur/],
+    ['GENERATOR_NETWORK_NOT_READY', /en préparation pour le générateur/],
+    ['GENERATOR_UNAVAILABLE', /indisponible pour le moment/],
+  ])('words %s and offers a retry only where it may pass', async (code, message) => {
     generateMock.mockRejectedValue(
-      new ApiClientError(400, {
-        code: 'GENERATOR_NETWORK_TOO_SMALL',
-        errorDetails: {
-          type: 'GENERATOR_NETWORK_TOO_SMALL',
-          routeCount: 1,
-          pendingRouteCount: 3,
-          excludedRouteCount: 0,
-          totalLengthM: 1000,
-          incomplete: true,
-        } as never,
-      })
+      new ApiClientError(code === 'GENERATOR_UNAVAILABLE' ? 503 : 400, { code } as never)
     )
     renderPanel()
     fireEvent.click(generate())
-    expect(await screen.findByText(/encore 3 parcours à traiter/)).toBeTruthy()
+    expect(await screen.findByText(message)).toBeTruthy()
+    const retry = screen.queryByRole('button', { name: 'Réessayer' })
+    if (code === 'GENERATOR_UNAVAILABLE') expect(retry).not.toBeNull()
+    else expect(retry).toBeNull()
   })
 
-  it('shows the fallback and the incomplete notices', async () => {
+  it('shows the date of the team roads and the partial coverage notice', async () => {
     generateMock.mockResolvedValue(
-      response({
-        familiarityFallback: true,
-        network: {
-          totalLengthM: 1,
-          routeCount: 3,
-          pendingRouteCount: 2,
-          excludedRouteCount: 0,
-          incomplete: true,
-        },
-      })
+      response({ networkPreparedAt: '2026-11-15T12:10:00Z', partialCoverage: true })
     )
     renderPanel()
     fireEvent.click(generate())
     expect(
-      await screen.findByText(/la fréquentation tient compte de tous ses parcours/)
+      await screen.findByText(/Routes de l'équipe prises en compte jusqu'au .*2026/)
     ).toBeTruthy()
-    expect(screen.getByText(/2 parcours en attente/)).toBeTruthy()
+    expect(screen.getByText(/sort de la région couverte/)).toBeTruthy()
+  })
+
+  it('shows no notice when the response carries neither', async () => {
+    generateMock.mockResolvedValue(response())
+    renderPanel()
+    fireEvent.click(generate())
+    await waitFor(() => expect(cards()).toHaveLength(3))
+    expect(screen.queryByText(/prises en compte jusqu'au/)).toBeNull()
+    expect(screen.queryByText(/sort de la région couverte/)).toBeNull()
+  })
+
+  it('shows no elevation line when the engine gave none', async () => {
+    generateMock.mockResolvedValue(
+      response({ candidates: [candidate({ ascentM: undefined, descentM: undefined })] })
+    )
+    renderPanel()
+    fireEvent.click(generate())
+    await waitFor(() => expect(cards()).toHaveLength(1))
+    expect(within(cards()[0]).queryByText(/Dénivelé positif/)).toBeNull()
+  })
+
+  it('offers the discovery slider at its second stop by default', () => {
+    renderPanel()
+    const thumb = screen.getByRole('slider', { name: "Routes de l'équipe ↔ Découverte" })
+    expect(thumb.getAttribute('aria-valuenow')).toBe('0.25')
+    expect(thumb.getAttribute('aria-valuetext')).toBe("Surtout les routes de l'équipe")
   })
 
   it("disables « Ouvrir dans l'éditeur » at a spent quota", async () => {

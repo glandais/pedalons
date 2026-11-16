@@ -18,14 +18,14 @@ mixin _$GeneratedRouteDto {
 
 /// Geometry as a polyline of precision 6 (latitude then longitude), the encoding of the planner's GPX import
  String get polyline;/// Distance in metres
- double get distanceM;/// Elevation gain in metres
- double get ascentM;/// Elevation loss in metres
- double get descentM;/// How often the team rides these roads, 0 to 1
- double get familiarity;/// Share of the distance on unpaved roads, 0 to 1
+ double get distanceM;/// Share of the distance on the team's roads, short gaps between them included, 0 to 1
+ double get teamShare;/// Share of the distance on unpaved roads, 0 to 1
  double get unpavedShare;/// Metres ridden twice (the way to and from the loop), counted once
  double get sharedM;/// Junctions crossed more than once outside the shared part
  int get crossings;/// Map frame of the route
- BoundsDto get bounds;/// Angle in degrees between the wished bearing and the route's. Absent when the bearing did not apply
+ BoundsDto get bounds;/// Elevation gain in metres. Absent when the profile was not ready in time: the editor computes it
+ double? get ascentM;/// Elevation loss in metres. Absent like the gain
+ double? get descentM;/// Angle in degrees between the wished bearing and the route's. Absent when the bearing did not apply
  double? get bearingDeviationDeg;
 /// Create a copy of GeneratedRouteDto
 /// with the given fields replaced by the non-null parameter values.
@@ -40,20 +40,20 @@ $GeneratedRouteDtoCopyWith<GeneratedRouteDto> get copyWith => _$GeneratedRouteDt
 @override
 bool operator ==(Object other) {
   final _this = this as GeneratedRouteDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GeneratedRouteDto&&(identical(other.polyline, _this.polyline) || other.polyline == _this.polyline)&&(identical(other.distanceM, _this.distanceM) || other.distanceM == _this.distanceM)&&(identical(other.ascentM, _this.ascentM) || other.ascentM == _this.ascentM)&&(identical(other.descentM, _this.descentM) || other.descentM == _this.descentM)&&(identical(other.familiarity, _this.familiarity) || other.familiarity == _this.familiarity)&&(identical(other.unpavedShare, _this.unpavedShare) || other.unpavedShare == _this.unpavedShare)&&(identical(other.sharedM, _this.sharedM) || other.sharedM == _this.sharedM)&&(identical(other.crossings, _this.crossings) || other.crossings == _this.crossings)&&(identical(other.bounds, _this.bounds) || other.bounds == _this.bounds)&&(identical(other.bearingDeviationDeg, _this.bearingDeviationDeg) || other.bearingDeviationDeg == _this.bearingDeviationDeg));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GeneratedRouteDto&&(identical(other.polyline, _this.polyline) || other.polyline == _this.polyline)&&(identical(other.distanceM, _this.distanceM) || other.distanceM == _this.distanceM)&&(identical(other.teamShare, _this.teamShare) || other.teamShare == _this.teamShare)&&(identical(other.unpavedShare, _this.unpavedShare) || other.unpavedShare == _this.unpavedShare)&&(identical(other.sharedM, _this.sharedM) || other.sharedM == _this.sharedM)&&(identical(other.crossings, _this.crossings) || other.crossings == _this.crossings)&&(identical(other.bounds, _this.bounds) || other.bounds == _this.bounds)&&(identical(other.ascentM, _this.ascentM) || other.ascentM == _this.ascentM)&&(identical(other.descentM, _this.descentM) || other.descentM == _this.descentM)&&(identical(other.bearingDeviationDeg, _this.bearingDeviationDeg) || other.bearingDeviationDeg == _this.bearingDeviationDeg));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as GeneratedRouteDto;
-  return Object.hash(runtimeType,_this.polyline,_this.distanceM,_this.ascentM,_this.descentM,_this.familiarity,_this.unpavedShare,_this.sharedM,_this.crossings,_this.bounds,_this.bearingDeviationDeg);
+  return Object.hash(runtimeType,_this.polyline,_this.distanceM,_this.teamShare,_this.unpavedShare,_this.sharedM,_this.crossings,_this.bounds,_this.ascentM,_this.descentM,_this.bearingDeviationDeg);
 }
 
 @override
 String toString() {
   final _this = this as GeneratedRouteDto;
-  return 'GeneratedRouteDto(polyline: ${_this.polyline}, distanceM: ${_this.distanceM}, ascentM: ${_this.ascentM}, descentM: ${_this.descentM}, familiarity: ${_this.familiarity}, unpavedShare: ${_this.unpavedShare}, sharedM: ${_this.sharedM}, crossings: ${_this.crossings}, bounds: ${_this.bounds}, bearingDeviationDeg: ${_this.bearingDeviationDeg})';
+  return 'GeneratedRouteDto(polyline: ${_this.polyline}, distanceM: ${_this.distanceM}, teamShare: ${_this.teamShare}, unpavedShare: ${_this.unpavedShare}, sharedM: ${_this.sharedM}, crossings: ${_this.crossings}, bounds: ${_this.bounds}, ascentM: ${_this.ascentM}, descentM: ${_this.descentM}, bearingDeviationDeg: ${_this.bearingDeviationDeg})';
 }
 
 
@@ -64,7 +64,7 @@ abstract mixin class $GeneratedRouteDtoCopyWith<$Res>  {
   factory $GeneratedRouteDtoCopyWith(GeneratedRouteDto value, $Res Function(GeneratedRouteDto) _then) = _$GeneratedRouteDtoCopyWithImpl;
 @useResult
 $Res call({
- String polyline, double distanceM, double ascentM, double descentM, double familiarity, double unpavedShare, double sharedM, int crossings, BoundsDto bounds, double? bearingDeviationDeg
+ String polyline, double distanceM, double teamShare, double unpavedShare, double sharedM, int crossings, BoundsDto bounds, double? ascentM, double? descentM, double? bearingDeviationDeg
 });
 
 
@@ -81,18 +81,18 @@ class _$GeneratedRouteDtoCopyWithImpl<$Res>
 
 /// Create a copy of GeneratedRouteDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? polyline = null,Object? distanceM = null,Object? ascentM = null,Object? descentM = null,Object? familiarity = null,Object? unpavedShare = null,Object? sharedM = null,Object? crossings = null,Object? bounds = null,Object? bearingDeviationDeg = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? polyline = null,Object? distanceM = null,Object? teamShare = null,Object? unpavedShare = null,Object? sharedM = null,Object? crossings = null,Object? bounds = null,Object? ascentM = freezed,Object? descentM = freezed,Object? bearingDeviationDeg = freezed,}) {
   return _then(GeneratedRouteDto(
 polyline: null == polyline ? _self.polyline : polyline // ignore: cast_nullable_to_non_nullable
 as String,distanceM: null == distanceM ? _self.distanceM : distanceM // ignore: cast_nullable_to_non_nullable
-as double,ascentM: null == ascentM ? _self.ascentM : ascentM // ignore: cast_nullable_to_non_nullable
-as double,descentM: null == descentM ? _self.descentM : descentM // ignore: cast_nullable_to_non_nullable
-as double,familiarity: null == familiarity ? _self.familiarity : familiarity // ignore: cast_nullable_to_non_nullable
+as double,teamShare: null == teamShare ? _self.teamShare : teamShare // ignore: cast_nullable_to_non_nullable
 as double,unpavedShare: null == unpavedShare ? _self.unpavedShare : unpavedShare // ignore: cast_nullable_to_non_nullable
 as double,sharedM: null == sharedM ? _self.sharedM : sharedM // ignore: cast_nullable_to_non_nullable
 as double,crossings: null == crossings ? _self.crossings : crossings // ignore: cast_nullable_to_non_nullable
 as int,bounds: null == bounds ? _self.bounds : bounds // ignore: cast_nullable_to_non_nullable
-as BoundsDto,bearingDeviationDeg: freezed == bearingDeviationDeg ? _self.bearingDeviationDeg : bearingDeviationDeg // ignore: cast_nullable_to_non_nullable
+as BoundsDto,ascentM: freezed == ascentM ? _self.ascentM : ascentM // ignore: cast_nullable_to_non_nullable
+as double?,descentM: freezed == descentM ? _self.descentM : descentM // ignore: cast_nullable_to_non_nullable
+as double?,bearingDeviationDeg: freezed == bearingDeviationDeg ? _self.bearingDeviationDeg : bearingDeviationDeg // ignore: cast_nullable_to_non_nullable
 as double?,
   ));
 }
@@ -187,10 +187,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String polyline,  double distanceM,  double ascentM,  double descentM,  double familiarity,  double unpavedShare,  double sharedM,  int crossings,  BoundsDto bounds,  double? bearingDeviationDeg)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String polyline,  double distanceM,  double teamShare,  double unpavedShare,  double sharedM,  int crossings,  BoundsDto bounds,  double? ascentM,  double? descentM,  double? bearingDeviationDeg)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GeneratedRouteDto() when $default != null:
-return $default(_that.polyline,_that.distanceM,_that.ascentM,_that.descentM,_that.familiarity,_that.unpavedShare,_that.sharedM,_that.crossings,_that.bounds,_that.bearingDeviationDeg);case _:
+return $default(_that.polyline,_that.distanceM,_that.teamShare,_that.unpavedShare,_that.sharedM,_that.crossings,_that.bounds,_that.ascentM,_that.descentM,_that.bearingDeviationDeg);case _:
   return orElse();
 
 }
@@ -208,10 +208,10 @@ return $default(_that.polyline,_that.distanceM,_that.ascentM,_that.descentM,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String polyline,  double distanceM,  double ascentM,  double descentM,  double familiarity,  double unpavedShare,  double sharedM,  int crossings,  BoundsDto bounds,  double? bearingDeviationDeg)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String polyline,  double distanceM,  double teamShare,  double unpavedShare,  double sharedM,  int crossings,  BoundsDto bounds,  double? ascentM,  double? descentM,  double? bearingDeviationDeg)  $default,) {final _that = this;
 switch (_that) {
 case _GeneratedRouteDto():
-return $default(_that.polyline,_that.distanceM,_that.ascentM,_that.descentM,_that.familiarity,_that.unpavedShare,_that.sharedM,_that.crossings,_that.bounds,_that.bearingDeviationDeg);case _:
+return $default(_that.polyline,_that.distanceM,_that.teamShare,_that.unpavedShare,_that.sharedM,_that.crossings,_that.bounds,_that.ascentM,_that.descentM,_that.bearingDeviationDeg);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -228,10 +228,10 @@ return $default(_that.polyline,_that.distanceM,_that.ascentM,_that.descentM,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String polyline,  double distanceM,  double ascentM,  double descentM,  double familiarity,  double unpavedShare,  double sharedM,  int crossings,  BoundsDto bounds,  double? bearingDeviationDeg)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String polyline,  double distanceM,  double teamShare,  double unpavedShare,  double sharedM,  int crossings,  BoundsDto bounds,  double? ascentM,  double? descentM,  double? bearingDeviationDeg)?  $default,) {final _that = this;
 switch (_that) {
 case _GeneratedRouteDto() when $default != null:
-return $default(_that.polyline,_that.distanceM,_that.ascentM,_that.descentM,_that.familiarity,_that.unpavedShare,_that.sharedM,_that.crossings,_that.bounds,_that.bearingDeviationDeg);case _:
+return $default(_that.polyline,_that.distanceM,_that.teamShare,_that.unpavedShare,_that.sharedM,_that.crossings,_that.bounds,_that.ascentM,_that.descentM,_that.bearingDeviationDeg);case _:
   return null;
 
 }
@@ -243,19 +243,15 @@ return $default(_that.polyline,_that.distanceM,_that.ascentM,_that.descentM,_tha
 @JsonSerializable()
 
 class _GeneratedRouteDto implements GeneratedRouteDto {
-  const _GeneratedRouteDto({required this.polyline, required this.distanceM, required this.ascentM, required this.descentM, required this.familiarity, required this.unpavedShare, required this.sharedM, required this.crossings, required this.bounds, this.bearingDeviationDeg});
+  const _GeneratedRouteDto({required this.polyline, required this.distanceM, required this.teamShare, required this.unpavedShare, required this.sharedM, required this.crossings, required this.bounds, this.ascentM, this.descentM, this.bearingDeviationDeg});
   factory _GeneratedRouteDto.fromJson(Map<String, dynamic> json) => _$GeneratedRouteDtoFromJson(json);
 
 /// Geometry as a polyline of precision 6 (latitude then longitude), the encoding of the planner's GPX import
 @override final  String polyline;
 /// Distance in metres
 @override final  double distanceM;
-/// Elevation gain in metres
-@override final  double ascentM;
-/// Elevation loss in metres
-@override final  double descentM;
-/// How often the team rides these roads, 0 to 1
-@override final  double familiarity;
+/// Share of the distance on the team's roads, short gaps between them included, 0 to 1
+@override final  double teamShare;
 /// Share of the distance on unpaved roads, 0 to 1
 @override final  double unpavedShare;
 /// Metres ridden twice (the way to and from the loop), counted once
@@ -264,6 +260,10 @@ class _GeneratedRouteDto implements GeneratedRouteDto {
 @override final  int crossings;
 /// Map frame of the route
 @override final  BoundsDto bounds;
+/// Elevation gain in metres. Absent when the profile was not ready in time: the editor computes it
+@override final  double? ascentM;
+/// Elevation loss in metres. Absent like the gain
+@override final  double? descentM;
 /// Angle in degrees between the wished bearing and the route's. Absent when the bearing did not apply
 @override final  double? bearingDeviationDeg;
 
@@ -280,18 +280,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GeneratedRouteDto&&(identical(other.polyline, polyline) || other.polyline == polyline)&&(identical(other.distanceM, distanceM) || other.distanceM == distanceM)&&(identical(other.ascentM, ascentM) || other.ascentM == ascentM)&&(identical(other.descentM, descentM) || other.descentM == descentM)&&(identical(other.familiarity, familiarity) || other.familiarity == familiarity)&&(identical(other.unpavedShare, unpavedShare) || other.unpavedShare == unpavedShare)&&(identical(other.sharedM, sharedM) || other.sharedM == sharedM)&&(identical(other.crossings, crossings) || other.crossings == crossings)&&(identical(other.bounds, bounds) || other.bounds == bounds)&&(identical(other.bearingDeviationDeg, bearingDeviationDeg) || other.bearingDeviationDeg == bearingDeviationDeg));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _GeneratedRouteDto&&(identical(other.polyline, polyline) || other.polyline == polyline)&&(identical(other.distanceM, distanceM) || other.distanceM == distanceM)&&(identical(other.teamShare, teamShare) || other.teamShare == teamShare)&&(identical(other.unpavedShare, unpavedShare) || other.unpavedShare == unpavedShare)&&(identical(other.sharedM, sharedM) || other.sharedM == sharedM)&&(identical(other.crossings, crossings) || other.crossings == crossings)&&(identical(other.bounds, bounds) || other.bounds == bounds)&&(identical(other.ascentM, ascentM) || other.ascentM == ascentM)&&(identical(other.descentM, descentM) || other.descentM == descentM)&&(identical(other.bearingDeviationDeg, bearingDeviationDeg) || other.bearingDeviationDeg == bearingDeviationDeg));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,polyline,distanceM,ascentM,descentM,familiarity,unpavedShare,sharedM,crossings,bounds,bearingDeviationDeg);
+    return Object.hash(runtimeType,polyline,distanceM,teamShare,unpavedShare,sharedM,crossings,bounds,ascentM,descentM,bearingDeviationDeg);
 }
 
 @override
 String toString() {
-    return 'GeneratedRouteDto(polyline: $polyline, distanceM: $distanceM, ascentM: $ascentM, descentM: $descentM, familiarity: $familiarity, unpavedShare: $unpavedShare, sharedM: $sharedM, crossings: $crossings, bounds: $bounds, bearingDeviationDeg: $bearingDeviationDeg)';
+    return 'GeneratedRouteDto(polyline: $polyline, distanceM: $distanceM, teamShare: $teamShare, unpavedShare: $unpavedShare, sharedM: $sharedM, crossings: $crossings, bounds: $bounds, ascentM: $ascentM, descentM: $descentM, bearingDeviationDeg: $bearingDeviationDeg)';
 }
 
 
@@ -302,7 +302,7 @@ abstract mixin class _$GeneratedRouteDtoCopyWith<$Res> implements $GeneratedRout
   factory _$GeneratedRouteDtoCopyWith(_GeneratedRouteDto value, $Res Function(_GeneratedRouteDto) _then) = __$GeneratedRouteDtoCopyWithImpl;
 @override @useResult
 $Res call({
- String polyline, double distanceM, double ascentM, double descentM, double familiarity, double unpavedShare, double sharedM, int crossings, BoundsDto bounds, double? bearingDeviationDeg
+ String polyline, double distanceM, double teamShare, double unpavedShare, double sharedM, int crossings, BoundsDto bounds, double? ascentM, double? descentM, double? bearingDeviationDeg
 });
 
 
@@ -319,18 +319,18 @@ class __$GeneratedRouteDtoCopyWithImpl<$Res>
 
 /// Create a copy of GeneratedRouteDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? polyline = null,Object? distanceM = null,Object? ascentM = null,Object? descentM = null,Object? familiarity = null,Object? unpavedShare = null,Object? sharedM = null,Object? crossings = null,Object? bounds = null,Object? bearingDeviationDeg = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? polyline = null,Object? distanceM = null,Object? teamShare = null,Object? unpavedShare = null,Object? sharedM = null,Object? crossings = null,Object? bounds = null,Object? ascentM = freezed,Object? descentM = freezed,Object? bearingDeviationDeg = freezed,}) {
   return _then(_GeneratedRouteDto(
 polyline: null == polyline ? _self.polyline : polyline // ignore: cast_nullable_to_non_nullable
 as String,distanceM: null == distanceM ? _self.distanceM : distanceM // ignore: cast_nullable_to_non_nullable
-as double,ascentM: null == ascentM ? _self.ascentM : ascentM // ignore: cast_nullable_to_non_nullable
-as double,descentM: null == descentM ? _self.descentM : descentM // ignore: cast_nullable_to_non_nullable
-as double,familiarity: null == familiarity ? _self.familiarity : familiarity // ignore: cast_nullable_to_non_nullable
+as double,teamShare: null == teamShare ? _self.teamShare : teamShare // ignore: cast_nullable_to_non_nullable
 as double,unpavedShare: null == unpavedShare ? _self.unpavedShare : unpavedShare // ignore: cast_nullable_to_non_nullable
 as double,sharedM: null == sharedM ? _self.sharedM : sharedM // ignore: cast_nullable_to_non_nullable
 as double,crossings: null == crossings ? _self.crossings : crossings // ignore: cast_nullable_to_non_nullable
 as int,bounds: null == bounds ? _self.bounds : bounds // ignore: cast_nullable_to_non_nullable
-as BoundsDto,bearingDeviationDeg: freezed == bearingDeviationDeg ? _self.bearingDeviationDeg : bearingDeviationDeg // ignore: cast_nullable_to_non_nullable
+as BoundsDto,ascentM: freezed == ascentM ? _self.ascentM : ascentM // ignore: cast_nullable_to_non_nullable
+as double?,descentM: freezed == descentM ? _self.descentM : descentM // ignore: cast_nullable_to_non_nullable
+as double?,bearingDeviationDeg: freezed == bearingDeviationDeg ? _self.bearingDeviationDeg : bearingDeviationDeg // ignore: cast_nullable_to_non_nullable
 as double?,
   ));
 }

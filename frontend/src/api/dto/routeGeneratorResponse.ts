@@ -1,14 +1,14 @@
 import type { GeneratedRouteDto } from './generatedRouteDto.ts'
-import type { RouteGeneratorNetworkDto } from './routeGeneratorNetworkDto.ts'
+import type { Instant } from './instant.ts'
 
 /**
- * Routes proposed by the team's route generator
+ * Routes proposed by the route generator
  */
 export interface RouteGeneratorResponse {
   /** One to three routes, best first, different from each other */
   candidates: GeneratedRouteDto[]
-  /** What the team's network is made of */
-  network: RouteGeneratorNetworkDto
-  /** True when the team rides too few routes of the requested type nearby, so the familiarity of all kinds was used instead */
-  familiarityFallback: boolean
+  /** When the team's roads were last prepared for the generator (the night before at best). Absent when the request did not use them (discovery) */
+  networkPreparedAt?: Instant
+  /** True when part of the area around the start leaves the region the generator covers: proposals are rarer there */
+  partialCoverage: boolean
 }

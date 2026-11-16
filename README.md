@@ -92,7 +92,7 @@ backend container through `env_file` — which is why anything that has no busin
 application has no business in it either (the `BACKUP_*` settings live in
 `/root/pedalons-backup.env`, see [Backup and restore](docs/OPERATIONS.md#backup-and-restore)).
 
-A workstation and a deployment differ in five keys, and only those:
+A workstation and a deployment differ in six keys, and only those:
 
 | Key | Deployment | Workstation |
 |---|---|---|
@@ -101,6 +101,7 @@ A workstation and a deployment differ in five keys, and only those:
 | `QUARKUS_MAILER_*` | the Scaleway TEM SMTP relay | `mailpit` / `1025`, TLS and login `DISABLED` |
 | `PEDALONS_BOOTSTRAP_DOMAIN` / `_BASE_URL` | the public hostname, `https://…` | `localhost` / `http://localhost:8090` (full stack only) |
 | `HTTP_PORT` | 8090 prod, 8089 staging, behind Caddy | anything free |
+| `ROUTE_GENERATOR_NAMESPACE_KEY` | its own random secret (43 base64url characters) | another one, never the deployment's |
 
 - **`ENV_NAME` names the stack** — containers, network, image tags, and the postgres and minio the
   backup scripts look up. A local stack called `…-prod` is indistinguishable from the real one in

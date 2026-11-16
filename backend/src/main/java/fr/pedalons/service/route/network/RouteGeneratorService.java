@@ -1,28 +1,23 @@
 package fr.pedalons.service.route.network;
 
+import fr.pedalons.common.TsidUtils;
 import fr.pedalons.common.exception.BusinessException;
+import fr.pedalons.common.exception.PedalonsException;
 import fr.pedalons.common.exception.ServiceUnavailableException;
 import fr.pedalons.domain.team.Team;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.error.ErrorValidationDetails;
 import fr.pedalons.dto.error.FieldError;
 import fr.pedalons.dto.routes.request.RouteGeneratorRequest;
-import fr.pedalons.dto.routes.response.BoundsDto;
 import fr.pedalons.dto.routes.response.GeneratedRouteDto;
-import fr.pedalons.dto.routes.response.RouteGeneratorNetworkDto;
 import fr.pedalons.dto.routes.response.RouteGeneratorResponse;
-import fr.pedalons.enums.CompassPoint;
 import fr.pedalons.enums.RouteGeneratorType;
-import fr.pedalons.service.route.generator.Bearing8;
-import fr.pedalons.service.route.generator.GeneratedRoute;
-import fr.pedalons.service.route.generator.GeneratorDiagnostics;
-import fr.pedalons.service.route.generator.GeneratorRequest;
-import fr.pedalons.service.route.generator.GeneratorResult;
-import fr.pedalons.service.route.generator.GeneratorStoppedException;
-import fr.pedalons.service.route.generator.LatLon;
-import fr.pedalons.service.route.generator.RideType;
-import fr.pedalons.service.route.generator.RouteGenerator;
-import fr.pedalons.service.route.planner.PolylineCodec;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorException;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorGateway;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GenerateRequest;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GenerateResponse;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GeoPoint;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.Route;
 import fr.pedalons.service.router.PlannerAccess;
 import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.annotation.Logged;
@@ -32,6 +27,7 @@ import jakarta.inject.Inject;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.geolatte.geom.G2D;
 import org.geolatte.geom.Point;
@@ -39,26 +35,28 @@ import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Proposes routes made of the roads a team already rides (ledger docs/LEDGER_*.md API-198, lot 3
- * plan §3). Not transactional: the graph comes from {@link TeamNetworkCache}, which reads in its own
- * short transactions, and no database connection is held while the engine computes.
+ * Proposes routes from the roads a team rides and the rest of the map, by asking the route
+ * generator of osm-route-details (ledger docs/LEDGER_*.md API-198, lot 3b). Not transactional: no
+ * database connection is held while the engine computes. The team's roads are prepared in the
+ * engine by the nightly {@link RouteGeneratorOverlayJob}, never here.
  */
 @ApplicationScoped
 public class RouteGeneratorService {
   private static final Logger LOG = Logger.getLogger(RouteGeneratorService.class);
-  private static final double DEFAULT_FAMILIARITY = 0.5;
+
+  /** The default of the cursor: mostly the team's roads, a little discovery. */
+  static final double DEFAULT_DISCOVERY = 0.25;
 
   @Inject PlannerAccess plannerAccess;
   @Inject PedalonsQueryContext pedalonsContext;
   @Inject TeamService teamService;
-  @Inject TeamNetworkCache networkCache;
   @Inject RouteGeneratorGuard guard;
   @Inject RouteGeneratorMetrics metrics;
+  @Inject RouteGeneratorGateway gateway;
+  @Inject GeneratedRouteAscent ascent;
 
   @ConfigProperty(name = "pedalons.route-generator.enabled", defaultValue = "true")
   boolean enabled;
-
-  private final RouteGenerator routeGenerator = new RouteGenerator();
 
   @Logged
   public RouteGeneratorResponse generate(String teamSlug, RouteGeneratorRequest request) {
@@ -69,72 +67,86 @@ public class RouteGeneratorService {
       throw new BusinessException(ErrorCode.ROUTE_PLANNER_DISABLED);
     }
     Team team = teamService.getTeam(teamSlug);
-    long domainId = pedalonsContext.getDomainId();
-    guard.admit(domainId, pedalonsContext.getUser().getId());
+    guard.admit(pedalonsContext.getDomainId(), pedalonsContext.getUser().getId());
 
-    GeneratorRequest engineRequest = engineRequest(team, request);
-    long teamId = team.getId();
+    GenerateRequest engineRequest = engineRequest(team, request);
+    if (!gateway.configured() || !gateway.availability(false).usable()) {
+      // Nothing is sent to a service that is off, or that predates the generator
+      metrics.request("unavailable");
+      throw new ServiceUnavailableException(ErrorCode.GENERATOR_UNAVAILABLE);
+    }
+
+    String teamRef = TsidUtils.toString(team.getId());
     long t0 = System.nanoTime();
-    TeamNetwork network = lookup(teamId, domainId);
-    long t1 = System.nanoTime();
-    TeamNetworkSummary summary = network.summary();
-    if (network.graph().edgeCount() == 0) {
-      metrics.request("network_too_small");
-      throw RouteGeneratorErrors.networkTooSmall(summary);
-    }
-
-    GeneratorResult result;
+    GenerateResponse answer;
     try {
-      result =
-          guard.withPermit(
-              () -> routeGenerator.generate(network.graph(), engineRequest, guard.deadline()));
-    } catch (GeneratorStoppedException e) {
-      long ms = Duration.ofNanos(System.nanoTime() - t1).toMillis();
-      LOG.warnf(
-          "Route generator stopped after %d ms: team %d, %.0f km, %s, %s",
-          ms,
-          teamId,
-          engineRequest.distanceM() / 1000,
-          engineRequest.type(),
-          engineRequest.end() == null ? "loop" : "trip");
-      metrics.request("stopped");
-      throw new ServiceUnavailableException(ErrorCode.ROUTE_GENERATOR_BUSY);
+      answer = gateway.generate(teamRef, engineRequest);
+    } catch (RouteGeneratorException e) {
+      Duration took = Duration.ofNanos(System.nanoTime() - t0);
+      metrics.generated(took);
+      metrics.request(RouteGeneratorErrors.outcome(e));
+      PedalonsException mapped = RouteGeneratorErrors.of(e);
+      if (RouteGeneratorErrors.isDrift(e)
+          || e.kind() == RouteGeneratorException.Kind.NOT_CONFIGURED) {
+        LOG.errorf("Route generator: unexpected answer for team %s: %s", teamRef, e.getMessage());
+      } else {
+        LOG.infof(
+            "Route generator: team %s, %.0f km, %s, outcome %s, %d ms",
+            teamRef,
+            engineRequest.distanceM() / 1000,
+            engineRequest.rideType(),
+            e.kind().name().toLowerCase(Locale.ROOT)
+                + (e.reason() == null ? "" : " (" + e.reason() + ")"),
+            took.toMillis());
+      }
+      throw mapped;
     }
-    long t2 = System.nanoTime();
-    metrics.generated(Duration.ofNanos(t2 - t1));
+    metrics.generated(Duration.ofNanos(System.nanoTime() - t0));
 
-    if (result instanceof GeneratorResult.Failure f) {
-      log(teamId, engineRequest, f.reason().name(), f.detail(), f.diagnostics(), t0, t1, t2);
-      metrics.request(f.reason().name());
-      throw RouteGeneratorErrors.of(f.reason(), summary);
+    List<Route> kept = new ArrayList<>();
+    List<GeneratedRouteSanity.Verdict> verdicts = new ArrayList<>();
+    for (Route route : answer.routes() == null ? List.<Route>of() : answer.routes()) {
+      GeneratedRouteSanity.Verdict verdict = GeneratedRouteSanity.check(engineRequest, route);
+      if (verdict.sane()) {
+        kept.add(route);
+        verdicts.add(verdict);
+      } else {
+        metrics.dropped(verdict.failed().name());
+        LOG.warnf(
+            "Route generator: a route of team %s dropped by the sanity check %s (%.0f km asked)",
+            teamRef, verdict.failed(), engineRequest.distanceM() / 1000);
+      }
     }
-    GeneratorResult.Success ok = (GeneratorResult.Success) result;
-    log(teamId, engineRequest, "OK", null, ok.diagnostics(), t0, t1, t2);
+    if (kept.isEmpty()) {
+      metrics.request("no_route");
+      throw new BusinessException(ErrorCode.GENERATOR_NO_ROUTE);
+    }
     metrics.request("ok");
-    List<GeneratedRouteDto> candidates = new ArrayList<>(ok.routes().size());
-    for (GeneratedRoute r : ok.routes()) {
-      candidates.add(toDto(r));
+
+    List<GeneratedRouteAscent.Gain> gains =
+        ascent.compute(kept.stream().map(Route::polyline).toList());
+    List<GeneratedRouteDto> candidates = new ArrayList<>(kept.size());
+    for (int i = 0; i < kept.size(); i++) {
+      candidates.add(toDto(kept.get(i), verdicts.get(i), gains.get(i)));
     }
+    LOG.infof(
+        "Route generator: team %s, %.0f km, %s, outcome ok, %d route(s), %d dropped, %d ms",
+        teamRef,
+        engineRequest.distanceM() / 1000,
+        engineRequest.rideType(),
+        candidates.size(),
+        answer.dropped() + (answer.routes() == null ? 0 : answer.routes().size() - kept.size()),
+        Duration.ofNanos(System.nanoTime() - t0).toMillis());
     return new RouteGeneratorResponse(
         candidates,
-        new RouteGeneratorNetworkDto(
-            ok.networkLengthM(),
-            summary.totalLengthM(),
-            summary.routeCount(),
-            summary.pendingRouteCount(),
-            summary.excludedRouteCount(),
-            summary.incomplete()),
-        ok.familiarityFallback());
+        answer.overlay() == null ? null : answer.overlay().depositedInstant(),
+        answer.partialCoverage());
   }
 
-  private TeamNetwork lookup(long teamId, long domainId) {
-    return networkCache.lookup(teamId, domainId);
-  }
-
-  private static GeneratorRequest engineRequest(Team team, RouteGeneratorRequest request) {
-    LatLon start;
+  static GenerateRequest engineRequest(Team team, RouteGeneratorRequest request) {
+    GeoPoint start;
     if (request.start() != null) {
-      start = new LatLon(request.start().lat(), request.start().lng());
+      start = new GeoPoint(request.start().lat(), request.start().lng());
     } else {
       Point<G2D> location = team.getGeometry();
       if (location == null) {
@@ -144,74 +156,33 @@ public class RouteGeneratorService {
                 List.of(new FieldError("start", "must be given: the team has no location"))),
             null);
       }
-      start = new LatLon(location.getPosition().getLat(), location.getPosition().getLon());
+      start = new GeoPoint(location.getPosition().getLat(), location.getPosition().getLon());
     }
-    LatLon end =
-        request.end() == null ? null : new LatLon(request.end().lat(), request.end().lng());
-    CompassPoint bearing = request.bearing();
-    RouteGeneratorType type = request.type();
-    return new GeneratorRequest(
+    GeoPoint end =
+        request.end() == null ? null : new GeoPoint(request.end().lat(), request.end().lng());
+    RouteGeneratorType type = request.type() == null ? RouteGeneratorType.ROAD : request.type();
+    return new GenerateRequest(
         start,
         end,
-        bearing == null ? null : Bearing8.valueOf(bearing.name()),
+        request.bearing() == null ? null : request.bearing().name(),
         request.distanceKm() * 1000,
-        request.familiarity() == null ? DEFAULT_FAMILIARITY : request.familiarity(),
-        type == null ? RideType.ROAD : RideType.valueOf(type.name()),
+        type.name().toLowerCase(Locale.ROOT),
+        request.discovery() == null ? DEFAULT_DISCOVERY : request.discovery(),
         request.seed() == null ? 0 : request.seed());
   }
 
-  static GeneratedRouteDto toDto(GeneratedRoute r) {
-    List<LatLon> points = r.points();
-    double[][] lngLat = new double[points.size()][];
-    double minLon = Double.POSITIVE_INFINITY;
-    double minLat = Double.POSITIVE_INFINITY;
-    double maxLon = Double.NEGATIVE_INFINITY;
-    double maxLat = Double.NEGATIVE_INFINITY;
-    for (int i = 0; i < lngLat.length; i++) {
-      LatLon p = points.get(i);
-      lngLat[i] = new double[] {p.lon(), p.lat()};
-      minLon = Math.min(minLon, p.lon());
-      maxLon = Math.max(maxLon, p.lon());
-      minLat = Math.min(minLat, p.lat());
-      maxLat = Math.max(maxLat, p.lat());
-    }
+  static GeneratedRouteDto toDto(
+      Route r, GeneratedRouteSanity.Verdict verdict, GeneratedRouteAscent.@Nullable Gain gain) {
     return new GeneratedRouteDto(
-        PolylineCodec.encode2(lngLat),
+        r.polyline(),
         r.distanceM(),
-        r.ascentM(),
-        r.descentM(),
+        gain == null ? null : gain.ascentM(),
+        gain == null ? null : gain.descentM(),
         r.bearingDeviationDeg(),
-        r.familiarity(),
+        r.teamShare(),
         r.unpavedShare(),
-        r.sharedM(),
+        r.tailM(),
         r.crossings(),
-        new BoundsDto(minLon, minLat, maxLon, maxLat));
-  }
-
-  /** One INFO line per request. No coordinates: a start point is often someone's home. */
-  private static void log(
-      long teamId,
-      GeneratorRequest r,
-      String outcome,
-      @Nullable String detail,
-      GeneratorDiagnostics d,
-      long t0,
-      long t1,
-      long t2) {
-    LOG.infof(
-        "Route generator: team %d, %.0f km, %s, %s, outcome %s%s, lookup %d ms, generate %d ms,"
-            + " candidates loop %d/%d polygon %d/%d",
-        teamId,
-        r.distanceM() / 1000,
-        r.type(),
-        r.end() == null ? "loop" : "trip",
-        outcome,
-        detail == null ? "" : " (" + detail + ")",
-        Duration.ofNanos(t1 - t0).toMillis(),
-        Duration.ofNanos(t2 - t1).toMillis(),
-        d.validLoop(),
-        d.loopCandidates(),
-        d.validPolygon(),
-        d.polygonCandidates());
+        verdict.bounds());
   }
 }

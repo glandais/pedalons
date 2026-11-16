@@ -1,6 +1,7 @@
 package fr.pedalons.infrastructure.routedetails;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -166,6 +167,29 @@ class FakeRouteDetailsGatewayTest {
     paused.fastPausedUntil = Instant.now().minusSeconds(1);
     assertEquals("fast", paused.details(line[0], line[1], fast).meta().profile());
     assertEquals(3, calls[0], "the pause ends");
+  }
+
+  /** A late call cancelled by its caller (interrupt) is not a service without answer. */
+  @Test
+  void aCallInterruptedByItsCaller_doesNotPauseTheFastCalls() {
+    FakeRouteDetailsClient interrupted =
+        new FakeRouteDetailsClient() {
+          @Override
+          public RouteDetailsResponse routeDetails(RouteDetailsRequest request) {
+            throw new ProcessingException(new InterruptedException("cancelled (test)"));
+          }
+        };
+    RouteDetailsGateway gw =
+        new FakeRouteDetailsGateway() {
+          @Override
+          RouteDetailsClient client(RouteDetailsProfile profile) {
+            return interrupted;
+          }
+        };
+    double[][] line = RouteSlicerTest.meridian(30, 90);
+    RouteDetailsOptions fast = RouteDetailsOptions.of(RouteDetailsProfile.FAST, false);
+    assertThrows(RouteDetailsException.class, () -> gw.details(line[0], line[1], fast));
+    assertNull(gw.fastPausedUntil, "no pause after an interrupt");
   }
 
   @Test

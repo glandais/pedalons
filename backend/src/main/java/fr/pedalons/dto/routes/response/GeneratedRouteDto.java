@@ -4,7 +4,7 @@ import fr.pedalons.dto.validation.ValidateSchema;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 
-@Schema(description = "A route proposed by the generator, every metre of it on a team road")
+@Schema(description = "A route proposed by the generator")
 @ValidateSchema
 public record GeneratedRouteDto(
     @Schema(
@@ -14,16 +14,26 @@ public record GeneratedRouteDto(
             required = true)
         String polyline,
     @Schema(description = "Distance in metres", required = true) double distanceM,
-    @Schema(description = "Elevation gain in metres", required = true) double ascentM,
-    @Schema(description = "Elevation loss in metres", required = true) double descentM,
+    @Nullable
+        @Schema(
+            description =
+                "Elevation gain in metres. Absent when the profile was not ready in time: the"
+                    + " editor computes it")
+        Double ascentM,
+    @Nullable @Schema(description = "Elevation loss in metres. Absent like the gain")
+        Double descentM,
     @Nullable
         @Schema(
             description =
                 "Angle in degrees between the wished bearing and the route's. Absent when the"
                     + " bearing did not apply")
         Double bearingDeviationDeg,
-    @Schema(description = "How often the team rides these roads, 0 to 1", required = true)
-        double familiarity,
+    @Schema(
+            description =
+                "Share of the distance on the team's roads, short gaps between them included, 0"
+                    + " to 1",
+            required = true)
+        double teamShare,
     @Schema(description = "Share of the distance on unpaved roads, 0 to 1", required = true)
         double unpavedShare,
     @Schema(

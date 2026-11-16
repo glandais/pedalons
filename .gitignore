@@ -113,6 +113,8 @@ mobile/screenshots/koubou/out/
 data/monitoring/
 # Former Valhalla tiles (17 GB, root-owned) until the operator deletes the directory (OPS-48)
 data/valhalla/
+# Graph and view files of the route generator (osm-route-details, docs/OPERATIONS.md): built on a workstation, far too big to commit
+data/osm-route-details-graph/
 # Launch videos rendered by the /brag skill
 brag-output/
 # Git worktrees created by Claude Code agents

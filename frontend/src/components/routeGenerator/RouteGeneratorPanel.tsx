@@ -25,6 +25,7 @@ import {
   pointToParam,
   type GeneratorParams,
 } from '@/lib/routeGenerator'
+import { useFormattedDate } from '@/utils/dateFormat'
 import { isPlannerQuotaSpent } from '@/lib/plannerQuota'
 import { selectIsPlatformAdmin, useAuthStore } from '@/store/authStore'
 import { useGeneratorPlaces, type GeneratorPlace } from '@/pages/route/routeGeneratorData'
@@ -36,7 +37,7 @@ import { teamPoint, useRouteGenerator } from './useRouteGenerator'
 
 /** What the panel changes: the parameters of the request, never the results. */
 export type GeneratorParamPatch = Partial<
-  Pick<GeneratorParams, 'start' | 'end' | 'bearing' | 'distanceKm' | 'familiarity' | 'type'>
+  Pick<GeneratorParams, 'start' | 'end' | 'bearing' | 'distanceKm' | 'discovery' | 'type'>
 >
 
 export interface RouteGeneratorPanelParams extends GeneratorParams {
@@ -63,12 +64,12 @@ const TYPE_LABEL_KEYS: Record<RouteGeneratorType, TranslationKey> = {
   MTB: tRegister('routes.surfaceType.MTB'),
 }
 
-const FAMILIARITY_BANDS: TranslationKey[] = [
-  tRegister('routeGenerator.card.band.low'),
-  tRegister('routeGenerator.card.band.low'),
-  tRegister('routeGenerator.card.band.mid'),
-  tRegister('routeGenerator.card.band.high'),
-  tRegister('routeGenerator.card.band.high'),
+const DISCOVERY_STOPS: TranslationKey[] = [
+  tRegister('routeGenerator.discovery.stop0'),
+  tRegister('routeGenerator.discovery.stop1'),
+  tRegister('routeGenerator.discovery.stop2'),
+  tRegister('routeGenerator.discovery.stop3'),
+  tRegister('routeGenerator.discovery.stop4'),
 ]
 
 const TEAM_OPTION = 'team'
@@ -120,6 +121,7 @@ export function RouteGeneratorPanel({
   layout,
 }: RouteGeneratorPanelProps) {
   const { t } = useTranslation()
+  const { formatDate } = useFormattedDate()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const isCoarse = useMediaMatch('(pointer: coarse)')
   const { distance, unitSystem, distanceFromDisplay, distanceToDisplay } = useUnits()
@@ -325,10 +327,10 @@ export function RouteGeneratorPanel({
         />
       </Stack>
 
-      {/* Fréquentation */}
+      {/* From the team's roads to discovery */}
       <Stack gap={4}>
         <Text size="sm" fw={500}>
-          {t('routeGenerator.familiarity.label')}
+          {t('routeGenerator.discovery.label')}
         </Text>
         <Slider
           min={0}
@@ -336,17 +338,17 @@ export function RouteGeneratorPanel({
           step={0.25}
           marks={[{ value: 0 }, { value: 0.25 }, { value: 0.5 }, { value: 0.75 }, { value: 1 }]}
           label={null}
-          value={params.familiarity}
-          onChange={(familiarity) => onParamsChange({ familiarity })}
-          thumbLabel={t('routeGenerator.familiarity.label')}
-          thumbValueText={(value) => t(FAMILIARITY_BANDS[Math.round(value * 4)])}
+          value={params.discovery}
+          onChange={(discovery) => onParamsChange({ discovery })}
+          thumbLabel={t('routeGenerator.discovery.label')}
+          thumbValueText={(value) => t(DISCOVERY_STOPS[Math.round(value * 4)])}
         />
         <Group justify="space-between" mt={8}>
           <Text size="xs" c="dimmed">
-            {t('routeGenerator.familiarity.low')}
+            {t('routeGenerator.discovery.low')}
           </Text>
           <Text size="xs" c="dimmed">
-            {t('routeGenerator.familiarity.high')}
+            {t('routeGenerator.discovery.high')}
           </Text>
         </Group>
       </Stack>
@@ -447,15 +449,17 @@ export function RouteGeneratorPanel({
           >
             {t('routeGenerator.more')}
           </Button>
-          {generator.data?.familiarityFallback && (
-            <Alert color="blue" variant="light" icon={<IconInfoCircle />}>
-              {t('routeGenerator.fallback')}
-            </Alert>
-          )}
-          {generator.data?.network.incomplete && (
+          {generator.data?.networkPreparedAt && (
             <Text size="sm" c="dimmed">
-              {t('routeGenerator.incomplete', { count: generator.data.network.pendingRouteCount })}
+              {t('routeGenerator.networkPreparedAt', {
+                date: formatDate(generator.data.networkPreparedAt),
+              })}
             </Text>
+          )}
+          {generator.data?.partialCoverage && (
+            <Alert color="blue" variant="light" icon={<IconInfoCircle />}>
+              {t('routeGenerator.partialCoverage')}
+            </Alert>
           )}
         </>
       ) : generator.isFetching ? (

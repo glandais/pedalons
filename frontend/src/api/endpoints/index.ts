@@ -1,6 +1,7 @@
 export * from './admin-domains/admin-domains.ts'
 export * from './admin-elevation/admin-elevation.ts'
 export * from './admin-reports/admin-reports.ts'
+export * from './admin-route-generator/admin-route-generator.ts'
 export * from './admin-teams/admin-teams.ts'
 export * from './admin-thumbnails/admin-thumbnails.ts'
 export * from './admin-users/admin-users.ts'

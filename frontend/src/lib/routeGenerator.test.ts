@@ -4,7 +4,6 @@ import { ApiClientError } from '@/lib/apiError'
 import { createServerI18n } from '@/i18n'
 import {
   dominantGeneratorType,
-  familiarityBand,
   generatedRouteName,
   generatorErrorMessage,
   gpxFromLine,
@@ -45,12 +44,12 @@ describe('isEndFar', () => {
 })
 
 describe('routeGeneratorRequest', () => {
-  const base = { distanceKm: 50, familiarity: 0.5, seed: 0 }
+  const base = { distanceKm: 50, discovery: 0.25, seed: 0 }
   it('leaves out start and end by default', () => {
     const request = routeGeneratorRequest(base, RouteGeneratorType.ROAD)
     expect(request).toEqual({
       distanceKm: 50,
-      familiarity: 0.5,
+      discovery: 0.25,
       type: 'ROAD',
       seed: 0,
     })
@@ -110,17 +109,6 @@ describe('dominantGeneratorType', () => {
   })
 })
 
-describe('familiarityBand', () => {
-  it('cuts at a third and two thirds', () => {
-    expect(familiarityBand(0)).toBe('low')
-    expect(familiarityBand(0.33)).toBe('low')
-    expect(familiarityBand(0.34)).toBe('mid')
-    expect(familiarityBand(0.66)).toBe('mid')
-    expect(familiarityBand(0.67)).toBe('high')
-    expect(familiarityBand(1)).toBe('high')
-  })
-})
-
 describe('gpxFromLine', () => {
   it('writes a track that parses back to the same points, with the name escaped', () => {
     const coords = [
@@ -161,15 +149,6 @@ describe('generatorErrorMessage and generatedRouteName (real catalogue)', () => 
       { code, errorDetails: details as never },
       retryAfter
     )
-  const pending = (count: number) => ({
-    type: 'GENERATOR_NETWORK_TOO_SMALL',
-    routeCount: 2,
-    pendingRouteCount: count,
-    excludedRouteCount: 0,
-    totalLengthM: 1000,
-    incomplete: count > 0,
-  })
-
   it('words every row of the table in French', async () => {
     const { t } = await createServerI18n('fr')
     const ctx = { distance: '120 km' }
@@ -192,40 +171,27 @@ describe('generatorErrorMessage and generatedRouteName (real catalogue)', () => 
     expect(generatorErrorMessage(new Error('x'), t, ctx)).toBe('Génération impossible')
   })
 
-  it('names the routes still being analysed, with the plural', async () => {
-    const fr = await createServerI18n('fr')
-    const one = generatorErrorMessage(
-      fail(ErrorCode.GENERATOR_NETWORK_TOO_SMALL, pending(1)),
-      fr.t,
-      { distance: '50 km' }
+  it('words the three errors of the engine, in French', async () => {
+    const { t } = await createServerI18n('fr')
+    const ctx = { distance: '50 km' }
+    expect(generatorErrorMessage(fail(ErrorCode.GENERATOR_OUT_OF_COVERAGE), t, ctx)).toContain(
+      'hors de la région'
     )
-    expect(one).toContain('encore 1 parcours à traiter')
-    const en = await createServerI18n('en')
-    expect(
-      generatorErrorMessage(fail(ErrorCode.GENERATOR_NETWORK_TOO_SMALL, pending(1)), en.t, {
-        distance: '50 km',
-      })
-    ).toContain('1 route left')
-    expect(
-      generatorErrorMessage(fail(ErrorCode.GENERATOR_NETWORK_TOO_SMALL, pending(3)), en.t, {
-        distance: '50 km',
-      })
-    ).toContain('3 routes left')
+    expect(generatorErrorMessage(fail(ErrorCode.GENERATOR_NETWORK_NOT_READY), t, ctx)).toContain(
+      'Découverte'
+    )
+    expect(generatorErrorMessage(fail(ErrorCode.GENERATOR_UNAVAILABLE), t, ctx)).toContain(
+      'indisponible'
+    )
   })
 
-  it('tells an empty complete network from a too small one', async () => {
+  it('suggests more discovery when the team roads do not suffice', async () => {
     const { t } = await createServerI18n('fr')
-    const empty = { ...pending(0), routeCount: 0 }
-    expect(
-      generatorErrorMessage(fail(ErrorCode.GENERATOR_NETWORK_TOO_SMALL, empty), t, {
-        distance: '50 km',
-      })
-    ).toContain('pas encore de parcours')
-    expect(
-      generatorErrorMessage(fail(ErrorCode.GENERATOR_NETWORK_TOO_SMALL, pending(0)), t, {
-        distance: '50 km',
-      })
-    ).toContain('ne suffisent pas pour 50 km')
+    const message = generatorErrorMessage(fail(ErrorCode.GENERATOR_NETWORK_TOO_SMALL), t, {
+      distance: '50 km',
+    })
+    expect(message).toContain('ne suffisent pas pour 50 km')
+    expect(message).toContain('découverte')
   })
 
   it('gives the wait of a rate limit in minutes, rounded up, or the plain message without it', async () => {
@@ -257,7 +223,9 @@ describe('generatorErrorMessage and generatedRouteName (real catalogue)', () => 
     expect(isRetryableGeneratorError(fail(ErrorCode.ROUTE_GENERATOR_BUSY))).toBe(true)
     expect(isRetryableGeneratorError(new Error('boom'))).toBe(true)
     expect(isRetryableGeneratorError(fail(ErrorCode.GENERATOR_NO_ROUTE))).toBe(false)
-    expect(isRetryableGeneratorError(fail(ErrorCode.GENERATOR_NETWORK_TOO_LARGE))).toBe(false)
+    expect(isRetryableGeneratorError(fail(ErrorCode.GENERATOR_NETWORK_NOT_READY))).toBe(false)
+    expect(isRetryableGeneratorError(fail(ErrorCode.GENERATOR_OUT_OF_COVERAGE))).toBe(false)
+    expect(isRetryableGeneratorError(fail(ErrorCode.GENERATOR_UNAVAILABLE))).toBe(true)
     expect(isRetryableGeneratorError(fail(ErrorCode.ROUTE_GENERATOR_RATE_LIMITED))).toBe(false)
   })
 })

@@ -4,9 +4,9 @@ import { normalizePointParam } from '@/lib/routeGenerator'
 
 /** Bounds of the wished distance, in km (the backend's own, `RouteGeneratorRequest`). */
 export const GENERATOR_MIN_KM = 10
-export const GENERATOR_MAX_KM = 300
+export const GENERATOR_MAX_KM = 200
 export const GENERATOR_DEFAULT_KM = 50
-export const GENERATOR_DEFAULT_FAMILIARITY = 0.5
+export const GENERATOR_DEFAULT_DISCOVERY = 0.25
 
 /** A point is a `"lat,lng"` string with 5 decimals; anything else is dropped. */
 const pointField = z.string().transform(normalizePointParam).optional().catch(undefined)
@@ -28,13 +28,14 @@ export const routeGeneratorFiltersSchema = z.object({
     .max(GENERATOR_MAX_KM)
     .default(GENERATOR_DEFAULT_KM)
     .catch(GENERATOR_DEFAULT_KM),
-  familiarity: z.coerce
+  /** From the team's roads (0) to discovery (1), in quarters. */
+  discovery: z.coerce
     .number()
     .min(0)
     .max(1)
     .transform((value) => Math.round(value * 4) / 4)
-    .default(GENERATOR_DEFAULT_FAMILIARITY)
-    .catch(GENERATOR_DEFAULT_FAMILIARITY),
+    .default(GENERATOR_DEFAULT_DISCOVERY)
+    .catch(GENERATOR_DEFAULT_DISCOVERY),
   /** Absent: the dominant type of the team's routes. */
   type: z.enum(RouteGeneratorType).optional().catch(undefined),
   seed: z.coerce.number().int().min(0).default(0).catch(0),
@@ -51,7 +52,7 @@ export const routeGeneratorFiltersAlias = {
   end: 'e',
   bearing: 'cap',
   distanceKm: 'd',
-  familiarity: 'f',
+  discovery: 'dec',
   type: 't',
   selected: 'sel',
 } as const

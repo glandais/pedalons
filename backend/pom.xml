@@ -290,7 +290,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-cache</artifactId>
         </dependency>
-        <!-- Programmatic caches with a weigher (team route generator graphs, API-198), version from the BOM -->
+        <!-- Programmatic caches (the route generator's rate-limit windows, API-198), version from the BOM -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>

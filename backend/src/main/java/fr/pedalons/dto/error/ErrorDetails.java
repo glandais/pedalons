@@ -19,9 +19,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
   @JsonSubTypes.Type(value = IncompatibleVisibilityDetails.class, name = "INCOMPATIBLE_VISIBILITY"),
   @JsonSubTypes.Type(value = TeamMemberLimitDetails.class, name = "TEAM_MEMBER_LIMIT_REACHED"),
   @JsonSubTypes.Type(value = PlannerQuotaDetails.class, name = "PLANNER_QUOTA_REACHED"),
-  @JsonSubTypes.Type(
-      value = RouteGeneratorNetworkDetails.class,
-      name = "GENERATOR_NETWORK_TOO_SMALL"),
 })
 @Schema(
     description = "Error details",
@@ -37,9 +34,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
           value = "TEAM_MEMBER_LIMIT_REACHED",
           schema = TeamMemberLimitDetails.class),
       @DiscriminatorMapping(value = "PLANNER_QUOTA_REACHED", schema = PlannerQuotaDetails.class),
-      @DiscriminatorMapping(
-          value = "GENERATOR_NETWORK_TOO_SMALL",
-          schema = RouteGeneratorNetworkDetails.class),
     },
     oneOf = {
       ErrorValidationDetails.class,
@@ -47,8 +41,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
       AssetNotAvailableDetails.class,
       IncompatibleVisibilityDetails.class,
       TeamMemberLimitDetails.class,
-      PlannerQuotaDetails.class,
-      RouteGeneratorNetworkDetails.class
+      PlannerQuotaDetails.class
     })
 @ValidateSchema
 public interface ErrorDetails {

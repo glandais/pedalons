@@ -22,7 +22,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * The street edges osm-route-details matched along one saved track of a team route, as stored in
  * the {@code network_edges} JSONB column of a track (docs/LEDGER_*.md API-198, plan {@code
- * docs/plans/2026-11-13-generateur-boucles-equipe-lot1.md} §2). Not part of the contract: nothing
+ * docs/plans/archive/2026-11-13-generateur-boucles-equipe-lot1.md} §2). Not part of the contract: nothing
  * serves it, the team route generator reads it.
  *
  * <p>Keys are short, the document is per track and the team graph reads thousands of them. Nodes

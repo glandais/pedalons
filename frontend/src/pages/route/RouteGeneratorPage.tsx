@@ -21,8 +21,9 @@ import { selectIsPlatformAdmin, useAuthStore } from '@/store/authStore'
 import { useRouteGeneratorData } from './routeGeneratorData'
 
 /**
- * The team route generator (ledger `WEB-179`): proposals made only of roads that a route of the
- * team already rides. The parameters live in the query string; nothing is requested until
+ * The route generator (ledger `WEB-179`): proposals that favour the roads the team's routes
+ * already ride, and link them by other roads as the discovery cursor allows (the engine is
+ * osm-route-details, ledger `API-206`). The parameters live in the query string; nothing is requested until
  * « Générer » is pressed, and changing a parameter clears the results.
  */
 export function RouteGeneratorPage() {

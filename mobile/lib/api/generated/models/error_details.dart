@@ -16,7 +16,6 @@ import 'local_date.dart';
 import 'not_found_details.dart';
 import 'planner_quota_details.dart';
 import 'planner_quota_scope.dart';
-import 'route_generator_network_details.dart';
 import 'searched_by.dart';
 import 'team_member_limit_details.dart';
 
@@ -85,24 +84,6 @@ sealed class ErrorDetails with _$ErrorDetails {
     /// Name of the team, for TEAM only
     String? teamName,
   }) = ErrorDetailsPlannerQuotaReached;
-
-  @FreezedUnionValue('GENERATOR_NETWORK_TOO_SMALL')
-  const factory ErrorDetails.generatorNetworkTooSmall({
-    /// Routes the network is made of
-    required int routeCount,
-
-    /// Routes whose roads are still being analysed and are not in the network yet
-    required int pendingRouteCount,
-
-    /// Routes ticked "ne pas utiliser pour générer des parcours"
-    required int excludedRouteCount,
-
-    /// Length of the whole network of the team, in metres
-    required double totalLengthM,
-
-    /// True when pendingRouteCount is above zero: the network may still grow
-    required bool incomplete,
-  }) = ErrorDetailsGeneratorNetworkTooSmall;
 
   factory ErrorDetails.fromJson(Map<String, Object?> json) =>
       _$ErrorDetailsFromJson(json);

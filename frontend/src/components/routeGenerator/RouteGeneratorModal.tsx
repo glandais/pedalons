@@ -4,7 +4,7 @@ import { ActionIcon, Box, Modal } from '@mantine/core'
 import { IconArrowLeft } from '@tabler/icons-react'
 import type { GeneratedRouteDto, RouteGeneratorType, TeamDetailDto } from '@/api/dto'
 import {
-  GENERATOR_DEFAULT_FAMILIARITY,
+  GENERATOR_DEFAULT_DISCOVERY,
   GENERATOR_DEFAULT_KM,
 } from '@/hooks/filters/routeGeneratorFilters'
 import { MapFullscreenShell } from '../map/MapFullscreenShell'
@@ -22,7 +22,7 @@ type Action =
 
 const INITIAL: RouteGeneratorPanelParams = {
   distanceKm: GENERATOR_DEFAULT_KM,
-  familiarity: GENERATOR_DEFAULT_FAMILIARITY,
+  discovery: GENERATOR_DEFAULT_DISCOVERY,
   seed: 0,
   selected: 0,
   go: false,

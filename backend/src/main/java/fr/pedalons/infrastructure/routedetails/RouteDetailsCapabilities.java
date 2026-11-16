@@ -15,7 +15,17 @@ public record RouteDetailsCapabilities(
     @Nullable @JsonProperty("api_version") String apiVersion,
     @Nullable Limits limits,
     @Nullable Enums enums,
-    @Nullable Data data) {
+    @Nullable Data data,
+    @Nullable GeneratorSection generator) {
+
+  /** Without {@code generator}: the shape this record had before api 1.9. */
+  public RouteDetailsCapabilities(
+      @Nullable String apiVersion,
+      @Nullable Limits limits,
+      @Nullable Enums enums,
+      @Nullable Data data) {
+    this(apiVersion, limits, enums, data, null);
+  }
 
   /** The service's bounds as of api 1.6, used while it has not answered. */
   public static final Limits FALLBACK_LIMITS = new Limits(16_000, 200_000);
@@ -54,6 +64,31 @@ public record RouteDetailsCapabilities(
       @Nullable @JsonProperty("node_grid_extent") Integer nodeGridExtent,
       @Nullable @JsonProperty("polyline_precision") Integer polylinePrecision) {}
 
+  /**
+   * {@code generator} (api 1.9): whether the route generator answers, which graph it serves and the
+   * bounds of a deposit and of a request (lot 3b plan §1).
+   */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record GeneratorSection(
+      boolean enabled,
+      @Nullable String reason,
+      @Nullable Graph graph,
+      @Nullable GeneratorLimits limits,
+      @Nullable @JsonProperty("overlay_ttl_days") Long overlayTtlDays,
+      boolean ascent) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Graph(@Nullable String id) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record GeneratorLimits(
+      @JsonProperty("distance_m_max") double distanceMMax, @Nullable DepositLimits deposit) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record DepositLimits(
+      @JsonProperty("max_document_bytes") long maxDocumentBytes,
+      @JsonProperty("max_tracks") long maxTracks) {}
+
   /** The published bounds, or {@link #FALLBACK_LIMITS} when they are missing or not positive. */
   public Limits effectiveLimits() {
     if (limits == null || limits.maxPoints() <= 0 || limits.maxLengthM() <= 0) {
@@ -77,6 +112,11 @@ public record RouteDetailsCapabilities(
   /** {@code options.edges} is understood (api 1.7, announced by {@code data.edges}). */
   public boolean supportsEdges() {
     return apiAtLeast(1, 7) && data != null && data.edges() != null;
+  }
+
+  /** The generator is served: api 1.9 or later, and its section says it is enabled. */
+  public boolean generatorEnabled() {
+    return apiAtLeast(1, 9) && generator != null && generator.enabled();
   }
 
   /** Whether {@code apiVersion} is at least {@code major.minor}; false when it is unreadable. */

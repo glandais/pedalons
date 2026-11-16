@@ -11,11 +11,11 @@ import 'route_generator_type.dart';
 part 'route_generator_request.freezed.dart';
 part 'route_generator_request.g.dart';
 
-/// What to ask the team's route generator for
+/// What to ask the route generator for
 @Freezed()
 abstract class RouteGeneratorRequest with _$RouteGeneratorRequest {
   const factory RouteGeneratorRequest({
-    /// Wished distance in kilometres, 10 to 300
+    /// Wished distance in kilometres, 10 to 200
     required double distanceKm,
 
     /// Start. Absent: the team's location (400 VALIDATION if it has none)
@@ -27,8 +27,8 @@ abstract class RouteGeneratorRequest with _$RouteGeneratorRequest {
     /// Wished direction, only used when the end is closer than half the distance (a loop included)
     String? bearing,
 
-    /// 0 prefers roads the team rides rarely, 1 the ones it rides often. Absent: 0.5
-    double? familiarity,
+    /// From the team's roads (0, only the roads the team rides) to discovery (1, no preference for them); rounded to the hundredth by the engine. Absent: 0.25
+    double? discovery,
 
     /// What to ride. Absent: ROAD
     String? type,

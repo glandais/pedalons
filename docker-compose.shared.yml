@@ -51,11 +51,27 @@ services:
   # API-198 (aretes des rues des parcours d'equipe) demande l'api >= 1.7 (options.edges) : 1.8.0
   # (api 1.8, tracktype / bicycle / foot) montee le 14 novembre 2026 apres le deploiement du backend
   # qui sait les lire. Ne pas revenir sous 1.7 sans savoir que le backend cesse alors d'en demander.
+  #
+  # API-198/API-207, lot 3b: 1.9.0 (api 1.9) serves the route generator. It needs a graph and its
+  # two views and the covered polygon, four files built on a workstation and put under
+  # ./data/osm-route-details-graph/ (read only here; `deploy.sh --shared` creates the directory,
+  # Swarm would not and the task would fail). ORD_GRAPH_NAME in ~/shared/.env, which
+  # `deploy.sh --shared` reads, names them: <name>.ordg, <name>.road.ordv, <name>.gravel.ordv and
+  # <name>.poly. Without it the generator is off (the service starts, the altitude is served and
+  # GENERATOR_UNAVAILABLE answers every generation). A graph arrives under a NEW name, never over a
+  # file the service has mapped: change ORD_GRAPH_NAME, redeploy the shared stack, then
+  # POST /api/admin/route-generator/overlays/refresh with force on each environment
+  # (docs/OPERATIONS.md "The route generator"). The team overlays live under the volume below,
+  # encrypted with a key of each environment, which this stack never sees stored.
   osm-route-details:
-    image: ghcr.io/glandais/osm-route-details:1.8.0
+    image: ghcr.io/glandais/osm-route-details:1.9.0
     networks:
       - shared
     environment:
+      ORD_GENERATOR__GRAPH: /var/lib/osm-route-details/graph/${ORD_GRAPH_NAME:-absent}.ordg
+      ORD_GENERATOR__VIEW_ROAD: /var/lib/osm-route-details/graph/${ORD_GRAPH_NAME:-absent}.road.ordv
+      ORD_GENERATOR__VIEW_GRAVEL: /var/lib/osm-route-details/graph/${ORD_GRAPH_NAME:-absent}.gravel.ordv
+      ORD_GENERATOR__COVERAGE_POLY: /var/lib/osm-route-details/graph/${ORD_GRAPH_NAME:-absent}.poly
       # Caches memoire de tuiles decodees : 512 Mo chacun par defaut (« a calibrer » dans la
       # conception du service), soit deja 1 Go avant la moindre requete. Moities, en attendant
       # une mesure.
@@ -65,6 +81,7 @@ services:
       MALLOC_ARENA_MAX: "2"
     volumes:
       - osm-route-details-data:/var/cache/osm-route-details
+      - ./data/osm-route-details-graph:/var/lib/osm-route-details/graph:ro
     # A l'arret, les requetes en vol sont attendues jusqu'a leur budget (90 s).
     stop_grace_period: 100s
     # Les deux caches memoire, plus le jeu de travail des requetes en cours (un parcours de 200 km a

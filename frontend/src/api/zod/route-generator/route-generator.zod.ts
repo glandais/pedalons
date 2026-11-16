@@ -1,8 +1,8 @@
 import * as zod from 'zod'
 
 /**
- * Proposes one to three routes, loops or one-way, whose every metre lies on a road that a route of the team already rides. Same rights as the route planner: the caller must be allowed to create routes in the team and the team must have its route planner on (ROUTE_PLANNER_DISABLED otherwise). Nothing is stored, no routing provider is called and no quota is drawn. Failures have their own codes, all 400: GENERATOR_START_TOO_FAR and GENERATOR_END_TOO_FAR (no road of the team within 2 km), GENERATOR_DISTANCE_TOO_SHORT, GENERATOR_NETWORK_TOO_SMALL (with RouteGeneratorNetworkDetails: also sent while the team's routes are still being analysed), GENERATOR_NETWORK_TOO_LARGE (the team's routes are more than the generator can hold in memory; no request succeeds until the limit is raised) and GENERATOR_NO_ROUTE. At most 30 requests per user in 15 minutes (ROUTE_GENERATOR_RATE_LIMITED, 429 with Retry-After); ROUTE_GENERATOR_BUSY (503) when the server has no free slot or the run took too long.
- * @summary Propose routes made of the team's own roads
+ * Proposes one to three routes, loops or one-way, from the roads a route of the team already rides (prepared every night for the generator) and the rest of the map: the cursor `discovery` goes from the team's roads only (0) to no preference (1), default 0.25. The engine is osm-route-details and covers one region for now (GENERATOR_OUT_OF_COVERAGE elsewhere); each route was checked by an independent checker of the engine and by a geometric sanity check here. Ascent and descent are computed from the fast elevation profile and are absent when it was not ready in time. Same rights as the route planner: the caller must be allowed to create routes in the team and the team must have its route planner on (ROUTE_PLANNER_DISABLED otherwise). Nothing is stored, no routing provider is called and no quota is drawn. Failures have their own codes, all 400: GENERATOR_START_TOO_FAR and GENERATOR_END_TOO_FAR (no suitable road near), GENERATOR_DISTANCE_TOO_SHORT, GENERATOR_NETWORK_TOO_SMALL, GENERATOR_OUT_OF_COVERAGE, GENERATOR_NETWORK_NOT_READY (the team's roads are not prepared yet; discovery needs no preparation) and GENERATOR_NO_ROUTE. At most 30 requests per user in 15 minutes (ROUTE_GENERATOR_RATE_LIMITED, 429 with Retry-After); ROUTE_GENERATOR_BUSY (503) when the engine has no free slot or took too long, GENERATOR_UNAVAILABLE (503) when it is off or unreachable.
+ * @summary Propose routes that favour the team's own roads
  */
 export const GenerateRoutesParams = zod.object({
   teamSlug: zod.string(),
@@ -21,10 +21,12 @@ export const generateRoutesBodyEndLatMin = -90
 export const generateRoutesBodyEndLatMax = 90
 
 export const generateRoutesBodyDistanceKmMin = 10
-export const generateRoutesBodyDistanceKmMax = 300
+export const generateRoutesBodyDistanceKmMax = 200
 
-export const generateRoutesBodyFamiliarityMin = 0
-export const generateRoutesBodyFamiliarityMax = 1
+export const generateRoutesBodyDiscoveryMin = 0
+export const generateRoutesBodyDiscoveryMax = 1
+
+export const generateRoutesBodySeedMin = 0
 
 export const GenerateRoutesBody = zod
   .object({
@@ -54,22 +56,25 @@ export const GenerateRoutesBody = zod
       .number()
       .min(generateRoutesBodyDistanceKmMin)
       .max(generateRoutesBodyDistanceKmMax)
-      .describe('Wished distance in kilometres, 10 to 300'),
-    familiarity: zod
+      .describe('Wished distance in kilometres, 10 to 200'),
+    discovery: zod
       .number()
-      .min(generateRoutesBodyFamiliarityMin)
-      .max(generateRoutesBodyFamiliarityMax)
+      .min(generateRoutesBodyDiscoveryMin)
+      .max(generateRoutesBodyDiscoveryMax)
       .optional()
-      .describe('0 prefers roads the team rides rarely, 1 the ones it rides often. Absent: 0.5'),
+      .describe(
+        "From the team's roads (0, only the roads the team rides) to discovery (1, no preference for them); rounded to the hundredth by the engine. Absent: 0.25"
+      ),
     type: zod.enum(['ROAD', 'GRAVEL', 'MTB']).optional().describe('What to ride. Absent: ROAD'),
     seed: zod
       .int()
+      .min(generateRoutesBodySeedMin)
       .optional()
       .describe(
         'Makes "other proposals" reproducible: the same seed gives the same routes. Absent: 0'
       ),
   })
-  .describe("What to ask the team's route generator for")
+  .describe('What to ask the route generator for')
 
 export const GenerateRoutesResponse = zod
   .object({
@@ -83,15 +88,27 @@ export const GenerateRoutesResponse = zod
                 "Geometry as a polyline of precision 6 (latitude then longitude), the encoding of the planner's GPX import"
               ),
             distanceM: zod.number().describe('Distance in metres'),
-            ascentM: zod.number().describe('Elevation gain in metres'),
-            descentM: zod.number().describe('Elevation loss in metres'),
+            ascentM: zod
+              .number()
+              .optional()
+              .describe(
+                'Elevation gain in metres. Absent when the profile was not ready in time: the editor computes it'
+              ),
+            descentM: zod
+              .number()
+              .optional()
+              .describe('Elevation loss in metres. Absent like the gain'),
             bearingDeviationDeg: zod
               .number()
               .optional()
               .describe(
                 "Angle in degrees between the wished bearing and the route's. Absent when the bearing did not apply"
               ),
-            familiarity: zod.number().describe('How often the team rides these roads, 0 to 1'),
+            teamShare: zod
+              .number()
+              .describe(
+                "Share of the distance on the team's roads, short gaps between them included, 0 to 1"
+              ),
             unpavedShare: zod.number().describe('Share of the distance on unpaved roads, 0 to 1'),
             sharedM: zod
               .number()
@@ -108,34 +125,19 @@ export const GenerateRoutesResponse = zod
               })
               .describe('Map frame of the route'),
           })
-          .describe('A route proposed by the generator, every metre of it on a team road')
+          .describe('A route proposed by the generator')
       )
       .describe('One to three routes, best first, different from each other'),
-    network: zod
-      .object({
-        lengthM: zod
-          .number()
-          .optional()
-          .describe(
-            'Length of the road the search can reach around the start and the end. Absent when no route was generated'
-          ),
-        totalLengthM: zod.number().describe('Length of the whole network of the team'),
-        routeCount: zod.int().describe('Routes the network is made of'),
-        pendingRouteCount: zod
-          .int()
-          .describe('Routes whose roads are still being analysed and are not in the network yet'),
-        excludedRouteCount: zod
-          .int()
-          .describe('Routes ticked "ne pas utiliser pour générer des parcours"'),
-        incomplete: zod
-          .boolean()
-          .describe('True when pendingRouteCount is above zero: the network may still grow'),
-      })
-      .describe("What the team's network is made of"),
-    familiarityFallback: zod
+    networkPreparedAt: zod.iso
+      .datetime({ offset: true })
+      .optional()
+      .describe(
+        "When the team's roads were last prepared for the generator (the night before at best). Absent when the request did not use them (discovery)"
+      ),
+    partialCoverage: zod
       .boolean()
       .describe(
-        'True when the team rides too few routes of the requested type nearby, so the familiarity of all kinds was used instead'
+        'True when part of the area around the start leaves the region the generator covers: proposals are rarer there'
       ),
   })
-  .describe("Routes proposed by the team's route generator")
+  .describe('Routes proposed by the route generator')

@@ -503,7 +503,8 @@ encore ouvert), [`plans/archive/2026-09-security-audit.md`](plans/archive/2026-0
 
 - [ ] `MOB-154` **Générer un parcours depuis l'app (M, plus tard)** — l'app n'a ni éditeur de
       parcours ni aperçus GPX ; un écran qui crée directement le parcours depuis une proposition
-      d'`API-198`. Plan [`2026-11-13-generateur-boucles-equipe.md`](plans/2026-11-13-generateur-boucles-equipe.md) §8.
+      du générateur (`API-206`, contrat `15.0.0` : curseur `discovery`, part sur les routes de
+      l'équipe). Plan [`2026-11-13-generateur-boucles-equipe.md`](plans/archive/2026-11-13-generateur-boucles-equipe.md) §8.
 
 - [ ] `MOB-170` **Tracer et modifier un parcours sur la carte dans l'app (M)** — l'app ne crée un
       parcours que par l'envoi d'un fichier GPX (`MOB-79`) : rien ne s'y trace, les points de
@@ -1023,19 +1024,26 @@ La recette du web est automatisée par une suite Playwright depuis le 25 septemb
       iOS, et alléger le bundle (2,6 Mo : catalogues entiers, paquet de recherche Stadia, CSS du
       site).
 
-- [ ] `WEB-179` **Panneau « Générer un parcours » (M)** — départ, arrivée, rose des vents, distance, fréquentation, trois
-      propositions sur la carte avec le réseau de l'équipe en fond, ouverture dans l'éditeur comme
-      ligne importée (pas d'ancres reroutées par Stadia). Dépend d'`API-198`. Plan [`2026-11-13-generateur-boucles-equipe.md`](plans/2026-11-13-generateur-boucles-equipe.md) §7.
-      Codé le 14 novembre 2026 (conception [`…-lot4.md`](plans/2026-11-13-generateur-boucles-equipe-lot4.md)) :
-      page `routeGenerate`, bouton dans la liste et troisième source de l'éditeur, case d'exclusion,
-      Vitest verts. Recette du 15 novembre 2026 : la spec e2e a tourné et trouvé trois défauts, corrigés
-      — un parcours généré ne comptait pas dans le quota du planificateur (décision §10.3), la source
-      porte désormais `generated` et `PlannerState.drawn()` la compte (contrat `14.16.0`, test
-      `TeamPlannerQuotaResourceTest.aStateOfGeneratedPieces_countsOne_andIsRefusedAtTheQuota`) ; la page
-      ne préchargeait pas le sélecteur d'équipes de son `TeamLayout` ; deux specs supposaient une
-      équipe née sans planificateur (faux depuis `BILL-10`). Restent : faire tourner ce test backend et
-      relancer `route-generator.e2e.ts` et `routes-render -g routeGenerate` sur des images
-      reconstruites, vérifier à l'œil l'ordre des couches de la carte, puis ranger l'entrée.
+- [ ] `WEB-179` **Panneau « Générer un parcours » (M)** — départ, arrivée, rose des vents, distance, curseur « routes de
+      l'équipe → découverte », trois propositions sur la carte avec le réseau de l'équipe en fond, ouverture dans l'éditeur
+      comme ligne importée (pas d'ancres reroutées par Stadia). Dépend d'`API-206`. Plan [`2026-11-13-generateur-boucles-equipe.md`](plans/archive/2026-11-13-generateur-boucles-equipe.md) §7.
+      Codé le 14 novembre 2026 (conception [`…-lot4.md`](plans/archive/2026-11-13-generateur-boucles-equipe-lot4.md)) :
+      page `routeGenerate`, bouton dans la liste et troisième source de l'éditeur, case d'exclusion.
+      Recette du 15 novembre 2026 : la spec e2e a tourné et trouvé trois défauts, corrigés — un parcours généré ne
+      comptait pas dans le quota du planificateur, la source porte désormais `generated` et `PlannerState.drawn()` la
+      compte (contrat `14.16.0`, test `TeamPlannerQuotaResourceTest.aStateOfGeneratedPieces_countsOne_andIsRefusedAtTheQuota`) ;
+      la page ne préchargeait pas le sélecteur d'équipes de son `TeamLayout` ; deux specs supposaient une équipe née sans
+      planificateur (faux depuis `BILL-10`).
+      Adapté le 16 novembre 2026 (lot 3b, contrat `15.0.0`, [`2026-11-16-generateur-parcours-osm-lot3b.md`](plans/2026-11-16-generateur-parcours-osm-lot3b.md) §8) :
+      curseur à cinq crans (paramètre `dec`, défaut 0,25) à la place de la fréquentation, 200 km au plus, part sur les routes
+      de l'équipe par proposition, ligne de D+ seulement quand le moteur l'a donné, avis « routes prises en compte jusqu'au… »
+      et couverture partielle, messages de `GENERATOR_OUT_OF_COVERAGE`, `GENERATOR_NETWORK_NOT_READY` et `GENERATOR_UNAVAILABLE` ;
+      suite Vitest entière verte (253 fichiers, 2 459 tests après fusion de `develop`). Recette du 16 novembre 2026 : génération
+      réelle sur un poste avec le graphe (backend, moteur et site ensemble : trois propositions, D+, part d'équipe, avis de
+      date, « hors zone », « indisponible ») ; `e2e/route-generator.e2e.ts` (10 passés, 2 ignorés sur mobile par construction)
+      et `routes-render -g routeGenerate` (12 passés) sur des images reconstruites, l'appel réel attendant « indisponible »
+      puisque la pile e2e n'a pas de graphe. Restent : « Ouvrir dans l'éditeur » sur une vraie proposition (non cliqué à la
+      recette), l'ordre des couches de la carte jugé à l'œil sur plusieurs fonds, puis ranger l'entrée.
 
 ### Heure de départ : audit du 7 novembre 2026
 
@@ -1257,63 +1265,31 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
       sécurité de tous les endpoints d'équipe : à faire à part, avec les `…QueryCountTest` pour
       mesurer.
 
-- [ ] `API-198` **Générateur de parcours sur le réseau de l'équipe (L, backend, plus une évolution
-      d'osm-route-details)** — rien ne propose de parcours à partir d'un départ, d'une arrivée (le
-      café, ou le départ), d'un cap et d'une distance ; la recherche du 17 octobre le jugeait bridé
-      faute de graphe local. Les parcours d'une équipe forment ce graphe : apparier chaque trace à
-      des arêtes de rue (`edges[]` d'osm-route-details api `1.7`, écrit dans
-      `gpx_tracks.network_edges` par `elevation_refresh`), puis chercher des parcours sans
-      demi-tour ni impasse, réemprunt limité à un tronçon commun au départ ou à l'arrivée,
-      croisements bornés, curseur de fréquentation, à ±10 % de la distance, sans appel Stadia.
-      Endpoint `POST /api/teams/{teamSlug}/route-generator`. Décisions du 13 novembre 2026 : plan [`2026-11-13-generateur-boucles-equipe.md`](plans/2026-11-13-generateur-boucles-equipe.md). Suites : `WEB-179`, `MOB-154`.
-      Livrés le 14 novembre 2026 : lot 1 (`V91`, `NetworkEdgesBackfill`, désactivé par défaut) et
-      lot 2 (`service/route/generator`, conception [`…-conception-lot2.md`](plans/2026-11-13-generateur-boucles-equipe-conception-lot2.md)).
-      Lot 3 codé le 14 novembre 2026 (conception [`…-lot3.md`](plans/2026-11-13-generateur-boucles-equipe-lot3.md)) :
-      cache Caffeine du graphe par équipe (empreinte relue à chaque requête), endpoint, garde-fous CPU
-      (`ROUTE_GENERATOR_RATE_LIMITED`, `ROUTE_GENERATOR_BUSY`, budget de 5 s), `Route.excludedFromGenerator`
-      (`V93`), contrat `14.14.0` ; tests `RouteGeneratorResourceTest`, `RouteGeneratorCacheTest`,
-      `RouteGeneratorQueryCountTest`, `RouteExcludedFromGeneratorResourceTest`. Banc sur données
-      réelles fait le 14 novembre 2026 (conception du lot 2, §13 : verdicts et neuf propositions).
-      Propositions 1 et 2 codées le même jour (§13.8) : borne `pedalons.route-generator.max-observations`
-      (par défaut un quart du tas de l'instance ; `GENERATOR_NETWORK_TOO_LARGE`, contrat `14.15.0`,
-      refus gardé par empreinte) et lecture en flux
-      du constructeur (`NetworkGraphBuilder.Intake`, géométries partagées) — la plus grande équipe se
-      construit avec 440 Mo de tas vivant au lieu de 1,66 Go, graphes identiques au bit près sur les
-      neuf équipes de production ; clés décrites dans `docs/OPERATIONS.md`. **À ne pas défaire** : les
-      traces arrivent par identifiant croissant et les exclues sont classées après les autres (le
-      graphe en dépend), une géométrie partagée n'est jamais écrite en place. Propositions 4 et 5
-      codées le même jour (§13.9) : un sens roulé seulement à contresens n'est ouvert que s'il a été
-      roulé d'un bout à l'autre de l'arête (`NetworkGraphBuilder.aggregate`, 54 arêtes et 10,6 km
-      refermés chez la plus grande équipe), et le départ s'accroche d'abord à une route admise qui
-      mène quelque part (`EdgeWeights.leadingOn`, `Snapper.snap` à trois rangs). Fait le 15 novembre 2026
-      (§13.11, tests `aStartThatAOneWayLeavesForGoodIsRefusedAtOnce`,
-      `aOnewayOnTheSideOfTheStartIsAvoidedByTheDirectedFlow`,
-      `theCheaperOfTheTwoOrdersOfTheDirectedFlowIsKept`) : une boucle dont le départ n'a pas de
-      retour répond tout de suite `NO_ROUTE` / `NO_WAY_BACK` (10 à 50 ms au lieu de 0,25 à 2,5 s),
-      et le flot de `EdgeDisjointPaths` connaît le sens de chaque côté, dans les deux ordres, le
-      moins cher gardé (207 cœurs acceptés au lieu de 15 sur 24 requêtes de A, 12 réussies au lieu
-      de 11) ; ne pas revenir au flot aveugle sur un graphe à sens uniques. Banc refait un passage
-      à la fois (§13.13) : 91 réussites sur 579 au lieu de 80 en production ; le filtre des points
-      de demi-tour par ponts du type demandé (`AnchorPair.coreComponent`, test
-      `aTurningPointBeyondABridgeOfTheRideTypeIsNotTried`) supprime les flots sans issue sans
-      changer le taux de réussite. Ne jamais comparer deux passages du banc lancés en même
-      temps. Production, 15 novembre (§13.14) : aucun parcours vers le nord-ouest depuis la place de
-      l'équipe A, le tour d'un pâté de maisons de 91 m à la sortie du départ étant lu comme un
-      demi-tour étalé ; la règle est levée dans les 200 premiers et derniers mètres du parcours
-      (`RouteGuarantees.CLUSTER_FREE_ENDS_M`, test
-      `aStartWhoseOnlyWayOutGoesRoundABlockStillGetsALoop`), 58 réussites sur 120 pour A et 28 pour
-      `903379379966724603` au banc. Ne pas baisser `CLUSTER_M` à la place : les raccords de 60 à
-      80 m entre deux chaussées doivent rester refusés. Restent : les
-      propositions 3 et 6 à 9 du §13.6 (budget de 10 s, reconstructions, pondérateur, familiarité,
-      banc) ; les composantes par type de sortie sur les arêtes admises (§13.10, correction b :
-      queue forcée jamais planifiée pour un départ sur une antenne du type demandé) ; les départs 4
-      et 5 de l'équipe A, sans proposition à 30 et 50 km pour une raison non expliquée (§13.11) ;
-      la première requête après un déploiement, qui attend la construction du graphe (34 s
-      pour A, §13.14) ; les cœurs du flot encore refusés au contrôle loin des ancres (86 refus sur 24
-      boucles de A, §13.14) ; l'oracle de test devenu lent sur A et ses relevés nouveaux non analysés
-      (§13.12) ; l'`EXPLAIN` de l'empreinte. Décidé le 14 novembre 2026 : 403 pour une personne non membre (règle
-      de `PlannerAccess`), les parcours masqués par la modération alimentent le réseau, une copie
-      garde la case d'exclusion.
+- [ ] `API-207` **Générateur de parcours au-delà du réseau de l'équipe (L, proposition, décision
+      d'abord)** — le générateur d'`API-198` ne propose que des routes déjà roulées par l'équipe :
+      41 % de réussite pour la plus grande, 14 % pour une moyenne, 0 à 2 % pour les autres, dont
+      les parcours sont des lignes sans boucle ; ses formes (point de retournement, polygone
+      régulier) ne sont pas celles qu'une personne trace, et la part de chemins n'est pas une
+      consigne. Proposition : graphe vélo préparé hors ligne à partir d'un extrait OSM, fichier en
+      cellules lu par `mmap`, moteur Rust à côté d'osm-route-details, génération « squelette puis
+      chair » sur les formes mesurées des vrais parcours, surcouches recalculées chaque nuit depuis
+      `network_edges` (fréquentation, goût appris par classe de route), part de non-revêtu tenue.
+      Revient sur trois points mis dehors par le plan d'`API-198` (importer OSM, sortir des routes
+      de l'équipe, agrégat entre équipes) : six décisions du propriétaire au §11, lot 0 de mesure
+      avant tout code. Plan [`2026-11-15-generateur-parcours-osm.md`](plans/2026-11-15-generateur-parcours-osm.md).
+      Les lots 0 à 3 (graphe, surcouche, moteur, service 1.9, backend `15.0.0` avec dépôt nocturne,
+      recherche Java retirée) sont livrés sous `API-206`. Restent : la mise en service, qui n'est pas
+      du code (`OPS-60` : image 1.9 et fichiers du graphe dans la pile partagée, clé par
+      environnement, première passe à la main ; `SEC-52`), l'e2e du site (`WEB-179`), puis les lots 4
+      à 7 : formes organiques (squelette puis chair, §5), off-road (§6), graphe de la France entière
+      (une seule région couverte, les Pays de la Loire, au 16 novembre 2026), catalogue. L'app
+      (`MOB-154`) reste dehors.
+      **Repris dans le moteur le 16 novembre 2026** (osm-route-details `v1.9.0`) : la levée de la règle du demi-tour étalé
+      dans les 200 premiers et derniers mètres du parcours, que la recherche Java avait reçue la veille après un relevé en
+      production (aucun parcours vers le nord-ouest depuis la place de la plus grande équipe, conception du lot 2
+      d'`API-198`, §13.14), est portée dans le moteur et, par un code séparé, dans son contrôleur. Campagne rejouée : aucune
+      violation, strict inchangé (91 sur 323), équipe d'abord 300 au lieu de 299. **Non vérifié** : la requête de
+      production elle-même (50 km, cap nord-ouest, place de l'équipe), qui n'est pas dans le banc.
 
 ### Heure de départ : audit du 7 novembre 2026
 
@@ -1894,6 +1870,8 @@ Ce que les tests ne prouvent pas, parce qu'ils ne passent ni par Flyway ni par u
       fiche du store depuis le 23 octobre ; côté mobile, elle arrive avec la prochaine version. Ne bloque pas mais se verra sur l'appareil :
       `AUD-26` (AM/PM en dur). `AUD-25` limite l'app à pedalons.fr. Taille : XS, surtout de l'attente.
 
+- [ ] `OPS-60` **Générateur de parcours : image 1.9 et graphe dans la pile partagée, clé dans chaque environnement (S, exploitation)** — le backend du lot 3b (`API-206`) appelle le moteur d'osm-route-details api 1.9. À faire à la main, sans que rien ne soit déployé par le code : image `1.9.0` dans `docker-compose.shared.yml` (publiée le 16 novembre 2026, tag `v1.9.0` ; essayée en conteneur limité à 2G avec le graphe : 305 Mo résidents après une génération), les quatre fichiers du graphe dans `~/shared/data/osm-route-details-graph/` sous un nom neuf, `ORD_GRAPH_NAME` dans `~/shared/.env`, `ROUTE_GENERATOR_NAMESPACE_KEY` distincte dans le `.env` de chaque environnement (32 octets aléatoires en base64url), puis le déclencheur `POST /api/admin/route-generator/overlays/refresh` avec `force`. Mesurer la mémoire du service (2G) avec le graphe et une altitude à froid. Procédure : `docs/OPERATIONS.md`.
+
 ## NOTIF — Notifications
 
 Les phases 1 à 5 de [`plans/archive/2026-09-18-notifications.md`](plans/archive/2026-09-18-notifications.md)
@@ -2082,6 +2060,7 @@ n'a pas de sévérité tant que son test de validation n'a pas tourné.
 | `SEC-49` | — | Nov. V6 | À valider | Un quota d'envoi suit le motif compter-puis-insérer (même famille que `SEC-35` et `SEC-39`) |
 | `SEC-50` | — | Nov. V7 | À valider | La désactivation d'un domaine ne s'applique pas à tous les chemins de résolution |
 | `SEC-51` | — | Audit des permissions du 11 novembre 2026 (plan [`2026-11-11-visibilite-contenu-equipe-privee.md`](plans/2026-11-11-visibilite-contenu-equipe-privee.md), A4) | Faible | Une réponse de l'API distingue deux cas qu'elle devrait confondre pour un appelant sans droit |
+| `SEC-52` | — | Lot 3b du générateur de parcours (16 novembre 2026) | Faible | La clé de cloisonnement du moteur de parcours circule en clair sur le réseau partagé des piles, et le moteur n'a pas de liste de clés admises : un conteneur de ce réseau peut l'appeler avec une clé à lui. Chiffrer le réseau ou configurer la liste du moteur (`docker-compose.shared.yml`) ; taille S |
 
 ---
 
@@ -2206,6 +2185,7 @@ redevient une entrée de sa section sous le même identifiant.
 
 | ID | Sujet | Décision | Ce que ça implique |
 |---|---|---|---|
+| `API-205` | **Finir le générateur Java d'équipe** (scindé d'`API-198`) : budget de 10 s, reconstructions reportées et `build-wait` à 60 s, pondérateur du cache, familiarité (β), corrections du banc (propositions 3 et 6 à 9 de la conception du lot 2, §13.6) ; composantes par type de sortie sur les arêtes admises (§13.10, correction b) ; départs 4 et 5 de la plus grande équipe sans proposition à 30 et 50 km, points de demi-tour sans flot (§13.11) ; `EXPLAIN` de l'empreinte | Non (15 novembre 2026, décision du propriétaire, plan [`2026-11-15-generateur-parcours-osm.md`](plans/2026-11-15-generateur-parcours-osm.md) §11.10) | La recherche Java est une preuve de concept, utilisée par le propriétaire seul, et sera retirée quand le moteur d'`API-207` fera au moins aussi bien sur le même banc en mode strict : régler ses seuils et son cache serait du travail jeté. Elle garde donc ses défauts connus (11 à 17 % de requêtes arrêtées à 5 s et réponse « occupé » trompeuse pour la plus grande équipe, 30 à 50 s d'attente après l'enregistrement d'un parcours, curseur de familiarité qui ne sépare que f = 0). Ce que ces défauts apprennent (départs sans candidat, flot orienté, accroche) est à reprendre comme **cas du banc** du nouveau moteur, pas comme correctifs. La recherche Java est retirée le 16 novembre 2026 (`API-206`), avec son cache, ses réglages et ses tests : il n'y a plus rien à rouvrir ici, et un défaut du générateur se traite désormais dans le moteur d'osm-route-details. |
 | `API-201` | **OAuth : enregistrer les applications, vérifier `redirect_uri`, des scopes** | Non (14 novembre 2026, décision du propriétaire) : le flux d'`API-199` est minimal, tout domaine, URL ou deep link est accepté | Rien ne garantit qui reçoit le code : ce qui en tient lieu est l'écran de consentement, qui montre le `client_id` déclaré et l'adresse de retour, et PKCE `S256` obligatoire. Les jetons donnent tout ce que donne la session du membre. Ne pas rendre PKCE facultatif ni approuver sans clic tant que ce point n'est pas rouvert : ce sont les deux seuls garde-fous. À rouvrir si l'API s'ouvre à des tiers qu'on ne connaît pas |
 | `API-183` | **Renvoyer tout le parc aux services GPS après `API-182`** | Non fait : le rattrapage réécrit les `route.fit` en place, sans nouvelle révision de contenu | Les parcours déjà poussés chez Wahoo avant `API-181` gardent un FIT à l'horodatage unique. Rien ne dit qu'un ELEMNT en souffre, et une révision sur chaque parcours renverrait tout le parc à chaque compte connecté. À rouvrir sur un retour Wahoo ; un parcours se renvoie déjà en le réenregistrant. |
 | `API-29` | **Liste d'attente (`waitlisted`)** | N'existe pas en base ; ni colonne, ni statut, ni rang sur `RideParticipation` | « Complet » est un **état terminal**. Ne pas câbler un `waitlisted: false` en dur : un champ toujours faux rend la vraie fonctionnalité indétectable en revue |

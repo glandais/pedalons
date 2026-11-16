@@ -123,6 +123,9 @@ if $SHARED; then
     . ./.env
     set +a
   fi
+  # Swarm does not create the source of a bind mount: a missing directory fails the task of
+  # osm-route-details (and with it the altitude of every environment).
+  mkdir -p ./data/osm-route-details-graph
   log "deploying stack pedalons-shared"
   # --prune, like the other stacks: a service removed from the file leaves the stack (osm-surface,
   # docs/LEDGER_*.md OPS-58), instead of running on unnoticed.

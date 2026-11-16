@@ -9,7 +9,7 @@ import 'bounds_dto.dart';
 part 'generated_route_dto.freezed.dart';
 part 'generated_route_dto.g.dart';
 
-/// A route proposed by the generator, every metre of it on a team road
+/// A route proposed by the generator
 @Freezed()
 abstract class GeneratedRouteDto with _$GeneratedRouteDto {
   const factory GeneratedRouteDto({
@@ -19,14 +19,8 @@ abstract class GeneratedRouteDto with _$GeneratedRouteDto {
     /// Distance in metres
     required double distanceM,
 
-    /// Elevation gain in metres
-    required double ascentM,
-
-    /// Elevation loss in metres
-    required double descentM,
-
-    /// How often the team rides these roads, 0 to 1
-    required double familiarity,
+    /// Share of the distance on the team's roads, short gaps between them included, 0 to 1
+    required double teamShare,
 
     /// Share of the distance on unpaved roads, 0 to 1
     required double unpavedShare,
@@ -39,6 +33,12 @@ abstract class GeneratedRouteDto with _$GeneratedRouteDto {
 
     /// Map frame of the route
     required BoundsDto bounds,
+
+    /// Elevation gain in metres. Absent when the profile was not ready in time: the editor computes it
+    double? ascentM,
+
+    /// Elevation loss in metres. Absent like the gain
+    double? descentM,
 
     /// Angle in degrees between the wished bearing and the route's. Absent when the bearing did not apply
     double? bearingDeviationDeg,

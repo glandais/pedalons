@@ -34,6 +34,9 @@ services:
     # planner test when E2E_NO_ROUTING is set.
     environment:
       STADIAMAPS_API_KEY: ${STADIAMAPS_API_KEY:-}
+      # Drawn by scripts/e2e.sh into the gitignored .e2e/ folder, exported from there: .env.e2e is
+      # committed and holds no key.
+      ROUTE_GENERATOR_NAMESPACE_KEY: ${ROUTE_GENERATOR_NAMESPACE_KEY:?scripts/e2e.sh sets it}
     volumes: !override
       - ./.e2e/storage:/mnt/storage
       - ./.e2e/keys:/mnt/keys:ro
@@ -78,6 +81,12 @@ services:
       file: docker-compose.shared.yml
       service: osm-route-details
     container_name: ${ENV_NAME}-osm-route-details
+    # Only the cache volume: no graph can be shipped to the e2e stack (125 + 65 + 92 MB built from a
+    # 374 MB PBF), so the engine does not run the generator here and every generation answers
+    # GENERATOR_UNAVAILABLE (frontend/e2e/route-generator.e2e.ts). A generation that really runs is
+    # checked by hand on the workstation stack with a graph.
+    volumes: !override
+      - osm-route-details-data:/var/cache/osm-route-details
     restart: unless-stopped
     # Nothing to wait for here: the shared stack's 100 s are for a `full` call in flight.
     stop_grace_period: 10s

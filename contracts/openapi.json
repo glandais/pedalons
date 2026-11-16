@@ -47,6 +47,10 @@
           }
         }
       },
+      "Action" : {
+        "type" : "string",
+        "enum" : [ "DEPOSIT", "DELETE", "KEEP" ]
+      },
       "ActivateAccountRequest" : {
         "description" : "Activates an account from its verification link: the password is chosen here, by whoever holds the mailbox, never at sign-up.",
         "type" : "object",
@@ -2406,7 +2410,7 @@
       },
       "ErrorCode" : {
         "type" : "string",
-        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "TRIP_FINISHED", "INVALID_VISIBILITY", "INCOMPATIBLE_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "PLANNER_STATE_INVALID", "PLANNER_IMPORT_TOO_LARGE", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "PLANNER_QUOTA_REACHED", "ROUTING_DAILY_LIMIT_REACHED", "GENERATOR_START_TOO_FAR", "GENERATOR_END_TOO_FAR", "GENERATOR_DISTANCE_TOO_SHORT", "GENERATOR_NETWORK_TOO_SMALL", "GENERATOR_NETWORK_TOO_LARGE", "GENERATOR_NO_ROUTE", "ROUTE_GENERATOR_RATE_LIMITED", "ROUTE_GENERATOR_BUSY", "GEOCODING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "TEAM_MEMBER_LIMIT_REACHED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
+        "enum" : [ "BAD_REQUEST", "NOT_FOUND", "UNAUTHORIZED", "FORBIDDEN", "INTERNAL_ERROR", "UNKNOWN", "VALIDATION", "BUSINESS_RULE", "LAST_ADMIN", "SOLE_TEAM_ADMIN", "SOLE_MIGRATED_TEAM_ADMIN", "MIGRATED_TEAM", "ALREADY_REGISTERED", "NOT_REGISTERED", "INVALID_SLUG", "SLUG_TAKEN", "USER_NOT_SYNCED", "GROUP_FULL", "RIDE_PAST", "TRIP_FINISHED", "INVALID_VISIBILITY", "INCOMPATIBLE_VISIBILITY", "PUBLIC_TRIP_PRIVATE_ROUTE", "GPX_FAILURE", "FILE_REQUIRED", "FILE_TYPE_REJECTED", "FILE_DETECTION_FAILED", "FILE_TOO_LARGE", "TOO_MANY_TEAM_PAGES", "GPX_EMPTY", "GPX_TOO_LONG", "GPX_MERGE_FILE_COUNT", "GPX_MERGE_TOO_MANY_TRACKS", "ROUTE_PLANNER_DISABLED", "PLANNER_STATE_INVALID", "PLANNER_IMPORT_TOO_LARGE", "ROUTING_QUOTA_EXCEEDED", "ROUTING_SEGMENT_TOO_LONG", "ROUTING_NO_ROUTE", "ROUTING_UNAVAILABLE", "PLANNER_QUOTA_REACHED", "ROUTING_DAILY_LIMIT_REACHED", "GENERATOR_START_TOO_FAR", "GENERATOR_END_TOO_FAR", "GENERATOR_DISTANCE_TOO_SHORT", "GENERATOR_NETWORK_TOO_SMALL", "GENERATOR_OUT_OF_COVERAGE", "GENERATOR_NETWORK_NOT_READY", "GENERATOR_UNAVAILABLE", "GENERATOR_NO_ROUTE", "ROUTE_GENERATOR_RATE_LIMITED", "ROUTE_GENERATOR_BUSY", "GEOCODING_UNAVAILABLE", "INVALID_FORMAT", "INVALID_TIMEZONE", "RENTAL_PERIOD_MISSING", "STATUS_INVALID", "PUBLIC_RIDE_PRIVATE_ROUTE", "INVALID_CREDENTIALS", "LOGIN_RATE_LIMITED", "EMAIL_NOT_VERIFIED", "EMAIL_ALREADY_EXISTS", "TOKEN_INVALID", "TOKEN_EXPIRED", "SESSION_EXPIRED", "PASSWORD_NOT_SET", "PASSKEY_NOT_FOUND", "USER_NOT_FOUND", "DOMAIN_NOT_FOUND", "TEAM_NOT_FOUND", "TEAM_CREATION_DISABLED", "USER_TEAM_LIMIT_REACHED", "TEAM_JOIN_NOT_ALLOWED", "TEAM_ADD_MEMBER_NOT_ALLOWED", "TEAM_MEMBER_LIMIT_REACHED", "GPS_SERVICE_ALREADY_CONNECTED", "GPS_SERVICE_NOT_CONNECTED", "GPS_SERVICE_NOT_CONFIGURED", "GPS_INVALID_STATE", "GPS_STATE_EXPIRED", "GPX_NOT_FOUND", "AUTHORIZATION_PENDING", "DEVICE_CODE_RATE_LIMITED", "GPS_CREDENTIAL_ALREADY_EXISTS", "GPS_OAUTH_VERSION_NOT_SUPPORTED", "GPS_CLIENT_SECRET_REQUIRED", "GPS_TOKEN_EXCHANGE_FAILED", "ENCRYPTION_FAILED", "DECRYPTION_FAILED", "DOMAIN_ALIAS_NOT_FOUND", "DOMAIN_ALIAS_HOSTNAME_EXISTS", "DOMAIN_ALIAS_TEAM_MISMATCH", "EXPORT_IN_PROGRESS", "EXPORT_RATE_LIMITED", "RIDE_GROUP_LEADER_NOT_MEMBER", "AD_CONTACT_SELF", "AD_CONTACT_OPTED_OUT", "AD_CONTACT_RATE_LIMITED", "AD_CONTACT_DELIVERY_FAILED", "EMAIL_NOT_SENT", "FEEDBACK_RATE_LIMITED", "TEAM_INVITE_INVALID", "TEAM_INVITE_EXPIRED", "TEAM_INVITE_REVOKED", "TEAM_INVITE_ALREADY_USED", "TEAM_INVITE_ALREADY_MEMBER", "TEAM_INVITE_EMAIL_MISMATCH", "TEAM_INVITE_SELF", "TEAM_INVITE_NOT_PENDING", "TEAM_INVITE_RATE_LIMITED", "TEAM_INVITE_DELIVERY_FAILED", "WEBHOOK_URL_INVALID", "REPORT_SELF", "BLOCK_SELF", "CONTENT_REJECTED", "TAG_LABEL_INVALID", "TAG_LABEL_TAKEN", "TAG_LIMIT_REACHED", "TAG_INVALID", "TOO_MANY_TAGS", "ASSET_NOT_AVAILABLE", "BIKETEAM_REQUEST_INVALID", "BIKETEAM_REQUEST_EXPIRED", "BIKETEAM_REQUEST_ALREADY_USED", "BIKETEAM_SLUG_CONFLICT", "BIKETEAM_MIGRATED_IN_OTHER_DOMAIN", "BIKETEAM_NOT_TEAM_ADMIN", "BIKETEAM_MIGRATION_RUNNING", "BIKETEAM_GRANT_INVALID", "BIKETEAM_GRANT_EXPIRED", "BIKETEAM_JOB_NOT_FOUND" ]
       },
       "ErrorDetails" : {
         "oneOf" : [ {
@@ -2421,8 +2425,6 @@
           "$ref" : "#/components/schemas/TeamMemberLimitDetails"
         }, {
           "$ref" : "#/components/schemas/PlannerQuotaDetails"
-        }, {
-          "$ref" : "#/components/schemas/RouteGeneratorNetworkDetails"
         } ],
         "description" : "Error details",
         "discriminator" : {
@@ -2433,8 +2435,7 @@
             "ASSET_NOT_AVAILABLE" : "#/components/schemas/AssetNotAvailableDetails",
             "INCOMPATIBLE_VISIBILITY" : "#/components/schemas/IncompatibleVisibilityDetails",
             "TEAM_MEMBER_LIMIT_REACHED" : "#/components/schemas/TeamMemberLimitDetails",
-            "PLANNER_QUOTA_REACHED" : "#/components/schemas/PlannerQuotaDetails",
-            "GENERATOR_NETWORK_TOO_SMALL" : "#/components/schemas/RouteGeneratorNetworkDetails"
+            "PLANNER_QUOTA_REACHED" : "#/components/schemas/PlannerQuotaDetails"
           }
         },
         "type" : "object",
@@ -2578,9 +2579,9 @@
         }
       },
       "GeneratedRouteDto" : {
-        "description" : "A route proposed by the generator, every metre of it on a team road",
+        "description" : "A route proposed by the generator",
         "type" : "object",
-        "required" : [ "polyline", "distanceM", "ascentM", "descentM", "familiarity", "unpavedShare", "sharedM", "crossings", "bounds" ],
+        "required" : [ "polyline", "distanceM", "teamShare", "unpavedShare", "sharedM", "crossings", "bounds" ],
         "properties" : {
           "polyline" : {
             "type" : "string",
@@ -2594,22 +2595,22 @@
           "ascentM" : {
             "type" : "number",
             "format" : "double",
-            "description" : "Elevation gain in metres"
+            "description" : "Elevation gain in metres. Absent when the profile was not ready in time: the editor computes it"
           },
           "descentM" : {
             "type" : "number",
             "format" : "double",
-            "description" : "Elevation loss in metres"
+            "description" : "Elevation loss in metres. Absent like the gain"
           },
           "bearingDeviationDeg" : {
             "type" : "number",
             "format" : "double",
             "description" : "Angle in degrees between the wished bearing and the route's. Absent when the bearing did not apply"
           },
-          "familiarity" : {
+          "teamShare" : {
             "type" : "number",
             "format" : "double",
-            "description" : "How often the team rides these roads, 0 to 1"
+            "description" : "Share of the distance on the team's roads, short gaps between them included, 0 to 1"
           },
           "unpavedShare" : {
             "type" : "number",
@@ -5075,6 +5076,10 @@
         "type" : "string",
         "enum" : [ "ANDROID", "IOS", "WEB" ]
       },
+      "Reason" : {
+        "type" : "string",
+        "enum" : [ "ABSENT", "STALE", "CHANGED", "EXPIRING", "FORCED", "CURRENT", "TEAM_GONE", "PLANNER_OFF" ]
+      },
       "RegisterRequest" : {
         "description" : "User registration request",
         "type" : "object",
@@ -6272,79 +6277,89 @@
           }
         }
       },
-      "RouteGeneratorNetworkDetails" : {
+      "RouteGeneratorOverlayRefreshItem" : {
         "type" : "object",
-        "required" : [ "type", "routeCount", "pendingRouteCount", "excludedRouteCount", "totalLengthM", "incomplete" ],
+        "description" : "One team's overlay",
+        "required" : [ "teamId", "teamSlug", "action", "reason" ],
         "properties" : {
-          "type" : {
-            "description" : "Type",
+          "teamId" : {
             "type" : "string",
-            "$ref" : "#/components/schemas/ErrorCode"
+            "description" : "ID of the team"
           },
-          "routeCount" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Routes the network is made of"
+          "teamSlug" : {
+            "type" : "string",
+            "description" : "Slug of the team"
           },
-          "pendingRouteCount" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Routes whose roads are still being analysed and are not in the network yet"
+          "action" : {
+            "description" : "What is done",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Action"
           },
-          "excludedRouteCount" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Routes ticked \"ne pas utiliser pour générer des parcours\""
+          "reason" : {
+            "description" : "Why",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Reason"
           },
-          "totalLengthM" : {
-            "type" : "number",
-            "format" : "double",
-            "description" : "Length of the whole network of the team, in metres"
+          "state" : {
+            "type" : "string",
+            "description" : "State of the overlay at the engine: absent, ready or stale"
           },
-          "incomplete" : {
-            "type" : "boolean",
-            "description" : "True when pendingRouteCount is above zero: the network may still grow"
+          "depositedAt" : {
+            "description" : "When it was deposited",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "expiresAt" : {
+            "description" : "When the engine drops it if it is not deposited again",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Instant"
           }
         }
       },
-      "RouteGeneratorNetworkDto" : {
-        "description" : "What the team's generator network is made of. Lengths in metres",
+      "RouteGeneratorOverlayRefreshRequest" : {
+        "description" : "Which team overlays of the route generator to prepare now: the nightly pass, by hand. Without force, only the teams whose overlay is absent, stale, changed or about to expire.",
         "type" : "object",
         "properties" : {
-          "lengthM" : {
-            "type" : "number",
-            "format" : "double",
-            "description" : "Length of the road the search can reach around the start and the end. Absent when no route was generated"
+          "teamId" : {
+            "type" : "string",
+            "description" : "Only this team (default: every team of every domain)"
           },
-          "totalLengthM" : {
-            "type" : "number",
-            "format" : "double",
-            "description" : "Length of the whole network of the team"
-          },
-          "routeCount" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Routes the network is made of"
-          },
-          "pendingRouteCount" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Routes whose roads are still being analysed and are not in the network yet"
-          },
-          "excludedRouteCount" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Routes ticked \"ne pas utiliser pour générer des parcours\""
-          },
-          "incomplete" : {
+          "force" : {
             "type" : "boolean",
-            "description" : "True when pendingRouteCount is above zero: the network may still grow"
+            "description" : "Deposit every team again, whatever its overlay: after a key rotation or a new graph"
+          },
+          "dryRun" : {
+            "type" : "boolean",
+            "description" : "Say what would be done, without depositing or deleting anything",
+            "examples" : [ true ]
           }
         },
-        "required" : [ "totalLengthM", "routeCount", "pendingRouteCount", "excludedRouteCount", "incomplete" ]
+        "required" : [ "force", "dryRun" ]
+      },
+      "RouteGeneratorOverlayRefreshResponse" : {
+        "description" : "What the pass over the teams' overlays did, or would do (dry run)",
+        "type" : "object",
+        "required" : [ "started", "items" ],
+        "properties" : {
+          "started" : {
+            "type" : "boolean",
+            "description" : "False when nothing started: the generator is off or unconfigured, or a pass is already running"
+          },
+          "graphId" : {
+            "type" : "string",
+            "description" : "Identity of the graph the engine serves"
+          },
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RouteGeneratorOverlayRefreshItem"
+            },
+            "description" : "One entry per team that is deposited, deleted, or kept (dry run only: a started pass answers 202 with no entries, it runs in the background)"
+          }
+        }
       },
       "RouteGeneratorRequest" : {
-        "description" : "What to ask the team's route generator for",
+        "description" : "What to ask the route generator for",
         "type" : "object",
         "properties" : {
           "start" : {
@@ -6365,14 +6380,14 @@
           "distanceKm" : {
             "type" : "number",
             "format" : "double",
-            "description" : "Wished distance in kilometres, 10 to 300",
-            "maximum" : 300,
+            "description" : "Wished distance in kilometres, 10 to 200",
+            "maximum" : 200,
             "minimum" : 10
           },
-          "familiarity" : {
+          "discovery" : {
             "type" : "number",
             "format" : "double",
-            "description" : "0 prefers roads the team rides rarely, 1 the ones it rides often. Absent: 0.5",
+            "description" : "From the team's roads (0, only the roads the team rides) to discovery (1, no preference for them); rounded to the hundredth by the engine. Absent: 0.25",
             "maximum" : 1,
             "minimum" : 0
           },
@@ -6384,15 +6399,16 @@
           "seed" : {
             "type" : "integer",
             "format" : "int32",
-            "description" : "Makes \"other proposals\" reproducible: the same seed gives the same routes. Absent: 0"
+            "description" : "Makes \"other proposals\" reproducible: the same seed gives the same routes. Absent: 0",
+            "minimum" : 0
           }
         },
         "required" : [ "distanceKm" ]
       },
       "RouteGeneratorResponse" : {
-        "description" : "Routes proposed by the team's route generator",
+        "description" : "Routes proposed by the route generator",
         "type" : "object",
-        "required" : [ "candidates", "network", "familiarityFallback" ],
+        "required" : [ "candidates", "partialCoverage" ],
         "properties" : {
           "candidates" : {
             "type" : "array",
@@ -6401,14 +6417,14 @@
             },
             "description" : "One to three routes, best first, different from each other"
           },
-          "network" : {
-            "description" : "What the team's network is made of",
-            "type" : "object",
-            "$ref" : "#/components/schemas/RouteGeneratorNetworkDto"
+          "networkPreparedAt" : {
+            "description" : "When the team's roads were last prepared for the generator (the night before at best). Absent when the request did not use them (discovery)",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Instant"
           },
-          "familiarityFallback" : {
+          "partialCoverage" : {
             "type" : "boolean",
-            "description" : "True when the team rides too few routes of the requested type nearby, so the familiarity of all kinds was used instead"
+            "description" : "True when part of the area around the start leaves the region the generator covers: proposals are rarer there"
           }
         }
       },
@@ -9309,6 +9325,9 @@
     "name" : "Admin - Reports",
     "description" : "Platform moderation queue"
   }, {
+    "name" : "Admin - Route generator",
+    "description" : "Platform admin maintenance of the teams' roads prepared for the route generator"
+  }, {
     "name" : "Admin - Teams",
     "description" : "Platform admin team management"
   }, {
@@ -9397,7 +9416,7 @@
     "description" : "Comment operations for routes"
   }, {
     "name" : "Route generator",
-    "description" : "Routes made only of the roads a team already rides"
+    "description" : "Routes that favour the roads a team already rides"
   }, {
     "name" : "Router",
     "description" : "Route calculation using the Stadia Maps routing API"
@@ -10538,6 +10557,65 @@
           },
           "401" : {
             "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "user" ]
+        } ]
+      }
+    },
+    "/api/admin/route-generator/overlays/refresh" : {
+      "post" : {
+        "summary" : "Prepare the teams' roads for the route generator now",
+        "description" : "The nightly pass, by hand: for each team (or the one given), compares the digest of its tracks with the one the engine holds and deposits it again when it differs, is absent, stale or about to expire (or always with force); deletes the overlay of a deleted team, or one whose planner is off. Idempotent. With dryRun the answer (200) lists what would be done; otherwise the pass runs in the background (202, started=false if one already runs on this instance). Run it with dryRun first; use force after a key rotation or a new graph.",
+        "operationId" : "adminRefreshRouteGeneratorOverlays",
+        "tags" : [ "Admin - Route generator" ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RouteGeneratorOverlayRefreshRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Dry run: what would be done",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteGeneratorOverlayRefreshResponse"
+                }
+              }
+            }
+          },
+          "202" : {
+            "description" : "The pass runs in the background",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RouteGeneratorOverlayRefreshResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - not a platform admin",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          },
+          "400" : {
+            "description" : "Bad Request"
           }
         },
         "security" : [ {
@@ -22216,8 +22294,8 @@
     },
     "/api/teams/{teamSlug}/route-generator" : {
       "post" : {
-        "summary" : "Propose routes made of the team's own roads",
-        "description" : "Proposes one to three routes, loops or one-way, whose every metre lies on a road that a route of the team already rides. Same rights as the route planner: the caller must be allowed to create routes in the team and the team must have its route planner on (ROUTE_PLANNER_DISABLED otherwise). Nothing is stored, no routing provider is called and no quota is drawn. Failures have their own codes, all 400: GENERATOR_START_TOO_FAR and GENERATOR_END_TOO_FAR (no road of the team within 2 km), GENERATOR_DISTANCE_TOO_SHORT, GENERATOR_NETWORK_TOO_SMALL (with RouteGeneratorNetworkDetails: also sent while the team's routes are still being analysed), GENERATOR_NETWORK_TOO_LARGE (the team's routes are more than the generator can hold in memory; no request succeeds until the limit is raised) and GENERATOR_NO_ROUTE. At most 30 requests per user in 15 minutes (ROUTE_GENERATOR_RATE_LIMITED, 429 with Retry-After); ROUTE_GENERATOR_BUSY (503) when the server has no free slot or the run took too long.",
+        "summary" : "Propose routes that favour the team's own roads",
+        "description" : "Proposes one to three routes, loops or one-way, from the roads a route of the team already rides (prepared every night for the generator) and the rest of the map: the cursor `discovery` goes from the team's roads only (0) to no preference (1), default 0.25. The engine is osm-route-details and covers one region for now (GENERATOR_OUT_OF_COVERAGE elsewhere); each route was checked by an independent checker of the engine and by a geometric sanity check here. Ascent and descent are computed from the fast elevation profile and are absent when it was not ready in time. Same rights as the route planner: the caller must be allowed to create routes in the team and the team must have its route planner on (ROUTE_PLANNER_DISABLED otherwise). Nothing is stored, no routing provider is called and no quota is drawn. Failures have their own codes, all 400: GENERATOR_START_TOO_FAR and GENERATOR_END_TOO_FAR (no suitable road near), GENERATOR_DISTANCE_TOO_SHORT, GENERATOR_NETWORK_TOO_SMALL, GENERATOR_OUT_OF_COVERAGE, GENERATOR_NETWORK_NOT_READY (the team's roads are not prepared yet; discovery needs no preparation) and GENERATOR_NO_ROUTE. At most 30 requests per user in 15 minutes (ROUTE_GENERATOR_RATE_LIMITED, 429 with Retry-After); ROUTE_GENERATOR_BUSY (503) when the engine has no free slot or took too long, GENERATOR_UNAVAILABLE (503) when it is off or unreachable.",
         "operationId" : "generateRoutes",
         "tags" : [ "Route generator" ],
         "parameters" : [ {
@@ -22250,7 +22328,7 @@
             }
           },
           "400" : {
-            "description" : "Invalid request, planner disabled (ROUTE_PLANNER_DISABLED), or no route (GENERATOR_START_TOO_FAR, GENERATOR_END_TOO_FAR, GENERATOR_DISTANCE_TOO_SHORT, GENERATOR_NETWORK_TOO_SMALL, GENERATOR_NETWORK_TOO_LARGE, GENERATOR_NO_ROUTE)",
+            "description" : "Invalid request, planner disabled (ROUTE_PLANNER_DISABLED), or no route (GENERATOR_START_TOO_FAR, GENERATOR_END_TOO_FAR, GENERATOR_DISTANCE_TOO_SHORT, GENERATOR_NETWORK_TOO_SMALL, GENERATOR_OUT_OF_COVERAGE, GENERATOR_NETWORK_NOT_READY, GENERATOR_NO_ROUTE)",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -22300,7 +22378,7 @@
             }
           },
           "503" : {
-            "description" : "No free slot, or time budget spent (ROUTE_GENERATOR_BUSY)",
+            "description" : "The engine has no free slot or took too long (ROUTE_GENERATOR_BUSY), or is off or unreachable (GENERATOR_UNAVAILABLE)",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -27002,7 +27080,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "14.16.0",
+    "version" : "15.0.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

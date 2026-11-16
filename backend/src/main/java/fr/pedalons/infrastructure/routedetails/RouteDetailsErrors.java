@@ -83,6 +83,16 @@ public final class RouteDetailsErrors {
         Kind.TRANSIENT, 0, null, cause.getClass().getSimpleName(), null, cause);
   }
 
+  /** Whether {@code e} comes from the calling thread being interrupted, not from the service. */
+  public static boolean isInterrupt(Throwable e) {
+    for (Throwable t = e; t != null; t = t.getCause()) {
+      if (t instanceof InterruptedException) {
+        return true;
+      }
+    }
+    return Thread.currentThread().isInterrupted();
+  }
+
   private static @Nullable String body(Response response) {
     try {
       return response.hasEntity() ? response.readEntity(String.class) : null;

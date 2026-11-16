@@ -20,16 +20,15 @@ import { hydrated, toasts } from './support/ui'
 import type { Page } from '@playwright/test'
 
 /**
- * The team route generator's site (ledger WEB-179, plan docs/plans/2026-11-13-generateur-boucles-equipe-lot4.md):
+ * The team route generator's site (ledger WEB-179, plan docs/plans/archive/2026-11-13-generateur-boucles-equipe-lot4.md):
  * the page /equipes/{slug}/parcours/generer (RouteGeneratorPage), the same panel in the route
  * editor's dialog, « Ouvrir dans l'éditeur » (a replacing import that keeps no file, so the save
  * draws the planner quota) and the exclusion box of the route form.
  *
- * The e2e stack holds the HD catch-up for 24 h (`.env.e2e`) and the network_edges are written by
- * that catch-up, so a seeded team never has a network during a run: the real endpoint always
- * answers GENERATOR_NETWORK_TOO_SMALL with `incomplete`. One test makes that real call; the others
- * stub POST /api/teams/{slug}/route-generator, as gpx-planner.e2e.ts stubs the router. A real
- * generation would need network_edges seeded (D9 of the plan).
+ * The e2e stack runs osm-route-details without a graph (it serves the altitude only), so the real
+ * endpoint answers GENERATOR_UNAVAILABLE. One test makes that real call; the others stub
+ * POST /api/teams/{slug}/route-generator, as gpx-planner.e2e.ts stubs the router. A real
+ * generation is checked by hand on a local stack with the graph (lot 3b plan).
  */
 
 test.setTimeout(120_000)
@@ -72,7 +71,7 @@ function candidates(): GeneratedRouteDto[] {
       distanceM: 5950 + i * 400,
       ascentM: 40 + i * 10,
       descentM: 40 + i * 10,
-      familiarity: [0.5, 0.9, 0.1][i],
+      teamShare: [0.8, 1, 0.3][i],
       unpavedShare: 0,
       sharedM: i === 0 ? 1200 : 0,
       crossings: 0,
@@ -91,14 +90,7 @@ async function stubGenerator(page: Page) {
   const bodies: RouteGeneratorRequest[] = []
   const response: RouteGeneratorResponse = {
     candidates: candidates(),
-    network: {
-      totalLengthM: 100_000,
-      routeCount: 3,
-      pendingRouteCount: 0,
-      excludedRouteCount: 0,
-      incomplete: false,
-    },
-    familiarityFallback: false,
+    partialCoverage: false,
   }
   await page.route('**/api/teams/*/route-generator', async (route) => {
     bodies.push(route.request().postDataJSON() as RouteGeneratorRequest)
@@ -110,7 +102,7 @@ async function stubGenerator(page: Page) {
 const generateButton = (page: Page) => page.getByRole('button', { name: 'Générer', exact: true })
 const cards = (page: Page) => page.getByTestId('generated-route-card')
 
-test('the organizer reaches the generator from the routes list, and the real answer says the analysis is under way', async ({
+test('the organizer reaches the generator from the routes list, and the real answer says the generator is unavailable', async ({
   context,
   page,
 }) => {
@@ -132,8 +124,7 @@ test('the organizer reaches the generator from the routes list, and the real ans
   await expect(page.getByRole('radio', { name: 'Route', exact: true })).toBeChecked()
   await hydrated(generateButton(page))
   await generateButton(page).click()
-  await expect(page.getByText(/L'analyse des routes de l'équipe est en cours/)).toBeVisible()
-  await expect(page.getByText(/encore \d+ parcours à traiter/)).toBeVisible()
+  await expect(page.getByText(/Le générateur de parcours est indisponible/)).toBeVisible()
   // The panel words the failure itself: no toast
   await expect(watched).toHaveCount(0)
 })

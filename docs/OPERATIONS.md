@@ -125,7 +125,7 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | traefik | 256M | |
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
-| osm-route-details (shared) | 2G | ledger `OPS-58`: its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; 1G was measured too tight on 2026-11-10 (~1.4 GB with swap under the backfill), still being watched |
+| osm-route-details (shared) | 2G | ledger `OPS-58` and, with the route generator's graph (about 1.07 GiB at worst measured outside a container), `OPS-60`: its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; 1G was measured too tight on 2026-11-10 (~1.4 GB with swap under the backfill), still being watched |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
 **The backend has no `-Xmx`.** The image's entrypoint (`run-java.sh`, from the Jib base image
@@ -757,7 +757,7 @@ is gone): its next save does, so keep the surface on wherever the fleet must sta
 stack has it off (`.env.e2e`): nothing in the suite looks at the surface.
 
 **Street edges of the team routes** (ledger `API-198`, lot 1; plan
-`docs/plans/2026-11-13-generateur-boucles-equipe-lot1.md`). The `full` call that computes a route's HD
+`docs/plans/archive/2026-11-13-generateur-boucles-equipe-lot1.md`). The `full` call that computes a route's HD
 profile (the catch-up, a synchronous save, the backfill below) also asks `options.edges`, and the
 write puts them in `gpx_tracks.network_edges` (a `NetworkEdgesDocument`, JSONB, nullable), in the same
 transaction as the profile and under the same route lock. Previews, the planner and FAST saves never
@@ -795,48 +795,126 @@ before it. Between two releases that both have it, leave it running through the 
   keeps its profile. Retry with `POST /api/admin/elevation-refresh/retry`, as above.
 - **Done** is when the log says `Network edges backfill done`.
 
-#### The team route generator
+#### The route generator
 
-`POST /api/teams/{slug}/route-generator` (ledger `API-198`, lot 3) proposes routes on the graph of
-the streets the team's routes ride, built from the documents above and cached per backend instance.
-Nothing is stored and no routing provider is called: what it costs is CPU and heap.
+`POST /api/teams/{slug}/route-generator` (ledger `API-198`, lot 3b) proposes routes that favour the
+roads a team already rides. The search is not in the backend any more: it is the generator of
+**osm-route-details** (api 1.9, the shared stack), which holds a graph of one region (Pays de la
+Loire for now) and, per team, an **overlay**: the stretches of that graph the team's saved routes
+ride. The backend prepares the overlays **every night** and never on demand; a request only asks the
+engine for routes and checks each one cheaply (it decodes, has about the distance asked, starts and
+ends where asked, has no jump over 10 km, has sane shares) before the proposals go out with a
+`fast` elevation profile each (2.5 s at most, absent otherwise). Nothing is stored and no routing
+provider is called.
 
 | Key (`pedalons.route-generator.…`) | Default | What it does |
 |---|---|---|
 | `enabled` (`ROUTE_GENERATOR_ENABLED`) | `true` | The kill switch: `false` answers `ROUTE_PLANNER_DISABLED` |
-| `max-observations` (`ROUTE_GENERATOR_MAX_OBSERVATIONS`) | `-1` (sized on the heap) | Street edge observations a team may hold (one per street and per route riding it). Past it no graph is built and the team gets `GENERATOR_NETWORK_TOO_LARGE`; `0` lifts the bound |
-| `cache.max-weight-mb` (`ROUTE_GENERATOR_CACHE_MB`) | `192` | Estimated size of the cached graphs; the estimate is 1.4 to 2.6 times under the real size |
-| `cache.min-rebuild-interval` | `PT10M` | How long a change of tracks or documents alone (the backfill, an HD catch-up) may wait; a route saved, deleted or ticked out rebuilds at the next request |
-| `cache.expire-after-access`, `cache.expire-after-write` | `PT2H`, `PT6H` | When an unused graph leaves the cache |
+| `namespace-key` (`ROUTE_GENERATOR_NAMESPACE_KEY`) | none in `%prod` | The secret of the environment, see below. **Required**: the `%prod` start fails without it, and `docker-compose.yml` restates it with `:?` |
 | `rate.max-per-window`, `rate.window-minutes` | `30`, `15` | Requests per person (`ROUTE_GENERATOR_RATE_LIMITED`, 429) |
-| `max-concurrent`, `permit-wait` | `0` (half of the cores), `PT2S` | Generations at once per instance, and the wait for a slot (`ROUTE_GENERATOR_BUSY`, 503) |
-| `time-budget` | `PT5S` | One generation; past it, `ROUTE_GENERATOR_BUSY` |
-| `build-wait` | `PT30S` | The wait for the one graph build at a time |
+| `generate-timeout` | `PT10S` | One generation: the engine's 8 s budget (queue included) plus 2 s; past it `ROUTE_GENERATOR_BUSY` |
+| `ascent-budget` | `PT2.5S` | The three `fast` elevation calls of the proposals together; late ones leave the ascent absent |
+| `overlay.enabled` (`ROUTE_GENERATOR_OVERLAY_ENABLED`) | `true` | The nightly deposit |
+| `overlay.cron` | `0 10 2 * * ?` | 02:10 UTC, before the 03:00 to 04:50 jobs |
+| `overlay.deposit-timeout` | `PT16M` | One deposit (the engine's hard budget is 900 s; the largest team measured 45 s) |
+| `overlay.refresh-before-expiry` | `P7D` | An overlay expires after 14 days at the engine; it is deposited again when it expires within this |
 
-**`max-observations` follows the heap.** Building a graph holds about 225 MB of heap per million
-observations at its peak (measured on 14 November 2026 with the production JVM options: 440 MB for
-the 1.97 million observations of the largest team, whose graph then keeps about 130 MB; the build
-takes 12 s after the read). Left at `-1`, the bound gives a build a quarter of the instance's heap
-(heap / 900 bytes): about 1 million observations for the default `BACKEND_MEMORY=1536M` (920 MB of
-heap), 4.7 million for a 4 GB heap; the backend logs the value at startup (`Route generator: a team
-may hold up to N street edge observations`). So a team refused for its size is served by raising
-`BACKEND_MEMORY`, not this key. The bound exists because the JVM runs with `-XX:+ExitOnOutOfMemoryError`: a build that does
-not fit takes the whole backend down, not the generator alone. Count a team's observations with
+The places and the queue of a computation are the engine's own: its `overloaded` is
+`ROUTE_GENERATOR_BUSY`. There is no cache, no heap bound and no `GENERATOR_NETWORK_TOO_LARGE` any
+more (the keys `max-observations`, `cache.*`, `max-concurrent`, `permit-wait`, `time-budget` and
+`build-wait`, and `ROUTE_GENERATOR_MAX_OBSERVATIONS` and `ROUTE_GENERATOR_CACHE_MB`, are gone: they
+are ignored and can leave a host's `.env`).
 
-```sql
-select te.team_id, sum(jsonb_array_length(t.network_edges -> 'edges')) as observations
-  from team_entities te join gpx_tracks t on t.route_id = te.id
- where te.entity_type = 2 and not te.deleted and t.network_edges is not null
- group by te.team_id order by 2 desc limit 10;
-```
+**The secret.** `ROUTE_GENERATOR_NAMESPACE_KEY`: 32 random bytes in base64url, no padding, 43
+characters. The engine derives from it the folder of the environment's overlays and the key that
+encrypts them, and stores none of it; the backend sends it in a header with every call and never
+logs it.
 
-(it reads every document: several hundred megabytes on the largest team, run it off-peak).
+- Generate it once per environment: `head -c32 /dev/urandom | base64 | tr '+/' '-_' | tr -d '=\n'`.
+- **It must differ per environment** (`~/prod/.env`, `~/staging/.env`, the workstation's, the e2e
+  stack's): two environments with the same key would share their overlays and the engine could not
+  tell. It goes in the `.env` of each environment, **never in `~/shared/.env`**, and is saved with
+  that `.env`. A malformed key stops the `%prod` start (the start-first deploy then keeps the
+  previous backend); a missing one stops the deploy before any container starts.
+- `scripts/dev-env.sh` exports it for `mvn quarkus:dev` (empty in `%dev`: every generation then
+  answers `GENERATOR_UNAVAILABLE`, with a warning at start). `scripts/e2e.sh` draws one into the
+  gitignored `.e2e/namespace-key`; nothing is committed.
+- **Rotating it** makes the overlays of the old key unreachable (they expire after 14 days, or go at
+  once with `DELETE /v1/generator/overlays` called with the old key) and the new key's overlays
+  absent, so until they are deposited every team gets `GENERATOR_NETWORK_NOT_READY` (the cursor at
+  discovery needs none). Change the `.env`, deploy, then deposit everything at once, not at the
+  next night: `POST /api/admin/route-generator/overlays/refresh` with `{"force": true,
+  "dryRun": false}` as a platform admin (about 75 s for the nine largest teams of the bench, in
+  series; the answer is 202 and the pass runs in the background).
+- The key travels in clear on the `pedalons-shared` network (it appears in no log); the hardening
+  of that (`allowed_namespaces`, an encrypted network) is open in ledger `SEC-52`. The engine's port
+  9090 (`/metrics`) is never published.
 
-- **Follow it**: the counters `pedalons_route_generator_requests_total{outcome}` and
-  `pedalons_route_generator_cache_total{result}` (`hit`, `deferred`, `miss`, `too_large`), the timers
-  `pedalons_route_generator_generate` and `pedalons_route_generator_build`, the gauges
-  `pedalons_route_generator_cached_teams` and `pedalons_route_generator_cached_bytes`; a refused team
-  logs `Team network N holds more than N street edge observations`.
+**The graph, in the shared stack.** `docker-compose.shared.yml` runs `osm-route-details:1.9.0`
+with `./data/osm-route-details-graph` mounted **read only**. A graph is four files built on a
+workstation (the graph, the `road` and `gravel` views, the covered polygon: about 125 + 65 + 92 MB
+for Pays de la Loire), named from one stem: `<name>.ordg`, `<name>.road.ordv`,
+`<name>.gravel.ordv`, `<name>.poly`. The stem is `ORD_GRAPH_NAME` in `~/shared/.env`, which `scripts/deploy.sh --shared`
+already reads; without it the generator is off (the service starts and serves the altitude, and the
+generator answers `data_unavailable`, so `GENERATOR_UNAVAILABLE`). `scripts/deploy.sh --shared`
+creates `./data/osm-route-details-graph` before `docker stack deploy`: Swarm does not create the source of a
+bind mount, and a task whose source is missing does not start (the altitude would go with it).
+
+1. Copy the four files, mode 0444, into `~/shared/data/osm-route-details-graph/` **under a new
+   name** (for instance the date of the data: `pdl-2026-11-16`); never over the files of the graph
+   being served, the service has them mapped.
+2. Set `ORD_GRAPH_NAME=pdl-2026-11-16` in `~/shared/.env` and run `cd ~/shared && scripts/deploy.sh --shared`.
+   The service verifies the files, publishes the new `graph.id` in `GET /v1/capabilities` and
+   `generator.enabled`.
+3. **What a new graph does**: every overlay deposited for the old one becomes `stale` and
+   generations below discovery answer 409, so `GENERATOR_NETWORK_NOT_READY`, until it is deposited
+   again. Do not wait for the night: on each environment run the trigger with `force` (it
+   reads the capabilities afresh, so it sees the new graph at once).
+4. After 48 hours the engine purges the overlays of the old graph; delete the old files by hand.
+
+**The nightly pass** (`RouteGeneratorOverlayJob`, 02:10 UTC). For each team of every domain, one at
+a time: compares the digest of its tracks (one statement) with the `source_digest` of its overlay
+at the engine and deposits it again when the overlay is absent, stale, different, or expires within
+seven days; deletes the overlay of a deleted team, a team whose route planner is off or whose
+domain is inactive. A team without any overlay and no planner costs one cheap status call. A deposit
+streams the team's `network_edges` documents (8 at a time from the database, 1 MiB in flight, one
+NDJSON line per track with its surface type and its "excluded from generator" flag; a document
+that is not current is sent as `null`) in a read transaction of up to 1000 s. The pass writes
+nothing in the database, holds a Postgres advisory lock (`route-generator-overlays`) on a
+connection of its own so that only one backend runs it during a rolling deploy, and is idempotent:
+run it as often as you like.
+
+| Failure at the engine | Effect |
+|---|---|
+| 503 `overloaded` | wait `Retry-After` (at most 120 s), three tries, then the next team |
+| 409 `deposit_in_progress`, 504 | the next team |
+| 413, 400, an unknown answer | the next team, logged as `ERROR` (a drift between the two repositories) |
+| 507, 503 `data_unavailable`, unreachable, the database failing | the pass ends (`ERROR` for 507) |
+
+No failure deletes an overlay: the old one serves until it expires, seven nights later at worst.
+
+- **By hand**: `POST /api/admin/route-generator/overlays/refresh`, platform admin, body
+  `{"teamId": null, "force": false, "dryRun": true}`. `dryRun` answers 200 at once with one line per
+  team that would be deposited (`DEPOSIT` with `ABSENT`, `STALE`, `CHANGED`, `EXPIRING` or
+  `FORCED`), deleted (`DELETE` with `TEAM_GONE` or `PLANNER_OFF`) or kept; without it the answer is
+  202 and the pass runs in the background (`started: false` when one already runs on that
+  instance). Swagger UI in `%dev`, or `curl` with an admin's token. Use it after a deploy that
+  changes the format of what is sent (the digest then differs for everyone), after a new graph, a
+  rotated key, a restored database, or to try the engine on the e2e or workstation stack.
+- **First start**: the engine ready (image 1.9.0, graph files, `ORD_GRAPH_NAME`), the key in each
+  `.env`, the backend deployed; then run the trigger with `force`, rather than wait for the night.
+  Until a team's overlay exists it gets `GENERATOR_NETWORK_NOT_READY` below discovery.
+- **Follow it**: the log lines `Route generator overlays: …` (one `INFO` per deposit with the team's
+  reference, the reason, tracks, edges, megabytes and seconds, one summary per pass; never a name, a
+  digest, a key or a coordinate); the counters `pedalons_route_generator_requests_total{outcome}`,
+  `pedalons_route_generator_dropped_total{check}` (routes the sanity check refused),
+  `pedalons_route_generator_ascent_total{outcome}`,
+  `pedalons_route_generator_overlay_deposits_total{outcome}`, the timers
+  `pedalons_route_generator_generate`, `…_overlay_deposit` and `…_overlay_pass`, and the gauge
+  `pedalons_route_generator_overlay_last_success` (the epoch second of the last pass that was not cut
+  short: alert when it is older than two days).
+- **Memory of the shared service**: 2G measured at 1.07 GiB at worst outside a container, without a
+  cold altitude request alongside; watch it (`OPS-60`).
 
 **The DEM tiles left on disk.** Since phase E the backend reads none: `mapterhorn`,
 `ign-lidar-hd-mnt` and `ign-lidar-hd-mns` in each environment's `data/cache` (about 7 GB in
