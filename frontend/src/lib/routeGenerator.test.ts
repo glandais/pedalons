@@ -151,7 +151,7 @@ describe('generatorErrorMessage and generatedRouteName (real catalogue)', () => 
     )
   it('words every row of the table in French', async () => {
     const { t } = await createServerI18n('fr')
-    const ctx = { distance: '120 km' }
+    const ctx = { distance: '120 km', minDistance: '10 km', maxDistance: '200 km' }
     expect(generatorErrorMessage(fail(ErrorCode.GENERATOR_START_TOO_FAR), t, ctx)).toContain(
       'du départ'
     )
@@ -173,7 +173,7 @@ describe('generatorErrorMessage and generatedRouteName (real catalogue)', () => 
 
   it('words the three errors of the engine, in French', async () => {
     const { t } = await createServerI18n('fr')
-    const ctx = { distance: '50 km' }
+    const ctx = { distance: '50 km', minDistance: '10 km', maxDistance: '200 km' }
     expect(generatorErrorMessage(fail(ErrorCode.GENERATOR_OUT_OF_COVERAGE), t, ctx)).toContain(
       'hors de la région'
     )
@@ -185,10 +185,28 @@ describe('generatorErrorMessage and generatedRouteName (real catalogue)', () => 
     )
   })
 
+  it('names the distance bounds when the request is refused for its distance', async () => {
+    const { t } = await createServerI18n('fr')
+    const ctx = { distance: '250 km', minDistance: '10 km', maxDistance: '200 km' }
+    const distanceRefused = fail(ErrorCode.VALIDATION, {
+      type: 'VALIDATION',
+      fieldErrors: [{ field: 'distanceKm', message: 'must be less than or equal to 200' }],
+    })
+    expect(generatorErrorMessage(distanceRefused, t, ctx)).toBe(
+      'La distance doit être comprise entre 10 km et 200 km.'
+    )
+    expect(generatorErrorMessage(fail(ErrorCode.VALIDATION), t, ctx)).toContain(
+      "n'accepte pas ces réglages"
+    )
+    expect(isRetryableGeneratorError(distanceRefused)).toBe(false)
+  })
+
   it('suggests more discovery when the team roads do not suffice', async () => {
     const { t } = await createServerI18n('fr')
     const message = generatorErrorMessage(fail(ErrorCode.GENERATOR_NETWORK_TOO_SMALL), t, {
       distance: '50 km',
+      minDistance: '10 km',
+      maxDistance: '200 km',
     })
     expect(message).toContain('ne suffisent pas pour 50 km')
     expect(message).toContain('découverte')
@@ -196,7 +214,7 @@ describe('generatorErrorMessage and generatedRouteName (real catalogue)', () => 
 
   it('gives the wait of a rate limit in minutes, rounded up, or the plain message without it', async () => {
     const { t } = await createServerI18n('fr')
-    const ctx = { distance: '50 km' }
+    const ctx = { distance: '50 km', minDistance: '10 km', maxDistance: '200 km' }
     expect(
       generatorErrorMessage(fail(ErrorCode.ROUTE_GENERATOR_RATE_LIMITED, undefined, 61), t, ctx)
     ).toContain('dans 2 minutes')
@@ -211,7 +229,13 @@ describe('generatorErrorMessage and generatedRouteName (real catalogue)', () => 
   it('says « Pas de connexion » for a network failure', async () => {
     const { t } = await createServerI18n('fr')
     const offline = Object.assign(new Error('Network Error'), { isAxiosError: true })
-    expect(generatorErrorMessage(offline, t, { distance: '50 km' })).toBe('Pas de connexion')
+    expect(
+      generatorErrorMessage(offline, t, {
+        distance: '50 km',
+        minDistance: '10 km',
+        maxDistance: '200 km',
+      })
+    ).toBe('Pas de connexion')
   })
 
   it('names a generated route after its distance', async () => {

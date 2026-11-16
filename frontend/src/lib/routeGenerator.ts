@@ -188,6 +188,7 @@ const GENERATOR_NON_RETRYABLE: ReadonlySet<ErrorCode> = new Set([
   ErrorCode.GENERATOR_NETWORK_NOT_READY,
   ErrorCode.ROUTE_GENERATOR_RATE_LIMITED,
   ErrorCode.ROUTE_PLANNER_DISABLED,
+  ErrorCode.VALIDATION,
 ])
 
 /** « Réessayer » helps on a network failure, a busy server or an unknown one. */
@@ -204,10 +205,20 @@ export function isRetryableGeneratorError(error: unknown): boolean {
 export function generatorErrorMessage(
   error: unknown,
   t: TFunction,
-  { distance }: { distance: string }
+  {
+    distance,
+    minDistance,
+    maxDistance,
+  }: { distance: string; minDistance: string; maxDistance: string }
 ): string {
   if (isNetworkError(error)) return t('routeGenerator.errors.network')
   const code = apiErrorCode(error)
+  // A request the contract refuses (400): name the distance when it is the field at fault
+  if (code === ErrorCode.VALIDATION) {
+    return validationFields(error).includes('distanceKm')
+      ? t('routeGenerator.errors.distanceOutOfRange', { min: minDistance, max: maxDistance })
+      : t('routeGenerator.errors.invalidRequest')
+  }
   if (code === ErrorCode.GENERATOR_NETWORK_TOO_SMALL) {
     return t('routeGenerator.errors.networkTooSmall', { distance })
   }
@@ -227,4 +238,11 @@ export function generatorErrorMessage(
   const key = code ? GENERATOR_ERROR_KEYS[code] : undefined
   if (key) return t(key)
   return t('routeGenerator.errors.generic')
+}
+
+/** The fields a `VALIDATION` refusal names (`ErrorValidationDetails.fieldErrors`), if any. */
+function validationFields(error: unknown): string[] {
+  if (!(error instanceof ApiClientError)) return []
+  const details = error.error.errorDetails as { fieldErrors?: { field?: string }[] } | undefined
+  return (details?.fieldErrors ?? []).flatMap((f) => (f.field ? [f.field] : []))
 }

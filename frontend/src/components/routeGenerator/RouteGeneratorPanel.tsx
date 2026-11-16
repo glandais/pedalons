@@ -29,6 +29,7 @@ import { useFormattedDate } from '@/utils/dateFormat'
 import { isPlannerQuotaSpent } from '@/lib/plannerQuota'
 import { selectIsPlatformAdmin, useAuthStore } from '@/store/authStore'
 import { useGeneratorPlaces, type GeneratorPlace } from '@/pages/route/routeGeneratorData'
+import { GENERATOR_MAX_KM, GENERATOR_MIN_KM } from '@/hooks/filters/routeGeneratorFilters'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 import { CompassPicker } from './CompassPicker'
 import { GeneratedRouteCard } from './GeneratedRouteCard'
@@ -157,15 +158,16 @@ export function RouteGeneratorPanel({
     onParamsChange(mode === 'start' ? { start: pointToParam(point) } : { end: pointToParam(point) })
   }
 
-  // Slider in the reader's unit; the request is in km, between the backend's 10 and 300
-  const sliderMin = isImperial ? 5 : 10
-  const sliderMax = isImperial ? 185 : 300
+  // Slider in the reader's unit; the request is in km, within the backend's bounds. Past them the
+  // query string falls back on its default (the thumb jumped back to 50 km) and the modal got a 400.
+  const sliderMin = isImperial ? 5 : GENERATOR_MIN_KM
+  const sliderMax = isImperial ? 120 : GENERATOR_MAX_KM
   const shownDistance = Math.round(distanceToDisplay(params.distanceKm * 1000) ?? sliderMin)
   const sliderValue = distanceDraft ?? Math.min(sliderMax, Math.max(sliderMin, shownDistance))
   const draftText = distance(kmOf(sliderValue) * 1000)
   function kmOf(display: number): number {
     const km = Math.round((distanceFromDisplay(display) ?? 0) / 1000)
-    return Math.min(300, Math.max(10, km))
+    return Math.min(GENERATOR_MAX_KM, Math.max(GENERATOR_MIN_KM, km))
   }
 
   const blockerText =
@@ -409,7 +411,11 @@ export function RouteGeneratorPanel({
         <Alert color="red" variant="light" icon={<IconAlertTriangle />}>
           <Stack gap="xs" align="flex-start">
             <Text size="sm">
-              {generatorErrorMessage(generator.error, t, { distance: distanceText })}
+              {generatorErrorMessage(generator.error, t, {
+                distance: distanceText,
+                minDistance: distance(GENERATOR_MIN_KM * 1000),
+                maxDistance: distance(GENERATOR_MAX_KM * 1000),
+              })}
             </Text>
             {isRetryableGeneratorError(generator.error) && (
               <Button size="compact-sm" variant="default" onClick={() => void generator.refetch()}>

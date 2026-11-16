@@ -277,6 +277,17 @@ describe('RouteGeneratorPanel (WEB-179)', () => {
     expect(options).toEqual({ skipErrorToast: true })
   })
 
+  it('stops the distance slider at the backend maximum, 200 km', async () => {
+    generateMock.mockResolvedValue(response())
+    renderPanel()
+    const slider = screen.getByRole('slider', { name: 'Distance' })
+    expect(slider.getAttribute('aria-valuemax')).toBe('200')
+    fireEvent.keyDown(slider, { key: 'End' })
+    fireEvent.click(generate())
+    await waitFor(() => expect(generateMock).toHaveBeenCalled())
+    expect(generateMock.mock.calls[0][1].distanceKm).toBe(200)
+  })
+
   it('takes the type with the most routes', async () => {
     counts.state = { counts: { ROAD: 1, GRAVEL: 4, MTB: 0 }, isPending: false }
     generateMock.mockResolvedValue(response())
