@@ -3,6 +3,7 @@ id: OPS-4
 title: "Les quatre gabarits d'invitation en production : les recevoir"
 status: open
 group: "Recette du backend en conditions réelles"
+kind: recette
 verified: 2026-11-16
 ---
 

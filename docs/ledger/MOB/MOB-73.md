@@ -3,6 +3,7 @@ id: MOB-73
 title: "Vérifier l'APK sur un Android sans Google Play Services"
 status: open
 group: "APK hors Play"
+kind: recette
 verified: 2026-11-16
 ---
 

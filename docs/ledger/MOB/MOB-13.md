@@ -3,6 +3,7 @@ id: MOB-13
 title: "Trombinoscope (34)"
 status: open
 group: "Recette sur une application qui tourne"
+kind: recette
 verified: 2026-11-16
 ---
 

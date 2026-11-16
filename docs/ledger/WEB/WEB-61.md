@@ -3,6 +3,7 @@ id: WEB-61
 title: "Météo des sorties : recette navigateur de ce que `WEB-94` n'a pas vu"
 status: open
 size: "S"
+kind: recette
 verified: 2026-11-16
 ---
 

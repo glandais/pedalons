@@ -2,6 +2,7 @@
 id: MOB-86
 title: "Points de parcours : recette sur appareil"
 status: open
+kind: recette
 verified: 2026-11-16
 ---
 

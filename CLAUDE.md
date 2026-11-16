@@ -45,7 +45,7 @@ notifications alike. Rephrase rather than agree: « Vous participez » not « Vo
 
 Every ledger entry carries a **stable ID, `PREFIX-n`** (`API-21`, `MOB-7`, `NOTIF-9`…) and lives in
 its own file, `docs/ledger/<PREFIX>/<ID>.md`, with a small frontmatter (`id`, `title`,
-`status: open | done | out`, optional `size` and `group`, `verified` or `done` dates). The prefix
+`status: open | done | out`, optional `size`, `group` and `kind`, `verified` or `done` dates). The prefix
 names the domain (`MOB`, `WEB`, `API`, `OPS`, `NOTIF`, `MOD`, `ISSUE`, `MIG`, `BRAND`, `SEC`, `AUD`,
 `LEGAL`, `BILL` — the table and the full rules are in [docs/ledger/README.md](docs/ledger/README.md)).
 `docs/LEDGER_NEXT.md` and `docs/LEDGER_DONE.md` are **generated indexes — never hand-edit them**.
@@ -64,6 +64,10 @@ only the entry files you need — never the whole directory.
   the contract changed, the test that covers it, and the decisions that must not be undone. If a
   part is still open, keep `status: open` and both sections in the same file (a split into two
   subjects keeps the ID on one and takes a new number for the other).
+- **`kind` marks an open entry no code change can close**: `recette` (to be seen by hand on a
+  device, in a browser, on a GPS unit or in production), `externe` (a store, a third party, an
+  operation outside the repository) or `decision`. The index lists them apart; don't spend a
+  session « fixing » one, and drop the field with `verified` when the entry is resolved.
 - **Rereading an open entry against the code** updates its `verified` date, changed or not;
   `node scripts/ledger.mjs stale` lists the ones not reread for thirty days.
 - **Always finish with `node scripts/ledger.mjs index`** and commit the two indexes with the entry;

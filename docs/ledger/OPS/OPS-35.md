@@ -3,6 +3,7 @@ id: OPS-35
 title: "Publier l'app Garmin sur le Connect IQ Store"
 status: open
 group: "App Garmin : Connect IQ Store"
+kind: externe
 verified: 2026-11-16
 ---
 

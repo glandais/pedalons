@@ -3,6 +3,7 @@ id: MOB-95
 title: "La météo sur la carte : recette sur appareil des paliers 1 à 3"
 status: open
 size: "S"
+kind: recette
 verified: 2026-11-16
 ---
 

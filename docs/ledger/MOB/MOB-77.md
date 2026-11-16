@@ -4,6 +4,7 @@ title: "Éditeur de sortie, modèles et parcours : recette sur appareil"
 status: open
 size: "S"
 group: "Couverture e2e Patrol — ce que les tests ne couvrent pas encore"
+kind: recette
 verified: 2026-11-16
 ---
 

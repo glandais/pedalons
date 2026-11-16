@@ -3,6 +3,7 @@ id: MIG-7
 title: "Avant l'arrêt de biketeam"
 status: open
 group: "Mise en production"
+kind: externe
 verified: 2026-11-16
 ---
 

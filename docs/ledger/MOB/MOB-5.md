@@ -3,6 +3,7 @@ id: MOB-5
 title: "Exploration de parcours (21)"
 status: open
 group: "Recette sur une application qui tourne"
+kind: recette
 verified: 2026-11-16
 ---
 

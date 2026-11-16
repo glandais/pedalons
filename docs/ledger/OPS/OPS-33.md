@@ -3,6 +3,7 @@ id: OPS-33
 title: "Publier l'extension Karoo dans l'Extension Library de Hammerhead"
 status: open
 group: "Extension Karoo : catalogue Hammerhead"
+kind: externe
 verified: 2026-11-16
 ---
 

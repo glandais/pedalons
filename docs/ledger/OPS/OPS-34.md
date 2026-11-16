@@ -3,6 +3,7 @@ id: OPS-34
 title: "Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`"
 status: open
 group: "Exploitation"
+kind: externe
 verified: 2026-11-16
 ---
 

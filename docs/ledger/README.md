@@ -39,9 +39,9 @@ verified: 2026-11-16
 …
 ```
 
-`size` (XS, S, M, L) et `group` (un sous-titre dans l'index) sont facultatifs ; `verified` va avec une
-entrée ouverte, `done` (la date de livraison) avec une entrée livrée. Pas de commentaire dans
-l'en-tête : le script le lit ligne à ligne.
+`size` (XS, S, M, L), `group` (un sous-titre dans l'index) et `kind` sont facultatifs ; `verified` va
+avec une entrée ouverte, `done` (la date de livraison) avec une entrée livrée. Pas de commentaire
+dans l'en-tête : le script le lit ligne à ligne.
 
 - `status: open` : il reste quelque chose à faire, décrit sous « Reste à faire ». Une entrée
   dont une part est livrée garde les deux sections dans le même fichier.
@@ -50,6 +50,14 @@ l'en-tête : le script le lit ligne à ligne.
 - `status: out` : écartée exprès, avec son motif sous « Écarté ». À relire avant de rouvrir :
   plusieurs sont des invariants que le code garde. Rouverte, elle repasse à `open` sous le même
   identifiant.
+- `kind` marque une entrée ouverte qu'aucun changement de code ne ferme, et dit ce qu'elle attend.
+  L'index la signale sur sa ligne et la reprend dans « Ce qui ne se ferme pas par du code ». Une
+  entrée qui mêle du code et une recette n'en porte pas ; livrée ou écartée, elle le perd.
+  - `recette` : à constater à la main, sur un téléphone, dans un navigateur, sur un compteur GPS
+    ou en production (un e-mail reçu, un webhook arrivé).
+  - `externe` : dépend d'un tiers ou d'une opération hors du dépôt (un store, la Search Console,
+    la bascule de biketeam).
+  - `decision` : attend un arbitrage avant tout code.
 - `verified` se met à jour chaque fois qu'on relit une entrée ouverte contre le code, qu'on la
   modifie ou non. `node scripts/ledger.mjs stale` liste celles qu'on n'a pas relues depuis
   trente jours.
@@ -58,6 +66,7 @@ l'en-tête : le script le lit ligne à ligne.
 
 ```bash
 node scripts/ledger.mjs new API "Titre de l'entrée" --size S   # crée docs/ledger/API/API-<n>.md
+node scripts/ledger.mjs new MOB "Recette de …" --kind recette  # une entrée qui ne se ferme pas par du code
 node scripts/ledger.mjs next API                               # le prochain numéro libre, sans rien créer
 node scripts/ledger.mjs index                                  # régénère LEDGER_NEXT.md et LEDGER_DONE.md
 node scripts/ledger.mjs check                                  # ce que la CI vérifie
@@ -68,7 +77,7 @@ node scripts/ledger.mjs stale 30                               # entrées ouvert
   elle vit dans le code. Un gros chantier a son plan dans `docs/plans/` et une entrée d'un
   paragraphe qui y renvoie.
 - **Livrer** : dans le commit du travail, passer `status` à `done`, poser `done:`, retirer
-  `verified:` et réécrire le texte au passé sous « Livré ». S'il reste une part ouverte, garder
+  `verified:` et `kind:`, et réécrire le texte au passé sous « Livré ». S'il reste une part ouverte, garder
   `status: open` et les deux sections ; une scission en deux sujets donne un numéro neuf à l'un
   des deux.
 - **Écarter** : `status: out`, le motif sous « Écarté ». Jamais de suppression silencieuse.

@@ -7,7 +7,7 @@
 //   node scripts/ledger.mjs check            fail on a stale index, a malformed entry, a dead link,
 //                                            or a code comment citing an entry that does not exist
 //   node scripts/ledger.mjs next API         print the next free identifier of a prefix
-//   node scripts/ledger.mjs new API "Title" [--size S] [--group "Sub-heading"]
+//   node scripts/ledger.mjs new API "Title" [--size S] [--group "Sub-heading"] [--kind recette]
 //   node scripts/ledger.mjs stale [days]     open entries not reread against the code for N days
 
 import { execFileSync } from 'node:child_process'
@@ -19,7 +19,13 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const DOCS = join(ROOT, 'docs')
 const LEDGER = join(DOCS, 'ledger')
 const STATUSES = ['open', 'done', 'out']
-const FIELDS = ['id', 'title', 'status', 'size', 'group', 'verified', 'done']
+const FIELDS = ['id', 'title', 'status', 'size', 'group', 'kind', 'verified', 'done']
+// What an open entry waits for when no change to the code can close it.
+const KINDS = {
+  recette: 'À constater à la main',
+  externe: "Dépend d'un tiers ou d'une opération hors du dépôt",
+  decision: 'Attend une décision',
+}
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 
 /** The prefix table of docs/ledger/README.md: the order of the sections, and their names. */
@@ -80,6 +86,7 @@ const oneLine = (s) => s.replace(/\s+/g, ' ').replace(/\|/g, '\\|')
 
 // The size, unless the title already carries it (« … (M, backend + web) »).
 const sizeSuffix = (e) => (e.size && !/\((XS|S|M|L|XL)[,) ]/.test(e.title) ? ` (${e.size})` : '')
+const kindSuffix = (e) => (e.kind ? ` · *${e.kind}*` : '')
 
 const BANNER = [
   '<!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->',
@@ -90,10 +97,14 @@ function renderNext(prefixes, entries) {
   const out = ['# La suite : ce qui reste à faire', '', ...BANNER]
   const open = entries.filter((e) => e.status === 'open')
   const ruledOut = entries.filter((e) => e.status === 'out')
+  const offCode = open.filter((e) => e.kind)
   out.push(
     `Index des **${open.length} entrées ouvertes** et des ${ruledOut.length} entrées écartées. Chaque entrée a son fichier`,
     'dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans',
     '[`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).',
+    '',
+    `${offCode.length} de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont`,
+    'reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).',
     ''
   )
   for (const { prefix, name } of prefixes) {
@@ -119,10 +130,27 @@ function renderNext(prefixes, entries) {
     for (const key of keys) {
       if (key) out.push(`### ${key}`, '')
       for (const e of groups.get(key).sort(byNumberDesc)) {
-        out.push(`- [ ] ${link(e)} ${oneLine(e.title)}${sizeSuffix(e)}`)
+        out.push(`- [ ] ${link(e)} ${oneLine(e.title)}${sizeSuffix(e)}${kindSuffix(e)}`)
       }
       out.push('')
     }
+  }
+  out.push(
+    '## Ce qui ne se ferme pas par du code',
+    '',
+    "Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne les fait pas avancer.",
+    ''
+  )
+  for (const [kind, heading] of Object.entries(KINDS)) {
+    const mine = offCode.filter((e) => e.kind === kind)
+    if (mine.length === 0) continue
+    out.push(`### ${heading} (\`${kind}\`)`, '')
+    for (const { prefix } of prefixes) {
+      for (const e of mine.filter((x) => x.dir === prefix).sort(byNumberDesc)) {
+        out.push(`- ${link(e)} ${oneLine(e.title)}`)
+      }
+    }
+    out.push('')
   }
   out.push(
     '## Délibérément dehors',
@@ -181,6 +209,10 @@ function validate(prefixes, entries) {
     if (!e.title) errors.push(`${where}: no title`)
     if (!STATUSES.includes(e.status))
       errors.push(`${where}: status « ${e.status} » is not one of ${STATUSES.join(', ')}`)
+    if (e.kind !== undefined && !(e.kind in KINDS))
+      errors.push(`${where}: kind « ${e.kind} » is not one of ${Object.keys(KINDS).join(', ')}`)
+    if (e.kind !== undefined && e.status !== 'open')
+      errors.push(`${where}: kind only goes with an open entry`)
     for (const key of ['verified', 'done']) {
       if (e[key] !== undefined && !DATE.test(e[key]))
         errors.push(`${where}: ${key} is not a YYYY-MM-DD date`)
@@ -308,12 +340,18 @@ function main() {
     if (command === 'next') return console.log(id)
     const title = args[1]
     if (!title || title.startsWith('--'))
-      throw new Error('usage: ledger.mjs new PREFIX "Title" [--size S] [--group "Sub-heading"]')
+      throw new Error(
+        'usage: ledger.mjs new PREFIX "Title" [--size S] [--group "Sub-heading"] [--kind recette]'
+      )
     const size = option(args, '--size')
     const group = option(args, '--group')
+    const kind = option(args, '--kind')
+    if (kind !== undefined && !(kind in KINDS))
+      throw new Error(`unknown kind « ${kind} »: one of ${Object.keys(KINDS).join(', ')}`)
     const lines = ['---', `id: ${id}`, `title: ${JSON.stringify(title)}`, 'status: open']
     if (size) lines.push(`size: ${JSON.stringify(size)}`)
     if (group) lines.push(`group: ${JSON.stringify(group)}`)
+    if (kind) lines.push(`kind: ${kind}`)
     lines.push(
       `verified: ${today()}`,
       '---',

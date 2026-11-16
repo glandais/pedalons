@@ -3,6 +3,7 @@ id: WEB-56
 title: "Profil refondu (`WEB-55`, `WEB-57`) : recette navigateur"
 status: open
 size: "S"
+kind: recette
 verified: 2026-11-16
 ---
 

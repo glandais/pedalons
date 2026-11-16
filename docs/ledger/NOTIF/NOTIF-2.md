@@ -2,6 +2,7 @@
 id: NOTIF-2
 title: "Décision produit sur l'e-mail"
 status: open
+kind: decision
 verified: 2026-11-16
 ---
 

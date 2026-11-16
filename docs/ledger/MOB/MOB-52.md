@@ -4,6 +4,7 @@ title: "Météo : recette sur appareil de ce que `MOB-68` ne couvre pas"
 status: open
 size: "S"
 group: "Recette sur une application qui tourne"
+kind: recette
 verified: 2026-11-16
 ---
 

@@ -2,9 +2,12 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **172 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
+Index des **173 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
+
+41 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
 
@@ -12,30 +15,30 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
 - [ ] [`MOB-175`](ledger/MOB/MOB-175.md) Recette sur Pixel de la 1.2.0 : défauts d'affichage des pages groupe, équipe et carte (S)
 - [ ] [`MOB-174`](ledger/MOB/MOB-174.md) `maplibre_ios` appelle `setState` sur une carte déjà démontée (S)
-- [ ] [`MOB-170`](ledger/MOB/MOB-170.md) Tracer et modifier un parcours sur la carte dans l'app : recette sur appareil (S)
+- [ ] [`MOB-170`](ledger/MOB/MOB-170.md) Tracer et modifier un parcours sur la carte dans l'app : recette sur appareil (S) · *recette*
 - [ ] [`MOB-161`](ledger/MOB/MOB-161.md) Éditeur riche : insérer un tableau et en ajouter ou retirer lignes et colonnes (S)
 - [ ] [`MOB-160`](ledger/MOB/MOB-160.md) Éditeur riche : test de widget du pont et test Patrol de l'écran plein (S)
 - [ ] [`MOB-154`](ledger/MOB/MOB-154.md) Générer un parcours depuis l'app (M, plus tard)
 - [ ] [`MOB-151`](ledger/MOB/MOB-151.md) Plugins Android qui appliquent encore le Kotlin Gradle Plugin (S)
 - [ ] [`MOB-149`](ledger/MOB/MOB-149.md) Basculer l'app sur `material_ui` / `cupertino_ui` quand les dépendances y seront (M)
-- [ ] [`MOB-146`](ledger/MOB/MOB-146.md) Listes homogènes : recette sur appareil de `MOB-143` (S)
-- [ ] [`MOB-141`](ledger/MOB/MOB-141.md) Cartes homogènes : recette sur appareil de `MOB-139` (S)
-- [ ] [`MOB-135`](ledger/MOB/MOB-135.md) Refonte des écrans de détail : recette sur appareil de `MOB-134` (S)
+- [ ] [`MOB-146`](ledger/MOB/MOB-146.md) Listes homogènes : recette sur appareil de `MOB-143` (S) · *recette*
+- [ ] [`MOB-141`](ledger/MOB/MOB-141.md) Cartes homogènes : recette sur appareil de `MOB-139` (S) · *recette*
+- [ ] [`MOB-135`](ledger/MOB/MOB-135.md) Refonte des écrans de détail : recette sur appareil de `MOB-134` (S) · *recette*
 - [ ] [`MOB-133`](ledger/MOB/MOB-133.md) Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)
-- [ ] [`MOB-130`](ledger/MOB/MOB-130.md) Contrôles de carte : recette sur appareil de `MOB-129` (S)
-- [ ] [`MOB-95`](ledger/MOB/MOB-95.md) La météo sur la carte : recette sur appareil des paliers 1 à 3 (S)
-- [ ] [`MOB-86`](ledger/MOB/MOB-86.md) Points de parcours : recette sur appareil
+- [ ] [`MOB-130`](ledger/MOB/MOB-130.md) Contrôles de carte : recette sur appareil de `MOB-129` (S) · *recette*
+- [ ] [`MOB-95`](ledger/MOB/MOB-95.md) La météo sur la carte : recette sur appareil des paliers 1 à 3 (S) · *recette*
+- [ ] [`MOB-86`](ledger/MOB/MOB-86.md) Points de parcours : recette sur appareil · *recette*
 
 ### APK hors Play
 
-- [ ] [`MOB-73`](ledger/MOB/MOB-73.md) Vérifier l'APK sur un Android sans Google Play Services
+- [ ] [`MOB-73`](ledger/MOB/MOB-73.md) Vérifier l'APK sur un Android sans Google Play Services · *recette*
 
 ### Couverture e2e Patrol — ce que les tests ne couvrent pas encore
 
 - [ ] [`MOB-163`](ledger/MOB/MOB-163.md) Éditeur de voyage : recette sur appareil, test Patrol et restes (S)
 - [ ] [`MOB-159`](ledger/MOB/MOB-159.md) Éditeur d'annonce : déclarer l'adresse sur les deux stores, recette sur appareil et test Patrol (S)
 - [ ] [`MOB-157`](ledger/MOB/MOB-157.md) Éditeur de publication : recette sur appareil et test Patrol (S)
-- [ ] [`MOB-77`](ledger/MOB/MOB-77.md) Éditeur de sortie, modèles et parcours : recette sur appareil (S)
+- [ ] [`MOB-77`](ledger/MOB/MOB-77.md) Éditeur de sortie, modèles et parcours : recette sur appareil (S) · *recette*
 - [ ] [`MOB-75`](ledger/MOB/MOB-75.md) `patrol_test/README.md` en retard sur la suite (XS)
 - [ ] [`MOB-62`](ledger/MOB/MOB-62.md) Profil refondu (`MOB-48`, `WEB-57`) : finitions (S)
 - [ ] [`MOB-37`](ledger/MOB/MOB-37.md) Les tests Patrol ne tournent qu'en local
@@ -43,17 +46,17 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
 ### Fiches des stores
 
-- [ ] [`MOB-110`](ledger/MOB/MOB-110.md) Publier la 1.2.0 sur l'App Store (XS)
-- [ ] [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play (S)
+- [ ] [`MOB-110`](ledger/MOB/MOB-110.md) Publier la 1.2.0 sur l'App Store (XS) · *externe*
+- [ ] [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play (S) · *externe*
 
 ### Recette sur une application qui tourne
 
-- [ ] [`MOB-52`](ledger/MOB/MOB-52.md) Météo : recette sur appareil de ce que `MOB-68` ne couvre pas (S)
+- [ ] [`MOB-52`](ledger/MOB/MOB-52.md) Météo : recette sur appareil de ce que `MOB-68` ne couvre pas (S) · *recette*
 - [ ] [`MOB-47`](ledger/MOB/MOB-47.md) Contact du vendeur : l'échec d'envoi (500) de bout en bout
 - [ ] [`MOB-20`](ledger/MOB/MOB-20.md) Performance
-- [ ] [`MOB-15`](ledger/MOB/MOB-15.md) Profil (33)
-- [ ] [`MOB-13`](ledger/MOB/MOB-13.md) Trombinoscope (34)
-- [ ] [`MOB-5`](ledger/MOB/MOB-5.md) Exploration de parcours (21)
+- [ ] [`MOB-15`](ledger/MOB/MOB-15.md) Profil (33) · *recette*
+- [ ] [`MOB-13`](ledger/MOB/MOB-13.md) Trombinoscope (34) · *recette*
+- [ ] [`MOB-5`](ledger/MOB/MOB-5.md) Exploration de parcours (21) · *recette*
 
 ## WEB — Site web
 
@@ -62,20 +65,20 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 - [ ] [`WEB-191`](ledger/WEB/WEB-191.md) Aperçu GPX : la molette zoome la carte pleine largeur au lieu de faire défiler la page (S)
 - [ ] [`WEB-183`](ledger/WEB/WEB-183.md) Planificateur embarquable dans l'app : recette iOS et poids du bundle (S)
 - [ ] [`WEB-179`](ledger/WEB/WEB-179.md) Panneau « Générer un parcours » (M)
-- [ ] [`WEB-176`](ledger/WEB/WEB-176.md) Listes homogènes : recette en navigateur de `WEB-175` (S)
-- [ ] [`WEB-172`](ledger/WEB/WEB-172.md) Cartes homogènes : recette en navigateur de `WEB-167` (S)
+- [ ] [`WEB-176`](ledger/WEB/WEB-176.md) Listes homogènes : recette en navigateur de `WEB-175` (S) · *recette*
+- [ ] [`WEB-172`](ledger/WEB/WEB-172.md) Cartes homogènes : recette en navigateur de `WEB-167` (S) · *recette*
 - [ ] [`WEB-170`](ledger/WEB/WEB-170.md) Servir la police Inter sur le site (S à M)
 - [ ] [`WEB-165`](ledger/WEB/WEB-165.md) Aligner le web sur les décisions des cibles mobiles (M, à cadrer)
 - [ ] [`WEB-163`](ledger/WEB/WEB-163.md) Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)
-- [ ] [`WEB-161`](ledger/WEB/WEB-161.md) Contrôles de carte : recette à l'œil de `WEB-157` (S)
-- [ ] [`WEB-133`](ledger/WEB/WEB-133.md) La météo des aperçus GPX : recette navigateur (S)
+- [ ] [`WEB-161`](ledger/WEB/WEB-161.md) Contrôles de carte : recette à l'œil de `WEB-157` (S) · *recette*
+- [ ] [`WEB-133`](ledger/WEB/WEB-133.md) La météo des aperçus GPX : recette navigateur (S) · *recette*
 - [ ] [`WEB-120`](ledger/WEB/WEB-120.md) Signaler à un administrateur de la plateforme les pages qu'il est seul à voir (XS, facultatif)
-- [ ] [`WEB-119`](ledger/WEB/WEB-119.md) La météo sur la carte : recette navigateur des paliers 1 à 3 (S)
+- [ ] [`WEB-119`](ledger/WEB/WEB-119.md) La météo sur la carte : recette navigateur des paliers 1 à 3 (S) · *recette*
 - [ ] [`WEB-100`](ledger/WEB/WEB-100.md) Éditeur de parcours web, desktop et web mobile (L, en quatre lots)
 - [ ] [`WEB-98`](ledger/WEB/WEB-98.md) Deux clés i18n mortes et un e-mail qui nomme un réglage sans lien (XS)
 - [ ] [`WEB-96`](ledger/WEB/WEB-96.md) La carte s'initialise au chargement et bloque le fil principal (S)
-- [ ] [`WEB-61`](ledger/WEB/WEB-61.md) Météo des sorties : recette navigateur de ce que `WEB-94` n'a pas vu (S)
-- [ ] [`WEB-56`](ledger/WEB/WEB-56.md) Profil refondu (`WEB-55`, `WEB-57`) : recette navigateur (S)
+- [ ] [`WEB-61`](ledger/WEB/WEB-61.md) Météo des sorties : recette navigateur de ce que `WEB-94` n'a pas vu (S) · *recette*
+- [ ] [`WEB-56`](ledger/WEB/WEB-56.md) Profil refondu (`WEB-55`, `WEB-57`) : recette navigateur (S) · *recette*
 - [ ] [`WEB-36`](ledger/WEB/WEB-36.md) Un tap juste après l'affichage d'une page, sous charge, est ignoré (M)
 
 ### Couverture e2e — ce que l'audit du 27 septembre laisse ouvert
@@ -92,9 +95,10 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 
-- [ ] [`API-207`](ledger/API/API-207.md) Générateur de parcours au-delà du réseau de l'équipe (L, proposition, décision d'abord)
-- [ ] [`API-203`](ledger/API/API-203.md) Ce qu'un jeton d'application ou d'appareil peut faire sans le membre (S, décision d'abord)
-- [ ] [`API-202`](ledger/API/API-202.md) Une application externe dans un navigateur ne peut pas appeler l'API (S, décision d'abord)
+- [ ] [`API-209`](ledger/API/API-209.md) Carte des parcours en fréquentation : nombre de parcours par arête OSM, coloré selon le compte (L)
+- [ ] [`API-207`](ledger/API/API-207.md) Générateur de parcours au-delà du réseau de l'équipe (L, proposition, décision d'abord) · *decision*
+- [ ] [`API-203`](ledger/API/API-203.md) Ce qu'un jeton d'application ou d'appareil peut faire sans le membre (S, décision d'abord) · *decision*
+- [ ] [`API-202`](ledger/API/API-202.md) Une application externe dans un navigateur ne peut pas appeler l'API (S, décision d'abord) · *decision*
 - [ ] [`API-200`](ledger/API/API-200.md) OAuth des applications externes : l'écran de consentement dans l'app mobile (M)
 - [ ] [`API-177`](ledger/API/API-177.md) Le rôle de l'appelant dans l'équipe, lu une fois par requête (S)
 - [ ] [`API-173`](ledger/API/API-173.md) La ligne météo d'un voyage dans les listes s'arrête au départ de sa dernière étape (S)
@@ -102,7 +106,7 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 - [ ] [`API-152`](ledger/API/API-152.md) D+ du service écrit dans le `Path` par une API publique de vcyclist (XS)
 - [ ] [`API-151`](ledger/API/API-151.md) Passage à osm-route-details : banc de D+ et crédit web (S)
 - [ ] [`API-148`](ledger/API/API-148.md) Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)
-- [ ] [`API-140`](ledger/API/API-140.md) `/api/admin/teams` sans domaine forcé : décision produit à prendre
+- [ ] [`API-140`](ledger/API/API-140.md) `/api/admin/teams` sans domaine forcé : décision produit à prendre · *decision*
 - [ ] [`API-139`](ledger/API/API-139.md) `GET /api/admin/teams` compte les membres ligne par ligne (S)
 - [ ] [`API-136`](ledger/API/API-136.md) Retirer `participations` du résumé du profil (S)
 - [ ] [`API-135`](ledger/API/API-135.md) Garder le type et la distance des `course_point` d'une pièce jointe FIT (S)
@@ -121,7 +125,7 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 - [ ] [`API-164`](ledger/API/API-164.md) `RideGroupDto.gpsSyncStatuses` vide quand la route du groupe est supprimée ou masquée (S)
 - [ ] [`API-126`](ledger/API/API-126.md) L'envoi manuel vers un service GPS traite 401, 412 et 429 comme la synchronisation (S)
 - [ ] [`API-125`](ledger/API/API-125.md) Les restes d'`API-120` : nom envoyé, envoi manuel d'une route suivie, étape 0 (S)
-- [ ] [`API-122`](ledger/API/API-122.md) L'état « déjà chez le service GPS » de « Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge (S)
+- [ ] [`API-122`](ledger/API/API-122.md) L'état « déjà chez le service GPS » de « Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge (S) · *recette*
 
 ### Extension Karoo : ce que le découpage de novembre 2026 a figé sans le corriger
 
@@ -131,11 +135,11 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 - [ ] [`API-187`](ledger/API/API-187.md) Karoo : les touches agissent sous l'écran affiché (S)
 - [ ] [`API-186`](ledger/API/API-186.md) Karoo : une synchro qui échoue ou réussit à tort (S)
 - [ ] [`API-72`](ledger/API/API-72.md) Contraintes CHECK des enums vérifiées contre Flyway (S)
-- [ ] [`API-63`](ledger/API/API-63.md) Onboarding d'un Karoo refait de bout en bout (M, backend + web + mobile + Karoo)
+- [ ] [`API-63`](ledger/API/API-63.md) Onboarding d'un Karoo refait de bout en bout (M, backend + web + mobile + Karoo) · *recette*
 
 ### Garmin
 
-- [ ] [`API-119`](ledger/API/API-119.md) « Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge (S)
+- [ ] [`API-119`](ledger/API/API-119.md) « Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge (S) · *recette*
 - [ ] [`API-111`](ledger/API/API-111.md) App Garmin sur les montres qui suivent un parcours
 - [ ] [`API-110`](ledger/API/API-110.md) App Garmin : rendre les Edge plus anciens éligibles
 - [ ] [`API-61`](ledger/API/API-61.md) Mettre l'intégration Garmin OAuth 2.0 en conformité
@@ -172,7 +176,7 @@ Contexte du domaine : [`ledger/OPS/README.md`](ledger/OPS/README.md).
 
 ### App Garmin : Connect IQ Store
 
-- [ ] [`OPS-35`](ledger/OPS/OPS-35.md) Publier l'app Garmin sur le Connect IQ Store
+- [ ] [`OPS-35`](ledger/OPS/OPS-35.md) Publier l'app Garmin sur le Connect IQ Store · *externe*
 
 ### Exploitation
 
@@ -181,22 +185,22 @@ Contexte du domaine : [`ledger/OPS/README.md`](ledger/OPS/README.md).
 - [ ] [`OPS-54`](ledger/OPS/OPS-54.md) Images Docker publiées sur un registry public, construites par la CI (étude)
 - [ ] [`OPS-47`](ledger/OPS/OPS-47.md) Un `robots.txt` pour `auth.pedalons.fr`
 - [ ] [`OPS-46`](ledger/OPS/OPS-46.md) (Optionnel) Alerte sur la taille du cache de tuiles du backend
-- [ ] [`OPS-42`](ledger/OPS/OPS-42.md) Envoi automatique des parcours : la recette sur appareil, faite après l'allumage (S)
+- [ ] [`OPS-42`](ledger/OPS/OPS-42.md) Envoi automatique des parcours : la recette sur appareil, faite après l'allumage (S) · *recette*
 - [ ] [`OPS-41`](ledger/OPS/OPS-41.md) Mesure d'audience du site : consigner la recette, puis relire au bout d'un mois (S)
-- [ ] [`OPS-34`](ledger/OPS/OPS-34.md) Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`
+- [ ] [`OPS-34`](ledger/OPS/OPS-34.md) Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109` · *externe*
 - [ ] [`OPS-30`](ledger/OPS/OPS-30.md) Check Healthchecks du rafraîchissement des données des relecteurs des stores
 - [ ] [`OPS-21`](ledger/OPS/OPS-21.md) Ce que le monitoring ne voit pas encore
 
 ### Extension Karoo : catalogue Hammerhead
 
-- [ ] [`OPS-33`](ledger/OPS/OPS-33.md) Publier l'extension Karoo dans l'Extension Library de Hammerhead
+- [ ] [`OPS-33`](ledger/OPS/OPS-33.md) Publier l'extension Karoo dans l'Extension Library de Hammerhead · *externe*
 
 ### Recette du backend en conditions réelles
 
 - [ ] [`OPS-44`](ledger/OPS/OPS-44.md) Un test automatisé pour « `AdDto` ne porte aucun champ de contact »
 - [ ] [`OPS-29`](ledger/OPS/OPS-29.md) Météo des sorties en production : ce qui reste (S)
-- [ ] [`OPS-4`](ledger/OPS/OPS-4.md) Les quatre gabarits d'invitation en production : les recevoir
-- [ ] [`OPS-3`](ledger/OPS/OPS-3.md) Le relais de contact en production : regarder un message reçu
+- [ ] [`OPS-4`](ledger/OPS/OPS-4.md) Les quatre gabarits d'invitation en production : les recevoir · *recette*
+- [ ] [`OPS-3`](ledger/OPS/OPS-3.md) Le relais de contact en production : regarder un message reçu · *recette*
 
 ## NOTIF — Notifications
 
@@ -206,8 +210,8 @@ Contexte du domaine : [`ledger/NOTIF/README.md`](ledger/NOTIF/README.md).
 - [ ] [`NOTIF-11`](ledger/NOTIF/NOTIF-11.md) Rejouer `CoalesceRace` sur le correctif exact de `NOTIF-10`
 - [ ] [`NOTIF-4`](ledger/NOTIF/NOTIF-4.md) Le canal e-mail des notifications n'a pas de test e2e
 - [ ] [`NOTIF-3`](ledger/NOTIF/NOTIF-3.md) Webhook d'équipe : le *DNS rebinding* n'est pas couvert
-- [ ] [`NOTIF-2`](ledger/NOTIF/NOTIF-2.md) Décision produit sur l'e-mail
-- [ ] [`NOTIF-1`](ledger/NOTIF/NOTIF-1.md) Recette du webhook d'équipe
+- [ ] [`NOTIF-2`](ledger/NOTIF/NOTIF-2.md) Décision produit sur l'e-mail · *decision*
+- [ ] [`NOTIF-1`](ledger/NOTIF/NOTIF-1.md) Recette du webhook d'équipe · *recette*
 
 ## MOD — Modération et signalement de contenu
 
@@ -236,11 +240,11 @@ Contexte du domaine : [`ledger/MIG/README.md`](ledger/MIG/README.md).
 ### Mise en production
 
 - [ ] [`MIG-8`](ledger/MIG/MIG-8.md) Après l'arrêt de biketeam
-- [ ] [`MIG-7`](ledger/MIG/MIG-7.md) Avant l'arrêt de biketeam
+- [ ] [`MIG-7`](ledger/MIG/MIG-7.md) Avant l'arrêt de biketeam · *externe*
 - [ ] [`MIG-6`](ledger/MIG/MIG-6.md) Données exportées mais non importées
 - [ ] [`MIG-3`](ledger/MIG/MIG-3.md) Liens internes non réécrits
-- [ ] [`MIG-2`](ledger/MIG/MIG-2.md) Redirections 302 → 301
-- [ ] [`MIG-1`](ledger/MIG/MIG-1.md) Passage réel
+- [ ] [`MIG-2`](ledger/MIG/MIG-2.md) Redirections 302 → 301 · *externe*
+- [ ] [`MIG-1`](ledger/MIG/MIG-1.md) Passage réel · *externe*
 
 ## BRAND — Charte
 
@@ -299,8 +303,62 @@ Contexte du domaine : [`ledger/LEGAL/README.md`](ledger/LEGAL/README.md).
 
 Contexte du domaine : [`ledger/BILL/README.md`](ledger/BILL/README.md).
 
-- [ ] [`BILL-11`](ledger/BILL/BILL-11.md) Recette des limites de l'offre gratuite (S)
+- [ ] [`BILL-11`](ledger/BILL/BILL-11.md) Recette des limites de l'offre gratuite (S) · *recette*
 - [ ] [`BILL-1`](ledger/BILL/BILL-1.md) Décider, vérifier, puis poser le socle (M)
+
+## Ce qui ne se ferme pas par du code
+
+Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne les fait pas avancer.
+
+### À constater à la main (`recette`)
+
+- [`MOB-170`](ledger/MOB/MOB-170.md) Tracer et modifier un parcours sur la carte dans l'app : recette sur appareil
+- [`MOB-146`](ledger/MOB/MOB-146.md) Listes homogènes : recette sur appareil de `MOB-143`
+- [`MOB-141`](ledger/MOB/MOB-141.md) Cartes homogènes : recette sur appareil de `MOB-139`
+- [`MOB-135`](ledger/MOB/MOB-135.md) Refonte des écrans de détail : recette sur appareil de `MOB-134`
+- [`MOB-130`](ledger/MOB/MOB-130.md) Contrôles de carte : recette sur appareil de `MOB-129`
+- [`MOB-95`](ledger/MOB/MOB-95.md) La météo sur la carte : recette sur appareil des paliers 1 à 3
+- [`MOB-86`](ledger/MOB/MOB-86.md) Points de parcours : recette sur appareil
+- [`MOB-77`](ledger/MOB/MOB-77.md) Éditeur de sortie, modèles et parcours : recette sur appareil
+- [`MOB-73`](ledger/MOB/MOB-73.md) Vérifier l'APK sur un Android sans Google Play Services
+- [`MOB-52`](ledger/MOB/MOB-52.md) Météo : recette sur appareil de ce que `MOB-68` ne couvre pas
+- [`MOB-15`](ledger/MOB/MOB-15.md) Profil (33)
+- [`MOB-13`](ledger/MOB/MOB-13.md) Trombinoscope (34)
+- [`MOB-5`](ledger/MOB/MOB-5.md) Exploration de parcours (21)
+- [`WEB-176`](ledger/WEB/WEB-176.md) Listes homogènes : recette en navigateur de `WEB-175`
+- [`WEB-172`](ledger/WEB/WEB-172.md) Cartes homogènes : recette en navigateur de `WEB-167`
+- [`WEB-161`](ledger/WEB/WEB-161.md) Contrôles de carte : recette à l'œil de `WEB-157`
+- [`WEB-133`](ledger/WEB/WEB-133.md) La météo des aperçus GPX : recette navigateur
+- [`WEB-119`](ledger/WEB/WEB-119.md) La météo sur la carte : recette navigateur des paliers 1 à 3
+- [`WEB-61`](ledger/WEB/WEB-61.md) Météo des sorties : recette navigateur de ce que `WEB-94` n'a pas vu
+- [`WEB-56`](ledger/WEB/WEB-56.md) Profil refondu (`WEB-55`, `WEB-57`) : recette navigateur
+- [`API-122`](ledger/API/API-122.md) L'état « déjà chez le service GPS » de « Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge
+- [`API-119`](ledger/API/API-119.md) « Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge
+- [`API-63`](ledger/API/API-63.md) Onboarding d'un Karoo refait de bout en bout (M, backend + web + mobile + Karoo)
+- [`OPS-42`](ledger/OPS/OPS-42.md) Envoi automatique des parcours : la recette sur appareil, faite après l'allumage
+- [`OPS-4`](ledger/OPS/OPS-4.md) Les quatre gabarits d'invitation en production : les recevoir
+- [`OPS-3`](ledger/OPS/OPS-3.md) Le relais de contact en production : regarder un message reçu
+- [`NOTIF-1`](ledger/NOTIF/NOTIF-1.md) Recette du webhook d'équipe
+- [`BILL-11`](ledger/BILL/BILL-11.md) Recette des limites de l'offre gratuite
+
+### Dépend d'un tiers ou d'une opération hors du dépôt (`externe`)
+
+- [`MOB-110`](ledger/MOB/MOB-110.md) Publier la 1.2.0 sur l'App Store
+- [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play
+- [`OPS-35`](ledger/OPS/OPS-35.md) Publier l'app Garmin sur le Connect IQ Store
+- [`OPS-34`](ledger/OPS/OPS-34.md) Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`
+- [`OPS-33`](ledger/OPS/OPS-33.md) Publier l'extension Karoo dans l'Extension Library de Hammerhead
+- [`MIG-7`](ledger/MIG/MIG-7.md) Avant l'arrêt de biketeam
+- [`MIG-2`](ledger/MIG/MIG-2.md) Redirections 302 → 301
+- [`MIG-1`](ledger/MIG/MIG-1.md) Passage réel
+
+### Attend une décision (`decision`)
+
+- [`API-207`](ledger/API/API-207.md) Générateur de parcours au-delà du réseau de l'équipe (L, proposition, décision d'abord)
+- [`API-203`](ledger/API/API-203.md) Ce qu'un jeton d'application ou d'appareil peut faire sans le membre (S, décision d'abord)
+- [`API-202`](ledger/API/API-202.md) Une application externe dans un navigateur ne peut pas appeler l'API (S, décision d'abord)
+- [`API-140`](ledger/API/API-140.md) `/api/admin/teams` sans domaine forcé : décision produit à prendre
+- [`NOTIF-2`](ledger/NOTIF/NOTIF-2.md) Décision produit sur l'e-mail
 
 ## Délibérément dehors
 

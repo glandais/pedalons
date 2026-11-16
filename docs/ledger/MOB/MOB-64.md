@@ -4,6 +4,7 @@ title: "Publier Pédalons sur Google Play"
 status: open
 size: "S"
 group: "Fiches des stores"
+kind: externe
 verified: 2026-11-16
 ---
 

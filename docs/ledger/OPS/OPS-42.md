@@ -4,6 +4,7 @@ title: "Envoi automatique des parcours : la recette sur appareil, faite après l
 status: open
 size: "S"
 group: "Exploitation"
+kind: recette
 verified: 2026-11-16
 ---
 

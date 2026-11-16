@@ -3,6 +3,7 @@ id: MIG-1
 title: "Passage réel"
 status: open
 group: "Mise en production"
+kind: externe
 verified: 2026-11-16
 ---
 

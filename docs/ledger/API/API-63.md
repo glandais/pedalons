@@ -4,6 +4,7 @@ title: "Onboarding d'un Karoo refait de bout en bout (M, backend + web + mobile 
 status: open
 size: "M"
 group: "Extension Karoo : ce que le découpage de novembre 2026 a figé sans le corriger"
+kind: recette
 verified: 2026-11-16
 ---
 

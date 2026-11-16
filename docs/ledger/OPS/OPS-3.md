@@ -3,6 +3,7 @@ id: OPS-3
 title: "Le relais de contact en production : regarder un message reçu"
 status: open
 group: "Recette du backend en conditions réelles"
+kind: recette
 verified: 2026-11-16
 ---
 

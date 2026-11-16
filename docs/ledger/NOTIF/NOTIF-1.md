@@ -2,6 +2,7 @@
 id: NOTIF-1
 title: "Recette du webhook d'équipe"
 status: open
+kind: recette
 verified: 2026-11-16
 ---
 

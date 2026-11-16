@@ -3,6 +3,7 @@ id: MIG-2
 title: "Redirections 302 → 301"
 status: open
 group: "Mise en production"
+kind: externe
 verified: 2026-11-16
 ---
 

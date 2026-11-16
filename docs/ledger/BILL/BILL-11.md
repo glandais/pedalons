@@ -3,6 +3,7 @@ id: BILL-11
 title: "Recette des limites de l'offre gratuite"
 status: open
 size: "S"
+kind: recette
 verified: 2026-11-16
 ---
 
