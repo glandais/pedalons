@@ -69,6 +69,10 @@ export function StatsCard({
   const { speed, distance, elevation } = useUnits()
   const rendezvous = useRendezvousFormat(timezone)
 
+  // No figure at all (a stage without a route, no pace): no empty frame either (WEB-188)
+  if (!departure && !averageSpeed && meters === undefined && elevationGain === undefined)
+    return null
+
   return (
     <Paper withBorder p="lg" data-testid={testId}>
       {/* Container query: the tiles sit in a narrow side column on wide screens, so the viewport

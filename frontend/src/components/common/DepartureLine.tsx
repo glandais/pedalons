@@ -87,7 +87,9 @@ export function DepartureLine({
         />
         {detail && (
           <Text span fz={14} c="dimmed" suppressHydrationWarning={rendezvous.isGuessedText}>
-            {' · '}
+            {/* No-break space after the dot: it goes to the next line with what follows, never
+                left alone at the end of one (WEB-188) */}
+            {' ·\u00a0'}
             {detail}
           </Text>
         )}
@@ -134,7 +136,7 @@ export function PublicationDepartureLine({
           detail ? (
             <>
               {span}
-              {' · '}
+              {' ·\u00a0'}
               {detail}
             </>
           ) : (

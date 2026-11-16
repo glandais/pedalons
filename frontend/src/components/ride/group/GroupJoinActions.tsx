@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@mantine/core'
 import type { RideGroupDto } from '@/api/dto'
 import type { GroupAction } from '@/pages/ride/rideGroupData'
+import { groupTitle } from '@/utils/groupTitle'
 
 /**
  * The filled control beside a group's name, as `groupAction` decides (the server's rules at join):
@@ -14,16 +15,31 @@ export function GroupJoinActions({
   group,
   membership,
   size,
+  canSwitch = false,
 }: {
   action: GroupAction
   group: RideGroupDto
   membership: {
     join: (groupId: string) => void
+    switchTo?: (groupId: string) => void
     isPending: boolean
   }
   size?: 'xs' | 'sm'
+  /**
+   * A member registered in another group may move to this one (`canSwitchTo`): « Changer pour »,
+   * as on the ride's group card (API-171, WEB-188).
+   */
+  canSwitch?: boolean
 }) {
   const { t } = useTranslation()
+  if (canSwitch && membership.switchTo) {
+    const switchTo = membership.switchTo
+    return (
+      <Button size={size} onClick={() => switchTo(group.id)} disabled={membership.isPending}>
+        {t('rides.detail.groups.switchTo', { group: groupTitle(group.name, t) })}
+      </Button>
+    )
+  }
   if (action === 'join') {
     return (
       <Button size={size} onClick={() => membership.join(group.id)} disabled={membership.isPending}>

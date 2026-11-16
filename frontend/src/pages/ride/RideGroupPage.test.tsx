@@ -30,6 +30,7 @@ const state = vi.hoisted(() => ({
   isAuthenticated: true,
   join: (() => {}) as (groupId: string) => void,
   leave: (() => {}) as (groupId: string) => void,
+  switchTo: (() => {}) as (groupId: string) => void,
 }))
 
 vi.mock('./rideGroupData', async (importOriginal) => ({
@@ -60,6 +61,7 @@ vi.mock('@/hooks/useRideGroupMembership', () => ({
   useRideGroupMembership: () => ({
     join: (groupId: string) => state.join(groupId),
     leave: (groupId: string) => state.leave(groupId),
+    switchTo: (groupId: string) => state.switchTo(groupId),
     isPending: false,
     error: null,
   }),
@@ -214,6 +216,7 @@ describe('RideGroupPage (WEB-77)', () => {
     state.isAuthenticated = true
     state.join = vi.fn()
     state.leave = vi.fn()
+    state.switchTo = vi.fn()
   })
   afterEach(cleanup)
 
@@ -347,6 +350,38 @@ describe('RideGroupPage (WEB-77)', () => {
     const notice = screen.getByTestId('registered-elsewhere')
     expect(plain(notice.textContent)).toContain('Votre inscription est dans le groupe Cool.')
     expect(notice.querySelector('a')?.getAttribute('href')).toMatch(/\/(groupes|groups)\/g2$/)
+  })
+
+  it('offers a rider of another group « Changer pour », as the ride page does (WEB-188)', () => {
+    state.ride = ride({ registered: true, registeredGroupId: 'g2' })
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Changer pour Rapide' }))
+    expect(state.switchTo).toHaveBeenCalledWith('g1')
+  })
+
+  it('gives a group without a route of its own the ride route’s figures (WEB-188)', () => {
+    state.ride = ride({
+      distance: 64_000,
+      elevationGain: 700,
+      groups: [group({ distance: undefined, elevationGain: undefined }), cool()],
+    })
+    renderPage()
+    const stats = plain(screen.getByTestId('group-stats').textContent)
+    expect(stats).toContain('64')
+    expect(stats).toContain('700')
+  })
+
+  it('keeps them off when the ride has no route of its own: its figures may be another group’s', () => {
+    state.ride = ride({
+      routeSlug: undefined,
+      distance: 64_000,
+      elevationGain: 700,
+      groups: [group({ distance: undefined, elevationGain: undefined }), cool()],
+    })
+    renderPage()
+    const stats = plain(screen.getByTestId('group-stats').textContent)
+    expect(stats).not.toContain('64')
+    expect(stats).not.toContain('700')
   })
 
   it('invites a signed-out visitor to sign in, with no join', () => {

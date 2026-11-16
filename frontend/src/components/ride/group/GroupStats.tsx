@@ -26,10 +26,19 @@ export function GroupStats({
       timezone={ride.timezone}
       departure={showDeparture ? group.startAt : undefined}
       averageSpeed={group.averageSpeed}
-      distance={group.distance}
-      elevationGain={group.elevationGain}
+      distance={group.distance ?? ridesRoute(ride, group, ride.distance)}
+      elevationGain={group.elevationGain ?? ridesRoute(ride, group, ride.elevationGain)}
       arrival={arrival}
       testId="group-stats"
     />
   )
+}
+
+/**
+ * A group without a route of its own rides the ride's, which its page maps: its figures then
+ * (WEB-188). Only when the ride has a route of its own — `ride.distance` otherwise falls back on
+ * its first group's route, which may be another one.
+ */
+function ridesRoute(ride: RideDto, group: RideGroupDto, value: number | undefined) {
+  return !group.routeSlug && ride.routeSlug ? value : undefined
 }

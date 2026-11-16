@@ -32,7 +32,13 @@ import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import { useRideGroupMembership } from '@/hooks/useRideGroupMembership'
 import { useScrollToAnchor } from '@/hooks/useScrollToAnchor'
 import { leavesGroupPage } from './rideDetailData'
-import { canLeaveFromGroupPage, groupAction, groupWindLeg, useRideGroupData } from './rideGroupData'
+import {
+  canLeaveFromGroupPage,
+  canSwitchTo,
+  groupAction,
+  groupWindLeg,
+  useRideGroupData,
+} from './rideGroupData'
 
 /**
  * One group of a ride, on a page of its own (ledger WEB-77): who leads it, when it leaves and at
@@ -183,7 +189,12 @@ export function RideGroupPage() {
       }
       actions={
         <>
-          <GroupJoinActions action={action} group={group} membership={membership} />
+          <GroupJoinActions
+            action={action}
+            group={group}
+            membership={membership}
+            canSwitch={canSwitchTo(ride, group)}
+          />
           {canEdit && (
             <Button
               component={PrefetchLink}

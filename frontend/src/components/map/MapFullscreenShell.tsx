@@ -17,6 +17,11 @@ interface MapFullscreenShellProps {
   stats?: { distance: number; gain?: number; loss?: number }
   /** Right of the toolbar, after the stats. */
   actions?: ReactNode
+  /**
+   * Below `sm`, `actions` take a second row of the toolbar: a wide control (the three colour modes)
+   * left the title « Re… » at 390 px (WEB-188).
+   */
+  actionsBelowOnPhone?: boolean
   /** The map: fills the space left between the toolbar and `bottom`. */
   children: ReactNode
   /** Pinned under the map (elevation strip, bottom bar). No room is reserved while it is empty. */
@@ -33,6 +38,7 @@ export function MapFullscreenShell({
   subtitle,
   stats,
   actions,
+  actionsBelowOnPhone = false,
   children,
   bottom,
 }: MapFullscreenShellProps) {
@@ -42,12 +48,13 @@ export function MapFullscreenShell({
     <Box h="100dvh" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Toolbar */}
       <Group
-        h={48}
+        mih={48}
         px="sm"
         gap="sm"
-        wrap="nowrap"
+        wrap={actionsBelowOnPhone ? 'wrap' : 'nowrap'}
         style={{
           flexShrink: 0,
+          rowGap: 0,
           borderBottom: '1px solid var(--mantine-color-default-border)',
         }}
       >
@@ -89,7 +96,13 @@ export function MapFullscreenShell({
           </Group>
         )}
 
-        {actions}
+        {actionsBelowOnPhone && actions ? (
+          <Box w={{ base: '100%', sm: 'auto' }} pb={{ base: 6, sm: 0 }}>
+            {actions}
+          </Box>
+        ) : (
+          actions
+        )}
       </Group>
 
       {/* Map fills the remaining space above the bottom strip */}

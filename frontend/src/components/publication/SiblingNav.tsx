@@ -1,11 +1,15 @@
-import { useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ActionIcon, Group, SegmentedControl, Select } from '@mantine/core'
+import { ActionIcon, Box, Group, SegmentedControl, Select } from '@mantine/core'
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 
-/** Up to this many siblings pick from a segmented control; beyond, a select keeps the row short. */
+/**
+ * Up to this many siblings pick from a segmented control; beyond, a select keeps the row short. A
+ * control whose segments do not fit their room (four « Groupe G1 · 0/1 » at 390 px) is a select
+ * too (WEB-188).
+ */
 const SEGMENTED_MAX = 4
 
 export interface Sibling {
@@ -32,6 +36,30 @@ export function SiblingNav({ siblings, currentId, label }: SiblingNavProps) {
   // The Select's input keeps the focus after a pick, and iOS Safari then offers to AutoFill it
   // (« Remplir »): drop the focus once the choice is made.
   const selectRef = useRef<HTMLInputElement>(null)
+  const slotRef = useRef<HTMLDivElement>(null)
+  // The room the segments need, read off the control while it is drawn: kept once it gave way to
+  // the select, so that widening the window brings it back
+  const neededRef = useRef(0)
+  const [tooWide, setTooWide] = useState(false)
+  const segmented = siblings.length >= 2 && siblings.length <= SEGMENTED_MAX
+  const labelsKey = siblings.map((s) => s.label).join('\n')
+
+  // After the mount (SSR and the first render draw the segmented control) and on every resize
+  useEffect(() => {
+    const slot = slotRef.current
+    if (!segmented || !slot) return
+    neededRef.current = 0
+    setTooWide(false)
+    const check = () => {
+      const control = slot.querySelector<HTMLElement>('.mantine-SegmentedControl-root')
+      if (control) neededRef.current = control.scrollWidth
+      setTooWide(neededRef.current > slot.clientWidth)
+    }
+    check()
+    const observer = new ResizeObserver(check)
+    observer.observe(slot)
+    return () => observer.disconnect()
+  }, [segmented, labelsKey])
 
   if (siblings.length < 2) return null
   const index = siblings.findIndex((s) => s.id === currentId)
@@ -51,27 +79,28 @@ export function SiblingNav({ siblings, currentId, label }: SiblingNavProps) {
         aria={previous ? t('publication.siblings.previous', { name: previous.label }) : ''}
         icon={<IconChevronLeft size={18} aria-hidden />}
       />
-      {siblings.length <= SEGMENTED_MAX ? (
-        <SegmentedControl
-          data={data}
-          value={currentId}
-          onChange={choose}
-          aria-label={label}
-          fullWidth
-          style={{ flex: 1, minWidth: 0 }}
-        />
-      ) : (
-        <Select
-          ref={selectRef}
-          data={data}
-          value={currentId}
-          onChange={choose}
-          aria-label={label}
-          allowDeselect={false}
-          maxDropdownHeight={400}
-          style={{ flex: 1, minWidth: 0, maxWidth: 420 }}
-        />
-      )}
+      <Box ref={slotRef} style={{ flex: 1, minWidth: 0 }}>
+        {segmented && !tooWide ? (
+          <SegmentedControl
+            data={data}
+            value={currentId}
+            onChange={choose}
+            aria-label={label}
+            fullWidth
+          />
+        ) : (
+          <Select
+            ref={selectRef}
+            data={data}
+            value={currentId}
+            onChange={choose}
+            aria-label={label}
+            allowDeselect={false}
+            maxDropdownHeight={400}
+            style={{ maxWidth: 420 }}
+          />
+        )}
+      </Box>
       <SiblingArrow
         sibling={next}
         aria={next ? t('publication.siblings.next', { name: next.label }) : ''}

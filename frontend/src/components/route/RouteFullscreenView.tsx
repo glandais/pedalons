@@ -187,13 +187,17 @@ export function RouteFullscreenView({
       }}
       // The grade / surface switch of the route sheet (WEB-100 C1b), once the route has its surface,
       // and the Météo mode with a forecast (WEB-117) — nothing with a single mode
+      actionsBelowOnPhone
       actions={
-        <ColorByControl
-          value={colorBy}
-          onChange={setColorBy}
-          options={options}
-          testId="route-fullscreen-color-by"
-        />
+        // Only with two modes or more: an empty second row would still take its room on a phone
+        options.length > 1 && (
+          <ColorByControl
+            value={colorBy}
+            onChange={setColorBy}
+            options={options}
+            testId="route-fullscreen-color-by"
+          />
+        )
       }
       bottom={
         <>

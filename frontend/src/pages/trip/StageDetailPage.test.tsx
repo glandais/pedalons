@@ -174,6 +174,13 @@ describe('StageDetailPage — the page of a child, as a group (WEB-155)', () => 
     expect(screen.queryByRole('heading', { name: 'Personnes inscrites' })).toBeNull()
   })
 
+  it('draws no empty figures frame for a stage without a route (WEB-188)', () => {
+    const base = trip()
+    state.trip = { ...base, stages: [{ ...base.stages[0], route: undefined }, base.stages[1]] }
+    renderPage()
+    expect(screen.queryByTestId('stage-stats')).toBeNull()
+  })
+
   it("hands the route's weather the stage's leg, departure and zone, for the stage", () => {
     renderPage()
     const stageWeather = (state.weather as TripWeatherDto).stages[0]
