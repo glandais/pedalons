@@ -26,7 +26,7 @@ notifications alike. Rephrase rather than agree: « Vous participez » not « Vo
 | What's left to do, and what was deliberately ruled out | **[docs/LEDGER_NEXT.md](docs/LEDGER_NEXT.md)** — start here |
 | What was delivered, and the decisions not to undo | [docs/LEDGER_DONE.md](docs/LEDGER_DONE.md) |
 | Product roadmap (P0 → Icebox): ideas with no ledger entry yet, nothing delivered | [docs/BACKLOG.md](docs/BACKLOG.md) |
-| Notifications (event pipeline, channels, what's left) | design in [docs/plans/archive/2026-09-18-notifications.md](docs/plans/archive/2026-09-18-notifications.md) (delivered, archived); what's left is `NOTIF-1`…`NOTIF-4`, what shipped `NOTIF-9` |
+| Notifications (event pipeline, channels, what's left) | design in [docs/plans/archive/2026-09-18-notifications.md](docs/plans/archive/2026-09-18-notifications.md) (delivered, archived); what's left is `NOTIF-1`…`NOTIF-4`, `NOTIF-11` and `NOTIF-12`, what shipped `NOTIF-9` |
 | Why the mobile app / the site / the API look the way they do | [docs/plans/archive/](docs/plans/archive/) — executed plans, kept for their arbitrations |
 | Security findings still open | the `SEC` section of [docs/LEDGER_NEXT.md](docs/LEDGER_NEXT.md); the September 2026 audit (H/M/L/V IDs, verified controls) is archived in [docs/plans/archive/2026-09-security-audit.md](docs/plans/archive/2026-09-security-audit.md) |
 | Infrastructure, CI/CD and code-quality audit (February 2026, statuses partly refreshed on 2026-09-29) — some rows still open; not the security reference | [docs/plans/2026-02-14-project-audit.md](docs/plans/2026-02-14-project-audit.md) |
