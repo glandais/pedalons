@@ -388,3 +388,46 @@ describe('layoutBadges (WEB-142)', () => {
     )
   })
 })
+
+describe('badges and the map controls (WEB-190)', () => {
+  /** The camera column of a fine pointer, top-left: 10 px margin, 36 px wide. */
+  const column = { left: 10, top: 10, right: 46, bottom: 160 }
+  const room = { obstacles: [column], width: 646 }
+
+  it('slides a start badge out from under the zoom column, into the map', () => {
+    expect(spreadBadges([{ x: 30, y: 100 }], 72, 26, room)).toEqual([{ dx: 52, dy: 0 }])
+  })
+
+  it('stacks the starts of several stages beside the column, not under it', () => {
+    const shifts = spreadBadges(
+      [
+        { x: 30, y: 100 },
+        { x: 30, y: 100 },
+      ],
+      72,
+      26,
+      room
+    )
+    expect(shifts.map(({ dx }) => 30 + dx)).toEqual([82, 154])
+  })
+
+  it('leaves a badge clear of every control where it stands', () => {
+    expect(spreadBadges([{ x: 300, y: 100 }], 72, 26, room)).toEqual([{ dx: 0, dy: 0 }])
+  })
+
+  it('drops a point en route that a control covers, keeps the start', () => {
+    const placed = layoutBadges(
+      [
+        { x: 30, y: 100, rank: null },
+        { x: 30, y: 140, rank: 0 },
+        { x: 300, y: 140, rank: 1 },
+      ],
+      72,
+      26,
+      88,
+      42,
+      room
+    )
+    expect(placed).toEqual([{ dx: 52, dy: 0 }, null, { dx: 0, dy: 0 }])
+  })
+})

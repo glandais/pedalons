@@ -141,6 +141,38 @@ export function checkpointRanks(checkpoints: readonly { kind: string }[]): (numb
   return ranks
 }
 
+/** A rectangle on screen, in the map's pixels: a control a badge must not land under. */
+export interface ScreenBox {
+  left: number
+  top: number
+  right: number
+  bottom: number
+}
+
+/** Where badges may stand: the controls over the map, and the map's width (WEB-190). */
+export interface BadgeRoom {
+  obstacles: readonly ScreenBox[]
+  /** The map's width: a badge moved aside stays within it when one side allows. */
+  width: number
+}
+
+const NO_ROOM: BadgeRoom = { obstacles: [], width: Infinity }
+
+/** Whether a badge box (`width` × `height`, centred on its point) meets a control's box. */
+function underControl(
+  point: { x: number; y: number },
+  box: ScreenBox,
+  width: number,
+  height: number
+) {
+  return (
+    point.x + width / 2 > box.left &&
+    point.x - width / 2 < box.right &&
+    point.y + height / 2 > box.top &&
+    point.y - height / 2 < box.bottom
+  )
+}
+
 /**
  * How far to move each badge, in screen pixels, so that none lies on another (ledgers WEB-128,
  * WEB-131). Badges whose boxes (`width` × `height`, centred on their point) touch — a loop's start
@@ -150,30 +182,51 @@ export function checkpointRanks(checkpoints: readonly { kind: string }[]): (numb
  * loop). No shared row: on a long north-south route, zoomed out, each badge touches the next, and
  * one row would carry them all off the map, far from their points; this way they fall on either
  * side of the track. A badge alone stays put, and nothing lands on it.
+ *
+ * The map's controls (`room.obstacles`) are in the way too (WEB-190): a badge under the zoom column
+ * slides out from under it, as it would from another badge, to the side that keeps it within the
+ * map's width when only one does.
  */
 export function spreadBadges(
   points: readonly { x: number; y: number }[],
   width: number,
-  height: number
+  height: number,
+  room: BadgeRoom = NO_ROOM
 ): { dx: number; dy: number }[] {
   // Projected points are fractional: without this margin, a badge placed exactly `width` away could
   // still touch by a rounding error, and `clear` would land on the same spot for ever.
   const touches = (a: { x: number; y: number }, b: { x: number; y: number }) =>
     Math.abs(a.x - b.x) < width - 1e-6 && Math.abs(a.y - b.y) < height
-  const placed = points.filter((p, i) => !points.some((q, j) => j !== i && touches(p, q)))
+  const blocked = (p: { x: number; y: number }) =>
+    room.obstacles.find((box) => underControl(p, box, width - 1e-6, height))
+  const placed = points.filter(
+    (p, i) => !blocked(p) && !points.some((q, j) => j !== i && touches(p, q))
+  )
   const clear = (point: { x: number; y: number }, side: 1 | -1) => {
     let dx = 0
     for (;;) {
-      const hit = placed.find((other) => touches({ x: point.x + dx, y: point.y }, other))
-      if (!hit) return dx
-      dx = hit.x + side * width - point.x
+      const at = { x: point.x + dx, y: point.y }
+      const hit = placed.find((other) => touches(at, other))
+      if (hit) {
+        dx = hit.x + side * width - point.x
+        continue
+      }
+      const box = blocked(at)
+      if (!box) return dx
+      dx = (side > 0 ? box.right + width / 2 : box.left - width / 2) - point.x
     }
   }
+  // Without a map to measure, every place is inside
+  const inside = (x: number) =>
+    !Number.isFinite(room.width) || (x - width / 2 >= 0 && x + width / 2 <= room.width)
   return points.map((point) => {
     if (placed.includes(point)) return { dx: 0, dy: 0 }
     const right = clear(point, 1)
     const left = clear(point, -1)
-    const dx = Math.abs(left) < Math.abs(right) ? left : right
+    const rightIn = inside(point.x + right)
+    const leftIn = inside(point.x + left)
+    const dx =
+      rightIn !== leftIn ? (leftIn ? left : right) : Math.abs(left) < Math.abs(right) ? left : right
     placed.push({ x: point.x + dx, y: point.y })
     return { dx, dy: 0 }
   })
@@ -182,15 +235,17 @@ export function spreadBadges(
 /**
  * Which badges the map has room for at this zoom, and where (ledger WEB-142): null for a badge left
  * out, else its shift in pixels. A point of rank null is always kept, moved apart from the others
- * of its kind by `spreadBadges`; the others are tried by rank then in order, each kept only when no
- * kept badge stands within `clearWidth` × `clearHeight` of it, and never moved.
+ * of its kind and from the map's controls by `spreadBadges`; the others are tried by rank then in
+ * order, each kept only when no kept badge stands within `clearWidth` × `clearHeight` of it and no
+ * control covers it (WEB-190), and never moved.
  */
 export function layoutBadges(
   points: readonly { x: number; y: number; rank: number | null }[],
   width: number,
   height: number,
   clearWidth: number,
-  clearHeight: number
+  clearHeight: number,
+  room: BadgeRoom = NO_ROOM
 ): ({ dx: number; dy: number } | null)[] {
   const result = points.map((): { dx: number; dy: number } | null => null)
   const indexes = points.map((_, i) => i)
@@ -198,7 +253,8 @@ export function layoutBadges(
   const spread = spreadBadges(
     required.map((i) => points[i]),
     width,
-    height
+    height,
+    room
   )
   const kept = required.map((i, k) => {
     result[i] = spread[k]
@@ -211,6 +267,7 @@ export function layoutBadges(
     const { x, y } = points[i]
     if (kept.some((o) => Math.abs(o.x - x) < clearWidth && Math.abs(o.y - y) < clearHeight))
       continue
+    if (room.obstacles.some((box) => underControl({ x, y }, box, width, height))) continue
     result[i] = { dx: 0, dy: 0 }
     kept.push({ x, y })
   }

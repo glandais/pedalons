@@ -6,6 +6,8 @@ import { routeLeg } from '@/test/weatherFixtures'
 // Every checkpoint at one spot on screen: only the room shared between the legs decides.
 const map = {
   project: () => ({ x: 10, y: 10 }),
+  // No control over the map
+  getContainer: () => document.createElement('div'),
   on: vi.fn(),
   off: vi.fn(),
 }

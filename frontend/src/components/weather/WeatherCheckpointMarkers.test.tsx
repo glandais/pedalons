@@ -372,6 +372,8 @@ describe('WeatherCheckpointMarkers (WEB-116)', () => {
         on: vi.fn(),
         off: vi.fn(),
         getBearing: () => 0,
+        // No control over the map
+        getContainer: () => document.createElement('div'),
       }
       return { ...map, getMap: () => map }
     }

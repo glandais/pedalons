@@ -155,6 +155,25 @@
   order: 100;
 }
 
+/* The credit never runs over the scale bar (docs/LEDGER_*.md WEB-190). On a map 640 px wide or
+   less MapLibre shows it expanded until the first drag, and a credit lengthened by the wind
+   colouring's « Open-Meteo.com » reached the scale's label at 390 px. The bottom-right corner
+   stops 120 px from the left edge — the scale bar's 100 px at most, its 10 px margin and a gap —
+   and the credit wraps within it. The corner lets the pointer through, so it covers nothing. */
+.maplibregl-ctrl-bottom-right {
+  left: 120px;
+}
+
+.maplibregl-ctrl-bottom-right > .maplibregl-ctrl-attrib {
+  /* Its 10 px right margin */
+  max-width: calc(100% - 10px);
+}
+
+.maplibregl-ctrl-bottom-right > .maplibregl-ctrl-attrib.maplibregl-compact {
+  /* A content box: 10 px margins either side, then 8 px and 28 px of padding */
+  max-width: calc(100% - 56px);
+}
+
 /* The bottom line (scale bar bottom-left, attribution bottom-right — and on a finger the whole
    control column, which lives bottom-right) sits above whatever covers the bottom of the map,
    instead of under it. The page that lays an overlay over the map sets these two variables on the

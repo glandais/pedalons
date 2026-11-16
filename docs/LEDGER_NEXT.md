@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **173 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
+Index des **172 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -60,7 +60,6 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 - [ ] [`WEB-191`](ledger/WEB/WEB-191.md) Aperçu GPX : la molette zoome la carte pleine largeur au lieu de faire défiler la page (S)
-- [ ] [`WEB-190`](ledger/WEB/WEB-190.md) Cartes : pastilles météo sous la colonne du zoom, crédit allongé sur l'échelle à 390 px (S)
 - [ ] [`WEB-183`](ledger/WEB/WEB-183.md) Planificateur embarquable dans l'app : recette iOS et poids du bundle (S)
 - [ ] [`WEB-179`](ledger/WEB/WEB-179.md) Panneau « Générer un parcours » (M)
 - [ ] [`WEB-176`](ledger/WEB/WEB-176.md) Listes homogènes : recette en navigateur de `WEB-175` (S)
