@@ -1911,9 +1911,8 @@ redevient une entrée de sa section sous le même identifiant.
 Ce fichier ne couvre que les suites de la v2 et des chantiers qui l'ont suivie. D'autres sources
 restent ouvertes :
 
-- [`BACKLOG.md`](BACKLOG.md) — la roadmap produit (P0 → Icebox). Y figurent notamment le statut
-  « Terminée » sur les sorties et voyages (livré sous `API-16`) et le système de notifications (qui
-  recoupe `NOTIF`).
+- [`BACKLOG.md`](BACKLOG.md) — la roadmap produit (P0 → Icebox) : les idées qui n'ont pas encore
+  d'entrée ici. Une idée qui reçoit un identifiant quitte ce fichier-là ; rien de livré n'y reste.
 - [`plans/2026-02-14-project-audit.md`](plans/2026-02-14-project-audit.md) — audit d'infrastructure,
   CI/CD et qualité des modules, statuts rafraîchis le 29 septembre 2026. Ses lignes ouvertes sont
   suivies sous `AUD`.
