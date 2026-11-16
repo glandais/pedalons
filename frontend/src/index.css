@@ -464,6 +464,23 @@
     width: calc(100% - 20px);
   }
 
+  /* Its results stand over the rest of the map, and within it (docs/LEDGER_*.md MOB-170): with the
+     keyboard open the map shrinks to a strip, and the list passed under the bottom-right column,
+     the scale bar and the credit (corners all at MapLibre's z-index 2), then ran off the map's
+     bottom edge. The corner rises above the others and spans the map's height (it lets the
+     pointer through, and its size no longer depends on its content: a safe size container), and
+     the list scrolls within what is left under the field — its 10 px margin, its 44 px, the list's
+     10 px offset at most (the package's margin), 10 px at the bottom. */
+  .maplibregl-ctrl-top-left:has(> .maplibre-search-box) {
+    bottom: 0;
+    z-index: 3;
+    container-type: size;
+  }
+
+  .maplibregl-ctrl.maplibre-search-box .results {
+    max-height: min(calc(50dvh - 60px), calc(100cqh - 74px));
+  }
+
   /* Same reason for every field of the site: Mantine's default `sm` is 14px, so tapping a Select
      or a TextInput zoomed the page in and left it there. `--input-fz` keeps a larger `size`. */
   input,

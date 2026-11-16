@@ -114,7 +114,11 @@ export type Outgoing =
   | { type: 'pickGpx' }
   | { type: 'locate' }
   | { type: 'busy'; busy: boolean }
-  | { type: 'dirty'; dirty: boolean }
+  /**
+   * `dirty`: anything changed since `load`. `pending`: anything changed since the last « Terminer »
+   * (since `load` before the first) — what the form does not have.
+   */
+  | { type: 'dirty'; dirty: boolean; pending: boolean }
   | {
       type: 'quotaRefused'
       scope: PlannerQuotaScope
@@ -134,7 +138,7 @@ export type Outgoing =
       /** `tooLarge`: the points are sent, the saved track loses its control points. */
       notice?: 'tooLarge'
     }
-  | { type: 'close'; dirty: boolean }
+  | { type: 'close'; dirty: boolean; pending: boolean }
   | { type: 'error'; message: string }
 
 /** What the app answers a `request` with. */

@@ -168,6 +168,12 @@ export interface RoutePlannerState {
   canRedo: boolean
   /** The route differs from the one the planner opened on (undoing back to the start makes it false). */
   isDirty: boolean
+  /**
+   * Changes identity at every edit, undo and redo — null before the first. Opaque: a host compares
+   * it with the one it kept to tell whether anything changed since (the embedded planner's
+   * « Terminer », docs/LEDGER_*.md MOB-170).
+   */
+  editMark: object | null
   /** The route, as the form saves it; computed on the call. */
   snapshot: () => PlannerSnapshot
   routerProfile: RouterProfile
@@ -334,6 +340,7 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
   const canUndo = history.length > 0
   const canRedo = future.length > 0
   const isDirty = history.length > 0
+  const editMark: object | null = history.at(-1) ?? null
 
   // The profile of a saved state is adopted once, on opening: re-routing a piece of a gravel route
   // stays gravel. The other settings are not saved and not touched.
@@ -920,6 +927,7 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     canUndo,
     canRedo,
     isDirty,
+    editMark,
     snapshot,
     undo,
     redo,

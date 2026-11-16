@@ -54,17 +54,21 @@ export function PlannerApp({ load }: { load: PlannerLoad }) {
     },
   })
   const panelState = useMapPanelState()
-  const { isLoading, isDirty, quotaRefusal, dismissQuotaRefusal } = planner
+  const { isLoading, isDirty, editMark, quotaRefusal, dismissQuotaRefusal } = planner
+  // The edit « Terminer » last handed over: what the map shows past it is what the form would not
+  // send. Before any « Terminer », everything since `load` is.
+  const [doneMark, setDoneMark] = useState<object | null | undefined>(undefined)
+  const pending = doneMark === undefined ? isDirty : editMark !== doneMark
 
   // A calculation in flight is not in the snapshot yet: the app's save waits for it.
   useEffect(() => {
     post({ type: 'busy', busy: isLoading })
   }, [isLoading])
 
-  // What the app's « leave without saving? » asks about.
+  // What the app's « leave without saving? » asks about, and whether the form has it all.
   useEffect(() => {
-    post({ type: 'dirty', dirty: isDirty })
-  }, [isDirty])
+    post({ type: 'dirty', dirty: isDirty, pending })
+  }, [isDirty, pending])
 
   // A calculation refused at a spent quota: the dialog is the app's, which also reads the team
   // again (docs/LEDGER_*.md BILL-10).
@@ -98,6 +102,7 @@ export function PlannerApp({ load }: { load: PlannerLoad }) {
   const done = () => {
     // The leg being computed would be missing from the snapshot
     if (isLoading) return
+    setDoneMark(editMark)
     post(
       doneMessage({
         snapshot: planner.snapshot(),
@@ -150,7 +155,7 @@ export function PlannerApp({ load }: { load: PlannerLoad }) {
             <ActionIcon
               variant="subtle"
               size="lg"
-              onClick={() => post({ type: 'close', dirty: isDirty })}
+              onClick={() => post({ type: 'close', dirty: isDirty, pending })}
               aria-label={t('actions.back')}
             >
               <IconArrowLeft size={20} />

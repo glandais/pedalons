@@ -113,6 +113,11 @@ class PlannerBridge {
   /// Quelque chose a changé dans la page depuis `load`.
   final ValueNotifier<bool> dirty = ValueNotifier<bool>(false);
 
+  /// Quelque chose a changé dans la page depuis le dernier « Terminer »
+  /// (depuis `load` avant le premier) : ce que le formulaire n'a pas.
+  /// Une page d'avant ce champ ne l'envoie pas : [dirty] en tient lieu.
+  final ValueNotifier<bool> pending = ValueNotifier<bool>(false);
+
   /// L'écran a été quitté sans « Terminer » alors que la page avait changé :
   /// ce qu'elle montre n'est pas (ou plus) ce que le formulaire enverrait.
   final ValueNotifier<bool> unvalidated = ValueNotifier<bool>(false);
@@ -216,7 +221,7 @@ class PlannerBridge {
       case 'busy':
         busy.value = message['busy'] == true;
       case 'dirty':
-        dirty.value = message['dirty'] == true;
+        _readDirty(message);
       case 'quotaRefused':
         final PlannerQuotaRefusal? refusal = PlannerQuotaRefusal.fromJson(
           message,
@@ -225,11 +230,17 @@ class PlannerBridge {
       case 'done':
         _done(message);
       case 'close':
-        dirty.value = message['dirty'] == true;
+        _readDirty(message);
         onLeave?.call();
       case 'error':
         AppLog.instance.error('planner', '${message['message']}');
     }
+  }
+
+  void _readDirty(Map<String, dynamic> message) {
+    dirty.value = message['dirty'] == true;
+    final Object? sinceDone = message['pending'];
+    pending.value = sinceDone is bool ? sinceDone : dirty.value;
   }
 
   void _done(Map<String, dynamic> message) {
@@ -242,6 +253,7 @@ class PlannerBridge {
       return;
     }
     dirty.value = result.dirty;
+    pending.value = false;
     unvalidated.value = false;
     _leavingAfterDone = true;
     onDone?.call(result);
@@ -253,7 +265,9 @@ class PlannerBridge {
   /// La page reste en vie avec ce qu'elle montre.
   void screenLeft() {
     if (_disposed) return;
-    if (!_leavingAfterDone && dirty.value) unvalidated.value = true;
+    // Rouvert après un « Terminer » et quitté sans rien toucher : le formulaire
+    // a déjà tout, rien n'est en suspens.
+    if (!_leavingAfterDone && pending.value) unvalidated.value = true;
     _leavingAfterDone = false;
   }
 
@@ -405,6 +419,7 @@ class PlannerBridge {
     webView.dispose();
     busy.dispose();
     dirty.dispose();
+    pending.dispose();
     unvalidated.dispose();
     loaded.dispose();
     loadError.dispose();

@@ -1,0 +1,3 @@
+/* Stands in for the styles of Mantine packages the embedded planner does not use
+   (`@mantine/dates`, `@mantine/schedule`), imported by index.css for the site
+   (vite.mobile-planner.config.ts, docs/LEDGER_*.md WEB-183). */

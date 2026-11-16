@@ -587,6 +587,52 @@ void main() {
       expect(b.unvalidated.value, isFalse);
     });
 
+    test(
+      'rouvert après « Terminer » et quitté sans retouche : rien en suspens',
+      () async {
+        final PlannerBridge b = bridge();
+        b.onLeave = b.screenLeft;
+        await send(b, <String, dynamic>{
+          'type': 'dirty',
+          'dirty': true,
+          'pending': true,
+        });
+        await send(b, <String, dynamic>{
+          'type': 'done',
+          'payload': <String, dynamic>{},
+          'stats': <String, dynamic>{},
+          'dirty': true,
+        });
+        // Rouvert : la page garde ses retouches d'avant, déjà reprises.
+        await send(b, <String, dynamic>{
+          'type': 'dirty',
+          'dirty': true,
+          'pending': false,
+        });
+        // Le retour du système, sans rien toucher (MOB-170).
+        b.screenLeft();
+        expect(b.unvalidated.value, isFalse);
+        expect(b.dirty.value, isTrue);
+
+        // Une retouche après le « Terminer », puis le retour : en suspens.
+        await send(b, <String, dynamic>{
+          'type': 'dirty',
+          'dirty': true,
+          'pending': true,
+        });
+        b.screenLeft();
+        expect(b.unvalidated.value, isTrue);
+      },
+    );
+
+    test('une page sans `pending` : `dirty` en tient lieu', () async {
+      final PlannerBridge b = bridge();
+      await send(b, <String, dynamic>{'type': 'dirty', 'dirty': true});
+      expect(b.pending.value, isTrue);
+      b.screenLeft();
+      expect(b.unvalidated.value, isTrue);
+    });
+
     test('quitté sans rien avoir touché : rien en suspens', () async {
       final PlannerBridge b = bridge();
       int left = 0;

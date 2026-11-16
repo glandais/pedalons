@@ -7,6 +7,8 @@ import type { GeocodeResultDto } from '@/api/dto'
 import type { SearchedPlace } from '@/components/map/MapSearchControl'
 import { useMapZones } from '@/components/map/mapZones'
 import { onPosition, post, resolvePlace, searchPlaces } from './bridge'
+// The site's search box styles, which this one wears (the package's script stays out: stubs/)
+import '@stadiamaps/maplibre-search-box/dist/maplibre-search-box.css'
 
 const MIN_QUERY_LENGTH = 3
 const SEARCH_DEBOUNCE_MS = 300

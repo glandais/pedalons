@@ -23,8 +23,8 @@ function inlineWorkerSource(): Plugin {
     name: 'inline-worker-source',
     closeBundle() {
       // Also called after a failed build, which wrote nothing: let its own error show
-      if (!fs.existsSync(path.join(outDir, 'planner.js'))) return
       const dir = path.join(outDir, 'assets')
+      if (!fs.existsSync(path.join(outDir, 'planner.js')) || !fs.existsSync(dir)) return
       const file = fs.readdirSync(dir).find((f) => f.startsWith('maplibre-gl-worker'))
       if (!file) throw new Error('MapLibre worker not found in the build')
       const source = fs.readFileSync(path.join(dir, file), 'utf8')
@@ -114,9 +114,72 @@ function recordSources(): Plugin {
   }
 }
 
+/**
+ * Only the keys the bundle can ask for, in both catalogues (docs/LEDGER_*.md WEB-183). The site
+ * loads one language's catalogue at a time; this single file holds both, whole they made 380 KB
+ * of the 2.6 MB of script. Each catalogue import is a placeholder until every module is known,
+ * then `renderChunk` writes the catalogue filtered on the code of our own modules: a key is kept
+ * when it appears there as a literal (plural forms with it), or when it starts with the fixed
+ * head of a template key (`` t(`routes.surface.${type}`) `` keeps every `routes.surface.…`). A key
+ * the planner builds another way (a concatenation) would be dropped: build keys as templates.
+ */
+const CATALOGUE = /\/locales\/(\w+)\/common\.json$/
+const CATALOGUE_ID = '\0planner-catalogue:'
+const PLURAL_SUFFIX = /_(?:zero|one|two|few|many|other)$/
+
+function trimCatalogues(): Plugin {
+  const catalogues = new Map<string, Record<string, string>>()
+  const placeholder = (language: string) => `__PLANNER_CATALOGUE_${language}__`
+  return {
+    name: 'trim-catalogues',
+    enforce: 'pre',
+    // A virtual module, not the file: Vite's JSON plugin would parse the placeholder
+    resolveId(source) {
+      const match = source.match(CATALOGUE)
+      return match ? CATALOGUE_ID + match[1] : null
+    },
+    load(id) {
+      if (!id.startsWith(CATALOGUE_ID)) return null
+      const language = id.slice(CATALOGUE_ID.length)
+      const file = path.resolve(import.meta.dirname, `src/locales/${language}/common.json`)
+      catalogues.set(language, JSON.parse(fs.readFileSync(file, 'utf8')))
+      return `export default ${placeholder(language)}`
+    },
+    renderChunk(code) {
+      const literals = new Set<string>()
+      const heads = new Set<string>()
+      for (const id of this.getModuleIds()) {
+        if (id.includes('/node_modules/') || id.startsWith('\0')) continue
+        const source = this.getModuleInfo(id)?.code
+        if (!source) continue
+        for (const [, key] of source.matchAll(/['"`]([A-Za-z][\w-]*(?:\.[\w-]+)+)['"`]/g))
+          literals.add(key)
+        for (const [, head] of source.matchAll(/`([A-Za-z][\w-]*(?:\.[\w-]+)*\.)\$\{/g))
+          heads.add(head)
+      }
+      let result = code
+      for (const [language, catalogue] of catalogues) {
+        const kept = Object.fromEntries(
+          Object.entries(catalogue).filter(
+            ([key]) =>
+              literals.has(key) ||
+              literals.has(key.replace(PLURAL_SUFFIX, '')) ||
+              [...heads].some((head) => key.startsWith(head))
+          )
+        )
+        if (!result.includes(placeholder(language))) {
+          this.error(`catalogue placeholder of ${language} not found in the chunk`)
+        }
+        result = result.replace(placeholder(language), JSON.stringify(kept))
+      }
+      return { code: result, map: null }
+    },
+  }
+}
+
 export default defineConfig({
   // `recordSources` last: it hashes what `inlineWorkerSource` wrote
-  plugins: [react(), forbidSiteModules(), inlineWorkerSource(), recordSources()],
+  plugins: [trimCatalogues(), react(), forbidSiteModules(), inlineWorkerSource(), recordSources()],
   resolve: {
     alias: [
       // The router, and through the route table every page of the site, stay out of the bundle:
@@ -132,6 +195,21 @@ export default defineConfig({
       {
         find: '@/lib/push/webPush',
         replacement: path.resolve(import.meta.dirname, 'src/embed/mobile-planner/stubs/webPush.ts'),
+      },
+      // Stadia Maps' search box (52 KB): the page searches through the app (`BridgeSearchControl`).
+      // Both spellings: the planner imports it by a relative path.
+      {
+        find: /^(?:@\/components|\.\.)\/map\/MapSearchControl$/,
+        replacement: path.resolve(
+          import.meta.dirname,
+          'src/embed/mobile-planner/stubs/MapSearchControl.tsx'
+        ),
+      },
+      // The styles of the calendar and the date pickers (146 KB of CSS), which index.css imports
+      // for the site: no date is picked in the planner.
+      {
+        find: /^@mantine\/(?:dates|schedule)\/styles\.css$/,
+        replacement: path.resolve(import.meta.dirname, 'src/embed/mobile-planner/stubs/empty.css'),
       },
       { find: '@', replacement: path.resolve(import.meta.dirname, './src') },
     ],

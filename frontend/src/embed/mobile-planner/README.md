@@ -113,10 +113,10 @@ messages by code (`lib/plannerErrors.ts`, `lib/plannerQuota.ts`) are the site's.
 | `{ type: 'pickGpx' }`                                                  | Opens the file picker, keeps the file, answers with `gpx`.                                                                                             |
 | `{ type: 'locate' }`                                                   | Answers with `position`.                                                                                                                               |
 | `{ type: 'busy', busy }`                                               | A calculation is in flight: nothing to save yet.                                                                                                       |
-| `{ type: 'dirty', dirty }`                                             | Whether anything changed since `load` — what a « leave without saving? » asks about.                                                                   |
+| `{ type: 'dirty', dirty, pending }`                                    | `dirty`: anything changed since `load` — what a « leave without saving? » asks about. `pending`: anything changed since the last `done` (since `load` before the first) — what the form does not have yet. |
 | `{ type: 'quotaRefused', scope, limit, current, resetsOn, teamName? }` | A calculation was refused with `PLANNER_QUOTA_REACHED`: open the quota dialog, read the team again. The page shows the refusal in its status line too. |
 | `{ type: 'done', payload, stats, dirty, nameSuggestion?, notice? }`    | « Terminer »: close the screen, hand the result to the form. Not sent while `busy`.                                                                    |
-| `{ type: 'close', dirty }`                                             | The back arrow: leave without a result. The page asks nothing; confirming is the app's.                                                                |
+| `{ type: 'close', dirty, pending }`                                    | The back arrow: leave without a result. The page asks nothing; confirming is the app's.                                                                |
 | `{ type: 'error', message }`                                           | An uncaught failure of the page, for the app's log.                                                                                                    |
 
 `request` is only ever one of:
