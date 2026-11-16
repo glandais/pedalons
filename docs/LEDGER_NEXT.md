@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **173 entrées ouvertes** et des 69 entrées écartées. Chaque entrée a son fichier
+Index des **175 entrées ouvertes** et des 69 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -58,6 +58,10 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
 Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
+- [ ] [`WEB-189`](ledger/WEB/WEB-189.md) Accueil : la carte « Ma prochaine sortie » s'étire à la hauteur de la colonne voisine (S)
+- [ ] [`WEB-188`](ledger/WEB/WEB-188.md) Pages groupe et étape au téléphone : segments coupés, encadré vide, titre plein écran tronqué (S)
+- [ ] [`WEB-187`](ledger/WEB/WEB-187.md) Profil d'altitude : crédit sur l'axe à 390 px, axe non traduit, mètres sous « ft » en impérial (S)
+- [ ] [`WEB-186`](ledger/WEB/WEB-186.md) Météo sur la carte : le clic de souris sur une pastille n'ouvre pas la bulle, et la bulle sort du cadre (S)
 - [ ] [`WEB-183`](ledger/WEB/WEB-183.md) Planificateur embarquable dans l'app : recette iOS et poids du bundle (S)
 - [ ] [`WEB-179`](ledger/WEB/WEB-179.md) Panneau « Générer un parcours » (M)
 - [ ] [`WEB-176`](ledger/WEB/WEB-176.md) Listes homogènes : recette en navigateur de `WEB-175` (S)
@@ -66,14 +70,12 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 - [ ] [`WEB-165`](ledger/WEB/WEB-165.md) Aligner le web sur les décisions des cibles mobiles (M, à cadrer)
 - [ ] [`WEB-163`](ledger/WEB/WEB-163.md) Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)
 - [ ] [`WEB-161`](ledger/WEB/WEB-161.md) Contrôles de carte : recette à l'œil de `WEB-157` (S)
-- [ ] [`WEB-160`](ledger/WEB/WEB-160.md) Recette à l'œil de `WEB-155` (S)
 - [ ] [`WEB-133`](ledger/WEB/WEB-133.md) La météo des aperçus GPX : recette navigateur (S)
 - [ ] [`WEB-120`](ledger/WEB/WEB-120.md) Signaler à un administrateur de la plateforme les pages qu'il est seul à voir (XS, facultatif)
 - [ ] [`WEB-119`](ledger/WEB/WEB-119.md) La météo sur la carte : recette navigateur des paliers 1 à 3 (S)
 - [ ] [`WEB-100`](ledger/WEB/WEB-100.md) Éditeur de parcours web, desktop et web mobile (L, en quatre lots)
 - [ ] [`WEB-98`](ledger/WEB/WEB-98.md) Deux clés i18n mortes et un e-mail qui nomme un réglage sans lien (XS)
 - [ ] [`WEB-96`](ledger/WEB/WEB-96.md) La carte s'initialise au chargement et bloque le fil principal (S)
-- [ ] [`WEB-78`](ledger/WEB/WEB-78.md) Page d'un groupe de sortie (`WEB-77`) : recette navigateur des états restants (S)
 - [ ] [`WEB-61`](ledger/WEB/WEB-61.md) Météo des sorties : recette navigateur de ce que `WEB-94` n'a pas vu (S)
 - [ ] [`WEB-56`](ledger/WEB/WEB-56.md) Profil refondu (`WEB-55`, `WEB-57`) : recette navigateur (S)
 - [ ] [`WEB-36`](ledger/WEB/WEB-36.md) Un tap juste après l'affichage d'une page, sous charge, est ignoré (M)

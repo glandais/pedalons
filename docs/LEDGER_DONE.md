@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **560 entrées livrées**, et des 10 entrées encore ouvertes dont une part l'est.
+Index des **562 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -160,6 +160,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`WEB-166`](ledger/WEB/WEB-166.md) Contenu public d'une équipe privée : pages de détail sans `GET team`, éditeurs sur les droits calculés — 2026-11-16
 - [x] [`WEB-164`](ledger/WEB/WEB-164.md) « Vitesse moyenne » à la place d'« Allure moyenne », client régénéré — 2026-11-10
 - [x] [`WEB-162`](ledger/WEB/WEB-162.md) L'interrupteur d'envoi automatique parle aussi des étapes de voyage — 2026-11-10
+- [x] [`WEB-160`](ledger/WEB/WEB-160.md) Recette à l'œil de `WEB-155` — 2026-11-16
 - [x] [`WEB-158`](ledger/WEB/WEB-158.md) Contrôles de carte : les e2e de `WEB-157` passés — 2026-11-10
 - [x] [`WEB-157`](ledger/WEB/WEB-157.md) Contrôles de carte : zones fixes, ligne du bas, barre d'outils du planificateur — 2026-11-10
 - [x] [`WEB-156`](ledger/WEB/WEB-156.md) Recette de `WEB-155` : les e2e passés — 2026-11-10
@@ -227,7 +228,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`WEB-82`](ledger/WEB/WEB-82.md) Assets du site compressés une fois au build, plus à chaque requête — 2026-10-14
 - [x] [`WEB-80`](ledger/WEB/WEB-80.md) Zoom du profil et de la carte plein écran synchronisés dans les deux sens
 - [x] [`WEB-79`](ledger/WEB/WEB-79.md) Sortie à un seul groupe : la page de la sortie est celle du groupe — 2026-10-13
-- [x] [`WEB-78`](ledger/WEB/WEB-78.md) Page d'un groupe de sortie (`WEB-77`) : recette navigateur des états restants — en partie, le reste est ouvert
+- [x] [`WEB-78`](ledger/WEB/WEB-78.md) Page d'un groupe de sortie (`WEB-77`) : recette navigateur des états restants — 2026-11-16
 - [x] [`WEB-77`](ledger/WEB/WEB-77.md) Page d'un groupe de sortie au web — 2026-10-13
 - [x] [`WEB-76`](ledger/WEB/WEB-76.md) Météo des sorties : vent détaillé, groupe choisi partagé avec la carte
 - [x] [`WEB-75`](ledger/WEB/WEB-75.md) Hauteur de pluie écrite selon la langue — 2026-11-12

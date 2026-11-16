@@ -8,17 +8,15 @@ verified: 2026-11-16
 
 ## Reste à faire
 
-`WEB-56` **Profil refondu (`WEB-55`, `WEB-57`) : recette navigateur (S)** — les e2e sont
-passés (voir la part livrée sous le même identifiant). Plus rien à trancher : Utilisateurs
-bloqués est sous Confidentialité (`/profil/vie-privee/bloques`), la zone de danger suit le
-jeton `danger` et les cases des notifications ont leur cible de 44 px sur téléphone
-(`WEB-55`). Reste la **recette à l'œil** : mise en page, point de rupture `md`, mode sombre (la
-bordure `danger-outline` de la zone de danger y compris) ; sur un téléphone, une touche
-n'importe où dans la cellule coche la case des notifications (le `<label>` enveloppe le `div`
-racine du `Checkbox` Mantine : HTML pas strictement valide, toléré par les navigateurs). Avec
-un fuseau non enregistré, Préférences montre celui du navigateur, que le serveur ne connaît
-pas (`WEB-54`). Les mineurs relevés au passage sont sortis dans `WEB-98` ; les renvois
-imprécis des textes légaux (« depuis votre profil ») relèvent de la section `LEGAL`.
+`WEB-56` **Profil refondu (`WEB-55`, `WEB-57`) : ce qui reste de la recette navigateur (S)** — vus le 16 novembre
+2026 sur staging (`3b8a0b80`, Chrome, compte administrateur) et conformes : la mise en page des dix écrans, la bascule
+liste puis détail sous le point de rupture `md` (980 px et 606 px), le mode sombre, la bordure `danger-outline` de la
+zone de danger en sombre (`1px solid rgb(255, 135, 135)`), Personnes bloquées sous Confidentialité. **Restent deux
+points que staging ne permet pas de voir** : la cible de 44 px des cases de notifications au téléphone (staging
+n'annonce aucun canal, la matrice type × canal n'y est pas rendue : à voir sur une pile qui liste `EMAIL` ou `PUSH`,
+au doigt) ; et Préférences avec un fuseau non enregistré, qui montre celui du navigateur (`WEB-54`) — il faut un
+compte neuf. Les mineurs relevés au passage sont dans `WEB-98` ; les renvois imprécis des textes légaux relèvent de
+la section `LEGAL`.
 
 ## Livré
 

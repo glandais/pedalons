@@ -1,21 +1,23 @@
 ---
 id: WEB-78
 title: "Page d'un groupe de sortie (`WEB-77`) : recette navigateur des états restants"
-status: open
+status: done
 size: "S"
-verified: 2026-11-16
+done: 2026-11-16
 ---
 
-## Reste à faire
-
-`WEB-78` **Page d'un groupe de sortie (`WEB-77`) : recette navigateur des états restants
-(S)** — les e2e sont passés (voir la part livrée sous le même identifiant) et `WEB-94` a
-vérifié la section météo de la page dans un navigateur (clair, sombre, 390 px). Restent à
-voir à l'œil : la colonne de carte collante à partir de 64em, le sélecteur de groupe (4 puis
-`Select`), un groupe supprimé (état vide), un inscrit dans un autre groupe, en mode sombre et
-sur téléphone. Recoupe `WEB-61`.
-
 ## Livré
+
+### `WEB-78` Page d'un groupe de sortie : les états restants vus dans un navigateur (2026-11-16, contrat inchangé)
+
+`WEB-78` **La recette à l'œil de la page d'un groupe (`WEB-77`) est faite** — sur staging (`3b8a0b80`, contrat `15.0.0`), Chrome au bureau avec un compte administrateur, clair et sombre, et Chromium émulé en téléphone tactile de 390 px sans compte (Playwright), avec une sortie à quatre
+groupes sur trois parcours et une à six groupes créées pour l'occasion. Vus et conformes : la colonne de carte
+collante à partir de 64em (`position: sticky`, `top: 76px` à 1040 et 1440 px ; carte au-dessus et colonne dessous à
+1000 px) ; le sélecteur en quatre segments puis en `Select` à six groupes, nom long compris ; l'état « Ce groupe
+n'existe plus » et son retour à la sortie ; « Votre inscription est dans le groupe G2. Voir le groupe » sur un autre
+groupe ; le tout en sombre et à 390 px. Les défauts relevés sont sortis dans `WEB-188` (segments coupés à 390 px, et
+deux points à trancher : pas de « Changer pour ce groupe » sur la page, pas de distance pour un groupe qui roule le
+parcours de la sortie).
 
 ### `WEB-78` Page d'un groupe de sortie : les e2e passés (constaté le 16 octobre 2026, contrat inchangé)
 
