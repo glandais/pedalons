@@ -559,6 +559,12 @@ body {
     max-height: var(--detail-map-visible);
     overflow-y: auto;
   }
+
+  /* The Météo mode adds the wind's legend and the forecast's credit (two lines) above the
+     surface's breakdown: the map gives them their room rather than the column a scrollbar */
+  .detail-map--solo:has([data-testid='wind-map-legend']) {
+    --detail-map-height: max(360px, calc(var(--detail-map-visible) - 2px - 180px));
+  }
 }
 
 /* MapLibre's fullscreen where the Fullscreen API is missing (iPhone Safari) is a `position: fixed`
