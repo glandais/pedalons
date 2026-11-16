@@ -152,6 +152,18 @@ public enum FileTypeCategory {
   }
 
   /**
+   * Whether a Magika prediction passes: {@code modelLabel} is what the model read before Magika
+   * replaced a low-confidence answer by {@code txt} or {@code unknown} (its default
+   * high-confidence mode, since magika 0.7). A blocklist refuses either — a one-line PowerShell
+   * script the model reads as {@code powershell} at 0.43 comes out as {@code txt}, which no
+   * blocklist names. An allowlist decides on the label alone: the confident answer is the one to
+   * trust there. docs/LEDGER_*.md SEC-53.
+   */
+  public boolean accepts(String label, String modelLabel) {
+    return accepts(label) && (!excludeMode || accepts(modelLabel));
+  }
+
+  /**
    * Package-private: only used by {@link FileTypeDetector} for diagnostic logging. The semantics
    * depend on {@link #isExcludeMode()} — either the allowlist or the blocklist, never both.
    */

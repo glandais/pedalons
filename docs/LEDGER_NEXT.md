@@ -869,16 +869,22 @@ notifications n'a pas de test e2e : c'est `NOTIF-4`.
         Plan : [2026-11-05-osm-route-details](plans/2026-11-05-osm-route-details.md).
 
 - [ ] `API-148` **Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)** —
-      `guava` est forcé en 33.7.2-jre dans le `dependencyManagement` de `backend/pom.xml`
-      (CVE-2026-102554, désérialisation Java, non atteinte : aucun `ObjectInputStream` dans
-      `src/main`), car il arrive par `magika` → `error_prone_core`, hors du BOM applicatif Quarkus ;
-      un override oublié empêche les montées suivantes. `opentelemetry-api` 1.62.0
-      (CVE-2026-118259, `tracestate`) n'est **pas** forcé : `quarkus-scheduler` l'amène sans
-      `quarkus-opentelemetry` ni SDK, donc le propagateur n'est pas appelé, et le passer seul en
-      1.67 le décalerait de `opentelemetry-api-incubator` 1.62.0-alpha. Alerte Dependabot n° 232
-      classée « code vulnérable non utilisé » le 5 novembre 2026. La branche 4.0 de Quarkus embarque
-      le SDK 1.67.0 : à la montée, vérifier la version résolue des deux, retirer l'override si un
-      BOM couvre guava ou si `magika` en amène une version corrigée.
+      `opentelemetry-api` 1.62.0 (CVE-2026-118259, `tracestate`) n'est **pas** forcé :
+      `quarkus-scheduler` l'amène sans `quarkus-opentelemetry` ni SDK, donc le propagateur n'est pas
+      appelé, et le passer seul en 1.67 le décalerait de `opentelemetry-api-incubator` 1.62.0-alpha.
+      Alerte Dependabot n° 232 classée « code vulnérable non utilisé » le 5 novembre 2026. La branche
+      4.0 de Quarkus embarque le SDK 1.67.0 : à la montée, vérifier la version résolue des deux. Restent
+      aussi dans `backend/pom.xml` les surcharges `jackson3.version` et `log4j-api.version`, à retirer
+      dès qu'un BOM Quarkus les dépasse. La surcharge de `guava` est partie le 16 novembre 2026 avec
+      magika 0.7.0, qui ne l'amène plus (`SEC-53`) : guava n'arrive plus qu'en test, en 33.6.0-jre, par
+      `quarkus-junit` → `maven-embedder`, hors de l'image.
+
+- [ ] `API-208` **Retirer la déclaration explicite de `fit-kotlin-sdk-jvm` (S)** — `backend/pom.xml`
+      la déclare en 21.218.0 pour compiler `TrackAttachmentSanitizer` et `FitClockBackfill` (et cinq
+      tests) contre `com.garmin.fit` : `vcyclist-fit` la publie en scope `runtime` (`implementation`
+      Gradle, voulu). Sa version doit suivre celle de vcyclist à la main, et Dependabot la monte seule
+      (PR 445). À retirer quand vcyclist publiera de quoi l'aligner (scope `compile` ou BOM importé),
+      en même temps que la montée de `vcyclist.version`.
 
 - [ ] `API-139` **`GET /api/admin/teams` compte les membres ligne par ligne (S)** —
       `AdminTeamService.listTeams` appelle `userTeamRepository.count` pour chaque équipe de la page

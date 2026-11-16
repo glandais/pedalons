@@ -25,7 +25,7 @@
         <vcyclist.version>6.13.0</vcyclist.version>
         <lombok.version>1.18.48</lombok.version>
         <jspecify.version>1.0.0</jspecify.version>
-        <magika.version>0.6.1</magika.version>
+        <magika.version>0.7.0</magika.version>
         <dependencyversion-maven-plugin.version>1.0.0</dependencyversion-maven-plugin.version>
         <geolatte-geojson.version>1.11</geolatte-geojson.version>
         <archunit-junit5.version>1.5.1</archunit-junit5.version>
@@ -36,19 +36,12 @@
         <!-- Security overrides of versions quarkus-bom pins too low; drop each one once a Quarkus
              release aligns past it. jackson 3 (via webauthn4j): GHSA ranges [3.2.0,3.2.2).
              log4j-api (via log4j2-jboss-logmanager): [2.26.0,2.26.1). -->
-        <jackson3.version>3.2.4</jackson3.version>
+        <jackson3.version>3.3.0</jackson3.version>
         <log4j-api.version>2.26.1</log4j-api.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <!-- CVE-2026-102554, fixed in 33.7.2. Comes through magika -> error_prone_core, and no
-                 Quarkus release moves it yet: docs/LEDGER_*.md API-148 says when to drop this. -->
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>33.8.0-jre</version>
-            </dependency>
             <!-- Before quarkus-bom: the first imported BOM wins. -->
             <dependency>
                 <groupId>tools.jackson</groupId>
@@ -181,6 +174,7 @@
             <artifactId>vcyclist-map</artifactId>
             <version>${vcyclist.version}</version>
         </dependency>
+
         <!-- FIT decoding of attached files (TrackAttachmentSanitizer): runtime-only through
              vcyclist-fit, declared to compile against it. Keep the version vcyclist brings. -->
         <dependency>

@@ -78,6 +78,12 @@ class FileTypeCategoryTest {
   class Fit {
 
     @Test
+    void anAllowlistDecidesOnTheLabelAlone() {
+      assertTrue(FileTypeCategory.FIT.accepts("unknown", "randombytes"));
+      assertFalse(FileTypeCategory.FIT.accepts("txt", "fit"));
+    }
+
+    @Test
     void acceptsFitAndUnknown() {
       assertTrue(FileTypeCategory.FIT.accepts("fit"));
       assertTrue(FileTypeCategory.FIT.accepts("unknown"));
@@ -198,6 +204,14 @@ class FileTypeCategoryTest {
     void rejectsUnknownAndEmpty() {
       assertFalse(FileTypeCategory.ATTACHMENT.accepts("unknown"));
       assertFalse(FileTypeCategory.ATTACHMENT.accepts("empty"));
+    }
+
+    @Test
+    void refusesWhatTheModelReadBehindALowConfidenceLabel() {
+      // docs/LEDGER_*.md SEC-53: Magika turns a script it is unsure of into txt
+      assertFalse(FileTypeCategory.ATTACHMENT.accepts("txt", "powershell"));
+      assertFalse(FileTypeCategory.ATTACHMENT.accepts("txt", "randomtxt"));
+      assertTrue(FileTypeCategory.ATTACHMENT.accepts("txt", "txt"));
     }
   }
 
