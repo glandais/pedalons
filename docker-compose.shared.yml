@@ -69,8 +69,11 @@ services:
   # (the limit below is 3G to leave room for the altitude)
   # container with 18 team overlays: 1.10 GB of anonymous memory at most, without the altitude
   # asked alongside (docs/LEDGER_*.md OPS-61).
+  # 1.9.2: a deposit waiting behind another one answers "100 Continue" at once. With 1.9.1 the
+  # backend's HTTP client took the late 100 for the final answer and waited its 16 minutes
+  # (staging behind prod, 2026-11-17). Do not go back under 1.9.2 while staging and prod share it.
   osm-route-details:
-    image: ghcr.io/glandais/osm-route-details:1.9.1
+    image: ghcr.io/glandais/osm-route-details:1.9.2
     networks:
       - shared
     environment:

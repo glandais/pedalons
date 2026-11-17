@@ -125,7 +125,7 @@ limit is killed by the kernel (`OOMKilled` in `docker inspect`, `task: non-zero 
 | traefik | 256M | |
 | goatcounter | 128M | production only; 36 to 40 MiB at rest, the rest for CSV exports and the dashboard |
 | tileserver (shared) | 3G | ~1.8 GB resident |
-| osm-route-details (shared) | 3G | 2G until 2026-11-17, raised for the graph of France (ledger `OPS-61`: the generator alone reaches 1.10 GB with 18 team overlays, the altitude alone reached 1.4 GB, both together not measured); ledger `OPS-58`; with the route generator's graph in service since 2026-11-16 (ledger `OPS-60`): 238 MB after start, 621 MB after thirteen overlay deposits and two generations, peak 662 MB (about 1.07 GiB at worst measured outside a container). Its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; 1G was measured too tight on 2026-11-10 (~1.4 GB with swap under the backfill), still being watched |
+| osm-route-details (shared) | 3G | 2G until 2026-11-17, raised for the graph of France (ledger `OPS-61`: 105 MB after start, 1.0 GB after thirteen deposits and the first generations in production; 1.10 GB at worst on a workstation with 18 team overlays, the altitude alone reached 1.4 GB, both peaks together not measured); ledger `OPS-58`; with the route generator's graph in service since 2026-11-16 (ledger `OPS-60`): 238 MB after start, 621 MB after thirteen overlay deposits and two generations, peak 662 MB (about 1.07 GiB at worst measured outside a container). Its two tile caches at 256 MB each (512 by default) plus the requests in flight, `MALLOC_ARENA_MAX=2`; 1G was measured too tight on 2026-11-10 (~1.4 GB with swap under the backfill), still being watched |
 | monitoring stack | 2G in all | see [Monitoring](#monitoring); ~1 GB resident |
 
 **The backend has no `-Xmx`.** The image's entrypoint (`run-java.sh`, from the Jib base image
@@ -850,7 +850,7 @@ logs it.
   of that (`allowed_namespaces`, an encrypted network) is open in ledger `SEC-52`. The engine's port
   9090 (`/metrics`) is never published.
 
-**The graph, in the shared stack.** `docker-compose.shared.yml` runs `osm-route-details:1.9.1`
+**The graph, in the shared stack.** `docker-compose.shared.yml` runs `osm-route-details:1.9.2`
 with `./data/osm-route-details-graph` mounted **read only**. A graph is four files built on a
 workstation (the graph, the `road` and `gravel` views, the covered polygon: about 125 + 65 + 92 MB
 for Pays de la Loire, 1.85 + 0.87 + 1.43 GB for France), named from one stem: `<name>.ordg`, `<name>.road.ordv`,
@@ -874,6 +874,9 @@ but the page cache must be able to hold the tiles in use, so keep the files on a
 2. Set `ORD_GRAPH_NAME=pdl-2026-11-16` in `~/shared/.env` and run `cd ~/shared && scripts/deploy.sh --shared`.
    The service verifies the files, publishes the new `graph.id` in `GET /v1/capabilities` and
    `generator.enabled`.
+   Run the trigger on staging and prod one after the other or together, as you like: the engine
+   takes one deposit at a time and the others wait their turn (since 1.9.2; with 1.9.1 a deposit
+   that waited more than a few seconds left the backend hanging for its 16-minute timeout).
 3. **What a new graph does**: every overlay deposited for the old one becomes `stale` and
    generations below discovery answer 409, so `GENERATOR_NETWORK_NOT_READY`, until it is deposited
    again. Do not wait for the night: on each environment run the trigger with `force` (it
@@ -909,7 +912,7 @@ No failure deletes an overlay: the old one serves until it expires, seven nights
   instance). Swagger UI in `%dev`, or `curl` with an admin's token. Use it after a deploy that
   changes the format of what is sent (the digest then differs for everyone), after a new graph, a
   rotated key, a restored database, or to try the engine on the e2e or workstation stack.
-- **First start**: the engine ready (image 1.9.1, graph files, `ORD_GRAPH_NAME`), the key in each
+- **First start**: the engine ready (image 1.9.2, graph files, `ORD_GRAPH_NAME`), the key in each
   `.env`, the backend deployed; then run the trigger with `force`, rather than wait for the night.
   Until a team's overlay exists it gets `GENERATOR_NETWORK_NOT_READY` below discovery.
 - **Follow it**: the log lines `Route generator overlays: …` (one `INFO` per deposit with the team's

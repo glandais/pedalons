@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **567 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **568 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -443,6 +443,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## OPS — Exploitation
 
+- [x] [`OPS-61`](ledger/OPS/OPS-61.md) Générateur de parcours : graphe de la France en service dans la pile partagée — 2026-11-17
 - [x] [`OPS-60`](ledger/OPS/OPS-60.md) Générateur de parcours mis en service : image 1.9 et graphe dans la pile partagée, une clé par environnement, premier dépôt lancé à la main — 2026-11-16
 - [x] [`OPS-59`](ledger/OPS/OPS-59.md) osm-surface retiré de la stack partagée — 2026-11-07
 - [x] [`OPS-57`](ledger/OPS/OPS-57.md) La surface des traces ne passe plus par Stadia Maps : osm-surface, dans la stack partagée — 2026-10-31

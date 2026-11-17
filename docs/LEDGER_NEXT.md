@@ -6,7 +6,7 @@ Index des **175 entrées ouvertes** et des 70 entrées écartées. Chaque entré
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-42 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+41 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
@@ -96,6 +96,7 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 
+- [ ] [`API-210`](ledger/API/API-210.md) Dépôt des surcouches du générateur : la connexion du verrou meurt quand une passe dure (S)
 - [ ] [`API-209`](ledger/API/API-209.md) Carte des parcours en fréquentation : nombre de parcours par arête OSM, coloré selon le compte (L)
 - [ ] [`API-207`](ledger/API/API-207.md) Générateur de parcours au-delà du réseau de l'équipe (L, proposition, décision d'abord) · *decision*
 - [ ] [`API-203`](ledger/API/API-203.md) Ce qu'un jeton d'application ou d'appareil peut faire sans le membre (S, décision d'abord) · *decision*
@@ -181,7 +182,6 @@ Contexte du domaine : [`ledger/OPS/README.md`](ledger/OPS/README.md).
 
 ### Exploitation
 
-- [ ] [`OPS-61`](ledger/OPS/OPS-61.md) Générateur de parcours : graphe de la France dans la pile partagée (S, exploitation) · *externe*
 - [ ] [`OPS-58`](ledger/OPS/OPS-58.md) osm-route-details dans la pile partagée : à régler
 - [ ] [`OPS-56`](ledger/OPS/OPS-56.md) Vérifier en prod le plateau du heap après `OPS-55`
 - [ ] [`OPS-54`](ledger/OPS/OPS-54.md) Images Docker publiées sur un registry public, construites par la CI (étude)
@@ -347,7 +347,6 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 
 - [`MOB-110`](ledger/MOB/MOB-110.md) Publier la 1.2.0 sur l'App Store
 - [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play
-- [`OPS-61`](ledger/OPS/OPS-61.md) Générateur de parcours : graphe de la France dans la pile partagée (S, exploitation)
 - [`OPS-35`](ledger/OPS/OPS-35.md) Publier l'app Garmin sur le Connect IQ Store
 - [`OPS-34`](ledger/OPS/OPS-34.md) Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`
 - [`OPS-33`](ledger/OPS/OPS-33.md) Publier l'extension Karoo dans l'Extension Library de Hammerhead

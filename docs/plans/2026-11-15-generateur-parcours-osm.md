@@ -625,6 +625,10 @@ Conception et relevés dans osm-route-details : `docs/design/technique/ord-loops
   au-delà de 200 km (le moteur est conçu jusqu'à 400, le contrat reste à 200) ; les derniers
   relevés en conteneur sont ceux de l'agent qui a codé, relus mais pas rejoués.
 - **Décidé le 17 novembre 2026** : la limite du conteneur passe de 2G à 3G.
+- **En service le 17 novembre 2026** (`OPS-61`) : graphe `fr-2026-11-15` sur le serveur, 13 équipes
+  redéposées. Les deux déclencheurs lancés ensemble ont révélé un blocage du dépôt en file (le
+  « 100 Continue » tardif, mal lu par le client HTTP du JDK), corrigé dans le moteur `1.9.2` ;
+  reste `API-210` (connexion du verrou).
 - **Reste au propriétaire** : le budget du générateur, et
   relever ou non la distance maximale.
 
