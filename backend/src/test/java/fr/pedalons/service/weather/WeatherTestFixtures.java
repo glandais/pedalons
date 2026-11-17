@@ -114,17 +114,7 @@ public final class WeatherTestFixtures {
 
   /** The cell stored under {@code key}, or null. Inside a transaction. */
   public static @Nullable WeatherCell cell(WeatherCellRepository cells, CellKey key) {
-    return key.eleBand() == null
-        ? cells
-            .find("latIdx = ?1 and lonIdx = ?2 and eleBand is null", key.latIdx(), key.lonIdx())
-            .firstResult()
-        : cells
-            .find(
-                "latIdx = ?1 and lonIdx = ?2 and eleBand = ?3",
-                key.latIdx(),
-                key.lonIdx(),
-                key.eleBand())
-            .firstResult();
+    return cells.findByKey(key.latIdx(), key.lonIdx(), key.eleBand());
   }
 
   /**

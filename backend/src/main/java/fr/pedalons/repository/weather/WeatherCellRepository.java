@@ -82,6 +82,14 @@ public class WeatherCellRepository implements PanacheRepository<WeatherCell> {
         .executeUpdate();
   }
 
+  /** The cell of these indexes, or null. A null band is a cell of its own, not a wildcard. */
+  public @Nullable WeatherCell findByKey(int latIdx, int lonIdx, @Nullable Integer eleBand) {
+    return eleBand == null
+        ? find("latIdx = ?1 and lonIdx = ?2 and eleBand is null", latIdx, lonIdx).firstResult()
+        : find("latIdx = ?1 and lonIdx = ?2 and eleBand = ?3", latIdx, lonIdx, eleBand)
+            .firstResult();
+  }
+
   /**
    * Due cells still wanted, nearest passage first, locked for this transaction and skipping those
    * another worker holds. Same two-part claim as {@code NotificationEventRepository}: {@code skip

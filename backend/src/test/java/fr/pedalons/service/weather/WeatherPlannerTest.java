@@ -446,10 +446,67 @@ class WeatherPlannerTest extends AbstractResourceTest {
 
     GpxPreview defaulted = datedPreview(domain, user1, 44.0, departure, null);
     QuarkusTransaction.requiringNew().run(() -> previewRepository.deleteById(fast.getId()));
-    planner.planPreview(defaulted.getId(), Instant.now());
+    // A full pass: one preview planned alone keeps a nearer passage still ahead (docs/LEDGER_*.md
+    // API-211).
+    planner.plan(Instant.now());
 
     // 30 km at the 25 km/h default: 72 minutes
     assertEquals(departure.plus(Duration.ofMinutes(72)), cell(finishCell).getNearestNeedAt());
+  }
+
+  /**
+   * docs/LEDGER_*.md API-211: a ride and a preview over the same cell. The rides and the previews
+   * were upserted one after the other, so the later preview's passage replaced the ride's, and the
+   * cell was refreshed every 6 h while the ride, leaving within a day, read it STALE after 2.
+   */
+  @Test
+  void plan_aRideAndALaterPreviewOverTheSameCell_shouldKeepTheRidesPassage() {
+    Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    Instant rideTime = now.plus(Duration.ofHours(20));
+    Ride ride = ride(team1, user1, "tomorrow", rideTime, Status.PUBLISHED);
+    locate(ride, 44.0, 4.0, null);
+    datedPreview(domain, user1, 44.0, now.plus(Duration.ofDays(2)), null);
+
+    planner.plan(now);
+
+    WeatherCell shared = cell(CellKey.of(44.0, 4.0));
+    assertNotNull(shared);
+    assertEquals(rideTime, shared.getNearestNeedAt());
+  }
+
+  /** The same when the preview, saved after the pass, is planned alone (docs/LEDGER_*.md API-211). */
+  @Test
+  void planPreview_shouldNotPushBackTheNearerPassageOfARide() {
+    Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    Instant rideTime = now.plus(Duration.ofHours(20));
+    locate(ride(team1, user1, "tomorrow", rideTime, Status.PUBLISHED), 44.0, 4.0, null);
+    planner.plan(now);
+    Instant previewTime = now.plus(Duration.ofDays(2));
+    GpxPreview preview = datedPreview(domain, user1, 44.0, previewTime, null);
+
+    planner.planPreview(preview.getId(), now.plus(Duration.ofMinutes(1)));
+
+    assertEquals(rideTime, cell(CellKey.of(44.0, 4.0)).getNearestNeedAt());
+    // A cell only the preview asks for takes its passage.
+    RouteSamples samples =
+        RouteSampleLookup.sample(
+            List.of(WeatherTestFixtures.northbound(44.0, 4.0, 30, 170)), 15_000);
+    CellKey finish = samples.samples().getLast().cell();
+    assertEquals(previewTime.plus(Duration.ofMinutes(72)), cell(finish).getNearestNeedAt());
+  }
+
+  @Test
+  void nearest_aPassageAheadWinsOverNow_theNearerOfTwoAheadOtherwise() {
+    Instant now = Instant.parse("2026-11-17T20:00:00Z");
+    Instant soon = now.plus(Duration.ofHours(1));
+    Instant later = now.plus(Duration.ofHours(30));
+    var nearest = WeatherPlanner.nearest(now);
+
+    assertEquals(soon, nearest.apply(soon, later));
+    assertEquals(soon, nearest.apply(later, soon));
+    assertEquals(later, nearest.apply(now, later));
+    assertEquals(later, nearest.apply(later, now));
+    assertEquals(now, nearest.apply(now, now));
   }
 
   @Test

@@ -1,6 +1,7 @@
 package fr.pedalons.service.weather;
 
 import fr.pedalons.domain.ride.Ride;
+import fr.pedalons.domain.weather.WeatherCell;
 import fr.pedalons.repository.gpx.GpxPreviewRepository;
 import fr.pedalons.repository.gpx.PreviewWeatherRow;
 import fr.pedalons.repository.ride.RideRepository;
@@ -21,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BinaryOperator;
 import org.jboss.logging.Logger;
 
 /**
@@ -81,28 +83,47 @@ public class WeatherPlanner {
    * pass cut short loses nothing the next tick does not write again (docs/LEDGER_*.md API-100).
    */
   public int plan(Instant now) {
-    Map<CellKey, Instant> demand = QuarkusTransaction.requiringNew().call(() -> demand(now));
+    Map<CellKey, Instant> demand =
+        new HashMap<>(QuarkusTransaction.requiringNew().call(() -> demand(now)));
+    // One upsert for both: written one after the other, the previews' passage replaced the rides'
+    // on a cell they share, and a ride leaving tomorrow was refreshed at the pace of a preview
+    // dated the day after — every 6 h, while its reader flags it STALE after 2 (docs/LEDGER_*.md
+    // API-211).
+    previewsDemand(now).forEach((cell, need) -> demand.merge(cell, need, nearest(now)));
     upsert(demand, now);
-    return demand.size() + planPreviews(now);
+    return demand.size();
   }
 
   /**
-   * The dated previews, apart from the rides: their number is the people's, not the teams', and a
-   * failure or a slow read here must not cost the rides their pass. Never throws.
+   * The dated previews, read apart from the rides: their number is the people's, not the teams',
+   * and a failure or a slow read here must not cost the rides their pass. Never throws.
    */
-  private int planPreviews(Instant now) {
+  private Map<CellKey, Instant> previewsDemand(Instant now) {
     try {
-      Map<CellKey, Instant> demand =
-          QuarkusTransaction.requiringNew().call(() -> previewsDemand(now));
-      upsert(demand, now);
-      return demand.size();
+      return QuarkusTransaction.requiringNew().call(() -> readPreviewsDemand(now));
     } catch (Exception e) {
       LOG.error("Weather planning of the GPX previews failed", e);
-      return 0;
+      return Map.of();
     }
   }
 
-  private Map<CellKey, Instant> previewsDemand(Instant now) {
+  /**
+   * Merges two needs of one cell, each already resolved by {@link #demand(List, List, Instant)}: a
+   * passage ahead wins over {@code now} (a cell only behind us), the nearer of two ahead otherwise.
+   */
+  static BinaryOperator<Instant> nearest(Instant now) {
+    return (a, b) -> {
+      if (!a.isAfter(now)) {
+        return b;
+      }
+      if (!b.isAfter(now)) {
+        return a;
+      }
+      return a.isBefore(b) ? a : b;
+    };
+  }
+
+  private Map<CellKey, Instant> readPreviewsDemand(Instant now) {
     Instant until = now.plus(RideWeatherCalculator.HORIZON);
     List<PreviewWeatherRow> previews =
         gpxPreviewRepository.findForWeather(now, until, MAX_PREVIEWS_PER_PASS);
@@ -110,21 +131,49 @@ public class WeatherPlanner {
   }
 
   private void upsert(Map<CellKey, Instant> demand, Instant now) {
+    upsert(demand, now, false);
+  }
+
+  /**
+   * @param keepNearer whether a nearer passage still ahead, asked for by a recent planning pass,
+   *     stays: true for one preview planned alone ({@link #planPreview}), which knows nothing of the
+   *     rides and the other previews over the same cells, and must not push their passage back
+   *     until the next pass (docs/LEDGER_*.md API-211). A full pass knows all the demand and writes it as it is.
+   */
+  private void upsert(Map<CellKey, Instant> demand, Instant now, boolean keepNearer) {
     for (Map.Entry<CellKey, Instant> entry : demand.entrySet()) {
       CellKey key = entry.getKey();
-      Instant need = entry.getValue();
       QuarkusTransaction.requiringNew()
-          .run(() ->
-              cellRepository.upsertDemand(
-                  key.latIdx(),
-                  key.lonIdx(),
-                  key.eleBand(),
-                  key.centerLat(),
-                  key.centerLon(),
-                  need,
-                  WeatherRefreshPolicy.ttl(need, now),
-                  now));
+          .run(() -> {
+            Instant need = entry.getValue();
+            if (keepNearer) {
+              need = nearest(now).apply(need, recentNeed(key, now));
+            }
+            cellRepository.upsertDemand(
+                key.latIdx(),
+                key.lonIdx(),
+                key.eleBand(),
+                key.centerLat(),
+                key.centerLon(),
+                need,
+                WeatherRefreshPolicy.ttl(need, now),
+                now);
+          });
     }
+  }
+
+  /**
+   * The passage a planning pass of the last {@code WeatherFetchWorker#DEMAND_FRESHNESS} wrote on
+   * this cell, or {@code now} when there is none still ahead.
+   */
+  private Instant recentNeed(CellKey key, Instant now) {
+    WeatherCell cell = cellRepository.findByKey(key.latIdx(), key.lonIdx(), key.eleBand());
+    if (cell == null
+        || cell.getNearestNeedAt() == null
+        || cell.getLastDemandAt().isBefore(now.minus(WeatherFetchWorker.DEMAND_FRESHNESS))) {
+      return now;
+    }
+    return cell.getNearestNeedAt();
   }
 
   /**
@@ -134,7 +183,7 @@ public class WeatherPlanner {
   public int planPreview(long previewId, Instant now) {
     Map<CellKey, Instant> demand =
         QuarkusTransaction.requiringNew().call(() -> previewDemand(previewId, now));
-    upsert(demand, now);
+    upsert(demand, now, true);
     return demand.size();
   }
 

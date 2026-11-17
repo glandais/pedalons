@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **597 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **598 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -315,6 +315,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## API — Contrat d'API et backend
 
+- [x] [`API-211`](ledger/API/API-211.md) Météo : un aperçu GPX daté écrase le passage le plus proche d'une sortie sur une cellule partagée — 2026-11-17
 - [x] [`API-210`](ledger/API/API-210.md) Dépôt des surcouches du générateur : la connexion du verrou meurt quand une passe dure — 2026-11-17
 - [x] [`API-208`](ledger/API/API-208.md) `fit-kotlin-sdk-jvm` aligné sur vcyclist par son BOM — 2026-11-16
 - [x] [`API-206`](ledger/API/API-206.md) Générateur de parcours sur un graphe OSM : les lots 0 à 3 d'`API-207` — 2026-11-16
