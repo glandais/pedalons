@@ -32,12 +32,12 @@ const generate: CreateAction = {
   disabledReason: 'Quota atteint',
 }
 
-function renderButton(actions: CreateAction[], compact = false) {
+function renderButton(actions: CreateAction[], fullWidth = false) {
   render(
     <QueryClientProvider client={new QueryClient()}>
       <MantineProvider>
         <MemoryRouter>
-          <CreateSplitButton actions={actions} compact={compact} />
+          <CreateSplitButton actions={actions} fullWidth={fullWidth} />
         </MemoryRouter>
       </MantineProvider>
     </QueryClientProvider>
@@ -75,12 +75,9 @@ describe('CreateSplitButton', () => {
     expect(screen.getByRole('link', { name: 'Créer un voyage' })).toBeTruthy()
   })
 
-  it('compact: one icon opening the whole menu', async () => {
+  it('fullWidth keeps the split button, label included', () => {
     renderButton([ride, trip], true)
-    expect(screen.queryByRole('link', { name: 'Créer une sortie' })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'actions.new' }))
-    await waitFor(() =>
-      expect(screen.getByRole('menuitem', { name: /Créer une sortie/ })).toBeTruthy()
-    )
+    expect(screen.getByRole('link', { name: 'Créer une sortie' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'aria.createOther' })).toBeTruthy()
   })
 })

@@ -1,6 +1,6 @@
-import { Fragment, type ReactNode } from 'react'
+import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActionIcon, Button, Menu, Text, ThemeIcon, Tooltip } from '@mantine/core'
+import { Button, Menu, Text, ThemeIcon } from '@mantine/core'
 import { IconChevronDown, IconPlus, type Icon } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import type { BadgeFamily } from '@/lib/badgeColors.generated'
@@ -29,71 +29,60 @@ export interface CreateAction {
 /**
  * « Créer une sortie ▾ »: the first available action as the button, every action in the menu behind
  * the chevron, by section. The team's agenda and its dashboard header share it, so the two places
- * an organizer creates from look the same. With `compact` (a phone, in a header) it is one `+`
- * icon opening the menu. A single action is a plain button.
+ * an organizer creates from look the same. `fullWidth` stretches it over its row (a phone, as in the
+ * app). A single action is a plain button.
  */
 export function CreateSplitButton({
   actions,
-  compact = false,
+  fullWidth = false,
 }: {
   actions: CreateAction[]
-  compact?: boolean
+  fullWidth?: boolean
 }) {
   const { t } = useTranslation()
   const primary = actions.find((a) => !a.disabledReason)
   if (!primary) return null
 
-  if (actions.length === 1) {
-    return compact ? (
-      <Tooltip label={primary.label}>
-        <ActionIcon {...linkProps(primary)} variant="filled" aria-label={primary.label} size="lg">
-          <IconPlus size={18} />
-        </ActionIcon>
-      </Tooltip>
-    ) : (
-      <Button {...linkProps(primary)} leftSection={<IconPlus size={16} />}>
-        {primary.label}
-      </Button>
-    )
-  }
-
-  const menu = (target: ReactNode) => (
-    <Menu position="bottom-end" width={300} withinPortal>
-      <Menu.Target>{target}</Menu.Target>
-      <Menu.Dropdown>
-        {actions.map((action, index) => {
-          const previous = actions[index - 1]
-          const newGroup = index === 0 || previous.group !== action.group
-          return (
-            <Fragment key={action.key}>
-              {newGroup && index > 0 && <Menu.Divider />}
-              {newGroup && action.group && <Menu.Label>{action.group}</Menu.Label>}
-              <CreateMenuItem action={action} />
-            </Fragment>
-          )
-        })}
-      </Menu.Dropdown>
-    </Menu>
+  const primaryButton = (
+    <Button
+      {...linkProps(primary)}
+      leftSection={<IconPlus size={16} />}
+      fullWidth={fullWidth}
+      style={fullWidth ? { flex: 1 } : undefined}
+    >
+      {primary.label}
+    </Button>
   )
-
-  if (compact) {
-    return menu(
-      <ActionIcon variant="filled" size="lg" aria-label={t('actions.new')}>
-        <IconPlus size={18} />
-      </ActionIcon>
-    )
-  }
+  if (actions.length === 1) return primaryButton
 
   return (
-    <Button.Group>
-      <Button {...linkProps(primary)} leftSection={<IconPlus size={16} />}>
-        {primary.label}
-      </Button>
-      {menu(
-        <Button px="xs" aria-label={t('aria.createOther')}>
-          <IconChevronDown size={16} />
-        </Button>
-      )}
+    <Button.Group style={fullWidth ? { width: '100%' } : undefined}>
+      {primaryButton}
+      <Menu position="bottom-end" width={300} withinPortal>
+        <Menu.Target>
+          <Button
+            px="xs"
+            aria-label={t('aria.createOther')}
+            // The two halves share a colour: a darker seam tells them apart.
+            style={{ borderLeft: '1px solid var(--mantine-color-primary-filled-hover)' }}
+          >
+            <IconChevronDown size={16} />
+          </Button>
+        </Menu.Target>
+        <Menu.Dropdown>
+          {actions.map((action, index) => {
+            const previous = actions[index - 1]
+            const newGroup = index === 0 || previous.group !== action.group
+            return (
+              <Fragment key={action.key}>
+                {newGroup && index > 0 && <Menu.Divider />}
+                {newGroup && action.group && <Menu.Label>{action.group}</Menu.Label>}
+                <CreateMenuItem action={action} />
+              </Fragment>
+            )
+          })}
+        </Menu.Dropdown>
+      </Menu>
     </Button.Group>
   )
 }

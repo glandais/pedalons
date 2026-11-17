@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { Stack, Group, Button, Box } from '@mantine/core'
+import { Stack, Group, Button, Box, ActionIcon, Tooltip } from '@mantine/core'
+import { IconLogout } from '@tabler/icons-react'
+import { useResponsive } from '@/hooks/useResponsive'
 import { getGetTeamQueryKey } from '@/api/endpoints/teams/teams'
 import { useLeaveTeam, getGetMembersQueryKey } from '@/api/endpoints/team-members/team-members'
 import { useAuth } from '../../hooks/useAuth'
@@ -33,7 +35,8 @@ interface TeamLayoutProps {
   children: React.ReactNode
   /** Under the name: the dashboard puts the reader's role and the member count there. */
   meta?: React.ReactNode
-  /** Before the header's own buttons: the dashboard's shortcuts (calendar, create). */
+  /** Before the header's own buttons: the dashboard's create button. On a phone it takes a full
+   * row of its own under the header, as the app does. */
   actions?: React.ReactNode
 }
 
@@ -50,6 +53,7 @@ export function TeamLayout({
   const queryClient = useQueryClient()
   const { isAuthenticated } = useAuth()
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const { isMobile } = useResponsive()
 
   // Set favicon to team logo
   useFavicon(team.about?.assets?.logo?.imageUrl?.replace('{size}', String(128)))
@@ -101,7 +105,7 @@ export function TeamLayout({
             </Group>
 
             <Group gap="sm">
-              {actions}
+              {!isMobile && actions}
 
               {joinBlockedByLimit && team.memberLimit != null && (
                 <Box maw={360}>
@@ -117,11 +121,24 @@ export function TeamLayout({
                 </Button>
               )}
 
-              {canLeave && (
-                <Button variant="default" onClick={() => setShowLeaveConfirm(true)}>
-                  {t('teams.detail.actions.leave')}
-                </Button>
-              )}
+              {canLeave &&
+                (isMobile ? (
+                  // On a phone the label crowded the team's name: an icon, named for assistive tech.
+                  <Tooltip label={t('teams.detail.actions.leave')}>
+                    <ActionIcon
+                      variant="default"
+                      size="input-sm"
+                      aria-label={t('teams.detail.actions.leave')}
+                      onClick={() => setShowLeaveConfirm(true)}
+                    >
+                      <IconLogout size={18} />
+                    </ActionIcon>
+                  </Tooltip>
+                ) : (
+                  <Button variant="default" onClick={() => setShowLeaveConfirm(true)}>
+                    {t('teams.detail.actions.leave')}
+                  </Button>
+                ))}
 
               {isOrganizer && (
                 <Button variant="default" component={PrefetchLink} to={paths.teamAdmin(team.slug)}>
@@ -135,6 +152,7 @@ export function TeamLayout({
           {meta}
         </Box>
       </Group>
+      {isMobile && actions}
 
       {/* Team Navigation */}
       <NavButtons items={tabs} currentId={currentTab} label={t('nav.landmark.team')} />
