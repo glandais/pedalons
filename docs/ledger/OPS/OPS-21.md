@@ -31,6 +31,5 @@ rien. Il lit la base sous `POSTGRES_USER`, le mot de passe dans sa propre variab
 `PostgresDown` (`pg_up == 0`, 2 min, critique) et `PostgresConnectionsHigh` (plus de 80 % de
 `max_connections`, 10 min), testées par `promtool test rules`
 (`services/monitoring/prometheus/tests/pedalons.test.yml`) ; les noms de métriques ont été relevés
-sur un exporteur v0.20.1 réel. Décrit dans `docs/OPERATIONS.md`, « Monitoring ». **À déployer** :
-`scripts/deploy.sh` de chaque environnement, puis `scripts/deploy.sh --monitoring` pour recharger
-Prometheus.
+sur un exporteur v0.20.1 réel. Décrit dans `docs/OPERATIONS.md`, « Monitoring ». **Déployé le 17 novembre 2026** en staging et en prod (`scripts/deploy.sh --rev` sur
+les images déjà en service, puis `--monitoring`) : les deux cibles `postgres` répondent, `pg_up` vaut 1.
