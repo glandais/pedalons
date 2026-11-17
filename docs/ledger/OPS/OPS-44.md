@@ -1,18 +1,19 @@
 ---
 id: OPS-44
 title: "Un test automatisé pour « `AdDto` ne porte aucun champ de contact »"
-status: open
+status: done
 group: "Recette du backend en conditions réelles"
-verified: 2026-11-16
+done: 2026-11-17
 ---
 
-## Reste à faire
+## Livré
 
-`OPS-44` **Un test automatisé pour « `AdDto` ne porte aucun champ de contact »** —
-l'invariant (relais d'e-mail, aucune adresse dans l'API) n'est gardé que par le `grep` et le
-script Python du §5.3 du
-[document d'API](../../plans/archive/2026-07-26-api-v2-livraison-et-suites.md), à lancer à la main
-(rejoués le 16 octobre 2026 sur le contrat `11.5.1` : `OPS-5`). Le jour où un champ de
-contact y entre, une adresse personnelle est publiée à toute une équipe, irrévocablement, et
-aucun build ne le voit. En faire un test backend qui lit le schéma OpenAPI généré (ou les
-composants du record `AdDto`) et échoue sur `contact|email|phone|mail|tel`. Taille : XS.
+`OPS-44` **« `AdDto` ne porte aucun champ de contact »** — la règle est écrite dans la Javadoc du
+record `AdDto` (`backend/src/main/java/fr/pedalons/dto/ads/response/AdDto.java`), là où un champ
+serait ajouté : aucun e-mail, téléphone, adresse ni lien pour joindre l'auteur, ni dans `AdDto` ni
+dans les records qu'il porte ; un acheteur écrit par `POST …/classifieds/{adSlug}/contact`, relayé par
+e-mail (`AdContactEmailService`). Elle reste aussi dans le CLAUDE.md racine (invariant des annonces).
+Décidé le 17 novembre 2026 avec le propriétaire : un commentaire plutôt qu'un test automatisé qui
+lirait les noms des composants ou le schéma OpenAPI — pas de garde de build, donc ; le `grep` et le
+script du §5.3 du [document d'API](../../plans/archive/2026-07-26-api-v2-livraison-et-suites.md)
+restent le moyen de le revérifier.

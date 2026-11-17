@@ -26,6 +26,17 @@ import org.geolatte.geom.G2D;
 import org.geolatte.geom.Point;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * An ad as every member of its team reads it.
+ *
+ * <p><b>No contact field, ever</b> — no e-mail, phone, address or link to reach the author, here or
+ * in any record it carries (docs/LEDGER_*.md OPS-44). A buyer writes through {@code POST
+ * …/classifieds/{adSlug}/contact}, which relays the message by e-mail ({@code
+ * AdContactEmailService}): the author's address never leaves the server, and the buyer's reaches the
+ * author only because the buyer chose to write. A contact field added here would publish a personal
+ * address to a whole team, irrevocably. The position is blurred the same way ({@code
+ * locationGeometry}, a ~1 km cell): render a sector, never a pin.
+ */
 @Schema(description = "Ad data")
 @ValidateSchema
 public record AdDto(
