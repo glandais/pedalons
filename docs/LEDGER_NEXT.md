@@ -2,11 +2,11 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **148 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **147 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-41 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+40 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
@@ -43,7 +43,6 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
 ### Fiches des stores
 
-- [ ] [`MOB-110`](ledger/MOB/MOB-110.md) Publier la 1.2.0 sur l'App Store (XS) · *externe*
 - [ ] [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play (S) · *externe*
 
 ### Recette sur une application qui tourne
@@ -315,7 +314,6 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 
 ### Dépend d'un tiers ou d'une opération hors du dépôt (`externe`)
 
-- [`MOB-110`](ledger/MOB/MOB-110.md) Publier la 1.2.0 sur l'App Store
 - [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play
 - [`OPS-35`](ledger/OPS/OPS-35.md) Publier l'app Garmin sur le Connect IQ Store
 - [`OPS-34`](ledger/OPS/OPS-34.md) Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`

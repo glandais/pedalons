@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **596 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **597 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -60,6 +60,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`MOB-113`](ledger/MOB/MOB-113.md) Le détail de sortie et la page de groupe ont un bloc de départ — 2026-11-07
 - [x] [`MOB-112`](ledger/MOB/MOB-112.md) « L'heure qui me concerne » a une source unique — 2026-11-07
 - [x] [`MOB-111`](ledger/MOB/MOB-111.md) « Ma prochaine sortie » donne toujours l'heure de départ — 2026-11-07
+- [x] [`MOB-110`](ledger/MOB/MOB-110.md) Publier la 1.2.0 sur l'App Store — 2026-11-17
 - [x] [`MOB-109`](ledger/MOB/MOB-109.md) Les pastilles météo restent sur la carte quand elles sont nombreuses à se toucher — 2026-11-06
 - [x] [`MOB-108`](ledger/MOB/MOB-108.md) La carte d'ensemble d'un voyage a son interrupteur « Étapes \| Météo » — 2026-10-31
 - [x] [`MOB-107`](ledger/MOB/MOB-107.md) Les pastilles météo sur la carte encastrée — 2026-10-31
