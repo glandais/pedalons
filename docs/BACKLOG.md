@@ -9,8 +9,8 @@ Everything else lives in the ledger and is not repeated here:
   [LEDGER_NEXT.md](LEDGER_NEXT.md);
 - what the product does today — [PRODUCT_SHEET.md](PRODUCT_SHEET.md).
 
-An idea that gets a ledger entry leaves this file. Two former lines went that way and are still
-open: global full-text search (ledger `API-19`) and weather on Karoo and Garmin (ledger `API-77`).
+An idea that gets a ledger entry leaves this file. Two former lines went that way:
+open: weather on Karoo and Garmin (ledger `API-77`); global full-text search (ledger `API-19`) was ruled out.
 
 ## P0 — Launch polish
 

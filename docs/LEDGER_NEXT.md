@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **151 entrées ouvertes** et des 75 entrées écartées. Chaque entrée a son fichier
+Index des **150 entrées ouvertes** et des 76 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -140,7 +140,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 
 ### Petites évolutions d'API qui suppriment chacune une dégradation nommée
 
-- [ ] [`API-19`](ledger/API/API-19.md) `GET /api/search?q&types=&limit` unifié
 - [ ] [`API-18`](ledger/API/API-18.md) Voyage comme événement multi-jour au calendrier (`CalendarEventType`, toujours `RIDE`/`TRIP_STAGE`)
 - [ ] [`API-17`](ledger/API/API-17.md) `?format=polyline` sur la géométrie de parcours
 - [ ] [`API-8`](ledger/API/API-8.md) Voisins de publication (`prev`/`next`) — absents de tout le contrat `11.5.1` (balayage de tous les schémas le…
@@ -395,6 +394,7 @@ identifiant.
 - [`API-31`](ledger/API/API-31.md) Position exacte d'une annonce
 - [`API-30`](ledger/API/API-30.md) Repli sur `createdBy` pour le meneur
 - [`API-29`](ledger/API/API-29.md) Liste d'attente (`waitlisted`)
+- [`API-19`](ledger/API/API-19.md) `GET /api/search?q&types=&limit` unifié
 - [`OPS-63`](ledger/OPS/OPS-63.md) Erreurs côté client web et mobile (GlitchTip)
 - [`OPS-62`](ledger/OPS/OPS-62.md) Métriques du frontend SSR
 - [`OPS-40`](ledger/OPS/OPS-40.md) Compter des visites plutôt que des pages vues
