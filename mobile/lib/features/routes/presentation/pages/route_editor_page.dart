@@ -69,7 +69,7 @@ import 'route_planner_screen.dart';
 /// [replaceGpx] (modification) fait ouvrir le sélecteur de fichier dès que
 /// l'écran s'affiche — « Remplacer le fichier GPX » du menu de la fiche ;
 /// rien ne part sans « Enregistrer ».
-class RouteEditorPage extends ConsumerWidget {
+class RouteEditorPage extends ConsumerStatefulWidget {
   const RouteEditorPage({
     super.key,
     required this.teamSlug,
@@ -81,10 +81,31 @@ class RouteEditorPage extends ConsumerWidget {
   final String? routeSlug;
   final bool replaceGpx;
 
+  @override
+  ConsumerState<RouteEditorPage> createState() => _RouteEditorPageState();
+}
+
+class _RouteEditorPageState extends ConsumerState<RouteEditorPage> {
+  String get teamSlug => widget.teamSlug;
+  String? get routeSlug => widget.routeSlug;
+  bool get replaceGpx => widget.replaceGpx;
   bool get _isEdit => routeSlug != null;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    // L'équipe déjà en cache (ouverte depuis sa page) porte le quota du
+    // planificateur de ce moment-là : il a pu être libéré depuis (changement
+    // de mois, déblocage par l'admin de plateforme). Elle est relue à chaque
+    // ouverture de l'éditeur, sans écran d'attente — la valeur en cache reste
+    // affichée pendant la relecture (docs/LEDGER_*.md MOB-176).
+    if (ref.read(teamDetailProvider(teamSlug).exists)) {
+      ref.invalidate(teamDetailProvider(teamSlug));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final String title = _isEdit
         ? 'routes.editor.editTitle'.tr()
         : 'routes.editor.createTitle'.tr();
@@ -253,9 +274,18 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
   RouteDetailDto? get _route => widget.route;
   String get _teamSlug => widget.team.slug;
 
+  /// L'app revenue au premier plan relit l'équipe : un quota libéré pendant
+  /// qu'elle dormait rouvre « Tracer sur la carte » (docs/LEDGER_*.md MOB-176).
+  late final AppLifecycleListener _resumeListener = AppLifecycleListener(
+    onResume: () {
+      if (mounted) ref.invalidate(teamDetailProvider(_teamSlug));
+    },
+  );
+
   @override
   void initState() {
     super.initState();
+    _resumeListener;
     final RouteDetailDto? route = _route;
     final RouteForm initial = route == null
         ? RouteForm.initial(widget.team)
@@ -279,6 +309,7 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
 
   @override
   void dispose() {
+    _resumeListener.dispose();
     _planner?.dispose();
     _name.dispose();
     _markdown.dispose();

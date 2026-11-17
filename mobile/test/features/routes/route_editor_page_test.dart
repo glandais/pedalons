@@ -119,7 +119,8 @@ class _StubRoutes implements RouteRepository {
 class _StubTeams implements TeamRepository {
   _StubTeams(this.team);
 
-  final TeamDetailDto team;
+  /// Remplaçable en cours de test : le quota libéré côté serveur.
+  TeamDetailDto team;
 
   /// Combien de fois l'équipe a été lue : une relecture après un refus de
   /// quota ou un enregistrement se compte ici.
@@ -1387,6 +1388,92 @@ void main() {
         ),
         web: web,
       );
+
+      expect(find.byKey(keys.routeEditor.quotaMessage), findsNothing);
+      await tester.tap(find.byKey(keys.routeEditor.drawButton));
+      await pumps(tester);
+      expect(web.created, 1);
+    });
+
+    // docs/LEDGER_*.md MOB-176 : le quota libéré se lit sans redémarrer l'app.
+    const PlannerQuotaDto spent = PlannerQuotaDto(
+      used: 20,
+      limit: 20,
+      resetsOn: '2026-12-01',
+    );
+    const PlannerQuotaDto freed = PlannerQuotaDto(
+      used: 0,
+      limit: 20,
+      resetsOn: '2027-01-01',
+    );
+    TeamDetailDto plannerTeam(PlannerQuotaDto quota) => fixtureRouteTeam(
+      role: 'ORGANIZER',
+      visibility: 'PUBLIC',
+      enableRoutes: true,
+      enableRoutePlanner: true,
+      plannerQuota: quota,
+    );
+
+    testWidgets('quota libéré : l\'éditeur rouvert relit l\'équipe', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        routes: _StubRoutes(),
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        quota: spent,
+        web: _FakePlannerWeb(),
+      );
+      expect(find.byKey(keys.routeEditor.quotaMessage), findsOneWidget);
+
+      // L'équipe reste en cache une fois l'éditeur fermé : le rouvrir
+      // doit la relire quand même.
+      router.pop();
+      await pumps(tester);
+      teams.team = plannerTeam(freed);
+      router.push('/editor');
+      await pumps(tester);
+
+      expect(find.byKey(keys.routeEditor.quotaMessage), findsNothing);
+      expect(find.byKey(keys.routeEditor.drawButton), findsOneWidget);
+    });
+
+    testWidgets('quota libéré : le retour au premier plan relit l\'équipe', (
+      WidgetTester tester,
+    ) async {
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: _StubRoutes(),
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        quota: spent,
+        web: web,
+      );
+      expect(find.byKey(keys.routeEditor.quotaMessage), findsOneWidget);
+
+      teams.team = plannerTeam(freed);
+      // L'app part en arrière-plan puis revient, état par état.
+      void lifecycle(List<AppLifecycleState> states) {
+        for (final AppLifecycleState state in states) {
+          tester.binding.handleAppLifecycleStateChanged(state);
+        }
+      }
+
+      lifecycle(<AppLifecycleState>[
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+      ]);
+      await pumps(tester);
+      expect(find.byKey(keys.routeEditor.quotaMessage), findsOneWidget);
+      lifecycle(<AppLifecycleState>[
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]);
+      await pumps(tester);
 
       expect(find.byKey(keys.routeEditor.quotaMessage), findsNothing);
       await tester.tap(find.byKey(keys.routeEditor.drawButton));

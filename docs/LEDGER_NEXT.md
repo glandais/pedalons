@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **163 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
+Index des **162 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -13,7 +13,6 @@ reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
-- [ ] [`MOB-176`](ledger/MOB/MOB-176.md) Nouveau parcours : le quota du planificateur reste celui de l'ouverture de l'équipe (S)
 - [ ] [`MOB-175`](ledger/MOB/MOB-175.md) Recette sur Pixel de la 1.2.0 : défauts d'affichage des pages groupe, équipe et carte (S)
 - [ ] [`MOB-174`](ledger/MOB/MOB-174.md) `maplibre_ios` appelle `setState` sur une carte déjà démontée (S)
 - [ ] [`MOB-170`](ledger/MOB/MOB-170.md) Tracer et modifier un parcours sur la carte dans l'app : recette sur appareil (S) · *recette*
