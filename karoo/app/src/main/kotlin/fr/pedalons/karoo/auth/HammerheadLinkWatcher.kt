@@ -13,7 +13,7 @@ internal class HammerheadLinkWatcher(private val repo: PedalonsRepository) {
 
     /** Checks now, then every [GpsConnectActivity.POLL_INTERVAL_MS], and returns once linked. */
     suspend fun awaitLinked() {
-        while (repo.hammerheadStatus() != HammerheadStatus.LINKED) {
+        while (repo.hammerheadStatus() != HammerheadStatus.Linked) {
             delay(GpsConnectActivity.POLL_INTERVAL_MS)
         }
     }

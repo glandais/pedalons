@@ -75,7 +75,7 @@ internal fun GpsConnectContent(resumeUrl: String, onLogout: () -> Unit) {
                 qrBitmap?.let { bitmap ->
                     Image(
                         bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "QR Code",
+                        contentDescription = stringResource(R.string.qr_code),
                         modifier = Modifier.size(110.dp),
                     )
                 }

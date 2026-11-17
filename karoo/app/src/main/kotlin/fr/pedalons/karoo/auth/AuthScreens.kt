@@ -101,7 +101,7 @@ internal fun CodeContent(deviceCode: DeviceCodeResponse) {
         qrBitmap?.let { bitmap ->
             Image(
                 bitmap = bitmap.asImageBitmap(),
-                contentDescription = "QR Code",
+                contentDescription = stringResource(R.string.qr_code),
                 modifier = Modifier.size(140.dp),
             )
         }

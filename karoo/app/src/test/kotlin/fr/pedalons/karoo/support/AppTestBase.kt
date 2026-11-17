@@ -178,7 +178,7 @@ abstract class AppTestBase {
     /** Decodes the QR code actually rendered on screen (captured pixels, read with ZXing). */
     fun decodeShownQr(): String {
         val bitmap =
-            compose.onNodeWithContentDescription("QR Code").captureToImage().asAndroidBitmap()
+            compose.onNodeWithContentDescription("QR code").captureToImage().asAndroidBitmap()
         val pixels = IntArray(bitmap.width * bitmap.height)
         bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
         val source = RGBLuminanceSource(bitmap.width, bitmap.height, pixels)

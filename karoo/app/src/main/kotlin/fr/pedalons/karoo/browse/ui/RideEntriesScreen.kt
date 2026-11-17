@@ -11,13 +11,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import fr.pedalons.karoo.R
 import fr.pedalons.karoo.api.DeviceRide
 import fr.pedalons.karoo.api.DeviceRideEntry
 import fr.pedalons.karoo.ui.components.DepartureLines
 import fr.pedalons.karoo.ui.components.DistanceAndElevation
+import fr.pedalons.karoo.ui.components.ListEmptyText
 import fr.pedalons.karoo.ui.components.NavArrow
 import fr.pedalons.karoo.ui.components.ScreenTopBar
 import fr.pedalons.karoo.ui.components.ScreenWithOverlay
@@ -40,33 +43,42 @@ internal fun RideEntriesScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             ScreenTopBar(title = ride.rideName, ellipsize = true)
 
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = 8.dp),
-            ) {
-                itemsIndexed(ride.entries, key = { index, entry -> "$index-${entry.routeSlug}" }) {
-                    index,
-                    entry ->
-                    SelectableRow(
-                        isSelected = index == selectedIndex,
-                        onClick = { onSelectEntry(entry) },
-                        contentPadding = 10.dp,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text =
-                                    entry.groupName?.let { groupLabel(context, it) }
-                                        ?: entry.routeName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            DepartureLines(ride.startOf(entry), ride.timezone)
-                            DistanceAndElevation(entry.distance, entry.elevationGain, userProfile)
+            if (ride.entries.isEmpty()) {
+                ListEmptyText(stringResource(R.string.no_ride_entries))
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                ) {
+                    itemsIndexed(
+                        ride.entries,
+                        key = { index, entry -> "$index-${entry.routeSlug}" },
+                    ) { index, entry ->
+                        SelectableRow(
+                            isSelected = index == selectedIndex,
+                            onClick = { onSelectEntry(entry) },
+                            contentPadding = 10.dp,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text =
+                                        entry.groupName?.let { groupLabel(context, it) }
+                                            ?: entry.routeName,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                DepartureLines(ride.startOf(entry), ride.timezone)
+                                DistanceAndElevation(
+                                    entry.distance,
+                                    entry.elevationGain,
+                                    userProfile,
+                                )
+                            }
+                            NavArrow()
                         }
-                        NavArrow()
                     }
                 }
             }

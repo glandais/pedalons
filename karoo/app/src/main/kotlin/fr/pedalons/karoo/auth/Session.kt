@@ -1,5 +1,6 @@
 package fr.pedalons.karoo.auth
 
+import fr.pedalons.karoo.api.ApiException
 import fr.pedalons.karoo.api.PedalonsApiClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
@@ -20,32 +21,48 @@ internal class Session(private val tokens: TokenStore, private val api: Pedalons
     suspend fun currentAccessToken(): String? = tokens.validAccessToken()
 
     /**
-     * A usable access token, refreshing the stored one when it is expired. Null when there is none
-     * and none can be had: no refresh token, a refused refresh, or an access token missing while
-     * its expiry is still in the future. A cancellation is never swallowed.
+     * A usable access token, refreshing the stored one when it is expired, or why there is none:
+     * [FreshToken.Refused] when the session is over (no refresh token, an access token missing
+     * while its expiry is still in the future, or the server answering the refresh with a 4xx),
+     * [FreshToken.Failed] when the refresh could not be had (no network, a 5xx): the tokens may
+     * still be good, so a caller must not sign out on it (docs/LEDGER_*.md API-188). A cancellation
+     * is never swallowed.
      */
-    suspend fun freshAccessToken(): String? {
+    suspend fun freshToken(): FreshToken {
         tokens.validAccessToken()?.let {
-            return it
+            return FreshToken.Token(it)
         }
         return refreshLock.withLock {
             // A concurrent caller may have refreshed while this one waited for the lock.
             tokens.validAccessToken()?.let {
-                return@withLock it
+                return@withLock FreshToken.Token(it)
             }
-            if (!tokens.needsRefresh()) return@withLock null
-            val refresh = tokens.refreshToken() ?: return@withLock null
+            if (!tokens.needsRefresh()) return@withLock FreshToken.Refused
+            val refresh = tokens.refreshToken() ?: return@withLock FreshToken.Refused
             api.refreshToken(refresh)
                 .fold(
                     onSuccess = {
                         tokens.save(it)
-                        it.accessToken
+                        FreshToken.Token(it.accessToken)
                     },
                     onFailure = {
-                        if (it is CancellationException) throw it
-                        null
+                        when {
+                            it is CancellationException -> throw it
+                            it is ApiException && it.status in 400..499 -> FreshToken.Refused
+                            else -> FreshToken.Failed(it)
+                        }
                     },
                 )
         }
     }
+}
+
+internal sealed interface FreshToken {
+    data class Token(val value: String) : FreshToken
+
+    /** The session is over: the tokens will never work again. */
+    data object Refused : FreshToken
+
+    /** The refresh could not be had; [cause] says whether the server answered. */
+    data class Failed(val cause: Throwable) : FreshToken
 }

@@ -1,6 +1,7 @@
 package fr.pedalons.karoo.browse
 
 import fr.pedalons.karoo.api.RoutesResponse
+import fr.pedalons.karoo.data.LoadError
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -12,16 +13,16 @@ class MainUiStateTest {
     private fun ready(
         auth: AuthStatus = AuthStatus.SIGNED_IN,
         isLoading: Boolean = false,
-        loadFailed: Boolean = false,
+        loadError: LoadError? = null,
         browse: BrowseState = loaded,
-    ) = MainUiState(true, auth, isLoading, loadFailed, browse)
+    ) = MainUiState(true, auth, isLoading, loadError, browse)
 
     @Test
     fun notReady_isAlwaysTheSkeleton() {
         assertEquals(MainScreenKind.SKELETON, MainUiState().screen())
         assertEquals(
             MainScreenKind.SKELETON,
-            MainUiState(false, AuthStatus.SIGNED_OUT, false, true, loaded).screen(),
+            MainUiState(false, AuthStatus.SIGNED_OUT, false, LoadError.SERVER, loaded).screen(),
         )
     }
 
@@ -29,14 +30,17 @@ class MainUiStateTest {
     fun signedOut_beatsTheError() {
         assertEquals(
             MainScreenKind.CONNECT,
-            ready(AuthStatus.SIGNED_OUT, loadFailed = true).screen(),
+            ready(AuthStatus.SIGNED_OUT, loadError = LoadError.SERVER).screen(),
         )
     }
 
     @Test
     fun failure_showsTheError_onlyWhenNotLoading() {
-        assertEquals(MainScreenKind.ERROR, ready(loadFailed = true).screen())
-        assertEquals(MainScreenKind.SKELETON, ready(loadFailed = true, isLoading = true).screen())
+        assertEquals(MainScreenKind.ERROR, ready(loadError = LoadError.SERVER).screen())
+        assertEquals(
+            MainScreenKind.SKELETON,
+            ready(loadError = LoadError.SERVER, isLoading = true).screen(),
+        )
     }
 
     @Test

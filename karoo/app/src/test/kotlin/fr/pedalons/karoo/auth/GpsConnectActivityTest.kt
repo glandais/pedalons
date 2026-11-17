@@ -54,7 +54,7 @@ class GpsConnectActivityTest : AppTestBase() {
             "Page closed on the phone? Scan to resume",
             "Sign out",
         )
-        assertTrue(hasDescription("QR Code"))
+        assertTrue(hasDescription("QR code"))
         compose.waitUntil(10_000) { meRequests().isNotEmpty() }
         assertEquals("stored-access", meRequests().first().bearer)
         assertTrue(!gps.isFinishing)
@@ -201,7 +201,7 @@ class GpsConnectActivityTest : AppTestBase() {
         backend.me = { ok(notConnected) }
         start()
         waitForText("Page closed on the phone? Scan to resume")
-        assertTrue(hasDescription("QR Code"))
+        assertTrue(hasDescription("QR code"))
         // The Hammerhead step alone, never the profile or the bare /karoo page.
         assertEquals("https://www.pedalons.fr/karoo/hammerhead", decodeShownQr())
     }

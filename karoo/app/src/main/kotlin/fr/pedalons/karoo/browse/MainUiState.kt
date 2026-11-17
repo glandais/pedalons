@@ -1,5 +1,6 @@
 package fr.pedalons.karoo.browse
 
+import fr.pedalons.karoo.data.LoadError
 import io.hammerhead.karooext.models.UserProfile
 
 internal enum class AuthStatus {
@@ -22,8 +23,8 @@ internal data class MainUiState(
     val karooReady: Boolean = false,
     val auth: AuthStatus = AuthStatus.UNKNOWN,
     val isLoading: Boolean = true,
-    /** A load failed with a message (a failure without one is not shown as an error). */
-    val loadFailed: Boolean = false,
+    /** Why the last load failed, until a load succeeds: any failure shows the error screen. */
+    val loadError: LoadError? = null,
     val browse: BrowseState = BrowseState(),
     val userProfile: UserProfile? = null,
 ) {
@@ -31,7 +32,7 @@ internal data class MainUiState(
         when {
             !karooReady -> MainScreenKind.SKELETON
             auth == AuthStatus.SIGNED_OUT -> MainScreenKind.CONNECT
-            loadFailed && !isLoading -> MainScreenKind.ERROR
+            loadError != null && !isLoading -> MainScreenKind.ERROR
             isLoading || auth == AuthStatus.UNKNOWN -> MainScreenKind.SKELETON
             browse.response == null -> MainScreenKind.EMPTY
             else -> MainScreenKind.CONTENT

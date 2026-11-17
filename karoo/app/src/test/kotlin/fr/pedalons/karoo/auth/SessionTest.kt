@@ -42,7 +42,7 @@ class SessionTest {
     fun aValidToken_makesNoRequest() = runBlocking {
         val engine = engine()
         val session = session(FakeTokenStore(), engine)
-        assertEquals("stored-access", session.freshAccessToken())
+        assertEquals(FreshToken.Token("stored-access"), session.freshToken())
         assertTrue(engine.requestHistory.isEmpty())
     }
 
@@ -51,7 +51,7 @@ class SessionTest {
         val engine = engine()
         val store = FakeTokenStore(expired = true)
         val session = session(store, engine)
-        assertEquals("new-access", session.freshAccessToken())
+        assertEquals(FreshToken.Token("new-access"), session.freshToken())
         assertEquals(1, engine.requestHistory.size)
         assertEquals("/api/device/oauth/token", engine.requestHistory.single().url.encodedPath)
         assertEquals(1, store.saves)
@@ -60,10 +60,10 @@ class SessionTest {
     }
 
     @Test
-    fun aRefusedRefresh_givesNull_andLeavesTheStoreAlone() = runBlocking {
+    fun aRefusedRefresh_isRefused_andLeavesTheStoreAlone() = runBlocking {
         val engine = engine(HttpStatusCode.BadRequest, """{"code":"INVALID_GRANT"}""")
         val store = FakeTokenStore(expired = true)
-        assertNull(session(store, engine).freshAccessToken())
+        assertEquals(FreshToken.Refused, session(store, engine).freshToken())
         assertEquals(1, engine.requestHistory.size)
         assertEquals(0, store.saves)
         assertEquals("stored-refresh", store.refresh)
@@ -71,18 +71,40 @@ class SessionTest {
     }
 
     @Test
-    fun noRefreshToken_givesNull_withoutARequest() = runBlocking {
+    fun aRefreshThatCouldNotBeHad_isAFailure_notARefusal() = runBlocking {
+        // API-188: a 5xx or no network leaves the tokens good; only a 4xx ends the session.
+        val store = FakeTokenStore(expired = true)
+        val server = session(store, engine(HttpStatusCode.BadGateway, "<html>")).freshToken()
+        assertTrue("$server", server is FreshToken.Failed)
+        val offline =
+            Session(
+                    store,
+                    PedalonsApiClient(
+                        "https://api.example.test",
+                        MockEngine {
+                            throw java.io.IOException("offline")
+                        },
+                    ),
+                )
+                .freshToken()
+        assertTrue("$offline", offline is FreshToken.Failed)
+        assertEquals(0, store.saves)
+        assertEquals("stored-refresh", store.refresh)
+    }
+
+    @Test
+    fun noRefreshToken_isRefused_withoutARequest() = runBlocking {
         val engine = engine()
         val session = session(FakeTokenStore(refresh = null, expired = true), engine)
-        assertNull(session.freshAccessToken())
+        assertEquals(FreshToken.Refused, session.freshToken())
         assertTrue(engine.requestHistory.isEmpty())
     }
 
     @Test
-    fun accessMissingButNotExpired_givesNull_withoutARequest() = runBlocking {
+    fun accessMissingButNotExpired_isRefused_withoutARequest() = runBlocking {
         val engine = engine()
         val session = session(FakeTokenStore(access = null, expired = false), engine)
-        assertNull(session.freshAccessToken())
+        assertEquals(FreshToken.Refused, session.freshToken())
         assertTrue(engine.requestHistory.isEmpty())
     }
 
@@ -94,11 +116,11 @@ class SessionTest {
         val store = FakeTokenStore(expired = true)
         val session = session(store, engine)
 
-        val callers = List(2) { async { session.freshAccessToken() } }
+        val callers = List(2) { async { session.freshToken() } }
         entered.await()
         gate.complete(Unit)
 
-        assertEquals(listOf("new-access", "new-access"), callers.awaitAll())
+        assertEquals(List(2) { FreshToken.Token("new-access") }, callers.awaitAll())
         assertEquals(1, engine.requestHistory.size)
         assertEquals(1, store.saves)
     }
@@ -122,7 +144,7 @@ class SessionTest {
         var thrown: Throwable? = null
         val job = launch {
             try {
-                session.freshAccessToken()
+                session.freshToken()
             } catch (e: CancellationException) {
                 thrown = e
                 throw e

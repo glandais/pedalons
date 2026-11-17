@@ -236,25 +236,53 @@ class StartupAndAuthFlowTest : AppTestBase() {
         assertFinishing()
     }
 
-    private fun assertRoutesLoadedAfterFailedAccountCheck(reply: Reply) {
-        backend.me = { reply }
+    // API-188: an account that could not be read is not taken for a linked one.
+    private fun assertErrorAfterFailedAccountCheck(reply: () -> Reply, reason: String) {
+        backend.me = { reply() }
         signIn()
         launch()
-        waitForHome()
-        assertTrue(backend.requests.any { it.path == "/api/device/routes" })
+        waitForText("Could not load")
+        assertShown(reason)
+        assertTrue(backend.requests.none { it.path == "/api/device/routes" })
+        assertEquals("stored-refresh", runBlocking { auth.getRefreshToken() })
     }
 
     @Test
-    fun accountCheckServerError_stillLoadsTheRoutes() =
-        assertRoutesLoadedAfterFailedAccountCheck(Reply(500, "boom"))
+    fun accountCheckServerError_showsTheServerError_andLoadsNothing() =
+        assertErrorAfterFailedAccountCheck({ Reply(500, "boom") }, SERVER_DOWN)
 
     @Test
-    fun accountCheck401_stillLoadsTheRoutes() =
-        assertRoutesLoadedAfterFailedAccountCheck(Reply(401, "{}"))
+    fun accountCheckUnreadable_showsTheServerError_andLoadsNothing() =
+        assertErrorAfterFailedAccountCheck({ Reply(200, "not json") }, SERVER_DOWN)
 
     @Test
-    fun accountCheckUnreadable_stillLoadsTheRoutes() =
-        assertRoutesLoadedAfterFailedAccountCheck(Reply(200, "not json"))
+    fun accountCheckOffline_showsTheNetworkError_andLoadsNothing() =
+        assertErrorAfterFailedAccountCheck({ throw java.io.IOException() }, NO_NETWORK)
+
+    @Test
+    fun accountCheck401_signsOut() {
+        backend.me = { Reply(401, "{}") }
+        signIn()
+        launch()
+        waitForText("Sign in")
+        assertNull(runBlocking { auth.getRefreshToken() })
+        assertTrue(backend.requests.none { it.path == "/api/device/routes" })
+    }
+
+    @Test
+    fun accountCheckFailed_retryChecksAgainThenLoads() {
+        var failing = true
+        backend.me = {
+            if (failing) Reply(500, "boom") else ok("""{"connectedGpsServices":["HAMMERHEAD"]}""")
+        }
+        signIn()
+        launch()
+        waitForText("Could not load")
+        failing = false
+        click("Try again")
+        waitForHome()
+        assertEquals(2, backend.count("GET", "/api/device/me"))
+    }
 
     // === Tokens ===
 
@@ -377,6 +405,16 @@ class StartupAndAuthFlowTest : AppTestBase() {
     }
 
     @Test
+    fun refreshUnreachable_keepsTheTokens_andShowsTheNetworkError() {
+        // API-188: no network during the refresh is not a refused session.
+        backend.refresh = { throw java.io.IOException("offline") }
+        signIn(expiresIn = -10)
+        launch()
+        waitForText(NO_NETWORK)
+        assertEquals("stored-refresh", runBlocking { auth.getRefreshToken() })
+    }
+
+    @Test
     fun routes401_signsOut() {
         backend.routes = { Reply(401, "{}") }
         signIn()
@@ -398,8 +436,8 @@ class StartupAndAuthFlowTest : AppTestBase() {
         launch()
 
         waitForText("Could not load")
-        assertShown("Try again")
-        assertNotShown("My next rides", "Sign in")
+        assertShown("Try again", SERVER_DOWN)
+        assertNotShown("My next rides", "Sign in", NO_NETWORK)
 
         failing = false
         click("Try again")
@@ -415,6 +453,18 @@ class StartupAndAuthFlowTest : AppTestBase() {
         signIn()
         launch()
         waitForText("Could not load")
+        assertShown(NO_NETWORK)
+        assertNotShown(SERVER_DOWN)
+    }
+
+    @Test
+    fun routesFailureWithoutMessage_showsTheErrorScreen() {
+        // API-188: it used to show « No routes available » as if the load had worked.
+        backend.routes = { throw java.io.IOException() }
+        signIn()
+        launch()
+        waitForText(NO_NETWORK)
+        assertNotShown("No routes available")
     }
 
     @Test
@@ -423,6 +473,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
         signIn()
         launch()
         waitForText("Could not load")
+        assertShown(SERVER_DOWN)
     }
 
     @Test
@@ -516,7 +567,7 @@ class StartupAndAuthFlowTest : AppTestBase() {
     }
 
     @Test
-    fun refreshButton_401_showsTheErrorScreenAndKeepsTheTokens() {
+    fun refreshButton_401_signsOut() {
         signIn()
         launch()
         waitForHome()
@@ -524,10 +575,21 @@ class StartupAndAuthFlowTest : AppTestBase() {
         backend.routes = { Reply(401, "{}") }
         clickDescription("Refresh")
 
-        // CHARACTERIZATION: unlike the first load, a 401 on a manual refresh does not sign out: the
-        // rider gets the generic error screen with the tokens still stored.
-        waitForText("Could not load")
-        assertEquals("stored-refresh", runBlocking { auth.getRefreshToken() })
+        // API-188: the same rule as the first load (it used to keep the tokens behind the error).
+        waitForText("Sign in")
+        assertNull(runBlocking { auth.getRefreshToken() })
+    }
+
+    @Test
+    fun refreshButton_failureWithoutMessage_showsTheErrorScreen() {
+        signIn()
+        launch()
+        waitForHome()
+
+        // API-188: it used to keep the old content without a word.
+        backend.routes = { throw java.io.IOException() }
+        clickDescription("Refresh")
+        waitForText(NO_NETWORK)
     }
 
     @Test
@@ -555,5 +617,11 @@ class StartupAndAuthFlowTest : AppTestBase() {
         waitForHome()
         back()
         assertFinishing()
+    }
+
+    private companion object {
+        const val NO_NETWORK =
+            "The Karoo has no connection. Check its Wi-Fi or its paired phone, then try again."
+        const val SERVER_DOWN = "Pédalons is not answering right now. Try again in a few minutes."
     }
 }

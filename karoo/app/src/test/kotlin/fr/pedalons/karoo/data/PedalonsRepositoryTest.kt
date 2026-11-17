@@ -67,21 +67,37 @@ class PedalonsRepositoryTest {
     }
 
     @Test
-    fun loadRoutes_serverError_isFailedWithTheBody() = runBlocking {
+    fun loadRoutes_serverError_isAServerFailure() = runBlocking {
         val rig = rig { answer("boom", HttpStatusCode.InternalServerError) }
-        assertEquals(RoutesResult.Failed("boom"), rig.repo.loadRoutes())
+        assertEquals(RoutesResult.Failed(LoadError.SERVER), rig.repo.loadRoutes())
     }
 
     @Test
-    fun loadRoutes_ioException_isFailedWithItsMessage() = runBlocking {
+    fun loadRoutes_unreadableAnswer_isAServerFailure() = runBlocking {
+        val rig = rig { answer("""{"unexpected":true}""") }
+        assertEquals(RoutesResult.Failed(LoadError.SERVER), rig.repo.loadRoutes())
+    }
+
+    @Test
+    fun loadRoutes_ioException_isANetworkFailure() = runBlocking {
         val rig = rig { throw IOException("offline") }
-        assertEquals(RoutesResult.Failed("offline"), rig.repo.loadRoutes())
+        assertEquals(RoutesResult.Failed(LoadError.NETWORK), rig.repo.loadRoutes())
     }
 
     @Test
-    fun loadRoutes_aFailureWithoutMessage_keepsTheMessageNull() = runBlocking {
+    fun loadRoutes_aFailureWithoutMessage_isStillAFailure() = runBlocking {
+        // API-188: it used to be « Failed(null) », shown as no error at all.
         val rig = rig { throw IOException() }
-        assertEquals(RoutesResult.Failed(null), rig.repo.loadRoutes())
+        assertEquals(RoutesResult.Failed(LoadError.NETWORK), rig.repo.loadRoutes())
+    }
+
+    @Test
+    fun loadRoutes_aRefreshThatCouldNotBeHad_isAFailure_notUnauthorized() = runBlocking {
+        val rig = rig(FakeTokenStore(expired = true)) { throw IOException("offline") }
+        assertEquals(RoutesResult.Failed(LoadError.NETWORK), rig.repo.loadRoutes())
+        val server =
+            rig(FakeTokenStore(expired = true)) { answer("", HttpStatusCode.ServiceUnavailable) }
+        assertEquals(RoutesResult.Failed(LoadError.SERVER), server.repo.loadRoutes())
     }
 
     @Test
@@ -114,33 +130,45 @@ class PedalonsRepositoryTest {
     @Test
     fun hammerhead_linked() = runBlocking {
         val rig = rig { answer("""{"connectedGpsServices":["HAMMERHEAD"]}""") }
-        assertEquals(HammerheadStatus.LINKED, rig.repo.hammerheadStatus())
+        assertEquals(HammerheadStatus.Linked, rig.repo.hammerheadStatus())
     }
 
     @Test
     fun hammerhead_notLinked() = runBlocking {
         val rig = rig { answer("""{"connectedGpsServices":["GARMIN"]}""") }
-        assertEquals(HammerheadStatus.NOT_LINKED, rig.repo.hammerheadStatus())
+        assertEquals(HammerheadStatus.NotLinked, rig.repo.hammerheadStatus())
     }
 
     @Test
-    fun hammerhead_noToken_isUnknown_withoutARequest() = runBlocking {
+    fun hammerhead_noToken_isUnauthorized_withoutARequest() = runBlocking {
         val rig = rig(signedOut) { answer("{}") }
-        assertEquals(HammerheadStatus.UNKNOWN, rig.repo.hammerheadStatus())
+        assertEquals(HammerheadStatus.Unauthorized, rig.repo.hammerheadStatus())
         assertTrue(rig.engine.requestHistory.isEmpty())
     }
 
     @Test
-    fun hammerhead_401_500_andUnreadable_areUnknown() = runBlocking {
+    fun hammerhead_401_isUnauthorized() = runBlocking {
         assertEquals(
-            HammerheadStatus.UNKNOWN,
+            HammerheadStatus.Unauthorized,
             rig { answer("", HttpStatusCode.Unauthorized) }.repo.hammerheadStatus(),
         )
+    }
+
+    @Test
+    fun hammerhead_500_unreadable_andOffline_areFailures() = runBlocking {
+        // API-188: an unread account is not taken for a linked one.
         assertEquals(
-            HammerheadStatus.UNKNOWN,
+            HammerheadStatus.Failed(LoadError.SERVER),
             rig { answer("oops", HttpStatusCode.InternalServerError) }.repo.hammerheadStatus(),
         )
-        assertEquals(HammerheadStatus.UNKNOWN, rig { answer("not json") }.repo.hammerheadStatus())
+        assertEquals(
+            HammerheadStatus.Failed(LoadError.SERVER),
+            rig { answer("not json") }.repo.hammerheadStatus(),
+        )
+        assertEquals(
+            HammerheadStatus.Failed(LoadError.NETWORK),
+            rig { throw IOException("offline") }.repo.hammerheadStatus(),
+        )
     }
 
     // === syncRoute ===

@@ -87,9 +87,14 @@
     <string name="badge_finished">Finished</string>
     <!-- Load failure of a list (KIT §10, RL11) -->
     <string name="load_error_title">Could not load</string>
+    <!-- Why it failed (API-188): no network, or the server answered wrong -->
+    <string name="load_error_network">The Karoo has no connection. Check its Wi-Fi or its paired phone, then try again.</string>
+    <string name="load_error_server">Pédalons is not answering right now. Try again in a few minutes.</string>
     <string name="retry">Try again</string>
     <string name="refresh">Refresh</string>
     <string name="places_span">%1$s → %2$s</string>
     <string name="nav_arrow">›</string>
     <string name="success_checkmark">✓</string>
+    <string name="qr_code">QR code</string>
+    <string name="no_ride_entries">No route for this ride</string>
 </resources>

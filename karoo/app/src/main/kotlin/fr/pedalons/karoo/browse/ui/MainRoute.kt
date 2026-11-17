@@ -11,6 +11,7 @@ import fr.pedalons.karoo.browse.MainIntent
 import fr.pedalons.karoo.browse.MainScreenKind
 import fr.pedalons.karoo.browse.MainUiState
 import fr.pedalons.karoo.browse.NavState
+import fr.pedalons.karoo.data.LoadError
 import fr.pedalons.karoo.ui.theme.PedalonsKarooTheme
 
 /**
@@ -62,7 +63,11 @@ private fun MainContent(
         when (state.screen()) {
             MainScreenKind.CONNECT -> ConnectScreen(onConnect = onConnect, onBack = onClose)
             MainScreenKind.ERROR ->
-                ErrorScreen(onRetry = { onIntent(MainIntent.Retry) }, onBack = onClose)
+                ErrorScreen(
+                    error = state.loadError ?: LoadError.SERVER,
+                    onRetry = { onIntent(MainIntent.Retry) },
+                    onBack = onClose,
+                )
             MainScreenKind.SKELETON -> SkeletonScreen(onBack = onClose)
             MainScreenKind.EMPTY -> EmptyScreen(onBack = onClose)
             MainScreenKind.CONTENT -> {

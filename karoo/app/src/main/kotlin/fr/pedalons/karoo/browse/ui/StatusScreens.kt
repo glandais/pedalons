@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import fr.pedalons.karoo.R
+import fr.pedalons.karoo.data.LoadError
 import fr.pedalons.karoo.ui.components.ScreenTopBar
 import fr.pedalons.karoo.ui.components.ScreenWithOverlay
 
@@ -67,7 +68,7 @@ internal fun ConnectScreen(onConnect: () -> Unit, onBack: () -> Unit) {
 }
 
 @Composable
-internal fun ErrorScreen(onRetry: () -> Unit, onBack: () -> Unit) {
+internal fun ErrorScreen(error: LoadError, onRetry: () -> Unit, onBack: () -> Unit) {
     ScreenWithOverlay(onBack = onBack) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -81,6 +82,20 @@ internal fun ErrorScreen(onRetry: () -> Unit, onBack: () -> Unit) {
                     text = stringResource(R.string.load_error_title),
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                // Why, in the rider's words: never the raw answer, which may be a proxy's HTML.
+                Text(
+                    text =
+                        stringResource(
+                            when (error) {
+                                LoadError.NETWORK -> R.string.load_error_network
+                                LoadError.SERVER -> R.string.load_error_server
+                            },
+                        ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(24.dp))

@@ -63,7 +63,7 @@ class AuthActivityTest : AppTestBase() {
             "ABC123",
             "Waiting for authentication…",
         )
-        assertTrue(hasDescription("QR Code"))
+        assertTrue(hasDescription("QR code"))
         assertTrue("the activity stays open", !authActivity.isFinishing)
     }
 
@@ -161,7 +161,7 @@ class AuthActivityTest : AppTestBase() {
         waitForText("XYZ789")
         // The visible code and the QR are built from the same answer.
         assertShown("XYZ789")
-        assertTrue(hasDescription("QR Code"))
+        assertTrue(hasDescription("QR code"))
         // verificationUriComplete (code included), not the bare verificationUri.
         assertEquals("https://www.pedalons.fr/karoo?code=XYZ789", decodeShownQr())
     }

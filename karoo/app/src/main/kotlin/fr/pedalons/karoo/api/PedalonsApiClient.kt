@@ -14,11 +14,13 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.serialization.json.Json
 
 /**
@@ -86,7 +88,7 @@ private constructor(
         if (response.status.isSuccess()) {
             response.body<DeviceCodeResponse>()
         } else {
-            throw ApiException(response.bodyAsText())
+            throw ApiException(response.bodyAsText(), response.status.value)
         }
     }
 
@@ -107,10 +109,10 @@ private constructor(
                 when (error.code) {
                     "AUTHORIZATION_PENDING" -> throw AuthorizationPendingException()
                     "TOKEN_EXPIRED" -> throw TokenExpiredException()
-                    else -> throw ApiException(error.message ?: "Bad request")
+                    else -> throw ApiException(error.message ?: "Bad request", 400)
                 }
             }
-            else -> throw ApiException(response.bodyAsText())
+            else -> throw ApiException(response.bodyAsText(), response.status.value)
         }
     }
 
@@ -127,7 +129,7 @@ private constructor(
         if (response.status.isSuccess()) {
             response.body<TokenResponse>()
         } else {
-            throw ApiException(response.bodyAsText())
+            throw ApiException(response.bodyAsText(), response.status.value)
         }
     }
 
@@ -139,11 +141,11 @@ private constructor(
                 bearerAuth(accessToken)
             }
         if (response.status.isSuccess()) {
-            response.body<UserStatusResponse>()
+            response.readBody<UserStatusResponse>()
         } else if (response.status.value == 401) {
             throw UnauthorizedException()
         } else {
-            throw ApiException(response.bodyAsText())
+            throw ApiException(response.bodyAsText(), response.status.value)
         }
     }
 
@@ -169,11 +171,11 @@ private constructor(
                 }
             }
         if (response.status.isSuccess()) {
-            response.body<RoutesResponse>()
+            response.readBody<RoutesResponse>()
         } else if (response.status.value == 401) {
             throw UnauthorizedException()
         } else {
-            throw ApiException(response.bodyAsText())
+            throw ApiException(response.bodyAsText(), response.status.value)
         }
     }
 
@@ -191,9 +193,22 @@ private constructor(
         } else if (response.status.value == 401) {
             throw UnauthorizedException()
         } else {
-            throw ApiException(response.bodyAsText())
+            throw ApiException(response.bodyAsText(), response.status.value)
         }
     }
+
+    /**
+     * The body of a 2xx answer; one that does not parse is the server's fault, so it is an
+     * [ApiException] like a 5xx, never mistaken for a network failure (docs/LEDGER_*.md API-188).
+     */
+    private suspend inline fun <reified T> HttpResponse.readBody(): T =
+        try {
+            body<T>()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            throw ApiException(e.message ?: "Unreadable answer", status.value)
+        }
 
     fun close() {
         client.close()
@@ -201,7 +216,9 @@ private constructor(
 }
 
 // Exceptions
-class ApiException(message: String) : Exception(message)
+
+/** The server answered, with [status], but not with what was asked: never a network failure. */
+class ApiException(message: String, val status: Int) : Exception(message)
 
 class AuthorizationPendingException : Exception("Authorization pending")
 

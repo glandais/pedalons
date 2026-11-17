@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **589 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **590 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -322,6 +322,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`API-194`](ledger/API/API-194.md) Les lignes du Karoo ont la structure des cartes de l'app : boîte du jour, « Départ 09:30 », lieu, état — 2026-11-13
 - [x] [`API-193`](ledger/API/API-193.md) Karoo aligné sur l'app : recette sur appareil — 2026-11-13
 - [x] [`API-191`](ledger/API/API-191.md) L'app Karoo écrit comme l'app et le site : formats, mots, fuseau — 2026-11-13
+- [x] [`API-188`](ledger/API/API-188.md) Karoo : erreurs de chargement traitées différemment selon le chemin — 2026-11-17
 - [x] [`API-185`](ledger/API/API-185.md) Événements datés : « à venir » puis « plus tôt » dans une même liste paginée — 2026-11-12
 - [x] [`API-184`](ledger/API/API-184.md) Listes paginées : ordre total, et membres par nom — 2026-11-12
 - [x] [`API-182`](ledger/API/API-182.md) Les `route.fit` stockés entre `API-44` et `API-181` sont régénérés — 2026-11-12

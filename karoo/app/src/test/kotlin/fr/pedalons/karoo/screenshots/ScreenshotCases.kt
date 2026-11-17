@@ -39,6 +39,7 @@ import fr.pedalons.karoo.browse.ui.RideListScreen
 import fr.pedalons.karoo.browse.ui.RouteDetailScreen
 import fr.pedalons.karoo.browse.ui.SkeletonScreen
 import fr.pedalons.karoo.browse.ui.StandaloneRouteListScreen
+import fr.pedalons.karoo.data.LoadError
 import fr.pedalons.karoo.support.TEST_NOW
 import fr.pedalons.karoo.ui.FormatClock
 import fr.pedalons.karoo.ui.theme.PedalonsKarooTheme
@@ -314,7 +315,11 @@ abstract class ScreenshotCases(private val language: String) {
 
     @Test fun skeleton() = shot("skeleton") { SkeletonScreen(onBack = {}) }
 
-    @Test fun error() = shot("error") { ErrorScreen(onRetry = {}, onBack = {}) }
+    @Test fun error() = shot("error") { ErrorScreen(LoadError.SERVER, onRetry = {}, onBack = {}) }
+
+    @Test
+    fun errorNetwork() =
+        shot("error_network") { ErrorScreen(LoadError.NETWORK, onRetry = {}, onBack = {}) }
 
     @Test fun empty() = shot("empty") { EmptyScreen(onBack = {}) }
 

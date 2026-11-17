@@ -7,6 +7,7 @@ import fr.pedalons.karoo.api.PedalonsApiClient
 import fr.pedalons.karoo.auth.AuthActivity
 import fr.pedalons.karoo.auth.GpsConnectActivity
 import fr.pedalons.karoo.auth.Session
+import fr.pedalons.karoo.data.LoadError
 import fr.pedalons.karoo.data.PedalonsRepository
 import fr.pedalons.karoo.support.FakeTokenStore
 import io.ktor.client.engine.mock.MockEngine
@@ -169,15 +170,45 @@ class MainViewModelTest {
     }
 
     @Test
-    fun manualRefresh_401_keepsTheTokens_andShowsTheError() = runTest {
+    fun manualRefresh_401_signsOut_likeTheFirstLoad() = runTest {
+        // API-188: one rule whatever the path; it used to keep the tokens behind the error screen.
         val rig = rig()
         rig.start()
         settle { rig.content() }
         rig.backend.routesStatus = HttpStatusCode.Unauthorized
         rig.vm.onIntent(MainIntent.Refresh)
         assertTrue(rig.state.isLoading)
+        settle { rig.state.screen() == MainScreenKind.CONNECT }
+        assertEquals(null, rig.tokens.access)
+        rig.scope.cancel()
+    }
+
+    @Test
+    fun retry_401_signsOut() = runTest {
+        val rig = rig { routesStatus = HttpStatusCode.InternalServerError }
+        rig.start()
         settle { rig.state.screen() == MainScreenKind.ERROR }
-        assertEquals("stored-access", rig.tokens.access)
+        assertEquals(LoadError.SERVER, rig.state.loadError)
+        rig.backend.routesStatus = HttpStatusCode.Unauthorized
+        rig.vm.onIntent(MainIntent.Retry)
+        settle { rig.state.screen() == MainScreenKind.CONNECT }
+        assertEquals(null, rig.tokens.access)
+        rig.scope.cancel()
+    }
+
+    @Test
+    fun accountCheckFailing_showsTheError_andRetryChecksAgainBeforeLoading() = runTest {
+        val rig = rig { me = "not json" }
+        rig.start()
+        settle { rig.state.screen() == MainScreenKind.ERROR }
+        assertTrue(rig.backend.requests.none { it.endsWith("/routes") })
+        rig.backend.me = """{"connectedGpsServices":["HAMMERHEAD"]}"""
+        rig.vm.onIntent(MainIntent.Retry)
+        settle { rig.content() }
+        assertEquals(
+            listOf("GET /api/device/me", "GET /api/device/me", "GET /api/device/routes"),
+            rig.backend.requests,
+        )
         rig.scope.cancel()
     }
 

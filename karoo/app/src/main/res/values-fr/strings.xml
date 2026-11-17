@@ -90,9 +90,14 @@
     <string name="badge_finished">Terminée</string>
     <!-- Load failure of a list (KIT §10, RL11) -->
     <string name="load_error_title">Chargement impossible</string>
+    <!-- Why it failed (API-188): no network, or the server answered wrong -->
+    <string name="load_error_network">Le Karoo n\'a pas de connexion. Vérifiez son Wi-Fi ou le téléphone associé, puis réessayez.</string>
+    <string name="load_error_server">Pédalons ne répond pas pour l\'instant. Réessayez dans quelques minutes.</string>
     <string name="retry">Réessayer</string>
     <string name="refresh">Actualiser</string>
     <string name="places_span">%1$s → %2$s</string>
     <string name="nav_arrow">›</string>
     <string name="success_checkmark">✓</string>
+    <string name="qr_code">Code QR</string>
+    <string name="no_ride_entries">Aucun parcours pour cette sortie</string>
 </resources>

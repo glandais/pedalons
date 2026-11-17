@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **159 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
+Index des **158 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -116,7 +116,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 
 - [ ] [`API-190`](ledger/API/API-190.md) Karoo : finir le filet de tests (S)
 - [ ] [`API-189`](ledger/API/API-189.md) Karoo : l'étape Hammerhead ne rend jamais la main (S)
-- [ ] [`API-188`](ledger/API/API-188.md) Karoo : erreurs de chargement traitées différemment selon le chemin (S)
 - [ ] [`API-187`](ledger/API/API-187.md) Karoo : les touches agissent sous l'écran affiché (S)
 - [ ] [`API-186`](ledger/API/API-186.md) Karoo : une synchro qui échoue ou réussit à tort (S)
 - [ ] [`API-63`](ledger/API/API-63.md) Onboarding d'un Karoo refait de bout en bout (M, backend + web + mobile + Karoo) · *recette*

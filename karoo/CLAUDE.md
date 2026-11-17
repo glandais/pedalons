@@ -85,9 +85,12 @@ app/src/main/kotlin/fr/pedalons/karoo/
 **Home screen and navigation (`browse/`):**
 - Flow: key or touch -> `MainActivity`/`MainRoute` -> a `MainViewModel` method -> a pure
   `BrowseState` transition returning `BrowseStep(state, outcome)` -> the VM assigns the state on the
-  main thread, then runs the outcome (`StartSync`, `Finish`). `MainViewModel` owns the startup
-  (Hammerhead check, then the first load: a 401 clears the tokens), Retry/Refresh (a 401 keeps them)
-  and the syncs; `MainActivity` only forwards keys, activity results and collects `effects`.
+  main thread, then runs the outcome (`StartSync`, `Finish`). `MainViewModel` owns the startup,
+  Retry and Refresh — one path, `runSession` (API-188): the Hammerhead check until it has been read,
+  then the load, which ends on Home — and the syncs. Whatever the step, a 401 or a refresh refused with
+  a 4xx clears the tokens; anything else is a `LoadError` (`NETWORK` when nothing came back, `SERVER`
+  for a 5xx or an unreadable body) shown by the error screen in words, never the raw answer. An
+  account that could not be read is an error, not a linked account; `MainActivity` only forwards keys, activity results and collects `effects`.
 - `NavState` is a stack-based state machine driven by the Karoo keys (`KarooKey` -> `onKey`). Keys act
   on `BrowseState` whatever `MainUiState.screen()` shows, and are ignored until the Karoo system
   service is connected.
@@ -132,7 +135,7 @@ app/src/main/kotlin/fr/pedalons/karoo/
 
 **Token Storage:**
 - DataStore preferences for access/refresh tokens
-- `Session` refreshes an expired token behind a Mutex (single flight), using `AuthManager`'s `isUsable` rule (5-minute buffer)
+- `Session` refreshes an expired token behind a Mutex (single flight), using `AuthManager`'s `isUsable` rule (5-minute buffer); `freshToken()` tells a refusal (4xx, no refresh token: sign out) from a refresh that could not be had (no network, 5xx: the tokens stay)
 
 ## Critical Constraints
 

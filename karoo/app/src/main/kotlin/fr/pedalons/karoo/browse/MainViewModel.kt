@@ -8,6 +8,7 @@ import fr.pedalons.karoo.api.DeviceRoute
 import fr.pedalons.karoo.auth.GpsConnectActivity
 import fr.pedalons.karoo.auth.TokenStore
 import fr.pedalons.karoo.data.HammerheadStatus
+import fr.pedalons.karoo.data.LoadError
 import fr.pedalons.karoo.data.PedalonsRepository
 import fr.pedalons.karoo.data.RoutesResult
 import fr.pedalons.karoo.data.SyncResult
@@ -77,6 +78,8 @@ internal class MainViewModel(
     private lateinit var repo: PedalonsRepository
     private var sessionJob: Job? = null
     private var awaitingHammerhead = false
+    /** The account was read and Hammerhead is linked: a reload goes straight to the routes. */
+    private var hammerheadChecked = false
     private var authFlowPending = false
 
     init {
@@ -114,8 +117,8 @@ internal class MainViewModel(
             is MainIntent.OpenRoute -> apply(browse.openRoute(intent.route))
             is MainIntent.Sync -> apply(browse.sync(intent.teamSlug, intent.routeSlug, intent.row))
             MainIntent.Back -> apply(browse.back())
-            MainIntent.Refresh -> refresh()
-            MainIntent.Retry -> retry()
+            MainIntent.Refresh,
+            MainIntent.Retry -> reload()
             MainIntent.Disconnect -> signOut()
         }
     }
@@ -145,7 +148,8 @@ internal class MainViewModel(
                 // Opened after a failed sync rather than by the startup check: nothing to resume.
                 if (awaitingHammerhead) {
                     awaitingHammerhead = false
-                    sessionJob = scope.launch { loadInitial() }
+                    hammerheadChecked = true
+                    startSession()
                 }
             }
             GpsConnectActivity.RESULT_LOGOUT -> {
@@ -169,94 +173,72 @@ internal class MainViewModel(
             it.copy(
                 auth = AuthStatus.SIGNED_OUT,
                 isLoading = false,
-                loadFailed = false,
+                loadError = null,
                 browse = it.browse.withResponse(null),
             )
         }
         awaitingHammerhead = false
+        hammerheadChecked = false
         sessionJob?.cancel()
     }
 
     private fun startSession() {
         if (sessionJob?.isActive == true) return
-        sessionJob = scope.launch {
-            _state.update { it.copy(isLoading = true) }
-            when (repo.hammerheadStatus()) {
-                // Not linked sends the rider to the mandatory step; the load waits for it.
-                HammerheadStatus.NOT_LINKED -> {
-                    awaitingHammerhead = true
-                    channel.send(MainEffect.StartGpsConnect)
-                }
-                // Unknown (no token, a failed read) goes on.
-                HammerheadStatus.LINKED,
-                HammerheadStatus.UNKNOWN -> loadInitial()
-            }
-        }
+        // Before the launch, so the skeleton shows from the touch on.
+        _state.update { it.copy(isLoading = true) }
+        sessionJob = scope.launch { runSession() }
     }
 
-    // The first load of a session: a refused token signs the Karoo out (the isAuthenticated
-    // collector takes it from there), any other failure shows the error.
-    private suspend fun loadInitial() {
+    /**
+     * The one way routes are loaded (docs/LEDGER_*.md API-188): at startup, on « Try again » and on
+     * the Home icon alike. The account is checked once per sign-in, until it has been read; the
+     * routes are loaded; a success goes back to Home. Whatever the step, a refused token signs the
+     * Karoo out and any other failure shows the error screen with its [LoadError].
+     */
+    private suspend fun runSession() {
+        if (!hammerheadChecked) {
+            when (val status = repo.hammerheadStatus()) {
+                // Not linked sends the rider to the mandatory step; the load waits for it.
+                HammerheadStatus.NotLinked -> {
+                    awaitingHammerhead = true
+                    channel.send(MainEffect.StartGpsConnect)
+                    return
+                }
+                HammerheadStatus.Unauthorized -> return sessionRefused()
+                // An unread account is not a linked one: nothing is loaded behind it.
+                is HammerheadStatus.Failed -> return failed(status.error)
+                HammerheadStatus.Linked -> hammerheadChecked = true
+            }
+        }
         when (val result = repo.loadRoutes()) {
             is RoutesResult.Loaded ->
                 _state.update {
                     it.copy(
-                        browse = it.browse.withResponse(result.response),
+                        browse = it.browse.withResponse(result.response).resetToHome(),
                         isLoading = false,
-                        loadFailed = false,
+                        loadError = null,
                     )
                 }
-            RoutesResult.Unauthorized -> {
-                _state.update { it.copy(isLoading = false) }
-                // Its own coroutine: the sign-out this triggers cancels the session job, which
-                // must not cut the clear.
-                scope.launch { tokens.clear() }
-            }
-            is RoutesResult.Failed ->
-                _state.update { it.copy(loadFailed = result.message != null, isLoading = false) }
+            RoutesResult.Unauthorized -> sessionRefused()
+            is RoutesResult.Failed -> failed(result.error)
         }
     }
 
-    /** The Home icon: a manual reload that goes back to Home. A refused token keeps the tokens. */
-    private fun refresh() {
-        _state.update { it.copy(isLoading = true) }
-        scope.launch {
-            when (val result = repo.loadRoutes()) {
-                is RoutesResult.Loaded ->
-                    _state.update {
-                        it.copy(
-                            browse = it.browse.withResponse(result.response).resetToHome(),
-                            isLoading = false,
-                            loadFailed = false,
-                        )
-                    }
-                else -> manualFailure(result)
-            }
-        }
+    private fun failed(error: LoadError) {
+        _state.update { it.copy(loadError = error, isLoading = false) }
     }
 
-    /** The error screen: reload where we are. A refused token keeps the tokens. */
-    private fun retry() {
-        _state.update { it.copy(isLoading = true, loadFailed = false) }
-        scope.launch {
-            when (val result = repo.loadRoutes()) {
-                is RoutesResult.Loaded ->
-                    _state.update {
-                        it.copy(browse = it.browse.withResponse(result.response), isLoading = false)
-                    }
-                else -> manualFailure(result)
-            }
-        }
+    private fun sessionRefused() {
+        _state.update { it.copy(isLoading = false) }
+        // Its own coroutine: the sign-out this triggers cancels the session job, which must not
+        // cut the clear. The isAuthenticated collector takes it from there.
+        scope.launch { tokens.clear() }
     }
 
-    private fun manualFailure(result: RoutesResult) {
-        val failed =
-            when (result) {
-                RoutesResult.Unauthorized -> true
-                is RoutesResult.Failed -> result.message != null
-                is RoutesResult.Loaded -> false
-            }
-        _state.update { it.copy(loadFailed = failed, isLoading = false) }
+    /** The Home icon and « Try again »: the same load, which ends on Home. */
+    private fun reload() {
+        if (_state.value.auth != AuthStatus.SIGNED_IN || awaitingHammerhead) return
+        startSession()
     }
 
     /** Clears the tokens and the routes. Nothing is sent to the server. */
