@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **584 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **585 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -405,6 +405,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`API-75`](ledger/API/API-75.md) Tests backend de la météo, lancés — 2026-10-06
 - [x] [`API-74`](ledger/API/API-74.md) Météo des sorties : cache Open-Meteo et `getRideWeather` (contrat `10.9.0`) — 2026-10-05
 - [x] [`API-73`](ledger/API/API-73.md) Un changement d'adresse coupait les sessions ouvertes pendant 15 min — 2026-10-04
+- [x] [`API-72`](ledger/API/API-72.md) Contraintes CHECK des enums vérifiées contre Flyway — 2026-11-17
 - [x] [`API-71`](ledger/API/API-71.md) Changement d'adresse e-mail en 500 — 2026-10-04
 - [x] [`API-70`](ledger/API/API-70.md) Tests backend du résumé du profil lancés — 2026-10-04
 - [x] [`API-69`](ledger/API/API-69.md) Résumé du profil en un appel (contrat `10.7.0`) — 2026-10-04

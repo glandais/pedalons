@@ -146,7 +146,9 @@ Custom exception hierarchy mapped to HTTP responses by `GlobalExceptionMapper`:
 ## Database
 
 - **Flyway migrations**: `src/main/resources/db/migration/V{number}__{description}.sql`
-- **Tests use `drop-and-create`** (no Flyway), production uses `validate`
+- **Tests use `drop-and-create`** (no Flyway), production uses `validate` — except `EnumCheckConstraintsTest`, which
+  migrates an empty PostGIS with `db/migration` and fails when an enum stored as text has a value its CHECK lacks:
+  a new enum value needs a migration widening the constraint (ledger `API-72`)
 - **PostGIS**: Hibernate Spatial for geographic data
 - **Naming**: CamelCaseToUnderscores (JPA → SQL)
 
