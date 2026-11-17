@@ -21,11 +21,6 @@ class _FakeProfileRepository implements ProfileRepository {
   Future<ProfileSummaryDto> profileSummary() async {
     summaryCalls++;
     return const ProfileSummaryDto(
-      participations: ProfileParticipationSummaryDto(
-        upcomingCount: 0,
-        pastCount: 0,
-        next: <PublicationDto>[],
-      ),
       teams: <ProfileTeamDto>[],
       passkeyCount: 0,
       pairedDevices: <PairedDeviceDto>[],

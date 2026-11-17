@@ -2,13 +2,12 @@ package fr.pedalons.api.users;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.when;
 
 import fr.pedalons.api.AbstractResourceTest;
-import fr.pedalons.domain.ride.Ride;
-import fr.pedalons.domain.team.Team;
-import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.NotificationChannel;
 import fr.pedalons.enums.NotificationType;
 import fr.pedalons.enums.TeamRole;
@@ -19,8 +18,6 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.response.ValidatableResponse;
 import jakarta.inject.Inject;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -61,12 +58,6 @@ class ProfileSummaryResourceTest extends AbstractResourceTest {
         .header("Cache-Control", "private, no-store");
   }
 
-  private Ride registeredRide(Team team, User user, String slug, Instant date) {
-    Ride ride = dataService.createRide(team, user1, slug, slug, date);
-    dataService.createParticipation(dataService.createRideGroup(user1, ride, "Groupe"), user);
-    return ride;
-  }
-
   @Test
   void anonymous_isRefused() {
     given().when().get(PATH).then().statusCode(401);
@@ -75,9 +66,7 @@ class ProfileSummaryResourceTest extends AbstractResourceTest {
   @Test
   void newAccount_hasEverythingEmpty() {
     summary(USER4)
-        .body("participations.upcomingCount", equalTo(0))
-        .body("participations.pastCount", equalTo(0))
-        .body("participations.next", hasSize(0))
+        .body("$", not(hasKey("participations")))
         .body("teams", hasSize(0))
         .body("passkeyCount", equalTo(0))
         .body("pairedDevices", hasSize(0))
@@ -90,12 +79,6 @@ class ProfileSummaryResourceTest extends AbstractResourceTest {
 
   @Test
   void summary_countsEachSubject() {
-    Instant now = Instant.now();
-    Ride next = registeredRide(team1, user1, "prochaine", now.plus(2, ChronoUnit.DAYS));
-    registeredRide(team1, user1, "plus-tard", now.plus(9, ChronoUnit.DAYS));
-    registeredRide(team2, user1, "passee", now.minus(3, ChronoUnit.DAYS));
-    // Not registered: counts for nobody.
-    dataService.createRide(team1, user1, "Libre", "libre", now.plus(4, ChronoUnit.DAYS));
     dataService.addUserToTeam(
         user1,
         dataService.createTeam(user2, "Autre équipe", "autre-equipe", Visibility.PUBLIC),
@@ -110,11 +93,6 @@ class ProfileSummaryResourceTest extends AbstractResourceTest {
     dataService.createPasskey(user2, "cred-3".getBytes(), "key-3".getBytes());
 
     summary(USER1)
-        .body("participations.upcomingCount", equalTo(2))
-        .body("participations.pastCount", equalTo(1))
-        .body("participations.next", hasSize(1))
-        .body("participations.next[0].slug", equalTo(next.getSlug()))
-        .body("participations.next[0].type", equalTo("RIDE"))
         .body("teams.name", equalTo(List.of("Autre équipe", "Team 1", "Team 2")))
         .body("teams.role", equalTo(List.of("MEMBER", "ADMIN", "ADMIN")))
         .body("teams[1].slug", equalTo(team1Slug))

@@ -56,11 +56,6 @@ class _StubProfileRepository implements ProfileRepository {
 }
 
 const ProfileSummaryDto _summary = ProfileSummaryDto(
-  participations: ProfileParticipationSummaryDto(
-    upcomingCount: 0,
-    pastCount: 0,
-    next: <PublicationDto>[],
-  ),
   teams: <ProfileTeamDto>[],
   passkeyCount: 0,
   pairedDevices: <PairedDeviceDto>[],

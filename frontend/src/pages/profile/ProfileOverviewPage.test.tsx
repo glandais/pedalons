@@ -3,7 +3,7 @@ import { render, screen, cleanup, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import type { ProfileSummaryDto, PublicationDto, UserDto } from '@/api/dto'
+import type { ProfileSummaryDto, UserDto } from '@/api/dto'
 
 vi.mock('@/lib/prefetch', () => ({ prefetchUrl: vi.fn() }))
 
@@ -48,17 +48,7 @@ const USER: UserDto = {
   plannerQuota: { limit: 10, used: 0, resetsOn: '2026-12-01' },
 }
 
-const NEXT = {
-  id: 'p1',
-  type: 'RIDE',
-  slug: 'sortie-du-dimanche',
-  name: 'Sortie du dimanche',
-  dateTime: '2026-10-11T07:00:00Z',
-  team: { slug: 'velo-club', name: 'Vélo Club' },
-} as unknown as PublicationDto
-
 const SUMMARY: ProfileSummaryDto = {
-  participations: { upcomingCount: 2, pastCount: 7, next: [NEXT] },
   teams: [{ slug: 'velo-club', name: 'Vélo Club', role: 'ADMIN' }],
   passkeyCount: 1,
   pairedDevices: [],

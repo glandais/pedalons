@@ -1628,7 +1628,7 @@ export const useUpdateMyPreferences = <
   return useMutation(getUpdateMyPreferencesMutationOptions(options), queryClient)
 }
 /**
- * What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.
+ * What the profile overview shows next to each shortcut, in one request: the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated, the user's outings on GET /api/users/me/participations. A fixed number of queries, whatever the amount of data.
  * @summary Summarise the current user's profile
  */
 export const getMyProfileSummary = (
@@ -1672,7 +1672,7 @@ export type GetMyProfileSummaryQueryResult = NonNullable<
 export type GetMyProfileSummaryQueryError = ErrorType<ErrorResponse | void>
 
 /**
- * What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.
+ * What the profile overview shows next to each shortcut, in one request: the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated, the user's outings on GET /api/users/me/participations. A fixed number of queries, whatever the amount of data.
  * @summary Summarise the current user's profile
  */
 export function useGetMyProfileSummary<
@@ -1696,7 +1696,7 @@ export function useGetMyProfileSummary<
   queryClient?: QueryClient
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.
+ * What the profile overview shows next to each shortcut, in one request: the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated, the user's outings on GET /api/users/me/participations. A fixed number of queries, whatever the amount of data.
  * @summary Summarise the current user's profile
  */
 export function useGetMyProfileSummary<
@@ -1720,7 +1720,7 @@ export function useGetMyProfileSummary<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.
+ * What the profile overview shows next to each shortcut, in one request: the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated, the user's outings on GET /api/users/me/participations. A fixed number of queries, whatever the amount of data.
  * @summary Summarise the current user's profile
  */
 export function useGetMyProfileSummary<
@@ -1734,7 +1734,7 @@ export function useGetMyProfileSummary<
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.
+ * What the profile overview shows next to each shortcut, in one request: the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated, the user's outings on GET /api/users/me/participations. A fixed number of queries, whatever the amount of data.
  * @summary Summarise the current user's profile
  */
 export function useGetMyProfileSummary<
@@ -1757,7 +1757,7 @@ export function useGetMyProfileSummary<
 }
 
 /**
- * What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.
+ * What the profile overview shows next to each shortcut, in one request: the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated, the user's outings on GET /api/users/me/participations. A fixed number of queries, whatever the amount of data.
  * @summary Summarise the current user's profile
  */
 export const prefetchGetMyProfileSummaryQuery = async <

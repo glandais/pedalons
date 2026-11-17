@@ -10,13 +10,13 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  *
  * <p>The rest of the overview reads the user itself ({@code GET /api/users/me}): the display
  * preferences, {@code contactableByMembers} and {@code connectedServices} are there already, and
- * are not repeated here.
+ * are not repeated here. Neither are the user's outings: no client showed them on the profile any
+ * more, so their counts went (contract {@code 16.0.0}, docs/LEDGER_*.md API-136) and {@code GET
+ * /api/users/me/participations} serves them.
  */
 @Schema(description = "The state of each subject of the current user's profile, for its overview")
 @ValidateSchema
 public record ProfileSummaryDto(
-    @Schema(description = "Rides and trips the user is registered to", required = true)
-        ProfileParticipationSummaryDto participations,
     @Schema(
             description =
                 "The user's teams on this site, in name order, each with the user's role in it",

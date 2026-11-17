@@ -25,7 +25,6 @@ function user(overrides: Partial<UserDto> = {}): UserDto {
 
 function summary(overrides: Partial<ProfileSummaryDto> = {}): ProfileSummaryDto {
   return {
-    participations: { upcomingCount: 3, pastCount: 12, next: [] },
     teams: [],
     passkeyCount: 0,
     pairedDevices: [],

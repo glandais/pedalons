@@ -13,8 +13,7 @@ import '../data/profile_repository.dart';
 /// résumé ne les répète pas.
 ///
 /// `null` hors session. Pas d'`autoDispose` : le profil est un onglet, ses
-/// lignes restent affichées. Ce qui change un compteur l'invalide — une
-/// inscription (`notifyParticipationChanged`), un blocage
+/// lignes restent affichées. Ce qui change un compteur l'invalide — un blocage
 /// (`refreshAfterBlockChange`), le retour d'une sous-page du profil, et un
 /// changement de mes équipes (ci-dessous).
 final profileSummaryProvider = FutureProvider<ProfileSummaryDto?>((ref) async {

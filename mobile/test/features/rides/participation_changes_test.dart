@@ -9,8 +9,6 @@ import 'package:pedalons/features/calendar/providers/calendar_month_provider.dar
 import 'package:pedalons/features/home/providers/next_ride_leave_controller.dart';
 import 'package:pedalons/features/home/providers/next_ride_provider.dart';
 import 'package:pedalons/features/home/providers/week_events_provider.dart';
-import 'package:pedalons/features/profile/data/profile_repository.dart';
-import 'package:pedalons/features/profile/providers/profile_summary_provider.dart';
 import 'package:pedalons/features/rides/data/ride_repository.dart';
 import 'package:pedalons/features/rides/providers/participation_changes.dart';
 import 'package:pedalons/features/rides/providers/ride_detail_provider.dart';
@@ -26,9 +24,8 @@ import 'ride_fixtures.dart';
 /// Une inscription faite dans l'app doit atteindre **toutes** les vues qui
 /// dérivent de mes participations — pas seulement le détail de la sortie.
 ///
-/// C'est la régression que traquent `next_ride_card_test` et
-/// `profile_participations_count_test` côté Patrol : la carte « Ma prochaine
-/// sortie » et le compteur du profil gardaient leur première valeur.
+/// C'est la régression que traque `next_ride_card_test` côté Patrol : la carte
+/// « Ma prochaine sortie » gardait sa première valeur.
 
 /// Le « serveur » : l'état d'inscription, partagé par tous les faux clients.
 class _Server {
@@ -36,9 +33,6 @@ class _Server {
   TripDto trip = fixtureTrip();
 
   bool get rideRegistered => ride.registeredGroupId != null;
-
-  int participationCount({required bool upcoming}) =>
-      upcoming ? (rideRegistered ? 1 : 0) + (trip.registered ? 1 : 0) : 0;
 }
 
 class _FakeRideRepository implements RideRepository {
@@ -150,34 +144,6 @@ class _FakeUsersClient implements UsersClient {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _FakeProfileRepository implements ProfileRepository {
-  _FakeProfileRepository(this._server);
-  final _Server _server;
-
-  /// Le résumé de la vue d'ensemble : seul son compteur « à venir » compte
-  /// ici.
-  @override
-  Future<ProfileSummaryDto> profileSummary() async => ProfileSummaryDto(
-    participations: ProfileParticipationSummaryDto(
-      upcomingCount: _server.participationCount(upcoming: true),
-      pastCount: _server.participationCount(upcoming: false),
-      next: const <PublicationDto>[],
-    ),
-    teams: const <ProfileTeamDto>[],
-    passkeyCount: 0,
-    pairedDevices: const <PairedDeviceDto>[],
-    blockedUserCount: 0,
-    notifications: const ProfileNotificationSummaryDto(
-      channels: <NotificationChannel>[],
-      enabledChannels: <NotificationChannel>[],
-      emailDigest: false,
-    ),
-  );
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
 RideDto _twoGroups({String? registeredIn}) => fixtureRide(
   registered: registeredIn != null,
   registeredGroupId: registeredIn,
@@ -245,7 +211,6 @@ void main() {
 
   late _Server server;
   late _FakeUsersClient users;
-  late _FakeProfileRepository profile;
   late _FakeRideRepository rides;
   late ProviderContainer container;
   late int weekBuilds;
@@ -254,7 +219,6 @@ void main() {
   setUp(() {
     server = _Server()..ride = _twoGroups();
     users = _FakeUsersClient(server);
-    profile = _FakeProfileRepository(server);
     rides = _FakeRideRepository(server);
     weekBuilds = 0;
     calendarBuilds = 0;
@@ -263,7 +227,6 @@ void main() {
         rideRepositoryProvider.overrideWithValue(rides),
         tripRepositoryProvider.overrideWithValue(_FakeTripRepository(server)),
         usersClientProvider.overrideWithValue(users),
-        profileRepositoryProvider.overrideWithValue(profile),
         accessTokenHolderProvider.overrideWith((ref) => 'token'),
         weekEventsProvider.overrideWith((Ref ref) async {
           weekBuilds++;
@@ -286,7 +249,6 @@ void main() {
   Future<void> mountDerivedViews() async {
     container.listen(nextRideProvider, (_, _) {}, fireImmediately: true);
     container.listen(weekEventsProvider, (_, _) {}, fireImmediately: true);
-    container.listen(profileSummaryProvider, (_, _) {}, fireImmediately: true);
     container.listen(
       calendarMonthProvider(monthKey),
       (_, _) {},
@@ -294,15 +256,8 @@ void main() {
     );
     await container.read(nextRideProvider.future);
     await container.read(weekEventsProvider.future);
-    await container.read(profileSummaryProvider.future);
     await container.read(calendarMonthProvider(monthKey).future);
   }
-
-  /// Le compteur « à venir » du résumé du profil, relu après invalidation.
-  Future<int> upcomingCount() async =>
-      (await container.read(profileSummaryProvider.future))!
-          .participations
-          .upcomingCount;
 
   Future<RideRegistrationController> openRide() async {
     container.listen(
@@ -324,27 +279,20 @@ void main() {
     return container.read(tripParticipationProvider(tripKey).notifier);
   }
 
-  test('rejoindre depuis la sortie fait apparaître « Ma prochaine sortie » '
-      'et incrémente le compteur du profil', () async {
-    await mountDerivedViews();
-    expect(container.read(nextRideProvider).value, isNull);
-    expect(
-      container
-          .read(profileSummaryProvider)
-          .value
-          ?.participations
-          .upcomingCount,
-      0,
-    );
+  test(
+    'rejoindre depuis la sortie fait apparaître « Ma prochaine sortie »',
+    () async {
+      await mountDerivedViews();
+      expect(container.read(nextRideProvider).value, isNull);
 
-    await (await openRide()).join('g2');
+      await (await openRide()).join('g2');
 
-    final NextRide? next = await container.read(nextRideProvider.future);
-    expect(next, isNotNull);
-    expect(next!.ride.slug, 'np-665');
-    expect(next.group?.name, 'Groupe B');
-    expect(await upcomingCount(), 1);
-  });
+      final NextRide? next = await container.read(nextRideProvider.future);
+      expect(next, isNotNull);
+      expect(next!.ride.slug, 'np-665');
+      expect(next.group?.name, 'Groupe B');
+    },
+  );
 
   test('« Ma prochaine sortie » se dessine depuis la ligne de liste, sans '
       'getRide', () async {
@@ -363,14 +311,6 @@ void main() {
       server.ride = _twoGroups(registeredIn: 'g1');
       await mountDerivedViews();
       expect(container.read(nextRideProvider).value?.group?.id, 'g1');
-      expect(
-        container
-            .read(profileSummaryProvider)
-            .value
-            ?.participations
-            .upcomingCount,
-        1,
-      );
 
       // La carte de l'accueil quitte sans charger la sortie : la ligne de
       // liste porte le groupe (`docs/LEDGER_*.md API-4`).
@@ -386,7 +326,6 @@ void main() {
 
       expect(rides.getRideCalls, 0);
       expect(await container.read(nextRideProvider.future), isNull);
-      expect(await upcomingCount(), 0);
     },
   );
 
@@ -418,15 +357,13 @@ void main() {
   });
 
   test(
-    'rejoindre un voyage met aussi à jour le profil et l\'accueil',
+    'rejoindre un voyage met aussi à jour l\'accueil et le calendrier',
     () async {
       await mountDerivedViews();
       final int weekBefore = weekBuilds;
       final int calendarBefore = calendarBuilds;
 
       await (await openTrip()).join();
-
-      expect(await upcomingCount(), 1);
       await container.read(weekEventsProvider.future);
       await container.read(calendarMonthProvider(monthKey).future);
       expect(weekBuilds, weekBefore + 1);

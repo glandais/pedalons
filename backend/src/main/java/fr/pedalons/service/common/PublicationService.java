@@ -748,23 +748,6 @@ public class PublicationService {
         view);
   }
 
-  /**
-   * How many rides and trips the current user is registered to between {@code from} and {@code
-   * to}: the {@code total} of {@link #listMyParticipations} for the same bounds, in one count query.
-   */
-  @CheckAccess(entityType = EntityType.PUBLICATION, action = ActionType.LIST_ALL_TEAMS)
-  public long countMyParticipations(@Nullable Instant from, @Nullable Instant to) {
-    return count(
-            baseQuery(0, 1)
-                .from(from)
-                .to(to)
-                .participating(true)
-                .ascending(true)
-                .includeDeleted(false)
-                .build())
-        .total();
-  }
-
   private PublicationQuery.PublicationQueryBuilder baseQuery(int page, int size) {
     return PublicationQuery.builder()
         .domainId(pedalonsQueryContext.getDomainId())

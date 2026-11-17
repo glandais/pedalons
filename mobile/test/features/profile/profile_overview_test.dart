@@ -47,11 +47,6 @@ const UserDto _user = UserDto(
 );
 
 const ProfileSummaryDto _summary = ProfileSummaryDto(
-  participations: ProfileParticipationSummaryDto(
-    upcomingCount: 3,
-    pastCount: 12,
-    next: <PublicationDto>[],
-  ),
   teams: <ProfileTeamDto>[
     ProfileTeamDto(slug: 'a', name: 'Les Rouleurs', role: 'ADMIN'),
     ProfileTeamDto(slug: 'b', name: 'Gaby Cyclo', role: 'MEMBER'),

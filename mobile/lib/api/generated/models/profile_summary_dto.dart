@@ -6,7 +6,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'paired_device_dto.dart';
 import 'profile_notification_summary_dto.dart';
-import 'profile_participation_summary_dto.dart';
 import 'profile_team_dto.dart';
 
 part 'profile_summary_dto.freezed.dart';
@@ -16,9 +15,6 @@ part 'profile_summary_dto.g.dart';
 @Freezed()
 abstract class ProfileSummaryDto with _$ProfileSummaryDto {
   const factory ProfileSummaryDto({
-    /// Rides and trips the user is registered to
-    required ProfileParticipationSummaryDto participations,
-
     /// The user's teams on this site, in name order, each with the user's role in it
     required List<ProfileTeamDto> teams,
 

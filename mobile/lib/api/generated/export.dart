@@ -238,7 +238,6 @@ export 'models/post_dto.dart';
 export 'models/post_list_response.dart';
 export 'models/post_request.dart';
 export 'models/profile_notification_summary_dto.dart';
-export 'models/profile_participation_summary_dto.dart';
 export 'models/profile_summary_dto.dart';
 export 'models/profile_team_dto.dart';
 export 'models/public_user_dto.dart';

@@ -16,8 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ProfileSummaryDto {
 
-/// Rides and trips the user is registered to
- ProfileParticipationSummaryDto get participations;/// The user's teams on this site, in name order, each with the user's role in it
+/// The user's teams on this site, in name order, each with the user's role in it
  List<ProfileTeamDto> get teams;/// Number of passkeys registered on the account
  int get passkeyCount;/// Devices (Karoo, Garmin) paired with the account, newest first — the same rows as GET /api/users/me/devices
  List<PairedDeviceDto> get pairedDevices;/// Number of live accounts the user blocked
@@ -36,20 +35,20 @@ $ProfileSummaryDtoCopyWith<ProfileSummaryDto> get copyWith => _$ProfileSummaryDt
 @override
 bool operator ==(Object other) {
   final _this = this as ProfileSummaryDto;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileSummaryDto&&(identical(other.participations, _this.participations) || other.participations == _this.participations)&&const DeepCollectionEquality().equals(other.teams, _this.teams)&&(identical(other.passkeyCount, _this.passkeyCount) || other.passkeyCount == _this.passkeyCount)&&const DeepCollectionEquality().equals(other.pairedDevices, _this.pairedDevices)&&(identical(other.blockedUserCount, _this.blockedUserCount) || other.blockedUserCount == _this.blockedUserCount)&&(identical(other.notifications, _this.notifications) || other.notifications == _this.notifications));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProfileSummaryDto&&const DeepCollectionEquality().equals(other.teams, _this.teams)&&(identical(other.passkeyCount, _this.passkeyCount) || other.passkeyCount == _this.passkeyCount)&&const DeepCollectionEquality().equals(other.pairedDevices, _this.pairedDevices)&&(identical(other.blockedUserCount, _this.blockedUserCount) || other.blockedUserCount == _this.blockedUserCount)&&(identical(other.notifications, _this.notifications) || other.notifications == _this.notifications));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ProfileSummaryDto;
-  return Object.hash(runtimeType,_this.participations,const DeepCollectionEquality().hash(_this.teams),_this.passkeyCount,const DeepCollectionEquality().hash(_this.pairedDevices),_this.blockedUserCount,_this.notifications);
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.teams),_this.passkeyCount,const DeepCollectionEquality().hash(_this.pairedDevices),_this.blockedUserCount,_this.notifications);
 }
 
 @override
 String toString() {
   final _this = this as ProfileSummaryDto;
-  return 'ProfileSummaryDto(participations: ${_this.participations}, teams: ${_this.teams}, passkeyCount: ${_this.passkeyCount}, pairedDevices: ${_this.pairedDevices}, blockedUserCount: ${_this.blockedUserCount}, notifications: ${_this.notifications})';
+  return 'ProfileSummaryDto(teams: ${_this.teams}, passkeyCount: ${_this.passkeyCount}, pairedDevices: ${_this.pairedDevices}, blockedUserCount: ${_this.blockedUserCount}, notifications: ${_this.notifications})';
 }
 
 
@@ -60,11 +59,11 @@ abstract mixin class $ProfileSummaryDtoCopyWith<$Res>  {
   factory $ProfileSummaryDtoCopyWith(ProfileSummaryDto value, $Res Function(ProfileSummaryDto) _then) = _$ProfileSummaryDtoCopyWithImpl;
 @useResult
 $Res call({
- ProfileParticipationSummaryDto participations, List<ProfileTeamDto> teams, int passkeyCount, List<PairedDeviceDto> pairedDevices, int blockedUserCount, ProfileNotificationSummaryDto notifications
+ List<ProfileTeamDto> teams, int passkeyCount, List<PairedDeviceDto> pairedDevices, int blockedUserCount, ProfileNotificationSummaryDto notifications
 });
 
 
-$ProfileParticipationSummaryDtoCopyWith<$Res> get participations;$ProfileNotificationSummaryDtoCopyWith<$Res> get notifications;
+$ProfileNotificationSummaryDtoCopyWith<$Res> get notifications;
 
 }
 /// @nodoc
@@ -77,10 +76,9 @@ class _$ProfileSummaryDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProfileSummaryDto
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? participations = null,Object? teams = null,Object? passkeyCount = null,Object? pairedDevices = null,Object? blockedUserCount = null,Object? notifications = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? teams = null,Object? passkeyCount = null,Object? pairedDevices = null,Object? blockedUserCount = null,Object? notifications = null,}) {
   return _then(ProfileSummaryDto(
-participations: null == participations ? _self.participations : participations // ignore: cast_nullable_to_non_nullable
-as ProfileParticipationSummaryDto,teams: null == teams ? _self.teams : teams // ignore: cast_nullable_to_non_nullable
+teams: null == teams ? _self.teams : teams // ignore: cast_nullable_to_non_nullable
 as List<ProfileTeamDto>,passkeyCount: null == passkeyCount ? _self.passkeyCount : passkeyCount // ignore: cast_nullable_to_non_nullable
 as int,pairedDevices: null == pairedDevices ? _self.pairedDevices : pairedDevices // ignore: cast_nullable_to_non_nullable
 as List<PairedDeviceDto>,blockedUserCount: null == blockedUserCount ? _self.blockedUserCount : blockedUserCount // ignore: cast_nullable_to_non_nullable
@@ -89,15 +87,6 @@ as ProfileNotificationSummaryDto,
   ));
 }
 /// Create a copy of ProfileSummaryDto
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ProfileParticipationSummaryDtoCopyWith<$Res> get participations {
-  
-  return $ProfileParticipationSummaryDtoCopyWith<$Res>(_self.participations, (value) {
-    return _then(_self.copyWith(participations: value));
-  });
-}/// Create a copy of ProfileSummaryDto
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -188,10 +177,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ProfileParticipationSummaryDto participations,  List<ProfileTeamDto> teams,  int passkeyCount,  List<PairedDeviceDto> pairedDevices,  int blockedUserCount,  ProfileNotificationSummaryDto notifications)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ProfileTeamDto> teams,  int passkeyCount,  List<PairedDeviceDto> pairedDevices,  int blockedUserCount,  ProfileNotificationSummaryDto notifications)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProfileSummaryDto() when $default != null:
-return $default(_that.participations,_that.teams,_that.passkeyCount,_that.pairedDevices,_that.blockedUserCount,_that.notifications);case _:
+return $default(_that.teams,_that.passkeyCount,_that.pairedDevices,_that.blockedUserCount,_that.notifications);case _:
   return orElse();
 
 }
@@ -209,10 +198,10 @@ return $default(_that.participations,_that.teams,_that.passkeyCount,_that.paired
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ProfileParticipationSummaryDto participations,  List<ProfileTeamDto> teams,  int passkeyCount,  List<PairedDeviceDto> pairedDevices,  int blockedUserCount,  ProfileNotificationSummaryDto notifications)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ProfileTeamDto> teams,  int passkeyCount,  List<PairedDeviceDto> pairedDevices,  int blockedUserCount,  ProfileNotificationSummaryDto notifications)  $default,) {final _that = this;
 switch (_that) {
 case _ProfileSummaryDto():
-return $default(_that.participations,_that.teams,_that.passkeyCount,_that.pairedDevices,_that.blockedUserCount,_that.notifications);case _:
+return $default(_that.teams,_that.passkeyCount,_that.pairedDevices,_that.blockedUserCount,_that.notifications);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -229,10 +218,10 @@ return $default(_that.participations,_that.teams,_that.passkeyCount,_that.paired
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ProfileParticipationSummaryDto participations,  List<ProfileTeamDto> teams,  int passkeyCount,  List<PairedDeviceDto> pairedDevices,  int blockedUserCount,  ProfileNotificationSummaryDto notifications)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ProfileTeamDto> teams,  int passkeyCount,  List<PairedDeviceDto> pairedDevices,  int blockedUserCount,  ProfileNotificationSummaryDto notifications)?  $default,) {final _that = this;
 switch (_that) {
 case _ProfileSummaryDto() when $default != null:
-return $default(_that.participations,_that.teams,_that.passkeyCount,_that.pairedDevices,_that.blockedUserCount,_that.notifications);case _:
+return $default(_that.teams,_that.passkeyCount,_that.pairedDevices,_that.blockedUserCount,_that.notifications);case _:
   return null;
 
 }
@@ -244,11 +233,9 @@ return $default(_that.participations,_that.teams,_that.passkeyCount,_that.paired
 @JsonSerializable()
 
 class _ProfileSummaryDto implements ProfileSummaryDto {
-  const _ProfileSummaryDto({required this.participations, required  List<ProfileTeamDto> teams, required this.passkeyCount, required  List<PairedDeviceDto> pairedDevices, required this.blockedUserCount, required this.notifications}): _teams = teams,_pairedDevices = pairedDevices;
+  const _ProfileSummaryDto({required  List<ProfileTeamDto> teams, required this.passkeyCount, required  List<PairedDeviceDto> pairedDevices, required this.blockedUserCount, required this.notifications}): _teams = teams,_pairedDevices = pairedDevices;
   factory _ProfileSummaryDto.fromJson(Map<String, dynamic> json) => _$ProfileSummaryDtoFromJson(json);
 
-/// Rides and trips the user is registered to
-@override final  ProfileParticipationSummaryDto participations;
 /// The user's teams on this site, in name order, each with the user's role in it
  final  List<ProfileTeamDto> _teams;
 /// The user's teams on this site, in name order, each with the user's role in it
@@ -287,18 +274,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileSummaryDto&&(identical(other.participations, participations) || other.participations == participations)&&const DeepCollectionEquality().equals(other.teams, _teams)&&(identical(other.passkeyCount, passkeyCount) || other.passkeyCount == passkeyCount)&&const DeepCollectionEquality().equals(other.pairedDevices, _pairedDevices)&&(identical(other.blockedUserCount, blockedUserCount) || other.blockedUserCount == blockedUserCount)&&(identical(other.notifications, notifications) || other.notifications == notifications));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProfileSummaryDto&&const DeepCollectionEquality().equals(other.teams, _teams)&&(identical(other.passkeyCount, passkeyCount) || other.passkeyCount == passkeyCount)&&const DeepCollectionEquality().equals(other.pairedDevices, _pairedDevices)&&(identical(other.blockedUserCount, blockedUserCount) || other.blockedUserCount == blockedUserCount)&&(identical(other.notifications, notifications) || other.notifications == notifications));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,participations,const DeepCollectionEquality().hash(_teams),passkeyCount,const DeepCollectionEquality().hash(_pairedDevices),blockedUserCount,notifications);
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_teams),passkeyCount,const DeepCollectionEquality().hash(_pairedDevices),blockedUserCount,notifications);
 }
 
 @override
 String toString() {
-    return 'ProfileSummaryDto(participations: $participations, teams: $teams, passkeyCount: $passkeyCount, pairedDevices: $pairedDevices, blockedUserCount: $blockedUserCount, notifications: $notifications)';
+    return 'ProfileSummaryDto(teams: $teams, passkeyCount: $passkeyCount, pairedDevices: $pairedDevices, blockedUserCount: $blockedUserCount, notifications: $notifications)';
 }
 
 
@@ -309,11 +296,11 @@ abstract mixin class _$ProfileSummaryDtoCopyWith<$Res> implements $ProfileSummar
   factory _$ProfileSummaryDtoCopyWith(_ProfileSummaryDto value, $Res Function(_ProfileSummaryDto) _then) = __$ProfileSummaryDtoCopyWithImpl;
 @override @useResult
 $Res call({
- ProfileParticipationSummaryDto participations, List<ProfileTeamDto> teams, int passkeyCount, List<PairedDeviceDto> pairedDevices, int blockedUserCount, ProfileNotificationSummaryDto notifications
+ List<ProfileTeamDto> teams, int passkeyCount, List<PairedDeviceDto> pairedDevices, int blockedUserCount, ProfileNotificationSummaryDto notifications
 });
 
 
-@override $ProfileParticipationSummaryDtoCopyWith<$Res> get participations;@override $ProfileNotificationSummaryDtoCopyWith<$Res> get notifications;
+@override $ProfileNotificationSummaryDtoCopyWith<$Res> get notifications;
 
 }
 /// @nodoc
@@ -326,10 +313,9 @@ class __$ProfileSummaryDtoCopyWithImpl<$Res>
 
 /// Create a copy of ProfileSummaryDto
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? participations = null,Object? teams = null,Object? passkeyCount = null,Object? pairedDevices = null,Object? blockedUserCount = null,Object? notifications = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? teams = null,Object? passkeyCount = null,Object? pairedDevices = null,Object? blockedUserCount = null,Object? notifications = null,}) {
   return _then(_ProfileSummaryDto(
-participations: null == participations ? _self.participations : participations // ignore: cast_nullable_to_non_nullable
-as ProfileParticipationSummaryDto,teams: null == teams ? _self._teams : teams // ignore: cast_nullable_to_non_nullable
+teams: null == teams ? _self._teams : teams // ignore: cast_nullable_to_non_nullable
 as List<ProfileTeamDto>,passkeyCount: null == passkeyCount ? _self.passkeyCount : passkeyCount // ignore: cast_nullable_to_non_nullable
 as int,pairedDevices: null == pairedDevices ? _self._pairedDevices : pairedDevices // ignore: cast_nullable_to_non_nullable
 as List<PairedDeviceDto>,blockedUserCount: null == blockedUserCount ? _self.blockedUserCount : blockedUserCount // ignore: cast_nullable_to_non_nullable
@@ -339,15 +325,6 @@ as ProfileNotificationSummaryDto,
 }
 
 /// Create a copy of ProfileSummaryDto
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ProfileParticipationSummaryDtoCopyWith<$Res> get participations {
-  
-  return $ProfileParticipationSummaryDtoCopyWith<$Res>(_self.participations, (value) {
-    return _then(_self.copyWith(participations: value));
-  });
-}/// Create a copy of ProfileSummaryDto
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')

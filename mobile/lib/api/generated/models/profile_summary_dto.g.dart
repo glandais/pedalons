@@ -8,9 +8,6 @@ part of 'profile_summary_dto.dart';
 
 _ProfileSummaryDto _$ProfileSummaryDtoFromJson(Map<String, dynamic> json) =>
     _ProfileSummaryDto(
-      participations: ProfileParticipationSummaryDto.fromJson(
-        json['participations'] as Map<String, dynamic>,
-      ),
       teams: (json['teams'] as List<dynamic>)
           .map((e) => ProfileTeamDto.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -26,7 +23,6 @@ _ProfileSummaryDto _$ProfileSummaryDtoFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ProfileSummaryDtoToJson(_ProfileSummaryDto instance) =>
     <String, dynamic>{
-      'participations': instance.participations.toJson(),
       'teams': instance.teams.map((e) => e.toJson()).toList(),
       'passkeyCount': instance.passkeyCount,
       'pairedDevices': instance.pairedDevices.map((e) => e.toJson()).toList(),

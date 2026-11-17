@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **160 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
+Index des **159 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -95,7 +95,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 - [ ] [`API-151`](ledger/API/API-151.md) Passage à osm-route-details : banc de D+ et crédit web (S)
 - [ ] [`API-148`](ledger/API/API-148.md) Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)
 - [ ] [`API-140`](ledger/API/API-140.md) `/api/admin/teams` sans domaine forcé : décision produit à prendre · *decision*
-- [ ] [`API-136`](ledger/API/API-136.md) Retirer `participations` du résumé du profil (S)
 - [ ] [`API-135`](ledger/API/API-135.md) Garder le type et la distance des `course_point` d'une pièce jointe FIT (S)
 
 ### Cache, fraîcheur et images — quatre briques indépendantes

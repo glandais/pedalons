@@ -1,14 +1,11 @@
 import type { PairedDeviceDto } from './pairedDeviceDto.ts'
 import type { ProfileNotificationSummaryDto } from './profileNotificationSummaryDto.ts'
-import type { ProfileParticipationSummaryDto } from './profileParticipationSummaryDto.ts'
 import type { ProfileTeamDto } from './profileTeamDto.ts'
 
 /**
  * The state of each subject of the current user's profile, for its overview
  */
 export interface ProfileSummaryDto {
-  /** Rides and trips the user is registered to */
-  participations: ProfileParticipationSummaryDto
   /** The user's teams on this site, in name order, each with the user's role in it */
   teams: ProfileTeamDto[]
   /** Number of passkeys registered on the account */

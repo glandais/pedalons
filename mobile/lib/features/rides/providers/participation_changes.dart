@@ -7,18 +7,16 @@ import '../../calendar/providers/calendar_month_provider.dart';
 import '../../home/providers/next_ride_provider.dart';
 import '../../home/providers/week_events_provider.dart';
 import '../../participants/providers/participant_list_provider.dart';
-import '../../profile/providers/profile_summary_provider.dart';
 import '../../teams/providers/team_dashboard_provider.dart';
 
 /// **Le** point où l'app dit « une de mes participations vient de changer ».
 ///
 /// Une inscription ne modifie pas qu'un écran : l'accueil (« Ma prochaine
-/// sortie », « Cette semaine »), le profil (compteur et liste « Mes sorties
-/// à venir ») et le calendrier (badge « J'y vais ») en sont tous des vues
+/// sortie », « Cette semaine »), le tableau de bord d'équipe et le calendrier (badge « J'y vais ») en sont tous des vues
 /// dérivées, chacune dans son propre cache. Avant ce point, seul le détail de
 /// la sortie était invalidé et ces vues restaient périmées jusqu'à un
-/// pull-to-refresh — ou jusqu'au redémarrage pour le compteur du profil, qui
-/// n'est jamais libéré.
+/// pull-to-refresh. Le résumé du profil n'en est plus une : il ne porte plus
+/// de participations (contrat 16.0.0, `docs/LEDGER_*.md API-136`).
 ///
 /// Les contrôleurs d'inscription (sortie **et** voyage) l'appellent après
 /// chaque appel réussi ; une nouvelle vue qui affiche une participation
@@ -55,9 +53,6 @@ void notifyParticipationChanged(
   // Accueil.
   ref.invalidate(nextRideProvider);
   ref.invalidate(weekEventsProvider);
-
-  // Profil : son résumé porte les compteurs de participations.
-  ref.invalidate(profileSummaryProvider);
 
   // Calendrier : chaque événement porte `registered`.
   ref.invalidate(calendarMonthProvider);

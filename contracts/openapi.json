@@ -4854,40 +4854,11 @@
           }
         }
       },
-      "ProfileParticipationSummaryDto" : {
-        "description" : "The rides and trips the current user is registered to, summed up",
-        "type" : "object",
-        "required" : [ "upcomingCount", "pastCount", "next" ],
-        "properties" : {
-          "upcomingCount" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Outings starting from now on"
-          },
-          "pastCount" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Outings that started before now"
-          },
-          "next" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/PublicationDto"
-            },
-            "description" : "The next outing, in the compact list view (no markdown body): empty when nothing is coming up, never more than one row"
-          }
-        }
-      },
       "ProfileSummaryDto" : {
         "description" : "The state of each subject of the current user's profile, for its overview",
         "type" : "object",
-        "required" : [ "participations", "teams", "passkeyCount", "pairedDevices", "blockedUserCount", "notifications" ],
+        "required" : [ "teams", "passkeyCount", "pairedDevices", "blockedUserCount", "notifications" ],
         "properties" : {
-          "participations" : {
-            "description" : "Rides and trips the user is registered to",
-            "type" : "object",
-            "$ref" : "#/components/schemas/ProfileParticipationSummaryDto"
-          },
           "teams" : {
             "type" : "array",
             "items" : {
@@ -27034,7 +27005,7 @@
     "/api/users/me/profile-summary" : {
       "get" : {
         "summary" : "Summarise the current user's profile",
-        "description" : "What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.",
+        "description" : "What the profile overview shows next to each shortcut, in one request: the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated, the user's outings on GET /api/users/me/participations. A fixed number of queries, whatever the amount of data.",
         "operationId" : "getMyProfileSummary",
         "tags" : [ "Users" ],
         "responses" : {
@@ -27090,7 +27061,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "15.0.1",
+    "version" : "16.0.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

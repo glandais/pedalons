@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **588 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **589 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -360,6 +360,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`API-139`](ledger/API/API-139.md) `GET /api/admin/teams` compte les membres ligne par ligne — 2026-11-17
 - [x] [`API-138`](ledger/API/API-138.md) La convention de distance de la météo est écrite dans le contrat
 - [x] [`API-137`](ledger/API/API-137.md) « Mes équipes » d'un administrateur de la plateforme : ses vraies adhésions, son vrai rôle, plus d'équipe supprimée — 2026-10-24
+- [x] [`API-136`](ledger/API/API-136.md) Retirer `participations` du résumé du profil — 2026-11-17
 - [x] [`API-134`](ledger/API/API-134.md) Promouvoir un aperçu GPX en parcours gardait-il ses points ? Non, et il les garde maintenant — 2026-10-20
 - [x] [`API-133`](ledger/API/API-133.md) Le revêtement dans `/routes/bulk`, lu par page (20 octobre 2026, contrat `11.15.0`) — 2026-10-20
 - [x] [`API-132`](ledger/API/API-132.md) Dates journalières d'Open-Meteo lues au décalage de la réponse (contrat inchangé)

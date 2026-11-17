@@ -155,7 +155,7 @@ abstract class UsersClient {
 
   /// Summarise the current user's profile.
   ///
-  /// What the profile overview shows next to each shortcut, in one request: the next outing and the outing counts, the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated. A fixed number of queries, whatever the amount of data.
+  /// What the profile overview shows next to each shortcut, in one request: the teams with the user's role, the passkey count, the paired devices, the number of blocked users and where notifications go. The display preferences, contactableByMembers and the connected GPS services are on GET /api/users/me and are not repeated, the user's outings on GET /api/users/me/participations. A fixed number of queries, whatever the amount of data.
   @GET('/api/users/me/profile-summary')
   Future<ProfileSummaryDto> getMyProfileSummary();
 }
