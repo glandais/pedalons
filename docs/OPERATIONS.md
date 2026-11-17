@@ -1245,6 +1245,13 @@ in Grafana's database: *Node Exporter Full* (1860), *JVM (Micrometer)* (4701). L
 *Explore → Loki*: `{stack="pedalons-prod", service="backend"} | json`, or `{job="caddy"} | json |
 status >= 500`.
 
+PostgreSQL logs every statement slower than **500 ms** (`command:` of the `postgres` service in
+`docker-compose.yml`), without its bound parameters (`log_parameter_max_length=0`: they carry
+e-mail addresses and names). To find them: `{stack="pedalons-prod", service="postgres"} |= "duration:"`;
+the line gives the time in ms and the SQL text, `$1`, `$2`… in place of the values. No alert reads
+them: a slow request shows first as `SlowResponses` or `BackendConnectionPoolExhausted`, and this is
+where to look next.
+
 ### Alerts
 
 All of them by e-mail, through `ALERT_SMTP_*` — preferably not the relay the application sends

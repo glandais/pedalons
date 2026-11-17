@@ -8,12 +8,8 @@ verified: 2026-11-17
 
 ## Reste à faire
 
-`OPS-21` **Ce que le monitoring ne voit pas encore** — trois angles morts restent :
+`OPS-21` **Ce que le monitoring ne voit pas encore** — deux angles morts restent :
 
-- **Les requêtes lentes de PostgreSQL** : il faudrait `pg_stat_statements` dans
-  `shared_preload_libraries`, c'est-à-dire un redémarrage de la base de chaque environnement
-  (`command:` du service `postgres` de `docker-compose.yml`), puis `CREATE EXTENSION` ; à défaut,
-  `log_min_duration_statement` mettrait les requêtes lentes dans Loki par un simple rechargement (`ALTER SYSTEM`, `pg_reload_conf()`).
 - **Le frontend SSR** : ni métriques Node ni temps de rendu ; seul Caddy le voit, par hôte.
 - **Les erreurs côté client web et mobile** : un GlitchTip, compatible Sentry, pèserait une base et
   un Redis de plus — à ne faire que si le besoin se confirme.
@@ -33,3 +29,13 @@ rien. Il lit la base sous `POSTGRES_USER`, le mot de passe dans sa propre variab
 (`services/monitoring/prometheus/tests/pedalons.test.yml`) ; les noms de métriques ont été relevés
 sur un exporteur v0.20.1 réel. Décrit dans `docs/OPERATIONS.md`, « Monitoring ». **Déployé le 17 novembre 2026** en staging et en prod (`scripts/deploy.sh --rev` sur
 les images déjà en service, puis `--monitoring`) : les deux cibles `postgres` répondent, `pg_up` vaut 1.
+
+**Requêtes lentes, le 17 novembre 2026** — le service `postgres` de `docker-compose.yml` démarre
+avec `log_min_duration_statement=500` et `log_parameter_max_length=0` (`command:`) : toute requête
+de plus de 500 ms est écrite dans le journal de PostgreSQL, qu'Alloy envoie déjà à Loki
+(`{service="postgres"} |= "duration:"`), sans ses paramètres liés — ils portent adresses e-mail et
+noms, que Loki garderait 14 jours. Vérifié sur l'image `imresamu/postgis:18-3.6-alpine` avec une
+requête liée comme celles de JDBC : la durée et le SQL (`$1`) sont journalisés, la valeur ne l'est
+pas. Le réglage est dans le dépôt plutôt qu'en `ALTER SYSTEM`, pour qu'un nouvel environnement
+l'ait aussi ; le changer redémarre PostgreSQL au déploiement suivant. Pas d'alerte (décidé avec le
+propriétaire) : la requête type est décrite dans `docs/OPERATIONS.md`, « Monitoring ».

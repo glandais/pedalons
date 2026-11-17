@@ -260,6 +260,16 @@ services:
     # copies it over and leaves it in place for a rollback.
     volumes:
       - pg_clusters:/var/lib/postgresql
+    # Slow queries (docs/LEDGER_*.md OPS-21): any statement over 500 ms is logged, and Alloy ships
+    # postgres's output to Loki like any container's. Its bound parameters are not: the backend's
+    # prepared statements carry e-mail addresses and names, which Loki would keep 14 days — only the
+    # SQL text is logged. Changing a flag here restarts postgres on the next deploy (stop-first).
+    command:
+      - postgres
+      - -c
+      - log_min_duration_statement=500
+      - -c
+      - log_parameter_max_length=0
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
