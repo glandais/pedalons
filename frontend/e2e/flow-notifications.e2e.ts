@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import type { RideRequest } from '../src/api/dto'
 import { apiPost, apiPut } from './support/api'
-import { addMember, newTeam, newUser, roleSession, signIn } from './support/data'
+import { addMember, newTeam, newUser, signIn } from './support/data'
 import { expect, test, unique } from './support/fixtures'
 import { inviteByApi } from './support/invitations'
 import { queueCard, report, teamQueuePath } from './support/moderation'
@@ -36,7 +36,7 @@ async function teamWithMember(label: string) {
   const author = await newUser(unique('Autrice'))
   const member = await newUser(unique('Membre'))
   const team = await newTeam(author, unique(label))
-  await addMember(await roleSession('admin'), team.slug, member)
+  await addMember(team.slug, member)
   return { author, member, team }
 }
 
@@ -227,9 +227,8 @@ test('muting a team in the profile silences its announcements, but not a reply',
   const member = await newUser(unique('Membre'))
   const muted = await newTeam(author, unique('Équipe en sourdine'))
   const heard = await newTeam(otherAuthor, unique('Équipe écoutée'))
-  const admin = await roleSession('admin')
-  await addMember(admin, muted.slug, member)
-  await addMember(admin, heard.slug, member)
+  await addMember(muted.slug, member)
+  await addMember(heard.slug, member)
 
   // The thread the reply will land in, in the team about to be muted — announced before the mute,
   // and waited for, so that the mute cannot race its dispatch.
@@ -322,8 +321,8 @@ test.describe('personal notifications', () => {
     const registered = await newUser(unique('Inscrite'))
     const bystander = await newUser(unique('Non inscrit'))
     const team = await newTeam(owner, unique('Sorties annulées'), { addMemberAllowed: true })
-    await addMember(owner, team.slug, registered)
-    await addMember(owner, team.slug, bystander)
+    await addMember(team.slug, registered)
+    await addMember(team.slug, bystander)
     const group = unique('Groupe du matin')
     const ride = await newRide(owner, team.slug, unique('Sortie annulée'), {
       groups: [{ name: group }],
@@ -384,8 +383,8 @@ test.describe('personal notifications', () => {
     const leader = await newUser(unique('Meneur'))
     const rider = await newUser(unique('Cycliste'))
     const team = await newTeam(owner, unique('Inscriptions'), { addMemberAllowed: true })
-    await addMember(owner, team.slug, leader)
-    await addMember(owner, team.slug, rider)
+    await addMember(team.slug, leader)
+    await addMember(team.slug, rider)
     const group = unique('Groupe rapide')
     const ride = await newRide(owner, team.slug, unique('Sortie rejointe'), {
       groups: [{ name: group, leaderId: leader.user.id }],
@@ -494,8 +493,8 @@ test.describe('personal notifications', () => {
     const author = await newUser(unique('Autrice signalée'))
     const reporter = await newUser(unique('Signaleuse'))
     const team = await newTeam(moderator, unique('Équipe modérée'), { addMemberAllowed: true })
-    await addMember(moderator, team.slug, author, 'ORGANIZER')
-    await addMember(moderator, team.slug, reporter)
+    await addMember(team.slug, author, 'ORGANIZER')
+    await addMember(team.slug, reporter)
     const reported = await newPost(author, team.slug, unique('Article signalé'))
     await report(reporter, team.slug, 'POST', reported.id, 'SPAM', 'Publicité déguisée.')
 

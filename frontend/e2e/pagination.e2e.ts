@@ -226,7 +226,7 @@ test('team list: page 2 from the server, back to it, p=abc, p=99', async ({ page
   const member = await newUser('pagination-teams')
   for (let i = 0; i < COUNT; i++) {
     const team = await newTeam(admin, unique(`Équipe paginée ${String(i + 1).padStart(2, '0')}`))
-    await addMember(admin, team.slug, member)
+    await addMember(team.slug, member)
   }
   const heads = await pageHeads(
     async (p) =>

@@ -203,21 +203,13 @@ export async function setTeamAttributes(
 }
 
 /**
- * Adds `member` to the team, as `by`.
- *
- * A team is born with addMemberAllowed=true (docs/LEDGER_*.md BILL-10), so its own admins may add
- * a member directly; once the platform admin closes it (`newTeam(…, { addMemberAllowed: false })`)
- * they get TEAM_ADD_MEMBER_NOT_ALLOWED and only the platform admin may, as `roleSession('admin')`.
- * The platform admin does not become a member by adding one.
+ * Adds `member` to the team, as the platform admin: since docs/LEDGER_*.md SEC-43 nobody else may
+ * add a member without their own click (a team admin invites). The platform admin does not become
+ * a member by adding one.
  */
-export async function addMember(
-  by: AuthResponse,
-  teamSlug: string,
-  member: AuthResponse,
-  role: TeamRole = 'MEMBER'
-) {
+export async function addMember(teamSlug: string, member: AuthResponse, role: TeamRole = 'MEMBER') {
   const request: AddMemberRequest = { userId: member.user.id, role }
-  await apiPost(by, `/api/teams/${teamSlug}/members`, request)
+  await apiPost(await roleSession('admin'), `/api/teams/${teamSlug}/members`, request)
 }
 
 /** A custom page of the team (a tab of its own), members-only unless `overrides` say otherwise. */

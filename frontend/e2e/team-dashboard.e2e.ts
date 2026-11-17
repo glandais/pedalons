@@ -36,9 +36,9 @@ async function buildWorld(): Promise<World> {
   const outsider = await newUser('dashboard outsider')
   const reporter = await newUser('dashboard reporter')
   const team = await newTeam(admin, unique('Tableau de bord'), { addMemberAllowed: true })
-  await addMember(admin, team.slug, organizer, 'ORGANIZER')
-  await addMember(admin, team.slug, member, 'MEMBER')
-  await addMember(admin, team.slug, reporter, 'MEMBER')
+  await addMember(team.slug, organizer, 'ORGANIZER')
+  await addMember(team.slug, member, 'MEMBER')
+  await addMember(team.slug, reporter, 'MEMBER')
 
   // One seat: the member's registration fills the group, so the ride is on the « complet » tile,
   // in the member's « Vos prochaines sorties », and — having no route — on « sans parcours ».

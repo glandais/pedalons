@@ -328,7 +328,7 @@ test('a team admin deletes a route: members no longer see it, the team admin can
 }) => {
   const { owner, team } = await ownTeam('suppression', { addMemberAllowed: true })
   const member = await newUser(unique('Membre'))
-  await addMember(owner, team.slug, member)
+  await addMember(team.slug, member)
   const name = unique('Parcours éphémère')
   const route = await newRoute(owner, team.slug, name, eastward())
 
@@ -676,7 +676,7 @@ test.describe('what a route shows to whom', () => {
   }) => {
     const { owner, team, route, name } = await publicTeamWithRoute('commentaires')
     const member = await newUser(unique('Membre'))
-    await addMember(owner, team.slug, member)
+    await addMember(team.slug, member)
     const outsider = await newUser(unique('Non-membre'))
     const first = `Attention aux graviers ${unique('msg')}`
     const request: CommentRequest = { content: first }
@@ -731,11 +731,11 @@ test.describe('what a route shows to whom', () => {
     context,
     browser,
   }) => {
-    const { owner, team, route, name } = await publicTeamWithRoute('droits')
+    const { team, route, name } = await publicTeamWithRoute('droits')
     const member = await newUser(unique('Membre'))
-    await addMember(owner, team.slug, member)
+    await addMember(team.slug, member)
     const organizer = await newUser(unique('Organisateur'))
-    await addMember(owner, team.slug, organizer, 'ORGANIZER')
+    await addMember(team.slug, organizer, 'ORGANIZER')
 
     // The member: the route's page and the list offer nothing to manage.
     await signIn(context, member)
@@ -776,7 +776,7 @@ test.describe('what a route shows to whom', () => {
   }) => {
     const { owner, team, route, name } = await publicTeamWithRoute('dupliquer')
     const organizer = await newUser(unique('Organisateur'))
-    await addMember(owner, team.slug, organizer, 'ORGANIZER')
+    await addMember(team.slug, organizer, 'ORGANIZER')
 
     await signIn(context, organizer)
     const main = await openSettled(page, team.slug, route.slug, name)
@@ -807,7 +807,7 @@ test.describe('what a route shows to whom', () => {
   }) => {
     const { owner, team, route, name } = await publicTeamWithRoute('copie')
     const member = await newUser(unique('Membre'))
-    await addMember(owner, team.slug, member)
+    await addMember(team.slug, member)
 
     await signIn(context, member)
     const main = await openSettled(page, team.slug, route.slug, name)
@@ -839,7 +839,7 @@ test.describe('what a route shows to whom', () => {
   }) => {
     const { owner, team, route, name } = await publicTeamWithRoute('usages')
     const member = await newUser(unique('Membre'))
-    await addMember(owner, team.slug, member)
+    await addMember(team.slug, member)
     const publicRide = await newRide(owner, team.slug, unique('Sortie ouverte'), {
       visibility: 'PUBLIC',
       groups: [{ name: 'Groupe A', routeSlug: route.slug }],

@@ -53,7 +53,7 @@ function setup() {
       surfaceType: 'GRAVEL',
     })
     const member = await newUser('generator-member')
-    await addMember(owner, team.slug, member)
+    await addMember(team.slug, member)
     return { owner, team, road1, road2, gravel, member }
   })()
 }

@@ -122,19 +122,16 @@ class TeamLimitsResourceTest extends AbstractResourceTest {
 
   // ==================== Addition by an administrator ====================
 
+  /**
+   * A team admin no longer adds anyone directly (docs/LEDGER_*.md SEC-43): refused before the cap
+   * is even looked at, full team or not.
+   */
   @Test
-  void addMember_atTheCap_isRefused() {
+  void addMember_byATeamAdmin_isRefusedBeforeTheCap() {
     fillTeam1To(LIMIT);
 
-    assertLimitReached(addMember(USER1, user4), LIMIT);
+    addMember(USER1, user4).statusCode(403);
     assertMemberCount(LIMIT);
-  }
-
-  @Test
-  void addMember_belowTheCap_passes() {
-    fillTeam1To(LIMIT - 1);
-
-    addMember(USER1, user4).statusCode(201);
   }
 
   // ==================== Invitation sent ====================
@@ -226,10 +223,8 @@ class TeamLimitsResourceTest extends AbstractResourceTest {
     join(USER4).statusCode(201);
     invite(USER1, "newcomer@example.com").statusCode(201);
     accept(USER5, token).statusCode(200);
-    User extra = dataService.createUser(domain, "extra@example.com", "Extra");
-    addMember(USER1, extra).statusCode(201);
 
-    assertMemberCount(LIMIT + 3);
+    assertMemberCount(LIMIT + 2);
   }
 
   // ==================== Platform admin ====================
@@ -267,7 +262,6 @@ class TeamLimitsResourceTest extends AbstractResourceTest {
         .body("memberCount", equalTo(30));
 
     assertLimitReached(join(USER4), 30);
-    assertLimitReached(addMember(USER1, user4), 30);
     assertLimitReached(invite(USER1, "newcomer@example.com"), 30);
     assertMemberCount(30);
   }

@@ -71,7 +71,7 @@ test.beforeAll(async () => {
   const admin = await roleSession('admin')
   const team = await newTeam(admin, unique('SSR session'), { visibility: 'PUBLIC' })
   const rider = await newUser('ssr-rider')
-  await addMember(admin, team.slug, rider)
+  await addMember(team.slug, rider)
   const rideName = unique('Sortie SSR')
   const ride = await newRide(admin, team.slug, rideName, { visibility: 'PUBLIC' })
   await joinGroup(rider, team.slug, ride, ride.groups[0].name)
@@ -288,7 +288,7 @@ test.describe('private team: nothing in the server document', () => {
       visibility: 'PUBLIC',
       media: markdownMedia(teamAbout),
     })
-    await addMember(admin, team.slug, member)
+    await addMember(team.slug, member)
 
     const names = {
       ride: unique('Sortie privée'),

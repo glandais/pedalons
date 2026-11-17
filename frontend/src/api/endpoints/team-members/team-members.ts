@@ -207,7 +207,7 @@ export const prefetchGetMembersQuery = async <
 }
 
 /**
- * Add a member to the team. Requires ADMIN role on team.
+ * Add a member to the team directly, without their consent: platform admins only (seeds, tests, support). A team admin invites instead (POST /invitations), and the invitee accepts.
  * @summary Add team member
  */
 export const addMember = (
@@ -272,7 +272,7 @@ export type AddMemberMutationError = ErrorType<ErrorResponse>
 export type AddMemberMutationVariables = { teamSlug: string; data: BodyType<AddMemberRequest> }
 
 /**
- * Add a member to the team. Requires ADMIN role on team.
+ * Add a member to the team directly, without their consent: platform admins only (seeds, tests, support). A team admin invites instead (POST /invitations), and the invitee accepts.
  * @summary Add team member
  */
 export const useAddMember = <TError = ErrorType<ErrorResponse>, TContext = unknown>(

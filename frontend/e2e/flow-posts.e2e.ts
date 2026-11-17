@@ -86,7 +86,7 @@ test('a post goes from the editor to the feeds, gets a comment, is edited, then 
     addMemberAllowed: true,
     enableRides: false,
   })
-  await addMember(author, team.slug, member)
+  await addMember(team.slug, member)
 
   const title = unique('Sortie du dimanche')
   const main = page.getByRole('main')
@@ -375,7 +375,7 @@ test('a post saved as a draft is hidden from members until it is published from 
     addMemberAllowed: true,
     enableRides: false,
   })
-  await addMember(author, team.slug, member)
+  await addMember(team.slug, member)
   const title = unique('Compte rendu à relire')
   const body = 'Merci à tous pour la sortie de dimanche.'
   const main = page.getByRole('main')
@@ -468,7 +468,7 @@ test.describe('scheduled publication', () => {
       addMemberAllowed: true,
       enableRides: false,
     })
-    await addMember(author, team.slug, member)
+    await addMember(team.slug, member)
     const title = unique('Article programmé')
     const publishOn = parisDaysAhead(1, 7, 15)
     const main = page.getByRole('main')
@@ -617,7 +617,7 @@ test.describe('restoring', () => {
       addMemberAllowed: true,
       enableRides: false,
     })
-    await addMember(author, team.slug, member)
+    await addMember(team.slug, member)
     const image = await uploadImage(
       author,
       team.slug,
@@ -749,8 +749,8 @@ test.describe('comment replies', () => {
       addMemberAllowed: true,
       enableRides: false,
     })
-    await addMember(author, team.slug, writer)
-    await addMember(author, team.slug, replier)
+    await addMember(team.slug, writer)
+    await addMember(team.slug, replier)
     const post = await newPost(author, team.slug, unique('Article discuté'))
     return { author, writer, replier, team, post }
   }

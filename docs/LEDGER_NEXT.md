@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **149 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **148 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -240,7 +240,6 @@ Contexte du domaine : [`ledger/SEC/README.md`](ledger/SEC/README.md).
 - [ ] [`SEC-46`](ledger/SEC/SEC-46.md) Un chemin d'envoi de trace échappe à la borne de taille posée par `SEC-6`
 - [ ] [`SEC-45`](ledger/SEC/SEC-45.md) Une bibliothèque d'analyse de fichiers de trace n'est pas protégée contre l'expansion d'entités
 - [ ] [`SEC-44`](ledger/SEC/SEC-44.md) Une entrée pré-authentification n'est pas bornée en mémoire avant validation
-- [ ] [`SEC-43`](ledger/SEC/SEC-43.md) Un ancien point d'API contourne la règle « personne ne rejoint une équipe sans un clic à soi »
 - [ ] [`SEC-41`](ledger/SEC/SEC-41.md) Une demande en cours sur un attribut d'identité survit à la récupération du compte
 - [ ] [`SEC-40`](ledger/SEC/SEC-40.md) La CSP complète du site n'est encore que rapportée (`Content-Security-Policy-Report-Only`) : lire les…
 - [ ] [`SEC-39`](ledger/SEC/SEC-39.md) Deux autres émissions de jetons par e-mail gardent le motif compter-puis-insérer que `SEC-35` a fermé pour…

@@ -50,7 +50,7 @@ abstract class TeamMembersClient {
 
   /// Add team member.
   ///
-  /// Add a member to the team. Requires ADMIN role on team.
+  /// Add a member to the team directly, without their consent: platform admins only (seeds, tests, support). A team admin invites instead (POST /invitations), and the invitee accepts.
   ///
   /// [teamSlug] - Team URL slug.
   ///

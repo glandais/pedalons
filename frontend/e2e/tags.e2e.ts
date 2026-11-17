@@ -1,7 +1,7 @@
 import type { TagWithUsageDto } from '../src/api/dto'
 import { getAd, newAd } from './support/ads'
 import { apiGet } from './support/api'
-import { addMember, newTeam, newUser, roleSession, signIn } from './support/data'
+import { addMember, newTeam, newUser, signIn } from './support/data'
 import { expect, test, unique } from './support/fixtures'
 import { entityCard, escapeRegExp, hydrated, pageAs } from './support/ui'
 
@@ -22,13 +22,12 @@ test('an admin creates a tag, a member puts it on an ad, the list filtered by UR
   context,
   browser,
 }) => {
-  const [platformAdmin, owner, member] = await Promise.all([
-    roleSession('admin'),
+  const [owner, member] = await Promise.all([
     newUser(unique('Bureau tags')),
     newUser(unique('Membre tags')),
   ])
   const team = await newTeam(owner, unique('Tags'))
-  await addMember(platformAdmin, team.slug, member)
+  await addMember(team.slug, member)
   const label = unique('Pièces')
   const [tagged, untagged] = await Promise.all([
     newAd(member, team.slug, { name: unique('Roue arrière') }),

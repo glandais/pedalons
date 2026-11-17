@@ -82,8 +82,8 @@ export async function moderationWorld(label: string): Promise<ModerationWorld> {
     newUser(unique('Témoin')),
   ])
   const team = await newTeam(moderator, unique(label), { addMemberAllowed: true })
-  await addMember(moderator, team.slug, author, 'ORGANIZER')
-  for (const member of [r1, r2, r3, bystander]) await addMember(moderator, team.slug, member)
+  await addMember(team.slug, author, 'ORGANIZER')
+  for (const member of [r1, r2, r3, bystander]) await addMember(team.slug, member)
   return { team, moderator, author, reporters: [r1, r2, r3], bystander }
 }
 

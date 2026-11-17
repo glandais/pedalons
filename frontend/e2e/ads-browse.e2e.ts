@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { AdDto, AdEditDto, AssetDto } from '../src/api/dto'
 import { getAd, newAd, solidPng, uploadImage } from './support/ads'
 import { apiGet } from './support/api'
-import { addMember, newTeam, newUser, roleSession, signIn } from './support/data'
+import { addMember, newTeam, newUser, signIn } from './support/data'
 import { expect, test, unique } from './support/fixtures'
 import { stubBasemap } from './support/routes'
 import { rawDocument, sessionCookie, ssrOutlet } from './support/ssr'
@@ -446,13 +446,12 @@ test('the exact point of an ad is neither in the server documents nor in any API
 }) => {
   // Two server documents, then three pages in a browser: past 30 s on a loaded stack.
   test.setTimeout(60_000)
-  const [admin, owner, member] = await Promise.all([
-    roleSession('admin'),
+  const [owner, member] = await Promise.all([
     newUser('exact-point seller'),
     newUser('exact-point buyer'),
   ])
   const team = await newTeam(owner, unique('exact-point'))
-  await addMember(admin, team.slug, member)
+  await addMember(team.slug, member)
   // Six decimals, like a geocoded address: its digits are the needles.
   const exact: [number, number] = [1.487531, 48.446927]
   const needles = ['1.48753', '48.44692']

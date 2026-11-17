@@ -265,20 +265,19 @@ class TeamMembershipServiceTest extends AbstractBaseTest {
   // ==================== Add Member ====================
 
   @Test
-  void addMember_whenNotAllowed_shouldThrowTeamAddMemberNotAllowed() {
-    dataService.setTeamAddMemberAllowed(team, false);
-
+  void addMember_byATeamAdmin_isRefused() {
+    // docs/LEDGER_*.md SEC-43: a team admin invites, and only the invitee's click lets them in.
     queryContext.setUserForTest(admin);
-    PedalonsException ex =
-        assertThrows(
-            PedalonsException.class,
-            () -> membershipService.addMember(team.getSlug(), user1.getId(), TeamRole.MEMBER));
-    assertEquals("TEAM_ADD_MEMBER_NOT_ALLOWED", ex.getMessage());
+    assertThrows(
+        ForbiddenException.class,
+        () -> membershipService.addMember(team.getSlug(), user1.getId(), TeamRole.MEMBER));
   }
 
   @Test
-  void addMember_shouldAddMemberAsAdmin() {
-    queryContext.setUserForTest(admin);
+  void addMember_shouldAddMemberAsPlatformAdmin() {
+    User platformAdmin =
+        dataService.createPlatformAdminUser("padmin@example.com", "Platform Admin");
+    queryContext.setUserForTest(platformAdmin);
     MemberDto result =
         membershipService.addMember(team.getSlug(), user1.getId(), TeamRole.ORGANIZER);
 
@@ -301,7 +300,8 @@ class TeamMembershipServiceTest extends AbstractBaseTest {
   void addMember_shouldThrowWhenAlreadyMember() {
     dataService.addUserToTeam(user1, team, TeamRole.MEMBER);
 
-    queryContext.setUserForTest(admin);
+    queryContext.setUserForTest(
+        dataService.createPlatformAdminUser("padmin@example.com", "Platform Admin"));
     PedalonsException exception =
         assertThrows(
             PedalonsException.class,
@@ -315,7 +315,8 @@ class TeamMembershipServiceTest extends AbstractBaseTest {
     UserTeam membership = dataService.addUserToTeam(user1, team, TeamRole.MEMBER);
     dataService.deleteUserTeam(membership);
 
-    queryContext.setUserForTest(admin);
+    queryContext.setUserForTest(
+        dataService.createPlatformAdminUser("padmin@example.com", "Platform Admin"));
     MemberDto result =
         membershipService.addMember(team.getSlug(), user1.getId(), TeamRole.ORGANIZER);
 

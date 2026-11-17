@@ -64,7 +64,7 @@ function sharedWorld(): Promise<World> {
     const owner = await roleSession('admin')
     const team = await newTeam(owner, unique('Parcours cartes'))
     const viewer = await newUser(unique('Cycliste'))
-    await addMember(owner, team.slug, viewer)
+    await addMember(team.slug, viewer)
 
     const gpx = windingTrack(300)
     const created = await newRoute(owner, team.slug, unique('Boucle beauceronne'), gpx)

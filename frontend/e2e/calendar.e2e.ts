@@ -34,8 +34,8 @@ async function threeTeams(label: string, day: WallClock) {
   const alsoMine = await newTeam(admin, unique(`Mon autre équipe ${label}`))
   // Public, and its ride public too: nothing but membership keeps it out of the member's calendar.
   const foreign = await newTeam(admin, unique(`Équipe voisine ${label}`), { visibility: 'PUBLIC' })
-  await addMember(admin, mine.slug, member)
-  await addMember(admin, alsoMine.slug, member)
+  await addMember(mine.slug, member)
+  await addMember(alsoMine.slug, member)
   const at = (hour: number) => ({ dateTime: wallTime({ ...day, hour, minute: 0 }) })
   const joined = await newRide(admin, mine.slug, unique('Sortie inscrite'), at(9))
   const other = await newRide(admin, alsoMine.slug, unique('Sortie non inscrite'), at(14))

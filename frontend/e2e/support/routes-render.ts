@@ -100,9 +100,9 @@ export async function buildDataset(
   const { owner, outsider, member, organizer, teamAdmin, platformAdmin } =
     accounts ?? (await freshAccounts(label))
   const created = await newTeam(owner, teamName, { visibility: 'PUBLIC' })
-  await addMember(platformAdmin, created.slug, member, 'MEMBER')
-  await addMember(platformAdmin, created.slug, organizer, 'ORGANIZER')
-  await addMember(platformAdmin, created.slug, teamAdmin, 'ADMIN')
+  await addMember(created.slug, member, 'MEMBER')
+  await addMember(created.slug, organizer, 'ORGANIZER')
+  await addMember(created.slug, teamAdmin, 'ADMIN')
   const slug = created.slug
 
   // What the entities point at: places, tags, pictures.

@@ -342,7 +342,7 @@ test('team list: search and membership from the URL, server-rendered, then chang
     newTeam(admin, `Equipe fermee ${tag}`),
     newTeam(admin, unique('Equipe hors recherche'), { visibility: 'PUBLIC' }),
   ])
-  await addMember(admin, joined.slug, visitor)
+  await addMember(joined.slug, visitor)
   await signIn(context, visitor)
   const main = page.getByRole('main')
   const search = page.getByRole('searchbox', { name: 'Rechercher des équipes' })

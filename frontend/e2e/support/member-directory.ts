@@ -1,6 +1,6 @@
 import type { MemberListResponse, TeamDetailDto } from '../../src/api/dto'
 import { apiContext, expectOk, type AuthResponse } from './api'
-import { addMember, newTeam, newUser, roleSession, teamRequest } from './data'
+import { addMember, newTeam, newUser, teamRequest } from './data'
 import { unique } from './fixtures'
 
 /**
@@ -29,10 +29,9 @@ export async function directoryTeam(enableMemberDirectory: boolean): Promise<Dir
     throw new Error(`enableMemberDirectory is not ${enableMemberDirectory} on ${team.slug}`)
   // Only the platform admin may add members to a new team (see addMember) — which does not make it
   // a member of the team.
-  const platform = await roleSession('admin')
-  await addMember(platform, team.slug, organizer, 'ORGANIZER')
-  await addMember(platform, team.slug, member, 'MEMBER')
-  await addMember(platform, team.slug, teammate, 'MEMBER')
+  await addMember(team.slug, organizer, 'ORGANIZER')
+  await addMember(team.slug, member, 'MEMBER')
+  await addMember(team.slug, teammate, 'MEMBER')
   return { team, admin, organizer, member, teammate }
 }
 

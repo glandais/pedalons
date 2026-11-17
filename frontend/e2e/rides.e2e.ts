@@ -38,8 +38,8 @@ async function ridingTeam(label: string) {
   const team = await newTeam(owner, unique(`Rides ${label}`))
   const organizer = await newUser(unique('Créatrice'))
   const member = await newUser(unique('Membre'))
-  await addMember(owner, team.slug, organizer, 'ORGANIZER')
-  await addMember(owner, team.slug, member)
+  await addMember(team.slug, organizer, 'ORGANIZER')
+  await addMember(team.slug, member)
   return { owner, team, organizer, member }
 }
 
@@ -102,9 +102,9 @@ test.describe('group leader', () => {
   })
 
   test('a designated leader is shown on their group only', async ({ page }) => {
-    const { owner, team, organizer, member } = await ridingTeam('leader')
+    const { team, organizer, member } = await ridingTeam('leader')
     const leader = await newUser(unique('Meneuse'))
-    await addMember(owner, team.slug, leader)
+    await addMember(team.slug, leader)
     const led = unique('Groupe mené')
     const free = unique('Groupe libre')
     const ride = await newRide(organizer, team.slug, unique('Sortie menée'), {
@@ -166,9 +166,9 @@ test.describe('registration', () => {
   })
 
   test('a full group shows « Complet » and offers no way to join', async ({ page }) => {
-    const { owner, team, organizer, member } = await ridingTeam('full')
+    const { team, organizer, member } = await ridingTeam('full')
     const other = await newUser(unique('Premier inscrit'))
-    await addMember(owner, team.slug, other)
+    await addMember(team.slug, other)
     const full = unique('Groupe plein')
     const open = unique('Groupe ouvert')
     const ride = await newRide(organizer, team.slug, unique('Sortie presque pleine'), {
@@ -194,9 +194,9 @@ test.describe('registration', () => {
     // RideGroupCard used to render « Complet » only inside `(canJoin || isJoined)`, and canJoin is
     // false once the whole ride is full — the capacity state vanished exactly then (fixed
     // 2026-09-25).
-    const { owner, team, organizer, member } = await ridingTeam('all-full')
+    const { team, organizer, member } = await ridingTeam('all-full')
     const other = await newUser(unique('Premier inscrit'))
-    await addMember(owner, team.slug, other)
+    await addMember(team.slug, other)
     const full = unique('Groupe plein')
     const ride = await newRide(organizer, team.slug, unique('Sortie pleine'), {
       groups: [{ name: full, maxParticipants: 1 }],
@@ -221,9 +221,9 @@ test.describe('registration', () => {
   })
 
   test('a GROUP_FULL answer rolls back and is reported on that group', async ({ page }) => {
-    const { owner, team, organizer, member } = await ridingTeam('race')
+    const { team, organizer, member } = await ridingTeam('race')
     const other = await newUser(unique('Plus rapide'))
-    await addMember(owner, team.slug, other)
+    await addMember(team.slug, other)
     const contested = unique('Groupe disputé')
     const spare = unique('Groupe de réserve')
     const ride = await newRide(organizer, team.slug, unique('Sortie disputée'), {
@@ -586,7 +586,7 @@ test.describe('participants', () => {
    * modal reads the whole list page by page from the server, searched there, with its « N sur M ».
    */
   test('the participant list is read and searched on the server', async ({ page }) => {
-    const { owner, team, organizer, member } = await ridingTeam('participants')
+    const { team, organizer, member } = await ridingTeam('participants')
     const name = unique('Groupe nombreux')
     // Two groups: a solo ride lists its participants inline instead (WEB-79).
     const ride = await newRide(organizer, team.slug, unique('Sortie fréquentée'), {
@@ -598,7 +598,7 @@ test.describe('participants', () => {
       Array.from({ length: 10 }, (_, i) => newUser(unique(`Cycliste ${i}`)))
     )
     for (const rider of riders) {
-      await addMember(owner, team.slug, rider)
+      await addMember(team.slug, rider)
       await joinGroup(rider, team.slug, ride, name)
     }
 

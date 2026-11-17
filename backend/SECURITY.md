@@ -357,6 +357,13 @@ never per row. This supersedes "author-signed posts name the author to every rea
 "participants readable by whoever may read the ride" (API-12). Kept on purpose:
 `InvitationPreviewDto.inviterName`.
 
+### Nobody joins a team without a click of their own (SEC-43)
+
+A membership starts from the person: joining an open team (`POST …/members/join`) or accepting an
+invitation. A team admin invites (`POST …/invitations`, gated by `addMemberAllowed`) and cannot add
+anyone directly: `POST /api/teams/{slug}/members` answers 403 `FORBIDDEN` to everyone but a
+platform admin, for the platform's own tooling (screenshot seed, e2e, Patrol) and support.
+
 ### SQL Filtering Logic
 
 #### Anonymous Users (not authenticated)

@@ -241,7 +241,7 @@ test.describe('members', () => {
     const owner = await newUser('Flow team members owner')
     const member = await newUser('Flow team member')
     const team = await newTeam(owner, unique('Membres'))
-    await addMember(await roleSession('admin'), team.slug, member)
+    await addMember(team.slug, member)
     await signIn(context, owner)
 
     await page.goto(`/equipes/${team.slug}`)
@@ -307,13 +307,13 @@ test.describe('members', () => {
     const team = await newTeam(owner, unique('Ajout fermé'), { addMemberAllowed: false })
     expect(team.addMemberAllowed, 'precondition: a closed team').toBe(false)
 
-    // The API refuses the owner a direct add…
+    // The API refuses the owner a direct add — as on any team (docs/LEDGER_*.md SEC-43)…
     const request: AddMemberRequest = { userId: candidate.user.id, role: 'MEMBER' }
     const refused = await apiPost(owner, `/api/teams/${team.slug}/members`, request).catch(
       (error: unknown) => error
     )
     expect(refused).toBeInstanceOf(ApiError)
-    expect((refused as ApiError).code).toBe('TEAM_ADD_MEMBER_NOT_ALLOWED')
+    expect((refused as ApiError).code).toBe('FORBIDDEN')
 
     // …and the member screen offers no way in.
     await signIn(context, owner)
@@ -344,7 +344,7 @@ test.describe('team pages', () => {
     const owner = await newUser('Flow team pages owner')
     const member = await newUser('Flow team pages member')
     const team = await newTeam(owner, unique('Pages'))
-    await addMember(await roleSession('admin'), team.slug, member)
+    await addMember(team.slug, member)
     const title = unique('Règlement')
     const content = 'Casque obligatoire et respect du code de la route'
     const retitled = unique('Charte')
@@ -482,7 +482,7 @@ test.describe('the team list', () => {
     const member = await newUser('Flow team list member')
     const outsider = await newUser('Flow team list outsider')
     const team = await newTeam(owner, unique('Annuaire'))
-    await addMember(await roleSession('admin'), team.slug, member)
+    await addMember(team.slug, member)
 
     // Members only: its members find it, nobody else does.
     await expectListed(browser, owner, team.name, true)
@@ -656,7 +656,7 @@ test.describe('leaving a team', () => {
     const owner = await newUser('Flow team leave owner')
     const member = await newUser('Flow team leaver')
     const team = await newTeam(owner, unique('Départ'))
-    await addMember(await roleSession('admin'), team.slug, member)
+    await addMember(team.slug, member)
     const ride = await newRide(owner, team.slug, unique('Sortie des membres'))
     const pageTitle = unique('Consignes')
     const teamPage = await newTeamPage(
@@ -720,7 +720,7 @@ test.describe('deleting a team', () => {
     const owner = await newUser('Flow team delete owner')
     const member = await newUser('Flow team delete member')
     const team = await newTeam(owner, unique('Suppression'))
-    await addMember(await roleSession('admin'), team.slug, member)
+    await addMember(team.slug, member)
     const ride = await newRide(owner, team.slug, unique('Sortie supprimée'))
     await signIn(context, owner)
 
@@ -854,7 +854,7 @@ test.describe('regressions', () => {
     const owner = await newUser('Flow team role picker owner')
     const member = await newUser('Flow team role picker member')
     const team = await newTeam(owner, unique('Sélecteur de rôle'))
-    await addMember(await roleSession('admin'), team.slug, member)
+    await addMember(team.slug, member)
     await signIn(context, owner)
 
     await page.goto(`/equipes/${team.slug}/admin/membres`)

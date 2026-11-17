@@ -142,7 +142,7 @@ test.describe('the platform admin switch', () => {
     const owner = await newUser(unique('Capitaine interrupteur'))
     const team = await newTeam(owner, unique('Équipe à ouvrir'))
     const organizer = await newUser(unique('Organisation'))
-    await addMember(await roleSession('admin'), team.slug, organizer, 'ORGANIZER')
+    await addMember(team.slug, organizer, 'ORGANIZER')
     expect((await adminTeam(team)).publicContentAllowed).toBe(false)
 
     // Before: a private team's ride editor has nothing to choose — « Équipe » only, no field.

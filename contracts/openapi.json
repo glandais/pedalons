@@ -18222,7 +18222,7 @@
       },
       "post" : {
         "summary" : "Add team member",
-        "description" : "Add a member to the team. Requires ADMIN role on team.",
+        "description" : "Add a member to the team directly, without their consent: platform admins only (seeds, tests, support). A team admin invites instead (POST /invitations), and the invitee accepts.",
         "operationId" : "addMember",
         "tags" : [ "Team Members" ],
         "parameters" : [ {
@@ -18266,7 +18266,7 @@
             }
           },
           "409" : {
-            "description" : "Already a member (ALREADY_REGISTERED), or the team's tier caps its members and the cap is reached (TEAM_MEMBER_LIMIT_REACHED, with the cap and the member count); a platform admin is exempt",
+            "description" : "Already a member (ALREADY_REGISTERED)",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -18286,7 +18286,7 @@
             }
           },
           "403" : {
-            "description" : "User is not a team admin",
+            "description" : "Caller is not a platform admin",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -27070,7 +27070,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "16.1.0",
+    "version" : "16.1.1",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

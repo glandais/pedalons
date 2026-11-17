@@ -94,7 +94,7 @@ export const GetMembersResponse = zod
   .describe('Paginated member list response')
 
 /**
- * Add a member to the team. Requires ADMIN role on team.
+ * Add a member to the team directly, without their consent: platform admins only (seeds, tests, support). A team admin invites instead (POST /invitations), and the invitee accepts.
  * @summary Add team member
  */
 export const AddMemberParams = zod.object({

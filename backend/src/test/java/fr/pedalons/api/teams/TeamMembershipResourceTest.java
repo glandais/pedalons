@@ -276,13 +276,40 @@ class TeamMembershipResourceTest extends AbstractResourceTest {
   // ==================== Add Member ====================
 
   @Test
-  void addMember_byAdmin_shouldSucceed() {
+  void addMember_byTeamAdmin_isRefused_evenWhenTheTeamMayGrow() {
+    // docs/LEDGER_*.md SEC-43: nobody joins a team without a click of their own — a team admin
+    // invites, the invitee accepts.
     String slug = createTeamViaApi(USER4);
     enableAddMember(slug);
 
     given()
         .auth()
         .oauth2(getAccessToken(USER4))
+        .contentType("application/json")
+        .body("{\"userId\": \"" + TsidUtils.toString(user5.getId()) + "\", \"role\": \"MEMBER\"}")
+        .when()
+        .post("/api/teams/" + slug + "/members")
+        .then()
+        .statusCode(403);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER4))
+        .when()
+        .get("/api/teams/" + slug + "/members")
+        .then()
+        .statusCode(200)
+        .body("total", equalTo(1));
+  }
+
+  @Test
+  void addMember_byPlatformAdmin_shouldSucceed() {
+    String slug = createTeamViaApi(USER4);
+    dataService.createPlatformAdminUser("padmin@example.com", "Platform Admin");
+
+    given()
+        .auth()
+        .oauth2(getAccessToken("padmin"))
         .contentType("application/json")
         .body("{\"userId\": \"" + TsidUtils.toString(user5.getId()) + "\", \"role\": \"MEMBER\"}")
         .when()
@@ -299,24 +326,6 @@ class TeamMembershipResourceTest extends AbstractResourceTest {
         .then()
         .statusCode(200)
         .body("total", equalTo(2));
-  }
-
-  @Test
-  void addMember_whenNotAllowed_shouldReturn400() {
-    String slug = createTeamViaApi(USER4);
-    // A new team is born open (docs/LEDGER_*.md BILL-10): the platform admin closed this one.
-    dataService.setTeamAddMemberAllowed(dataService.findTeamBySlug(domain, slug), false);
-
-    given()
-        .auth()
-        .oauth2(getAccessToken(USER4))
-        .contentType("application/json")
-        .body("{\"userId\": \"" + TsidUtils.toString(user5.getId()) + "\", \"role\": \"MEMBER\"}")
-        .when()
-        .post("/api/teams/" + slug + "/members")
-        .then()
-        .statusCode(400)
-        .body("code", equalTo("TEAM_ADD_MEMBER_NOT_ALLOWED"));
   }
 
   // ==================== Pagination ====================

@@ -56,8 +56,8 @@ async function rideAbroad(label: string, zone: string, departure: WallClock, gro
   const team = await newTeam(owner, unique(`Fuseaux ${label}`), { timezone: zone })
   const organizer = await newUser(unique('Organisatrice'))
   const member = await newUser(unique('Membre'))
-  await addMember(owner, team.slug, organizer, 'ORGANIZER')
-  await addMember(owner, team.slug, member)
+  await addMember(team.slug, organizer, 'ORGANIZER')
+  await addMember(team.slug, member)
   const withRide = unique('Groupe avec la sortie')
   const ownTime = unique('Groupe à son heure')
   const ride = await newRide(organizer, team.slug, unique(`Sortie ${label}`), {

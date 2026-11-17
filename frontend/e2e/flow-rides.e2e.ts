@@ -66,8 +66,8 @@ async function ridingTeam(label: string) {
   const team = await newTeam(owner, unique(`Flow sorties ${label}`))
   const organizer = await newUser(unique('Organisatrice'))
   const member = await newUser(unique('Membre'))
-  await addMember(owner, team.slug, organizer, 'ORGANIZER')
-  await addMember(owner, team.slug, member)
+  await addMember(team.slug, organizer, 'ORGANIZER')
+  await addMember(team.slug, member)
   return { team, organizer, member }
 }
 
@@ -1121,7 +1121,7 @@ test.describe('a route from the ride editor', () => {
     const owner = await roleSession('admin')
     const team = await newTeam(owner, unique('Flow sorties publique'), { visibility: 'PUBLIC' })
     const organizer = await newUser(unique('Organisatrice'))
-    await addMember(owner, team.slug, organizer, 'ORGANIZER')
+    await addMember(team.slug, organizer, 'ORGANIZER')
     const routeName = unique('Parcours réservé')
     const route = await newRoute(organizer, team.slug, routeName, windingTrack(60), {
       visibility: 'TEAM',
@@ -1203,7 +1203,7 @@ test.describe('a route from the ride editor', () => {
     const owner = await roleSession('admin')
     const team = await newTeam(owner, unique('Flow parcours utilisé'), { visibility: 'PUBLIC' })
     const organizer = await newUser(unique('Organisatrice'))
-    await addMember(owner, team.slug, organizer, 'ORGANIZER')
+    await addMember(team.slug, organizer, 'ORGANIZER')
     const route = await newRoute(
       organizer,
       team.slug,
@@ -1340,7 +1340,7 @@ test.describe('editing a ride that has registrations', () => {
     test.slow()
     const { team, organizer, member } = await ridingTeam('inscrits gardés')
     const leader = await newUser(unique('Meneuse'))
-    await addMember(await roleSession('admin'), team.slug, leader)
+    await addMember(team.slug, leader)
     const joined = unique('Groupe rejoint')
     const renamed = unique('Groupe rejoint renommé')
     const second = unique('Groupe du milieu')

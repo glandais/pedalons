@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { CommentListResponse, TripDto, TripRequest } from '../src/api/dto'
 import { ApiError, apiDelete, apiGet, apiPost, apiPut } from './support/api'
 import { calendarEvent, openCalendar, teamEvents } from './support/calendar'
-import { addMember, markdownMedia, newTeam, newUser, roleSession, signIn } from './support/data'
+import { addMember, markdownMedia, newTeam, newUser, signIn } from './support/data'
 import {
   frenchDateTime,
   frenchDeparture,
@@ -78,7 +78,7 @@ const routeFiles = (card: Locator) => card.getByText(/^[\d\s\u00a0\u202f,.]+[\s\
 async function tripTeamWithMember(label: string) {
   const { teamAdmin, team } = await tripTeam(label)
   const member = await newUser(unique('Membre'))
-  await addMember(await roleSession('admin'), team.slug, member)
+  await addMember(team.slug, member)
   return { teamAdmin, team, member }
 }
 
@@ -246,7 +246,7 @@ test.describe('registration', () => {
   test('a member registers to a trip from its page, then leaves it', async ({ page }) => {
     const { teamAdmin, team } = await tripTeam('inscription')
     const member = await newUser(unique('Voyageuse'))
-    await addMember(await roleSession('admin'), team.slug, member)
+    await addMember(team.slug, member)
     const trip = await newTrip(teamAdmin, team.slug, unique('Voyage à rejoindre'), [
       { name: unique('Étape unique') },
     ])
@@ -293,7 +293,7 @@ test('a team admin edits a stage, deletes the other one, then deletes the trip',
 }) => {
   const { teamAdmin, team } = await tripTeam('édition')
   const member = await newUser(unique('Membre'))
-  await addMember(await roleSession('admin'), team.slug, member)
+  await addMember(team.slug, member)
   const kept = unique('Étape gardée')
   const dropped = unique('Étape abandonnée')
   const trip = await newTrip(teamAdmin, team.slug, unique('Voyage à remanier'), [

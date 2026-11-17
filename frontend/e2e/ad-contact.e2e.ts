@@ -3,7 +3,7 @@ import type { AdDto, ErrorResponse, TeamDetailDto } from '../src/api/dto'
 import type { AuthResponse } from './support/api'
 import { contactAuthor, rawAd, setContactable } from './support/ad-contact'
 import { newAd } from './support/ads'
-import { addMember, newTeam, newUser, roleSession, signIn } from './support/data'
+import { addMember, newTeam, newUser, signIn } from './support/data'
 import { expect, test, unique } from './support/fixtures'
 import { mailsTo } from './support/mailpit'
 import { hydrated, toasts, watchToasts } from './support/ui'
@@ -33,13 +33,9 @@ interface Scene {
 
 /** A team of its own, a seller with a published ad, and a buyer who is a member of the team. */
 async function scene(): Promise<Scene> {
-  const [admin, seller, buyer] = await Promise.all([
-    roleSession('admin'),
-    newUser('Vendeur E2E'),
-    newUser('Acheteur E2E'),
-  ])
+  const [seller, buyer] = await Promise.all([newUser('Vendeur E2E'), newUser('Acheteur E2E')])
   const team = await newTeam(seller, unique('Annonces E2E'))
-  await addMember(admin, team.slug, buyer)
+  await addMember(team.slug, buyer)
   const ad = await newAd(seller, team.slug, {
     name: unique('Vélo de route'),
     body: 'Vélo de route, taille 56.',

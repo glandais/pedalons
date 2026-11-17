@@ -59,20 +59,19 @@ interface Scene {
 
 /** A team of its own, owned by someone else, and the member who writes the ads. */
 async function scene(): Promise<Scene> {
-  const [admin, owner, member] = await Promise.all([
-    roleSession('admin'),
+  const [owner, member] = await Promise.all([
     newUser('Bureau annonces'),
     newUser('Vendeur annonces'),
   ])
   const team = await newTeam(owner, unique('Annonces parcours'))
-  await addMember(admin, team.slug, member)
+  await addMember(team.slug, member)
   return { team, member }
 }
 
 /** Another member of the team, to check what the rest of the team sees. */
 async function anotherMember(team: TeamDetailDto): Promise<AuthResponse> {
-  const [admin, other] = await Promise.all([roleSession('admin'), newUser('Lecteur annonces')])
-  await addMember(admin, team.slug, other)
+  const [other] = await Promise.all([newUser('Lecteur annonces')])
+  await addMember(team.slug, other)
   return other
 }
 
@@ -417,8 +416,8 @@ test.describe('ad rights', () => {
 
   /** Someone else in the team, with `role`. */
   async function teammate(team: TeamDetailDto, role: TeamRole): Promise<AuthResponse> {
-    const [admin, user] = await Promise.all([roleSession('admin'), newUser(`Coéquipier ${role}`)])
-    await addMember(admin, team.slug, user, role)
+    const [user] = await Promise.all([newUser(`Coéquipier ${role}`)])
+    await addMember(team.slug, user, role)
     return user
   }
 
@@ -698,7 +697,7 @@ test.describe('restoring', () => {
   }) => {
     const { team, member: author } = await scene()
     const [admin, other] = await Promise.all([newUser('Bureau annonces'), anotherMember(team)])
-    await addMember(await roleSession('admin'), team.slug, admin, 'ADMIN')
+    await addMember(team.slug, admin, 'ADMIN')
     const photo = await uploadImage(
       author,
       team.slug,

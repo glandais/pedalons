@@ -129,7 +129,7 @@ scripts/recette.sh unplug        # take the adb forwards back
   changing parameter against the cache) is the WebView's own WebKit.
 - **The planner's WebView on the Pixel**: `scripts/recette.sh webview-android` forwards the debug
   build's `webview_devtools_remote_<pid>` to 9333; then `RECETTE_CDP_PORT=9333 scripts/recette.sh
-  look cdp --page planner - <shot.png> --boxes …` measures it where it is (`-`: no navigation).
+look cdp --page planner - <shot.png> --boxes …` measures it where it is (`-`: no navigation).
 - `mobile/tool/e2e_env.sh` is bash only: sourced from zsh it cannot find `.env.e2e` and now stops
   rather than leave the app with empty ports (« Invalid port »). `recette.sh` runs under bash.
 - **`mobile --iphone`, the plugged-in iPhone**, when the simulator is not enough: iOS has no `adb reverse`, so the iPhone cannot reach the
@@ -151,7 +151,7 @@ scripts/recette.sh unplug        # take the adb forwards back
   the stack's API; `web-android --dev [path]` opens it on the phone (`adb reverse` of 5174 too).
   Mail links still point at the stack's own app (8190).
 - **A look at a screen**: `scripts/recette.sh look <desktop|iphone|pixel|cdp> <url|path> <shot.png>
-  [--boxes <css>]… [--click <text>] [--wait <css>] [--full] [--width <px>]`, with `--base dev`
+[--boxes <css>]… [--click <text>] [--wait <css>] [--full] [--width <px>]`, with `--base dev`
   first to aim at `dev`. It takes a screenshot and prints the boxes of the matched elements as one
   JSON line (`e2e/recette/look.mjs`). `iphone` is Chromium's emulation (393 px, touch): there is no
   WebKit nor Chrome on iOS to drive here. `cdp` is the phone's real Chrome: its only context is the

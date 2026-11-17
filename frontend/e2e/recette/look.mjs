@@ -55,9 +55,13 @@ if (mode === 'cdp') {
   const pages = context.pages()
   if (options.page) {
     const titled = await Promise.all(pages.map(async (p) => [p, await p.title().catch(() => '')]))
-    page = titled.find(([p, title]) => p.url().includes(options.page) || title.includes(options.page))?.[0]
+    page = titled.find(
+      ([p, title]) => p.url().includes(options.page) || title.includes(options.page)
+    )?.[0]
     if (!page) {
-      console.error(`look.mjs: no page matching ${options.page}: ${pages.map((p) => p.url()).join(' ')}`)
+      console.error(
+        `look.mjs: no page matching ${options.page}: ${pages.map((p) => p.url()).join(' ')}`
+      )
       process.exit(1)
     }
   } else if (stay) {
@@ -74,7 +78,10 @@ if (mode === 'cdp') {
   browser = await chromium.launch()
   const device = devices[DEVICES[mode]]
   const viewport = options.width
-    ? { width: options.width, height: Math.round((options.width * device.viewport.height) / device.viewport.width) }
+    ? {
+        width: options.width,
+        height: Math.round((options.width * device.viewport.height) / device.viewport.width),
+      }
     : device.viewport
   // Emulation drives Chromium whatever the device: WebKit's user agent would not match.
   const { defaultBrowserType: _ignored, ...settings } = device

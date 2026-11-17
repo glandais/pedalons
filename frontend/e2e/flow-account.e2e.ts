@@ -1,15 +1,7 @@
 import { readFileSync } from 'node:fs'
 import type { Browser, Page } from '@playwright/test'
 import { ApiError, apiDelete, apiGetOrNull, apiPost, loginWithPassword } from './support/api'
-import {
-  addMember,
-  freshAddress,
-  getTeam,
-  newTeam,
-  newUser,
-  roleSession,
-  signIn,
-} from './support/data'
+import { addMember, freshAddress, getTeam, newTeam, newUser, signIn } from './support/data'
 import { expect, test, unique } from './support/fixtures'
 import { wallTimeOf, clockText, frenchLongDay } from './support/dates'
 import { stack } from './support/stack'
@@ -745,8 +737,7 @@ test.describe('deleting the account', () => {
     const user = await newUser(unique('Seule admin'))
     const member = await newUser(unique('Coéquipière'))
     const team = await newTeam(user, unique('Équipe à garder'))
-    const admin = await roleSession('admin')
-    await addMember(admin, team.slug, member)
+    await addMember(team.slug, member)
     await signIn(context, user)
     const { dialog, confirm, open } = await openDangerZone(page, user.user.email)
     const cookie = await sessionCookie(context)
@@ -781,7 +772,7 @@ test.describe('deleting the account', () => {
     // Another admin named, the impact is read again when the confirmation reopens: the account
     // goes, and the team stays with its members.
     const successor = await newUser(unique('Relève'))
-    await addMember(admin, team.slug, successor, 'ADMIN')
+    await addMember(team.slug, successor, 'ADMIN')
     await open()
     await expect(
       dialog.getByText('Vous ne pouvez pas encore supprimer votre compte', { exact: true })

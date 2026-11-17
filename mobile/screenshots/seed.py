@@ -827,8 +827,9 @@ def club_assets(base: str, org: str, lang: str) -> tuple:
 
 def ensure_member(slug: str, viewer: dict) -> None:
     """Fails the run when the test account isn't in the club (a reviewer left it, or a
-    rebuild stopped before adding it): a club admin can neither add nor invite it
-    back (TEAM_ADD_MEMBER_NOT_ALLOWED), and a TEAM club can't be joined."""
+    rebuild stopped before adding it): a club admin can neither add it (only a platform
+    admin may, docs/LEDGER_*.md SEC-43) nor invite it back (TEAM_ADD_MEMBER_NOT_ALLOWED),
+    and a TEAM club can't be joined."""
     try:
         if call("GET", f"/api/teams/{slug}", token=viewer["token"]).get("role"):
             return

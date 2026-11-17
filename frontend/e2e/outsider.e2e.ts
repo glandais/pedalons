@@ -11,14 +11,7 @@ import type {
 } from '../src/api/dto'
 import { newAd } from './support/ads'
 import { ApiError, apiGet, apiPost, type AuthResponse } from './support/api'
-import {
-  addMember,
-  markdownMedia,
-  newTeam,
-  newTeamPage,
-  newUser,
-  roleSession,
-} from './support/data'
+import { addMember, markdownMedia, newTeam, newTeamPage, newUser } from './support/data'
 import { expect, test, unique } from './support/fixtures'
 import { commentOnPost, newPost, postPath } from './support/posts'
 import { joinGroup, newRide, postComments, ridePath } from './support/rides'
@@ -92,7 +85,6 @@ interface Scene {
 let scene: Scene
 
 test.beforeAll(async () => {
-  const admin = await roleSession('admin')
   const [owner, member, outsider] = await Promise.all([
     newUser('outsider-owner'),
     newUser('outsider-member'),
@@ -100,7 +92,7 @@ test.beforeAll(async () => {
   ])
   const teamName = unique('Club ouvert')
   const team = await newTeam(owner, teamName, { visibility: 'PUBLIC' })
-  await addMember(admin, team.slug, member)
+  await addMember(team.slug, member)
   const slug = team.slug
 
   const [ride, trip, post] = await Promise.all([

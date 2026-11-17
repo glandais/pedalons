@@ -117,10 +117,11 @@ public class TeamMembershipService {
   @CheckAccess(entityType = EntityType.USER_TEAM, action = ActionType.CREATE)
   public MemberDto addMember(String teamSlug, Long targetUserId, TeamRole role) {
     Team team = teamService.getTeam(teamSlug);
-    User actingUser = pedalonsContext.getUser();
-    boolean isPlatformAdmin = actingUser.isPlatformAdmin();
-    if (!isPlatformAdmin && !team.isAddMemberAllowed()) {
-      throw new BusinessException(ErrorCode.TEAM_ADD_MEMBER_NOT_ALLOWED);
+    // Nobody joins a team without a click of their own: a team admin goes through an invitation,
+    // which the invitee accepts. The direct add stays for the platform's own tooling (seeds, e2e,
+    // Patrol) and support (docs/LEDGER_*.md SEC-43).
+    if (!pedalonsContext.getUser().isPlatformAdmin()) {
+      throw new ForbiddenException();
     }
     // An account of another site is a stranger here, and answered as one: the same 404 as an id
     // that exists nowhere (docs/LEDGER_*.md SEC-12, audit L6).

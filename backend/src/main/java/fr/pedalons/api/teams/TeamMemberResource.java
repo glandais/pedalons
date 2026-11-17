@@ -164,7 +164,10 @@ public class TeamMemberResource {
   @POST
   @Operation(
       summary = "Add team member",
-      description = "Add a member to the team. Requires ADMIN role on team.")
+      description =
+          "Add a member to the team directly, without their consent: platform admins only (seeds,"
+              + " tests, support). A team admin invites instead (POST /invitations), and the"
+              + " invitee accepts.")
   @APIResponses({
     @APIResponse(
         responseCode = "201",
@@ -176,10 +179,7 @@ public class TeamMemberResource {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "409",
-        description =
-            "Already a member (ALREADY_REGISTERED), or the team's tier caps its members and the cap"
-                + " is reached (TEAM_MEMBER_LIMIT_REACHED, with the cap and the member count); a"
-                + " platform admin is exempt",
+        description = "Already a member (ALREADY_REGISTERED)",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "401",
@@ -187,7 +187,7 @@ public class TeamMemberResource {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "403",
-        description = "User is not a team admin",
+        description = "Caller is not a platform admin",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @APIResponse(
         responseCode = "404",

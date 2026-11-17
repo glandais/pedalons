@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { CalendarTokenDto, SlugChangeRequest, TeamDetailDto } from '../../src/api/dto'
 import { apiGet, apiPatch, withApi, type AuthResponse } from './api'
 import { newAd } from './ads'
-import { addMember, newTeam, newUser, roleSession } from './data'
+import { addMember, newTeam, newUser } from './data'
 import { unique } from './fixtures'
 import { newRide, ridePath } from './rides'
 import { newRoute, routePath, windingTrack } from './routes'
@@ -95,13 +95,12 @@ export function freshSlug(label: string): string {
  * the one who follows the old links.
  */
 export async function slugScene(label: string) {
-  const [admin, owner, member] = await Promise.all([
-    roleSession('admin'),
+  const [owner, member] = await Promise.all([
     newUser(`Slug ${label} bureau`),
     newUser(`Slug ${label} membre`),
   ])
   const team = await newTeam(owner, unique(`Slug ${label}`))
-  await addMember(admin, team.slug, member)
+  await addMember(team.slug, member)
   return { owner, member, team }
 }
 
