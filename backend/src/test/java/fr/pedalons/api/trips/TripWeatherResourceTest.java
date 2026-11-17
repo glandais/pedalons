@@ -27,6 +27,11 @@ import fr.pedalons.infrastructure.openmeteo.OpenMeteoCircuitBreaker;
 import fr.pedalons.infrastructure.openmeteo.OpenMeteoGateway;
 import fr.pedalons.infrastructure.openmeteo.OpenMeteoGateway.Location;
 import fr.pedalons.repository.trip.TripStageRepository;
+import fr.pedalons.repository.weather.WeatherCellRepository;
+import fr.pedalons.repository.weather.WeatherDailyRepository;
+import fr.pedalons.repository.weather.WeatherHourlyRepository;
+import fr.pedalons.service.publication.PublicationEndCalculator;
+import fr.pedalons.service.weather.CellKey;
 import fr.pedalons.service.weather.WeatherFetchWorker;
 import fr.pedalons.service.weather.WeatherPlanner;
 import fr.pedalons.service.weather.WeatherTestFixtures;
@@ -34,7 +39,10 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +67,11 @@ class TripWeatherResourceTest extends AbstractResourceTest {
   @Inject WeatherPlanner planner;
   @Inject WeatherFetchWorker worker;
   @Inject ObjectMapper objectMapper;
+  @Inject PublicationEndCalculator endCalculator;
+  @Inject EntityManager entityManager;
+  @Inject WeatherCellRepository weatherCellRepository;
+  @Inject WeatherHourlyRepository weatherHourlyRepository;
+  @Inject WeatherDailyRepository weatherDailyRepository;
 
   @InjectMock OpenMeteoGateway gateway;
 
@@ -347,5 +360,54 @@ class TripWeatherResourceTest extends AbstractResourceTest {
         // The leg carries the same summary; its departure stays on the stage.
         .body("stages[1].leg.summary", notNullValue())
         .body("stages[1].leg", not(hasKey("departure")));
+  }
+
+  /**
+   * docs/LEDGER_*.md API-173: the last stage left an hour ago — the trip's card in a list keeps its
+   * weather line, as the trip's page keeps the stage's forecast, instead of dropping it once the last
+   * stage has left. The ends are stored as a save would store them.
+   */
+  @Test
+  void listLine_ofATripOnItsLastStage_isKeptUntilTheStageIsOver() {
+    Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    Trip trip =
+        trip("Last day trip", now.minus(30, ChronoUnit.HOURS), Visibility.PUBLIC, Status.PUBLISHED);
+    stage(trip, "Last day 1", 0, now.minus(30, ChronoUnit.HOURS), true);
+    stage(trip, "Last day 2", 1, now.minus(1, ChronoUnit.HOURS), true);
+    QuarkusTransaction.requiringNew()
+        .run(() -> endCalculator.refresh(entityManager.find(Trip.class, trip.getId())));
+    // The line reads the stage's departure cell — the first track point, at 170 m: the 200 m band.
+    // The planner no longer fetches it once the stage has left, so it is seeded as it stands in
+    // production, fetched before the departure and kept for a day.
+    QuarkusTransaction.requiringNew()
+        .run(() -> {
+          Instant firstHour = now.truncatedTo(ChronoUnit.HOURS).minus(3, ChronoUnit.HOURS);
+          WeatherTestFixtures.seedCell(
+              weatherCellRepository,
+              weatherHourlyRepository,
+              weatherDailyRepository,
+              CellKey.of(WeatherTestFixtures.LYON_LAT, WeatherTestFixtures.LYON_LON, 170.0),
+              now,
+              now,
+              WeatherTestFixtures.hours(firstHour, firstHour.plus(24, ChronoUnit.HOURS)),
+              14,
+              WeatherTestFixtures.dates(
+                  LocalDate.now(ZoneOffset.UTC).minusDays(1),
+                  LocalDate.now(ZoneOffset.UTC).plusDays(1)));
+        });
+
+    given()
+        .header("Authorization", "Bearer " + getAccessToken(USER1))
+        .when()
+        .get("/api/teams/" + team1Slug + "/publications?type=TRIP")
+        .then()
+        .statusCode(200)
+        .body("publications.find { it.slug == '" + trip.getSlug() + "' }.weather", notNullValue())
+        .body(
+            "publications.find { it.slug == '" + trip.getSlug() + "' }.weather.status",
+            equalTo("OK"))
+        .body(
+            "publications.find { it.slug == '" + trip.getSlug() + "' }.weather.temperature",
+            equalTo(14.0f));
   }
 }

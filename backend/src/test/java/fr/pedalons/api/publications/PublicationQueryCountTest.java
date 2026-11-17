@@ -386,11 +386,12 @@ class PublicationQueryCountTest extends AbstractQueryCountTest {
               team1,
               user1,
               "Weather Trip " + i,
-              now.minus(1, ChronoUnit.DAYS).plusSeconds(i),
+              now.minus(2, ChronoUnit.DAYS).plusSeconds(i),
               Visibility.PUBLIC);
+      // Two days back, so its day is over whatever the hour (docs/LEDGER_*.md API-173).
       TripStage gone =
           dataService.createTripStage(
-              user1, trip, "Weather Trip " + i + " Day 1", 0, now.minus(1, ChronoUnit.DAYS));
+              user1, trip, "Weather Trip " + i + " Day 1", 0, now.minus(2, ChronoUnit.DAYS));
       dataService.setTripStageRoute(gone, route);
       TripStage next =
           dataService.createTripStage(

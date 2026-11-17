@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **577 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **579 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -327,6 +327,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`API-178`](ledger/API/API-178.md) Distance et dénivelé d'affichage d'une sortie, calculés par l'API — 2026-11-12
 - [x] [`API-176`](ledger/API/API-176.md) Contenu public d'une équipe privée, par lien, et droits calculés par le backend — 2026-11-11
 - [x] [`API-174`](ledger/API/API-174.md) Recalcul du parc terminé, `RouteDetailsBackfill` retiré — 2026-11-10
+- [x] [`API-173`](ledger/API/API-173.md) La ligne météo d'un voyage dans les listes s'arrête au départ de sa dernière étape — 2026-11-17
 - [x] [`API-172`](ledger/API/API-172.md) Arrivée et durée estimées par groupe et par étape — 2026-11-10
 - [x] [`API-171`](ledger/API/API-171.md) Changement de groupe en un appel — 2026-11-10
 - [x] [`API-170`](ledger/API/API-170.md) Météo et inscription jugées par groupe, jusqu'à la fin — 2026-11-10
@@ -463,6 +464,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`OPS-49`](ledger/OPS/OPS-49.md) Le géocodeur passe de Nominatim à l'API Stadia Maps — 2026-10-17
 - [x] [`OPS-48`](ledger/OPS/OPS-48.md) Le routage passe de Valhalla auto-hébergé à l'API Stadia Maps — 2026-10-17
 - [x] [`OPS-45`](ledger/OPS/OPS-45.md) Les tests tournent sur le PostGIS de la prod — 2026-10-25
+- [x] [`OPS-44`](ledger/OPS/OPS-44.md) Un test automatisé pour « `AdDto` ne porte aucun champ de contact » — 2026-11-17
 - [x] [`OPS-43`](ledger/OPS/OPS-43.md) Mise à jour des données Valhalla sans coupure du routage — 2026-10-16
 - [x] [`OPS-42`](ledger/OPS/OPS-42.md) Envoi automatique des parcours : la recette sur appareil, faite après l'allumage — en partie, le reste est ouvert
 - [x] [`OPS-41`](ledger/OPS/OPS-41.md) Mesure d'audience du site : consigner la recette, puis relire au bout d'un mois — en partie, le reste est ouvert

@@ -824,8 +824,8 @@ public class PublicationService {
     // page leaves within the forecast horizon. Read from the cache only, never the provider.
     RideWeatherSummaries rideWeather =
         rideWeatherLookup.forRides(itemsOfType(publications.items(), Ride.class));
-    // At most one more for the trips: the line of each trip's next leg, none when no trip of the
-    // page has a stage left to leave (docs/LEDGER_*.md API-82).
+    // At most one more for the trips: the line of each trip's current leg, none when no trip of
+    // the page can have one left (docs/LEDGER_*.md API-82, API-173).
     RideWeatherSummaries tripWeather =
         tripWeatherLookup.forTrips(itemsOfType(publications.items(), Trip.class), summaries::trip);
     // One more for the thumbnail of every ride, its own else its route's (docs/LEDGER_*.md

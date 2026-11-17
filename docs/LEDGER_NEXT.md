@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **168 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
+Index des **165 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -62,7 +62,6 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
 Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
-- [ ] [`WEB-191`](ledger/WEB/WEB-191.md) Aperçu GPX : la molette zoome la carte pleine largeur au lieu de faire défiler la page (S)
 - [ ] [`WEB-183`](ledger/WEB/WEB-183.md) Planificateur embarquable dans l'app : recette iOS et poids du bundle (S)
 - [ ] [`WEB-179`](ledger/WEB/WEB-179.md) Panneau « Générer un parcours » (M)
 - [ ] [`WEB-176`](ledger/WEB/WEB-176.md) Listes homogènes : recette en navigateur de `WEB-175` (S) · *recette*
@@ -96,7 +95,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 - [ ] [`API-202`](ledger/API/API-202.md) Une application externe dans un navigateur ne peut pas appeler l'API (S, décision d'abord) · *decision*
 - [ ] [`API-200`](ledger/API/API-200.md) OAuth des applications externes : l'écran de consentement dans l'app mobile (M)
 - [ ] [`API-177`](ledger/API/API-177.md) Le rôle de l'appelant dans l'équipe, lu une fois par requête (S)
-- [ ] [`API-173`](ledger/API/API-173.md) La ligne météo d'un voyage dans les listes s'arrête au départ de sa dernière étape (S)
 - [ ] [`API-154`](ledger/API/API-154.md) Plafonds de la météo des aperçus GPX qui restent ouverts (S)
 - [ ] [`API-152`](ledger/API/API-152.md) D+ du service écrit dans le `Path` par une API publique de vcyclist (XS)
 - [ ] [`API-151`](ledger/API/API-151.md) Passage à osm-route-details : banc de D+ et crédit web (S)
@@ -190,7 +188,6 @@ Contexte du domaine : [`ledger/OPS/README.md`](ledger/OPS/README.md).
 
 ### Recette du backend en conditions réelles
 
-- [ ] [`OPS-44`](ledger/OPS/OPS-44.md) Un test automatisé pour « `AdDto` ne porte aucun champ de contact »
 - [ ] [`OPS-29`](ledger/OPS/OPS-29.md) Météo des sorties en production : ce qui reste (S)
 - [ ] [`OPS-4`](ledger/OPS/OPS-4.md) Les quatre gabarits d'invitation en production : les recevoir · *recette*
 - [ ] [`OPS-3`](ledger/OPS/OPS-3.md) Le relais de contact en production : regarder un message reçu · *recette*
@@ -370,6 +367,7 @@ identifiant.
 - [`MOB-24`](ledger/MOB/MOB-24.md) Édition et création de contenu au mobile — hors sorties, modèles de sortie, parcours et publications
 - [`MOB-23`](ledger/MOB/MOB-23.md) Écran de profil public d'un membre
 - [`MOB-22`](ledger/MOB/MOB-22.md) Jeu d'icônes Tabler côté mobile
+- [`WEB-191`](ledger/WEB/WEB-191.md) Aperçu GPX : la molette zoome la carte pleine largeur au lieu de faire défiler la page
 - [`WEB-171`](ledger/WEB/WEB-171.md) Mention de fuseau en ligne sur le site, comme dans l'app
 - [`WEB-159`](ledger/WEB/WEB-159.md) Interrupteur Pente · Revêtement · Météo dans l'en-tête du profil en surimpression (web)
 - [`WEB-109`](ledger/WEB/WEB-109.md) POI suggérés le long d'un parcours

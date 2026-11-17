@@ -263,9 +263,9 @@ public class WeatherHourlyRepository
       @Nullable WeatherHourRow hour) {}
 
   /**
-   * The list path of trips (docs/LEDGER_*.md API-82): for each trip of a page, its next leg — the
-   * first live stage leaving at or after {@code now} (by date, then rank), else the trip itself when
-   * it has no live stage — and the hours of that leg's departure cell from its start to its
+   * The list path of trips (docs/LEDGER_*.md API-82): for each trip of a page, its current leg — the
+   * first live stage (by date, then rank) whose day is not over at {@code now}, else the trip itself
+   * when it has no live stage — and the hours of that leg's departure cell from its start to its
    * estimated arrival, in <b>one</b> query whatever the page size. The stages are never loaded.
    *
    * <p>Everything {@code TripWeatherPlans} and {@code RouteSampleLookup} work out from the entities
@@ -281,6 +281,11 @@ public class WeatherHourlyRepository
    *   <li>its arrival: the start plus the route's distance at the stage's average speed, else
    *       {@code defaultSpeed}.
    * </ul>
+   *
+   * <p>A leg's day is over at the end of the local day, in its own zone, of its stored end — else
+   * of its departure plus the three hours of {@code PublicationEndCalculator.DEFAULT_DURATION}:
+   * {@code RideWeatherCalculator.shownUntil}, the rule of the trip's page, so a stage under way, the
+   * last one included, keeps its line (docs/LEDGER_*.md API-170, API-173).
    *
    * <p>A leg leaving after {@code horizonEnd} returns one row with no hour, so the caller can say
    * {@code NOT_YET_AVAILABLE}; so does a leg whose cell has no cached hour in its window.
@@ -306,7 +311,8 @@ public class WeatherHourlyRepository
         """
         with t as (
           select te.id as trip_id, te.date_time as trip_time, te.route_id as trip_route_id,
-                 te.timezone as trip_zone
+                 te.timezone as trip_zone,
+                 coalesce(te.end_date_time, te.date_time + interval '3 hours') as trip_end
           from team_entities te
           where te.id in (:tripIds)
         ),
@@ -318,12 +324,16 @@ public class WeatherHourlyRepository
             (select s.date_time as departure, s.route_id, s.average_speed as speed,
                     s.timezone as zone
                from team_entities s
-              where s.trip_id = t.trip_id and s.deleted = false and s.date_time >= :now
+              where s.trip_id = t.trip_id and s.deleted = false
+                and (date_trunc('day', coalesce(s.end_date_time, s.date_time + interval '3 hours')
+                                         at time zone s.timezone)
+                     + interval '1 day') at time zone s.timezone > :now
               order by s.date_time, s.sort_order, s.id
               limit 1)
             union all
             (select t.trip_time, t.trip_route_id, cast(null as float4), cast(null as varchar)
-              where t.trip_time >= :now
+              where (date_trunc('day', t.trip_end at time zone t.trip_zone) + interval '1 day')
+                      at time zone t.trip_zone > :now
                 and not exists (select 1 from team_entities s
                                  where s.trip_id = t.trip_id and s.deleted = false))
           ) leg
