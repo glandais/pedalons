@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **170 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
+Index des **169 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -75,7 +75,6 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 - [ ] [`WEB-120`](ledger/WEB/WEB-120.md) Signaler à un administrateur de la plateforme les pages qu'il est seul à voir (XS, facultatif)
 - [ ] [`WEB-119`](ledger/WEB/WEB-119.md) La météo sur la carte : recette navigateur des paliers 1 à 3 (S) · *recette*
 - [ ] [`WEB-100`](ledger/WEB/WEB-100.md) Éditeur de parcours web, desktop et web mobile (L, en quatre lots)
-- [ ] [`WEB-98`](ledger/WEB/WEB-98.md) Deux clés i18n mortes et un e-mail qui nomme un réglage sans lien (XS)
 - [ ] [`WEB-96`](ledger/WEB/WEB-96.md) La carte s'initialise au chargement et bloque le fil principal (S)
 - [ ] [`WEB-61`](ledger/WEB/WEB-61.md) Météo des sorties : recette navigateur de ce que `WEB-94` n'a pas vu (S) · *recette*
 - [ ] [`WEB-56`](ledger/WEB/WEB-56.md) Profil refondu (`WEB-55`, `WEB-57`) : recette navigateur (S) · *recette*

@@ -36,6 +36,9 @@ public class AdContactEmailService {
     String adUrl =
         "%s/teams/%s/classifieds/%s"
             .formatted(site.effectiveBaseUrl(), ad.getTeam().getSlug(), ad.getSlug());
+    // The setting the footer names, as a link rather than a menu path to retrace (docs/LEDGER_*.md
+    // WEB-98).
+    String privacyUrl = site.effectiveBaseUrl() + "/profile/privacy";
 
     // The sender's address as Reply-To is the whole mechanism: the author answers the buyer
     // directly, and the buyer's address reaches the author only because the buyer chose to write.
@@ -51,6 +54,7 @@ public class AdContactEmailService {
             "senderName", sender.getDisplayName(),
             "adName", ad.getName(),
             "adUrl", adUrl,
+            "privacyUrl", privacyUrl,
             "message", message),
         sender.getEmail());
   }

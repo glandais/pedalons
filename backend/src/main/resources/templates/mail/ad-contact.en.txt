@@ -9,7 +9,7 @@ You can reply directly to this email: your reply goes to {params.senderName}'s a
 
 The ad: {params.adUrl}
 
-If you no longer want to be contacted this way, turn off "Can be contacted by members" in Profile › Privacy.
+If you no longer want to be contacted this way, turn off "Can be contacted by members" in Profile › Privacy: {params.privacyUrl}
 
 Best regards,
 The {params.appName} team

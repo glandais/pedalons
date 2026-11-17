@@ -44,6 +44,7 @@ class EmailServiceTest extends AbstractBaseTest {
           Map.entry("senderName", "Sender"),
           Map.entry("adName", "Vélo de route"),
           Map.entry("adUrl", "https://example.test/teams/t/classifieds/a"),
+          Map.entry("privacyUrl", "https://example.test/profile/privacy"),
           Map.entry("message", "Bonjour, votre annonce m'intéresse."),
           Map.entry("inviterName", "Inviter"),
           Map.entry("teamName", "Team"),

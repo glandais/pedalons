@@ -1,18 +1,19 @@
 ---
 id: WEB-98
 title: "Deux clés i18n mortes et un e-mail qui nomme un réglage sans lien"
-status: open
+status: done
 size: "XS"
-verified: 2026-11-16
+done: 2026-11-17
 ---
 
-## Reste à faire
+## Livré
 
-`WEB-98` **Deux clés i18n mortes et un e-mail qui nomme un réglage sans lien (XS)** —
-`auth.login.tabs.passkey` et `auth.passkey.login` ne servent plus nulle part dans
-`frontend/src` (`frontend/src/locales/{fr,en}/common.json` ;
-le mobile a son propre catalogue) : les supprimer des deux langues. L'e-mail de contact d'une
-annonce (`backend/src/main/resources/templates/mail/ad-contact.{fr,en}.{txt,html}`) dit
-« désactivez « Accepter les messages des membres » dans Profil › Confidentialité » sans lien, le
-gabarit ne recevant que `params.adUrl` : passer l'URL absolue de `/profile/privacy` (sur le
-domaine de l'équipe, comme `adUrl`) et en faire un lien dans la version HTML.
+`WEB-98` **Deux clés i18n mortes et un e-mail qui nomme un réglage sans lien (XS)** — les clés
+`auth.login.tabs.passkey` et `auth.passkey.login`, que plus rien n'utilisait dans `frontend/src`, ont
+été retirées de `frontend/src/locales/{fr,en}/common.json`. L'e-mail de contact d'une annonce
+(`ad-contact.{fr,en}.{txt,html}`) reçoit désormais `params.privacyUrl`, l'URL absolue de
+`/profile/privacy` sur le domaine de l'équipe, construite par `AdContactEmailService` comme `adUrl`
+(chemin anglais canonique, que les deux routeurs résolvent dans les deux langues) : la version HTML
+fait de « Profil › Confidentialité » un lien, la version texte donne l'URL à sa suite. Pas de
+changement de contrat. Couvert par `AdContactResourceTest#contact_asAnotherMember_relaysToAuthorWithReplyToSender`
+(l'URL dans le texte, le lien dans le HTML) et `EmailServiceTest` (rendu de tous les gabarits).

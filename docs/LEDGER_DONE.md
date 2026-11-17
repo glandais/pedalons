@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **575 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **576 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -221,6 +221,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`WEB-102`](ledger/WEB/WEB-102.md) Profil d'altitude provisoire signalé et rafraîchi (17 octobre 2026, contrat `11.8.0`) — 2026-10-17
 - [x] [`WEB-100`](ledger/WEB/WEB-100.md) Éditeur de parcours web, desktop et web mobile (L, en quatre lots) — en partie, le reste est ouvert
 - [x] [`WEB-99`](ledger/WEB/WEB-99.md) Barre de recherche de lieux sur les cartes à navigation libre (17 octobre 2026, contrat inchangé) — 2026-10-17
+- [x] [`WEB-98`](ledger/WEB/WEB-98.md) Deux clés i18n mortes et un e-mail qui nomme un réglage sans lien — 2026-11-17
 - [x] [`WEB-97`](ledger/WEB/WEB-97.md) Les images réservent leur place, chargent à la demande et à la bonne taille — 2026-10-16
 - [x] [`WEB-95`](ledger/WEB/WEB-95.md) Le chargement initial ne tire plus Tiptap, Chart.js, le calendrier ni l'autre langue — 2026-10-16
 - [x] [`WEB-94`](ledger/WEB/WEB-94.md) « Météo du parcours » d'un groupe, refaite (16 octobre 2026) — 2026-10-16

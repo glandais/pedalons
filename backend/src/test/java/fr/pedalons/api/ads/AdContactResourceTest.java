@@ -88,6 +88,11 @@ class AdContactResourceTest extends AbstractResourceTest {
         "Reply-To must carry the sender so the author can answer");
     assertTrue(mail.getText().contains("Bonjour, le vélo est-il toujours disponible ?"));
     assertTrue(mail.getText().contains(user2.getDisplayName()));
+    // The setting that stops these messages is a link, not a menu path to retrace (docs/LEDGER_*.md
+    // WEB-98).
+    assertTrue(mail.getText().contains("/profile/privacy"), "the text names the privacy URL");
+    assertTrue(
+        mail.getHtml().contains("/profile/privacy\">"), "the HTML links the privacy setting");
     // The buyer is not copied: they wrote the message, and a copy would be one more place the
     // author's address could leak into.
     assertTrue(mailbox.getMailsSentTo(user2.getEmail()).isEmpty(), "the sender is not copied");
