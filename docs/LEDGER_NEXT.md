@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **159 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
+Index des **163 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -197,6 +197,13 @@ Contexte du domaine : [`ledger/NOTIF/README.md`](ledger/NOTIF/README.md).
 - [ ] [`NOTIF-3`](ledger/NOTIF/NOTIF-3.md) Webhook d'équipe : le *DNS rebinding* n'est pas couvert
 - [ ] [`NOTIF-2`](ledger/NOTIF/NOTIF-2.md) Décision produit sur l'e-mail · *decision*
 - [ ] [`NOTIF-1`](ledger/NOTIF/NOTIF-1.md) Recette du webhook d'équipe · *recette*
+
+### Notifications datées : expiration
+
+- [ ] [`NOTIF-18`](ledger/NOTIF/NOTIF-18.md) Une invitation acceptée ou un signalement traité reste non lu (S)
+- [ ] [`NOTIF-17`](ledger/NOTIF/NOTIF-17.md) Les clients ne distinguent pas une notification expirée (S)
+- [ ] [`NOTIF-16`](ledger/NOTIF/NOTIF-16.md) Un push daté peut arriver après le rendez-vous (S)
+- [ ] [`NOTIF-15`](ledger/NOTIF/NOTIF-15.md) Une notification datée reste non lue après le rendez-vous (M)
 
 ## MOD — Modération et signalement de contenu
 
