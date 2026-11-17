@@ -66,6 +66,7 @@ services:
   # API-207, lot 6: 1.9.1 (api 1.9 unchanged) maps the graph and loads only the tiles around a
   # request, under one memory budget (ORD_GENERATOR__MEMORY_BUDGET_MB, 800 by default): it serves
   # the graph of France (four files, about 4.1 GB) where 1.9.0 needed 15 GB. Measured in a 2G
+  # (the limit below is 3G to leave room for the altitude)
   # container with 18 team overlays: 1.10 GB of anonymous memory at most, without the altitude
   # asked alongside (docs/LEDGER_*.md OPS-61).
   osm-route-details:
@@ -97,10 +98,13 @@ services:
     # froid : ~100 Mo de MNT, jusqu'a ~270 Mo de rues). 1G mesure trop juste le 10 novembre 2026 :
     # ~1,4 Go en tout (977 Mo + 475 Mo de swap) sous le backfill, plus que 40 Mo de page cache,
     # tuiles relues sans cesse, requetes de 20 a 45 s. 2G en attendant de voir si ca plafonne (OPS-58).
+    # 3G since the graph of France (OPS-61): the generator alone reaches 1.10 GB of anonymous memory
+    # with 18 team overlays, the altitude alone reached 1.4 GB on 2026-11-10, and the mapped graph
+    # (4.1 GB of files) needs page cache left over. Both together were not measured.
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 3G
 
 volumes:
   osm-route-details-data:

@@ -19,5 +19,5 @@ polygone ; construits sur un poste, données OSM du 15 novembre 2026) sous un no
 avec `force` sur staging et prod. À mesurer sur le serveur, parce que le poste ne l'a pas fait : la
 mémoire avec l'altitude sollicitée en même temps (1,10 Go d'anonyme mesurés pour le générateur seul
 avec 18 équipes ; l'altitude seule est montée à 1,4 Go avec le swap le 10 novembre 2026, `OPS-58`),
-donc décider si la limite de 2G passe à 3G ; le démarrage (8,5 s sur le poste) et la première
+que la limite du conteneur, passée de 2G à 3G le 17 novembre 2026 sur décision du propriétaire, doit couvrir ; le démarrage (8,5 s sur le poste) et la première
 génération sur le disque du serveur. Procédure : `docs/OPERATIONS.md`.

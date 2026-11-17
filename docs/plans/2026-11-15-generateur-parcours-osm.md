@@ -624,7 +624,8 @@ Conception et relevés dans osm-route-details : `docs/design/technique/ord-loops
 - **Pas prouvé** : l'altitude sollicitée dans le même conteneur ; un disque lent ; les distances
   au-delà de 200 km (le moteur est conçu jusqu'à 400, le contrat reste à 200) ; les derniers
   relevés en conteneur sont ceux de l'agent qui a codé, relus mais pas rejoués.
-- **Reste au propriétaire** : la limite du conteneur (2G ou 3G), le budget du générateur, et
+- **Décidé le 17 novembre 2026** : la limite du conteneur passe de 2G à 3G.
+- **Reste au propriétaire** : le budget du générateur, et
   relever ou non la distance maximale.
 
 ## 13. Risques
