@@ -43,6 +43,8 @@ function page(n: number, deleted = false): TeamPageSummaryDto {
     visibility: 'PUBLIC',
     order: n,
     deleted,
+    status: 'PUBLISHED',
+    moderationHidden: false,
   }
 }
 

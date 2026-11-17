@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **591 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **592 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -210,6 +210,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`WEB-123`](ledger/WEB/WEB-123.md) Le site n'affiche ni ne demande plus les noms des membres à qui n'est pas membre — 2026-10-26
 - [x] [`WEB-122`](ledger/WEB/WEB-122.md) Un chunk disparu après un déploiement était encore remonté en erreur — 2026-10-26
 - [x] [`WEB-121`](ledger/WEB/WEB-121.md) Un administrateur de la plateforme crée une annonce et voit ses pages préchargées hors de ses équipes — 2026-10-25
+- [x] [`WEB-120`](ledger/WEB/WEB-120.md) Signaler à un administrateur de la plateforme les pages qu'il est seul à voir (XS, facultatif) — 2026-11-17
 - [x] [`WEB-118`](ledger/WEB/WEB-118.md) La météo sur la carte, palier 3 lot B : sortie solo et voyages — 2026-10-25
 - [x] [`WEB-117`](ledger/WEB/WEB-117.md) La météo sur la carte du groupe, palier 3 lot A : carte ↔ tableau et plein écran du groupe — 2026-10-25
 - [x] [`WEB-116`](ledger/WEB/WEB-116.md) La météo sur la carte du groupe, palier 2 : les pastilles aux checkpoints

@@ -8,14 +8,14 @@ import {
   IconRoute,
   IconTag,
 } from '@tabler/icons-react'
-import type { TeamDetailDto, TeamRole } from '@/api/dto'
+import type { TeamDetailDto, TeamPageSummaryDto, TeamRole } from '@/api/dto'
 
 vi.mock('@/config/appConfig', () => ({ isSingleTeam: () => false }))
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'fr' } }),
 }))
 
-import { teamSwitchPath, useTeamNavItems } from './useNavItems'
+import { pageBadge, teamSwitchPath, useTeamNavItems } from './useNavItems'
 import type { TFunction } from 'i18next'
 import { paths } from '@/config/paths'
 
@@ -138,5 +138,43 @@ describe('team switcher landing (WEB-111)', () => {
       pages: [{ slug: 'posts', title: 'Posts', visibility: 'PUBLIC' }],
     } as Partial<TeamDetailDto>)
     expect(teamSwitchPath(pageOnly, 'posts', t)).toBe(paths.team('b-team'))
+  })
+})
+
+describe('custom page badges (WEB-120)', () => {
+  const t = ((key: string) => key) as unknown as TFunction
+  const page = (overrides: Partial<TeamPageSummaryDto> = {}) =>
+    ({
+      slug: 'histoire',
+      title: 'Histoire',
+      visibility: 'PUBLIC',
+      status: 'PUBLISHED',
+      moderationHidden: false,
+      ...overrides,
+    }) as TeamPageSummaryDto
+
+  it('says nothing of a published public page', () => {
+    expect(pageBadge(page(), false, t)).toBeUndefined()
+    expect(pageBadge(page(), true, t)).toBeUndefined()
+  })
+
+  it('tells a draft and a page hidden by moderation, hidden first', () => {
+    expect(pageBadge(page({ status: 'DRAFT' }), true, t)).toBe('teams.nav.pageBadge.draft')
+    expect(pageBadge(page({ moderationHidden: true }), true, t)).toBe('teams.nav.pageBadge.hidden')
+    expect(pageBadge(page({ status: 'DRAFT', moderationHidden: true }), true, t)).toBe(
+      'teams.nav.pageBadge.hidden'
+    )
+  })
+
+  it('says « Membres » only to a reader outside the team', () => {
+    expect(pageBadge(page({ visibility: 'TEAM' }), false, t)).toBe('teams.nav.pageBadge.members')
+    expect(pageBadge(page({ visibility: 'TEAM' }), true, t)).toBeUndefined()
+  })
+
+  it('carries the badge on the tab', () => {
+    const items = renderHook(() =>
+      useTeamNavItems(team('ADMIN', { pages: [page({ status: 'DRAFT' })] }))
+    ).result.current
+    expect(items.find((i) => i.id === 'histoire')?.badge).toBe('teams.nav.pageBadge.draft')
   })
 })

@@ -4,14 +4,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
-import '../../../../core/material.dart';
+import '../../../../core/material.dart' hide Visibility;
 import '../../../../core/pdl/pdl.dart';
+import '../../../../core/theme/enum_colors.dart';
+import '../../../../core/theme/pdl_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/widgets/markdown_content.dart';
 import '../../../../core/widgets/media_attachments.dart';
 import '../../../../keys.dart';
+import '../../domain/team_page_badge.dart';
 import '../../providers/team_providers.dart';
 
 /// A team's About section: its presentation and its free pages.
@@ -111,6 +114,7 @@ class TeamAboutPage extends ConsumerWidget {
                       key: keys.team.aboutPageRow(pages[i].slug),
                       icon: PdlIcons.page,
                       title: pages[i].title,
+                      trailing: _badge(context, pages[i]),
                       showDivider: i < pages.length - 1,
                       onTap: () =>
                           context.push(Paths.teamPage(teamSlug, pages[i].slug)),
@@ -134,6 +138,22 @@ class TeamAboutPage extends ConsumerWidget {
           const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
         ],
       ),
+    );
+  }
+
+  Widget? _badge(BuildContext context, TeamPageSummaryDto page) {
+    final TeamPageBadge? badge = teamPageBadge(
+      page,
+      isMember: team.role != null,
+    );
+    if (badge == null) return null;
+    final PdlColors c = context.pdl;
+    return PdlBadge(
+      key: keys.team.aboutPageBadge(page.slug),
+      label: 'teams.aboutPage.badge.${badge.name}'.tr(),
+      tone: badge == TeamPageBadge.members
+          ? Visibility.team.tone(c)
+          : Status.draft.tone(c),
     );
   }
 }

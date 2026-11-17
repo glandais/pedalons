@@ -335,6 +335,16 @@ export const ListTeamsResponse = zod
                       .describe('Visibility level'),
                     order: zod.int().describe('Page order'),
                     deleted: zod.boolean().describe('Whether the page is soft-deleted'),
+                    status: zod
+                      .enum(['DRAFT', 'PUBLISHED', 'CANCELLED'])
+                      .describe(
+                        "Publication status: a DRAFT is listed only to the team's administrators and the platform admin, who are told it is one (docs/LEDGER_*.md WEB-120)"
+                      ),
+                    moderationHidden: zod
+                      .boolean()
+                      .describe(
+                        "Hidden by moderation: listed only to the team's organisers, administrators and the platform admin (docs/LEDGER_*.md WEB-120)"
+                      ),
                   })
                   .describe('Team page summary for listings')
               )
@@ -1101,6 +1111,16 @@ export const CreateTeamResponse = zod
               .describe('Visibility level'),
             order: zod.int().describe('Page order'),
             deleted: zod.boolean().describe('Whether the page is soft-deleted'),
+            status: zod
+              .enum(['DRAFT', 'PUBLISHED', 'CANCELLED'])
+              .describe(
+                "Publication status: a DRAFT is listed only to the team's administrators and the platform admin, who are told it is one (docs/LEDGER_*.md WEB-120)"
+              ),
+            moderationHidden: zod
+              .boolean()
+              .describe(
+                "Hidden by moderation: listed only to the team's organisers, administrators and the platform admin (docs/LEDGER_*.md WEB-120)"
+              ),
           })
           .describe('Team page summary for listings')
       )
@@ -1860,6 +1880,16 @@ export const UpdateTeamResponse = zod
               .describe('Visibility level'),
             order: zod.int().describe('Page order'),
             deleted: zod.boolean().describe('Whether the page is soft-deleted'),
+            status: zod
+              .enum(['DRAFT', 'PUBLISHED', 'CANCELLED'])
+              .describe(
+                "Publication status: a DRAFT is listed only to the team's administrators and the platform admin, who are told it is one (docs/LEDGER_*.md WEB-120)"
+              ),
+            moderationHidden: zod
+              .boolean()
+              .describe(
+                "Hidden by moderation: listed only to the team's organisers, administrators and the platform admin (docs/LEDGER_*.md WEB-120)"
+              ),
           })
           .describe('Team page summary for listings')
       )
@@ -2303,6 +2333,16 @@ export const GetTeamResponse = zod
               .describe('Visibility level'),
             order: zod.int().describe('Page order'),
             deleted: zod.boolean().describe('Whether the page is soft-deleted'),
+            status: zod
+              .enum(['DRAFT', 'PUBLISHED', 'CANCELLED'])
+              .describe(
+                "Publication status: a DRAFT is listed only to the team's administrators and the platform admin, who are told it is one (docs/LEDGER_*.md WEB-120)"
+              ),
+            moderationHidden: zod
+              .boolean()
+              .describe(
+                "Hidden by moderation: listed only to the team's organisers, administrators and the platform admin (docs/LEDGER_*.md WEB-120)"
+              ),
           })
           .describe('Team page summary for listings')
       )
@@ -2825,6 +2865,16 @@ export const GetTeamDashboardResponse = zod
                   .describe('Visibility level'),
                 order: zod.int().describe('Page order'),
                 deleted: zod.boolean().describe('Whether the page is soft-deleted'),
+                status: zod
+                  .enum(['DRAFT', 'PUBLISHED', 'CANCELLED'])
+                  .describe(
+                    "Publication status: a DRAFT is listed only to the team's administrators and the platform admin, who are told it is one (docs/LEDGER_*.md WEB-120)"
+                  ),
+                moderationHidden: zod
+                  .boolean()
+                  .describe(
+                    "Hidden by moderation: listed only to the team's organisers, administrators and the platform admin (docs/LEDGER_*.md WEB-120)"
+                  ),
               })
               .describe('Team page summary for listings')
           )
@@ -22083,6 +22133,16 @@ export const ChangeTeamSlugResponse = zod
               .describe('Visibility level'),
             order: zod.int().describe('Page order'),
             deleted: zod.boolean().describe('Whether the page is soft-deleted'),
+            status: zod
+              .enum(['DRAFT', 'PUBLISHED', 'CANCELLED'])
+              .describe(
+                "Publication status: a DRAFT is listed only to the team's administrators and the platform admin, who are told it is one (docs/LEDGER_*.md WEB-120)"
+              ),
+            moderationHidden: zod
+              .boolean()
+              .describe(
+                "Hidden by moderation: listed only to the team's organisers, administrators and the platform admin (docs/LEDGER_*.md WEB-120)"
+              ),
           })
           .describe('Team page summary for listings')
       )

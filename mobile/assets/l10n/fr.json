@@ -393,7 +393,12 @@
       "pages": "Pages de l'équipe",
       "pagesHint": "Chaque page ouvre un écran propre et partageable.",
       "empty": "Rien à présenter pour l'instant",
-      "emptyHint": "Cette équipe n'a pas encore écrit sa présentation."
+      "emptyHint": "Cette équipe n'a pas encore écrit sa présentation.",
+      "badge": {
+        "hidden": "Masquée",
+        "draft": "Brouillon",
+        "members": "Membres"
+      }
     },
     "loadError": {
       "title": "Équipe indisponible"

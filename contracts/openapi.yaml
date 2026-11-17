@@ -7690,6 +7690,8 @@ components:
       - visibility
       - order
       - deleted
+      - status
+      - moderationHidden
       properties:
         id:
           type: string
@@ -7711,6 +7713,15 @@ components:
         deleted:
           type: boolean
           description: Whether the page is soft-deleted
+        status:
+          description: "Publication status: a DRAFT is listed only to the team's administrators\
+            \ and the platform admin, who are told it is one (docs/LEDGER_*.md WEB-120)"
+          type: string
+          $ref: "#/components/schemas/Status"
+        moderationHidden:
+          type: boolean
+          description: "Hidden by moderation: listed only to the team's organisers,\
+            \ administrators and the platform admin (docs/LEDGER_*.md WEB-120)"
     TeamPublicationDto:
       type: object
       description: Team information
@@ -22499,7 +22510,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 16.0.0
+  version: 16.1.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: /

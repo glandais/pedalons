@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
-import { Group, UnstyledButton, Text, ScrollArea, Box } from '@mantine/core'
+import { Badge, Group, UnstyledButton, Text, ScrollArea, Box } from '@mantine/core'
 import type { TablerIcon } from '@tabler/icons-react'
 
 export interface NavButtonItem {
@@ -8,6 +8,11 @@ export interface NavButtonItem {
   path: string
   label: string
   icon: TablerIcon
+  /**
+   * A short word under the label saying who else can see the destination — set only where the
+   * reader might take it for public (docs/LEDGER_*.md WEB-120).
+   */
+  badge?: string
 }
 
 interface NavButtonsProps {
@@ -159,6 +164,11 @@ export function NavButtons({ items, currentId, label }: NavButtonsProps) {
                   >
                     {item.label}
                   </Text>
+                  {item.badge && (
+                    <Badge size="xs" variant="light" color="gray">
+                      {item.badge}
+                    </Badge>
+                  )}
                 </UnstyledButton>
               </Box>
             )

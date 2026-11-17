@@ -16,6 +16,16 @@ export const ListPagesResponseItem = zod
     visibility: zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']).describe('Visibility level'),
     order: zod.int().describe('Page order'),
     deleted: zod.boolean().describe('Whether the page is soft-deleted'),
+    status: zod
+      .enum(['DRAFT', 'PUBLISHED', 'CANCELLED'])
+      .describe(
+        "Publication status: a DRAFT is listed only to the team's administrators and the platform admin, who are told it is one (docs/LEDGER_*.md WEB-120)"
+      ),
+    moderationHidden: zod
+      .boolean()
+      .describe(
+        "Hidden by moderation: listed only to the team's organisers, administrators and the platform admin (docs/LEDGER_*.md WEB-120)"
+      ),
   })
   .describe('Team page summary for listings')
 export const ListPagesResponse = zod.array(ListPagesResponseItem)
@@ -680,6 +690,16 @@ export const ReorderPagesResponseItem = zod
     visibility: zod.enum(['TEAM', 'PUBLIC_UNLISTED', 'PUBLIC']).describe('Visibility level'),
     order: zod.int().describe('Page order'),
     deleted: zod.boolean().describe('Whether the page is soft-deleted'),
+    status: zod
+      .enum(['DRAFT', 'PUBLISHED', 'CANCELLED'])
+      .describe(
+        "Publication status: a DRAFT is listed only to the team's administrators and the platform admin, who are told it is one (docs/LEDGER_*.md WEB-120)"
+      ),
+    moderationHidden: zod
+      .boolean()
+      .describe(
+        "Hidden by moderation: listed only to the team's organisers, administrators and the platform admin (docs/LEDGER_*.md WEB-120)"
+      ),
   })
   .describe('Team page summary for listings')
 export const ReorderPagesResponse = zod.array(ReorderPagesResponseItem)

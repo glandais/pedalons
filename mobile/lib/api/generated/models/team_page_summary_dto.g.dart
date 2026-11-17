@@ -14,6 +14,8 @@ _TeamPageSummaryDto _$TeamPageSummaryDtoFromJson(Map<String, dynamic> json) =>
       visibility: json['visibility'] as String,
       order: (json['order'] as num).toInt(),
       deleted: json['deleted'] as bool,
+      status: json['status'] as String,
+      moderationHidden: json['moderationHidden'] as bool,
     );
 
 Map<String, dynamic> _$TeamPageSummaryDtoToJson(_TeamPageSummaryDto instance) =>
@@ -24,4 +26,6 @@ Map<String, dynamic> _$TeamPageSummaryDtoToJson(_TeamPageSummaryDto instance) =>
       'visibility': instance.visibility,
       'order': instance.order,
       'deleted': instance.deleted,
+      'status': instance.status,
+      'moderationHidden': instance.moderationHidden,
     };

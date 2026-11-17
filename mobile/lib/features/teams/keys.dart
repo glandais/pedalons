@@ -99,6 +99,10 @@ class TeamPageKeys {
   ValueKey<String> aboutPageRow(String pageSlug) =>
       _TeamPageKey('aboutPageRow_$pageSlug');
 
+  /// Le badge d'une page libre dans « À propos » (docs/LEDGER_*.md WEB-120).
+  ValueKey<String> aboutPageBadge(String pageSlug) =>
+      _TeamPageKey('aboutPageBadge_$pageSlug');
+
   /// L'écran d'une page libre : son titre, son corps.
   final customPageTitle = const _TeamPageKey('customPageTitle');
   final customPageBody = const _TeamPageKey('customPageBody');

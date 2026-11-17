@@ -143,6 +143,8 @@ const TeamPageSummaryDto _faq = TeamPageSummaryDto(
   visibility: 'PUBLIC',
   order: 0,
   deleted: false,
+  status: 'PUBLISHED',
+  moderationHidden: false,
 );
 
 const TeamPageSummaryDto _rules = TeamPageSummaryDto(
@@ -152,6 +154,8 @@ const TeamPageSummaryDto _rules = TeamPageSummaryDto(
   visibility: 'TEAM',
   order: 1,
   deleted: false,
+  status: 'PUBLISHED',
+  moderationHidden: false,
 );
 
 const TeamPageSummaryDto _gear = TeamPageSummaryDto(
@@ -161,6 +165,8 @@ const TeamPageSummaryDto _gear = TeamPageSummaryDto(
   visibility: 'PUBLIC_UNLISTED',
   order: 2,
   deleted: false,
+  status: 'PUBLISHED',
+  moderationHidden: false,
 );
 
 DioException _apiError(int status, String code) => DioException(
@@ -740,6 +746,8 @@ void main() {
       visibility: 'TEAM',
       order: 3,
       deleted: true,
+      status: 'PUBLISHED',
+      moderationHidden: false,
     );
 
     testWidgets('trois pages et une supprimée : « Restaurer » est inactif — '

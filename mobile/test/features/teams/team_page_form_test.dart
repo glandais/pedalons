@@ -16,6 +16,8 @@ void main() {
         visibility: 'TEAM',
         order: 0,
         deleted: deleted,
+        status: 'PUBLISHED',
+        moderationHidden: false,
       );
 
   const AssetDto image = AssetDto(

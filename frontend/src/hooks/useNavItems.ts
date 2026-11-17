@@ -22,7 +22,7 @@ import { findMatchingRoute, getRouteById } from '@/config/routeUtils'
 import { isSingleTeam } from '@/config/appConfig'
 import { useAuth } from './useAuth'
 import type { NavButtonItem } from '../components/common/NavButtons'
-import type { TeamDetailDto } from '@/api/dto'
+import type { TeamDetailDto, TeamPageSummaryDto } from '@/api/dto'
 import { teamAccess } from '@/lib/teamAccess'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 
@@ -178,9 +178,29 @@ function teamNavItems(
     path: paths.teamPage(team.slug, page.slug),
     label: page.title,
     icon: IconFileText,
+    badge: pageBadge(page, !!team.role, t),
   }))
 
   return [...teamSectionItems(team, t, isPlatformAdmin), ...pageTabs]
+}
+
+/**
+ * The badge of a custom page in the team's menu, the most restrictive reason first: hidden by
+ * moderation, a draft, members only. The first two reach only the team's moderators, its
+ * administrators and the platform admin, who must not take them for published pages; « Membres »
+ * is said only to a reader outside the team — a platform admin, who sees every page (API-137) and
+ * would otherwise believe them public. A member knows the team's pages are theirs
+ * (docs/LEDGER_*.md WEB-120).
+ */
+export function pageBadge(
+  page: TeamPageSummaryDto,
+  isMember: boolean,
+  t: TFunction
+): string | undefined {
+  if (page.moderationHidden) return t('teams.nav.pageBadge.hidden')
+  if (page.status === 'DRAFT') return t('teams.nav.pageBadge.draft')
+  if (page.visibility === 'TEAM' && !isMember) return t('teams.nav.pageBadge.members')
+  return undefined
 }
 
 /** The sections the team has, without its custom pages: what the team switcher carries over. */

@@ -393,7 +393,12 @@
       "pages": "Team pages",
       "pagesHint": "Each page opens its own shareable screen.",
       "empty": "Nothing to show yet",
-      "emptyHint": "This team has not written its presentation yet."
+      "emptyHint": "This team has not written its presentation yet.",
+      "badge": {
+        "hidden": "Hidden",
+        "draft": "Draft",
+        "members": "Members"
+      }
     },
     "loadError": {
       "title": "Team unavailable"
