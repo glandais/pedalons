@@ -169,6 +169,7 @@ left today.
 | Lists — ads and members (`pagination.e2e.ts`, `list-filters.e2e.ts`, `member-directory.e2e.ts`) | `ads_members_pagination_test` — 22 ads and 22 members: both lists reach their page 2 by scrolling; the « Recherche » chip keeps the wanted ad alone, a search that matches nothing ends on the ads' dead end; the members search narrows the list to one name |
 | Lists — comments (`rides.e2e.ts` › comments) | `comments_pagination_test` — a thread of 21 comments: scrolling the post reaches the 21st, on the API's page 2 (the thread loads its next page as its foot nears the screen) |
 | Rides — single-group ride (ledger `MOB-69`, web `WEB-79`) | `ride_solo_group_test` — a ride with one group has no group card: « Rejoindre » from the departure block (then « J'y vais »), « Quitter le groupe » at the foot of « Personnes inscrites » (ledger `MOB-134`), checked against the API; the group's own link (`…/groupes/{id}`) opens the ride's detail, not a group page |
+| Rides — the group page (ledgers `MOB-67`, `MOB-68`, `MOB-134`) | `ride_group_page_test` — a member opens a group's page from its card on the ride: it names the designated leader, never the ride's creator; « Rejoindre » from its departure block registers them in that group (checked against the API); switched to the other group, it shows no leader and offers « Changer pour », not « Rejoindre » — the server allows one group per ride —; the group's weather shows in its last section |
 | Rides — participants, groups map, exports (no single web counterpart) | `ride_participants_map_test` — « Voir les N personnes inscrites », under the group cards, gathers the riders of both groups (count 2, one row each, not the reader nor the creator); the groups map's pill names the first group, then the one whose card is tapped; « GPS » is on one's own card only (none before joining, ledger `MOB-134`, lot 8), and its GPS sheet's « Fichier GPX » (and « Fichier FIT » when the route has one) follows the route's assets, « Connecter un compteur » without a connected GPS service, and sharing the GPX opens the system share sheet on a GPX file (native tree) |
 | Legal pages (`routes-render.e2e.ts` › terms, privacy) | `legal_pages_test` — signed out, from the sign-up form: « Confidentialité » and « Lire les conditions » open their bundled text, and back lands on the form |
 | « Signaler un problème » (no web counterpart) | `report_problem_test` — from the profile's « Aide et à propos »: a message under 10 characters once trimmed keeps « Envoyer » off; a suggestion goes out (`POST /api/feedback` 204), the sheet closes and the thanks are shown |
@@ -176,8 +177,9 @@ left today.
 
 ## Not covered yet
 
-Tracked in the ledger: passkeys (`MOB-26`, blocked on the e2e stack's plain-HTTP `localhost`), an
-expired access token end to end (`MOB-38`), and running this suite in CI (`MOB-37`). What each
+Tracked in the ledger: passkeys (`MOB-26`, blocked on the e2e stack's plain-HTTP `localhost`) and
+running this suite in CI (`MOB-37`). The expired access token (`MOB-38`) is now
+`expired_access_token_test`, above. What each
 scenario above leaves aside is listed under « Non couvert » in its ledger entry
 (`docs/ledger/MOB/<ID>.md`). A test that closes an open entry sets it to `status: done` in the same
 commit (see `docs/ledger/README.md`), and adds a row to « Coverage » above.
