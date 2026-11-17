@@ -369,6 +369,15 @@ class _CreateSplitButton extends StatelessWidget {
                 child: Text(group, style: t.sub),
               ),
             );
+          } else if (group == null && i > 0 && actions[i - 1].group != null) {
+            // Hors section après une section (la publication) : un filet,
+            // comme le menu du site.
+            rows.add(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Divider(height: 1, color: sheetContext.pdl.borderSubtle),
+              ),
+            );
           }
           rows.add(
             Padding(
