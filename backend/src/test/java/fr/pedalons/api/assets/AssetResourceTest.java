@@ -41,6 +41,10 @@ class AssetResourceTest extends AbstractResourceTest {
   }
 
   private PostRequest createPostRequest(String name, AssetDto assetDto) {
+    return createPostRequest(name, assetDto, Visibility.PUBLIC);
+  }
+
+  private PostRequest createPostRequest(String name, AssetDto assetDto, Visibility visibility) {
     return new PostRequest(
         name,
         MediaDto.builder()
@@ -49,7 +53,7 @@ class AssetResourceTest extends AbstractResourceTest {
             .build(),
         wall(Instant.now().plus(7, ChronoUnit.DAYS)),
         Status.PUBLISHED,
-        Visibility.PUBLIC,
+        visibility,
         null,
         null,
         null);
@@ -489,6 +493,36 @@ class AssetResourceTest extends AbstractResourceTest {
   }
 
   // ==================== Image Upload Tests ====================
+
+  /**
+   * docs/LEDGER_*.md SEC-51: an asset held by content the caller cannot read is refused with the
+   * same status as an asset that does not exist — before, the holder's 404 told them apart.
+   */
+  @Test
+  void downloadAsset_heldByHiddenContent_answersLikeANonexistentOne() {
+    AssetDto assetDto = uploadGpx(team1Slug);
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .contentType("application/json")
+        .body(createPostRequest("team only", assetDto, Visibility.TEAM))
+        .when()
+        .post("/api/teams/" + team1Slug + "/posts")
+        .then()
+        .statusCode(201);
+
+    given().auth().oauth2(getAccessToken(USER3)).when().get(assetDto.url()).then().statusCode(200);
+    given()
+        .redirects()
+        .follow(false)
+        .auth()
+        .oauth2(getAccessToken(USER4))
+        .when()
+        .get(assetDto.url())
+        .then()
+        .statusCode(403);
+    given().redirects().follow(false).when().get(assetDto.url()).then().statusCode(403);
+  }
 
   @Test
   void uploadImage_shouldReturnImageUrl() {

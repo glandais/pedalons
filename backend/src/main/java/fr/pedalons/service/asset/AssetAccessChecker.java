@@ -1,5 +1,6 @@
 package fr.pedalons.service.asset;
 
+import fr.pedalons.common.exception.NotFoundException;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.common.TeamEntity;
 import fr.pedalons.domain.team.Team;
@@ -73,12 +74,10 @@ public class AssetAccessChecker implements AccessChecker {
             && asset.getId().equals(team.getLogoAssetId())) {
           yield true;
         }
-        // User can read asset if he has rights to see related entity
-        securityVerifier.verifyAccess(
-            teamEntity.getEntityType(),
-            ActionType.READ,
-            // we always expect slug as first parameter for team entities
-            List.of(team.getSlug(), teamEntity.getSlug()));
+        // The caller may touch the asset only if they may read the content holding it.
+        if (!canReadHolder(team, teamEntity)) {
+          yield false;
+        }
         if (action == ActionType.READ) {
           yield true;
         }
@@ -87,5 +86,24 @@ public class AssetAccessChecker implements AccessChecker {
       }
       case LIST, LIST_ALL_TEAMS, JOIN, LEAVE -> false;
     };
+  }
+
+  /**
+   * Whether the caller may read the content an asset is attached to. The content's checker answers
+   * 404 for content hidden from the caller (its {@code findBySlug} filters in SQL), while an asset
+   * that does not exist, belongs to another team or is not attached answers 403: the status told an
+   * asset held by hidden content apart from no asset at all. Hidden content is therefore a refusal
+   * like the others — one status, whatever the reason (docs/LEDGER_*.md SEC-51).
+   */
+  private boolean canReadHolder(Team team, TeamEntity teamEntity) {
+    try {
+      return securityVerifier.canAccess(
+          teamEntity.getEntityType(),
+          ActionType.READ,
+          // we always expect slug as first parameter for team entities
+          List.of(team.getSlug(), teamEntity.getSlug()));
+    } catch (NotFoundException hidden) {
+      return false;
+    }
   }
 }

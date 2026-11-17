@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **158 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
+Index des **157 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -242,7 +242,6 @@ Aucune entrée ouverte. Contexte du domaine : [`ledger/BRAND/README.md`](ledger/
 Contexte du domaine : [`ledger/SEC/README.md`](ledger/SEC/README.md).
 
 - [ ] [`SEC-52`](ledger/SEC/SEC-52.md) La clé de cloisonnement du moteur de parcours circule en clair sur le réseau partagé des piles, et le moteur…
-- [ ] [`SEC-51`](ledger/SEC/SEC-51.md) Une réponse de l'API distingue deux cas qu'elle devrait confondre pour un appelant sans droit
 - [ ] [`SEC-50`](ledger/SEC/SEC-50.md) La désactivation d'un domaine ne s'applique pas à tous les chemins de résolution
 - [ ] [`SEC-49`](ledger/SEC/SEC-49.md) Un quota d'envoi suit le motif compter-puis-insérer (même famille que `SEC-35` et `SEC-39`)
 - [ ] [`SEC-48`](ledger/SEC/SEC-48.md) Un appel facturé à un fournisseur n'a pas de quota par compte. Aperçus GPX datés (API-153) : 20 à venir par…

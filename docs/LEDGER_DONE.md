@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **590 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **591 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -554,6 +554,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 ## SEC — Sécurité applicative
 
 - [x] [`SEC-53`](ledger/SEC/SEC-53.md) Liste de refus des pièces jointes : le label du modèle, pas seulement celui de Magika — 2026-11-16
+- [x] [`SEC-51`](ledger/SEC/SEC-51.md) Une réponse de l'API distingue deux cas qu'elle devrait confondre pour un appelant sans droit — 2026-11-17
 - [x] [`SEC-42`](ledger/SEC/SEC-42.md) Un envoi de fichier refusé laisse sa copie temporaire sur le disque du backend — 2026-11-17
 - [x] [`SEC-38`](ledger/SEC/SEC-38.md) Quitter un groupe ne vérifiait pas que le groupe appartenait à la sortie contrôlée — 2026-10-11
 - [x] [`SEC-37`](ledger/SEC/SEC-37.md) Le challenge d'authentification par passkey est strictement à usage unique — 2026-10-11
