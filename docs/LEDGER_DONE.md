@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **570 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **573 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -84,6 +84,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`MOB-79`](ledger/MOB/MOB-79.md) Créer, modifier et supprimer un parcours dans l'app (17 octobre 2026, contrat d'API inchangé) — 2026-10-17
 - [x] [`MOB-78`](ledger/MOB/MOB-78.md) Gérer les modèles de sortie dans l'app (17 octobre 2026, contrat d'API inchangé) — 2026-10-17
 - [x] [`MOB-76`](ledger/MOB/MOB-76.md) Profil d'altitude provisoire dans l'app (18 octobre 2026, contrat `11.8.0`) — 2026-10-18
+- [x] [`MOB-75`](ledger/MOB/MOB-75.md) `patrol_test/README.md` en retard sur la suite — 2026-11-17
 - [x] [`MOB-72`](ledger/MOB/MOB-72.md) Un APK signé pour les Android sans Google Play — 2026-10-16
 - [x] [`MOB-71`](ledger/MOB/MOB-71.md) Interrupteur « envoi automatique » par service GPS connecté (16 octobre 2026, contrat `11.5.0`) — 2026-10-16
 - [x] [`MOB-70`](ledger/MOB/MOB-70.md) La 1.1.0 est publiée sur l'App Store — 2026-10-26
@@ -345,6 +346,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`API-143`](ledger/API/API-143.md) Les réponses de l'API sont compressées — 2026-10-26
 - [x] [`API-142`](ledger/API/API-142.md) L'inscription « Devenir testeur·se » est supprimée, de la base au site
 - [x] [`API-141`](ledger/API/API-141.md) Les expirations ne basculent plus une heure trop tôt la nuit du changement d'heure — 2026-10-25
+- [x] [`API-139`](ledger/API/API-139.md) `GET /api/admin/teams` compte les membres ligne par ligne — 2026-11-17
 - [x] [`API-138`](ledger/API/API-138.md) La convention de distance de la météo est écrite dans le contrat
 - [x] [`API-137`](ledger/API/API-137.md) « Mes équipes » d'un administrateur de la plateforme : ses vraies adhésions, son vrai rôle, plus d'équipe supprimée — 2026-10-24
 - [x] [`API-134`](ledger/API/API-134.md) Promouvoir un aperçu GPX en parcours gardait-il ses points ? Non, et il les garde maintenant — 2026-10-20
@@ -601,6 +603,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`LEGAL-25`](ledger/LEGAL/LEGAL-25.md) Stadia Maps relu contre son avenant de traitement des données : sous-traitant, clauses contractuelles types — 2026-10-17
 - [x] [`LEGAL-24`](ledger/LEGAL/LEGAL-24.md) Stadia Maps déclaré pour la recherche de lieux, par le serveur et depuis l'appareil — 2026-10-17
 - [x] [`LEGAL-23`](ledger/LEGAL/LEGAL-23.md) Stadia Maps déclaré pour le calcul d'itinéraires — 2026-10-17
+- [x] [`LEGAL-22`](ledger/LEGAL/LEGAL-22.md) Renvois « depuis votre profil » rendus précis — 2026-11-17
 - [x] [`LEGAL-21`](ledger/LEGAL/LEGAL-21.md) L'envoi automatique des parcours aux services GPS dans la politique — 2026-10-16
 - [x] [`LEGAL-19`](ledger/LEGAL/LEGAL-19.md) La mesure d'audience du site déclarée — 2026-10-15
 - [x] [`LEGAL-18`](ledger/LEGAL/LEGAL-18.md) L'IGN crédité pour les altitudes — 2026-10-14

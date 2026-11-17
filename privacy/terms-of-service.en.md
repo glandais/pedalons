@@ -61,7 +61,7 @@ You also agree to:
 - **Reporting**: you can report any content (ride, trip, route, post, ad, comment) or a member, with a reason and an optional message. Content you report disappears from your lists at once.
 - **Handling**: reports are sent to the organizers of the team concerned and to the Pedalons team, who handle them **within 24 hours**. Content that breaches these terms is removed, and its author may be excluded from the team or from the platform. Content reported by at least three members is hidden until a decision is made.
 - **Confidentiality**: your identity is known to the Pedalons team only. Neither the team's organizers nor the author of the content know who reported it.
-- **Blocking**: you can block another user. You no longer see their comments, posts, or ads, and you no longer receive notifications about their comments. The blocked user is not told. You can unblock them at any time from your profile.
+- **Blocking**: you can block another user. You no longer see their comments, posts, or ads, and you no longer receive notifications about their comments. The blocked user is not told. You can unblock them at any time under **Profile → Privacy → Blocked users**.
 - **Filtering**: a filter refuses, at publication time, text containing certain abusive or hateful terms.
 
 ## 7. Intellectual Property
@@ -80,7 +80,7 @@ The service is provided "as is". We strive to ensure its availability but do not
 
 ## 9. Termination
 
-- You may delete your account at any time from your profile, on the website or in the app. Deletion is immediate and irreversible.
+- You may delete your account at any time under **Profile → My account → Danger zone**, on the website or in the app. Deletion is immediate and irreversible.
 - If you are the only administrator of a team that has other members, you must first make another member an administrator. A team of which you are the only member is deleted along with your account.
 - The content you published in a team (rides, routes, posts and the files attached to them) belongs to the team and remains online, credited to "Ancien membre" ("former member"). What is erased or kept is detailed in "Delete your account", in section 7 of the Privacy Policy.
 - We reserve the right to suspend or delete an account in case of violation of these terms.

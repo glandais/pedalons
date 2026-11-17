@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **173 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
+Index des **170 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -40,7 +40,6 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 - [ ] [`MOB-159`](ledger/MOB/MOB-159.md) Éditeur d'annonce : déclarer l'adresse sur les deux stores, recette sur appareil et test Patrol (S)
 - [ ] [`MOB-157`](ledger/MOB/MOB-157.md) Éditeur de publication : recette sur appareil et test Patrol (S)
 - [ ] [`MOB-77`](ledger/MOB/MOB-77.md) Éditeur de sortie, modèles et parcours : recette sur appareil (S) · *recette*
-- [ ] [`MOB-75`](ledger/MOB/MOB-75.md) `patrol_test/README.md` en retard sur la suite (XS)
 - [ ] [`MOB-62`](ledger/MOB/MOB-62.md) Profil refondu (`MOB-48`, `WEB-57`) : finitions (S)
 - [ ] [`MOB-37`](ledger/MOB/MOB-37.md) Les tests Patrol ne tournent qu'en local
 - [ ] [`MOB-26`](ledger/MOB/MOB-26.md) Clés d'accès
@@ -108,7 +107,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 - [ ] [`API-151`](ledger/API/API-151.md) Passage à osm-route-details : banc de D+ et crédit web (S)
 - [ ] [`API-148`](ledger/API/API-148.md) Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)
 - [ ] [`API-140`](ledger/API/API-140.md) `/api/admin/teams` sans domaine forcé : décision produit à prendre · *decision*
-- [ ] [`API-139`](ledger/API/API-139.md) `GET /api/admin/teams` compte les membres ligne par ligne (S)
 - [ ] [`API-136`](ledger/API/API-136.md) Retirer `participations` du résumé du profil (S)
 - [ ] [`API-135`](ledger/API/API-135.md) Garder le type et la distance des `course_point` d'une pièce jointe FIT (S)
 
@@ -297,7 +295,6 @@ Contexte du domaine : [`ledger/LEGAL/README.md`](ledger/LEGAL/README.md).
 - [ ] [`LEGAL-30`](ledger/LEGAL/LEGAL-30.md) La politique ne nomme pas les tags parmi le contenu créé (XS)
 - [ ] [`LEGAL-28`](ledger/LEGAL/LEGAL-28.md) La politique ne parle pas des applications externes autorisées par OAuth (S)
 - [ ] [`LEGAL-26`](ledger/LEGAL/LEGAL-26.md) Revêtement des parcours : ODbL et mention de VersaTiles côté serveur (S)
-- [ ] [`LEGAL-22`](ledger/LEGAL/LEGAL-22.md) Renvois « depuis votre profil » rendus précis (XS)
 
 ## BILL — Monétisation
 

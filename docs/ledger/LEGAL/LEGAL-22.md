@@ -1,18 +1,17 @@
 ---
 id: LEGAL-22
 title: "Renvois « depuis votre profil » rendus précis"
-status: open
+status: done
 size: "XS"
-verified: 2026-11-16
+done: 2026-11-17
 ---
 
-## Reste à faire
+## Livré
 
-`LEGAL-22` **Renvois « depuis votre profil » rendus précis (XS)** — quatre
-phrases renvoient au profil sans dire où, alors que le profil a depuis octobre un sous-écran
-par sujet (`contracts/routes.yaml`, mêmes libellés sur le site et dans l'app) : CGU l.64
-(débloquer → **Profil → Confidentialité → Utilisateurs bloqués**) et l.83 (supprimer son
-compte → **Profil → Mon compte → Zone de danger**), politique l.20 (contact au sujet des
-annonces → **Profil → Confidentialité**) et l.170 (« Déconnecter tous les appareils » →
-**Profil → Connexion et sécurité**). `privacy/terms-of-service.{fr,en}.md` et
-`privacy/privacy-policy.{fr,en}.md`, en parité FR/EN, comme le fait déjà `support.{fr,en}.md`.
+`LEGAL-22` **Renvois « depuis votre profil » rendus précis** (17 novembre 2026, en parité FR/EN) — les
+quatre phrases nomment l'écran, avec les libellés du site et de l'app : CGU, débloquer → **Profil →
+Confidentialité → Personnes bloquées** (*Blocked users*) et supprimer son compte → **Profil → Mon compte
+→ Zone de danger** ; politique, contact au sujet des annonces → **Profil → Confidentialité** et
+« Déconnecter tous les appareils » → **Profil → Connexion et sécurité** (*Sign-in and security*), comme
+`support.{fr,en}.md`. Le fond ne change pas : la date « Dernière mise à jour » des deux textes n'a pas
+bougé.

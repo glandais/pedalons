@@ -61,7 +61,7 @@ Vous vous engagez en outre à :
 - **Signaler** : vous pouvez signaler tout contenu (sortie, voyage, parcours, publication, petite annonce, commentaire) ou un membre, avec un motif et un message facultatif. Le contenu que vous signalez disparaît aussitôt de vos listes.
 - **Traitement** : les signalements sont transmis aux personnes qui organisent l'équipe concernée et à l'équipe Pedalons, qui les traitent **dans un délai de 24 heures**. Un contenu contraire aux présentes conditions est supprimé, et la personne qui l'a publié peut être exclue de l'équipe ou de la plateforme. Un contenu signalé par au moins trois membres est masqué en attendant la décision.
 - **Confidentialité** : votre identité n'est connue que de l'équipe Pedalons. Ni les personnes qui organisent l'équipe ni celle qui a publié le contenu ne savent qui l'a signalé.
-- **Bloquer** : vous pouvez bloquer une autre personne. Vous ne voyez plus ses commentaires, ses publications ni ses annonces, et vous ne recevez plus de notification pour ses commentaires. La personne bloquée n'en est pas informée. Vous pouvez la débloquer à tout moment depuis votre profil.
+- **Bloquer** : vous pouvez bloquer une autre personne. Vous ne voyez plus ses commentaires, ses publications ni ses annonces, et vous ne recevez plus de notification pour ses commentaires. La personne bloquée n'en est pas informée. Vous pouvez la débloquer à tout moment depuis **Profil → Confidentialité → Personnes bloquées**.
 - **Filtrage** : un filtre refuse, au moment de la publication, les textes contenant certains termes injurieux ou haineux.
 
 ## 7. Propriété intellectuelle
@@ -80,7 +80,7 @@ Le service est fourni « en l'état ». Nous nous efforçons d'assurer sa dispon
 
 ## 9. Résiliation
 
-- Vous pouvez supprimer votre compte à tout moment depuis votre profil, sur le site ou dans l'application. La suppression est immédiate et irréversible.
+- Vous pouvez supprimer votre compte à tout moment depuis **Profil → Mon compte → Zone de danger**, sur le site ou dans l'application. La suppression est immédiate et irréversible.
 - Si vous êtes la seule personne à administrer une équipe qui compte d'autres membres, vous devez d'abord confier le rôle Administrateur à un autre membre. Une équipe dont vous êtes l'unique membre est supprimée avec votre compte.
 - Le contenu que vous avez publié dans une équipe (sorties, itinéraires, posts et fichiers joints) appartient à l'équipe et reste en ligne, attribué à « Ancien membre ». Ce qui est effacé ou conservé est détaillé dans « Supprimer votre compte », à la section 7 de la Politique de confidentialité.
 - Nous nous réservons le droit de suspendre ou supprimer un compte en cas de violation des présentes conditions.
