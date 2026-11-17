@@ -329,6 +329,9 @@ class _RideRouteSectionState extends ConsumerState<RideRouteSection>
       teamSlug: ride.team.slug,
       routeSlug: routeSlug,
       route: route,
+      syncStatuses: group == null
+          ? ride.gpsSyncStatuses
+          : group.gpsSyncStatuses,
     );
     return Wrap(
       spacing: PdlSpacing.chipGap,

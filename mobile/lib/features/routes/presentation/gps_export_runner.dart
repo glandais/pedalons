@@ -24,6 +24,7 @@ class GpsExportTarget {
     required this.routeSlug,
     this.gpx,
     this.fit,
+    this.syncStatuses,
   });
 
   /// Le sous-titre de la feuille : « Groupe B · 78,0 km », le nom du parcours.
@@ -34,6 +35,12 @@ class GpsExportTarget {
   final String? routeSlug;
   final AssetDto? gpx;
   final AssetDto? fit;
+
+  /// Où en est déjà le parcours chez les services de la personne
+  /// (docs/LEDGER_*.md MOB-133) : ceux d'un groupe, ou d'une sortie sans
+  /// groupe — la route que l'envoi automatique transmet —, sinon ceux de la
+  /// route.
+  final List<RouteGpsSyncStatusDto>? syncStatuses;
 
   /// Le bouton a-t-il quelque chose à proposer avec ces [services] ?
   bool offered(List<GpsServiceConnectionDto> services) => gpsExportOffered(
@@ -125,6 +132,7 @@ mixin GpsExportRunner<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       offerConnect: services.isEmpty,
       gpx: target.gpx,
       fit: target.fit,
+      syncStatuses: target.syncStatuses,
     );
     if (choice == null || !mounted) return;
     final RouteExportOperations ops = ref.read(routeExportOperationsProvider);

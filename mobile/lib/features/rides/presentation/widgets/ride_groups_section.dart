@@ -240,6 +240,7 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
             teamSlug: ride.team.slug,
             routeSlug: routeSlug,
             route: route,
+            syncStatuses: group.gpsSyncStatuses,
           )
         : null;
 

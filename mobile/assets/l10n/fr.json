@@ -1648,7 +1648,14 @@
       "gpxFile": "Fichier GPX",
       "fitFile": "Fichier FIT, pour compteur",
       "connectDevice": "Connecter un compteur",
-      "connectDeviceHint": "Garmin, Karoo… pour envoyer le parcours sans fichier"
+      "connectDeviceHint": "Garmin, Karoo… pour envoyer le parcours sans fichier",
+      "status": {
+        "sent": "Déjà envoyé",
+        "sentOn": "Déjà envoyé · {date}",
+        "outdated": "Une version précédente y est : renvoyez-le",
+        "failing": "Le dernier envoi a échoué",
+        "reconnectRequired": "Accès refusé : reconnectez le service"
+      }
     },
     "planner": {
       "loadError": "Le planificateur n'a pas pu s'ouvrir.",

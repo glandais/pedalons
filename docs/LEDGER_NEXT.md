@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **161 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
+Index des **160 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -24,7 +24,6 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 - [ ] [`MOB-146`](ledger/MOB/MOB-146.md) Listes homogènes : recette sur appareil de `MOB-143` (S) · *recette*
 - [ ] [`MOB-141`](ledger/MOB/MOB-141.md) Cartes homogènes : recette sur appareil de `MOB-139` (S) · *recette*
 - [ ] [`MOB-135`](ledger/MOB/MOB-135.md) Refonte des écrans de détail : recette sur appareil de `MOB-134` (S) · *recette*
-- [ ] [`MOB-133`](ledger/MOB/MOB-133.md) Afficher l'état `gpsSyncStatuses` près de l'action d'envoi (S)
 - [ ] [`MOB-130`](ledger/MOB/MOB-130.md) Contrôles de carte : recette sur appareil de `MOB-129` (S) · *recette*
 - [ ] [`MOB-95`](ledger/MOB/MOB-95.md) La météo sur la carte : recette sur appareil des paliers 1 à 3 (S) · *recette*
 - [ ] [`MOB-86`](ledger/MOB/MOB-86.md) Points de parcours : recette sur appareil · *recette*

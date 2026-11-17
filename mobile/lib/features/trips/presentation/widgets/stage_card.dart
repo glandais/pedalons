@@ -130,6 +130,7 @@ class _StageCardState extends ConsumerState<StageCard>
             routeSlug: route.slug,
             gpx: route.media.assets.gpx,
             fit: route.media.assets.fit,
+            syncStatuses: route.gpsSyncStatuses,
           )
         : null;
     final bool showGps = gps != null && gps.offered(watchGpsServices());

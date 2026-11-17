@@ -20,6 +20,7 @@ import 'package:pedalons/features/home/presentation/widgets/next_ride_card.dart'
 import 'package:pedalons/features/home/providers/next_ride_provider.dart';
 import 'package:pedalons/features/rides/domain/ride_group_action.dart';
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dart';
+import 'package:pedalons/features/rides/presentation/widgets/ride_group_route_actions.dart';
 import 'package:pedalons/features/routes/presentation/gps_export_runner.dart';
 import 'package:pedalons/features/routes/presentation/gps_sheet.dart';
 import 'package:pedalons/features/routes/presentation/widgets/gps_button.dart';
@@ -166,6 +167,7 @@ class _RouteGpsState extends ConsumerState<_RouteGps>
       routeSlug: route.slug,
       gpx: route.media.assets.gpx,
       fit: route.media.assets.fit,
+      syncStatuses: route.gpsSyncStatuses,
     );
     if (!target.offered(watchGpsServices())) return const SizedBox.shrink();
     return Column(
@@ -304,6 +306,95 @@ void main() {
         expect(inSheet('Partager'), findsNWidgets(2));
         expect(inSheet('Enregistrer sur le téléphone'), findsNothing);
       });
+    });
+
+    // docs/LEDGER_*.md MOB-133 : où en est déjà le parcours, service par
+    // service.
+    testWidgets('chaque service dit où en est déjà le parcours ; sans état, '
+        'rien', (WidgetTester tester) async {
+      await pump(
+        tester,
+        _RouteGps(
+          route: route().copyWith(
+            gpsSyncStatuses: const <RouteGpsSyncStatusDto>[
+              RouteGpsSyncStatusDto(serviceType: 'GARMIN', state: 'OUTDATED'),
+            ],
+          ),
+        ),
+        services: _services,
+      );
+      await openFromRoute(tester);
+
+      Finder under(String service, String text) => find.descendant(
+        of: find.byKey(keys.gpsSheet.service(service)),
+        matching: find.text(text),
+      );
+      expect(
+        under('GARMIN', 'Une version précédente y est : renvoyez-le'),
+        findsOneWidget,
+      );
+      // Hammerhead n'a pas d'état : sa ligne n'a que son nom.
+      expect(
+        find.descendant(
+          of: find.byKey(keys.gpsSheet.service('HAMMERHEAD')),
+          matching: find.byType(Text),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    test('gpsRouteStatusLine : un libellé par état, rien sans état', () {
+      RouteGpsSyncStatusDto st(String state, [String? at]) =>
+          RouteGpsSyncStatusDto(
+            serviceType: 'WAHOO',
+            state: state,
+            syncedAt: at,
+          );
+      expect(gpsRouteStatusLine(null), isNull);
+      expect(gpsRouteStatusLine(st('SENT')), 'Déjà envoyé');
+      expect(
+        gpsRouteStatusLine(st('SENT', '2026-11-15T08:30:00Z')),
+        startsWith('Déjà envoyé · '),
+      );
+      expect(gpsRouteStatusLine(st('PENDING')), 'Envoi en cours…');
+      expect(gpsRouteStatusLine(st('FAILING')), 'Le dernier envoi a échoué');
+      expect(
+        gpsRouteStatusLine(st('RECONNECT_REQUIRED')),
+        'Accès refusé : reconnectez le service',
+      );
+      // Une valeur ajoutée côté serveur plus tard : rien plutôt qu'un faux.
+      expect(gpsRouteStatusLine(st('SOMETHING_NEW')), isNull);
+    });
+
+    test('gpsTargetOfGroup : les états du groupe passent devant ceux de la '
+        'route', () {
+      const List<RouteGpsSyncStatusDto> ofGroup = <RouteGpsSyncStatusDto>[
+        RouteGpsSyncStatusDto(serviceType: 'GARMIN', state: 'PENDING'),
+      ];
+      final RouteDetailDto withOwn = route().copyWith(
+        gpsSyncStatuses: const <RouteGpsSyncStatusDto>[
+          RouteGpsSyncStatusDto(serviceType: 'GARMIN', state: 'SENT'),
+        ],
+      );
+      expect(
+        gpsTargetOfGroup(
+          subtitle: 'B',
+          teamSlug: 't',
+          routeSlug: 'r',
+          route: withOwn,
+          syncStatuses: ofGroup,
+        ).syncStatuses,
+        ofGroup,
+      );
+      expect(
+        gpsTargetOfGroup(
+          subtitle: 'B',
+          teamSlug: 't',
+          routeSlug: 'r',
+          route: withOwn,
+        ).syncStatuses,
+        withOwn.gpsSyncStatuses,
+      );
     });
 
     testWidgets('sans service : pas de section appareil, « Connecter un '

@@ -246,6 +246,15 @@ class _MyUpcomingRowState extends ConsumerState<_MyUpcomingRow>
                       subtitle: p.name,
                       teamSlug: p.team.slug,
                       routeSlug: routeSlug,
+                      // Ceux du groupe de la personne, sinon de la sortie
+                      // (docs/LEDGER_*.md MOB-133).
+                      syncStatuses: switch (p) {
+                        PublicationDtoRide ride =>
+                          ride.registeredGroup == null
+                              ? ride.gpsSyncStatuses
+                              : ride.registeredGroup!.gpsSyncStatuses,
+                        _ => null,
+                      },
                     ),
                     button,
                   ),

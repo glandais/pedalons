@@ -1648,7 +1648,14 @@
       "gpxFile": "GPX file",
       "fitFile": "FIT file, for bike computers",
       "connectDevice": "Connect a bike computer",
-      "connectDeviceHint": "Garmin, Karoo… to send the route without a file"
+      "connectDeviceHint": "Garmin, Karoo… to send the route without a file",
+      "status": {
+        "sent": "Already sent",
+        "sentOn": "Already sent · {date}",
+        "outdated": "An older version is there: send it again",
+        "failing": "The last send failed",
+        "reconnectRequired": "Access refused: reconnect the service"
+      }
     },
     "planner": {
       "loadError": "The planner could not open.",

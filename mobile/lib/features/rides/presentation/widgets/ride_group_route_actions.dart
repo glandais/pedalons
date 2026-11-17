@@ -14,16 +14,19 @@ String gpsSubtitleOfGroup(RideGroupDto group, UnitSystem units) {
 }
 
 /// La cible GPS du parcours [routeSlug] d'un groupe, ses fichiers pris dans
-/// [route] (chargé en lot pour la carte, sans appel de plus).
+/// [route] (chargé en lot pour la carte, sans appel de plus). [syncStatuses],
+/// ceux du groupe ou de la sortie, passent devant ceux de [route].
 GpsExportTarget gpsTargetOfGroup({
   required String subtitle,
   required String teamSlug,
   required String? routeSlug,
   required RouteDetailDto? route,
+  List<RouteGpsSyncStatusDto>? syncStatuses,
 }) => GpsExportTarget(
   subtitle: subtitle,
   teamSlug: teamSlug,
   routeSlug: routeSlug,
   gpx: route?.media.assets.gpx,
   fit: route?.media.assets.fit,
+  syncStatuses: syncStatuses ?? route?.gpsSyncStatuses,
 );

@@ -541,6 +541,9 @@ class _NextRideActionsState extends ConsumerState<_NextRideActions>
         routeSlug: routeSlug,
         gpx: route?.media.assets.gpx,
         fit: route?.media.assets.fit,
+        syncStatuses: joined == null
+            ? ride.gpsSyncStatuses
+            : joined.gpsSyncStatuses,
       ),
       button,
     );

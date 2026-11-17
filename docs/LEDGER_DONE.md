@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **583 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **584 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -38,6 +38,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`MOB-138`](ledger/MOB/MOB-138.md) « Connecter un compteur » ouvrait un écran vide — 2026-11-11
 - [x] [`MOB-137`](ledger/MOB/MOB-137.md) Contenu public d'une équipe privée : éditeurs et écrans de détail sur les droits calculés — 2026-11-16
 - [x] [`MOB-134`](ledger/MOB/MOB-134.md) Refonte des écrans de détail : sortie, groupe, voyage, étape, parcours — 2026-11-10
+- [x] [`MOB-133`](ledger/MOB/MOB-133.md) Afficher l'état `gpsSyncStatuses` près de l'action d'envoi — 2026-11-17
 - [x] [`MOB-132`](ledger/MOB/MOB-132.md) L'interrupteur d'envoi automatique parle aussi des étapes de voyage — 2026-11-10
 - [x] [`MOB-129`](ledger/MOB/MOB-129.md) Contrôles de carte : zones fixes et ligne du bas — 2026-11-10
 - [x] [`MOB-128`](ledger/MOB/MOB-128.md) Le bloc de départ ne répète plus la date — 2026-11-09

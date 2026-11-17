@@ -303,6 +303,7 @@ class _RouteSectionState extends ConsumerState<RouteSection>
       routeSlug: route.slug,
       gpx: route.media.assets.gpx,
       fit: route.media.assets.fit,
+      syncStatuses: route.gpsSyncStatuses,
     );
     final bool gps = target.offered(watchGpsServices());
     if (!gps && !widget.showDetailsAction) return null;

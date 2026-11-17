@@ -8,6 +8,7 @@ import '../../../core/theme/pdl_colors.dart';
 import '../../../core/theme/pdl_icons.dart';
 import '../../../core/theme/pdl_tokens.dart';
 import '../../../core/theme/pdl_typography.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/utils/share_file.dart';
 import '../../../keys.dart';
 
@@ -53,13 +54,44 @@ bool gpsExportOffered({
   required bool canSend,
 }) => gpx != null || fit != null || canSend;
 
+/// Où en est déjà le parcours chez un service (`gpsSyncStatuses`,
+/// docs/LEDGER_*.md MOB-133) : la ligne sous son nom dans la feuille, `null`
+/// quand le service n'a pas d'état — le parcours n'y est pas, ou son envoi
+/// automatique est coupé. L'envoi reste proposé dans tous les cas.
+String? gpsRouteStatusLine(RouteGpsSyncStatusDto? status) {
+  if (status == null) return null;
+  switch (GpsRouteSyncState.fromJson(status.state)) {
+    case GpsRouteSyncState.sent:
+      final DateTime? at = DateTime.tryParse(status.syncedAt ?? '');
+      return at == null
+          ? 'routes.gpsSheet.status.sent'.tr()
+          : 'routes.gpsSheet.status.sentOn'.tr(
+              namedArgs: <String, String>{
+                'date': AppFormatters.formatTimestamp(at),
+              },
+            );
+    case GpsRouteSyncState.outdated:
+      return 'routes.gpsSheet.status.outdated'.tr();
+    case GpsRouteSyncState.pending:
+      return 'profile.gps.autoSync.pending'.tr();
+    case GpsRouteSyncState.failing:
+      return 'routes.gpsSheet.status.failing'.tr();
+    case GpsRouteSyncState.reconnectRequired:
+      return 'routes.gpsSheet.status.reconnectRequired'.tr();
+    case GpsRouteSyncState.$unknown:
+      return null;
+  }
+}
+
 /// La feuille « GPS » : le seul chemin par lequel un parcours sort de l'app
 /// (KIT §8, « Export du parcours »).
 ///
 /// [subtitle] nomme ce qui part — « Groupe B · 78,0 km », le nom du parcours.
 /// Dans l'ordre :
 ///
-/// * « Vers un appareil », une ligne par service de [services] ;
+/// * « Vers un appareil », une ligne par service de [services], avec sous son
+///   nom où en est déjà le parcours d'après [syncStatuses]
+///   ([gpsRouteStatusLine]) ;
 /// * « Fichier GPX » puis « Fichier FIT, pour compteur », chacun seulement si
 ///   le fichier existe — sur **Android** « Enregistrer sur le téléphone » et
 ///   « Envoyer vers une autre app », sur **iOS** une ligne « Partager », dont
@@ -76,6 +108,7 @@ Future<GpsChoice?> showGpsSheet(
   required bool offerConnect,
   AssetDto? gpx,
   AssetDto? fit,
+  List<RouteGpsSyncStatusDto>? syncStatuses,
 }) {
   return PdlSheet.show<GpsChoice>(
     context: context,
@@ -85,6 +118,7 @@ Future<GpsChoice?> showGpsSheet(
       offerConnect: offerConnect,
       gpx: gpx,
       fit: fit,
+      syncStatuses: syncStatuses,
       onChoice: (GpsChoice choice) => Navigator.of(sheetContext).pop(choice),
     ),
   );
@@ -100,6 +134,7 @@ class GpsSheet extends StatelessWidget {
     required this.onChoice,
     this.gpx,
     this.fit,
+    this.syncStatuses,
   });
 
   final String subtitle;
@@ -107,6 +142,9 @@ class GpsSheet extends StatelessWidget {
   final bool offerConnect;
   final AssetDto? gpx;
   final AssetDto? fit;
+
+  /// Où en est déjà le parcours chez chaque service (`gpsSyncStatuses`).
+  final List<RouteGpsSyncStatusDto>? syncStatuses;
   final ValueChanged<GpsChoice> onChoice;
 
   @override
@@ -144,6 +182,7 @@ class GpsSheet extends StatelessWidget {
             _row(
               key: keys.gpsSheet.service(s.serviceType),
               title: s.displayName,
+              subtitle: gpsRouteStatusLine(_statusOf(s.serviceType)),
               icon: PdlIcons.device,
               divider: i < services.length - 1,
               choice: GpsSendToService(s),
@@ -190,6 +229,14 @@ class GpsSheet extends StatelessWidget {
     );
   }
 
+  RouteGpsSyncStatusDto? _statusOf(String serviceType) {
+    for (final RouteGpsSyncStatusDto status
+        in syncStatuses ?? const <RouteGpsSyncStatusDto>[]) {
+      if (status.serviceType == serviceType) return status;
+    }
+    return null;
+  }
+
   /// Le libellé d'une section de fichier, puis ses lignes : deux sur Android,
   /// une seule « Partager » ailleurs.
   List<Widget> _fileSection({
@@ -229,12 +276,14 @@ class GpsSheet extends StatelessWidget {
     required String title,
     required IconData icon,
     required GpsChoice choice,
+    String? subtitle,
     bool divider = false,
   }) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
     child: PdlSettingRow(
       key: key,
       title: title,
+      subtitle: subtitle,
       icon: icon,
       showDivider: divider,
       trailing: const SizedBox.shrink(),
