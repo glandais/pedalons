@@ -1,6 +1,6 @@
 package fr.pedalons.service.asset;
 
-import fr.pedalons.common.exception.NotFoundException;
+import fr.pedalons.common.exception.PedalonsException;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.common.TeamEntity;
 import fr.pedalons.domain.team.Team;
@@ -16,6 +16,7 @@ import fr.pedalons.service.security.PedalonsQueryContext;
 import fr.pedalons.service.security.SecurityVerifier;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 
 @ApplicationScoped
@@ -102,8 +103,12 @@ public class AssetAccessChecker implements AccessChecker {
           ActionType.READ,
           // we always expect slug as first parameter for team entities
           List.of(team.getSlug(), teamEntity.getSlug()));
-    } catch (NotFoundException hidden) {
-      return false;
+    } catch (PedalonsException e) {
+      // Both NotFoundException classes (common and infrastructure) end up here.
+      if (e.getStatus() == Response.Status.NOT_FOUND) {
+        return false;
+      }
+      throw e;
     }
   }
 }
