@@ -103,7 +103,12 @@ export function RideSoloGroupPanel({
 
         {action === 'leave' && routeSlug && (
           <Box>
-            <GpsMenuButton teamSlug={teamSlug} routeSlug={routeSlug} route={route} />
+            <GpsMenuButton
+              teamSlug={teamSlug}
+              routeSlug={routeSlug}
+              route={route}
+              statuses={group.gpsSyncStatuses}
+            />
           </Box>
         )}
 

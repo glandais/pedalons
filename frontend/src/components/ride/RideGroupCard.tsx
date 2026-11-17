@@ -193,6 +193,7 @@ export function RideGroupCard({
             teamSlug={teamSlug}
             routeSlug={effectiveRouteSlug}
             route={route}
+            statuses={group.gpsSyncStatuses}
             subtitle={
               group.distance !== undefined ? `${title} · ${distance(group.distance)}` : title
             }

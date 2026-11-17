@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import type { GpsServiceConnectionDto, RouteDetailDto } from '@/api/dto'
+import type { GpsServiceConnectionDto, RouteDetailDto, RouteGpsSyncStatusDto } from '@/api/dto'
 import { paths } from '@/config/paths'
 
 const gps = vi.hoisted(() => ({
@@ -55,20 +55,32 @@ const files = {
   },
 } as unknown as Pick<RouteDetailDto, 'media'>
 
-function mount(route?: Pick<RouteDetailDto, 'media'>) {
+function mount(
+  route?: Pick<RouteDetailDto, 'media' | 'gpsSyncStatuses'>,
+  statuses?: RouteGpsSyncStatusDto[]
+) {
   render(
     <MantineProvider>
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
-          <GpsMenuButton teamSlug="vcm" routeSlug="boucle-b" route={route} subtitle="B · 78,0 km" />
+          <GpsMenuButton
+            teamSlug="vcm"
+            routeSlug="boucle-b"
+            route={route}
+            statuses={statuses}
+            subtitle="B · 78,0 km"
+          />
         </MemoryRouter>
       </QueryClientProvider>
     </MantineProvider>
   )
 }
 
-function open(route?: Pick<RouteDetailDto, 'media'>) {
-  mount(route)
+function open(
+  route?: Pick<RouteDetailDto, 'media' | 'gpsSyncStatuses'>,
+  statuses?: RouteGpsSyncStatusDto[]
+) {
+  mount(route, statuses)
   fireEvent.click(
     screen.getByRole('button', { name: "Envoyer le parcours vers un GPS ou l'exporter" })
   )
@@ -129,5 +141,30 @@ describe('GpsMenuButton', () => {
       )
     ).toBe('/files/b.gpx')
     expect(bulk.calls.some((query) => query.enabled)).toBe(true)
+  })
+
+  // docs/LEDGER_*.md WEB-163: each service says where the route already stands.
+  it('says, on each service, where the group’s route already stands', async () => {
+    gps.connectedServices = [
+      { serviceType: 'GARMIN' } as GpsServiceConnectionDto,
+      { serviceType: 'WAHOO' } as GpsServiceConnectionDto,
+    ]
+    // The group's statuses (the route its sync sends) win over the route's own.
+    open({ ...files, gpsSyncStatuses: [{ serviceType: 'WAHOO', state: 'FAILING' }] }, [
+      { serviceType: 'GARMIN', state: 'PENDING' },
+    ])
+    expect((await screen.findByTestId('gps-route-status-GARMIN')).textContent).toBe(
+      'Envoi en cours…'
+    )
+    expect(screen.queryByTestId('gps-route-status-WAHOO')).toBeNull()
+  })
+
+  it('reads the route’s own statuses when the card has none', async () => {
+    gps.connectedServices = [{ serviceType: 'GARMIN' } as GpsServiceConnectionDto]
+    bulk.route = { ...files, gpsSyncStatuses: [{ serviceType: 'GARMIN', state: 'OUTDATED' }] }
+    open()
+    expect((await screen.findByTestId('gps-route-status-GARMIN')).textContent).toBe(
+      'Une version précédente y est : renvoyez-le'
+    )
   })
 })

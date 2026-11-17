@@ -182,7 +182,16 @@ export function useGpsConnections() {
       )
       return response.data
     },
-    onSuccess: notifyUploadResult,
+    onSuccess: (result, { teamSlug }) => {
+      notifyUploadResult(result)
+      // The upload is recorded: the team's routes re-read their `gpsSyncStatuses`, so the device
+      // menu says the route is there (docs/LEDGER_*.md WEB-163).
+      const prefix = `/api/teams/${teamSlug}/routes`
+      queryClient.invalidateQueries({
+        predicate: ({ queryKey }) =>
+          typeof queryKey[0] === 'string' && queryKey[0].startsWith(prefix),
+      })
+    },
     onError: notifyUploadFailure,
   })
 

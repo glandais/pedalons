@@ -217,6 +217,7 @@ export function NextRideCard({ ride, headingId }: NextRideCardProps) {
                 <GpsMenuButton
                   teamSlug={ride.team.slug}
                   routeSlug={routeSlug}
+                  statuses={group ? group.gpsSyncStatuses : ride.gpsSyncStatuses}
                   size="sm"
                   subtitle={group ? `${groupTitle(group.name, t)} · ${ride.name}` : ride.name}
                 />

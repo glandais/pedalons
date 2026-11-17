@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { IconMap, IconDownload, IconDeviceMobile } from '@tabler/icons-react'
 import { Group, Text, UnstyledButton, Anchor, Menu, Loader } from '@mantine/core'
 import type { GpsServiceType, RouteDetailDto } from '@/api/dto'
+import { SendToDeviceItems } from '@/components/route/SendToDeviceItems'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { paths } from '@/config/paths'
 import { useAuth } from '@/hooks/useAuth'
@@ -14,9 +15,10 @@ interface RideGroupRouteActionsProps {
   /**
    * That route — from the ride's single `/routes/bulk` read (`useRideDetailData.routesBySlug`), or
    * the `RouteDto` a trip's stage embeds — only its GPX/FIT assets are read here. Undefined while
-   * it loads: the links wait for it.
+   * it loads: the links wait for it. Its `gpsSyncStatuses` say, in the device menu, where it
+   * already stands at the caller's services (docs/LEDGER_*.md WEB-163).
    */
-  route: Pick<RouteDetailDto, 'media'> | undefined
+  route: Pick<RouteDetailDto, 'media' | 'gpsSyncStatuses'> | undefined
   size?: 'xs' | 'sm'
   /** False on the ride page's group cards: the card itself opens the group, map and route included. */
   withViewLink?: boolean
@@ -74,7 +76,7 @@ export function RideGroupRouteActions({
         </Anchor>
       )}
       {isAuthenticated && connectedServices.length > 0 && (
-        <Menu shadow="md" width={200}>
+        <Menu shadow="md" width={260}>
           <Menu.Target>
             <UnstyledButton
               disabled={isUploading}
@@ -90,16 +92,11 @@ export function RideGroupRouteActions({
             </UnstyledButton>
           </Menu.Target>
           <Menu.Dropdown>
-            {connectedServices.map((service) => (
-              <Menu.Item
-                key={service.serviceType}
-                onClick={() => handleSendToDevice(service.serviceType)}
-              >
-                {t(
-                  `gps.services.${service.serviceType.toLowerCase() as Lowercase<GpsServiceType>}`
-                )}
-              </Menu.Item>
-            ))}
+            <SendToDeviceItems
+              services={connectedServices}
+              statuses={route?.gpsSyncStatuses}
+              onSend={handleSendToDevice}
+            />
           </Menu.Dropdown>
         </Menu>
       )}

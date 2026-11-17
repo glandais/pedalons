@@ -7,9 +7,10 @@ import {
   IconDownload,
   IconPlugConnected,
 } from '@tabler/icons-react'
-import type { GpsServiceType, RouteDetailDto } from '@/api/dto'
+import type { RouteDetailDto, RouteGpsSyncStatusDto } from '@/api/dto'
 import { useGetRoutesBulk } from '@/api/endpoints/routes/routes'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
+import { SendToDeviceItems } from '@/components/route/SendToDeviceItems'
 import { paths } from '@/config/paths'
 import { useAuth } from '@/hooks/useAuth'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
@@ -23,7 +24,13 @@ interface GpsMenuButtonProps {
    * prochaines sorties », whose rows carry only the slug —, the menu reads them when it opens, from
    * the same `/routes/bulk` without geometry: one small request, and only for who asks.
    */
-  route?: Pick<RouteDetailDto, 'media'>
+  route?: Pick<RouteDetailDto, 'media' | 'gpsSyncStatuses'>
+  /**
+   * Where the route already stands at the caller's services, said on each service's line
+   * (docs/LEDGER_*.md WEB-163): a group's or a ride's `gpsSyncStatuses` — the route its automatic
+   * sync sends. Absent, the route's own (given, or read when the menu opens).
+   */
+  statuses?: RouteGpsSyncStatusDto[]
   /** What leaves, on the menu's first line: « Groupe B · 78,0 km ». */
   subtitle?: string
   size?: 'xs' | 'sm'
@@ -43,6 +50,7 @@ export function GpsMenuButton({
   route,
   subtitle,
   size = 'xs',
+  statuses,
 }: GpsMenuButtonProps) {
   const { t } = useTranslation()
   const { isAuthenticated } = useAuth()
@@ -54,7 +62,8 @@ export function GpsMenuButton({
     { slug: [routeSlug], geometry: false },
     { query: { enabled: opened && !route, staleTime: 5 * 60 * 1000 } }
   )
-  const assets = (route ?? lazy.data?.routes?.[0])?.media?.assets
+  const read = route ?? lazy.data?.routes?.[0]
+  const assets = read?.media?.assets
   const loadingFiles = !route && lazy.isLoading && opened
 
   return (
@@ -79,15 +88,12 @@ export function GpsMenuButton({
         )}
         <Menu.Label>{t('routes.gps.toDevice')}</Menu.Label>
         {isAuthenticated && connectedServices.length > 0 ? (
-          connectedServices.map((service) => (
-            <Menu.Item
-              key={service.serviceType}
-              leftSection={<IconDeviceWatch size={16} aria-hidden />}
-              onClick={() => uploadRoute({ serviceType: service.serviceType, teamSlug, routeSlug })}
-            >
-              {t(`gps.services.${service.serviceType.toLowerCase() as Lowercase<GpsServiceType>}`)}
-            </Menu.Item>
-          ))
+          <SendToDeviceItems
+            services={connectedServices}
+            statuses={statuses ?? read?.gpsSyncStatuses}
+            onSend={(serviceType) => uploadRoute({ serviceType, teamSlug, routeSlug })}
+            icon={<IconDeviceWatch size={16} aria-hidden />}
+          />
         ) : (
           <Menu.Item
             component={PrefetchLink}

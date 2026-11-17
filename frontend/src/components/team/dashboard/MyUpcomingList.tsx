@@ -86,6 +86,7 @@ function RideRow({ ride }: { ride: RideDto }) {
             <GpsMenuButton
               teamSlug={ride.team.slug}
               routeSlug={routeSlug}
+              statuses={group ? group.gpsSyncStatuses : ride.gpsSyncStatuses}
               subtitle={group ? `${groupTitle(group.name, t)} · ${ride.name}` : ride.name}
             />
           )}

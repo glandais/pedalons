@@ -6,6 +6,7 @@ import {
   IconDownload,
   IconDeviceMobile,
 } from '@tabler/icons-react'
+import { SendToDeviceItems } from '@/components/route/SendToDeviceItems'
 import { Box, Button, Group, Stack, Text, Title, Badge, Menu, Loader } from '@mantine/core'
 import {
   ElevationState,
@@ -151,7 +152,7 @@ export function RouteDetailView({
           )}
           {/* Send to Device - only show if authenticated with connected services */}
           {hasDownloads && isAuthenticated && teamSlug && connectedServices.length > 0 && (
-            <Menu shadow="md" width={200}>
+            <Menu shadow="md" width={260}>
               <Menu.Target>
                 <Button
                   variant="default"
@@ -163,16 +164,11 @@ export function RouteDetailView({
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
-                {connectedServices.map((service) => (
-                  <Menu.Item
-                    key={service.serviceType}
-                    onClick={() => handleSendToDevice(service.serviceType)}
-                  >
-                    {t(
-                      `gps.services.${service.serviceType.toLowerCase() as Lowercase<GpsServiceType>}`
-                    )}
-                  </Menu.Item>
-                ))}
+                <SendToDeviceItems
+                  services={connectedServices}
+                  statuses={route.gpsSyncStatuses}
+                  onSend={handleSendToDevice}
+                />
               </Menu.Dropdown>
             </Menu>
           )}
