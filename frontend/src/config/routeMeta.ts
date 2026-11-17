@@ -18,6 +18,7 @@ import type { Instant, Visibility } from '@/api/dto'
 import type { Locale } from '@/config/paths'
 import type { RouteConfig } from '@/config/routes.types'
 import { groupTitle } from '@/utils/groupTitle'
+import { formatDate as formatLongDate, formatTime as formatClockTime } from '@/utils/dateFormatCore'
 import {
   buildMetaTags as _buildMetaTags,
   defaultImage,
@@ -109,28 +110,36 @@ export function withIndexing(
  */
 const META_FALLBACK_TIME_ZONE = 'Europe/Paris'
 
+/**
+ * Runs one of `utils/dateFormat`'s formatters (from `dateFormatCore`, which leaves i18next alone) in the entity's zone, never throwing: an identifier
+ * this runtime does not know falls back on Paris. The same formatters as the pages, so a preview
+ * writes « 15 juin 2025 » / « June 15, 2025 » like the screen it opens (docs/LEDGER_*.md WEB-139).
+ */
+function inEntityZone(
+  formatter: (date: Instant, language: string, timeZone: string) => string,
+  instant: Instant | undefined,
+  locale: Locale,
+  timeZone: string | undefined
+): string | undefined {
+  if (!instant) return undefined
+  try {
+    return formatter(instant, locale, timeZone || META_FALLBACK_TIME_ZONE) || undefined
+  } catch {
+    try {
+      return formatter(instant, locale, META_FALLBACK_TIME_ZONE) || undefined
+    } catch {
+      return undefined
+    }
+  }
+}
+
 /** Localised long date (day + month + year), matching the resolved SSR locale — not the browser. */
 function formatDate(
   instant: Instant | undefined,
   locale: Locale,
   timeZone: string | undefined
 ): string | undefined {
-  if (!instant) return undefined
-  const d = new Date(instant)
-  if (Number.isNaN(d.getTime())) return undefined
-  const format = (zone: string) =>
-    new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'fr-FR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      timeZone: zone,
-    }).format(d)
-  // A meta builder never throws: an identifier this runtime does not know falls back.
-  try {
-    return format(timeZone || META_FALLBACK_TIME_ZONE)
-  } catch {
-    return format(META_FALLBACK_TIME_ZONE)
-  }
+  return inEntityZone(formatLongDate, instant, locale, timeZone)
 }
 
 /** Localised time of day (« 08:30 »), in the entity's zone like {@link formatDate}. */
@@ -139,20 +148,7 @@ function formatTime(
   locale: Locale,
   timeZone: string | undefined
 ): string | undefined {
-  if (!instant) return undefined
-  const d = new Date(instant)
-  if (Number.isNaN(d.getTime())) return undefined
-  const format = (zone: string) =>
-    new Intl.DateTimeFormat(locale === 'en' ? 'en-GB' : 'fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: zone,
-    }).format(d)
-  try {
-    return format(timeZone || META_FALLBACK_TIME_ZONE)
-  } catch {
-    return format(META_FALLBACK_TIME_ZONE)
-  }
+  return inEntityZone(formatClockTime, instant, locale, timeZone)
 }
 
 /** ISO-8601 publication time, preferring the explicit publish time over creation. */
@@ -317,10 +313,13 @@ export const rideMeta: RouteMetaFn = (ctx) => {
   const stripped = stripMarkdown(ride.media?.markdown ?? '')
   // A solo ride's page is its group's (WEB-79): the group's facts stand in for the ride's count.
   const solo = soloGroup(ride)
+  const rideDate = formatDate(ride.dateTime, ctx.locale, ride.timezone)
+  // The date leads even when the ride has a text: a preview without it does not say which outing
+  // of a recurring name it is (docs/LEDGER_*.md WEB-139).
   const description = stripped
-    ? truncate(stripped, 200)
+    ? truncate(joinFacets([rideDate, stripped]), 200)
     : joinFacets([
-        formatDate(ride.dateTime, ctx.locale, ride.timezone),
+        rideDate,
         ride.startPlace?.name && `${ctx.t('seo.ride.startPrefix')}${ride.startPlace.name}`,
         ...(solo
           ? groupFacts(solo, ride, ctx)
@@ -409,12 +408,13 @@ export const tripMeta: RouteMetaFn = (ctx) => {
   const teamName = trip.team?.name ?? appNameOf(ctx)
 
   const stripped = stripMarkdown(trip.media?.markdown ?? '')
+  const tripStart = formatDate(trip.dateTime, ctx.locale, trip.timezone)
+  const startFacet = tripStart && `${ctx.t('seo.trip.startPrefix')}${tripStart}`
   const description = stripped
-    ? truncate(stripped, 200)
+    ? truncate(joinFacets([startFacet, stripped]), 200)
     : joinFacets([
         trip.stageCount > 0 && ctx.t('seo.trip.stages', { count: trip.stageCount }),
-        formatDate(trip.dateTime, ctx.locale, trip.timezone) &&
-          `${ctx.t('seo.trip.startPrefix')}${formatDate(trip.dateTime, ctx.locale, trip.timezone)}`,
+        startFacet,
         trip.participantCount > 0 &&
           ctx.t('seo.ride.participants', { count: trip.participantCount }),
       ])
@@ -464,9 +464,12 @@ export const stageMeta: RouteMetaFn = (ctx) => {
   }
 
   const alt = `${stage.name} — ${trip.name}`
+  // A stage's day leads, text or not (docs/LEDGER_*.md WEB-139); a stage starts at its own time,
+  // in its own zone, not the trip's.
+  const stageDate = formatDate(stage.dateTime, ctx.locale, stage.timezone)
   const stripped = stripMarkdown(stage.media?.markdown ?? '')
-  const description = stripped
-    ? truncate(stripped, 180)
+  const body = stripped
+    ? stripped
     : joinFacets([
         stage.route && `${formatKm(stage.route.distance)} km`,
         stage.route && `${Math.round(stage.route.elevationGain)} m ${ctx.t('seo.elevation')}`,
@@ -474,6 +477,7 @@ export const stageMeta: RouteMetaFn = (ctx) => {
           stage.endPlace?.name &&
           `${stage.startPlace.name} → ${stage.endPlace.name}`,
       ]) || ctx.t('seo.stage.description', { trip: trip.name })
+  const description = truncate(joinFacets([stageDate, body]), 180)
 
   return {
     type: 'article',

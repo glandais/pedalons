@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **576 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **577 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -189,6 +189,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`WEB-142`](ledger/WEB/WEB-142.md) Les pastilles météo s'adaptent au zoom de la carte — 2026-11-09
 - [x] [`WEB-141`](ledger/WEB/WEB-141.md) Fonds cyclistes « Vélo » et « Route », en clair ou en sombre quel que soit le thème — 2026-11-08
 - [x] [`WEB-140`](ledger/WEB/WEB-140.md) Les specs e2e de fuseau lisent le bloc de départ — 2026-11-07
+- [x] [`WEB-139`](ledger/WEB/WEB-139.md) Aperçu de partage (OG/SSR) : la date disparaît dès qu'il y a une description — 2026-11-17
 - [x] [`WEB-138`](ledger/WEB/WEB-138.md) Le départ quitte la barre des statistiques, au format unique — 2026-11-07
 - [x] [`WEB-137`](ledger/WEB/WEB-137.md) Le départ passe avant la description, dans un bloc de départ — 2026-11-07
 - [x] [`WEB-136`](ledger/WEB/WEB-136.md) « L'heure qui me concerne » a une source unique — 2026-11-07

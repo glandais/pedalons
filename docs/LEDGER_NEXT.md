@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **169 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
+Index des **168 entrées ouvertes** et des 70 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -84,10 +84,6 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 - [ ] [`WEB-81`](ledger/WEB/WEB-81.md) GPX à plusieurs traces : profil empilé et synchro faussée (S, priorité basse)
 - [ ] [`WEB-7`](ledger/WEB/WEB-7.md) Idées de la liste « P2 (à planifier) » qui n'ont pas été retenues
-
-### Heure de départ : audit du 7 novembre 2026
-
-- [ ] [`WEB-139`](ledger/WEB/WEB-139.md) Aperçu de partage (OG/SSR) : la date disparaît dès qu'il y a une description (S)
 
 ## API — Contrat d'API et backend
 

@@ -4,11 +4,20 @@
 import { describe, it, expect, vi } from 'vitest'
 import { QueryClient } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
-import type { RideDto, TeamDetailDto, Visibility } from '@/api/dto'
+import type { RideDto, TeamDetailDto, TripDto, Visibility } from '@/api/dto'
 import { getGetTeamQueryKey } from '@/api/endpoints/teams/teams'
 import { getGetRideQueryKey } from '@/api/endpoints/rides/rides'
+import { getGetTripQueryKey } from '@/api/endpoints/trips/trips'
 import { buildMetaTags, buildCanonicalUrl, type RouteMetaContext } from '@/lib/seo'
-import { rideGroupMeta, rideMeta, routeIndexable, teamDetailMeta, withIndexing } from './routeMeta'
+import {
+  rideGroupMeta,
+  rideMeta,
+  routeIndexable,
+  stageMeta,
+  teamDetailMeta,
+  tripMeta,
+  withIndexing,
+} from './routeMeta'
 import { pathVariants } from './paths'
 
 vi.mock('@/config/appConfig', () => ({
@@ -175,6 +184,79 @@ describe('ride date in the link preview (WEB-70)', () => {
       ...ride,
       dateTime: '2026-10-10T16:30:00Z',
       timezone: 'Asia/Tokyo',
+    })
+    expect(rideMeta(ctx)?.description).toContain('11 octobre 2026')
+  })
+})
+
+describe('the date stays in a preview that has a text (WEB-139)', () => {
+  function tripContext(): RouteMetaContext {
+    const ctx = context('PUBLIC')
+    ctx.params = { teamSlug: 'np', tripSlug: 'tour', stageSlug: 'etape-1' }
+    ctx.queryClient.setQueryData(getGetTripQueryKey('np', 'tour'), {
+      slug: 'tour',
+      name: 'Tour du lac',
+      visibility: 'PUBLIC',
+      dateTime: '2026-10-10T06:00:00Z',
+      timezone: 'Europe/Paris',
+      stageCount: 2,
+      participantCount: 0,
+      media: { markdown: 'Deux jours autour du lac, nuit au refuge.' },
+      team: { slug: 'np', name: 'N Peloton', visibility: 'PUBLIC', accessible: true },
+      permissions: { canEdit: false, canDelete: false, indexable: true },
+      stages: [
+        {
+          slug: 'etape-1',
+          name: 'Étape 1',
+          // 23:30 UTC on the 10th is already the 11th in Tokyo: the stage's zone, not the trip's.
+          dateTime: '2026-10-10T23:30:00Z',
+          timezone: 'Asia/Tokyo',
+          media: { markdown: '' },
+        },
+      ],
+    } as unknown as TripDto)
+    return ctx
+  }
+
+  it('leads a ride description written by its organiser', () => {
+    const ctx = context('PUBLIC', 'PUBLIC')
+    const ride = ctx.queryClient.getQueryData<RideDto>(getGetRideQueryKey('np', 'sortie'))!
+    ctx.queryClient.setQueryData(getGetRideQueryKey('np', 'sortie'), {
+      ...ride,
+      dateTime: '2026-10-11T06:00:00Z',
+      media: { markdown: 'On roule **tranquille** vers la côte.' },
+    })
+    expect(rideMeta(ctx)?.description).toBe('11 octobre 2026 · On roule tranquille vers la côte.')
+  })
+
+  it('leads a trip description, with its start prefix', () => {
+    expect(tripMeta(tripContext())?.description).toBe(
+      'seo.trip.startPrefix10 octobre 2026 · Deux jours autour du lac, nuit au refuge.'
+    )
+  })
+
+  it('gives a stage its own day, in its own zone', () => {
+    expect(stageMeta(tripContext())?.description).toBe('11 octobre 2026 · seo.stage.description')
+  })
+
+  it('writes the day as the pages do, in English too', () => {
+    const ctx = context('PUBLIC', 'PUBLIC')
+    ctx.locale = 'en'
+    const ride = ctx.queryClient.getQueryData<RideDto>(getGetRideQueryKey('np', 'sortie'))!
+    ctx.queryClient.setQueryData(getGetRideQueryKey('np', 'sortie'), {
+      ...ride,
+      dateTime: '2026-10-11T06:00:00Z',
+    })
+    expect(rideMeta(ctx)?.description).toContain('October 11, 2026')
+  })
+
+  it('falls back on Paris for a zone the runtime does not know, without throwing', () => {
+    const ctx = context('PUBLIC', 'PUBLIC')
+    const ride = ctx.queryClient.getQueryData<RideDto>(getGetRideQueryKey('np', 'sortie'))!
+    ctx.queryClient.setQueryData(getGetRideQueryKey('np', 'sortie'), {
+      ...ride,
+      dateTime: '2026-10-10T22:30:00Z',
+      timezone: 'Mars/Olympus_Mons',
     })
     expect(rideMeta(ctx)?.description).toContain('11 octobre 2026')
   })
