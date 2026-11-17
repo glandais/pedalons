@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **156 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
+Index des **155 entrées ouvertes** et des 72 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -252,7 +252,6 @@ Contexte du domaine : [`ledger/SEC/README.md`](ledger/SEC/README.md).
 - [ ] [`SEC-41`](ledger/SEC/SEC-41.md) Une demande en cours sur un attribut d'identité survit à la récupération du compte
 - [ ] [`SEC-40`](ledger/SEC/SEC-40.md) La CSP complète du site n'est encore que rapportée (`Content-Security-Policy-Report-Only`) : lire les…
 - [ ] [`SEC-39`](ledger/SEC/SEC-39.md) Deux autres émissions de jetons par e-mail gardent le motif compter-puis-insérer que `SEC-35` a fermé pour…
-- [ ] [`SEC-14`](ledger/SEC/SEC-14.md) Images externes dans le markdown ; le parseur XML et le paramètre non encodé sont livrés sous `SEC-21`
 - [ ] [`SEC-13`](ledger/SEC/SEC-13.md) Durcissement des workflows GitHub Actions — permissions minimales posées sur les quatre workflows d'alors…
 - [ ] [`SEC-12`](ledger/SEC/SEC-12.md) Voir la table des constats faibles de l'audit ; L1 et L5 à L9 sont livrés sous `SEC-20`, L12 et L13 sous…
 
@@ -414,6 +413,7 @@ identifiant.
 - [`MOD-5`](ledger/MOD/MOD-5.md) Contenu masqué d'un compte effacé
 - [`ISSUE-10`](ledger/ISSUE/ISSUE-10.md) Staging et la production servent publiquement leurs sourcemaps
 - [`BRAND-3`](ledger/BRAND/BRAND-3.md) Test de concordance des tables de couleurs web et mobile
+- [`SEC-14`](ledger/SEC/SEC-14.md) Images externes dans le markdown ; le parseur XML et le paramètre non encodé sont livrés sous `SEC-21`
 - [`AUD-33`](ledger/AUD/AUD-33.md) Pagination des routes côté Karoo
 - [`AUD-1`](ledger/AUD/AUD-1.md) Déploiement automatique (CD) depuis GitHub
 - [`LEGAL-20`](ledger/LEGAL/LEGAL-20.md) Mesure d'audience par un service SaaS

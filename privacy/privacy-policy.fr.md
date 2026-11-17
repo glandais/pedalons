@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-**Dernière mise à jour : 14 novembre 2026**
+**Dernière mise à jour : 17 novembre 2026**
 
 La présente politique de confidentialité décrit la manière dont Pedalons (« nous », « notre », « nos ») collecte, utilise et protège vos données personnelles lorsque vous utilisez notre plateforme (site web, application mobile, extensions pour appareils GPS).
 
@@ -227,6 +227,7 @@ Nous n'utilisons **jamais** vos données pour :
 - **Votre nom affiché et votre photo de profil** sont visibles par les membres de vos équipes, et par quiconque sur internet partout où ils apparaissent sur du contenu public (liste des personnes inscrites, publications que vous signez). Le fichier de votre photo est servi à une adresse qui n'exige pas de connexion. Choisissez un nom et une photo que vous acceptez de montrer publiquement ; vous pouvez retirer votre photo à tout moment.
 - **Fichiers de l'outil GPX** : accessibles à quiconque possède le lien, sans compte (voir « Outil d'analyse GPX » à la section 1).
 - **Aperçus de lien** : lorsqu'un lien vers un itinéraire, une sortie ou un fichier GPX analysé est collé dans une messagerie, un réseau social ou un outil de discussion, cette plateforme récupère l'image d'aperçu que nous publions — pour une trace, une carte de la trace avec son nom, sa distance et son dénivelé — même si personne ne clique. Ne partagez pas le lien si la trace part de votre domicile.
+- **Images hébergées ailleurs** : le texte d'une sortie, d'une publication ou d'une page peut afficher une image par son adresse sur un autre site, plutôt qu'une image envoyée sur Pedalons. Votre navigateur ou l'application la télécharge alors directement depuis ce site, qui reçoit votre adresse IP, l'heure et l'adresse de l'image, comme pour toute image sur le web ; aucune information de votre compte ne lui est transmise. Ce site n'est pas un sous-traitant de Pedalons et applique ses propres règles.
 - **Abonnements calendrier (ICS)** : votre lien calendrier personnel fonctionne sans connexion : quiconque l'obtient peut lire les sorties et voyages que vous voyez, y compris ceux réservés à l'équipe. Un service de calendrier hébergé (Google Calendar, Apple Calendar, Outlook…) récupère le flux sur ses propres serveurs et en stocke le contenu (titres, dates et liens des sorties et étapes, noms de vos équipes) ; nous n'avons aucun contrôle sur ce qu'il en fait. Traitez l'adresse du flux comme un mot de passe : tant qu'une application de calendrier la consulte, elle reste valide ; elle expire après 90 jours sans consultation, et la régénérer invalide immédiatement l'ancienne.
 - **Canaux de discussion d'équipe** : si les personnes qui administrent votre équipe en ont relié un (voir « Notifications » à la section 1), les annonces de l'équipe, avec le nom du membre qui les a déclenchées, y sont publiées. C'est l'équipe qui choisit ce service, qui les reçoit en tant que destinataire agissant selon ses propres conditions, et non en tant que prestataire de notre part.
 - **Signalements** : voir « Signalements et blocages » à la section 1.

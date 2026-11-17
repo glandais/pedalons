@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: November 14, 2026**
+**Last updated: November 17, 2026**
 
 This privacy policy describes how Pedalons ("we", "our", "us") collects, uses, and protects your personal data when you use our platform (website, mobile app, GPS device extensions).
 
@@ -227,6 +227,7 @@ We **never** use your data for:
 - **Your display name and profile picture** are visible to the members of your teams, and to anyone on the internet wherever they appear on public content (participant list, author of a post). Your picture file is served from an address that does not require logging in. Choose a name and a picture you are comfortable showing publicly; you can remove your picture at any time.
 - **GPX tool files**: accessible to anyone who has the link, without an account (see "GPX Analysis Tool" in section 1).
 - **Link previews**: when a link to a route, a ride or an analysed GPX file is pasted into a messaging app, a social network or a chat tool, that platform fetches the preview image we publish — for a track, a map of the track with its name, distance and elevation — even if nobody clicks. Do not share the link if the track starts at your home.
+- **Images hosted elsewhere**: the text of a ride, a post or a page can show an image by its address on another site, instead of an image uploaded to Pedalons. Your browser or the app then downloads it directly from that site, which receives your IP address, the time and the image's address, as for any image on the web; no information from your account is sent to it. That site is not a Pedalons processor and applies its own rules.
 - **Calendar subscriptions (ICS)**: your personal calendar link works without logging in: anyone who obtains it can read the rides and trips you can see, including team-only ones. A hosted calendar service (Google Calendar, Apple Calendar, Outlook, …) fetches the feed on its own servers and stores its content (titles, dates and links of rides and stages, your team names); we have no control over what it does with it. Treat the feed address as a password: it stays valid as long as a calendar application fetches it; it expires after 90 days without a fetch, and regenerating it immediately invalidates the old one.
 - **Team chat channels**: if your team's administrators have connected one (see "Notifications" in section 1), the team's announcements, with the name of the member who triggered them, are posted there. The team chooses the service, which receives them as a recipient acting under its own terms, not as our provider.
 - **Reports**: see "Reports and Blocks" in section 1.
