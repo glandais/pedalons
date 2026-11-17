@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
@@ -100,6 +101,26 @@ public class UserTeamRepository implements BaseRepository<UserTeam> {
     String dir = (sortDir != null ? sortDir : key.getDefaultDirection()).name().toLowerCase();
     pedalonsQuery.order(key.getField() + " " + dir + ", id " + dir);
     return getPage(pedalonsQuery, page, size);
+  }
+
+  /**
+   * The number of memberships of each team, for a whole page of teams in one {@code GROUP BY}
+   * query: the same count as {@code count("team.id = ?1")}, never one query per row (docs/LEDGER_*.md
+   * API-139). A team without members is absent from the map.
+   */
+  public Map<Long, Long> countByTeamIds(Collection<Long> teamIds) {
+    if (teamIds.isEmpty()) {
+      return Map.of();
+    }
+    return getEntityManager()
+        .createQuery(
+            "SELECT ut.team.id, COUNT(ut) FROM UserTeam ut "
+                + "WHERE ut.team.id IN :teamIds GROUP BY ut.team.id",
+            Object[].class)
+        .setParameter("teamIds", teamIds)
+        .getResultList()
+        .stream()
+        .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
   }
 
   /**

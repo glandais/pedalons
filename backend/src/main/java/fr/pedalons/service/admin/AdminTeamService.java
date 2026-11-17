@@ -16,6 +16,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 @ApplicationScoped
@@ -54,12 +55,12 @@ public class AdminTeamService {
             .list();
     long total = teamRepository.count(query, params);
 
+    // One grouped count for the page, never one per row (docs/LEDGER_*.md API-139).
+    Map<Long, Long> memberCounts =
+        userTeamRepository.countByTeamIds(teams.stream().map(Team::getId).toList());
     List<AdminTeamDto> items =
         teams.stream()
-            .map(team -> {
-              long memberCount = userTeamRepository.count("team.id = ?1", team.getId());
-              return AdminTeamDto.from(team, memberCount);
-            })
+            .map(team -> AdminTeamDto.from(team, memberCounts.getOrDefault(team.getId(), 0L)))
             .toList();
 
     return new PedalonsPage<>(items, total);
