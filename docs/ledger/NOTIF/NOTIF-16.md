@@ -1,24 +1,34 @@
 ---
 id: NOTIF-16
 title: "Un push daté peut arriver après le rendez-vous"
-status: open
+status: done
 size: "S"
 group: "Notifications datées : expiration"
-verified: 2026-11-17
+done: 2026-11-17
 ---
 
-## Reste à faire
+## Livré
 
-`NOTIF-16` **Un push daté peut arriver après le rendez-vous** — `FcmClient` ne fixe ni
-`android.ttl` (FCM garde alors le message 4 semaines) ni l'en-tête `apns-expiration` ; seul le web
-a un TTL, de 24 h (`WEB_TTL_SECONDS`). Un téléphone éteint jusqu'au dimanche reçoit en se
-rallumant le rappel de la sortie de samedi.
+`NOTIF-16` **Un push daté peut arriver après le rendez-vous** (2026-11-17, contrat inchangé) —
+`FcmClient` ne fixait ni `android.ttl` (FCM gardait alors le message 4 semaines) ni
+`apns-expiration`, et un téléphone éteint jusqu'au dimanche recevait en se rallumant le rappel de
+la sortie de samedi.
 
-À faire : faire porter à `NotificationMessage` l'échéance de la notification (la même règle par
-type que `NOTIF-15`) et la traduire en `android.ttl` et `apns-expiration` (et en `TTL` web, borné à
-l'échéance) pour les types datés ; inchangé pour les autres. Indépendant de `NOTIF-15` pour la
-colonne : l'échéance se calcule depuis `subjectDateTime`, déjà dans le message. Un test sur le JSON
-construit par `FcmClient`.
+- La règle d'échéance vit sur `NotificationType.expiresAt(subjectDateTime)`, `switch` exhaustif :
+  le départ (celui du groupe de la personne, `NOTIF-13`) pour les types de sortie et de voyage,
+  rien pour les posts, les commentaires, les invitations et les signalements. `NOTIF-15` la
+  reprendra pour la boîte de réception. `NotificationMessage.expiresAt()` la lit.
+- `FcmClient.message` la traduit par plateforme : `android.ttl` (borné au plafond de 28 jours de
+  FCM), `apns-expiration` en temps UNIX absolu, `TTL` web au plus tôt de l'échéance et d'un jour.
+  Sans échéance, rien ne change. Jamais un TTL de 0, qui veut dire « maintenant ou jamais » pour
+  FCM, pas « expiré ».
+- `NotificationDeliveryService` passe en `SKIPPED` une livraison **push** due après son échéance
+  (relance passé le départ, file en retard) au lieu de l'envoyer. L'e-mail continue d'envoyer :
+  c'est la part de `NOTIF-15`.
+
+Couvert par `FcmMessageTest` (TTL Android, plafond, `apns-expiration`, TTL web, échéance dépassée)
+et `PushNotificationTest#theMessageExpiresAtTheRidesStart`,
+`#aPushDueAfterTheRendezvous_isSkipped_notSent`.
 
 Hors périmètre : retirer un push déjà affiché sur le téléphone, qui demanderait un push silencieux
 et du code dans l'isolat de fond.

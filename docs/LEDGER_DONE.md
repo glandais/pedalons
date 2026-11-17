@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **585 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **586 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -501,6 +501,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## NOTIF — Notifications
 
+- [x] [`NOTIF-16`](ledger/NOTIF/NOTIF-16.md) Un push daté peut arriver après le rendez-vous — 2026-11-17
 - [x] [`NOTIF-14`](ledger/NOTIF/NOTIF-14.md) La date en tête des titres, des objets et des aperçus — 2026-11-07
 - [x] [`NOTIF-13`](ledger/NOTIF/NOTIF-13.md) Les messages donnent à chaque personne l'heure de son groupe — 2026-11-07
 - [x] [`NOTIF-10`](ledger/NOTIF/NOTIF-10.md) Une modification de sortie faite pendant l'envoi du `RIDE_UPDATED` précédent est de nouveau annoncée — 2026-10-11

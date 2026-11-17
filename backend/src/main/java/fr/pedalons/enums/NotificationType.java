@@ -4,8 +4,10 @@ import static fr.pedalons.enums.NotificationChannel.EMAIL;
 import static fr.pedalons.enums.NotificationChannel.IN_APP;
 import static fr.pedalons.enums.NotificationChannel.PUSH;
 
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The closed set of things a member can be notified about.
@@ -117,6 +119,36 @@ public enum NotificationType {
           TEAM_INVITATION,
           CONTENT_REPORTED ->
           false;
+    };
+  }
+
+  /**
+   * When a notification of this type stops being worth delivering: the start of its rendezvous for
+   * the types about a ride or a trip someone is to leave on — a reminder, an announcement, a change
+   * or a cancellation read after the departure is noise — and never for the others. {@code
+   * subjectDateTime} is the recipient's own start (their group's, docs/LEDGER_*.md NOTIF-13).
+   *
+   * <p>The push channel bounds how long a provider keeps the message for an offline device, and
+   * drops a delivery due after it (docs/LEDGER_*.md NOTIF-16); the inbox is to follow the same rule
+   * (docs/LEDGER_*.md NOTIF-15).
+   */
+  public @Nullable Instant expiresAt(@Nullable Instant subjectDateTime) {
+    return switch (this) {
+      case RIDE_PUBLISHED,
+          RIDE_CANCELLED,
+          TRIP_PUBLISHED,
+          TRIP_CANCELLED,
+          RIDE_REMINDER,
+          RIDE_UPDATED,
+          RIDE_GROUP_REMOVED,
+          RIDE_JOINED ->
+          subjectDateTime;
+      case POST_PUBLISHED,
+          COMMENT_REPLY,
+          COMMENT_ON_MY_PUBLICATION,
+          TEAM_INVITATION,
+          CONTENT_REPORTED ->
+          null;
     };
   }
 

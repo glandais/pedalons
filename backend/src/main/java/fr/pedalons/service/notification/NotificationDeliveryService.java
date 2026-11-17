@@ -77,7 +77,7 @@ public class NotificationDeliveryService {
       return 0;
     }
 
-    Batch batch = QuarkusTransaction.requiringNew().call(() -> load(ids));
+    Batch batch = QuarkusTransaction.requiringNew().call(() -> load(ids, now));
     batch.skipped().forEach(id -> mark(id, NotificationDeliveryStatus.SKIPPED, null));
     for (NotificationMessage message : batch.messages()) {
       try {
@@ -95,12 +95,17 @@ public class NotificationDeliveryService {
     return ids.size();
   }
 
-  private Batch load(List<Long> ids) {
+  private Batch load(List<Long> ids, Instant now) {
     List<NotificationMessage> messages = new ArrayList<>();
     List<Long> skipped = new ArrayList<>();
     for (NotificationDelivery delivery : deliveryRepository.findWithContent(ids)) {
       NotificationMessage message = toMessage(delivery);
-      if (message == null) {
+      // A push due after its rendezvous — retried past the departure, or queued while the sender
+      // was
+      // down — would buzz a phone about a ride already gone (docs/LEDGER_*.md NOTIF-16). E-mail
+      // keeps sending for now: the inbox and its other channels follow in NOTIF-15.
+      if (message == null
+          || (message.channel() == NotificationChannel.PUSH && message.isExpired(now))) {
         skipped.add(delivery.getId());
       } else {
         messages.add(message);

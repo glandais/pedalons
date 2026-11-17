@@ -117,8 +117,9 @@ class PushNotificationTest extends AbstractResourceTest {
     deliveryService.sendDue(NotificationChannel.PUSH);
 
     assertEquals(NotificationDeliveryStatus.SENT, pushDeliveryOfUser3().getStatus());
-    verify(fcm).send(eq(TOKEN), eq(PushPlatform.ANDROID), anyString(), anyString(), any());
-    verify(fcm).send(eq(TOKEN + "-ipad"), eq(PushPlatform.IOS), anyString(), anyString(), any());
+    verify(fcm).send(eq(TOKEN), eq(PushPlatform.ANDROID), anyString(), anyString(), any(), any());
+    verify(fcm)
+        .send(eq(TOKEN + "-ipad"), eq(PushPlatform.IOS), anyString(), anyString(), any(), any());
   }
 
   /** What the app reads on a tap: the type it words itself, and the path to open. */
@@ -131,7 +132,7 @@ class PushNotificationTest extends AbstractResourceTest {
 
     @SuppressWarnings("unchecked")
     ArgumentCaptor<Map> captor = ArgumentCaptor.forClass(Map.class);
-    verify(fcm).send(eq(TOKEN), any(), anyString(), anyString(), captor.capture());
+    verify(fcm).send(eq(TOKEN), any(), anyString(), anyString(), captor.capture(), any());
     Map<?, ?> data = captor.getValue();
     assertEquals("RIDE_PUBLISHED", data.get("type"));
     assertEquals(team1Slug, data.get("teamSlug"));
@@ -139,6 +140,33 @@ class PushNotificationTest extends AbstractResourceTest {
     assertTrue(
         data.get("path").toString().startsWith("/teams/" + team1Slug + "/rides/"),
         data.get("path").toString());
+  }
+
+  /** A provider holding the push for an offline phone drops it when the ride leaves (NOTIF-16). */
+  @Test
+  void theMessageExpiresAtTheRidesStart() throws Exception {
+    devices.seed(user3, PushPlatform.ANDROID, TOKEN);
+    publishRide();
+    drain();
+    deliveryService.sendDue(NotificationChannel.PUSH);
+
+    ArgumentCaptor<Instant> captor = ArgumentCaptor.forClass(Instant.class);
+    verify(fcm).send(eq(TOKEN), any(), anyString(), anyString(), any(), captor.capture());
+    assertEquals(notifications.subjectDateTimesFor(user3).getFirst(), captor.getValue());
+  }
+
+  /** A push due after the ride left — retried, or queued while the sender was down — is dropped. */
+  @Test
+  void aPushDueAfterTheRendezvous_isSkipped_notSent() throws Exception {
+    devices.seed(user3, PushPlatform.ANDROID, TOKEN);
+    publishRide();
+    drain();
+    notifications.pastEveryRendezvous();
+
+    deliveryService.sendDue(NotificationChannel.PUSH);
+
+    assertEquals(NotificationDeliveryStatus.SKIPPED, pushDeliveryOfUser3().getStatus());
+    verify(fcm, never()).send(anyString(), any(), anyString(), anyString(), any(), any());
   }
 
   /** The normal state of every member who only uses the web: nothing to send is not a failure. */
@@ -149,7 +177,7 @@ class PushNotificationTest extends AbstractResourceTest {
     deliveryService.sendDue(NotificationChannel.PUSH);
 
     assertEquals(NotificationDeliveryStatus.SENT, pushDeliveryOfUser3().getStatus());
-    verify(fcm, never()).send(anyString(), any(), anyString(), anyString(), any());
+    verify(fcm, never()).send(anyString(), any(), anyString(), anyString(), any(), any());
   }
 
   /** The table must not grow with tokens nobody can reach — and a dead token is not retried. */
@@ -158,7 +186,7 @@ class PushNotificationTest extends AbstractResourceTest {
     devices.seed(user3, PushPlatform.ANDROID, TOKEN);
     doThrow(new FcmException("UNREGISTERED", true))
         .when(fcm)
-        .send(anyString(), any(), anyString(), anyString(), any());
+        .send(anyString(), any(), anyString(), anyString(), any(), any());
     publishRide();
     drain();
     deliveryService.sendDue(NotificationChannel.PUSH);
@@ -172,7 +200,7 @@ class PushNotificationTest extends AbstractResourceTest {
     devices.seed(user3, PushPlatform.ANDROID, TOKEN);
     doThrow(new FcmException("FCM returned 503", false))
         .when(fcm)
-        .send(anyString(), any(), anyString(), anyString(), any());
+        .send(anyString(), any(), anyString(), anyString(), any(), any());
     publishRide();
     drain();
     deliveryService.sendDue(NotificationChannel.PUSH);

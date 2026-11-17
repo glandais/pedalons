@@ -46,10 +46,14 @@ public class FcmClient {
   private static final Duration ASSERTION_LIFETIME = Duration.ofMinutes(60);
 
   /**
-   * How long a browser's push service keeps a web push for a browser that is offline. A day: a ride
-   * reminder or a cancellation read later than that is noise, and the inbox still has it.
+   * How long a browser's push service keeps a web push for a browser that is offline, at most. A
+   * day: a ride reminder or a cancellation read later than that is noise, and the inbox still has
+   * it. Shorter when the notification expires sooner (docs/LEDGER_*.md NOTIF-16).
    */
-  private static final String WEB_TTL_SECONDS = "86400";
+  static final Duration WEB_TTL = Duration.ofDays(1);
+
+  /** FCM's own ceiling for {@code android.ttl}, and its default when none is given. */
+  static final Duration ANDROID_MAX_TTL = Duration.ofDays(28);
 
   @ConfigProperty(name = "pedalons.push.enabled", defaultValue = "false")
   boolean enabled;
@@ -121,11 +125,18 @@ public class FcmClient {
   /**
    * Delivers one notification to one device.
    *
+   * @param expiresAt when the message stops being worth showing — a provider holding it for an
+   *     offline device drops it then; null when it never does
    * @throws FcmException with {@link FcmException#tokenInvalid()} when the token is dead and the
    *     caller must purge it, and without it when another attempt is worth making
    */
   public void send(
-      String token, PushPlatform platform, String title, String body, Map<String, String> data)
+      String token,
+      PushPlatform platform,
+      String title,
+      String body,
+      Map<String, String> data,
+      @Nullable Instant expiresAt)
       throws FcmException {
     FcmServiceAccount serviceAccount = account;
     if (serviceAccount == null) {
@@ -137,7 +148,9 @@ public class FcmClient {
           fcm.send(
               serviceAccount.projectId(),
               "Bearer " + accessToken(serviceAccount),
-              Map.of("message", message(token, platform, title, body, data)));
+              Map.of(
+                  "message",
+                  message(token, platform, title, body, data, expiresAt, Instant.now())));
     } catch (FcmException e) {
       throw e;
     } catch (Exception e) {
@@ -154,8 +167,25 @@ public class FcmClient {
     }
   }
 
+  /**
+   * The FCM message for one device. With an {@code expiresAt}, every platform is told to drop the
+   * message for a device still offline then — {@code android.ttl}, {@code apns-expiration}, the web
+   * push {@code TTL} — rather than ring a phone switched back on after the ride has left
+   * (docs/LEDGER_*.md NOTIF-16). Without one, Android keeps its 28-day default, APNs its own, and
+   * the web its day.
+   */
   static Map<String, Object> message(
-      String token, PushPlatform platform, String title, String body, Map<String, String> data) {
+      String token,
+      PushPlatform platform,
+      String title,
+      String body,
+      Map<String, String> data,
+      @Nullable Instant expiresAt,
+      Instant now) {
+    // Never below one second: a TTL of 0 means "now or never" to FCM, not "already expired" — the
+    // sender drops an expired delivery before it gets here.
+    @Nullable Duration remaining =
+        expiresAt == null ? null : max(Duration.between(now, expiresAt), Duration.ofSeconds(1));
     Map<String, Object> message = new HashMap<>();
     message.put("token", token);
     if (platform == PushPlatform.WEB) {
@@ -166,29 +196,45 @@ public class FcmClient {
       webData.put("title", title);
       webData.put("body", body);
       message.put("data", webData);
-      message.put("webpush", Map.of("headers", Map.of("Urgency", "high", "TTL", WEB_TTL_SECONDS)));
+      Duration webTtl = remaining == null ? WEB_TTL : min(remaining, WEB_TTL);
+      message.put(
+          "webpush",
+          Map.of("headers", Map.of("Urgency", "high", "TTL", Long.toString(webTtl.toSeconds()))));
       return message;
     }
     message.put("notification", Map.of("title", title, "body", body));
     message.put("data", data);
     if (platform == PushPlatform.ANDROID) {
-      message.put(
-          "android",
-          Map.of("priority", "high", "notification", Map.of("channel_id", "pedalons_default")));
+      Map<String, Object> android = new LinkedHashMap<>();
+      android.put("priority", "high");
+      if (remaining != null) {
+        android.put("ttl", min(remaining, ANDROID_MAX_TTL).toSeconds() + "s");
+      }
+      android.put("notification", Map.of("channel_id", "pedalons_default"));
+      message.put("android", android);
     } else {
       // No content-available: nothing in the app uses a background wake (the iOS badge was ruled
       // out), and the wake is harmful — it relaunches a killed app before the tap, and
       // firebase_messaging then withholds the tap from getInitialMessage() at launch. See the
       // iOS pitfalls in docs/LEDGER_*.md NOTIF-9.
+      Map<String, String> headers = new LinkedHashMap<>();
+      headers.put("apns-priority", "10");
+      if (remaining != null) {
+        // An absolute UNIX time, unlike the others; "0" would mean "deliver once or never".
+        headers.put("apns-expiration", Long.toString(now.plus(remaining).getEpochSecond()));
+      }
       message.put(
-          "apns",
-          Map.of(
-              "headers",
-              Map.of("apns-priority", "10"),
-              "payload",
-              Map.of("aps", Map.of("sound", "default"))));
+          "apns", Map.of("headers", headers, "payload", Map.of("aps", Map.of("sound", "default"))));
     }
     return message;
+  }
+
+  private static Duration min(Duration a, Duration b) {
+    return a.compareTo(b) <= 0 ? a : b;
+  }
+
+  private static Duration max(Duration a, Duration b) {
+    return a.compareTo(b) >= 0 ? a : b;
   }
 
   /**

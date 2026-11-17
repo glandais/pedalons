@@ -161,6 +161,15 @@ public class NotificationTestData {
         Instant.now());
   }
 
+  /** As if every rendezvous had already left: the events' and the inbox rows' starts, an hour ago. */
+  @Transactional
+  public void pastEveryRendezvous() {
+    Instant anHourAgo = Instant.now().minus(1, ChronoUnit.HOURS);
+    eventRepository.update("subjectDateTime = ?1 where subjectDateTime is not null", anHourAgo);
+    notificationRepository.update(
+        "subjectDateTime = ?1 where subjectDateTime is not null", anHourAgo);
+  }
+
   /** Skips the backoff: every pending event becomes due now. */
   @Transactional
   public void makeEventsDue() {

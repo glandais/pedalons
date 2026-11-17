@@ -50,6 +50,17 @@ public record NotificationMessage(
     return baseUrl + NotificationLinks.subjectPath(subjectType, teamSlug, subjectSlug);
   }
 
+  /** When delivering this stops being worth it; null when never — see {@link NotificationType#expiresAt}. */
+  public @Nullable Instant expiresAt() {
+    return type.expiresAt(subjectDateTime);
+  }
+
+  /** Past its {@link #expiresAt()}: a channel that is not a record of the past must not send it. */
+  public boolean isExpired(Instant now) {
+    Instant expiresAt = expiresAt();
+    return expiresAt != null && !expiresAt.isAfter(now);
+  }
+
   public String preferencesUrl() {
     return baseUrl + NotificationLinks.PREFERENCES_PATH;
   }

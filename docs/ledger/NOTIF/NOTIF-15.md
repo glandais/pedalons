@@ -32,8 +32,10 @@ une notification déjà créée.
 - `RIDE_REMINDER` expiré est **supprimé**, sans valeur comme historique : une règle par type dans
   `NotificationRetentionService` (par exemple 24 h après l'échéance), en tranches comme la purge
   existante. Les autres types restent dans l'historique jusqu'aux 90 jours.
-- `NotificationDeliveryService` et le digest abandonnent une livraison en attente (relance push,
-  e-mail du matin) dont la notification a expiré, au lieu de l'envoyer.
+- `NotificationDeliveryService` et le digest abandonnent une livraison **e-mail** en attente
+  (relance, digest du matin) dont la notification a expiré, au lieu de l'envoyer — le push le fait
+  déjà (`NOTIF-16`, dans `NotificationDeliveryService.load`). Réutiliser
+  `NotificationType.expiresAt`, posée par `NOTIF-16`, pour remplir la colonne.
 
 Décision à écrire au moment de livrer : l'échéance est figée à la diffusion, comme
 `subjectDateTime`. Une sortie repoussée fait expirer trop tôt son ancienne `RIDE_PUBLISHED`, ce qui

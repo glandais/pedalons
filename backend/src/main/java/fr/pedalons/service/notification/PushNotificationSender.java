@@ -68,7 +68,13 @@ public class PushNotificationSender implements NotificationChannelSender {
     Exception retryable = null;
     for (Target target : targets) {
       try {
-        fcm.send(target.token(), target.platform(), rendered.title(), rendered.body(), data);
+        fcm.send(
+            target.token(),
+            target.platform(),
+            rendered.title(),
+            rendered.body(),
+            data,
+            message.expiresAt());
         sent++;
       } catch (FcmException e) {
         if (e.tokenInvalid()) {

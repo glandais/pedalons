@@ -8,7 +8,10 @@ public enum NotificationDeliveryStatus {
   SENDING,
   /** Handed to the provider. */
   SENT,
-  /** Not sent on purpose — the recipient was deleted, or the channel was switched off since. */
+  /**
+   * Not sent on purpose — the recipient was deleted, the channel was switched off since, or a push
+   * came due after its rendezvous (docs/LEDGER_*.md NOTIF-16).
+   */
   SKIPPED,
   /** Gave up after repeated failures. */
   FAILED
