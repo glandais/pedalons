@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **154 entrées ouvertes** et des 74 entrées écartées. Chaque entrée a son fichier
+Index des **153 entrées ouvertes** et des 75 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -146,10 +146,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 - [ ] [`API-18`](ledger/API/API-18.md) Voyage comme événement multi-jour au calendrier (`CalendarEventType`, toujours `RIDE`/`TRIP_STAGE`)
 - [ ] [`API-17`](ledger/API/API-17.md) `?format=polyline` sur la géométrie de parcours
 - [ ] [`API-8`](ledger/API/API-8.md) Voisins de publication (`prev`/`next`) — absents de tout le contrat `11.5.1` (balayage de tous les schémas le…
-
-### Vie privée : ce que la politique doit encore décrire faute de mieux
-
-- [ ] [`API-47`](ledger/API/API-47.md) Les documents joints gardent leurs métadonnées
 
 ## OPS — Exploitation
 
@@ -394,6 +390,7 @@ identifiant.
 - [`API-67`](ledger/API/API-67.md) « Mes équipes » d'un admin de plateforme
 - [`API-54`](ledger/API/API-54.md) exiftool pour retirer les métadonnées des images
 - [`API-52`](ledger/API/API-52.md) Durcir `ImageMetadataStripper`
+- [`API-47`](ledger/API/API-47.md) Les documents joints gardent leurs métadonnées
 - [`API-34`](ledger/API/API-34.md) `acceptTerms` obligatoire à l'inscription (contrat `4.1.0`)
 - [`API-33`](ledger/API/API-33.md) `GET /api/rides` et listes mono-type
 - [`API-32`](ledger/API/API-32.md) Champ de contact libre sur une annonce

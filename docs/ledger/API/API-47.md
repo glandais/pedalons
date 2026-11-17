@@ -1,19 +1,12 @@
 ---
 id: API-47
 title: "Les documents joints gardent leurs métadonnées"
-status: open
+status: out
 group: "Vie privée : ce que la politique doit encore décrire faute de mieux"
-verified: 2026-11-16
 ---
 
-## Reste à faire
+## Écarté
 
-`API-47` **Les documents joints gardent leurs métadonnées** — PDF (auteur, JPEG embarqués
-avec leur EXIF), fichiers bureautiques (`docProps`), PSD (EXIF/IPTC) sont stockés tels quels ;
-la politique (§1) le dit. À trancher : les nettoyer (dépendance nouvelle pour le PDF), ou
-garder la phrase. Taille : M à L. exiftool **n'aide pas** (mesuré le 29 septembre 2026,
-`API-54`) : il ajoute une mise à jour incrémentale réversible, le dictionnaire Info reste dans
-les octets, et l'EXIF des JPEG embarqués est intact. Seule voie : réécriture complète (PDFBox)
-en faisant réencoder les JPEG embarqués comme les images (`API-43`). L'enjeu est mince : au
-16 octobre 2026, la prod compte 8 PDF parmi ses pièces jointes, et aucun fichier bureautique
-ni PSD ; garder la phrase (« Délibérément dehors ») reste une issue (décision du propriétaire).
+| ID | Sujet | Décision | Ce que ça implique |
+|---|---|---|---|
+| `API-47` | **Les documents joints gardent leurs métadonnées** : PDF (auteur, dictionnaire Info, XMP, JPEG embarqués avec leur EXIF), fichiers bureautiques (`docProps`), PSD (EXIF/IPTC) | Gardés tels quels (décidé le 17 novembre 2026 avec le propriétaire) | La politique le dit (§4, « Photos et images » : « Les autres fichiers joints (PDF, documents…) sont conservés tels que vous les envoyez, avec leurs métadonnées »), en français et en anglais. Les images jointes sont réencodées (`API-43`), les GPX et FIT réécrits (`TrackAttachmentSanitizer`) : seuls les autres documents gardent leurs métadonnées. Enjeu mesuré le 17 novembre 2026 : 8 PDF (12 Mo) parmi les pièces jointes de la prod, aucun fichier bureautique ni PSD. exiftool ne nettoie pas un PDF (mesuré le 29 septembre 2026, `API-54`) ; la seule voie, une réécriture par PDFBox avec réencodage des JPEG embarqués, invaliderait les signatures, risquerait les formulaires et dégraderait les plans scannés. À rouvrir si les pièces jointes non-image deviennent courantes ; la phrase de la politique doit alors changer avec le code |
