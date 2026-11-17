@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **155 entrées ouvertes** et des 72 entrées écartées. Chaque entrée a son fichier
+Index des **154 entrées ouvertes** et des 74 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -170,7 +170,6 @@ Contexte du domaine : [`ledger/OPS/README.md`](ledger/OPS/README.md).
 - [ ] [`OPS-41`](ledger/OPS/OPS-41.md) Mesure d'audience du site : consigner la recette, puis relire au bout d'un mois (S)
 - [ ] [`OPS-34`](ledger/OPS/OPS-34.md) Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109` · *externe*
 - [ ] [`OPS-30`](ledger/OPS/OPS-30.md) Check Healthchecks du rafraîchissement des données des relecteurs des stores
-- [ ] [`OPS-21`](ledger/OPS/OPS-21.md) Ce que le monitoring ne voit pas encore
 
 ### Extension Karoo : catalogue Hammerhead
 
@@ -401,6 +400,8 @@ identifiant.
 - [`API-31`](ledger/API/API-31.md) Position exacte d'une annonce
 - [`API-30`](ledger/API/API-30.md) Repli sur `createdBy` pour le meneur
 - [`API-29`](ledger/API/API-29.md) Liste d'attente (`waitlisted`)
+- [`OPS-63`](ledger/OPS/OPS-63.md) Erreurs côté client web et mobile (GlitchTip)
+- [`OPS-62`](ledger/OPS/OPS-62.md) Métriques du frontend SSR
 - [`OPS-40`](ledger/OPS/OPS-40.md) Compter des visites plutôt que des pages vues
 - [`OPS-39`](ledger/OPS/OPS-39.md) Mesure d'audience par les journaux d'accès
 - [`OPS-38`](ledger/OPS/OPS-38.md) Matomo pour la mesure d'audience

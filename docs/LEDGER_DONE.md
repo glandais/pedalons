@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **592 entrées livrées**, et des 10 entrées encore ouvertes dont une part l'est.
+Index des **593 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -487,7 +487,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`OPS-25`](ledger/OPS/OPS-25.md) Un health check lent ne coupe plus tout `/api` — 2026-09-30
 - [x] [`OPS-24`](ledger/OPS/OPS-24.md) `next` et `Referer` masqués dans le journal de Caddy — 2026-09-30
 - [x] [`OPS-22`](ledger/OPS/OPS-22.md) Monitoring mis en service sur l'hôte — 2026-09-30
-- [x] [`OPS-21`](ledger/OPS/OPS-21.md) Ce que le monitoring ne voit pas encore — en partie, le reste est ouvert
+- [x] [`OPS-21`](ledger/OPS/OPS-21.md) Ce que le monitoring ne voit pas encore — 2026-11-17
 - [x] [`OPS-20`](ledger/OPS/OPS-20.md) Le backend attend postgres et MinIO au démarrage — 2026-09-29
 - [x] [`OPS-19`](ledger/OPS/OPS-19.md) PostgreSQL 17 → 18 : image, volume et script de bascule — 2026-10-25
 - [x] [`OPS-17`](ledger/OPS/OPS-17.md) Les originaux orphelins de `tmp/reencode/` expirent en un jour — 2026-09-30
