@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **150 entrées ouvertes** et des 76 entrées écartées. Chaque entrée a son fichier
+Index des **149 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -262,7 +262,6 @@ Contexte du domaine : [`ledger/AUD/README.md`](ledger/AUD/README.md).
 - [ ] [`AUD-15`](ledger/AUD/AUD-15.md) `FetchType.EAGER` sur neuf `@ManyToOne` (`Ride`, `RideGroup`, `Trip`, `TripStage`, `UserTeam`)
 - [ ] [`AUD-10`](ledger/AUD/AUD-10.md) Aucune procédure de rotation des secrets dans `OPERATIONS.md` (clés JWT, `ENCRYPTION_KEY`, mots de passe…
 - [ ] [`AUD-9`](ledger/AUD/AUD-9.md) imgproxy sans signature d'URL (ni `IMGPROXY_KEY` ni `IMGPROXY_SALT`) — même brique que les URLs signées…
-- [ ] [`AUD-8`](ledger/AUD/AUD-8.md) VCL Varnish réduite à un `backend default` et une règle de contournement du cache (`API-43`) : ni purge, ni…
 - [ ] [`AUD-6`](ledger/AUD/AUD-6.md) `forwardedHeaders.insecure=true` sur Traefik (atténué par les règles `DOCKER-USER` qui ne laissent que Caddy…
 
 ## LEGAL — Politique de confidentialité
@@ -411,6 +410,7 @@ identifiant.
 - [`BRAND-3`](ledger/BRAND/BRAND-3.md) Test de concordance des tables de couleurs web et mobile
 - [`SEC-14`](ledger/SEC/SEC-14.md) Images externes dans le markdown ; le parseur XML et le paramètre non encodé sont livrés sous `SEC-21`
 - [`AUD-33`](ledger/AUD/AUD-33.md) Pagination des routes côté Karoo
+- [`AUD-8`](ledger/AUD/AUD-8.md) VCL Varnish réduite à un `backend default` et une règle de contournement du cache (`API-43`) : ni purge, ni…
 - [`AUD-1`](ledger/AUD/AUD-1.md) Déploiement automatique (CD) depuis GitHub
 - [`LEGAL-20`](ledger/LEGAL/LEGAL-20.md) Mesure d'audience par un service SaaS
 - [`LEGAL-17`](ledger/LEGAL/LEGAL-17.md) Responsable du traitement par domaine
