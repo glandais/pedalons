@@ -355,20 +355,17 @@ final class RouteDetailsTrack {
    * getReportedElevationGain()} / {@code getReportedElevationLoss()} and carried unchanged by
    * Douglas-Peucker.
    *
-   * <p>vcyclist declares these setters Kotlin {@code internal} — compiled as public methods with a
-   * mangled name — because in vcyclist only its own dead-band accumulator ({@code ElevationGain})
-   * writes them. Here the service's {@code dem} preset <b>replaces</b> that accumulator
-   * (docs/LEDGER_*.md API-150): {@code annotate} cannot be tuned to reproduce the service's
-   * figures, and the raw sum on the simplified path would depend on its sampling. A vcyclist
-   * upgrade that renames the methods fails the compilation, never silently; a public {@code
-   * report(path, gain, loss)} is to be asked of vcyclist, after which this is the only call to
-   * change.
+   * <p>The service's {@code dem} preset <b>replaces</b> vcyclist's dead-band accumulator ({@code
+   * ElevationGain}, docs/LEDGER_*.md API-150): {@code annotate} cannot be tuned to reproduce the
+   * service's figures, and the raw sum on the simplified path would depend on its sampling. {@code
+   * Path.reportElevation} is vcyclist's public entry for such an external figure (since 6.15.0,
+   * docs/LEDGER_*.md API-152). It must run after the path's last {@code computeDerivedData}, which
+   * resets the figures to NaN; it throws on a non-finite figure, a negative gain or a positive loss.
    *
    * @param lossM {@code <= 0}, vcyclist's convention
    */
   static void reportAscent(Path path, double gainM, double lossM) {
-    path.setElevationGainFiltered$io_github_glandais_gpx(gainM);
-    path.setElevationLossFiltered$io_github_glandais_gpx(lossM);
+    path.reportElevation(gainM, lossM);
   }
 
   /** The length, in metres, of the ranges of {@code values} that are NaN. */

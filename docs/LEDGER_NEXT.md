@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **161 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
+Index des **160 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -92,7 +92,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 - [ ] [`API-200`](ledger/API/API-200.md) OAuth des applications externes : l'écran de consentement dans l'app mobile (M)
 - [ ] [`API-177`](ledger/API/API-177.md) Le rôle de l'appelant dans l'équipe, lu une fois par requête (S)
 - [ ] [`API-154`](ledger/API/API-154.md) Plafonds de la météo des aperçus GPX qui restent ouverts (S)
-- [ ] [`API-152`](ledger/API/API-152.md) D+ du service écrit dans le `Path` par une API publique de vcyclist (XS)
 - [ ] [`API-151`](ledger/API/API-151.md) Passage à osm-route-details : banc de D+ et crédit web (S)
 - [ ] [`API-148`](ledger/API/API-148.md) Retirer les rustines de sécurité des dépendances une fois sur Quarkus 4 (S)
 - [ ] [`API-140`](ledger/API/API-140.md) `/api/admin/teams` sans domaine forcé : décision produit à prendre · *decision*

@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **587 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **588 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -347,6 +347,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`API-156`](ledger/API/API-156.md) Les deux files mortes du revêtement quittent la base — 2026-11-07
 - [x] [`API-155`](ledger/API/API-155.md) Plus d'entité ni de dépôt pour les deux files mortes du revêtement — 2026-11-07
 - [x] [`API-153`](ledger/API/API-153.md) Un aperçu GPX peut recevoir une date de départ et une vitesse moyenne, et affiche la météo — 2026-11-06
+- [x] [`API-152`](ledger/API/API-152.md) D+ du service écrit dans le `Path` par une API publique de vcyclist — 2026-11-17
 - [x] [`API-150`](ledger/API/API-150.md) Le profil d'altitude et le revêtement viennent d'un seul service, osm-route-details — 2026-11-06
 - [x] [`API-149`](ledger/API/API-149.md) Un parcours garde en base sa trace brute, de l'import au calcul des surfaces
 - [x] [`API-147`](ledger/API/API-147.md) Le compte des relecteurs des stores ne peut plus être supprimé — 2026-10-31
