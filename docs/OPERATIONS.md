@@ -1161,6 +1161,13 @@ About 2.7 GB of ceilings, 1 GB or so resident. What Prometheus scrapes:
   through the Swarm API, one target per task — both during a rolling update — on
   `pedalons-shared`, and labelled `env` with the stack's name: a new environment needs no change.
   `/q` is not routed by traefik (only `/api` is), so the endpoint is not public;
+- **each environment's PostgreSQL**, through the `postgres-exporter` service of
+  `docker-compose.yml` (one per environment, 64M, about 4 MB resident): connections against
+  `max_connections`, database size, dead tuples and vacuums per table, locks, checkpoints. Found the
+  same way as the backend (job `postgres`, port 9187 on `pedalons-shared`, label `env`). It reads
+  the database as `POSTGRES_USER`; the password is its own variable, so no character needs
+  escaping. Slow queries are not among them: that needs `pg_stat_statements` preloaded, i.e. a
+  PostgreSQL restart (docs/LEDGER_*.md OPS-21);
 - node-exporter, cadvisor, and the monitoring services themselves.
 
 The backend logs **JSON** in `%prod` (`quarkus-logging-json`), so a stack trace is one Loki entry
@@ -1254,6 +1261,8 @@ through, whose outage would then silence its own alert. Severity only says how s
 | `HostLowMemory` | under 10 % of the host's memory available for 15 min | `docker stats` |
 | `BackendHeapFull` | over 90 % of the heap still live after GC for 15 min | raise `BACKEND_MEMORY`; `jcmd 1 GC.class_histogram` in the backend container says what fills it |
 | `BackendConnectionPoolExhausted` | requests waiting for a database connection for 5 min | slow queries, a stuck transaction |
+| `PostgresDown` (critical) | an environment's database does not answer its exporter for 2 min | `docker service ps <env>_postgres`, its logs in Loki |
+| `PostgresConnectionsHigh` | over 80 % of `max_connections` in use for 10 min (the backend's pool is 20 per task: a rolling update holds 40) | `select usename, application_name, state, count(*) from pg_stat_activity group by 1, 2, 3` through `docker exec` |
 | `BackendErrors` (Loki) | more than 10 `ERROR` lines in 10 min, for 5 min | the lines themselves, in Loki |
 | `TargetDown` | a scrape target unreachable for 5 min | `docker stack ps` of its stack |
 | `BackendMissing` (critical) | an environment scraped in the last day has no backend task for 5 min (`TargetDown` cannot see a target that is gone); resolves a day later — silence it after a deliberate teardown | `docker service ps <env>_backend` |

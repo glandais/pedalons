@@ -146,3 +146,29 @@ groups:
           severity: warning
         annotations:
           summary: "{{ $labels.env }}: requests are waiting for a database connection."
+
+  # postgres-exporter, one per environment (docs/LEDGER_*.md OPS-21). TargetDown already covers the
+  # exporter itself; these two say the database behind it is unreachable or running out of slots.
+  - name: postgres
+    rules:
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.env }}: PostgreSQL does not answer its exporter."
+
+      # Every client counted, the backend's pool of 20 per task included: two tasks during a rolling
+      # update already hold 40 of the default 100.
+      - alert: PostgresConnectionsHigh
+        expr: |
+          sum by (env) (pg_stat_database_numbackends)
+          / on (env)
+          max by (env) (pg_settings_max_connections)
+          > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.env }}: {{ $value | humanizePercentage }} of PostgreSQL's connections are in use."

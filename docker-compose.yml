@@ -277,6 +277,29 @@ services:
         limits:
           memory: 1G
 
+  # PostgreSQL seen by the monitoring stack (docs/LEDGER_*.md OPS-21): connections against
+  # max_connections, database size, dead tuples and vacuums per table, locks, checkpoints. On
+  # `shared` so that the Prometheus of docker-compose.monitoring.yml finds it through the Swarm API,
+  # like the backend; it publishes no port and traefik does not route it. The password goes in its
+  # own variable, not in a URL, where a special character would have to be escaped.
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
+    container_name: ${ENV_NAME}-postgres-exporter
+    restart: unless-stopped
+    networks:
+      - pedalons
+      - shared
+    environment:
+      DATA_SOURCE_URI: postgres:5432/${POSTGRES_DB}?sslmode=disable
+      DATA_SOURCE_USER: ${POSTGRES_USER}
+      DATA_SOURCE_PASS: ${POSTGRES_PASSWORD}
+    depends_on:
+      - postgres
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
   imgproxy:
     image: ghcr.io/imgproxy/imgproxy:v4.0.24
     container_name: ${ENV_NAME}-imgproxy

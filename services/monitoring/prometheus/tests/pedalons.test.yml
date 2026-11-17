@@ -135,3 +135,48 @@ tests:
               instance: 10.0.0.5:8080
             exp_annotations:
               summary: "pedalons-prod: 95% of the heap is live after GC (raise BACKEND_MEMORY?)."
+
+  # OPS-21: the database of staging stops answering; prod's keeps going.
+  - interval: 1m
+    input_series:
+      - series: 'pg_up{job="postgres", env="pedalons-staging", instance="10.0.1.30:9187"}'
+        values: '1x5 0x10'
+      - series: 'pg_up{job="postgres", env="pedalons-prod", instance="10.0.1.31:9187"}'
+        values: '1x15'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PostgresDown
+        exp_alerts: []
+      - eval_time: 10m
+        alertname: PostgresDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: postgres
+              env: pedalons-staging
+              instance: 10.0.1.30:9187
+            exp_annotations:
+              summary: "pedalons-staging: PostgreSQL does not answer its exporter."
+
+  # OPS-21: 85 of 100 connections in prod across two databases; staging at 30.
+  - interval: 1m
+    input_series:
+      - series: 'pg_stat_database_numbackends{job="postgres", env="pedalons-prod", instance="10.0.1.31:9187", datid="1", datname="pedalons"}'
+        values: '80x20'
+      - series: 'pg_stat_database_numbackends{job="postgres", env="pedalons-prod", instance="10.0.1.31:9187", datid="2", datname="postgres"}'
+        values: '5x20'
+      - series: 'pg_settings_max_connections{job="postgres", env="pedalons-prod", instance="10.0.1.31:9187"}'
+        values: '100x20'
+      - series: 'pg_stat_database_numbackends{job="postgres", env="pedalons-staging", instance="10.0.1.30:9187", datid="1", datname="pedalons"}'
+        values: '30x20'
+      - series: 'pg_settings_max_connections{job="postgres", env="pedalons-staging", instance="10.0.1.30:9187"}'
+        values: '100x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: PostgresConnectionsHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              env: pedalons-prod
+            exp_annotations:
+              summary: "pedalons-prod: 85% of PostgreSQL's connections are in use."
