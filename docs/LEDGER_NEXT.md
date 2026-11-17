@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **152 entrées ouvertes** et des 75 entrées écartées. Chaque entrée a son fichier
+Index des **151 entrées ouvertes** et des 75 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -19,7 +19,6 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 - [ ] [`MOB-161`](ledger/MOB/MOB-161.md) Éditeur riche : insérer un tableau et en ajouter ou retirer lignes et colonnes (S)
 - [ ] [`MOB-160`](ledger/MOB/MOB-160.md) Éditeur riche : test de widget du pont et test Patrol de l'écran plein (S)
 - [ ] [`MOB-154`](ledger/MOB/MOB-154.md) Générer un parcours depuis l'app (M, plus tard)
-- [ ] [`MOB-151`](ledger/MOB/MOB-151.md) Plugins Android qui appliquent encore le Kotlin Gradle Plugin (S)
 - [ ] [`MOB-149`](ledger/MOB/MOB-149.md) Basculer l'app sur `material_ui` / `cupertino_ui` quand les dépendances y seront (M)
 - [ ] [`MOB-146`](ledger/MOB/MOB-146.md) Listes homogènes : recette sur appareil de `MOB-143` (S) · *recette*
 - [ ] [`MOB-141`](ledger/MOB/MOB-141.md) Cartes homogènes : recette sur appareil de `MOB-139` (S) · *recette*
