@@ -5,6 +5,7 @@ import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.domain.route.RawTrackBackfillSkip.Reason;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.enums.AssetType;
+import fr.pedalons.infrastructure.lock.SessionAdvisoryLock;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.route.GpxTrackRepository;
@@ -24,14 +25,12 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.geolatte.geom.G2D;
 import org.geolatte.geom.LineString;
@@ -151,37 +150,30 @@ public class RawTrackBackfill {
     if (!enabled || batch <= 0) {
       return new Report(0, 0);
     }
-    try (Connection connection = dataSource.getConnection()) {
-      if (!lock(connection, "pg_try_advisory_lock")) {
-        LOG.debug("Raw line catch-up: another backend runs it");
-        return new Report(0, 0);
-      }
-      try {
-        return pass(now);
-      } finally {
-        lock(connection, "pg_advisory_unlock");
-      }
+    SessionAdvisoryLock lock;
+    try {
+      lock = SessionAdvisoryLock.tryAcquire(dataSource, "raw-track-backfill", "Raw line catch-up");
     } catch (SQLException e) {
       throw new IllegalStateException("Raw line catch-up: lock failed", e);
     }
-  }
-
-  /** {@code function} is one of two constants of this class, never user input. */
-  private static boolean lock(Connection connection, String function) throws SQLException {
-    try (PreparedStatement statement =
-        connection.prepareStatement(
-            "select " + function + "(hashtextextended('raw-track-backfill', 0))")) {
-      try (ResultSet rs = statement.executeQuery()) {
-        return rs.next() && rs.getBoolean(1);
-      }
+    if (lock == null) {
+      LOG.debug("Raw line catch-up: another backend runs it");
+      return new Report(0, 0);
+    }
+    try (lock) {
+      return pass(now, lock::held);
     }
   }
 
-  private Report pass(Instant now) {
+  /** {@code held} false once the advisory lock is lost: the pass stops before its next route. */
+  private Report pass(Instant now, BooleanSupplier held) {
     List<Candidate> candidates = candidates(batch);
     int filled = 0;
     int skipped = 0;
     for (Candidate candidate : candidates) {
+      if (!held.getAsBoolean()) {
+        break;
+      }
       Outcome outcome = handle(candidate, now);
       if (outcome == null) {
         // The bucket or the database failed: the next pass starts again from this route

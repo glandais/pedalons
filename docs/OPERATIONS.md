@@ -893,7 +893,10 @@ NDJSON line per track with its surface type and its "excluded from generator" fl
 that is not current is sent as `null`) in a read transaction of up to 1000 s. The pass writes
 nothing in the database, holds a Postgres advisory lock (`route-generator-overlays`) on a
 connection of its own so that only one backend runs it during a rolling deploy, and is idempotent:
-run it as often as you like.
+run it as often as you like. The Swarm overlay network forgets a TCP connection idle for 900 s, so
+a heartbeat checks that connection every 5 minutes (`SessionAdvisoryLock`, shared with
+`RawTrackBackfill`); if it dies anyway, the log says « the connection holding the advisory lock
+died » and the pass stops before its next team. A failed unlock is a warning, never a failed pass.
 
 | Failure at the engine | Effect |
 |---|---|

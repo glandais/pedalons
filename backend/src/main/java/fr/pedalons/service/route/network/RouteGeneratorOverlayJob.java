@@ -2,6 +2,7 @@ package fr.pedalons.service.route.network;
 
 import fr.pedalons.common.Crons;
 import fr.pedalons.common.TsidUtils;
+import fr.pedalons.infrastructure.lock.SessionAdvisoryLock;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorException;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorGateway;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.DepositReport;
@@ -14,9 +15,6 @@ import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.UncheckedIOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -24,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -37,7 +36,7 @@ import org.jspecify.annotations.Nullable;
  * its planner off or sits in an inactive domain.
  *
  * <p>Teams one at a time. One instance at a time: a session advisory lock on a connection of its
- * own, taken without waiting ({@code RawTrackBackfill}'s pattern), so the two backends of a rolling
+ * own, taken without waiting and kept alive by a heartbeat ({@link SessionAdvisoryLock}), so the two backends of a rolling
  * deploy never both run it (and the engine refuses a second deposit of an environment anyway).
  * Idempotent and writing nothing to the database: the state is the engine's, the teams are the
  * database's. No failure deletes an overlay: the old one serves until it expires, seven nights
@@ -52,6 +51,9 @@ public class RouteGeneratorOverlayJob {
 
   /** Seconds, at most, a transaction that streams one team's tracks may last. */
   static final int STREAM_TRANSACTION_SECONDS = 1000;
+
+  /** The advisory lock's name: one pass at a time across the backends. */
+  static final String LOCK_KEY = "route-generator-overlays";
 
   static final int MAX_DEPOSIT_ATTEMPTS = 3;
   static final Duration DEFAULT_RETRY_AFTER = Duration.ofSeconds(10);
@@ -213,7 +215,7 @@ public class RouteGeneratorOverlayJob {
       return Report.skipped();
     }
     if (options.dryRun()) {
-      return pass(now, options, availability);
+      return pass(now, options, availability, () -> true);
     }
     if (!running.compareAndSet(false, true)) {
       LOG.info("Route generator overlays: a pass is already running here");
@@ -228,34 +230,30 @@ public class RouteGeneratorOverlayJob {
 
   private Report lockedPass(
       Instant now, Options options, RouteGeneratorGateway.Availability availability) {
-    try (Connection connection = dataSource.getConnection()) {
-      if (!lock(connection, "pg_try_advisory_lock")) {
-        LOG.info("Route generator overlays: another backend runs the pass");
-        return Report.skipped();
-      }
-      try {
-        return pass(now, options, availability);
-      } finally {
-        lock(connection, "pg_advisory_unlock");
-      }
+    SessionAdvisoryLock lock;
+    try {
+      lock = SessionAdvisoryLock.tryAcquire(dataSource, LOCK_KEY, "Route generator overlays");
     } catch (SQLException e) {
       throw new IllegalStateException("Route generator overlays: lock failed", e);
     }
-  }
-
-  /** {@code function} is one of two constants of this class, never user input. */
-  private static boolean lock(Connection connection, String function) throws SQLException {
-    try (PreparedStatement statement =
-        connection.prepareStatement(
-            "select " + function + "(hashtextextended('route-generator-overlays', 0))")) {
-      try (ResultSet rs = statement.executeQuery()) {
-        return rs.next() && rs.getBoolean(1);
-      }
+    if (lock == null) {
+      LOG.info("Route generator overlays: another backend runs the pass");
+      return Report.skipped();
+    }
+    try (lock) {
+      return pass(now, options, availability, lock::held);
     }
   }
 
+  /**
+   * @param held false once the advisory lock is lost (docs/LEDGER_*.md API-210): the pass then
+   *     stops before its next team, a second backend may run it now
+   */
   private Report pass(
-      Instant now, Options options, RouteGeneratorGateway.Availability availability) {
+      Instant now,
+      Options options,
+      RouteGeneratorGateway.Availability availability,
+      BooleanSupplier held) {
     long started = System.nanoTime();
     List<TeamRow> teams =
         QuarkusTransaction.requiringNew().call(() -> repository.listTeams()).stream()
@@ -268,6 +266,11 @@ public class RouteGeneratorOverlayJob {
     int failed = 0;
     boolean cut = false;
     for (TeamRow team : teams) {
+      if (!held.getAsBoolean()) {
+        LOG.warn("Route generator overlays: pass ended early: the advisory lock was lost");
+        cut = true;
+        break;
+      }
       try {
         Item item = handle(team, now, options, availability);
         if (item == null) {
