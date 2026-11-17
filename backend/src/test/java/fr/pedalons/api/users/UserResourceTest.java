@@ -391,6 +391,41 @@ class UserResourceTest extends AbstractResourceTest {
         .statusCode(400);
   }
 
+  /** docs/LEDGER_*.md SEC-42: a refused avatar leaves no copy behind on the backend's disk. */
+  @Test
+  void uploadAvatar_refused_leavesNoTempCopy() throws Exception {
+    java.util.Set<String> before = tempFiles("pedalons-avatars");
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("file", "photo.png", "not an image at all".getBytes(), "image/png")
+        .when()
+        .post("/api/users/me/avatar")
+        .then()
+        .statusCode(
+            org.hamcrest.Matchers.allOf(
+                org.hamcrest.Matchers.greaterThanOrEqualTo(400),
+                org.hamcrest.Matchers.lessThan(500)));
+
+    java.util.Set<String> after = new java.util.HashSet<>(tempFiles("pedalons-avatars"));
+    after.removeAll(before);
+    org.junit.jupiter.api.Assertions.assertTrue(after.isEmpty(), "left on disk: " + after);
+  }
+
+  /** The names in a backend temp directory of uploads, none when it does not exist yet. */
+  private static java.util.Set<String> tempFiles(String directory) throws java.io.IOException {
+    java.nio.file.Path dir = java.nio.file.Path.of(System.getProperty("java.io.tmpdir"), directory);
+    if (!java.nio.file.Files.isDirectory(dir)) {
+      return java.util.Set.of();
+    }
+    try (var files = java.nio.file.Files.list(dir)) {
+      return files
+          .map(f -> f.getFileName().toString())
+          .collect(java.util.stream.Collectors.toSet());
+    }
+  }
+
   // ==================== Delete Avatar Tests ====================
 
   @Test

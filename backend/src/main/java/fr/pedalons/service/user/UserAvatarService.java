@@ -56,65 +56,65 @@ public class UserAvatarService {
     // Create temp file for content type validation
     long tempFileId = TSID.Factory.getTsid().toLong();
     File tempFile = createTempFile(tempFileId);
-
-    // Save original file temporarily
-    Files.copy(content, tempFile.toPath());
-
-    DetectedFileType detected;
-    try {
-      detected = fileTypeDetector.detectAndValidate(tempFile, fileName, AssetType.IMAGE);
-    } catch (PedalonsException e) {
-      tempFile.delete();
-      throw e;
-    } catch (RuntimeException e) {
-      tempFile.delete();
-      throw new BusinessException(ErrorCode.INVALID_FORMAT, e);
-    }
-    String contentType = detected.mimeType();
-    if (!contentType.startsWith("image/")) {
-      tempFile.delete();
-      throw new BusinessException(ErrorCode.INVALID_FORMAT);
-    }
-
-    // Upload temp file to S3 for imgproxy processing
-    String tempKey = getAvatarKey(tempFileId);
-    try (InputStream fis = new FileInputStream(tempFile)) {
-      storageService.store(tempKey, fis, contentType, tempFile.length());
-    } catch (IOException | RuntimeException e) {
-      // e.g. an image imgproxy cannot decode to re-encode it (docs/LEDGER_*.md API-43)
-      tempFile.delete();
-      throw e;
-    }
-
-    // Generate final file ID and resize via imgproxy
     long fileId = TSID.Factory.getTsid().toLong();
     File avatarFile = createTempFile(fileId);
+    String tempKey = getAvatarKey(tempFileId);
+    boolean tempStored = false;
+    // Both local copies and the S3 original go whatever happens — refused type, interrupted copy,
+    // imgproxy or storage failure (docs/LEDGER_*.md SEC-42).
+    try {
+      // Save original file temporarily
+      Files.copy(content, tempFile.toPath());
 
-    // Use ImgProxy to resize to 256x256
-    try (InputStream resizedStream =
-        imgProxyService.getPhotoContent("image/jpeg", tempKey, AVATAR_SIZE, AVATAR_SIZE)) {
-      Files.copy(resizedStream, avatarFile.toPath());
-    } catch (Exception e) {
-      tempFile.delete();
-      storageService.delete(tempKey);
-      throw new BusinessException(ErrorCode.INVALID_FORMAT, e);
+      DetectedFileType detected;
+      try {
+        detected = fileTypeDetector.detectAndValidate(tempFile, fileName, AssetType.IMAGE);
+      } catch (PedalonsException e) {
+        throw e;
+      } catch (RuntimeException e) {
+        throw new BusinessException(ErrorCode.INVALID_FORMAT, e);
+      }
+      String contentType = detected.mimeType();
+      if (!contentType.startsWith("image/")) {
+        throw new BusinessException(ErrorCode.INVALID_FORMAT);
+      }
+
+      // Upload temp file to S3 for imgproxy processing; an image imgproxy cannot decode to
+      // re-encode it fails here or below (docs/LEDGER_*.md API-43)
+      try (InputStream fis = new FileInputStream(tempFile)) {
+        tempStored = true;
+        storageService.store(tempKey, fis, contentType, tempFile.length());
+      }
+
+      // Use ImgProxy to resize to 256x256
+      try (InputStream resizedStream =
+          imgProxyService.getPhotoContent("image/jpeg", tempKey, AVATAR_SIZE, AVATAR_SIZE)) {
+        Files.copy(resizedStream, avatarFile.toPath());
+      } catch (Exception e) {
+        throw new BusinessException(ErrorCode.INVALID_FORMAT, e);
+      }
+
+      // Upload resized avatar to S3
+      String avatarKey = getAvatarKey(fileId);
+      Map<String, String> metadata =
+          Map.of(
+              "file-id", TsidUtils.toString(fileId),
+              "user-id", TsidUtils.toString(user.getId()),
+              "type", "avatar");
+      try (InputStream fis = new FileInputStream(avatarFile)) {
+        storageService.store(avatarKey, fis, "image/jpeg", avatarFile.length(), metadata);
+      }
+    } finally {
+      deleteQuietly(tempFile);
+      deleteQuietly(avatarFile);
+      if (tempStored) {
+        try {
+          storageService.delete(tempKey);
+        } catch (RuntimeException e) {
+          LOG.warnf(e, "Failed to delete temp avatar object %s", tempKey);
+        }
+      }
     }
-
-    // Upload resized avatar to S3
-    String avatarKey = getAvatarKey(fileId);
-    Map<String, String> metadata =
-        Map.of(
-            "file-id", TsidUtils.toString(fileId),
-            "user-id", TsidUtils.toString(user.getId()),
-            "type", "avatar");
-    try (InputStream fis = new FileInputStream(avatarFile)) {
-      storageService.store(avatarKey, fis, "image/jpeg", avatarFile.length(), metadata);
-    }
-
-    // Delete temp files and temp S3 object
-    tempFile.delete();
-    avatarFile.delete();
-    storageService.delete(tempKey);
 
     // Delete old avatar file if exists
     String oldAvatarUrl = user.getAvatarUrl();
@@ -162,6 +162,12 @@ public class UserAvatarService {
     return Response.fromResponse(
             imgProxyService.getPhoto(accept, key, effectiveSize, effectiveSize))
         .build();
+  }
+
+  private static void deleteQuietly(File file) {
+    if (!file.delete() && file.exists()) {
+      LOG.warnf("Failed to delete temp avatar file %s — may leak on disk", file.getAbsolutePath());
+    }
   }
 
   private File createTempFile(long fileId) throws IOException {

@@ -136,35 +136,33 @@ public class AssetService {
     Long size = null;
 
     if (content != null) {
-      // Copy content to temp file for content type detection
-      Files.copy(content, tempFile.toPath());
-      contentType = detectAndValidate(tempFile, fileName, type);
-      storedName = storedFileName(tempFile, fileName);
-      if (TrackAttachmentSanitizer.applies(type, contentType)) {
-        // docs/LEDGER_*.md API-49, API-55: an attached GPX or FIT loses its clock and sensors
-        // like a route's.
-        byte[] raw = Files.readAllBytes(tempFile.toPath());
-        try {
+      // The copy goes whatever happens — refused type, interrupted copy, refused track, storage
+      // failure (docs/LEDGER_*.md SEC-42): only the external-writing path below keeps it.
+      try {
+        // Copy content to temp file for content type detection
+        Files.copy(content, tempFile.toPath());
+        contentType = detectAndValidate(tempFile, fileName, type);
+        storedName = storedFileName(tempFile, fileName);
+        if (TrackAttachmentSanitizer.applies(type, contentType)) {
+          // docs/LEDGER_*.md API-49, API-55: an attached GPX or FIT loses its clock and sensors
+          // like a route's.
+          byte[] raw = Files.readAllBytes(tempFile.toPath());
           Files.write(tempFile.toPath(), trackAttachmentSanitizer.sanitize(raw, contentType));
-        } catch (RuntimeException e) {
-          // Refused: nothing is stored, and the upload's copy must not stay on disk either.
-          deleteTempFile(tempFile);
-          throw e;
         }
-      }
 
-      // Upload to S3 with metadata
-      String key = getAssetKey(team, fileId);
-      Map<String, String> metadata =
-          Map.of(
-              "file-id", TsidUtils.toString(fileId),
-              "team-id", TsidUtils.toString(team.getId()),
-              "file-name", storedName);
-      try (InputStream fis = new FileInputStream(tempFile)) {
-        size = storageService.store(key, fis, contentType, tempFile.length(), metadata);
+        // Upload to S3 with metadata
+        String key = getAssetKey(team, fileId);
+        Map<String, String> metadata =
+            Map.of(
+                "file-id", TsidUtils.toString(fileId),
+                "team-id", TsidUtils.toString(team.getId()),
+                "file-name", storedName);
+        try (InputStream fis = new FileInputStream(tempFile)) {
+          size = storageService.store(key, fis, contentType, tempFile.length(), metadata);
+        }
+      } finally {
+        deleteTempFile(tempFile);
       }
-
-      deleteTempFile(tempFile);
     } else {
       // No content - create temp file for external writing. Magika validation cannot run yet
       // because there is no payload; the caller is expected to populate the temp file and then
@@ -209,22 +207,26 @@ public class AssetService {
       throw new IOException("Temp file not found for asset: " + asset.getId());
     }
 
-    String contentType = detectAndValidate(tempFile, asset.getFileName(), asset.getType());
-    asset.setContentType(contentType);
-    asset.setFileName(storedFileName(tempFile, asset.getFileName()));
+    // Gone whether it is stored or refused (docs/LEDGER_*.md SEC-42).
+    try {
+      String contentType = detectAndValidate(tempFile, asset.getFileName(), asset.getType());
+      asset.setContentType(contentType);
+      asset.setFileName(storedFileName(tempFile, asset.getFileName()));
 
-    String key = getAssetKey(asset.getTeam(), asset.getFileId());
-    Map<String, String> metadata =
-        Map.of(
-            "asset-id", TsidUtils.toString(asset.getId()),
-            "file-id", TsidUtils.toString(asset.getFileId()),
-            "team-id", TsidUtils.toString(asset.getTeam().getId()),
-            "file-name", asset.getFileName());
-    try (InputStream fis = new FileInputStream(tempFile)) {
-      asset.setFileSize(storageService.store(key, fis, contentType, tempFile.length(), metadata));
+      String key = getAssetKey(asset.getTeam(), asset.getFileId());
+      Map<String, String> metadata =
+          Map.of(
+              "asset-id", TsidUtils.toString(asset.getId()),
+              "file-id", TsidUtils.toString(asset.getFileId()),
+              "team-id", TsidUtils.toString(asset.getTeam().getId()),
+              "file-name", asset.getFileName());
+      try (InputStream fis = new FileInputStream(tempFile)) {
+        asset.setFileSize(storageService.store(key, fis, contentType, tempFile.length(), metadata));
+      }
+
+    } finally {
+      deleteTempFile(tempFile);
     }
-
-    deleteTempFile(tempFile);
   }
 
   /**
@@ -274,19 +276,23 @@ public class AssetService {
   public UploadedFile uploadTempFileToS3(Team team, AssetType type, long fileId, String fileName)
       throws IOException {
     File tempFile = getTempFile(fileId);
-    String contentType = detectAndValidate(tempFile, fileName, type);
-    String key = getAssetKey(team, fileId);
-    Map<String, String> metadata =
-        Map.of(
-            "file-id", TsidUtils.toString(fileId),
-            "team-id", TsidUtils.toString(team.getId()),
-            "file-name", fileName);
-    long size;
-    try (InputStream fis = new FileInputStream(tempFile)) {
-      size = storageService.store(key, fis, contentType, tempFile.length(), metadata);
+    // Gone whether it is stored or refused (docs/LEDGER_*.md SEC-42).
+    try {
+      String contentType = detectAndValidate(tempFile, fileName, type);
+      String key = getAssetKey(team, fileId);
+      Map<String, String> metadata =
+          Map.of(
+              "file-id", TsidUtils.toString(fileId),
+              "team-id", TsidUtils.toString(team.getId()),
+              "file-name", fileName);
+      long size;
+      try (InputStream fis = new FileInputStream(tempFile)) {
+        size = storageService.store(key, fis, contentType, tempFile.length(), metadata);
+      }
+      return new UploadedFile(contentType, size);
+    } finally {
+      deleteTempFile(tempFile);
     }
-    deleteTempFile(tempFile);
-    return new UploadedFile(contentType, size);
   }
 
   private static void deleteTempFile(File tempFile) {

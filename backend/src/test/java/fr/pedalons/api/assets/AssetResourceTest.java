@@ -71,6 +71,45 @@ class AssetResourceTest extends AbstractResourceTest {
 
   // ==================== Upload Tests ====================
 
+  /**
+   * docs/LEDGER_*.md SEC-42: an upload refused for its type leaves no copy behind in the backend's
+   * temp directory (the test JVM is the backend's).
+   */
+  @Test
+  void uploadAsset_refused_leavesNoTempCopy() throws Exception {
+    java.util.Set<String> before = tempFiles("pedalons-assets");
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .multiPart("file", "photo.png", "not an image at all".getBytes(), "image/png")
+        .when()
+        .queryParam("assetType", "IMAGE")
+        .post("/api/teams/" + team1Slug + "/assets")
+        .then()
+        .statusCode(
+            org.hamcrest.Matchers.allOf(
+                org.hamcrest.Matchers.greaterThanOrEqualTo(400),
+                org.hamcrest.Matchers.lessThan(500)));
+
+    java.util.Set<String> after = new java.util.HashSet<>(tempFiles("pedalons-assets"));
+    after.removeAll(before);
+    org.junit.jupiter.api.Assertions.assertTrue(after.isEmpty(), "left on disk: " + after);
+  }
+
+  /** The names in a backend temp directory of uploads, none when it does not exist yet. */
+  private static java.util.Set<String> tempFiles(String directory) throws java.io.IOException {
+    java.nio.file.Path dir = java.nio.file.Path.of(System.getProperty("java.io.tmpdir"), directory);
+    if (!java.nio.file.Files.isDirectory(dir)) {
+      return java.util.Set.of();
+    }
+    try (var files = java.nio.file.Files.list(dir)) {
+      return files
+          .map(f -> f.getFileName().toString())
+          .collect(java.util.stream.Collectors.toSet());
+    }
+  }
+
   @Test
   void uploadAsset_asAdmin_shouldSucceed() {
     File gpxFile = new File("src/test/resources/example.gpx");
