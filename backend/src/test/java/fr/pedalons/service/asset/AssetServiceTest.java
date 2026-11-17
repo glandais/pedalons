@@ -234,6 +234,32 @@ class AssetServiceTest extends AbstractBaseTest {
       assertEquals(ErrorCode.GPX_FAILURE, ex.getErrorCode());
     }
 
+    /**
+     * The `.fit` name lets an attachment Magika calls `unknown` through (docs/LEDGER_*.md SEC-53):
+     * what is not a FIT is still refused, by the label or by the rewrite.
+     */
+    @Test
+    void shouldRefuseAFitAttachmentThatIsNotAFit() {
+      queryContext.setUserForTest(member);
+      byte[] noise = new byte[4096];
+      new java.util.Random(53).nextBytes(noise);
+      PedalonsException ex =
+          assertThrows(
+              PedalonsException.class,
+              () ->
+                  assetService.addAssetStream(
+                      team,
+                      AssetType.ATTACHMENT,
+                      null,
+                      new ByteArrayInputStream(noise),
+                      "sortie.fit"));
+      assertTrue(
+          ex.getErrorCode() == ErrorCode.GPX_FAILURE
+              || ex.getErrorCode() == ErrorCode.GPX_EMPTY
+              || ex.getErrorCode() == ErrorCode.FILE_TYPE_REJECTED,
+          "unexpected " + ex.getErrorCode());
+    }
+
     @Test
     void shouldCreateAssetWithoutContent() throws Exception {
       queryContext.setUserForTest(member);

@@ -25,3 +25,13 @@ non lancés. **À ne pas défaire** : ne pas revenir au mode `BEST_GUESS` pour r
 comportement : le label confiant sert au choix du type MIME, et le modèle a changé
 (`standard_v3_3`) ; ne pas tester `modelLabel` contre une liste d'admission, ce qui y ferait entrer
 des lectures incertaines.
+
+**Régression corrigée le 17 novembre 2026** : en mode haute confiance, un FIT joint sort `unknown`,
+que la liste de refus d'`ATTACHMENT` nomme ; les FIT joints étaient refusés
+(`AssetServiceTest.shouldStripClockAndSensorsFromAnAttachedFit`,
+`GpxSanitizationBackfillTest.sanitizeAll_rewritesAFitAttachmentStoredAsUploaded`, première
+exécution de la suite le même jour). Le repli par extension de `FileTypeDetector` laisse passer un
+`.fit` lu `unknown`, comme le `.gpx` lu `xml` : stocké en `application/vnd.ant.fit`, il est décodé
+et réécrit en parcours par `TrackAttachmentSanitizer`, refusé s'il ne se décode pas
+(`shouldRefuseAFitAttachmentThatIsNotAFit`). Suite backend complète sur optiplex : 5 068 tests, ces
+deux erreurs seules, vertes après correction.

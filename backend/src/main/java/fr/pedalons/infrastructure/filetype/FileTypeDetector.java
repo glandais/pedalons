@@ -304,7 +304,13 @@ public class FileTypeDetector {
       // An attached GPX: the xml label ATTACHMENT refuses, let through on its name only. It is
       // stored as application/gpx+xml after TrackAttachmentSanitizer rewrote it from its tracks —
       // nothing else of the upload survives (docs/LEDGER_*.md SEC-1, API-49).
-      case ATTACHMENT -> "xml".equals(label) && lower.endsWith(".gpx");
+      // An attached FIT likewise: Magika has no FIT label and answers `unknown`, which ATTACHMENT
+      // refuses (since magika 0.7.0, docs/LEDGER_*.md SEC-53). Stored as application/vnd.ant.fit,
+      // it is decoded and rewritten as a course by TrackAttachmentSanitizer — refused if it does
+      // not decode (API-55).
+      case ATTACHMENT ->
+          ("xml".equals(label) && lower.endsWith(".gpx"))
+              || ("unknown".equals(label) && lower.endsWith(".fit"));
       case IMAGE -> false;
     };
   }
