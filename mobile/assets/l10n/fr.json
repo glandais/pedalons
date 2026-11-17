@@ -692,7 +692,12 @@
         "manageMembers": "Gérer les membres",
         "settings": "Paramètres de l'équipe"
       },
-      "createTrip": "Créer un voyage"
+      "createTrip": "Créer un voyage",
+      "create": {
+        "title": "Créer",
+        "other": "Créer autre chose",
+        "routeHint": "Importer un GPX ou tracer sur la carte"
+      }
     },
     "agenda": {
       "underWay": "En cours",

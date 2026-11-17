@@ -1,8 +1,10 @@
 import { useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Box, Button, Group, Menu, MultiSelect, SimpleGrid, Stack, Title } from '@mantine/core'
-import { IconCalendarEvent, IconChevronDown, IconPlus, IconTags } from '@tabler/icons-react'
+import { Box, Button, Group, MultiSelect, SimpleGrid, Stack, Title } from '@mantine/core'
+import { IconBike, IconCalendarEvent, IconRoute, IconTags } from '@tabler/icons-react'
+import { CreateSplitButton, type CreateAction } from '@/components/common/CreateSplitButton'
+import { PUBLICATION_TYPE_COLORS } from '@/lib/badgeColors.generated'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -77,12 +79,28 @@ export function TeamAgendaPage() {
   }
 
   const canCreate = teamAccess(teamData, isPlatformAdmin).isOrganizer
-  const createItems = [
+  const createItems: CreateAction[] = [
     ...(teamData.enableRides && teamData.enableRoutes
-      ? [{ path: paths.rideNew(teamData.slug), label: t('list.create.ride') }]
+      ? [
+          {
+            key: 'ride',
+            to: paths.rideNew(teamData.slug),
+            label: t('list.create.ride'),
+            icon: IconBike,
+            color: PUBLICATION_TYPE_COLORS.RIDE,
+          },
+        ]
       : []),
     ...(teamData.enableTrips && teamData.enableRoutes
-      ? [{ path: paths.tripNew(teamData.slug), label: t('list.create.trip') }]
+      ? [
+          {
+            key: 'trip',
+            to: paths.tripNew(teamData.slug),
+            label: t('list.create.trip'),
+            icon: IconRoute,
+            color: PUBLICATION_TYPE_COLORS.TRIP,
+          },
+        ]
       : []),
   ]
 
@@ -162,33 +180,7 @@ export function TeamAgendaPage() {
       <Stack gap="lg">
         <Group justify="space-between" align="center" wrap="wrap">
           <Title order={2}>{t('teams.detail.tabs.agenda')}</Title>
-          {canCreate && createItems.length > 0 && (
-            <Button.Group>
-              <Button
-                component={PrefetchLink}
-                to={createItems[0].path}
-                leftSection={<IconPlus size={16} />}
-              >
-                {createItems[0].label}
-              </Button>
-              {createItems.length > 1 && (
-                <Menu position="bottom-end">
-                  <Menu.Target>
-                    <Button px="xs" aria-label={t('aria.createOther')}>
-                      <IconChevronDown size={16} />
-                    </Button>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    {createItems.map((item) => (
-                      <Menu.Item key={item.path} component={PrefetchLink} to={item.path}>
-                        {item.label}
-                      </Menu.Item>
-                    ))}
-                  </Menu.Dropdown>
-                </Menu>
-              )}
-            </Button.Group>
-          )}
+          {canCreate && createItems.length > 0 && <CreateSplitButton actions={createItems} />}
         </Group>
 
         <Stack gap="sm">
@@ -304,7 +296,7 @@ export function TeamAgendaPage() {
               description={t('agenda.empty.description')}
               actions={
                 canCreate && createItems.length > 0 ? (
-                  <Button component={PrefetchLink} to={createItems[0].path} variant="light">
+                  <Button component={PrefetchLink} to={createItems[0].to} variant="light">
                     {createItems[0].label}
                   </Button>
                 ) : undefined

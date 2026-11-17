@@ -2,12 +2,13 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **573 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **575 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
 ## MOB — Application mobile
 
+- [x] [`MOB-177`](ledger/MOB/MOB-177.md) Page d'équipe : un seul bouton Créer, comme l'agenda — 2026-11-17
 - [x] [`MOB-173`](ledger/MOB/MOB-173.md) Supprimer une équipe ou changer son adresse ferme d'abord le clavier — 2026-11-16
 - [x] [`MOB-172`](ledger/MOB/MOB-172.md) Les paramètres d'une équipe relisent l'équipe à leur ouverture — 2026-11-16
 - [x] [`MOB-170`](ledger/MOB/MOB-170.md) Tracer et modifier un parcours sur la carte dans l'app : recette sur appareil — en partie, le reste est ouvert
@@ -145,6 +146,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## WEB — Site web
 
+- [x] [`WEB-192`](ledger/WEB/WEB-192.md) Page d'équipe : un seul bouton Créer, comme l'agenda — 2026-11-17
 - [x] [`WEB-190`](ledger/WEB/WEB-190.md) Cartes : pastilles météo sous la colonne du zoom, crédit allongé sur l'échelle à 390 px — 2026-11-16
 - [x] [`WEB-189`](ledger/WEB/WEB-189.md) Accueil : la carte « Ma prochaine sortie » s'étire à la hauteur de la colonne voisine — 2026-11-16
 - [x] [`WEB-188`](ledger/WEB/WEB-188.md) Pages groupe et étape au téléphone : segments coupés, encadré vide, titre plein écran tronqué — 2026-11-16

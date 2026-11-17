@@ -2540,6 +2540,7 @@
   "teams.dashboard.ads.empty": "Aucune annonce pour le moment.",
   "teams.dashboard.ads.sector": "Secteur {{place}}",
   "teams.dashboard.ads.title": "Annonces",
+  "teams.dashboard.create.routeHint": "Importer un GPX ou tracer sur la carte",
   "teams.dashboard.myUpcoming.empty": "Aucune inscription à une sortie à venir de l'équipe.",
   "teams.dashboard.myUpcoming.title": "Vos prochaines sorties",
   "teams.dashboard.myUpcoming.viewTrip": "Voir le voyage",

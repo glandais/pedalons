@@ -2468,6 +2468,7 @@
   "teams.dashboard.ads.empty": "No ad yet.",
   "teams.dashboard.ads.sector": "Area: {{place}}",
   "teams.dashboard.ads.title": "Ads",
+  "teams.dashboard.create.routeHint": "Import a GPX or draw it on the map",
   "teams.dashboard.myUpcoming.empty": "You are not registered to any upcoming ride of the team.",
   "teams.dashboard.myUpcoming.title": "Your next rides",
   "teams.dashboard.myUpcoming.viewTrip": "View the trip",

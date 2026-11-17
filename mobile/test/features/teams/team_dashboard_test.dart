@@ -85,6 +85,12 @@ void main() {
                     Text('liste modèles ${state.pathParameters['teamSlug']}'),
               ),
               GoRoute(
+                path: PathVariants.routeNew(':teamSlug')['fr']!,
+                builder: (BuildContext _, GoRouterState state) => Text(
+                  'nouveau parcours ${state.pathParameters['teamSlug']}',
+                ),
+              ),
+              GoRoute(
                 path: PathVariants.teamAdminReports(':teamSlug')['fr']!,
                 builder: (BuildContext _, GoRouterState state) =>
                     Text('signalements ${state.pathParameters['teamSlug']}'),
@@ -136,8 +142,8 @@ void main() {
       expect(find.byKey(keys.teamDashboard.todo), findsNothing);
       expect(find.byKey(keys.teamDashboard.templates), findsNothing);
       expect(find.byKey(keys.teamDashboard.admin), findsNothing);
-      expect(find.byKey(keys.teamDashboard.createRideButton), findsNothing);
-      expect(find.byKey(keys.teamDashboard.newPostButton), findsNothing);
+      expect(find.byKey(keys.teamDashboard.createPrimaryButton), findsNothing);
+      expect(find.byKey(keys.teamDashboard.createMenuButton), findsNothing);
       expect(
         find.byKey(keys.teamDashboard.rideEditButton('sortie-du-samedi')),
         findsNothing,
@@ -286,8 +292,14 @@ void main() {
       expect(find.byKey(keys.teamDashboard.todoWithoutRoute), findsOneWidget);
       expect(find.byKey(keys.teamDashboard.todoFullGroup), findsOneWidget);
       expect(find.byKey(keys.teamDashboard.todoReports), findsOneWidget);
-      expect(find.byKey(keys.teamDashboard.createRideButton), findsOneWidget);
-      expect(find.byKey(keys.teamDashboard.newPostButton), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(keys.teamDashboard.createPrimaryButton),
+          matching: find.text('Créer une sortie'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(keys.teamDashboard.createMenuButton), findsOneWidget);
       expect(
         find.byKey(keys.teamDashboard.rideEditButton('sortie-du-samedi')),
         findsOneWidget,
@@ -394,7 +406,10 @@ void main() {
 
       expect(find.byKey(keys.teamDashboard.todo), findsNothing);
       expect(find.text('À traiter'), findsNothing);
-      expect(find.byKey(keys.teamDashboard.createRideButton), findsOneWidget);
+      expect(
+        find.byKey(keys.teamDashboard.createPrimaryButton),
+        findsOneWidget,
+      );
     });
 
     testWidgets('sans module de sorties, ni tuiles de sorties ni modèles', (
@@ -419,7 +434,50 @@ void main() {
       expect(find.byKey(keys.teamDashboard.todoWithoutRoute), findsNothing);
       expect(find.byKey(keys.teamDashboard.todoFullGroup), findsNothing);
       expect(find.byKey(keys.teamDashboard.templates), findsNothing);
-      expect(find.byKey(keys.teamDashboard.createRideButton), findsNothing);
+      // Le bouton de tête passe à la création suivante.
+      expect(
+        find.descendant(
+          of: find.byKey(keys.teamDashboard.createPrimaryButton),
+          matching: find.text('Créer une sortie'),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('le chevron ouvre la feuille « Créer », par section', (
+      WidgetTester tester,
+    ) async {
+      final TeamDashboardDto d = _dashboard(role: 'ORGANIZER');
+      await renderBody(
+        tester,
+        d.copyWith(
+          team: d.team.copyWith(
+            enableRides: true,
+            enableTrips: true,
+            enableRoutes: true,
+            enableRoutePlanner: true,
+            enablePosts: true,
+          ),
+        ),
+        routed: true,
+      );
+
+      await tester.tap(find.byKey(keys.teamDashboard.createMenuButton));
+      await settle(tester);
+
+      expect(find.text('Créer'), findsOneWidget);
+      expect(find.byKey(keys.teamDashboard.createRideButton), findsOneWidget);
+      expect(find.byKey(keys.teamDashboard.createTripButton), findsOneWidget);
+      expect(find.byKey(keys.teamDashboard.createRouteButton), findsOneWidget);
+      expect(find.byKey(keys.teamDashboard.newPostButton), findsOneWidget);
+      expect(
+        find.text('Importer un GPX ou tracer sur la carte'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(keys.teamDashboard.createRouteButton));
+      await settle(tester);
+      expect(find.text('nouveau parcours ${d.team.slug}'), findsOneWidget);
     });
   });
 

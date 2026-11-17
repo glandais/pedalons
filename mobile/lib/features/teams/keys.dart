@@ -138,6 +138,12 @@ class TeamDashboardKeys {
   final createRideButton = const _TeamDashboardKey('createRideButton');
   final newPostButton = const _TeamDashboardKey('newPostButton');
   final createTripButton = const _TeamDashboardKey('createTripButton');
+  final createRouteButton = const _TeamDashboardKey('createRouteButton');
+
+  /// Le bouton de tête, quelle que soit l'action qu'il porte ; les lignes de
+  /// la feuille ont la clé de leur action.
+  final createPrimaryButton = const _TeamDashboardKey('createPrimaryButton');
+  final createMenuButton = const _TeamDashboardKey('createMenuButton');
   final loadError = const _TeamDashboardKey('loadError');
 
   final todo = const _TeamDashboardKey('todo');

@@ -186,8 +186,8 @@ class TeamDashboardBody extends StatelessWidget {
   }
 }
 
-/// Le rôle, le nombre de membres, et les gestes de tête : créer une sortie
-/// ou une publication pour qui organise.
+/// Le rôle, le nombre de membres, et le geste de tête pour qui organise :
+/// « Créer une sortie », et tout le reste derrière le chevron.
 class _Summary extends StatelessWidget {
   const _Summary({
     required this.team,
@@ -206,14 +206,9 @@ class _Summary extends StatelessWidget {
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
     final String? role = this.role;
-    // Comme le site : une sortie se crée sur un parcours, il faut donc les
-    // deux modules.
-    final bool canCreateRide =
-        organizer && team.enableRides && team.enableRoutes;
-    final bool canPost = organizer && team.enablePosts;
-    // Un voyage se crée sur des parcours, comme une sortie (ledger `MOB-162`).
-    final bool canCreateTrip =
-        organizer && team.enableTrips && team.enableRoutes;
+    final List<_CreateAction> actions = organizer
+        ? _createActions(team)
+        : const <_CreateAction>[];
 
     return Padding(
       key: keys.teamDashboard.summary,
@@ -240,43 +235,162 @@ class _Summary extends StatelessWidget {
               ),
             ],
           ),
-          if (canCreateRide || canPost || canCreateTrip) ...<Widget>[
+          if (actions.isNotEmpty) ...<Widget>[
             const SizedBox(height: PdlSpacing.chipGap),
-            Wrap(
-              spacing: PdlSpacing.chipGap,
-              runSpacing: PdlSpacing.chipGap,
-              children: <Widget>[
-                if (canCreateRide)
-                  PdlButton(
-                    key: keys.teamDashboard.createRideButton,
-                    label: 'teams.dashboard.createRide'.tr(),
-                    icon: PdlIcons.add,
-                    size: PdlButtonSize.sm,
-                    onPressed: () => context.push(rideNewLocation(team.slug)),
-                  ),
-                if (canPost)
-                  PdlButton(
-                    key: keys.teamDashboard.newPostButton,
-                    label: 'teams.dashboard.newPost'.tr(),
-                    icon: PdlIcons.post,
-                    variant: PdlButtonVariant.outline,
-                    size: PdlButtonSize.sm,
-                    onPressed: () => context.push(Paths.postNew(team.slug)),
-                  ),
-                if (canCreateTrip)
-                  PdlButton(
-                    key: keys.teamDashboard.createTripButton,
-                    label: 'teams.dashboard.createTrip'.tr(),
-                    icon: PdlIcons.trip,
-                    variant: PdlButtonVariant.outline,
-                    size: PdlButtonSize.sm,
-                    onPressed: () => context.push(Paths.tripNew(team.slug)),
-                  ),
-              ],
-            ),
+            _CreateSplitButton(actions: actions),
           ],
         ],
       ),
     );
+  }
+}
+
+/// Une création proposée par le tableau de bord.
+class _CreateAction {
+  const _CreateAction({
+    required this.key,
+    required this.label,
+    required this.icon,
+    required this.location,
+    this.subtitle,
+    this.group,
+  });
+
+  final Key key;
+  final String label;
+  final IconData icon;
+  final String location;
+  final String? subtitle;
+
+  /// La section de la feuille ; des actions consécutives du même groupe
+  /// partagent son titre.
+  final String? group;
+}
+
+/// Ce qu'un organisateur peut créer d'ici, dans l'ordre de la feuille :
+/// l'agenda (sortie, voyage), les parcours, puis une publication — chacun
+/// seulement quand l'équipe a le module. Comme le site
+/// (`DashboardHeaderActions`), sauf le générateur de parcours, que l'app n'a
+/// pas (ledger `MOB-154`).
+List<_CreateAction> _createActions(TeamDetailDto team) {
+  final String agenda = 'teams.tabs.agenda'.tr();
+  return <_CreateAction>[
+    // Une sortie se crée sur un parcours, il faut donc les deux modules.
+    if (team.enableRides && team.enableRoutes)
+      _CreateAction(
+        key: keys.teamDashboard.createRideButton,
+        label: 'teams.dashboard.createRide'.tr(),
+        icon: PdlIcons.ride,
+        location: rideNewLocation(team.slug),
+        group: agenda,
+      ),
+    // Un voyage aussi (ledger `MOB-162`).
+    if (team.enableTrips && team.enableRoutes)
+      _CreateAction(
+        key: keys.teamDashboard.createTripButton,
+        label: 'teams.dashboard.createTrip'.tr(),
+        icon: PdlIcons.trip,
+        location: Paths.tripNew(team.slug),
+        group: agenda,
+      ),
+    if (team.enableRoutes)
+      _CreateAction(
+        key: keys.teamDashboard.createRouteButton,
+        label: 'lists.createLabel.route'.tr(),
+        icon: PdlIcons.route,
+        location: Paths.routeNew(team.slug),
+        // Tracer sur la carte passe par le planificateur (ledger `MOB-170`).
+        subtitle: team.enableRoutePlanner
+            ? 'teams.dashboard.create.routeHint'.tr()
+            : null,
+        group: 'teams.tabs.routes'.tr(),
+      ),
+    if (team.enablePosts)
+      _CreateAction(
+        key: keys.teamDashboard.newPostButton,
+        label: 'teams.dashboard.newPost'.tr(),
+        icon: PdlIcons.post,
+        location: Paths.postNew(team.slug),
+      ),
+  ];
+}
+
+/// « Créer une sortie ▾ », comme l'agenda du site : la première action en
+/// bouton, toutes derrière le chevron, dans une feuille. Une seule action :
+/// le bouton seul.
+class _CreateSplitButton extends StatelessWidget {
+  const _CreateSplitButton({required this.actions});
+
+  final List<_CreateAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final _CreateAction primary = actions.first;
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: PdlButton(
+            key: keys.teamDashboard.createPrimaryButton,
+            label: primary.label,
+            icon: PdlIcons.add,
+            fullWidth: true,
+            onPressed: () => context.push(primary.location),
+          ),
+        ),
+        if (actions.length > 1) ...<Widget>[
+          const SizedBox(width: PdlSpacing.chipGap),
+          Semantics(
+            label: 'teams.dashboard.create.other'.tr(),
+            child: PdlButton(
+              key: keys.teamDashboard.createMenuButton,
+              label: '',
+              icon: PdlIcons.chevronDown,
+              onPressed: () => _openSheet(context),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _openSheet(BuildContext context) async {
+    final String? location = await PdlSheet.show<String>(
+      context: context,
+      builder: (BuildContext sheetContext) {
+        final PdlTypography t = sheetContext.pdlText;
+        final List<Widget> rows = <Widget>[];
+        for (int i = 0; i < actions.length; i++) {
+          final _CreateAction action = actions[i];
+          final String? group = action.group;
+          if (group != null && (i == 0 || actions[i - 1].group != group)) {
+            rows.add(
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Text(group, style: t.sub),
+              ),
+            );
+          }
+          rows.add(
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: PdlSettingRow(
+                key: action.key,
+                title: action.label,
+                subtitle: action.subtitle,
+                icon: action.icon,
+                showDivider:
+                    i < actions.length - 1 && actions[i + 1].group == group,
+                onTap: () => Navigator.of(sheetContext).pop(action.location),
+              ),
+            ),
+          );
+        }
+        return PdlSheet(
+          title: 'teams.dashboard.create.title'.tr(),
+          children: rows,
+        );
+      },
+    );
+    if (location != null && context.mounted) context.push(location);
   }
 }
