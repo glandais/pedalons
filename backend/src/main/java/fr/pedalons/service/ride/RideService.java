@@ -170,7 +170,10 @@ public class RideService extends TeamEntityService<Ride, RideRepository, RideDto
         rideWeatherLookup.forRides(List.of(entity)),
         withNames,
         gpsSyncLookup.forRoutes(syncedRouteIds),
-        ContentPermissions.forDetail(caller));
+        ContentPermissions.forDetail(caller),
+        // Who is sent a draft or hidden group route, so a group reports the route its members'
+        // services really hold (docs/LEDGER_*.md API-164).
+        caller.moderates(entity.getTeam().getId()));
   }
 
   /**

@@ -12,6 +12,7 @@ import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.domain.gps.GpsServiceConnection;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.ride.RideGroup;
+import fr.pedalons.domain.ride.RideParticipation;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.trip.Trip;
 import fr.pedalons.domain.trip.TripStage;
@@ -52,6 +53,8 @@ class RouteGpsSyncStatusesResourceTest extends AbstractResourceTest {
   private Ride ride;
   private Route rideRoute;
   private Route groupBRoute;
+  private RideGroup groupB;
+  private RideParticipation participation;
   private Trip trip;
   private Route stageRoute;
   private GpsServiceConnection connection;
@@ -66,10 +69,10 @@ class RouteGpsSyncStatusesResourceTest extends AbstractResourceTest {
     rideRoute = sync.routeWithGpx(ride, user1, "Boucle des étangs");
     dataService.setRideRoute(ride, rideRoute);
     RideGroup groupA = dataService.createRideGroup(user1, ride, "Groupe A", 0);
-    RideGroup groupB = dataService.createRideGroup(user1, ride, "Groupe B", 1);
+    groupB = dataService.createRideGroup(user1, ride, "Groupe B", 1);
     groupBRoute = sync.routeWithGpx(ride, user1, "Grande boucle");
     sync.setGroupRoute(groupB, groupBRoute);
-    dataService.createParticipation(groupA, user3);
+    participation = dataService.createParticipation(groupA, user3);
 
     trip = dataService.createTrip(team1, user1, "Voyage", now.plus(1, ChronoUnit.DAYS));
     TripStage stage =
@@ -151,6 +154,27 @@ class RouteGpsSyncStatusesResourceTest extends AbstractResourceTest {
         // Group B rides a route of its own, which user3's sync does not hold.
         .body("groups.find { it.name == 'Groupe B' }.gpsSyncStatuses", nullValue())
         .body("registeredGroup.gpsSyncStatuses", hasSize(1));
+  }
+
+  /**
+   * docs/LEDGER_*.md API-164: user3 rides group B, whose own route is then hidden by moderation —
+   * the sync sends them the ride's route instead, and group B now reports where that one stands,
+   * on the detail as on the list row, rather than nothing.
+   */
+  @Test
+  void groupWhoseRouteIsHidden_reportsTheRideRouteTheSyncSends() {
+    sync.moveParticipation(participation, groupB);
+    sync.hideByModeration(groupBRoute);
+    planner.plan(Instant.now());
+
+    get(USER3, ridePath())
+        .body("groups.find { it.name == 'Groupe B' }.gpsSyncStatuses", hasSize(1))
+        .body("groups.find { it.name == 'Groupe B' }.gpsSyncStatuses[0].state", equalTo("PENDING"))
+        .body("registeredGroup.gpsSyncStatuses", hasSize(1));
+    get(USER3, "/api/users/me/participations")
+        .body(
+            "publications.find { it.slug == 'sortie' }.registeredGroup.gpsSyncStatuses",
+            hasSize(1));
   }
 
   @Test

@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **580 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **581 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -333,6 +333,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`API-170`](ledger/API/API-170.md) Météo et inscription jugées par groupe, jusqu'à la fin — 2026-11-10
 - [x] [`API-169`](ledger/API/API-169.md) Météo par groupe : résumé et conditions de départ à l'heure du groupe — 2026-11-10
 - [x] [`API-168`](ledger/API/API-168.md) Les étapes des voyages où l'on participe, dans « Prochaines sorties » du Karoo — 2026-11-13
+- [x] [`API-164`](ledger/API/API-164.md) `RideGroupDto.gpsSyncStatuses` vide quand la route du groupe est supprimée ou masquée — 2026-11-17
 - [x] [`API-163`](ledger/API/API-163.md) `gpsSyncStatuses` : l'état de l'envoi automatique de chaque parcours dans les réponses — 2026-11-10
 - [x] [`API-162`](ledger/API/API-162.md) Les étapes de voyage entrent dans l'envoi automatique des parcours — 2026-11-10
 - [x] [`API-161`](ledger/API/API-161.md) Météo de départ d'une étape et inscription refusée à un voyage terminé — 2026-11-16

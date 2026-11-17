@@ -40,6 +40,16 @@ public record CallerRoles(@Nullable Long userId, boolean platformAdmin, Map<Long
     return userId != null && (platformAdmin || roles.containsKey(teamId));
   }
 
+  /**
+   * Whether the caller organises or administers this team — the moderator roles of {@code
+   * MemberRouteVisibility#routeVisible}, which pick the routes their GPS services are sent. Being a
+   * platform admin is not one: the sync reads the caller's role in the team only.
+   */
+  public boolean moderates(Long teamId) {
+    TeamRole role = roles.get(teamId);
+    return role == TeamRole.ORGANIZER || role == TeamRole.ADMIN;
+  }
+
   /** The teams, among these, whose member names the caller may see. */
   public Set<Long> teamsWithNames(Collection<Long> teamIds) {
     if (userId == null) {

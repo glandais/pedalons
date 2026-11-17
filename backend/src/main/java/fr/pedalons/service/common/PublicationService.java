@@ -810,7 +810,16 @@ public class PublicationService {
             .map(Ride::getId)
             .collect(Collectors.toSet());
     PublicationListSummaries summaries = loadSummaries(publications.items(), namedRideIds);
-    UserParticipations participations = loadParticipations(publications.items(), namedRideIds);
+    // The rides whose team the caller moderates: they are sent a draft or hidden group route a
+    // plain
+    // member is not, and the joined group's sync statuses follow (docs/LEDGER_*.md API-164).
+    Set<Long> moderatedRideIds =
+        itemsOfType(publications.items(), Ride.class).stream()
+            .filter(r -> caller.moderates(r.getTeam().getId()))
+            .map(Ride::getId)
+            .collect(Collectors.toSet());
+    UserParticipations participations =
+        loadParticipations(publications.items(), namedRideIds, moderatedRideIds);
     // Two more queries for the whole page, none per row — and nothing at all for a visitor who is
     // not a member of any of the teams on it.
     CommentCounts commentCounts = commentCountLookup.forEntities(publications.items());
@@ -875,7 +884,8 @@ public class PublicationService {
    * registeredGroup}) for the whole page at once — a fixed number of queries, whatever the page
    * size, and with them the rows' {@code gpsSyncStatuses}. Anonymous callers cost nothing.
    */
-  private UserParticipations loadParticipations(List<Publication> items, Set<Long> namedRideIds) {
+  private UserParticipations loadParticipations(
+      List<Publication> items, Set<Long> namedRideIds, Set<Long> moderatedRideIds) {
     // Ride.route is an eager to-one, loaded with the page: its id costs nothing.
     Map<Long, Long> routeIdByRideId = new HashMap<>();
     for (Ride ride : itemsOfType(items, Ride.class)) {
@@ -884,7 +894,11 @@ public class PublicationService {
       }
     }
     return participationLookup.forListPage(
-        idsOfType(items, Ride.class), idsOfType(items, Trip.class), namedRideIds, routeIdByRideId);
+        idsOfType(items, Ride.class),
+        idsOfType(items, Trip.class),
+        namedRideIds,
+        moderatedRideIds,
+        routeIdByRideId);
   }
 
   /**

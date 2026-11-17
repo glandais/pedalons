@@ -74,12 +74,16 @@ public class ParticipationLookup {
    * @param namedRideIds the rides of the page whose team's member names the caller may see
    *     (docs/LEDGER_*.md API-144): the joined group of any other ride carries neither leader nor
    *     participants, a former member's own registrations included
+   * @param moderatedRideIds the rides of the page whose team the caller organises or administers:
+   *     the joined group's {@code gpsSyncStatuses} follow the route the sync sends them, a draft or
+   *     hidden one included (docs/LEDGER_*.md API-164)
    * @param routeIdByRideId the page's rides that have a route of their own → that route's id
    */
   public UserParticipations forListPage(
       Collection<Long> rideIds,
       Collection<Long> tripIds,
       Set<Long> namedRideIds,
+      Set<Long> moderatedRideIds,
       Map<Long, Long> routeIdByRideId) {
     UserParticipations participations = forPublications(rideIds, tripIds);
     Map<Long, Long> groupIdByRide = participations.registeredGroupIdByRideId();
@@ -104,7 +108,12 @@ public class ParticipationLookup {
         thumbnailLookup.forTeamEntities(
             rows.stream().map(GroupRow::routeId).filter(Objects::nonNull).distinct().toList());
     List<Long> syncedRouteIds = new ArrayList<>(routeIdByRideId.values());
-    rows.stream().map(GroupRow::routeId).filter(Objects::nonNull).forEach(syncedRouteIds::add);
+    // The route the sync sends for each joined group — its own, else its ride's, as visible to the
+    // caller (docs/LEDGER_*.md API-164).
+    rows.stream()
+        .map(r -> r.syncedRouteId(moderatedRideIds.contains(r.rideId())))
+        .filter(Objects::nonNull)
+        .forEach(syncedRouteIds::add);
     RouteGpsSyncStatuses gpsSync = gpsSyncLookup.forRoutes(syncedRouteIds);
     Map<Long, RideGroupDto> groupByRide = new HashMap<>();
     for (GroupRow row : rows) {
@@ -115,7 +124,7 @@ public class ParticipationLookup {
               row.routeId() != null ? thumbnails.get(row.routeId()) : null,
               previews.getOrDefault(row.id(), ParticipantPreview.EMPTY),
               namedRideIds.contains(row.rideId()),
-              routeIdByRideId.get(row.rideId()),
+              moderatedRideIds.contains(row.rideId()),
               gpsSync));
     }
     return new UserParticipations(

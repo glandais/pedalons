@@ -1,7 +1,9 @@
 package fr.pedalons.repository.ride;
 
 import fr.pedalons.domain.ride.RideGroup;
+import fr.pedalons.enums.Status;
 import fr.pedalons.repository.common.BaseRepository;
+import fr.pedalons.repository.common.MemberRouteVisibility;
 import fr.pedalons.service.ride.RideDisplayFigures;
 import fr.pedalons.service.timezone.EventTimezoneResolver;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -123,7 +125,10 @@ public class RideGroupRepository implements BaseRepository<RideGroup> {
                     // The route the group rides, for its estimated arrival (docs/LEDGER_*.md
                     // API-172): its own unless deleted, else the ride's — two more columns of this
                     // one statement, no query of their own.
-                    + " r.deleted, rr.distance, rr.deleted"
+                    + " r.deleted, rr.distance, rr.deleted,"
+                    // Who is sent which route (docs/LEDGER_*.md API-164): what the automatic sync
+                    // reads to choose between them, again columns of this one statement.
+                    + " r.status, r.moderationHiddenAt, rr.id, rr.status, rr.moderationHiddenAt"
                     + " from RideGroup g join g.ride rd left join g.route r left join g.leader l"
                     + " left join rd.route rr"
                     + " where g.id in (:ids)",
@@ -149,8 +154,28 @@ public class RideGroupRepository implements BaseRepository<RideGroup> {
                 (String) row[12],
                 (String) row[13],
                 (Instant) row[3],
-                riddenDistance(row)))
+                riddenDistance(row),
+                syncedRouteId(row, false),
+                syncedRouteId(row, true)))
         .toList();
+  }
+
+  /**
+   * The route the automatic sync sends a member of the group's team, a moderator or not: its own
+   * when visible to them, else its ride's — {@link MemberRouteVisibility#routeVisible}, in Java.
+   */
+  private static @Nullable Long syncedRouteId(Object[] row, boolean moderator) {
+    if (row[7] != null
+        && MemberRouteVisibility.visible(
+            Boolean.TRUE.equals(row[16]), (Status) row[19], (Instant) row[20], moderator)) {
+      return (Long) row[7];
+    }
+    if (row[21] != null
+        && MemberRouteVisibility.visible(
+            Boolean.TRUE.equals(row[18]), (Status) row[22], (Instant) row[23], moderator)) {
+      return (Long) row[21];
+    }
+    return null;
   }
 
   /** The length of the route a group rides: its own when live, else its ride's when live. */
@@ -165,7 +190,9 @@ public class RideGroupRepository implements BaseRepository<RideGroup> {
    * One group as {@link #findGroupRows} projects it; the route and leader parts may be null. {@code
    * time} is the group's own wall time, read back from {@code startAt}. {@code riddenDistance} is
    * the length of the route the group rides — its own, else the ride's, deleted ones skipped — for
-   * its estimated arrival; {@code distance} stays its own route's, as on the detail.
+   * its estimated arrival; {@code distance} stays its own route's, as on the detail. The two synced
+   * route ids are the one the automatic sync sends a plain member and a moderator ({@link
+   * #syncedRouteId}).
    */
   public record GroupRow(
       Long id,
@@ -183,7 +210,18 @@ public class RideGroupRepository implements BaseRepository<RideGroup> {
       @Nullable String leaderDisplayName,
       @Nullable String leaderAvatarUrl,
       Instant startAt,
-      @Nullable Float riddenDistance) {}
+      @Nullable Float riddenDistance,
+      @Nullable Long memberSyncedRouteId,
+      @Nullable Long moderatorSyncedRouteId) {
+
+    /**
+     * The route the automatic sync sends the caller for this group (docs/LEDGER_*.md API-164):
+     * a moderator of the team is sent a draft or hidden route a plain member is not.
+     */
+    public @Nullable Long syncedRouteId(boolean moderator) {
+      return moderator ? moderatorSyncedRouteId : memberSyncedRouteId;
+    }
+  }
 
   /** Ride groups a user created, for the GDPR data export. */
   public List<RideGroup> findByCreator(Long domainId, Long userId) {

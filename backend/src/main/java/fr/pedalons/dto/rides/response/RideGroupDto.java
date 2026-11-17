@@ -7,6 +7,7 @@ import fr.pedalons.dto.gps.response.RouteGpsSyncStatusDto;
 import fr.pedalons.dto.gps.response.RouteGpsSyncStatuses;
 import fr.pedalons.dto.users.response.PublicUserDto;
 import fr.pedalons.dto.validation.ValidateSchema;
+import fr.pedalons.repository.common.MemberRouteVisibility;
 import fr.pedalons.repository.ride.RideGroupRepository.GroupRow;
 import fr.pedalons.service.asset.ThumbnailLookup.ThemedThumbnail;
 import fr.pedalons.service.common.ParticipantPreviewLookup.ParticipantPreview;
@@ -133,6 +134,8 @@ public record RideGroupDto(
    *     participants already stripped by the lookup (docs/LEDGER_*.md API-144)
    * @param gpsSync the caller's sync statuses of the ride's routes and of every group's, resolved
    *     at once by {@code GpsSyncLookup} — never one lookup per group
+   * @param moderator whether the caller organises or administers the ride's team: they are sent a
+   *     draft or hidden route a plain member is not (docs/LEDGER_*.md API-164)
    */
   public static RideGroupDto from(
       RideGroup group,
@@ -141,7 +144,8 @@ public record RideGroupDto(
       @Nullable ThemedThumbnail routeThumbnail,
       ParticipantPreview participants,
       boolean withNames,
-      RouteGpsSyncStatuses gpsSync) {
+      RouteGpsSyncStatuses gpsSync,
+      boolean moderator) {
     // RideGroup.route is a to-one, already resolved (and batched across the ride's groups) by the
     // routeSlug read just below: the metrics cost no extra query.
     Route route = group.getRoute();
@@ -165,20 +169,10 @@ public record RideGroupDto(
         routeThumbnail != null ? routeThumbnail.light() : null,
         routeThumbnail != null ? routeThumbnail.dark() : null,
         routeThumbnail != null ? routeThumbnail.collapsed() : null,
-        gpsSync.fieldFor(effectiveRouteId(route, group.getRide().getRoute())),
+        gpsSync.fieldFor(
+            MemberRouteVisibility.syncedRouteId(route, group.getRide().getRoute(), moderator)),
         estimate != null ? estimate.arrival() : null,
         estimate != null ? estimate.durationMinutes() : null);
-  }
-
-  /**
-   * The route the group rides, its own else its ride's — the rule of the route sync ({@code
-   * GpsSyncTargetRow.effectiveRouteId}). {@code getId()} on a lazy proxy reads the key in hand.
-   */
-  private static @Nullable Long effectiveRouteId(@Nullable Route own, @Nullable Route ride) {
-    if (own != null) {
-      return own.getId();
-    }
-    return ride != null ? ride.getId() : null;
   }
 
   /**
@@ -193,7 +187,9 @@ public record RideGroupDto(
    * @param participants resolved for every such group of the page in two queries
    * @param withNames {@code false} for a caller who is not a member of the team: no leader
    *     (docs/LEDGER_*.md API-144)
-   * @param rideRouteId the route of the group's ride, the group's when it has none of its own
+   * @param moderator whether the caller organises or administers the ride's team, which picks the
+   *     route the automatic sync sends them ({@link GroupRow#syncedRouteId}, docs/LEDGER_*.md
+   *     API-164)
    * @param gpsSync the caller's sync statuses of the page's routes, resolved at once by {@code
    *     GpsSyncLookup}
    */
@@ -202,7 +198,7 @@ public record RideGroupDto(
       @Nullable ThemedThumbnail routeThumbnail,
       ParticipantPreview participants,
       boolean withNames,
-      @Nullable Long rideRouteId,
+      boolean moderator,
       RouteGpsSyncStatuses gpsSync) {
     LegEstimate estimate =
         PublicationEndCalculator.estimate(row.startAt(), row.riddenDistance(), row.averageSpeed());
@@ -228,7 +224,7 @@ public record RideGroupDto(
         routeThumbnail != null ? routeThumbnail.light() : null,
         routeThumbnail != null ? routeThumbnail.dark() : null,
         routeThumbnail != null ? routeThumbnail.collapsed() : null,
-        gpsSync.fieldFor(row.routeId() != null ? row.routeId() : rideRouteId),
+        gpsSync.fieldFor(row.syncedRouteId(moderator)),
         estimate != null ? estimate.arrival() : null,
         estimate != null ? estimate.durationMinutes() : null);
   }

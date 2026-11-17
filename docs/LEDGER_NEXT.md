@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **164 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
+Index des **163 entrées ouvertes** et des 71 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -114,7 +114,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 
 ### Envoi automatique des parcours vers les services GPS : ce qui reste après `API-120`
 
-- [ ] [`API-164`](ledger/API/API-164.md) `RideGroupDto.gpsSyncStatuses` vide quand la route du groupe est supprimée ou masquée (S)
 - [ ] [`API-126`](ledger/API/API-126.md) L'envoi manuel vers un service GPS traite 401, 412 et 429 comme la synchronisation (S)
 - [ ] [`API-125`](ledger/API/API-125.md) Les restes d'`API-120` : nom envoyé, envoi manuel d'une route suivie, étape 0 (S)
 - [ ] [`API-122`](ledger/API/API-122.md) L'état « déjà chez le service GPS » de « Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge (S) · *recette*

@@ -476,7 +476,8 @@ public class RideDto implements PublicationDto {
       RideWeatherSummaries weather,
       boolean withNames,
       RouteGpsSyncStatuses gpsSync,
-      ContentPermissions permissions) {
+      ContentPermissions permissions,
+      boolean moderator) {
     Long registeredGroupId = participations.registeredGroupId(ride.getId());
     List<RideGroup> groups =
         ride.getGroups().stream().sorted(Comparator.comparing(RideGroup::getSortOrder)).toList();
@@ -495,7 +496,8 @@ public class RideDto implements PublicationDto {
                     group.getRoute() != null ? routeThumbnails.get(group.getRoute().getId()) : null,
                     preview.apply(group),
                     withNames,
-                    gpsSync))
+                    gpsSync,
+                    moderator))
             .toList();
 
     // The first 5 registrations of the ride. Each group's preview holds its own earliest ones, so
