@@ -20,16 +20,18 @@ interface DepartureBlockProps {
   place?: { name: string; address?: string } | null
   /**
    * The reader's group, when it leaves at another time than the departure (`groupLeavesAtOwnTime`):
-   * « Votre groupe · Groupe B · 09:30 » on the right.
+   * its time becomes the block's (« Départ 09:30 »), and a line under it names the group and the
+   * ride's first departure (« **Groupe B** · premier départ 09:00 ») — the app's reading (KIT §8,
+   * docs/LEDGER_*.md WEB-165).
    */
   group?: { name: string; startAt: string } | null
 }
 
 /**
  * The departure block of a detail page (docs/BRANDING.md §7.8, ledger `BRAND-8`): just under the
- * title and the badges, before the description. The flat day box on the left; « Départ 09:00 »,
- * the « Demain » pill, « samedi 12 avril », the zone mention and the start
- * place in the middle; the reader's group and its time on the right, below the rest under 600 px.
+ * title and the badges, before the description. The flat day box on the left; « Départ 09:00 »
+ * (the reader's group's time when it has its own), the « Demain » pill, the trip's span, the zone
+ * mention, the reader's group line and the start place on the right.
  */
 export function DepartureBlock({
   date,
@@ -41,21 +43,23 @@ export function DepartureBlock({
 }: DepartureBlockProps) {
   const { t } = useTranslation()
   const start = useRendezvousFormat(zone)
-  const relative = start.formatRelativeDay(date)
-  const mention = start.mention(date)
+  // The time the reader leaves at: their group's, when it has its own.
+  const leaves = group?.startAt ?? date
+  const relative = start.formatRelativeDay(leaves)
+  const mention = start.mention(leaves)
 
   // The day box already says the day: no « samedi 12 avril » beside it (docs/BRANDING.md §7.8).
   // A trip's span stays, it names the last day too.
 
   return (
-    <Box component="section" aria-label={t('departure.block.label')} className={classes.root}>
+    <Box component="section" aria-label={t('departure.block.label')}>
       <div className={classes.surface}>
-        <DayBox date={date} zone={start.zone} tone={tone} size="lg" />
+        <DayBox date={leaves} zone={start.zone} tone={tone} size="lg" />
 
         <div className={classes.main}>
           <Group gap="sm" wrap="wrap" align="center">
             <Text fz={24} fw={700} lh={1.2} suppressHydrationWarning={start.isGuessedText}>
-              {t('departure.block.time', { time: start.formatTime(date) })}
+              {t('departure.block.time', { time: start.formatTime(leaves) })}
             </Text>
             {relative && (
               <Badge variant="light" color={tone} suppressHydrationWarning>
@@ -74,6 +78,17 @@ export function DepartureBlock({
                 // Alone on its line: no leading « · ».
                 <span suppressHydrationWarning={start.isGuessedTimezone}>{mention?.full}</span>
               )}
+            </Text>
+          )}
+          {group && (
+            <Text size="sm" mt={6} data-testid="departure-group">
+              <Text span fw={600}>
+                {groupTitle(group.name, t)}
+              </Text>
+              <Text span c="dimmed" suppressHydrationWarning={start.isGuessedText}>
+                {' · '}
+                {t('departure.block.firstDeparture', { time: start.formatTime(date) })}
+              </Text>
             </Text>
           )}
           {place && (
@@ -99,20 +114,6 @@ export function DepartureBlock({
             </Group>
           )}
         </div>
-
-        {group && (
-          <div className={classes.group} data-testid="departure-group">
-            <Text size="sm" c="dimmed">
-              {t('departure.block.yourGroup')}
-            </Text>
-            <Text fw={700} suppressHydrationWarning={start.isGuessedText}>
-              {t('departure.block.group', {
-                name: groupTitle(group.name, t),
-                time: start.formatTime(group.startAt),
-              })}
-            </Text>
-          </div>
-        )}
       </div>
     </Box>
   )

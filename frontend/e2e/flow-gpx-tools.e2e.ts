@@ -116,8 +116,9 @@ test('a user drops a GPX on the hub, reads its preview, finds it in their files,
   // Its stats as the API has them, its map, and its downloads.
   await expect(main.getByText(km(stored!.distance), { exact: true })).toBeVisible()
   await expect(page.locator('canvas.maplibregl-canvas').first()).toBeVisible()
-  const gpxLink = main.getByRole('link', { name: 'Télécharger GPX' })
-  await expect(main.getByRole('link', { name: 'Télécharger FIT' })).toBeVisible()
+  await main.getByTestId('gps-button').click()
+  const gpxLink = page.getByRole('menuitem', { name: 'Fichier GPX' })
+  await expect(page.getByRole('menuitem', { name: 'Fichier FIT, pour compteur' })).toBeVisible()
   const gpx = await page.request.get((await gpxLink.getAttribute('href'))!)
   expect(gpx.ok()).toBe(true)
   expect(await gpx.text()).toContain('<gpx')
@@ -362,7 +363,7 @@ test.describe('a shared preview link', () => {
     // An anonymous visitor: the map, the stats and the downloads, no action.
     const main = await openPreview(page, preview.id, name)
     await expect(main.getByText(km(preview.distance), { exact: true })).toBeVisible()
-    await expect(main.getByRole('link', { name: 'Télécharger GPX' })).toBeVisible()
+    await expect(main.getByTestId('gps-button')).toBeVisible()
     await expect(main.getByRole('button', { name: 'Modifier', exact: true })).toHaveCount(0)
     await expect(main.getByRole('button', { name: 'Supprimer', exact: true })).toHaveCount(0)
     await expect(main.getByRole('button', { name: 'Enregistrer comme parcours' })).toHaveCount(0)

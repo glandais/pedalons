@@ -451,12 +451,12 @@ describe('RideDetailPage — the departure block', () => {
     ).toBeTruthy()
   })
 
-  it('names the reader’s group beside it when that group leaves at its own time', () => {
+  it('leaves at the reader’s group’s time when that group has its own (WEB-165)', () => {
     state.ride = ride({ groups: two(), registered: true, registeredGroupId: 'g2' })
     renderPage()
-    expect(within(block()).getByText('Départ 06:40')).toBeTruthy()
+    expect(within(block()).getByText('Départ 07:10')).toBeTruthy()
     expect(within(block()).getByTestId('departure-group').textContent).toBe(
-      'Votre groupeCool · 07:10'
+      'Cool · premier départ 06:40'
     )
   })
 

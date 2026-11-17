@@ -1,17 +1,10 @@
 import { useTranslation } from 'react-i18next'
-import {
-  IconMap,
-  IconArrowUp,
-  IconArrowDown,
-  IconDownload,
-  IconDeviceMobile,
-} from '@tabler/icons-react'
-import { SendToDeviceItems } from '@/components/route/SendToDeviceItems'
-import { Box, Button, Group, Stack, Text, Title, Badge, Menu, Loader } from '@mantine/core'
+import { IconMap, IconArrowUp, IconArrowDown } from '@tabler/icons-react'
+import { GpsMenuButton } from '@/components/route/GpsMenuButton'
+import { Box, Group, Stack, Text, Title, Badge } from '@mantine/core'
 import {
   ElevationState,
   type RouteDetailDto,
-  type GpsServiceType,
   type WeatherAttributionDto,
   type WeatherLegDto,
 } from '@/api/dto'
@@ -22,8 +15,6 @@ import { RouteWaypointList } from './RouteWaypointList'
 import { useWaypointSelection } from '@/hooks/useWaypointSelection'
 import { useWindColorMode } from '@/hooks/useWindColorMode'
 import { useUnits } from '@/hooks/useUnits'
-import { useGpsConnections } from '@/hooks/useGpsConnections'
-import { useAuth } from '@/hooks/useAuth'
 import { FormattedDate } from '@/components/common/FormattedDate'
 import { BADGE_VARIANTS, CLIMB_CATEGORY_COLORS } from '@/lib/badgeColors.generated'
 import { TagList } from '@/components/tag'
@@ -77,23 +68,15 @@ export function RouteDetailView({
 }: RouteDetailViewProps) {
   const { t } = useTranslation()
   const { distance, elevation, formatDistance, config, grade } = useUnits()
-  const { isAuthenticated } = useAuth()
   const mode = useWindColorMode({
     tracks: route.tracks,
     leg: windLeg,
     attribution: windAttribution,
     timezone,
   })
-  const { connectedServices, uploadRoute, isUploading } = useGpsConnections()
   const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
 
   const hasDownloads = showDownload && !!(route.media.assets.gpx || route.media.assets.fit)
-
-  const handleSendToDevice = (serviceType: GpsServiceType) => {
-    if (teamSlug && route.slug) {
-      uploadRoute({ serviceType, teamSlug, routeSlug: route.slug })
-    }
-  }
 
   return (
     <Stack>
@@ -125,52 +108,19 @@ export function RouteDetailView({
         subject="stage"
       />
 
-      {/* Download Buttons - inline without wrapper */}
+      {/* The route's actions: « GPS », then the page's own (edit, delete…) */}
       {(hasDownloads || extraActions) && (
         <Group gap="sm" wrap="wrap" data-testid="route-downloads">
-          {hasDownloads && route.media.assets.gpx && (
-            <Button
-              variant="default"
+          {/* One « GPS » button for files and devices, as on every card (KIT §8,
+              docs/LEDGER_*.md WEB-165). */}
+          {hasDownloads && teamSlug && (
+            <GpsMenuButton
+              teamSlug={teamSlug}
+              routeSlug={route.slug}
+              route={route}
+              statuses={route.gpsSyncStatuses}
               size="sm"
-              component="a"
-              href={route.media.assets.gpx.url}
-              leftSection={<IconDownload size={16} />}
-            >
-              {t('routes.detail.download.gpx')}
-            </Button>
-          )}
-          {hasDownloads && route.media.assets.fit && (
-            <Button
-              variant="default"
-              size="sm"
-              component="a"
-              href={route.media.assets.fit.url}
-              leftSection={<IconDownload size={16} />}
-            >
-              {t('routes.detail.download.fit')}
-            </Button>
-          )}
-          {/* Send to Device - only show if authenticated with connected services */}
-          {hasDownloads && isAuthenticated && teamSlug && connectedServices.length > 0 && (
-            <Menu shadow="md" width={260}>
-              <Menu.Target>
-                <Button
-                  variant="default"
-                  size="sm"
-                  leftSection={isUploading ? <Loader size={16} /> : <IconDeviceMobile size={16} />}
-                  disabled={isUploading}
-                >
-                  {t('routes.detail.sendToDevice')}
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <SendToDeviceItems
-                  services={connectedServices}
-                  statuses={route.gpsSyncStatuses}
-                  onSend={handleSendToDevice}
-                />
-              </Menu.Dropdown>
-            </Menu>
+            />
           )}
           {extraActions}
         </Group>

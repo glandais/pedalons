@@ -8,26 +8,12 @@ import {
   IconArrowUp,
   IconArrowDown,
   IconBolt,
-  IconDeviceMobile,
-  IconDownload,
   IconCopy,
   IconEdit,
   IconRoute,
   IconTrash,
 } from '@tabler/icons-react'
-import {
-  Anchor,
-  Box,
-  Button,
-  Group,
-  Loader,
-  Menu,
-  Modal,
-  Select,
-  Stack,
-  Text,
-  Title,
-} from '@mantine/core'
+import { Anchor, Box, Button, Group, Modal, Select, Stack, Text, Title } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import type { GpsServiceType, GpxPreviewDto } from '@/api/dto'
 import { ElevationState, ErrorCode, SurfaceType } from '@/api/dto'
@@ -50,6 +36,7 @@ import { useWaypointSelection } from '@/hooks/useWaypointSelection'
 import { paths } from '@/config/paths'
 import { useAuth } from '@/hooks/useAuth'
 import { useGpsConnections } from '@/hooks/useGpsConnections'
+import { GpsMenu } from '@/components/route/GpsMenuButton'
 import { useUnits } from '@/hooks/useUnits'
 import { apiErrorCode, ApiClientError } from '@/lib/apiError'
 import { defaultMedia } from '@/lib/apiUtils'
@@ -74,7 +61,7 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
   const queryClient = useQueryClient()
   const { distance, elevation, speed } = useUnits()
   const { isAuthenticated } = useAuth()
-  const { connectedServices, uploadPreview, isUploadingPreview } = useGpsConnections()
+  const { uploadPreview, isUploadingPreview } = useGpsConnections()
 
   const [saveOpened, setSaveOpened] = useState(false)
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null)
@@ -260,24 +247,15 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
 
       {/* Downloads are open to anyone with the link; the actions below need an account. */}
       <Group gap="sm" wrap="wrap">
-        <Button
-          variant="default"
+        {/* One « GPS » button for files and devices, as for a route (KIT §8,
+            docs/LEDGER_*.md WEB-165). */}
+        <GpsMenu
+          gpxUrl={preview.gpxUrl}
+          fitUrl={preview.fitUrl}
+          onSend={handleSendToDevice}
+          isUploading={isUploadingPreview}
           size="sm"
-          component="a"
-          href={preview.gpxUrl}
-          leftSection={<IconDownload size={16} />}
-        >
-          {t('routes.detail.download.gpx')}
-        </Button>
-        <Button
-          variant="default"
-          size="sm"
-          component="a"
-          href={preview.fitUrl}
-          leftSection={<IconDownload size={16} />}
-        >
-          {t('routes.detail.download.fit')}
-        </Button>
+        />
 
         {isAuthenticated && (
           <Button
@@ -288,33 +266,6 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
           >
             {t('gpxTools.preview.saveAsRoute')}
           </Button>
-        )}
-
-        {isAuthenticated && connectedServices.length > 0 && (
-          <Menu shadow="md" width={200}>
-            <Menu.Target>
-              <Button
-                variant="default"
-                size="sm"
-                leftSection={
-                  isUploadingPreview ? <Loader size={16} /> : <IconDeviceMobile size={16} />
-                }
-                disabled={isUploadingPreview}
-              >
-                {t('routes.detail.sendToDevice')}
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              {connectedServices.map((service) => (
-                <Menu.Item
-                  key={service.serviceType}
-                  onClick={() => handleSendToDevice(service.serviceType)}
-                >
-                  {service.serviceType}
-                </Menu.Item>
-              ))}
-            </Menu.Dropdown>
-          </Menu>
         )}
 
         {isAuthenticated && (

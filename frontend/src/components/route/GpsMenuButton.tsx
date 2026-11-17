@@ -7,7 +7,7 @@ import {
   IconDownload,
   IconPlugConnected,
 } from '@tabler/icons-react'
-import type { RouteDetailDto, RouteGpsSyncStatusDto } from '@/api/dto'
+import type { GpsServiceType, RouteDetailDto, RouteGpsSyncStatusDto } from '@/api/dto'
 import { useGetRoutesBulk } from '@/api/endpoints/routes/routes'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { SendToDeviceItems } from '@/components/route/SendToDeviceItems'
@@ -41,8 +41,8 @@ interface GpsMenuButtonProps {
  * parcours », the app's `GpsButton` and GPS sheet). An outlined button with a device icon, opening
  * a menu: « Vers un appareil », one line per connected service — or « Connecter un compteur » to the
  * devices page when none is —, then « Fichier GPX » and « Fichier FIT, pour compteur » when the
- * route has them. It replaces the cards' « GPX », « FIT » and « Envoyer vers l'appareil »; the
- * route's own page keeps its downloads.
+ * route has them. It replaces « GPX », « FIT » and « Envoyer vers l'appareil » everywhere a route
+ * leaves: cards, a group's page, the route's own page (docs/LEDGER_*.md WEB-165).
  */
 export function GpsMenuButton({
   teamSlug,
@@ -52,9 +52,7 @@ export function GpsMenuButton({
   size = 'xs',
   statuses,
 }: GpsMenuButtonProps) {
-  const { t } = useTranslation()
-  const { isAuthenticated } = useAuth()
-  const { connectedServices, uploadRoute, isUploading } = useGpsConnections()
+  const { uploadRoute, isUploading } = useGpsConnections()
   const [opened, setOpened] = useState(false)
 
   const lazy = useGetRoutesBulk(
@@ -64,10 +62,60 @@ export function GpsMenuButton({
   )
   const read = route ?? lazy.data?.routes?.[0]
   const assets = read?.media?.assets
-  const loadingFiles = !route && lazy.isLoading && opened
 
   return (
-    <Menu shadow="md" width={240} opened={opened} onChange={setOpened} position="bottom-start">
+    <GpsMenu
+      opened={opened}
+      onChange={setOpened}
+      gpxUrl={assets?.gpx?.url}
+      fitUrl={assets?.fit?.url}
+      loadingFiles={!route && lazy.isLoading && opened}
+      statuses={statuses ?? read?.gpsSyncStatuses}
+      onSend={(serviceType) => uploadRoute({ serviceType, teamSlug, routeSlug })}
+      isUploading={isUploading}
+      subtitle={subtitle}
+      size={size}
+    />
+  )
+}
+
+interface GpsMenuProps {
+  gpxUrl?: string
+  fitUrl?: string
+  /** The files are being read: one disabled line in their place. */
+  loadingFiles?: boolean
+  statuses?: RouteGpsSyncStatusDto[]
+  onSend: (serviceType: GpsServiceType) => void
+  isUploading: boolean
+  subtitle?: string
+  size?: 'xs' | 'sm'
+  /** Controlled opening, for a caller that reads the files only once the menu opens. */
+  opened?: boolean
+  onChange?: (opened: boolean) => void
+}
+
+/**
+ * The « GPS » button and its menu, whatever leaves: a team's route (`GpsMenuButton`) or a GPX
+ * tool's preview, which has files and a send of its own (docs/LEDGER_*.md WEB-165).
+ */
+export function GpsMenu({
+  gpxUrl,
+  fitUrl,
+  loadingFiles = false,
+  statuses,
+  onSend,
+  isUploading,
+  subtitle,
+  size = 'xs',
+  opened,
+  onChange,
+}: GpsMenuProps) {
+  const { t } = useTranslation()
+  const { isAuthenticated } = useAuth()
+  const { connectedServices } = useGpsConnections()
+
+  return (
+    <Menu shadow="md" width={240} opened={opened} onChange={onChange} position="bottom-start">
       <Menu.Target>
         <Button
           variant="default"
@@ -90,8 +138,8 @@ export function GpsMenuButton({
         {isAuthenticated && connectedServices.length > 0 ? (
           <SendToDeviceItems
             services={connectedServices}
-            statuses={statuses ?? read?.gpsSyncStatuses}
-            onSend={(serviceType) => uploadRoute({ serviceType, teamSlug, routeSlug })}
+            statuses={statuses}
+            onSend={onSend}
             icon={<IconDeviceWatch size={16} aria-hidden />}
           />
         ) : (
@@ -110,29 +158,27 @@ export function GpsMenuButton({
           </Menu.Item>
         ) : (
           <>
-            {assets?.gpx?.url && (
+            {gpxUrl && (
               <Menu.Item
                 component="a"
-                href={assets.gpx.url}
+                href={gpxUrl}
                 download
                 leftSection={<IconDownload size={16} aria-hidden />}
               >
                 {t('routes.gps.gpxFile')}
               </Menu.Item>
             )}
-            {assets?.fit?.url && (
+            {fitUrl && (
               <Menu.Item
                 component="a"
-                href={assets.fit.url}
+                href={fitUrl}
                 download
                 leftSection={<IconDownload size={16} aria-hidden />}
               >
                 {t('routes.gps.fitFile')}
               </Menu.Item>
             )}
-            {!assets?.gpx?.url && !assets?.fit?.url && (
-              <Menu.Item disabled>{t('routes.gps.noFile')}</Menu.Item>
-            )}
+            {!gpxUrl && !fitUrl && <Menu.Item disabled>{t('routes.gps.noFile')}</Menu.Item>}
           </>
         )}
       </Menu.Dropdown>

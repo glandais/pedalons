@@ -1,12 +1,10 @@
 import { useTranslation } from 'react-i18next'
-import { IconMap, IconDownload, IconDeviceMobile } from '@tabler/icons-react'
-import { Group, Text, UnstyledButton, Anchor, Menu, Loader } from '@mantine/core'
-import type { GpsServiceType, RouteDetailDto } from '@/api/dto'
-import { SendToDeviceItems } from '@/components/route/SendToDeviceItems'
+import { IconMap } from '@tabler/icons-react'
+import { Group, Anchor } from '@mantine/core'
+import type { RouteDetailDto } from '@/api/dto'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
+import { GpsMenuButton } from '@/components/route/GpsMenuButton'
 import { paths } from '@/config/paths'
-import { useAuth } from '@/hooks/useAuth'
-import { useGpsConnections } from '@/hooks/useGpsConnections'
 
 interface RideGroupRouteActionsProps {
   teamSlug: string
@@ -15,7 +13,7 @@ interface RideGroupRouteActionsProps {
   /**
    * That route — from the ride's single `/routes/bulk` read (`useRideDetailData.routesBySlug`), or
    * the `RouteDto` a trip's stage embeds — only its GPX/FIT assets are read here. Undefined while
-   * it loads: the links wait for it. Its `gpsSyncStatuses` say, in the device menu, where it
+   * it loads: the « GPS » menu then reads it itself when opened. Its `gpsSyncStatuses` say, in the device menu, where it
    * already stands at the caller's services (docs/LEDGER_*.md WEB-163).
    */
   route: Pick<RouteDetailDto, 'media' | 'gpsSyncStatuses'> | undefined
@@ -25,8 +23,8 @@ interface RideGroupRouteActionsProps {
 }
 
 /**
- * What a rider does with a group's route: open it, download its GPX or FIT, send it to a connected
- * device. The same row on the group's card (ride page) and on the group's own page.
+ * What a rider does with a group's route: open it, and take it away through the « GPS » menu (GPX,
+ * FIT, a connected device). On a group's page under the map, and on a child page's route card.
  */
 export function RideGroupRouteActions({
   teamSlug,
@@ -36,16 +34,9 @@ export function RideGroupRouteActions({
   withViewLink = true,
 }: RideGroupRouteActionsProps) {
   const { t } = useTranslation()
-  const { isAuthenticated } = useAuth()
-  const { connectedServices, uploadRoute, isUploading } = useGpsConnections()
-
-  const handleSendToDevice = (serviceType: GpsServiceType) => {
-    uploadRoute({ serviceType, teamSlug, routeSlug })
-  }
 
   return (
-    // Without the view link, the row fits on one line: the device menu shrinks to make it so.
-    <Group gap="xs" wrap={withViewLink ? 'wrap' : 'nowrap'}>
+    <Group gap="sm" wrap="wrap" align="center">
       {withViewLink && (
         <Anchor
           component={PrefetchLink}
@@ -59,47 +50,15 @@ export function RideGroupRouteActions({
           </Group>
         </Anchor>
       )}
-      {route?.media?.assets?.gpx?.url && (
-        <Anchor href={route.media.assets.gpx.url} size={size} c="dimmed" download>
-          <Group gap={4} wrap="nowrap">
-            <IconDownload size={16} />
-            {t('rides.detail.groups.route.downloadGpx')}
-          </Group>
-        </Anchor>
-      )}
-      {route?.media?.assets?.fit?.url && (
-        <Anchor href={route.media.assets.fit.url} size={size} c="dimmed" download>
-          <Group gap={4} wrap="nowrap">
-            <IconDownload size={16} />
-            {t('rides.detail.groups.route.downloadFit')}
-          </Group>
-        </Anchor>
-      )}
-      {isAuthenticated && connectedServices.length > 0 && (
-        <Menu shadow="md" width={260}>
-          <Menu.Target>
-            <UnstyledButton
-              disabled={isUploading}
-              aria-label={t('routes.detail.sendToDevice')}
-              miw={0}
-            >
-              <Group gap={4} wrap="nowrap">
-                {isUploading ? <Loader size={16} /> : <IconDeviceMobile size={16} />}
-                <Text size={size} c="dimmed" truncate>
-                  {t('routes.detail.sendToDevice')}
-                </Text>
-              </Group>
-            </UnstyledButton>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <SendToDeviceItems
-              services={connectedServices}
-              statuses={route?.gpsSyncStatuses}
-              onSend={handleSendToDevice}
-            />
-          </Menu.Dropdown>
-        </Menu>
-      )}
+      {/* One « GPS » button for files and devices, as on the cards (KIT §8, docs/LEDGER_*.md
+          WEB-165). Until the route is read, the menu reads it when it opens. */}
+      <GpsMenuButton
+        teamSlug={teamSlug}
+        routeSlug={routeSlug}
+        route={route}
+        statuses={route?.gpsSyncStatuses}
+        size={size}
+      />
     </Group>
   )
 }

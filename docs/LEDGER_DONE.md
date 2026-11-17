@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **593 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
+Index des **594 entrées livrées**, et des 9 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -169,6 +169,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`WEB-168`](ledger/WEB/WEB-168.md) « Dupliquer » sur la fiche d'un parcours — 2026-11-12
 - [x] [`WEB-167`](ledger/WEB/WEB-167.md) Cartes homogènes entre l'app et le site, côté site — 2026-11-12
 - [x] [`WEB-166`](ledger/WEB/WEB-166.md) Contenu public d'une équipe privée : pages de détail sans `GET team`, éditeurs sur les droits calculés — 2026-11-16
+- [x] [`WEB-165`](ledger/WEB/WEB-165.md) Aligner le web sur les décisions des cibles mobiles (M, à cadrer) — 2026-11-17
 - [x] [`WEB-164`](ledger/WEB/WEB-164.md) « Vitesse moyenne » à la place d'« Allure moyenne », client régénéré — 2026-11-10
 - [x] [`WEB-163`](ledger/WEB/WEB-163.md) Afficher l'état `gpsSyncStatuses` près de l'action d'envoi — 2026-11-17
 - [x] [`WEB-162`](ledger/WEB/WEB-162.md) L'interrupteur d'envoi automatique parle aussi des étapes de voyage — 2026-11-10

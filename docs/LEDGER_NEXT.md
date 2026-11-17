@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **153 entrées ouvertes** et des 75 entrées écartées. Chaque entrée a son fichier
+Index des **152 entrées ouvertes** et des 75 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -65,7 +65,6 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 - [ ] [`WEB-176`](ledger/WEB/WEB-176.md) Listes homogènes : recette en navigateur de `WEB-175` (S) · *recette*
 - [ ] [`WEB-172`](ledger/WEB/WEB-172.md) Cartes homogènes : recette en navigateur de `WEB-167` (S) · *recette*
 - [ ] [`WEB-170`](ledger/WEB/WEB-170.md) Servir la police Inter sur le site (S à M)
-- [ ] [`WEB-165`](ledger/WEB/WEB-165.md) Aligner le web sur les décisions des cibles mobiles (M, à cadrer)
 - [ ] [`WEB-161`](ledger/WEB/WEB-161.md) Contrôles de carte : recette à l'œil de `WEB-157` (S) · *recette*
 - [ ] [`WEB-133`](ledger/WEB/WEB-133.md) La météo des aperçus GPX : recette navigateur (S) · *recette*
 - [ ] [`WEB-119`](ledger/WEB/WEB-119.md) La météo sur la carte : recette navigateur des paliers 1 à 3 (S) · *recette*

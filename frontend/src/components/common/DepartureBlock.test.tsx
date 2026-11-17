@@ -75,14 +75,16 @@ describe('DepartureBlock', () => {
     expect(within(block()).getByRole('img', { name: 'Lieu de départ' })).toBeTruthy()
   })
 
-  it('shows the reader’s group and its time only when given one', () => {
+  it('leaves at the reader’s group’s time, naming the group and the first departure under it', () => {
     renderBlock()
     expect(screen.queryByTestId('departure-group')).toBeNull()
     cleanup()
     renderBlock({ group: { name: 'Groupe B', startAt: '2026-04-11T07:30:00Z' } })
-    const group = screen.getByTestId('departure-group')
-    expect(group.textContent).toBe('Votre groupeGroupe B · 09:30')
-    // The block still gives the ride's own time.
-    expect(within(block()).getByText('Départ 09:00')).toBeTruthy()
+    // The app's reading (KIT §8, docs/LEDGER_*.md WEB-165): the group's time in the headline.
+    expect(within(block()).getByText('Départ 09:30')).toBeTruthy()
+    expect(within(block()).queryByText('Départ 09:00')).toBeNull()
+    expect(screen.getByTestId('departure-group').textContent).toBe(
+      'Groupe B · premier départ 09:00'
+    )
   })
 })

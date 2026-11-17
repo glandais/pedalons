@@ -856,8 +856,8 @@ groupe (le site garde le groupe devant le compte : « B · 11/12 personnes ») ;
 
 Le départ est une information primaire, jamais une statistique parmi d'autres (ledger `BRAND-8`,
 décidé le 7 novembre 2026, maquette « BRAND-8 — date et heure de départ »). Pour une personne
-inscrite, **l'heure affichée est celle de son groupe** (`group.startAt ?? ride.dateTime`), sauf sur
-le détail d'une sortie, qui donne l'heure de la sortie et, à côté, « Votre groupe : B · 09:30 ».
+inscrite, **l'heure affichée est celle de son groupe** (`group.startAt ?? ride.dateTime`), partout,
+détail d'une sortie compris (ledger `WEB-165`).
 
 - **Boîte du jour** (`DayBox` sur le web, `_DateBlock` / `_DayTile` sur mobile) : 56–72 px de
   large, rayon 8 px, trois lignes centrées — jour abrégé (« sam. », 12–13 px/600,
@@ -882,8 +882,9 @@ le détail d'une sortie, qui donne l'heure de la sortie et, à côté, « Votre 
   gauche la boîte du jour à plat ; au centre « Départ 09:00 » en 24 px/700 (22 px sur mobile), la
   pastille « Demain » et le lieu de départ — **la date n'est pas répétée en toutes lettres**, la
   boîte du jour la dit (seule la plage d'un voyage, « ven. 16 → dim. 18 mai », s'y ajoute, puisqu'elle
-  nomme aussi le dernier jour) ;
-  à droite (sous le reste sur mobile) « Votre groupe » et son heure en 700.
+  nomme aussi le dernier jour). Quand le groupe de la personne part à son heure, « Départ 09:30 » est
+  la sienne, et une ligne dessous nomme le groupe et le premier départ : « **Groupe B** · premier
+  départ 09:00 » (nom en 600, la suite atténuée).
 - **Horaires de groupes différents** (carte de groupe du détail d'une sortie) : sous le nom, un bandeau
   indigo très doux (`primary-0` `#edf2ff` en clair, surface alternée en sombre — pas l'indigo
   « light », sur lequel le gris atténué tombe sous 4,5:1), rayon 8 px, contenant la ligne de départ

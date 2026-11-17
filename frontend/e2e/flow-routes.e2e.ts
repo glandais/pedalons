@@ -170,8 +170,9 @@ test('a team admin creates a route by uploading a GPX; its page shows its stats,
   // The map is drawn (on the stubbed basemap).
   await expect(page.locator('canvas.maplibregl-canvas')).toBeVisible()
 
-  // The GPX is offered for download, and it is this track.
-  const download = main.getByRole('link', { name: 'Télécharger GPX' })
+  // The GPX is offered for download through the « GPS » menu, and it is this track.
+  await main.getByTestId('gps-button').click()
+  const download = page.getByRole('menuitem', { name: 'Fichier GPX' })
   await expect(download).toBeVisible()
   const href = await download.getAttribute('href')
   expect(href, 'the download link has a target').toBeTruthy()
@@ -827,7 +828,7 @@ test.describe('what a route shows to whom', () => {
   }) => {
     const { team, route, name } = await publicTeamWithRoute('copie-anonyme')
     const main = await openSettled(page, team.slug, route.slug, name)
-    await expect(main.getByRole('link', { name: 'Télécharger GPX' })).toBeVisible()
+    await expect(main.getByTestId('gps-button')).toBeVisible()
     await expect(main.getByRole('button', { name: 'Dupliquer', exact: true })).toHaveCount(0)
     await expect(main.getByRole('button', { name: 'Modifier une copie' })).toHaveCount(0)
   })
@@ -1047,7 +1048,8 @@ test.describe('GPX files in the route forms', () => {
     )
 
     // The download is the new track: it ends where the longer one ends.
-    const download = main.getByRole('link', { name: 'Télécharger GPX' })
+    await main.getByTestId('gps-button').click()
+    const download = page.getByRole('menuitem', { name: 'Fichier GPX' })
     const gpx = await page.request.get((await download.getAttribute('href'))!)
     expect(gpx.ok()).toBe(true)
     const trkpts = [...(await gpx.text()).matchAll(/<trkpt lat="([\d.]+)" lon="([\d.]+)"/g)]

@@ -189,8 +189,8 @@ export function RideDetailPage() {
         editPath={paths.rideEdit(teamSlug!, rideSlug!)}
       >
         {/* The departure, a primary piece of information: under the title, before everything the
-            organiser wrote (docs/BRANDING.md §7.8, docs/LEDGER_*.md WEB-137). The ride's own time,
-            its reader's group's beside it when that group leaves at another. */}
+            organiser wrote (docs/BRANDING.md §7.8, docs/LEDGER_*.md WEB-137). The reader's
+            group's time when that group leaves at its own, the first departure under it (WEB-165). */}
         <Stack gap="sm">
           <DepartureBlock
             date={ride.dateTime}

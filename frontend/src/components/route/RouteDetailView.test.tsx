@@ -27,6 +27,10 @@ vi.mock('@/hooks/useGpsConnections', () => ({
   useGpsConnections: () => ({ connectedServices: [], uploadRoute: () => {}, isUploading: false }),
 }))
 
+vi.mock('@/api/endpoints/routes/routes', () => ({
+  useGetRoutesBulk: () => ({ data: undefined, isLoading: false }),
+}))
+
 import { RouteDetailView } from './RouteDetailView'
 
 const ROUTE = {
@@ -160,9 +164,13 @@ describe('RouteDetailView — the page’s extra actions (WEB-169)', () => {
     media: { markdown: '', assets: { gpx: { url: '/aller.gpx' } } },
   } as unknown as RouteDetailDto
 
-  it('renders them in the downloads’ row, after the downloads', () => {
-    show({ route: withGpx, extraActions: <button type="button">Modifier une copie</button> })
-    const download = screen.getByRole('link', { name: 'Télécharger GPX' })
+  it('renders them in the downloads’ row, after the « GPS » button (WEB-165)', () => {
+    show({
+      route: withGpx,
+      teamSlug: 'np',
+      extraActions: <button type="button">Modifier une copie</button>,
+    })
+    const download = screen.getByTestId('gps-button')
     const extra = screen.getByRole('button', { name: 'Modifier une copie' })
     expect(download.parentElement).toBe(extra.parentElement)
     expect(!!(download.compareDocumentPosition(extra) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(
@@ -173,7 +181,7 @@ describe('RouteDetailView — the page’s extra actions (WEB-169)', () => {
   it('renders them even without a download to offer', () => {
     show({ extraActions: <button type="button">Modifier une copie</button> })
     expect(screen.getByRole('button', { name: 'Modifier une copie' })).toBeTruthy()
-    expect(screen.queryByRole('link', { name: 'Télécharger GPX' })).toBeNull()
+    expect(screen.queryByTestId('gps-button')).toBeNull()
   })
 
   it('renders them in a row of their own', () => {
@@ -182,8 +190,8 @@ describe('RouteDetailView — the page’s extra actions (WEB-169)', () => {
   })
 
   it('renders no row when there is neither', () => {
-    show({ route: withGpx, showDownload: false })
-    expect(screen.queryByRole('link', { name: 'Télécharger GPX' })).toBeNull()
+    show({ route: withGpx, teamSlug: 'np', showDownload: false })
+    expect(screen.queryByTestId('gps-button')).toBeNull()
     expect(screen.queryByTestId('route-downloads')).toBeNull()
   })
 

@@ -52,7 +52,7 @@ interface StatsCardProps {
 }
 
 /**
- * Pace, distance and climb — each one only when known — and, under the pace, the estimated arrival:
+ * Distance, climb and pace — each one only when known — and, under the pace, the estimated arrival:
  * a ride group's figures and a trip stage's alike (docs/LEDGER_*.md WEB-155), on their pages and on
  * a solo ride's (WEB-79).
  */
@@ -78,6 +78,24 @@ export function StatsCard({
       {/* Container query: the tiles sit in a narrow side column on wide screens, so the viewport
           width says nothing about the room they have. */}
       <SimpleGrid type="container" cols={{ base: 2, '560px': 4 }} spacing="md">
+        {/* Distance | climb, then departure | pace: the order of the app's tiles (KIT §8,
+            docs/LEDGER_*.md WEB-165). */}
+        {meters !== undefined && (
+          <StatTile
+            icon={<IconArrowsMaximize size={14} aria-hidden />}
+            label={t('rides.group.stats.distance')}
+          >
+            {distance(meters)}
+          </StatTile>
+        )}
+        {elevationGain !== undefined && (
+          <StatTile
+            icon={<IconArrowUp size={14} aria-hidden />}
+            label={t('rides.group.stats.elevation')}
+          >
+            {elevation(elevationGain)}
+          </StatTile>
+        )}
         {departure && (
           <StatTile
             icon={<IconClock size={14} aria-hidden />}
@@ -100,22 +118,6 @@ export function StatsCard({
             }
           >
             {speed(averageSpeed)}
-          </StatTile>
-        )}
-        {meters !== undefined && (
-          <StatTile
-            icon={<IconArrowsMaximize size={14} aria-hidden />}
-            label={t('rides.group.stats.distance')}
-          >
-            {distance(meters)}
-          </StatTile>
-        )}
-        {elevationGain !== undefined && (
-          <StatTile
-            icon={<IconArrowUp size={14} aria-hidden />}
-            label={t('rides.group.stats.elevation')}
-          >
-            {elevation(elevationGain)}
           </StatTile>
         )}
       </SimpleGrid>
