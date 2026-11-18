@@ -99,8 +99,15 @@ class _RouteEditorPageState extends ConsumerState<RouteEditorPage> {
     // de mois, déblocage par l'admin de plateforme). Elle est relue à chaque
     // ouverture de l'éditeur, sans écran d'attente — la valeur en cache reste
     // affichée pendant la relecture (docs/LEDGER_*.md MOB-176).
+    //
+    // Après la première image, jamais dans initState : la page est montée
+    // pendant un build, et invalider là marque le ProviderScope à
+    // reconstruire en plein build — l'assertion de Flutter casse l'éditeur
+    // en mode debug (vu par les tests Patrol route_editor et route_planner).
     if (ref.read(teamDetailProvider(teamSlug).exists)) {
-      ref.invalidate(teamDetailProvider(teamSlug));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.invalidate(teamDetailProvider(teamSlug));
+      });
     }
   }
 
