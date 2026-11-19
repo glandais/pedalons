@@ -632,6 +632,33 @@ Conception et relevés dans osm-route-details : `docs/design/technique/ord-loops
 - **Reste au propriétaire** : le budget du générateur, et
   relever ou non la distance maximale.
 
+## 12 septies. Lot 4 : goût appris et formes organiques (17 au 19 novembre 2026)
+
+Conception et relevés dans osm-route-details : `docs/design/technique/ord-loops-lot4.md` (décisions §9.1 à §9.9) et
+`ord-loops-lot4-mesures.md`, `-sonde.md`, `-sonde2.md`, `-3b-mesures.md`, `ord-loops-lot4c-sonde.md`,
+`ord-loops-lot4c-mesures.md` ; registre `API-207`, mise en service `OPS-64`.
+
+- **Mesuré d'abord (4a)** : un banc compare les formes et les classes de route des vraies boucles des équipes à
+  celles du moteur 1.9.2. Les boucles générées étaient trop étirées et trop peu en triangle.
+- **Goût (3b, 1.10)** : la première idée (« roulé contre disponible ») doublait les biais et a été abandonnée ; le
+  goût retenu est **recalé** : par équipe, la part de chaque classe de route dans ses vraies boucles contre celle des
+  boucles générées, en trois pas, appris au dépôt de la surcouche (au plus 500 boucles), dans un fichier chiffré à
+  côté d'elle, plus une table commune à toutes les équipes (apprise sur 100 % des boucles). L'écart de classes au réel
+  tombe à 0,24 au plus en route et 0,33 en gravel (1 = moteur 1.9.2). Réserve acceptée : la plus grande équipe en
+  route faisait un peu moins bien que la table commune seule (+0,044), levée par les formes organiques.
+- **Formes (4c, 1.11 puis 1.12)** : triangle (deux points lointains) en plus de la lentille, couloir qui écarte
+  l'aller du retour, recherche des virages et des allers-retours alignée sur le contrôleur indépendant. L'écart au
+  réel de l'écartement des boucles est divisé par 2,7 en route et 1,7 en gravel, la part de triangles passe de
+  presque rien à 0,43–0,55 (réel 0,53 en route), 0 refus du contrôleur sur 20 280 parcours, goût inchangé.
+- **Décidé le 19 novembre 2026** : le temps est accepté, médiane ×1,23 à ×1,38 du moteur 1.10 au banc (le temps à
+  90 % est meilleur, ×0,95 à ×0,98) ; en conteneur de 3 Gio, 0,60 s à 4 clients et 0,30 s en série ; les formes
+  organiques deviennent le défaut (osm-route-details `1.12.0`). Mémoire au pic : 1,50 Gio, profil le plus long 442 s.
+- **Côté Pédalons** : rien à changer. Le backend n'envoie pas la forme, ignore les champs ajoutés et redépose toute
+  surcouche `stale`. Au premier démarrage de 1.12, toutes les surcouches le deviennent (raison `profile`) et la table
+  commune les sert jusqu'à la passe de la nuit.
+- **Reste** : le 4d (attracteurs OSM : cols, bourgs, points de vue, points d'eau, en points lointains), puis les
+  lieux de l'équipe comme attracteurs, après le lot 4.
+
 ## 13. Risques
 
 - **La qualité d'OSM hors des routes roulées** : accès privés mal tagués, chemins disparus. Le
