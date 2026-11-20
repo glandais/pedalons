@@ -12,6 +12,7 @@ import {
   Slider,
   Stack,
   Text,
+  useMantineTheme,
 } from '@mantine/core'
 import { IconAlertTriangle, IconInfoCircle, IconRefresh, IconRoute2 } from '@tabler/icons-react'
 import { CompassPoint, RouteGeneratorType } from '@/api/dto'
@@ -124,7 +125,13 @@ export function RouteGeneratorPanel({
   const { t } = useTranslation()
   const { formatDate } = useFormattedDate()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
+  const theme = useMantineTheme()
+  // Stacked (controls, map, results) on a touch screen or a window too narrow for the 360 px column
+  // beside the map: the pointer alone left a narrow desktop window, or a phone reporting a fine
+  // pointer, with a squeezed map
   const isCoarse = useMediaMatch('(pointer: coarse)')
+  const isNarrow = useMediaMatch(`(max-width: ${theme.breakpoints.md})`)
+  const stacked = isCoarse || isNarrow
   const { distance, unitSystem, distanceFromDisplay, distanceToDisplay } = useUnits()
   const isImperial = unitSystem === 'IMPERIAL'
 
@@ -428,12 +435,12 @@ export function RouteGeneratorPanel({
         <>
           <Box
             style={
-              isCoarse
+              stacked
                 ? undefined
                 : { display: 'flex', flexDirection: 'column', gap: 'var(--mantine-spacing-sm)' }
             }
           >
-            {isCoarse ? (
+            {stacked ? (
               <ScrollArea type="auto" offsetScrollbars>
                 <Group wrap="nowrap" gap="sm" align="stretch">
                   {candidates.map((candidate, i) => (
@@ -507,8 +514,7 @@ export function RouteGeneratorPanel({
     )
   }
 
-  const mapHeight =
-    layout === 'modal' ? (isCoarse ? '50dvh' : '100%') : isCoarse ? '50dvh' : '70dvh'
+  const mapHeight = layout === 'modal' ? (stacked ? '50dvh' : '100%') : stacked ? '50dvh' : '70dvh'
   const map = (
     <RouteGeneratorMap
       start={generator.start}
@@ -526,9 +532,9 @@ export function RouteGeneratorPanel({
     />
   )
 
-  if (isCoarse) {
+  if (stacked) {
     return (
-      <Stack gap="md">
+      <Stack gap="md" p={layout === 'modal' ? 'md' : undefined}>
         {controls}
         {map}
         {results}
