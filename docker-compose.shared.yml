@@ -77,8 +77,12 @@ services:
   # Its first start marks every overlay deposited by an older engine `stale` (reason `profile`):
   # the common table serves them until the nightly pass deposits them again. Going back under
   # 1.12 asks for the same redeposit (docs/LEDGER_*.md OPS-64).
+  # 1.13.0 (lot 4, 4d): OSM attractors (cafés, bakeries, viewpoints, cols, summits) read from
+  # <name>.road.orda and <name>.gravel.orda beside the views, built by `ord-graph-build attractors`
+  # on the graph's extract. They stay off (generator.attractors.enabled = false): routes are those
+  # of 1.12 and no redeposit is asked. A missing file only makes them unavailable (OPS-65).
   osm-route-details:
-    image: ghcr.io/glandais/osm-route-details:1.12.0
+    image: ghcr.io/glandais/osm-route-details:1.13.0
     networks:
       - shared
     environment:

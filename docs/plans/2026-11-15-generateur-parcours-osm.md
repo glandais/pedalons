@@ -656,8 +656,15 @@ Conception et relevés dans osm-route-details : `docs/design/technique/ord-loops
 - **Côté Pédalons** : rien à changer. Le backend n'envoie pas la forme, ignore les champs ajoutés et redépose toute
   surcouche `stale`. Au premier démarrage de 1.12, toutes les surcouches le deviennent (raison `profile`) et la table
   commune les sert jusqu'à la passe de la nuit.
-- **Reste** : le 4d (attracteurs OSM : cols, bourgs, points de vue, points d'eau, en points lointains), puis les
-  lieux de l'équipe comme attracteurs, après le lot 4.
+- **En service le 20 novembre 2026** : la première passe de nuit redépose toutes les surcouches sans échec (`OPS-64`).
+- **4d, attracteurs OSM (19 et 20 novembre 2026)** : cafés, boulangeries, points de vue, cols et sommets, lus dans un
+  fichier par vue construit hors ligne (~10 Mo chacun), servent de points lointains organiques. L'effet est net mais
+  dépasse le réel : en route, la part des points lointains près d'un commerce passe de 0,15 à 0,27–0,29, contre 0,20
+  pour les vrais parcours. Sans la lentille, l'étape qui place le point lointain près de l'attracteur, l'effet devient
+  trop faible. Aucun réglage ne tient tous les critères (commerce en gravel, formes, goût en route, temps au P90).
+  **Décidé le 20 novembre 2026** : osm-route-details `1.13.0` est publiée avec les attracteurs `off`, fichiers posés
+  (`OPS-65`), parcours identiques à la 1.12 ; les critères ne sont pas relâchés et le 4d s'arrête là.
+- **Reste** : les lieux de l'équipe comme attracteurs, après le lot 4.
 
 ## 13. Risques
 
