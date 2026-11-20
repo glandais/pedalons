@@ -2,11 +2,11 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **148 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **147 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-41 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+40 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
@@ -146,8 +146,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 ## OPS — Exploitation
 
 Contexte du domaine : [`ledger/OPS/README.md`](ledger/OPS/README.md).
-
-- [ ] [`OPS-64`](ledger/OPS/OPS-64.md) Générateur de parcours : osm-route-details 1.12, formes organiques et profil de goût en service (S) · *recette*
 
 ### App Garmin : Connect IQ Store
 
@@ -308,7 +306,6 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 - [`API-122`](ledger/API/API-122.md) L'état « déjà chez le service GPS » de « Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge
 - [`API-119`](ledger/API/API-119.md) « Prochaines sorties » éprouvé sur un vrai Karoo et un vrai Edge
 - [`API-63`](ledger/API/API-63.md) Onboarding d'un Karoo refait de bout en bout (M, backend + web + mobile + Karoo)
-- [`OPS-64`](ledger/OPS/OPS-64.md) Générateur de parcours : osm-route-details 1.12, formes organiques et profil de goût en service
 - [`OPS-42`](ledger/OPS/OPS-42.md) Envoi automatique des parcours : la recette sur appareil, faite après l'allumage
 - [`OPS-4`](ledger/OPS/OPS-4.md) Les quatre gabarits d'invitation en production : les recevoir
 - [`OPS-3`](ledger/OPS/OPS-3.md) Le relais de contact en production : regarder un message reçu
