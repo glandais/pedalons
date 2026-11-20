@@ -81,8 +81,10 @@ services:
   # <name>.road.orda and <name>.gravel.orda beside the views, built by `ord-graph-build attractors`
   # on the graph's extract. They stay off (generator.attractors.enabled = false): routes are those
   # of 1.12 and no redeposit is asked. A missing file only makes them unavailable (OPS-65).
+  # 1.13.1: the bearing of a one-way ride picks the sectors, as for a loop (it only weighed in the
+  # score: with an arrival near the start, routes went 90-170 degrees off the asked bearing).
   osm-route-details:
-    image: ghcr.io/glandais/osm-route-details:1.13.0
+    image: ghcr.io/glandais/osm-route-details:1.13.1
     networks:
       - shared
     environment:
