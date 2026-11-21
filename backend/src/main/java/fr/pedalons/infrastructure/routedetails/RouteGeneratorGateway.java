@@ -63,7 +63,7 @@ public class RouteGeneratorGateway {
   @ConfigProperty(name = "pedalons.route-generator.namespace-key")
   Optional<String> configuredKey;
 
-  @ConfigProperty(name = "pedalons.route-generator.generate-timeout", defaultValue = "PT10S")
+  @ConfigProperty(name = "pedalons.route-generator.generate-timeout", defaultValue = "PT35S")
   Duration generateTimeout;
 
   @ConfigProperty(name = "pedalons.route-generator.overlay.deposit-timeout", defaultValue = "PT16M")

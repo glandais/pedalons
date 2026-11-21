@@ -812,7 +812,7 @@ provider is called.
 | `enabled` (`ROUTE_GENERATOR_ENABLED`) | `true` | The kill switch: `false` answers `ROUTE_PLANNER_DISABLED` |
 | `namespace-key` (`ROUTE_GENERATOR_NAMESPACE_KEY`) | none in `%prod` | The secret of the environment, see below. **Required**: the `%prod` start fails without it, and `docker-compose.yml` restates it with `:?` |
 | `rate.max-per-window`, `rate.window-minutes` | `30`, `15` | Requests per person (`ROUTE_GENERATOR_RATE_LIMITED`, 429) |
-| `generate-timeout` | `PT10S` | One generation: the engine's 8 s budget (queue included) plus 2 s; past it `ROUTE_GENERATOR_BUSY` |
+| `generate-timeout` | `PT35S` | One generation: the engine's budget (30 s since osm-route-details 1.14.0, 8 s before; queue included) plus 5 s; past it `ROUTE_GENERATOR_BUSY`. Raise it with `ORD_GENERATOR__BUDGET_MS` |
 | `ascent-budget` | `PT2.5S` | The three `fast` elevation calls of the proposals together; late ones leave the ascent absent |
 | `overlay.enabled` (`ROUTE_GENERATOR_OVERLAY_ENABLED`) | `true` | The nightly deposit |
 | `overlay.cron` | `0 10 2 * * ?` | 02:10 UTC, before the 03:00 to 04:50 jobs |
@@ -854,7 +854,10 @@ logs it.
 with `./data/osm-route-details-graph` mounted **read only**. A graph is four files built on a
 workstation (the graph, the `road` and `gravel` views, the covered polygon: about 125 + 65 + 92 MB
 for Pays de la Loire, 1.85 + 0.87 + 1.43 GB for France), named from one stem: `<name>.ordg`, `<name>.road.ordv`,
-`<name>.gravel.ordv`, `<name>.poly`. The stem is `ORD_GRAPH_NAME` in `~/shared/.env`, which `scripts/deploy.sh --shared`
+`<name>.gravel.ordv`, `<name>.poly`, and since 1.14.0 `<name>.ordi`, the prebuilt tile index (`ord-graph-build index`;
+without it the service rebuilds the index at each start, seconds for France but 37 minutes and more than the 3G limit
+for the planet), plus the two attractor files `<name>.road.orda` and `<name>.gravel.orda` (absent, the attractors are
+only unavailable). The stem is `ORD_GRAPH_NAME` in `~/shared/.env`, which `scripts/deploy.sh --shared`
 already reads; without it the generator is off (the service starts and serves the altitude, and the
 generator answers `data_unavailable`, so `GENERATOR_UNAVAILABLE`). `scripts/deploy.sh --shared`
 creates `./data/osm-route-details-graph` before `docker stack deploy`: Swarm does not create the source of a
@@ -868,7 +871,7 @@ Since 1.9.1 the service maps the files and loads only the tiles around a request
 `ORD_GENERATOR__MEMORY_BUDGET_MB` (800 by default): the size of the graph no longer drives its memory,
 but the page cache must be able to hold the tiles in use, so keep the files on a local disk.
 
-1. Copy the four files, mode 0444, into `~/shared/data/osm-route-details-graph/` **under a new
+1. Copy the files, mode 0444, into `~/shared/data/osm-route-details-graph/` **under a new
    name** (for instance the date of the data: `pdl-2026-11-16`); never over the files of the graph
    being served, the service has them mapped.
 2. Set `ORD_GRAPH_NAME=pdl-2026-11-16` in `~/shared/.env` and run `cd ~/shared && scripts/deploy.sh --shared`.
