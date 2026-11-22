@@ -877,9 +877,11 @@ but the page cache must be able to hold the tiles in use, so keep the files on a
 2. Set `ORD_GRAPH_NAME=pdl-2026-11-16` in `~/shared/.env` and run `cd ~/shared && scripts/deploy.sh --shared`.
    The service verifies the files, publishes the new `graph.id` in `GET /v1/capabilities` and
    `generator.enabled`.
-   Run the trigger on staging and prod one after the other or together, as you like: the engine
-   takes one deposit at a time and the others wait their turn (since 1.9.2; with 1.9.1 a deposit
-   that waited more than a few seconds left the backend hanging for its 16-minute timeout).
+   Run the trigger on staging and prod **one after the other**, the second once the first pass has logged
+   its summary: the engine takes one deposit at a time and another one waits at most 120 s
+   (`generator.deposit.queue_wait_s`) before a 503 that ends its pass. The largest team takes about
+   7.5 min (454 s on the planet, 2026-11-21): the staging pass started alongside ended at its first team
+   and only the night caught up.
 3. **What a new graph does**: every overlay deposited for the old one becomes `stale` and
    generations below discovery answer 409, so `GENERATOR_NETWORK_NOT_READY`, until it is deposited
    again. Do not wait for the night: on each environment run the trigger with `force` (it

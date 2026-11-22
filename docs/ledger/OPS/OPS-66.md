@@ -3,7 +3,7 @@ id: OPS-66
 title: "Générateur de parcours : osm-route-details 1.14, la planète servie et un budget de 30 s"
 status: open
 size: "S"
-verified: 2026-11-21
+verified: 2026-11-22
 ---
 
 ## Livré
@@ -23,12 +23,16 @@ changent pas. Elle lit aussi l'index de service `<name>.ordi` à côté du graph
 
 Mesures et validation sur le poste : note `ord-1-14-planete-mesures.md` d'osm-route-details.
 
+- **Surcouches :** le déclencheur avec `force` a redéposé les 10 surcouches de prod le 21 novembre, de 17:39 à
+  17:59 UTC (1202 s, 0 échec). La plus grosse équipe a pris 454 s et 704,5 Mo envoyés, comme sur la France. Le
+  déclencheur de staging, lancé en même temps, a attendu 120 s derrière ce dépôt puis reçu un 503 qui a arrêté sa
+  passe. La passe de nuit du 22 novembre a déposé ses 4 surcouches `STALE` en 348 s ; celle de prod les a toutes
+  gardées.
+- **Constat :** aucun redémarrage ni OOM du moteur en 24 h, et une génération d'équipe en `team_first` rend ses trois
+  parcours en 1,4 s. `docs/OPERATIONS.md` demande désormais de lancer les déclencheurs l'un après l'autre.
+
 ## Reste à faire
 
-- **Redéposer les surcouches :** celles de la France sont `stale` depuis la bascule, donc les générations sous la
-  découverte répondent `GENERATOR_NETWORK_NOT_READY`. Il faut lancer le déclencheur avec `force` sur chaque
-  environnement, ce qui demande une session d'admin de la plateforme. À défaut, la passe de nuit les redépose.
-- **Relever pendant ce premier dépôt :** sa durée et le pic mémoire du service, puis constater qu'une équipe est
-  servie avec ses routes.
-- **Supprimer les fichiers `fr-2026-11-15.*` :** à la main, quand le moteur aura purgé les surcouches de l'ancien
-  graphe, 48 h après.
+- **Supprimer les fichiers `fr-2026-11-15.*` :** à la main, sous `~/shared/data/osm-route-details-graph/`, une fois que
+  le moteur aura purgé les surcouches de l'ancien graphe, 48 h après la bascule (à partir du 23 novembre 2026, 17:00 UTC).
+  Ce sont la base, les deux vues, les deux `.orda` et le `.poly`, environ 4,2 Go.
