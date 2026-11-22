@@ -13,9 +13,14 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../keys.dart';
+import '../../../../core/config/config_provider.dart';
+import '../../../auth/domain/auth_state.dart';
+import '../../../auth/providers/auth_provider.dart';
 import '../../../routes/data/gpx_file_source.dart';
 import '../../../routes/domain/gpx_check.dart';
+import '../../../routes/domain/planner_quota.dart';
 import '../../../routes/presentation/widgets/editor/gpx_refused_banner.dart';
+import '../../../routes/presentation/widgets/editor/planner_quota_message.dart';
 import '../../data/gpx_files_picker.dart';
 import '../../data/gpx_preview_repository.dart';
 import '../../providers/gpx_preview_provider.dart';
@@ -28,8 +33,8 @@ const int kGpxMergeMaxFiles = 10;
 
 /// L'accueil des outils GPX (docs/LEDGER_*.md MOB-178), ouvert depuis
 /// l'onglet Parcours : les cartes du site (`GpxToolsPage`) — visualiser un
-/// fichier, en fusionner plusieurs, lister les siens —, et la mention de
-/// conservation.
+/// fichier, en fusionner plusieurs, en tracer un (si le domaine ouvre le
+/// planificateur), lister les siens —, et la mention de conservation.
 ///
 /// « Visualiser » et « Fusionner » envoient dès le choix, comme au site : le
 /// serveur choisit l'ordre et le sens des traces d'une fusion, il n'y a rien à
@@ -172,6 +177,48 @@ class _GpxToolsPageState extends ConsumerState<GpxToolsPage> {
     });
   }
 
+  bool get _plannerEnabled =>
+      ref.watch(appConfigProvider).value?.enableGpxPlanner ?? false;
+
+  /// « Créer un parcours » : fermé, avec sa raison, quand les enregistrements
+  /// du mois d'un tracé dessiné sont tous utilisés (quota personnel,
+  /// `BILL-10`). Aucun compteur avant ; les cartes des fichiers restent
+  /// ouvertes.
+  Widget _drawCard() {
+    final PlannerQuotaDto? quota = ref.watch(
+      authProvider.select((AuthState s) => s.user?.plannerQuota),
+    );
+    final bool platformAdmin = ref.watch(
+      authProvider.select(
+        (AuthState s) => s.user?.platformRole == 'PLATFORM_ADMIN',
+      ),
+    );
+    final bool spent = isPlannerQuotaSpent(quota, platformAdmin: platformAdmin);
+    return GpxToolCard(
+      icon: PdlIcons.route,
+      title: 'gpxTools.createFromScratch.title'.tr(),
+      description: 'gpxTools.createFromScratch.description'.tr(),
+      extra: spent
+          ? PlannerQuotaMessage(
+              key: keys.gpxTools.quotaMessage,
+              refusal: PlannerQuotaRefusal(
+                team: false,
+                limit: quota!.limit!,
+                resetsOn: quota.resetsOn,
+              ),
+              help: true,
+            )
+          : null,
+      action: PdlButton(
+        key: keys.gpxTools.drawButton,
+        label: 'gpxTools.createFromScratch.submit'.tr(),
+        variant: PdlButtonVariant.outline,
+        enabled: !spent,
+        onPressed: () => context.push(Paths.gpxToolsNew()),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
@@ -250,6 +297,9 @@ class _GpxToolsPageState extends ConsumerState<GpxToolsPage> {
                 ),
               ),
               gap,
+              // Tracer de zéro est une affaire du domaine ; les cartes des
+              // fichiers restent.
+              if (_plannerEnabled) ...<Widget>[_drawCard(), gap],
               GpxToolCard(
                 icon: PdlIcons.list,
                 title: 'gpxTools.listFiles.title'.tr(),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../../../api/generated/export.dart';
 import '../../../api/pedalons_api_client.dart';
 import '../../../core/pagination/pagination.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../data/gpx_preview_repository.dart';
 
 /// Un aperçu des outils GPX, pour sa fiche (docs/LEDGER_*.md MOB-178).
@@ -62,4 +63,15 @@ void notifyGpxPreviewChanged(WidgetRef ref, {String? previewId}) {
     ref.invalidate(gpxPreviewProvider(previewId));
     ref.invalidate(gpxPreviewWeatherProvider(previewId));
   }
+}
+
+/// Relit la personne connectée : son quota personnel des outils GPX
+/// (`UserDto.plannerQuota`, `BILL-10`) vient de `/api/users/me`, et un tracé
+/// dessiné enregistré l'a entamé. Un échec garde l'ancien : le serveur reste
+/// l'autorité, et refuse un enregistrement de trop.
+Future<void> refreshPlannerQuota(WidgetRef ref) async {
+  try {
+    final UserDto user = await ref.read(usersClientProvider).getMe();
+    ref.read(authProvider.notifier).setUser(user);
+  } catch (_) {}
 }

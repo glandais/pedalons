@@ -228,6 +228,29 @@ class _GpxPreviewPageState extends ConsumerState<GpxPreviewPage> {
             sliver: SliverToBoxAdapter(
               child: GpxPreviewDeparture(preview: preview),
             ),
+          )
+        // Sans date, son propriétaire peut en poser une : la météo suivra.
+        else if (preview.owned)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              PdlSpacing.section,
+              PdlSpacing.chipGap,
+              PdlSpacing.section,
+              0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: PdlButton(
+                  key: keys.gpxTools.previewAddDeparture,
+                  label: 'gpxTools.departure.add'.tr(),
+                  icon: PdlIcons.date,
+                  variant: PdlButtonVariant.text,
+                  size: PdlButtonSize.sm,
+                  onPressed: () => context.push(Paths.gpxToolsEdit(preview.id)),
+                ),
+              ),
+            ),
           ),
         SliverToBoxAdapter(
           child: RouteSection(
@@ -303,6 +326,13 @@ class _GpxPreviewPageState extends ConsumerState<GpxPreviewPage> {
           ),
         ),
       ),
+      if (preview.owned)
+        PdlAppBarAction(
+          key: keys.gpxTools.editButton,
+          icon: PdlIcons.edit,
+          semanticLabel: 'gpxTools.preview.edit'.tr(),
+          onPressed: () => context.push(Paths.gpxToolsEdit(preview.id)),
+        ),
       if (actions.isNotEmpty)
         PdlAppBarAction(
           key: keys.gpxTools.moreButton,

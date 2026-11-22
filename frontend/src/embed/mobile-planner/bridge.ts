@@ -46,7 +46,12 @@ export interface PlannerLoad {
   waypointsTotal?: number
   /** Shown in the toolbar. */
   routeName?: string
-  teamSlug: string
+  /**
+   * The team the route belongs to, sent with every routing call. Absent for a GPX preview of the GPX
+   * tools, which belongs to no team (docs/LEDGER_*.md MOB-178): the server then applies the personal
+   * quota, as the site's `RoutePlannerField` without a team does.
+   */
+  teamSlug?: string
   /** `[lng, lat]`: where the map opens when there is no track. */
   teamLocation?: [number, number]
   /** Accepted for the app's convenience; the page does not read it (the app disables its entry). */

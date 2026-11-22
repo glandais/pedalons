@@ -15,8 +15,37 @@ class GpxPreviewRepository {
 
   /// « Visualiser un fichier » : le fichier part dès le choix, sans date ni
   /// vitesse — elles se posent ensuite, depuis la modification.
-  Future<GpxPreviewDto> createFromFile(GpxFile file) =>
-      _client.createPreview(gpxFile: gpxPart(file));
+  Future<GpxPreviewDto> createFromFile(
+    GpxFile file, {
+    String? departure,
+    double? averageSpeed,
+  }) => _client.createPreview(
+    gpxFile: gpxPart(file),
+    departure: departure,
+    averageSpeed: averageSpeed?.toString(),
+  );
+
+  /// « Créer un parcours » : le tracé dessiné dans le planificateur (son état
+  /// d'édition, ou ses points), sans fichier.
+  Future<GpxPreviewDto> createFromPoints(GpxPreviewFromPointsRequest request) =>
+      _client.createPreviewFromPoints(body: request);
+
+  /// La modification, réservée à qui a déposé l'aperçu : le nom toujours, le
+  /// tracé s'il change ([gpx] passe devant un état d'édition), le départ.
+  Future<GpxPreviewDto> update(
+    String previewId,
+    GpxPreviewUpdateRequest request, {
+    GpxFile? gpx,
+  }) => _client.updatePreview(
+    previewId: previewId,
+    preview: request,
+    gpxFile: gpx == null ? null : gpxPart(gpx),
+  );
+
+  /// L'état d'édition enregistré de l'aperçu, `null` s'il n'en a pas (un
+  /// fichier importé jamais redessiné).
+  Future<PlannerState?> plannerState(String previewId) async =>
+      (await _client.getPreviewPlannerState(previewId: previewId)).state;
 
   /// « Fusionner des fichiers » : de 2 à 10 fichiers, le serveur choisit
   /// l'ordre et le sens des traces (et revérifie les bornes).
@@ -37,6 +66,10 @@ class GpxPreviewRepository {
       total: response.total,
     );
   }
+
+  /// L'aperçu, relu tout de suite — l'éditeur part de là, jamais d'un cache.
+  Future<GpxPreviewDto> get(String previewId) =>
+      _client.getPreview(previewId: previewId);
 
   Future<void> delete(String previewId) =>
       _client.deletePreview(previewId: previewId);

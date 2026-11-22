@@ -446,7 +446,7 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
       webViewFactory: ref.read(plannerWebViewFactoryProvider),
       load: () async => buildPlannerLoad(
         team: widget.team,
-        route: route,
+        route: route == null ? null : plannerTrackOfRoute(route),
         routeName: routeName,
         config: await ref.read(appConfigProvider.future),
         // Les documents de style sont publics : le client sans session.
@@ -850,7 +850,9 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
                   KeyedSubtree(
                     key: _trackKey,
                     child: RouteTrackSection(
-                      current: route,
+                      current: route == null
+                          ? null
+                          : currentTrackOfRoute(route),
                       picked: _gpx,
                       refused: _refused,
                       busy: busy,

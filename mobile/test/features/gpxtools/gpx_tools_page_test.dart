@@ -4,10 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/core/config/config_provider.dart';
 import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
+import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/features/auth/data/auth_repository.dart';
+import 'package:pedalons/features/auth/data/secure_storage.dart';
+import 'package:pedalons/features/auth/domain/auth_state.dart';
+import 'package:pedalons/features/auth/providers/auth_provider.dart';
 import 'package:pedalons/features/gpxtools/data/gpx_files_picker.dart';
 import 'package:pedalons/features/gpxtools/data/gpx_preview_repository.dart';
 import 'package:pedalons/features/gpxtools/presentation/pages/gpx_tools_page.dart';
@@ -59,7 +65,11 @@ class _FakeRepository implements GpxPreviewRepository {
   List<GpxPreviewSummaryDto> mine = <GpxPreviewSummaryDto>[];
 
   @override
-  Future<GpxPreviewDto> createFromFile(GpxFile file) async {
+  Future<GpxPreviewDto> createFromFile(
+    GpxFile file, {
+    String? departure,
+    double? averageSpeed,
+  }) async {
     uploaded.add(file.name);
     return _created('new1');
   }
@@ -87,6 +97,47 @@ class _FakeRepository implements GpxPreviewRepository {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+ConfigDto _config({required bool planner}) => ConfigDto(
+  webAuthnRpId: 'localhost',
+  appName: 'Pédalons',
+  singleTeam: false,
+  enableGpxPlanner: planner,
+  mapStyles: const <MapStyleDto>[],
+  tileServerBaseUrl: 'https://tiles.test',
+  defaultCenter: const MapCenterDto(lat: 46.6, lon: 2.5, zoom: 5),
+  gpsAutoSyncEnabled: false,
+);
+
+class _FakeAuthRepository implements AuthRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeSecureStorage implements SecureTokenStorage {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// Une session dont le quota personnel des outils GPX vaut [quota].
+class _StubAuthNotifier extends AuthNotifier {
+  _StubAuthNotifier(Ref ref, PlannerQuotaDto quota)
+    : super(_FakeAuthRepository(), _FakeSecureStorage(), ref) {
+    state = AuthState(
+      isInitialized: true,
+      accessToken: 'token',
+      user: UserDto(
+        plannerQuota: quota,
+        id: 'u-me',
+        email: 'moi@example.org',
+        displayName: 'Moi',
+        contactableByMembers: true,
+        emailVerified: true,
+        connectedServices: const <GpsServiceConnectionDto>[],
+      ),
+    );
+  }
 }
 
 class _Picker implements GpxFilePicker {
@@ -130,6 +181,12 @@ void main() {
     List<GpxFile> many = const <GpxFile>[],
     List<GpxPreviewSummaryDto> mine = const <GpxPreviewSummaryDto>[],
     String initial = '/',
+    bool planner = false,
+    PlannerQuotaDto quota = const PlannerQuotaDto(
+      used: 0,
+      limit: 10,
+      resetsOn: '2026-12-01',
+    ),
   }) async {
     tester.view.physicalSize = const Size(402 * 3, 2400 * 3);
     tester.view.devicePixelRatio = 3;
@@ -164,6 +221,10 @@ void main() {
           gpxPreviewRepositoryProvider.overrideWithValue(repository),
           gpxFilePickerProvider.overrideWith((Ref ref) => _Picker(single)),
           gpxFilesPickerProvider.overrideWith((Ref ref) => _ManyPicker(many)),
+          appConfigProvider.overrideWith(
+            (Ref ref) async => _config(planner: planner),
+          ),
+          authProvider.overrideWith((ref) => _StubAuthNotifier(ref, quota)),
         ],
         child: MaterialApp.router(
           theme: PedalonsTheme.build(Brightness.light),
@@ -246,6 +307,42 @@ void main() {
         <String>['a.gpx', 'b.gpx'],
       ]);
       expect(find.text('fiche merged1'), findsOneWidget);
+    });
+  });
+
+  group('créer un parcours', () {
+    testWidgets('fermé par le domaine : pas de carte', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      expect(find.byKey(keys.gpxTools.drawButton), findsNothing);
+    });
+
+    testWidgets('ouvert : la carte, son bouton actif, pas de compteur', (
+      WidgetTester tester,
+    ) async {
+      await open(tester, planner: true);
+      expect(find.byKey(keys.gpxTools.drawButton), findsOneWidget);
+      expect(find.byKey(keys.gpxTools.quotaMessage), findsNothing);
+    });
+
+    testWidgets('quota du mois épuisé : le bouton inactif et sa raison', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        planner: true,
+        quota: const PlannerQuotaDto(
+          used: 10,
+          limit: 10,
+          resetsOn: '2026-12-01',
+        ),
+      );
+      expect(find.byKey(keys.gpxTools.quotaMessage), findsOneWidget);
+      final PdlButton draw = tester.widget<PdlButton>(
+        find.byKey(keys.gpxTools.drawButton),
+      );
+      expect(draw.enabled, isFalse);
     });
   });
 

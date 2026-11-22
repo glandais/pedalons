@@ -19,7 +19,28 @@ import 'gpx_refused_banner.dart';
 import 'planner_preview_card.dart';
 import 'planner_quota_message.dart';
 
-/// La section « Tracé » de l'éditeur de parcours (ledger `MOB-79`).
+/// Le tracé actuel que la section montre en modification : celui d'un
+/// parcours ([currentTrackOfRoute]) ou d'un aperçu des outils GPX
+/// (docs/LEDGER_*.md MOB-178). Les vignettes peuvent porter le gabarit
+/// `{size}`.
+typedef CurrentTrack = ({
+  String name,
+  double distance,
+  double elevationGain,
+  String? thumbnailLight,
+  String? thumbnailDark,
+});
+
+CurrentTrack currentTrackOfRoute(RouteDetailDto route) => (
+  name: route.name,
+  distance: route.distance,
+  elevationGain: route.elevationGain,
+  thumbnailLight: route.media.assets.thumbnailLight?.url,
+  thumbnailDark: route.media.assets.thumbnailDark?.url,
+);
+
+/// La section « Tracé » de l'éditeur de parcours (ledger `MOB-79`), et de
+/// celui d'un aperçu GPX (`MOB-178`).
 ///
 /// * **Création** ([current] nul) : le fichier choisi ([picked]) — nom,
 ///   taille, « distance et dénivelé calculés à l'envoi » — et « Changer ».
@@ -56,7 +77,7 @@ class RouteTrackSection extends ConsumerWidget {
     this.plannerWarning,
   });
 
-  final RouteDetailDto? current;
+  final CurrentTrack? current;
   final GpxFile? picked;
   final GpxRefused? refused;
   final bool busy;
@@ -73,7 +94,7 @@ class RouteTrackSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final RouteDetailDto? route = current;
+    final CurrentTrack? route = current;
     final GpxFile? file = picked;
     final GpxRefused? refusal = refused;
 
@@ -191,14 +212,14 @@ class RouteTrackSection extends ConsumerWidget {
   List<Widget> _edition(
     BuildContext context,
     WidgetRef ref,
-    RouteDetailDto route,
+    CurrentTrack route,
     GpxFile? file,
   ) {
     final UnitSystem units = ref.watch(unitSystemProvider);
     final bool dark = Theme.of(context).brightness == Brightness.dark;
     final String? thumbnail = dark
-        ? route.media.assets.thumbnailDark?.url
-        : route.media.assets.thumbnailLight?.url;
+        ? route.thumbnailDark ?? route.thumbnailLight
+        : route.thumbnailLight;
 
     return <Widget>[
       PdlCardMedia(

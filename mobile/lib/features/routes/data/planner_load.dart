@@ -62,17 +62,38 @@ Future<List<Map<String, dynamic>>> plannerMapStyles(
   ]);
 }
 
+/// Le tracé à une trace qu'ouvre le planificateur : celui d'un parcours
+/// d'équipe ([plannerTrackOfRoute]) ou d'un aperçu des outils GPX
+/// (docs/LEDGER_*.md MOB-178).
+typedef PlannerTrack = ({
+  List<List<double>> line,
+  double ascend,
+  List<WaypointDto> waypoints,
+  double distance,
+});
+
+PlannerTrack plannerTrackOfRoute(RouteDetailDto route) => (
+  line: route.tracks.single.line.coordinates,
+  ascend: route.elevationGain,
+  waypoints: route.waypoints,
+  distance: route.distance,
+);
+
 /// L'argument de `window.pedalonsPlanner.load`, tiré des données de l'app
 /// (docs/LEDGER_*.md MOB-170 ; champs : README du planificateur embarqué).
 ///
 /// [route] nul : création, la page s'ouvre vide et tout le tracé partira
-/// (`create: true`, **toujours explicite**). Sinon le parcours à une trace
+/// (`create: true`, **toujours explicite**). Sinon le tracé à une trace
 /// s'ouvre sur son état d'édition enregistré, lu par [readState] juste
 /// maintenant — jamais d'un cache — ; si la lecture échoue, il s'ouvre sur sa
 /// trace, comme un import, et [PlannerLoad.stateReadFailed] le dit.
+///
+/// [team] nul : un aperçu des outils GPX, qui n'est d'aucune équipe — ni
+/// `teamSlug` (le quota est alors le quota personnel), ni position d'équipe
+/// (la carte s'ouvre sur `defaultCenter`).
 Future<PlannerLoad> buildPlannerLoad({
-  required TeamDetailDto team,
-  required RouteDetailDto? route,
+  required TeamDetailDto? team,
+  required PlannerTrack? route,
   required String routeName,
   required ConfigDto config,
   required Dio dio,
@@ -97,7 +118,7 @@ Future<PlannerLoad> buildPlannerLoad({
       stateReadFailed = true;
     }
   }
-  final List<double>? location = team.geometry?.coordinates;
+  final List<double>? location = team?.geometry?.coordinates;
   final MapTerrainDto? terrain = config.terrain;
   final String name = routeName.trim();
   // Les DTO générés écrivent `null` pour un champ absent ; l'API, elle, ne
@@ -105,15 +126,15 @@ Future<PlannerLoad> buildPlannerLoad({
   final Map<String, dynamic> input = withoutNulls(<String, dynamic>{
     'state': ?state?.toJson(),
     if (route != null) ...<String, dynamic>{
-      'track': route.tracks.single.line.coordinates,
-      'ascend': route.elevationGain,
+      'track': route.line,
+      'ascend': route.ascend,
       'waypoints': <Map<String, dynamic>>[
         for (final WaypointDto waypoint in route.waypoints) waypoint.toJson(),
       ],
       'waypointsTotal': route.distance,
     },
     if (name.isNotEmpty) 'routeName': name,
-    'teamSlug': team.slug,
+    'teamSlug': ?team?.slug,
     if (location != null && location.length >= 2)
       'teamLocation': <double>[location[0], location[1]],
     'create': route == null,

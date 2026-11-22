@@ -1758,7 +1758,7 @@
       "speedLine": "Vitesse moyenne : {speed}",
       "clear": "Retirer la date",
       "pick": "Choisir une date",
-      "invalidSpeed": "Saisissez une vitesse entre 1 et 99."
+      "invalidSpeed": "Saisissez une vitesse entre {min} et {max}."
     },
     "weather": {
       "departed": "Ce départ est passé : plus de prévisions à afficher.",

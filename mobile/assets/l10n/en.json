@@ -1758,7 +1758,7 @@
       "speedLine": "Average speed: {speed}",
       "clear": "Remove the date",
       "pick": "Choose a date",
-      "invalidSpeed": "Enter a speed between 1 and 99."
+      "invalidSpeed": "Enter a speed between {min} and {max}."
     },
     "weather": {
       "departed": "This departure has passed: no forecast to show.",
