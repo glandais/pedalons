@@ -25,3 +25,19 @@ Future<void> uploadRouteToService(
         routeSlug: routeSlug,
       );
 }
+
+/// L'envoi d'un aperçu des outils GPX vers un service GPS connecté
+/// (docs/LEDGER_*.md MOB-178). Lève en cas d'échec, comme
+/// [uploadRouteToService].
+Future<void> uploadPreviewToService(
+  WidgetRef ref,
+  GpsServiceConnectionDto service, {
+  required String previewId,
+}) {
+  return ref
+      .read(gpxPreviewsClientProvider)
+      .uploadToGpsService(
+        previewId: previewId,
+        serviceType: GpsServiceType.fromJson(service.serviceType),
+      );
+}

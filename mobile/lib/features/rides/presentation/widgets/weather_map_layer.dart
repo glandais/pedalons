@@ -7,6 +7,7 @@ import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
+import '../../../routes/domain/shown_route.dart';
 import '../../domain/ride_weather_map.dart';
 import 'ride_weather_map_markers.dart';
 
@@ -29,7 +30,8 @@ List<List<List<double>>> routeLinesOf(RouteDetailDto route) =>
     ];
 
 /// Les couleurs du vent sur [route] pour [leg] (`PdlMapTrack.segmentColors`),
-/// **mémorisées par (leg, parcours)** : sur un parcours de
+/// **mémorisées par (leg, parcours)** — le [ShownRoute] est le même objet
+/// pour le même DTO (`.shown`) : sur un parcours de
 /// plusieurs milliers de sommets, les recalculer à chaque `build` coûterait
 /// une recherche par segment pour un résultat identique — et
 /// `PdlMapTrack.==` compare la liste élément par élément.
@@ -41,11 +43,11 @@ List<List<List<double>>> routeLinesOf(RouteDetailDto route) =>
 /// — groupe, sortie solo, étape, voyage (ledger `MOB-105`) : ni la couleur
 /// d'un groupe ou d'une étape, qui pourrait se lire comme un vent, ni le gris,
 /// qui dit « travers ».
-List<Color> weatherTrackColors(RouteDetailDto route, WeatherLegDto leg) {
+List<Color> weatherTrackColors(ShownRoute route, WeatherLegDto leg) {
   final _WindColors? memo = _windMemo[leg];
   if (memo != null && identical(memo.route, route)) return memo.colors;
   final List<Color> colors = windSegmentColors<Color>(
-    routeLinesOf(route),
+    route.lines,
     leg.segments,
     (RelativeWind? wind) => wind?.stroke ?? slopeNeutral,
   );
@@ -64,7 +66,7 @@ List<Color> weatherTrackColors(RouteDetailDto route, WeatherLegDto leg) {
 /// [idPrefix] distingue les marqueurs de plusieurs legs sur une même carte
 /// (les étapes d'un voyage) ; [openWeatherMapMarker] le reçoit à l'identique.
 List<PdlMapMarker> weatherMarkersOnRoute(
-  RouteDetailDto route,
+  ShownRoute route,
   WeatherLegDto leg, {
   required UnitSystem units,
   required String? timezone,
@@ -75,7 +77,7 @@ List<PdlMapMarker> weatherMarkersOnRoute(
   if (memo != null && identical(memo.route, route)) {
     points = memo.points;
   } else {
-    points = rideWeatherMarkerPoints(routeLinesOf(route), leg);
+    points = rideWeatherMarkerPoints(route.lines, leg);
     _pointsMemo[leg] = _WeatherPoints(route, points);
   }
   return rideWeatherMapMarkers(
@@ -99,7 +101,7 @@ final Expando<_WeatherPoints> _pointsMemo = Expando<_WeatherPoints>(
 class _WindColors {
   const _WindColors(this.route, this.colors);
 
-  final RouteDetailDto route;
+  final ShownRoute route;
   final List<Color> colors;
 }
 
@@ -107,7 +109,7 @@ class _WindColors {
 class _WeatherPoints {
   const _WeatherPoints(this.route, this.points);
 
-  final RouteDetailDto route;
+  final ShownRoute route;
   final List<LngLat?> points;
 }
 

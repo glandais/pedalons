@@ -17,7 +17,10 @@ import '../../../../core/widgets/detail_section.dart';
 import '../../../../core/widgets/detail_source_button.dart';
 import '../../../../keys.dart';
 import '../../domain/elevation_refresh.dart';
+import '../../../gpxtools/domain/preview_assets.dart';
+import '../../../gpxtools/providers/gpx_preview_provider.dart';
 import '../../domain/route_color_mode.dart';
+import '../../domain/shown_route.dart';
 import '../../domain/track_slope_colors.dart';
 import '../../domain/track_surfaces.dart';
 import '../../domain/track_wind_bars.dart';
@@ -55,11 +58,14 @@ import 'waypoint_sheet.dart';
 /// hôte ; sans eux, la section tient les siens.
 ///
 /// Elle a remplacé, sur l'étape, la fiche parcours embarquée
-/// (`EmbeddedRouteSheet`, retirée au lot 11 de `MOB-134`).
+/// (`EmbeddedRouteSheet`, retirée au lot 11 de `MOB-134`), et sert aussi la
+/// fiche d'un aperçu des outils GPX ([GpxPreviewKey], ledger `MOB-178`) : la
+/// carte et le profil lisent un `ShownRoute`, le bouton « GPS » vise
+/// l'aperçu, et « Détails » n'existe que pour un parcours d'équipe.
 class RouteSection extends ConsumerStatefulWidget {
   const RouteSection({
     super.key,
-    required this.routeKey,
+    required this.trackKey,
     this.title,
     this.selection,
     this.cursor,
@@ -73,7 +79,9 @@ class RouteSection extends ConsumerStatefulWidget {
     this.mapKey,
   });
 
-  final RouteKey routeKey;
+  /// Le parcours d'équipe ([RouteKey]) ou l'aperçu GPX ([GpxPreviewKey])
+  /// affiché.
+  final TrackKey trackKey;
 
   /// Le titre de section ; `null` : aucun, la carte vient d'abord.
   final String? title;
@@ -84,7 +92,7 @@ class RouteSection extends ConsumerStatefulWidget {
 
   /// Le réticule partagé par la carte et le profil, que l'écran hôte déplace
   /// aussi (une montée touchée) ; `null` : la section tient le sien. Il doit
-  /// être bâti sur la géométrie du parcours de [routeKey].
+  /// être bâti sur la géométrie du tracé de [trackKey].
   final RouteCursorController? cursor;
 
   /// Ce que l'écran hôte pose en plus sur la carte — le mode « Météo » d'une
@@ -108,7 +116,7 @@ class RouteSection extends ConsumerStatefulWidget {
   final Key? colorBySwitchKey;
 
   /// « Détails » à côté de « GPS », qui pousse la fiche du parcours — rien
-  /// sur la fiche elle-même.
+  /// sur la fiche elle-même, ni pour un aperçu GPX.
   final bool showDetailsAction;
 
   /// Posée sur la carte : l'ancre d'un défilement qui la remonte à l'écran
@@ -122,7 +130,7 @@ class RouteSection extends ConsumerStatefulWidget {
 class _RouteSectionState extends ConsumerState<RouteSection>
     with GpsExportRunner<RouteSection> {
   RouteCursorController? _ownCursor;
-  String? _ownCursorForSlug;
+  String? _ownCursorForId;
   RouteColorBy _colorBy = RouteColorBy.grade;
   final TrackSurfaceBarColors _barColors = TrackSurfaceBarColors();
   WaypointSelectionController? _ownSelection;
@@ -139,24 +147,20 @@ class _RouteSectionState extends ConsumerState<RouteSection>
 
   /// Le réticule de l'écran hôte, sinon le sien, reconstruit quand — et
   /// seulement quand — le parcours change.
-  RouteCursorController _cursorFor(RouteDetailDto route) {
+  RouteCursorController _cursorFor(ShownRoute route) {
     if (widget.cursor != null) return widget.cursor!;
-    if (_ownCursor != null && _ownCursorForSlug == route.slug) {
+    if (_ownCursor != null && _ownCursorForId == route.id) {
       return _ownCursor!;
     }
     _ownCursor?.dispose();
-    _ownCursorForSlug = route.slug;
-    return _ownCursor = RouteCursorController(
-      lines: <List<List<double>>>[
-        for (final TrackDto t in route.tracks) t.line.coordinates,
-      ],
-    );
+    _ownCursorForId = route.id;
+    return _ownCursor = RouteCursorController(lines: route.lines);
   }
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<RouteDetailDto> detail = ref.watch(
-      routeDetailProvider(widget.routeKey),
+    final AsyncValue<ShownRoute> detail = ref.watch(
+      shownRouteProvider(widget.trackKey),
     );
     final Widget body = detail.when(
       data: _body,
@@ -172,8 +176,7 @@ class _RouteSectionState extends ConsumerState<RouteSection>
           PdlButton(
             label: 'common.retry'.tr(),
             variant: PdlButtonVariant.outline,
-            onPressed: () =>
-                ref.invalidate(routeDetailProvider(widget.routeKey)),
+            onPressed: () => invalidateShownRoute(ref, widget.trackKey),
           ),
         ],
       ),
@@ -189,7 +192,7 @@ class _RouteSectionState extends ConsumerState<RouteSection>
     );
   }
 
-  Widget _body(RouteDetailDto route) {
+  Widget _body(ShownRoute route) {
     final RouteCursorController cursor = _cursorFor(route);
     final List<RouteColorBy> modes = routeColorModes(
       surfaces: hasTrackSurfaces(route.tracks),
@@ -295,18 +298,40 @@ class _RouteSectionState extends ConsumerState<RouteSection>
     );
   }
 
+  /// Ce que vise « GPS » : le parcours et ses fichiers, ou l'aperçu GPX.
+  /// Lu dans le même cache que le tracé.
+  GpsExportTarget? _gpsTarget() => switch (widget.trackKey) {
+    final RouteKey key => switch (ref.watch(routeDetailProvider(key)).value) {
+      final RouteDetailDto route => GpsExportTarget(
+        subtitle: route.name,
+        teamSlug: route.team.slug,
+        routeSlug: route.slug,
+        gpx: route.media.assets.gpx,
+        fit: route.media.assets.fit,
+        syncStatuses: route.gpsSyncStatuses,
+      ),
+      null => null,
+    },
+    GpxPreviewKey(:final String previewId) => switch (ref
+        .watch(gpxPreviewProvider(previewId))
+        .value) {
+      final GpxPreviewDto preview => GpsExportTarget.preview(
+        subtitle: preview.name,
+        previewId: preview.id,
+        gpx: preview.gpxAsset,
+        fit: preview.fitAsset,
+      ),
+      null => null,
+    },
+  };
+
   /// « GPS » et, sur l'étape, « Détails ». Rien sans l'un ni l'autre.
-  Widget? _actions(RouteDetailDto route) {
-    final GpsExportTarget target = GpsExportTarget(
-      subtitle: route.name,
-      teamSlug: route.team.slug,
-      routeSlug: route.slug,
-      gpx: route.media.assets.gpx,
-      fit: route.media.assets.fit,
-      syncStatuses: route.gpsSyncStatuses,
-    );
-    final bool gps = target.offered(watchGpsServices());
-    if (!gps && !widget.showDetailsAction) return null;
+  Widget? _actions(ShownRoute route) {
+    final GpsExportTarget? target = _gpsTarget();
+    final TrackKey key = widget.trackKey;
+    final bool gps = target != null && target.offered(watchGpsServices());
+    final bool details = widget.showDetailsAction && key is RouteKey;
+    if (!gps && !details) return null;
     return Padding(
       padding: const EdgeInsets.only(top: PdlSpacing.section),
       child: Wrap(
@@ -321,19 +346,15 @@ class _RouteSectionState extends ConsumerState<RouteSection>
               loading: gpsExporting,
               onPressed: (BuildContext button) => openGpsSheet(target, button),
             ),
-          if (widget.showDetailsAction)
+          if (details)
             PdlButton(
               key: keys.routeDetail.details,
               label: 'common.details'.tr(),
               icon: PdlIcons.route,
               variant: PdlButtonVariant.text,
               size: PdlButtonSize.sm,
-              onPressed: () => context.push(
-                Paths.route(
-                  widget.routeKey.teamSlug,
-                  widget.routeKey.routeSlug,
-                ),
-              ),
+              onPressed: () =>
+                  context.push(Paths.route(key.teamSlug, key.routeSlug)),
             ),
         ],
       ),
@@ -342,7 +363,7 @@ class _RouteSectionState extends ConsumerState<RouteSection>
 
   /// « Profil » et son ⓘ, la mention provisoire, puis le profil.
   Widget _profileBlock(
-    RouteDetailDto route,
+    ShownRoute route,
     RouteCursorController cursor,
     RouteColorBy colorBy,
     WeatherLegDto? windLeg,
@@ -392,7 +413,7 @@ class _RouteSectionState extends ConsumerState<RouteSection>
   }
 
   Widget _withMarkers(
-    RouteDetailDto route,
+    ShownRoute route,
     RouteCursorController cursor,
     Widget Function(List<PdlProfileMarker>, String?, ValueChanged<String>?)
     builder,
@@ -420,13 +441,13 @@ class _RouteSectionState extends ConsumerState<RouteSection>
   }
 
   Widget _profile(
-    RouteDetailDto route,
+    ShownRoute route,
     RouteCursorController cursor,
     RouteColorBy colorBy,
     WeatherLegDto? windLeg,
   ) {
     final UnitSystem units = ref.watch(unitSystemProvider);
-    final RouteKey key = widget.routeKey;
+    final TrackKey key = widget.trackKey;
     final List<TrackSurface?>? bars = colorBy == RouteColorBy.surface
         ? ref.watch(routeSurfaceBarsProvider(key)).value
         : null;
@@ -439,7 +460,7 @@ class _RouteSectionState extends ConsumerState<RouteSection>
     final WindBars? wind = windLeg == null
         ? null
         : ref
-              .watch(routeWindBarsProvider(WindBarsKey<RouteKey>(key, windLeg)))
+              .watch(routeWindBarsProvider(WindBarsKey<TrackKey>(key, windLeg)))
               .value;
 
     return ref
@@ -496,7 +517,7 @@ class _RouteSectionState extends ConsumerState<RouteSection>
             label: 'routes.profileUnavailable'.tr(),
             actionLabel: 'common.retry'.tr(),
             height: PdlMetrics.detailElevation,
-            onRetry: () => ref.invalidate(routeDetailProvider(key)),
+            onRetry: () => invalidateShownRoute(ref, key),
           ),
         );
   }

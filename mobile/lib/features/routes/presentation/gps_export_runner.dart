@@ -20,19 +20,39 @@ import 'route_export.dart';
 class GpsExportTarget {
   const GpsExportTarget({
     required this.subtitle,
-    required this.teamSlug,
+    required String this.teamSlug,
     required this.routeSlug,
     this.gpx,
     this.fit,
     this.syncStatuses,
-  });
+  }) : previewId = null;
+
+  /// Un aperçu des outils GPX (docs/LEDGER_*.md MOB-178) : ni équipe ni
+  /// slug, l'envoi vers un appareil passe par l'aperçu lui-même.
+  const GpsExportTarget.preview({
+    required this.subtitle,
+    required String this.previewId,
+    this.gpx,
+    this.fit,
+  }) : teamSlug = null,
+       routeSlug = null,
+       syncStatuses = null;
 
   /// Le sous-titre de la feuille : « Groupe B · 78,0 km », le nom du parcours.
   final String subtitle;
-  final String teamSlug;
 
-  /// `null` : rien à envoyer vers un appareil, seulement des fichiers.
+  /// L'équipe du parcours ; `null` pour un aperçu.
+  final String? teamSlug;
+
+  /// `null` : rien à envoyer vers un appareil, seulement des fichiers —
+  /// sauf pour un aperçu ([previewId]).
   final String? routeSlug;
+
+  /// L'aperçu des outils GPX visé, `null` pour un parcours d'équipe.
+  final String? previewId;
+
+  /// Quelque chose peut partir vers un appareil connecté.
+  bool get canSendToDevice => routeSlug != null || previewId != null;
   final AssetDto? gpx;
   final AssetDto? fit;
 
@@ -46,12 +66,13 @@ class GpsExportTarget {
   bool offered(List<GpsServiceConnectionDto> services) => gpsExportOffered(
     gpx: gpx,
     fit: fit,
-    canSend: routeSlug != null && services.isNotEmpty,
+    canSend: canSendToDevice && services.isNotEmpty,
   );
 }
 
-/// Les deux gestes qui font sortir un parcours, tels quels : [deliverAsset]
-/// (`core/utils/share_file.dart`) et [uploadRouteToService].
+/// Les gestes qui font sortir un parcours, tels quels : [deliverAsset]
+/// (`core/utils/share_file.dart`), [uploadRouteToService] et, pour un aperçu
+/// GPX, [uploadPreviewToService].
 ///
 /// Derrière un provider pour que les tests les remplacent — le sélecteur de
 /// fichier et la feuille de partage sont des canaux natifs.
@@ -59,6 +80,7 @@ class RouteExportOperations {
   const RouteExportOperations({
     this.deliver = deliverAsset,
     this.upload = uploadRouteToService,
+    this.uploadPreview = uploadPreviewToService,
   });
 
   final Future<bool> Function(
@@ -76,6 +98,13 @@ class RouteExportOperations {
     required String routeSlug,
   })
   upload;
+
+  final Future<void> Function(
+    WidgetRef ref,
+    GpsServiceConnectionDto service, {
+    required String previewId,
+  })
+  uploadPreview;
 }
 
 final Provider<RouteExportOperations> routeExportOperationsProvider =
@@ -128,7 +157,7 @@ mixin GpsExportRunner<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     final GpsChoice? choice = await showGpsSheet(
       context,
       subtitle: target.subtitle,
-      services: target.routeSlug == null ? const [] : services,
+      services: target.canSendToDevice ? services : const [],
       offerConnect: services.isEmpty,
       gpx: target.gpx,
       fit: target.fit,
@@ -159,12 +188,17 @@ mixin GpsExportRunner<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         });
       case GpsSendToService(:final GpsServiceConnectionDto service):
         await _run(tag, () async {
-          await ops.upload(
-            ref,
-            service,
-            teamSlug: target.teamSlug,
-            routeSlug: target.routeSlug!,
-          );
+          final String? previewId = target.previewId;
+          if (previewId != null) {
+            await ops.uploadPreview(ref, service, previewId: previewId);
+          } else {
+            await ops.upload(
+              ref,
+              service,
+              teamSlug: target.teamSlug!,
+              routeSlug: target.routeSlug!,
+            );
+          }
           return 'routes.uploadSuccess'.tr();
         });
     }

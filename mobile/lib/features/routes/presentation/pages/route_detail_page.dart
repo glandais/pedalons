@@ -225,7 +225,7 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
         SliverToBoxAdapter(
           child: RouteSection(
             key: keys.routeDetail.routeSection,
-            routeKey: _key,
+            trackKey: _key,
             selection: _selection,
             cursor: cursor,
             mapKey: _mapAnchor,

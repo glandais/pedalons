@@ -101,6 +101,7 @@ class _Ops {
   final List<(AssetDto, AssetDestination, Rect)> delivered =
       <(AssetDto, AssetDestination, Rect)>[];
   final List<(String, String, String)> uploaded = <(String, String, String)>[];
+  final List<(String, String)> previewUploaded = <(String, String)>[];
   Completer<bool>? pendingDelivery;
   Object? uploadError;
 
@@ -126,6 +127,15 @@ class _Ops {
           uploaded.add((service.serviceType, teamSlug, routeSlug));
           if (uploadError != null) throw uploadError!;
         },
+    uploadPreview:
+        (
+          WidgetRef ref,
+          GpsServiceConnectionDto service, {
+          required String previewId,
+        }) async {
+          previewUploaded.add((service.serviceType, previewId));
+          if (uploadError != null) throw uploadError!;
+        },
   );
 }
 
@@ -148,9 +158,12 @@ Future<void> onPlatform(
 /// fiche embarquée qui jouait ce rôle est partie avec le lot 11 de
 /// `MOB-134`.
 class _RouteGps extends ConsumerStatefulWidget {
-  const _RouteGps({required this.route});
+  const _RouteGps({this.route, this.target});
 
-  final RouteDetailDto route;
+  final RouteDetailDto? route;
+
+  /// Une cible donnée telle quelle — l'aperçu GPX (docs/LEDGER_*.md MOB-178).
+  final GpsExportTarget? target;
 
   @override
   ConsumerState<_RouteGps> createState() => _RouteGpsState();
@@ -160,15 +173,17 @@ class _RouteGpsState extends ConsumerState<_RouteGps>
     with GpsExportRunner<_RouteGps> {
   @override
   Widget build(BuildContext context) {
-    final RouteDetailDto route = widget.route;
-    final GpsExportTarget target = GpsExportTarget(
-      subtitle: route.name,
-      teamSlug: route.team.slug,
-      routeSlug: route.slug,
-      gpx: route.media.assets.gpx,
-      fit: route.media.assets.fit,
-      syncStatuses: route.gpsSyncStatuses,
-    );
+    final RouteDetailDto? route = widget.route;
+    final GpsExportTarget target =
+        widget.target ??
+        GpsExportTarget(
+          subtitle: route!.name,
+          teamSlug: route.team.slug,
+          routeSlug: route.slug,
+          gpx: route.media.assets.gpx,
+          fit: route.media.assets.fit,
+          syncStatuses: route.gpsSyncStatuses,
+        );
     if (!target.offered(watchGpsServices())) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -628,6 +643,30 @@ void main() {
       expect(ops.uploaded, <(String, String, String)>[
         ('HAMMERHEAD', 'n-peloton', 'col-de-la-croix'),
       ]);
+      expect(find.byKey(keys.gpsSheet.successBanner), findsOneWidget);
+    });
+
+    testWidgets('un aperçu GPX part vers un appareil par l’aperçu, sans '
+        'équipe ni slug (MOB-178)', (WidgetTester tester) async {
+      final _Ops ops = await pump(
+        tester,
+        const _RouteGps(
+          target: GpsExportTarget.preview(
+            subtitle: 'Sortie du dimanche',
+            previewId: 'p1',
+            gpx: _gpx,
+            fit: _fit,
+          ),
+        ),
+        services: _services,
+      );
+      await openFromRoute(tester);
+      expect(inSheet('Sortie du dimanche'), findsOneWidget);
+      await tester.tap(find.byKey(keys.gpsSheet.service('GARMIN')));
+      await settle(tester);
+
+      expect(ops.previewUploaded, <(String, String)>[('GARMIN', 'p1')]);
+      expect(ops.uploaded, isEmpty);
       expect(find.byKey(keys.gpsSheet.successBanner), findsOneWidget);
     });
 

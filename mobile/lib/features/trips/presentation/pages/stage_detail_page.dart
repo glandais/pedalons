@@ -48,6 +48,7 @@ import '../../../teams/domain/publication_timing.dart';
 import '../../domain/trip_weather_map.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../providers/trip_weather_provider.dart';
+import '../../../routes/domain/shown_route.dart';
 
 /// L'écran 25 — une étape de voyage (ledger `MOB-134`, lot 11, KIT §8,
 /// maquette `etape-mobile-cible`). L'étape est à un voyage ce que le groupe
@@ -389,7 +390,7 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       RouteSection(
-                        routeKey: routeKey,
+                        trackKey: routeKey,
                         title: 'rides.routeSection.title'.tr(),
                         selection: _selection,
                         cursor: cursor,
@@ -725,7 +726,7 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
   RouteMapLayer? _mapLayer(
     BuildContext context,
     WidgetRef ref,
-    RouteDetailDto route, {
+    ShownRoute route, {
     required bool fullscreen,
   }) {
     final TripWeatherDto? weather = watchTripMapWeather(ref, tripKey, trip);

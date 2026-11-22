@@ -2,15 +2,46 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart';
 import '../../../core/pdl/elevation/elevation_samples.dart';
-import '../domain/route_elevation_builder.dart';
+import '../../gpxtools/providers/gpx_preview_provider.dart';
+import '../domain/shown_route.dart';
 import '../domain/track_slope_colors.dart';
 import '../domain/track_surfaces.dart';
 import '../domain/track_wind_bars.dart';
 import 'route_detail_provider.dart';
 
+/// Le tracé que montre [key] : le détail d'un parcours d'équipe, ou un aperçu
+/// des outils GPX (ledger `MOB-178`). Même requête, même cache que
+/// [routeDetailProvider] et [gpxPreviewProvider] : rien n'est relu deux fois.
+final shownRouteProvider = Provider.family<AsyncValue<ShownRoute>, TrackKey>((
+  Ref ref,
+  TrackKey key,
+) {
+  return switch (key) {
+    RouteKey() =>
+      ref
+          .watch(routeDetailProvider(key))
+          .whenData((RouteDetailDto route) => route.shown),
+    GpxPreviewKey(:final String previewId) =>
+      ref
+          .watch(gpxPreviewProvider(previewId))
+          .whenData((GpxPreviewDto preview) => preview.shown),
+  };
+}, isAutoDispose: true);
+
+/// Relit le tracé de [key] à sa source — le « Réessayer » d'une carte ou d'un
+/// profil en échec.
+void invalidateShownRoute(WidgetRef ref, TrackKey key) {
+  switch (key) {
+    case RouteKey():
+      ref.invalidate(routeDetailProvider(key));
+    case GpxPreviewKey(:final String previewId):
+      ref.invalidate(gpxPreviewProvider(previewId));
+  }
+}
+
 /// Le profil d'un parcours, **prêt à peindre**, dérivé de sa géométrie.
 ///
-/// Un cran au-dessus de [routeDetailProvider], qui rend le DTO : ici
+/// Un cran au-dessus de [shownRouteProvider], qui rend le tracé : ici
 /// l'agrégation vers ~76 barres est faite une fois et **mémorisée avec la
 /// réponse**. Sans ce palier, chaque `build` reconstruirait un
 /// [ElevationSamples] neuf, que le painter comparerait par identité et jugerait
@@ -25,13 +56,13 @@ import 'route_detail_provider.dart';
 /// La valeur est `null` quand le parcours n'a pas d'altitude exploitable —
 /// l'écran ne rend alors pas de profil, plutôt qu'un profil plat.
 final routeElevationSamplesProvider =
-    Provider.family<AsyncValue<ElevationSamples?>, RouteKey>((
+    Provider.family<AsyncValue<ElevationSamples?>, TrackKey>((
       Ref ref,
-      RouteKey key,
+      TrackKey key,
     ) {
       return ref
-          .watch(routeDetailProvider(key))
-          .whenData((RouteDetailDto route) => route.elevationSamples());
+          .watch(shownRouteProvider(key))
+          .whenData((ShownRoute route) => route.elevationSamples());
     }, isAutoDispose: true);
 
 /// La classe de revêtement de chaque barre du profil (`MOB-81`), **mémorisée**
@@ -39,17 +70,15 @@ final routeElevationSamplesProvider =
 ///
 /// `null` sans revêtement prêt ou sans profil.
 final routeSurfaceBarsProvider =
-    Provider.family<AsyncValue<List<TrackSurface?>?>, RouteKey>((
+    Provider.family<AsyncValue<List<TrackSurface?>?>, TrackKey>((
       Ref ref,
-      RouteKey key,
+      TrackKey key,
     ) {
-      final AsyncValue<RouteDetailDto> detail = ref.watch(
-        routeDetailProvider(key),
-      );
+      final AsyncValue<ShownRoute> detail = ref.watch(shownRouteProvider(key));
       final AsyncValue<ElevationSamples?> samples = ref.watch(
         routeElevationSamplesProvider(key),
       );
-      return detail.whenData((RouteDetailDto route) {
+      return detail.whenData((ShownRoute route) {
         final ElevationSamples? s = samples.value;
         if (s == null || !hasTrackSurfaces(route.tracks)) return null;
         return barSurfaces(s, route.tracks);
@@ -62,14 +91,12 @@ final routeSurfaceBarsProvider =
 ///
 /// `null` sans profil.
 final routeClimbBarsProvider =
-    Provider.family<AsyncValue<ClimbBars?>, RouteKey>((Ref ref, RouteKey key) {
-      final AsyncValue<RouteDetailDto> detail = ref.watch(
-        routeDetailProvider(key),
-      );
+    Provider.family<AsyncValue<ClimbBars?>, TrackKey>((Ref ref, TrackKey key) {
+      final AsyncValue<ShownRoute> detail = ref.watch(shownRouteProvider(key));
       final AsyncValue<ElevationSamples?> samples = ref.watch(
         routeElevationSamplesProvider(key),
       );
-      return detail.whenData((RouteDetailDto route) {
+      return detail.whenData((ShownRoute route) {
         final ElevationSamples? s = samples.value;
         return s == null ? null : climbBars(s, route.tracks);
       });
@@ -81,17 +108,17 @@ final routeClimbBarsProvider =
 ///
 /// `null` sans profil.
 final routeWindBarsProvider =
-    Provider.family<AsyncValue<WindBars?>, WindBarsKey<RouteKey>>((
+    Provider.family<AsyncValue<WindBars?>, WindBarsKey<TrackKey>>((
       Ref ref,
-      WindBarsKey<RouteKey> key,
+      WindBarsKey<TrackKey> key,
     ) {
-      final AsyncValue<RouteDetailDto> detail = ref.watch(
-        routeDetailProvider(key.route),
+      final AsyncValue<ShownRoute> detail = ref.watch(
+        shownRouteProvider(key.route),
       );
       final AsyncValue<ElevationSamples?> samples = ref.watch(
         routeElevationSamplesProvider(key.route),
       );
-      return detail.whenData((RouteDetailDto route) {
+      return detail.whenData((ShownRoute route) {
         final ElevationSamples? s = samples.value;
         return s == null ? null : windBars(s, route.tracks, key.leg);
       });

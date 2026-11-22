@@ -19,6 +19,7 @@ import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
 import '../../domain/trip_weather_map.dart';
 import '../../providers/trip_detail_provider.dart';
 import '../../providers/trip_tracks_provider.dart';
+import '../../../routes/domain/shown_route.dart';
 
 /// La carte multi-étapes, et la moitié cartographique de la sélection croisée.
 ///
@@ -336,7 +337,9 @@ class TripMap extends ConsumerWidget {
           lines: routeLinesOf(route),
           color: windMode ? slopeNeutral : color,
           label: stage.name,
-          segmentColors: leg == null ? null : weatherTrackColors(route, leg),
+          segmentColors: leg == null
+              ? null
+              : weatherTrackColors(route.shown, leg),
           // Sans sélection, toutes les étapes sont à l'opacité d'un tracé
           // non sélectionné : le vent y ressortirait délavé, loin des teintes
           // de la légende.
@@ -389,7 +392,7 @@ class TripMap extends ConsumerWidget {
       if (windLegs[stage.id] case final WeatherLegDto leg)
         if (state.geometries[stage.route?.slug] case final RouteDetailDto route)
           ...weatherMarkersOnRoute(
-            route,
+            route.shown,
             leg,
             units: units,
             timezone: stage.timezone,

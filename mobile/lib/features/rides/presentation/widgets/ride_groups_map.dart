@@ -27,6 +27,7 @@ import '../../providers/ride_group_selection_provider.dart';
 import 'ride_weather_map_markers.dart';
 import 'ride_wind_map_legend.dart';
 import 'weather_map_layer.dart';
+import '../../../routes/domain/shown_route.dart';
 
 /// La carte multi-tracés de l'écran 12, et la moitié cartographique de la
 /// sélection croisée.
@@ -426,7 +427,7 @@ class RideGroupsMap extends ConsumerWidget {
     final List<PdlMapMarker> weatherMarkers =
         windLeg != null && windRoute != null
         ? weatherMarkersOnRoute(
-            windRoute,
+            windRoute.shown,
             windLeg,
             units: units,
             timezone: ride.timezone,
@@ -574,7 +575,7 @@ class RideGroupsMap extends ConsumerWidget {
     PdlColors c,
   ) => switch (colorBy) {
     RouteColorBy.wind when windLeg != null => weatherTrackColors(
-      route,
+      route.shown,
       windLeg,
     ),
     RouteColorBy.surface =>

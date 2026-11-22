@@ -227,3 +227,8 @@ final moderationClientProvider = Provider<ModerationClient>((ref) {
 final feedbackClientProvider = Provider<FeedbackClient>((ref) {
   return ref.watch(apiClientProvider).feedback;
 });
+
+/// Les aperçus des outils GPX (docs/LEDGER_*.md MOB-178).
+final gpxPreviewsClientProvider = Provider<GpxPreviewsClient>((ref) {
+  return ref.watch(apiClientProvider).gpxPreviews;
+});

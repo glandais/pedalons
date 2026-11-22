@@ -12,6 +12,7 @@ import '../../../../core/pdl/map/pdl_map_marker.dart';
 import '../../../../core/pdl/map/pdl_waypoint_mark.dart';
 import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/pdl_colors.dart';
+import '../../domain/shown_route.dart';
 import '../../domain/track_slope_colors.dart';
 import '../../domain/track_surfaces.dart';
 import 'route_cursor_controller.dart';
@@ -68,11 +69,12 @@ class RouteMapLayer {
 typedef RouteMapLayerBuilder = RouteMapLayer? Function(
   BuildContext context,
   WidgetRef ref,
-  RouteDetailDto route, {
+  ShownRoute route, {
   required bool fullscreen,
 });
 
-/// L'adaptateur entre `RouteDetailDto` et [PdlMap].
+/// L'adaptateur entre un tracé affiché ([ShownRoute] : un parcours d'équipe
+/// ou un aperçu GPX) et [PdlMap].
 ///
 /// C'est tout ce qu'il reste des 276 lignes d'origine : la conversion du DTO
 /// vers les types simples de `core/pdl/map`, et le branchement des fonds servis
@@ -93,7 +95,7 @@ class RouteMap extends ConsumerStatefulWidget {
     this.bottomInset = 0,
   });
 
-  final RouteDetailDto route;
+  final ShownRoute route;
 
   /// Le réticule partagé avec le profil altimétrique. `null` sur les écrans qui
   /// n'en ont pas (l'aperçu d'une sortie, par exemple).
@@ -152,7 +154,7 @@ class RouteMap extends ConsumerStatefulWidget {
 class _RouteMapState extends ConsumerState<RouteMap> {
   final PdlMapController _controller = PdlMapController();
 
-  RouteDetailDto get route => widget.route;
+  ShownRoute get route => widget.route;
 
   @override
   void initState() {
@@ -185,9 +187,7 @@ class _RouteMapState extends ConsumerState<RouteMap> {
   }
 
   /// Les LineStrings du parcours, telles quelles.
-  List<List<List<double>>> get _lines => <List<List<double>>>[
-    for (final TrackDto t in route.tracks) t.line.coordinates,
-  ];
+  List<List<List<double>>> get _lines => route.lines;
 
   @override
   Widget build(BuildContext context) {
@@ -387,7 +387,7 @@ class RouteMapProbe extends StatelessWidget {
 }
 
 /// Les extrémités du tracé, quand `start` / `end` sont absents du DTO.
-extension RouteMapEndpoints on RouteDetailDto {
+extension RouteMapEndpoints on ShownRoute {
   PdlMapPoint? get firstPoint => _endpoint(first: true);
   PdlMapPoint? get lastPoint => _endpoint(first: false);
 

@@ -1,30 +1,11 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart';
 import '../../../api/pedalons_api_client.dart';
 import '../data/route_repository.dart';
+import '../domain/track_key.dart';
 
-/// Ce qui identifie un parcours : son équipe et son slug.
-@immutable
-class RouteKey {
-  const RouteKey({required this.teamSlug, required this.routeSlug});
-
-  final String teamSlug;
-  final String routeSlug;
-
-  @override
-  bool operator ==(Object other) =>
-      other is RouteKey &&
-      other.teamSlug == teamSlug &&
-      other.routeSlug == routeSlug;
-
-  @override
-  int get hashCode => Object.hash(teamSlug, routeSlug);
-
-  @override
-  String toString() => 'RouteKey($teamSlug/$routeSlug)';
-}
+export '../domain/track_key.dart';
 
 /// Le détail d'un parcours pour sa fiche.
 ///
