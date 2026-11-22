@@ -22,6 +22,8 @@ import '../../../profile/presentation/widgets/confirm_sheet.dart';
 import '../../../routes/domain/elevation_refresh.dart';
 import '../../../routes/domain/track_key.dart';
 import '../../../routes/domain/track_surfaces.dart';
+import '../../../routes/providers/route_changes.dart';
+import '../../../teams/providers/team_providers.dart';
 import '../../../routes/presentation/widgets/route_cursor_controller.dart';
 import '../../../routes/presentation/widgets/route_section.dart';
 import '../../../routes/presentation/widgets/route_waypoints_section.dart';
@@ -30,16 +32,23 @@ import '../../data/gpx_preview_repository.dart';
 import '../../domain/weather_arrival.dart';
 import '../../providers/gpx_preview_provider.dart';
 import '../widgets/gpx_preview_departure.dart';
+import '../widgets/gpx_preview_duplicate_sheet.dart';
 import '../widgets/gpx_preview_map_layer.dart';
+import '../widgets/gpx_preview_save_as_route_sheet.dart';
 import '../widgets/gpx_preview_weather.dart';
 
 /// Les gestes du `⋯` d'un aperçu, dans l'ordre du menu.
-enum GpxPreviewAction { delete }
+enum GpxPreviewAction { saveAsRoute, duplicate, delete }
 
-/// Les gestes offerts sur [preview] : supprimer est réservé à la personne qui
-/// l'a déposé (`owned`).
+/// Les gestes offerts sur [preview] : enregistrer comme parcours et
+/// dupliquer à toute personne connectée — l'app n'en a pas d'autre —,
+/// supprimer à la personne qui l'a déposé (`owned`).
 List<GpxPreviewAction> gpxPreviewActions(GpxPreviewDto preview) =>
-    <GpxPreviewAction>[if (preview.owned) GpxPreviewAction.delete];
+    <GpxPreviewAction>[
+      GpxPreviewAction.saveAsRoute,
+      GpxPreviewAction.duplicate,
+      if (preview.owned) GpxPreviewAction.delete,
+    ];
 
 /// La fiche d'un aperçu GPX (docs/LEDGER_*.md MOB-178), l'ossature commune
 /// des fiches (KIT §8, ledger `MOB-134`) : une page qui défile, sans barre
@@ -323,6 +332,22 @@ class _GpxPreviewPageState extends ConsumerState<GpxPreviewPage> {
           children: <Widget>[
             for (final GpxPreviewAction a in actions)
               switch (a) {
+                GpxPreviewAction.saveAsRoute => PdlSettingRow(
+                  key: keys.gpxTools.saveAsRouteAction,
+                  icon: PdlIcons.route,
+                  title: 'gpxTools.preview.saveAsRoute'.tr(),
+                  trailing: const SizedBox.shrink(),
+                  onTap: () => Navigator.of(sheetContext).pop(a),
+                ),
+                GpxPreviewAction.duplicate => PdlSettingRow(
+                  key: keys.gpxTools.duplicateAction,
+                  icon: PdlIcons.copy,
+                  title: 'gpxTools.preview.duplicate.action'.tr(),
+                  // Le séparateur : avant le geste destructif.
+                  showDivider: actions.contains(GpxPreviewAction.delete),
+                  trailing: const SizedBox.shrink(),
+                  onTap: () => Navigator.of(sheetContext).pop(a),
+                ),
                 GpxPreviewAction.delete => PdlSettingRow(
                   key: keys.gpxTools.deleteAction,
                   icon: PdlIcons.delete,
@@ -337,12 +362,41 @@ class _GpxPreviewPageState extends ConsumerState<GpxPreviewPage> {
       );
       if (action == null || !mounted) return;
       switch (action) {
+        case GpxPreviewAction.saveAsRoute:
+          await _saveAsRoute(preview);
+        case GpxPreviewAction.duplicate:
+          await _duplicate(preview);
         case GpxPreviewAction.delete:
           await _delete(preview);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// La copie ouverte à la place de l'original, comme au site.
+  Future<void> _duplicate(GpxPreviewDto preview) async {
+    final GpxPreviewDto? copy = await showGpxPreviewDuplicateSheet(
+      context,
+      preview,
+    );
+    if (copy == null || !mounted) return;
+    notifyGpxPreviewChanged(ref);
+    context.pushReplacement(Paths.gpxToolsView(copy.id));
+  }
+
+  /// Le parcours créé : les listes de parcours se relisent, le quota de
+  /// l'équipe aussi pour un tracé dessiné (`BILL-10`), et sa fiche s'ouvre
+  /// par-dessus l'aperçu, qui reste dessous.
+  Future<void> _saveAsRoute(GpxPreviewDto preview) async {
+    final SavedPreviewRoute? saved = await showGpxPreviewSaveAsRouteSheet(
+      context,
+      preview,
+    );
+    if (saved == null || !mounted) return;
+    notifyRouteChanged(ref, teamSlug: saved.teamSlug);
+    if (preview.drawn) ref.invalidate(teamDetailProvider(saved.teamSlug));
+    context.push(Paths.route(saved.teamSlug, saved.route.slug));
   }
 
   Future<void> _delete(GpxPreviewDto preview) async {

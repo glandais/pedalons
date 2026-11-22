@@ -9,11 +9,13 @@ import 'package:pedalons/features/gpxtools/data/gpx_preview_repository.dart';
 import 'package:pedalons/features/gpxtools/presentation/pages/gpx_preview_page.dart';
 import 'package:pedalons/features/gpxtools/providers/gpx_preview_provider.dart';
 import 'package:pedalons/features/routes/presentation/widgets/gps_button.dart';
+import 'package:pedalons/features/teams/providers/team_providers.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
 import '../rides/ride_fixtures.dart';
+import '../../support/content_permissions.dart';
 import '../routes/route_fixtures.dart';
 
 /// docs/LEDGER_*.md MOB-178 : la fiche d'un aperçu GPX, l'ossature commune
@@ -59,9 +61,50 @@ GpxPreviewDto _preview({
 
 class _FakeRepository implements GpxPreviewRepository {
   final List<String> deleted = <String>[];
+  final List<(String, String)> copied = <(String, String)>[];
+  final List<(String, String, RouteRequest)> routes =
+      <(String, String, RouteRequest)>[];
 
   @override
   Future<void> delete(String previewId) async => deleted.add(previewId);
+
+  @override
+  Future<GpxPreviewDto> copy(String previewId, {required String name}) async {
+    copied.add((previewId, name));
+    return _preview().copyWith(id: 'copy1', name: name);
+  }
+
+  @override
+  Future<RouteDto> createRoute(
+    String previewId, {
+    required String teamSlug,
+    required RouteRequest request,
+  }) async {
+    routes.add((previewId, teamSlug, request));
+    return RouteDto(
+      permissions: kNoPermissions,
+      id: 'r1',
+      slug: 'boucle-du-dimanche',
+      elevationState: 'HD',
+      team: const TeamPublicationDto(
+        accessible: true,
+        id: 't1',
+        slug: 'n-peloton',
+        name: 'N-Peloton',
+        visibility: 'PUBLIC',
+      ),
+      name: request.name,
+      media: request.media,
+      distance: 30000,
+      elevationGain: 420,
+      elevationLoss: 410,
+      surfaceType: request.surfaceType,
+      visibility: request.visibility,
+      createdAt: '2026-11-22T10:00:00Z',
+      deleted: false,
+      tags: const <TagDto>[],
+    );
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -75,6 +118,7 @@ void main() {
     WidgetTester tester,
     GpxPreviewDto preview, {
     RideWeatherDto? weather,
+    List<TeamDetailDto> teams = const <TeamDetailDto>[],
   }) async {
     tester.view.physicalSize = const Size(402 * 3, 4000 * 3);
     tester.view.devicePixelRatio = 3;
@@ -93,6 +137,16 @@ void main() {
               path: 'p',
               builder: (_, _) => const GpxPreviewPage(previewId: 'p1'),
             ),
+            GoRoute(
+              path: 'outils-gpx/:id',
+              builder: (_, GoRouterState s) =>
+                  Text('fiche ${s.pathParameters['id']}'),
+            ),
+            GoRoute(
+              path: 'equipes/:team/parcours/:route',
+              builder: (_, GoRouterState s) =>
+                  Text('parcours ${s.pathParameters['route']}'),
+            ),
           ],
         ),
       ],
@@ -105,6 +159,7 @@ void main() {
           gpxPreviewProvider('p1').overrideWith((Ref ref) async => preview),
           gpxPreviewWeatherProvider('p1')
               .overrideWith((Ref ref) async => weather ?? fixtureWeather()),
+          myTeamsProvider.overrideWith((Ref ref) async => teams),
         ],
         child: MaterialApp.router(
           theme: PedalonsTheme.build(Brightness.light),
@@ -200,11 +255,109 @@ void main() {
     expect(find.byKey(keys.gpxTools.previewWaypoints), findsOneWidget);
   });
 
-  testWidgets('le `⋯` n’existe que pour qui a déposé le fichier', (
+  testWidgets('« Supprimer » n’est offert qu’à qui a déposé le fichier', (
     WidgetTester tester,
   ) async {
     await open(tester, _preview(owned: false));
-    expect(find.byKey(keys.gpxTools.moreButton), findsNothing);
+    await tester.tap(find.byKey(keys.gpxTools.moreButton));
+    await tester.pumpAndSettle();
+    expect(find.byKey(keys.gpxTools.saveAsRouteAction), findsOneWidget);
+    expect(find.byKey(keys.gpxTools.duplicateAction), findsOneWidget);
+    expect(find.byKey(keys.gpxTools.deleteAction), findsNothing);
+  });
+
+  testWidgets('dupliquer : « Copie de … » d’avance, puis la copie s’ouvre', (
+    WidgetTester tester,
+  ) async {
+    final _FakeRepository repository = await open(tester, _preview());
+    await tester.tap(find.byKey(keys.gpxTools.moreButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(keys.gpxTools.duplicateAction));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Copie de Boucle du dimanche'), findsOneWidget);
+    await tester.tap(find.byKey(keys.gpxTools.duplicateSubmit));
+    await tester.pumpAndSettle();
+
+    expect(repository.copied, <(String, String)>[
+      ('p1', 'Copie de Boucle du dimanche'),
+    ]);
+    expect(find.text('fiche copy1'), findsOneWidget);
+  });
+
+  testWidgets('dupliquer : un nom trop court ne part pas', (
+    WidgetTester tester,
+  ) async {
+    final _FakeRepository repository = await open(tester, _preview());
+    await tester.tap(find.byKey(keys.gpxTools.moreButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(keys.gpxTools.duplicateAction));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(keys.gpxTools.duplicateName), ' a ');
+    await tester.tap(find.byKey(keys.gpxTools.duplicateSubmit));
+    await tester.pumpAndSettle();
+
+    expect(repository.copied, isEmpty);
+    expect(
+      find.text('Le nom doit contenir au moins 3 caractères.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('enregistrer comme parcours : les équipes où l’on organise ; un '
+      'tracé dessiné grise celles sans tracé d’itinéraire', (
+    WidgetTester tester,
+  ) async {
+    final _FakeRepository repository = await open(
+      tester,
+      _preview().copyWith(drawn: true),
+      teams: <TeamDetailDto>[
+        fixtureRouteTeam(role: 'ORGANIZER', enableRoutePlanner: true),
+        fixtureRouteTeam(role: 'ADMIN').copyWith(slug: 'ferme', name: 'Fermée'),
+        fixtureRouteTeam(role: 'MEMBER').copyWith(slug: 'membre'),
+        fixtureRouteTeam(
+          role: 'ADMIN',
+          enableRoutes: false,
+        ).copyWith(slug: 'sans-parcours'),
+      ],
+    );
+    await tester.tap(find.byKey(keys.gpxTools.moreButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(keys.gpxTools.saveAsRouteAction));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(keys.gpxTools.saveAsRouteTeam('n-peloton')),
+      findsOneWidget,
+    );
+    expect(find.byKey(keys.gpxTools.saveAsRouteTeam('ferme')), findsOneWidget);
+    expect(find.byKey(keys.gpxTools.saveAsRouteTeam('membre')), findsNothing);
+    expect(
+      find.byKey(keys.gpxTools.saveAsRouteTeam('sans-parcours')),
+      findsNothing,
+    );
+    expect(find.text('Tracé d\'itinéraire non activé'), findsOneWidget);
+
+    // L'équipe fermée ne se choisit pas.
+    await tester.tap(find.byKey(keys.gpxTools.saveAsRouteTeam('ferme')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(keys.gpxTools.saveAsRouteSubmit));
+    await tester.pumpAndSettle();
+    expect(repository.routes, isEmpty);
+
+    await tester.tap(find.byKey(keys.gpxTools.saveAsRouteTeam('n-peloton')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(keys.gpxTools.saveAsRouteSubmit));
+    await tester.pumpAndSettle();
+
+    expect(repository.routes, hasLength(1));
+    final (String id, String team, RouteRequest request) =
+        repository.routes.single;
+    expect((id, team), ('p1', 'n-peloton'));
+    expect(request.name, 'Boucle du dimanche');
+    expect(request.surfaceType, 'ROAD');
+    expect(request.visibility, 'PUBLIC');
+    expect(find.text('parcours boucle-du-dimanche'), findsOneWidget);
   });
 
   testWidgets('supprimer : confirmation, appel, puis retour', (

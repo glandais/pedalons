@@ -41,6 +41,26 @@ class GpxPreviewRepository {
   Future<void> delete(String previewId) =>
       _client.deletePreview(previewId: previewId);
 
+  /// Une copie à soi, sous [name] (`WEB-180` au site).
+  Future<GpxPreviewDto> copy(String previewId, {required String name}) =>
+      _client.copyGpxPreview(
+        previewId: previewId,
+        body: GpxPreviewCopyRequest(name: name),
+      );
+
+  /// « Enregistrer comme parcours » dans [teamSlug] : le serveur reprend le
+  /// fichier d'origine de l'aperçu ; [request] porte ce qu'un parcours a en
+  /// plus (surface, visibilité, description vide).
+  Future<RouteDto> createRoute(
+    String previewId, {
+    required String teamSlug,
+    required RouteRequest request,
+  }) => _client.createRouteFromPreview(
+    previewId: previewId,
+    teamSlug: teamSlug,
+    body: request,
+  );
+
   Future<RideWeatherDto> weather(String previewId) =>
       _client.getPreviewWeather(previewId: previewId);
 

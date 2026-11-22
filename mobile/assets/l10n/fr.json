@@ -1745,7 +1745,8 @@
       "drawnNeedsPlanner": "Ce tracé a été dessiné : il ne peut être enregistré que dans une équipe dont le tracé d'itinéraire est activé. Les autres équipes sont grisées.",
       "plannerClosedForTeam": "Cette équipe n'a pas activé le tracé d'itinéraire : un tracé dessiné ne peut pas y être enregistré.",
       "save": "Enregistrer",
-      "routeCreated": "Parcours créé dans {team}"
+      "routeCreated": "Parcours créé dans {team}",
+      "plannerClosedShort": "Tracé d'itinéraire non activé"
     },
     "departure": {
       "title": "Départ",
@@ -1778,7 +1779,8 @@
       "notOwner": "Seule la personne qui a déposé ce fichier peut le modifier.",
       "pointsRequired": "Tracez au moins deux points sur la carte.",
       "discardTitle": "Abandonner les modifications ?",
-      "discardMessage": "Ce que vous avez saisi sera perdu."
+      "discardMessage": "Ce que vous avez saisi sera perdu.",
+      "nameTooLong": "Le nom ne peut pas dépasser 200 caractères."
     }
   },
   "tags": {

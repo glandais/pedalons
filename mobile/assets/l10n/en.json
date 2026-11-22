@@ -1745,7 +1745,8 @@
       "drawnNeedsPlanner": "This track was drawn: it can only be saved in a team that has route drawing enabled. Other teams are greyed out.",
       "plannerClosedForTeam": "This team has not enabled route drawing: a drawn track cannot be saved in it.",
       "save": "Save",
-      "routeCreated": "Route created in {team}"
+      "routeCreated": "Route created in {team}",
+      "plannerClosedShort": "Route drawing not enabled"
     },
     "departure": {
       "title": "Departure",
@@ -1778,7 +1779,8 @@
       "notOwner": "Only the person who uploaded this file can edit it.",
       "pointsRequired": "Draw at least two points on the map.",
       "discardTitle": "Discard your changes?",
-      "discardMessage": "What you typed will be lost."
+      "discardMessage": "What you typed will be lost.",
+      "nameTooLong": "The name cannot be longer than 200 characters."
     }
   },
   "tags": {
