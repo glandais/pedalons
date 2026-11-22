@@ -1,7 +1,8 @@
 # Retoucher un parcours existant : viser une distance, déplacer l'arrivée
 
-Écrit le 22 novembre 2026. **État : décidé le 22 novembre 2026 (§9), rien de codé, rien de
-mesuré.** Un lot 0 de mesure avant tout code (§10). Ledger `API-212`.
+Écrit le 22 novembre 2026. **État : décidé le 22 novembre 2026 (§9) ; lot 0 mesuré le 22 novembre 2026
+(§10 bis) : aucun critère tenu tel quel, lot 2 non ouvert, lot 1 à ouvrir sous une forme étroite si le
+propriétaire le décide.** Ledger `API-212`.
 Suite de [`2026-11-15-generateur-parcours-osm.md`](2026-11-15-generateur-parcours-osm.md)
 (`API-207`) : même moteur (osm-route-details, crate `ord-loops`), même façade côté Pédalons.
 
@@ -255,6 +256,35 @@ dans ce plan.
 Critères du lot 0 pour continuer **(proposés)** : une couture possible à moins de 1 km de tout
 point pour 95 % des parcours ; arrivée déplacée sans refus du contrôleur dans 95 % des essais ;
 distance tenue à 3 % dans 90 % des essais pour `|Δ| ≤ 25 %` ; temps au P90 sous 2 s.
+
+---
+
+## 10 bis. Lot 0 : ce que les mesures ont donné (22 novembre 2026)
+
+Conception et relevé dans osm-route-details : `docs/design/technique/ord-retouche-lot0.md` et
+`ord-retouche-lot0-mesures.md` (sous-commandes `retouche-continuity` et `retouche-play` du banc, prototypes
+sous la feature `probe`, générations ordinaires inchangées). 3 355 traces réelles, 85 482 essais de
+`move_end`, 7 044 demandes de `resize` **(mesuré)**.
+
+| Critère (§10) | Mesuré | Verdict |
+|---|---|---|
+| Couture à 1 km ou moins de tout point, 95 % des parcours | 54,2 % ; 70,8 % au mieux (marge de 50 m) ; 95 % demanderait 2,6 km | non tenu, **et mal posé** : il ne prédit pas le succès de `resize` |
+| Arrivée déplacée sans refus du contrôleur, 95 % | 79,5 % ; 89 % des refus sont un virage serré à la couture que le moteur ne voit pas (le cap de la jambe gardée) ; sans eux, 96,3 % **(calculé)** | non tenu, cause unique et localisée |
+| Distance à ±3 %, 90 %, pour \|Δ\| ≤ 25 % | 88,9 % pondéré (80,1 % brut) ; allongement ~97 %, **raccourcissement 53 à 67 %** (47 % pour les allers simples à −10 %) | à la limite ; le raccourcissement échoue |
+| P90 sous 2 s | `move_end` 127 ms ; `resize` 4,5 s avec contrôles (18 s au-delà de 200 km) | tenu / non tenu |
+| (ajouté) Ordre des jambes fiable | 5,0 % des traces ont une anomalie d'ordre | non tenu : à rejeter à l'entrée |
+
+Ce que les chiffres disent des seuils proposés : marge de couture **100 m** plutôt que 200 (+12 points
+sur le premier critère, rien de perdu ailleurs) ; ±3 % se garde ; ±30 % est un choix de produit, sans
+falaise mesurée. Le **recalage géométrique** du §11 n'est pas justifié : les trous d'appariement ont une
+corde de 32 m au P50. L'interdiction des arêtes gardées doit rester (sans elle, −5,8 points sur la
+distance).
+
+**Recommandation du relevé** (au propriétaire de trancher) : ne pas ouvrir le lot 2 tant que le
+raccourcissement et le temps de `resize` ne sont pas réglés ; ouvrir le lot 1 sous une forme étroite :
+cap d'arrivée de la jambe gardée donné au moteur en premier, traces à anomalie d'ordre refusées, marge
+de 100 m, critère de couture remplacé par une condition sur les paires de coutures offertes ; sortie :
+arrivée déplacée sans refus dans 95 % des essais.
 
 ---
 
