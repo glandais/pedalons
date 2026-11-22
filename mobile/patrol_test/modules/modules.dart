@@ -7,6 +7,7 @@ import 'auth.dart';
 import 'calendar.dart';
 import 'detail_menus.dart';
 import 'device.dart';
+import 'gpx_tools.dart';
 import 'home.dart';
 import 'lists.dart';
 import 'moderation.dart';
@@ -44,6 +45,7 @@ final class Modules {
   late final calendar = Calendar(_$);
   late final detailMenus = DetailMenus(_$);
   late final device = Device(_$);
+  late final gpxTools = GpxTools(_$);
   late final home = Home(_$);
   late final lists = Lists(_$);
   late final moderation = Moderation(_$);

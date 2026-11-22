@@ -2502,7 +2502,8 @@
     "start": "Start",
     "end": "Finish",
     "truncated": "{shown} of {total} routes shown in this area",
-    "unavailable": "Map unavailable"
+    "unavailable": "Map unavailable",
+    "searchPlace": "Search a place"
   },
   "comments": {
     "count": {

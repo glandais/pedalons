@@ -2502,7 +2502,8 @@
     "start": "Départ",
     "end": "Arrivée",
     "truncated": "{shown} parcours affichés sur {total} dans cette zone",
-    "unavailable": "Carte indisponible"
+    "unavailable": "Carte indisponible",
+    "searchPlace": "Rechercher un lieu"
   },
   "comments": {
     "count": {

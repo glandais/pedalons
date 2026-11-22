@@ -6,14 +6,14 @@ Index des **148 entrées ouvertes** et des 77 entrées écartées. Chaque entré
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-40 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+41 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
 
 Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
-- [ ] [`MOB-178`](ledger/MOB/MOB-178.md) Les outils GPX dans l'app (L)
+- [ ] [`MOB-178`](ledger/MOB/MOB-178.md) Les outils GPX dans l'app : recette sur appareil (L) · *recette*
 - [ ] [`MOB-175`](ledger/MOB/MOB-175.md) Recette sur Pixel de la 1.2.0 : défauts d'affichage des pages groupe, équipe et carte (S)
 - [ ] [`MOB-174`](ledger/MOB/MOB-174.md) `maplibre_ios` appelle `setState` sur une carte déjà démontée (S)
 - [ ] [`MOB-170`](ledger/MOB/MOB-170.md) Tracer et modifier un parcours sur la carte dans l'app : recette sur appareil (S) · *recette*
@@ -285,6 +285,7 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 
 ### À constater à la main (`recette`)
 
+- [`MOB-178`](ledger/MOB/MOB-178.md) Les outils GPX dans l'app : recette sur appareil
 - [`MOB-170`](ledger/MOB/MOB-170.md) Tracer et modifier un parcours sur la carte dans l'app : recette sur appareil
 - [`MOB-146`](ledger/MOB/MOB-146.md) Listes homogènes : recette sur appareil de `MOB-143`
 - [`MOB-141`](ledger/MOB/MOB-141.md) Cartes homogènes : recette sur appareil de `MOB-139`

@@ -2,12 +2,13 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **601 entrées livrées**, et des 10 entrées encore ouvertes dont une part l'est.
+Index des **601 entrées livrées**, et des 11 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
 ## MOB — Application mobile
 
+- [x] [`MOB-178`](ledger/MOB/MOB-178.md) Les outils GPX dans l'app : recette sur appareil — en partie, le reste est ouvert
 - [x] [`MOB-177`](ledger/MOB/MOB-177.md) Page d'équipe : un seul bouton Créer, comme l'agenda — 2026-11-17
 - [x] [`MOB-176`](ledger/MOB/MOB-176.md) Nouveau parcours : le quota du planificateur reste celui de l'ouverture de l'équipe — 2026-11-17
 - [x] [`MOB-173`](ledger/MOB/MOB-173.md) Supprimer une équipe ou changer son adresse ferme d'abord le clavier — 2026-11-16

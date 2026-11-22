@@ -34,7 +34,8 @@ const int kGpxMergeMaxFiles = 10;
 /// L'accueil des outils GPX (docs/LEDGER_*.md MOB-178), ouvert depuis
 /// l'onglet Parcours : les cartes du site (`GpxToolsPage`) — visualiser un
 /// fichier, en fusionner plusieurs, en tracer un (si le domaine ouvre le
-/// planificateur), lister les siens —, et la mention de conservation.
+/// planificateur), ouvrir une carte sans tracé, lister les siens —, et la
+/// mention de conservation.
 ///
 /// « Visualiser » et « Fusionner » envoient dès le choix, comme au site : le
 /// serveur choisit l'ordre et le sens des traces d'une fusion, il n'y a rien à
@@ -300,6 +301,18 @@ class _GpxToolsPageState extends ConsumerState<GpxToolsPage> {
               // Tracer de zéro est une affaire du domaine ; les cartes des
               // fichiers restent.
               if (_plannerEnabled) ...<Widget>[_drawCard(), gap],
+              GpxToolCard(
+                icon: PdlIcons.map,
+                title: 'gpxTools.blankMap.title'.tr(),
+                description: 'gpxTools.blankMap.description'.tr(),
+                action: PdlButton(
+                  key: keys.gpxTools.blankMapButton,
+                  label: 'gpxTools.blankMap.submit'.tr(),
+                  variant: PdlButtonVariant.outline,
+                  onPressed: () => context.push(Paths.gpxToolsBlankMap()),
+                ),
+              ),
+              gap,
               GpxToolCard(
                 icon: PdlIcons.list,
                 title: 'gpxTools.listFiles.title'.tr(),

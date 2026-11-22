@@ -57,6 +57,7 @@ import '../features/teams/presentation/pages/team_custom_page.dart';
 import '../features/teams/presentation/pages/team_editor_page.dart';
 import '../features/teams/presentation/pages/team_home_page.dart';
 import '../features/teams/presentation/pages/team_page_editor_page.dart';
+import '../features/gpxtools/presentation/pages/gpx_blank_map_page.dart';
 import '../features/gpxtools/presentation/pages/gpx_preview_editor_page.dart';
 import '../features/gpxtools/presentation/pages/gpx_preview_map_page.dart';
 import '../features/gpxtools/presentation/pages/gpx_preview_page.dart';
@@ -1253,7 +1254,7 @@ GoRoute _postEditRoute(String locale) {
 /// Les écrans des outils GPX (docs/LEDGER_*.md MOB-178), une arborescence
 /// par langue : l'accueil, et sous lui « Mes fichiers », la création, puis la
 /// fiche d'un aperçu et, sous elle, sa carte plein écran et sa modification.
-/// Les segments fixes (`mes-fichiers`, `nouveau`) passent **avant**
+/// Les segments fixes (`mes-fichiers`, `nouveau`, `carte`) passent **avant**
 /// `{previewId}` : la première route qui
 /// correspond l'emporte, et un identifiant n'est jamais l'un d'eux.
 List<GoRoute> _gpxToolsRoutes() {
@@ -1275,6 +1276,10 @@ List<GoRoute> _gpxToolsRoutes() {
           GoRoute(
             path: _underTeam(PathVariants.gpxToolsNew(), locale, base),
             builder: (context, state) => const GpxPreviewEditorPage(),
+          ),
+          GoRoute(
+            path: _underTeam(PathVariants.gpxToolsBlankMap(), locale, base),
+            builder: (context, state) => const GpxBlankMapPage(),
           ),
           GoRoute(
             path: _underTeam(

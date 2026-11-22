@@ -11,6 +11,13 @@ appelés. Ce plan porte les sept écrans dans l'app, **sans changement de contra
 changement hors de `mobile/` est le pont du planificateur embarqué, où `teamSlug` devient
 facultatif (un aperçu n'a pas d'équipe).
 
+**État (22 novembre 2026)** : les cinq lots sont codés, tests unitaires verts ; restent le test
+Patrol `gpx_tools_test.dart` à lancer et la recette sur appareil (ledger `MOB-178`). Écarts avec
+le plan : à la création, un fichier peut aussi être choisi hors du planificateur (le site ne le
+propose que dans le planificateur) ; la carte sans tracé a une recherche de lieu, celle des
+formulaires ; le test Patrol ne trace pas de zéro, le domaine par défaut de la pile e2e gardant
+le planificateur des outils fermé.
+
 ## 2. Décisions (22 novembre 2026, avec le propriétaire)
 
 | # | Décision |

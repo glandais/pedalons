@@ -206,6 +206,14 @@ void main() {
               builder: (_, _) => const MyGpxPreviewsPage(),
             ),
             GoRoute(
+              path: 'outils-gpx/carte',
+              builder: (_, _) => const Text('carte sans tracé'),
+            ),
+            GoRoute(
+              path: 'outils-gpx/nouveau',
+              builder: (_, _) => const Text('créer un parcours'),
+            ),
+            GoRoute(
               path: 'outils-gpx/:id',
               builder: (_, GoRouterState s) =>
                   Text('fiche ${s.pathParameters['id']}'),
@@ -310,6 +318,15 @@ void main() {
     });
   });
 
+  testWidgets('« Ouvrir la carte » ouvre la carte sans tracé', (
+    WidgetTester tester,
+  ) async {
+    await open(tester);
+    await tester.tap(find.byKey(keys.gpxTools.blankMapButton));
+    await settle(tester);
+    expect(find.text('carte sans tracé'), findsOneWidget);
+  });
+
   group('créer un parcours', () {
     testWidgets('fermé par le domaine : pas de carte', (
       WidgetTester tester,
@@ -324,6 +341,9 @@ void main() {
       await open(tester, planner: true);
       expect(find.byKey(keys.gpxTools.drawButton), findsOneWidget);
       expect(find.byKey(keys.gpxTools.quotaMessage), findsNothing);
+      await tester.tap(find.byKey(keys.gpxTools.drawButton));
+      await settle(tester);
+      expect(find.text('créer un parcours'), findsOneWidget);
     });
 
     testWidgets('quota du mois épuisé : le bouton inactif et sa raison', (
