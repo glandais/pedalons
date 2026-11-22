@@ -81,6 +81,7 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 
+- [ ] [`API-212`](ledger/API/API-212.md) Retoucher un parcours existant : viser une distance, déplacer l'arrivée (L, mesure d'abord)
 - [ ] [`API-209`](ledger/API/API-209.md) Carte des parcours en fréquentation : nombre de parcours par arête OSM, coloré selon le compte (L)
 - [ ] [`API-207`](ledger/API/API-207.md) Générateur de parcours au-delà du réseau de l'équipe (L, proposition, décision d'abord) · *decision*
 - [ ] [`API-203`](ledger/API/API-203.md) Ce qu'un jeton d'application ou d'appareil peut faire sans le membre (S, décision d'abord) · *decision*
