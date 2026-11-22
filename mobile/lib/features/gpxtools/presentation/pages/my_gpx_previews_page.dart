@@ -218,7 +218,9 @@ class _PreviewRow extends ConsumerWidget {
     final String stats = <String>[
       AppFormatters.formatDistance(preview.distance, units),
       '↑ ${AppFormatters.formatElevation(preview.elevationGain, units)}',
-      '↓ ${AppFormatters.formatElevation(preview.elevationLoss, units)}',
+      // La perte arrive négative (le site l'affiche signée) : la flèche
+      // porte déjà le sens, pas de « ↓ -1 398 m ».
+      '↓ ${AppFormatters.formatElevation(preview.elevationLoss.abs(), units)}',
       if (createdAt != null) AppFormatters.formatRelative(createdAt),
     ].join(' · ');
 

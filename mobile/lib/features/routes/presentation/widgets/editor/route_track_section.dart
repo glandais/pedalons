@@ -75,6 +75,7 @@ class RouteTrackSection extends ConsumerWidget {
     this.drawn,
     this.unvalidated = false,
     this.plannerWarning,
+    this.trackWarning,
   });
 
   final CurrentTrack? current;
@@ -89,6 +90,11 @@ class RouteTrackSection extends ConsumerWidget {
   final VoidCallback? onDraw;
   final PlannerQuotaRefusal? quotaSpent;
   final PlannerResult? drawn;
+
+  /// L'avertissement sous « Remplacer le GPX » ; `null` : celui d'un
+  /// parcours d'équipe (les sorties qui l'utilisent suivront le nouveau
+  /// tracé). Un aperçu des outils GPX n'a pas de sortie (MOB-178).
+  final String? trackWarning;
   final bool unvalidated;
   final String? plannerWarning;
 
@@ -295,7 +301,7 @@ class RouteTrackSection extends ConsumerWidget {
         key: keys.routeEditor.trackWarning,
         tone: PdlBannerTone.warn,
         icon: PdlIcons.warning,
-        message: 'routes.editor.trackWarning'.tr(),
+        message: trackWarning ?? 'routes.editor.trackWarning'.tr(),
       ),
     ];
   }

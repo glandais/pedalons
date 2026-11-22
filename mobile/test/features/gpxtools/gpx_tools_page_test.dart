@@ -51,7 +51,8 @@ GpxPreviewSummaryDto _summary(String id, {String? departureTime}) =>
       name: 'Fichier $id',
       distance: 42000,
       elevationGain: 600,
-      elevationLoss: 590,
+      // Négative, comme le serveur la rend.
+      elevationLoss: -590,
       hilliness: 14,
       createdAt: '2026-11-20T08:00:00Z',
       departureTime: departureTime,
@@ -395,6 +396,18 @@ void main() {
       expect(repo.deleted, <String>['b']);
       expect(find.byKey(keys.gpxTools.row('b')), findsNothing);
       expect(find.byKey(keys.gpxTools.row('a')), findsOneWidget);
+    });
+
+    testWidgets('la perte s’affiche sans signe : la flèche porte le sens', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        initial: '/outils-gpx/mes-fichiers',
+        mine: <GpxPreviewSummaryDto>[_summary('a')],
+      );
+      expect(find.textContaining('↓ 590'), findsOneWidget);
+      expect(find.textContaining('-590'), findsNothing);
     });
 
     testWidgets('toucher une ligne ouvre sa fiche', (

@@ -1780,7 +1780,8 @@
       "pointsRequired": "Tracez au moins deux points sur la carte.",
       "discardTitle": "Abandonner les modifications ?",
       "discardMessage": "Ce que vous avez saisi sera perdu.",
-      "nameTooLong": "Le nom ne peut pas dépasser 200 caractères."
+      "nameTooLong": "Le nom ne peut pas dépasser 200 caractères.",
+      "trackWarning": "Un nouveau GPX remplace tout le tracé."
     }
   },
   "tags": {

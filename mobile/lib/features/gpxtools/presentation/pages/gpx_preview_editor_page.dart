@@ -633,6 +633,7 @@ class _GpxPreviewEditorPageState extends ConsumerState<GpxPreviewEditorPage> {
                   plannerWarning: (_planner?.stateReadFailed.value ?? false)
                       ? 'routes.planner.stateReadFailed'.tr()
                       : null,
+                  trackWarning: 'gpxTools.edit.trackWarning'.tr(),
                 ),
 
                 // ── Nom ──

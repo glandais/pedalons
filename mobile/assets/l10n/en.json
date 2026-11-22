@@ -1780,7 +1780,8 @@
       "pointsRequired": "Draw at least two points on the map.",
       "discardTitle": "Discard your changes?",
       "discardMessage": "What you typed will be lost.",
-      "nameTooLong": "The name cannot be longer than 200 characters."
+      "nameTooLong": "The name cannot be longer than 200 characters.",
+      "trackWarning": "A new GPX replaces the whole track."
     }
   },
   "tags": {
