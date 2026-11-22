@@ -86,6 +86,15 @@ final Map<String, List<String>> internalRouteTemplates = <String, List<String>>{
   'calendar': PathVariants.calendar().values.toList(),
   'allRoutes': PathVariants.allRoutes().values.toList(),
   'allRoutesMap': PathVariants.allRoutesMap().values.toList(),
+  // Les outils GPX (docs/LEDGER_*.md MOB-178) : les segments fixes avant
+  // `{previewId}`, comme dans le routeur.
+  'gpxTools': PathVariants.gpxTools().values.toList(),
+  'gpxToolsList': PathVariants.gpxToolsList().values.toList(),
+  'gpxToolsNew': PathVariants.gpxToolsNew().values.toList(),
+  'gpxToolsBlankMap': PathVariants.gpxToolsBlankMap().values.toList(),
+  'gpxToolsView': PathVariants.gpxToolsView(_slot).values.toList(),
+  'gpxToolsMap': PathVariants.gpxToolsMap(_slot).values.toList(),
+  'gpxToolsEdit': PathVariants.gpxToolsEdit(_slot).values.toList(),
   'teams': PathVariants.teams().values.toList(),
   'teamsDiscover': PathVariants.teamsDiscover().values.toList(),
   'teamsNew': PathVariants.teamsNew().values.toList(),

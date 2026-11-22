@@ -140,6 +140,17 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
     return Scaffold(
       appBar: PdlAppBar(
         title: (widget.teamSlug == null ? 'nav.explore' : 'routes.title').tr(),
+        // Les outils GPX, sur l'onglet Explorer seulement : ils ne relèvent
+        // d'aucune équipe (docs/LEDGER_*.md MOB-178).
+        actions: <Widget>[
+          if (widget.teamSlug == null)
+            PdlAppBarAction(
+              key: keys.gpxTools.entryButton,
+              icon: PdlIcons.gpx,
+              semanticLabel: 'gpxTools.entry'.tr(),
+              onPressed: () => context.push(Paths.gpxTools()),
+            ),
+        ],
       ),
       body: body,
     );

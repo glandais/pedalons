@@ -1676,6 +1676,111 @@
       }
     }
   },
+  "gpxTools": {
+    "title": "Outils GPX",
+    "subtitle": "Analysez un fichier GPX sans le rattacher à une équipe.",
+    "entry": "Outils GPX",
+    "retentionNotice": "Les fichiers déposés ici sont conservés 30 jours, puis supprimés.",
+    "viewFile": {
+      "title": "Visualiser un fichier",
+      "description": "Déposez un fichier GPX pour voir la carte, le profil altimétrique et les cols détectés.",
+      "submit": "Choisir un fichier"
+    },
+    "merge": {
+      "title": "Fusionner des fichiers",
+      "description": "Déposez de 2 à 10 fichiers GPX : leurs tracés sont mis bout à bout en un seul, dans l'ordre et le sens qui les relient au plus court.",
+      "submit": "Choisir les fichiers",
+      "fileCount": "Choisissez entre {min} et {max} fichiers GPX à fusionner (sélection : {selected})."
+    },
+    "createFromScratch": {
+      "title": "Créer un parcours",
+      "description": "Tracez un itinéraire sur une carte vierge, sans fichier GPX, à l'aide du planificateur.",
+      "submit": "Créer un parcours",
+      "created": "Parcours créé",
+      "renameFailed": "Parcours créé, mais le nom saisi n'a pas pu être enregistré : il porte le nom du fichier."
+    },
+    "blankMap": {
+      "title": "Ouvrir une carte",
+      "description": "Ouvrez une carte vierge en plein écran : fonds de carte et relief.",
+      "submit": "Ouvrir la carte",
+      "pageTitle": "Carte"
+    },
+    "listFiles": {
+      "title": "Lister mes fichiers",
+      "description": "Retrouvez les fichiers GPX que vous avez déposés et qui sont encore disponibles.",
+      "submit": "Voir mes fichiers",
+      "empty": "Vous n'avez aucun fichier disponible pour le moment.",
+      "noun": {
+        "one": "fichier",
+        "other": "fichiers"
+      },
+      "count": {
+        "one": "{} fichier",
+        "other": "{} fichiers"
+      }
+    },
+    "preview": {
+      "title": "Visualisation",
+      "share": "Partager le lien",
+      "more": "Actions sur le fichier",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "deleteConfirmTitle": "Supprimer le fichier",
+      "deleteConfirm": "Voulez-vous vraiment supprimer ce fichier ? Le lien ne sera plus accessible.",
+      "deleted": "Fichier supprimé",
+      "notFoundTitle": "Fichier introuvable",
+      "notFoundMessage": "Ce fichier n'existe plus : les fichiers déposés sont supprimés au bout de 30 jours.",
+      "loadErrorTitle": "Impossible de charger le fichier",
+      "duplicate": {
+        "action": "Dupliquer",
+        "title": "Dupliquer le fichier",
+        "nameLabel": "Nom du parcours",
+        "defaultName": "Copie de {name}",
+        "submit": "Dupliquer"
+      },
+      "duplicated": "Fichier dupliqué",
+      "saveAsRoute": "Enregistrer comme parcours",
+      "selectTeam": "Équipe",
+      "noTeam": "Aucune équipe où créer un parcours",
+      "drawnNeedsPlanner": "Ce tracé a été dessiné : il ne peut être enregistré que dans une équipe dont le tracé d'itinéraire est activé. Les autres équipes sont grisées.",
+      "plannerClosedForTeam": "Cette équipe n'a pas activé le tracé d'itinéraire : un tracé dessiné ne peut pas y être enregistré.",
+      "save": "Enregistrer",
+      "routeCreated": "Parcours créé dans {team}"
+    },
+    "departure": {
+      "title": "Départ",
+      "add": "Ajouter une date de départ pour voir la météo",
+      "label": "Date et heure de départ",
+      "hint": "Facultatif. Heure locale au point de départ du tracé, pas celle de votre appareil. Si le tracé change de fuseau, l'heure saisie reste la même. Visible par toute personne qui a le lien.",
+      "speedLabel": "Vitesse moyenne",
+      "speedHint": "Facultative. Sert à estimer les heures de passage ; sans valeur, une vitesse par défaut s'applique. Visible par toute personne qui a le lien.",
+      "speedLine": "Vitesse moyenne : {speed}",
+      "clear": "Retirer la date",
+      "pick": "Choisir une date",
+      "invalidSpeed": "Saisissez une vitesse entre 1 et 99."
+    },
+    "weather": {
+      "departed": "Ce départ est passé : plus de prévisions à afficher.",
+      "pending": "Récupération des prévisions en cours, cela prend environ une minute.",
+      "timelineSpeedDefault": "Passages estimés à {speed}, vitesse par défaut"
+    },
+    "edit": {
+      "title": "Modifier le fichier GPX",
+      "updated": "Fichier mis à jour",
+      "nameLabel": "Nom",
+      "nameTooShort": "Le nom doit contenir au moins 3 caractères.",
+      "trackTitle": "Tracé",
+      "draw": "Tracer sur la carte",
+      "redraw": "Modifier le tracé",
+      "pickFile": "Remplacer par un fichier GPX",
+      "fileChosen": "Nouveau fichier : {file}",
+      "keepTrack": "Laissez le tracé tel quel pour ne modifier que le nom.",
+      "notOwner": "Seule la personne qui a déposé ce fichier peut le modifier.",
+      "pointsRequired": "Tracez au moins deux points sur la carte.",
+      "discardTitle": "Abandonner les modifications ?",
+      "discardMessage": "Ce que vous avez saisi sera perdu."
+    }
+  },
   "tags": {
     "title": "Tags",
     "filter": "Tags",

@@ -57,6 +57,10 @@ import '../features/teams/presentation/pages/team_custom_page.dart';
 import '../features/teams/presentation/pages/team_editor_page.dart';
 import '../features/teams/presentation/pages/team_home_page.dart';
 import '../features/teams/presentation/pages/team_page_editor_page.dart';
+import '../features/gpxtools/presentation/pages/gpx_preview_map_page.dart';
+import '../features/gpxtools/presentation/pages/gpx_preview_page.dart';
+import '../features/gpxtools/presentation/pages/gpx_tools_page.dart';
+import '../features/gpxtools/presentation/pages/my_gpx_previews_page.dart';
 import '../features/teams/presentation/pages/team_pages_admin_page.dart';
 import '../features/teams/presentation/pages/teams_discover_page.dart';
 import '../features/teams/presentation/pages/teams_page.dart';
@@ -137,6 +141,12 @@ String _adAncestor(Map<String, String> p, String locale) =>
     PathVariants.ad(p['teamSlug']!, p['adSlug']!)[locale]!;
 String _routeAncestor(Map<String, String> p, String locale) =>
     PathVariants.route(p['teamSlug']!, p['routeSlug']!)[locale]!;
+String _allRoutesMapAncestor(Map<String, String> p, String locale) =>
+    PathVariants.allRoutesMap()[locale]!;
+String _gpxToolsAncestor(Map<String, String> p, String locale) =>
+    PathVariants.gpxTools()[locale]!;
+String _gpxToolsViewAncestor(Map<String, String> p, String locale) =>
+    PathVariants.gpxToolsView(p['previewId']!)[locale]!;
 
 /// The ancestors that are pages **of the team** — its home, or one of its
 /// sections or lists. They answer « Équipe indisponible » to a caller who
@@ -487,6 +497,33 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
     entity: true,
     patterns: PathVariants.route(':teamSlug', ':routeSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamRoutesAncestor],
+  ),
+
+  // Les outils GPX vivent au-dessus de l'onglet Parcours, d'où on les ouvre
+  // (docs/LEDGER_*.md MOB-178) : un lien d'aperçu partagé retrouve l'onglet
+  // et l'accueil des outils dessous, et sa carte `…/carte` la fiche.
+  // `gpxToolsMap` **avant** `gpxToolsView` n'importe pas (un segment de
+  // plus), mais les pages statiques (`mes-fichiers`, `nouveau`, `carte`)
+  // passent avant `{previewId}`.
+  _DeepLinkHierarchy(
+    patterns: PathVariants.gpxToolsList(),
+    ancestors: [_allRoutesMapAncestor, _gpxToolsAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.gpxToolsMap(':previewId'),
+    ancestors: [
+      _allRoutesMapAncestor,
+      _gpxToolsAncestor,
+      _gpxToolsViewAncestor,
+    ],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.gpxToolsView(':previewId'),
+    ancestors: [_allRoutesMapAncestor, _gpxToolsAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.gpxTools(),
+    ancestors: [_allRoutesMapAncestor],
   ),
 ];
 
@@ -1212,6 +1249,55 @@ GoRoute _postEditRoute(String locale) {
   );
 }
 
+/// Les écrans des outils GPX (docs/LEDGER_*.md MOB-178), une arborescence
+/// par langue : l'accueil, et sous lui « Mes fichiers » puis la fiche d'un
+/// aperçu et, sous elle, sa carte plein écran. Les segments fixes
+/// (`mes-fichiers`) passent **avant** `{previewId}` : la première route qui
+/// correspond l'emporte, et un identifiant n'est jamais l'un d'eux.
+List<GoRoute> _gpxToolsRoutes() {
+  final seen = <String>{};
+  final routes = <GoRoute>[];
+  for (final String locale in PathVariants.gpxTools().keys) {
+    final String base = PathVariants.gpxTools()[locale]!;
+    if (!seen.add(base)) continue;
+    final String viewBase = PathVariants.gpxToolsView(':previewId')[locale]!;
+    routes.add(
+      GoRoute(
+        path: base,
+        builder: (context, state) => const GpxToolsPage(),
+        routes: [
+          GoRoute(
+            path: _underTeam(PathVariants.gpxToolsList(), locale, base),
+            builder: (context, state) => const MyGpxPreviewsPage(),
+          ),
+          GoRoute(
+            path: _underTeam(
+              PathVariants.gpxToolsView(':previewId'),
+              locale,
+              base,
+            ),
+            builder: (context, state) =>
+                GpxPreviewPage(previewId: state.pathParameters['previewId']!),
+            routes: [
+              GoRoute(
+                path: _underTeam(
+                  PathVariants.gpxToolsMap(':previewId'),
+                  locale,
+                  viewBase,
+                ),
+                builder: (context, state) => GpxPreviewMapPage(
+                  previewId: state.pathParameters['previewId']!,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  return routes;
+}
+
 /// L'éditeur d'un parcours, sous sa fiche : ouvert par un lien, la fiche se
 /// reconstruit dessous et l'enregistrement y revient (ledger `MOB-79`).
 /// `?gpx=replace` fait ouvrir le sélecteur de fichier dès l'ouverture.
@@ -1418,6 +1504,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         PathVariants.teamsNew(),
         (ctx, st) => const TeamEditorPage(),
       ),
+
+      // Les outils GPX, plein écran au-dessus du shell (docs/LEDGER_*.md
+      // MOB-178) : ouverts depuis l'onglet Parcours, ils n'appartiennent à
+      // aucune branche — une route directe d'une branche ne peut pas viser le
+      // navigateur racine.
+      ..._gpxToolsRoutes(),
 
       // The single navigation shell: five fixed tabs, one branch each, one
       // navigator per branch so every tab keeps its own back stack. A team is

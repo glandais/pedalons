@@ -1676,6 +1676,111 @@
       }
     }
   },
+  "gpxTools": {
+    "title": "GPX tools",
+    "subtitle": "Analyse a GPX file without attaching it to a team.",
+    "entry": "GPX tools",
+    "retentionNotice": "Files uploaded here are kept for 30 days, then deleted.",
+    "viewFile": {
+      "title": "View a file",
+      "description": "Upload a GPX file to see the map, elevation profile and detected climbs.",
+      "submit": "Choose a file"
+    },
+    "merge": {
+      "title": "Merge files",
+      "description": "Drop 2 to 10 GPX files: their tracks are joined into one, in the order and direction that link them most closely.",
+      "submit": "Choose files",
+      "fileCount": "Choose between {min} and {max} GPX files to merge (selected: {selected})."
+    },
+    "createFromScratch": {
+      "title": "Create a route",
+      "description": "Draw a route on a blank map, without a GPX file, using the planner.",
+      "submit": "Create a route",
+      "created": "Route created",
+      "renameFailed": "Route created, but the name you typed could not be saved: it carries the file's name."
+    },
+    "blankMap": {
+      "title": "Open a map",
+      "description": "Open a blank fullscreen map: basemaps and relief.",
+      "submit": "Open the map",
+      "pageTitle": "Map"
+    },
+    "listFiles": {
+      "title": "List my files",
+      "description": "Find the GPX files you uploaded that are still available.",
+      "submit": "View my files",
+      "empty": "You have no available files yet.",
+      "noun": {
+        "one": "file",
+        "other": "files"
+      },
+      "count": {
+        "one": "{} file",
+        "other": "{} files"
+      }
+    },
+    "preview": {
+      "title": "Preview",
+      "share": "Share the link",
+      "more": "File actions",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirmTitle": "Delete the file",
+      "deleteConfirm": "Really delete this file? The link will stop working.",
+      "deleted": "File deleted",
+      "notFoundTitle": "File not found",
+      "notFoundMessage": "This file no longer exists: uploaded files are deleted after 30 days.",
+      "loadErrorTitle": "Could not load the file",
+      "duplicate": {
+        "action": "Duplicate",
+        "title": "Duplicate file",
+        "nameLabel": "Route name",
+        "defaultName": "Copy of {name}",
+        "submit": "Duplicate"
+      },
+      "duplicated": "File duplicated",
+      "saveAsRoute": "Save as route",
+      "selectTeam": "Team",
+      "noTeam": "No team to create a route on",
+      "drawnNeedsPlanner": "This track was drawn: it can only be saved in a team that has route drawing enabled. Other teams are greyed out.",
+      "plannerClosedForTeam": "This team has not enabled route drawing: a drawn track cannot be saved in it.",
+      "save": "Save",
+      "routeCreated": "Route created in {team}"
+    },
+    "departure": {
+      "title": "Departure",
+      "add": "Add a departure date to see the weather",
+      "label": "Departure date and time",
+      "hint": "Optional. Local time at the start of the track, not your device's. It stays the same if the track moves to another time zone. Visible to anyone with the link.",
+      "speedLabel": "Average speed",
+      "speedHint": "Optional. Used to estimate passage times; without one, a default speed applies. Visible to anyone with the link.",
+      "speedLine": "Average speed: {speed}",
+      "clear": "Remove the date",
+      "pick": "Choose a date",
+      "invalidSpeed": "Enter a speed between 1 and 99."
+    },
+    "weather": {
+      "departed": "This departure has passed: no forecast to show.",
+      "pending": "Fetching the forecast, this takes about a minute.",
+      "timelineSpeedDefault": "Passages estimated at {speed}, the default speed"
+    },
+    "edit": {
+      "title": "Edit GPX file",
+      "updated": "File updated",
+      "nameLabel": "Name",
+      "nameTooShort": "The name must be at least 3 characters.",
+      "trackTitle": "Track",
+      "draw": "Draw on the map",
+      "redraw": "Edit the track",
+      "pickFile": "Replace with a GPX file",
+      "fileChosen": "New file: {file}",
+      "keepTrack": "Leave the track as it is to only change the name.",
+      "notOwner": "Only the person who uploaded this file can edit it.",
+      "pointsRequired": "Draw at least two points on the map.",
+      "discardTitle": "Discard your changes?",
+      "discardMessage": "What you typed will be lost."
+    }
+  },
   "tags": {
     "title": "Tags",
     "filter": "Tags",

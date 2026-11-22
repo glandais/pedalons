@@ -109,6 +109,10 @@
                 <data android:path="/profil/aide" />
                 <data android:path="/calendar" />
                 <data android:path="/calendrier" />
+                <data android:pathPattern="/gpx-tools/.*" />
+                <data android:pathPattern="/outils-gpx/.*" />
+                <data android:pathPattern="/gpx-tools/.*/map" />
+                <data android:pathPattern="/outils-gpx/.*/carte" />
                 <data android:path="/teams" />
                 <data android:path="/equipes" />
                 <data android:path="/teams/discover" />

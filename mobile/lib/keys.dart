@@ -8,6 +8,7 @@ import 'features/comments/keys.dart';
 import 'features/device/keys.dart';
 import 'features/feed/keys.dart';
 import 'features/feedback/keys.dart';
+import 'features/gpxtools/keys.dart';
 import 'features/home/keys.dart';
 import 'features/legal/keys.dart';
 import 'features/moderation/keys.dart';
@@ -58,6 +59,7 @@ class Keys {
   final adManage = AdManageKeys();
   final apps = AppsPageKeys();
   final feedback = FeedbackKeys();
+  final gpxTools = GpxToolsKeys();
   final legal = LegalPageKeys();
   final post = PostDetailKeys();
   final postEditor = PostEditorKeys();

@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../api/generated/export.dart';
 import '../../../api/pedalons_api_client.dart';
+import '../../../core/pagination/pagination.dart';
+import '../data/gpx_preview_repository.dart';
 
 /// Un aperçu des outils GPX, pour sa fiche (docs/LEDGER_*.md MOB-178).
 ///
@@ -14,3 +17,49 @@ final gpxPreviewProvider = FutureProvider.family<GpxPreviewDto, String>((
 ) {
   return ref.watch(gpxPreviewsClientProvider).getPreview(previewId: previewId);
 });
+
+/// La météo d'un aperçu daté : le cache du serveur seulement (le point
+/// d'accès n'appelle jamais le fournisseur), que le planificateur remplit en
+/// arrière-plan. `autoDispose` comme celle d'une sortie : une prévision
+/// vieillit.
+final gpxPreviewWeatherProvider = FutureProvider.autoDispose
+    .family<RideWeatherDto, String>(
+      (Ref ref, String previewId) =>
+          ref.watch(gpxPreviewRepositoryProvider).weather(previewId),
+    );
+
+/// « Mes fichiers » : les aperçus encore disponibles de la personne, du plus
+/// récent au plus ancien, page après page.
+final myGpxPreviewsProvider =
+    StateNotifierProvider.autoDispose<
+      MyGpxPreviewsNotifier,
+      PagedListState<GpxPreviewSummaryDto>
+    >(
+      (Ref ref) =>
+          MyGpxPreviewsNotifier(ref.watch(gpxPreviewRepositoryProvider)),
+    );
+
+class MyGpxPreviewsNotifier extends PagedListNotifier<GpxPreviewSummaryDto> {
+  MyGpxPreviewsNotifier(this._repository);
+
+  final GpxPreviewRepository _repository;
+
+  @override
+  Future<PageResult<GpxPreviewSummaryDto>> fetchPage(int page) =>
+      _repository.listMine(page: page, size: pageSize);
+
+  @override
+  Object? itemKey(GpxPreviewSummaryDto item) => item.id;
+}
+
+/// **Le** point où l'app dit « un aperçu vient de changer » — créé,
+/// dupliqué, modifié ou supprimé : « Mes fichiers » se relit, et la fiche de
+/// [previewId] et sa météo si elle est nommée. Le pendant de
+/// `notifyRouteChanged`.
+void notifyGpxPreviewChanged(WidgetRef ref, {String? previewId}) {
+  ref.invalidate(myGpxPreviewsProvider);
+  if (previewId != null) {
+    ref.invalidate(gpxPreviewProvider(previewId));
+    ref.invalidate(gpxPreviewWeatherProvider(previewId));
+  }
+}

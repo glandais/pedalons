@@ -23,6 +23,7 @@ const _tripSlug = 'alpes';
 const _stageSlug = 'etape-1';
 const _postSlug = 'mon-article';
 const _routeSlug = 'col-du-galibier';
+const _previewId = '0n1x3v5k7q9s2';
 const _adSlug = 'velo-a-vendre';
 const _pageSlug = 'notre-histoire';
 const _templateSlug = 'sortie-du-dimanche';
@@ -334,6 +335,22 @@ final List<_LinkCase> _cases = [
     PathVariants.team(_teamSlug),
     PathVariants.routes(_teamSlug),
   ]),
+  // Les outils GPX (docs/LEDGER_*.md MOB-178) : au-dessus de l'onglet
+  // Parcours, d'où on les ouvre ; la carte d'un aperçu sous sa fiche.
+  _LinkCase('gpxToolsList', PathVariants.gpxToolsList(), [
+    PathVariants.allRoutesMap(),
+    PathVariants.gpxTools(),
+  ]),
+  _LinkCase('gpxToolsMap', PathVariants.gpxToolsMap(_previewId), [
+    PathVariants.allRoutesMap(),
+    PathVariants.gpxTools(),
+    PathVariants.gpxToolsView(_previewId),
+  ]),
+  _LinkCase('gpxToolsView', PathVariants.gpxToolsView(_previewId), [
+    PathVariants.allRoutesMap(),
+    PathVariants.gpxTools(),
+  ]),
+  _LinkCase('gpxTools', PathVariants.gpxTools(), [PathVariants.allRoutesMap()]),
 ];
 
 /// Deep-linkable routes that legitimately have no ancestor: they either carry
@@ -360,6 +377,14 @@ final Map<String, Map<String, String>> _selfNavigating = {
 /// breadcrumb does (ledger `MOB-60`). It is accepted above those two only.
 bool _isAncestorPath(String ancestor, String path) {
   if (ancestor == '/' || path.startsWith('$ancestor/')) return true;
+  // Les outils GPX s'ouvrent depuis l'onglet Parcours, dont l'adresse n'est
+  // pas un préfixe de la leur (docs/LEDGER_*.md MOB-178).
+  if (PathVariants.allRoutesMap().values.contains(ancestor) &&
+      PathVariants.gpxTools().values.any(
+        (String tools) => path == tools || path.startsWith('$tools/'),
+      )) {
+    return true;
+  }
   const String agenda = '/agenda';
   if (!ancestor.endsWith(agenda)) return false;
   final String team = ancestor.substring(0, ancestor.length - agenda.length);

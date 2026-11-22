@@ -202,6 +202,69 @@ class Paths {
     }
   }
 
+  static String gpxTools() {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/outils-gpx';
+      default:
+        return '/gpx-tools';
+    }
+  }
+
+  static String gpxToolsList() {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/outils-gpx/mes-fichiers';
+      default:
+        return '/gpx-tools/my-files';
+    }
+  }
+
+  static String gpxToolsNew() {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/outils-gpx/nouveau';
+      default:
+        return '/gpx-tools/new';
+    }
+  }
+
+  static String gpxToolsBlankMap() {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/outils-gpx/carte';
+      default:
+        return '/gpx-tools/map';
+    }
+  }
+
+  static String gpxToolsView(String previewId) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/outils-gpx/$previewId';
+      default:
+        return '/gpx-tools/$previewId';
+    }
+  }
+
+  static String gpxToolsMap(String previewId) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/outils-gpx/$previewId/carte';
+      default:
+        return '/gpx-tools/$previewId/map';
+    }
+  }
+
+  static String gpxToolsEdit(String previewId) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/outils-gpx/$previewId/modifier';
+      default:
+        return '/gpx-tools/$previewId/edit';
+    }
+  }
+
   static String teams() {
     switch (getCurrentLocale()) {
       case 'fr':
@@ -683,6 +746,34 @@ class PathVariants {
   static Map<String, String> allRoutesMap() => {
     'en': '/routes/map',
     'fr': '/parcours/carte',
+  };
+  static Map<String, String> gpxTools() => {
+    'en': '/gpx-tools',
+    'fr': '/outils-gpx',
+  };
+  static Map<String, String> gpxToolsList() => {
+    'en': '/gpx-tools/my-files',
+    'fr': '/outils-gpx/mes-fichiers',
+  };
+  static Map<String, String> gpxToolsNew() => {
+    'en': '/gpx-tools/new',
+    'fr': '/outils-gpx/nouveau',
+  };
+  static Map<String, String> gpxToolsBlankMap() => {
+    'en': '/gpx-tools/map',
+    'fr': '/outils-gpx/carte',
+  };
+  static Map<String, String> gpxToolsView(String previewId) => {
+    'en': '/gpx-tools/$previewId',
+    'fr': '/outils-gpx/$previewId',
+  };
+  static Map<String, String> gpxToolsMap(String previewId) => {
+    'en': '/gpx-tools/$previewId/map',
+    'fr': '/outils-gpx/$previewId/carte',
+  };
+  static Map<String, String> gpxToolsEdit(String previewId) => {
+    'en': '/gpx-tools/$previewId/edit',
+    'fr': '/outils-gpx/$previewId/modifier',
   };
   static Map<String, String> teams() => {'en': '/teams', 'fr': '/equipes'};
   static Map<String, String> teamsDiscover() => {

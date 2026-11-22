@@ -131,7 +131,10 @@
 		     (POST /api/teams/{slug}/tags, PATCH …/tags/{id}, data-safety.md #31, ledger MOB-169);
 		     the title, the text and the attachments of a team's custom page, written by a
 		     team's administrator (POST /api/teams/{slug}/pages, PUT …/pages/{pageSlug},
-		     data-safety.md #32, ledger MOB-169).
+		     data-safety.md #32, ledger MOB-169);
+		     the GPX previews of the GPX tools — a picked or drawn track, its name, a departure date
+		     and an average speed (POST/PUT /api/gpx-previews…, kept 30 days, data-safety.md #33,
+		     ledger MOB-178).
 		     All user-generated, all stored against the account, used only to run the app and moderate
 		     it. -->
 		<dict>

@@ -73,6 +73,19 @@ void main() {
       expect(internalLocationFor('/'), '/');
     });
 
+    // docs/LEDGER_*.md MOB-178 : un aperçu GPX partagé s'ouvre dans l'app,
+    // sa carte aussi.
+    test('un lien d’aperçu GPX reste dans l’app', () {
+      for (final String link in <String>[
+        '/outils-gpx/0n1x3v5k7q9s2',
+        '/outils-gpx/0n1x3v5k7q9s2/carte',
+        '/gpx-tools/0n1x3v5k7q9s2/map',
+        '/outils-gpx/mes-fichiers',
+      ]) {
+        expect(internalLocationFor(link), link, reason: link);
+      }
+    });
+
     test('conserve la requête et le fragment', () {
       expect(
         internalLocationFor('/parcours?tri=distance#haut'),

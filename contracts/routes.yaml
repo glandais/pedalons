@@ -286,21 +286,21 @@ routes:
       en: /gpx-tools
       fr: /outils-gpx
     web: true
-    mobile: false
+    mobile: true
     deeplink: false
   - id: gpxToolsList
     path:
       en: /gpx-tools/my-files
       fr: /outils-gpx/mes-fichiers
     web: true
-    mobile: false
+    mobile: true
     deeplink: false
   - id: gpxToolsNew
     path:
       en: /gpx-tools/new
       fr: /outils-gpx/nouveau
     web: true
-    mobile: false
+    mobile: true
     deeplink: false
   # Static segment sibling of {previewId}: React Router ranks it first, and a TSID is never "map".
   - id: gpxToolsBlankMap
@@ -308,7 +308,7 @@ routes:
       en: /gpx-tools/map
       fr: /outils-gpx/carte
     web: true
-    mobile: false
+    mobile: true
     deeplink: false
   - id: gpxToolsView
     path:
@@ -317,8 +317,8 @@ routes:
     params:
       - previewId
     web: true
-    mobile: false
-    deeplink: false
+    mobile: true
+    deeplink: true
   - id: gpxToolsMap
     path:
       en: /gpx-tools/{previewId}/map
@@ -326,8 +326,8 @@ routes:
     params:
       - previewId
     web: true
-    mobile: false
-    deeplink: false
+    mobile: true
+    deeplink: true
   - id: gpxToolsEdit
     path:
       en: /gpx-tools/{previewId}/edit
@@ -335,7 +335,7 @@ routes:
     params:
       - previewId
     web: true
-    mobile: false
+    mobile: true
     deeplink: false
 
   # --- Teams ---
