@@ -58,6 +58,12 @@ function loadRoutes() {
       appScreen: route.appScreen !== false,
       deeplink: route.deeplink === true,
       webFallback: route.webFallback ?? null,
+      appParent: route.appParent ?? null,
+    }
+    if (normalized.appParent && !(normalized.web && normalized.deeplink && !normalized.mobile)) {
+      throw new Error(
+        `route ${normalized.id}: appParent applies to a web deeplink with mobile: false`
+      )
     }
     if (!normalized.id) throw new Error(`route is missing id: ${JSON.stringify(route)}`)
     if (!normalized.appScreen) {
@@ -322,6 +328,16 @@ function generatePathsDart(routes) {
   }
   lines.push('};')
   lines.push('')
+  lines.push('/// Pages of the site the app opens as their parent screen (`appParent`): a')
+  lines.push('/// map page has no screen of its own, its ride / route / stage does. Each entry')
+  lines.push('/// is an anchored regular expression and the parent path, `$1`… being the')
+  lines.push('/// captured segments.')
+  lines.push('const List<(String, String)> webPageParents = <(String, String)>[')
+  for (const [source, target] of webPageParentEntries(routes)) {
+    lines.push(`  (r'${source}', r'${target}'),`)
+  }
+  lines.push('];')
+  lines.push('')
   lines.push('/// Pages of the **site** a deeplink wildcard captures although the app has no')
   lines.push('/// screen for them, as anchored regular expressions. The OS hands such a link')
   lines.push('/// to the app, which opens it in the browser (docs/LEDGER_*.md MOB-59). The')
@@ -337,6 +353,44 @@ function generatePathsDart(routes) {
   lines.push('];')
   lines.push('')
   return lines.join('\n')
+}
+
+/** One (regex, parent path) per locale of every `appParent` route. */
+function webPageParentEntries(routes) {
+  const byId = new Map(routes.map((route) => [route.id, route]))
+  const entries = []
+  const seen = new Set()
+  for (const route of routes) {
+    if (!route.appParent) continue
+    const parent = byId.get(route.appParent)
+    if (!parent?.mobile || !parent.appScreen) {
+      throw new Error(`route ${route.id}: appParent ${route.appParent} is not an app screen`)
+    }
+    const names = route.params.map((p) => p.name)
+    for (const p of parent.params) {
+      if (!names.includes(p.name)) {
+        throw new Error(`route ${route.id}: appParent ${route.appParent} needs param ${p.name}`)
+      }
+    }
+    for (const locale of LOCALES) {
+      const template = localePathMap(route)[locale]
+      const source = template
+        .split(/(\{[^}]+\})/)
+        .map((part) =>
+          /^\{.*\}$/.test(part) ? '([^/]+)' : part.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+        )
+        .join('')
+      let target = localePathMap(parent)[locale]
+      for (const p of parent.params) {
+        target = target.split(`{${p.name}}`).join(`$${names.indexOf(p.name) + 1}`)
+      }
+      const key = `${source}|${target}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      entries.push([`^${source}/?$`, target])
+    }
+  }
+  return entries
 }
 
 /** The AASA pattern of one locale path: every parameter becomes `*`. */

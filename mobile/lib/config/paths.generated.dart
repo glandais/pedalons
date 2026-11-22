@@ -964,21 +964,40 @@ class PathVariants {
 /// for (`appScreen: false`): their path only serves to open them in a browser.
 const Set<String> webOnlyRouteIds = <String>{'features', 'support'};
 
+/// Pages of the site the app opens as their parent screen (`appParent`): a
+/// map page has no screen of its own, its ride / route / stage does. Each entry
+/// is an anchored regular expression and the parent path, `$1`… being the
+/// captured segments.
+const List<(String, String)> webPageParents = <(String, String)>[
+  (
+    r'^/teams/([^/]+)/rides/([^/]+)/groups/([^/]+)/map/?$',
+    r'/teams/$1/rides/$2/groups/$3',
+  ),
+  (
+    r'^/equipes/([^/]+)/sorties/([^/]+)/groupes/([^/]+)/carte/?$',
+    r'/equipes/$1/sorties/$2/groupes/$3',
+  ),
+  (r'^/teams/([^/]+)/rides/([^/]+)/map/?$', r'/teams/$1/rides/$2'),
+  (r'^/equipes/([^/]+)/sorties/([^/]+)/carte/?$', r'/equipes/$1/sorties/$2'),
+  (
+    r'^/teams/([^/]+)/trips/([^/]+)/stages/([^/]+)/map/?$',
+    r'/teams/$1/trips/$2/stages/$3',
+  ),
+  (
+    r'^/equipes/([^/]+)/voyages/([^/]+)/etapes/([^/]+)/carte/?$',
+    r'/equipes/$1/voyages/$2/etapes/$3',
+  ),
+  (r'^/teams/([^/]+)/routes/map/?$', r'/teams/$1/routes'),
+  (r'^/equipes/([^/]+)/parcours/carte/?$', r'/equipes/$1/parcours'),
+  (r'^/teams/([^/]+)/routes/([^/]+)/map/?$', r'/teams/$1/routes/$2'),
+  (r'^/equipes/([^/]+)/parcours/([^/]+)/carte/?$', r'/equipes/$1/parcours/$2'),
+];
+
 /// Pages of the **site** a deeplink wildcard captures although the app has no
 /// screen for them, as anchored regular expressions. The OS hands such a link
 /// to the app, which opens it in the browser (docs/LEDGER_*.md MOB-59). The
 /// AASA excludes the same pages (`NOT …`); the Android manifest cannot.
 const List<String> sitePagePathPatterns = <String>[
-  r'^/teams/[^/]+/rides/[^/]+/groups/[^/]+/map/?$',
-  r'^/equipes/[^/]+/sorties/[^/]+/groupes/[^/]+/carte/?$',
-  r'^/teams/[^/]+/rides/[^/]+/map/?$',
-  r'^/equipes/[^/]+/sorties/[^/]+/carte/?$',
-  r'^/teams/[^/]+/trips/[^/]+/stages/[^/]+/map/?$',
-  r'^/equipes/[^/]+/voyages/[^/]+/etapes/[^/]+/carte/?$',
-  r'^/teams/[^/]+/routes/map/?$',
-  r'^/equipes/[^/]+/parcours/carte/?$',
   r'^/teams/[^/]+/routes/generate/?$',
   r'^/equipes/[^/]+/parcours/generer/?$',
-  r'^/teams/[^/]+/routes/[^/]+/map/?$',
-  r'^/equipes/[^/]+/parcours/[^/]+/carte/?$',
 ];

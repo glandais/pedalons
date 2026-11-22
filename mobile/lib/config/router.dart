@@ -696,11 +696,13 @@ int _teamAwareOpenGeneration = 0;
 /// ([openWithTeamAwareHierarchy]).
 Future<void> openDeepLink(
   GoRouter router,
-  String path, {
+  String rawPath, {
   required bool signedIn,
   required PendingSignInLink pending,
   TeamAccessProbe? teamAccess,
 }) async {
+  // Une carte plein écran du site : l'app ouvre la fiche, qui montre la même.
+  final path = appLocationFor(rawPath);
   // Une page du site que le manifeste Android n'a pas su exclure : au
   // navigateur, sans session requise ni pile touchée (docs/LEDGER_*.md MOB-59).
   if (isSitePageLocation(path)) {

@@ -159,6 +159,10 @@
                 <data android:pathPattern="/equipes/.*/sorties/.*" />
                 <data android:pathPattern="/teams/.*/rides/.*/groups/.*" />
                 <data android:pathPattern="/equipes/.*/sorties/.*/groupes/.*" />
+                <data android:pathPattern="/teams/.*/rides/.*/groups/.*/map" />
+                <data android:pathPattern="/equipes/.*/sorties/.*/groupes/.*/carte" />
+                <data android:pathPattern="/teams/.*/rides/.*/map" />
+                <data android:pathPattern="/equipes/.*/sorties/.*/carte" />
                 <data android:pathPattern="/teams/.*/rides/.*/edit" />
                 <data android:pathPattern="/equipes/.*/sorties/.*/modifier" />
                 <data android:pathPattern="/teams/.*/admin/ride-templates" />
@@ -175,6 +179,8 @@
                 <data android:pathPattern="/equipes/.*/voyages/.*/modifier" />
                 <data android:pathPattern="/teams/.*/trips/.*/stages/.*" />
                 <data android:pathPattern="/equipes/.*/voyages/.*/etapes/.*" />
+                <data android:pathPattern="/teams/.*/trips/.*/stages/.*/map" />
+                <data android:pathPattern="/equipes/.*/voyages/.*/etapes/.*/carte" />
                 <data android:pathPattern="/teams/.*/posts/new" />
                 <data android:pathPattern="/equipes/.*/articles/nouveau" />
                 <data android:pathPattern="/teams/.*/posts/.*" />
@@ -183,10 +189,14 @@
                 <data android:pathPattern="/equipes/.*/articles/.*/modifier" />
                 <data android:pathPattern="/teams/.*/routes" />
                 <data android:pathPattern="/equipes/.*/parcours" />
+                <data android:pathPattern="/teams/.*/routes/map" />
+                <data android:pathPattern="/equipes/.*/parcours/carte" />
                 <data android:pathPattern="/teams/.*/routes/new" />
                 <data android:pathPattern="/equipes/.*/parcours/nouveau" />
                 <data android:pathPattern="/teams/.*/routes/.*" />
                 <data android:pathPattern="/equipes/.*/parcours/.*" />
+                <data android:pathPattern="/teams/.*/routes/.*/map" />
+                <data android:pathPattern="/equipes/.*/parcours/.*/carte" />
                 <data android:pathPattern="/teams/.*/routes/.*/edit" />
                 <data android:pathPattern="/equipes/.*/parcours/.*/modifier" />
                 <data android:pathPattern="/teams/.*/classifieds/new" />

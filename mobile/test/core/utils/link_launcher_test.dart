@@ -159,6 +159,36 @@ void main() {
     });
   });
 
+  group('cartes plein écran du site', () {
+    // Liens d'app (AASA, manifeste) : l'app ouvre la fiche, qui montre la
+    // même carte (`appParent` de contracts/routes.yaml).
+    const Map<String, String> cartes = <String, String>{
+      '/teams/vc/rides/r1/map': '/teams/vc/rides/r1',
+      '/equipes/vc/sorties/r1/carte': '/equipes/vc/sorties/r1',
+      '/teams/vc/rides/r1/groups/g1/map': '/teams/vc/rides/r1/groups/g1',
+      '/equipes/vc/sorties/r1/groupes/g1/carte':
+          '/equipes/vc/sorties/r1/groupes/g1',
+      '/teams/vc/trips/t1/stages/s1/map': '/teams/vc/trips/t1/stages/s1',
+      '/teams/vc/routes/map': '/teams/vc/routes',
+      '/equipes/vc/parcours/carte': '/equipes/vc/parcours',
+      '/teams/vc/routes/p1/map': '/teams/vc/routes/p1',
+      '/equipes/vc/parcours/p1/carte': '/equipes/vc/parcours/p1',
+    };
+
+    test('chaque carte s\'ouvre sur sa fiche, requête conservée', () {
+      cartes.forEach((String carte, String fiche) {
+        expect(isSitePageLocation(carte), isFalse, reason: carte);
+        expect(appLocationFor(carte), fiche, reason: carte);
+        expect(internalLocationFor(carte), fiche, reason: carte);
+        expect(
+          internalLocationFor('$carte?color=weather'),
+          '$fiche?color=weather',
+          reason: carte,
+        );
+      });
+    });
+  });
+
   group('isSitePageLocation', () {
     // Des pages restées au site, dans les deux locales — le planificateur de
     // parcours (ledger `MOB-24`), des routes `web` seulement, sans

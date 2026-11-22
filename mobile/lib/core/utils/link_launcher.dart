@@ -185,6 +185,33 @@ bool _isCurrentHost(String host) {
       h == _bareHost(Uri.parse(AppConfig.apiBaseUrl).host);
 }
 
+final List<(RegExp, String)> _webPageParents = <(RegExp, String)>[
+  for (final (String source, String parent) in webPageParents)
+    (RegExp(source), parent),
+];
+
+/// La page de l'app qui ouvre une page du site sans écran propre — la carte
+/// plein écran d'un parcours, d'une sortie, d'un groupe ou d'une étape —, avec
+/// sa requête ; [location] inchangé pour tout autre chemin.
+///
+/// Ces cartes sont des liens d'app (AASA, manifeste) : l'app les reçoit et
+/// montre la carte de la fiche, qui est la même (`appParent` de
+/// `contracts/routes.yaml`).
+String appLocationFor(String location) {
+  final Uri? uri = Uri.tryParse(location);
+  if (uri == null) return location;
+  for (final (RegExp pattern, String parent) in _webPageParents) {
+    final RegExpMatch? match = pattern.firstMatch(uri.path);
+    if (match == null) continue;
+    final String path = parent.replaceAllMapped(
+      RegExp(r'\$(\d)'),
+      (Match m) => match.group(int.parse(m.group(1)!))!,
+    );
+    return uri.hasQuery ? '$path?${uri.query}' : path;
+  }
+  return location;
+}
+
 /// L'emplacement `GoRouter` correspondant à [href], ou `null` si ce lien n'est
 /// pas une route interne de cette application.
 ///
@@ -202,7 +229,9 @@ String? internalLocationFor(String href) {
   }
   if (!_isCurrentHost(uri.host)) return null;
 
-  final String path = uri.path.isEmpty ? '/' : uri.path;
+  final String path = Uri.parse(
+    appLocationFor(uri.path.isEmpty ? '/' : uri.path),
+  ).path;
   // Avant les motifs de l'app : `/equipes/x/sorties/nouvelle` est aussi la
   // sortie de slug `nouvelle`, et c'est la page du site qui est visée.
   if (isSitePageLocation(path)) return null;

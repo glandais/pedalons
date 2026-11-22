@@ -18,6 +18,9 @@
 #               listed in `webOnlyRouteIds` so the app's link resolver never pushes it on its
 #               router (default: true). Cannot be combined with `deeplink: true`.
 #   deeplink:   register this path in AASA + AndroidManifest (default: false)
+#   appParent:  for a web-only page with `deeplink: true` and `mobile: false` (a map page): the id of
+#               the app screen the link opens — the app has no screen of its own for it, its parent
+#               shows the same map. Its params must be a subset of this route's.
 #   webFallback: for a deeplink with web: false, the id of the web route a browser is redirected
 #               to — the universal link reaches the web whenever the app is not installed, and
 #               must not end on a 404. Its params must be a subset of this route's.
@@ -607,6 +610,8 @@ routes:
       - rideSlug
       - groupId
     web: true
+    deeplink: true
+    appParent: rideGroup
   # A solo ride's map in full screen (WEB-118): its one group, whose id the URL keeps to itself
   # (a solo ride has no group page), the Météo mode in `?color=`. Web only, like rideGroupMap.
   - id: rideMap
@@ -617,6 +622,8 @@ routes:
       - teamSlug
       - rideSlug
     web: true
+    deeplink: true
+    appParent: ride
   - id: rideEdit
     path:
       en: /teams/{teamSlug}/rides/{rideSlug}/edit
@@ -711,6 +718,8 @@ routes:
       - tripSlug
       - stageSlug
     web: true
+    deeplink: true
+    appParent: stage
 
   # --- Posts ---
   # `postNew` and `postEdit` are app screens since MOB-164 (docs/LEDGER_*.md MOB-164).
@@ -763,6 +772,8 @@ routes:
     params:
       - teamSlug
     web: true
+    deeplink: true
+    appParent: routes
   # Web only: the app has no route generator (MOB-154, WEB-179).
   - id: routeGenerate
     path:
@@ -798,6 +809,8 @@ routes:
       - teamSlug
       - routeSlug
     web: true
+    deeplink: true
+    appParent: route
   - id: routeEdit
     path:
       en: /teams/{teamSlug}/routes/{routeSlug}/edit
