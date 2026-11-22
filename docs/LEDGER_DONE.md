@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **600 entrées livrées**, et des 10 entrées encore ouvertes dont une part l'est.
+Index des **601 entrées livrées**, et des 10 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -162,6 +162,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`WEB-182`](ledger/WEB/WEB-182.md) La carte d'une sortie ou d'un voyage ne plante plus sur un navigateur ancien — 2026-11-15
 - [x] [`WEB-181`](ledger/WEB/WEB-181.md) Publier ou dépublier son annonce depuis sa fiche ne remplace plus sa position exacte par le point flouté — 2026-11-14
 - [x] [`WEB-180`](ledger/WEB/WEB-180.md) « Dupliquer » sur la page d'un aperçu GPX — 2026-11-13
+- [x] [`WEB-179`](ledger/WEB/WEB-179.md) Panneau « Générer un parcours » — 2026-11-22
 - [x] [`WEB-178`](ledger/WEB/WEB-178.md) Mode « Météo » sur la carte d'une sortie à plusieurs parcours, pour le groupe où l'on est inscrit — 2026-11-13
 - [x] [`WEB-177`](ledger/WEB/WEB-177.md) Fonds « Route » et « Gravel », et un interrupteur « Carte claire » en thème sombre — 2026-11-13
 - [x] [`WEB-175`](ledger/WEB/WEB-175.md) Listes homogènes entre l'app et le site, côté site — 2026-11-12

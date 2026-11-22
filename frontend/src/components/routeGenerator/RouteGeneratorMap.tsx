@@ -128,17 +128,28 @@ export function RouteGeneratorMap({
   // The selected line is drawn last, over the others. MapLibre stacks layers in the order they
   // were added and react-maplibre does not reorder them, so the layers of every candidate stay
   // mounted (casing and chevrons hidden when not selected) and the selected candidate's are moved
-  // to the top of the stack.
+  // to the top of the stack. A change of basemap reloads the style and react-maplibre adds the
+  // layers back in their React order, which drops that move: it is done again on every
+  // `styledata`, only when the selected layers are not already on top (a move fires `styledata`).
   useEffect(() => {
     const map = mapRef.current?.getMap()
     if (!map) return
-    for (const id of [
+    const ids = [
       `gen-casing-${selected}`,
       `gen-line-${selected}`,
       `gen-arrows-${selected}`,
       `${HIT_PREFIX}${selected}`,
-    ]) {
-      if (map.getLayer(id)) map.moveLayer(id)
+    ]
+    const raise = () => {
+      if (!ids.every((id) => map.getLayer(id))) return
+      const top = map.getLayersOrder().slice(-ids.length)
+      if (top.join() === ids.join()) return
+      for (const id of ids) map.moveLayer(id)
+    }
+    raise()
+    map.on('styledata', raise)
+    return () => {
+      map.off('styledata', raise)
     }
   }, [selected, candidates])
 
