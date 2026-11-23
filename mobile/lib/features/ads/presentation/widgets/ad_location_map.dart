@@ -104,7 +104,7 @@ class AdLocationMap extends ConsumerWidget {
                           // La carte illustre, elle ne s'explore pas : la
                           // faire glisser ferait croire qu'on cherche
                           // l'adresse.
-                          gestures: const MapGestures.none(),
+                          movements: const MapMovements.none(),
                         ),
                         IgnorePointer(
                           key: keys.ad.locationSector,

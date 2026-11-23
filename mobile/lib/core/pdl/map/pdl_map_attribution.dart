@@ -75,7 +75,7 @@ class _PdlMapAttributionState extends State<PdlMapAttribution> {
     final PdlColors c = context.pdl;
     final String? extra = widget.credit.extra;
     final List<String> credits = <String>[
-      ...?MapController.maybeOf(context)?.style?.getAttributionsSync(),
+      ...?StyleController.maybeOf(context)?.attributions,
       if (extra != null && extra.isNotEmpty) extra,
     ];
     if (credits.isEmpty) return const SizedBox.shrink();

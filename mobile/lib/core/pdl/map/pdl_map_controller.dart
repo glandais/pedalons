@@ -30,8 +30,8 @@ class PdlMapTrack {
   });
 
   /// Identité du tracé. Elle finit dans le `layerId` de la couche MapLibre,
-  /// parce que **c'est le seul endroit où elle survit** à un `queryLayers` :
-  /// `QueriedLayer` ne rend pas les propriétés de l'entité (§1.0.3-7).
+  /// que [PdlMapController.trackIdAt] relit sur `RenderedFeature.layerId`
+  /// (§1.0.3-7).
   ///
   /// Doit donc être un identifiant stable et sans caractère exotique — un TSID
   /// ou un index suffisent.
@@ -236,18 +236,14 @@ class PdlMapBox {
     );
   }
 
-  LngLatBounds toLngLatBounds() => LngLatBounds(
-    longitudeWest: minLon,
-    longitudeEast: maxLon,
-    latitudeSouth: minLat,
-    latitudeNorth: maxLat,
-  );
+  GeoBox toGeoBox() =>
+      GeoBox(west: minLon, south: minLat, east: maxLon, north: maxLat);
 
-  static PdlMapBox fromLngLatBounds(LngLatBounds b) => PdlMapBox(
-    minLon: b.longitudeWest,
-    minLat: b.latitudeSouth,
-    maxLon: b.longitudeEast,
-    maxLat: b.latitudeNorth,
+  static PdlMapBox fromGeoBox(GeoBox b) => PdlMapBox(
+    minLon: b.west,
+    minLat: b.south,
+    maxLon: b.east,
+    maxLat: b.north,
   );
 
   @override
@@ -437,7 +433,7 @@ class PdlMapController extends ChangeNotifier {
   PdlHillshade? _hillshade;
   bool _styleReady = false;
   String? _massTileUrl;
-  String _massColorHex = '#1D32A8';
+  Color _massColor = const Color(0xFF1D32A8);
 
   /// Les couches de tracé réellement posées dans le style, dans leur ordre de
   /// dessin. Elles y restent jusqu'au prochain [_applyAll], qui doit les
@@ -482,9 +478,9 @@ class PdlMapController extends ChangeNotifier {
     final MapController? m = _map;
     if (m == null) return null;
     try {
-      return PdlMapBox.fromLngLatBounds(m.getVisibleRegion());
+      return PdlMapBox.fromGeoBox(m.getVisibleBounds());
     } catch (_) {
-      // `getVisibleRegion` lève tant que la vue native n'a pas de taille.
+      // `getVisibleBounds` lève tant que la vue native n'a pas de taille.
       return null;
     }
   }
@@ -493,7 +489,7 @@ class PdlMapController extends ChangeNotifier {
     _map = controller;
   }
 
-  /// Appelé sur `MapEventStyleLoaded`. Repose l'intégralité des couches : un
+  /// Appelé sur `onStyleLoaded`. Repose l'intégralité des couches : un
   /// changement de fond de carte les efface toutes.
   Future<void> attachStyle(StyleController style) async {
     _style = style;
@@ -573,11 +569,11 @@ class PdlMapController extends ChangeNotifier {
   /// garantir que le tracé sélectionné, les marqueurs et le réticule restent
   /// **au-dessus** de la masse après un renouvellement de jeton — c'est-à-dire
   /// douze minutes après l'ouverture, ce qu'aucun test de démarrage ne verrait.
-  Future<void> setMassTileUrl(String? template, {String? colorHex}) async {
-    final String nextColor = colorHex ?? _massColorHex;
-    if (template == _massTileUrl && nextColor == _massColorHex) return;
+  Future<void> setMassTileUrl(String? template, {Color? color}) async {
+    final Color nextColor = color ?? _massColor;
+    if (template == _massTileUrl && nextColor == _massColor) return;
     _massTileUrl = template;
-    _massColorHex = nextColor;
+    _massColor = nextColor;
     if (_style == null) return;
     await _applyAll();
   }
@@ -588,24 +584,24 @@ class PdlMapController extends ChangeNotifier {
   ///
   /// **Pourquoi pas [trackIdAt]** : celui-ci déduit le tracé du *nom de la
   /// couche*, une couche GeoJSON par tracé. Sur une source vectorielle tous les
-  /// parcours sont dans une seule couche, et `QueriedLayer` ne porte aucune
-  /// propriété d'entité. `featuresAtPoint` en porte, lui — c'est exactement ce
-  /// que fait la carte web, qui lit `event.features[0].properties`.
+  /// parcours sont dans une seule couche : ce sont les propriétés de l'entité
+  /// qui les distinguent — exactement ce que lit la carte web,
+  /// `event.features[0].properties`.
   ///
   /// Rend la `Map` brute : `core/pdl` ne connaît aucun DTO, c'est l'appelant
   /// qui interprète `slug`, `name`, `team_slug`, `distance`, `elevation_gain`.
-  Map<String, Object?>? massFeatureAt(
+  Future<Map<String, Object?>?> massFeatureAt(
     Offset screenPoint, {
     double tolerance = 12,
-  }) {
+  }) async {
     final MapController? m = _map;
     if (m == null || _massTileUrl == null) return null;
     // La même croix de sondage que [trackIdAt] : un trait de quelques pixels
     // ne se touche pas au pixel près, et l'API n'offre pas de tolérance.
     for (final Offset probe in _probesAround(screenPoint, tolerance)) {
       try {
-        final List<RenderedFeature> hits = m.featuresAtPoint(
-          probe,
+        final List<RenderedFeature> hits = await m.queryRenderedFeatures(
+          .point(probe),
           layerIds: <String>[massLayerId],
         );
         if (hits.isNotEmpty) return hits.first.properties;
@@ -628,16 +624,10 @@ class PdlMapController extends ChangeNotifier {
   ///
   /// **Ne reconstruit pas les couches** : le trait est piloté par une
   /// expression `case` sur la propriété `sel` de l'entité, et il suffit donc de
-  /// repousser la source (un seul `updateGeoJsonSource`). Seul l'ordre de
+  /// repousser la source (un seul `updateGeoJsonData`). Seul l'ordre de
   /// dessin impose de toucher une couche — celle du tracé nouvellement
-  /// sélectionné est retirée puis rajoutée pour repasser au-dessus, MapLibre
-  /// n'ayant pas de `zIndex` sur les lignes.
-  ///
-  /// **Écart assumé** : le plan cite `setLayerProperties`, qui **n'existe pas**
-  /// sur le `StyleController` de `maplibre 0.3.5` (vérifié : la classe expose
-  /// `addSource`, `addLayer`, `updateGeoJsonSource`, `removeLayer`,
-  /// `removeSource`, et rien pour muter une couche en place). L'expression
-  /// pilotée par la donnée obtient le même résultat en un appel.
+  /// sélectionné repasse au-dessus par `style.layers.move`, MapLibre n'ayant
+  /// pas de `zIndex` sur les lignes.
   Future<void> select(String? trackId) async {
     if (_selectedId == trackId) return;
     _selectedId = trackId;
@@ -650,7 +640,7 @@ class PdlMapController extends ChangeNotifier {
     // Pas de couche de tracé posée, pas de source à mettre à jour.
     if (style == null || _drawnLayers.isEmpty) return;
     await _safe(
-      () => style.updateGeoJsonSource(id: _sourceId, data: _tracksGeoJson()),
+      () => style.sources.updateGeoJsonData(_sourceId, .text(_tracksGeoJson())),
     );
     if (trackId != null) await _raise(trackId);
   }
@@ -658,7 +648,7 @@ class PdlMapController extends ChangeNotifier {
   /// Déplace le marqueur de réticule, ou l'efface avec `null`.
   ///
   /// La couche et sa source sont posées **une fois** au chargement du style,
-  /// vides ; ce déplacement n'est qu'un `updateGeoJsonSource`. Ajouter et
+  /// vides ; ce déplacement n'est qu'un `updateGeoJsonData`. Ajouter et
   /// retirer une couche à chaque frame de glissement ferait scintiller la
   /// carte et fuiterait des couches (§1.3.1).
   Future<void> setCursor(PdlMapPoint? point) async {
@@ -668,9 +658,9 @@ class PdlMapController extends ChangeNotifier {
     final StyleController? style = _style;
     if (style == null) return;
     await _safe(
-      () => style.updateGeoJsonSource(
-        id: _cursorSourceId,
-        data: _cursorGeoJson(),
+      () => style.sources.updateGeoJsonData(
+        _cursorSourceId,
+        .text(_cursorGeoJson()),
       ),
     );
   }
@@ -698,20 +688,22 @@ class PdlMapController extends ChangeNotifier {
   /// L'identifiant du tracé sous [screenPoint], ou `null`.
   ///
   /// Interroge une petite croix de points autour du doigt : un trait de 5 px
-  /// logiques est presque impossible à toucher au pixel près, et `queryLayers`
-  /// n'offre pas de tolérance.
-  String? trackIdAt(Offset screenPoint, {double tolerance = 12}) {
+  /// logiques est presque impossible à toucher au pixel près, et
+  /// `queryRenderedFeatures` n'offre pas de tolérance.
+  Future<String?> trackIdAt(Offset screenPoint, {double tolerance = 12}) async {
     final MapController? m = _map;
     if (m == null) return null;
     for (final Offset probe in _probesAround(screenPoint, tolerance)) {
-      late final List<QueriedLayer> hits;
+      late final List<RenderedFeature> hits;
       try {
-        hits = m.queryLayers(probe);
+        hits = await m.queryRenderedFeatures(.point(probe));
       } catch (_) {
         return null;
       }
-      for (final QueriedLayer hit in hits) {
-        final String? id = _trackIdOfLayer(hit.layerId);
+      for (final RenderedFeature hit in hits) {
+        final String? layerId = hit.layerId;
+        if (layerId == null) continue;
+        final String? id = _trackIdOfLayer(layerId);
         if (id != null) return id;
       }
     }
@@ -745,10 +737,9 @@ class PdlMapController extends ChangeNotifier {
     final MapController? m = _map;
     if (m == null || viewSize.width <= 0) return;
     try {
-      final MapCamera camera = m.getCamera();
-      final LngLatBounds visible = m.getVisibleRegion();
-      final double spanLon = (visible.longitudeEast - visible.longitudeWest)
-          .abs();
+      final CameraPosition camera = m.getCamera();
+      final GeoBox visible = m.getVisibleBounds();
+      final double spanLon = (visible.east - visible.west).abs();
       if (spanLon <= 0 || spanLon >= 360) return;
       final double world =
           viewSize.width / ((spanLon / 360) * math.pow(2, camera.zoom));
@@ -765,7 +756,7 @@ class PdlMapController extends ChangeNotifier {
   /// Place la caméra pour montrer [box] dans une vue de [viewSize], en lui
   /// réservant [padding]. Rend `false` si le cadrage n'a pas pu être calculé.
   ///
-  /// Remplace `MapController.fitBounds`, qui délègue le calcul à la vue native
+  /// Remplaçait `fitBounds` de `maplibre` 0.3, qui déléguait le calcul à la vue native
   /// et l'exécute sans erreur *ni effet* quand celle-ci n'a pas encore sa
   /// taille — et qui, sur iOS, anime toujours (`animated: true` en dur).
   /// Ici le calcul est fait ici ([pdlCameraForBox]) à partir d'une taille que
@@ -786,8 +777,10 @@ class PdlMapController extends ChangeNotifier {
     );
     if (camera == null) return false;
     await m.moveCamera(
-      center: Geographic(lon: camera.lon, lat: camera.lat),
-      zoom: camera.zoom,
+      .position(
+        center: Geographic(lon: camera.lon, lat: camera.lat),
+        zoom: camera.zoom,
+      ),
     );
     return true;
   }
@@ -826,11 +819,12 @@ class PdlMapController extends ChangeNotifier {
 
     await _addHillshadeLayer(style);
 
-    await _safe(() => style.removeLayer(_pointsSourceId));
-    // Les couches des points de parcours avant leurs sources (règle iOS).
-    await _safe(() => style.removeLayer(_waypointHaloLayerId));
-    await _safe(() => style.removeLayer(_waypointIconLayerId));
-    await _safe(() => style.removeLayer(_waypointLabelLayerId));
+    await _safe(() => style.layers.remove(_pointsSourceId));
+    // Les couches des points de parcours avant leurs sources : une source
+    // encore employée ne se retire pas.
+    await _safe(() => style.layers.remove(_waypointHaloLayerId));
+    await _safe(() => style.layers.remove(_waypointIconLayerId));
+    await _safe(() => style.layers.remove(_waypointLabelLayerId));
 
     // La masse juste au-dessus de l'ombrage, et sous tout le reste : c'est un
     // fond, et le tracé sélectionné comme les marqueurs doivent rester lisibles
@@ -841,15 +835,15 @@ class PdlMapController extends ChangeNotifier {
     // `layerId` qui porte l'identité, chaque couche étant filtrée sur son
     // `trackId`.
     for (final String id in List<String>.of(_drawnLayers)) {
-      await _safe(() => style.removeLayer(id));
+      await _safe(() => style.layers.remove(id));
     }
     _drawnLayers.clear();
-    await _safe(() => style.removeLayer(_arrowsLayerId));
-    await _safe(() => style.removeSource(_arrowsSourceId));
-    await _safe(() => style.removeSource(_sourceId));
+    await _safe(() => style.layers.remove(_arrowsLayerId));
+    await _safe(() => style.sources.remove(_arrowsSourceId));
+    await _safe(() => style.sources.remove(_sourceId));
     if (_tracks.isNotEmpty) {
-      await style.addSource(
-        GeoJsonSource(id: _sourceId, data: _tracksGeoJson()),
+      await style.sources.add(
+        GeoJsonSource.data(id: _sourceId, data: .text(_tracksGeoJson())),
       );
       for (final PdlMapTrack track in _tracks) {
         if (track.id == _selectedId) continue;
@@ -874,62 +868,58 @@ class PdlMapController extends ChangeNotifier {
   /// et le réticule.
   ///
   /// La source est un `RasterDemSource` construit sur l'URL du TileJSON. On ne
-  /// lui passe **ni encodage ni plage de zoom** : le greffon ne les applique sur
-  /// aucune des deux plateformes (Android construit `RasterDemSource(url,
-  /// tileSize)` avec un « TODO apply other properties », iOS passe par
-  /// `initWithIdentifier:configurationURL:tileSize:`), c'est le TileJSON qui
-  /// fait foi. Conséquence à connaître : si le document ne déclare pas de
-  /// `maxzoom`, l'ombrage peut disparaître au-delà du zoom natif du
-  /// fournisseur, là où le web le prolonge en le déclarant lui-même.
+  /// lui passe **ni encodage ni plage de zoom** : c'est le TileJSON qui fait
+  /// foi (Terrarium chez Mapterhorn). Conséquence à connaître : si le document
+  /// ne déclare pas de `maxzoom`, l'ombrage peut disparaître au-delà du zoom
+  /// natif du fournisseur, là où le web le prolonge en le déclarant lui-même.
   ///
-  /// `hillshade-method` n'est pas envoyé : c'est une propriété de MapLibre GL
-  /// **JS**, absente des SDK natifs, où elle finirait en écriture KVC sur une
-  /// clé inconnue.
+  /// `hillshade-method` n'est pas envoyé, comme avant `maplibre` 0.4 dont les
+  /// SDK natifs l'ignoraient : le relief garde le rendu qu'on lui connaît.
   Future<void> _addHillshadeLayer(StyleController style) async {
-    await _safe(() => style.removeLayer('$_hillshadeSourceId-layer'));
-    await _safe(() => style.removeSource(_hillshadeSourceId));
+    await _safe(() => style.layers.remove('$_hillshadeSourceId-layer'));
+    await _safe(() => style.sources.remove(_hillshadeSourceId));
     final PdlHillshade? hillshade = _hillshade;
     if (hillshade == null) return;
     await _safe(
-      () => style.addSource(
-        RasterDemSource(id: _hillshadeSourceId, url: hillshade.url),
+      () => style.sources.add(
+        RasterDemSource.url(id: _hillshadeSourceId, url: hillshade.url),
       ),
     );
     await _safe(
-      () => style.addLayer(
+      () => style.layers.add(
         HillshadeStyleLayer(
           id: '$_hillshadeSourceId-layer',
           sourceId: _hillshadeSourceId,
-          paint: <String, Object>{
-            'hillshade-exaggeration': hillshade.exaggeration,
-            'hillshade-shadow-color': hillshade.shadowColor.toHexString(),
-            'hillshade-highlight-color': hillshade.highlightColor.toHexString(),
-          },
+          exaggeration: .literal(hillshade.exaggeration),
+          shadowColor: _singleColor(hillshade.shadowColor),
+          highlightColor: _singleColor(hillshade.highlightColor),
         ),
       ),
     );
   }
 
+  /// Une couleur seule, et non la liste de l'éclairage multiple que la
+  /// spécification permet : la forme que tout moteur lit.
+  static Expression<List<Color>> _singleColor(Color color) =>
+      Expression<Color>.literal(color).cast<List<Color>>();
+
   /// Pose — ou retire — la couche de tuiles vectorielles de masse.
   Future<void> _applyMassLayer(StyleController style) async {
-    await _safe(() => style.removeLayer(massLayerId));
-    await _safe(() => style.removeSource(_massSourceId));
+    await _safe(() => style.layers.remove(massLayerId));
+    await _safe(() => style.sources.remove(_massSourceId));
     final String? template = _massTileUrl;
     if (template == null) return;
     // Un fond qui ne se pose pas ne doit pas emporter le reste de la pile :
     // tracés, marqueurs et réticule viennent après (feedback #8).
     try {
-      await style.addSource(
-        await PdlMassTiles.platformSource(
-          id: _massSourceId,
-          tileUrlTemplate: template,
-        ),
+      await style.sources.add(
+        PdlMassTiles.source(id: _massSourceId, tileUrlTemplate: template),
       );
-      await style.addLayer(
+      await style.layers.add(
         PdlMassTiles.layer(
           id: massLayerId,
           sourceId: _massSourceId,
-          colorHex: _massColorHex,
+          color: _massColor,
         ),
       );
     } catch (error) {
@@ -942,21 +932,19 @@ class PdlMapController extends ChangeNotifier {
   /// Elle est ajoutée en dernier pour rester au-dessus des tracés et des
   /// marqueurs. Son contenu ne bouge ensuite que par [setCursor].
   Future<void> _addCursorLayer(StyleController style) async {
-    await _safe(() => style.removeLayer('$_cursorSourceId-dot'));
-    await _safe(() => style.removeSource(_cursorSourceId));
-    await style.addSource(
-      GeoJsonSource(id: _cursorSourceId, data: _cursorGeoJson()),
+    await _safe(() => style.layers.remove('$_cursorSourceId-dot'));
+    await _safe(() => style.sources.remove(_cursorSourceId));
+    await style.sources.add(
+      GeoJsonSource.data(id: _cursorSourceId, data: .text(_cursorGeoJson())),
     );
-    await style.addLayer(
+    await style.layers.add(
       CircleStyleLayer(
         id: '$_cursorSourceId-dot',
         sourceId: _cursorSourceId,
-        paint: <String, Object>{
-          'circle-radius': 7,
-          'circle-color': _cursorColor.toHexString(),
-          'circle-stroke-width': 3,
-          'circle-stroke-color': _pointStroke.toHexString(),
-        },
+        radius: const .literal(7),
+        color: .literal(_cursorColor),
+        strokeWidth: const .literal(3),
+        strokeColor: .literal(_pointStroke),
       ),
     );
   }
@@ -970,48 +958,34 @@ class PdlMapController extends ChangeNotifier {
 
   Future<void> _addTrackLayer(StyleController style, PdlMapTrack track) async {
     final String id = '$layerPrefix-${track.id}';
-    await style.addLayer(
+    await style.layers.add(
       LineStyleLayer(
         id: id,
         sourceId: _sourceId,
-        filter: <Object>[
-          '==',
-          <Object>['get', 'trackId'],
-          track.id,
-        ],
-        layout: const <String, Object>{
-          'line-cap': 'round',
-          'line-join': 'round',
-        },
-        paint: <String, Object>{
-          // Lue sur l'entité, jamais figée sur la couche : c'est ce qui permet
-          // à un tracé colorisé par pente de tenir sur **une** couche.
-          'line-color': <Object>['get', 'color'],
-          'line-width': <Object>[
-            'case',
-            <Object>[
-              '==',
-              <Object>['get', 'sel'],
-              1,
-            ],
-            trackTheme.selectedWidth,
-            trackTheme.width,
-          ],
-          'line-opacity': <Object>[
-            'case',
-            <Object>[
-              '==',
-              <Object>['get', 'sel'],
-              1,
-            ],
-            trackTheme.selectedOpacity,
-            trackTheme.opacity,
-          ],
-        },
+        filter: Expression.equal(
+          Expression.get('trackId'),
+          Expression.literal(track.id),
+        ),
+        cap: const .literal(LineCap.round),
+        join: const .literal(LineJoin.round),
+        // Lue sur l'entité, jamais figée sur la couche : c'est ce qui permet
+        // à un tracé colorisé par pente de tenir sur **une** couche.
+        color: Expression.get('color').cast<Color>(),
+        width: _whenSelected(trackTheme.selectedWidth, trackTheme.width),
+        opacity: _whenSelected(trackTheme.selectedOpacity, trackTheme.opacity),
       ),
     );
     _drawnLayers.add(id);
   }
+
+  /// [selected] pour une entité dont `sel` vaut 1, [other] sinon.
+  static Expression<num> _whenSelected(num selected, num other) =>
+      Expression.select<num>(<(Expression<bool>, Expression<num>)>[
+        (
+          Expression.equal(Expression.get('sel'), const Expression.literal(1)),
+          Expression.literal(selected),
+        ),
+      ], fallback: Expression.literal(other));
 
   Future<void> _raise(String trackId) async {
     final StyleController? style = _style;
@@ -1020,12 +994,18 @@ class PdlMapController extends ChangeNotifier {
     if (track == null || track.id != trackId) return;
     final String id = '$layerPrefix-$trackId';
     if (_drawnLayers.isEmpty || _drawnLayers.last == id) return;
-    await _safe(() => style.removeLayer(id));
-    _drawnLayers.remove(id);
-    await _addTrackLayer(style, track);
-    // Le tracé repassé au premier plan recouvrirait ses propres chevrons.
-    await _safe(() => style.removeLayer(_arrowsLayerId));
-    await _safe(() => _addArrowLayerOnly(style));
+    // Juste sous les chevrons : le tracé repassé au premier plan ne doit pas
+    // recouvrir ses propres flèches.
+    final bool arrows = style.layers[_arrowsLayerId] != null;
+    try {
+      style.layers.move(id, belowLayerId: arrows ? _arrowsLayerId : null);
+    } catch (_) {
+      // La couche n'est plus dans le style : la prochaine pose la remettra.
+      return;
+    }
+    _drawnLayers
+      ..remove(id)
+      ..add(id);
   }
 
   /// Pose les chevrons du sens de parcours, au-dessus de tous les tracés.
@@ -1045,22 +1025,16 @@ class PdlMapController extends ChangeNotifier {
       // Un changement de fond de carte remplace le style, et ses images avec :
       // l'image est donc reposée à chaque pose.
       await style.addImage(pdlRouteArrowImageId, png);
-      await style.addSource(
-        GeoJsonSource(id: _arrowsSourceId, data: _arrowsGeoJson()),
+      await style.sources.add(
+        GeoJsonSource.data(id: _arrowsSourceId, data: .text(_arrowsGeoJson())),
       );
-      await _addArrowLayerOnly(style);
+      await style.layers.add(
+        pdlRouteArrowLayer(id: _arrowsLayerId, sourceId: _arrowsSourceId),
+      );
     } catch (error) {
       debugPrint('Route arrows not drawn: $error');
     }
   }
-
-  Future<void> _addArrowLayerOnly(StyleController style) => style.addLayer(
-    SymbolStyleLayer(
-      id: _arrowsLayerId,
-      sourceId: _arrowsSourceId,
-      layout: pdlRouteArrowLayout,
-    ),
-  );
 
   Future<Uint8List?>? _arrowPngCache;
   Color? _arrowPngFill;
@@ -1104,27 +1078,25 @@ class PdlMapController extends ChangeNotifier {
     if (_end != null) {
       features.add(_pointFeature(_end!, 'end'));
     }
-    await _safe(() => style.removeSource(_pointsSourceId));
+    await _safe(() => style.sources.remove(_pointsSourceId));
     if (features.isNotEmpty) {
-      await style.addSource(
-        GeoJsonSource(
+      await style.sources.add(
+        GeoJsonSource.data(
           id: _pointsSourceId,
-          data: jsonEncode(<String, Object?>{
+          data: .json(<String, Object?>{
             'type': 'FeatureCollection',
             'features': features,
           }),
         ),
       );
-      await style.addLayer(
+      await style.layers.add(
         CircleStyleLayer(
           id: _pointsSourceId,
           sourceId: _pointsSourceId,
-          paint: <String, Object>{
-            'circle-radius': 8,
-            'circle-color': <Object>['get', 'color'],
-            'circle-stroke-width': 2,
-            'circle-stroke-color': <Object>['get', 'stroke'],
-          },
+          radius: const .literal(8),
+          color: Expression.get('color').cast<Color>(),
+          strokeWidth: const .literal(2),
+          strokeColor: Expression.get('stroke').cast<Color>(),
         ),
       );
     }
@@ -1140,8 +1112,8 @@ class PdlMapController extends ChangeNotifier {
   /// style, et ses images avec. Leurs PNG, eux, sont mémorisés. Un échec
   /// n'emporte pas le reste de la pile.
   Future<void> _addWaypointLayers(StyleController style) async {
-    await _safe(() => style.removeSource(_waypointsSourceId));
-    await _safe(() => style.removeSource(_waypointFocusSourceId));
+    await _safe(() => style.sources.remove(_waypointsSourceId));
+    await _safe(() => style.sources.remove(_waypointFocusSourceId));
     if (_waypoints.isEmpty) return;
     try {
       final Set<String> placed = <String>{};
@@ -1161,45 +1133,41 @@ class PdlMapController extends ChangeNotifier {
           await style.addImage(pdlWaypointLabelImageId(text), png);
         }
       }
-      await style.addSource(
-        GeoJsonSource(id: _waypointsSourceId, data: _waypointsGeoJson()),
+      await style.sources.add(
+        GeoJsonSource.data(
+          id: _waypointsSourceId,
+          data: .text(_waypointsGeoJson()),
+        ),
       );
       // Posée même vide, comme le réticule : le halo ne fait ensuite que
       // pousser sa source.
-      await style.addSource(
-        GeoJsonSource(id: _waypointFocusSourceId, data: _focusGeoJson()),
+      await style.sources.add(
+        GeoJsonSource.data(
+          id: _waypointFocusSourceId,
+          data: .text(_focusGeoJson()),
+        ),
       );
-      await style.addLayer(
+      await style.layers.add(
         CircleStyleLayer(
           id: _waypointHaloLayerId,
           sourceId: _waypointFocusSourceId,
-          paint: <String, Object>{
-            'circle-radius': 17,
-            'circle-color': _cursorColor.toHexString(),
-            'circle-opacity': 0.35,
-            'circle-stroke-width': 2,
-            'circle-stroke-color': _waypointRingColor.toHexString(),
-          },
+          radius: const .literal(17),
+          color: .literal(_cursorColor),
+          opacity: const .literal(0.35),
+          strokeWidth: const .literal(2),
+          strokeColor: .literal(_waypointRingColor),
         ),
       );
-      await style.addLayer(
-        SymbolStyleLayer(
+      await style.layers.add(
+        pdlWaypointIconLayer(
           id: _waypointIconLayerId,
           sourceId: _waypointsSourceId,
-          layout: pdlWaypointIconLayout,
         ),
       );
-      await style.addLayer(
-        SymbolStyleLayer(
+      await style.layers.add(
+        pdlWaypointLabelLayer(
           id: _waypointLabelLayerId,
           sourceId: _waypointsSourceId,
-          layout: pdlWaypointLabelLayout,
-          minZoom: kPdlWaypointLabelMinZoom,
-          filter: <Object>[
-            '!=',
-            <Object>['get', 'label'],
-            '',
-          ],
         ),
       );
     } catch (error) {
@@ -1276,7 +1244,7 @@ class PdlMapController extends ChangeNotifier {
     });
   }
 
-  /// Allume un point (halo), ou éteint avec `null`. Un `updateGeoJsonSource`,
+  /// Allume un point (halo), ou éteint avec `null`. Un `updateGeoJsonData`,
   /// sans repose complète.
   Future<void> setWaypointFocus(String? key) async {
     if (_focusKey == key) return;
@@ -1285,24 +1253,26 @@ class PdlMapController extends ChangeNotifier {
     final StyleController? style = _style;
     if (style == null || _waypoints.isEmpty) return;
     await _safe(
-      () => style.updateGeoJsonSource(
-        id: _waypointFocusSourceId,
-        data: _focusGeoJson(),
+      () => style.sources.updateGeoJsonData(
+        _waypointFocusSourceId,
+        .text(_focusGeoJson()),
       ),
     );
   }
 
   /// La clé du point sous [screenPoint], ou `null`. En cas de recouvrement, le
   /// plus prioritaire (celui qu'on voit au-dessus).
-  String? waypointKeyAt(
+  Future<String?> waypointKeyAt(
     Offset screenPoint, {
     double extent = PdlMetrics.tapTarget,
-  }) {
+  }) async {
     final MapController? m = _map;
     if (m == null || _waypoints.isEmpty) return null;
     try {
-      final List<RenderedFeature> hits = m.featuresInRect(
-        Rect.fromCenter(center: screenPoint, width: extent, height: extent),
+      final List<RenderedFeature> hits = await m.queryRenderedFeatures(
+        .rect(
+          Rect.fromCenter(center: screenPoint, width: extent, height: extent),
+        ),
         layerIds: <String>[_waypointIconLayerId],
       );
       String? best;
@@ -1310,7 +1280,7 @@ class PdlMapController extends ChangeNotifier {
       for (final RenderedFeature f in hits) {
         final Object? key = f.properties['key'];
         if (key is! String) continue;
-        // Android convertit les types : un entier peut revenir en double.
+        // Un entier peut revenir en double selon la plateforme.
         final int priority = (f.properties['priority'] as num?)?.toInt() ?? 0;
         if (priority > bestPriority) {
           best = key;
@@ -1353,15 +1323,19 @@ class PdlMapController extends ChangeNotifier {
     try {
       final double zoom = math.max(m.getCamera().zoom, 13);
       final Geographic center = Geographic(lon: w.lon, lat: w.lat);
+      final CameraUpdate update = .position(
+        center: center,
+        zoom: zoom,
+        padding: padding,
+      );
       if (animate) {
+        // `fly`, comme les SDK natifs sous 0.3 : 0.4 glisse par défaut.
         await m.animateCamera(
-          center: center,
-          zoom: zoom,
-          padding: padding,
-          nativeDuration: PdlMotion.mapFocus,
+          update,
+          animation: const .fly(duration: PdlMotion.mapFocus),
         );
       } else {
-        await m.moveCamera(center: center, zoom: zoom, padding: padding);
+        await m.moveCamera(update);
       }
     } catch (error) {
       debugPrint('Waypoint not revealed: $error');

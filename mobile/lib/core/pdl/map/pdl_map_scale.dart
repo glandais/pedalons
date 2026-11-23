@@ -87,7 +87,7 @@ class PdlMapScaleBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final MapController? controller = MapController.maybeOf(context);
     // Lu pour se reconstruire à chaque mouvement de la caméra
-    final MapCamera? camera = MapCamera.maybeOf(context);
+    final CameraPosition? camera = CameraPosition.maybeOf(context);
     if (controller == null || camera == null) return const SizedBox.shrink();
 
     final double metersPerPixel = controller.getMetersPerPixelAtLatitude(

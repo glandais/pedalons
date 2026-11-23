@@ -20,7 +20,7 @@ import 'pdl_waypoint_mark.dart';
 /// * le fond vient de [styleUrl], que l'appelant lit sur `mapStyleProvider` —
 ///   `ConfigDto.mapStyles[]`, servi et non compilé. **Aucune URL de style n'est
 ///   écrite dans `lib/`** ;
-/// * le cadrage part de `MapEventStyleLoaded`, jamais d'un délai ;
+/// * le cadrage part de `onStyleLoaded`, jamais d'un délai ;
 /// * la carte s'ouvre sur [initialCenter] (`ConfigDto.defaultCenter`) avant de
 ///   savoir ce qu'elle montre ;
 /// * plusieurs tracés colorisés cohabitent, chacun sur **sa** couche, et le tap
@@ -54,7 +54,7 @@ class PdlMap extends StatefulWidget {
     this.onMapTapped,
     this.onCameraIdle,
     this.interactive = true,
-    this.gestures,
+    this.movements,
     this.overlays = const <Widget>[],
     this.massTileUrl,
     this.massTileColor,
@@ -171,10 +171,11 @@ class PdlMap extends StatefulWidget {
   /// geste de caméra — donc une carte non interactive reste sélectionnable.
   final bool interactive;
 
-  /// Réglage fin des gestes, quand [interactive] est trop grossier. Il l'emporte
-  /// sur lui. Réservé à `core/pdl` et aux rares écrans qui importent déjà
-  /// MapLibre : le vocabulaire courant est [interactive].
-  final MapGestures? gestures;
+  /// Réglage fin des mouvements permis (déplacer, zoomer, tourner, incliner),
+  /// quand [interactive] est trop grossier. Il l'emporte sur lui. Réservé à
+  /// `core/pdl` et aux rares écrans qui importent déjà MapLibre : le
+  /// vocabulaire courant est [interactive].
+  final MapMovements? movements;
 
   /// Surcouches posées **dans** le contexte de la carte : boutons, pilules,
   /// carte flottante. Elles arrivent après la couche de marqueurs, donc
@@ -267,13 +268,12 @@ class _PdlMapState extends State<PdlMap> {
   void didUpdateWidget(PdlMap oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // Changer de fond de carte **efface toutes les couches** : on ne fait que
-    // demander le style, et `MapEventStyleLoaded` les repose.
+    // Changer de fond de carte **efface toutes les couches** : la carte charge
+    // le nouveau style que `build` lui passe, et `onStyleLoaded` les repose.
     if (widget.styleUrl != _appliedStyleUrl) {
       _appliedStyleUrl = widget.styleUrl;
       _fittedBox = null;
       _controller.detachStyle();
-      _controller.map?.setStyle(widget.styleUrl);
     }
 
     // Comparaison **de valeur**, pas d'identité : les écrans reconstruisent
@@ -334,7 +334,7 @@ class _PdlMapState extends State<PdlMap> {
   void _pushMassTiles() {
     _controller.setMassTileUrl(
       widget.massTileUrl,
-      colorHex: (widget.massTileColor ?? context.pdl.primary).toHexString(),
+      color: widget.massTileColor ?? context.pdl.primary,
     );
   }
 
@@ -353,7 +353,7 @@ class _PdlMapState extends State<PdlMap> {
   /// Le repli sur les tracés doit être **réévalué à chaque mise à jour**, et
   /// pas seulement au chargement du style : sur la fiche d'une sortie, les
   /// géométries des parcours arrivent d'un provider asynchrone, donc *après*
-  /// `MapEventStyleLoaded`. Ne cadrer qu'une fois y laissait la carte sur le
+  /// `onStyleLoaded`. Ne cadrer qu'une fois y laissait la carte sur le
   /// centre par défaut, la France entière, avec le tracé quelque part dedans.
   /// Le repli couvre aussi le départ, l'arrivée et les points de passage : sur
   /// une sortie dont les géométries n'arrivent pas (parcours privé, appel
@@ -377,7 +377,7 @@ class _PdlMapState extends State<PdlMap> {
 
   /// Cadre sur la boîte visée — **jamais avant le premier [MapEventIdle]**.
   ///
-  /// `MapEventStyleLoaded` ne dit que « le style est là » : la vue native peut
+  /// `onStyleLoaded` ne dit que « le style est là » : la vue native peut
   /// n'avoir aucune taille utile à cet instant, et `fitBounds` s'y exécute
   /// alors sans erreur *et sans effet* — la caméra reste sur `initCenter`, ou
   /// pire, se cale sur une hauteur utile nulle une fois les 50 px de marge
@@ -448,55 +448,56 @@ class _PdlMapState extends State<PdlMap> {
     return max / total;
   }
 
-  void _onEvent(MapEvent event) {
-    switch (event) {
-      case MapEventStyleLoaded():
-        _onStyleLoaded(event.style);
-      case MapEventClick():
-        // Un point de parcours touché gagne le toucher.
-        if (widget.onWaypointTapped != null) {
-          final String? waypoint = _controller.waypointKeyAt(event.screenPoint);
-          if (waypoint != null) {
-            widget.onWaypointTapped!(waypoint);
-            return;
-          }
-        }
-        widget.onMapTapped?.call(event.point.lon, event.point.lat);
-        final String? id = _controller.trackIdAt(event.screenPoint);
-        if (id != null || _controller.selectedTrackId != null) {
-          widget.onTrackSelected?.call(id);
-          if (widget.selectedTrackId == null) _controller.select(id);
-        }
-        // La masse est interrogée **après** les tracés GeoJSON : sur un écran
-        // qui affiche les deux, le tracé posé au premier plan gagne le tap,
-        // comme il gagne le dessin.
-        if (widget.onMassFeatureTapped != null && id == null) {
-          widget.onMassFeatureTapped!(
-            _controller.massFeatureAt(event.screenPoint),
-          );
-        }
-      case MapEventCameraIdle():
-        final PdlMapBox? box = _controller.visibleBox;
-        if (box != null) widget.onCameraIdle?.call(box);
-        _settle();
-      case MapEventIdle():
-        _settle();
-      default:
-        break;
+  /// Les requêtes d'entités sont asynchrones depuis `maplibre` 0.4 : le widget
+  /// a pu quitter l'arbre entre deux, d'où les `mounted`.
+  Future<void> _onClick(MapEventClick event) async {
+    // Un point de parcours touché gagne le toucher.
+    if (widget.onWaypointTapped != null) {
+      final String? waypoint = await _controller.waypointKeyAt(
+        event.screenPoint,
+      );
+      if (!mounted) return;
+      if (waypoint != null) {
+        widget.onWaypointTapped?.call(waypoint);
+        return;
+      }
     }
+    widget.onMapTapped?.call(event.point.lon, event.point.lat);
+    final String? id = await _controller.trackIdAt(event.screenPoint);
+    if (!mounted) return;
+    if (id != null || _controller.selectedTrackId != null) {
+      widget.onTrackSelected?.call(id);
+      if (widget.selectedTrackId == null) _controller.select(id);
+    }
+    // La masse est interrogée **après** les tracés GeoJSON : sur un écran
+    // qui affiche les deux, le tracé posé au premier plan gagne le tap,
+    // comme il gagne le dessin.
+    if (widget.onMassFeatureTapped != null && id == null) {
+      final Map<String, Object?>? feature = await _controller.massFeatureAt(
+        event.screenPoint,
+      );
+      if (!mounted) return;
+      widget.onMassFeatureTapped?.call(feature);
+    }
+  }
+
+  void _onCameraMoveEnd(MapEventCameraMoveEnd event) {
+    final PdlMapBox? box = _controller.visibleBox;
+    if (box != null) widget.onCameraIdle?.call(box);
+    _settle();
   }
 
   /// La carte a rendu au moins une image : elle est mesurable, on étalonne
   /// l'échelle une fois puis on rejoue le cadrage mémorisé.
   ///
-  /// **Deux événements y mènent, et il en faut bien deux.** `MapEventIdle`
-  /// (« plus une tuile en vol ») n'est *jamais* émis par le SDK Android : la
-  /// carte n'y produit que `MapCreated`, `StyleLoaded`, `StartMoveCamera` puis
-  /// `CameraIdle`. N'attendre que le premier laissait le cadrage mort-né sur
+  /// **Deux événements y mènent, et il en faut bien deux.** Sous `maplibre`
+  /// 0.3, `MapEventIdle` (« plus une tuile en vol ») n'était *jamais* émis par
+  /// le SDK Android : la carte n'y produisait que la fin de mouvement de
+  /// caméra. N'attendre que le premier laissait le cadrage mort-né sur
   /// Android — la carte restait sur `initialCenter` au zoom 5, la France
-  /// entière, quelle que soit l'emprise servie par le backend. Le symptôme
-  /// n'avait rien d'aléatoire : il était total, et invisible en test parce que
-  /// rien de tout cela ne tourne hors d'un appareil.
+  /// entière, quelle que soit l'emprise servie par le backend. Le moteur unique
+  /// de 0.4 émet les deux partout, mais rien ne coûte de garder les deux
+  /// entrées : la première arrivée gagne.
   ///
   /// Les `idle` suivants ne coûtent rien : [_fit] sort aussitôt quand la boîte
   /// et la marge sont déjà celles en place — c'est aussi ce qui empêche un
@@ -557,19 +558,25 @@ class _PdlMapState extends State<PdlMap> {
 
     return MapLibreMap(
       options: MapOptions(
-        initCenter: center == null
-            ? null
-            : Geographic(lon: center.lon, lat: center.lat),
-        initZoom: widget.initialZoom,
-        initStyle: widget.styleUrl,
-        gestures:
-            widget.gestures ??
+        // Un nouveau style passé ici remplace le fond, et efface les couches.
+        style: MapStyle.url(widget.styleUrl),
+        initCamera: CameraUpdate.position(
+          center: center == null
+              ? null
+              : Geographic(lon: center.lon, lat: center.lat),
+          zoom: widget.initialZoom,
+        ),
+        movements:
+            widget.movements ??
             (widget.interactive
-                ? const MapGestures.all()
-                : const MapGestures.none()),
+                ? const MapMovements()
+                : const MapMovements.none()),
       ),
       onMapCreated: _controller.attachMap,
-      onEvent: _onEvent,
+      onStyleLoaded: _onStyleLoaded,
+      onClick: _onClick,
+      onCameraMoveEnd: _onCameraMoveEnd,
+      onIdle: (_) => _settle(),
       children: <Widget>[
         if (widget.kmMarkers.isNotEmpty)
           // Reconstruite à chaque mouvement de la caméra : les bornes qui se
@@ -616,7 +623,8 @@ class _PdlMapState extends State<PdlMap> {
                         // (une flèche de vent) le retranche.
                         child: Builder(
                           builder: (BuildContext context) => PdlMapBearing(
-                            bearing: MapCamera.maybeOf(context)?.bearing ?? 0,
+                            bearing:
+                                CameraPosition.maybeOf(context)?.bearing ?? 0,
                             child: PdlMapMarkerTarget(
                               marker: m,
                               onTap: widget.onMarkerTapped == null
@@ -650,7 +658,7 @@ List<PdlKmMarker> _roomyKmMarkers(
 ) {
   final MapController? controller = MapController.maybeOf(context);
   // Lu pour se reconstruire à chaque mouvement de la caméra
-  final MapCamera? camera = MapCamera.maybeOf(context);
+  final CameraPosition? camera = CameraPosition.maybeOf(context);
   if (controller == null || camera == null || markers.length < 2) {
     return markers;
   }
@@ -714,7 +722,7 @@ List<Geographic?> _layoutMarkerPoints(
   ];
   final MapController? controller = MapController.maybeOf(context);
   // Lu pour se reconstruire à chaque mouvement de la caméra
-  final MapCamera? camera = MapCamera.maybeOf(context);
+  final CameraPosition? camera = CameraPosition.maybeOf(context);
   if (controller == null || camera == null || markers.length < 2) {
     return points;
   }

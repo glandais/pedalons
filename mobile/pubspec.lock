@@ -1091,42 +1091,42 @@ packages:
     dependency: "direct main"
     description:
       name: maplibre
-      sha256: "2795a46511c4867de2f37072febde94053906ac8a30de7a4937f1547bcf18c9e"
+      sha256: "3508feeacae9a4e01ac5b23d2750f93e14321d99fb30838404aa490f0ddd1079"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.7"
-  maplibre_android:
+    version: "0.4.0"
+  maplibre_native:
     dependency: transitive
     description:
-      name: maplibre_android
-      sha256: "2a2253909c2161b94e1ce78518ce6734ed93e5c9204d0bb8a129286b2931734e"
+      name: maplibre_native
+      sha256: "5178073f1a096032a7ab3e26a5504181c3a0ff80ec3ac7c5ebd47fbf7ceb776e"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.7"
-  maplibre_ios:
+    version: "0.4.0"
+  maplibre_native_ffi:
     dependency: transitive
     description:
-      name: maplibre_ios
-      sha256: "0164468f9f95caf320cc7d4d5274931361aa68086ae60d23216fde72e56b9269"
+      name: maplibre_native_ffi
+      sha256: "12f332177cbe874d9866d350b7ce9490af6e7845a68cbf21b7e1bd4b45fda0f8"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.7"
+    version: "0.202611.0"
   maplibre_platform_interface:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: maplibre_platform_interface
-      sha256: "9a39b8a82de96b37f3edc3db920b8d99038863f9a7f6852b2df366e0bfd8297a"
+      sha256: fe306727e7f917d5ab2b3c6a7c87d17164ee0541aac87a39bce5c6fa25933bd7
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.7"
+    version: "0.4.0"
   maplibre_web:
     dependency: transitive
     description:
       name: maplibre_web
-      sha256: "503d5031a045fbc98bea63e033ca6837e09ae5307df54624e291415648139d11"
+      sha256: "04abbd58fc397b3d04811edf63b60391edccc6cc01fa18b5d7674bf88b11e9d0"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.7"
+    version: "0.4.0"
   markdown:
     dependency: transitive
     description:
@@ -1207,14 +1207,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
-  native_toolchain_c:
-    dependency: transitive
-    description:
-      name: native_toolchain_c
-      sha256: "90eaad8059ebc2004a63810a4696ea9acdb02473e47ed3b6b3bafb100ac77e31"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.19.5"
   objective_c:
     dependency: transitive
     description:
@@ -1447,38 +1439,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
-  pointer_interceptor:
-    dependency: transitive
-    description:
-      name: pointer_interceptor
-      sha256: "9ad8889f36a417649ad7578fdb6df967157208cb90f69facd043660424020710"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.10.1+3"
-  pointer_interceptor_ios:
-    dependency: transitive
-    description:
-      name: pointer_interceptor_ios
-      sha256: "03c5fa5896080963ab4917eeffda8d28c90f22863a496fb5ba13bc10943e40e4"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.10.1+1"
-  pointer_interceptor_platform_interface:
-    dependency: transitive
-    description:
-      name: pointer_interceptor_platform_interface
-      sha256: "0597b0560e14354baeb23f8375cd612e8bd4841bf8306ecb71fcd0bb78552506"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.10.0+1"
-  pointer_interceptor_web:
-    dependency: transitive
-    description:
-      name: pointer_interceptor_web
-      sha256: "460b600e71de6fcea2b3d5f662c92293c049c4319e27f0829310e5a953b3ee2a"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.10.3"
   pool:
     dependency: transitive
     description:

@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:maplibre/maplibre.dart';
 
 /// Un point de parcours, vu de `core/pdl` : **sans DTO ni traduction**. C'est
 /// `features/routes` qui convertit un `WaypointDto` en [PdlMapWaypoint] et en
@@ -259,36 +260,48 @@ Future<Uint8List?> pdlWaypointLabelPng(
   );
 }
 
-/// Mise en page de la couche des pictogrammes. L'image vient de la propriété
-/// `icon` de l'entité ; la taille grandit du zoom 8 au zoom 12.
-const Map<String, Object> pdlWaypointIconLayout = <String, Object>{
-  'icon-image': <Object>['get', 'icon'],
-  'icon-size': <Object>[
-    'interpolate',
-    <Object>['linear'],
-    <Object>['zoom'],
-    8,
-    0.7 / 3,
-    12,
-    1 / 3,
-  ],
-  'icon-allow-overlap': true,
-  'icon-ignore-placement': false,
-  'symbol-sort-key': <Object>['get', 'priority'],
-};
+/// La couche des pictogrammes. L'image vient de la propriété `icon` de
+/// l'entité ; la taille grandit du zoom 8 au zoom 12.
+SymbolStyleLayer pdlWaypointIconLayer({
+  required String id,
+  required String sourceId,
+}) => SymbolStyleLayer(
+  id: id,
+  sourceId: sourceId,
+  iconImage: Expression.get('icon').cast<String>(),
+  iconSize: Expression.interpolate<num>(
+    const Interpolation.linear(),
+    Expression.zoom(),
+    <num, Expression<num>>{
+      8: const Expression.literal(0.7 / _supersample),
+      12: const Expression.literal(1 / _supersample),
+    },
+  ),
+  iconAllowOverlap: const .literal(true),
+  iconIgnorePlacement: const .literal(false),
+  sortKey: Expression.get('priority').cast<num>(),
+);
 
-/// Mise en page de la couche des noms : à droite du pictogramme, sans
-/// recouvrement (la collision donne la priorité au plus important).
-const Map<String, Object> pdlWaypointLabelLayout = <String, Object>{
-  'icon-image': <Object>['get', 'label'],
-  'icon-size': 1 / 3,
-  'icon-anchor': 'left',
+/// La couche des noms : à droite du pictogramme, sans recouvrement (la
+/// collision donne la priorité au plus important), à partir du zoom
+/// [kPdlWaypointLabelMinZoom], et seulement pour les points nommés.
+SymbolStyleLayer pdlWaypointLabelLayer({
+  required String id,
+  required String sourceId,
+}) => SymbolStyleLayer(
+  id: id,
+  sourceId: sourceId,
+  minZoom: kPdlWaypointLabelMinZoom,
+  filter: Expression.notEqual(
+    Expression.get('label'),
+    const Expression.literal(''),
+  ),
+  iconImage: Expression.get('label').cast<String>(),
+  iconSize: const .literal(1 / _supersample),
+  iconAnchor: const .literal(IconAnchor.left),
   // En pixels d'image : 45 × 1/3 = 15 pt, le rayon du pictogramme plus 2 pt.
-  'icon-offset': <Object>[45, 0],
-  'icon-allow-overlap': false,
-  'symbol-sort-key': <Object>[
-    '-',
-    0,
-    <Object>['get', 'priority'],
-  ],
-};
+  iconOffset: const .literal(Offset(45, 0)),
+  iconAllowOverlap: const .literal(false),
+  sortKey:
+      const Expression<num>.literal(0) - Expression.get('priority').cast<num>(),
+);
