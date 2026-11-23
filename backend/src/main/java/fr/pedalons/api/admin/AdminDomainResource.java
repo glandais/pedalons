@@ -1,5 +1,6 @@
 package fr.pedalons.api.admin;
 
+import fr.pedalons.dto.admin.AdminActivationResponse;
 import fr.pedalons.dto.admin.AdminDomainAliasDto;
 import fr.pedalons.dto.admin.AdminDomainDto;
 import fr.pedalons.dto.admin.AdminDomainListResponse;
@@ -65,6 +66,34 @@ public class AdminDomainResource {
   public Response getStats() {
     AdminStatsDto stats = adminDomainService.getStats();
     return Response.ok(stats).build();
+  }
+
+  @GET
+  @Path("/activation")
+  @Admin
+  @Operation(
+      operationId = "getActivation",
+      summary = "Activation of new accounts",
+      description =
+          "Per sign-up week (ISO week, UTC) and domain: accounts created, verified, that joined a"
+              + " team and that signed up to a ride within 7 days. Counts only, computed on the"
+              + " data already stored — no person is named (ledger API-213).")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "200",
+        description = "Activation counts",
+        content = @Content(schema = @Schema(implementation = AdminActivationResponse.class))),
+    @APIResponse(
+        responseCode = "403",
+        description = "Forbidden - not a platform admin",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  public Response getActivation(
+      @Parameter(description = "Sign-up weeks back, the current one included (1 to 52)")
+          @QueryParam("weeks")
+          @DefaultValue("12")
+          int weeks) {
+    return Response.ok(adminDomainService.getActivation(weeks)).build();
   }
 
   @GET

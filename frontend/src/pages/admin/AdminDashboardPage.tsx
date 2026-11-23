@@ -5,7 +5,9 @@ import { Stack, SimpleGrid, Paper, Text, Group, ThemeIcon, Skeleton, Anchor } fr
 import { IconWorld, IconBuildingCommunity, IconUsers, IconArrowRight } from '@tabler/icons-react'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { paths } from '@/config/paths'
-import { useGetStats } from '@/api/endpoints/admin-domains/admin-domains'
+import { useGetActivation, useGetStats } from '@/api/endpoints/admin-domains/admin-domains'
+import { ActivationTable } from '@/components/admin/ActivationTable'
+import { ACTIVATION_PARAMS } from './adminDashboardData'
 
 interface StatCardProps {
   title: string
@@ -52,6 +54,7 @@ function StatCard({ title, value, icon, link, linkLabel, isLoading }: StatCardPr
 export function AdminDashboardPage() {
   const { t } = useTranslation()
   const { data: stats, isLoading } = useGetStats()
+  const activation = useGetActivation(ACTIVATION_PARAMS)
 
   return (
     <AdminLayout currentTab="dashboard">
@@ -84,6 +87,12 @@ export function AdminDashboardPage() {
             isLoading={isLoading}
           />
         </SimpleGrid>
+
+        <ActivationTable
+          weeks={activation.data?.weeks}
+          isLoading={activation.isLoading}
+          isError={activation.isError}
+        />
       </Stack>
     </AdminLayout>
   )

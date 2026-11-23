@@ -65,6 +65,8 @@ export 'models/ad_request.dart';
 export 'models/ad_sort_by.dart';
 export 'models/ad_type.dart';
 export 'models/add_member_request.dart';
+export 'models/admin_activation_response.dart';
+export 'models/admin_activation_week_dto.dart';
 export 'models/admin_domain_alias_dto.dart';
 export 'models/admin_domain_dto.dart';
 export 'models/admin_domain_list_response.dart';

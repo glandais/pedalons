@@ -117,6 +117,59 @@ export const CreateDomainResponse = zod
   .describe('Admin domain view with statistics')
 
 /**
+ * Per sign-up week (ISO week, UTC) and domain: accounts created, verified, that joined a team and that signed up to a ride within 7 days. Counts only, computed on the data already stored — no person is named (ledger API-213).
+ * @summary Activation of new accounts
+ */
+export const getActivationQueryWeeksDefault = 12
+
+export const GetActivationQueryParams = zod.object({
+  weeks: zod
+    .int()
+    .default(getActivationQueryWeeksDefault)
+    .describe('Sign-up weeks back, the current one included (1 to 52)'),
+})
+
+export const GetActivationResponse = zod
+  .object({
+    weeks: zod
+      .array(
+        zod
+          .object({
+            domainId: zod.string().describe('Domain ID (TSID)'),
+            domainName: zod.string().describe('Domain name'),
+            weekStart: zod.iso.date().describe('Monday of the sign-up week (ISO week, UTC)'),
+            complete: zod
+              .boolean()
+              .describe(
+                'Whether every account of the week has had its 7 days: the counts of a week that is not complete can still grow'
+              ),
+            signedUp: zod.int().describe('Accounts created that week, deleted ones left out'),
+            verified: zod.int().describe('Of those, accounts whose address is verified'),
+            joinedTeam: zod
+              .int()
+              .describe(
+                'Of those, accounts that joined a team (or created one) within 7 days of their creation, and still belong to it'
+              ),
+            joinedRide: zod
+              .int()
+              .describe(
+                'Of those, accounts that signed up to a ride within 7 days of their creation, and are still signed up'
+              ),
+          })
+          .describe(
+            "Activation of the accounts created in one sign-up week on one domain: counts only, no person named. The rates are the client's to compute, over signedUp."
+          )
+      )
+      .describe(
+        'One row per week and domain that has at least one sign-up; a week without any is absent'
+      ),
+    weeksBack: zod.int().describe('How many weeks back the rows go'),
+  })
+  .describe(
+    'Activation of new accounts per sign-up week and domain, newest week first (ledger API-213)'
+  )
+
+/**
  * Get overall platform statistics
  * @summary Get platform statistics
  */

@@ -6,6 +6,7 @@ import 'package:dio/dio.dart' hide Headers;
 import 'package:retrofit/retrofit.dart';
 import 'package:retrofit/error_logger.dart';
 
+import '../models/admin_activation_response.dart';
 import '../models/admin_domain_alias_dto.dart';
 import '../models/admin_domain_dto.dart';
 import '../models/admin_domain_list_response.dart';
@@ -45,6 +46,16 @@ abstract class AdminDomainsClient {
   @POST('/api/admin/domains')
   Future<AdminDomainDto> createDomain({
     @Body() required CreateDomainRequest body,
+  });
+
+  /// Activation of new accounts.
+  ///
+  /// Per sign-up week (ISO week, UTC) and domain: accounts created, verified, that joined a team and that signed up to a ride within 7 days. Counts only, computed on the data already stored — no person is named (ledger API-213).
+  ///
+  /// [weeks] - Sign-up weeks back, the current one included (1 to 52).
+  @GET('/api/admin/domains/activation')
+  Future<AdminActivationResponse> getActivation({
+    @Query('weeks') int? weeks = 12,
   });
 
   /// Get platform statistics.

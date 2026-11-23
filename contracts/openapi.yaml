@@ -457,6 +457,71 @@ components:
           description: Role to assign (defaults to MEMBER)
           type: string
           $ref: "#/components/schemas/TeamRole"
+    AdminActivationResponse:
+      description: "Activation of new accounts per sign-up week and domain, newest\
+        \ week first (ledger API-213)"
+      type: object
+      required:
+      - weeks
+      - weeksBack
+      properties:
+        weeks:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminActivationWeekDto"
+          description: One row per week and domain that has at least one sign-up;
+            a week without any is absent
+        weeksBack:
+          type: integer
+          format: int32
+          description: How many weeks back the rows go
+    AdminActivationWeekDto:
+      type: object
+      description: "Activation of the accounts created in one sign-up week on one\
+        \ domain: counts only, no person named. The rates are the client's to compute,\
+        \ over signedUp."
+      required:
+      - domainId
+      - domainName
+      - weekStart
+      - complete
+      - signedUp
+      - verified
+      - joinedTeam
+      - joinedRide
+      properties:
+        domainId:
+          type: string
+          description: Domain ID (TSID)
+        domainName:
+          type: string
+          description: Domain name
+        weekStart:
+          description: "Monday of the sign-up week (ISO week, UTC)"
+          type: string
+          $ref: "#/components/schemas/LocalDate"
+        complete:
+          type: boolean
+          description: "Whether every account of the week has had its 7 days: the\
+            \ counts of a week that is not complete can still grow"
+        signedUp:
+          type: integer
+          format: int64
+          description: "Accounts created that week, deleted ones left out"
+        verified:
+          type: integer
+          format: int64
+          description: "Of those, accounts whose address is verified"
+        joinedTeam:
+          type: integer
+          format: int64
+          description: "Of those, accounts that joined a team (or created one) within\
+            \ 7 days of their creation, and still belong to it"
+        joinedRide:
+          type: integer
+          format: int64
+          description: "Of those, accounts that signed up to a ride within 7 days\
+            \ of their creation, and are still signed up"
     AdminDomainAliasDto:
       description: Admin view of a domain alias (dedicated hostname pinned to a team)
       type: object
@@ -9770,6 +9835,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Forbidden - not a platform admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not Authorized
+      security:
+      - SecurityScheme:
+        - user
+  /api/admin/domains/activation:
+    get:
+      summary: Activation of new accounts
+      description: "Per sign-up week (ISO week, UTC) and domain: accounts created,\
+        \ verified, that joined a team and that signed up to a ride within 7 days.\
+        \ Counts only, computed on the data already stored — no person is named (ledger\
+        \ API-213)."
+      operationId: getActivation
+      tags:
+      - Admin - Domains
+      parameters:
+      - description: "Sign-up weeks back, the current one included (1 to 52)"
+        name: weeks
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 12
+      responses:
+        "200":
+          description: Activation counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminActivationResponse"
         "403":
           description: Forbidden - not a platform admin
           content:
@@ -22510,7 +22611,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 16.1.1
+  version: 16.2.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: /

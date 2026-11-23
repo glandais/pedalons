@@ -82,6 +82,34 @@ class _AdminDomainsClient implements AdminDomainsClient {
   }
 
   @override
+  Future<AdminActivationResponse> getActivation({int? weeks = 12}) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'weeks': weeks};
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<AdminActivationResponse>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/admin/domains/activation',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late AdminActivationResponse _value;
+    try {
+      _value = AdminActivationResponse.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<AdminStatsDto> getStats() async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};

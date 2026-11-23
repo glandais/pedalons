@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **151 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **150 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -137,10 +137,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 
 - [ ] [`API-103`](ledger/API/API-103.md) Pas de réglage d'unités pour le Royaume-Uni (S, contrat + web + mobile)
 - [ ] [`API-77`](ledger/API/API-77.md) Météo sur Karoo et Garmin (M)
-
-### Onboarding : recherche du 22 novembre 2026
-
-- [ ] [`API-213`](ledger/API/API-213.md) Aucune mesure d'activation des nouveaux comptes (S)
 
 ### Petites évolutions d'API qui suppriment chacune une dégradation nommée
 

@@ -15,6 +15,7 @@ import type {
 } from '@tanstack/react-query'
 
 import type {
+  AdminActivationResponse,
   AdminDomainAliasDto,
   AdminDomainDto,
   AdminDomainListResponse,
@@ -24,6 +25,7 @@ import type {
   CreateDomainRequest,
   CreateGpsCredentialRequest,
   ErrorResponse,
+  GetActivationParams,
   ListDomainsParams,
   UpdateDomainAliasRequest,
   UpdateDomainRequest,
@@ -290,6 +292,159 @@ export const useCreateDomain = <TError = ErrorType<ErrorResponse | void>, TConte
 > => {
   return useMutation(getCreateDomainMutationOptions(options), queryClient)
 }
+/**
+ * Per sign-up week (ISO week, UTC) and domain: accounts created, verified, that joined a team and that signed up to a ride within 7 days. Counts only, computed on the data already stored — no person is named (ledger API-213).
+ * @summary Activation of new accounts
+ */
+export const getActivation = (
+  params?: GetActivationParams,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<AdminActivationResponse>(
+    { url: `/api/admin/domains/activation`, method: 'GET', params, signal },
+    options
+  )
+}
+
+export const getGetActivationQueryKey = (params?: GetActivationParams) => {
+  return [`/api/admin/domains/activation`, ...(params ? [params] : [])] as const
+}
+
+export const getGetActivationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getActivation>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  params?: GetActivationParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivation>>, TError, TData>>
+    request?: SecondParameter<typeof axiosMutator>
+  }
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetActivationQueryKey(params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivation>>> = ({ signal }) =>
+    getActivation(params, requestOptions, signal)
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getActivation>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetActivationQueryResult = NonNullable<Awaited<ReturnType<typeof getActivation>>>
+export type GetActivationQueryError = ErrorType<void | ErrorResponse>
+
+/**
+ * Per sign-up week (ISO week, UTC) and domain: accounts created, verified, that joined a team and that signed up to a ride within 7 days. Counts only, computed on the data already stored — no person is named (ledger API-213).
+ * @summary Activation of new accounts
+ */
+export function useGetActivation<
+  TData = Awaited<ReturnType<typeof getActivation>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  params: undefined | GetActivationParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivation>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getActivation>>,
+          TError,
+          Awaited<ReturnType<typeof getActivation>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Per sign-up week (ISO week, UTC) and domain: accounts created, verified, that joined a team and that signed up to a ride within 7 days. Counts only, computed on the data already stored — no person is named (ledger API-213).
+ * @summary Activation of new accounts
+ */
+export function useGetActivation<
+  TData = Awaited<ReturnType<typeof getActivation>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  params?: GetActivationParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivation>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getActivation>>,
+          TError,
+          Awaited<ReturnType<typeof getActivation>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Per sign-up week (ISO week, UTC) and domain: accounts created, verified, that joined a team and that signed up to a ride within 7 days. Counts only, computed on the data already stored — no person is named (ledger API-213).
+ * @summary Activation of new accounts
+ */
+export function useGetActivation<
+  TData = Awaited<ReturnType<typeof getActivation>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  params?: GetActivationParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivation>>, TError, TData>>
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Per sign-up week (ISO week, UTC) and domain: accounts created, verified, that joined a team and that signed up to a ride within 7 days. Counts only, computed on the data already stored — no person is named (ledger API-213).
+ * @summary Activation of new accounts
+ */
+export function useGetActivation<
+  TData = Awaited<ReturnType<typeof getActivation>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  params?: GetActivationParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivation>>, TError, TData>>
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetActivationQueryOptions(params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+/**
+ * Per sign-up week (ISO week, UTC) and domain: accounts created, verified, that joined a team and that signed up to a ride within 7 days. Counts only, computed on the data already stored — no person is named (ledger API-213).
+ * @summary Activation of new accounts
+ */
+export const prefetchGetActivationQuery = async <
+  TData = Awaited<ReturnType<typeof getActivation>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  queryClient: QueryClient,
+  params?: GetActivationParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getActivation>>, TError, TData>>
+    request?: SecondParameter<typeof axiosMutator>
+  }
+): Promise<QueryClient> => {
+  const queryOptions = getGetActivationQueryOptions(params, options)
+
+  await queryClient.query(queryOptions).catch(() => {})
+
+  return queryClient
+}
+
 /**
  * Get overall platform statistics
  * @summary Get platform statistics
