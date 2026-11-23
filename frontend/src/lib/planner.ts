@@ -123,13 +123,16 @@ export interface RouterSettings {
   useRoads?: number
   /** Only ever PEDALONS: absent means the server's default (Stadia), so the call stays what it was. */
   engine?: RouterEngine
+  /** With PEDALONS only: main roads cost more, without being forbidden. Sent only when true. */
+  avoidMainRoads?: boolean
 }
 
 export function definedSettings(settings: RouterSettings): RouterSettings {
-  const { profile, useHills, useRoads, engine } = settings
+  const { profile, useHills, useRoads, engine, avoidMainRoads } = settings
   return {
     profile,
     ...(engine === RouterEngine.PEDALONS && { engine }),
+    ...(engine === RouterEngine.PEDALONS && avoidMainRoads === true && { avoidMainRoads }),
     ...(useHills !== undefined && { useHills }),
     ...(useRoads !== undefined && { useRoads }),
   }

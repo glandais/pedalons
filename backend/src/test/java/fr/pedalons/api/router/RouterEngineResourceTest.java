@@ -32,6 +32,7 @@ import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.stream.Stream;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -201,6 +202,154 @@ class RouterEngineResourceTest extends AbstractResourceTest {
             })
             .toList();
     assertEquals(List.of("road", "road", "gravel", "mtb"), rideTypes);
+  }
+
+  private JsonNode routeWithUseRoads(String profile, @Nullable Double useRoads) throws Exception {
+    String request =
+        "{\"from\": {\"lng\": 4.8357, \"lat\": 45.7640},"
+            + " \"to\": {\"lng\": 4.8500, \"lat\": 45.7700}, \"profile\": \""
+            + profile
+            + "\", \"engine\": \"PEDALONS\""
+            + (useRoads == null ? "" : ", \"useRoads\": " + useRoads)
+            + "}";
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(request)
+        .when()
+        .post("/api/router")
+        .then()
+        .statusCode(200);
+    return new ObjectMapper()
+        .readTree(
+            FakeRouterEngineGateway.CALLS.get(FakeRouterEngineGateway.CALLS.size() - 1).body());
+  }
+
+  @Test
+  void pedalons_whenTheEngineAcceptsUseRoads_shouldSendTheRequestsSettingAndTheProfilesNeutral()
+      throws Exception {
+    engineAnswers("[]");
+    FakeRouterEngineGateway.acceptsUseRoads = true;
+    double[] neutrals = {0.25, 1.0, 0.25, 0.25};
+    String[] profiles = {"BIKE", "FASTBIKE", "GRAVEL", "MTB"};
+    for (int i = 0; i < profiles.length; i++) {
+      JsonNode sent = routeWithUseRoads(profiles[i], 0.6);
+      assertEquals(0.6, sent.path("use_roads").asDouble(), 1e-9, profiles[i]);
+      assertEquals(neutrals[i], sent.path("use_roads_neutral").asDouble(), 1e-9, profiles[i]);
+    }
+  }
+
+  @Test
+  void pedalons_withoutUseRoads_shouldSendTheNeutralForBothFields() throws Exception {
+    engineAnswers("[]");
+    FakeRouterEngineGateway.acceptsUseRoads = true;
+    double[] neutrals = {0.25, 1.0, 0.25, 0.25};
+    String[] profiles = {"BIKE", "FASTBIKE", "GRAVEL", "MTB"};
+    for (int i = 0; i < profiles.length; i++) {
+      JsonNode sent = routeWithUseRoads(profiles[i], null);
+      assertEquals(neutrals[i], sent.path("use_roads").asDouble(), 1e-9, profiles[i]);
+      assertEquals(neutrals[i], sent.path("use_roads_neutral").asDouble(), 1e-9, profiles[i]);
+    }
+  }
+
+  @Test
+  void pedalons_whenTheEngineDoesNotAnnounceUseRoads_shouldSendNeitherField() throws Exception {
+    engineAnswers("[]");
+    FakeRouterEngineGateway.acceptsUseRoads = false;
+    for (String profile : List.of("BIKE", "FASTBIKE", "GRAVEL", "MTB")) {
+      JsonNode sent = routeWithUseRoads(profile, 0.6);
+      assertTrue(!sent.has("use_roads") && !sent.has("use_roads_neutral"), profile);
+    }
+  }
+
+  private JsonNode routeWithAvoid(@Nullable Boolean avoid, @Nullable Double useRoads)
+      throws Exception {
+    String request =
+        "{\"from\": {\"lng\": 4.8357, \"lat\": 45.7640},"
+            + " \"to\": {\"lng\": 4.8500, \"lat\": 45.7700}, \"profile\": \"BIKE\","
+            + " \"engine\": \"PEDALONS\""
+            + (avoid == null ? "" : ", \"avoidMainRoads\": " + avoid)
+            + (useRoads == null ? "" : ", \"useRoads\": " + useRoads)
+            + "}";
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(request)
+        .when()
+        .post("/api/router")
+        .then()
+        .statusCode(200);
+    return new ObjectMapper()
+        .readTree(
+            FakeRouterEngineGateway.CALLS.get(FakeRouterEngineGateway.CALLS.size() - 1).body());
+  }
+
+  @Test
+  void pedalons_avoidMainRoads_shouldBeSentWhenAskedAndAccepted() throws Exception {
+    engineAnswers("[]");
+    FakeRouterEngineGateway.acceptsAvoidMainRoads = true;
+
+    JsonNode sent = routeWithAvoid(true, null);
+
+    assertTrue(sent.path("avoid_main_roads").asBoolean());
+  }
+
+  @Test
+  void pedalons_avoidMainRoads_shouldNotBeSentWhenNotAccepted() throws Exception {
+    engineAnswers("[]");
+    FakeRouterEngineGateway.acceptsAvoidMainRoads = false;
+
+    assertTrue(!routeWithAvoid(true, null).has("avoid_main_roads"));
+  }
+
+  @Test
+  void pedalons_avoidMainRoads_shouldNeverBeSentAsFalseNorWhenAbsent() throws Exception {
+    engineAnswers("[]");
+    FakeRouterEngineGateway.acceptsAvoidMainRoads = true;
+
+    assertTrue(!routeWithAvoid(false, null).has("avoid_main_roads"));
+    assertTrue(!routeWithAvoid(null, null).has("avoid_main_roads"));
+  }
+
+  @Test
+  void pedalons_avoidMainRoads_shouldAccumulateWithUseRoads() throws Exception {
+    engineAnswers("[]");
+    FakeRouterEngineGateway.acceptsAvoidMainRoads = true;
+    FakeRouterEngineGateway.acceptsUseRoads = true;
+
+    JsonNode sent = routeWithAvoid(true, 0.6);
+
+    assertTrue(sent.path("avoid_main_roads").asBoolean());
+    assertEquals(0.6, sent.path("use_roads").asDouble(), 1e-9);
+    assertEquals(0.25, sent.path("use_roads_neutral").asDouble(), 1e-9);
+  }
+
+  @Test
+  void engines_shouldListTheOptionsTheEngineAccepts_andNoneForStadia() {
+    FakeRouterEngineGateway.offered = true;
+
+    engines(USER1, null)
+        .statusCode(200)
+        .body("engines[0].options.size()", equalTo(0))
+        .body("engines[1].options.size()", equalTo(0));
+
+    FakeRouterEngineGateway.acceptsUseRoads = true;
+    engines(USER1, null)
+        .statusCode(200)
+        .body("engines[0].options.size()", equalTo(0))
+        .body("engines[1].options", contains("USE_ROADS"));
+
+    FakeRouterEngineGateway.acceptsUseRoads = false;
+    FakeRouterEngineGateway.acceptsAvoidMainRoads = true;
+    engines(USER1, null).statusCode(200).body("engines[1].options", contains("AVOID_MAIN_ROADS"));
+
+    FakeRouterEngineGateway.acceptsUseRoads = true;
+    engines(USER1, null)
+        .statusCode(200)
+        .body("engines[0].options.size()", equalTo(0))
+        .body("engines[1].options", contains("USE_ROADS", "AVOID_MAIN_ROADS"));
   }
 
   @Test

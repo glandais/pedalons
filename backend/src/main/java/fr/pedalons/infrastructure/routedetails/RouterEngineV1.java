@@ -1,6 +1,7 @@
 package fr.pedalons.infrastructure.routedetails;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -17,8 +18,15 @@ public final class RouterEngineV1 {
   public record Point(double lat, double lon) {}
 
   /** The request: {@code ride_type} is {@code road}, {@code gravel} or {@code mtb}. */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   public record Request(
-      Point start, Point end, @JsonProperty("ride_type") String rideType, double cursor) {}
+      Point start,
+      Point end,
+      @JsonProperty("ride_type") String rideType,
+      double cursor,
+      @Nullable @JsonProperty("use_roads") Double useRoads,
+      @Nullable @JsonProperty("use_roads_neutral") Double useRoadsNeutral,
+      @Nullable @JsonProperty("avoid_main_roads") Boolean avoidMainRoads) {}
 
   /**
    * The answer. {@code polyline} is encoded with 6 digits; {@code unpaved} holds [first, last]

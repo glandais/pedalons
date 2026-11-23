@@ -57,6 +57,12 @@ export const RouteBody = zod.object({
     .describe(
       "Propensity to ride with traffic, 0 (cycleways and paths) to 1 (roads). Absent: the profile's value (1 for FASTBIKE). Bicycle profiles only; ignored otherwise."
     ),
+  avoidMainRoads: zod
+    .boolean()
+    .optional()
+    .describe(
+      'With the PEDALONS engine, main roads (secondary, and more so primary and trunk) cost more without being forbidden. Absent or false: no effect. Ignored by STADIA and by the non-bicycle profiles, and without effect when the engine does not accept it or when the leg falls back on STADIA.'
+    ),
   engine: zod
     .enum(['STADIA', 'PEDALONS'])
     .optional()
@@ -220,6 +226,11 @@ export const RouterEnginesResponse = zod.object({
         profiles: zod.array(
           zod.enum(['BIKE', 'FASTBIKE', 'GRAVEL', 'MTB', 'RUN_HIKE', 'MOTORCYCLE'])
         ),
+        options: zod
+          .array(zod.enum(['USE_ROADS', 'AVOID_MAIN_ROADS']))
+          .describe(
+            'What the engine really accepts beyond the profiles, from its capabilities: the screen shows a control only when its option is listed. Empty for STADIA.'
+          ),
       })
     )
     .describe(

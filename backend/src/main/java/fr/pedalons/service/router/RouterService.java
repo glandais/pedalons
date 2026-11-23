@@ -12,6 +12,7 @@ import fr.pedalons.common.exception.ServiceUnavailableException;
 import fr.pedalons.common.planner.UnpavedSpan;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.dto.router.request.RouterEngine;
+import fr.pedalons.dto.router.request.RouterEngineOption;
 import fr.pedalons.dto.router.request.RouterProfile;
 import fr.pedalons.dto.router.request.RouterRequest;
 import fr.pedalons.dto.router.response.RouterEnginesResponse;
@@ -99,7 +100,8 @@ public class RouterService {
   public RouterEnginesResponse engines(@Nullable String teamSlug) {
     plannerAccess.check(teamSlug);
     List<RouterEngineOffer> offers = new ArrayList<>();
-    offers.add(new RouterEngineOffer(RouterEngine.STADIA, List.of(RouterProfile.values())));
+    offers.add(
+        new RouterEngineOffer(RouterEngine.STADIA, List.of(RouterProfile.values()), List.of()));
     if (routerEngine.offered()) {
       offers.add(
           new RouterEngineOffer(
@@ -108,7 +110,8 @@ public class RouterService {
                   RouterProfile.BIKE,
                   RouterProfile.FASTBIKE,
                   RouterProfile.GRAVEL,
-                  RouterProfile.MTB)));
+                  RouterProfile.MTB),
+              engineOptions()));
     }
     return new RouterEnginesResponse(offers);
   }
@@ -163,6 +166,19 @@ public class RouterService {
       if (routerRequest.teamSlug() != null && !routerRequest.teamSlug().isBlank()) {
         team = TsidUtils.toString(teamService.getTeam(routerRequest.teamSlug()).getId());
       }
+      // use_roads only reaches an engine that announces it (an older one refuses unknown fields).
+      // The neutral is the profile's own value, the one Stadia is sent when the request has none.
+      Double useRoads = null;
+      Double useRoadsNeutral = null;
+      if (routerEngine.acceptsUseRoads()) {
+        useRoadsNeutral = profileUseRoads(routerRequest.profile());
+        useRoads = routerRequest.useRoads() != null ? routerRequest.useRoads() : useRoadsNeutral;
+      }
+      Boolean avoidMainRoads =
+          Boolean.TRUE.equals(routerRequest.avoidMainRoads())
+                  && routerEngine.acceptsAvoidMainRoads()
+              ? Boolean.TRUE
+              : null;
       RouterEngineV1.Response answer =
           routerEngine.route(
               team,
@@ -170,7 +186,10 @@ public class RouterService {
               routerRequest.from().lng(),
               routerRequest.to().lat(),
               routerRequest.to().lng(),
-              rideType);
+              rideType,
+              useRoads,
+              useRoadsNeutral,
+              avoidMainRoads);
       List<double[]> coords = Polyline6Decoder.decode(answer.polyline());
       if (coords.size() < 2) {
         return fallback("empty");
@@ -363,6 +382,31 @@ public class RouterService {
     // 5xx, and anything unexpected (401/403 on a bad key, 404): the planner is out of order for
     // the caller, who did nothing wrong.
     return new ServiceUnavailableException(ErrorCode.ROUTING_UNAVAILABLE);
+  }
+
+  /** What the offered engine accepts, from its cached capabilities. */
+  private List<RouterEngineOption> engineOptions() {
+    List<RouterEngineOption> options = new ArrayList<>();
+    if (routerEngine.acceptsUseRoads()) {
+      options.add(RouterEngineOption.USE_ROADS);
+    }
+    if (routerEngine.acceptsAvoidMainRoads()) {
+      options.add(RouterEngineOption.AVOID_MAIN_ROADS);
+    }
+    return options;
+  }
+
+  /** Valhalla's default {@code use_roads} of the bicycle costing, for a profile that has none. */
+  static final double DEFAULT_USE_ROADS = 0.25;
+
+  /**
+   * The profile's own {@code use_roads}: the same {@link RouterProfile#getCostingOptions()} that is
+   * sent to Stadia Maps, {@link #DEFAULT_USE_ROADS} when the profile does not carry the key.
+   */
+  static double profileUseRoads(RouterProfile profile) {
+    return profile.getCostingOptions().get("use_roads") instanceof Number n
+        ? n.doubleValue()
+        : DEFAULT_USE_ROADS;
   }
 
   /**

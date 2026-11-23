@@ -294,6 +294,7 @@ export 'models/route_usage_dto.dart';
 export 'models/route_usages_response.dart';
 export 'models/router_engine.dart';
 export 'models/router_engine_offer.dart';
+export 'models/router_engine_option.dart';
 export 'models/router_engines_response.dart';
 export 'models/router_profile.dart';
 export 'models/router_request.dart';

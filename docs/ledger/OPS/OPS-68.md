@@ -18,3 +18,8 @@ livré non plus. À faire dans osm-route-details : relire et commiter les lots 1
 à reconstruire, les générations sont inchangées au bit près), puis vérifier `capabilities.router.enabled`
 et les métriques `ord_router_*`. Réglages nouveaux, défauts à mesurer en charge :
 `generator.router_max_concurrent` (2), `router_max_queued` (6), `router_budget_ms` (5 000).
+
+Depuis le même jour, la version à monter est `1.17.0` (api 1.16 : `use_roads`, `avoid_main_roads`), à
+commiter, taguer et publier ; `docker-compose.shared.yml` pointe encore `1.16.0`, publiée. Avec `1.16.0`
+le curseur « Trafic » et « Éviter les grandes routes » restent sans effet, sans rien casser : le backend
+ne les envoie que si le moteur les annonce.

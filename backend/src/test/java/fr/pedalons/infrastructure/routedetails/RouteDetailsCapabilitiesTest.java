@@ -88,6 +88,50 @@ class RouteDetailsCapabilitiesTest {
   }
 
   @Test
+  void theRoutersUseRoads_isReadPresentAbsentOrFalse() throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    assertTrue(
+        mapper
+            .readValue(
+                "{\"api_version\":\"1.16\",\"router\":{\"enabled\":true,\"use_roads\":true}}",
+                RouteDetailsCapabilities.class)
+            .router()
+            .useRoads());
+    assertFalse(
+        mapper
+            .readValue(
+                "{\"api_version\":\"1.15\",\"router\":{\"enabled\":true}}",
+                RouteDetailsCapabilities.class)
+            .router()
+            .useRoads());
+    assertFalse(
+        mapper
+            .readValue(
+                "{\"api_version\":\"1.16\",\"router\":{\"enabled\":true,\"use_roads\":false}}",
+                RouteDetailsCapabilities.class)
+            .router()
+            .useRoads());
+  }
+
+  @Test
+  void theRoutersAvoidMainRoads_isReadPresentAbsentOrFalse() throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    String head = "{\"api_version\":\"1.16\",\"router\":{\"enabled\":true";
+    assertTrue(
+        mapper
+            .readValue(head + ",\"avoid_main_roads\":true}}", RouteDetailsCapabilities.class)
+            .router()
+            .avoidMainRoads());
+    assertFalse(
+        mapper.readValue(head + "}}", RouteDetailsCapabilities.class).router().avoidMainRoads());
+    assertFalse(
+        mapper
+            .readValue(head + ",\"avoid_main_roads\":false}}", RouteDetailsCapabilities.class)
+            .router()
+            .avoidMainRoads());
+  }
+
+  @Test
   void theCapabilitiesOfApi17_areRead() throws IOException {
     String json =
         """

@@ -36,6 +36,13 @@ public record RouterRequest(
         @Nullable Double useRoads,
     @Schema(
             description =
+                "With the PEDALONS engine, main roads (secondary, and more so primary and trunk)"
+                    + " cost more without being forbidden. Absent or false: no effect. Ignored by"
+                    + " STADIA and by the non-bicycle profiles, and without effect when the engine"
+                    + " does not accept it or when the leg falls back on STADIA.")
+        @Nullable Boolean avoidMainRoads,
+    @Schema(
+            description =
                 "Engine that calculates the leg. Absent: STADIA. PEDALONS applies to the profiles"
                     + " BIKE, FASTBIKE, GRAVEL and MTB when GET /api/router/engines offers it;"
                     + " otherwise, and whenever that engine cannot answer, the leg is calculated by"

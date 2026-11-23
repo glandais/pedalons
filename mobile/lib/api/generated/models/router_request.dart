@@ -27,6 +27,9 @@ abstract class RouterRequest with _$RouterRequest {
     /// Propensity to ride with traffic, 0 (cycleways and paths) to 1 (roads). Absent: the profile's value (1 for FASTBIKE). Bicycle profiles only; ignored otherwise.
     double? useRoads,
 
+    /// With the PEDALONS engine, main roads (secondary, and more so primary and trunk) cost more without being forbidden. Absent or false: no effect. Ignored by STADIA and by the non-bicycle profiles, and without effect when the engine does not accept it or when the leg falls back on STADIA.
+    bool? avoidMainRoads,
+
     /// Engine that calculates the leg. Absent: STADIA. PEDALONS applies to the profiles BIKE, FASTBIKE, GRAVEL and MTB when GET /api/router/engines offers it; otherwise, and whenever that engine cannot answer, the leg is calculated by STADIA, with useHills and useRoads, and the response does not say so.
     String? engine,
   }) = _RouterRequest;

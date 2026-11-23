@@ -5,8 +5,8 @@ import { effectiveEngine, isEngineOffered, sanitizeEngine } from './routerEngine
 
 const BIKES = [RouterProfile.BIKE, RouterProfile.FASTBIKE, RouterProfile.GRAVEL, RouterProfile.MTB]
 const OFFERS = [
-  { engine: RouterEngine.STADIA, profiles: Object.values(RouterProfile) },
-  { engine: RouterEngine.PEDALONS, profiles: BIKES },
+  { engine: RouterEngine.STADIA, profiles: Object.values(RouterProfile), options: [] },
+  { engine: RouterEngine.PEDALONS, profiles: BIKES, options: [] },
 ]
 
 describe('sanitizeEngine', () => {
@@ -43,13 +43,24 @@ describe('effectiveEngine', () => {
   })
 
   it('reads the profiles of the offer, not of the list', () => {
-    const offers = [{ engine: RouterEngine.PEDALONS, profiles: [RouterProfile.MTB] }]
+    const offers = [{ engine: RouterEngine.PEDALONS, profiles: [RouterProfile.MTB], options: [] }]
     expect(isEngineOffered(offers, RouterEngine.PEDALONS, RouterProfile.MTB)).toBe(true)
     expect(isEngineOffered(offers, RouterEngine.PEDALONS, RouterProfile.BIKE)).toBe(false)
   })
 })
 
 describe('definedSettings', () => {
+  it('sends the avoidance only when true and with PEDALONS', () => {
+    const profile = RouterProfile.BIKE
+    expect(
+      definedSettings({ profile, engine: RouterEngine.PEDALONS, avoidMainRoads: true })
+    ).toEqual({ profile, engine: 'PEDALONS', avoidMainRoads: true })
+    expect(
+      definedSettings({ profile, engine: RouterEngine.PEDALONS, avoidMainRoads: false })
+    ).toEqual({ profile, engine: 'PEDALONS' })
+    expect(definedSettings({ profile, avoidMainRoads: true })).toEqual({ profile })
+  })
+
   it('sends the engine only when it is PEDALONS', () => {
     const profile = RouterProfile.BIKE
     expect(definedSettings({ profile, engine: RouterEngine.PEDALONS })).toEqual({

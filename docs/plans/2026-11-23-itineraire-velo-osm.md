@@ -270,6 +270,20 @@ conséquence à ces temps.
   bundle reconstruit. 2 548 tests vitest et `mobile/check.sh` verts ; **rien vu dans un navigateur ni
   sur un téléphone**, e2e écrits et non lancés (`WEB-198`).
 
+**Curseur « Trafic » et « Éviter les grandes routes » (D8), codés le 23 novembre 2026, non commités.**
+Moteur `1.17.0` (api 1.16) : `use_roads` / `use_roads_neutral` et `avoid_main_roads` sur
+`POST /v1/router/route`, annoncés dans `capabilities.router` ; `secondary` a sa case à part, le goût
+commun la mettant au prix d'une rue. Backend (contrat `16.5.0`) : `RouterRequest.avoidMainRoads`,
+`RouterEngineOffer.options` ; les champs ne partent au moteur que s'il les annonce (un `1.16.0`
+refuserait le champ inconnu et le tronçon retomberait sur Stadia). Écran : « Côtes » masqué (D7),
+interrupteur sous le choix du calcul, gardé par appareil. Les facteurs viennent de la session
+`highway-weight` et du `road_factor` de Valhalla : **une estimation, calée sur aucune mesure**. Relevé
+**(mesuré)**, Nantes → Ancenis, découverte : en gravel, de 64 % de non-revêtu à « Pistes » à 0 % à
+« Routes » ; en vélo de route, 43,6 km à « Pistes » contre 39,7 km à « Routes » ; éviter les grandes
+routes : 39,7 → 41,4 km en route (Nantes → Angers : 94,2 → 96,2 km). La longueur roulée sur `secondary`
+avant et après n'est pas mesurée. Tests : 11 du moteur, 1 117 du workspace, 89 du backend, 2 554 du
+site ; aucun test du service ne montre un changement de tracé (sa grille n'a qu'une classe de voie).
+
 ## 11. Décisions du propriétaire (23 novembre 2026)
 
 | # | Question | Décision | Écarté |
@@ -279,6 +293,8 @@ conséquence à ces temps.
 | D3 | Sans équipe (planificateur personnel) | **L'option est offerte**, au goût commun | Équipes seulement |
 | D4 | Le moteur ne peut pas répondre (trop long, hors couverture, indisponible) | **Repli silencieux sur Stadia** | Erreur explicite ; repli signalé à l'écran |
 | D6 | Compteur journalier de routage | **Partagé** avec Stadia (300 par personne) | Compteur à part ; pas de plafond |
+| D7 | Curseur « Côtes » avec le moteur Pédalons | **Masqué** : le moteur n'a pas l'altitude ; le texte d'aide ne parle plus des côtes | Le laisser affiché pour le seul repli sur Stadia |
+| D8 | Curseur « Trafic » et grandes routes avec le moteur Pédalons | **Le curseur agit sur le moteur** (multiplicateur par type de voie, neutre au cran du profil) et un interrupteur **« Éviter les grandes routes »** pénalise `secondary` (×2) et `primary` / `trunk` (×1,5) sans les interdire | Curseur sans effet ; interdire les `secondary` |
 
 Reste proposé, sans décision demandée : D5, pas de curseur d'affinité dans le
 planificateur, 0,25 fixe comme le générateur, à rouvrir après usage.

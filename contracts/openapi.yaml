@@ -6851,6 +6851,7 @@ components:
       required:
       - engine
       - profiles
+      - options
       properties:
         engine:
           $ref: "#/components/schemas/RouterEngine"
@@ -6858,6 +6859,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RouterProfile"
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/RouterEngineOption"
+          description: "What the engine really accepts beyond the profiles, from its\
+            \ capabilities: the screen shows a control only when its option is listed.\
+            \ Empty for STADIA."
+    RouterEngineOption:
+      type: string
+      enum:
+      - USE_ROADS
+      - AVOID_MAIN_ROADS
     RouterEnginesResponse:
       type: object
       required:
@@ -6914,6 +6927,13 @@ components:
             \ only; ignored otherwise."
           maximum: 1.0
           minimum: 0.0
+        avoidMainRoads:
+          type: boolean
+          description: "With the PEDALONS engine, main roads (secondary, and more\
+            \ so primary and trunk) cost more without being forbidden. Absent or false:\
+            \ no effect. Ignored by STADIA and by the non-bicycle profiles, and without\
+            \ effect when the engine does not accept it or when the leg falls back\
+            \ on STADIA."
         engine:
           description: "Engine that calculates the leg. Absent: STADIA. PEDALONS applies\
             \ to the profiles BIKE, FASTBIKE, GRAVEL and MTB when GET /api/router/engines\
@@ -22728,7 +22748,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 16.4.0
+  version: 16.5.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: /

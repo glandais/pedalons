@@ -2311,9 +2311,16 @@ test.describe('route calculation engine (API-217)', () => {
       {
         engine: 'STADIA',
         profiles: ['BIKE', 'FASTBIKE', 'GRAVEL', 'MTB', 'RUN_HIKE', 'MOTORCYCLE'],
+        options: [],
       },
       ...(withPedalons
-        ? [{ engine: 'PEDALONS', profiles: ['BIKE', 'FASTBIKE', 'GRAVEL', 'MTB'] }]
+        ? [
+            {
+              engine: 'PEDALONS',
+              profiles: ['BIKE', 'FASTBIKE', 'GRAVEL', 'MTB'],
+              options: ['USE_ROADS', 'AVOID_MAIN_ROADS'],
+            },
+          ]
         : []),
     ],
   })
@@ -2347,7 +2354,13 @@ test.describe('route calculation engine (API-217)', () => {
       .filter({ hasText: /^Pédalons$/ })
       .click()
     await expect(group.getByRole('radio', { name: 'Pédalons' })).toBeChecked()
-    await expect(page.getByRole('slider', { name: 'Côtes' })).toBeVisible()
+    // The Pédalons engine knows no elevation: the hills knob goes, the roads one stays
+    await expect(page.getByRole('slider', { name: 'Côtes' })).toHaveCount(0)
+    await expect(page.getByRole('slider', { name: 'Trafic' })).toBeVisible()
+    const avoid = page.getByRole('switch')
+    await expect(avoid).not.toBeChecked()
+    await avoid.check({ force: true })
+    await expect(avoid).toBeChecked()
     expect(routerRequests, 'choosing an engine routes nothing').toHaveLength(0)
     await page.keyboard.press('Escape')
 
@@ -2356,6 +2369,7 @@ test.describe('route calculation engine (API-217)', () => {
     await settled()
     expect(routerRequests).toHaveLength(1)
     expect(routerRequests.at(-1)?.engine).toBe('PEDALONS')
+    expect(routerRequests.at(-1)?.avoidMainRoads).toBe(true)
   })
 
   test('without the engine on offer there is no choice, and no request carries one', async ({

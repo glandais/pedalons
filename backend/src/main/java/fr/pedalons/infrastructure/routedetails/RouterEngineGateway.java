@@ -56,6 +56,31 @@ public class RouterEngineGateway {
   }
 
   /**
+   * Whether the engine accepts {@code use_roads} / {@code use_roads_neutral} ({@code
+   * capabilities.router.use_roads}, api 1.16): an older engine refuses any unknown field, so they
+   * are only sent when this is true. Read from the cached capabilities, never afresh.
+   */
+  public boolean acceptsUseRoads() {
+    return routeDetails
+        .capabilities()
+        .map(RouteDetailsCapabilities::router)
+        .map(RouteDetailsCapabilities.RouterSection::useRoads)
+        .orElse(false);
+  }
+
+  /**
+   * Whether the engine accepts {@code avoid_main_roads} ({@code
+   * capabilities.router.avoid_main_roads}, api 1.16); same rule as {@link #acceptsUseRoads()}.
+   */
+  public boolean acceptsAvoidMainRoads() {
+    return routeDetails
+        .capabilities()
+        .map(RouteDetailsCapabilities::router)
+        .map(RouteDetailsCapabilities.RouterSection::avoidMainRoads)
+        .orElse(false);
+  }
+
+  /**
    * Whether the engine can be asked: switched on, a namespace key configured, and the cached
    * capabilities announce {@code router.enabled}. Never calls the service afresh, never throws.
    */
@@ -72,6 +97,12 @@ public class RouterEngineGateway {
    *
    * @param team the team's TSID, or null for a planner without a team
    * @param rideType {@code road}, {@code gravel} or {@code mtb}
+   * @param useRoads the traffic setting asked for, or null to send none (an engine that does not
+   *     accept it)
+   * @param avoidMainRoads {@code true} to send {@code avoid_main_roads}; null to send nothing
+   *     (never {@code false})
+   * @param useRoadsNeutral the profile's own setting, for which the engine changes nothing; null
+   *     exactly when {@code useRoads} is
    * @throws RouteGeneratorException the service's refusal, no answer, or an unreadable answer
    */
   public RouterEngineV1.Response route(
@@ -80,7 +111,10 @@ public class RouterEngineGateway {
       double fromLon,
       double toLat,
       double toLon,
-      String rideType) {
+      String rideType,
+      @Nullable Double useRoads,
+      @Nullable Double useRoadsNeutral,
+      @Nullable Boolean avoidMainRoads) {
     byte[] body;
     try {
       body =
@@ -89,7 +123,10 @@ public class RouterEngineGateway {
                   new RouterEngineV1.Point(fromLat, fromLon),
                   new RouterEngineV1.Point(toLat, toLon),
                   rideType,
-                  cursor));
+                  cursor,
+                  useRoads,
+                  useRoadsNeutral,
+                  avoidMainRoads));
     } catch (IOException e) {
       throw RouteGeneratorException.of(Kind.UNEXPECTED, e);
     }

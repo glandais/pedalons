@@ -14,6 +14,7 @@ import {
   Indicator,
   SegmentedControl,
   Slider,
+  Switch,
   Text,
   Stack,
   UnstyledButton,
@@ -139,6 +140,7 @@ export function RouterProfileSelector({
               onChange={onTuningChange}
               onReset={onTuningReset}
               custom={custom}
+              hideHills={engineChoice?.value === RouterEngine.PEDALONS}
             />
           )}
         </Stack>
@@ -179,6 +181,16 @@ function EngineSwitch({ choice }: { choice: EngineChoice }) {
           {choice.team ? t('planner.engine.help.team') : t('planner.engine.help.shared')}
         </Text>
       )}
+      {choice.value === RouterEngine.PEDALONS && choice.avoidMainRoads && (
+        <Switch
+          size="sm"
+          mt={4}
+          label={t('planner.engine.avoidMainRoads.label')}
+          description={t('planner.engine.avoidMainRoads.help')}
+          checked={choice.avoidMainRoads.value}
+          onChange={(event) => choice.avoidMainRoads?.onChange(event.currentTarget.checked)}
+        />
+      )}
     </Stack>
   )
 }
@@ -189,11 +201,20 @@ interface TuningSlidersProps {
   onChange: (key: TuningKey, value: number) => void
   onReset?: () => void
   custom: boolean
+  /** The Pédalons engine knows no elevation: the hills knob would change nothing, so it is not shown. */
+  hideHills?: boolean
 }
 
 const STEPS = [0, 0.25, 0.5, 0.75, 1]
 
-function TuningSliders({ profile, tuning, onChange, onReset, custom }: TuningSlidersProps) {
+function TuningSliders({
+  profile,
+  tuning,
+  onChange,
+  onReset,
+  custom,
+  hideHills = false,
+}: TuningSlidersProps) {
   const { t } = useTranslation()
   const hills = [
     t('planner.tuning.hills.0'),
@@ -216,12 +237,14 @@ function TuningSliders({ profile, tuning, onChange, onReset, custom }: TuningSli
       pt="sm"
       style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}
     >
-      <TuningSlider
-        name={t('planner.tuning.hills.label')}
-        words={hills}
-        value={displayedValue(profile, tuning, 'useHills')}
-        onCommit={(v) => onChange('useHills', v)}
-      />
+      {!hideHills && (
+        <TuningSlider
+          name={t('planner.tuning.hills.label')}
+          words={hills}
+          value={displayedValue(profile, tuning, 'useHills')}
+          onCommit={(v) => onChange('useHills', v)}
+        />
+      )}
       <TuningSlider
         name={t('planner.tuning.roads.label')}
         words={roads}
@@ -229,7 +252,7 @@ function TuningSliders({ profile, tuning, onChange, onReset, custom }: TuningSli
         onCommit={(v) => onChange('useRoads', v)}
       />
       <Text size="xs" c="dimmed">
-        {t('planner.tuning.help')}
+        {hideHills ? t('planner.tuning.helpRoads') : t('planner.tuning.help')}
       </Text>
       {custom && onReset && (
         <Anchor component="button" type="button" size="xs" onClick={onReset} ta="left">

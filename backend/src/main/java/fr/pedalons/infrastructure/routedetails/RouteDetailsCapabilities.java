@@ -47,7 +47,29 @@ public record RouteDetailsCapabilities(
       boolean enabled,
       @Nullable @JsonProperty("ride_types") List<String> rideTypes,
       @Nullable @JsonProperty("crow_m_max") Double crowMMax,
-      @Nullable @JsonProperty("snap_m") Double snapM) {}
+      @Nullable @JsonProperty("snap_m") Double snapM,
+      @JsonProperty("use_roads") boolean useRoads,
+      @JsonProperty("avoid_main_roads") boolean avoidMainRoads) {
+
+    /** Without {@code use_roads}: the shape this record had before api 1.16. */
+    public RouterSection(
+        boolean enabled,
+        @Nullable List<String> rideTypes,
+        @Nullable Double crowMMax,
+        @Nullable Double snapM) {
+      this(enabled, rideTypes, crowMMax, snapM, false, false);
+    }
+
+    /** Without {@code avoid_main_roads}: the shape this record had before api 1.16's second option. */
+    public RouterSection(
+        boolean enabled,
+        @Nullable List<String> rideTypes,
+        @Nullable Double crowMMax,
+        @Nullable Double snapM,
+        boolean useRoads) {
+      this(enabled, rideTypes, crowMMax, snapM, useRoads, false);
+    }
+  }
 
   /** The service's bounds as of api 1.6, used while it has not answered. */
   public static final Limits FALLBACK_LIMITS = new Limits(16_000, 200_000);

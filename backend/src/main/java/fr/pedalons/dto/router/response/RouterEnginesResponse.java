@@ -1,6 +1,7 @@
 package fr.pedalons.dto.router.response;
 
 import fr.pedalons.dto.router.request.RouterEngine;
+import fr.pedalons.dto.router.request.RouterEngineOption;
 import fr.pedalons.dto.router.request.RouterProfile;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -17,5 +18,12 @@ public record RouterEnginesResponse(
   /** One engine and the profiles it calculates; the others go to Stadia whatever the request says. */
   public record RouterEngineOffer(
       @Schema(required = true) RouterEngine engine,
-      @Schema(required = true) List<RouterProfile> profiles) {}
+      @Schema(required = true) List<RouterProfile> profiles,
+      @Schema(
+              required = true,
+              description =
+                  "What the engine really accepts beyond the profiles, from its capabilities:"
+                      + " the screen shows a control only when its option is listed. Empty for"
+                      + " STADIA.")
+          List<RouterEngineOption> options) {}
 }

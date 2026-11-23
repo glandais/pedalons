@@ -14,6 +14,7 @@ _RouterRequest _$RouterRequestFromJson(Map<String, dynamic> json) =>
       teamSlug: json['teamSlug'] as String?,
       useHills: (json['useHills'] as num?)?.toDouble(),
       useRoads: (json['useRoads'] as num?)?.toDouble(),
+      avoidMainRoads: json['avoidMainRoads'] as bool?,
       engine: json['engine'] as String?,
     );
 
@@ -25,5 +26,6 @@ Map<String, dynamic> _$RouterRequestToJson(_RouterRequest instance) =>
       'teamSlug': instance.teamSlug,
       'useHills': instance.useHills,
       'useRoads': instance.useRoads,
+      'avoidMainRoads': instance.avoidMainRoads,
       'engine': instance.engine,
     };

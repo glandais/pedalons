@@ -1126,6 +1126,43 @@ describe('useRoutePlanner routing engine', () => {
     expect(routeMock.mock.calls[0][0]).toMatchObject({ profile: 'BIKE', engine: 'PEDALONS' })
   })
 
+  it('avoids main roads only when the engine accepts it, it is on, and PEDALONS routes the leg', async () => {
+    // Not accepted: no control, nothing sent
+    const first = await drawFirstPoint('BIKE')
+    expect(first.result.current.engineChoice?.avoidMainRoads).toBeUndefined()
+    first.unmount()
+
+    offersMock.mockReturnValue([
+      OFFERS[0],
+      { ...OFFERS[1], options: ['USE_ROADS', 'AVOID_MAIN_ROADS'] },
+    ])
+    const { result } = await drawFirstPoint('BIKE')
+    expect(result.current.engineChoice?.avoidMainRoads?.value).toBe(false)
+    act(() => result.current.engineChoice?.avoidMainRoads?.onChange(true))
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(localStorage.setItem).toHaveBeenCalledWith('pedalons-router-avoid-main-roads', 'true')
+    act(() => result.current.addControlPoint(B, false))
+    await waitFor(() => expect(routeMock).toHaveBeenCalledTimes(1))
+    expect(routeMock.mock.calls[0][0]).toMatchObject({ engine: 'PEDALONS', avoidMainRoads: true })
+  })
+
+  it('sends no avoidance with Standard, even when it is on', async () => {
+    offersMock.mockReturnValue([OFFERS[0], { ...OFFERS[1], options: ['AVOID_MAIN_ROADS'] }])
+    vi.mocked(localStorage.getItem).mockImplementation((key) =>
+      key === 'pedalons-router-engine'
+        ? '"STADIA"'
+        : key === 'pedalons-router-avoid-main-roads'
+          ? 'true'
+          : null
+    )
+    const { result } = await drawFirstPoint('BIKE')
+    act(() => result.current.addControlPoint(B, false))
+    await waitFor(() => expect(routeMock).toHaveBeenCalledTimes(1))
+    const sent = Object.keys(routeMock.mock.calls[0][0])
+    expect(sent).not.toContain('engine')
+    expect(sent).not.toContain('avoidMainRoads')
+  })
+
   it('reads the stored choice back', () => {
     stored('"PEDALONS"')
     const { result } = renderHook(() => useRoutePlanner())

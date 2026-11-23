@@ -28,6 +28,12 @@ public class FakeRouterEngineGateway extends RouterEngineGateway {
   /** Whether the capabilities announce the engine. */
   public static volatile boolean offered = false;
 
+  /** Whether the capabilities announce {@code router.use_roads} (api 1.16). */
+  public static volatile boolean acceptsUseRoads = false;
+
+  /** Whether the capabilities announce {@code router.avoid_main_roads} (api 1.16). */
+  public static volatile boolean acceptsAvoidMainRoads = false;
+
   /** What the engine answers to a call; null: a 200 with {@link #okBody}. */
   public static volatile @Nullable Supplier<Reply> responder = null;
 
@@ -42,6 +48,8 @@ public class FakeRouterEngineGateway extends RouterEngineGateway {
 
   public static void reset() {
     offered = false;
+    acceptsUseRoads = false;
+    acceptsAvoidMainRoads = false;
     responder = null;
     CALLS.clear();
   }
@@ -78,6 +86,16 @@ public class FakeRouterEngineGateway extends RouterEngineGateway {
   @Override
   public boolean offered() {
     return offered;
+  }
+
+  @Override
+  public boolean acceptsUseRoads() {
+    return acceptsUseRoads;
+  }
+
+  @Override
+  public boolean acceptsAvoidMainRoads() {
+    return acceptsAvoidMainRoads;
   }
 
   @Override

@@ -36,7 +36,7 @@ import {
   type ElevationCache,
 } from '@/lib/plannerElevation'
 import { MAX_PLANNER_SOURCES, restorePlannerState, serializePlannerState } from '@/lib/plannerState'
-import { RouterEngine, RouterProfile, WaypointOrigin } from '@/api/dto'
+import { RouterEngine, RouterEngineOption, RouterProfile, WaypointOrigin } from '@/api/dto'
 import type {
   GeoPoint,
   GpxImportResponse,
@@ -74,10 +74,12 @@ import {
   type TuningKey,
 } from '@/lib/routerTuning'
 import {
+  ROUTER_AVOID_MAIN_ROADS_STORAGE_KEY,
   ROUTER_ENGINE_STORAGE_KEY,
   DEFAULT_ROUTER_ENGINE,
   effectiveEngine,
   isEngineOffered,
+  isOptionOffered,
   sanitizeEngine,
   type EngineChoice,
 } from '@/lib/routerEngine'
@@ -292,6 +294,12 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     defaultValue: DEFAULT_ROUTER_ENGINE,
     getInitialValueInEffect: false,
   })
+  // Per device too; only ever sent with the Pédalons engine, and only where it accepts it.
+  const [storedAvoidMainRoads, setStoredAvoidMainRoads] = useLocalStorage<boolean>({
+    key: ROUTER_AVOID_MAIN_ROADS_STORAGE_KEY,
+    defaultValue: false,
+    getInitialValueInEffect: false,
+  })
   const engineOffers = useRouterEngineOffers(teamSlug)
   // Per profile: the knobs of the bicycle profiles. Same distrust of the stored value.
   const [storedTuning, setStoredTuning] = useLocalStorage<RouterTuningStore>({
@@ -320,9 +328,19 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
   const routerEngine = sanitizeEngine(storedEngine)
   const sentEngine = effectiveEngine(routerEngine, routerProfile, engineOffers)
   const engineOffered = isEngineOffered(engineOffers, RouterEngine.PEDALONS, routerProfile)
+  const avoidOffered = isOptionOffered(
+    engineOffers,
+    RouterEngine.PEDALONS,
+    RouterEngineOption.AVOID_MAIN_ROADS
+  )
+  const avoidMainRoads = storedAvoidMainRoads === true
   const routerSettings = useMemo(
-    () => ({ ...toRouterSettings(routerProfile, routerTuning), engine: sentEngine }),
-    [routerProfile, routerTuning, sentEngine]
+    () => ({
+      ...toRouterSettings(routerProfile, routerTuning),
+      engine: sentEngine,
+      avoidMainRoads: sentEngine === RouterEngine.PEDALONS && avoidOffered && avoidMainRoads,
+    }),
+    [routerProfile, routerTuning, sentEngine, avoidOffered, avoidMainRoads]
   )
 
   // What the planner opens on, computed once: the saved state, else the loaded track as an import
@@ -450,10 +468,35 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     [cancelInFlight, setStoredEngine]
   )
   const hasTeam = teamSlug !== undefined
+  // Like the engine: no leg is routed again, nothing enters the history.
+  const setAvoidMainRoads = useCallback(
+    (on: boolean) => {
+      cancelInFlight()
+      setStoredAvoidMainRoads(on === true)
+    },
+    [cancelInFlight, setStoredAvoidMainRoads]
+  )
   const engineChoice = useMemo<EngineChoice | undefined>(
     () =>
-      engineOffered ? { value: routerEngine, onChange: setRouterEngine, team: hasTeam } : undefined,
-    [engineOffered, routerEngine, setRouterEngine, hasTeam]
+      engineOffered
+        ? {
+            value: routerEngine,
+            onChange: setRouterEngine,
+            team: hasTeam,
+            ...(avoidOffered && {
+              avoidMainRoads: { value: avoidMainRoads, onChange: setAvoidMainRoads },
+            }),
+          }
+        : undefined,
+    [
+      engineOffered,
+      routerEngine,
+      setRouterEngine,
+      hasTeam,
+      avoidOffered,
+      avoidMainRoads,
+      setAvoidMainRoads,
+    ]
   )
 
   const resetRouterTuning = useCallback(() => {

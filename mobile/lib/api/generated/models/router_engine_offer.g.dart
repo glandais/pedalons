@@ -12,10 +12,14 @@ _RouterEngineOffer _$RouterEngineOfferFromJson(Map<String, dynamic> json) =>
       profiles: (json['profiles'] as List<dynamic>)
           .map((e) => RouterProfile.fromJson(e as String))
           .toList(),
+      options: (json['options'] as List<dynamic>)
+          .map((e) => RouterEngineOption.fromJson(e as String))
+          .toList(),
     );
 
 Map<String, dynamic> _$RouterEngineOfferToJson(_RouterEngineOffer instance) =>
     <String, dynamic>{
       'engine': instance.engine.toJson(),
       'profiles': instance.profiles.map((e) => e.toJson()).toList(),
+      'options': instance.options.map((e) => e.toJson()).toList(),
     };

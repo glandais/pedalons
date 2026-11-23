@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$RouterEngineOffer {
 
- RouterEngine get engine; List<RouterProfile> get profiles;
+ RouterEngine get engine; List<RouterProfile> get profiles;/// What the engine really accepts beyond the profiles, from its capabilities: the screen shows a control only when its option is listed. Empty for STADIA.
+ List<RouterEngineOption> get options;
 /// Create a copy of RouterEngineOffer
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +31,20 @@ $RouterEngineOfferCopyWith<RouterEngineOffer> get copyWith => _$RouterEngineOffe
 @override
 bool operator ==(Object other) {
   final _this = this as RouterEngineOffer;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouterEngineOffer&&(identical(other.engine, _this.engine) || other.engine == _this.engine)&&const DeepCollectionEquality().equals(other.profiles, _this.profiles));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouterEngineOffer&&(identical(other.engine, _this.engine) || other.engine == _this.engine)&&const DeepCollectionEquality().equals(other.profiles, _this.profiles)&&const DeepCollectionEquality().equals(other.options, _this.options));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RouterEngineOffer;
-  return Object.hash(runtimeType,_this.engine,const DeepCollectionEquality().hash(_this.profiles));
+  return Object.hash(runtimeType,_this.engine,const DeepCollectionEquality().hash(_this.profiles),const DeepCollectionEquality().hash(_this.options));
 }
 
 @override
 String toString() {
   final _this = this as RouterEngineOffer;
-  return 'RouterEngineOffer(engine: ${_this.engine}, profiles: ${_this.profiles})';
+  return 'RouterEngineOffer(engine: ${_this.engine}, profiles: ${_this.profiles}, options: ${_this.options})';
 }
 
 
@@ -54,7 +55,7 @@ abstract mixin class $RouterEngineOfferCopyWith<$Res>  {
   factory $RouterEngineOfferCopyWith(RouterEngineOffer value, $Res Function(RouterEngineOffer) _then) = _$RouterEngineOfferCopyWithImpl;
 @useResult
 $Res call({
- RouterEngine engine, List<RouterProfile> profiles
+ RouterEngine engine, List<RouterProfile> profiles, List<RouterEngineOption> options
 });
 
 
@@ -71,11 +72,12 @@ class _$RouterEngineOfferCopyWithImpl<$Res>
 
 /// Create a copy of RouterEngineOffer
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? engine = null,Object? profiles = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? engine = null,Object? profiles = null,Object? options = null,}) {
   return _then(RouterEngineOffer(
 engine: null == engine ? _self.engine : engine // ignore: cast_nullable_to_non_nullable
 as RouterEngine,profiles: null == profiles ? _self.profiles : profiles // ignore: cast_nullable_to_non_nullable
-as List<RouterProfile>,
+as List<RouterProfile>,options: null == options ? _self.options : options // ignore: cast_nullable_to_non_nullable
+as List<RouterEngineOption>,
   ));
 }
 
@@ -160,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( RouterEngine engine,  List<RouterProfile> profiles)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( RouterEngine engine,  List<RouterProfile> profiles,  List<RouterEngineOption> options)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RouterEngineOffer() when $default != null:
-return $default(_that.engine,_that.profiles);case _:
+return $default(_that.engine,_that.profiles,_that.options);case _:
   return orElse();
 
 }
@@ -181,10 +183,10 @@ return $default(_that.engine,_that.profiles);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( RouterEngine engine,  List<RouterProfile> profiles)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( RouterEngine engine,  List<RouterProfile> profiles,  List<RouterEngineOption> options)  $default,) {final _that = this;
 switch (_that) {
 case _RouterEngineOffer():
-return $default(_that.engine,_that.profiles);case _:
+return $default(_that.engine,_that.profiles,_that.options);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +203,10 @@ return $default(_that.engine,_that.profiles);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( RouterEngine engine,  List<RouterProfile> profiles)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( RouterEngine engine,  List<RouterProfile> profiles,  List<RouterEngineOption> options)?  $default,) {final _that = this;
 switch (_that) {
 case _RouterEngineOffer() when $default != null:
-return $default(_that.engine,_that.profiles);case _:
+return $default(_that.engine,_that.profiles,_that.options);case _:
   return null;
 
 }
@@ -216,7 +218,7 @@ return $default(_that.engine,_that.profiles);case _:
 @JsonSerializable()
 
 class _RouterEngineOffer implements RouterEngineOffer {
-  const _RouterEngineOffer({required this.engine, required  List<RouterProfile> profiles}): _profiles = profiles;
+  const _RouterEngineOffer({required this.engine, required  List<RouterProfile> profiles, required  List<RouterEngineOption> options}): _profiles = profiles,_options = options;
   factory _RouterEngineOffer.fromJson(Map<String, dynamic> json) => _$RouterEngineOfferFromJson(json);
 
 @override final  RouterEngine engine;
@@ -225,6 +227,15 @@ class _RouterEngineOffer implements RouterEngineOffer {
   if (_profiles is EqualUnmodifiableListView) return _profiles;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_profiles);
+}
+
+/// What the engine really accepts beyond the profiles, from its capabilities: the screen shows a control only when its option is listed. Empty for STADIA.
+ final  List<RouterEngineOption> _options;
+/// What the engine really accepts beyond the profiles, from its capabilities: the screen shows a control only when its option is listed. Empty for STADIA.
+@override List<RouterEngineOption> get options {
+  if (_options is EqualUnmodifiableListView) return _options;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_options);
 }
 
 
@@ -241,18 +252,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouterEngineOffer&&(identical(other.engine, engine) || other.engine == engine)&&const DeepCollectionEquality().equals(other.profiles, _profiles));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouterEngineOffer&&(identical(other.engine, engine) || other.engine == engine)&&const DeepCollectionEquality().equals(other.profiles, _profiles)&&const DeepCollectionEquality().equals(other.options, _options));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,engine,const DeepCollectionEquality().hash(_profiles));
+    return Object.hash(runtimeType,engine,const DeepCollectionEquality().hash(_profiles),const DeepCollectionEquality().hash(_options));
 }
 
 @override
 String toString() {
-    return 'RouterEngineOffer(engine: $engine, profiles: $profiles)';
+    return 'RouterEngineOffer(engine: $engine, profiles: $profiles, options: $options)';
 }
 
 
@@ -263,7 +274,7 @@ abstract mixin class _$RouterEngineOfferCopyWith<$Res> implements $RouterEngineO
   factory _$RouterEngineOfferCopyWith(_RouterEngineOffer value, $Res Function(_RouterEngineOffer) _then) = __$RouterEngineOfferCopyWithImpl;
 @override @useResult
 $Res call({
- RouterEngine engine, List<RouterProfile> profiles
+ RouterEngine engine, List<RouterProfile> profiles, List<RouterEngineOption> options
 });
 
 
@@ -280,11 +291,12 @@ class __$RouterEngineOfferCopyWithImpl<$Res>
 
 /// Create a copy of RouterEngineOffer
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? engine = null,Object? profiles = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? engine = null,Object? profiles = null,Object? options = null,}) {
   return _then(_RouterEngineOffer(
 engine: null == engine ? _self.engine : engine // ignore: cast_nullable_to_non_nullable
 as RouterEngine,profiles: null == profiles ? _self._profiles : profiles // ignore: cast_nullable_to_non_nullable
-as List<RouterProfile>,
+as List<RouterProfile>,options: null == options ? _self._options : options // ignore: cast_nullable_to_non_nullable
+as List<RouterEngineOption>,
   ));
 }
 

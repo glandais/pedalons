@@ -1,4 +1,9 @@
-import { RouterEngine, type RouterEngineOffer, RouterProfile } from '@/api/dto'
+import {
+  RouterEngine,
+  type RouterEngineOffer,
+  type RouterEngineOption,
+  RouterProfile,
+} from '@/api/dto'
 
 /** Where the choice is kept, per device, beside the profile and the tuning knobs. */
 export const ROUTER_ENGINE_STORAGE_KEY = 'pedalons-router-engine'
@@ -41,10 +46,24 @@ export function effectiveEngine(
     : undefined
 }
 
+/** Where « avoid main roads » is kept, per device. Off until the user turns it on. */
+export const ROUTER_AVOID_MAIN_ROADS_STORAGE_KEY = 'pedalons-router-avoid-main-roads'
+
+/** True when the offers list that option for the engine: its control is drawn only then. */
+export function isOptionOffered(
+  offers: readonly RouterEngineOffer[] | undefined,
+  engine: RouterEngine,
+  option: RouterEngineOption
+): boolean {
+  return offers?.some((o) => o.engine === engine && (o.options ?? []).includes(option)) ?? false
+}
+
 /** What `RouterProfileSelector` needs to draw the choice; absent when it is not on offer. */
 export interface EngineChoice {
   value: RouterEngine
   onChange: (engine: RouterEngine) => void
   /** The planner belongs to a team: « Routes de l'équipe » instead of « Pédalons ». */
   team: boolean
+  /** « Avoid main roads », absent when the engine on offer does not accept it. */
+  avoidMainRoads?: { value: boolean; onChange: (on: boolean) => void }
 }

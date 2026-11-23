@@ -102,6 +102,39 @@ describe('RouterProfileSelector engine choice', () => {
     expect(screen.queryByText('planner.engine.help.team')).toBeNull()
   })
 
+  it('hides the hills knob with the team engine, which knows no elevation, and keeps the roads one', () => {
+    setup(RouterProfile.GRAVEL, {}, choice({ value: RouterEngine.PEDALONS }))
+    expect(screen.queryByRole('slider', { name: 'planner.tuning.hills.label' })).toBeNull()
+    expect(screen.getByRole('slider', { name: 'planner.tuning.roads.label' })).toBeTruthy()
+    expect(screen.getByText('planner.tuning.helpRoads')).toBeTruthy()
+    cleanup()
+    setup(RouterProfile.GRAVEL, {}, choice({ value: RouterEngine.STADIA }))
+    expect(screen.getAllByRole('slider')).toHaveLength(2)
+    expect(screen.getByText('planner.tuning.help')).toBeTruthy()
+  })
+
+  it('offers to avoid main roads only with the team engine, and only where it is accepted', () => {
+    const onChange = vi.fn()
+    setup(RouterProfile.BIKE, {}, choice({ avoidMainRoads: { value: false, onChange } }))
+    const avoid = screen.getByRole('switch')
+    expect(screen.getByText('planner.engine.avoidMainRoads.label')).toBeTruthy()
+    expect((avoid as HTMLInputElement).checked).toBe(false)
+    fireEvent.click(avoid)
+    expect(onChange).toHaveBeenCalledWith(true)
+    cleanup()
+    // Not accepted by the engine: no switch
+    setup(RouterProfile.BIKE, {}, choice())
+    expect(screen.queryByRole('switch')).toBeNull()
+    cleanup()
+    // Standard chosen: Stadia ignores it, no switch
+    setup(
+      RouterProfile.BIKE,
+      {},
+      choice({ value: RouterEngine.STADIA, avoidMainRoads: { value: true, onChange } })
+    )
+    expect(screen.queryByRole('switch')).toBeNull()
+  })
+
   it('words the second position for a planner without a team', () => {
     setup(RouterProfile.BIKE, {}, choice({ team: false, value: RouterEngine.PEDALONS }))
     expect(screen.getByRole('radio', { name: 'planner.engine.shared' })).toBeTruthy()
