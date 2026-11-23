@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **601 entrées livrées**, et des 11 entrées encore ouvertes dont une part l'est.
+Index des **602 entrées livrées**, et des 11 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -151,6 +151,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## WEB — Site web
 
+- [x] [`WEB-193`](ledger/WEB/WEB-193.md) Invitation sans compte : l'activation ramène à l'accueil, pas à l'invitation — 2026-11-23
 - [x] [`WEB-192`](ledger/WEB/WEB-192.md) Page d'équipe : un seul bouton Créer, comme l'agenda — 2026-11-17
 - [x] [`WEB-190`](ledger/WEB/WEB-190.md) Cartes : pastilles météo sous la colonne du zoom, crédit allongé sur l'échelle à 390 px — 2026-11-16
 - [x] [`WEB-189`](ledger/WEB/WEB-189.md) Accueil : la carte « Ma prochaine sortie » s'étire à la hauteur de la colonne voisine — 2026-11-16

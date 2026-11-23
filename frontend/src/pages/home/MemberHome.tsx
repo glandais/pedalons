@@ -12,6 +12,7 @@ import { NextRideCard } from '../../components/home/NextRideCard'
 import { WeekAgenda } from '../../components/home/WeekAgenda'
 import { MyTeamsCard } from '../../components/home/MyTeamsCard'
 import { QuickActions } from '../../components/home/QuickActions'
+import { PendingInvitationsBanner } from '../../components/team/PendingInvitationsBanner'
 import { useWeekSummary } from '../../components/home/memberHomeHelpers'
 import { paths } from '../../config/paths'
 import { useAuth } from '../../hooks/useAuth'
@@ -73,6 +74,8 @@ export function MemberHome() {
   return (
     <Stack>
       {header}
+      {/* An invitee lands here after signing up: the invitation is the first thing to do (WEB-193). */}
+      <PendingInvitationsBanner />
       <Stack gap="xl">
         <Grid gap="lg">
           <Grid.Col span={{ base: 12, md: 7, lg: 8 }}>

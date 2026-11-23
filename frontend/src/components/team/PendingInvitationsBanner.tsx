@@ -1,52 +1,29 @@
 import { useTranslation } from 'react-i18next'
-import { useQueryClient } from '@tanstack/react-query'
-import { notifications } from '@mantine/notifications'
-import i18next from 'i18next'
 import { Alert, Button, Group, Stack, Text } from '@mantine/core'
 import { IconMailOpened } from '@tabler/icons-react'
-import {
-  useListMyInvitations,
-  useAcceptMyInvitation,
-  getListMyInvitationsQueryKey,
-} from '@/api/endpoints/invitations/invitations'
-import { getListTeamsQueryKey } from '@/api/endpoints/teams/teams'
+import { useListMyInvitations } from '@/api/endpoints/invitations/invitations'
 import { useAuthStore } from '@/store/authStore'
+import { useAcceptPendingInvitation } from './useAcceptPendingInvitation'
 
 /**
  * "You have invitations waiting."
  *
- * This is the only thing that catches someone invited before they had an account who then signs up
- * through the ordinary form rather than by clicking the link in the e-mail. Nothing enrols them
- * automatically — signing up is not joining a team — so without this banner their invitations would
- * simply sit in the database until they lapsed.
+ * This catches someone invited before they had an account who then signs up through the ordinary
+ * form rather than by clicking the link in the e-mail, or who put off the end of their activation.
+ * Nothing enrols them automatically — signing up is not joining a team — so without this banner
+ * their invitations would simply sit in the database until they lapsed. It shows on the home and on
+ * the team list (WEB-193).
  */
 export function PendingInvitationsBanner() {
   const { t } = useTranslation()
-  const queryClient = useQueryClient()
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
   const { data } = useListMyInvitations({ query: { enabled: isAuthenticated } })
-  const acceptMutation = useAcceptMyInvitation()
+  const { acceptInvitation, isPending } = useAcceptPendingInvitation()
 
   const invitations = data?.invitations ?? []
   if (invitations.length === 0) {
     return null
-  }
-
-  const handleAccept = (invitationId: string, teamName: string) => {
-    acceptMutation.mutate(
-      { invitationId },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getListMyInvitationsQueryKey() })
-          queryClient.invalidateQueries({ queryKey: getListTeamsQueryKey() })
-          notifications.show({
-            message: i18next.t('invitations.banner.joined', { team: teamName }),
-            color: 'green',
-          })
-        },
-      }
-    )
   }
 
   return (
@@ -63,8 +40,8 @@ export function PendingInvitationsBanner() {
             </Text>
             <Button
               size="compact-sm"
-              loading={acceptMutation.isPending}
-              onClick={() => handleAccept(invitation.id, invitation.team.name)}
+              loading={isPending}
+              onClick={() => acceptInvitation(invitation)}
             >
               {t('invitations.banner.accept')}
             </Button>

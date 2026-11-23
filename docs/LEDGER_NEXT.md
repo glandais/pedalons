@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **155 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **154 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -85,7 +85,6 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 - [ ] [`WEB-195`](ledger/WEB/WEB-195.md) Équipe tout juste créée : aucune première étape proposée (web + mobile) (M)
 - [ ] [`WEB-194`](ledger/WEB/WEB-194.md) Accueil sans équipe : deux cartes vides au lieu d'un choix (web + mobile) (M)
-- [ ] [`WEB-193`](ledger/WEB/WEB-193.md) Invitation sans compte : l'activation ramène à l'accueil, pas à l'invitation (S)
 
 ## API — Contrat d'API et backend
 

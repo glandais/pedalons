@@ -380,19 +380,20 @@ test.describe('invitee side', () => {
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}$`))
   })
 
-  test('an address without an account: sign up through the link, verify, not a member until accepted on /equipes', async ({
-    page,
-  }) => {
-    const owner = await newUser('Owner signup')
-    const team = await newTeam(owner, unique('Invitations inscription'), { addMemberAllowed: true })
-    const email = freshAddress('newcomer')
-    const { token, mail } = await inviteByApi(owner, team.slug, email)
-    expect(mail).toMatch(NO_ACCOUNT)
-
+  /**
+   * An address without an account follows the link, signs up from it, and gets the verification
+   * mail; returns that mail's token. The account exists but is not active until the link is opened.
+   */
+  async function signUpThroughInvitation(
+    page: Page,
+    token: string,
+    email: string,
+    inviter: string
+  ) {
     // Signed out, the link says who invites to what, and offers a login.
     await page.goto(`/invitation?token=${token}`)
     await expect(
-      page.getByRole('heading', { name: `Owner signup vous invite à rejoindre ${team.name}` })
+      page.getByRole('heading', { name: new RegExp(`^${inviter} vous invite à rejoindre `) })
     ).toBeVisible()
     await page.getByRole('main').getByRole('link', { name: 'Se connecter' }).click()
     await expect(page).toHaveURL(/\/connexion/)
@@ -409,42 +410,92 @@ test.describe('invitee side', () => {
         "Cliquez sur le lien dans l'e-mail pour choisir votre mot de passe et activer votre compte."
       )
     ).toBeVisible()
+    return linkTokenIn(await waitForNewMail(email, seen))
+  }
 
-    // Verify the address from the mail: the password is chosen there (SEC-24).
-    const verification = linkTokenIn(await waitForNewMail(email, seen))
+  /** Opens the verification link and chooses the password there (SEC-24), declining a passkey. */
+  async function activate(page: Page, verification: string) {
     await page.goto(`/verifier-email?token=${verification}`)
     const main = page.getByRole('main')
     await expect(main.getByRole('heading', { name: 'Activer votre compte' })).toBeVisible()
     await main.getByRole('textbox', { name: 'Mot de passe', exact: true }).fill('e2e-password')
     await main.getByRole('textbox', { name: 'Confirmer le mot de passe' }).fill('e2e-password')
     await main.getByRole('button', { name: 'Activer mon compte' }).click()
-    const verified = page.getByRole('heading', { name: 'Compte activé !' })
-    const passkeyPrompt = page.getByRole('heading', { name: 'Sécurisez votre compte' })
-    await expect(verified.or(passkeyPrompt)).toBeVisible()
+    const invited = main.getByRole('heading', { name: 'Votre compte est activé' })
+    const passkeyPrompt = main.getByRole('heading', { name: 'Sécurisez votre compte' })
+    await expect(invited.or(passkeyPrompt)).toBeVisible()
     if (await passkeyPrompt.isVisible())
-      await page.getByRole('button', { name: 'Plus tard' }).click()
+      await main.getByRole('button', { name: 'Plus tard' }).click()
+    await expect(invited).toBeVisible()
+    return main
+  }
 
-    // Signed up and verified — and still not a member.
-    const me = (await loginWithPassword(email, 'e2e-password')).user.id
-    expect(await membershipsOf(owner, team.slug, me)).toHaveLength(0)
+  test('an address without an account: sign up through the link, verify in another browser, land in the team', async ({
+    page,
+    browser,
+  }) => {
+    // The verification link opens where the invitation page's sessionStorage is empty — another
+    // tab, another browser: the end of the activation still leads to the invitation, read from the
+    // server by address, and joining lands on the team (docs/LEDGER_*.md WEB-193).
+    const owner = await newUser('Owner signup')
+    const team = await newTeam(owner, unique('Invitations inscription'), { addMemberAllowed: true })
+    const email = freshAddress('newcomer')
+    const { token, mail } = await inviteByApi(owner, team.slug, email)
+    expect(mail).toMatch(NO_ACCOUNT)
 
-    // The invitation waits on /equipes.
-    await page.goto('/equipes')
+    const verification = await signUpThroughInvitation(page, token, email, 'Owner signup')
+
+    const elsewhere = await browser.newContext()
+    try {
+      const other = await elsewhere.newPage()
+      const main = await activate(other, verification)
+
+      // Signed up and verified — and not a member until the invitation is accepted.
+      const me = (await loginWithPassword(email, 'e2e-password')).user.id
+      expect(await membershipsOf(owner, team.slug, me)).toHaveLength(0)
+
+      await expect(
+        main.getByText(`Owner signup vous invite à rejoindre ${team.name}.`, { exact: true })
+      ).toBeVisible()
+      await main.getByRole('button', { name: "Rejoindre l'équipe" }).click()
+      await expect(other).toHaveURL(new RegExp(`/equipes/${team.slug}$`))
+
+      const memberships = await membershipsOf(owner, team.slug, me)
+      expect(memberships).toHaveLength(1)
+      expect(memberships[0].role).toBe('MEMBER')
+      expect((await previewInvitation(token)).status).toBe('ACCEPTED')
+    } finally {
+      await elsewhere.close()
+    }
+  })
+
+  test('an invitation put off at the end of the activation waits on the home, and joining lands in the team', async ({
+    page,
+  }) => {
+    const owner = await newUser('Owner later')
+    const team = await newTeam(owner, unique('Invitations plus tard'), { addMemberAllowed: true })
+    const email = freshAddress('later')
+    const { token } = await inviteByApi(owner, team.slug, email)
+
+    const verification = await signUpThroughInvitation(page, token, email, 'Owner later')
+    const main = await activate(page, verification)
+    await main.getByRole('link', { name: 'Plus tard' }).click()
+
+    // The home offers it too, not only the team list.
     const banner = page
       .getByRole('alert')
       .filter({ hasText: 'Vous avez une invitation en attente' })
     await expect(banner).toBeVisible()
     await expect(
-      banner.getByText(`Owner signup vous invite à rejoindre ${team.name}.`, { exact: true })
+      banner.getByText(`Owner later vous invite à rejoindre ${team.name}.`, { exact: true })
     ).toBeVisible()
     await hydrated(banner.getByRole('button', { name: 'Accepter' }))
     await banner.getByRole('button', { name: 'Accepter' }).click()
 
+    await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}$`))
     await expect(page.getByText(`Vous avez rejoint ${team.name}.`, { exact: true })).toBeVisible()
-    await expect(banner).toBeHidden()
-    const memberships = await membershipsOf(owner, team.slug, me)
-    expect(memberships).toHaveLength(1)
-    expect(memberships[0].role).toBe('MEMBER')
+    const me = (await loginWithPassword(email, 'e2e-password')).user.id
+    expect(await membershipsOf(owner, team.slug, me)).toHaveLength(1)
     expect((await previewInvitation(token)).status).toBe('ACCEPTED')
   })
 })

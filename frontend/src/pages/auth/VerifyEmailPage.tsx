@@ -3,7 +3,15 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation, Trans } from 'react-i18next'
 import { useForm } from '@mantine/form'
-import { IconCheck, IconX, IconFingerprint, IconLock, IconAlertTriangle } from '@tabler/icons-react'
+import {
+  IconCheck,
+  IconX,
+  IconFingerprint,
+  IconLock,
+  IconAlertTriangle,
+  IconMailOpened,
+  IconUsers,
+} from '@tabler/icons-react'
 import {
   Alert,
   Center,
@@ -19,6 +27,9 @@ import { paths } from '@/config/paths'
 import { useAuthStore } from '@/store/authStore'
 import { isPasskeySupported, registerNewPasskey } from '@/lib/passkeys'
 import { apiErrorCode } from '@/lib/apiError'
+import type { MyInvitationDto } from '@/api/dto'
+import { listMyInvitations } from '@/api/endpoints/invitations/invitations'
+import { useAcceptPendingInvitation } from '@/components/team/useAcceptPendingInvitation'
 import {
   activateAccount,
   confirmEmailChange,
@@ -27,7 +38,14 @@ import {
 } from '@/api/endpoints/authentication/authentication'
 
 type VerificationState =
-  'loading' | 'activate' | 'passkey' | 'activated' | 'emailChanged' | 'emailTaken' | 'error'
+  | 'loading'
+  | 'activate'
+  | 'passkey'
+  | 'activated'
+  | 'invited'
+  | 'emailChanged'
+  | 'emailTaken'
+  | 'error'
 
 /**
  * Where a sign-up or address-change link lands. Nothing happens on load but reading the link: the
@@ -35,6 +53,10 @@ type VerificationState =
  * Loading the page used to sign its reader into the account — anyone's, if someone else's link was
  * forwarded to them (docs/LEDGER_*.md SEC-9, audit M5) — with the password whoever signed up had
  * typed (SEC-24, audit L4).
+ *
+ * A sign-up ends on the account's pending invitations when it has any (docs/LEDGER_*.md WEB-193),
+ * read from the server by address: the token the invitation page kept in sessionStorage is gone
+ * when the mail's link opens in another tab or browser, which is the usual case.
  */
 export function VerifyEmailPage() {
   const { t } = useTranslation()
@@ -47,6 +69,8 @@ export function VerifyEmailPage() {
   const [email, setEmail] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isRegisteringPasskey, setIsRegisteringPasskey] = useState(false)
+  const [invitations, setInvitations] = useState<MyInvitationDto[]>([])
+  const { acceptInvitation, isPending: isAccepting } = useAcceptPendingInvitation()
   const hasRead = useRef(false)
 
   const form = useForm({
@@ -105,11 +129,36 @@ export function VerifyEmailPage() {
       )
       if (data.accessToken) setAccessToken(data.accessToken)
       if (data.user) setUser(data.user)
-      setState(isPasskeySupported() ? 'passkey' : 'activated')
+      if (isPasskeySupported()) {
+        setState('passkey')
+      } else {
+        setState((await showInvitations()) ? 'invited' : 'activated')
+      }
     } catch {
       setState('error')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  /** Loads the new account's pending invitations; true when there is one to offer. */
+  const showInvitations = async () => {
+    try {
+      const data = await listMyInvitations({ skipErrorToast: true })
+      setInvitations(data.invitations)
+      return data.invitations.length > 0
+    } catch {
+      // The home's banner offers them all the same.
+      return false
+    }
+  }
+
+  // After the passkey step, taken or declined: the invitations first, the home otherwise.
+  const finish = async () => {
+    if (await showInvitations()) {
+      setState('invited')
+    } else {
+      navigate(paths.home())
     }
   }
 
@@ -118,9 +167,10 @@ export function VerifyEmailPage() {
     try {
       await registerNewPasskey(undefined)
     } catch {
-      // If passkey registration fails, just go home
+      // A failed registration does not hold up the account: carry on.
     }
-    navigate(paths.home())
+    setIsRegisteringPasskey(false)
+    await finish()
   }
 
   const renderContent = () => {
@@ -211,7 +261,7 @@ export function VerifyEmailPage() {
             >
               {t('auth.verifyEmail.passkey.register')}
             </Button>
-            <Button onClick={() => navigate(paths.home())} variant="subtle" fullWidth>
+            <Button onClick={() => void finish()} variant="subtle" fullWidth>
               {t('auth.verifyEmail.passkey.skip')}
             </Button>
           </Stack>
@@ -229,6 +279,44 @@ export function VerifyEmailPage() {
             <Text c="dimmed">{t('auth.verifyEmail.success.message')}</Text>
             <Button component={PrefetchLink} to={paths.home()} fullWidth>
               {t('auth.verifyEmail.success.continue')}
+            </Button>
+          </Stack>
+        )
+
+      case 'invited':
+        return (
+          <Stack>
+            <Stack gap="xs" ta="center">
+              <IconMailOpened
+                size={48}
+                style={{ margin: '0 auto' }}
+                color="var(--mantine-color-primary-6)"
+              />
+              <Title order={2}>{t('auth.verifyEmail.invited.title')}</Title>
+              <Text c="dimmed">{t('invitations.banner.title', { count: invitations.length })}</Text>
+            </Stack>
+            {invitations.map((invitation) => (
+              <Stack key={invitation.id} gap="xs">
+                <Text ta="center">
+                  {t('invitations.banner.line', {
+                    inviter: invitation.inviterName,
+                    team: invitation.team.name,
+                  })}
+                </Text>
+                <Button
+                  onClick={() => acceptInvitation(invitation)}
+                  loading={isAccepting}
+                  fullWidth
+                  leftSection={<IconUsers size={18} />}
+                >
+                  {invitations.length === 1
+                    ? t('invitations.accept.join')
+                    : t('auth.verifyEmail.invited.joinTeam', { team: invitation.team.name })}
+                </Button>
+              </Stack>
+            ))}
+            <Button component={PrefetchLink} to={paths.home()} variant="subtle" fullWidth>
+              {t('auth.verifyEmail.invited.later')}
             </Button>
           </Stack>
         )
