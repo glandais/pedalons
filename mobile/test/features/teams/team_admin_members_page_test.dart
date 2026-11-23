@@ -576,16 +576,14 @@ void main() {
       expect(find.byKey(keys.moderation.blockAction), findsOneWidget);
     });
 
-    testWidgets('une personne qui administre : pas de « Modifier le rôle » '
-        '(parité avec le site), mais retirer, signaler, bloquer', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('une autre personne qui administre : modifier son rôle, '
+        'retirer, signaler, bloquer (MOB-180)', (WidgetTester tester) async {
       await open(tester, teams: _Teams(role: 'ADMIN'));
 
       await tester.tap(find.byKey(k.rowMore('u2')));
       await settle(tester);
 
-      expect(find.byKey(k.changeRoleAction), findsNothing);
+      expect(find.byKey(k.changeRoleAction), findsOneWidget);
       expect(find.byKey(k.removeAction), findsOneWidget);
       expect(find.byKey(keys.moderation.reportAction), findsOneWidget);
       expect(find.byKey(keys.moderation.blockAction), findsOneWidget);

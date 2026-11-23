@@ -10,6 +10,7 @@ import '../../../../core/pagination/pagination.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_colors.dart';
+import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/utils/formatters.dart';
@@ -50,11 +51,17 @@ class TeamMembersPage extends ConsumerStatefulWidget {
   /// le dit alors, « Rechercher par nom ou e-mail… » (règle RL7).
   final bool searchesEmail;
 
+  /// Si le lecteur administre l'équipe (ou la plateforme) : la page mène
+  /// alors à « Gestion des membres », où la même liste se gère
+  /// (docs/LEDGER_*.md MOB-180). Le serveur tranche le droit de toute façon.
+  final bool canManageMembers;
+
   const TeamMembersPage({
     super.key,
     required this.teamSlug,
     required this.rolesShown,
     this.searchesEmail = false,
+    this.canManageMembers = false,
   });
 
   @override
@@ -128,6 +135,29 @@ class _TeamMembersPageState extends ConsumerState<TeamMembersPage> {
               searchesEmail: widget.searchesEmail || platformAdmin,
             ),
           ),
+          if (widget.canManageMembers)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                PdlSpacing.section,
+                PdlSpacing.chipGap,
+                PdlSpacing.section,
+                0,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: PdlButton(
+                    key: keys.team.membersManageButton,
+                    label: 'teams.dashboard.admin.manageMembers'.tr(),
+                    icon: PdlIcons.admin,
+                    variant: PdlButtonVariant.outline,
+                    size: PdlButtonSize.sm,
+                    onPressed: () =>
+                        context.push(Paths.teamAdminMembers(widget.teamSlug)),
+                  ),
+                ),
+              ),
+            ),
           ..._contentSlivers(state, notifier, filters),
           const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
         ],

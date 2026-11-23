@@ -112,7 +112,7 @@ Faits qui contredisent ce qu'on supposerait :
 | D5 | **Un hub « Gestion de l'équipe »** en liste, pas d'onglets | L'app n'a pas de barre d'onglets imbriquée (`mobile/CLAUDE.md`) |
 | D6 | **Les pages se réordonnent par boutons monter / descendre** | Le site n'a que le glisser-déposer ; trois pages au plus, et des cibles de 44 px accessibles |
 | D7 | **Le webhook est une `PdlFullSheet`** ouverte depuis Paramètres | Il a son propre « Enregistrer », distinct de celui du formulaire d'équipe |
-| D8 | **Parité stricte sur les règles de membres** : pas de rétrogradation d'un admin, pas d'ajout direct par `addMember` | « Iso fonctionnel » ; l'élargir se décide des deux côtés |
+| D8 | **Parité stricte sur les règles de membres** : pas de rétrogradation d'un admin, pas d'ajout direct par `addMember` | « Iso fonctionnel » ; l'élargir se décide des deux côtés — la rétrogradation d'un admin est levée le 2026-11-23 sur les deux clients (ledger `WEB-196`, `MOB-180`) |
 
 ### Arbitrages des déclarations des stores (§8) — tranchés le 15 novembre 2026
 

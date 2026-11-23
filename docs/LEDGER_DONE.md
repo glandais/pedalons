@@ -2,12 +2,13 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **603 entrées livrées**, et des 11 entrées encore ouvertes dont une part l'est.
+Index des **605 entrées livrées**, et des 11 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
 ## MOB — Application mobile
 
+- [x] [`MOB-180`](ledger/MOB/MOB-180.md) Liste des membres : lien vers la gestion, rôle d'un admin modifiable — 2026-11-23
 - [x] [`MOB-179`](ledger/MOB/MOB-179.md) Le lien d'invitation n'ouvre pas l'app : pas d'écran pour le recevoir — 2026-11-23
 - [x] [`MOB-178`](ledger/MOB/MOB-178.md) Les outils GPX dans l'app : recette sur appareil — en partie, le reste est ouvert
 - [x] [`MOB-177`](ledger/MOB/MOB-177.md) Page d'équipe : un seul bouton Créer, comme l'agenda — 2026-11-17
@@ -152,6 +153,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## WEB — Site web
 
+- [x] [`WEB-196`](ledger/WEB/WEB-196.md) Liste des membres : lien vers la gestion, rôle d'un admin modifiable — 2026-11-23
 - [x] [`WEB-193`](ledger/WEB/WEB-193.md) Invitation sans compte : l'activation ramène à l'accueil, pas à l'invitation — 2026-11-23
 - [x] [`WEB-192`](ledger/WEB/WEB-192.md) Page d'équipe : un seul bouton Créer, comme l'agenda — 2026-11-17
 - [x] [`WEB-190`](ledger/WEB/WEB-190.md) Cartes : pastilles météo sous la colonne du zoom, crédit allongé sur l'échelle à 390 px — 2026-11-16

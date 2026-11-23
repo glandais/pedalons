@@ -86,8 +86,9 @@ export function TeamMemberList({
           // members' directory (TeamDirectoryPage) it may not be, and the actions are off there
           // anyway. The actions that depend on knowing the role stay off when it is absent.
           const memberRole = member.role
-          const canEdit =
-            canManageMembers && !isCurrentUser && memberRole != null && memberRole !== 'ADMIN'
+          // Another administrator's role changes too: the server keeps the team from losing its
+          // last one (LAST_ADMIN), and one's own row stays untouched (docs/LEDGER_*.md WEB-196).
+          const canEdit = canManageMembers && !isCurrentUser && memberRole != null
           const canRemove = canManageMembers && !isCurrentUser
 
           return (

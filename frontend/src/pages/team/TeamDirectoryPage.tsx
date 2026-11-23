@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Box, Button, Group, Select, Stack, Title } from '@mantine/core'
-import { IconUsers } from '@tabler/icons-react'
+import { IconUserCog, IconUsers } from '@tabler/icons-react'
 import { useGetTeam } from '@/api/endpoints/teams/teams'
 import { PlatformRole, TeamRole } from '@/api/dto'
 import { apiErrorStatus } from '@/lib/apiError'
@@ -91,7 +91,21 @@ export function TeamDirectoryPage() {
     <TeamLayout team={team} currentTab="members">
       <Box py="md">
         <Stack gap="lg">
-          <Title order={2}>{t('teams.detail.members.title')}</Title>
+          <Group justify="space-between" align="center">
+            <Title order={2}>{t('teams.detail.members.title')}</Title>
+            {/* Whoever administers the team manages the same list from the admin screen: the way
+                there, rather than a second copy of its actions here (docs/LEDGER_*.md WEB-196). */}
+            {admin && (
+              <Button
+                variant="default"
+                leftSection={<IconUserCog size={16} />}
+                component={PrefetchLink}
+                to={paths.teamAdminMembers(team.slug)}
+              >
+                {t('teams.dashboard.admin.manageMembers')}
+              </Button>
+            )}
+          </Group>
 
           {refused ? (
             <AccessRefusedState

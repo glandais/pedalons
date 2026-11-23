@@ -370,6 +370,24 @@ describe('R13 — actions', () => {
     expect(screen.getByRole('button', { name: "Plus d'actions" })).toBeTruthy()
   })
 
+  it('another administrator’s row: « Modifier » too, the server keeps the last one (WEB-196)', () => {
+    wrap(
+      <TeamMemberList
+        members={[
+          member(CAMILLE, 'ADMIN', '2024-03-03T10:00:00Z'),
+          member(NOE, 'ADMIN', '2024-03-03T10:00:00Z'),
+        ]}
+        currentUserRole="ADMIN"
+        currentUserId={CAMILLE.id}
+        onUpdateRole={vi.fn()}
+        onRemoveMember={vi.fn()}
+      />
+    )
+    // Noé's row only: one's own row offers nothing.
+    expect(screen.getAllByRole('button', { name: 'Modifier' })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: 'Retirer' })).toHaveLength(1)
+  })
+
   it('registered person’s row: the same menu, not on one’s own row', () => {
     wrap(
       <ParticipantList

@@ -119,6 +119,9 @@ class TeamPageKeys {
   /// La recherche de la section « Membres ».
   final membersSearchField = const _TeamPageKey('membersSearchField');
 
+  /// « Gérer les membres », au-dessus de la liste, pour qui administre.
+  final membersManageButton = const _TeamPageKey('membersManageButton');
+
   /// « Liste des membres non partagée » : le serveur a refusé la liste (403).
   final membersForbiddenState = const _TeamPageKey('membersForbiddenState');
 

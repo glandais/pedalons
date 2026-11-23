@@ -306,6 +306,7 @@ class _TeamSectionScaffold extends ConsumerWidget {
                 platformAdmin ||
                 team.enableMemberDirectory,
             searchesEmail: team.role == 'ADMIN' || platformAdmin,
+            canManageMembers: team.role == 'ADMIN' || platformAdmin,
           ),
         ),
       ),

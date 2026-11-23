@@ -82,6 +82,7 @@ void main() {
     Brightness brightness = Brightness.light,
     bool rolesShown = true,
     bool searchesEmail = false,
+    bool canManageMembers = false,
     bool signedInAsU1 = false,
   }) async {
     await tester.pumpWidget(
@@ -99,6 +100,7 @@ void main() {
               teamSlug: 'n-peloton',
               rolesShown: rolesShown,
               searchesEmail: searchesEmail,
+              canManageMembers: canManageMembers,
             ),
           ),
         ),
@@ -223,6 +225,20 @@ void main() {
     );
     expect(find.text('Rechercher par nom ou e-mail…'), findsOneWidget);
     expect(find.text('Rechercher un membre…'), findsNothing);
+  });
+
+  testWidgets('« Gérer les membres » ne s\'affiche qu\'à qui administre '
+      '(MOB-180)', (WidgetTester tester) async {
+    await openMembers(tester, repository: _StubTeamRepository(total: 3));
+    expect(find.byKey(keys.team.membersManageButton), findsNothing);
+
+    await openMembers(
+      tester,
+      repository: _StubTeamRepository(total: 3),
+      canManageMembers: true,
+    );
+    expect(find.byKey(keys.team.membersManageButton), findsOneWidget);
+    expect(find.text('Gérer les membres'), findsOneWidget);
   });
 
   DioException httpError(int status) {

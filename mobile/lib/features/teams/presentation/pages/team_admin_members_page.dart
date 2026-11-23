@@ -390,9 +390,11 @@ class _AdminMembersState extends ConsumerState<_AdminMembers> {
   Future<void> _openMemberMenu(MemberDto member) async {
     final PublicUserDto user = member.user;
     final String? role = member.role;
-    // Parité stricte avec le site (décision D8) : le rôle d'une personne qui
-    // administre l'équipe ne se modifie pas ici — la retirer reste possible.
-    final bool canEditRole = role != null && role != TeamRole.admin.json;
+    // Le rôle d'une autre personne qui administre se modifie aussi, comme au
+    // site : le serveur garde à l'équipe son dernier admin (`LAST_ADMIN`, dans
+    // le bandeau), et sa propre ligne ne s'ouvre pas (docs/LEDGER_*.md MOB-180,
+    // qui lève la décision D8).
+    final bool canEditRole = role != null;
     await showModerationMenu(
       context,
       title: user.displayName,
