@@ -5,6 +5,7 @@ import {
   ErrorCode,
   RouteGeneratorType,
   type GeoPoint,
+  type RouteGeneratorUnpaved,
   type RouteGeneratorRequest,
 } from '@/api/dto'
 import { ApiClientError, apiErrorCode, isNetworkError } from '@/lib/apiError'
@@ -21,6 +22,8 @@ export interface GeneratorParams {
   distanceKm: number
   discovery: number
   type?: RouteGeneratorType
+  /** The wished share of paths (gravel, MTB); absent: the usual one, which is never written. */
+  unpaved?: Exclude<RouteGeneratorUnpaved, 'USUAL'>
   seed: number
 }
 
@@ -123,6 +126,8 @@ export function routeGeneratorRequest(
   if (start) request.start = start
   if (end) request.end = end
   if (params.bearing && !far) request.bearing = params.bearing
+  // Paths only mean something off the road: nothing is sent for a road ride, nor for the usual
+  if (request.type !== RouteGeneratorType.ROAD && params.unpaved) request.unpaved = params.unpaved
   return request
 }
 

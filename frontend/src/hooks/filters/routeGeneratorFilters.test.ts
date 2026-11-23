@@ -21,6 +21,7 @@ describe('routeGeneratorFilters', () => {
       distanceKm: 50,
       discovery: 0.25,
       type: undefined,
+      unpaved: undefined,
       seed: 0,
       selected: 0,
       go: false,
@@ -50,6 +51,13 @@ describe('routeGeneratorFilters', () => {
     expect(read('s=45.123456,5.1').start).toBe('45.12346,5.10000')
     expect(read('dec=0.6').discovery).toBe(0.5)
     expect(read('dec=0.9').discovery).toBe(1)
+  })
+
+  it('reads the paths level from ch, the usual one is never kept', () => {
+    expect(read('ch=HIGH').unpaved).toBe('HIGH')
+    expect(read('ch=LOW').unpaved).toBe('LOW')
+    expect(read('ch=USUAL').unpaved).toBeUndefined()
+    expect(read('ch=ZZ').unpaved).toBeUndefined()
   })
 
   it('reads the flags', () => {

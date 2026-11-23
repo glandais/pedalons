@@ -321,3 +321,21 @@ test('a member sees no button and is sent back to the list; a team without the p
   await ownerContext.close()
   void road1
 })
+
+test('gravel at the « Beaucoup » stop sends unpaved HIGH, and the URL keeps it as ch', async ({
+  context,
+  page,
+}) => {
+  const { owner, team } = await seeded()
+  await signIn(context, owner)
+  await stubBasemap(page)
+  const generator = await stubGenerator(page)
+
+  await page.goto(`${GENERATE_PATH(team.slug)}?s=${START}&t=GRAVEL`)
+  await hydrated(generateButton(page))
+  await page.getByText('Beaucoup', { exact: true }).click()
+  await expect(page).toHaveURL(/ch=HIGH/)
+  await generateButton(page).click()
+  await expect(cards(page)).toHaveCount(3)
+  expect(generator.bodies[0]).toMatchObject({ type: 'GRAVEL', unpaved: 'HIGH' })
+})

@@ -277,6 +277,27 @@ describe('RouteGeneratorPanel (WEB-179)', () => {
     expect(options).toEqual({ skipErrorToast: true })
   })
 
+  it('hides the paths control on a road ride and sends no unpaved', async () => {
+    generateMock.mockResolvedValue(response())
+    renderPanel(TEAM(), { unpaved: 'HIGH' })
+    expect(screen.queryByRole('radio', { name: 'Beaucoup' })).toBeNull()
+    fireEvent.click(generate())
+    await waitFor(() => expect(generateMock).toHaveBeenCalled())
+    expect('unpaved' in generateMock.mock.calls[0][1]).toBe(false)
+  })
+
+  it('offers the paths control on a gravel ride, at the usual stop, and sends the chosen one', async () => {
+    generateMock.mockResolvedValue(response())
+    renderPanel(TEAM(), { type: 'GRAVEL' })
+    expect(
+      (screen.getByRole('radio', { name: "Comme d'habitude" }) as HTMLInputElement).checked
+    ).toBe(true)
+    fireEvent.click(screen.getByRole('radio', { name: 'Beaucoup' }))
+    fireEvent.click(generate())
+    await waitFor(() => expect(generateMock).toHaveBeenCalled())
+    expect(generateMock.mock.calls[0][1]).toMatchObject({ type: 'GRAVEL', unpaved: 'HIGH' })
+  })
+
   it('stops the distance slider at the backend maximum, 200 km', async () => {
     generateMock.mockResolvedValue(response())
     renderPanel()
@@ -344,6 +365,25 @@ describe('RouteGeneratorPanel (WEB-179)', () => {
     fireEvent.click(generate())
     await waitFor(() => expect(cards()).toHaveLength(3))
     expect(within(cards()[0]).getByText(/Non revêtu : 0\s?%/)).toBeTruthy()
+  })
+
+  it('says when the area gave fewer or more paths than asked for', async () => {
+    generateMock.mockResolvedValue(
+      response({
+        candidates: [
+          candidate({ unpavedShare: 0.3, unpavedTarget: 0.6, unpavedTargetReached: false }),
+          candidate({ unpavedShare: 0.8, unpavedTarget: 0.25, unpavedTargetReached: false }),
+          candidate({ unpavedShare: 0.58, unpavedTarget: 0.6, unpavedTargetReached: true }),
+        ],
+      })
+    )
+    renderPanel(TEAM(), { type: 'GRAVEL' })
+    fireEvent.click(generate())
+    await waitFor(() => expect(cards()).toHaveLength(3))
+    const [first, second, third] = cards()
+    expect(within(first).getByText('Moins de chemins que demandé dans ce secteur')).toBeTruthy()
+    expect(within(second).getByText('Plus de chemins que demandé dans ce secteur')).toBeTruthy()
+    expect(within(third).queryByText(/que demandé/)).toBeNull()
   })
 
   it('hands the chosen candidate and its type to the host', async () => {

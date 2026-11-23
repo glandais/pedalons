@@ -94,6 +94,13 @@ export function GeneratedRouteCard({
             {t('routeGenerator.card.unpaved', { share: percent(candidate.unpavedShare * 100) })}
           </Text>
         )}
+        {candidate.unpavedTargetReached === false && candidate.unpavedTarget !== undefined && (
+          <Text size="xs" c="dimmed">
+            {candidate.unpavedShare < candidate.unpavedTarget
+              ? t('routeGenerator.card.unpavedBelow')
+              : t('routeGenerator.card.unpavedAbove')}
+          </Text>
+        )}
         <Group justify="flex-end" mt={4}>
           {openDisabled && openDisabledReason ? (
             <Tooltip

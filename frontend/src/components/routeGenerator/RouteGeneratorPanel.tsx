@@ -15,7 +15,7 @@ import {
   useMantineTheme,
 } from '@mantine/core'
 import { IconAlertTriangle, IconInfoCircle, IconRefresh, IconRoute2 } from '@tabler/icons-react'
-import { CompassPoint, RouteGeneratorType } from '@/api/dto'
+import { CompassPoint, RouteGeneratorType, RouteGeneratorUnpaved } from '@/api/dto'
 import type { GeneratedRouteDto, GeoPoint, TeamDetailDto } from '@/api/dto'
 import { EmptyState } from '@/components/common/EmptyState'
 import { useMediaMatch } from '@/hooks/useResponsive'
@@ -39,7 +39,10 @@ import { teamPoint, useRouteGenerator } from './useRouteGenerator'
 
 /** What the panel changes: the parameters of the request, never the results. */
 export type GeneratorParamPatch = Partial<
-  Pick<GeneratorParams, 'start' | 'end' | 'bearing' | 'distanceKm' | 'discovery' | 'type'>
+  Pick<
+    GeneratorParams,
+    'start' | 'end' | 'bearing' | 'distanceKm' | 'discovery' | 'type' | 'unpaved'
+  >
 >
 
 export interface RouteGeneratorPanelParams extends GeneratorParams {
@@ -64,6 +67,12 @@ const TYPE_LABEL_KEYS: Record<RouteGeneratorType, TranslationKey> = {
   ROAD: tRegister('routes.surfaceType.ROAD'),
   GRAVEL: tRegister('routes.surfaceType.GRAVEL'),
   MTB: tRegister('routes.surfaceType.MTB'),
+}
+
+const UNPAVED_LABEL_KEYS: Record<RouteGeneratorUnpaved, TranslationKey> = {
+  LOW: tRegister('routeGenerator.unpaved.low'),
+  USUAL: tRegister('routeGenerator.unpaved.usual'),
+  HIGH: tRegister('routeGenerator.unpaved.high'),
 }
 
 const DISCOVERY_STOPS: TranslationKey[] = [
@@ -386,6 +395,29 @@ export function RouteGeneratorPanel({
           />
         )}
       </Stack>
+
+      {/* The share of paths: only off the road */}
+      {generator.type !== RouteGeneratorType.ROAD && (
+        <Stack gap={4}>
+          <Text size="sm" fw={500}>
+            {t('routeGenerator.unpaved.label')}
+          </Text>
+          <SegmentedControl
+            size="xs"
+            value={params.unpaved ?? RouteGeneratorUnpaved.USUAL}
+            onChange={(value) => {
+              const next = value as RouteGeneratorUnpaved
+              // The usual share is the default: it is not written
+              onParamsChange({ unpaved: next === RouteGeneratorUnpaved.USUAL ? undefined : next })
+            }}
+            data={Object.values(RouteGeneratorUnpaved).map((level) => ({
+              value: level,
+              label: t(UNPAVED_LABEL_KEYS[level]),
+            }))}
+            aria-label={t('routeGenerator.unpaved.label')}
+          />
+        </Stack>
+      )}
 
       <Stack gap={4}>
         <Button

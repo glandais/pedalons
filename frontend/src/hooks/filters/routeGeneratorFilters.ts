@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { CompassPoint, RouteGeneratorType } from '@/api/dto'
+import { CompassPoint, RouteGeneratorType, RouteGeneratorUnpaved } from '@/api/dto'
 import { normalizePointParam } from '@/lib/routeGenerator'
 
 /** Bounds of the wished distance, in km (the backend's own, `RouteGeneratorRequest`). */
@@ -38,6 +38,12 @@ export const routeGeneratorFiltersSchema = z.object({
     .catch(GENERATOR_DEFAULT_DISCOVERY),
   /** Absent: the dominant type of the team's routes. */
   type: z.enum(RouteGeneratorType).optional().catch(undefined),
+  /** Absent: the usual share of paths (`USUAL`, never written). */
+  unpaved: z
+    .enum(RouteGeneratorUnpaved)
+    .transform((value) => (value === RouteGeneratorUnpaved.USUAL ? undefined : value))
+    .optional()
+    .catch(undefined),
   seed: z.coerce.number().int().min(0).default(0).catch(0),
   /** The candidate shown selected. */
   selected: z.coerce.number().int().min(0).max(2).default(0).catch(0),
@@ -54,6 +60,7 @@ export const routeGeneratorFiltersAlias = {
   distanceKm: 'd',
   discovery: 'dec',
   type: 't',
+  unpaved: 'ch',
   selected: 'sel',
 } as const
 

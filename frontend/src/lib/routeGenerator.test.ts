@@ -57,6 +57,11 @@ describe('routeGeneratorRequest', () => {
     expect('end' in request).toBe(false)
     expect('bearing' in request).toBe(false)
   })
+  it('sends the paths level off the road only', () => {
+    expect(routeGeneratorRequest({ ...base, unpaved: 'HIGH' }, 'ROAD').unpaved).toBeUndefined()
+    expect(routeGeneratorRequest({ ...base, unpaved: 'HIGH' }, 'GRAVEL').unpaved).toBe('HIGH')
+    expect('unpaved' in routeGeneratorRequest(base, 'GRAVEL')).toBe(false)
+  })
   it('keeps the bearing for a loop and a near end, drops it for a far end', () => {
     const loop = routeGeneratorRequest({ ...base, bearing: CompassPoint.N }, 'ROAD', START)
     expect(loop.bearing).toBe('N')
