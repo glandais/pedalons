@@ -97,7 +97,7 @@ dependencies:
   # Creates the `pedalons_default` Android channel — the channel_id the server
   # already sends — and shows a notification while the app is in the foreground,
   # which FCM does not do on Android.
-  flutter_local_notifications: ^22.3.2
+  flutter_local_notifications: ^23.0.3
   # The device name sent with the push token, so a member can tell their phones
   # apart in a future device list.
   device_info_plus: ^13.3.0
