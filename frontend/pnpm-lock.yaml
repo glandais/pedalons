@@ -197,8 +197,8 @@ importers:
         specifier: ^3.52.0
         version: 3.52.0(react@19.3.1)
       '@tanstack/react-query':
-        specifier: ^5.108.1
-        version: 5.108.1(@types/react@19.3.0)(react@19.3.1)
+        specifier: ^5.108.2
+        version: 5.108.2(@types/react@19.3.0)(react@19.3.1)
       '@tiptap/core':
         specifier: ^3.35.0
         version: 3.35.0(@tiptap/pm@3.35.0)
@@ -385,7 +385,7 @@ importers:
         version: 3.2.1
       orval:
         specifier: ^8.48.0
-        version: 8.48.0(@tanstack/react-query@5.108.1(@types/react@19.3.0)(react@19.3.1))(prettier@3.10.1)(zod@4.6.7)
+        version: 8.48.0(@tanstack/react-query@5.108.2(@types/react@19.3.0)(react@19.3.1))(prettier@3.10.1)(zod@4.6.7)
       oxlint:
         specifier: ^1.94.0
         version: 1.94.0
@@ -1935,11 +1935,11 @@ packages:
   '@tabler/icons@3.52.0':
     resolution: {integrity: sha512-dldKlJNfO/gZnGLcIY0X2EFFKIMGwL/rEvTqglvBgAPFiwj9pZOCN5V3Sf0Gyjq6foX4VQmLdOmsS4w5FdWKAw==}
 
-  '@tanstack/query-core@5.108.1':
-    resolution: {integrity: sha512-GBX6Xsc9E+9eVLLxuM7orQNbssQjpruOCbocBYwT78MjxOWT5I+CWdvEo0N+UM6+oCZEKxuSud1oFLvE3OEmIg==}
+  '@tanstack/query-core@5.108.2':
+    resolution: {integrity: sha512-0l+0xDKqn71hfJBKaAvFP/X7WYM0TbscEk6nK1pHaWQUWUEA+WJD0VlT8wF+HIJANMV9B/DouPWwDnX3w/l9BA==}
 
-  '@tanstack/react-query@5.108.1':
-    resolution: {integrity: sha512-8/p7fpIdmUiKIukQ5ddAMUUSKC7Z8CcgUOBR2r3WqRvMg9Lzc4CXeoFchjfATKvqi23SyYFvesDdOULrvyunNg==}
+  '@tanstack/react-query@5.108.2':
+    resolution: {integrity: sha512-wV6hEjVGTfh9rvu3uREYW0hgBfS9klDejGelhPY575jD5jg6qbAb1nzT7hR1Q+wemR66ZjtE5p9pAGUwqK8zbg==}
     peerDependencies:
       '@types/react': ^18 || ^19
       react: ^18 || ^19
@@ -5739,12 +5739,12 @@ snapshots:
       - '@faker-js/faker'
       - '@modelcontextprotocol/server'
 
-  '@orval/query@8.48.0(@tanstack/react-query@5.108.1(@types/react@19.3.0)(react@19.3.1))':
+  '@orval/query@8.48.0(@tanstack/react-query@5.108.2(@types/react@19.3.0)(react@19.3.1))':
     dependencies:
       '@orval/core': 8.48.0
       '@orval/fetch': 8.48.0
     optionalDependencies:
-      '@tanstack/react-query': 5.108.1(@types/react@19.3.0)(react@19.3.1)
+      '@tanstack/react-query': 5.108.2(@types/react@19.3.0)(react@19.3.1)
     transitivePeerDependencies:
       - '@faker-js/faker'
       - '@modelcontextprotocol/server'
@@ -6080,11 +6080,11 @@ snapshots:
 
   '@tabler/icons@3.52.0': {}
 
-  '@tanstack/query-core@5.108.1': {}
+  '@tanstack/query-core@5.108.2': {}
 
-  '@tanstack/react-query@5.108.1(@types/react@19.3.0)(react@19.3.1)':
+  '@tanstack/react-query@5.108.2(@types/react@19.3.0)(react@19.3.1)':
     dependencies:
-      '@tanstack/query-core': 5.108.1
+      '@tanstack/query-core': 5.108.2
       react: 19.3.1
     optionalDependencies:
       '@types/react': 19.3.0
@@ -8075,7 +8075,7 @@ snapshots:
 
   orderedmap@2.1.1: {}
 
-  orval@8.48.0(@tanstack/react-query@5.108.1(@types/react@19.3.0)(react@19.3.1))(prettier@3.10.1)(zod@4.6.7):
+  orval@8.48.0(@tanstack/react-query@5.108.2(@types/react@19.3.0)(react@19.3.1))(prettier@3.10.1)(zod@4.6.7):
     dependencies:
       '@commander-js/extra-typings': 15.1.0(commander@15.1.0)
       '@orval/angular': 8.48.0
@@ -8087,7 +8087,7 @@ snapshots:
       '@orval/mcp': 8.48.0(zod@4.6.7)
       '@orval/mock': 8.48.0
       '@orval/pinia-colada': 8.48.0
-      '@orval/query': 8.48.0(@tanstack/react-query@5.108.1(@types/react@19.3.0)(react@19.3.1))
+      '@orval/query': 8.48.0(@tanstack/react-query@5.108.2(@types/react@19.3.0)(react@19.3.1))
       '@orval/solid-start': 8.48.0
       '@orval/swr': 8.48.0
       '@orval/valibot': 8.48.0
