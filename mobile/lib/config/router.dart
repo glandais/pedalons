@@ -51,6 +51,7 @@ import '../features/routes/presentation/pages/all_routes_page.dart';
 import '../features/routes/presentation/pages/route_detail_page.dart';
 import '../features/routes/presentation/pages/route_editor_page.dart';
 import '../features/routes/presentation/route_editor_location.dart';
+import '../features/teams/presentation/pages/invitation_page.dart';
 import '../features/teams/presentation/pages/team_admin_members_page.dart';
 import '../features/teams/presentation/pages/team_admin_page.dart';
 import '../features/teams/presentation/pages/team_custom_page.dart';
@@ -187,6 +188,10 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   ),
   _DeepLinkHierarchy(
     patterns: PathVariants.deviceHammerhead(),
+    ancestors: [_homeAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.invitation(),
     ancestors: [_homeAncestor],
   ),
 
@@ -607,6 +612,8 @@ final Set<String> _authAdjacentPaths = <String>{
   ...PathVariants.privacy().values,
   ...PathVariants.terms().values,
   ...PathVariants.apps().values,
+  // Qui invite, et à quoi, se lit avant de se connecter (MOB-179).
+  ...PathVariants.invitation().values,
 };
 
 final Set<String> _loginPaths = PathVariants.login().values.toSet();
@@ -1487,6 +1494,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ..._perLocale(
         PathVariants.forgotPassword(),
         (ctx, st) => const ForgotPasswordPage(),
+      ),
+      // Le lien d'un e-mail d'invitation : son aperçu est public, la page
+      // s'ouvre avec ou sans session (docs/LEDGER_*.md MOB-179).
+      ..._perLocale(
+        PathVariants.invitation(),
+        (ctx, st) => InvitationPage(token: st.uri.queryParameters['token']),
       ),
       ..._perLocale(
         PathVariants.resetPassword(),

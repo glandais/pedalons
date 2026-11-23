@@ -20,6 +20,7 @@ import 'features/profile/keys.dart';
 import 'features/rides/keys.dart';
 import 'features/routes/keys.dart';
 import 'features/tags/keys.dart';
+import 'features/teams/invitation_keys.dart';
 import 'features/teams/keys.dart';
 import 'features/trips/keys.dart';
 import 'features/visibility/keys.dart';
@@ -35,6 +36,7 @@ class Keys {
   final profile = ProfilePageKeys();
   final teams = TeamsPageKeys();
   final teamsDiscover = TeamsDiscoverKeys();
+  final invitation = InvitationPageKeys();
   final team = TeamPageKeys();
   final teamDashboard = TeamDashboardKeys();
   final teamAgenda = TeamAgendaKeys();

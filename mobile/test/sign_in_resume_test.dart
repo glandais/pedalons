@@ -65,6 +65,8 @@ void main() {
         ...PathVariants.terms().values,
         ...PathVariants.privacy().values,
         ...PathVariants.apps().values,
+        // Son aperçu est public ; c'est la page qui se met en attente.
+        '${PathVariants.invitation()['en']!}?token=t0k3n',
       ];
       for (final path in adjacent) {
         router.calls.clear();

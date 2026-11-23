@@ -65,6 +65,7 @@ final Map<String, List<String>> internalRouteTemplates = <String, List<String>>{
   'login': PathVariants.login().values.toList(),
   'register': PathVariants.register().values.toList(),
   'verifyEmail': PathVariants.verifyEmail().values.toList(),
+  'invitation': PathVariants.invitation().values.toList(),
   'forgotPassword': PathVariants.forgotPassword().values.toList(),
   'resetPassword': PathVariants.resetPassword().values.toList(),
   'deviceVerifyGarmin': PathVariants.deviceVerifyGarmin().values.toList(),

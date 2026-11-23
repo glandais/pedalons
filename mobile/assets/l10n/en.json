@@ -2605,6 +2605,20 @@
       "line": "{inviter} invites you to join {team}.",
       "accept": "Accept",
       "accepting": "Accepting…"
+    },
+    "page": {
+      "title": "{inviter} invites you to join {team}",
+      "subtitle": "As {role}, for the address {email}.",
+      "signInPrompt": "Sign in, or create your account with the invited address, to join the team.",
+      "signIn": "Sign in or create an account",
+      "join": "Join the team",
+      "switchAccount": "Use another account",
+      "notRedeemable": "This invitation is no longer valid. Ask the team for a new one.",
+      "alreadyMember": "You are already part of {team}.",
+      "goToTeam": "View the team",
+      "unavailableTitle": "Invitation unavailable",
+      "unavailableBody": "This invitation link is incomplete. Open it again from the e-mail.",
+      "backHome": "Back to home"
     }
   },
   "moderation": {

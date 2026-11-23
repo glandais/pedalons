@@ -14,6 +14,7 @@ import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../feed/presentation/widgets/publication_feed_view.dart';
 import '../../../notifications/presentation/widgets/notification_bell.dart';
+import '../../../teams/presentation/widgets/pending_invitations_card.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../providers/next_ride_provider.dart';
 import '../../providers/week_events_provider.dart';
@@ -56,6 +57,7 @@ class HomePage extends ConsumerWidget {
           ref.invalidate(nextRideProvider);
           ref.invalidate(weekEventsProvider);
           ref.invalidate(myTeamsProvider);
+          ref.invalidate(myInvitationsProvider);
           // Chaque bloc masque son propre échec : un rafraîchissement raté
           // de l'un ne doit pas faire échouer le geste entier.
           Future<void> settle(Future<Object?> f) =>
@@ -68,6 +70,9 @@ class HomePage extends ConsumerWidget {
         },
         leadingSlivers: <Widget>[
           const _HomeAppBar(),
+          // Les invitations en attente d'abord : une personne invitée avant
+          // d'avoir un compte arrive ici après l'activation (MOB-179).
+          const SliverToBoxAdapter(child: PendingInvitationsCard()),
           const SliverToBoxAdapter(child: _NextRideSliver()),
           const SliverToBoxAdapter(child: WeekAgendaSection()),
           const SliverToBoxAdapter(child: MyTeamsSection()),

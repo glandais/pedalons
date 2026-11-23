@@ -55,6 +55,8 @@ final List<_LinkCase> _cases = [
   _LinkCase('deviceHammerhead', PathVariants.deviceHammerhead(), [
     PathVariants.home(),
   ]),
+  // Le lien d'un e-mail d'invitation (ledger `MOB-179`).
+  _LinkCase('invitation', PathVariants.invitation(), [PathVariants.home()]),
 
   // La boîte de réception vit sous l'accueil, d'où sa cloche l'ouvre.
   _LinkCase('notifications', PathVariants.notifications(), [

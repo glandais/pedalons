@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **154 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **153 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -45,10 +45,6 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 ### Fiches des stores
 
 - [ ] [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play (S) · *externe*
-
-### Onboarding : recherche du 22 novembre 2026
-
-- [ ] [`MOB-179`](ledger/MOB/MOB-179.md) Le lien d'invitation n'ouvre pas l'app : pas d'écran pour le recevoir (M)
 
 ### Recette sur une application qui tourne
 

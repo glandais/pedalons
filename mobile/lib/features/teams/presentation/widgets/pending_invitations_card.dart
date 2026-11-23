@@ -14,13 +14,15 @@ import '../../data/invitations_repository.dart';
 import '../../providers/membership_scoped_content.dart';
 import '../../providers/team_providers.dart';
 
-/// « Vous avez des invitations en attente », en tête de « Mes équipes ».
+/// « Vous avez des invitations en attente », en tête de « Mes équipes » et de
+/// l'accueil (docs/LEDGER_*.md MOB-179).
 ///
-/// Le pendant du `PendingInvitationsBanner` du web. Il rattrape deux cas que
-/// rien d'autre ne couvre : la notification `TEAM_INVITATION`, qui ouvre cet
-/// écran, et la personne invitée avant d'avoir un compte qui s'inscrit par le
-/// formulaire ordinaire — s'inscrire n'est pas rejoindre une équipe, et ses
-/// invitations dormiraient sinon jusqu'à expirer.
+/// Le pendant du `PendingInvitationsBanner` du web. Il rattrape ce que la page
+/// du lien (`InvitationPage`) ne couvre pas : la notification `TEAM_INVITATION`,
+/// qui ouvre « Mes équipes », et la personne invitée avant d'avoir un compte qui
+/// s'inscrit par le formulaire ordinaire, ou dont l'app a été fermée entre
+/// l'inscription et l'activation — s'inscrire n'est pas rejoindre une équipe, et
+/// ses invitations dormiraient sinon jusqu'à expirer.
 ///
 /// Rien ne s'affiche tant que la liste charge, échoue ou est vide : c'est un
 /// rappel, pas un état de l'écran. Une acceptation réussie se voit d'elle-même

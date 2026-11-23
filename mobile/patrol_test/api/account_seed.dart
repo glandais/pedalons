@@ -19,6 +19,21 @@ extension AccountSeed on BackendClient {
     return response.data!;
   }
 
+  /// [login], as a [TestUser] the other seeds accept — for an account the test created through
+  /// the app rather than with [BackendClient.newUser].
+  Future<TestUser> sessionOf(String email, String password) async {
+    final auth = await login(email, password);
+    final user = auth['user'] as Json;
+    return TestUser(
+      id: user['id'] as String,
+      email: email,
+      password: password,
+      displayName: user['displayName'] as String,
+      accessToken: auth['accessToken'] as String,
+      refreshToken: auth['refreshToken'] as String,
+    );
+  }
+
   /// `POST /api/auth/refresh` with [refreshToken]: 200 while the session lives.
   Future<int> refreshStatus(String refreshToken) async =>
       (await http.post<Json>(

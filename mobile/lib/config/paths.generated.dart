@@ -35,6 +35,7 @@ class Paths {
     }
   }
 
+  static String invitation() => '/invitation';
   static String forgotPassword() {
     switch (getCurrentLocale()) {
       case 'fr':
@@ -666,6 +667,10 @@ class PathVariants {
   static Map<String, String> verifyEmail() => {
     'en': '/verify-email',
     'fr': '/verifier-email',
+  };
+  static Map<String, String> invitation() => {
+    'en': '/invitation',
+    'fr': '/invitation',
   };
   static Map<String, String> forgotPassword() => {
     'en': '/forgot-password',

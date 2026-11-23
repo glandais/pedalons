@@ -130,6 +130,27 @@ final class Teams extends Module {
     await waitUntilTeamIsShown();
   }
 
+  // ── The invitation e-mail's link (MOB-179) ─────────────────────────────
+
+  /// Waits for the page the link opens: « {inviter} vous invite à rejoindre {team} ».
+  Future<void> waitUntilInvitationPageIsShown() async {
+    await $(keys.invitation.title).waitUntilVisible();
+  }
+
+  /// Whether the invitation page's title names [text] (the team, the inviter).
+  bool invitationPageShows(String text) => shows(keys.invitation.title, text);
+
+  /// Signed out: « Se connecter ou créer un compte », which keeps the link for after the login.
+  Future<void> signInFromInvitation() async {
+    await (await scrolledTo(keys.invitation.signInButton)).tap();
+  }
+
+  /// Signed in: « Rejoindre l'équipe », which lands on the team's page.
+  Future<void> joinFromInvitation() async {
+    await (await scrolledTo(keys.invitation.joinButton)).tap();
+    await waitUntilTeamIsShown();
+  }
+
   // ── « À propos » and its free pages ────────────────────────────────────
 
   /// Waits for [pageSlug]'s row in the team's « À propos » section.

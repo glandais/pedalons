@@ -31,6 +31,15 @@ class _FakeInvitations implements InvitationsRepository {
         .where((MyInvitationDto i) => i.id != invitationId)
         .toList();
   }
+
+  // Le lien par jeton est l'affaire de `InvitationPage` : la carte ne s'en sert
+  // pas.
+  @override
+  Future<InvitationPreviewDto> preview(String token) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> acceptToken(String token) => throw UnimplementedError();
 }
 
 const MyInvitationDto _invitation = MyInvitationDto(

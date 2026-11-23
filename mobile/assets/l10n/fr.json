@@ -2605,6 +2605,20 @@
       "line": "{inviter} vous invite à rejoindre {team}.",
       "accept": "Accepter",
       "accepting": "Acceptation…"
+    },
+    "page": {
+      "title": "{inviter} vous invite à rejoindre {team}",
+      "subtitle": "En tant que {role}, pour l'adresse {email}.",
+      "signInPrompt": "Connectez-vous, ou créez votre compte avec l'adresse invitée, pour rejoindre l'équipe.",
+      "signIn": "Se connecter ou créer un compte",
+      "join": "Rejoindre l'équipe",
+      "switchAccount": "Utiliser un autre compte",
+      "notRedeemable": "Cette invitation n'est plus valide. Demandez-en une nouvelle à l'équipe.",
+      "alreadyMember": "Vous faites déjà partie de {team}.",
+      "goToTeam": "Voir l'équipe",
+      "unavailableTitle": "Invitation indisponible",
+      "unavailableBody": "Ce lien d'invitation est incomplet. Ouvrez-le à nouveau depuis l'e-mail.",
+      "backHome": "Retour à l'accueil"
     }
   },
   "moderation": {

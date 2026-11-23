@@ -65,16 +65,17 @@ routes:
   # resetPassword: a bearer secret in a path segment ends up in access logs and in the Referer of
   # anything the page loads.
   #
-  # mobile/deeplink stay false until there is a Flutter screen to receive it — turning deeplink on
-  # first would make an installed app swallow the link and drop it nowhere. Flip both in the same
-  # commit as that screen.
+  # An app screen since MOB-179 (`invitation_page.dart`): an installed app opens the e-mail's link,
+  # shows who invites to what, and leads through login or sign-up back to it. Both flags were
+  # flipped in the same commit as that screen — deeplink on before it would have made the app
+  # swallow the link and drop it nowhere.
   - id: invitation
     path:
       en: /invitation
       fr: /invitation
     web: true
-    mobile: false
-    deeplink: false
+    mobile: true
+    deeplink: true
   # Where biketeam sends a team admin who asked to move their team here. The signed request travels
   # in ?request= ; it is not a credential on its own (confirming needs a session), see
   # docs/plans/2026-09-22-biketeam-live-migration.md.

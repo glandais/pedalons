@@ -14,6 +14,7 @@
           "/inscription",
           "/verify-email",
           "/verifier-email",
+          "/invitation",
           "/forgot-password",
           "/mot-de-passe-oublie",
           "/reset-password",

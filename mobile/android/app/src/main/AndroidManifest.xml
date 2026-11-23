@@ -75,6 +75,7 @@
                 <data android:path="/inscription" />
                 <data android:path="/verify-email" />
                 <data android:path="/verifier-email" />
+                <data android:path="/invitation" />
                 <data android:path="/forgot-password" />
                 <data android:path="/mot-de-passe-oublie" />
                 <data android:path="/reset-password" />
