@@ -60,6 +60,14 @@ export const COMMENT_LIST_OPTIONS = {
   sort: SortDirection.ASC,
 } as const
 
+/**
+ * The next page of a comment list, or `undefined` past the last one. Shared by `useComments` and
+ * the SSR prefetch (`prefetchMemberComments`), which TanStack Query ≥ 5.108 requires to declare it.
+ */
+export function getNextCommentPage(last: CommentListResponse): number | undefined {
+  return (last.page + 1) * last.size < last.itemTotal ? last.page + 1 : undefined
+}
+
 interface CommentPageParams {
   page?: number
   size?: number
@@ -123,8 +131,7 @@ export function useComments(
     queryFn: ({ pageParam }) =>
       listComments(teamSlug!, entityType, entitySlug!, { page: pageParam, size, sort }),
     initialPageParam: 0,
-    getNextPageParam: (last) =>
-      (last.page + 1) * last.size < last.itemTotal ? last.page + 1 : undefined,
+    getNextPageParam: getNextCommentPage,
     enabled: !!teamSlug && !!entitySlug,
     staleTime: 30 * 1000, // 30 seconds - comments need fresher data
   })

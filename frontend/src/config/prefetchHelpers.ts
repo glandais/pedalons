@@ -7,12 +7,13 @@ import {
 import { prefetchGetRoutesBulkQuery } from '@/api/endpoints/routes/routes'
 import { prefetchListTeamTagsQuery } from '@/api/endpoints/tags/tags'
 import { ROUTES_BULK_MAX_SLUGS } from '@/hooks/useRoutesBulk'
-import { COMMENT_LIST_OPTIONS } from '@/hooks/useComments'
+import { COMMENT_LIST_OPTIONS, getNextCommentPage } from '@/hooks/useComments'
 import type { MembershipFilterValue } from '@/hooks/filters/membership'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
 import { MinRole } from '@/api/dto'
 import type {
+  CommentListResponse,
   SortDirection,
   TagTarget,
   TeamDetailDto,
@@ -60,7 +61,7 @@ export async function prefetchMemberComments(
     teamSlug: string,
     entitySlug: string,
     params: { page: number; size: number; sort: SortDirection }
-  ) => Promise<unknown>,
+  ) => Promise<CommentListResponse>,
   getQueryKey: (teamSlug: string, entitySlug: string) => readonly unknown[],
   canComment: boolean | undefined
 ) {
@@ -71,6 +72,7 @@ export async function prefetchMemberComments(
     queryFn: ({ pageParam }: { pageParam: number }) =>
       listComments(teamSlug, entitySlug, { page: pageParam, ...COMMENT_LIST_OPTIONS }),
     initialPageParam: 0,
+    getNextPageParam: getNextCommentPage,
   })
 }
 
