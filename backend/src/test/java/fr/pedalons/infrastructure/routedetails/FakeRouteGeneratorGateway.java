@@ -57,6 +57,12 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
   /** The ride types the fake announces under {@code generator.offroad} (api 1.14); empty: none. */
   public static volatile List<String> offroadRideTypes = List.of("gravel", "mtb");
 
+  /**
+   * The ride types the cached capabilities still announce, when they differ from {@link
+   * #offroadRideTypes} (an engine rolled back within the hour); null: the same.
+   */
+  public static volatile @Nullable List<String> cachedOffroadRideTypes = null;
+
   /** The {@code offroad.tolerance} the fake answers with. */
   public static volatile double offroadTolerance = 0.05;
 
@@ -120,6 +126,7 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
     routeCount = 2;
     partial = false;
     offroadRideTypes = List.of("gravel", "mtb");
+    cachedOffroadRideTypes = null;
     offroadTolerance = 0.05;
     offroadShare = null;
     omitOffroadResult = false;
@@ -175,8 +182,15 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
     if (!recent || !generatorEnabled) {
       return Availability.unavailable();
     }
+    List<String> cached = cachedOffroadRideTypes;
     return new Availability(
-        true, graphId, 16L * 1024 * 1024, 10_000, 14, 200_000, offroadRideTypes);
+        true,
+        graphId,
+        16L * 1024 * 1024,
+        10_000,
+        14,
+        200_000,
+        fresh || cached == null ? offroadRideTypes : cached);
   }
 
   @Override
@@ -298,6 +312,10 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
       response.putNull("overlay");
     }
     JsonNode target = request.path("offroad_target");
+    if (!target.isMissingNode() && !offroadRideTypes.contains(request.path("ride_type").asText())) {
+      // the strict JSON of an engine that does not steer this ride type (api 1.13, or a road ride)
+      return problem(new Problem(400, "invalid_input", null, null, null));
+    }
     if (target.isNumber() && !omitOffroadResult) {
       // the engine steers: the outcome is about the first route
       Double share = offroadShare;

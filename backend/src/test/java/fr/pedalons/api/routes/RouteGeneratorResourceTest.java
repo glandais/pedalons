@@ -203,6 +203,34 @@ class RouteGeneratorResourceTest extends AbstractResourceTest {
   }
 
   @Test
+  void anEngineRolledBackWithinTheHourIsAskedAgainWithoutTheTarget() {
+    // the cached capabilities still announce the steering, the engine (api 1.13) refuses the key
+    FakeRouteGeneratorGateway.cachedOffroadRideTypes = List.of("gravel", "mtb");
+    FakeRouteGeneratorGateway.offroadRideTypes = List.of();
+    post(USER1, team1Slug, ride("GRAVEL", "HIGH"))
+        .statusCode(200)
+        .body("candidates[0].unpavedTarget", nullValue())
+        .body("candidates[0].unpavedTargetReached", nullValue());
+    assertEquals(2, FakeRouteGeneratorGateway.calls("POST", "/v1/generator/routes"));
+    assertTrue(lastBody().path("offroad_target").isMissingNode());
+  }
+
+  @Test
+  void aRefusedTargetTheEngineStillAnnouncesIsNotRetried() {
+    engineAnswers(new Problem(400, "invalid_input", null, null, null));
+    post(USER1, team1Slug, ride("GRAVEL", "HIGH"))
+        .statusCode(503)
+        .body("code", equalTo("GENERATOR_UNAVAILABLE"));
+    assertEquals(1, FakeRouteGeneratorGateway.calls("POST", "/v1/generator/routes"));
+  }
+
+  @Test
+  void anUnknownLevelIsRefused_andTheEngineNeverCalled() {
+    post(USER1, team1Slug, ride("GRAVEL", "SOME")).statusCode(400);
+    assertEquals(0, FakeRouteGeneratorGateway.calls("POST", "/v1/generator/routes"));
+  }
+
+  @Test
   void theShareIsReadOnOffroadShareAndTheTargetIsJudgedPerRoute() {
     FakeRouteGeneratorGateway.offroadShare = 0.58;
     post(USER1, team1Slug, ride("GRAVEL", "HIGH"))

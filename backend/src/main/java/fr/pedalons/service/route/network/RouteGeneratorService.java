@@ -110,7 +110,18 @@ public class RouteGeneratorService {
     long t0 = System.nanoTime();
     GenerateResponse answer;
     try {
-      answer = gateway.generate(teamRef, engineRequest);
+      try {
+        answer = gateway.generate(teamRef, engineRequest);
+      } catch (RouteGeneratorException e) {
+        if (!targetRefusedByAnEngineThatNoLongerSteers(e, engineRequest)) {
+          throw e;
+        }
+        // An engine rolled back below api 1.14 since the capabilities were cached (an hour)
+        // refuses the key: they have just been read again and no longer announce the steering, so
+        // the same request goes once more without the target
+        engineRequest = engineRequest.withoutOffroadTarget();
+        answer = gateway.generate(teamRef, engineRequest);
+      }
     } catch (RouteGeneratorException e) {
       Duration took = Duration.ofNanos(System.nanoTime() - t0);
       metrics.generated(took);
@@ -201,6 +212,17 @@ public class RouteGeneratorService {
         request.discovery() == null ? DEFAULT_DISCOVERY : request.discovery(),
         request.seed() == null ? 0 : request.seed(),
         steersUnpaved(type) ? unpavedTarget(unpavedLevel(request)) : null);
+  }
+
+  /**
+   * Whether a 400 answers a target the engine no longer announces it steers, read past the cache.
+   * A 400 to a target it still announces is a genuine refusal and is not retried.
+   */
+  private boolean targetRefusedByAnEngineThatNoLongerSteers(
+      RouteGeneratorException e, GenerateRequest sent) {
+    return e.status() == 400
+        && sent.offroadTarget() != null
+        && !gateway.availability(true).steersUnpaved(sent.rideType());
   }
 
   /** Only a ride that leaves the road has a share off pavement to ask for. */
