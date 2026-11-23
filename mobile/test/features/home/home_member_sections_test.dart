@@ -6,6 +6,7 @@ import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/core/utils/provider_retry.dart';
 import 'package:pedalons/features/home/presentation/widgets/my_teams_section.dart';
+import 'package:pedalons/features/home/presentation/widgets/no_team_welcome.dart';
 import 'package:pedalons/features/home/presentation/widgets/week_agenda_section.dart';
 import 'package:pedalons/features/home/providers/next_ride_provider.dart';
 import 'package:pedalons/features/home/providers/week_events_provider.dart';
@@ -65,6 +66,7 @@ Future<void> _pump(
   List<TeamDetailDto> teams = const <TeamDetailDto>[],
   Object? teamsError,
   bool singleTeam = false,
+  List<MyInvitationDto> invitations = const <MyInvitationDto>[],
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -84,6 +86,7 @@ Future<void> _pump(
         appConfigProvider.overrideWith(
           (Ref ref) async => _config(singleTeam: singleTeam),
         ),
+        myInvitationsProvider.overrideWith((Ref ref) async => invitations),
       ],
       child: MaterialApp(
         theme: PedalonsTheme.build(Brightness.light),
@@ -96,8 +99,86 @@ Future<void> _pump(
   }
 }
 
+const MyInvitationDto _invitation = MyInvitationDto(
+  id: 'inv-1',
+  team: kMemberTeam,
+  inviterName: 'Léa',
+  role: 'MEMBER',
+  expiresAt: '2099-10-01T00:00:00Z',
+);
+
+/// Le haut de [key] à l'écran : l'ordre des étapes se lit de haut en bas.
+double _top(WidgetTester tester, Key key) =>
+    tester.getTopLeft(find.byKey(key)).dy;
+
 void main() {
   setUpAll(loadTestTranslations);
+
+  // L'accueil de qui n'a aucune équipe (docs/LEDGER_*.md WEB-194) : un bloc,
+  // trois étapes dans l'ordre, et les blocs vides qu'il remplace se taisent.
+  group('Sans équipe', () {
+    testWidgets('trouver une équipe, puis en créer une', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, const NoTeamWelcome());
+
+      expect(find.byKey(keys.home.noTeamWelcome), findsOneWidget);
+      expect(find.text('Bienvenue !'), findsOneWidget);
+      expect(
+        _top(tester, keys.home.noTeamFindButton),
+        lessThan(_top(tester, keys.home.noTeamCreateButton)),
+      );
+    });
+
+    testWidgets('les invitations d\'abord, avec « Rejoindre » sur place', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        const NoTeamWelcome(),
+        invitations: const <MyInvitationDto>[_invitation],
+      );
+
+      final Key join = keys.home.noTeamJoinButton(kMemberTeam.slug);
+      expect(find.byKey(join), findsOneWidget);
+      expect(
+        find.text('Léa vous invite à rejoindre ${kMemberTeam.name}.'),
+        findsOneWidget,
+      );
+      expect(
+        _top(tester, join),
+        lessThan(_top(tester, keys.home.noTeamFindButton)),
+      );
+    });
+
+    testWidgets('un site mono-équipe ne propose que de créer', (
+      WidgetTester tester,
+    ) async {
+      await _pump(tester, const NoTeamWelcome(), singleTeam: true);
+
+      expect(find.byKey(keys.home.noTeamFindButton), findsNothing);
+      expect(find.byKey(keys.home.noTeamCreateButton), findsOneWidget);
+    });
+
+    testWidgets('une semaine vide ne montre rien', (WidgetTester tester) async {
+      await _pump(tester, const WeekAgendaSection(hideWhenEmpty: true));
+
+      expect(find.byType(WeekAgendaRow), findsNothing);
+      expect(find.text('Cette semaine'), findsNothing);
+    });
+
+    testWidgets('une semaine avec une sortie la montre quand même', (
+      WidgetTester tester,
+    ) async {
+      await _pump(
+        tester,
+        const WeekAgendaSection(hideWhenEmpty: true),
+        events: <CalendarEventDto>[_event('publique', registered: true)],
+      );
+
+      expect(find.byKey(keys.home.weekEvent('publique')), findsOneWidget);
+    });
+  });
 
   group('weekAgendaEvents', () {
     test('écarte ce qui est terminé et trie par instant', () {

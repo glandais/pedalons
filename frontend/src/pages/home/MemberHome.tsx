@@ -12,6 +12,7 @@ import { NextRideCard } from '../../components/home/NextRideCard'
 import { WeekAgenda } from '../../components/home/WeekAgenda'
 import { MyTeamsCard } from '../../components/home/MyTeamsCard'
 import { QuickActions } from '../../components/home/QuickActions'
+import { NoTeamWelcome } from '../../components/home/NoTeamWelcome'
 import { PendingInvitationsBanner } from '../../components/team/PendingInvitationsBanner'
 import { useWeekSummary } from '../../components/home/memberHomeHelpers'
 import { paths } from '../../config/paths'
@@ -23,7 +24,8 @@ const NEXT_RIDE_HEADING_ID = 'home-next-ride-title'
 
 /**
  * The home of a signed-in member: greeting, organizer shortcuts, « Ma prochaine sortie », the
- * week and their teams aside, then the feed.
+ * week and their teams aside, then the feed. Without any team, one welcome block replaces those
+ * three cards (`NoTeamWelcome`, docs/LEDGER_*.md WEB-194).
  */
 export function MemberHome() {
   const { t, i18n } = useTranslation()
@@ -32,12 +34,19 @@ export function MemberHome() {
   const feed = useHomeFeedData()
   const { week, teams } = useMemberHomeData(feed.nowIso)
   const summary = useWeekSummary(week.data?.events)
+  // Known to be no team, not merely not loaded yet: while loading or on error the usual cards say so.
+  const noTeam = teams.isSuccess && teams.data.teams.length === 0
+  // Without a team, « Ma prochaine sortie » and the week only show when they hold something — a
+  // public ride of another team the person signed up to; empty, they were the dead ends WEB-194
+  // replaced with the welcome block.
+  const hasWeekEvents = (week.data?.events?.length ?? 0) > 0
 
   // Registered rides only: the participations window also holds trips and watched rides.
   const participations = feed.participations
   const nextRide = participations.data?.publications?.find(
     (p): p is RideDto => p.type === 'RIDE' && (p as RideDto).registered
   )
+  const showAgenda = !noTeam || nextRide !== undefined || hasWeekEvents
 
   const today = formatInTimeZone(new Date(), timezone, t('home.member.dateFormat'), {
     locale: i18n.language === 'fr' ? fr : enUS,
@@ -74,74 +83,80 @@ export function MemberHome() {
   return (
     <Stack>
       {header}
-      {/* An invitee lands here after signing up: the invitation is the first thing to do (WEB-193). */}
-      <PendingInvitationsBanner />
+      {/* An invitee lands here after signing up: the invitation is the first thing to do (WEB-193).
+          Without a team, the welcome block holds the invitations itself. */}
+      {!noTeam && <PendingInvitationsBanner />}
       <Stack gap="xl">
-        <Grid gap="lg">
-          <Grid.Col span={{ base: 12, md: 7, lg: 8 }}>
-            <Box component="section" aria-labelledby={NEXT_RIDE_HEADING_ID}>
-              {nextRide ? (
-                <NextRideCard ride={nextRide} headingId={NEXT_RIDE_HEADING_ID} />
-              ) : participations.isLoading ? (
-                <Paper withBorder radius="md" p="md">
-                  <Stack>
-                    {nextRideHeading}
-                    <Skeleton h={24} w="40%" />
-                    <Skeleton h={160} />
-                    <Skeleton h={36} w="60%" />
-                  </Stack>
-                </Paper>
-              ) : participations.isError ? (
-                <Paper withBorder radius="md" p="md">
+        {noTeam && <NoTeamWelcome />}
+        {showAgenda && (
+          <Grid gap="lg">
+            <Grid.Col span={{ base: 12, md: 7, lg: 8 }}>
+              <Box component="section" aria-labelledby={NEXT_RIDE_HEADING_ID}>
+                {nextRide ? (
+                  <NextRideCard ride={nextRide} headingId={NEXT_RIDE_HEADING_ID} />
+                ) : participations.isLoading ? (
+                  <Paper withBorder radius="md" p="md">
+                    <Stack>
+                      {nextRideHeading}
+                      <Skeleton h={24} w="40%" />
+                      <Skeleton h={160} />
+                      <Skeleton h={36} w="60%" />
+                    </Stack>
+                  </Paper>
+                ) : participations.isError ? (
+                  <Paper withBorder radius="md" p="md">
+                    <Stack gap="xs">
+                      {nextRideHeading}
+                      <Text size="sm" c="dimmed">
+                        {t('error.loading')}
+                      </Text>
+                    </Stack>
+                  </Paper>
+                ) : (
                   <Stack gap="xs">
                     {nextRideHeading}
-                    <Text size="sm" c="dimmed">
-                      {t('error.loading')}
-                    </Text>
+                    <EmptyState
+                      icon={<IconBike size={48} />}
+                      title={t('home.nextRide.empty.title')}
+                      description={t('home.nextRide.empty.description')}
+                      actions={
+                        <Button
+                          component={PrefetchLink}
+                          to={paths.calendar()}
+                          variant="light"
+                          leftSection={<IconCalendar size={16} />}
+                        >
+                          {t('home.week.calendarLink')}
+                        </Button>
+                      }
+                    />
                   </Stack>
-                </Paper>
-              ) : (
-                <Stack gap="xs">
-                  {nextRideHeading}
-                  <EmptyState
-                    icon={<IconBike size={48} />}
-                    title={t('home.nextRide.empty.title')}
-                    description={t('home.nextRide.empty.description')}
-                    actions={
-                      <Button
-                        component={PrefetchLink}
-                        to={paths.calendar()}
-                        variant="light"
-                        leftSection={<IconCalendar size={16} />}
-                      >
-                        {t('home.week.calendarLink')}
-                      </Button>
-                    }
+                )}
+              </Box>
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 5, lg: 4 }}>
+              <Stack gap="lg">
+                <WeekAgenda
+                  nowIso={feed.nowIso}
+                  events={week.data?.events}
+                  isLoading={week.isLoading}
+                  isError={week.isError}
+                  nextRide={
+                    nextRide ? { teamSlug: nextRide.team.slug, slug: nextRide.slug } : undefined
+                  }
+                />
+                {!noTeam && (
+                  <MyTeamsCard
+                    teams={teams.data?.teams}
+                    total={teams.data?.total}
+                    isLoading={teams.isLoading}
+                    isError={teams.isError}
                   />
-                </Stack>
-              )}
-            </Box>
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, md: 5, lg: 4 }}>
-            <Stack gap="lg">
-              <WeekAgenda
-                nowIso={feed.nowIso}
-                events={week.data?.events}
-                isLoading={week.isLoading}
-                isError={week.isError}
-                nextRide={
-                  nextRide ? { teamSlug: nextRide.team.slug, slug: nextRide.slug } : undefined
-                }
-              />
-              <MyTeamsCard
-                teams={teams.data?.teams}
-                total={teams.data?.total}
-                isLoading={teams.isLoading}
-                isError={teams.isError}
-              />
-            </Stack>
-          </Grid.Col>
-        </Grid>
+                )}
+              </Stack>
+            </Grid.Col>
+          </Grid>
+        )}
 
         <HomeFeedSection feed={feed} title={t('home.feed.title')} />
       </Stack>

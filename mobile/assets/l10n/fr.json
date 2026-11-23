@@ -252,6 +252,21 @@
         "one": "{} nouvelle publication",
         "other": "{} nouvelles publications"
       }
+    },
+    "noTeam": {
+      "title": "Bienvenue !",
+      "subtitle": "Tout se passe dans une équipe : les sorties, les parcours, les annonces. Par quoi commencer ?",
+      "join": "Rejoindre",
+      "find": {
+        "title": "Rejoindre une équipe existante",
+        "description": "Parcourez les équipes ouvertes et rejoignez celle qui vous correspond.",
+        "action": "Trouver une équipe"
+      },
+      "create": {
+        "title": "Créer une équipe",
+        "description": "Lancez votre club ou votre groupe, puis invitez ses membres.",
+        "action": "Créer mon équipe"
+      }
     }
   },
   "teams": {

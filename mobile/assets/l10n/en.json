@@ -252,6 +252,21 @@
         "one": "{} new post",
         "other": "{} new posts"
       }
+    },
+    "noTeam": {
+      "title": "Welcome!",
+      "subtitle": "Everything happens in a team: rides, routes, ads. Where to start?",
+      "join": "Join",
+      "find": {
+        "title": "Join an existing team",
+        "description": "Browse the open teams and join the one that suits you.",
+        "action": "Find a team"
+      },
+      "create": {
+        "title": "Create a team",
+        "description": "Start your club or your group, then invite its members.",
+        "action": "Create my team"
+      }
     }
   },
   "teams": {

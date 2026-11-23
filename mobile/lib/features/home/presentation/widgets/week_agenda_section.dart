@@ -33,7 +33,11 @@ const int kWeekAgendaLimit = 5;
 /// Un échec masque le bloc ; une semaine vide le réduit à une carte compacte
 /// qui mène au calendrier.
 class WeekAgendaSection extends ConsumerWidget {
-  const WeekAgendaSection({super.key});
+  const WeekAgendaSection({super.key, this.hideWhenEmpty = false});
+
+  /// Rien d'autre cette semaine : aucun bloc plutôt que la carte compacte
+  /// (sans équipe, `NoTeamWelcome` dit déjà quoi faire — WEB-194).
+  final bool hideWhenEmpty;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,6 +58,7 @@ class WeekAgendaSection extends ConsumerWidget {
             if (!_isNextRide(e, nextRide)) e,
         ];
         if (events.isEmpty) {
+          if (hideWhenEmpty) return const SizedBox.shrink();
           // Only the next ride this week: it sits right above, so « nothing else ».
           return _frame(context, _WeekEmpty(nothingElse: all.isNotEmpty));
         }

@@ -20,6 +20,7 @@ import '../../providers/next_ride_provider.dart';
 import '../../providers/week_events_provider.dart';
 import '../widgets/my_teams_section.dart';
 import '../widgets/next_ride_card.dart';
+import '../widgets/no_team_welcome.dart';
 import '../widgets/week_agenda_section.dart';
 
 /// L'accueil — « qu'est-ce que je fais à vélo cette semaine ? ».
@@ -39,6 +40,8 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Sans équipe, pas tant que la liste charge ou a échoué (WEB-194).
+    final bool noTeam = ref.watch(myTeamsProvider).value?.isEmpty ?? false;
     return Scaffold(
       body: PublicationFeedView(
         teamSlug: null,
@@ -70,12 +73,19 @@ class HomePage extends ConsumerWidget {
         },
         leadingSlivers: <Widget>[
           const _HomeAppBar(),
-          // Les invitations en attente d'abord : une personne invitée avant
-          // d'avoir un compte arrive ici après l'activation (MOB-179).
-          const SliverToBoxAdapter(child: PendingInvitationsCard()),
-          const SliverToBoxAdapter(child: _NextRideSliver()),
-          const SliverToBoxAdapter(child: WeekAgendaSection()),
-          const SliverToBoxAdapter(child: MyTeamsSection()),
+          // Sans équipe, un seul bloc dit quoi faire en premier, invitations
+          // comprises (WEB-194) ; « Ma prochaine sortie » et la semaine ne
+          // restent que si elles ont quelque chose à montrer — une sortie
+          // publique d'une autre équipe. Avec une équipe, les invitations en
+          // attente d'abord : une personne invitée avant d'avoir un compte
+          // arrive ici après l'activation (MOB-179).
+          if (noTeam)
+            const SliverToBoxAdapter(child: NoTeamWelcome())
+          else
+            const SliverToBoxAdapter(child: PendingInvitationsCard()),
+          SliverToBoxAdapter(child: _NextRideSliver(hideWhenEmpty: noTeam)),
+          SliverToBoxAdapter(child: WeekAgendaSection(hideWhenEmpty: noTeam)),
+          if (!noTeam) const SliverToBoxAdapter(child: MyTeamsSection()),
         ],
       ),
     );
@@ -142,7 +152,11 @@ class _HomeAppBar extends ConsumerWidget {
 /// **Un échec masque le bloc sans rien afficher** : c'est un enrichissement,
 /// il n'a pas le droit de casser l'accueil.
 class _NextRideSliver extends ConsumerWidget {
-  const _NextRideSliver();
+  const _NextRideSliver({this.hideWhenEmpty = false});
+
+  /// Rien à venir : aucun bloc plutôt que la carte compacte (sans équipe,
+  /// `NoTeamWelcome` dit déjà quoi faire).
+  final bool hideWhenEmpty;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -154,18 +168,20 @@ class _NextRideSliver extends ConsumerWidget {
         child: PdlSkeletonCard(),
       ),
       error: (Object error, StackTrace stack) => const SizedBox.shrink(),
-      data: (NextRide? value) => Padding(
-        padding: const EdgeInsets.all(PdlSpacing.section),
-        child: value == null
-            ? NoNextRideCard(
-                key: keys.home.noNextRideCard,
-                onExplore: () => context.go(Paths.allRoutesMap()),
-              )
-            : NextRideCard(
-                key: keys.home.nextRideCard(value.ride.slug),
-                next: value,
-              ),
-      ),
+      data: (NextRide? value) => value == null && hideWhenEmpty
+          ? const SizedBox.shrink()
+          : Padding(
+              padding: const EdgeInsets.all(PdlSpacing.section),
+              child: value == null
+                  ? NoNextRideCard(
+                      key: keys.home.noNextRideCard,
+                      onExplore: () => context.go(Paths.allRoutesMap()),
+                    )
+                  : NextRideCard(
+                      key: keys.home.nextRideCard(value.ride.slug),
+                      next: value,
+                    ),
+            ),
     );
   }
 }

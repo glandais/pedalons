@@ -67,4 +67,12 @@ class HomeKeys {
 
   /// « Trouver une équipe », en tête de section ou dans la carte sans équipe.
   final findTeamButton = const _HomeKey('findTeam');
+
+  /// Le bloc d'accueil de qui n'a aucune équipe (docs/LEDGER_*.md WEB-194), ses
+  /// trois étapes : rejoindre une invitation, trouver une équipe, en créer une.
+  final noTeamWelcome = const _HomeKey('noTeamWelcome');
+  ValueKey<String> noTeamJoinButton(String teamSlug) =>
+      _HomeKey('noTeamJoin_$teamSlug');
+  final noTeamFindButton = const _HomeKey('noTeamFind');
+  final noTeamCreateButton = const _HomeKey('noTeamCreate');
 }
