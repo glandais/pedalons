@@ -80,8 +80,9 @@ final class _View {
   _View.android(AndroidNativeView view)
     : texts = [?view.text, ?view.contentDescription, ?view.resourceName],
       description = '${view.className} pkg=${view.applicationPackage}',
-      // The chooser's list of targets, the framework's own id whatever the package serving it.
-      isSheetNode = view.resourceName == 'android:id/resolver_list',
+      // The chooser's list of targets: the framework's own id on Android 14 (`android:id/…`),
+      // the resolver's own on newer releases (`com.android.intentresolver:id/…`, Pixel 6a).
+      isSheetNode = view.resourceName?.endsWith(':id/resolver_list') ?? false,
       children = [for (final child in view.children) _View.android(child)];
 
   final List<String> texts;
