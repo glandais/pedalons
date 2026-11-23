@@ -101,7 +101,26 @@ export async function loginWithOtp(email: string): Promise<AuthResponse> {
 }
 
 export const loginWithPassword = (email: string, password: string) =>
-  apiPost<AuthResponse>(undefined, '/api/auth/login', { email, password })
+  retryOn429(() => apiPost<AuthResponse>(undefined, '/api/auth/login', { email, password }))
+
+/**
+ * Runs a password login again while it gets 429. The password throttle counts an admitted login as
+ * a failure until it succeeds (docs/LEDGER_*.md SEC-36): past five logins in flight for one address,
+ * the next is refused although none fails — and every worker signs the seeded admin in at once
+ * (roleSession) when the suite starts. A refused login records nothing, so it is simply tried again
+ * a moment later; any other error is thrown. No test expects a password login's 429: the throttle
+ * itself is covered by the backend's tests.
+ */
+export async function retryOn429<T>(login: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await login()
+    } catch (e) {
+      if (!(e instanceof ApiError) || e.status !== 429 || attempt === 8) throw e
+      await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
+    }
+  }
+}
 
 /**
  * Sign-up as the app does it: register, then follow the verification link from the mail and choose

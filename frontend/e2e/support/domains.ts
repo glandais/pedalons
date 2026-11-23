@@ -12,7 +12,16 @@ import type {
   TeamDetailDto,
   UpdateDomainAliasRequest,
 } from '../../src/api/dto'
-import { ApiError, apiGet, apiPatch, apiPost, apiPut, expectOk, type AuthResponse } from './api'
+import {
+  ApiError,
+  apiGet,
+  apiPatch,
+  apiPost,
+  apiPut,
+  expectOk,
+  retryOn429,
+  type AuthResponse,
+} from './api'
 import { roleSession, SESSION_MAX_AGE_MS, teamRequest } from './data'
 import { linkTokenIn, mailbox, waitForNewMail } from './mailpit'
 import { keepRotatedSession, type RawDocument } from './ssr'
@@ -124,8 +133,9 @@ export async function registerOn(
   return { ...auth, password }
 }
 
+/** A password login on `host`, tried again while it gets 429 (see api.ts retryOn429). */
 export const loginOn = (host: string, email: string, password: string) =>
-  hostPost<AuthResponse>(host, undefined, '/api/auth/login', { email, password })
+  retryOn429(() => hostPost<AuthResponse>(host, undefined, '/api/auth/login', { email, password }))
 
 /**
  * A fresh access token for `refreshToken`, asked of `host` — null when that host refuses it (4xx).
@@ -419,7 +429,7 @@ let plannerSession:
  */
 async function logInPlannerOwner(): Promise<AuthResponse & { password: string }> {
   const { password } = PLANNER_OWNER
-  const login = () => retryOn429(() => loginOn(PLANNER_HOST, PLANNER_OWNER.email, password))
+  const login = () => loginOn(PLANNER_HOST, PLANNER_OWNER.email, password)
   try {
     return { ...(await login()), password }
   } catch (e) {
@@ -434,27 +444,12 @@ async function logInPlannerOwner(): Promise<AuthResponse & { password: string }>
 }
 
 /**
- * Runs a password login again while it gets 429. Every planner test logs the planner's user in, from
- * every worker at once, and the password throttle counts an admitted login as a failure until it
- * succeeds (docs/LEDGER_*.md SEC-36): past five logins in flight for one address, the next is
- * refused although none fails. A refused login records nothing, so it is simply tried again a
- * moment later; any other error is thrown.
+ * Signs `context` in as the planner's user, with a session of its own. Every planner test logs that
+ * user in from every worker at once: loginOn() tries again on 429 (api.ts retryOn429).
  */
-async function retryOn429<T>(login: () => Promise<T>): Promise<T> {
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await login()
-    } catch (e) {
-      if (!(e instanceof ApiError) || e.status !== 429 || attempt === 8) throw e
-      await new Promise((resolve) => setTimeout(resolve, 250 * attempt))
-    }
-  }
-}
-
-/** Signs `context` in as the planner's user, with a session of its own (see retryOn429). */
 export async function signInPlanner(context: BrowserContext) {
   const { owner } = await plannerSite()
-  await retryOn429(() => signInOn(context, PLANNER_PIN_HOST, owner))
+  await signInOn(context, PLANNER_PIN_HOST, owner)
 }
 
 /**

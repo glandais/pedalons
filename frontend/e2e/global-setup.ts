@@ -10,7 +10,7 @@ import {
   type AuthResponse,
 } from './support/api'
 import { teamRequest } from './support/data'
-import { ensureOtherAdmin } from './support/domains'
+import { ensureOtherAdmin, pinnedAlias, plannerSite } from './support/domains'
 import { seedPath, stack } from './support/stack'
 import type { Seed } from './support/fixtures'
 
@@ -67,6 +67,12 @@ export default async function globalSetup() {
   // After the seed: it signs the admin in (roleSession reads the seed). Before the workers: see
   // ensureOtherAdmin for why not in each of them.
   await ensureOtherAdmin()
+  // The same for the sites created on first use. On a fresh stack, every worker probing the
+  // planner's user at once failed five logins (unknown account) and closed that address for
+  // 15 minutes, failing every planner test; two workers creating the pinned team at once gave the
+  // second one `pin-e2e-1`. Created here, serially, the workers only find them.
+  await plannerSite()
+  await pinnedAlias()
 }
 
 async function assertStackUp() {
