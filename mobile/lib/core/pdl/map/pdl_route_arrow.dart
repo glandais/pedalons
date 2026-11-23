@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:maplibre/maplibre.dart';
+
 /// Le chevron répété le long d'un tracé pour en montrer le sens — le même que
 /// celui du site (`frontend/src/components/map/RouteArrows.tsx`,
 /// `routeArrowLayout.ts`).
@@ -16,23 +18,27 @@ const int _supersample = 3;
 /// Taille affichée, en points logiques — celle du site (32 px à `pixelRatio: 2`).
 const int _displaySize = 16;
 
-/// Mise en page d'une couche `symbol` qui répète le chevron le long d'une
-/// source de lignes. Un placement `line` tourne l'axe x de l'icône dans le
+/// Une couche `symbol` qui répète le chevron le long d'une source de lignes. Un placement `line` tourne l'axe x de l'icône dans le
 /// sens des coordonnées : le chevron est donc dessiné pointant vers l'est.
 ///
 /// `symbol-spacing` est plus serré que les 90 du site : MapLibre natif mesure
 /// l'espacement sur la tuile, que le zoom fractionnaire agrandit, et au cadrage
 /// d'une étape de 65 km il ne posait **qu'un** chevron sur la vignette — caché
 /// d'office sous une borne kilométrique, qui est un widget posé par-dessus.
-const Map<String, Object> pdlRouteArrowLayout = <String, Object>{
-  'symbol-placement': 'line',
-  'symbol-spacing': 50,
-  'icon-image': pdlRouteArrowImageId,
-  'icon-size': 1 / _supersample,
-  'icon-allow-overlap': true,
-  'icon-ignore-placement': true,
-  'icon-rotation-alignment': 'map',
-};
+SymbolStyleLayer pdlRouteArrowLayer({
+  required String id,
+  required String sourceId,
+}) => SymbolStyleLayer(
+  id: id,
+  sourceId: sourceId,
+  placement: const .literal(SymbolPlacement.line),
+  spacing: const .literal(50),
+  iconImage: const .literal(pdlRouteArrowImageId),
+  iconSize: const .literal(1 / _supersample),
+  iconAllowOverlap: const .literal(true),
+  iconIgnorePlacement: const .literal(true),
+  iconRotationAlignment: const .literal(IconRotationAlignment.map),
+);
 
 /// Le chevron en PNG : un trait [fill] sur un liseré [rim], lisible sur toutes
 /// les couleurs de tracé et tous les fonds. `null` si l'encodage échoue.

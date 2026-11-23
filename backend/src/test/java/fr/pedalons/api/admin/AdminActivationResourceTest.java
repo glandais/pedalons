@@ -1,7 +1,9 @@
 package fr.pedalons.api.admin;
 
 import static io.restassured.RestAssured.given;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
@@ -81,7 +83,7 @@ class AdminActivationResourceTest extends AbstractResourceTest {
             .statusCode(200)
             .extract()
             .jsonPath();
-    assertThat(body.getInt("weeksBack")).isEqualTo(4);
+    assertEquals(4, body.getInt("weeksBack"));
     String domainId = TsidUtils.toString(other.getId());
     return body.<Map<String, Object>>getList("weeks").stream()
         .filter(row -> domainId.equals(row.get("domainId")))
@@ -109,23 +111,22 @@ class AdminActivationResourceTest extends AbstractResourceTest {
     dataService.addUserToTeam(late, team, TeamRole.MEMBER);
 
     List<Map<String, Object>> rows = rowsOfOtherDomain();
-    assertThat(rows).hasSize(2);
+    assertEquals(2, rows.size());
 
     Map<String, Object> thisWeek = rows.get(0);
-    assertThat(thisWeek.get("domainName")).isEqualTo("Activation");
-    assertThat(thisWeek.get("complete")).isEqualTo(false);
-    assertThat(thisWeek)
-        .containsEntry("signedUp", 2)
-        .containsEntry("verified", 1)
-        .containsEntry("joinedTeam", 1)
-        .containsEntry("joinedRide", 1);
+    assertEquals("Activation", thisWeek.get("domainName"));
+    assertEquals(false, thisWeek.get("complete"));
+    assertEquals(2, thisWeek.get("signedUp"));
+    assertEquals(1, thisWeek.get("verified"));
+    assertEquals(1, thisWeek.get("joinedTeam"));
+    assertEquals(1, thisWeek.get("joinedRide"));
 
     Map<String, Object> earlier = rows.get(1);
-    assertThat((String) earlier.get("weekStart")).isLessThan((String) thisWeek.get("weekStart"));
-    assertThat(earlier)
-        .containsEntry("signedUp", 1)
-        .containsEntry("joinedTeam", 0)
-        .containsEntry("joinedRide", 0);
+    assertTrue(
+        ((String) earlier.get("weekStart")).compareTo((String) thisWeek.get("weekStart")) < 0);
+    assertEquals(1, earlier.get("signedUp"));
+    assertEquals(0, earlier.get("joinedTeam"));
+    assertEquals(0, earlier.get("joinedRide"));
   }
 
   @Test
@@ -134,8 +135,8 @@ class AdminActivationResourceTest extends AbstractResourceTest {
 
     List<Map<String, Object>> rows = rowsOfOtherDomain();
 
-    assertThat(rows).hasSize(1);
-    assertThat(rows.get(0).get("complete")).isEqualTo(true);
+    assertEquals(1, rows.size());
+    assertEquals(true, rows.get(0).get("complete"));
   }
 
   @Test
@@ -153,7 +154,8 @@ class AdminActivationResourceTest extends AbstractResourceTest {
             .extract()
             .asString();
 
-    assertThat(body).doesNotContain("someone@activation.test").doesNotContain("Someone");
+    assertFalse(body.contains("someone@activation.test"));
+    assertFalse(body.contains("Someone"));
   }
 
   @Test

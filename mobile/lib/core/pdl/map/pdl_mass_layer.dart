@@ -26,22 +26,18 @@
 // signifié maintenir deux rendus de la même carte, dont un qu'on ne veut plus
 // voir.
 //
-// **La sélection au tap** ne passe pas par `queryLayers` : `QueriedLayer` ne
-// porte que des identifiants de couche, et sur une source vectorielle tous les
-// parcours vivent dans **une** couche. Elle passe par
-// `PdlMapController.massFeatureAt`, bâti sur `featuresAtPoint`, qui rend les
-// propriétés de l'entité — exactement ce que fait la carte web avec
+// **La sélection au tap** ne lit pas l'identifiant de couche : sur une source
+// vectorielle tous les parcours vivent dans **une** couche. Elle passe par
+// `PdlMapController.massFeatureAt`, bâti sur `queryRenderedFeatures`, qui rend
+// les propriétés de l'entité — exactement ce que fait la carte web avec
 // `event.features[0].properties`. Les propriétés disponibles sont celles du
 // type `route_mvt_row` du backend : `slug`, `name`, `team_slug`, `distance`,
 // `elevation_gain`.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:maplibre/maplibre.dart';
-import 'package:path_provider/path_provider.dart';
+
+import '../../material.dart';
 
 /// Les tuiles vectorielles de parcours servies par le backend.
 abstract final class PdlMassTiles {
@@ -54,12 +50,16 @@ abstract final class PdlMassTiles {
   /// au-delà du zoom 2 (§1.3.2-2). 14 est le niveau maximal auquel le backend
   /// génère ses tuiles ; MapLibre sur-zoome celles-ci au-delà.
   ///
-  /// Et `sourceLayer` se précise sur la **couche**, pas sur la source — la
-  /// propriété homonyme de `VectorSource` est dépréciée et sans effet.
+  /// Et `sourceLayer` se précise sur la **couche**, pas sur la source.
+  ///
+  /// Toutes les plateformes la posent telle quelle depuis `maplibre` 0.4. Sous
+  /// 0.3, `maplibre_android` ne lisait que `VectorSource.url` et levait sur une
+  /// source définie par `tiles` (feedback #8) : Android recevait l'URL d'un
+  /// TileJSON écrit dans le cache de l'app, détour retiré avec le greffon.
   static VectorSource source({
     required String id,
     required String tileUrlTemplate,
-  }) => VectorSource(
+  }) => VectorSource.tiles(
     id: id,
     tiles: <String>[tileUrlTemplate],
     minZoom: 0,
@@ -67,78 +67,27 @@ abstract final class PdlMassTiles {
     volatile: true,
   );
 
-  /// La source telle que la plateforme courante sait la poser.
-  ///
-  /// **Android ne sait pas poser [source]** : `maplibre_android` 0.3.6 ne lit
-  /// que `VectorSource.url` (`source.url!`, un `TypeError` sur une source
-  /// définie par `tiles`) — l'écran des parcours levait à chaque ouverture
-  /// (feedback #8). On lui donne donc l'URL d'un TileJSON écrit dans le cache
-  /// de l'app, que le SDK lit par son chargeur `file://` ; le document porte la
-  /// même plage de zoom que [source]. iOS lit `tiles` correctement et garde
-  /// [source].
-  ///
-  /// À retirer quand le greffon construira un `VectorSource` sur `TileSet`
-  /// (la liaison JNI `VectorSource.new$4` existe déjà).
-  static Future<VectorSource> platformSource({
-    required String id,
-    required String tileUrlTemplate,
-  }) async {
-    if (defaultTargetPlatform != TargetPlatform.android) {
-      return source(id: id, tileUrlTemplate: tileUrlTemplate);
-    }
-    final Directory dir = await getApplicationCacheDirectory();
-    // Un fichier par gabarit, donc par jeton : le SDK ne relit jamais un
-    // document qu'il croit déjà connaître. Les précédents sont supprimés.
-    final String name =
-        'pdl-mass-${tileUrlTemplate.hashCode.toUnsigned(32).toRadixString(16)}.json';
-    final File file = File('${dir.path}/$name');
-    if (!file.existsSync()) {
-      await for (final FileSystemEntity old in dir.list()) {
-        final String oldName = old.uri.pathSegments.last;
-        if (oldName.startsWith('pdl-mass-') && oldName.endsWith('.json')) {
-          await old.delete();
-        }
-      }
-      await file.writeAsString(tileJson(tileUrlTemplate));
-    }
-    return VectorSource(id: id, url: file.uri.toString(), volatile: true);
-  }
-
-  /// Le TileJSON équivalent à [source], pour les SDK qui ne prennent qu'une URL.
-  static String tileJson(String tileUrlTemplate) => jsonEncode(<String, Object>{
-    'tilejson': '3.0.0',
-    'tiles': <String>[tileUrlTemplate],
-    'minzoom': 0,
-    'maxzoom': 14,
-    'vector_layers': <Map<String, Object>>[
-      <String, Object>{'id': sourceLayerId, 'fields': <String, String>{}},
-    ],
-  });
-
-  /// La couche de tracés adossée à [source].
+  /// La couche de tracés adossée à [source], au trait [color].
   static LineStyleLayer layer({
     required String id,
     required String sourceId,
-    required String colorHex,
+    required Color color,
   }) => LineStyleLayer(
     id: id,
     sourceId: sourceId,
     sourceLayerId: sourceLayerId,
-    layout: const <String, Object>{'line-cap': 'round', 'line-join': 'round'},
-    paint: <String, Object>{
-      'line-color': colorHex,
-      'line-width': <Object>[
-        'interpolate',
-        <Object>['linear'],
-        <Object>['zoom'],
-        6,
-        1.0,
-        10,
-        2.0,
-        14,
-        4.0,
-      ],
-      'line-opacity': 0.7,
-    },
+    cap: const .literal(LineCap.round),
+    join: const .literal(LineJoin.round),
+    color: .literal(color),
+    width: Expression.interpolate<num>(
+      const Interpolation.linear(),
+      Expression.zoom(),
+      <num, Expression<num>>{
+        6: const Expression.literal(1.0),
+        10: const Expression.literal(2.0),
+        14: const Expression.literal(4.0),
+      },
+    ),
+    opacity: const .literal(0.7),
   );
 }

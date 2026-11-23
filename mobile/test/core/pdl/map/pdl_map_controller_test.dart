@@ -3,76 +3,126 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:maplibre/maplibre.dart';
+import 'package:maplibre_platform_interface/maplibre_platform_interface.dart'
+    show StyleBackend;
 import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pdl/map/pdl_map_controller.dart';
 import 'package:pedalons/core/pdl/map/pdl_route_arrow.dart';
 import 'package:pedalons/core/pdl/map/pdl_waypoint_mark.dart';
 
-/// Un style qui applique les deux règles de MapLibre iOS qui comptent ici :
-/// `addSource` lève sur un identifiant déjà pris, et `removeSource` ne fait
-/// rien tant qu'une couche emploie la source. Chaque appel rend la main,
-/// comme le vrai, ce qui laisse deux poses s'entrelacer.
-class _StrictStyle extends Fake implements StyleController {
-  final Set<String> sources = <String>{};
-  final Map<String, String?> layers = <String, String?>{};
-  final Map<String, Uint8List> images = <String, Uint8List>{};
-  final Map<String, StyleLayer> layerObjects = <String, StyleLayer>{};
-  final Map<String, String> geoJson = <String, String>{};
-  int imageCalls = 0;
+/// La carte native vue des collections : chaque commande rend la main, comme
+/// la vraie, ce qui laisse deux poses s'entrelacer.
+class _AsyncBackend implements StyleBackend {
+  Future<void> _tick() => Future<void>.delayed(Duration.zero);
 
   @override
-  Future<void> addImage(String id, Uint8List bytes) async {
+  Future<void> addLayer(Map<String, Object?> json, {String? belowLayerId}) =>
+      _tick();
+
+  @override
+  Future<void> removeLayer(String id) => _tick();
+
+  @override
+  void moveLayer(String id, {String? belowLayerId}) {}
+
+  @override
+  void setLayerProperty(
+    String layerId,
+    String name,
+    Object? value, {
+    required bool layout,
+  }) {}
+
+  @override
+  void setFilter(String layerId, Object? filter) {}
+
+  @override
+  void setZoomRange(String layerId, double minZoom, double maxZoom) {}
+
+  @override
+  Future<void> addSource(Source source) => _tick();
+
+  @override
+  Future<void> removeSource(String id) => _tick();
+
+  @override
+  Future<void> setGeoJsonData(String id, GeoJsonData data) => _tick();
+
+  @override
+  Future<void> setGeoJsonUrl(String id, String url) => _tick();
+
+  @override
+  Future<void> setImageCoordinates(String id, LngLatQuad coordinates) =>
+      _tick();
+
+  @override
+  Future<void> setTiles(
+    String id,
+    List<String> tiles,
+    Map<String, Object?> specification,
+  ) => _tick();
+
+  @override
+  Future<void> setTileJsonUrl(
+    String id,
+    String url,
+    Map<String, Object?> specification,
+  ) => _tick();
+}
+
+/// Un style sur les **vraies** collections de `maplibre` : elles appliquent
+/// les règles qui comptent ici — une source ou une couche dont l'identifiant
+/// est pris lève, une source encore employée par une couche ne se retire pas.
+class _StrictStyle extends Fake implements StyleController {
+  _StrictStyle() {
+    reset();
+  }
+
+  late StyleSources _sources;
+  late StyleLayers _layers;
+  final Map<String, Uint8List> images = <String, Uint8List>{};
+  int imageCalls = 0;
+
+  /// Un style neuf, comme après un changement de fond de carte.
+  void reset() {
+    final _AsyncBackend backend = _AsyncBackend();
+    _sources = StyleSources(backend, layers: () => _layers);
+    _layers = StyleLayers(backend, sources: _sources);
+    images.clear();
+  }
+
+  @override
+  StyleSources get sources => _sources;
+
+  @override
+  StyleLayers get layers => _layers;
+
+  List<String> get layerIds => <String>[
+    for (final StyleLayer layer in _layers) layer.id,
+  ];
+
+  Set<String> get sourceIds => <String>{
+    for (final Source source in _sources) source.id,
+  };
+
+  String? sourceOf(String layerId) => switch (_layers[layerId]) {
+    final StyleLayerWithSource layer => layer.sourceId,
+    _ => null,
+  };
+
+  String geoJson(String sourceId) =>
+      (_sources[sourceId]! as GeoJsonSourceData).data.toText();
+
+  @override
+  Future<void> addImage(
+    String id,
+    Uint8List bytes, {
+    double pixelRatio = 1,
+    StyleImageOptions options = const StyleImageOptions(),
+  }) async {
     await Future<void>.delayed(Duration.zero);
     imageCalls++;
     images[id] = bytes;
-  }
-
-  @override
-  Future<void> addSource(Source source) async {
-    await Future<void>.delayed(Duration.zero);
-    if (!sources.add(source.id)) {
-      throw Exception('A Source with the id "${source.id}" already exists');
-    }
-    if (source is GeoJsonSource) geoJson[source.id] = source.data;
-  }
-
-  @override
-  Future<void> removeSource(String id) async {
-    await Future<void>.delayed(Duration.zero);
-    if (layers.values.contains(id)) return;
-    sources.remove(id);
-  }
-
-  @override
-  Future<void> addLayer(
-    StyleLayer layer, {
-    String? belowLayerId,
-    String? aboveLayerId,
-    int? atIndex,
-  }) async {
-    await Future<void>.delayed(Duration.zero);
-    if (layers.containsKey(layer.id)) {
-      throw Exception('A Layer with the id "${layer.id}" already exists');
-    }
-    layers[layer.id] = layer is StyleLayerWithSource ? layer.sourceId : null;
-    layerObjects[layer.id] = layer;
-  }
-
-  @override
-  Future<void> removeLayer(String id) async {
-    await Future<void>.delayed(Duration.zero);
-    layers.remove(id);
-    layerObjects.remove(id);
-  }
-
-  @override
-  Future<void> updateGeoJsonSource({
-    required String id,
-    required String data,
-  }) async {
-    await Future<void>.delayed(Duration.zero);
-    if (!sources.contains(id)) throw StateError('no source $id');
-    geoJson[id] = data;
   }
 }
 
@@ -155,14 +205,14 @@ void main() {
       );
     });
 
-    test('l\'aller-retour par LngLatBounds conserve les quatre bords', () {
+    test('l\'aller-retour par GeoBox conserve les quatre bords', () {
       const PdlMapBox box = PdlMapBox(
         minLon: 1.5,
         minLat: 44.5,
         maxLon: 3.5,
         maxLat: 46.5,
       );
-      expect(PdlMapBox.fromLngLatBounds(box.toLngLatBounds()), box);
+      expect(PdlMapBox.fromGeoBox(box.toGeoBox()), box);
     });
   });
 
@@ -323,17 +373,17 @@ void main() {
       expect(notifications, 1);
     });
 
-    test('sans carte attachée, trackIdAt ne lève pas', () {
+    test('sans carte attachée, trackIdAt ne lève pas', () async {
       final PdlMapController controller = PdlMapController();
       addTearDown(controller.dispose);
-      expect(controller.trackIdAt(const Offset(10, 10)), isNull);
+      expect(await controller.trackIdAt(const Offset(10, 10)), isNull);
       expect(controller.visibleBox, isNull);
     });
 
-    test('sans carte attachée, massFeatureAt ne lève pas', () {
+    test('sans carte attachée, massFeatureAt ne lève pas', () async {
       final PdlMapController controller = PdlMapController();
       addTearDown(controller.dispose);
-      expect(controller.massFeatureAt(const Offset(10, 10)), isNull);
+      expect(await controller.massFeatureAt(const Offset(10, 10)), isNull);
     });
 
     test('la couche de masse est nommée sous le préfixe de l\'écran', () {
@@ -379,7 +429,7 @@ void main() {
       );
 
       expect(
-        style.layers.keys,
+        style.layerIds,
         containsAll(<String>['pdl-track-a', 'pdl-track-b']),
       );
     });
@@ -401,7 +451,7 @@ void main() {
       await Future.wait(pending);
 
       expect(
-        style.layers.keys.where(
+        style.layerIds.where(
           (String id) => id == 'pdl-track-a' || id == 'pdl-track-b',
         ),
         unorderedEquals(<String>['pdl-track-a', 'pdl-track-b']),
@@ -430,7 +480,7 @@ void main() {
       await controller.attachStyle(style);
 
       final List<dynamic> features =
-          (jsonDecode(style.geoJson['pdl-track-src']!)
+          (jsonDecode(style.geoJson('pdl-track-src'))
                   as Map<String, dynamic>)['features']
               as List<dynamic>;
       int selOf(String id) =>
@@ -461,8 +511,8 @@ void main() {
 
       expect(style.images.keys, contains(pdlRouteArrowImageId));
       expect(style.images[pdlRouteArrowImageId], isNotEmpty);
-      expect(style.layers['pdl-track-arrows-layer'], 'pdl-track-arrows');
-      final List<String> order = style.layers.keys.toList();
+      expect(style.sourceOf('pdl-track-arrows-layer'), 'pdl-track-arrows');
+      final List<String> order = style.layerIds;
       expect(
         order.indexOf('pdl-track-arrows-layer'),
         greaterThan(order.indexOf('pdl-track-b')),
@@ -470,7 +520,7 @@ void main() {
 
       // Le tracé sélectionné repasse au premier plan : ses chevrons aussi.
       await controller.select('a');
-      final List<String> raised = style.layers.keys.toList();
+      final List<String> raised = style.layerIds;
       expect(
         raised.indexOf('pdl-track-arrows-layer'),
         greaterThan(raised.indexOf('pdl-track-a')),
@@ -484,8 +534,8 @@ void main() {
 
       await controller.attachStyle(style);
 
-      expect(style.sources, isNot(contains('pdl-track-arrows')));
-      expect(style.layers.keys, isNot(contains('pdl-track-arrows-layer')));
+      expect(style.sourceIds, isNot(contains('pdl-track-arrows')));
+      expect(style.layerIds, isNot(contains('pdl-track-arrows-layer')));
     });
   });
 
@@ -547,7 +597,7 @@ void main() {
         );
         await controller.attachStyle(style);
 
-        final List<String> order = style.layers.keys.toList();
+        final List<String> order = style.layerIds;
         final List<String> expected = <String>[
           'pdl-track-arrows-layer',
           'pdl-track-points',
@@ -573,7 +623,7 @@ void main() {
       final (PdlMapController _, _StrictStyle style) = await attached(
         <PdlMapWaypoint>[_waypoint('1')],
       );
-      final StyleLayer label = style.layerObjects['pdl-track-waypoints-label']!;
+      final StyleLayer label = style.layers['pdl-track-waypoints-label']!;
       expect(label.minZoom, kPdlWaypointLabelMinZoom);
       expect(label.minZoom, 12);
     });
@@ -586,27 +636,23 @@ void main() {
 
       // Ce que fait `PdlMap` quand le style change : tout est effacé, puis
       // `MapEventStyleLoaded` rattache.
-      style
-        ..images.clear()
-        ..sources.clear()
-        ..layers.clear()
-        ..layerObjects.clear();
+      style.reset();
       controller.detachStyle();
       await controller.attachStyle(style);
 
       expect(style.imageCalls, greaterThan(before));
       expect(style.images.keys, contains('pdl-waypoint:SUPPLY'));
-      expect(style.layers.keys, contains('pdl-track-waypoints-icon'));
-      expect(style.sources, contains('pdl-track-waypoints'));
+      expect(style.layerIds, contains('pdl-track-waypoints-icon'));
+      expect(style.sourceIds, contains('pdl-track-waypoints'));
     });
 
     test('sans point, ni source ni couche', () async {
       final (PdlMapController _, _StrictStyle style) = await attached(
         const <PdlMapWaypoint>[],
       );
-      expect(style.sources, isNot(contains('pdl-track-waypoints')));
+      expect(style.sourceIds, isNot(contains('pdl-track-waypoints')));
       expect(
-        style.layers.keys.where((String id) => id.contains('waypoints')),
+        style.layerIds.where((String id) => id.contains('waypoints')),
         isEmpty,
       );
     });
@@ -616,7 +662,7 @@ void main() {
         <PdlMapWaypoint>[_waypoint('1', lon: 0, lat: 45)],
       );
       final Map<String, Object?> data = jsonDecode(
-        style.geoJson['pdl-track-waypoints']!,
+        style.geoJson('pdl-track-waypoints'),
       ) as Map<String, Object?>;
       final List<Object?> features = data['features']! as List<Object?>;
       expect(features, hasLength(1));
@@ -647,22 +693,22 @@ void main() {
         await Future.wait(<Future<void>>[attaching, focus]);
 
         final Map<String, Object?> data = jsonDecode(
-          style.geoJson['pdl-track-waypoint-focus']!,
+          style.geoJson('pdl-track-waypoint-focus'),
         ) as Map<String, Object?>;
         expect(data['features']! as List<Object?>, hasLength(1));
 
         await controller.setWaypointFocus(null);
         final Map<String, Object?> cleared = jsonDecode(
-          style.geoJson['pdl-track-waypoint-focus']!,
+          style.geoJson('pdl-track-waypoint-focus'),
         ) as Map<String, Object?>;
         expect(cleared['features']! as List<Object?>, isEmpty);
       },
     );
 
-    test('sans carte attachée, waypointKeyAt rend null', () {
+    test('sans carte attachée, waypointKeyAt rend null', () async {
       final PdlMapController controller = PdlMapController();
       addTearDown(controller.dispose);
-      expect(controller.waypointKeyAt(const Offset(10, 10)), isNull);
+      expect(await controller.waypointKeyAt(const Offset(10, 10)), isNull);
     });
   });
 }

@@ -123,7 +123,8 @@ PdlMapScale mapScaleFor(UnitSystem units) {
 }
 
 /// L'ombrage du relief à passer à `PdlMap`, ou `null` — pas de source servie,
-/// ou interrupteur éteint.
+/// interrupteur éteint, ou encodage du TileJSON pas encore lu (un relief posé
+/// avec le mauvais encodage serait faux, pas seulement en retard).
 ///
 /// Les deux teintes viennent de `context.pdl`, jamais d'un littéral : `core/pdl`
 /// ne peut pas les choisir (il ne connaît pas la source), mais elles restent des
@@ -131,9 +132,12 @@ PdlMapScale mapScaleFor(UnitSystem units) {
 PdlHillshade? servedHillshade(BuildContext context, WidgetRef ref) {
   final MapTerrainDto? terrain = ref.watch(mapTerrainProvider);
   if (terrain == null || !ref.watch(hillshadeEnabledProvider)) return null;
+  final PdlDemEncoding? encoding = ref.watch(mapTerrainEncodingProvider).value;
+  if (encoding == null) return null;
   final PdlColors c = context.pdl;
   return PdlHillshade(
     url: terrain.url,
+    encoding: encoding,
     shadowColor: c.mapHillshadeShadow,
     highlightColor: c.mapHillshadeHighlight,
   );

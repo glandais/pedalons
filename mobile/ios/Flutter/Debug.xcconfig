@@ -1,1 +1,5 @@
 #include "Generated.xcconfig"
+
+// maplibre 0.4: the MapLibre Native C library is published for devices and arm64
+// simulators only (no x86_64 slice) — ledger MOB-181.
+EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64

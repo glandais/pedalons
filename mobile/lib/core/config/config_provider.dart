@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../api/generated/export.dart';
 import '../../api/pedalons_api_client.dart';
 import '../material.dart';
+import '../pdl/map/pdl_map_controller.dart' show PdlDemEncoding;
 import '../preferences/user_preferences_provider.dart';
 import '../utils/provider_retry.dart';
 
@@ -108,6 +112,43 @@ class MapLightInDarkNotifier extends Notifier<bool> {
 final mapTerrainProvider = Provider<MapTerrainDto?>(
   (Ref ref) => ref.watch(appConfigProvider).value?.terrain,
 );
+
+/// L'encodage que déclare le TileJSON de la source d'élévation, ou `null`
+/// sans source, ou tant que le document n'est pas lu.
+///
+/// Le contrat ne sert que l'URL : c'est le TileJSON qui fait foi, comme sur le
+/// web. Mais `maplibre` 0.4 écrit toujours un encodage dans la source native,
+/// Mapbox par défaut, qui l'emporte sur celui du document : il faut donc le
+/// relire ici (ledger `MOB-181`). Une requête par URL et par session, sans
+/// authentification — c'est un document public d'un tiers.
+final mapTerrainEncodingProvider = FutureProvider<PdlDemEncoding?>((
+  Ref ref,
+) async {
+  final String? url = ref.watch(mapTerrainProvider)?.url;
+  if (url == null) return null;
+  final Dio dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+      // Lu en texte et décodé ici : Mapterhorn sert son TileJSON en
+      // `text/plain`, que Dio rendrait tel quel, sans champ `encoding`.
+      responseType: ResponseType.plain,
+    ),
+  );
+  try {
+    final Response<String> response = await dio.get<String>(url);
+    return demEncodingOfTileJson(jsonDecode(response.data ?? 'null'));
+  } finally {
+    dio.close();
+  }
+});
+
+/// L'encodage déclaré par un TileJSON : Terrarium s'il le dit, Mapbox sinon —
+/// la valeur par défaut de la spécification.
+PdlDemEncoding demEncodingOfTileJson(Object? tileJson) =>
+    tileJson is Map && tileJson['encoding'] == 'terrarium'
+    ? PdlDemEncoding.terrarium
+    : PdlDemEncoding.mapbox;
 
 /// Le style de fond de carte effectif, résolu pour une luminosité donnée.
 ///

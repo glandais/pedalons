@@ -117,7 +117,7 @@ services:
           memory: 256M
 
   loki:
-    image: grafana/loki:3.7.9
+    image: grafana/loki:3.7.10
     command:
       - -config.file=/etc/loki/loki.yml
     networks:
