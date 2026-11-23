@@ -19,7 +19,9 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "fr.pedalons.karoo"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) { minorApiLevel = 2 }
+    }
 
     defaultConfig {
         applicationId = "fr.pedalons.karoo"
