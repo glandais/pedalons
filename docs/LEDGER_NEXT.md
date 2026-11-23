@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **151 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **152 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -82,6 +82,7 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 
+- [ ] [`API-214`](ledger/API/API-214.md) Typologie des tuiles de route-details : 12,6 % des tronçons gravel sans classe de revêtement (M)
 - [ ] [`API-212`](ledger/API/API-212.md) Retoucher un parcours existant : viser une distance, déplacer l'arrivée (L, lot 0 mesuré, décision d'abord) · *decision*
 - [ ] [`API-209`](ledger/API/API-209.md) Carte des parcours en fréquentation : nombre de parcours par arête OSM, coloré selon le compte (L)
 - [ ] [`API-207`](ledger/API/API-207.md) Générateur de parcours au-delà du réseau de l'équipe (L, proposition, décision d'abord) · *decision*
