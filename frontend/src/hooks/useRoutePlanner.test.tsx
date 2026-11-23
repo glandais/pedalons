@@ -12,6 +12,8 @@ vi.mock('@/api/endpoints/router/router', () => ({
   route: routeMock,
   lineElevation: lineElevationMock,
 }))
+const offersMock = vi.hoisted(() => vi.fn())
+vi.mock('@/hooks/useRouterEngineOffers', () => ({ useRouterEngineOffers: offersMock }))
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }))
 
 function apiError(code: ErrorCode, status: number) {
@@ -1044,5 +1046,93 @@ describe('useRoutePlanner route points (C3e)', () => {
     act(() => result.current.undo())
     expect(result.current.controlPoints).toHaveLength(2)
     expect(result.current.placedWaypoints[0].distance).not.toBeNull()
+  })
+})
+
+describe('useRoutePlanner routing engine', () => {
+  const OFFERS = [
+    {
+      engine: 'STADIA',
+      profiles: ['BIKE', 'FASTBIKE', 'GRAVEL', 'MTB', 'RUN_HIKE', 'MOTORCYCLE'],
+    },
+    { engine: 'PEDALONS', profiles: ['BIKE', 'FASTBIKE', 'GRAVEL', 'MTB'] },
+  ]
+
+  beforeEach(() => {
+    routeMock.mockReset()
+    routeMock.mockResolvedValue({ route: { coordinates: [[B.lng, B.lat]] } })
+    offersMock.mockReset()
+    offersMock.mockReturnValue(OFFERS)
+    // The test setup's localStorage is an empty mock: a stored value is given through getItem
+    vi.mocked(localStorage.getItem).mockReset()
+    vi.mocked(localStorage.setItem).mockReset()
+  })
+
+  afterEach(() => vi.mocked(localStorage.getItem).mockReset())
+
+  function stored(value: string) {
+    vi.mocked(localStorage.getItem).mockImplementation((key) =>
+      key === 'pedalons-router-engine' ? value : null
+    )
+  }
+
+  async function drawFirstPoint(profile: string) {
+    const hook = renderHook(() => useRoutePlanner({ teamSlug: 'les-mollets' }))
+    act(() => hook.result.current.setRouterProfile(profile as never))
+    act(() => hook.result.current.addControlPoint(A, true))
+    await waitFor(() => expect(hook.result.current.controlPoints).toHaveLength(1))
+    return hook
+  }
+
+  it('offers the choice for a bicycle profile and not for the others, with the team flag', async () => {
+    const { result } = await drawFirstPoint('GRAVEL')
+    expect(result.current.engineChoice).toMatchObject({ value: 'STADIA', team: true })
+    act(() => result.current.setRouterProfile('RUN_HIKE' as never))
+    expect(result.current.engineChoice).toBeUndefined()
+  })
+
+  it('offers nothing when the engine is not on offer', async () => {
+    offersMock.mockReturnValue([OFFERS[0]])
+    const { result } = await drawFirstPoint('BIKE')
+    expect(result.current.engineChoice).toBeUndefined()
+  })
+
+  it('sends no engine by default', async () => {
+    const { result } = await drawFirstPoint('BIKE')
+    act(() => result.current.addControlPoint(B, false))
+    await waitFor(() => expect(routeMock).toHaveBeenCalledTimes(1))
+    expect(Object.keys(routeMock.mock.calls[0][0])).not.toContain('engine')
+  })
+
+  it('choosing PEDALONS sends no request, keeps the history, is stored per device and applies to the next gesture', async () => {
+    const { result } = await drawFirstPoint('BIKE')
+    const canUndo = result.current.canUndo
+    act(() => result.current.engineChoice?.onChange('PEDALONS' as never))
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(result.current.canUndo).toBe(canUndo)
+    expect(localStorage.setItem).toHaveBeenCalledWith('pedalons-router-engine', '"PEDALONS"')
+    act(() => result.current.addControlPoint(B, false))
+    await waitFor(() => expect(routeMock).toHaveBeenCalledTimes(1))
+    expect(routeMock.mock.calls[0][0]).toMatchObject({ profile: 'BIKE', engine: 'PEDALONS' })
+  })
+
+  it('reads the stored choice back', () => {
+    stored('"PEDALONS"')
+    const { result } = renderHook(() => useRoutePlanner())
+    expect(result.current.engineChoice?.value).toBe('PEDALONS')
+  })
+
+  it('sends no engine for a profile it does not serve, nor when the offer is gone', async () => {
+    stored('"PEDALONS"')
+    const { result } = await drawFirstPoint('RUN_HIKE')
+    act(() => result.current.addControlPoint(B, false))
+    await waitFor(() => expect(routeMock).toHaveBeenCalledTimes(1))
+    expect(Object.keys(routeMock.mock.calls[0][0])).not.toContain('engine')
+  })
+
+  it('falls back on STADIA for a stored value it does not know', () => {
+    stored('"valhalla"')
+    const { result } = renderHook(() => useRoutePlanner())
+    expect(result.current.engineChoice?.value).toBe('STADIA')
   })
 })

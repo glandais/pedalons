@@ -2,7 +2,13 @@ import { distance } from '@/components/map/mapUtils'
 import { plannerTransport } from '@/lib/plannerTransport'
 import KDBush from 'kdbush'
 import { around } from 'geokdbush'
-import { RouterProfile, type GpxImportTrack, type UnpavedSpan, type WaypointDto } from '@/api/dto'
+import {
+  RouterEngine,
+  RouterProfile,
+  type GpxImportTrack,
+  type UnpavedSpan,
+  type WaypointDto,
+} from '@/api/dto'
 import { decode1, decode2 } from '@/lib/polyline'
 import { tRegister, type TranslationKey } from '@/lib/i18nUtils'
 import type { MappableRoute } from '@/components/route/RouteMapView'
@@ -115,12 +121,15 @@ export interface RouterSettings {
   useHills?: number
   /** 0 prefers cycleways and paths, 1 roads. */
   useRoads?: number
+  /** Only ever PEDALONS: absent means the server's default (Stadia), so the call stays what it was. */
+  engine?: RouterEngine
 }
 
-function definedSettings(settings: RouterSettings): RouterSettings {
-  const { profile, useHills, useRoads } = settings
+export function definedSettings(settings: RouterSettings): RouterSettings {
+  const { profile, useHills, useRoads, engine } = settings
   return {
     profile,
+    ...(engine === RouterEngine.PEDALONS && { engine }),
     ...(useHills !== undefined && { useHills }),
     ...(useRoads !== undefined && { useRoads }),
   }

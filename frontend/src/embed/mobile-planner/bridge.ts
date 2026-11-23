@@ -361,6 +361,15 @@ export const bridgeTransport: PlannerTransport = {
     }
     return bridgeRequest('POST', '/api/router/import-gpx', multipart, signal)
   },
+  engines: (teamSlug, signal) =>
+    bridgeRequest(
+      'GET',
+      teamSlug
+        ? `/api/router/engines?teamSlug=${encodeURIComponent(teamSlug)}`
+        : '/api/router/engines',
+      undefined,
+      signal
+    ),
 }
 
 /** `GET /api/geocode/search`: at most five suggestions, usually without a position. */

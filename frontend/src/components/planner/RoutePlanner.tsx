@@ -235,6 +235,7 @@ export function RoutePlanner({
     routerTuning,
     setRouterTuning,
     resetRouterTuning,
+    engineChoice,
     addControlPoint,
     insertControlPoint,
     updateControlPoint,
@@ -2188,6 +2189,7 @@ export function RoutePlanner({
               routerTuning={routerTuning}
               onTuningChange={setRouterTuning}
               onTuningReset={resetRouterTuning}
+              engineChoice={engineChoice}
               onImport={onImport}
               onClear={layout === 'inline' ? clearRoute : undefined}
             />

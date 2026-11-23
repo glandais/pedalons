@@ -1,15 +1,16 @@
-import { importGpx, lineElevation, route } from '@/api/endpoints/router/router'
+import { importGpx, lineElevation, route, routerEngines } from '@/api/endpoints/router/router'
 import type {
   GpxImportResponse,
   ImportGpxBody,
   LineElevationRequest,
   LineElevationResponse,
+  RouterEnginesResponse,
   RouterRequest,
   RouterResponse,
 } from '@/api/dto'
 
 /**
- * The planner's three network calls, behind one interface (docs/LEDGER_*.md WEB-183): the site
+ * The planner's four network calls, behind one interface (docs/LEDGER_*.md WEB-183): the site
  * sends them with the generated client, the planner embedded in the mobile app hands them to the
  * app over its bridge (`src/embed/mobile-planner`), which holds the session.
  *
@@ -24,6 +25,8 @@ export interface PlannerTransport {
   lineElevation(request: LineElevationRequest, signal?: AbortSignal): Promise<LineElevationResponse>
   /** `POST /api/router/import-gpx` (multipart). */
   importGpx(body: ImportGpxBody, signal?: AbortSignal): Promise<GpxImportResponse>
+  /** `GET /api/router/engines`, with the planner's team when it has one. */
+  engines(teamSlug?: string, signal?: AbortSignal): Promise<RouterEnginesResponse>
 }
 
 // The planner renders its failures itself, by code (plannerErrorMessage): no global toast on top.
@@ -34,6 +37,7 @@ const siteTransport: PlannerTransport = {
   route: (request, signal) => route(request, SILENT, signal),
   lineElevation: (request, signal) => lineElevation(request, SILENT, signal),
   importGpx: (body, signal) => importGpx(body, SILENT, signal),
+  engines: (teamSlug, signal) => routerEngines(teamSlug ? { teamSlug } : undefined, SILENT, signal),
 }
 
 let current: PlannerTransport = siteTransport

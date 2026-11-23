@@ -13,6 +13,7 @@ import { directShortcut } from '@/lib/plannerErrors'
 import type { RouterTuning, TuningKey } from '@/lib/routerTuning'
 import { PlannerHelpControl } from './PlannerHelpControl'
 import { PlannerStatus } from './PlannerStatus'
+import type { EngineChoice } from '@/lib/routerEngine'
 import { RouterProfileSelector } from './RouterProfileSelector'
 
 interface PlannerToolbarProps {
@@ -34,6 +35,8 @@ interface PlannerToolbarProps {
   routerTuning: RouterTuning
   onTuningChange: (key: TuningKey, value: number) => void
   onTuningReset: () => void
+  /** Absent unless the Pédalons engine is on offer for the profile. */
+  engineChoice?: EngineChoice
   /** Given where the map holds the tool: adds « Import a GPX file ». */
   onImport?: () => void
   /**
@@ -71,6 +74,7 @@ export function PlannerToolbar({
   routerTuning,
   onTuningChange,
   onTuningReset,
+  engineChoice,
   onImport,
   onClear,
 }: PlannerToolbarProps) {
@@ -120,6 +124,7 @@ export function PlannerToolbar({
         tuning={routerTuning}
         onTuningChange={onTuningChange}
         onTuningReset={onTuningReset}
+        engineChoice={engineChoice}
       />
       {separator}
       {onImport && (

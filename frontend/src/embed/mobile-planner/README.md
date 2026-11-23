@@ -34,7 +34,7 @@ Everything but the host. `PlannerApp.tsx` renders the same pieces as the site's 
 
 Three things differ, each injected rather than forked:
 
-- **Network** — `lib/plannerTransport.ts`. The site sends the planner's three calls with the
+- **Network** — `lib/plannerTransport.ts`. The site sends the planner's calls (route, elevation, GPX import, engines on offer) with the
   generated client; this page calls `setPlannerTransport(bridgeTransport)` and they become bridge
   messages. Any other call of the site's client is refused before it leaves (`main.tsx`).
 - **Search and « Me localiser »** — `components/planner/plannerMapControls.ts`. The site's search
@@ -126,6 +126,7 @@ messages by code (`lib/plannerErrors.ts`, `lib/plannerQuota.ts`) are the site's.
 | `POST /api/router`            | `RouterRequest`                                                                                                    |
 | `POST /api/router/elevation`  | `LineElevationRequest`                                                                                             |
 | `POST /api/router/import-gpx` | `{ multipart: { fields: { teamSlug? }, file: { name, base64, contentType } } }` — the file part is named `gpxFile` |
+| `GET /api/router/engines[?teamSlug=…]` | —                                                                                                  |
 | `GET /api/geocode/search?q=…` | —                                                                                                                  |
 | `GET /api/geocode/place?id=…` | —                                                                                                                  |
 

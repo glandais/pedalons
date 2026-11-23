@@ -33,4 +33,11 @@ public record RouterRequest(
                     + " otherwise.")
         @DecimalMin("0.0")
         @DecimalMax("1.0")
-        @Nullable Double useRoads) {}
+        @Nullable Double useRoads,
+    @Schema(
+            description =
+                "Engine that calculates the leg. Absent: STADIA. PEDALONS applies to the profiles"
+                    + " BIKE, FASTBIKE, GRAVEL and MTB when GET /api/router/engines offers it;"
+                    + " otherwise, and whenever that engine cannot answer, the leg is calculated by"
+                    + " STADIA, with useHills and useRoads, and the response does not say so.")
+        @Nullable RouterEngine engine) {}

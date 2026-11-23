@@ -16,7 +16,8 @@ public record RouteDetailsCapabilities(
     @Nullable Limits limits,
     @Nullable Enums enums,
     @Nullable Data data,
-    @Nullable GeneratorSection generator) {
+    @Nullable GeneratorSection generator,
+    @Nullable RouterSection router) {
 
   /** Without {@code generator}: the shape this record had before api 1.9. */
   public RouteDetailsCapabilities(
@@ -24,8 +25,29 @@ public record RouteDetailsCapabilities(
       @Nullable Limits limits,
       @Nullable Enums enums,
       @Nullable Data data) {
-    this(apiVersion, limits, enums, data, null);
+    this(apiVersion, limits, enums, data, null, null);
   }
+
+  /** Without {@code router}: the shape this record had before api 1.15. */
+  public RouteDetailsCapabilities(
+      @Nullable String apiVersion,
+      @Nullable Limits limits,
+      @Nullable Enums enums,
+      @Nullable Data data,
+      @Nullable GeneratorSection generator) {
+    this(apiVersion, limits, enums, data, generator, null);
+  }
+
+  /**
+   * {@code router} (api 1.15): the point to point engine of the planner, its ride types and the
+   * bounds of a leg.
+   */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record RouterSection(
+      boolean enabled,
+      @Nullable @JsonProperty("ride_types") List<String> rideTypes,
+      @Nullable @JsonProperty("crow_m_max") Double crowMMax,
+      @Nullable @JsonProperty("snap_m") Double snapM) {}
 
   /** The service's bounds as of api 1.6, used while it has not answered. */
   public static final Limits FALLBACK_LIMITS = new Limits(16_000, 200_000);
@@ -138,6 +160,11 @@ public record RouteDetailsCapabilities(
   /** The generator is served: api 1.9 or later, and its section says it is enabled. */
   public boolean generatorEnabled() {
     return apiAtLeast(1, 9) && generator != null && generator.enabled();
+  }
+
+  /** The planner's engine is served: api 1.15 or later, and its section says it is enabled. */
+  public boolean routerEnabled() {
+    return apiAtLeast(1, 15) && router != null && router.enabled();
   }
 
   /** Whether {@code apiVersion} is at least {@code major.minor}; false when it is unreadable. */

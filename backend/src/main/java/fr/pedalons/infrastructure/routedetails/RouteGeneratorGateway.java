@@ -274,7 +274,19 @@ public class RouteGeneratorGateway {
     return h;
   }
 
-  private Exchange call(Call call) {
+  /** The headers of a router call: the team's pair when there is a team, none of them otherwise. */
+  Map<String, String> routerHeaders(@Nullable String team) {
+    if (team != null) {
+      return headers(team, "application/json");
+    }
+    Map<String, String> h = new LinkedHashMap<>();
+    h.put("Accept", "application/json, application/problem+json");
+    h.put("Content-Type", "application/json");
+    return h;
+  }
+
+  /** One call, an error answer thrown as a classified exception. */
+  Exchange call(Call call) {
     Exchange answer = exchange(call);
     if (answer.status() >= 200 && answer.status() < 300) {
       return answer;

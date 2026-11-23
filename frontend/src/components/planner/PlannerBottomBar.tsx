@@ -12,6 +12,7 @@ import { RouterProfile } from '@/api/dto'
 import { PlannerHelpControl } from './PlannerHelpControl'
 import { PlannerStatus } from './PlannerStatus'
 import type { RouterTuning, TuningKey } from '@/lib/routerTuning'
+import type { EngineChoice } from '@/lib/routerEngine'
 import { RouterProfileSelector } from './RouterProfileSelector'
 
 interface PlannerBottomBarProps {
@@ -36,6 +37,8 @@ interface PlannerBottomBarProps {
   routerTuning: RouterTuning
   onTuningChange: (key: TuningKey, value: number) => void
   onTuningReset: () => void
+  /** Absent unless the Pédalons engine is on offer for the profile. */
+  engineChoice?: EngineChoice
   /** "Straight line" toggle: the next gestures are drawn without the router. */
   directMode: boolean
   onDirectModeChange: (on: boolean) => void
@@ -75,6 +78,7 @@ export function PlannerBottomBar({
   routerTuning,
   onTuningChange,
   onTuningReset,
+  engineChoice,
   directMode,
   onDirectModeChange,
   onDone,
@@ -167,6 +171,7 @@ export function PlannerBottomBar({
             tuning={routerTuning}
             onTuningChange={onTuningChange}
             onTuningReset={onTuningReset}
+            engineChoice={engineChoice}
             trigger="bar"
           />
           <PlannerHelpControl trigger="bar" />

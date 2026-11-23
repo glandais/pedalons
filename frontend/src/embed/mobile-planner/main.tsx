@@ -70,7 +70,7 @@ window.addEventListener('unhandledrejection', (event) =>
   post({ type: 'error', message: String(event.reason) })
 )
 
-// The planner's three calls go through the app. Anything else the site's client would send from
+// The planner's calls (route, elevation, GPX import, engines on offer) go through the app. Anything else the site's client would send from
 // here has nowhere to go (no origin, no session): refused before it leaves, should a shared
 // component ever try.
 setPlannerTransport(bridgeTransport)

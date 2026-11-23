@@ -1,7 +1,7 @@
 import * as zod from 'zod'
 
 /**
- * Calculate a route between two points using the Stadia Maps routing API. Each call is billed against a monthly quota, so the checks come first: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Once the planner quota the save would draw on is spent — the team's with teamSlug, the caller's own without — the calculation is refused with PLANNER_QUOTA_REACHED (403); past the caller's calculations of the UTC day, whatever the plan, with ROUTING_DAILY_LIMIT_REACHED (429, Retry-After). Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503).
+ * Calculate a route between two points using the Stadia Maps routing API, or, with engine PEDALONS on a bicycle profile, the engine of osm-route-details, which falls back silently on Stadia Maps when it cannot answer. Each call is billed against a monthly quota, so the checks come first: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Once the planner quota the save would draw on is spent — the team's with teamSlug, the caller's own without — the calculation is refused with PLANNER_QUOTA_REACHED (403); past the caller's calculations of the UTC day, whatever the plan, with ROUTING_DAILY_LIMIT_REACHED (429, Retry-After). Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503).
  * @summary Calculate route
  */
 export const routeBodyFromLngMin = -180
@@ -56,6 +56,12 @@ export const RouteBody = zod.object({
     .optional()
     .describe(
       "Propensity to ride with traffic, 0 (cycleways and paths) to 1 (roads). Absent: the profile's value (1 for FASTBIKE). Bicycle profiles only; ignored otherwise."
+    ),
+  engine: zod
+    .enum(['STADIA', 'PEDALONS'])
+    .optional()
+    .describe(
+      'Engine that calculates the leg. Absent: STADIA. PEDALONS applies to the profiles BIKE, FASTBIKE, GRAVEL and MTB when GET /api/router/engines offers it; otherwise, and whenever that engine cannot answer, the leg is calculated by STADIA, with useHills and useRoads, and the response does not say so.'
     ),
 })
 
@@ -195,6 +201,31 @@ export const LineElevationResponse = zod
       .describe('True when part of the elevations could not be read from the elevation source'),
   })
   .describe('The relief of straight lines, processed with the FAST elevations')
+
+/**
+ * The engines the planner can ask for a leg and the profiles each calculates. STADIA is always there with every profile; PEDALONS (BIKE, FASTBIKE, GRAVEL and MTB) only when the service behind it is configured and announces itself ready, read on its cached capabilities. Same rights as the route calculation: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Calls no engine and counts for nothing in the daily calculations.
+ * @summary List the routing engines on offer
+ */
+export const routerEnginesQueryTeamSlugMax = 250
+
+export const RouterEnginesQueryParams = zod.object({
+  teamSlug: zod.string().max(routerEnginesQueryTeamSlugMax).optional(),
+})
+
+export const RouterEnginesResponse = zod.object({
+  engines: zod
+    .array(
+      zod.object({
+        engine: zod.enum(['STADIA', 'PEDALONS']),
+        profiles: zod.array(
+          zod.enum(['BIKE', 'FASTBIKE', 'GRAVEL', 'MTB', 'RUN_HIKE', 'MOTORCYCLE'])
+        ),
+      })
+    )
+    .describe(
+      'The engines the planner can ask for a leg. STADIA is always there, with every profile; PEDALONS only when the service behind it is configured and says it is ready'
+    ),
+})
 
 /**
  * Processes a GPX file with the FAST elevations and returns its tracks as polylines, with the ascent accumulated up to each point. Nothing is stored and the routing provider is not called. Same rights as the route calculation: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled.

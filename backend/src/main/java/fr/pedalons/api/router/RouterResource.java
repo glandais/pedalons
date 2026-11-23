@@ -8,6 +8,7 @@ import fr.pedalons.dto.router.request.LineElevationRequest;
 import fr.pedalons.dto.router.request.RouterRequest;
 import fr.pedalons.dto.router.response.GpxImportResponse;
 import fr.pedalons.dto.router.response.LineElevationResponse;
+import fr.pedalons.dto.router.response.RouterEnginesResponse;
 import fr.pedalons.dto.router.response.RouterResponse;
 import fr.pedalons.service.router.GpxImportService;
 import fr.pedalons.service.router.LineElevationService;
@@ -46,7 +47,9 @@ public class RouterResource {
   @Operation(
       summary = "Calculate route",
       description =
-          "Calculate a route between two points using the Stadia Maps routing API. Each call is"
+          "Calculate a route between two points using the Stadia Maps routing API, or, with engine"
+              + " PEDALONS on a bicycle profile, the engine of osm-route-details, which falls back"
+              + " silently on Stadia Maps when it cannot answer. Each call is"
               + " billed against a monthly quota, so the checks come first: with teamSlug, the"
               + " caller must be allowed to create routes in that team and the team must have the"
               + " route planner enabled; without it, the domain's GPX planner must be enabled."
@@ -94,6 +97,45 @@ public class RouterResource {
   public Response route(@Valid RouterRequest request) {
     RouterResponse resp = routerService.getRoute(request);
     return Response.ok(resp).build();
+  }
+
+  @GET
+  @Path("/engines")
+  @Operation(
+      operationId = "routerEngines",
+      summary = "List the routing engines on offer",
+      description =
+          "The engines the planner can ask for a leg and the profiles each calculates. STADIA is"
+              + " always there with every profile; PEDALONS (BIKE, FASTBIKE, GRAVEL and MTB) only"
+              + " when the service behind it is configured and announces itself ready, read on its"
+              + " cached capabilities. Same rights as the route calculation: with teamSlug, the"
+              + " caller must be allowed to create routes in that team and the team must have the"
+              + " route planner enabled; without it, the domain's GPX planner must be enabled."
+              + " Calls no engine and counts for nothing in the daily calculations.")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "200",
+        description = "The engines on offer",
+        content = @Content(schema = @Schema(implementation = RouterEnginesResponse.class))),
+    @APIResponse(
+        responseCode = "400",
+        description = "Planner disabled (ROUTE_PLANNER_DISABLED)",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "401",
+        description = "Unauthorized",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "403",
+        description = "User may not create routes in the team",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "404",
+        description = "Team not found in this domain",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  public Response engines(@QueryParam("teamSlug") @Nullable @Size(max = 250) String teamSlug) {
+    return Response.ok(routerService.engines(teamSlug)).build();
   }
 
   @POST

@@ -2256,6 +2256,82 @@ test.describe('avoiding hills and traffic (C2)', () => {
   })
 })
 
+test.describe('route calculation engine (API-217)', () => {
+  test.setTimeout(90_000)
+
+  /** What GET /api/router/engines answers: Stadia for every profile, Pédalons for the bicycle ones. */
+  const engines = (withPedalons: boolean) => ({
+    engines: [
+      {
+        engine: 'STADIA',
+        profiles: ['BIKE', 'FASTBIKE', 'GRAVEL', 'MTB', 'RUN_HIKE', 'MOTORCYCLE'],
+      },
+      ...(withPedalons
+        ? [{ engine: 'PEDALONS', profiles: ['BIKE', 'FASTBIKE', 'GRAVEL', 'MTB'] }]
+        : []),
+    ],
+  })
+
+  test('the choice appears when the engine is offered, asks nothing of the router, and the next leg carries it', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    await page.route('**/api/router/engines**', (route) => route.fulfill({ json: engines(true) }))
+    const { surface, clickMap, points, settled, routerRequests } = await openPlanner({
+      context,
+      page,
+      isMobile,
+    })
+    await clickMap(-100, 0)
+    await expect(points(1)).toBeVisible()
+
+    await surface.getByRole('button', ROUTER_PROFILE).click()
+    const group = page.getByRole('radiogroup', { name: "Calcul d'itinéraire" })
+    await expect(group).toBeVisible()
+    await expect(group.getByRole('radio', { name: 'Standard' })).toBeChecked()
+    // No team on the GPX tools: the shared wording
+    await group
+      .locator('label')
+      .filter({ hasText: /^Pédalons$/ })
+      .click()
+    await expect(group.getByRole('radio', { name: 'Pédalons' })).toBeChecked()
+    await expect(page.getByRole('slider', { name: 'Côtes' })).toBeVisible()
+    expect(routerRequests, 'choosing an engine routes nothing').toHaveLength(0)
+    await page.keyboard.press('Escape')
+
+    await clickMap(100, 30)
+    await expect(points(2)).toBeVisible()
+    await settled()
+    expect(routerRequests).toHaveLength(1)
+    expect(routerRequests.at(-1)?.engine).toBe('PEDALONS')
+  })
+
+  test('without the engine on offer there is no choice, and no request carries one', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    await page.route('**/api/router/engines**', (route) => route.fulfill({ json: engines(false) }))
+    const { surface, clickMap, points, settled, routerRequests } = await openPlanner({
+      context,
+      page,
+      isMobile,
+    })
+    await clickMap(-100, 0)
+    await expect(points(1)).toBeVisible()
+    await surface.getByRole('button', ROUTER_PROFILE).click()
+    await expect(page.getByRole('slider', { name: 'Côtes' })).toBeVisible()
+    await expect(page.getByRole('radiogroup', { name: "Calcul d'itinéraire" })).toHaveCount(0)
+    await page.keyboard.press('Escape')
+
+    await clickMap(100, 30)
+    await expect(points(2)).toBeVisible()
+    await settled()
+    expect(routerRequests.at(-1)?.engine).toBeUndefined()
+  })
+})
+
 /**
  * The editing state saved with the track and read back (C4a, ledger WEB-100): control points, joins,
  * straight legs and the loaded file survive a save, and reopening a route asks the router for

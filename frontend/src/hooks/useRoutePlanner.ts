@@ -36,7 +36,7 @@ import {
   type ElevationCache,
 } from '@/lib/plannerElevation'
 import { MAX_PLANNER_SOURCES, restorePlannerState, serializePlannerState } from '@/lib/plannerState'
-import { RouterProfile, WaypointOrigin } from '@/api/dto'
+import { RouterEngine, RouterProfile, WaypointOrigin } from '@/api/dto'
 import type {
   GeoPoint,
   GpxImportResponse,
@@ -73,6 +73,15 @@ import {
   type RouterTuningStore,
   type TuningKey,
 } from '@/lib/routerTuning'
+import {
+  ROUTER_ENGINE_STORAGE_KEY,
+  DEFAULT_ROUTER_ENGINE,
+  effectiveEngine,
+  isEngineOffered,
+  sanitizeEngine,
+  type EngineChoice,
+} from '@/lib/routerEngine'
+import { useRouterEngineOffers } from '@/hooks/useRouterEngineOffers'
 
 export interface UseRoutePlannerOptions {
   /**
@@ -184,6 +193,11 @@ export interface RoutePlannerState {
   setRouterTuning: (key: TuningKey, value: number) => void
   /** Back to the profile's values (current profile only). */
   resetRouterTuning: () => void
+  /**
+   * The engine choice for the selector: absent unless the Pédalons engine is on offer for the
+   * current profile. Changing it is like changing the profile (no re-routing, not in the history).
+   */
+  engineChoice?: EngineChoice
   addControlPoint: (p: Point, direct?: boolean) => void
   insertControlPoint: (
     start: RoutePoint | undefined,
@@ -272,6 +286,13 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     defaultValue: RouterProfile.FASTBIKE,
     getInitialValueInEffect: false,
   })
+  // Per device, like the profile. Sanitised on read; the offers decide whether it is sent.
+  const [storedEngine, setStoredEngine] = useLocalStorage<RouterEngine>({
+    key: ROUTER_ENGINE_STORAGE_KEY,
+    defaultValue: DEFAULT_ROUTER_ENGINE,
+    getInitialValueInEffect: false,
+  })
+  const engineOffers = useRouterEngineOffers(teamSlug)
   // Per profile: the knobs of the bicycle profiles. Same distrust of the stored value.
   const [storedTuning, setStoredTuning] = useLocalStorage<RouterTuningStore>({
     key: ROUTER_TUNING_STORAGE_KEY,
@@ -296,9 +317,12 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     }),
     [useHills, useRoads]
   )
+  const routerEngine = sanitizeEngine(storedEngine)
+  const sentEngine = effectiveEngine(routerEngine, routerProfile, engineOffers)
+  const engineOffered = isEngineOffered(engineOffers, RouterEngine.PEDALONS, routerProfile)
   const routerSettings = useMemo(
-    () => toRouterSettings(routerProfile, routerTuning),
-    [routerProfile, routerTuning]
+    () => ({ ...toRouterSettings(routerProfile, routerTuning), engine: sentEngine }),
+    [routerProfile, routerTuning, sentEngine]
   )
 
   // What the planner opens on, computed once: the saved state, else the loaded track as an import
@@ -415,6 +439,21 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
       })
     },
     [cancelInFlight, routerProfile, setStoredTuning]
+  )
+
+  // Like a profile change too: only what is drawn next is routed by the engine chosen.
+  const setRouterEngine = useCallback(
+    (engine: RouterEngine) => {
+      cancelInFlight()
+      setStoredEngine(sanitizeEngine(engine))
+    },
+    [cancelInFlight, setStoredEngine]
+  )
+  const hasTeam = teamSlug !== undefined
+  const engineChoice = useMemo<EngineChoice | undefined>(
+    () =>
+      engineOffered ? { value: routerEngine, onChange: setRouterEngine, team: hasTeam } : undefined,
+    [engineOffered, routerEngine, setRouterEngine, hasTeam]
   )
 
   const resetRouterTuning = useCallback(() => {
@@ -911,6 +950,7 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     routerTuning,
     setRouterTuning,
     resetRouterTuning,
+    engineChoice,
     addControlPoint,
     insertControlPoint,
     updateControlPoint,

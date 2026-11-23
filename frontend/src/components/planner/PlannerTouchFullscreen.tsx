@@ -110,6 +110,7 @@ export function PlannerTouchFullscreen({
             routerTuning={planner.routerTuning}
             onTuningChange={planner.setRouterTuning}
             onTuningReset={planner.resetRouterTuning}
+            engineChoice={planner.engineChoice}
             directMode={planner.directMode}
             onDirectModeChange={planner.setDirectMode}
             onDone={onDone}

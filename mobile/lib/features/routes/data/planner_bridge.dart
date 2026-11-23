@@ -17,7 +17,7 @@ import 'planner_web_view.dart';
 
 /// Les seules requêtes que la page a le droit de faire passer par l'app
 /// (`frontend/src/embed/mobile-planner/README.md`) : les trois appels du
-/// routeur et la recherche de lieux. Tout le reste est refusé (statut 0) —
+/// routeur, la liste de ses moteurs et la recherche de lieux. Tout le reste est refusé (statut 0) —
 /// la page ne choisit ni l'hôte ni un autre chemin de l'API.
 @visibleForTesting
 bool plannerRequestAllowed(Object? method, Object? path) {
@@ -29,9 +29,13 @@ bool plannerRequestAllowed(Object? method, Object? path) {
   }
   if (method != 'GET') return false;
   final Uri? uri = Uri.tryParse(path);
-  if (uri == null || uri.hasScheme || uri.hasAuthority || !uri.hasQuery) {
-    return false;
+  if (uri == null || uri.hasScheme || uri.hasAuthority) return false;
+  // Les moteurs offerts : avec ou sans `teamSlug`, aucun autre paramètre.
+  if (uri.path == '/api/router/engines') {
+    final Set<String> keys = uri.queryParameters.keys.toSet();
+    return keys.isEmpty || keys.length == 1 && keys.single == 'teamSlug';
   }
+  if (!uri.hasQuery) return false;
   return uri.path == '/api/geocode/search' || uri.path == '/api/geocode/place';
 }
 

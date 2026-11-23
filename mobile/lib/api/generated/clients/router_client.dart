@@ -11,6 +11,7 @@ import 'package:retrofit/error_logger.dart';
 import '../models/gpx_import_response.dart';
 import '../models/line_elevation_request.dart';
 import '../models/line_elevation_response.dart';
+import '../models/router_engines_response.dart';
 import '../models/router_request.dart';
 import '../models/router_response.dart';
 
@@ -22,7 +23,7 @@ abstract class RouterClient {
 
   /// Calculate route.
   ///
-  /// Calculate a route between two points using the Stadia Maps routing API. Each call is billed against a monthly quota, so the checks come first: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Once the planner quota the save would draw on is spent — the team's with teamSlug, the caller's own without — the calculation is refused with PLANNER_QUOTA_REACHED (403); past the caller's calculations of the UTC day, whatever the plan, with ROUTING_DAILY_LIMIT_REACHED (429, Retry-After). Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503).
+  /// Calculate a route between two points using the Stadia Maps routing API, or, with engine PEDALONS on a bicycle profile, the engine of osm-route-details, which falls back silently on Stadia Maps when it cannot answer. Each call is billed against a monthly quota, so the checks come first: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Once the planner quota the save would draw on is spent — the team's with teamSlug, the caller's own without — the calculation is refused with PLANNER_QUOTA_REACHED (403); past the caller's calculations of the UTC day, whatever the plan, with ROUTING_DAILY_LIMIT_REACHED (429, Retry-After). Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE (503).
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/router')
@@ -38,6 +39,14 @@ abstract class RouterClient {
   @POST('/api/router/elevation')
   Future<LineElevationResponse> lineElevation({
     @Body() required LineElevationRequest body,
+  });
+
+  /// List the routing engines on offer.
+  ///
+  /// The engines the planner can ask for a leg and the profiles each calculates. STADIA is always there with every profile; PEDALONS (BIKE, FASTBIKE, GRAVEL and MTB) only when the service behind it is configured and announces itself ready, read on its cached capabilities. Same rights as the route calculation: with teamSlug, the caller must be allowed to create routes in that team and the team must have the route planner enabled; without it, the domain's GPX planner must be enabled. Calls no engine and counts for nothing in the daily calculations.
+  @GET('/api/router/engines')
+  Future<RouterEnginesResponse> routerEngines({
+    @Query('teamSlug') String? teamSlug,
   });
 
   /// Load a GPX file into the route editor.

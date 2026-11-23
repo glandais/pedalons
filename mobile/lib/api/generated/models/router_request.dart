@@ -5,6 +5,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'geo_point.dart';
+import 'router_engine.dart';
 import 'router_profile.dart';
 
 part 'router_request.freezed.dart';
@@ -25,6 +26,9 @@ abstract class RouterRequest with _$RouterRequest {
 
     /// Propensity to ride with traffic, 0 (cycleways and paths) to 1 (roads). Absent: the profile's value (1 for FASTBIKE). Bicycle profiles only; ignored otherwise.
     double? useRoads,
+
+    /// Engine that calculates the leg. Absent: STADIA. PEDALONS applies to the profiles BIKE, FASTBIKE, GRAVEL and MTB when GET /api/router/engines offers it; otherwise, and whenever that engine cannot answer, the leg is calculated by STADIA, with useHills and useRoads, and the response does not say so.
+    String? engine,
   }) = _RouterRequest;
 
   factory RouterRequest.fromJson(Map<String, Object?> json) =>

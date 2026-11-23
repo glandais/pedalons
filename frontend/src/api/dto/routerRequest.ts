@@ -1,4 +1,5 @@
 import type { GeoPoint } from './geoPoint.ts'
+import type { RouterEngine } from './routerEngine.ts'
 import type { RouterProfile } from './routerProfile.ts'
 
 export interface RouterRequest {
@@ -22,4 +23,6 @@ export interface RouterRequest {
    * @maximum 1
    */
   useRoads?: number
+  /** Engine that calculates the leg. Absent: STADIA. PEDALONS applies to the profiles BIKE, FASTBIKE, GRAVEL and MTB when GET /api/router/engines offers it; otherwise, and whenever that engine cannot answer, the leg is calculated by STADIA, with useHills and useRoads, and the response does not say so. */
+  engine?: RouterEngine
 }

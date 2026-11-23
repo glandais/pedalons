@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   IconBike,
@@ -8,8 +8,17 @@ import {
   IconWalk,
   IconMotorbike,
 } from '@tabler/icons-react'
-import { Anchor, Group, Indicator, Slider, Text, Stack, UnstyledButton } from '@mantine/core'
-import { RouterProfile } from '@/api/dto'
+import {
+  Anchor,
+  Group,
+  Indicator,
+  SegmentedControl,
+  Slider,
+  Text,
+  Stack,
+  UnstyledButton,
+} from '@mantine/core'
+import { RouterEngine, RouterProfile } from '@/api/dto'
 import { MapPanel } from '@/components/map/MapPanel'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import {
@@ -19,6 +28,7 @@ import {
   type RouterTuning,
   type TuningKey,
 } from '@/lib/routerTuning'
+import type { EngineChoice } from '@/lib/routerEngine'
 
 interface RouterProfileSelectorProps {
   currentProfile: RouterProfile
@@ -27,6 +37,8 @@ interface RouterProfileSelectorProps {
   tuning?: RouterTuning
   onTuningChange?: (key: TuningKey, value: number) => void
   onTuningReset?: () => void
+  /** The choice of calculation; absent when the Pédalons engine is not on offer for the profile. */
+  engineChoice?: EngineChoice
   /**
    * `'toolbar'` (default): a button of the toolbar at the bottom of the map, on a mouse
    * (`PlannerToolbar`); `'bar'`: a button of the touch bottom bar (`PlannerBottomBar`).
@@ -58,6 +70,7 @@ export function RouterProfileSelector({
   tuning = {},
   onTuningChange,
   onTuningReset,
+  engineChoice,
   trigger = 'toolbar',
 }: RouterProfileSelectorProps) {
   const { t } = useTranslation()
@@ -127,9 +140,46 @@ export function RouterProfileSelector({
               custom={custom}
             />
           )}
+          {engineChoice && <EngineSwitch choice={engineChoice} />}
         </Stack>
       )}
     </MapPanel>
+  )
+}
+
+function EngineSwitch({ choice }: { choice: EngineChoice }) {
+  const { t } = useTranslation()
+  const labelId = useId()
+  return (
+    <Stack
+      gap={6}
+      mt="xs"
+      pt="sm"
+      style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}
+    >
+      <Text id={labelId} size="sm" fw={500}>
+        {t('planner.engine.label')}
+      </Text>
+      <SegmentedControl
+        fullWidth
+        size="xs"
+        aria-labelledby={labelId}
+        value={choice.value}
+        onChange={(value) => choice.onChange(value as RouterEngine)}
+        data={[
+          { value: RouterEngine.STADIA, label: t('planner.engine.standard') },
+          {
+            value: RouterEngine.PEDALONS,
+            label: choice.team ? t('planner.engine.team') : t('planner.engine.shared'),
+          },
+        ]}
+      />
+      {choice.value === RouterEngine.PEDALONS && (
+        <Text size="xs" c="dimmed">
+          {choice.team ? t('planner.engine.help.team') : t('planner.engine.help.shared')}
+        </Text>
+      )}
+    </Stack>
   )
 }
 

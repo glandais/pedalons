@@ -156,6 +156,16 @@ describe('bridgeTransport', () => {
     })
   })
 
+  it('asks the engines on offer, with the team when there is one', () => {
+    void bridgeTransport.engines('les-mollets')
+    expect(lastRequest()).toMatchObject({
+      method: 'GET',
+      path: '/api/router/engines?teamSlug=les-mollets',
+    })
+    void bridgeTransport.engines()
+    expect(lastRequest()).toMatchObject({ method: 'GET', path: '/api/router/engines' })
+  })
+
   it('sends a file as a multipart description, its bytes in base64', async () => {
     const file = new File(['<gpx/>'], 'tour.gpx', { type: 'application/gpx+xml' })
     void bridgeTransport.importGpx({ gpxFile: file, teamSlug: 'les-mollets' })

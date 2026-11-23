@@ -6841,6 +6841,35 @@ components:
           items:
             $ref: "#/components/schemas/RouteUsageDto"
           description: "Usages of the route, most recent first"
+    RouterEngine:
+      type: string
+      enum:
+      - STADIA
+      - PEDALONS
+    RouterEngineOffer:
+      type: object
+      required:
+      - engine
+      - profiles
+      properties:
+        engine:
+          $ref: "#/components/schemas/RouterEngine"
+        profiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/RouterProfile"
+    RouterEnginesResponse:
+      type: object
+      required:
+      - engines
+      properties:
+        engines:
+          type: array
+          items:
+            $ref: "#/components/schemas/RouterEngineOffer"
+          description: "The engines the planner can ask for a leg. STADIA is always\
+            \ there, with every profile; PEDALONS only when the service behind it\
+            \ is configured and says it is ready"
     RouterProfile:
       type: string
       enum:
@@ -6885,6 +6914,14 @@ components:
             \ only; ignored otherwise."
           maximum: 1.0
           minimum: 0.0
+        engine:
+          description: "Engine that calculates the leg. Absent: STADIA. PEDALONS applies\
+            \ to the profiles BIKE, FASTBIKE, GRAVEL and MTB when GET /api/router/engines\
+            \ offers it; otherwise, and whenever that engine cannot answer, the leg\
+            \ is calculated by STADIA, with useHills and useRoads, and the response\
+            \ does not say so."
+          type: string
+          $ref: "#/components/schemas/RouterEngine"
     RouterResponse:
       type: object
       required:
@@ -14200,16 +14237,18 @@ paths:
     post:
       summary: Calculate route
       description: "Calculate a route between two points using the Stadia Maps routing\
-        \ API. Each call is billed against a monthly quota, so the checks come first:\
-        \ with teamSlug, the caller must be allowed to create routes in that team\
-        \ and the team must have the route planner enabled; without it, the domain's\
-        \ GPX planner must be enabled. Otherwise ROUTE_PLANNER_DISABLED. Once the\
-        \ planner quota the save would draw on is spent — the team's with teamSlug,\
-        \ the caller's own without — the calculation is refused with PLANNER_QUOTA_REACHED\
-        \ (403); past the caller's calculations of the UTC day, whatever the plan,\
-        \ with ROUTING_DAILY_LIMIT_REACHED (429, Retry-After). Routing failures have\
-        \ their own codes: ROUTING_SEGMENT_TOO_LONG and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED\
-        \ and ROUTING_UNAVAILABLE (503)."
+        \ API, or, with engine PEDALONS on a bicycle profile, the engine of osm-route-details,\
+        \ which falls back silently on Stadia Maps when it cannot answer. Each call\
+        \ is billed against a monthly quota, so the checks come first: with teamSlug,\
+        \ the caller must be allowed to create routes in that team and the team must\
+        \ have the route planner enabled; without it, the domain's GPX planner must\
+        \ be enabled. Otherwise ROUTE_PLANNER_DISABLED. Once the planner quota the\
+        \ save would draw on is spent — the team's with teamSlug, the caller's own\
+        \ without — the calculation is refused with PLANNER_QUOTA_REACHED (403); past\
+        \ the caller's calculations of the UTC day, whatever the plan, with ROUTING_DAILY_LIMIT_REACHED\
+        \ (429, Retry-After). Routing failures have their own codes: ROUTING_SEGMENT_TOO_LONG\
+        \ and ROUTING_NO_ROUTE (400), ROUTING_QUOTA_EXCEEDED and ROUTING_UNAVAILABLE\
+        \ (503)."
       operationId: route
       tags:
       - Router
@@ -14295,6 +14334,60 @@ paths:
           description: "Invalid request (no line, more than 50, coordinates out of\
             \ bounds), planner disabled (ROUTE_PLANNER_DISABLED), or a line over 100\
             \ km or lines over 200 km together (ROUTING_SEGMENT_TOO_LONG)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: User may not create routes in the team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Team not found in this domain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - SecurityScheme:
+        - user
+  /api/router/engines:
+    get:
+      summary: List the routing engines on offer
+      description: "The engines the planner can ask for a leg and the profiles each\
+        \ calculates. STADIA is always there with every profile; PEDALONS (BIKE, FASTBIKE,\
+        \ GRAVEL and MTB) only when the service behind it is configured and announces\
+        \ itself ready, read on its cached capabilities. Same rights as the route\
+        \ calculation: with teamSlug, the caller must be allowed to create routes\
+        \ in that team and the team must have the route planner enabled; without it,\
+        \ the domain's GPX planner must be enabled. Calls no engine and counts for\
+        \ nothing in the daily calculations."
+      operationId: routerEngines
+      tags:
+      - Router
+      parameters:
+      - name: teamSlug
+        in: query
+        schema:
+          type: string
+          maxLength: 250
+      responses:
+        "200":
+          description: The engines on offer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RouterEnginesResponse"
+        "400":
+          description: Planner disabled (ROUTE_PLANNER_DISABLED)
           content:
             application/json:
               schema:
@@ -22635,7 +22728,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 16.3.0
+  version: 16.4.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: /

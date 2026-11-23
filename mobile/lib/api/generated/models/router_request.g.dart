@@ -14,6 +14,7 @@ _RouterRequest _$RouterRequestFromJson(Map<String, dynamic> json) =>
       teamSlug: json['teamSlug'] as String?,
       useHills: (json['useHills'] as num?)?.toDouble(),
       useRoads: (json['useRoads'] as num?)?.toDouble(),
+      engine: json['engine'] as String?,
     );
 
 Map<String, dynamic> _$RouterRequestToJson(_RouterRequest instance) =>
@@ -24,4 +25,5 @@ Map<String, dynamic> _$RouterRequestToJson(_RouterRequest instance) =>
       'teamSlug': instance.teamSlug,
       'useHills': instance.useHills,
       'useRoads': instance.useRoads,
+      'engine': instance.engine,
     };

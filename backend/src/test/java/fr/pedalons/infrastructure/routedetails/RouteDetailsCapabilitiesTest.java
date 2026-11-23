@@ -69,6 +69,25 @@ class RouteDetailsCapabilitiesTest {
   }
 
   @Test
+  void theRouterNeedsApi115_andItsOwnSwitch() throws IOException {
+    String json =
+        """
+        {"api_version":"1.15","router":{"enabled":true,"ride_types":["road","gravel","mtb"],
+         "crow_m_max":100000,"snap_m":500}}
+        """;
+    RouteDetailsCapabilities c = new ObjectMapper().readValue(json, RouteDetailsCapabilities.class);
+    assertTrue(c.routerEnabled());
+    assertEquals(3, c.router().rideTypes().size());
+    RouteDetailsCapabilities.RouterSection on =
+        new RouteDetailsCapabilities.RouterSection(true, null, null, null);
+    RouteDetailsCapabilities.RouterSection off =
+        new RouteDetailsCapabilities.RouterSection(false, null, null, null);
+    assertFalse(new RouteDetailsCapabilities("1.14", null, null, null, null, on).routerEnabled());
+    assertFalse(new RouteDetailsCapabilities("1.15", null, null, null, null, off).routerEnabled());
+    assertFalse(new RouteDetailsCapabilities("1.15", null, null, null, null, null).routerEnabled());
+  }
+
+  @Test
   void theCapabilitiesOfApi17_areRead() throws IOException {
     String json =
         """

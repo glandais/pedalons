@@ -8,6 +8,7 @@ import { useRoutePlanner, MAX_IMPORT_BYTES } from './useRoutePlanner'
 const routeMock = vi.hoisted(() => vi.fn())
 const lineElevationMock = vi.hoisted(() => vi.fn())
 const importMock = vi.hoisted(() => vi.fn())
+vi.mock('@/hooks/useRouterEngineOffers', () => ({ useRouterEngineOffers: () => undefined }))
 vi.mock('@/api/endpoints/router/router', () => ({
   route: routeMock,
   importGpx: importMock,

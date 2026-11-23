@@ -163,7 +163,7 @@ void main() {
       web.of('response')[index]! as Map<String, dynamic>;
 
   group('liste fermée des chemins', () {
-    test('les cinq appels du planificateur, et rien d\'autre', () {
+    test('les six appels du planificateur, et rien d\'autre', () {
       expect(plannerRequestAllowed('POST', '/api/router'), isTrue);
       expect(plannerRequestAllowed('POST', '/api/router/elevation'), isTrue);
       expect(plannerRequestAllowed('POST', '/api/router/import-gpx'), isTrue);
@@ -172,6 +172,14 @@ void main() {
         isTrue,
       );
       expect(plannerRequestAllowed('GET', '/api/geocode/place?id=42'), isTrue);
+      expect(plannerRequestAllowed('GET', '/api/router/engines'), isTrue);
+      expect(
+        plannerRequestAllowed(
+          'GET',
+          '/api/router/engines?teamSlug=les-mollets',
+        ),
+        isTrue,
+      );
 
       for (final (String method, String path) in <(String, String)>[
         ('GET', '/api/router'),
@@ -183,6 +191,11 @@ void main() {
         ('DELETE', '/api/teams/x/routes/col'),
         ('GET', '/api/users/me'),
         ('GET', '/api/geocode/search'),
+        ('POST', '/api/router/engines'),
+        ('GET', '/api/router/engines/'),
+        ('GET', '/api/router/engines?x=1'),
+        ('GET', '/api/router/engines?teamSlug=a&x=1'),
+        ('GET', 'https://evil.test/api/router/engines'),
         ('GET', '/api/geocode/reverse?lat=1'),
         ('GET', '/api/geocode/search/../../users/me?q=1'),
         ('POST', '/api/geocode/search?q=annecy'),
