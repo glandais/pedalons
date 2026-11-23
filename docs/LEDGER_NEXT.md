@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **152 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **151 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -149,8 +149,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 ## OPS — Exploitation
 
 Contexte du domaine : [`ledger/OPS/README.md`](ledger/OPS/README.md).
-
-- [ ] [`OPS-66`](ledger/OPS/OPS-66.md) Générateur de parcours : osm-route-details 1.14, la planète servie et un budget de 30 s (S)
 
 ### App Garmin : Connect IQ Store
 

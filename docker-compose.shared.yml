@@ -89,7 +89,7 @@ services:
   # <name>.ordi beside the graph, the prebuilt tile index: without it a start rebuilds the index of
   # the planet (37 min, more than 3G). A graph is therefore five files, plus its two .orda.
   osm-route-details:
-    image: ghcr.io/glandais/osm-route-details:1.14.0
+    image: ghcr.io/glandais/osm-route-details:1.15.0
     networks:
       - shared
     environment:

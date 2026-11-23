@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **608 entrées livrées**, et des 12 entrées encore ouvertes dont une part l'est.
+Index des **609 entrées livrées**, et des 11 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -476,7 +476,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## OPS — Exploitation
 
-- [x] [`OPS-66`](ledger/OPS/OPS-66.md) Générateur de parcours : osm-route-details 1.14, la planète servie et un budget de 30 s — en partie, le reste est ouvert
+- [x] [`OPS-66`](ledger/OPS/OPS-66.md) Générateur de parcours : osm-route-details 1.14, la planète servie et un budget de 30 s — 2026-11-23
 - [x] [`OPS-65`](ledger/OPS/OPS-65.md) Générateur de parcours : osm-route-details 1.13, attracteurs OSM posés et non actifs — 2026-11-20
 - [x] [`OPS-64`](ledger/OPS/OPS-64.md) Générateur de parcours : osm-route-details 1.12, formes organiques et profil de goût en service — 2026-11-20
 - [x] [`OPS-61`](ledger/OPS/OPS-61.md) Générateur de parcours : graphe de la France en service dans la pile partagée — 2026-11-17

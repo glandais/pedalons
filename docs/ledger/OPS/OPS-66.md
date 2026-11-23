@@ -1,9 +1,9 @@
 ---
 id: OPS-66
 title: "Générateur de parcours : osm-route-details 1.14, la planète servie et un budget de 30 s"
-status: open
+status: done
 size: "S"
-verified: 2026-11-22
+done: 2026-11-23
 ---
 
 ## Livré
@@ -30,9 +30,5 @@ Mesures et validation sur le poste : note `ord-1-14-planete-mesures.md` d'osm-ro
   gardées.
 - **Constat :** aucun redémarrage ni OOM du moteur en 24 h, et une génération d'équipe en `team_first` rend ses trois
   parcours en 1,4 s. `docs/OPERATIONS.md` demande désormais de lancer les déclencheurs l'un après l'autre.
-
-## Reste à faire
-
-- **Supprimer les fichiers `fr-2026-11-15.*` :** à la main, sous `~/shared/data/osm-route-details-graph/`, une fois que
-  le moteur aura purgé les surcouches de l'ancien graphe, 48 h après la bascule (à partir du 23 novembre 2026, 17:00 UTC).
-  Ce sont la base, les deux vues, les deux `.orda` et le `.poly`, environ 4,2 Go.
+- **Ancien graphe :** le moteur a purgé les 14 surcouches de l'ancien graphe le 23 novembre à 02:50 UTC, puis les six
+  fichiers `fr-2026-11-15.*` (environ 4,2 Go) ont été supprimés à la main le même jour.
