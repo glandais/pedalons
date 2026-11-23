@@ -666,6 +666,36 @@ Conception et relevés dans osm-route-details : `docs/design/technique/ord-loops
   (`OPS-65`), parcours identiques à la 1.12 ; les critères ne sont pas relâchés et le 4d s'arrête là.
 - **Reste** : les lieux de l'équipe comme attracteurs, après le lot 4.
 
+## 12 octies. Lot 5 : off-road (20 au 23 novembre 2026)
+
+Conception et relevés dans osm-route-details : `docs/design/technique/ord-loops-lot5.md` (décisions du propriétaire
+après le 5a et après le 5d, révision après le C4) et `ord-loops-lot5-mesures.md` ; registre `API-207`, contrat
+`API-215`, site `WEB-197`, mise en service `OPS-67`.
+
+- **Mesuré d'abord (5a)** : la part hors revêtement des vraies boucles gravel va de 0,26 (P10) à 0,61 (P90), médiane
+  0,47. La page d'un parcours en montre environ 8 points de moins que le graphe du moteur : 12,6 % de la longueur n'a
+  pas de classe de revêtement dans les tuiles (`API-214`, chantier à part). Le coût de passage entre chemins et routes
+  (5e) est abandonné : les boucles générées enchaînent déjà plus que les vraies.
+- **Une définition** : le moteur mesure le non-revêtu comme `/v1/route-details` (tag `surface`, puis `tracktype`, puis
+  classe) ; chaque parcours rend `offroad_share`, mesuré par le contrôleur indépendant.
+- **Consigne** : trois crans, « Peu » 0,25, « Comme d'habitude » 0,47, « Beaucoup » 0,60 (ramené de 0,65 : hors de
+  portée pour la plupart des départs). Le moteur essaie au plus 4 multiplicateurs du coût du non-revêtu sur une grille
+  de 0,25 à 2, mélange les candidats et rend les plus proches de la cible. Le premier essai est toujours la génération
+  sans consigne : une consigne ne coûte ni 504 ni 422 que la requête sans elle n'aurait pas eu.
+- **Bornes de roulabilité** (actives par défaut) : en gravel, ni revêtement très mauvais ou impraticable, ni piste de grade 5, ni boue, ni
+  sentier VTT difficile ; en VTT, seulement les sentiers les plus durs exclus ; une arête que l'équipe a roulée reste
+  permise, sauf impraticable. Au banc, plus aucune arête bornée n'est empruntée hors de cette exemption, pour un refus de plus sur 780
+  requêtes.
+- **Décidé le 23 novembre 2026** (après le 5d) : temps accepté jusqu'à × 5 au P90 par requête (médiane ≤ × 3) ;
+  « Beaucoup » se juge sans les équipes dont les vraies boucles n'atteignent jamais 0,60 ; « Peu » au curseur de goût 1
+  (63 à 68 % au lieu de 70) accepté ; la forme se juge au seul cran 0,47. Rejoué en conteneur de 3 Gio après la
+  révision : aucun 504, 503 ni 422 de plus qu'en 1.14.0, P90 par requête × 2,4 à × 3,0 en série, mémoire au niveau de
+  1.14.0.
+- **Côté Pédalons** : contrat `16.3.0`, réglage « Chemins » du site, la consigne envoyée seulement si le moteur
+  annonce le type, et redemandée sans elle si un moteur revenu en arrière la refuse. L'app ne l'envoie pas : sans
+  réglage, gravel et VTT ont « Comme d'habitude ».
+- **Reste** : un cran par équipe (R4, changement du format de profil), la couverture des tuiles (`API-214`).
+
 ## 13. Risques
 
 - **La qualité d'OSM hors des routes roulées** : accès privés mal tagués, chemins disparus. Le
