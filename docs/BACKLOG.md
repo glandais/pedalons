@@ -9,8 +9,9 @@ Everything else lives in the ledger and is not repeated here:
   [LEDGER_NEXT.md](LEDGER_NEXT.md);
 - what the product does today — [PRODUCT_SHEET.md](PRODUCT_SHEET.md).
 
-An idea that gets a ledger entry leaves this file. Two former lines went that way:
-open: weather on Karoo and Garmin (ledger `API-77`); global full-text search (ledger `API-19`) was ruled out.
+An idea that gets a ledger entry leaves this file. Three former lines went that way:
+open: weather on Karoo and Garmin (ledger `API-77`), the route heatmap weighted by rides (ledger
+`API-216`); global full-text search (ledger `API-19`) was ruled out.
 
 ## P0 — Launch polish
 
@@ -26,9 +27,6 @@ Features that differentiate and deepen engagement.
 
 ### Route features
 - [ ] Route basket (collect routes, display on a single map)
-- [ ] Team/global route heatmap — the routes maps (`/parcours/carte`, per team or `?role=all`)
-      already draw every route one may read; what is missing is weighting by how often a road is
-      ridden
 
 ### Trips
 - [ ] Trip stage alternative routes
