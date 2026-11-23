@@ -9,7 +9,7 @@ import {
 } from '@/components/team/dashboard/DashboardHeader'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import { paths } from '@/config/paths'
-import { useTeamDashboardData } from './teamHomeData'
+import { useFirstSteps, useTeamDashboardData } from './teamHomeData'
 
 /**
  * « Tableau de bord »: the team page, for everyone (see `TeamHomePage`). The header and the tabs
@@ -18,6 +18,7 @@ import { useTeamDashboardData } from './teamHomeData'
  */
 export function TeamDashboardPage({ team }: { team: TeamDetailDto }) {
   const { dashboard } = useTeamDashboardData(team.slug, true)
+  const firstSteps = useFirstSteps(team.slug, dashboard.data)
 
   useCanonicalPath(paths.team(team.slug))
 
@@ -39,7 +40,9 @@ export function TeamDashboardPage({ team }: { team: TeamDetailDto }) {
         onRetry={() => void dashboard.refetch()}
         skeleton={<DashboardSkeleton />}
       >
-        {dashboard.data && <TeamDashboard dashboard={dashboard.data} team={team} />}
+        {dashboard.data && (
+          <TeamDashboard dashboard={dashboard.data} team={team} firstSteps={firstSteps} />
+        )}
       </QueryStateBoundary>
     </TeamLayout>
   )

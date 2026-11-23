@@ -17,6 +17,7 @@ import '../../../../keys.dart';
 import '../../../rides/presentation/ride_editor_location.dart';
 import '../../providers/team_dashboard_provider.dart';
 import '../widgets/dashboard/dashboard_admin.dart';
+import '../widgets/dashboard/dashboard_first_steps.dart';
 import '../widgets/dashboard/dashboard_content.dart';
 import '../widgets/dashboard/dashboard_rides.dart';
 import '../widgets/dashboard/dashboard_todo.dart';
@@ -143,6 +144,8 @@ class TeamDashboardBody extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         _Summary(team: team, role: d.role, organizer: organizer != null),
+        if (d.admin != null)
+          DashboardFirstSteps(teamId: team.id, teamSlug: team.slug),
         if (organizer != null)
           DashboardTodo(teamSlug: team.slug, data: organizer),
         // « Voir tout » mène à l'Agenda et aux Publications, comme au site

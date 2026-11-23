@@ -142,6 +142,13 @@ class _TeamDashboardKey extends ValueKey<String> {
 /// ce qu'un rôle voit sans dépendre d'un libellé.
 class TeamDashboardKeys {
   final summary = const _TeamDashboardKey('summary');
+
+  /// « Premières étapes », sa croix, et chacune de ses étapes (`invite`,
+  /// `ride`, `route`) — docs/LEDGER_*.md WEB-195.
+  final firstSteps = const _TeamDashboardKey('firstSteps');
+  final firstStepsDismiss = const _TeamDashboardKey('firstStepsDismiss');
+  ValueKey<String> firstStep(String step) =>
+      _TeamDashboardKey('firstStep_$step');
   final createRideButton = const _TeamDashboardKey('createRideButton');
   final newPostButton = const _TeamDashboardKey('newPostButton');
   final createTripButton = const _TeamDashboardKey('createTripButton');

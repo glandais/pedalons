@@ -4,6 +4,8 @@ import type { TeamDashboardDto, TeamDetailDto } from '@/api/dto'
 import { paths } from '@/config/paths'
 import { DashboardSection } from './DashboardSection'
 import { TodoBand } from './TodoBand'
+import { FirstSteps } from './FirstSteps'
+import type { FirstStepsState } from '@/pages/team/teamHomeData'
 import { MyUpcomingList } from './MyUpcomingList'
 import { UpcomingRideCard } from './UpcomingRideCard'
 import { LatestAdsList, LatestPostsList, NewRoutesList } from './ContentLists'
@@ -15,6 +17,8 @@ interface TeamDashboardProps {
   dashboard: TeamDashboardDto
   /** The team as `GET /api/teams/{slug}` gives it — the same object as `dashboard.team`. */
   team?: TeamDetailDto
+  /** « Premières étapes », for a team administrator only (`useFirstSteps`, WEB-195). */
+  firstSteps?: FirstStepsState
 }
 
 /**
@@ -27,7 +31,7 @@ interface TeamDashboardProps {
  * team ORGANIZER or ADMIN, or a platform admin whose `role` is null when not a member
  * (docs/LEDGER_*.md API-137). Their presence, not `role`, is what draws them.
  */
-export function TeamDashboard({ dashboard, team: teamOverride }: TeamDashboardProps) {
+export function TeamDashboard({ dashboard, team: teamOverride, firstSteps }: TeamDashboardProps) {
   const { t } = useTranslation()
   const team = teamOverride ?? dashboard.team
   const slug = team.slug
@@ -42,6 +46,7 @@ export function TeamDashboard({ dashboard, team: teamOverride }: TeamDashboardPr
 
   return (
     <Stack gap="xl">
+      {admin && firstSteps && <FirstSteps teamId={team.id} teamSlug={slug} state={firstSteps} />}
       {organizer && <TodoBand teamSlug={slug} organizer={organizer} />}
 
       <Flex gap="xl" wrap="wrap" align="flex-start">

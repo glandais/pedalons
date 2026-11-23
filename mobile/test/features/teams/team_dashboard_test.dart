@@ -20,6 +20,7 @@ import 'package:pedalons/features/teams/data/team_repository.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_dashboard_page.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_home_page.dart';
 import 'package:pedalons/features/teams/presentation/widgets/team_sections.dart';
+import 'package:pedalons/features/teams/providers/team_first_steps_provider.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -59,6 +60,7 @@ void main() {
     Size size = const Size(1000, 6000),
     bool routed = false,
     UserDto? user,
+    FirstStepsState? firstSteps,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -111,6 +113,10 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           authProvider.overrideWith((ref) => _StubAuthNotifier(ref, user)),
+          // Sans réseau : ce que les « Premières étapes » liraient de l'équipe.
+          teamFirstStepsProvider.overrideWith(
+            (Ref ref, String slug) async => firstSteps,
+          ),
         ],
         child: router == null
             ? MaterialApp(theme: PedalonsTheme.build(brightness), home: body)
@@ -478,6 +484,98 @@ void main() {
       await tester.tap(find.byKey(keys.teamDashboard.createRouteButton));
       await settle(tester);
       expect(find.text('nouveau parcours ${d.team.slug}'), findsOneWidget);
+    });
+  });
+
+  // « Premières étapes » (docs/LEDGER_*.md WEB-195) : ce qui s'applique, ce
+  // qui se coche, ce qui mène où, et comment la liste s'en va.
+  group('premières étapes', () {
+    const FirstStepsState fresh = FirstStepsState(
+      invite: false,
+      ride: false,
+      route: false,
+    );
+
+    testWidgets('une équipe neuve : les trois étapes, dans l\'ordre', (
+      WidgetTester tester,
+    ) async {
+      await renderBody(tester, _dashboard(role: 'ADMIN'), firstSteps: fresh);
+
+      expect(find.byKey(keys.teamDashboard.firstSteps), findsOneWidget);
+      expect(find.text('Premières étapes'), findsOneWidget);
+      expect(find.text('0 sur 3'), findsOneWidget);
+      final double invite = tester
+          .getTopLeft(find.byKey(keys.teamDashboard.firstStep('invite')))
+          .dy;
+      final double ride = tester
+          .getTopLeft(find.byKey(keys.teamDashboard.firstStep('ride')))
+          .dy;
+      final double route = tester
+          .getTopLeft(find.byKey(keys.teamDashboard.firstStep('route')))
+          .dy;
+      expect(invite, lessThan(ride));
+      expect(ride, lessThan(route));
+    });
+
+    testWidgets('une étape faite se coche ; l\'étape absente ne compte pas', (
+      WidgetTester tester,
+    ) async {
+      await renderBody(
+        tester,
+        _dashboard(role: 'ADMIN'),
+        firstSteps: const FirstStepsState(ride: true, route: false),
+      );
+
+      expect(find.byKey(keys.teamDashboard.firstStep('invite')), findsNothing);
+      expect(find.text('1 sur 2'), findsOneWidget);
+    });
+
+    testWidgets('tout est fait : plus de liste', (WidgetTester tester) async {
+      await renderBody(
+        tester,
+        _dashboard(role: 'ADMIN'),
+        firstSteps: const FirstStepsState(
+          invite: true,
+          ride: true,
+          route: true,
+        ),
+      );
+
+      expect(find.byKey(keys.teamDashboard.firstSteps), findsNothing);
+    });
+
+    testWidgets('inviter ouvre la feuille d\'invitation des membres', (
+      WidgetTester tester,
+    ) async {
+      await renderBody(
+        tester,
+        _dashboard(role: 'ADMIN'),
+        firstSteps: fresh,
+        routed: true,
+      );
+
+      await tester.tap(find.byKey(keys.teamDashboard.firstStep('invite')));
+      await settle(tester);
+
+      expect(find.textContaining('invite=1'), findsOneWidget);
+    });
+
+    testWidgets('masquée à la main, elle ne revient pas', (
+      WidgetTester tester,
+    ) async {
+      await renderBody(tester, _dashboard(role: 'ADMIN'), firstSteps: fresh);
+      await tester.tap(find.byKey(keys.teamDashboard.firstStepsDismiss));
+      await settle(tester);
+      expect(find.byKey(keys.teamDashboard.firstSteps), findsNothing);
+
+      await renderBody(tester, _dashboard(role: 'ADMIN'), firstSteps: fresh);
+      expect(find.byKey(keys.teamDashboard.firstSteps), findsNothing);
+    });
+
+    testWidgets('un membre ne la voit jamais', (WidgetTester tester) async {
+      await renderBody(tester, _dashboard(role: 'MEMBER'), firstSteps: fresh);
+
+      expect(find.byKey(keys.teamDashboard.firstSteps), findsNothing);
     });
   });
 
