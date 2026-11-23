@@ -2,11 +2,11 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **148 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **155 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-41 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+42 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
@@ -46,6 +46,10 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
 - [ ] [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play (S) · *externe*
 
+### Onboarding : recherche du 22 novembre 2026
+
+- [ ] [`MOB-179`](ledger/MOB/MOB-179.md) Le lien d'invitation n'ouvre pas l'app : pas d'écran pour le recevoir (M)
+
 ### Recette sur une application qui tourne
 
 - [ ] [`MOB-52`](ledger/MOB/MOB-52.md) Météo : recette sur appareil de ce que `MOB-68` ne couvre pas (S) · *recette*
@@ -76,6 +80,12 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 - [ ] [`WEB-81`](ledger/WEB/WEB-81.md) GPX à plusieurs traces : profil empilé et synchro faussée (S, priorité basse)
 - [ ] [`WEB-7`](ledger/WEB/WEB-7.md) Idées de la liste « P2 (à planifier) » qui n'ont pas été retenues
+
+### Onboarding : recherche du 22 novembre 2026
+
+- [ ] [`WEB-195`](ledger/WEB/WEB-195.md) Équipe tout juste créée : aucune première étape proposée (web + mobile) (M)
+- [ ] [`WEB-194`](ledger/WEB/WEB-194.md) Accueil sans équipe : deux cartes vides au lieu d'un choix (web + mobile) (M)
+- [ ] [`WEB-193`](ledger/WEB/WEB-193.md) Invitation sans compte : l'activation ramène à l'accueil, pas à l'invitation (S)
 
 ## API — Contrat d'API et backend
 
@@ -138,6 +148,10 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 - [ ] [`API-103`](ledger/API/API-103.md) Pas de réglage d'unités pour le Royaume-Uni (S, contrat + web + mobile)
 - [ ] [`API-77`](ledger/API/API-77.md) Météo sur Karoo et Garmin (M)
 
+### Onboarding : recherche du 22 novembre 2026
+
+- [ ] [`API-213`](ledger/API/API-213.md) Aucune mesure d'activation des nouveaux comptes (S)
+
 ### Petites évolutions d'API qui suppriment chacune une dégradation nommée
 
 - [ ] [`API-18`](ledger/API/API-18.md) Voyage comme événement multi-jour au calendrier (`CalendarEventType`, toujours `RIDE`/`TRIP_STAGE`)
@@ -192,6 +206,10 @@ Contexte du domaine : [`ledger/NOTIF/README.md`](ledger/NOTIF/README.md).
 - [ ] [`NOTIF-18`](ledger/NOTIF/NOTIF-18.md) Une invitation acceptée ou un signalement traité reste non lu (S)
 - [ ] [`NOTIF-17`](ledger/NOTIF/NOTIF-17.md) Les clients ne distinguent pas une notification expirée (S)
 - [ ] [`NOTIF-15`](ledger/NOTIF/NOTIF-15.md) Une notification datée reste non lue après le rendez-vous (M)
+
+### Onboarding : recherche du 22 novembre 2026
+
+- [ ] [`NOTIF-19`](ledger/NOTIF/NOTIF-19.md) Activation du push proposée seulement dans la boîte de notifications (S)
 
 ## MOD — Modération et signalement de contenu
 
