@@ -30,13 +30,15 @@ describe('the rideGroupMap route', () => {
     expect(route?.dataRedirect).toBeTypeOf('function')
   })
 
-  it("is no universal link: the app has no screen for it, the group's link stays the app's", () => {
+  it("is a universal link: the app opens the group's page in its place (appParent)", () => {
     const aasa = readFileSync(
       resolve(process.cwd(), 'public/.well-known/apple-app-site-association'),
       'utf8'
     )
-    expect(aasa).toContain('"NOT /teams/*/rides/*/groups/*/map"')
-    expect(aasa).toContain('"NOT /equipes/*/sorties/*/groupes/*/carte"')
+    expect(aasa).toContain('"/teams/*/rides/*/groups/*/map"')
+    expect(aasa).not.toContain('"NOT /teams/*/rides/*/groups/*/map"')
+    expect(aasa).toContain('"/equipes/*/sorties/*/groupes/*/carte"')
+    expect(aasa).not.toContain('"NOT /equipes/*/sorties/*/groupes/*/carte"')
   })
 })
 

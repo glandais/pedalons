@@ -481,16 +481,19 @@ test.describe('invitee side', () => {
     const main = await activate(page, verification)
     await main.getByRole('link', { name: 'Plus tard' }).click()
 
-    // The home offers it too, not only the team list.
-    const banner = page
-      .getByRole('alert')
-      .filter({ hasText: 'Vous avez une invitation en attente' })
-    await expect(banner).toBeVisible()
+    // The home offers it too, not only the team list: without a team, inside the welcome block
+    // (WEB-194), which then replaces the banner.
+    const welcome = page.getByRole('region', { name: 'Bienvenue !' })
+    await expect(welcome.getByText('Vous avez une invitation en attente')).toBeVisible()
     await expect(
-      banner.getByText(`Owner later vous invite à rejoindre ${team.name}.`, { exact: true })
+      welcome.getByText(`Owner later vous invite à rejoindre ${team.name}.`, { exact: true })
     ).toBeVisible()
-    await hydrated(banner.getByRole('button', { name: 'Accepter' }))
-    await banner.getByRole('button', { name: 'Accepter' }).click()
+    await expect(page.getByRole('alert').filter({ hasText: 'invitation en attente' })).toHaveCount(
+      0
+    )
+    const join = welcome.getByRole('button', { name: `Rejoindre ${team.name}` })
+    await hydrated(join)
+    await join.click()
 
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}$`))
     await expect(page.getByText(`Vous avez rejoint ${team.name}.`, { exact: true })).toBeVisible()

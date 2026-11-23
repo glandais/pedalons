@@ -49,13 +49,15 @@ describe('the rideMap route', () => {
     expect(redirect(new QueryClient(), params, url)).toBeUndefined()
   })
 
-  it("is no universal link: the app has no screen for it, the ride's link stays the app's", () => {
+  it("is a universal link: the app opens the ride's page in its place (appParent)", () => {
     const aasa = readFileSync(
       resolve(process.cwd(), 'public/.well-known/apple-app-site-association'),
       'utf8'
     )
-    expect(aasa).toContain('"NOT /teams/*/rides/*/map"')
-    expect(aasa).toContain('"NOT /equipes/*/sorties/*/carte"')
+    expect(aasa).toContain('"/teams/*/rides/*/map"')
+    expect(aasa).not.toContain('"NOT /teams/*/rides/*/map"')
+    expect(aasa).toContain('"/equipes/*/sorties/*/carte"')
+    expect(aasa).not.toContain('"NOT /equipes/*/sorties/*/carte"')
   })
 })
 

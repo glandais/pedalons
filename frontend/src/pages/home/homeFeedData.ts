@@ -10,6 +10,7 @@ import { prefetchListMyParticipationsQuery } from '@/api/endpoints/users/users'
 import { useGetEvents, prefetchGetEventsQuery } from '@/api/endpoints/calendar/calendar'
 import { useListTeams, prefetchListTeamsQuery } from '@/api/endpoints/teams/teams'
 import { prefetchGetAvailableServicesQuery } from '@/api/endpoints/gps-services/gps-services'
+import { prefetchListMyInvitationsQuery } from '@/api/endpoints/invitations/invitations'
 import { MinRole } from '@/api/dto'
 import { useAuth } from '@/hooks/useAuth'
 import { useUrlFilters, readUrlFilters } from '@/hooks/useUrlFilters'
@@ -164,6 +165,9 @@ export async function prefetchHomeFeed(queryClient: QueryClient, url: URL): Prom
       prefetchListTeamsQuery(queryClient, MY_TEAMS_PARAMS),
       // `NextRideCard`'s « Envoyer vers l'appareil » goes through `useGpsConnections()`.
       prefetchGetAvailableServicesQuery(queryClient),
+      // The pending invitations: `PendingInvitationsBanner`, or `NoTeamWelcome` without a team
+      // (WEB-193, WEB-194).
+      prefetchListMyInvitationsQuery(queryClient),
     ])
   }
   const filters = readUrlFilters(url.searchParams, homeFeedFilterOptions(membershipDefault))
