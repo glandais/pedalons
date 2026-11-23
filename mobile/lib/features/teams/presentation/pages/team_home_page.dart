@@ -48,6 +48,7 @@ class TeamHomePage extends ConsumerWidget {
     this.agendaType,
     this.agendaScope = AgendaScope.all,
     this.agendaView = AgendaView.cards,
+    this.routesMapView,
   });
 
   final String teamSlug;
@@ -63,6 +64,10 @@ class TeamHomePage extends ConsumerWidget {
   /// La vue sur laquelle l'Agenda s'ouvre : `teamCalendar` l'ouvre en
   /// calendrier.
   final AgendaView agendaView;
+
+  /// La caméra qu'impose l'adresse (`?map=`) à la carte de la section
+  /// Parcours, qui s'ouvre alors en vue Carte ; `null` : comme d'habitude.
+  final PdlMapCamera? routesMapView;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -88,6 +93,7 @@ class TeamHomePage extends ConsumerWidget {
         agendaType: agendaType,
         agendaScope: agendaScope,
         agendaView: agendaView,
+        routesMapView: routesMapView,
       );
     }
 
@@ -98,6 +104,7 @@ class TeamHomePage extends ConsumerWidget {
         agendaType: agendaType,
         agendaScope: agendaScope,
         agendaView: agendaView,
+        routesMapView: routesMapView,
       ),
       loading: () => const _TeamChrome.bare(
         // Défilable : trois gabarits dépassent la hauteur d'un écran, et un
@@ -190,6 +197,7 @@ class _TeamSectionScaffold extends ConsumerWidget {
     required this.agendaType,
     required this.agendaScope,
     required this.agendaView,
+    required this.routesMapView,
   });
 
   final TeamDetailDto team;
@@ -197,6 +205,7 @@ class _TeamSectionScaffold extends ConsumerWidget {
   final PublicationType? agendaType;
   final AgendaScope agendaScope;
   final AgendaView agendaView;
+  final PdlMapCamera? routesMapView;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -281,7 +290,11 @@ class _TeamSectionScaffold extends ConsumerWidget {
         body: _WithSectionsBar(
           sections: sections,
           current: section,
-          child: RoutesPage(teamSlug: team.slug, embedded: true),
+          child: RoutesPage(
+            teamSlug: team.slug,
+            embedded: true,
+            initialMapView: routesMapView,
+          ),
         ),
       ),
       TeamSectionKind.ads => _TeamChrome(

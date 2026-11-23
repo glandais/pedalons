@@ -7,6 +7,7 @@ import '../../../../core/config/map_style_options.dart';
 import '../../../../core/material.dart';
 import '../../../../core/pdl/map/pdl_map.dart';
 import '../../../../core/pdl/map/pdl_map_buttons.dart';
+import '../../../../core/pdl/map/pdl_map_camera.dart';
 import '../../../../core/pdl/map/pdl_map_controller.dart';
 import '../../../../core/pdl/map/pdl_map_hero.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -29,7 +30,11 @@ const double _kPlaceSpan = 0.02;
 /// position n'en couvre pas l'affichage sur une carte (ledgers `MOB-131`,
 /// `MOB-170`, la règle de `kPlannerLocate`).
 class GpxBlankMapPage extends ConsumerStatefulWidget {
-  const GpxBlankMapPage({super.key});
+  const GpxBlankMapPage({super.key, this.initialView});
+
+  /// La caméra de `?map=z/lat/lon` (un lien du site), à la place du centre par
+  /// défaut ; `null` : le centre par défaut.
+  final PdlMapCamera? initialView;
 
   @override
   ConsumerState<GpxBlankMapPage> createState() => _GpxBlankMapPageState();
@@ -123,8 +128,11 @@ class _GpxBlankMapPageState extends ConsumerState<GpxBlankMapPage> {
           credit: servedMapCredit(resolved),
           scale: servedMapScale(ref),
           hillshade: servedHillshade(context, ref),
-          initialCenter: PdlMapPoint(lon: center.lon, lat: center.lat),
-          initialZoom: center.zoom,
+          initialCenter: PdlMapPoint(
+            lon: widget.initialView?.lon ?? center.lon,
+            lat: widget.initialView?.lat ?? center.lat,
+          ),
+          initialZoom: widget.initialView?.zoom ?? center.zoom,
           fitBox: _place,
           fitPadding: EdgeInsets.zero,
         ),

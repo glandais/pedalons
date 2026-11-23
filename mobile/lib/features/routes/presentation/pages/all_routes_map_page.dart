@@ -1,5 +1,6 @@
 import '../../../../core/material.dart';
 
+import '../../../../core/pdl/pdl.dart';
 import '../../domain/route_filters.dart';
 import 'routes_page.dart';
 
@@ -9,9 +10,15 @@ import 'routes_page.dart';
 /// pas un écran. Basculer sur Liste depuis ici ne change donc pas d'adresse —
 /// c'est voulu, la vue est un état persisté et non une route.
 class AllRoutesMapPage extends StatelessWidget {
-  const AllRoutesMapPage({super.key});
+  const AllRoutesMapPage({super.key, this.initialView});
+
+  /// La caméra de `?map=z/lat/lon`, ou `null`.
+  final PdlMapCamera? initialView;
 
   @override
-  Widget build(BuildContext context) =>
-      const RoutesPage(teamSlug: null, initialView: RouteViewMode.map);
+  Widget build(BuildContext context) => RoutesPage(
+    teamSlug: null,
+    initialView: RouteViewMode.map,
+    initialMapView: initialView,
+  );
 }

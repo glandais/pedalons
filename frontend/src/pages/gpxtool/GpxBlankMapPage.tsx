@@ -11,6 +11,7 @@ import { PedalonsMap } from '@/components/map/PedalonsMap'
 import { paths } from '@/config/paths'
 import { useAppName } from '@/hooks/useAppName'
 import { useDefaultMapView } from '@/hooks/useDefaultMapView'
+import { useMapViewParam } from '@/hooks/useMapViewParam'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 
 /**
@@ -23,7 +24,11 @@ export function GpxBlankMapPage() {
   const { t } = useTranslation()
   const appName = useAppName()
   const colorScheme = useResolvedColorScheme()
-  const initialViewState = useDefaultMapView()
+  const defaultView = useDefaultMapView()
+  // `?map=z/lat/lon` opens where a shared link or a reload left the map; the default otherwise.
+  const { initialView: urlView, onMoveEnd } = useMapViewParam()
+  // Still held until /api/config lands: without it the map has no style to paint.
+  const initialViewState = defaultView && (urlView ?? defaultView)
   const title = t('gpxTools.blankMap.pageTitle')
 
   useEffect(() => {
@@ -50,7 +55,7 @@ export function GpxBlankMapPage() {
           // /api/config hasn't said where to open yet: no map at an invented position.
           <Skeleton h="100%" w="100%" radius={0} />
         ) : (
-          <PedalonsMap initialViewState={initialViewState}>
+          <PedalonsMap initialViewState={initialViewState} onMoveEnd={onMoveEnd}>
             <MapSearchControl />
             <MapFullscreenControl />
             <LocateControl trackUserLocation />

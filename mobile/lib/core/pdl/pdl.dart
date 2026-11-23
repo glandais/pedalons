@@ -14,6 +14,7 @@ export 'elevation/elevation_cursor_painter.dart';
 export 'elevation/elevation_markers_painter.dart';
 export 'elevation/elevation_samples.dart';
 export 'elevation/pdl_elevation_profile.dart';
+export 'map/map_view_param.dart';
 export 'map/pdl_map.dart';
 export 'map/pdl_map_attribution.dart';
 export 'map/pdl_map_bottom_inset.dart';

@@ -41,10 +41,16 @@ class RoutesMapView extends ConsumerStatefulWidget {
     required this.filters,
     required this.onChanged,
     this.fullscreen = false,
+    this.initialView,
   });
 
   final RouteFilters filters;
   final ValueChanged<RouteFilters> onChanged;
+
+  /// La caméra qu'impose l'adresse (`?map=z/lat/lon`, un lien du site) : la
+  /// carte s'ouvre là, et ne se cadre plus sur les parcours. Seul un
+  /// changement d'« Autour de moi » la recadre ensuite.
+  final PdlMapCamera? initialView;
 
   /// Vrai dans la page plein écran, que cette vue construit elle-même — voir
   /// `PdlMapHero.fullscreenBuilder`. La page est une **seconde instance** :
@@ -71,6 +77,10 @@ class _RoutesMapViewState extends ConsumerState<RoutesMapView>
   /// Les filtres du premier cadre : ce sont eux, et eux seuls, qui cadrent la
   /// carte.
   late final RouteFilters _framingFilters = widget.filters;
+
+  /// Le cadre « Autour de moi » à l'ouverture. Sous une caméra imposée, il ne
+  /// cadre pas : seul un rayon ou une position **changés** depuis le font.
+  late final PdlMapBox? _framingProximity = _proximityBox();
 
   @override
   void initState() {
@@ -160,7 +170,11 @@ class _RoutesMapViewState extends ConsumerState<RoutesMapView>
       return _MapPending(error: style.error, onRetry: _reloadConfig);
     }
 
-    final PdlMapBox? fitBox = _proximityBox() ?? bounds.value;
+    final PdlMapCamera? view = widget.initialView;
+    final PdlMapBox? proximity = _proximityBox();
+    final PdlMapBox? fitBox = view == null
+        ? proximity ?? bounds.value
+        : (proximity == _framingProximity ? null : proximity);
 
     return PdlMapHero(
       isFullscreen: widget.fullscreen,
@@ -215,10 +229,12 @@ class _RoutesMapViewState extends ConsumerState<RoutesMapView>
         massTileUrl: _tileUrl,
         massTileColor: c.mapTrack,
         onMassFeatureTapped: _onFeatureTapped,
-        initialCenter: center.value == null
+        initialCenter: view != null
+            ? PdlMapPoint(lon: view.lon, lat: view.lat)
+            : center.value == null
             ? null
             : PdlMapPoint(lon: center.value!.lon, lat: center.value!.lat),
-        initialZoom: center.value?.zoom.toDouble() ?? 5,
+        initialZoom: view?.zoom ?? center.value?.zoom.toDouble() ?? 5,
         fitBox: fitBox,
       ),
     );

@@ -48,11 +48,16 @@ class RoutesPage extends ConsumerStatefulWidget {
   /// elle, c'est la dernière vue employée qui gagne.
   final RouteViewMode? initialView;
 
+  /// La caméra qu'impose l'adresse (`?map=z/lat/lon`) : la page s'ouvre alors
+  /// en vue Carte, là, plutôt que cadrée sur les parcours.
+  final PdlMapCamera? initialMapView;
+
   const RoutesPage({
     super.key,
     required this.teamSlug,
     this.embedded = false,
     this.initialView,
+    this.initialMapView,
   });
 
   @override
@@ -72,7 +77,9 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
   @override
   void initState() {
     super.initState();
-    final RouteViewMode? forced = widget.initialView;
+    final RouteViewMode? forced =
+        widget.initialView ??
+        (widget.initialMapView != null ? RouteViewMode.map : null);
     if (forced != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -130,6 +137,7 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
             viewSwitch: _viewSwitch(ListViewKind.map),
             filters: filters,
             onChanged: _setFilters,
+            initialView: widget.initialMapView,
           )
         : _buildList(filters, toolbar);
 
@@ -424,12 +432,14 @@ class _MapBody extends StatelessWidget {
     required this.viewSwitch,
     required this.filters,
     required this.onChanged,
+    this.initialView,
   });
 
   final Widget toolbar;
   final Widget viewSwitch;
   final RouteFilters filters;
   final ValueChanged<RouteFilters> onChanged;
+  final PdlMapCamera? initialView;
 
   @override
   Widget build(BuildContext context) {
@@ -458,6 +468,7 @@ class _MapBody extends StatelessWidget {
             key: keys.routes.mapView,
             filters: filters,
             onChanged: onChanged,
+            initialView: initialView,
           ),
         ),
       ],

@@ -843,6 +843,11 @@ Widget _teamPage(GoRouterState state, TeamSectionTarget target) => TeamHomePage(
   agendaType: target.type,
   agendaScope: target.scope,
   agendaView: target.view,
+  // `?map=z/lat/lon` : la carte de la section Parcours s'ouvre là, comme le
+  // lien `…/parcours/carte?map=` du site qui y mène (`appParent`).
+  routesMapView: target.kind == TeamSectionKind.routes
+      ? mapViewFromQuery(state.uri.queryParameters)
+      : null,
 );
 
 /// Build the team subtree for a single locale, grafted under the Teams branch.
@@ -1304,7 +1309,9 @@ List<GoRoute> _gpxToolsRoutes() {
           ),
           GoRoute(
             path: _underTeam(PathVariants.gpxToolsBlankMap(), locale, base),
-            builder: (context, state) => const GpxBlankMapPage(),
+            builder: (context, state) => GpxBlankMapPage(
+              initialView: mapViewFromQuery(state.uri.queryParameters),
+            ),
           ),
           GoRoute(
             path: _underTeam(
@@ -1628,7 +1635,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               ..._perLocale(
                 PathVariants.allRoutesMap(),
-                (ctx, st) => const AllRoutesMapPage(),
+                (ctx, st) => AllRoutesMapPage(
+                  initialView: mapViewFromQuery(st.uri.queryParameters),
+                ),
                 asPage: true,
               ),
               ..._perLocale(

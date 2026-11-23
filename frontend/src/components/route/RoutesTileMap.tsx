@@ -8,6 +8,7 @@ import { paths } from '@/config/paths'
 import { useMapHeight } from '@/hooks/useResponsive'
 import { useUnits } from '@/hooks/useUnits'
 import { useDefaultMapView } from '@/hooks/useDefaultMapView'
+import { useMapViewParam } from '@/hooks/useMapViewParam'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
 import { PedalonsMap } from '../map/PedalonsMap'
 import { MapSearchControl } from '../map/MapSearchControl'
@@ -47,7 +48,8 @@ const featureOf = (event: MapLayerMouseEvent): RouteFeature | null => {
 export interface RoutesTileMapProps {
   tilesUrl: string
   /**
-   * Extent to open on, once {@link boundsPending} is false. Read at mount only: refraiming under
+   * Extent to open on, once {@link boundsPending} is false — unless the URL names a camera
+   * (`?map=`, {@link useMapViewParam}), which wins and doesn't wait for it. Read at mount only: refraiming under
    * the fingers of someone who is narrowing the filters would be disorienting.
    */
   bounds?: BoundsDto
@@ -65,6 +67,8 @@ export function RoutesTileMap({ tilesUrl, bounds, boundsPending }: RoutesTileMap
   // A dedicated map page can afford more room than the maps embedded in detail pages.
   const mapHeight = useMapHeight('fullscreen')
   const defaultView = useDefaultMapView()
+  // `?map=z/lat/lon`: where a shared link, a reload or a Back left the map, ahead of the extent.
+  const { initialView: urlView, onMoveEnd } = useMapViewParam()
 
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null)
   const [selected, setSelected] = useState<SelectedRoute | null>(null)
@@ -86,6 +90,8 @@ export function RoutesTileMap({ tilesUrl, bounds, boundsPending }: RoutesTileMap
 
   // Read once, at mount: the map isn't rendered at all before this resolves.
   const initialViewState = useMemo(() => {
+    // Still held until /api/config lands (`defaultView`): without it the map has no style yet.
+    if (urlView) return defaultView ? urlView : undefined
     if (bounds) {
       return {
         bounds: [
@@ -96,7 +102,7 @@ export function RoutesTileMap({ tilesUrl, bounds, boundsPending }: RoutesTileMap
       }
     }
     return defaultView ?? undefined
-  }, [bounds, defaultView])
+  }, [urlView, bounds, defaultView])
 
   const container = (children: ReactNode) => (
     <Box
@@ -116,7 +122,7 @@ export function RoutesTileMap({ tilesUrl, bounds, boundsPending }: RoutesTileMap
   )
 
   // Nothing to frame on yet. The placeholder is the map's own size, so the page doesn't jump.
-  if (boundsPending || !initialViewState) {
+  if ((boundsPending && !urlView) || !initialViewState) {
     return container(<Skeleton h="100%" w="100%" radius={0} />)
   }
 
@@ -128,6 +134,7 @@ export function RoutesTileMap({ tilesUrl, bounds, boundsPending }: RoutesTileMap
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={handleClick}
+      onMoveEnd={onMoveEnd}
     >
       <MapSearchControl />
       <LocateControl />
