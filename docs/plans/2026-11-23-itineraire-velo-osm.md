@@ -25,7 +25,7 @@ triangle.
 Ce plan ajoute au moteur un **calcul d'itinéraire de A à B**, et le propose **en option** dans le
 planificateur du site et de l'app :
 
-| | Stadia (aujourd'hui, reste le défaut) | Moteur Pédalons (option) |
+| | Stadia (« Standard ») | Moteur Pédalons (défaut là où il est offert, D1) |
 |---|---|---|
 | Profils | vélo, route, gravel, VTT, marche, moto | **route, gravel, VTT** seulement |
 | Montées | curseur « éviter les montées » | **ignorées** (le moteur n'a pas l'altitude) |
@@ -175,8 +175,8 @@ POST /v1/router/route          (api 1.15, ajout pur)
 
 ## 7. Écrans — lots 4 et 5
 
-- **Site** : dans le panneau des profils (`RouterProfileSelector`), sous les curseurs, un choix
-  « Calcul d'itinéraire » : *Standard* / *Routes de l'équipe* (libellés à arrêter, BRANDING §8.2),
+- **Site** : dans le panneau des profils (`RouterProfileSelector`), au-dessus des curseurs, un choix
+  « Calcul d'itinéraire » : *Routes de l'équipe* (défaut, D1 ; *Pédalons* sans équipe) / *Standard*,
   visible pour les quatre profils vélo (D2) quand le moteur répond, avec ou sans équipe (D3). Les
   curseurs « montées » et « routes » restent : ils servent au repli (D4), une ligne d'aide dit que le
   moteur Pédalons ne tient pas compte des montées. Choix gardé par appareil (`localStorage`), comme les curseurs ;
@@ -274,19 +274,20 @@ conséquence à ces temps.
 
 | # | Question | Décision | Écarté |
 |---|---|---|---|
+| D1 | Défaut du planificateur | **Le moteur Pédalons par défaut** (« Routes de l'équipe », « Pédalons » sans équipe) partout où il est offert pour le profil ; le choix, placé **au-dessus des curseurs** et en première position, reste gardé par appareil | Stadia par défaut et le moteur en choix explicite (la première version, changée le jour même) |
 | D2 | Profil `BIKE` (vélo polyvalent) avec le moteur Pédalons | **Rangé avec la route** : l'option vaut pour les quatre profils vélo | Masquer l'option pour `BIKE` ; le ranger avec le gravel |
 | D3 | Sans équipe (planificateur personnel) | **L'option est offerte**, au goût commun | Équipes seulement |
 | D4 | Le moteur ne peut pas répondre (trop long, hors couverture, indisponible) | **Repli silencieux sur Stadia** | Erreur explicite ; repli signalé à l'écran |
 | D6 | Compteur journalier de routage | **Partagé** avec Stadia (300 par personne) | Compteur à part ; pas de plafond |
 
-Restent proposés, sans décision demandée : D1, Stadia reste le défaut et le moteur Pédalons un choix
-par appareil (c'est la demande : « on propose l'option ») ; D5, pas de curseur d'affinité dans le
+Reste proposé, sans décision demandée : D5, pas de curseur d'affinité dans le
 planificateur, 0,25 fixe comme le générateur, à rouvrir après usage.
 
 ## 12. Risques
 
 - **Coût réglé pour des boucles, pas pour aller au plus court** : le goût peut préférer un grand détour
-  à 500 m de départementale. C'est ce que mesure le lot 1 bis ; d'ici là l'option est facultative.
+  à 500 m de départementale. C'est ce que mesure le lot 1 bis ; depuis D1 le moteur est le défaut, donc
+  ce banc passe avant tout autre lot.
 - **Heuristique faible** quand l'équipe baisse beaucoup les poids : temps borné par la zone, à mesurer
   au P90 (cible : 300 ms à chaud pour 20 km **(proposé)**).
 - **Mémoire** : les fenêtres du routage partagent le budget de 800 Mo avec la génération ; la borne de

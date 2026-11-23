@@ -131,6 +131,7 @@ export function RouterProfileSelector({
               </UnstyledButton>
             )
           })}
+          {engineChoice && <EngineSwitch choice={engineChoice} />}
           {showTuning && (
             <TuningSliders
               profile={currentProfile}
@@ -140,7 +141,6 @@ export function RouterProfileSelector({
               custom={custom}
             />
           )}
-          {engineChoice && <EngineSwitch choice={engineChoice} />}
         </Stack>
       )}
     </MapPanel>
@@ -167,11 +167,11 @@ function EngineSwitch({ choice }: { choice: EngineChoice }) {
         value={choice.value}
         onChange={(value) => choice.onChange(value as RouterEngine)}
         data={[
-          { value: RouterEngine.STADIA, label: t('planner.engine.standard') },
           {
             value: RouterEngine.PEDALONS,
             label: choice.team ? t('planner.engine.team') : t('planner.engine.shared'),
           },
+          { value: RouterEngine.STADIA, label: t('planner.engine.standard') },
         ]}
       />
       {choice.value === RouterEngine.PEDALONS && (

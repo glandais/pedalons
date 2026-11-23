@@ -2335,8 +2335,13 @@ test.describe('route calculation engine (API-217)', () => {
     await surface.getByRole('button', ROUTER_PROFILE).click()
     const group = page.getByRole('radiogroup', { name: "Calcul d'itinéraire" })
     await expect(group).toBeVisible()
+    // No team on the GPX tools: the shared wording, chosen by default
+    await expect(group.getByRole('radio', { name: 'Pédalons' })).toBeChecked()
+    await group
+      .locator('label')
+      .filter({ hasText: /^Standard$/ })
+      .click()
     await expect(group.getByRole('radio', { name: 'Standard' })).toBeChecked()
-    // No team on the GPX tools: the shared wording
     await group
       .locator('label')
       .filter({ hasText: /^Pédalons$/ })

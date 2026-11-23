@@ -72,7 +72,7 @@ describe('RouterProfileSelector engine choice', () => {
   afterEach(cleanup)
 
   const choice = (over: Partial<EngineChoice> = {}): EngineChoice => ({
-    value: RouterEngine.STADIA,
+    value: RouterEngine.PEDALONS,
     onChange: vi.fn(),
     team: true,
     ...over,
@@ -84,13 +84,21 @@ describe('RouterProfileSelector engine choice', () => {
     expect(screen.queryByRole('radiogroup')).toBeNull()
   })
 
-  it('offers two labelled positions, the sliders staying', () => {
-    setup(RouterProfile.GRAVEL, {}, choice())
+  it('offers two labelled positions, the team one first, above the sliders', () => {
+    setup(RouterProfile.GRAVEL, {}, choice({ value: RouterEngine.STADIA }))
     const group = screen.getByRole('radiogroup', { name: 'planner.engine.label' })
-    expect(group).toBeTruthy()
+    const radios = screen.getAllByRole('radio')
+    expect(radios.map((r) => r.getAttribute('value'))).toEqual([
+      RouterEngine.PEDALONS,
+      RouterEngine.STADIA,
+    ])
     expect(screen.getByRole('radio', { name: 'planner.engine.standard' })).toBeTruthy()
     expect(screen.getByRole('radio', { name: 'planner.engine.team' })).toBeTruthy()
-    expect(screen.getAllByRole('slider')).toHaveLength(2)
+    const sliders = screen.getAllByRole('slider')
+    expect(sliders).toHaveLength(2)
+    expect(
+      group.compareDocumentPosition(sliders[0]) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
     expect(screen.queryByText('planner.engine.help.team')).toBeNull()
   })
 
@@ -102,7 +110,7 @@ describe('RouterProfileSelector engine choice', () => {
 
   it('says what the team engine does once chosen, and reports a change', () => {
     const onChange = vi.fn()
-    setup(RouterProfile.BIKE, {}, choice({ onChange }))
+    setup(RouterProfile.BIKE, {}, choice({ onChange, value: RouterEngine.STADIA }))
     fireEvent.click(screen.getByRole('radio', { name: 'planner.engine.team' }))
     expect(onChange).toHaveBeenCalledWith(RouterEngine.PEDALONS)
     cleanup()

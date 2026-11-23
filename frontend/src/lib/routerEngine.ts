@@ -3,8 +3,12 @@ import { RouterEngine, type RouterEngineOffer, RouterProfile } from '@/api/dto'
 /** Where the choice is kept, per device, beside the profile and the tuning knobs. */
 export const ROUTER_ENGINE_STORAGE_KEY = 'pedalons-router-engine'
 
-/** What the planner uses until the user picks the other one. */
-export const DEFAULT_ROUTER_ENGINE: RouterEngine = RouterEngine.STADIA
+/**
+ * What the planner uses until the user picks the other one: the Pédalons engine, wherever it is on
+ * offer for the profile (owner's decision, 2026-11-23). Where it is not, no `engine` is sent and
+ * Stadia answers, as before.
+ */
+export const DEFAULT_ROUTER_ENGINE: RouterEngine = RouterEngine.PEDALONS
 
 /** A stored value is untrusted (stale, hand-edited): anything but a known engine is the default. */
 export function sanitizeEngine(raw: unknown): RouterEngine {

@@ -1086,7 +1086,7 @@ describe('useRoutePlanner routing engine', () => {
 
   it('offers the choice for a bicycle profile and not for the others, with the team flag', async () => {
     const { result } = await drawFirstPoint('GRAVEL')
-    expect(result.current.engineChoice).toMatchObject({ value: 'STADIA', team: true })
+    expect(result.current.engineChoice).toMatchObject({ value: 'PEDALONS', team: true })
     act(() => result.current.setRouterProfile('RUN_HIKE' as never))
     expect(result.current.engineChoice).toBeUndefined()
   })
@@ -1097,14 +1097,24 @@ describe('useRoutePlanner routing engine', () => {
     expect(result.current.engineChoice).toBeUndefined()
   })
 
-  it('sends no engine by default', async () => {
+  it('sends PEDALONS by default where it is on offer', async () => {
     const { result } = await drawFirstPoint('BIKE')
+    act(() => result.current.addControlPoint(B, false))
+    await waitFor(() => expect(routeMock).toHaveBeenCalledTimes(1))
+    expect(routeMock.mock.calls[0][0]).toMatchObject({ profile: 'BIKE', engine: 'PEDALONS' })
+  })
+
+  it('sends no engine once Standard is chosen', async () => {
+    const { result } = await drawFirstPoint('BIKE')
+    act(() => result.current.engineChoice?.onChange('STADIA' as never))
+    expect(localStorage.setItem).toHaveBeenCalledWith('pedalons-router-engine', '"STADIA"')
     act(() => result.current.addControlPoint(B, false))
     await waitFor(() => expect(routeMock).toHaveBeenCalledTimes(1))
     expect(Object.keys(routeMock.mock.calls[0][0])).not.toContain('engine')
   })
 
   it('choosing PEDALONS sends no request, keeps the history, is stored per device and applies to the next gesture', async () => {
+    stored('"STADIA"')
     const { result } = await drawFirstPoint('BIKE')
     const canUndo = result.current.canUndo
     act(() => result.current.engineChoice?.onChange('PEDALONS' as never))
@@ -1130,9 +1140,9 @@ describe('useRoutePlanner routing engine', () => {
     expect(Object.keys(routeMock.mock.calls[0][0])).not.toContain('engine')
   })
 
-  it('falls back on STADIA for a stored value it does not know', () => {
+  it('falls back on the default for a stored value it does not know', () => {
     stored('"valhalla"')
     const { result } = renderHook(() => useRoutePlanner())
-    expect(result.current.engineChoice?.value).toBe('STADIA')
+    expect(result.current.engineChoice?.value).toBe('PEDALONS')
   })
 })

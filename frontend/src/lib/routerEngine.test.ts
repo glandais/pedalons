@@ -16,7 +16,7 @@ describe('sanitizeEngine', () => {
   })
 
   it.each([null, undefined, 'valhalla', 'pedalons', 3, {}, []])('falls back on %j', (raw) => {
-    expect(sanitizeEngine(raw)).toBe(RouterEngine.STADIA)
+    expect(sanitizeEngine(raw)).toBe(RouterEngine.PEDALONS)
   })
 })
 
