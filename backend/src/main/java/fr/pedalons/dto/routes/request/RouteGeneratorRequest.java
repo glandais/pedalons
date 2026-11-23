@@ -4,6 +4,7 @@ import fr.pedalons.common.GeoPoint;
 import fr.pedalons.dto.validation.ValidateSchema;
 import fr.pedalons.enums.CompassPoint;
 import fr.pedalons.enums.RouteGeneratorType;
+import fr.pedalons.enums.RouteGeneratorUnpaved;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -50,4 +51,23 @@ public record RouteGeneratorRequest(
                 "Makes \"other proposals\" reproducible: the same seed gives the same routes."
                     + " Absent: 0")
         @PositiveOrZero
-        Integer seed) {}
+        Integer seed,
+    @Nullable
+        @Schema(
+            description =
+                "How much of the route to ride off pavement: LOW, USUAL or HIGH. Only for GRAVEL"
+                    + " and MTB, ignored for ROAD. Absent: USUAL")
+        RouteGeneratorUnpaved unpaved) {
+
+  /** Without {@code unpaved}: the shape this record had before contract 16.2.0. */
+  public RouteGeneratorRequest(
+      @Nullable GeoPoint start,
+      @Nullable GeoPoint end,
+      @Nullable CompassPoint bearing,
+      double distanceKm,
+      @Nullable Double discovery,
+      @Nullable RouteGeneratorType type,
+      @Nullable Integer seed) {
+    this(start, end, bearing, distanceKm, discovery, type, seed, null);
+  }
+}

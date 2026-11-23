@@ -20,6 +20,7 @@ _RouteGeneratorRequest _$RouteGeneratorRequestFromJson(
   discovery: (json['discovery'] as num?)?.toDouble(),
   type: json['type'] as String?,
   seed: (json['seed'] as num?)?.toInt(),
+  unpaved: json['unpaved'] as String?,
 );
 
 Map<String, dynamic> _$RouteGeneratorRequestToJson(
@@ -32,4 +33,5 @@ Map<String, dynamic> _$RouteGeneratorRequestToJson(
   'discovery': instance.discovery,
   'type': instance.type,
   'seed': instance.seed,
+  'unpaved': instance.unpaved,
 };

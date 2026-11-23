@@ -75,7 +75,28 @@ public record RouteDetailsCapabilities(
       @Nullable Graph graph,
       @Nullable GeneratorLimits limits,
       @Nullable @JsonProperty("overlay_ttl_days") Long overlayTtlDays,
-      boolean ascent) {}
+      boolean ascent,
+      @Nullable OffroadInfo offroad) {
+
+    /** Without {@code offroad}: the shape this record had before api 1.14. */
+    public GeneratorSection(
+        boolean enabled,
+        @Nullable String reason,
+        @Nullable Graph graph,
+        @Nullable GeneratorLimits limits,
+        @Nullable Long overlayTtlDays,
+        boolean ascent) {
+      this(enabled, reason, graph, limits, overlayTtlDays, ascent, null);
+    }
+  }
+
+  /** {@code generator.offroad} (api 1.14): the steering of the share ridden off pavement. */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record OffroadInfo(
+      @Nullable @JsonProperty("ride_types") List<String> rideTypes,
+      @JsonProperty("target_min") double targetMin,
+      @JsonProperty("target_max") double targetMax,
+      double tolerance) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record Graph(@Nullable String id) {}

@@ -12,11 +12,14 @@ import fr.pedalons.dto.routes.request.RouteGeneratorRequest;
 import fr.pedalons.dto.routes.response.GeneratedRouteDto;
 import fr.pedalons.dto.routes.response.RouteGeneratorResponse;
 import fr.pedalons.enums.RouteGeneratorType;
+import fr.pedalons.enums.RouteGeneratorUnpaved;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorException;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorGateway;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorGateway.Availability;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GenerateRequest;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GenerateResponse;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GeoPoint;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.OffroadResult;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.Route;
 import fr.pedalons.service.router.PlannerAccess;
 import fr.pedalons.service.security.PedalonsQueryContext;
@@ -47,6 +50,26 @@ public class RouteGeneratorService {
   /** The default of the cursor: mostly the team's roads, a little discovery. */
   static final double DEFAULT_DISCOVERY = 0.25;
 
+  /**
+   * The share of the route off pavement each level asks of the engine (ledger API-207, lot 5, the
+   * owner's choice of 2026-11-23): the shares of the team routes the engine was measured on, a
+   * third of them below LOW and a third above HIGH. They stay here, not in the contract, so they
+   * can be tuned without touching the clients.
+   */
+  static final double UNPAVED_LOW = 0.25;
+
+  static final double UNPAVED_USUAL = 0.47;
+  static final double UNPAVED_HIGH = 0.60;
+
+  /** The target of a level of unpaved share. */
+  static double unpavedTarget(RouteGeneratorUnpaved level) {
+    return switch (level) {
+      case LOW -> UNPAVED_LOW;
+      case USUAL -> UNPAVED_USUAL;
+      case HIGH -> UNPAVED_HIGH;
+    };
+  }
+
   @Inject PlannerAccess plannerAccess;
   @Inject PedalonsQueryContext pedalonsContext;
   @Inject TeamService teamService;
@@ -70,10 +93,17 @@ public class RouteGeneratorService {
     guard.admit(pedalonsContext.getDomainId(), pedalonsContext.getUser().getId());
 
     GenerateRequest engineRequest = engineRequest(team, request);
-    if (!gateway.configured() || !gateway.availability(false).usable()) {
+    Availability availability = gateway.configured() ? gateway.availability(false) : null;
+    if (availability == null || !availability.usable()) {
       // Nothing is sent to a service that is off, or that predates the generator
       metrics.request("unavailable");
       throw new ServiceUnavailableException(ErrorCode.GENERATOR_UNAVAILABLE);
+    }
+    if (engineRequest.offroadTarget() != null
+        && !availability.steersUnpaved(engineRequest.rideType())) {
+      // An engine that does not steer this ride type would refuse the key (400): ask nothing, and
+      // the answer carries no target either
+      engineRequest = engineRequest.withoutOffroadTarget();
     }
 
     String teamRef = TsidUtils.toString(team.getId());
@@ -127,7 +157,8 @@ public class RouteGeneratorService {
         ascent.compute(kept.stream().map(Route::polyline).toList());
     List<GeneratedRouteDto> candidates = new ArrayList<>(kept.size());
     for (int i = 0; i < kept.size(); i++) {
-      candidates.add(toDto(kept.get(i), verdicts.get(i), gains.get(i)));
+      candidates.add(
+          toDto(kept.get(i), verdicts.get(i), gains.get(i), engineRequest, answer.offroad()));
     }
     LOG.infof(
         "Route generator: team %s, %.0f km, %s, outcome ok, %d route(s), %d dropped, %d ms",
@@ -168,11 +199,30 @@ public class RouteGeneratorService {
         request.distanceKm() * 1000,
         type.name().toLowerCase(Locale.ROOT),
         request.discovery() == null ? DEFAULT_DISCOVERY : request.discovery(),
-        request.seed() == null ? 0 : request.seed());
+        request.seed() == null ? 0 : request.seed(),
+        steersUnpaved(type) ? unpavedTarget(unpavedLevel(request)) : null);
+  }
+
+  /** Only a ride that leaves the road has a share off pavement to ask for. */
+  private static boolean steersUnpaved(RouteGeneratorType type) {
+    return type == RouteGeneratorType.GRAVEL || type == RouteGeneratorType.MTB;
+  }
+
+  private static RouteGeneratorUnpaved unpavedLevel(RouteGeneratorRequest request) {
+    return request.unpaved() == null ? RouteGeneratorUnpaved.USUAL : request.unpaved();
   }
 
   static GeneratedRouteDto toDto(
-      Route r, GeneratedRouteSanity.Verdict verdict, GeneratedRouteAscent.@Nullable Gain gain) {
+      Route r,
+      GeneratedRouteSanity.Verdict verdict,
+      GeneratedRouteAscent.@Nullable Gain gain,
+      GenerateRequest sent,
+      @Nullable OffroadResult offroad) {
+    // Per route, not the engine's own flag: that one holds for its first route only, and the sanity
+    // check may have dropped that one
+    Double target = sent.offroadTarget() != null && offroad != null ? sent.offroadTarget() : null;
+    Boolean reached =
+        target == null ? null : Math.abs(r.offpavementShare() - target) <= offroad.tolerance();
     return new GeneratedRouteDto(
         r.polyline(),
         r.distanceM(),
@@ -180,7 +230,9 @@ public class RouteGeneratorService {
         gain == null ? null : gain.descentM(),
         r.bearingDeviationDeg(),
         r.teamShare(),
-        r.unpavedShare(),
+        r.offpavementShare(),
+        target,
+        reached,
         r.tailM(),
         r.crossings(),
         verdict.bounds());

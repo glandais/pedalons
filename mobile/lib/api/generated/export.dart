@@ -284,6 +284,7 @@ export 'models/route_generator_overlay_refresh_response.dart';
 export 'models/route_generator_request.dart';
 export 'models/route_generator_response.dart';
 export 'models/route_generator_type.dart';
+export 'models/route_generator_unpaved.dart';
 export 'models/route_gps_sync_status_dto.dart';
 export 'models/route_list_response.dart';
 export 'models/route_request.dart';

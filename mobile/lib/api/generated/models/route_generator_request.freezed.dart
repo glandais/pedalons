@@ -23,7 +23,8 @@ mixin _$RouteGeneratorRequest {
  String? get bearing;/// From the team's roads (0, only the roads the team rides) to discovery (1, no preference for them); rounded to the hundredth by the engine. Absent: 0.25
  double? get discovery;/// What to ride. Absent: ROAD
  String? get type;/// Makes "other proposals" reproducible: the same seed gives the same routes. Absent: 0
- int? get seed;
+ int? get seed;/// How much of the route to ride off pavement: LOW, USUAL or HIGH. Only for GRAVEL and MTB, ignored for ROAD. Absent: USUAL
+ String? get unpaved;
 /// Create a copy of RouteGeneratorRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -37,20 +38,20 @@ $RouteGeneratorRequestCopyWith<RouteGeneratorRequest> get copyWith => _$RouteGen
 @override
 bool operator ==(Object other) {
   final _this = this as RouteGeneratorRequest;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouteGeneratorRequest&&(identical(other.distanceKm, _this.distanceKm) || other.distanceKm == _this.distanceKm)&&(identical(other.start, _this.start) || other.start == _this.start)&&(identical(other.end, _this.end) || other.end == _this.end)&&(identical(other.bearing, _this.bearing) || other.bearing == _this.bearing)&&(identical(other.discovery, _this.discovery) || other.discovery == _this.discovery)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.seed, _this.seed) || other.seed == _this.seed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RouteGeneratorRequest&&(identical(other.distanceKm, _this.distanceKm) || other.distanceKm == _this.distanceKm)&&(identical(other.start, _this.start) || other.start == _this.start)&&(identical(other.end, _this.end) || other.end == _this.end)&&(identical(other.bearing, _this.bearing) || other.bearing == _this.bearing)&&(identical(other.discovery, _this.discovery) || other.discovery == _this.discovery)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.seed, _this.seed) || other.seed == _this.seed)&&(identical(other.unpaved, _this.unpaved) || other.unpaved == _this.unpaved));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RouteGeneratorRequest;
-  return Object.hash(runtimeType,_this.distanceKm,_this.start,_this.end,_this.bearing,_this.discovery,_this.type,_this.seed);
+  return Object.hash(runtimeType,_this.distanceKm,_this.start,_this.end,_this.bearing,_this.discovery,_this.type,_this.seed,_this.unpaved);
 }
 
 @override
 String toString() {
   final _this = this as RouteGeneratorRequest;
-  return 'RouteGeneratorRequest(distanceKm: ${_this.distanceKm}, start: ${_this.start}, end: ${_this.end}, bearing: ${_this.bearing}, discovery: ${_this.discovery}, type: ${_this.type}, seed: ${_this.seed})';
+  return 'RouteGeneratorRequest(distanceKm: ${_this.distanceKm}, start: ${_this.start}, end: ${_this.end}, bearing: ${_this.bearing}, discovery: ${_this.discovery}, type: ${_this.type}, seed: ${_this.seed}, unpaved: ${_this.unpaved})';
 }
 
 
@@ -61,7 +62,7 @@ abstract mixin class $RouteGeneratorRequestCopyWith<$Res>  {
   factory $RouteGeneratorRequestCopyWith(RouteGeneratorRequest value, $Res Function(RouteGeneratorRequest) _then) = _$RouteGeneratorRequestCopyWithImpl;
 @useResult
 $Res call({
- double distanceKm, GeoPoint? start, GeoPoint? end, String? bearing, double? discovery, String? type, int? seed
+ double distanceKm, GeoPoint? start, GeoPoint? end, String? bearing, double? discovery, String? type, int? seed, String? unpaved
 });
 
 
@@ -78,7 +79,7 @@ class _$RouteGeneratorRequestCopyWithImpl<$Res>
 
 /// Create a copy of RouteGeneratorRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? distanceKm = null,Object? start = freezed,Object? end = freezed,Object? bearing = freezed,Object? discovery = freezed,Object? type = freezed,Object? seed = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? distanceKm = null,Object? start = freezed,Object? end = freezed,Object? bearing = freezed,Object? discovery = freezed,Object? type = freezed,Object? seed = freezed,Object? unpaved = freezed,}) {
   return _then(RouteGeneratorRequest(
 distanceKm: null == distanceKm ? _self.distanceKm : distanceKm // ignore: cast_nullable_to_non_nullable
 as double,start: freezed == start ? _self.start : start // ignore: cast_nullable_to_non_nullable
@@ -87,7 +88,8 @@ as GeoPoint?,bearing: freezed == bearing ? _self.bearing : bearing // ignore: ca
 as String?,discovery: freezed == discovery ? _self.discovery : discovery // ignore: cast_nullable_to_non_nullable
 as double?,type: freezed == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String?,seed: freezed == seed ? _self.seed : seed // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,unpaved: freezed == unpaved ? _self.unpaved : unpaved // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of RouteGeneratorRequest
@@ -196,10 +198,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double distanceKm,  GeoPoint? start,  GeoPoint? end,  String? bearing,  double? discovery,  String? type,  int? seed)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double distanceKm,  GeoPoint? start,  GeoPoint? end,  String? bearing,  double? discovery,  String? type,  int? seed,  String? unpaved)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RouteGeneratorRequest() when $default != null:
-return $default(_that.distanceKm,_that.start,_that.end,_that.bearing,_that.discovery,_that.type,_that.seed);case _:
+return $default(_that.distanceKm,_that.start,_that.end,_that.bearing,_that.discovery,_that.type,_that.seed,_that.unpaved);case _:
   return orElse();
 
 }
@@ -217,10 +219,10 @@ return $default(_that.distanceKm,_that.start,_that.end,_that.bearing,_that.disco
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double distanceKm,  GeoPoint? start,  GeoPoint? end,  String? bearing,  double? discovery,  String? type,  int? seed)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double distanceKm,  GeoPoint? start,  GeoPoint? end,  String? bearing,  double? discovery,  String? type,  int? seed,  String? unpaved)  $default,) {final _that = this;
 switch (_that) {
 case _RouteGeneratorRequest():
-return $default(_that.distanceKm,_that.start,_that.end,_that.bearing,_that.discovery,_that.type,_that.seed);case _:
+return $default(_that.distanceKm,_that.start,_that.end,_that.bearing,_that.discovery,_that.type,_that.seed,_that.unpaved);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -237,10 +239,10 @@ return $default(_that.distanceKm,_that.start,_that.end,_that.bearing,_that.disco
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double distanceKm,  GeoPoint? start,  GeoPoint? end,  String? bearing,  double? discovery,  String? type,  int? seed)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double distanceKm,  GeoPoint? start,  GeoPoint? end,  String? bearing,  double? discovery,  String? type,  int? seed,  String? unpaved)?  $default,) {final _that = this;
 switch (_that) {
 case _RouteGeneratorRequest() when $default != null:
-return $default(_that.distanceKm,_that.start,_that.end,_that.bearing,_that.discovery,_that.type,_that.seed);case _:
+return $default(_that.distanceKm,_that.start,_that.end,_that.bearing,_that.discovery,_that.type,_that.seed,_that.unpaved);case _:
   return null;
 
 }
@@ -252,7 +254,7 @@ return $default(_that.distanceKm,_that.start,_that.end,_that.bearing,_that.disco
 @JsonSerializable()
 
 class _RouteGeneratorRequest implements RouteGeneratorRequest {
-  const _RouteGeneratorRequest({required this.distanceKm, this.start, this.end, this.bearing, this.discovery, this.type, this.seed});
+  const _RouteGeneratorRequest({required this.distanceKm, this.start, this.end, this.bearing, this.discovery, this.type, this.seed, this.unpaved});
   factory _RouteGeneratorRequest.fromJson(Map<String, dynamic> json) => _$RouteGeneratorRequestFromJson(json);
 
 /// Wished distance in kilometres, 10 to 200
@@ -269,6 +271,8 @@ class _RouteGeneratorRequest implements RouteGeneratorRequest {
 @override final  String? type;
 /// Makes "other proposals" reproducible: the same seed gives the same routes. Absent: 0
 @override final  int? seed;
+/// How much of the route to ride off pavement: LOW, USUAL or HIGH. Only for GRAVEL and MTB, ignored for ROAD. Absent: USUAL
+@override final  String? unpaved;
 
 /// Create a copy of RouteGeneratorRequest
 /// with the given fields replaced by the non-null parameter values.
@@ -283,18 +287,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouteGeneratorRequest&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.start, start) || other.start == start)&&(identical(other.end, end) || other.end == end)&&(identical(other.bearing, bearing) || other.bearing == bearing)&&(identical(other.discovery, discovery) || other.discovery == discovery)&&(identical(other.type, type) || other.type == type)&&(identical(other.seed, seed) || other.seed == seed));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RouteGeneratorRequest&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.start, start) || other.start == start)&&(identical(other.end, end) || other.end == end)&&(identical(other.bearing, bearing) || other.bearing == bearing)&&(identical(other.discovery, discovery) || other.discovery == discovery)&&(identical(other.type, type) || other.type == type)&&(identical(other.seed, seed) || other.seed == seed)&&(identical(other.unpaved, unpaved) || other.unpaved == unpaved));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,distanceKm,start,end,bearing,discovery,type,seed);
+    return Object.hash(runtimeType,distanceKm,start,end,bearing,discovery,type,seed,unpaved);
 }
 
 @override
 String toString() {
-    return 'RouteGeneratorRequest(distanceKm: $distanceKm, start: $start, end: $end, bearing: $bearing, discovery: $discovery, type: $type, seed: $seed)';
+    return 'RouteGeneratorRequest(distanceKm: $distanceKm, start: $start, end: $end, bearing: $bearing, discovery: $discovery, type: $type, seed: $seed, unpaved: $unpaved)';
 }
 
 
@@ -305,7 +309,7 @@ abstract mixin class _$RouteGeneratorRequestCopyWith<$Res> implements $RouteGene
   factory _$RouteGeneratorRequestCopyWith(_RouteGeneratorRequest value, $Res Function(_RouteGeneratorRequest) _then) = __$RouteGeneratorRequestCopyWithImpl;
 @override @useResult
 $Res call({
- double distanceKm, GeoPoint? start, GeoPoint? end, String? bearing, double? discovery, String? type, int? seed
+ double distanceKm, GeoPoint? start, GeoPoint? end, String? bearing, double? discovery, String? type, int? seed, String? unpaved
 });
 
 
@@ -322,7 +326,7 @@ class __$RouteGeneratorRequestCopyWithImpl<$Res>
 
 /// Create a copy of RouteGeneratorRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? distanceKm = null,Object? start = freezed,Object? end = freezed,Object? bearing = freezed,Object? discovery = freezed,Object? type = freezed,Object? seed = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? distanceKm = null,Object? start = freezed,Object? end = freezed,Object? bearing = freezed,Object? discovery = freezed,Object? type = freezed,Object? seed = freezed,Object? unpaved = freezed,}) {
   return _then(_RouteGeneratorRequest(
 distanceKm: null == distanceKm ? _self.distanceKm : distanceKm // ignore: cast_nullable_to_non_nullable
 as double,start: freezed == start ? _self.start : start // ignore: cast_nullable_to_non_nullable
@@ -331,7 +335,8 @@ as GeoPoint?,bearing: freezed == bearing ? _self.bearing : bearing // ignore: ca
 as String?,discovery: freezed == discovery ? _self.discovery : discovery // ignore: cast_nullable_to_non_nullable
 as double?,type: freezed == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as String?,seed: freezed == seed ? _self.seed : seed // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,unpaved: freezed == unpaved ? _self.unpaved : unpaved // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

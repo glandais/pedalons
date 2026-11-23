@@ -1,6 +1,7 @@
 import type { CompassPoint } from './compassPoint.ts'
 import type { GeoPoint } from './geoPoint.ts'
 import type { RouteGeneratorType } from './routeGeneratorType.ts'
+import type { RouteGeneratorUnpaved } from './routeGeneratorUnpaved.ts'
 
 /**
  * What to ask the route generator for
@@ -31,4 +32,6 @@ export interface RouteGeneratorRequest {
    * @minimum 0
    */
   seed?: number
+  /** How much of the route to ride off pavement: LOW, USUAL or HIGH. Only for GRAVEL and MTB, ignored for ROAD. Absent: USUAL */
+  unpaved?: RouteGeneratorUnpaved
 }

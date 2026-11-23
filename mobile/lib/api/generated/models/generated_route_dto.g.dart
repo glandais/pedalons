@@ -18,6 +18,8 @@ _GeneratedRouteDto _$GeneratedRouteDtoFromJson(Map<String, dynamic> json) =>
       ascentM: (json['ascentM'] as num?)?.toDouble(),
       descentM: (json['descentM'] as num?)?.toDouble(),
       bearingDeviationDeg: (json['bearingDeviationDeg'] as num?)?.toDouble(),
+      unpavedTarget: (json['unpavedTarget'] as num?)?.toDouble(),
+      unpavedTargetReached: json['unpavedTargetReached'] as bool?,
     );
 
 Map<String, dynamic> _$GeneratedRouteDtoToJson(_GeneratedRouteDto instance) =>
@@ -32,4 +34,6 @@ Map<String, dynamic> _$GeneratedRouteDtoToJson(_GeneratedRouteDto instance) =>
       'ascentM': instance.ascentM,
       'descentM': instance.descentM,
       'bearingDeviationDeg': instance.bearingDeviationDeg,
+      'unpavedTarget': instance.unpavedTarget,
+      'unpavedTargetReached': instance.unpavedTargetReached,
     };

@@ -2792,7 +2792,20 @@ components:
         unpavedShare:
           type: number
           format: double
-          description: "Share of the distance on unpaved roads, 0 to 1"
+          description: "Share of the distance off pavement, 0 to 1, as the route page\
+            \ of a saved route measures it (surface tag, then track type, then road\
+            \ class)"
+        unpavedTarget:
+          type: number
+          format: double
+          description: "The share of unpaved asked for, 0 to 1. Absent when no target\
+            \ was sent: a road ride, a request without it, or an engine that does\
+            \ not steer"
+        unpavedTargetReached:
+          type: boolean
+          description: "Whether unpavedShare is within the engine's tolerance of unpavedTarget.\
+            \ Absent like unpavedTarget. False: the area has no better route, compare\
+            \ the two to tell more from less"
         sharedM:
           type: number
           format: double
@@ -6589,6 +6602,11 @@ components:
           description: "Makes \"other proposals\" reproducible: the same seed gives\
             \ the same routes. Absent: 0"
           minimum: 0
+        unpaved:
+          description: "How much of the route to ride off pavement: LOW, USUAL or\
+            \ HIGH. Only for GRAVEL and MTB, ignored for ROAD. Absent: USUAL"
+          type: string
+          $ref: "#/components/schemas/RouteGeneratorUnpaved"
       required:
       - distanceKm
     RouteGeneratorResponse:
@@ -6618,6 +6636,12 @@ components:
       - ROAD
       - GRAVEL
       - MTB
+    RouteGeneratorUnpaved:
+      type: string
+      enum:
+      - LOW
+      - USUAL
+      - HIGH
     RouteGpsSyncStatusDto:
       type: object
       description: Where the route stands at one of the caller's automatically synced
@@ -22611,7 +22635,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 16.2.0
+  version: 16.3.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: /

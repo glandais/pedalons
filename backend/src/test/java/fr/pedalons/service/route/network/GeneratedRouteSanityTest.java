@@ -203,6 +203,17 @@ class GeneratedRouteSanityTest {
     assertEquals(
         GeneratedRouteSanity.Check.SHARES,
         GeneratedRouteSanity.check(loopOf(20_000), badUnpaved).failed());
+    for (double offroad : new double[] {-0.01, 1.2, Double.NaN}) {
+      Route badOffroad =
+          new Route(r.polyline(), d, 0, 0, 0.5, 0, 0, 0, 0.1, null, null, null, 0.0, offroad);
+      assertEquals(
+          GeneratedRouteSanity.Check.SHARES,
+          GeneratedRouteSanity.check(loopOf(20_000), badOffroad).failed(),
+          "offroad share " + offroad);
+    }
+    Route goodOffroad =
+        new Route(r.polyline(), d, 0, 0, 0.5, 0, 0, 0, 0.1, null, null, null, d * 0.4, 0.4);
+    assertTrue(GeneratedRouteSanity.check(loopOf(20_000), goodOffroad).sane());
     Route negativeTail = new Route(r.polyline(), d, 0, 0, 0.5, -1, 0, 0, 0.1, null, null, null);
     assertEquals(
         GeneratedRouteSanity.Check.SHARES,

@@ -24,6 +24,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -101,7 +102,24 @@ public class RouteGeneratorGateway {
       long maxDocumentBytes,
       long maxTracks,
       long overlayTtlDays,
-      double distanceMMax) {
+      double distanceMMax,
+      List<String> offroadRideTypes) {
+
+    /** Without the ride types that take a target of unpaved share: none does. */
+    public Availability(
+        boolean usable,
+        @Nullable String graphId,
+        long maxDocumentBytes,
+        long maxTracks,
+        long overlayTtlDays,
+        double distanceMMax) {
+      this(usable, graphId, maxDocumentBytes, maxTracks, overlayTtlDays, distanceMMax, List.of());
+    }
+
+    /** Whether the engine steers the unpaved share of a ride of this type ({@code gravel}). */
+    public boolean steersUnpaved(String rideType) {
+      return offroadRideTypes.contains(rideType);
+    }
 
     public static Availability unavailable() {
       return new Availability(false, null, 0, 0, 14, 200_000);
@@ -170,7 +188,10 @@ public class RouteGeneratorGateway {
         deposit == null ? 16L * 1024 * 1024 : deposit.maxDocumentBytes(),
         deposit == null ? 10_000 : deposit.maxTracks(),
         g.overlayTtlDays() == null ? 14 : g.overlayTtlDays(),
-        g.limits() == null ? 200_000 : g.limits().distanceMMax());
+        g.limits() == null ? 200_000 : g.limits().distanceMMax(),
+        g.offroad() == null || g.offroad().rideTypes() == null
+            ? List.of()
+            : g.offroad().rideTypes());
   }
 
   /** {@code POST /v1/generator/routes}. */

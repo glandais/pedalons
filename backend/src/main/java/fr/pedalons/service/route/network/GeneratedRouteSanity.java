@@ -101,6 +101,7 @@ final class GeneratedRouteSanity {
   private static boolean shares(Route r) {
     return unit(r.teamShare())
         && unit(r.unpavedShare())
+        && unit(r.offpavementShare())
         && r.tailM() >= 0
         && r.crossings() >= 0
         && Double.isFinite(r.distanceM());

@@ -34,8 +34,25 @@ public record GeneratedRouteDto(
                     + " to 1",
             required = true)
         double teamShare,
-    @Schema(description = "Share of the distance on unpaved roads, 0 to 1", required = true)
+    @Schema(
+            description =
+                "Share of the distance off pavement, 0 to 1, as the route page of a saved route"
+                    + " measures it (surface tag, then track type, then road class)",
+            required = true)
         double unpavedShare,
+    @Nullable
+        @Schema(
+            description =
+                "The share of unpaved asked for, 0 to 1. Absent when no target was sent: a road"
+                    + " ride, a request without it, or an engine that does not steer")
+        Double unpavedTarget,
+    @Nullable
+        @Schema(
+            description =
+                "Whether unpavedShare is within the engine's tolerance of unpavedTarget. Absent"
+                    + " like unpavedTarget. False: the area has no better route, compare the two"
+                    + " to tell more from less")
+        Boolean unpavedTargetReached,
     @Schema(
             description = "Metres ridden twice (the way to and from the loop), counted once",
             required = true)

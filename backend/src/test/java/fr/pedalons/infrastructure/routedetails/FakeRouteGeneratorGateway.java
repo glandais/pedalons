@@ -54,6 +54,18 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
   /** Routes the engine proposes, 1 to 3. */
   public static volatile int routeCount = 2;
 
+  /** The ride types the fake announces under {@code generator.offroad} (api 1.14); empty: none. */
+  public static volatile List<String> offroadRideTypes = List.of("gravel", "mtb");
+
+  /** The {@code offroad.tolerance} the fake answers with. */
+  public static volatile double offroadTolerance = 0.05;
+
+  /** The {@code offroad_share} of every route; null leaves it out, as an engine of api 1.13. */
+  public static volatile @Nullable Double offroadShare = null;
+
+  /** True: the answer to a target carries no {@code offroad} object. */
+  public static volatile boolean omitOffroadResult = false;
+
   /** True: {@code coverage = partial}. */
   public static volatile boolean partial = false;
 
@@ -107,6 +119,10 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
     clock = java.time.Clock.systemUTC();
     routeCount = 2;
     partial = false;
+    offroadRideTypes = List.of("gravel", "mtb");
+    offroadTolerance = 0.05;
+    offroadShare = null;
+    omitOffroadResult = false;
     tamper = null;
     GENERATE_PROBLEMS.clear();
     DEPOSIT_PROBLEMS.clear();
@@ -159,7 +175,8 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
     if (!recent || !generatorEnabled) {
       return Availability.unavailable();
     }
-    return new Availability(true, graphId, 16L * 1024 * 1024, 10_000, 14, 200_000);
+    return new Availability(
+        true, graphId, 16L * 1024 * 1024, 10_000, 14, 200_000, offroadRideTypes);
   }
 
   @Override
@@ -280,6 +297,20 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
     } else {
       response.putNull("overlay");
     }
+    JsonNode target = request.path("offroad_target");
+    if (target.isNumber() && !omitOffroadResult) {
+      // the engine steers: the outcome is about the first route
+      Double share = offroadShare;
+      ObjectNode result = response.putObject("offroad");
+      result.put("target", target.asDouble());
+      result.put("tolerance", offroadTolerance);
+      result.put(
+          "reached",
+          Math.abs((share == null ? 0.1 : share) - target.asDouble()) <= offroadTolerance);
+      result.put("steps", 1);
+    } else {
+      response.putNull("offroad");
+    }
     ArrayNode routes = response.putArray("routes");
     for (int i = 0; i < routeCount; i++) {
       ObjectNode route =
@@ -358,6 +389,11 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
     r.put("crossings", 0);
     r.put("unpaved_m", length * 0.1);
     r.put("unpaved_share", 0.1);
+    Double offroad = offroadShare;
+    if (offroad != null) {
+      r.put("offroad_m", length * offroad);
+      r.put("offroad_share", offroad);
+    }
     r.put("presumed_surface_m", 0);
     r.put("family", "turnaround");
     r.put("start_snap_m", 5);

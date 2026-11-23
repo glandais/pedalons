@@ -7,6 +7,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'compass_point.dart';
 import 'geo_point.dart';
 import 'route_generator_type.dart';
+import 'route_generator_unpaved.dart';
 
 part 'route_generator_request.freezed.dart';
 part 'route_generator_request.g.dart';
@@ -35,6 +36,9 @@ abstract class RouteGeneratorRequest with _$RouteGeneratorRequest {
 
     /// Makes "other proposals" reproducible: the same seed gives the same routes. Absent: 0
     int? seed,
+
+    /// How much of the route to ride off pavement: LOW, USUAL or HIGH. Only for GRAVEL and MTB, ignored for ROAD. Absent: USUAL
+    String? unpaved,
   }) = _RouteGeneratorRequest;
 
   factory RouteGeneratorRequest.fromJson(Map<String, Object?> json) =>

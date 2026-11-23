@@ -29,7 +29,25 @@ public final class RouteGeneratorV1 {
       @JsonProperty("distance_m") double distanceM,
       @JsonProperty("ride_type") String rideType,
       double cursor,
-      long seed) {}
+      long seed,
+      @JsonProperty("offroad_target") @Nullable Double offroadTarget) {
+
+    public GenerateRequest withoutOffroadTarget() {
+      return new GenerateRequest(start, end, bearing, distanceM, rideType, cursor, seed, null);
+    }
+
+    /** Without a target of unpaved share: the shape this record had before api 1.14. */
+    public GenerateRequest(
+        GeoPoint start,
+        @Nullable GeoPoint end,
+        @Nullable String bearing,
+        double distanceM,
+        String rideType,
+        double cursor,
+        long seed) {
+      this(start, end, bearing, distanceM, rideType, cursor, seed, null);
+    }
+  }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record GenerateResponse(
@@ -38,13 +56,32 @@ public final class RouteGeneratorV1 {
       @Nullable String coverage,
       int dropped,
       @Nullable OverlayInfo overlay,
-      @Nullable List<Route> routes) {
+      @Nullable List<Route> routes,
+      @Nullable OffroadResult offroad) {
+
+    /** Without the outcome of a target: the shape this record had before api 1.14. */
+    public GenerateResponse(
+        @Nullable String graphId,
+        @Nullable String mode,
+        @Nullable String coverage,
+        int dropped,
+        @Nullable OverlayInfo overlay,
+        @Nullable List<Route> routes) {
+      this(graphId, mode, coverage, dropped, overlay, routes, null);
+    }
 
     /** Whether the disc around the start leaves the covered polygon ({@code partial}). */
     public boolean partialCoverage() {
       return "partial".equals(coverage);
     }
   }
+
+  /**
+   * What the steering of {@code offroad_target} achieved (api 1.14). {@code reached} is the
+   * engine's, for its first route only: Pédalons recomputes it per route from {@code tolerance}.
+   */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record OffroadResult(double target, double tolerance, boolean reached, int steps) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record OverlayInfo(@JsonProperty("deposited_at") @Nullable String depositedAt) {
@@ -67,7 +104,49 @@ public final class RouteGeneratorV1 {
       @JsonProperty("unpaved_share") double unpavedShare,
       @JsonProperty("bearing_deviation_deg") @Nullable Double bearingDeviationDeg,
       @JsonProperty("ascent_m") @Nullable Double ascentM,
-      @JsonProperty("descent_m") @Nullable Double descentM) {}
+      @JsonProperty("descent_m") @Nullable Double descentM,
+      @JsonProperty("offroad_m") @Nullable Double offroadM,
+      @JsonProperty("offroad_share") @Nullable Double offroadShare) {
+
+    /** Without the off-pavement measure: the shape this record had before api 1.14. */
+    public Route(
+        String polyline,
+        double distanceM,
+        double teamM,
+        double bridgedM,
+        double teamShare,
+        double tailM,
+        int crossings,
+        double unpavedM,
+        double unpavedShare,
+        @Nullable Double bearingDeviationDeg,
+        @Nullable Double ascentM,
+        @Nullable Double descentM) {
+      this(
+          polyline,
+          distanceM,
+          teamM,
+          bridgedM,
+          teamShare,
+          tailM,
+          crossings,
+          unpavedM,
+          unpavedShare,
+          bearingDeviationDeg,
+          ascentM,
+          descentM,
+          null,
+          null);
+    }
+
+    /**
+     * The share off pavement: {@code offroad_share} (the definition of the route page), else the
+     * surface tag alone ({@code unpaved_share}) when the engine does not give the first.
+     */
+    public double offpavementShare() {
+      return offroadShare != null ? offroadShare : unpavedShare;
+    }
+  }
 
   /** {@code GET /v1/generator/overlay}: {@code absent}, {@code ready} or {@code stale}. */
   @JsonIgnoreProperties(ignoreUnknown = true)

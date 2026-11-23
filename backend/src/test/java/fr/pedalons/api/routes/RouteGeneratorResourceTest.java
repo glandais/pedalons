@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.platform.Domain;
@@ -135,6 +136,114 @@ class RouteGeneratorResourceTest extends AbstractResourceTest {
     assertEquals(0.5, seen.body().get("cursor").asDouble(), 1e-9);
     assertEquals(12345, seen.body().get("seed").asLong());
     assertEquals(LAT + 0.2, seen.body().get("end").get("lat").asDouble(), 1e-6);
+  }
+
+  // ---------------------------------------------------------------- the share of unpaved asked for
+
+  private static Map<String, Object> ride(String type, String unpaved) {
+    Map<String, Object> body = loop(40);
+    body.put("type", type);
+    if (unpaved != null) {
+      body.put("unpaved", unpaved);
+    }
+    return body;
+  }
+
+  private static JsonNode lastBody() {
+    return FakeRouteGeneratorGateway.lastGenerate().body();
+  }
+
+  @Test
+  void aGravelRideWithoutALevelAsksForTheUsualShare() {
+    post(USER1, team1Slug, ride("GRAVEL", null)).statusCode(200);
+    assertEquals(0.47, lastBody().get("offroad_target").asDouble(), 1e-9);
+  }
+
+  @Test
+  void theThreeLevelsAreTranslatedToTheirShare() {
+    post(USER1, team1Slug, ride("GRAVEL", "LOW")).statusCode(200);
+    assertEquals(0.25, lastBody().get("offroad_target").asDouble(), 1e-9);
+    post(USER1, team1Slug, ride("GRAVEL", "USUAL")).statusCode(200);
+    assertEquals(0.47, lastBody().get("offroad_target").asDouble(), 1e-9);
+    post(USER1, team1Slug, ride("GRAVEL", "HIGH")).statusCode(200);
+    assertEquals(0.60, lastBody().get("offroad_target").asDouble(), 1e-9);
+    post(USER1, team1Slug, ride("MTB", "HIGH")).statusCode(200);
+    assertEquals("mtb", lastBody().get("ride_type").asText());
+    assertEquals(0.60, lastBody().get("offroad_target").asDouble(), 1e-9);
+  }
+
+  @Test
+  void aRoadRideSendsNoTargetWhateverTheLevel() {
+    post(USER1, team1Slug, ride("ROAD", "HIGH")).statusCode(200);
+    assertTrue(lastBody().path("offroad_target").isMissingNode());
+    // no type at all is a road ride
+    Map<String, Object> body = loop(40);
+    body.put("unpaved", "HIGH");
+    post(USER1, team1Slug, body)
+        .statusCode(200)
+        .body("candidates[0].unpavedTarget", nullValue())
+        .body("candidates[0].unpavedTargetReached", nullValue());
+    assertTrue(lastBody().path("offroad_target").isMissingNode());
+  }
+
+  @Test
+  void nothingIsSentToAnEngineThatDoesNotAnnounceTheRideType() {
+    FakeRouteGeneratorGateway.offroadRideTypes = List.of();
+    post(USER1, team1Slug, ride("GRAVEL", "HIGH"))
+        .statusCode(200)
+        .body("candidates[0].unpavedTarget", nullValue())
+        .body("candidates[0].unpavedTargetReached", nullValue());
+    assertTrue(lastBody().path("offroad_target").isMissingNode());
+
+    FakeRouteGeneratorGateway.offroadRideTypes = List.of("mtb");
+    post(USER1, team1Slug, ride("GRAVEL", "HIGH")).statusCode(200);
+    assertTrue(lastBody().path("offroad_target").isMissingNode());
+    post(USER1, team1Slug, ride("MTB", "HIGH")).statusCode(200);
+    assertEquals(0.60, lastBody().get("offroad_target").asDouble(), 1e-9);
+  }
+
+  @Test
+  void theShareIsReadOnOffroadShareAndTheTargetIsJudgedPerRoute() {
+    FakeRouteGeneratorGateway.offroadShare = 0.58;
+    post(USER1, team1Slug, ride("GRAVEL", "HIGH"))
+        .statusCode(200)
+        .body("candidates[0].unpavedShare", equalTo(0.58f))
+        .body("candidates[0].unpavedTarget", equalTo(0.6f))
+        .body("candidates[0].unpavedTargetReached", equalTo(true))
+        .body("candidates[1].unpavedTargetReached", equalTo(true));
+
+    // 0.58 is 0.11 away from 0.47, beyond the tolerance of 0.05: the engine did not reach it
+    post(USER1, team1Slug, ride("GRAVEL", "USUAL"))
+        .statusCode(200)
+        .body("candidates[0].unpavedTarget", equalTo(0.47f))
+        .body("candidates[0].unpavedTargetReached", equalTo(false))
+        .body("candidates[1].unpavedTargetReached", equalTo(false));
+
+    // the tolerance is the engine's
+    FakeRouteGeneratorGateway.offroadTolerance = 0.15;
+    post(USER1, team1Slug, ride("GRAVEL", "USUAL"))
+        .statusCode(200)
+        .body("candidates[0].unpavedTargetReached", equalTo(true));
+  }
+
+  @Test
+  void withoutOffroadShareTheSurfaceTagShareIsRead() {
+    // an engine of api 1.13 after a rollback: no offroad_share, no offroad object
+    FakeRouteGeneratorGateway.offroadRideTypes = List.of();
+    post(USER1, team1Slug, ride("GRAVEL", "HIGH"))
+        .statusCode(200)
+        .body("candidates[0].unpavedShare", equalTo(0.1f));
+  }
+
+  @Test
+  void aTargetWithoutTheEnginesOutcomeIsNotReported() {
+    // the engine announced the ride type but answered no `offroad` object: its tolerance is
+    // unknown, so nothing is claimed
+    FakeRouteGeneratorGateway.omitOffroadResult = true;
+    post(USER1, team1Slug, ride("GRAVEL", "HIGH"))
+        .statusCode(200)
+        .body("candidates[0].unpavedTarget", nullValue())
+        .body("candidates[0].unpavedTargetReached", nullValue());
   }
 
   @Test

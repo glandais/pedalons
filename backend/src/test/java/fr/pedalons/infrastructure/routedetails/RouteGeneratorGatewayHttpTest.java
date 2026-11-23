@@ -145,6 +145,52 @@ class RouteGeneratorGatewayHttpTest {
   }
 
   @Test
+  void theTargetOfUnpavedShareIsSentAndItsOutcomeRead() throws Exception {
+    handle(
+        "/v1/generator/routes",
+        e -> {
+          body.set(e.getRequestBody().readAllBytes());
+          respond(
+              e,
+              200,
+              "application/json",
+              "{\"dropped\":0,\"offroad\":{\"target\":0.6,\"tolerance\":0.05,"
+                  + "\"reached\":false,\"steps\":3},\"routes\":[{\"polyline\":\"abc\","
+                  + "\"distance_m\":50000.0,\"team_m\":1,\"bridged_m\":0,\"team_share\":0.8,"
+                  + "\"tail_m\":10,\"crossings\":0,\"unpaved_m\":0,\"unpaved_share\":0.1,"
+                  + "\"offroad_m\":20000.0,\"offroad_share\":0.4}]}");
+        });
+    GenerateRequest asked =
+        new GenerateRequest(new GeoPoint(47.2, -1.5), null, null, 50_000, "gravel", 0.25, 7, 0.6);
+    GenerateResponse answer = running(Duration.ofSeconds(5)).generate(TEAM, asked);
+
+    String sent = new String(body.get(), StandardCharsets.UTF_8);
+    assertTrue(sent.contains("\"offroad_target\":0.6"), sent);
+    assertEquals(0.4, answer.routes().get(0).offroadShare(), 1e-9);
+    assertEquals(0.4, answer.routes().get(0).offpavementShare(), 1e-9);
+    assertEquals(0.05, answer.offroad().tolerance(), 1e-9);
+    assertEquals(false, answer.offroad().reached());
+    assertEquals(3, answer.offroad().steps());
+  }
+
+  @Test
+  void withoutATargetTheKeyIsLeftOutAndTheSurfaceTagShareIsTheFallback() throws Exception {
+    handle(
+        "/v1/generator/routes",
+        e -> {
+          body.set(e.getRequestBody().readAllBytes());
+          respond(e, 200, "application/json", ROUTES);
+        });
+    GenerateResponse answer = running(Duration.ofSeconds(5)).generate(TEAM, request());
+    assertTrue(
+        !new String(body.get(), StandardCharsets.UTF_8).contains("offroad_target"),
+        "a null target is left out");
+    assertEquals(null, answer.offroad());
+    assertEquals(null, answer.routes().get(0).offroadShare());
+    assertEquals(0.1, answer.routes().get(0).offpavementShare(), 1e-9);
+  }
+
+  @Test
   void aProblemBecomesATypedException() {
     handle(
         "/v1/generator/routes",
