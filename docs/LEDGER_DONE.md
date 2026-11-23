@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **612 entrées livrées**, et des 11 entrées encore ouvertes dont une part l'est.
+Index des **612 entrées livrées**, et des 12 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -154,6 +154,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## WEB — Site web
 
+- [x] [`WEB-199`](ledger/WEB/WEB-199.md) La souris déplace les ancres d'un tracé au lieu d'ajouter un point à côté — en partie, le reste est ouvert
 - [x] [`WEB-197`](ledger/WEB/WEB-197.md) Générateur : réglage « Chemins » du site et ligne de secteur sur la carte — 2026-11-23
 - [x] [`WEB-196`](ledger/WEB/WEB-196.md) Liste des membres : lien vers la gestion, rôle d'un admin modifiable — 2026-11-23
 - [x] [`WEB-195`](ledger/WEB/WEB-195.md) Équipe tout juste créée : aucune première étape proposée (web + mobile) — 2026-11-23

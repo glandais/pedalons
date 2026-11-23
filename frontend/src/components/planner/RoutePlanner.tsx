@@ -401,6 +401,12 @@ export function RoutePlanner({
     seg: number
   } | null>(null)
 
+  // The anchor under the mouse (a small white point of the trace): grabbed, it moves, never adds
+  const [hoverAnchor, setHoverAnchor] = useState<number | null>(null)
+  // A mouse press on an anchor: until it moves past ANCHOR_DRAG_TOLERANCE_PX it is a mere click,
+  // which does nothing (the anchor is grabbed to be moved, a click must not turn it into a point)
+  const mouseAnchorPress = useRef<{ x: number; y: number; moved: boolean } | null>(null)
+
   // State for dragging a ghost point (before insertion)
   const [draggingGhost, setDraggingGhost] = useState<{
     lng: number
@@ -1085,6 +1091,13 @@ export function RoutePlanner({
 
       if (draggingGhost) {
         onHoverIndex?.(-1)
+        const press = mouseAnchorPress.current
+        if (
+          press &&
+          Math.hypot(event.point.x - press.x, event.point.y - press.y) > ANCHOR_DRAG_TOLERANCE_PX
+        ) {
+          press.moved = true
+        }
         autoPan.follow(event.lngLat)
         setDraggingGhost((prev) =>
           prev ? { ...prev, lng: event.lngLat.lng, lat: event.lngLat.lat } : null
@@ -1100,6 +1113,7 @@ export function RoutePlanner({
       // Over a route point's pin: no ghost, so no insertion by dragging from under it
       if ((event.originalEvent?.target as HTMLElement | null)?.closest?.('.planner-waypoint')) {
         setHoverPoint(null)
+        setHoverAnchor(null)
         onHoverIndex?.(-1)
         return
       }
@@ -1110,6 +1124,7 @@ export function RoutePlanner({
       // ghost to insert (seen on an iPhone). A finger inserts with one tap instead.
       if (isFingerEvent(event.originalEvent)) {
         if (hoverPoint) setHoverPoint(null)
+        setHoverAnchor(null)
         onHoverIndex?.(-1)
         return
       }
@@ -1126,6 +1141,7 @@ export function RoutePlanner({
         const distance = Math.sqrt(dx * dx + dy * dy)
         if (distance < MARKER_PROXIMITY_PX) {
           setHoverPoint(null)
+          setHoverAnchor(null)
           onHoverIndex?.(-1)
           return
         }
@@ -1141,6 +1157,22 @@ export function RoutePlanner({
       })
 
       if (features.length > 0) {
+        // An anchor lies on the line: over one, the press will move it, so no ghost to insert
+        const anchor = anchorAt(
+          mapRef.current,
+          route,
+          event.point,
+          ANCHOR_CLICK_RADIUS_PX,
+          getMapZoom(),
+          false
+        )
+        if (anchor !== null) {
+          setHoverPoint(null)
+          setHoverAnchor(anchor)
+          onHoverIndex?.(anchor)
+          return
+        }
+        setHoverAnchor(null)
         const seg = nearestSegment(route, event.lngLat)
         if (seg) {
           setHoverPoint({ lng: seg.point.lng, lat: seg.point.lat, seg: seg.index })
@@ -1156,11 +1188,13 @@ export function RoutePlanner({
       }
 
       setHoverPoint(null)
+      setHoverAnchor(null)
       onHoverIndex?.(-1)
     },
     [
       route,
       routeGeoJson,
+      getMapZoom,
       draggingGhost,
       draggingMarker,
       draggingWaypoint,
@@ -1175,6 +1209,7 @@ export function RoutePlanner({
 
   const handleMouseLeave = useCallback(() => {
     setHoverPoint(null)
+    setHoverAnchor(null)
     setCursorPosition(null)
     onHoverIndex?.(-1)
   }, [onHoverIndex])
@@ -1183,7 +1218,31 @@ export function RoutePlanner({
     (event: MapMouseEvent) => {
       if (event.originalEvent.button !== 0) return
       if ((event.originalEvent.target as HTMLElement | null)?.closest?.('.planner-waypoint')) return
-      if (!hoverPoint || isLoading) return
+      if (isLoading) return
+
+      // On an anchor: the press moves it, like a finger's (handleMapTouchStart), between its two
+      // neighbours. Checked again here rather than trusted from the hover: the map may have moved.
+      const map = mapRef.current
+      const zoom = getMapZoom()
+      const grabbed =
+        hoverAnchor !== null && map
+          ? anchorAt(map, route, event.point, ANCHOR_CLICK_RADIUS_PX, zoom, false)
+          : null
+      if (grabbed !== null) {
+        event.preventDefault()
+        cancelKeyboardMove()
+        const anchor = route.points[grabbed]
+        mouseAnchorPress.current = { x: event.point.x, y: event.point.y, moved: false }
+        setDraggingGhost({ lng: anchor.lng, lat: anchor.lat, idx: grabbed })
+        const { start, end } = spanBounds(route, grabbed - 1, grabbed + 1, zoom)
+        setStartDragPoint(start)
+        setEndDragPoint(end)
+        setHoverAnchor(null)
+        autoPan.begin(event.lngLat)
+        return
+      }
+
+      if (!hoverPoint) return
 
       event.preventDefault()
       cancelKeyboardMove()
@@ -1200,11 +1259,21 @@ export function RoutePlanner({
       // Armed from the pointer, not from the snapped point (up to ROUTE_BUFFER_PX away)
       autoPan.begin(event.lngLat)
     },
-    [hoverPoint, getMapZoom, route, isLoading, autoPan, cancelKeyboardMove]
+    [hoverPoint, hoverAnchor, getMapZoom, route, isLoading, autoPan, cancelKeyboardMove]
   )
 
   const handleMouseUp = useCallback(() => {
     autoPan.end()
+    const anchorPress = mouseAnchorPress.current
+    mouseAnchorPress.current = null
+    if (draggingGhost && anchorPress && !anchorPress.moved) {
+      // A click on an anchor, not a drag: nothing changes, and the click that follows adds nothing
+      setDraggingGhost(null)
+      setStartDragPoint(undefined)
+      setEndDragPoint(undefined)
+      gestureCancelledAt.current = Date.now()
+      return
+    }
     if (draggingGhost) {
       insertControlPoint(
         startDragPoint,
@@ -1280,6 +1349,7 @@ export function RoutePlanner({
         cancelAnchorDrag()
       } else {
         autoPan.end()
+        mouseAnchorPress.current = null
         setDraggingGhost(null)
         setStartDragPoint(undefined)
         setEndDragPoint(undefined)
@@ -1705,9 +1775,11 @@ export function RoutePlanner({
                 ? 'progress'
                 : draggingGhost || draggingMarker || draggingWaypoint
                   ? 'grabbing'
-                  : hoverPoint
-                    ? 'pointer'
-                    : 'crosshair'
+                  : hoverAnchor !== null
+                    ? 'grab'
+                    : hoverPoint
+                      ? 'pointer'
+                      : 'crosshair'
             }
           >
             {hostControls ? (
@@ -1784,7 +1856,7 @@ export function RoutePlanner({
                       type="circle"
                       filter={['>=', ['zoom'], ['get', 'zoom']]}
                       paint={{
-                        // Bigger on a finger, which can grab them (handleMapTouchStart)
+                        // Grabbed by a mouse (handleMapMouseDown) or a finger (handleMapTouchStart); bigger on a finger
                         'circle-radius': isCoarsePointer ? 8 : 5,
                         'circle-color': 'white',
                         'circle-stroke-width': isCoarsePointer ? 3 : 2,

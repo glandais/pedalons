@@ -1285,6 +1285,52 @@ test('a finger drags an anchor of a loaded track: the trace is routed again thro
   expect(Math.abs(startAfter.x - start.x), 'the map did not pan').toBeLessThan(2)
 })
 
+test('a mouse drags an anchor of a loaded track: it moves, no point is added beside it', async ({
+  context,
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'a mouse gesture: covered by the desktop project')
+  const {
+    page: p,
+    marker,
+    centre,
+    corner,
+    settled,
+    routerRequests,
+  } = await openLTrack({
+    context,
+    page,
+    isMobile,
+  })
+
+  // A click on the anchor, without moving: nothing changes
+  await p.mouse.move(corner.x - 10, corner.y - 10)
+  await p.mouse.move(corner.x, corner.y, { steps: 3 })
+  await p.mouse.move(corner.x + 1, corner.y, { steps: 2 })
+  await p.mouse.down()
+  await p.mouse.up()
+  await p.waitForTimeout(500)
+  expect(routerRequests, 'a click on an anchor routes nothing').toHaveLength(0)
+  await expect(marker(3)).toHaveCount(0)
+
+  // Pressed and dragged: the corner itself goes where the mouse is released
+  const drop = { x: corner.x - 60, y: corner.y - 60 }
+  await p.mouse.move(corner.x, corner.y, { steps: 2 })
+  await p.mouse.down()
+  await p.mouse.move(drop.x, drop.y, { steps: 8 })
+  await p.mouse.up()
+  await settled()
+
+  // One point only, the moved corner, routed from the start and to the end
+  await expect(marker(3)).toBeVisible()
+  await expect(marker(4)).toHaveCount(0)
+  await expect.poll(() => routerRequests.length).toBe(2)
+  const moved = await centre(2)
+  expect(Math.abs(moved.x - drop.x), 'the corner is where the mouse was released').toBeLessThan(20)
+  expect(Math.abs(moved.y - drop.y)).toBeLessThan(20)
+})
+
 test.describe('deleting an anchor of a loaded track', () => {
   test.setTimeout(90_000)
 
