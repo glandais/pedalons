@@ -88,8 +88,14 @@ services:
   # (pedalons.route-generator.generate-timeout): never raise one without the other. It also reads
   # <name>.ordi beside the graph, the prebuilt tile index: without it a start rebuilds the index of
   # the planet (37 min, more than 3G). A graph is therefore five files, plus its two .orda.
+  # 1.16.0 (api 1.15): POST /v1/router/route, a bicycle route from A to B with the generator's
+  # weights and team affinity, on a queue of its own (2 at once, 6 waiting, 5 s:
+  # ORD_GENERATOR__ROUTER_*). The planner offers it as an option (docs/LEDGER_*.md API-217) and
+  # falls back on Stadia Maps whenever it cannot answer. No graph file to rebuild, no redeposit;
+  # generations are unchanged. Under 1.16 the backend sees no `router` in the capabilities and
+  # offers Stadia Maps alone (OPS-68).
   osm-route-details:
-    image: ghcr.io/glandais/osm-route-details:1.15.0
+    image: ghcr.io/glandais/osm-route-details:1.16.0
     networks:
       - shared
     environment:
