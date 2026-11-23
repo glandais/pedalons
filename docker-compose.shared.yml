@@ -94,8 +94,11 @@ services:
   # falls back on Stadia Maps whenever it cannot answer. No graph file to rebuild, no redeposit;
   # generations are unchanged. Under 1.16 the backend sees no `router` in the capabilities and
   # offers Stadia Maps alone (OPS-68).
+  # 1.17.0 (api 1.16): the route takes `use_roads` (the planner's traffic knob) and
+  # `avoid_main_roads`, announced in capabilities.router; the backend sends them only when
+  # announced, so 1.16.0 still serves it, without them. Factors are estimates, tuned on no measure.
   osm-route-details:
-    image: ghcr.io/glandais/osm-route-details:1.16.0
+    image: ghcr.io/glandais/osm-route-details:1.17.0
     networks:
       - shared
     environment:
