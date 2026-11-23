@@ -2,12 +2,13 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **612 entrées livrées**, et des 12 entrées encore ouvertes dont une part l'est.
+Index des **613 entrées livrées**, et des 12 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
 ## MOB — Application mobile
 
+- [x] [`MOB-182`](ledger/MOB/MOB-182.md) Liens universels pour les écrans de l'app qui n'en avaient pas — 2026-11-23
 - [x] [`MOB-181`](ledger/MOB/MOB-181.md) Passer à maplibre 0.4 (moteur natif unique) — en partie, le reste est ouvert
 - [x] [`MOB-180`](ledger/MOB/MOB-180.md) Liste des membres : lien vers la gestion, rôle d'un admin modifiable — 2026-11-23
 - [x] [`MOB-179`](ledger/MOB/MOB-179.md) Le lien d'invitation n'ouvre pas l'app : pas d'écran pour le recevoir — 2026-11-23

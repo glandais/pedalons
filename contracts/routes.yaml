@@ -275,14 +275,14 @@ routes:
       fr: /parcours
     web: true
     mobile: true
-    deeplink: false
+    deeplink: true
   - id: allRoutesMap
     path:
       en: /routes/map
       fr: /parcours/carte
     web: true
     mobile: true
-    deeplink: false
+    deeplink: true
 
   # --- GPX tools ---
   - id: gpxTools
@@ -291,21 +291,21 @@ routes:
       fr: /outils-gpx
     web: true
     mobile: true
-    deeplink: false
+    deeplink: true
   - id: gpxToolsList
     path:
       en: /gpx-tools/my-files
       fr: /outils-gpx/mes-fichiers
     web: true
     mobile: true
-    deeplink: false
+    deeplink: true
   - id: gpxToolsNew
     path:
       en: /gpx-tools/new
       fr: /outils-gpx/nouveau
     web: true
     mobile: true
-    deeplink: false
+    deeplink: true
   # Static segment sibling of {previewId}: React Router ranks it first, and a TSID is never "map".
   - id: gpxToolsBlankMap
     path:
@@ -313,7 +313,7 @@ routes:
       fr: /outils-gpx/carte
     web: true
     mobile: true
-    deeplink: false
+    deeplink: true
   - id: gpxToolsView
     path:
       en: /gpx-tools/{previewId}
@@ -340,7 +340,7 @@ routes:
       - previewId
     web: true
     mobile: true
-    deeplink: false
+    deeplink: true
 
   # --- Teams ---
   - id: teams
@@ -465,6 +465,7 @@ routes:
       - pageSlug
     web: true
     mobile: true
+    deeplink: true
 
   # --- Team admin ---
   # The team's administration (docs/plans/archive/2026-11-15-gestion-equipe-mobile.md). `teamAdmin` is an
@@ -834,6 +835,7 @@ routes:
     web: true
     mobile: true
     mobileName: teamAds
+    deeplink: true
   - id: adNew
     path:
       en: /teams/{teamSlug}/classifieds/new

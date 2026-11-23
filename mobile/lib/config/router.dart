@@ -517,6 +517,22 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
     ancestors: [_allRoutesMapAncestor, _gpxToolsAncestor],
   ),
   _DeepLinkHierarchy(
+    patterns: PathVariants.gpxToolsNew(),
+    ancestors: [_allRoutesMapAncestor, _gpxToolsAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.gpxToolsBlankMap(),
+    ancestors: [_allRoutesMapAncestor, _gpxToolsAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.gpxToolsEdit(':previewId'),
+    ancestors: [
+      _allRoutesMapAncestor,
+      _gpxToolsAncestor,
+      _gpxToolsViewAncestor,
+    ],
+  ),
+  _DeepLinkHierarchy(
     patterns: PathVariants.gpxToolsMap(':previewId'),
     ancestors: [
       _allRoutesMapAncestor,

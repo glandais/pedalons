@@ -343,6 +343,19 @@ final List<_LinkCase> _cases = [
     PathVariants.allRoutesMap(),
     PathVariants.gpxTools(),
   ]),
+  _LinkCase('gpxToolsNew', PathVariants.gpxToolsNew(), [
+    PathVariants.allRoutesMap(),
+    PathVariants.gpxTools(),
+  ]),
+  _LinkCase('gpxToolsBlankMap', PathVariants.gpxToolsBlankMap(), [
+    PathVariants.allRoutesMap(),
+    PathVariants.gpxTools(),
+  ]),
+  _LinkCase('gpxToolsEdit', PathVariants.gpxToolsEdit(_previewId), [
+    PathVariants.allRoutesMap(),
+    PathVariants.gpxTools(),
+    PathVariants.gpxToolsView(_previewId),
+  ]),
   _LinkCase('gpxToolsMap', PathVariants.gpxToolsMap(_previewId), [
     PathVariants.allRoutesMap(),
     PathVariants.gpxTools(),
