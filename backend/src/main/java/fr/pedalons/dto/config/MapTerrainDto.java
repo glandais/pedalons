@@ -10,10 +10,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * hard-coded in the web client while the mobile app had no relief at all.
  *
  * <p>Only a TileJSON URL is carried, deliberately. The DEM's <em>encoding</em> (Terrarium vs Mapbox
- * RGB) is declared by the TileJSON document itself, and that is the only channel both mobile
- * platforms actually read: on Android and iOS the plugin builds the native source from the
- * configuration URL and drops any encoding passed alongside it. Serving an encoding field would look
- * authoritative while changing nothing.
+ * RGB) is declared by the TileJSON document itself, which stays the single source: the web hands
+ * the URL to maplibre-gl, which reads it there, and the mobile app reads the document's {@code
+ * encoding} and passes it on, since its map library (maplibre 0.4) always writes one into the native
+ * source (ledger MOB-181).
  */
 @Schema(description = "The elevation source used to shade the relief")
 @ValidateSchema

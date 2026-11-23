@@ -261,17 +261,22 @@ class PdlMapBox {
   String toString() => 'PdlMapBox($minLon, $minLat, $maxLon, $maxLat)';
 }
 
+/// Comment les tuiles d'un MNT codent l'altitude dans leurs pixels.
+enum PdlDemEncoding { mapbox, terrarium }
+
 /// La source d'élévation dont l'ombrage du relief est tiré, **sans DTO**.
 ///
 /// [url] est une URL de TileJSON, jamais écrite ici : elle vient de
 /// `ConfigDto.terrain`, comme les fonds de carte. C'est ce document qui déclare
-/// l'encodage du MNT (Terrarium chez Mapterhorn) — le seul canal que lisent les
-/// SDK natifs, qui construisent leur source à partir de l'URL de configuration
-/// et ignorent l'encodage passé à côté.
+/// l'encodage du MNT (Terrarium chez Mapterhorn), et l'appelant le relit pour
+/// remplir [encoding] : `maplibre` 0.4 écrit toujours un encodage dans la
+/// source, Mapbox par défaut, qui l'emporte sur celui du TileJSON — des tuiles
+/// Terrarium lues en Mapbox couvrent la Beauce de falaises (ledger `MOB-181`).
 @immutable
 class PdlHillshade {
   const PdlHillshade({
     required this.url,
+    required this.encoding,
     required this.shadowColor,
     required this.highlightColor,
     this.exaggeration = 0.4,
@@ -279,6 +284,9 @@ class PdlHillshade {
 
   /// L'URL du TileJSON décrivant des tuiles raster-DEM.
   final String url;
+
+  /// L'encodage que déclare le TileJSON de [url].
+  final PdlDemEncoding encoding;
 
   final Color shadowColor;
   final Color highlightColor;
@@ -291,13 +299,14 @@ class PdlHillshade {
   bool operator ==(Object other) =>
       other is PdlHillshade &&
       other.url == url &&
+      other.encoding == encoding &&
       other.shadowColor == shadowColor &&
       other.highlightColor == highlightColor &&
       other.exaggeration == exaggeration;
 
   @override
   int get hashCode =>
-      Object.hash(url, shadowColor, highlightColor, exaggeration);
+      Object.hash(url, encoding, shadowColor, highlightColor, exaggeration);
 }
 
 /// Épaisseurs et opacités des tracés (§1.3.2).
@@ -867,11 +876,12 @@ class PdlMapController extends ChangeNotifier {
   /// fond de carte (comme sur le web) mais reste sous les tracés, les marqueurs
   /// et le réticule.
   ///
-  /// La source est un `RasterDemSource` construit sur l'URL du TileJSON. On ne
-  /// lui passe **ni encodage ni plage de zoom** : c'est le TileJSON qui fait
-  /// foi (Terrarium chez Mapterhorn). Conséquence à connaître : si le document
-  /// ne déclare pas de `maxzoom`, l'ombrage peut disparaître au-delà du zoom
-  /// natif du fournisseur, là où le web le prolonge en le déclarant lui-même.
+  /// La source est un `RasterDemSource` construit sur l'URL du TileJSON, avec
+  /// l'encodage que ce document déclare ([PdlHillshade.encoding]), mais **sans
+  /// plage de zoom** : c'est le TileJSON qui la fixe. Conséquence à connaître :
+  /// si le document ne déclare pas de `maxzoom`, l'ombrage peut disparaître
+  /// au-delà du zoom natif du fournisseur, là où le web le prolonge en le
+  /// déclarant lui-même.
   ///
   /// `hillshade-method` n'est pas envoyé, comme avant `maplibre` 0.4 dont les
   /// SDK natifs l'ignoraient : le relief garde le rendu qu'on lui connaît.
@@ -882,7 +892,14 @@ class PdlMapController extends ChangeNotifier {
     if (hillshade == null) return;
     await _safe(
       () => style.sources.add(
-        RasterDemSource.url(id: _hillshadeSourceId, url: hillshade.url),
+        RasterDemSource.url(
+          id: _hillshadeSourceId,
+          url: hillshade.url,
+          encoding: switch (hillshade.encoding) {
+            PdlDemEncoding.terrarium => const RasterDemTerrariumEncoding(),
+            PdlDemEncoding.mapbox => const RasterDemMapboxEncoding(),
+          },
+        ),
       ),
     );
     await _safe(
