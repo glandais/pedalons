@@ -1,8 +1,8 @@
 # Calcul d'itinéraire vélo par le moteur du générateur
 
-Écrit le 23 novembre 2026. **État : décidé le 23 novembre 2026 (§11) ; lots 1 à 5 codés le même jour,
-non commités (§10 bis) ; restent la mise en service du moteur (`OPS-68`), la recette (`WEB-198`) et les
-lots 1 bis, 6, 7 et 8.** Ledger `API-217`.
+Écrit le 23 novembre 2026. **État : décidé le 23 novembre 2026 (§11) ; lots 1 à 5 et 1 bis livrés (§10 bis),
+moteur `1.17.1` en service et recette faite le 24 novembre 2026 (`OPS-68`) ; restent la suite e2e
+(`WEB-198`) et les lots 6, 7 et 8.** Ledger `API-217`.
 Suite de [`2026-11-15-generateur-parcours-osm.md`](2026-11-15-generateur-parcours-osm.md) (`API-207`) :
 même moteur (osm-route-details, crate `ord-loops`), même passerelle côté Pédalons. Recoupe
 [`2026-11-22-retouche-parcours.md`](2026-11-22-retouche-parcours.md) (`API-212`), §8 ici.

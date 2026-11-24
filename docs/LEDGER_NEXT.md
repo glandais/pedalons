@@ -2,11 +2,11 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **156 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **155 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-47 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+45 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
@@ -61,7 +61,7 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 - [ ] [`WEB-199`](ledger/WEB/WEB-199.md) La souris déplace les ancres d'un tracé au lieu d'ajouter un point à côté (S) · *recette*
-- [ ] [`WEB-198`](ledger/WEB/WEB-198.md) Recette du choix du calcul d'itinéraire dans le planificateur (S) · *recette*
+- [ ] [`WEB-198`](ledger/WEB/WEB-198.md) Recette du choix du calcul d'itinéraire dans le planificateur (S)
 - [ ] [`WEB-183`](ledger/WEB/WEB-183.md) Planificateur embarquable dans l'app : recette iOS et poids du bundle (S)
 - [ ] [`WEB-176`](ledger/WEB/WEB-176.md) Listes homogènes : recette en navigateur de `WEB-175` (S) · *recette*
 - [ ] [`WEB-172`](ledger/WEB/WEB-172.md) Cartes homogènes : recette en navigateur de `WEB-167` (S) · *recette*
@@ -153,8 +153,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 ## OPS — Exploitation
 
 Contexte du domaine : [`ledger/OPS/README.md`](ledger/OPS/README.md).
-
-- [ ] [`OPS-68`](ledger/OPS/OPS-68.md) Mettre en service osm-route-details 1.16.0 (itinéraire de A à B, api 1.15) (S) · *externe*
 
 ### App Garmin : Connect IQ Store
 
@@ -313,7 +311,6 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 - [`MOB-13`](ledger/MOB/MOB-13.md) Trombinoscope (34)
 - [`MOB-5`](ledger/MOB/MOB-5.md) Exploration de parcours (21)
 - [`WEB-199`](ledger/WEB/WEB-199.md) La souris déplace les ancres d'un tracé au lieu d'ajouter un point à côté
-- [`WEB-198`](ledger/WEB/WEB-198.md) Recette du choix du calcul d'itinéraire dans le planificateur
 - [`WEB-176`](ledger/WEB/WEB-176.md) Listes homogènes : recette en navigateur de `WEB-175`
 - [`WEB-172`](ledger/WEB/WEB-172.md) Cartes homogènes : recette en navigateur de `WEB-167`
 - [`WEB-161`](ledger/WEB/WEB-161.md) Contrôles de carte : recette à l'œil de `WEB-157`
@@ -333,7 +330,6 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 ### Dépend d'un tiers ou d'une opération hors du dépôt (`externe`)
 
 - [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play
-- [`OPS-68`](ledger/OPS/OPS-68.md) Mettre en service osm-route-details 1.16.0 (itinéraire de A à B, api 1.15)
 - [`OPS-35`](ledger/OPS/OPS-35.md) Publier l'app Garmin sur le Connect IQ Store
 - [`OPS-34`](ledger/OPS/OPS-34.md) Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`
 - [`OPS-33`](ledger/OPS/OPS-33.md) Publier l'extension Karoo dans l'Extension Library de Hammerhead

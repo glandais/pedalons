@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **615 entrées livrées**, et des 12 entrées encore ouvertes dont une part l'est.
+Index des **616 entrées livrées**, et des 13 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -158,6 +158,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 - [x] [`WEB-200`](ledger/WEB/WEB-200.md) Le cadrage des cartes d'exploration dans l'URL (?map=z/lat/lon) — 2026-11-23
 - [x] [`WEB-199`](ledger/WEB/WEB-199.md) La souris déplace les ancres d'un tracé au lieu d'ajouter un point à côté — en partie, le reste est ouvert
+- [x] [`WEB-198`](ledger/WEB/WEB-198.md) Recette du choix du calcul d'itinéraire dans le planificateur — en partie, le reste est ouvert
 - [x] [`WEB-197`](ledger/WEB/WEB-197.md) Générateur : réglage « Chemins » du site et ligne de secteur sur la carte — 2026-11-23
 - [x] [`WEB-196`](ledger/WEB/WEB-196.md) Liste des membres : lien vers la gestion, rôle d'un admin modifiable — 2026-11-23
 - [x] [`WEB-195`](ledger/WEB/WEB-195.md) Équipe tout juste créée : aucune première étape proposée (web + mobile) — 2026-11-23
@@ -482,6 +483,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## OPS — Exploitation
 
+- [x] [`OPS-68`](ledger/OPS/OPS-68.md) Mettre en service osm-route-details 1.16.0 (itinéraire de A à B, api 1.15) — 2026-11-24
 - [x] [`OPS-67`](ledger/OPS/OPS-67.md) Générateur de parcours : osm-route-details 1.15.0, part de chemins visée et bornes de roulabilité — 2026-11-23
 - [x] [`OPS-66`](ledger/OPS/OPS-66.md) Générateur de parcours : osm-route-details 1.14, la planète servie et un budget de 30 s — 2026-11-23
 - [x] [`OPS-65`](ledger/OPS/OPS-65.md) Générateur de parcours : osm-route-details 1.13, attracteurs OSM posés et non actifs — 2026-11-20
