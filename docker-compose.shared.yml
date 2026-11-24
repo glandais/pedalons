@@ -99,8 +99,13 @@ services:
   # announced, so 1.16.0 still serves it, without them. Factors checked on real legs (plan §10 bis), unchanged.
   # 1.17.1: a sharp turn costs 200 to 250 m instead of being refused; before, a route could go
   # several times the distance around to avoid one. Same API.
+  # 1.18.0 (api 1.17): POST /v1/generator/routes/edit, retouching a saved route (aim at a distance,
+  # move the finish) by a local splice, on the generator's queue. No graph file to rebuild, no
+  # redeposit; generations and A to B routes are unchanged. Under 1.18 the backend sees no `edit`
+  # in the capabilities and never offers « Retoucher » (OPS-69). Its tile index cache is
+  # ORD_GENERATOR__EDIT_INDEX_CACHE_MB (64 by default), inside the 3G below, not measured there.
   osm-route-details:
-    image: ghcr.io/glandais/osm-route-details:1.17.1
+    image: ghcr.io/glandais/osm-route-details:1.18.0
     networks:
       - shared
     environment:

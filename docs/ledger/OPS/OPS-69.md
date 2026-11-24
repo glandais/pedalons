@@ -14,7 +14,8 @@ verified: 2026-11-24
 reste en 1.17.1 et l'action « Retoucher » (`API-212`, `WEB-201`) n'apparaît pas, rien ne casse. À faire par le
 propriétaire :
 
-- publier l'image et l'épingler dans `docker-compose.shared.yml`, puis déployer ;
+- déployer la pile partagée (`scripts/deploy.sh --shared`) : l'image `1.18.0` est publiée et épinglée dans
+  `docker-compose.shared.yml` depuis le 24 novembre 2026 ;
 - à la recette, lire `ord_generator_edit_requests_total` (part de `order_anomaly` et `route_mismatch` : au-delà
   de 10 %, la piste du §15.3 de la note du moteur), `ord_generator_edit_stage_seconds{stage="match"}` (cache des
   poses au-delà de 200 ms au P90) et la mémoire de l'index (`ORD_GENERATOR__EDIT_INDEX_CACHE_MB`, 64) ;
