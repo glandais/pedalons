@@ -302,7 +302,9 @@ function TuningSlider({ name, words, value, onCommit }: TuningSliderProps) {
           setDraft(null)
           onCommit(v)
         }}
-        label={(v) => words[Math.round(v * 4)]}
+        // No bubble: the word already shows beside the name and follows the thumb; at the right end
+        // the bubble overflowed the narrow panel (cut, and a horizontal scrollbar)
+        label={null}
         marks={STEPS.map((v) => ({ value: v }))}
         thumbLabel={name}
         thumbValueText={(v) => words[Math.round(v * 4)]}
