@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **159 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **165 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -43,6 +43,10 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 - [ ] [`MOB-37`](ledger/MOB/MOB-37.md) Les tests Patrol ne tournent qu'en local
 - [ ] [`MOB-26`](ledger/MOB/MOB-26.md) Clés d'accès
 
+### En-têtes de pages : audit du 25 novembre 2026
+
+- [ ] [`MOB-184`](ledger/MOB/MOB-184.md) « GPS » dans l'en-tête d'une sortie sur l'app, comme sur le site (S)
+
 ### Fiches des stores
 
 - [ ] [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play (S) · *externe*
@@ -81,6 +85,14 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 - [ ] [`WEB-81`](ledger/WEB/WEB-81.md) GPX à plusieurs traces : profil empilé et synchro faussée (S, priorité basse)
 - [ ] [`WEB-7`](ledger/WEB/WEB-7.md) Idées de la liste « P2 (à planifier) » qui n'ont pas été retenues
+
+### En-têtes de pages : audit du 25 novembre 2026
+
+- [ ] [`WEB-209`](ledger/WEB/WEB-209.md) En-têtes de pages, lot 5 : une carte transactionnelle commune (M)
+- [ ] [`WEB-208`](ledger/WEB/WEB-208.md) En-têtes de pages, lot 4 : bandeau d'équipe et administration (M)
+- [ ] [`WEB-207`](ledger/WEB/WEB-207.md) En-têtes de pages, lot 3 : un h1 par page (M)
+- [ ] [`WEB-206`](ledger/WEB/WEB-206.md) En-têtes de pages, lot 2 : un DetailHeader commun aux pages de détail (L)
+- [ ] [`WEB-205`](ledger/WEB/WEB-205.md) En-têtes de pages, lot 1 : lexique et titre d'onglet (M)
 
 ### Planificateur : audit UX du choix du profil, 24 novembre 2026
 
