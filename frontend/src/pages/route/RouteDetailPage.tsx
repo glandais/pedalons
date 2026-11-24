@@ -227,6 +227,10 @@ export function RouteDetailPage() {
                     {t('actions.edit')}
                   </Button>
                 )}
+                {/* Beside « Modifier »: its « Modifier » replaces this route's track (WEB-201) */}
+                {canEdit && !route.deleted && (
+                  <RouteRetouchButton offer={retouchOffer} onChoose={setRetouchMode} />
+                )}
                 {canEdit && !route.deleted && (
                   <Button
                     variant="default"
@@ -235,9 +239,6 @@ export function RouteDetailPage() {
                   >
                     {t('actions.duplicate')}
                   </Button>
-                )}
-                {canEdit && !route.deleted && (
-                  <RouteRetouchButton offer={retouchOffer} onChoose={setRetouchMode} />
                 )}
                 {canDelete && route.deleted && (
                   <Button
