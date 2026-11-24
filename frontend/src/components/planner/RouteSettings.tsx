@@ -298,10 +298,28 @@ export function RouteSettingsBody({ settings }: { settings: RouteSettingsModel }
             const Icon = PROFILE_ICONS[p]
             const checked = p === profile
             return (
-              <Radio.Card key={p} value={p} radius="md" mih={72} p={6}>
+              <Radio.Card
+                key={p}
+                value={p}
+                radius="md"
+                mih={72}
+                p={6}
+                // The choice must read at a glance: tinted ground, primary border (doubled by an inset
+                // ring, so the card does not move) and text, not just a bolder label
+                bg={checked ? 'var(--mantine-primary-color-light)' : undefined}
+                c={checked ? 'var(--mantine-primary-color-light-color)' : undefined}
+                style={
+                  checked
+                    ? {
+                        borderColor: 'var(--mantine-primary-color-filled)',
+                        boxShadow: 'inset 0 0 0 1px var(--mantine-primary-color-filled)',
+                      }
+                    : undefined
+                }
+              >
                 <Stack align="center" justify="center" gap={6} h="100%">
                   <Icon size={24} />
-                  <Text size="sm" ta="center" lh={1.2} fw={checked ? 600 : 400}>
+                  <Text size="sm" ta="center" lh={1.2} fw={checked ? 600 : 400} c="inherit">
                     {t(`planner.profile.${p}`)}
                   </Text>
                 </Stack>
