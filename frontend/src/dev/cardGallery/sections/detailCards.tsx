@@ -9,15 +9,7 @@ import { rideMapRoutes } from '@/pages/ride/rideMapRoutes'
 import { someGroupLeavesAtOwnTime } from '@/utils/groupStart'
 import { routeColor } from '@/lib/routeColors'
 import type { GallerySection } from '../galleryLayout'
-import {
-  TRIP_SLUG,
-  VCM_SLUG,
-  ride,
-  routeDetails,
-  stages,
-  weatherLeg,
-  weatherSummary,
-} from '../fixtures'
+import { TRIP_SLUG, VCM_SLUG, ride, stages, weatherLeg, weatherSummary } from '../fixtures'
 
 /**
  * A ride's group cards with the props `RideDetailPage` gives them — same helpers, same order (the
@@ -37,7 +29,6 @@ function GroupCards({
   fullOn?: string
 }) {
   const { t } = useTranslation()
-  const routesBySlug = useMemo(routeDetails, [])
   const { colorByGroupId } = useMemo(
     () => rideMapRoutes(theRide, t('rides.detail.mainRoute')),
     [theRide, t]
@@ -61,8 +52,6 @@ function GroupCards({
             showStartTime={someGroupLeavesAtOwnTime(theRide.groups, theRide.dateTime)}
             teamSlug={VCM_SLUG}
             rideSlug={theRide.slug}
-            rideRouteSlug={only ? group.routeSlug : theRide.routeSlug}
-            routesBySlug={routesBySlug}
             trackColor={colorByGroupId.get(group.id)}
             weatherLeg={withWeather ? weatherLeg(group) : undefined}
             action={groupAction(theRide, group)}

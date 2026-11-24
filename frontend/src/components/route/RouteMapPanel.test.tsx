@@ -93,9 +93,6 @@ vi.mock('@/components/weather/WeatherCheckpointMarkers', () => ({
     </>
   ),
 }))
-vi.mock('@/components/ride/RideGroupRouteActions', () => ({
-  RideGroupRouteActions: () => null,
-}))
 
 import { RouteMapPanel } from './RouteMapPanel'
 
@@ -129,7 +126,6 @@ function tree(
           leg={leg}
           attribution={leg ? okWeather.attribution : undefined}
           timezone="Europe/Paris"
-          withActions={false}
         />
       </MantineProvider>
     </MemoryRouter>

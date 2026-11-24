@@ -30,6 +30,9 @@ import { GroupWeatherSection, RideWeatherSection } from '@/components/weather'
 import { useWeatherFocus } from '@/components/publication/useWeatherFocus'
 import { hasForecast } from '@/components/weather/weatherDisplay'
 import { RideSoloGroupPanel } from '@/components/ride/RideSoloGroupPanel'
+import { GpsMenuButton } from '@/components/route/GpsMenuButton'
+import { groupTitle } from '@/utils/groupTitle'
+import { useUnits } from '@/hooks/useUnits'
 import { RideOverviewMap } from '@/components/ride/RideOverviewMap'
 import { GroupParticipantsSection } from '@/components/ride/group/GroupParticipantsSection'
 import { RouteMapPanel } from '@/components/route/RouteMapPanel'
@@ -57,6 +60,7 @@ export function RideDetailPage() {
   const { t } = useTranslation()
   const { teamSlug, rideSlug } = useParams<{ teamSlug: string; rideSlug: string }>()
   const { isAuthenticated } = useAuth()
+  const { distance } = useUnits()
   // The hovered route, and the one chosen by a click on its trace — map item ids, one per distinct
   // route (`rideMapRoutes`). The choice stays lit on the map and on the cards of every group that
   // rides it, until a card's hover replaces it: the map stays on the last route hovered.
@@ -173,6 +177,12 @@ export function RideDetailPage() {
       ? registeredGroup
       : null
 
+  // « GPS » in the header, for the reader's own group (R7, docs/LEDGER_*.md WEB-203): the group
+  // they ride in, the ride neither cancelled nor over; its route, else the ride's.
+  const myGroup = ride.groups?.find((g) => groupAction(ride, g) === 'leave')
+  const myRouteSlug = myGroup ? myGroup.routeSlug || ride.routeSlug : undefined
+  const myGroupTitle = myGroup ? groupTitle(myGroup.name, t) : undefined
+
   const handleJoinGroup = membership.join
   const handleLeaveGroup = membership.leave
 
@@ -187,6 +197,26 @@ export function RideDetailPage() {
         reportTargetType={ReportTargetType.RIDE}
         statusActions={canEdit ? statusActions : null}
         editPath={paths.rideEdit(teamSlug!, rideSlug!)}
+        joinActions={
+          myGroup &&
+          myRouteSlug && (
+            <GpsMenuButton
+              teamSlug={teamSlug!}
+              routeSlug={myRouteSlug}
+              route={groupRoutesBySlug.get(myRouteSlug)}
+              statuses={myGroup.gpsSyncStatuses}
+              // Which group's route leaves, on a ride with several (a solo ride's says nothing)
+              subtitle={
+                solo
+                  ? undefined
+                  : myGroup.distance !== undefined
+                    ? `${myGroupTitle} · ${distance(myGroup.distance)}`
+                    : myGroupTitle
+              }
+              size="sm"
+            />
+          )
+        }
       >
         {/* The departure, a primary piece of information: under the title, before everything the
             organiser wrote (docs/BRANDING.md §7.8, docs/LEDGER_*.md WEB-137). The reader's
@@ -219,12 +249,9 @@ export function RideDetailPage() {
             {solo ? (
               <Stack gap="md">
                 <RideSoloGroupPanel
-                  teamSlug={teamSlug!}
-                  ride={ride}
                   group={solo}
                   action={groupAction(ride, solo)}
                   membership={membership}
-                  routesBySlug={groupRoutesBySlug}
                   // On its single-route map (graded, not a coloured trace) the bar would match nothing.
                   trackColor={soloRouteSlug ? undefined : trackColors.get(solo.id)}
                   error={groupError?.groupId === solo.id ? groupError.message : undefined}
@@ -268,8 +295,6 @@ export function RideDetailPage() {
                               teamSlug={teamSlug!}
                               teamName={ride.team.name}
                               rideSlug={ride.slug}
-                              rideRouteSlug={ride.routeSlug}
-                              routesBySlug={groupRoutesBySlug}
                               trackColor={trackColors.get(group.id)}
                               weatherLeg={
                                 weather.data && hasForecast(weather.data.status)
@@ -362,7 +387,6 @@ export function RideDetailPage() {
                 fullscreenPath={(colorBy) =>
                   withMapColor(paths.rideMap(team.slug, ride.slug), colorBy)
                 }
-                withActions={false}
                 heightVariant="sticky"
               />
             ) : (

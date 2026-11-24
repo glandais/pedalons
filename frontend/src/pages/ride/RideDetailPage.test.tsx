@@ -62,12 +62,9 @@ vi.mock('@/components/ride/ParticipantList', () => ({
     <div data-testid="participant-list">{props.source.groupId}</div>
   ),
 }))
-vi.mock('@/components/ride/RideGroupRouteActions', () => ({
-  RideGroupRouteActions: () => <div data-testid="route-actions" />,
-}))
 vi.mock('@/components/route/GpsMenuButton', () => ({
-  GpsMenuButton: ({ routeSlug }: { routeSlug: string }) => (
-    <div data-testid="gps-button" data-route={routeSlug} />
+  GpsMenuButton: ({ routeSlug, subtitle }: { routeSlug: string; subtitle?: string }) => (
+    <div data-testid="gps-button" data-route={routeSlug} data-subtitle={subtitle} />
   ),
 }))
 vi.mock('@/components/route/RoutesMapView', () => ({
@@ -202,7 +199,7 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
   })
 
   // R6 and R7 (docs/LEDGER_*.md WEB-167): the group card's controls, on the solo panel too.
-  it('gives a rider « GPS » and the red « Quitter le groupe » at the foot, no button in the corner', () => {
+  it('gives a rider the red « Quitter le groupe » at the foot, « GPS » in the header (WEB-203)', () => {
     state.ride = ride({
       registered: true,
       registeredGroupId: 'g1',
@@ -210,7 +207,8 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     })
     renderPage()
     const panel = screen.getByTestId('solo-group')
-    expect(within(panel).getByTestId('gps-button').getAttribute('data-route')).toBe('boucle')
+    expect(within(panel).queryByTestId('gps-button')).toBeNull()
+    expect(screen.getByTestId('gps-button').getAttribute('data-route')).toBe('boucle')
     expect(within(panel).getByRole('button', { name: 'Quitter le groupe' })).toBeTruthy()
     expect(within(panel).queryByRole('button', { name: 'Quitter' })).toBeNull()
   })
@@ -220,7 +218,7 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
     renderPage()
     const panel = screen.getByTestId('solo-group')
     expect(within(panel).getByRole('button', { name: 'Complet' })).toBeDisabled()
-    expect(within(panel).queryByTestId('gps-button')).toBeNull()
+    expect(screen.queryByTestId('gps-button')).toBeNull()
   })
 
   it('shows no leader without one — never the ride creator', () => {
@@ -578,6 +576,20 @@ describe('RideDetailPage — « Changer pour » on the other groups', () => {
     expect(screen.queryByRole('button', { name: /Changer pour/ })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Quitter le groupe' })).toBeNull()
     expect(screen.queryByTestId('gps-button')).toBeNull()
+  })
+
+  // docs/LEDGER_*.md WEB-203: one « GPS » in the header, the reader's group's route, named
+  it("puts « GPS » once, in the header, for the reader's own group's route", () => {
+    state.ride = ride({
+      groups: two({ routeSlug: 'cool-route' }),
+      registered: true,
+      registeredGroupId: 'g2',
+    })
+    renderPage()
+    const buttons = screen.getAllByTestId('gps-button')
+    expect(buttons).toHaveLength(1)
+    expect(buttons[0].getAttribute('data-route')).toBe('cool-route')
+    expect(buttons[0].getAttribute('data-subtitle')).toMatch(/^Cool · 82/)
   })
 
   it('offers no switch to a full group', () => {

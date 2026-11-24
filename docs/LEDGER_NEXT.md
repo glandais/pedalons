@@ -2,11 +2,11 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **158 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **159 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-46 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+47 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
@@ -60,6 +60,7 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
 Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
+- [ ] [`WEB-203`](ledger/WEB/WEB-203.md) « GPS » dans la barre d'actions des pages parcours, sortie, groupe et étape (S) · *recette*
 - [ ] [`WEB-201`](ledger/WEB/WEB-201.md) Retoucher un parcours sur le site : ajuster la distance, déplacer l'arrivée (M)
 - [ ] [`WEB-199`](ledger/WEB/WEB-199.md) La souris déplace les ancres d'un tracé au lieu d'ajouter un point à côté (S) · *recette*
 - [ ] [`WEB-198`](ledger/WEB/WEB-198.md) Recette du choix du calcul d'itinéraire dans le planificateur (S)
@@ -317,6 +318,7 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 - [`MOB-15`](ledger/MOB/MOB-15.md) Profil (33)
 - [`MOB-13`](ledger/MOB/MOB-13.md) Trombinoscope (34)
 - [`MOB-5`](ledger/MOB/MOB-5.md) Exploration de parcours (21)
+- [`WEB-203`](ledger/WEB/WEB-203.md) « GPS » dans la barre d'actions des pages parcours, sortie, groupe et étape
 - [`WEB-202`](ledger/WEB/WEB-202.md) Planificateur : refonte du volet de réglages du tracé (pratique, calcul, circulation, côtes, recalcul)
 - [`WEB-199`](ledger/WEB/WEB-199.md) La souris déplace les ancres d'un tracé au lieu d'ajouter un point à côté
 - [`WEB-176`](ledger/WEB/WEB-176.md) Listes homogènes : recette en navigateur de `WEB-175`

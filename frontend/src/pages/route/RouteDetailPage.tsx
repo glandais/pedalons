@@ -18,6 +18,7 @@ import { getListMyPreviewsQueryKey } from '@/api/endpoints/gpx-previews/gpx-prev
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
 import { useRouteDetailData } from './routeDetailData'
 import { RouteDetailView } from '../../components/route/RouteDetailView'
+import { GpsMenuButton } from '@/components/route/GpsMenuButton'
 import { RouteUsages } from '../../components/route/RouteUsages'
 import { DuplicateRouteModal } from '../../components/route/DuplicateRouteModal'
 import { RouteRetouchButton } from '../../components/routeRetouch/RouteRetouchButton'
@@ -175,6 +176,9 @@ export function RouteDetailPage() {
     )
   }
 
+  // The files « GPS » offers, with the services (docs/LEDGER_*.md WEB-165)
+  const hasFiles = !!(route.media.assets.gpx || route.media.assets.fit)
+
   return (
     <Box maw={1280} mx="auto" px="md" py="xl">
       {/* Way back to the team: this page is not mounted inside TeamLayout */}
@@ -191,6 +195,27 @@ export function RouteDetailPage() {
             <MediaDisplay media={route.media} />
           </Stack>
           <Group mt={{ base: 'md', sm: 0 }} gap="sm">
+            {/* « GPS » first: the action every reader takes (docs/LEDGER_*.md WEB-203, WEB-165) */}
+            {hasFiles && (
+              <GpsMenuButton
+                teamSlug={team.slug}
+                routeSlug={route.slug}
+                route={route}
+                statuses={route.gpsSyncStatuses}
+                size="sm"
+              />
+            )}
+            {/* A reader who cannot edit takes a copy to the GPX tools instead (ledger WEB-169) */}
+            {isAuthenticated && !canEdit && !route.deleted && route.media.assets.gpx && (
+              <Button
+                variant="default"
+                leftSection={<IconCopy size={16} />}
+                onClick={handleEditCopy}
+                loading={createPreviewMutation.isPending}
+              >
+                {t('routes.detail.editCopy')}
+              </Button>
+            )}
             {(canEdit || canDelete) && (
               <>
                 {canEdit && (
@@ -210,6 +235,9 @@ export function RouteDetailPage() {
                   >
                     {t('actions.duplicate')}
                   </Button>
+                )}
+                {canEdit && !route.deleted && (
+                  <RouteRetouchButton offer={retouchOffer} onChoose={setRetouchMode} />
                 )}
                 {canDelete && route.deleted && (
                   <Button
@@ -233,7 +261,8 @@ export function RouteDetailPage() {
                 )}
               </>
             )}
-            {!route.deleted && (
+            {/* Offered to a reader who cannot edit too: the retouch opens as a new route */}
+            {!canEdit && !route.deleted && (
               <RouteRetouchButton offer={retouchOffer} onChoose={setRetouchMode} />
             )}
             <ShareButton title={route.name} />
@@ -293,24 +322,7 @@ export function RouteDetailPage() {
       <Box>
         <RouteDetailView
           route={route}
-          teamSlug={teamSlug}
           fullscreenPath={(colorBy) => withMapColor(paths.routeMap(team.slug, route.slug), colorBy)}
-          extraActions={
-            isAuthenticated &&
-            !canEdit &&
-            !route.deleted &&
-            route.media.assets.gpx && (
-              <Button
-                variant="default"
-                size="sm"
-                leftSection={<IconCopy size={16} />}
-                onClick={handleEditCopy}
-                loading={createPreviewMutation.isPending}
-              >
-                {t('routes.detail.editCopy')}
-              </Button>
-            )
-          }
         />
       </Box>
 

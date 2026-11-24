@@ -13,7 +13,7 @@ import { EmptyState } from '@/components/common/EmptyState'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { ShareButton } from '@/components/common/ShareButton'
 import { ChildDetailShell } from '@/components/publication/ChildDetailShell'
-import { RouteCard } from '@/components/publication/RouteCard'
+import { GpsMenuButton } from '@/components/route/GpsMenuButton'
 import { PlacesLine } from '@/components/publication/PlacesLine'
 import { CHILD_WEATHER_ANCHOR, useWeatherFocus } from '@/components/publication/useWeatherFocus'
 import { GroupJoinActions } from '@/components/ride/group/GroupJoinActions'
@@ -195,6 +195,16 @@ export function RideGroupPage() {
             membership={membership}
             canSwitch={canSwitchTo(ride, group)}
           />
+          {/* « GPS » after joining, before editing (docs/LEDGER_*.md WEB-203, WEB-165) */}
+          {routeSlug && (
+            <GpsMenuButton
+              teamSlug={team.slug}
+              routeSlug={routeSlug}
+              route={route}
+              statuses={group.gpsSyncStatuses}
+              size="sm"
+            />
+          )}
           {canEdit && (
             <Button
               component={PrefetchLink}
@@ -296,17 +306,6 @@ export function RideGroupPage() {
               />
             </Box>
           )}
-
-          {/* What to do with the route, beside the map rather than under it: the map column fills
-              the visible height (docs/LEDGER_*.md WEB-134) */}
-          {routeSlug && (
-            <RouteCard
-              title={route?.name ?? t('rides.group.routeTitle')}
-              teamSlug={team.slug}
-              routeSlug={routeSlug}
-              route={route}
-            />
-          )}
         </>
       }
       map={
@@ -324,7 +323,6 @@ export function RideGroupPage() {
             fullscreenPath={(colorBy) =>
               withMapColor(paths.rideGroupMap(team.slug, ride.slug, group.id), colorBy)
             }
-            withActions={false}
             heightVariant="sticky"
           />
         ) : null

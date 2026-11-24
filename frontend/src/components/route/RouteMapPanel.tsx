@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Box, Paper, Skeleton, Stack, Text, Title } from '@mantine/core'
+import { Box, Skeleton, Stack, Text } from '@mantine/core'
 import {
   ElevationState,
   type RouteDetailDto,
@@ -8,7 +8,6 @@ import {
   type WeatherLegDto,
 } from '@/api/dto'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
-import { RideGroupRouteActions } from '@/components/ride/RideGroupRouteActions'
 import { ColorModeControls } from '@/components/route/ColorModeControls'
 import { RouteWaypointList } from '@/components/route/RouteWaypointList'
 import type { WindLegendSubject } from '@/components/weather/WindMapLegend'
@@ -31,8 +30,8 @@ const RouteMapView = lazy(() =>
 
 /**
  * The single route of a ride group or a trip stage (docs/LEDGER_*.md WEB-155): the map with its
- * profile and a way to full screen, then — unless `withActions` is off — what to do with it (view,
- * GPX, FIT, send to a device). While the route's elevation is still being refined, says so.
+ * profile and a way to full screen; what to do with it (« GPS ») is the page's header
+ * (docs/LEDGER_*.md WEB-203). While the route's elevation is still being refined, says so.
  *
  * With a `leg` that has a forecast, a « Météo » mode colours the line by the wind (ledger WEB-115,
  * plan 2026-10-24-weather-on-map.md): exclusive of the grade and the surface, never the default,
@@ -52,7 +51,6 @@ export function RouteMapPanel({
   selectedCheckpoint,
   onSelectCheckpoint,
   fullscreenPath,
-  withActions = true,
   heightVariant,
   subject = 'group',
 }: {
@@ -78,7 +76,6 @@ export function RouteMapPanel({
   onSelectCheckpoint?: (index: number | null) => void
   /** The fullscreen map, opened in the mode the line is in; the route's own map without it. */
   fullscreenPath?: (colorBy: RouteMapColorBy) => string
-  withActions?: boolean
   /** The map's height, `RouteMapView`'s (`full` when left out); `sticky` on a solo ride's page. */
   heightVariant?: MapHeightVariant
   /** Whose speed the wind legend says the passages assume by default: a group's or a stage's. */
@@ -142,21 +139,6 @@ export function RouteMapPanel({
           <Skeleton height={skeletonHeight} radius="md" />
         )}
       </ErrorBoundary>
-      {withActions && (
-        <Paper withBorder p="md">
-          <Stack gap="xs">
-            <Title order={3} size="h5">
-              {t('rides.group.routeTitle')}
-            </Title>
-            <RideGroupRouteActions
-              teamSlug={teamSlug}
-              routeSlug={routeSlug}
-              route={route}
-              size="sm"
-            />
-          </Stack>
-        </Paper>
-      )}
     </Stack>
   )
 }

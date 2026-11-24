@@ -14,6 +14,11 @@ import { Status, WeatherStatus } from '@/api/dto'
 import { okWeather, plain, weatherLeg } from '@/test/weatherFixtures'
 import { pathVariants, paths } from '@/config/paths'
 
+vi.mock('@/components/route/GpsMenuButton', () => ({
+  GpsMenuButton: ({ routeSlug }: { routeSlug: string }) => (
+    <div data-testid="gps-button" data-route={routeSlug} />
+  ),
+}))
 vi.mock('react-i18next', async (importOriginal) => {
   const { frenchT } = await import('@/test/frenchT')
   return {
@@ -110,9 +115,6 @@ vi.mock('@/components/weather/WeatherCheckpointMarkers', () => ({
       </button>
     </>
   ),
-}))
-vi.mock('@/components/ride/RideGroupRouteActions', () => ({
-  RideGroupRouteActions: () => <div data-testid="route-actions" />,
 }))
 
 import { RideGroupPage } from './RideGroupPage'
@@ -296,6 +298,16 @@ describe('RideGroupPage (WEB-77)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Rejoindre' }))
     expect(state.join).toHaveBeenCalledWith('g1')
     expect(screen.queryByRole('button', { name: 'Quitter' })).toBeNull()
+  })
+
+  // docs/LEDGER_*.md WEB-203: « GPS » in the header, right after « Rejoindre », no route card
+  it('puts « GPS » in the header after « Rejoindre », the group’s route, else the ride’s', () => {
+    renderPage()
+    const gps = screen.getByTestId('gps-button')
+    expect(gps.getAttribute('data-route')).toBe('boucle')
+    const join = screen.getByRole('button', { name: 'Rejoindre' })
+    expect(join.compareDocumentPosition(gps) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByText('Voir le parcours')).toBeNull()
   })
 
   // R6 (docs/LEDGER_*.md WEB-167): a red link under « Personnes inscrites », not a button.

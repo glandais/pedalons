@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next'
 import { IconMap, IconArrowUp, IconArrowDown } from '@tabler/icons-react'
-import { GpsMenuButton } from '@/components/route/GpsMenuButton'
 import { Box, Group, Stack, Text, Title, Badge } from '@mantine/core'
 import {
   ElevationState,
@@ -21,10 +20,6 @@ import { TagList } from '@/components/tag'
 
 interface RouteDetailViewProps {
   route: RouteDetailDto
-  /** Team slug for GPS upload functionality */
-  teamSlug?: string
-  /** Show download buttons (default: true) */
-  showDownload?: boolean
   /** Show route info section with visibility and surface type (default: true) */
   showInfo?: boolean
   /**
@@ -43,28 +38,20 @@ interface RouteDetailViewProps {
   timezone?: string
   /** What the page sets just above the climbs: a stage's forecast, under its map (WEB-143). */
   beforeClimbs?: React.ReactNode
-  /**
-   * Buttons the page adds after the downloads, in the same row: the route sheet's « Modifier une
-   * copie » (ledger WEB-169).
-   */
-  extraActions?: React.ReactNode
 }
 
 /**
- * Detailed route view component showing map, stats, info, and climbs.
- * Used in RouteDetailPage and StageDetailPage, where a stage's forecast adds the Météo mode.
+ * Detailed route view component showing map, stats, info, and climbs, on RouteDetailPage. The
+ * route's actions, « GPS » first, are the page's header (docs/LEDGER_*.md WEB-203).
  */
 export function RouteDetailView({
   route,
-  teamSlug,
-  showDownload = true,
   showInfo = true,
   fullscreenPath,
   windLeg,
   windAttribution,
   timezone,
   beforeClimbs,
-  extraActions,
 }: RouteDetailViewProps) {
   const { t } = useTranslation()
   const { distance, elevation, formatDistance, config, grade } = useUnits()
@@ -75,8 +62,6 @@ export function RouteDetailView({
     timezone,
   })
   const { selection, setSelection, mapBoxRef, selectFromList } = useWaypointSelection()
-
-  const hasDownloads = showDownload && !!(route.media.assets.gpx || route.media.assets.fit)
 
   return (
     <Stack>
@@ -107,24 +92,6 @@ export function RouteDetailView({
         attribution={windAttribution}
         subject="stage"
       />
-
-      {/* The route's actions: « GPS », then the page's own (edit, delete…) */}
-      {(hasDownloads || extraActions) && (
-        <Group gap="sm" wrap="wrap" data-testid="route-downloads">
-          {/* One « GPS » button for files and devices, as on every card (KIT §8,
-              docs/LEDGER_*.md WEB-165). */}
-          {hasDownloads && teamSlug && (
-            <GpsMenuButton
-              teamSlug={teamSlug}
-              routeSlug={route.slug}
-              route={route}
-              statuses={route.gpsSyncStatuses}
-              size="sm"
-            />
-          )}
-          {extraActions}
-        </Group>
-      )}
 
       {/* Stats - compact inline display */}
       <Group gap="xl" wrap="wrap">

@@ -58,8 +58,6 @@ function renderCard(
             showStartTime={showStartTime}
             teamSlug="np"
             rideSlug="sortie"
-            rideRouteSlug="boucle"
-            routesBySlug={new Map()}
             weatherLeg={weather}
             trackColor={trackColor}
             action="join"
@@ -166,9 +164,6 @@ describe('RideGroupCard (WEB-77)', () => {
       expect(screen.queryByRole('button', { name: 'Quitter' })).toBeNull()
       const link = screen.getByRole('button', { name: 'Quitter le groupe' })
       expect(link.closest('[data-testid="leave-group"]') ?? link).toBeTruthy()
-      // After the people and the « GPS » button: the card's last control.
-      const gps = screen.getByTestId('gps-button')
-      expect(gps.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
       expect(screen.getByText("J'y vais")).toBeTruthy()
       fireEvent.click(link)
       expect(onLeave).toHaveBeenCalledTimes(1)
@@ -195,16 +190,9 @@ describe('RideGroupCard (WEB-77)', () => {
     })
 
     // R7: one « GPS » button, on the reader's own group only.
-    it('offers « GPS » on my group only, for its route', () => {
+    // docs/LEDGER_*.md WEB-203: the reader's route leaves from the ride's header, not the card
+    it('offers no « GPS » on the card, even on my group', () => {
       at({ registered: true, routeSlug: 'boucle-b' }, { action: 'leave', onLeave: vi.fn() })
-      expect(screen.getByTestId('gps-button').getAttribute('data-route')).toBe('boucle-b')
-      expect(screen.queryByText('GPX')).toBeNull()
-      expect(screen.queryByText('FIT')).toBeNull()
-      cleanup()
-      at({}, { action: 'join' })
-      expect(screen.queryByTestId('gps-button')).toBeNull()
-      cleanup()
-      at({}, { action: 'registeredElsewhere', canSwitch: true })
       expect(screen.queryByTestId('gps-button')).toBeNull()
     })
 

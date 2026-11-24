@@ -9,6 +9,11 @@ import { weatherLeg } from '@/test/weatherFixtures'
 import { pathVariants, paths } from '@/config/paths'
 import type { ColorByOption } from '@/components/route/ColorByControl'
 
+vi.mock('@/components/route/GpsMenuButton', () => ({
+  GpsMenuButton: ({ routeSlug }: { routeSlug: string }) => (
+    <div data-testid="gps-button" data-route={routeSlug} />
+  ),
+}))
 vi.mock('react-i18next', async (importOriginal) => {
   const { frenchT } = await import('@/test/frenchT')
   return {
@@ -56,9 +61,6 @@ vi.mock('@/components/weather/RouteWeatherSection', () => ({
     state.weatherSection = props
     return <div data-testid="route-weather" />
   },
-}))
-vi.mock('@/components/ride/RideGroupRouteActions', () => ({
-  RideGroupRouteActions: () => <div data-testid="route-actions" />,
 }))
 vi.mock('@/components/comment', () => ({
   CommentSection: () => <div data-testid="comments" />,
@@ -164,13 +166,14 @@ describe('StageDetailPage — the page of a child, as a group (WEB-155)', () => 
     expect(screen.queryByRole('tab')).toBeNull()
   })
 
-  it('gives its figures, its untitled instructions and its route card, no people', () => {
+  it('gives its figures, its untitled instructions and « GPS » in its header, no people', () => {
     renderPage()
     expect(screen.getByTestId('stage-stats')).toBeTruthy()
     expect(screen.getByTestId('stage-instructions')).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Consignes' })).toBeNull()
-    expect(screen.getByRole('heading', { level: 3, name: 'Aller' })).toBeTruthy()
-    expect(screen.getByTestId('route-actions')).toBeTruthy()
+    // docs/LEDGER_*.md WEB-203: no route card, the route leaves from the header
+    expect(screen.queryByRole('heading', { level: 3, name: 'Aller' })).toBeNull()
+    expect(screen.getByTestId('gps-button').getAttribute('data-route')).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Personnes inscrites' })).toBeNull()
   })
 

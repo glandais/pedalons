@@ -3,17 +3,15 @@ import { useTranslation } from 'react-i18next'
 import { groupTitle } from '@/utils/groupTitle'
 import { IconShieldCheck } from '@tabler/icons-react'
 import { Badge, Box, Button, Group, Text } from '@mantine/core'
-import type { RideGroupDto, RouteDetailDto, WeatherLegDto } from '@/api/dto'
+import type { RideGroupDto, WeatherLegDto } from '@/api/dto'
 import { DepartureLine } from '@/components/common/DepartureLine'
 import { UserAvatar } from '@/components/common/UserAvatar'
 import { AboveLink, ChildCard, ChildFacts } from '@/components/publication/ChildCard'
-import { GpsMenuButton } from '@/components/route/GpsMenuButton'
 import { GroupPeopleRow } from '@/components/ride/group/GroupPeopleRow'
 import { LeaveGroupLink } from '@/components/ride/group/LeaveGroupLink'
 import { GroupWeatherLine } from '@/components/weather'
 import { paths } from '@/config/paths'
 import { useRendezvousFormat } from '@/hooks/useRendezvousFormat'
-import { useUnits } from '@/hooks/useUnits'
 import type { GroupAction } from '@/pages/ride/rideGroupData'
 import { ParticipantListModal } from './ParticipantListModal'
 
@@ -27,13 +25,6 @@ interface RideGroupCardProps {
   /** The team's name: the « Signaler / Bloquer » menu of the people in « Voir tout » (R13). */
   teamName?: string
   rideSlug: string
-  rideRouteSlug?: string
-  /**
-   * Every route referenced by the ride, keyed by slug — the parent (`RideDetailPage`) fetches
-   * them all in one `getRoutesBulk` call and shares the map across every group card, rather
-   * than each card issuing its own `getRoute`.
-   */
-  routesBySlug: Map<string, RouteDetailDto>
   /**
    * The colour of the group's trace on the ride's map (`rideMapRoutes`), recalled by a bar in
    * front of its name — the same for every group on that route; absent when it rides no route.
@@ -49,7 +40,7 @@ interface RideGroupCardProps {
   /**
    * What the card offers, `groupAction(ride, group)` (docs/LEDGER_*.md WEB-167, R6): « Rejoindre »
    * or a disabled « Complet » in the corner; on the reader's own group, « Quitter le groupe » at the
-   * foot and the « GPS » button. Nothing on a cancelled or finished ride.
+   * foot; its « GPS » is the page's header (docs/LEDGER_*.md WEB-203). Nothing on a cancelled or finished ride.
    */
   action: GroupAction
   /**
@@ -80,8 +71,6 @@ export function RideGroupCard({
   teamSlug,
   teamName,
   rideSlug,
-  rideRouteSlug,
-  routesBySlug,
   trackColor,
   weatherLeg,
   showStartTime,
@@ -97,20 +86,14 @@ export function RideGroupCard({
   error,
 }: RideGroupCardProps) {
   const { t } = useTranslation()
-  const { distance } = useUnits()
   const [showParticipants, setShowParticipants] = useState(false)
   const rendezvous = useRendezvousFormat(rideTimezone)
   // « Groupe B », « Les Rapides » (KIT §9): the card's title, its switch button and its menus.
   const title = groupTitle(group.name, t)
   // `registered` is computed server-side (contract 1.3.0) — never recompute it here.
   const isJoined = group.registered
-  // The reader rides here, the ride neither cancelled nor over: leave, and take the route along.
+  // The reader rides here, the ride neither cancelled nor over: leave (the route leaves from the header).
   const isMine = action === 'leave'
-
-  // The group's route, else the ride's. Distance and climb come from the group itself; the route
-  // only gives the GPX/FIT links, fetched once for every group by the parent (`routesBySlug`).
-  const effectiveRouteSlug = group.routeSlug || rideRouteSlug
-  const route = effectiveRouteSlug ? routesBySlug.get(effectiveRouteSlug) : undefined
 
   // The one filled control of the card, in its corner (R6): « Rejoindre », or « Complet » disabled
   // in its place — to a reader registered in another group too. Never « Quitter » here.
@@ -184,22 +167,6 @@ export function RideGroupCard({
       }
       weather={<GroupWeatherLine leg={weatherLeg} timezone={rideTimezone} />}
       footer={footer}
-      // « GPS » on the reader's own group only (R7): the other groups' routes leave from their
-      // pages, and the route's.
-      routeActions={
-        isMine &&
-        effectiveRouteSlug && (
-          <GpsMenuButton
-            teamSlug={teamSlug}
-            routeSlug={effectiveRouteSlug}
-            route={route}
-            statuses={group.gpsSyncStatuses}
-            subtitle={
-              group.distance !== undefined ? `${title} · ${distance(group.distance)}` : title
-            }
-          />
-        )
-      }
     >
       {/* The group's own departure (docs/BRANDING.md §7.8, ledger BRAND-8): its time in 700 and the
           day when it is not the ride's — never a dimmed stat. */}

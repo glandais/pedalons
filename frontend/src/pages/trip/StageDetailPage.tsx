@@ -18,7 +18,7 @@ import { AccessAlerts } from '@/components/publication/AccessAlerts'
 import { ChildDetailShell } from '@/components/publication/ChildDetailShell'
 import { InstructionsBlock } from '@/components/publication/InstructionsBlock'
 import { PlacesLine } from '@/components/publication/PlacesLine'
-import { RouteCard } from '@/components/publication/RouteCard'
+import { GpsMenuButton } from '@/components/route/GpsMenuButton'
 import { StatsCard } from '@/components/publication/StatsCard'
 import { CHILD_WEATHER_ANCHOR, useWeatherFocus } from '@/components/publication/useWeatherFocus'
 import { RouteMapPanel } from '@/components/route/RouteMapPanel'
@@ -126,7 +126,6 @@ export function StageDetailPage() {
   const stageIndex = stages.findIndex((s) => s.id === stage.id)
   // The stage's Météo mode on its map, and on its fullscreen map (WEB-118)
   const windLeg = stageWindLeg(trip, weather.data, stage.id)
-  const routeName = route?.name ?? stage.route?.name
 
   return (
     <ChildDetailShell
@@ -156,15 +155,23 @@ export function StageDetailPage() {
         </>
       }
       actions={
-        canEdit && (
-          <Button
-            component={PrefetchLink}
-            to={paths.tripEdit(team.slug, trip.slug)}
-            variant="outline"
-            leftSection={<IconPencil size={16} />}
-          >
-            {t('actions.edit')}
-          </Button>
+        (routeSlug || canEdit) && (
+          <>
+            {/* « GPS » first: one joins the trip, not the stage (docs/LEDGER_*.md WEB-203) */}
+            {routeSlug && (
+              <GpsMenuButton teamSlug={team.slug} routeSlug={routeSlug} route={route} size="sm" />
+            )}
+            {canEdit && (
+              <Button
+                component={PrefetchLink}
+                to={paths.tripEdit(team.slug, trip.slug)}
+                variant="outline"
+                leftSection={<IconPencil size={16} />}
+              >
+                {t('actions.edit')}
+              </Button>
+            )}
+          </>
         )
       }
       departure={
@@ -193,9 +200,6 @@ export function StageDetailPage() {
             testId="stage-stats"
           />
           <InstructionsBlock media={stage.media} testId="stage-instructions" />
-          {routeSlug && routeName && (
-            <RouteCard title={routeName} teamSlug={team.slug} routeSlug={routeSlug} route={route} />
-          )}
         </>
       }
       map={
@@ -212,7 +216,6 @@ export function StageDetailPage() {
             fullscreenPath={(colorBy) =>
               withMapColor(paths.stageMap(team.slug, trip.slug, stage.slug), colorBy)
             }
-            withActions={false}
             heightVariant="sticky"
             subject="stage"
           />
