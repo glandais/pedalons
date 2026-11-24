@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **616 entrées livrées**, et des 17 entrées encore ouvertes dont une part l'est.
+Index des **617 entrées livrées**, et des 17 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -156,6 +156,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## WEB — Site web
 
+- [x] [`WEB-204`](ledger/WEB/WEB-204.md) En-têtes de pages : cinq libellés et boutons corrigés après audit — 2026-11-25
 - [x] [`WEB-203`](ledger/WEB/WEB-203.md) « GPS » dans la barre d'actions des pages parcours, sortie, groupe et étape — en partie, le reste est ouvert
 - [x] [`WEB-202`](ledger/WEB/WEB-202.md) Planificateur : refonte du volet de réglages du tracé (pratique, calcul, circulation, côtes, recalcul) — en partie, le reste est ouvert
 - [x] [`WEB-201`](ledger/WEB/WEB-201.md) Retoucher un parcours sur le site : ajuster la distance, déplacer l'arrivée — en partie, le reste est ouvert

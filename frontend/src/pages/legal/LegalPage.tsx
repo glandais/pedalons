@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Container, Title, Stack } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
 import { MarkdownDisplay } from '@/components/common/MarkdownDisplay'
+import { stripLeadingTitle } from './legalMarkdown'
 
 import privacyFr from '@/assets/legal/privacy-policy.fr.md?raw'
 import privacyEn from '@/assets/legal/privacy-policy.en.md?raw'
@@ -25,7 +26,8 @@ interface LegalPageProps {
 export function LegalPage({ type, beforeContent }: LegalPageProps) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language.startsWith('fr') ? 'fr' : 'en'
-  const markdown = content[type][lang]
+  // The Title below is the page's h1; the Markdown's own `# …` (kept for the mobile app) would repeat it.
+  const markdown = stripLeadingTitle(content[type][lang])
   const titleKey = `legal.${type}.title` as const
 
   return (

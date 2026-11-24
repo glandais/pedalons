@@ -663,12 +663,12 @@ test.describe('restoring', () => {
       await expectStored('PUBLISHED')
     })
 
-    await test.step('« Annuler » marks it cancelled; « Réactiver » publishes it again', async () => {
-      // The menu item says « Annuler »; its dialog and confirmation, « Annuler la publication ».
+    await test.step('« Annuler la publication » marks it cancelled; « Réactiver » publishes it again', async () => {
+      // The menu item, its dialog and its confirmation all say « Annuler la publication ».
       await (
         await openActionsMenu(page)
       )
-        .getByRole('menuitem', { name: 'Annuler', exact: true })
+        .getByRole('menuitem', { name: 'Annuler la publication', exact: true })
         .click()
       const cancel = page.getByRole('dialog', { name: 'Annuler la publication' })
       await expect(cancel).toContainText('Voulez-vous annuler cette publication ?')

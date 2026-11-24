@@ -17,6 +17,7 @@ import {
   Title,
 } from '@mantine/core'
 import { useAuth } from '@/hooks/useAuth'
+import { useAppName } from '@/hooks/useAppName'
 import { useOauthAuthorize } from '@/api/endpoints/oauth/oauth'
 import { deniedRedirect, parseAuthorizeParams } from '@/lib/oauthAuthorize'
 
@@ -32,6 +33,7 @@ export function OAuthAuthorizePage() {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
+  const appName = useAppName()
   const request = useMemo(() => parseAuthorizeParams(searchParams), [searchParams])
   const [leaving, setLeaving] = useState(false)
 
@@ -110,7 +112,7 @@ export function OAuthAuthorizePage() {
             </Code>
           </Stack>
           <Alert color="orange" variant="light" icon={<IconAlertTriangle size={16} />}>
-            <Text size="sm">{t('oauth.confirm.warning')}</Text>
+            <Text size="sm">{t('oauth.confirm.warning', { appName })}</Text>
           </Alert>
           <Group grow w="100%">
             <Button

@@ -234,7 +234,7 @@ export function PostDetailPage() {
                             {t('actions.unpublish')}
                           </Menu.Item>
                           <Menu.Item onClick={() => setShowCancelConfirm(true)} color="warning">
-                            {t('actions.cancelAction')}
+                            {t('posts.detail.actions.cancel')}
                           </Menu.Item>
                         </>
                       )}

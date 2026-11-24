@@ -842,11 +842,16 @@ Une personne non membre voit le compte, jamais les noms.
 - **Une erreur s'affiche dans la carte concernée**, pas en bandeau de section.
 - **Un seul bouton plein par carte** : c'est l'appel à l'action du parcours membre.
 
-**Export du parcours** : **un seul bouton « GPS »** (contour, icône d'appareil), qui ouvre le choix
+**Export du parcours** : **un seul bouton « GPS »** (icône d'appareil), qui ouvre le choix
 « Vers un appareil » / « Fichier GPX » / « Fichier FIT » — plus de boutons `GPX`, `FIT` ou
-« Envoyer vers l'appareil » côte à côte sur une carte. Il est **sur la carte de son groupe**, sur
-« Ma prochaine sortie » et sur les étapes d'un voyage auquel la personne qui lit participe ; nulle
-part ailleurs sur une carte. **Il reste visible jusqu'à la fin de la sortie.**
+« Envoyer vers l'appareil » côte à côte. **Sur le site**, c'est un bouton neutre
+(`variant="default"`) et il n'y en a **qu'un par page** : sur une sortie, **dans l'en-tête de la
+page**, en tête des actions, pour le groupe de la personne qui lit (rien pour qui n'est inscrit
+dans aucun groupe) ; sur les pages d'un groupe et d'une étape, dans la barre d'actions, avant
+« Modifier » ; plus sur la carte d'un groupe (ledger `WEB-203`). **Dans l'application**, il est en
+contour, sur la carte de son groupe. Sur les deux supports, il reste sur « Ma prochaine sortie » et
+sur les étapes d'un voyage auquel la personne qui lit participe ; nulle part ailleurs sur une carte.
+**Il reste visible jusqu'à la fin de la sortie.**
 
 **« Ma prochaine sortie »** (accueil) : mêmes règles. Compte, grappe et barre de places de son
 groupe (le site garde le groupe devant le compte : « B · 11/12 personnes ») ; « GPS » ;

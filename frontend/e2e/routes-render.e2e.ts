@@ -212,19 +212,20 @@ const screens: Record<string, Screen> = {
   deviceHammerhead: { roles: SIGNED_IN, sees: heading(DEVICE_PAGE.hammerhead) },
   apps: { roles: EVERYONE, sees: heading('Applications') },
   features: { roles: EVERYONE, sees: heading("Tout ce qu'il faut pour faire rouler une équipe") },
-  // The legal pages repeat their title in their own markdown: two level-1 headings.
+  // The legal markdown opens on the same `# Title` as the page: the page drops it on display
+  // (stripLeadingTitle), so one level-1 heading only.
   privacy: {
     roles: EVERYONE,
     sees: (main) =>
       expect(
         main.getByRole('heading', { level: 1, name: 'Politique de confidentialité' })
-      ).toHaveCount(2),
+      ).toHaveCount(1),
   },
   terms: {
     roles: EVERYONE,
     sees: (main) =>
       expect(main.getByRole('heading', { level: 1, name: "Conditions d'utilisation" })).toHaveCount(
-        2
+        1
       ),
   },
   support: { roles: EVERYONE, sees: heading('Aide et contact') },

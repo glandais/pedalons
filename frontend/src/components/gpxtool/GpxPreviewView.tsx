@@ -292,7 +292,7 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
 
         {preview.owned && (
           <Button
-            variant="default"
+            variant="outline"
             size="sm"
             color="danger"
             leftSection={<IconTrash size={16} />}

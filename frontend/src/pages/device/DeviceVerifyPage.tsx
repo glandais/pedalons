@@ -377,7 +377,6 @@ export function DeviceVerifyPage() {
           <Group grow w="100%">
             <Button
               variant="default"
-              color="red"
               leftSection={<IconX size={16} />}
               loading={submitting === 'deny'}
               disabled={submitting !== null}
