@@ -547,6 +547,9 @@ class PdlMapController extends ChangeNotifier {
       _selectedId = tracks.first.id;
     }
     if (_style != null) await _applyAll();
+    // Même garde qu'[attachStyle] : l'écran a pu se fermer pendant que les
+    // couches se posaient (signaler un parcours puis revenir en arrière).
+    if (_disposed) return;
     notifyListeners();
   }
 
@@ -559,6 +562,7 @@ class PdlMapController extends ChangeNotifier {
     if (_hillshade == hillshade) return;
     _hillshade = hillshade;
     if (_style != null) await _applyAll();
+    if (_disposed) return;
     notifyListeners();
   }
 

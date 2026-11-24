@@ -705,6 +705,18 @@ void main() {
       },
     );
 
+    test('un contenu encore en pose quand l’écran se ferme ne prévient plus personne', () async {
+      final PdlMapController controller = PdlMapController();
+      final _StrictStyle style = _StrictStyle();
+      await controller.attachStyle(style);
+      final Future<void> content = controller.setContent(
+        tracks: <PdlMapTrack>[_track('a')],
+      );
+      controller.dispose();
+      // Sans la garde, notifyListeners lèverait « used after being disposed ».
+      await content;
+    });
+
     test('sans carte attachée, waypointKeyAt rend null', () async {
       final PdlMapController controller = PdlMapController();
       addTearDown(controller.dispose);
