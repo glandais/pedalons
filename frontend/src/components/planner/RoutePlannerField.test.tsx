@@ -736,6 +736,15 @@ describe('RoutePlannerField', () => {
       expect(importGpxMock.mock.calls[0][2]).toEqual({ keepFile: false, generated: true })
     })
 
+    it('replaces the route without asking when the request says so (a retouch in its editor)', async () => {
+      importGpxMock.mockResolvedValue(info())
+      plannerState.route = { points: [{}, {}], dist: 1, ascend: 0 } as never
+      renderField({ importRequest: { ...request(1), replace: true } })
+      await waitFor(() => expect(importGpxMock).toHaveBeenCalledTimes(1))
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(importGpxMock.mock.calls[0][1]).toBe('replace')
+    })
+
     it('imports nothing when the question is cancelled', async () => {
       plannerState.route = { points: [{}, {}], dist: 1, ascend: 0 } as never
       renderField({ importRequest: request(1) })

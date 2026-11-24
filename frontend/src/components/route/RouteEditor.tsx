@@ -97,7 +97,9 @@ interface RouteEditorProps {
   suggestedSurfaceType?: SurfaceType | null
   /**
    * A route proposed by the team route generator (ledger WEB-179), handed over by its page: the
-   * planner opens on it (when the team's planner is usable) as an import that keeps no file.
+   * planner opens on it (when the team's planner is usable) as an import that keeps no file. In
+   * edit mode it replaces the saved track without asking: a retouch chosen with « Modifier »
+   * (ledger `WEB-203`), the form's name stays.
    */
   initialGenerated?: GeneratedHandoff
 }
@@ -157,6 +159,7 @@ export function RouteEditor({
           polyline: initialGenerated.polyline,
           name:
             initialGenerated.name ?? generatedRouteName(distance(initialGenerated.distanceM), t),
+          replace: !isCreateMode,
         }
       : undefined
   )

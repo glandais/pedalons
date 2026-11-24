@@ -2266,6 +2266,8 @@
   "routeRetouch.card.truncated": "Le parcours s'arrête à la nouvelle arrivée",
   "routeRetouch.card.unmatched": "Une partie gardée n'a pas pu être vérifiée sur la carte : le tronçon neuf peut la reprendre.",
   "routeRetouch.current": "Actuellement {{distance}}",
+  "routeRetouch.edit": "Modifier",
+  "routeRetouch.editHelp": "Rien n'est enregistré : « Modifier » remplace la trace de ce parcours dans son éditeur, « Ouvrir dans le planificateur » en fait un nouveau parcours.",
   "routeRetouch.errors.changeTooLarge": "L'écart est trop grand pour une retouche (au plus {{percent}}). Pour une distance aussi différente, le générateur propose un nouveau parcours.",
   "routeRetouch.errors.changeTooSmall": "L'écart est trop petit : visez au moins {{min}} de plus ou de moins que {{current}}.",
   "routeRetouch.errors.endTooFar": "Aucune voie praticable près de cette arrivée pour ce type de parcours. Posez-la plus près d'une route ou d'un chemin.",

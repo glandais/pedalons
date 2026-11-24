@@ -118,11 +118,12 @@ const response = (over: Partial<RouteRetouchResponse> = {}): RouteRetouchRespons
 })
 
 const onOpen = vi.fn()
+const onEdit = vi.fn()
 const onClose = vi.fn()
 
 function renderModal(
   mode: RetouchMode = 'resize',
-  extra: { plannerQuota?: PlannerQuotaDto; offer?: RouteRetouchOfferDto } = {}
+  extra: { plannerQuota?: PlannerQuotaDto; offer?: RouteRetouchOfferDto; editable?: boolean } = {}
 ) {
   render(
     <QueryClientProvider client={new QueryClient()}>
@@ -137,6 +138,7 @@ function renderModal(
             initialMode={mode}
             plannerQuota={extra.plannerQuota}
             onOpen={onOpen}
+            onEdit={extra.editable ? onEdit : undefined}
           />
         </MemoryRouter>
       </MantineProvider>
@@ -152,6 +154,7 @@ const cards = () => screen.queryAllByTestId('retouched-route-card')
 beforeEach(() => {
   retouchMock.mockReset()
   onOpen.mockReset()
+  onEdit.mockReset()
   retouchMock.mockResolvedValue(response())
 })
 afterEach(cleanup)
@@ -247,6 +250,30 @@ describe('RouteRetouchModal, adjust the distance', () => {
       distanceM: 70_500,
       name: 'Boucle du lac (retouché)',
     })
+  })
+
+  it("hands the chosen proposal to the route's editor with « Modifier », under its own name", async () => {
+    renderModal('resize', { editable: true })
+    type('70')
+    fireEvent.click(submit())
+    await waitFor(() => expect(cards()).toHaveLength(3))
+    fireEvent.click(cards()[1])
+    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+    expect(onEdit).toHaveBeenCalledWith({
+      polyline: '_p~iF~ps|U',
+      type: 'GRAVEL',
+      distanceM: 70_500,
+      name: 'Boucle du lac',
+    })
+    expect(onOpen).not.toHaveBeenCalled()
+  })
+
+  it('offers no « Modifier » to a reader who cannot edit the route', async () => {
+    renderModal()
+    type('70')
+    fireEvent.click(submit())
+    await waitFor(() => expect(cards()).toHaveLength(3))
+    expect(screen.queryByRole('button', { name: 'Modifier' })).toBeNull()
   })
 
   it('disables the opening, and says why, when the planner quota is spent', async () => {

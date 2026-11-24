@@ -2208,6 +2208,8 @@
   "routeRetouch.card.truncated": "The route stops at the new finish",
   "routeRetouch.card.unmatched": "Part of what is kept couldn't be checked on the map: the new section may ride it again.",
   "routeRetouch.current": "Currently {{distance}}",
+  "routeRetouch.edit": "Edit",
+  "routeRetouch.editHelp": "Nothing is saved: “Edit” replaces this route's track in its editor, “Open in the planner” makes it a new route.",
   "routeRetouch.errors.changeTooLarge": "The change is too large for an adjustment (at most {{percent}}). For such a different distance, the generator suggests a new route.",
   "routeRetouch.errors.changeTooSmall": "The change is too small: aim at least {{min}} above or below {{current}}.",
   "routeRetouch.errors.endTooFar": "No suitable road near this finish for this type of route. Place it closer to a road or track.",

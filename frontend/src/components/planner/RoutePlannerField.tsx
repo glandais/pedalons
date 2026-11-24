@@ -103,6 +103,11 @@ export interface PlannerImportRequest {
   polyline: string
   /** Name written in the GPX, the form fills its empty name field with it. */
   name: string
+  /**
+   * Replace the route on screen without asking: the person already chose this track to replace
+   * the saved one (« Modifier » of a retouch, ledger `WEB-203`).
+   */
+  replace?: boolean
 }
 
 /**
@@ -287,7 +292,7 @@ export function RoutePlannerField({
       'parcours-genere.gpx',
       { type: 'application/gpx+xml' }
     )
-    if (route.points.length >= 2) setPendingGenerated(file)
+    if (route.points.length >= 2 && !importRequest.replace) setPendingGenerated(file)
     else void runImport(file, 'replace', GENERATED_IMPORT)
   }, [importRequest, onImportHandled, route.points.length, runImport])
   const openFilePicker = useCallback(() => fileInputRef.current?.click(), [])

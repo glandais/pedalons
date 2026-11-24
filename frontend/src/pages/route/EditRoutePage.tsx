@@ -1,4 +1,4 @@
-import { useParams, useNavigate, Navigate } from 'react-router-dom'
+import { useParams, useNavigate, Navigate, useLocation } from 'react-router-dom'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
@@ -16,12 +16,15 @@ import { suggestSurfaceType } from '@/lib/trackSurface'
 import { useEditRouteFormData } from './routeFormData'
 import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
 import { useRouteUsagesRefusal } from '@/components/visibility/useVisibilityAlignment'
+import { readGeneratedHandoff } from '@/lib/routeGenerator'
 
 export function EditRoutePage() {
   const { teamSlug, routeSlug } = useParams<{ teamSlug: string; routeSlug: string }>()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  // A retouch chosen with « Modifier » on the route's page (ledger WEB-203): it replaces the track
+  const generated = readGeneratedHandoff(useLocation().state)
 
   const {
     team: teamQuery,
@@ -161,6 +164,7 @@ export function EditRoutePage() {
         initialPlannerState={plannerStateQuery.data?.state}
         initialWaypoints={route.waypoints}
         initialDistance={route.distance}
+        initialGenerated={generated}
         suggestedSurfaceType={suggestSurfaceType(route.tracks)}
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.route(teamSlug!, routeSlug!))}

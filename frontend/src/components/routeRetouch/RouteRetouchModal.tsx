@@ -58,6 +58,11 @@ interface RouteRetouchModalProps {
   plannerQuota?: PlannerQuotaDto
   /** « Ouvrir dans le planificateur »: the page navigates to a new route with this hand-off. */
   onOpen: (handoff: GeneratedHandoff) => void
+  /**
+   * « Modifier »: the page opens this route's editor with the proposal in place of its track
+   * (ledger `WEB-203`). Absent for a reader who cannot edit the route: no button.
+   */
+  onEdit?: (handoff: GeneratedHandoff) => void
 }
 
 interface Submitted {
@@ -83,6 +88,7 @@ export function RouteRetouchModal({
   initialMode,
   plannerQuota,
   onOpen,
+  onEdit,
 }: RouteRetouchModalProps) {
   const { t } = useTranslation()
   const { distance, distanceToDisplay, distanceFromDisplay, unitSystem, percent } = useUnits()
@@ -170,6 +176,11 @@ export function RouteRetouchModal({
     onOpen(
       retouchHandoff(chosen, offer.rideType, t('routeRetouch.retouchedName', { name: route.name }))
     )
+  }
+
+  const edit = () => {
+    if (!chosen || !onEdit) return
+    onEdit(retouchHandoff(chosen, offer.rideType, route.name))
   }
 
   const error = retouch.error
@@ -327,12 +338,27 @@ export function RouteRetouchModal({
             >
               {t('routeRetouch.more')}
             </Button>
-            <Button onClick={open} disabled={quotaSpent || retouch.isPlaceholder}>
-              {t('routeRetouch.open')}
-            </Button>
+            <Group gap="xs" wrap="wrap">
+              {onEdit && (
+                <Button
+                  variant="default"
+                  onClick={edit}
+                  disabled={quotaSpent || retouch.isPlaceholder}
+                >
+                  {t('routeRetouch.edit')}
+                </Button>
+              )}
+              <Button onClick={open} disabled={quotaSpent || retouch.isPlaceholder}>
+                {t('routeRetouch.open')}
+              </Button>
+            </Group>
           </Group>
           <Text size="xs" c="dimmed">
-            {quotaSpent ? t('routeGenerator.quotaSpent') : t('routeRetouch.openHelp')}
+            {quotaSpent
+              ? t('routeGenerator.quotaSpent')
+              : onEdit
+                ? t('routeRetouch.editHelp')
+                : t('routeRetouch.openHelp')}
           </Text>
         </>
       ) : retouch.isFetching ? (

@@ -279,6 +279,13 @@ export function RouteDetailPage() {
           initialMode={retouchMode}
           plannerQuota={teamQuery.data?.plannerQuota}
           onOpen={(generated) => navigate(paths.routeNew(team.slug), { state: { generated } })}
+          // The editor's planner only takes a single-track route (EditRoutePage)
+          onEdit={
+            canEdit && route.tracks.length === 1
+              ? (generated) =>
+                  navigate(paths.routeEdit(team.slug, route.slug), { state: { generated } })
+              : undefined
+          }
         />
       )}
 
