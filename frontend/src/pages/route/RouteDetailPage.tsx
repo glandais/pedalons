@@ -20,6 +20,12 @@ import { useRouteDetailData } from './routeDetailData'
 import { RouteDetailView } from '../../components/route/RouteDetailView'
 import { RouteUsages } from '../../components/route/RouteUsages'
 import { DuplicateRouteModal } from '../../components/route/DuplicateRouteModal'
+import { RouteRetouchButton } from '../../components/routeRetouch/RouteRetouchButton'
+import {
+  RouteRetouchModal,
+  type RetouchMode,
+} from '../../components/routeRetouch/RouteRetouchModal'
+import { useRouteRetouchOffer } from '../../components/routeRetouch/useRouteRetouchOffer'
 import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '../../components/common/DetailPageSkeleton'
@@ -42,7 +48,7 @@ export function RouteDetailPage() {
   const currentUserId = useAuthStore(selectUser)?.id
   const { isAuthenticated } = useAuth()
 
-  const { route: routeQuery } = useRouteDetailData(teamSlug, routeSlug)
+  const { route: routeQuery, team: teamQuery } = useRouteDetailData(teamSlug, routeSlug)
   const { data: route, isLoading: routeLoading, error, refetch } = routeQuery
   // The route's embedded team: the page never waits for `GET team`, which a reader of a private
   // team's public route by link does not get (docs/LEDGER_*.md WEB-166).
@@ -54,6 +60,15 @@ export function RouteDetailPage() {
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showDuplicate, setShowDuplicate] = useState(false)
+  const [retouchMode, setRetouchMode] = useState<RetouchMode | null>(null)
+
+  // Whether the route can be retouched by this reader (ledger API-212): asked of a signed-in
+  // reader on a live route, nothing is shown unless the engine can do it
+  const retouchOffer = useRouteRetouchOffer(
+    teamSlug,
+    routeSlug,
+    isAuthenticated && !!route && !route.deleted
+  ).data
 
   useCanonicalPath(team && route ? paths.route(team.slug, route.slug) : undefined)
 
@@ -218,6 +233,9 @@ export function RouteDetailPage() {
                 )}
               </>
             )}
+            {!route.deleted && (
+              <RouteRetouchButton offer={retouchOffer} onChoose={setRetouchMode} />
+            )}
             <ShareButton title={route.name} />
             <ContentActionsMenu
               teamSlug={team.slug}
@@ -248,6 +266,19 @@ export function RouteDetailPage() {
           loading={duplicateRouteMutation.isPending}
           onSubmit={handleDuplicate}
           onClose={() => setShowDuplicate(false)}
+        />
+      )}
+
+      {retouchOffer?.available && retouchMode && (
+        <RouteRetouchModal
+          opened
+          onClose={() => setRetouchMode(null)}
+          teamSlug={team.slug}
+          route={route}
+          offer={retouchOffer}
+          initialMode={retouchMode}
+          plannerQuota={teamQuery.data?.plannerQuota}
+          onOpen={(generated) => navigate(paths.routeNew(team.slug), { state: { generated } })}
         />
       )}
 

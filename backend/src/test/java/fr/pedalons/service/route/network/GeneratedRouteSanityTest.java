@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import fr.pedalons.common.GeoDistance;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.Changed;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.EditedRoute;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GenerateRequest;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GeoPoint;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.Route;
@@ -218,5 +220,180 @@ class GeneratedRouteSanityTest {
     assertEquals(
         GeneratedRouteSanity.Check.SHARES,
         GeneratedRouteSanity.check(loopOf(20_000), negativeTail).failed());
+  }
+
+  // ------------------------------------------------------------------ checkEdit
+
+  private static EditedRoute edited(List<double[]> points, String kind, int from, int to) {
+    return editedWith(points, length(points), kind, from, to, 0.9, 0.5);
+  }
+
+  private static EditedRoute editedWith(
+      List<double[]> points,
+      double distance,
+      String kind,
+      int from,
+      int to,
+      double kept,
+      double team) {
+    double[] lat = new double[points.size()];
+    double[] lon = new double[points.size()];
+    for (int i = 0; i < lat.length; i++) {
+      lat[i] = points.get(i)[0];
+      lon[i] = points.get(i)[1];
+    }
+    return new EditedRoute(
+        kind,
+        null,
+        Polyline6Encoder.encode(lat, lon, 0, lat.length - 1),
+        distance,
+        null,
+        0,
+        kept,
+        null,
+        null,
+        0,
+        new Changed(0, 0, 0, List.of(from, to), 0, 0, team, 0, 0.1, 0));
+  }
+
+  /** The points are [lat, lon]; the context wants [lon, lat]. */
+  private static GeneratedRouteSanity.EditContext context(
+      List<double[]> original, Double target, GeoPoint end) {
+    double[] f = original.getFirst();
+    double[] l = original.getLast();
+    return new GeneratedRouteSanity.EditContext(
+        new double[] {f[1], f[0]}, new double[] {l[1], l[0]}, target, end);
+  }
+
+  private static List<double[]> line(double km, double stepM) {
+    List<double[]> out = new ArrayList<>();
+    for (int i = 0; i * stepM <= km * 1000; i++) {
+      out.add(new double[] {LAT + i * stepM / M_PER_DEG, LON});
+    }
+    return out;
+  }
+
+  @Test
+  void aSaneEditKeepsItsEndsAndIsFramed() {
+    List<double[]> original = line(20, 500);
+    var verdict =
+        GeneratedRouteSanity.checkEdit(
+            context(original, null, null), edited(original, "lengthen", 10, 12));
+    assertTrue(verdict.sane(), String.valueOf(verdict.failed()));
+    assertNotNull(verdict.bounds());
+  }
+
+  @Test
+  void theIndicesMustFrameAStretchOfThePolyline() {
+    List<double[]> original = line(20, 500);
+    var ctx = context(original, null, null);
+    for (int[] bad : new int[][] {{-1, 3}, {5, 4}, {3, original.size()}}) {
+      assertEquals(
+          GeneratedRouteSanity.Check.INDICES,
+          GeneratedRouteSanity.checkEdit(ctx, edited(original, "lengthen", bad[0], bad[1]))
+              .failed(),
+          bad[0] + "," + bad[1]);
+    }
+  }
+
+  @Test
+  void aResizeIsHeldToItsTargetAndTheEngineToItsOwnLength() {
+    List<double[]> original = line(20, 500);
+    double d = length(original);
+    EditedRoute route = edited(original, "shorten", 3, 4);
+    assertTrue(GeneratedRouteSanity.checkEdit(context(original, d * 1.02, null), route).sane());
+    assertEquals(
+        GeneratedRouteSanity.Check.LENGTH,
+        GeneratedRouteSanity.checkEdit(context(original, d * 1.3, null), route).failed());
+    EditedRoute lying = editedWith(original, d * 1.5, "shorten", 3, 4, 0.9, 0.5);
+    assertEquals(
+        GeneratedRouteSanity.Check.LENGTH,
+        GeneratedRouteSanity.checkEdit(context(original, null, null), lying).failed());
+  }
+
+  @Test
+  void theEndsOfAResizeAreTheOriginalOnes() {
+    List<double[]> original = line(20, 500);
+    List<double[]> moved = new ArrayList<>(original);
+    moved.set(moved.size() - 1, new double[] {LAT + 25_000 / M_PER_DEG, LON});
+    assertEquals(
+        GeneratedRouteSanity.Check.ENDS,
+        GeneratedRouteSanity.checkEdit(
+                context(original, null, null), edited(moved, "lengthen", 3, 4))
+            .failed());
+    List<double[]> shifted = new ArrayList<>(original);
+    shifted.set(0, new double[] {LAT - 100 / M_PER_DEG, LON});
+    assertEquals(
+        GeneratedRouteSanity.Check.ENDS,
+        GeneratedRouteSanity.checkEdit(
+                context(original, null, null), edited(shifted, "lengthen", 3, 4))
+            .failed());
+  }
+
+  @Test
+  void aMovedEndLiesWithinTwoKilometresOfTheAskedPoint() {
+    List<double[]> original = line(20, 500);
+    List<double[]> route = new ArrayList<>(original.subList(0, 20));
+    route.add(new double[] {LAT + 12_000 / M_PER_DEG, LON + 0.01});
+    GeoPoint asked = new GeoPoint(LAT + 12_000 / M_PER_DEG, LON + 0.01);
+    assertTrue(
+        GeneratedRouteSanity.checkEdit(
+                context(original, null, asked), edited(route, "move_end", 19, 20))
+            .sane());
+    GeoPoint far = new GeoPoint(LAT + 12_000 / M_PER_DEG, LON + 0.05);
+    assertEquals(
+        GeneratedRouteSanity.Check.ENDS,
+        GeneratedRouteSanity.checkEdit(
+                context(original, null, far), edited(route, "move_end", 19, 20))
+            .failed());
+  }
+
+  @Test
+  void aJumpIsSoughtInTheNewStretchOnly() {
+    // a hole of 15 km in the person's own track
+    List<double[]> hole = line(10, 500);
+    hole.addAll(
+        line(10, 500).stream().map(p -> new double[] {p[0] + 25_000 / M_PER_DEG, p[1]}).toList());
+    var ctx = context(hole, null, null);
+    // the new stretch is at the start: the hole is the kept part, the proposal stands
+    assertTrue(GeneratedRouteSanity.checkEdit(ctx, edited(hole, "lengthen", 2, 3)).sane());
+    // the new stretch contains the hole: refused
+    assertEquals(
+        GeneratedRouteSanity.Check.JUMP,
+        GeneratedRouteSanity.checkEdit(ctx, edited(hole, "lengthen", 3, hole.size() - 3)).failed());
+  }
+
+  @Test
+  void theSharesAndTheKindOfAnEditAreChecked() {
+    List<double[]> original = line(20, 500);
+    var ctx = context(original, null, null);
+    assertEquals(
+        GeneratedRouteSanity.Check.SHARES,
+        GeneratedRouteSanity.checkEdit(
+                ctx, editedWith(original, length(original), "lengthen", 3, 4, 1.4, 0.5))
+            .failed());
+    assertEquals(
+        GeneratedRouteSanity.Check.SHARES,
+        GeneratedRouteSanity.checkEdit(
+                ctx, editedWith(original, length(original), "lengthen", 3, 4, 0.9, -0.1))
+            .failed());
+    assertEquals(
+        GeneratedRouteSanity.Check.SHARES,
+        GeneratedRouteSanity.checkEdit(ctx, edited(original, "teleport", 3, 4)).failed());
+    EditedRoute garbled =
+        new EditedRoute(
+            "lengthen",
+            null,
+            "!!!",
+            1,
+            null,
+            0,
+            0.9,
+            null,
+            null,
+            0,
+            new Changed(0, 0, 0, List.of(1, 2), 0, 0, 0.5, 0, 0.1, 0));
+    assertEquals(
+        GeneratedRouteSanity.Check.DECODE, GeneratedRouteSanity.checkEdit(ctx, garbled).failed());
   }
 }

@@ -42,6 +42,35 @@ public class RouteGeneratorMetrics {
     count("pedalons.route_generator.ascent", "outcome", outcome);
   }
 
+  /**
+   * A retouch of a saved route (docs/plans/2026-11-24-retouche-parcours-lot7c.md §3.5): {@code
+   * operation} is {@code resize} or {@code move_end}, {@code outcome} {@code ok}, a reason of the
+   * engine in lower case, {@code not_ready}, {@code unsupported}, {@code unavailable}, {@code
+   * rate_limited} or {@code sanity}. Fixed sets: never a coordinate, a distance or a name.
+   */
+  public void retouch(String operation, String outcome) {
+    try {
+      Counter.builder("pedalons.route_retouch.requests")
+          .tag("operation", operation.toLowerCase(Locale.ROOT))
+          .tag("outcome", outcome.toLowerCase(Locale.ROOT))
+          .register(registry)
+          .increment();
+    } catch (RuntimeException e) {
+      // a metric never fails what it measures
+    }
+  }
+
+  public void retouchDuration(String operation, Duration d) {
+    try {
+      Timer.builder("pedalons.route_retouch.duration")
+          .tag("operation", operation.toLowerCase(Locale.ROOT))
+          .register(registry)
+          .record(d);
+    } catch (RuntimeException e) {
+      // ignored
+    }
+  }
+
   public void deposit(String outcome) {
     count("pedalons.route_generator.overlay.deposits", "outcome", outcome);
   }

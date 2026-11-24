@@ -59,6 +59,8 @@ export const generatedHandoffSchema = z.object({
   polyline: z.string().min(1),
   type: z.enum(RouteGeneratorType),
   distanceM: z.number().nonnegative(),
+  /** The name of the import when the sender has a better one than « Parcours généré de … » (a retouch). */
+  name: z.string().min(1).optional(),
 })
 
 export type GeneratedHandoff = z.infer<typeof generatedHandoffSchema>

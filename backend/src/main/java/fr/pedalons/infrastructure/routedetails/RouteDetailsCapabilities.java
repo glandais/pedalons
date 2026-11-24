@@ -120,7 +120,20 @@ public record RouteDetailsCapabilities(
       @Nullable GeneratorLimits limits,
       @Nullable @JsonProperty("overlay_ttl_days") Long overlayTtlDays,
       boolean ascent,
-      @Nullable OffroadInfo offroad) {
+      @Nullable OffroadInfo offroad,
+      @Nullable EditInfo edit) {
+
+    /** Without {@code edit}: the shape this record had before api 1.17. */
+    public GeneratorSection(
+        boolean enabled,
+        @Nullable String reason,
+        @Nullable Graph graph,
+        @Nullable GeneratorLimits limits,
+        @Nullable Long overlayTtlDays,
+        boolean ascent,
+        @Nullable OffroadInfo offroad) {
+      this(enabled, reason, graph, limits, overlayTtlDays, ascent, offroad, null);
+    }
 
     /** Without {@code offroad}: the shape this record had before api 1.14. */
     public GeneratorSection(
@@ -130,7 +143,35 @@ public record RouteDetailsCapabilities(
         @Nullable GeneratorLimits limits,
         @Nullable Long overlayTtlDays,
         boolean ascent) {
-      this(enabled, reason, graph, limits, overlayTtlDays, ascent, null);
+      this(enabled, reason, graph, limits, overlayTtlDays, ascent, null, null);
+    }
+  }
+
+  /**
+   * {@code generator.edit} (api 1.17): what the route edit ({@code POST /v1/generator/routes/edit})
+   * accepts and the bounds of a {@code resize}. Absent on an engine that cannot edit: the route is
+   * then not called (docs/plans/2026-11-24-retouche-parcours-lot7c.md §6).
+   */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record EditInfo(
+      @Nullable List<String> operations,
+      @Nullable @JsonProperty("ride_types") List<String> rideTypes,
+      @JsonProperty("change_share_max") double changeShareMax,
+      @JsonProperty("change_m_min") double changeMMin,
+      double tolerance,
+      @JsonProperty("end_snap_m") double endSnapM,
+      @JsonProperty("proposals_max") int proposalsMax,
+      @JsonProperty("points_max") long pointsMax,
+      @JsonProperty("request_body_bytes") long requestBodyBytes) {
+
+    /** Whether {@code operation} ({@code resize} or {@code move_end}) is accepted. */
+    public boolean offers(String operation) {
+      return operations != null && operations.contains(operation);
+    }
+
+    /** Whether a route of this ride type ({@code road}, {@code gravel}, {@code mtb}) is accepted. */
+    public boolean accepts(String rideType) {
+      return rideTypes != null && rideTypes.contains(rideType);
     }
   }
 
@@ -182,6 +223,14 @@ public record RouteDetailsCapabilities(
   /** The generator is served: api 1.9 or later, and its section says it is enabled. */
   public boolean generatorEnabled() {
     return apiAtLeast(1, 9) && generator != null && generator.enabled();
+  }
+
+  /**
+   * The route edit is served: api 1.17 or later, the generator enabled and its section carrying
+   * {@code edit}.
+   */
+  public boolean editEnabled() {
+    return generatorEnabled() && apiAtLeast(1, 17) && generator != null && generator.edit() != null;
   }
 
   /** The planner's engine is served: api 1.15 or later, and its section says it is enabled. */

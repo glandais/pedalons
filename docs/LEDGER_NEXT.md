@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **155 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **157 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -60,6 +60,7 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
 Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
+- [ ] [`WEB-201`](ledger/WEB/WEB-201.md) Retoucher un parcours sur le site : ajuster la distance, déplacer l'arrivée (M)
 - [ ] [`WEB-199`](ledger/WEB/WEB-199.md) La souris déplace les ancres d'un tracé au lieu d'ajouter un point à côté (S) · *recette*
 - [ ] [`WEB-198`](ledger/WEB/WEB-198.md) Recette du choix du calcul d'itinéraire dans le planificateur (S)
 - [ ] [`WEB-183`](ledger/WEB/WEB-183.md) Planificateur embarquable dans l'app : recette iOS et poids du bundle (S)
@@ -87,7 +88,7 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 - [ ] [`API-217`](ledger/API/API-217.md) Calcul d'itinéraire vélo par le moteur du générateur, en option du planificateur (L)
 - [ ] [`API-216`](ledger/API/API-216.md) Carte de chaleur des parcours, pondérée par les sorties roulées (M)
 - [ ] [`API-214`](ledger/API/API-214.md) Typologie des tuiles de route-details : 12,6 % des tronçons gravel sans classe de revêtement (M)
-- [ ] [`API-212`](ledger/API/API-212.md) Retoucher un parcours existant : viser une distance, déplacer l'arrivée (L, lot 0 mesuré, décision d'abord) · *decision*
+- [ ] [`API-212`](ledger/API/API-212.md) Retoucher un parcours existant : viser une distance, déplacer l'arrivée (L, lot 0 mesuré, lot 7c codé)
 - [ ] [`API-209`](ledger/API/API-209.md) Carte des parcours en fréquentation : nombre de parcours par arête OSM, coloré selon le compte (L)
 - [ ] [`API-207`](ledger/API/API-207.md) Générateur de parcours au-delà du réseau de l'équipe (L, proposition, décision d'abord) · *decision*
 - [ ] [`API-203`](ledger/API/API-203.md) Ce qu'un jeton d'application ou d'appareil peut faire sans le membre (S, décision d'abord) · *decision*
@@ -153,6 +154,8 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 ## OPS — Exploitation
 
 Contexte du domaine : [`ledger/OPS/README.md`](ledger/OPS/README.md).
+
+- [ ] [`OPS-69`](ledger/OPS/OPS-69.md) Mettre en service osm-route-details 1.18.0 (retouche, api 1.17) (S) · *externe*
 
 ### App Garmin : Connect IQ Store
 
@@ -330,6 +333,7 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 ### Dépend d'un tiers ou d'une opération hors du dépôt (`externe`)
 
 - [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play
+- [`OPS-69`](ledger/OPS/OPS-69.md) Mettre en service osm-route-details 1.18.0 (retouche, api 1.17)
 - [`OPS-35`](ledger/OPS/OPS-35.md) Publier l'app Garmin sur le Connect IQ Store
 - [`OPS-34`](ledger/OPS/OPS-34.md) Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`
 - [`OPS-33`](ledger/OPS/OPS-33.md) Publier l'extension Karoo dans l'Extension Library de Hammerhead
@@ -339,7 +343,6 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 
 ### Attend une décision (`decision`)
 
-- [`API-212`](ledger/API/API-212.md) Retoucher un parcours existant : viser une distance, déplacer l'arrivée (L, lot 0 mesuré, décision d'abord)
 - [`API-207`](ledger/API/API-207.md) Générateur de parcours au-delà du réseau de l'équipe (L, proposition, décision d'abord)
 - [`API-203`](ledger/API/API-203.md) Ce qu'un jeton d'application ou d'appareil peut faire sans le membre (S, décision d'abord)
 - [`API-202`](ledger/API/API-202.md) Une application externe dans un navigateur ne peut pas appeler l'API (S, décision d'abord)

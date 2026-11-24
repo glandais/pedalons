@@ -219,6 +219,80 @@ public class GpxTrackRepository implements PanacheRepository<GpxTrack> {
         .toList();
   }
 
+  /**
+   * What a track says of its street edges document and of its raw line, without reading either (the
+   * offer of the retouch, docs/plans/2026-11-24-retouche-parcours-lot7c.md §4.2): the version and
+   * the revision of the document, its status, and the raw line's number of points and length on the
+   * sphere, in metres (the engine's haversine, to a millionth). Null where the column is.
+   */
+  public record RetouchHead(
+      Long trackId,
+      @Nullable Integer version,
+      @Nullable Long revision,
+      @Nullable String status,
+      boolean hasDocument,
+      int rawPoints,
+      double rawLengthM,
+      long documentBytes) {
+
+    public boolean hasRaw() {
+      return rawPoints > 0;
+    }
+  }
+
+  /** The retouch head of each track of a route, in id order: a native projection. */
+  public List<RetouchHead> findRetouchHeads(Long routeId) {
+    @SuppressWarnings("unchecked")
+    List<Object[]> rows =
+        getEntityManager()
+            .createNativeQuery(
+                "select id, (network_edges->>'v')::int, (network_edges->>'rev')::bigint,"
+                    + " network_edges->>'status', network_edges is not null,"
+                    + " coalesce(ST_NPoints(raw_geometry), 0),"
+                    + " coalesce(ST_Length(raw_geometry::geography, false), 0),"
+                    + " coalesce(pg_column_size(network_edges), 0)"
+                    + " from gpx_tracks where route_id = :routeId order by id")
+            .setParameter("routeId", routeId)
+            .getResultList();
+    return rows.stream()
+        .map(r ->
+            new RetouchHead(
+                ((Number) r[0]).longValue(),
+                r[1] == null ? null : ((Number) r[1]).intValue(),
+                r[2] == null ? null : ((Number) r[2]).longValue(),
+                (String) r[3],
+                Boolean.TRUE.equals(r[4]),
+                ((Number) r[5]).intValue(),
+                ((Number) r[6]).doubleValue(),
+                ((Number) r[7]).longValue()))
+        .toList();
+  }
+
+  /** The raw line of a track and its street edges document as stored, for the retouch. */
+  public record RetouchSource(@Nullable LineString<G2D> raw, @Nullable String document) {}
+
+  /**
+   * The raw line and the {@code network_edges} text of a track, read for one retouch: two
+   * projections that leave every other lazy column alone. The text is the jsonb as the database
+   * prints it (one line), the very text the nightly deposit sends.
+   */
+  public RetouchSource findRetouchSource(Long trackId) {
+    List<Object> raw =
+        getEntityManager()
+            .createQuery("select t.rawGeometry from GpxTrack t where t.id = :id", Object.class)
+            .setParameter("id", trackId)
+            .getResultList();
+    @SuppressWarnings("unchecked")
+    List<Object> text =
+        getEntityManager()
+            .createNativeQuery("select network_edges::text from gpx_tracks where id = :id")
+            .setParameter("id", trackId)
+            .getResultList();
+    @SuppressWarnings("unchecked")
+    LineString<G2D> line = raw.isEmpty() ? null : (LineString<G2D>) raw.getFirst();
+    return new RetouchSource(line, text.isEmpty() ? null : (String) text.getFirst());
+  }
+
   /** A track's id and its number of stored points, without reading them. */
   public record TrackSize(Long trackId, int points) {}
 

@@ -155,7 +155,8 @@ export function RouteEditor({
       ? {
           seq: 1,
           polyline: initialGenerated.polyline,
-          name: generatedRouteName(distance(initialGenerated.distanceM), t),
+          name:
+            initialGenerated.name ?? generatedRouteName(distance(initialGenerated.distanceM), t),
         }
       : undefined
   )

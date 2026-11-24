@@ -2,7 +2,9 @@ package fr.pedalons.service.route.network;
 
 import fr.pedalons.common.GeoDistance;
 import fr.pedalons.dto.routes.response.BoundsDto;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.EditedRoute;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GenerateRequest;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GeoPoint;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.Route;
 import fr.pedalons.infrastructure.valhalla.Polyline6Decoder;
 import java.util.List;
@@ -23,7 +25,8 @@ final class GeneratedRouteSanity {
     LENGTH,
     ENDS,
     JUMP,
-    SHARES
+    SHARES,
+    INDICES
   }
 
   static final int MAX_POINTS = 100_000;
@@ -88,6 +91,111 @@ final class GeneratedRouteSanity {
       return new Verdict(Check.JUMP, null);
     }
     return new Verdict(null, new BoundsDto(minLon, minLat, maxLon, maxLat));
+  }
+
+  /**
+   * What an edit was asked, as {@link #checkEdit} needs it: the first and last point of the saved
+   * route as {@code [lon, lat]}, its length, the distance asked of a {@code resize} and the finish
+   * asked of a {@code move_end}.
+   */
+  record EditContext(
+      double[] originalFirst,
+      double[] originalLast,
+      @Nullable Double targetM,
+      @Nullable GeoPoint end) {}
+
+  /**
+   * The sanity check of a retouched route (docs/plans/2026-11-24-retouche-parcours-lot7c.md §3.4).
+   * The route is the person's track with one stretch replaced: its ends are the original's (or the
+   * finish asked), its length is the engine's, and only the NEW stretch is searched for a jump,
+   * since the kept parts are the person's own GPS trace and a hole in it is not the engine's fault.
+   */
+  static Verdict checkEdit(EditContext ctx, EditedRoute route) {
+    if (!editShares(route)) {
+      return new Verdict(Check.SHARES, null);
+    }
+    List<double[]> points = decode(route.polyline());
+    if (points == null) {
+      return new Verdict(Check.DECODE, null);
+    }
+    var changed = route.changed();
+    if (changed == null
+        || changed.points() == null
+        || changed.points().size() != 2
+        || changed.points().get(0) == null
+        || changed.points().get(1) == null) {
+      return new Verdict(Check.INDICES, null);
+    }
+    int startIndex = changed.points().get(0);
+    int endIndex = changed.points().get(1);
+    if (startIndex < 0 || startIndex > endIndex || endIndex >= points.size()) {
+      return new Verdict(Check.INDICES, null);
+    }
+    double length = 0;
+    double minLon = Double.POSITIVE_INFINITY;
+    double minLat = Double.POSITIVE_INFINITY;
+    double maxLon = Double.NEGATIVE_INFINITY;
+    double maxLat = Double.NEGATIVE_INFINITY;
+    boolean jump = false;
+    double[] previous = null;
+    for (int i = 0; i < points.size(); i++) {
+      double[] p = points.get(i);
+      minLon = Math.min(minLon, p[0]);
+      maxLon = Math.max(maxLon, p[0]);
+      minLat = Math.min(minLat, p[1]);
+      maxLat = Math.max(maxLat, p[1]);
+      if (previous != null) {
+        double step = GeoDistance.haversineMeters(previous[1], previous[0], p[1], p[0]);
+        length += step;
+        jump |= step > MAX_STEP_M && i > startIndex && i <= endIndex;
+      }
+      previous = p;
+    }
+    if (!(Math.abs(route.distanceM() - length) <= length * ENGINE_LENGTH_TOLERANCE)) {
+      return new Verdict(Check.LENGTH, null);
+    }
+    Double target = ctx.targetM();
+    if (target != null && Math.abs(length - target) > target * LENGTH_TOLERANCE) {
+      return new Verdict(Check.LENGTH, null);
+    }
+    double[] first = points.get(0);
+    double[] last = points.get(points.size() - 1);
+    if (!within(first, ctx.originalFirst()[1], ctx.originalFirst()[0], LOOP_CLOSING_M)) {
+      return new Verdict(Check.ENDS, null);
+    }
+    boolean endsWell;
+    if (ctx.end() != null) {
+      endsWell = within(last, ctx.end().lat(), ctx.end().lon(), END_RADIUS_M);
+    } else {
+      endsWell = within(last, ctx.originalLast()[1], ctx.originalLast()[0], LOOP_CLOSING_M);
+    }
+    if (!endsWell) {
+      return new Verdict(Check.ENDS, null);
+    }
+    if (jump) {
+      return new Verdict(Check.JUMP, null);
+    }
+    return new Verdict(null, new BoundsDto(minLon, minLat, maxLon, maxLat));
+  }
+
+  private static boolean editShares(EditedRoute r) {
+    var c = r.changed();
+    return c != null
+        && r.kind() != null
+        && java.util.Set.of("shorten", "lengthen", "move_end", "truncate").contains(r.kind())
+        && unit(r.keptShare())
+        && unit(c.teamShare())
+        && unit(c.offroadShare())
+        && nonNegative(r.distanceM())
+        && nonNegative(r.unmatchedM())
+        && nonNegative(c.fromM())
+        && nonNegative(c.toM())
+        && nonNegative(c.newM())
+        && c.crossings() >= 0;
+  }
+
+  private static boolean nonNegative(double v) {
+    return Double.isFinite(v) && v >= 0;
   }
 
   private static boolean within(double[] lonLat, double lat, double lon, double meters) {

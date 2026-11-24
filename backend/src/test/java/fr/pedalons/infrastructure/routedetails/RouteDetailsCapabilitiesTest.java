@@ -146,4 +146,39 @@ class RouteDetailsCapabilitiesTest {
     assertTrue(c.supportsSurfaceDetail());
     assertTrue(c.supportsFast());
   }
+
+  @Test
+  void theEditNeedsApi117_andItsOwnBlock() throws IOException {
+    String json =
+        """
+        {"api_version":"1.17","generator":{"enabled":true,"ride_types":["road"],"ascent":false,
+         "edit":{"operations":["resize","move_end"],"ride_types":["road","gravel"],
+         "change_share_max":0.3,"change_m_min":1000,"tolerance":0.05,"end_snap_m":500,
+         "proposals_max":3,"points_max":50000,"request_body_bytes":4194304,"future":1}}}
+        """;
+    RouteDetailsCapabilities c = new ObjectMapper().readValue(json, RouteDetailsCapabilities.class);
+    assertTrue(c.editEnabled());
+    RouteDetailsCapabilities.EditInfo edit = c.generator().edit();
+    assertTrue(edit.offers("resize"));
+    assertTrue(edit.offers("move_end"));
+    assertFalse(edit.offers("rotate"));
+    assertTrue(edit.accepts("gravel"));
+    assertFalse(edit.accepts("mtb"));
+    assertEquals(0.3, edit.changeShareMax(), 1e-9);
+    assertEquals(50_000, edit.pointsMax());
+    assertEquals(4_194_304L, edit.requestBodyBytes());
+    // absent block (an engine that cannot edit), and an api below 1.17
+    RouteDetailsCapabilities.GeneratorSection without =
+        new RouteDetailsCapabilities.GeneratorSection(true, null, null, null, 14L, false);
+    assertFalse(new RouteDetailsCapabilities("1.17", null, null, null, without).editEnabled());
+    RouteDetailsCapabilities.GeneratorSection with =
+        new RouteDetailsCapabilities.GeneratorSection(
+            true, null, null, null, 14L, false, null, edit);
+    assertTrue(new RouteDetailsCapabilities("1.17", null, null, null, with).editEnabled());
+    assertFalse(new RouteDetailsCapabilities("1.16", null, null, null, with).editEnabled());
+    RouteDetailsCapabilities.GeneratorSection off =
+        new RouteDetailsCapabilities.GeneratorSection(
+            false, "not_configured", null, null, null, false, null, edit);
+    assertFalse(new RouteDetailsCapabilities("1.17", null, null, null, off).editEnabled());
+  }
 }

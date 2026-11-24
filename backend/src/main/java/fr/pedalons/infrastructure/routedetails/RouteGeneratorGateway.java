@@ -3,6 +3,8 @@ package fr.pedalons.infrastructure.routedetails;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorException.Kind;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.DepositReport;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.EditRequest;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.EditResponse;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GenerateRequest;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GenerateResponse;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.OverlayStatus;
@@ -67,6 +69,9 @@ public class RouteGeneratorGateway {
   @ConfigProperty(name = "pedalons.route-generator.generate-timeout", defaultValue = "PT35S")
   Duration generateTimeout;
 
+  @ConfigProperty(name = "pedalons.route-generator.edit-timeout", defaultValue = "PT35S")
+  Duration editTimeout;
+
   @ConfigProperty(name = "pedalons.route-generator.overlay.deposit-timeout", defaultValue = "PT16M")
   Duration depositTimeout;
 
@@ -103,7 +108,28 @@ public class RouteGeneratorGateway {
       long maxTracks,
       long overlayTtlDays,
       double distanceMMax,
-      List<String> offroadRideTypes) {
+      List<String> offroadRideTypes,
+      RouteDetailsCapabilities.@Nullable EditInfo edit) {
+
+    /** Without the route edit: the shape this record had before api 1.17. */
+    public Availability(
+        boolean usable,
+        @Nullable String graphId,
+        long maxDocumentBytes,
+        long maxTracks,
+        long overlayTtlDays,
+        double distanceMMax,
+        List<String> offroadRideTypes) {
+      this(
+          usable,
+          graphId,
+          maxDocumentBytes,
+          maxTracks,
+          overlayTtlDays,
+          distanceMMax,
+          offroadRideTypes,
+          null);
+    }
 
     /** Without the ride types that take a target of unpaved share: none does. */
     public Availability(
@@ -113,7 +139,15 @@ public class RouteGeneratorGateway {
         long maxTracks,
         long overlayTtlDays,
         double distanceMMax) {
-      this(usable, graphId, maxDocumentBytes, maxTracks, overlayTtlDays, distanceMMax, List.of());
+      this(
+          usable,
+          graphId,
+          maxDocumentBytes,
+          maxTracks,
+          overlayTtlDays,
+          distanceMMax,
+          List.of(),
+          null);
     }
 
     /** Whether the engine steers the unpaved share of a ride of this type ({@code gravel}). */
@@ -191,7 +225,8 @@ public class RouteGeneratorGateway {
         g.limits() == null ? 200_000 : g.limits().distanceMMax(),
         g.offroad() == null || g.offroad().rideTypes() == null
             ? List.of()
-            : g.offroad().rideTypes());
+            : g.offroad().rideTypes(),
+        capabilities.get().editEnabled() ? g.edit() : null);
   }
 
   /** {@code POST /v1/generator/routes}. */
@@ -212,6 +247,33 @@ public class RouteGeneratorGateway {
                 null,
                 generateTimeout));
     return read(answer, GenerateResponse.class);
+  }
+
+  /**
+   * {@code POST /v1/generator/routes/edit} (api 1.17): the body is serialized first, so that its
+   * size is known before anything is sent (the caller refuses a body above {@code
+   * edit.request_body_bytes} itself, see {@link #bodyOf}).
+   */
+  public EditResponse edit(String team, byte[] body) {
+    Exchange answer =
+        call(
+            new Call(
+                "POST",
+                "/v1/generator/routes/edit",
+                headers(team, "application/json"),
+                body,
+                null,
+                editTimeout));
+    return read(answer, EditResponse.class);
+  }
+
+  /** The JSON of an edit request, as it goes out. */
+  public byte[] bodyOf(EditRequest request) {
+    try {
+      return mapper.writeValueAsBytes(request);
+    } catch (IOException e) {
+      throw RouteGeneratorException.of(Kind.UNEXPECTED, e);
+    }
   }
 
   /** {@code GET /v1/generator/overlay}. */

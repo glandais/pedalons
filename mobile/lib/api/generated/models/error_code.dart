@@ -110,6 +110,22 @@ enum ErrorCode {
   routeGeneratorRateLimited('ROUTE_GENERATOR_RATE_LIMITED'),
   @JsonValue('ROUTE_GENERATOR_BUSY')
   routeGeneratorBusy('ROUTE_GENERATOR_BUSY'),
+  @JsonValue('ROUTE_RETOUCH_NOT_READY')
+  routeRetouchNotReady('ROUTE_RETOUCH_NOT_READY'),
+  @JsonValue('ROUTE_RETOUCH_UNSUPPORTED')
+  routeRetouchUnsupported('ROUTE_RETOUCH_UNSUPPORTED'),
+  @JsonValue('ROUTE_RETOUCH_ORDER_ANOMALY')
+  routeRetouchOrderAnomaly('ROUTE_RETOUCH_ORDER_ANOMALY'),
+  @JsonValue('ROUTE_RETOUCH_CHANGE_TOO_SMALL')
+  routeRetouchChangeTooSmall('ROUTE_RETOUCH_CHANGE_TOO_SMALL'),
+  @JsonValue('ROUTE_RETOUCH_CHANGE_TOO_LARGE')
+  routeRetouchChangeTooLarge('ROUTE_RETOUCH_CHANGE_TOO_LARGE'),
+  @JsonValue('ROUTE_RETOUCH_NO_SHORTER')
+  routeRetouchNoShorter('ROUTE_RETOUCH_NO_SHORTER'),
+  @JsonValue('ROUTE_RETOUCH_NO_PROPOSAL')
+  routeRetouchNoProposal('ROUTE_RETOUCH_NO_PROPOSAL'),
+  @JsonValue('ROUTE_RETOUCH_END_UNREACHABLE')
+  routeRetouchEndUnreachable('ROUTE_RETOUCH_END_UNREACHABLE'),
   @JsonValue('GEOCODING_UNAVAILABLE')
   geocodingUnavailable('GEOCODING_UNAVAILABLE'),
   @JsonValue('INVALID_FORMAT')

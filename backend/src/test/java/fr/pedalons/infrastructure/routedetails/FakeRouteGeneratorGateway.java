@@ -78,6 +78,28 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
   /** Changes each route as the engine would have built it (to forge a bad one). */
   public static volatile @Nullable Consumer<ObjectNode> tamper = null;
 
+  /**
+   * Whether {@code generator.edit} (api 1.17) is announced. Off by default: an engine in production
+   * is 1.17.x and cannot edit.
+   */
+  public static volatile boolean editEnabled = false;
+
+  /** Changes each edited route as the engine would have built it (to forge a bad one). */
+  public static volatile @Nullable Consumer<ObjectNode> editTamper = null;
+
+  /** The {@code generator.edit} the fake announces; a test may narrow it. */
+  public static volatile RouteDetailsCapabilities.EditInfo editInfo =
+      new RouteDetailsCapabilities.EditInfo(
+          List.of("resize", "move_end"),
+          List.of("road", "gravel", "mtb"),
+          0.30,
+          1000,
+          0.05,
+          500,
+          3,
+          50_000,
+          4L * 1024 * 1024);
+
   /** An error answer the fake sends instead of the real one. */
   public record Problem(
       int status,
@@ -88,6 +110,15 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
 
   /** The next answers of a generation, one per call, then the real ones. */
   public static final Queue<Problem> GENERATE_PROBLEMS = new ArrayDeque<>();
+
+  /** The next answers of an edit, one per call, then the real ones. */
+  public static final Queue<Problem> EDIT_PROBLEMS = new ArrayDeque<>();
+
+  /** The body of every edit received, as text, in order. */
+  public static final List<String> EDITS = new CopyOnWriteArrayList<>();
+
+  /** The headers of every edit received, in order. */
+  public static final List<Map<String, String>> EDIT_HEADERS = new CopyOnWriteArrayList<>();
 
   /** The next answers of a deposit, one per call, then the real ones. */
   public static final Queue<Problem> DEPOSIT_PROBLEMS = new ArrayDeque<>();
@@ -131,6 +162,22 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
     offroadShare = null;
     omitOffroadResult = false;
     tamper = null;
+    editEnabled = false;
+    editTamper = null;
+    editInfo =
+        new RouteDetailsCapabilities.EditInfo(
+            List.of("resize", "move_end"),
+            List.of("road", "gravel", "mtb"),
+            0.30,
+            1000,
+            0.05,
+            500,
+            3,
+            50_000,
+            4L * 1024 * 1024);
+    EDIT_PROBLEMS.clear();
+    EDITS.clear();
+    EDIT_HEADERS.clear();
     GENERATE_PROBLEMS.clear();
     DEPOSIT_PROBLEMS.clear();
     OVERLAYS.clear();
@@ -190,7 +237,8 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
         10_000,
         14,
         200_000,
-        fresh || cached == null ? offroadRideTypes : cached);
+        fresh || cached == null ? offroadRideTypes : cached,
+        editEnabled ? editInfo : null);
   }
 
   @Override
@@ -216,6 +264,9 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
     }
     if (path.equals("/v1/generator/routes") && method.equals("POST")) {
       return generate(call, key, team);
+    }
+    if (path.equals("/v1/generator/routes/edit") && method.equals("POST")) {
+      return edit(call, team);
     }
     return problem(new Problem(404, "not_found", null, null, null));
   }
@@ -342,6 +393,217 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
       routes.add(route);
     }
     return json(200, response);
+  }
+
+  // ------------------------------------------------------------------ the edit of a saved route
+
+  /**
+   * An edit: {@code resize} lengthens by an out and back in the middle, or shortens by cutting the
+   * tip of the farthest point; {@code move_end} keeps the route up to its middle and goes straight
+   * to the point. The proposals differ by the side of the detour. The saved route must be one that
+   * comes back (an out and back) for a shortening to save anything.
+   */
+  private Exchange edit(Call call, String team) {
+    String text = new String(call.body(), StandardCharsets.UTF_8);
+    EDITS.add(text);
+    EDIT_HEADERS.add(call.headers());
+    Problem next = EDIT_PROBLEMS.poll();
+    if (next != null) {
+      return problem(next);
+    }
+    JsonNode request;
+    try {
+      request = JSON.readTree(call.body());
+    } catch (IOException e) {
+      return problem(new Problem(400, "invalid_input", null, null, null));
+    }
+    if (!request.path("network_edges").isObject()) {
+      return problem(new Problem(400, "invalid_input", null, null, null));
+    }
+    List<double[]> original = new ArrayList<>();
+    for (double[] p :
+        fr.pedalons.infrastructure.valhalla.Polyline6Decoder.decode(
+            request.path("polyline").asText())) {
+      original.add(new double[] {p[1], p[0]}); // lat, lon
+    }
+    double length = 0;
+    for (int i = 1; i < original.size(); i++) {
+      length += step(original, i);
+    }
+    JsonNode operation = request.path("operation");
+    ObjectNode response = JSON.createObjectNode();
+    response.put("graph_id", graphId);
+    response.put("mode", "team_first");
+    response.putObject("overlay").put("deposited_at", clock.instant().toString());
+    response.put("original_m", length);
+    response.put("dropped", 0);
+    ArrayNode routes = response.putArray("routes");
+    if (operation.has("resize")) {
+      double target = operation.path("resize").path("distance_m").asDouble();
+      response.put("operation", "resize");
+      response.put("target_m", target);
+      for (int i = 0; i < routeCount; i++) {
+        ObjectNode route =
+            target >= length
+                ? lengthen(original, length, target, i)
+                : shorten(original, length, target);
+        if (route == null) {
+          return problem(new Problem(422, "generation_failed", "no_economy", null, null));
+        }
+        Consumer<ObjectNode> t = editTamper;
+        if (t != null) {
+          t.accept(route);
+        }
+        routes.add(route);
+      }
+    } else {
+      JsonNode point = operation.path("move_end").path("point");
+      response.put("operation", "move_end");
+      response.putNull("target_m");
+      for (int i = 0; i < routeCount; i++) {
+        ObjectNode route =
+            moveEnd(original, length, point.path("lat").asDouble(), point.path("lon").asDouble());
+        Consumer<ObjectNode> t = editTamper;
+        if (t != null) {
+          t.accept(route);
+        }
+        routes.add(route);
+      }
+    }
+    return json(200, response);
+  }
+
+  private static double step(List<double[]> p, int i) {
+    return GeoDistance.haversineMeters(p.get(i - 1)[0], p.get(i - 1)[1], p.get(i)[0], p.get(i)[1]);
+  }
+
+  private static ObjectNode lengthen(
+      List<double[]> original, double length, double target, int variant) {
+    int m = original.size() / 2;
+    double half = (target - length) / 2;
+    double[] at = original.get(m);
+    double cos = Math.cos(Math.toRadians(at[0]));
+    double dLat = variant % 2 == 0 ? half / M_PER_DEGREE : 0;
+    double dLon = variant % 2 == 1 ? half / M_PER_DEGREE / cos : 0;
+    List<double[]> out = new ArrayList<>(original.subList(0, m + 1));
+    out.add(new double[] {at[0] + dLat, at[1] + dLon});
+    out.add(at);
+    out.addAll(original.subList(m + 1, original.size()));
+    double from = 0;
+    for (int i = 1; i <= m; i++) {
+      from += step(original, i);
+    }
+    return edited(out, "lengthen", null, from, from, target - length, m, m + 2, length, null);
+  }
+
+  private static @Nullable ObjectNode shorten(
+      List<double[]> original, double length, double target) {
+    int apex = 0;
+    double far = 0;
+    for (int i = 0; i < original.size(); i++) {
+      double d =
+          GeoDistance.haversineMeters(
+              original.get(0)[0], original.get(0)[1], original.get(i)[0], original.get(i)[1]);
+      if (d > far) {
+        far = d;
+        apex = i;
+      }
+    }
+    for (int k = 1; apex - k >= 0 && apex + k < original.size(); k++) {
+      List<double[]> out = new ArrayList<>(original.subList(0, apex - k + 1));
+      out.addAll(original.subList(apex + k, original.size()));
+      double len = 0;
+      for (int i = 1; i < out.size(); i++) {
+        len += step(out, i);
+      }
+      if (len <= target) {
+        double from = 0;
+        for (int i = 1; i <= apex - k; i++) {
+          from += step(original, i);
+        }
+        double to = 0;
+        for (int i = 1; i <= apex + k; i++) {
+          to += step(original, i);
+        }
+        double chord = step(out, apex - k + 1);
+        return edited(out, "shorten", null, from, to, chord, apex - k, apex - k + 1, length, null);
+      }
+    }
+    return null;
+  }
+
+  private static ObjectNode moveEnd(
+      List<double[]> original, double length, double lat, double lon) {
+    int m = original.size() / 2;
+    List<double[]> out = new ArrayList<>(original.subList(0, m + 1));
+    double[] from = original.get(m);
+    double leg = GeoDistance.haversineMeters(from[0], from[1], lat, lon);
+    int steps = Math.max(1, (int) Math.ceil(leg / 1000));
+    for (int i = 1; i <= steps; i++) {
+      double f = (double) i / steps;
+      out.add(new double[] {from[0] + (lat - from[0]) * f, from[1] + (lon - from[1]) * f});
+    }
+    double at = 0;
+    for (int i = 1; i <= m; i++) {
+      at += step(original, i);
+    }
+    return edited(out, "move_end", "best", at, length, leg, m, out.size() - 1, length, 5.0);
+  }
+
+  private static ObjectNode edited(
+      List<double[]> points,
+      String kind,
+      @Nullable String variant,
+      double fromM,
+      double toM,
+      double newM,
+      int startIndex,
+      int endIndex,
+      double originalM,
+      @Nullable Double endSnap) {
+    double[] lat = new double[points.size()];
+    double[] lon = new double[points.size()];
+    double length = 0;
+    for (int i = 0; i < lat.length; i++) {
+      lat[i] = points.get(i)[0];
+      lon[i] = points.get(i)[1];
+      if (i > 0) {
+        length += GeoDistance.haversineMeters(lat[i - 1], lon[i - 1], lat[i], lon[i]);
+      }
+    }
+    ObjectNode r = JSON.createObjectNode();
+    r.put("kind", kind);
+    if (variant == null) {
+      r.putNull("variant");
+    } else {
+      r.put("variant", variant);
+    }
+    r.put("polyline", Polyline6Encoder.encode(lat, lon, 0, lat.length - 1));
+    r.put("distance_m", length);
+    r.putNull("error_share");
+    double kept = Math.max(0, originalM - (toM - fromM));
+    r.put("kept_m", kept);
+    r.put("kept_share", originalM == 0 ? 0 : kept / originalM);
+    r.putNull("abandoned_m");
+    if (endSnap == null) {
+      r.putNull("end_snap_m");
+    } else {
+      r.put("end_snap_m", endSnap);
+    }
+    r.put("unmatched_m", 0);
+    ObjectNode c = r.putObject("changed");
+    c.put("from_m", fromM);
+    c.put("to_m", toM);
+    c.put("new_m", newM);
+    c.putArray("points").add(startIndex).add(endIndex);
+    c.put("team_m", newM * 0.5);
+    c.put("bridged_m", 0);
+    c.put("team_share", 0.5);
+    c.put("offroad_m", 0);
+    c.put("offroad_share", 0.0);
+    c.putArray("unpaved");
+    c.put("crossings", 0);
+    return r;
   }
 
   private static final double M_PER_DEGREE = Math.toRadians(1) * GeoDistance.EARTH_RADIUS_METERS;

@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **616 entrées livrées**, et des 13 entrées encore ouvertes dont une part l'est.
+Index des **616 entrées livrées**, et des 15 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -156,6 +156,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## WEB — Site web
 
+- [x] [`WEB-201`](ledger/WEB/WEB-201.md) Retoucher un parcours sur le site : ajuster la distance, déplacer l'arrivée — en partie, le reste est ouvert
 - [x] [`WEB-200`](ledger/WEB/WEB-200.md) Le cadrage des cartes d'exploration dans l'URL (?map=z/lat/lon) — 2026-11-23
 - [x] [`WEB-199`](ledger/WEB/WEB-199.md) La souris déplace les ancres d'un tracé au lieu d'ajouter un point à côté — en partie, le reste est ouvert
 - [x] [`WEB-198`](ledger/WEB/WEB-198.md) Recette du choix du calcul d'itinéraire dans le planificateur — en partie, le reste est ouvert
@@ -332,6 +333,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 - [x] [`API-215`](ledger/API/API-215.md) Générateur : consigne de part de chemins en gravel et VTT, contrat 16.3.0 — 2026-11-23
 - [x] [`API-213`](ledger/API/API-213.md) Aucune mesure d'activation des nouveaux comptes — 2026-11-23
+- [x] [`API-212`](ledger/API/API-212.md) Retoucher un parcours existant : viser une distance, déplacer l'arrivée (L, lot 0 mesuré, lot 7c codé) — en partie, le reste est ouvert
 - [x] [`API-211`](ledger/API/API-211.md) Météo : un aperçu GPX daté écrase le passage le plus proche d'une sortie sur une cellule partagée — 2026-11-17
 - [x] [`API-210`](ledger/API/API-210.md) Dépôt des surcouches du générateur : la connexion du verrou meurt quand une passe dure — 2026-11-17
 - [x] [`API-208`](ledger/API/API-208.md) `fit-kotlin-sdk-jvm` aligné sur vcyclist par son BOM — 2026-11-16

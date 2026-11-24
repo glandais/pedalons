@@ -120,6 +120,35 @@ public enum ErrorCode {
    */
   ROUTE_GENERATOR_BUSY,
   /**
+   * Route retouch (docs/plans/2026-11-24-retouche-parcours-lot7c.md), HTTP 400: the route's street
+   * edges are not computed for its current track yet (the analysis runs after a save, and every
+   * night); try again later.
+   */
+  ROUTE_RETOUCH_NOT_READY,
+  /**
+   * Route retouch, HTTP 400: this route cannot be retouched (several tracks, too short, too long,
+   * a track the engine cannot match to its map, or a route removed).
+   */
+  ROUTE_RETOUCH_UNSUPPORTED,
+  /**
+   * Route retouch, HTTP 400: the track doubles back over itself in a way the engine cannot follow
+   * (about one track in twenty); edit it in the planner, or generate a new route.
+   */
+  ROUTE_RETOUCH_ORDER_ANOMALY,
+  /** Route retouch, HTTP 400: the distance asked is too close to the route's own. */
+  ROUTE_RETOUCH_CHANGE_TOO_SMALL,
+  /** Route retouch, HTTP 400: the distance asked is too far from the route's (30 percent at most). */
+  ROUTE_RETOUCH_CHANGE_TOO_LARGE,
+  /**
+   * Route retouch, HTTP 400: nothing shorter came out. A normal answer, not a failure: only about
+   * half of the routes shorten (a third for a one-way route).
+   */
+  ROUTE_RETOUCH_NO_SHORTER,
+  /** Route retouch, HTTP 400: no proposal for this lengthening or this new finish. */
+  ROUTE_RETOUCH_NO_PROPOSAL,
+  /** Route retouch, HTTP 400: the route does not reach the new finish without a U-turn. */
+  ROUTE_RETOUCH_END_UNREACHABLE,
+  /**
    * The geocoder failed, timed out, could not be reached or its quota is spent, while resolving the
    * position of a picked place (GET /api/geocode/place) — HTTP 503.
    */

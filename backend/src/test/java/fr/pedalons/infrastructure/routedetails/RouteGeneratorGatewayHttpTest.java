@@ -10,6 +10,9 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorException.Kind;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.DepositReport;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.EditOperation;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.EditRequest;
+import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.EditResponse;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GenerateRequest;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GenerateResponse;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.GeoPoint;
@@ -64,6 +67,7 @@ class RouteGeneratorGatewayHttpTest {
     g.url = url;
     g.configuredKey = Optional.of(KEY);
     g.generateTimeout = generateTimeout;
+    g.editTimeout = Duration.ofSeconds(5);
     g.depositTimeout = Duration.ofSeconds(30);
     g.mapper = new ObjectMapper();
     return g;
@@ -412,5 +416,102 @@ class RouteGeneratorGatewayHttpTest {
                       throw new IllegalStateException("database down");
                     }));
     assertEquals("database down", boom.getMessage());
+  }
+
+  private static final String DOCUMENT =
+      "{\"v\":1,\"rev\":5,\"status\":\"ok\",\"edges\":[{\"a\":1},  {\"b\":2}]}";
+
+  @Test
+  void anEditCarriesTheStoredDocumentAsItIsAndOneKeyOfOperation() throws Exception {
+    handle(
+        "/v1/generator/routes/edit",
+        e -> {
+          body.set(e.getRequestBody().readAllBytes());
+          respond(
+              e,
+              200,
+              "application/json",
+              "{\"graph_id\":\"g\",\"mode\":\"discovery\",\"operation\":\"resize\","
+                  + "\"original_m\":1000.5,\"target_m\":1200,\"dropped\":2,\"overlay\":null,"
+                  + "\"future\":1,\"routes\":[{\"kind\":\"lengthen\",\"polyline\":\"abc\","
+                  + "\"distance_m\":1200,\"kept_m\":900,\"kept_share\":0.9,\"unmatched_m\":0,"
+                  + "\"changed\":{\"from_m\":10,\"to_m\":20,\"new_m\":30,\"points\":[3,5],"
+                  + "\"team_m\":1,\"bridged_m\":0,\"team_share\":0.5,\"offroad_m\":0,"
+                  + "\"offroad_share\":0.1,\"unpaved\":[],\"crossings\":1}}]}");
+        });
+    RouteGeneratorGateway g = running(Duration.ofSeconds(5));
+    byte[] sent =
+        g.bodyOf(new EditRequest("abc", DOCUMENT, "road", 0.25, 3, EditOperation.resize(1200)));
+    EditResponse answer = g.edit(TEAM, sent);
+
+    assertEquals("POST", method.get());
+    assertEquals("/v1/generator/routes/edit", path.get());
+    assertEquals(KEY, headers.get().getFirst("Ord-Namespace-Key"));
+    assertEquals(TEAM, headers.get().getFirst("Ord-Team"));
+    String text = new String(body.get(), StandardCharsets.UTF_8);
+    assertTrue(text.contains("\"network_edges\":" + DOCUMENT), text);
+    assertTrue(text.contains("\"operation\":{\"resize\":{\"distance_m\":1200.0}}"), text);
+    assertTrue(!text.contains("move_end"), text);
+    assertEquals(1000.5, answer.originalM(), 1e-9);
+    assertEquals(2, answer.dropped());
+    assertEquals(List.of(3, 5), answer.routes().get(0).changed().points());
+    assertEquals(1, answer.routes().get(0).changed().crossings());
+  }
+
+  @Test
+  void aMoveOfTheEndSendsTheMoveEndKeyAlone() {
+    byte[] sent =
+        gateway("http://127.0.0.1:1", Duration.ofSeconds(1))
+            .bodyOf(
+                new EditRequest(
+                    "abc",
+                    DOCUMENT,
+                    "gravel",
+                    1,
+                    0,
+                    EditOperation.moveEnd(new GeoPoint(47.1, -1.2))));
+    String text = new String(sent, StandardCharsets.UTF_8);
+    assertTrue(
+        text.contains("\"operation\":{\"move_end\":{\"point\":{\"lat\":47.1,\"lon\":-1.2}}}"),
+        text);
+    assertTrue(!text.contains("resize"), text);
+  }
+
+  @Test
+  void aRefusalOfAnEditIsReadWithItsReason() {
+    handle(
+        "/v1/generator/routes/edit",
+        e -> {
+          e.getRequestBody().readAllBytes();
+          respond(
+              e,
+              422,
+              "application/problem+json",
+              "{\"status\":422,\"code\":\"generation_failed\",\"details\":{\"reason\":\"no_economy\"}}");
+        });
+    RouteGeneratorGateway g = running(Duration.ofSeconds(5));
+    RouteGeneratorException e =
+        assertThrows(
+            RouteGeneratorException.class,
+            () -> g.edit(TEAM, "{}".getBytes(StandardCharsets.UTF_8)));
+    assertEquals(Kind.GENERATION_FAILED, e.kind());
+    assertEquals("no_economy", e.reason());
+  }
+
+  @Test
+  void aTooLargeBodyIsUnexpected() {
+    handle(
+        "/v1/generator/routes/edit",
+        e -> {
+          e.getRequestBody().readAllBytes();
+          respond(
+              e, 413, "application/problem+json", "{\"status\":413,\"code\":\"route_too_large\"}");
+        });
+    RouteGeneratorGateway g = running(Duration.ofSeconds(5));
+    RouteGeneratorException e =
+        assertThrows(
+            RouteGeneratorException.class,
+            () -> g.edit(TEAM, "{}".getBytes(StandardCharsets.UTF_8)));
+    assertEquals(Kind.UNEXPECTED, e.kind());
   }
 }

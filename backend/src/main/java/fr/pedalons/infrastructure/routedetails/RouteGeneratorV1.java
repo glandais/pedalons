@@ -3,6 +3,7 @@ package fr.pedalons.infrastructure.routedetails;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
@@ -188,6 +189,84 @@ public final class RouteGeneratorV1 {
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record DepositKm(double total, double outside, double matched) {}
+
+  // ------------------------------------------------------------------ the edit of a saved route
+
+  /**
+   * {@code POST /v1/generator/routes/edit} (api 1.17). {@code networkEdges} is the text of the
+   * stored document, copied as it is: neither parsed nor rewritten (docs/plans/2026-11-24-retouche-parcours-lot7c.md §3.1).
+   */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record EditRequest(
+      String polyline,
+      @JsonProperty("network_edges") @JsonRawValue String networkEdges,
+      @JsonProperty("ride_type") String rideType,
+      double cursor,
+      long seed,
+      EditOperation operation) {}
+
+  /** Exactly one of the two keys is set, so that exactly one goes out. */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record EditOperation(
+      @Nullable Resize resize, @JsonProperty("move_end") @Nullable MoveEnd moveEnd) {
+
+    public static EditOperation resize(double distanceM) {
+      return new EditOperation(new Resize(distanceM), null);
+    }
+
+    public static EditOperation moveEnd(GeoPoint point) {
+      return new EditOperation(null, new MoveEnd(point));
+    }
+
+    /** {@code resize} or {@code move_end}: the label of the metrics and of the logs. */
+    public String name() {
+      return resize != null ? "resize" : "move_end";
+    }
+  }
+
+  public record Resize(@JsonProperty("distance_m") double distanceM) {}
+
+  public record MoveEnd(GeoPoint point) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record EditResponse(
+      @JsonProperty("graph_id") @Nullable String graphId,
+      @Nullable String mode,
+      @Nullable OverlayInfo overlay,
+      @Nullable String operation,
+      @JsonProperty("original_m") double originalM,
+      @JsonProperty("target_m") @Nullable Double targetM,
+      int dropped,
+      @Nullable List<EditedRoute> routes) {}
+
+  /** One edited route: the whole polyline, and the stretch that changed. */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record EditedRoute(
+      @Nullable String kind,
+      @Nullable String variant,
+      String polyline,
+      @JsonProperty("distance_m") double distanceM,
+      @JsonProperty("error_share") @Nullable Double errorShare,
+      @JsonProperty("kept_m") double keptM,
+      @JsonProperty("kept_share") double keptShare,
+      @JsonProperty("abandoned_m") @Nullable Double abandonedM,
+      @JsonProperty("end_snap_m") @Nullable Double endSnapM,
+      @JsonProperty("unmatched_m") double unmatchedM,
+      @Nullable Changed changed) {}
+
+  /** The new stretch of an edited route, measured on that stretch alone. */
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Changed(
+      @JsonProperty("from_m") double fromM,
+      @JsonProperty("to_m") double toM,
+      @JsonProperty("new_m") double newM,
+      @Nullable List<Integer> points,
+      @JsonProperty("team_m") double teamM,
+      @JsonProperty("bridged_m") double bridgedM,
+      @JsonProperty("team_share") double teamShare,
+      @JsonProperty("offroad_m") double offroadM,
+      @JsonProperty("offroad_share") double offroadShare,
+      int crossings) {}
 
   /** An RFC 3339 instant, null when absent or unreadable. */
   static @Nullable Instant instant(@Nullable String text) {
