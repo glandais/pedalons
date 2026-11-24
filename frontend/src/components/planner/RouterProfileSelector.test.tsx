@@ -113,6 +113,17 @@ describe('RouterProfileSelector engine choice', () => {
     expect(screen.getByText('planner.tuning.help')).toBeTruthy()
   })
 
+  it('ignores a stored hills setting while its knob is hidden', () => {
+    setup(RouterProfile.FASTBIKE, { useHills: 1 }, choice({ value: RouterEngine.PEDALONS }))
+    expect(screen.queryByText('planner.tuning.reset')).toBeNull()
+    cleanup()
+    setup(RouterProfile.FASTBIKE, { useHills: 1 }, choice({ value: RouterEngine.STADIA }))
+    expect(screen.getByText('planner.tuning.reset')).toBeTruthy()
+    cleanup()
+    setup(RouterProfile.FASTBIKE, { useRoads: 0 }, choice({ value: RouterEngine.PEDALONS }))
+    expect(screen.getByText('planner.tuning.reset')).toBeTruthy()
+  })
+
   it('offers to avoid main roads only with the team engine, and only where it is accepted', () => {
     const onChange = vi.fn()
     setup(RouterProfile.BIKE, {}, choice({ avoidMainRoads: { value: false, onChange } }))

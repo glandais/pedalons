@@ -76,7 +76,11 @@ export function RouterProfileSelector({
 }: RouterProfileSelectorProps) {
   const { t } = useTranslation()
   const showTuning = isTunable(currentProfile) && onTuningChange !== undefined
-  const custom = showTuning && isCustomTuning(tuning)
+  // The Pédalons engine knows no elevation: its hills knob is hidden, so a stored one must not light
+  // the dot either (it stays stored, for when the standard calculation is chosen again)
+  const hideHills = engineChoice?.value === RouterEngine.PEDALONS
+  const shownTuning = hideHills ? { ...tuning, useHills: undefined } : tuning
+  const custom = showTuning && isCustomTuning(shownTuning)
   const CurrentIcon = PROFILE_ICONS[currentProfile]
 
   return (
@@ -140,7 +144,7 @@ export function RouterProfileSelector({
               onChange={onTuningChange}
               onReset={onTuningReset}
               custom={custom}
-              hideHills={engineChoice?.value === RouterEngine.PEDALONS}
+              hideHills={hideHills}
             />
           )}
         </Stack>

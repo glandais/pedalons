@@ -101,7 +101,7 @@ export function MapPanel(props: MapPanelProps) {
         color="gray"
         size="sm"
         onClick={close}
-        aria-label={t('actions.cancelAction')}
+        aria-label={t('actions.close')}
       >
         <IconX size={16} />
       </ActionIcon>
@@ -146,7 +146,7 @@ export function MapPanel(props: MapPanelProps) {
           zIndex={PANEL_Z_INDEX}
           portalProps={{ target: fullscreenElement }}
           title={title}
-          closeButtonProps={{ 'aria-label': t('actions.cancelAction') }}
+          closeButtonProps={{ 'aria-label': t('actions.close') }}
         >
           {content}
         </Drawer>
