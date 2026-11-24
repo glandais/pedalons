@@ -19,7 +19,9 @@ livré non plus. À faire dans osm-route-details : relire et commiter les lots 1
 et les métriques `ord_router_*`. Réglages nouveaux, défauts à mesurer en charge :
 `generator.router_max_concurrent` (2), `router_max_queued` (6), `router_budget_ms` (5 000).
 
-Depuis le même jour, la version à monter est `1.17.0` (api 1.16 : `use_roads`, `avoid_main_roads`), à
-commiter, taguer et publier ; `docker-compose.shared.yml` pointe encore `1.16.0`, publiée. Avec `1.16.0`
-le curseur « Trafic » et « Éviter les grandes routes » restent sans effet, sans rien casser : le backend
-ne les envoie que si le moteur les annonce.
+La version à monter est `1.17.1`, publiée le 24 novembre 2026 et épinglée dans
+`docker-compose.shared.yml` : api 1.16 (`use_roads`, `avoid_main_roads`, depuis `1.17.0`), plus le
+correctif du virage serré, qui coûte 200 à 250 m au lieu d'être refusé (avant, un itinéraire pouvait
+faire plusieurs fois la distance pour en éviter un). Avec `1.16.0` le curseur « Trafic » et « Éviter
+les grandes routes » restent sans effet, sans rien casser : le backend ne les envoie que si le moteur
+les annonce.

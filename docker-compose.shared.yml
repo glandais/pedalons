@@ -96,9 +96,11 @@ services:
   # offers Stadia Maps alone (OPS-68).
   # 1.17.0 (api 1.16): the route takes `use_roads` (the planner's traffic knob) and
   # `avoid_main_roads`, announced in capabilities.router; the backend sends them only when
-  # announced, so 1.16.0 still serves it, without them. Factors are estimates, tuned on no measure.
+  # announced, so 1.16.0 still serves it, without them. Factors checked on real legs (plan §10 bis), unchanged.
+  # 1.17.1: a sharp turn costs 200 to 250 m instead of being refused; before, a route could go
+  # several times the distance around to avoid one. Same API.
   osm-route-details:
-    image: ghcr.io/glandais/osm-route-details:1.17.0
+    image: ghcr.io/glandais/osm-route-details:1.17.1
     networks:
       - shared
     environment:
