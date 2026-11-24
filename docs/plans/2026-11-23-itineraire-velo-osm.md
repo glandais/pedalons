@@ -284,6 +284,27 @@ routes : 39,7 → 41,4 km en route (Nantes → Angers : 94,2 → 96,2 km). La lo
 avant et après n'est pas mesurée. Tests : 11 du moteur, 1 117 du workspace, 89 du backend, 2 554 du
 site ; aucun test du service ne montre un changement de tracé (sa grille n'a qu'une classe de voie).
 
+**Lot 1 bis, le banc sur tronçons réels (24 novembre 2026).** Sous-commande `route-play` du banc du
+moteur, relevé `ord-route-lot1bis-mesures.md` d'osm-route-details, non commités. 3 186 traces réelles,
+8 334 tronçons de 2 à 40 km, itinéraire sans équipe comparé à ce qui a été roulé (indice de Jaccard en
+longueur), facteurs choisis sur une moitié des traces et jugés sur l'autre **(mesuré)** :
+
+- **le neutre est déjà à un cran de l'optimum sur chaque case** : la meilleure table trouvée gagne
+  +0,8 point [+0,2 ; +1,3] en route sur la moitié de contrôle (39,1 de base), rien en gravel, et retire
+  des voies cyclables ; elle n'est pas adoptée ;
+- **`secondary` est juste au neutre** : 23,6 % des kilomètres réels en route, 23,0 % de l'itinéraire ;
+  l'itinéraire prend trop de `tertiary` (48,0 % contre 42,7 %) et pas assez de petites routes (13,6 %
+  contre 17,3 %) ; en gravel, trop de voies cyclables (19,2 % contre 12,7 %), pas assez de chemins ;
+- **« Éviter les grandes routes » est bien dimensionné** : `secondary` passe de 23 à 4,8 % des
+  kilomètres, pour un détour P90 de 1,05 à 1,15 ; le curseur « Trafic » déplace les kilomètres dans le
+  sens attendu sur toutes les cases (`secondary` de 13 à 49 % entre « Pistes » et « Routes ») ;
+- le recouvrement tombe avec la distance (61 à 63 en 2–5 km, 17 en 15–40 km) et l'itinéraire est plus
+  court que le réel : au-delà de 15 km, une personne ne va pas « de A à B ».
+
+Limites : deux équipes font presque toutes les traces, 29 tronçons VTT seulement (inexploitable), pas de
+comparaison avec Stadia, goût d'équipe et aménagements cyclables (`infra`) non mesurés. Les facteurs du
+moteur restent ceux de `1.17.0`.
+
 ## 11. Décisions du propriétaire (23 novembre 2026)
 
 | # | Question | Décision | Écarté |
@@ -303,7 +324,7 @@ planificateur, 0,25 fixe comme le générateur, à rouvrir après usage.
 
 - **Coût réglé pour des boucles, pas pour aller au plus court** : le goût peut préférer un grand détour
   à 500 m de départementale. C'est ce que mesure le lot 1 bis ; depuis D1 le moteur est le défaut, donc
-  ce banc passe avant tout autre lot.
+  ce banc est fait (§10 bis) : le neutre est à un cran de l'optimum, `secondary` y est juste.
 - **Heuristique faible** quand l'équipe baisse beaucoup les poids : temps borné par la zone, à mesurer
   au P90 (cible : 300 ms à chaud pour 20 km **(proposé)**).
 - **Mémoire** : les fenêtres du routage partagent le budget de 800 Mo avec la génération ; la borne de
