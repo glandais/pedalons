@@ -60,6 +60,9 @@ const plannerState = vi.hoisted(() => ({
   routeLegsGeoJson: null,
   undo: () => undoMock(),
   redo: () => {},
+  recalculate: vi.fn(),
+  recalcScope: { legs: 0, distance: 0, keeps: false },
+  recalculated: false,
   quotaRefusal: null as Record<string, unknown> | null,
   dismissQuotaRefusal: () => {},
 }))

@@ -6,6 +6,7 @@ import type { RoutePlannerState } from '@/hooks/useRoutePlanner'
 import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
 import { PlannerBottomBar } from './PlannerBottomBar'
 import { PlannerElevationStrip } from './PlannerElevationStrip'
+import { useRouteSettings } from './routeSettingsModel'
 import type { PlannerEditing } from './usePlannerEditing'
 
 const STRIP_BODY_HEIGHT_TOUCH = 110
@@ -44,6 +45,7 @@ export function PlannerTouchFullscreen({
 }: PlannerTouchFullscreenProps) {
   const { t } = useTranslation()
   const { controlPoints, isLoading } = planner
+  const routeSettings = useRouteSettings(planner)
   return (
     <MapFullscreenShell
       leading={leading}
@@ -105,12 +107,7 @@ export function PlannerTouchFullscreen({
             canRedo={planner.canRedo}
             onUndo={planner.undo}
             onRedo={planner.redo}
-            routerProfile={planner.routerProfile}
-            onProfileChange={planner.setRouterProfile}
-            routerTuning={planner.routerTuning}
-            onTuningChange={planner.setRouterTuning}
-            onTuningReset={planner.resetRouterTuning}
-            engineChoice={planner.engineChoice}
+            settings={routeSettings}
             directMode={planner.directMode}
             onDirectModeChange={planner.setDirectMode}
             onDone={onDone}

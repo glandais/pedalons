@@ -4,6 +4,7 @@ import { I18nextProvider } from 'react-i18next'
 import type { i18n as I18n } from 'i18next'
 import { MantineProvider } from '@mantine/core'
 import { RouterProfile } from '@/api/dto'
+import type { RouteSettingsModel } from './routeSettingsModel'
 import { createServerI18n } from '@/i18n'
 import { MapPanelContext, useMapPanelState } from '@/components/map/mapPanelState'
 import { PlannerToolbar } from './PlannerToolbar'
@@ -20,6 +21,22 @@ beforeAll(async () => {
   // The real French catalogue: the end-to-end tests find these buttons by these very names.
   i18n = await createServerI18n('fr')
 })
+
+function settingsOf(over: Partial<RouteSettingsModel> = {}): RouteSettingsModel {
+  return {
+    profile: RouterProfile.BIKE,
+    onProfileChange: vi.fn(),
+    tuning: {},
+    onTuningChange: vi.fn(),
+    onTuningReset: vi.fn(),
+    pointCount: 0,
+    isLoading: false,
+    recalcScope: { legs: 0, distance: 0, keeps: false },
+    recalculated: false,
+    onRecalculate: vi.fn(),
+    ...over,
+  }
+}
 
 type Props = React.ComponentProps<typeof PlannerToolbar>
 
@@ -39,11 +56,7 @@ function setup(over: Partial<Props> = {}) {
     onRedo: vi.fn(),
     directMode: false,
     onDirectModeChange: vi.fn(),
-    routerProfile: RouterProfile.BIKE,
-    onProfileChange: vi.fn(),
-    routerTuning: {},
-    onTuningChange: vi.fn(),
-    onTuningReset: vi.fn(),
+    settings: settingsOf(),
     ...over,
   }
   render(
@@ -72,7 +85,7 @@ describe('PlannerToolbar', () => {
       'Annuler (Ctrl+Z)',
       'Rétablir (Ctrl+Maj+Z)',
       expect.stringMatching(/^Ligne droite \(ou /),
-      'Profil',
+      'Réglages du tracé : Vélo',
       'Importer un fichier GPX',
       'Aide : gestes',
     ])
@@ -163,11 +176,11 @@ describe('PlannerToolbar', () => {
     expect(onClear).toHaveBeenCalledTimes(1)
   })
 
-  it('opens the profile and the help panels from its buttons, one at a time', async () => {
+  it('toggles the settings and the help panels from its buttons, one at a time', async () => {
     const { toolbar } = setup()
-    const profile = within(toolbar).getByRole('button', { name: 'Profil' })
+    const profile = within(toolbar).getByRole('button', { name: 'Réglages du tracé : Vélo' })
+    // The panel itself is docked by RoutePlanner: the button only tells it is open.
     fireEvent.click(profile)
-    expect(await screen.findByText('Vélo', { exact: true })).toBeInTheDocument()
     expect(profile).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.click(within(toolbar).getByRole('button', { name: 'Aide : gestes' }))
@@ -175,11 +188,11 @@ describe('PlannerToolbar', () => {
     expect(profile).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('keeps the dot of a tuned profile on its button', () => {
-    const { toolbar } = setup({ routerProfile: RouterProfile.BIKE, routerTuning: { useHills: 0 } })
+  it('says on its button that a setting is adjusted', () => {
+    const { toolbar } = setup({ settings: settingsOf({ tuning: { useHills: 0 } }) })
     expect(
       within(toolbar).getByRole('button', {
-        name: 'Profil (Réglage différent de celui du profil)',
+        name: 'Réglages du tracé : Vélo · ajusté',
       })
     ).toBeInTheDocument()
   })

@@ -6,6 +6,7 @@ import {
   appendImport,
   computeRoute,
   createRoute,
+  definedSettings,
   directStats as computeDirectStats,
   DirectStats,
   geojson,
@@ -15,8 +16,11 @@ import {
   LegProperties,
   Point,
   PlannerRefusedError,
+  recalcScope as computeRecalcScope,
   remove,
+  rerouteLegs,
   restoreSourceSpan,
+  routedLegs,
   routeFromSources,
   Route,
   RoutePoint,
@@ -64,17 +68,18 @@ import { plannerErrorMessage } from '@/lib/plannerErrors'
 import { plannerQuotaRefusalOf } from '@/lib/plannerQuota'
 import type { PlannerColorBy } from '@/lib/plannerSurface'
 import {
+  avoidMainRoadsOf,
   isTunable,
   PROFILE_DEFAULTS,
   sanitizeStore,
   sanitizeTuning,
+  snapToStep,
   toRouterSettings,
   type RouterTuning,
   type RouterTuningStore,
   type TuningKey,
 } from '@/lib/routerTuning'
 import {
-  ROUTER_AVOID_MAIN_ROADS_STORAGE_KEY,
   ROUTER_ENGINE_STORAGE_KEY,
   DEFAULT_ROUTER_ENGINE,
   effectiveEngine,
@@ -149,6 +154,7 @@ export const ELEVATION_DEBOUNCE_MS = 300
 const IMPORT_TOO_BIG_KEY = tRegister('planner.import.tooBig')
 const IMPORT_FAILED_KEY = tRegister('planner.import.failed')
 const IMPORT_TOO_MANY_KEY = tRegister('planner.import.tooManyTracks')
+const RECALC_FAILED_KEY = tRegister('planner.recalc.failed')
 
 /** Everything the planner hook returns: the state a view of the planner is given. */
 export interface RoutePlannerState {
@@ -249,6 +255,21 @@ export interface RoutePlannerState {
   ) => Promise<GpxImportInfo | null>
   undo: () => void
   redo: () => void
+  /**
+   * « Recalculer » (WEB-202): routes every routed leg again with the current settings, one
+   * request per leg, all or nothing, as one undoable operation. Straight lines and imported spans
+   * stay as they are. Resolves true when applied; false when there is no routed leg (no request,
+   * no history entry), when another operation runs, on a failure (the route is left as it was and
+   * `error` / `quotaRefusal` say why) or when cancelled.
+   */
+  recalculate: () => Promise<boolean>
+  /** What a recalculation would touch: routed legs, their summed length (m), and whether anything stays as it is. */
+  recalcScope: { legs: number; distance: number; keeps: boolean }
+  /**
+   * The route is the one the last recalculation produced, with the settings it used: no gesture,
+   * undo or redo, and no setting change, since. The footer then says so instead of offering the button.
+   */
+  recalculated: boolean
 }
 
 /**
@@ -294,12 +315,6 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     defaultValue: DEFAULT_ROUTER_ENGINE,
     getInitialValueInEffect: false,
   })
-  // Per device too; only ever sent with the Pédalons engine, and only where it accepts it.
-  const [storedAvoidMainRoads, setStoredAvoidMainRoads] = useLocalStorage<boolean>({
-    key: ROUTER_AVOID_MAIN_ROADS_STORAGE_KEY,
-    defaultValue: false,
-    getInitialValueInEffect: false,
-  })
   const engineOffers = useRouterEngineOffers(teamSlug)
   // Per profile: the knobs of the bicycle profiles. Same distrust of the stored value.
   const [storedTuning, setStoredTuning] = useLocalStorage<RouterTuningStore>({
@@ -333,7 +348,11 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     RouterEngine.PEDALONS,
     RouterEngineOption.AVOID_MAIN_ROADS
   )
-  const avoidMainRoads = storedAvoidMainRoads === true
+  // Avoidance is decided by the Circulation step (WEB-202): « Au calme » and « Équilibré » avoid
+  // main roads, « Direct » does not. The old `pedalons-router-avoid-main-roads` key is no longer
+  // read or written (a deliberate choice: it is left in localStorage, where it is harmless). Still
+  // only sent with the Pédalons engine, and only where it accepts the option.
+  const avoidMainRoads = avoidMainRoadsOf(routerProfile, routerTuning)
   const routerSettings = useMemo(
     () => ({
       ...toRouterSettings(routerProfile, routerTuning),
@@ -416,7 +435,13 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
   //    when the gesture that supersedes it is not a routing one (undo, redo, clear), when the
   //    profile changes (its result would be computed for the wrong profile) and on unmount.
   // A cancelled operation touches neither the history nor the route and shows no error.
+  // A recalculation (« Recalculer ») is one such operation too, however many requests it makes: one
+  // per routed leg, at most RECALC_CONCURRENCY at a time, the first failure aborting the others so
+  // nothing more is billed; it is cancelled like the others, and applied all or nothing.
   const inFlightRef = useRef<AbortController | null>(null)
+  // The history entry the last successful routing operation pushed: how a recalculation recognises
+  // « nothing was drawn since » (the entry is still the top of the history, `editMark`).
+  const lastEntryRef = useRef<PlannerEntry | null>(null)
 
   const cancelInFlight = useCallback(() => {
     const controller = inFlightRef.current
@@ -448,11 +473,11 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     (key: TuningKey, value: number) => {
       if (!isTunable(routerProfile) || !Number.isFinite(value)) return
       cancelInFlight()
-      const clamped = Math.min(1, Math.max(0, value))
+      const stepped = snapToStep(key, Math.min(1, Math.max(0, value)))
       setStoredTuning((previous) => {
         const next = { ...sanitizeTuning(previous, routerProfile) }
-        if (clamped === PROFILE_DEFAULTS[routerProfile]?.[key]) delete next[key]
-        else next[key] = clamped
+        if (stepped === PROFILE_DEFAULTS[routerProfile]?.[key]) delete next[key]
+        else next[key] = stepped
         return { ...sanitizeStore(previous), [routerProfile]: next }
       })
     },
@@ -468,14 +493,6 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     [cancelInFlight, setStoredEngine]
   )
   const hasTeam = teamSlug !== undefined
-  // Like the engine: no leg is routed again, nothing enters the history.
-  const setAvoidMainRoads = useCallback(
-    (on: boolean) => {
-      cancelInFlight()
-      setStoredAvoidMainRoads(on === true)
-    },
-    [cancelInFlight, setStoredAvoidMainRoads]
-  )
   const engineChoice = useMemo<EngineChoice | undefined>(
     () =>
       engineOffered
@@ -483,26 +500,22 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
             value: routerEngine,
             onChange: setRouterEngine,
             team: hasTeam,
-            ...(avoidOffered && {
-              avoidMainRoads: { value: avoidMainRoads, onChange: setAvoidMainRoads },
-            }),
           }
         : undefined,
-    [
-      engineOffered,
-      routerEngine,
-      setRouterEngine,
-      hasTeam,
-      avoidOffered,
-      avoidMainRoads,
-      setAvoidMainRoads,
-    ]
+    [engineOffered, routerEngine, setRouterEngine, hasTeam]
   )
 
   const resetRouterTuning = useCallback(() => {
     cancelInFlight()
     setStoredTuning((previous) => ({ ...sanitizeStore(previous), [routerProfile]: {} }))
   }, [cancelInFlight, routerProfile, setStoredTuning])
+
+  // The recalculation just applied: the history entry it pushed and the settings it used. It still
+  // holds while the top of the history is that entry and the settings are unchanged.
+  const [recalcMark, setRecalcMark] = useState<{ entry: PlannerEntry | null; key: string } | null>(
+    null
+  )
+  const settingsKey = JSON.stringify(definedSettings(routerSettings))
 
   // Generic executor for all route operations
   // The file imported in place of the track and the routes that are exactly what it produced: the
@@ -534,7 +547,9 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
         const newRoute = 'waypoints' in outcome ? outcome.route : outcome
         if (importedRef.current?.routes.has(routeRef.current))
           importedRef.current.routes.add(snapshot)
-        setHistory((prev) => [...prev, { route: snapshot, waypoints: before, track: true }])
+        const entry: PlannerEntry = { route: snapshot, waypoints: before, track: true }
+        lastEntryRef.current = entry
+        setHistory((prev) => [...prev, entry])
         setFuture([])
         if ('waypoints' in outcome && outcome.waypoints !== before) {
           waypointsRef.current = outcome.waypoints
@@ -715,6 +730,23 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     },
     [executeRouteOperation, routerSettings, teamSlug]
   )
+
+  const recalculate = useCallback(async (): Promise<boolean> => {
+    if (routedLegs(routeRef.current).length === 0) return false
+    const key = settingsKey
+    const applied = await executeRouteOperation(
+      (r, signal) => rerouteLegs(r, routerSettings, signal, teamSlug),
+      RECALC_FAILED_KEY
+    )
+    if (applied) setRecalcMark({ entry: lastEntryRef.current, key })
+    return applied
+  }, [executeRouteOperation, routerSettings, settingsKey, teamSlug])
+  const recalcScope = useMemo(() => computeRecalcScope(route), [route])
+  const recalculated =
+    recalcMark !== null &&
+    recalcMark.entry !== null &&
+    recalcMark.entry === editMark &&
+    recalcMark.key === settingsKey
 
   const clearRoute = useCallback(() => {
     cancelInFlight()
@@ -1014,5 +1046,8 @@ export function useRoutePlanner(options?: UseRoutePlannerOptions): RoutePlannerS
     snapshot,
     undo,
     redo,
+    recalculate,
+    recalcScope,
+    recalculated,
   }
 }

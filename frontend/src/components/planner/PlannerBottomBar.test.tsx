@@ -4,6 +4,7 @@ import { I18nextProvider } from 'react-i18next'
 import type { i18n as I18n } from 'i18next'
 import { MantineProvider } from '@mantine/core'
 import { RouterProfile } from '@/api/dto'
+import type { RouteSettingsModel } from './routeSettingsModel'
 import { createServerI18n } from '@/i18n'
 import { MapPanelContext, useMapPanelState } from '@/components/map/mapPanelState'
 import { PlannerBottomBar } from './PlannerBottomBar'
@@ -20,6 +21,22 @@ beforeAll(async () => {
   // The real French catalogue: the end-to-end tests find these buttons by these very names.
   i18n = await createServerI18n('fr')
 })
+
+function settingsOf(over: Partial<RouteSettingsModel> = {}): RouteSettingsModel {
+  return {
+    profile: RouterProfile.BIKE,
+    onProfileChange: vi.fn(),
+    tuning: {},
+    onTuningChange: vi.fn(),
+    onTuningReset: vi.fn(),
+    pointCount: 0,
+    isLoading: false,
+    recalcScope: { legs: 0, distance: 0, keeps: false },
+    recalculated: false,
+    onRecalculate: vi.fn(),
+    ...over,
+  }
+}
 
 type Props = React.ComponentProps<typeof PlannerBottomBar>
 
@@ -39,11 +56,7 @@ function setup(over: Partial<Props> = {}) {
     canRedo: false,
     onUndo: vi.fn(),
     onRedo: vi.fn(),
-    routerProfile: RouterProfile.BIKE,
-    onProfileChange: vi.fn(),
-    routerTuning: {},
-    onTuningChange: vi.fn(),
-    onTuningReset: vi.fn(),
+    settings: settingsOf(),
     directMode: false,
     onDirectModeChange: vi.fn(),
     onDone: vi.fn(),
@@ -77,7 +90,7 @@ describe('PlannerBottomBar', () => {
     expect(summary.textContent).toContain('42.6 km')
     expect(summary.textContent).toContain('+640 m')
     expect(summary.textContent).toContain('3 points')
-    expect(summary.textContent).toContain('Profil')
+    expect(summary.textContent).toContain('Altitude')
     // The figures are its description
     const description = document.getElementById(summary.getAttribute('aria-describedby')!)
     expect(description?.textContent).toContain('42.6 km')
@@ -114,13 +127,13 @@ describe('PlannerBottomBar', () => {
     expect(screen.getByRole('status', { name: "Calcul de l'itinéraire..." })).toBeTruthy()
     expect(summary.textContent).toContain('a atteint son quota mensuel')
     expect(summary.textContent).toContain('2 points')
-    // The error takes the room of the word « Profil »
-    expect(summary.textContent).not.toContain('Profil')
+    // The error takes the room of the word « Altitude »
+    expect(summary.textContent).not.toContain('Altitude')
   })
 
   it('says nothing of a route not started: no count, no figures', () => {
     setup()
-    expect(summaryButton().textContent).toBe('Profil')
+    expect(summaryButton().textContent).toBe('Altitude')
     expect(screen.queryByRole('status')).toBeNull()
   })
 
@@ -134,7 +147,7 @@ describe('PlannerBottomBar', () => {
     expect(direct.getAttribute('aria-pressed')).toBe('false')
     fireEvent.click(direct)
     expect(props.onDirectModeChange).toHaveBeenCalledWith(true)
-    expect(screen.getByRole('button', { name: 'Profil' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Réglages du tracé : Vélo' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Aide : gestes' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Terminer' }))
     expect(props.onDone).toHaveBeenCalledTimes(1)

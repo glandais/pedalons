@@ -51,7 +51,7 @@ describe('RouteSurfaceSummary', () => {
     const link = screen.getByRole('link', { name: '© contributeurs OpenStreetMap' })
     expect(link.getAttribute('href')).toBe('https://www.openstreetmap.org/copyright')
     expect(link.getAttribute('rel')).toContain('noopener')
-    expect(screen.getByRole('radiogroup', { name: /Colorer le profil/ })).toBeTruthy()
+    expect(screen.getByRole('radiogroup', { name: /Colorer l.altitude/ })).toBeTruthy()
   })
 
   it('reports the mode chosen', () => {

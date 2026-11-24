@@ -213,6 +213,20 @@
   --map-inset-bottom-right: 54px;
 }
 
+/* The « Réglages du tracé » panel docked on the right of the map on a mouse (`RouteSettingsDock`,
+   WEB-202): 340 px wide and 10 px from the edges, so 340 + 2 × 10. What stands on the right of the
+   map moves left by that inset: the toolbar column and the precision mini-map (they read the
+   variable), and the two right-hand control corners. Change it with ROUTE_SETTINGS_DOCK_WIDTH_PX
+   and PLANNER_TOOLBAR_OFFSET_PX in RouteSettings.tsx / RoutePlanner.tsx. */
+.planner-map--dock {
+  --planner-dock-inset: 360px;
+}
+
+.planner-map--dock .maplibregl-ctrl-top-right,
+.planner-map--dock .maplibregl-ctrl-bottom-right {
+  right: var(--planner-dock-inset);
+}
+
 /* The toolbar itself: the surface, shadow and radius of a map control box, and buttons that look
    like the control columns' ones (36 px, hover, toggled-on state), all from maplibre-theme's
    variables, so it follows the `.dark` scheme set on the map's wrapper. The column holding it lets
@@ -241,6 +255,21 @@
   height: 36px;
   justify-content: center;
   width: 36px;
+}
+
+/* A button that names itself (the « Réglages du tracé » one carries the practice in words). */
+.map-toolbar-button--text {
+  font-size: var(--mantine-font-size-sm);
+  font-weight: 500;
+  gap: 6px;
+  padding: 0 10px;
+  white-space: nowrap;
+  width: auto;
+}
+
+.map-toolbar-button__adjusted {
+  color: var(--mantine-color-orange-text);
+  font-size: var(--mantine-font-size-xs);
 }
 
 .map-toolbar-button:not(:disabled):hover {

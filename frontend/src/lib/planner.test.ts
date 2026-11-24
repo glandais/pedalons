@@ -13,6 +13,7 @@ vi.mock('@/api/endpoints/router/router', () => ({
 
 import {
   add,
+  appendImport,
   computeRoute,
   createRoute,
   directStats,
@@ -23,12 +24,18 @@ import {
   isStraightSpan,
   legBounds,
   legsGeojson,
+  MAX_RECALC_LEGS,
   nearestSegment,
   plannerRouteToMappable,
   PlannerRefusedError,
+  recalcScope,
+  RECALC_CONCURRENCY,
   remove,
+  rerouteLegs,
   restoreSourceSpan,
   routeAscend,
+  routedLegs,
+  routeFromSources,
   sourceOf,
   spanBounds,
   straightEdgesMissingProfile,
@@ -1560,5 +1567,195 @@ describe('C4a source span', () => {
     const next = restoreSourceSpan(route, start, end, source)
     expect(next.ascend).toBeCloseTo(createRoute(climbing).ascend, 6)
     expect(next.ascend).toBeGreaterThan(0)
+  })
+})
+
+describe('recalculation of the routed legs (WEB-202)', () => {
+  const RECALC: RouterSettings = { profile: RouterProfile.GRAVEL, useRoads: 1 }
+
+  beforeEach(() => {
+    routeMock.mockReset()
+    routeMock.mockImplementation(async ({ from, to }: RouteRequest) => ({
+      ...arcAnswer({ from, to }, 4, 0.05),
+      ascend: 7,
+      shape: 'new-shape',
+    }))
+  })
+
+  const E = { lng: 5.03, lat: 45.0 }
+
+  /** A -> B -> C routed, then a straight line to E, then an imported file after it. */
+  async function mixedRoute(): Promise<Route> {
+    let route = computeRoute([])
+    route = await add(route, A, PROFILE)
+    route = await add(route, B, PROFILE)
+    route = await add(route, C, PROFILE)
+    route = await add(route, E, PROFILE, true)
+    const file = densify(
+      [
+        [5.04, 45.0],
+        [5.05, 45.01],
+      ],
+      5
+    )
+    const imported = routeFromSources([sourceOf(file)], 9)
+    route = await appendImport(route, imported, PROFILE, true)
+    routeMock.mockClear()
+    return route
+  }
+
+  /** `n` routed legs in a row. */
+  async function longRoute(n: number): Promise<Route> {
+    let route = computeRoute([])
+    for (let i = 0; i <= n; i++) route = await add(route, { lng: 5 + i * 0.001, lat: 45 }, PROFILE)
+    routeMock.mockClear()
+    return route
+  }
+
+  it('lists only the routed legs, and says what stays', async () => {
+    const route = await mixedRoute()
+    const [pa, pb, pc] = manualPoints(route)
+    expect(routedLegs(route).map(({ start, end }) => [start.id, end.id])).toEqual([
+      [pa.id, pb.id],
+      [pb.id, pc.id],
+    ])
+    const scope = recalcScope(route)
+    expect(scope.legs).toBe(2)
+    expect(scope.keeps).toBe(true)
+    expect(scope.distance).toBeGreaterThan(1500)
+    expect(scope.distance).toBeLessThan(route.dist)
+  })
+
+  it('has no routed leg in an intact import, nor a lone point', async () => {
+    expect(routedLegs(importedRoute())).toEqual([])
+    expect(recalcScope(importedRoute())).toEqual({ legs: 0, distance: 0, keeps: true })
+    expect(recalcScope(computeRoute([]))).toEqual({ legs: 0, distance: 0, keeps: false })
+  })
+
+  it('does not keep anything on a route that is all routed', async () => {
+    const route = await threePointRoute()
+    expect(recalcScope(route).keeps).toBe(false)
+  })
+
+  it('sends one request per routed leg with the settings, none for the rest', async () => {
+    const route = await mixedRoute()
+    const untouched = route.points.filter((p) => p.imported && !p.manual).map((p) => [p.id, p.lng])
+    await rerouteLegs(route, RECALC, undefined, 'club')
+    expect(routeMock).toHaveBeenCalledTimes(2)
+    for (const [body] of routeMock.mock.calls) {
+      expect(body).toMatchObject({ profile: 'GRAVEL', useRoads: 1, teamSlug: 'club' })
+    }
+    const result = await rerouteLegs(route, RECALC)
+    expect(result.points.filter((p) => p.imported && !p.manual).map((p) => [p.id, p.lng])).toEqual(
+      untouched
+    )
+  })
+
+  it('keeps the ends where they are and gives them the new climb and shape', async () => {
+    const route = await mixedRoute()
+    const ends = manualPoints(route).map((p) => [p.id, p.lng, p.lat])
+    const result = await rerouteLegs(route, RECALC)
+    expect(manualPoints(result).map((p) => [p.id, p.lng, p.lat])).toEqual(ends)
+    const [, pb, pc, pe] = manualPoints(result)
+    for (const end of [pb, pc]) {
+      expect(end.direct).toBe(false)
+      expect(end.legAscend).toBe(7)
+      expect(end.legShape?.shape).toBe('new-shape')
+    }
+    // The straight line is still straight
+    expect(pe.direct).toBe(true)
+    expect(routedLegs(result)).toHaveLength(2)
+    expect(recalcScope(result).keeps).toBe(true)
+  })
+
+  it('does not call the router for a hop under 5 m, which stays a routed leg of no climb', async () => {
+    // A -> B -> A' with A' two metres from A: removing B joins A to A' by a hop
+    let route = await add(computeRoute([]), A, PROFILE)
+    route = await add(route, B, PROFILE)
+    route = await add(route, { lng: A.lng + 0.00002, lat: A.lat }, PROFILE)
+    const [pa, , pc] = manualPoints(route)
+    route = await remove(route, pa, pc, PROFILE)
+    expect(routedLegs(route)).toHaveLength(1)
+    routeMock.mockClear()
+    const result = await rerouteLegs(route, RECALC)
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(result.points.at(-1)?.legAscend).toBe(0)
+  })
+
+  it('returns the route itself when nothing is routed', async () => {
+    const route = importedRoute()
+    expect(await rerouteLegs(route, RECALC)).toBe(route)
+    expect(routeMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects with the failure and leaves the route untouched when one leg fails', async () => {
+    const route = await threePointRoute()
+    const objects = [...route.points]
+    const before = route.points.map((p) => ({ ...p }))
+    routeMock.mockImplementation(async ({ from, to }: RouteRequest) => {
+      if (to.lng === C.lng) throw new Error('no route')
+      return arcAnswer({ from, to })
+    })
+    await expect(rerouteLegs(route, RECALC)).rejects.toThrow('no route')
+    expect(route.points).toHaveLength(objects.length)
+    route.points.forEach((p, i) => {
+      expect(p).toBe(objects[i])
+      expect(p).toEqual(before[i])
+    })
+  })
+
+  it('refuses more than MAX_RECALC_LEGS legs before any request', async () => {
+    const route = await longRoute(MAX_RECALC_LEGS + 1)
+    expect(routedLegs(route)).toHaveLength(MAX_RECALC_LEGS + 1)
+    await expect(rerouteLegs(route, RECALC)).rejects.toBeInstanceOf(PlannerRefusedError)
+    expect(routeMock).not.toHaveBeenCalled()
+  })
+
+  it('rejects without a request when already aborted', async () => {
+    const route = await threePointRoute()
+    const controller = new AbortController()
+    controller.abort()
+    await expect(rerouteLegs(route, RECALC, controller.signal)).rejects.toThrow()
+    expect(routeMock).not.toHaveBeenCalled()
+  })
+
+  it('an abort while the router answers rejects and applies nothing', async () => {
+    const route = await threePointRoute()
+    const before = route.points.map((p) => ({ ...p }))
+    const controller = new AbortController()
+    routeMock.mockImplementation(
+      (_body: unknown, _opts: unknown, signal: AbortSignal) =>
+        new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason))
+          controller.abort()
+        })
+    )
+    await expect(rerouteLegs(route, RECALC, controller.signal)).rejects.toThrow()
+    expect(route.points.map((p) => ({ ...p }))).toEqual(before)
+  })
+
+  it('never has more than RECALC_CONCURRENCY requests in flight', async () => {
+    const route = await longRoute(10)
+    let inFlight = 0
+    let peak = 0
+    routeMock.mockImplementation(async ({ from, to }: RouteRequest) => {
+      inFlight++
+      peak = Math.max(peak, inFlight)
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      inFlight--
+      return arcAnswer({ from, to })
+    })
+    await rerouteLegs(route, RECALC)
+    expect(routeMock).toHaveBeenCalledTimes(10)
+    expect(peak).toBe(RECALC_CONCURRENCY)
+  })
+
+  it('stops sending requests after the first failure', async () => {
+    const route = await longRoute(10)
+    routeMock.mockImplementation(async () => {
+      throw new Error('quota')
+    })
+    await expect(rerouteLegs(route, RECALC)).rejects.toThrow('quota')
+    expect(routeMock.mock.calls.length).toBeLessThanOrEqual(RECALC_CONCURRENCY)
   })
 })

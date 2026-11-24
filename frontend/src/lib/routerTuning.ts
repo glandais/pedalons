@@ -26,6 +26,43 @@ export function isTunable(profile: RouterProfile): boolean {
   return PROFILE_DEFAULTS[profile] !== undefined
 }
 
+/**
+ * The steps the planner offers for each knob (WEB-202). Storage stays numeric, per profile: a step
+ * is a named value, and a stored number is read at the nearest one.
+ *
+ * Circulation: « Au calme » and « Équilibré » also ask the engine to avoid main roads; « Direct »
+ * does not. That is the only place avoidance is decided (the old standalone switch is gone).
+ */
+export type TrafficStep = 'calm' | 'balanced' | 'direct'
+export const TRAFFIC_STEPS: readonly TrafficStep[] = ['calm', 'balanced', 'direct']
+export const TRAFFIC_STEP_VALUES: Record<
+  TrafficStep,
+  { useRoads: number; avoidMainRoads: boolean }
+> = {
+  calm: { useRoads: 0.25, avoidMainRoads: true },
+  balanced: { useRoads: 0.5, avoidMainRoads: true },
+  direct: { useRoads: 1, avoidMainRoads: false },
+}
+
+/** Côtes: avoid the climbs, limit them, or do not care. */
+export type HillsStep = 'avoid' | 'limit' | 'any'
+export const HILLS_STEPS: readonly HillsStep[] = ['avoid', 'limit', 'any']
+export const HILLS_STEP_VALUES: Record<HillsStep, number> = { avoid: 0, limit: 0.25, any: 1 }
+
+const STEP_VALUES: Record<TuningKey, readonly number[]> = {
+  useRoads: TRAFFIC_STEPS.map((step) => TRAFFIC_STEP_VALUES[step].useRoads),
+  useHills: HILLS_STEPS.map((step) => HILLS_STEP_VALUES[step]),
+}
+
+/** The nearest step value of the knob; a tie goes to the higher step (0.75 gives 1). */
+export function snapToStep(key: TuningKey, value: number): number {
+  let best = STEP_VALUES[key][0]
+  for (const candidate of STEP_VALUES[key]) {
+    if (Math.abs(candidate - value) <= Math.abs(best - value)) best = candidate
+  }
+  return best
+}
+
 function isUnit(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1
 }
@@ -38,7 +75,11 @@ export function sanitizeTuning(raw: unknown, profile: RouterProfile): RouterTuni
   const tuning: RouterTuning = {}
   for (const key of TUNING_KEYS) {
     const value = (entry as Record<string, unknown>)[key]
-    if (isUnit(value) && value !== PROFILE_DEFAULTS[profile]?.[key]) tuning[key] = value
+    if (!isUnit(value)) continue
+    // Values stored by the old five-step sliders (0, 0.25, 0.5, 0.75, 1) are read at the nearest
+    // step of the new controls; nothing is written back to storage on read.
+    const snapped = snapToStep(key, value)
+    if (snapped !== PROFILE_DEFAULTS[profile]?.[key]) tuning[key] = snapped
   }
   return tuning
 }
@@ -52,6 +93,40 @@ export function toRouterSettings(profile: RouterProfile, tuning: RouterTuning): 
 /** The knob's value for display: the user's, else the profile's. */
 export function displayedValue(profile: RouterProfile, tuning: RouterTuning, key: TuningKey) {
   return tuning[key] ?? PROFILE_DEFAULTS[profile]?.[key] ?? 0.25
+}
+
+function stepOfValue<S extends string>(
+  steps: readonly S[],
+  values: (step: S) => number,
+  value: number
+): S {
+  return steps.find((step) => values(step) === value) ?? steps[0]
+}
+
+/** The Circulation step shown for the profile: the user's value, else the profile's, snapped. */
+export function trafficStepOf(profile: RouterProfile, tuning: RouterTuning): TrafficStep {
+  const value = snapToStep('useRoads', displayedValue(profile, tuning, 'useRoads'))
+  return stepOfValue(TRAFFIC_STEPS, (step) => TRAFFIC_STEP_VALUES[step].useRoads, value)
+}
+
+/** The Côtes step shown for the profile: the user's value, else the profile's, snapped. */
+export function hillsStepOf(profile: RouterProfile, tuning: RouterTuning): HillsStep {
+  const value = snapToStep('useHills', displayedValue(profile, tuning, 'useHills'))
+  return stepOfValue(HILLS_STEPS, (step) => HILLS_STEP_VALUES[step], value)
+}
+
+export function defaultTrafficStep(profile: RouterProfile): TrafficStep {
+  return trafficStepOf(profile, {})
+}
+
+export function defaultHillsStep(profile: RouterProfile): HillsStep {
+  return hillsStepOf(profile, {})
+}
+
+/** Whether the engine is asked to avoid main roads: decided by the Circulation step, bicycle profiles only. */
+export function avoidMainRoadsOf(profile: RouterProfile, tuning: RouterTuning): boolean {
+  if (!isTunable(profile)) return false
+  return TRAFFIC_STEP_VALUES[trafficStepOf(profile, tuning)].avoidMainRoads
 }
 
 /** True when a knob differs from the profile (a stored value equal to it is never kept). */

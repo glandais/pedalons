@@ -46,9 +46,6 @@ export function effectiveEngine(
     : undefined
 }
 
-/** Where « avoid main roads » is kept, per device. Off until the user turns it on. */
-export const ROUTER_AVOID_MAIN_ROADS_STORAGE_KEY = 'pedalons-router-avoid-main-roads'
-
 /** True when the offers list that option for the engine: its control is drawn only then. */
 export function isOptionOffered(
   offers: readonly RouterEngineOffer[] | undefined,
@@ -58,12 +55,10 @@ export function isOptionOffered(
   return offers?.some((o) => o.engine === engine && (o.options ?? []).includes(option)) ?? false
 }
 
-/** What `RouterProfileSelector` needs to draw the choice; absent when it is not on offer. */
+/** What `RouteSettingsBody` needs to draw the choice; absent when it is not on offer. */
 export interface EngineChoice {
   value: RouterEngine
   onChange: (engine: RouterEngine) => void
-  /** The planner belongs to a team: « Routes de l'équipe » instead of « Pédalons ». */
+  /** The planner belongs to a team: « Routes de l'équipe » instead of « Routes des cyclistes ». */
   team: boolean
-  /** « Avoid main roads », absent when the engine on offer does not accept it. */
-  avoidMainRoads?: { value: boolean; onChange: (on: boolean) => void }
 }

@@ -8,12 +8,10 @@ import {
   IconLineDashed,
 } from '@tabler/icons-react'
 import { ActionIcon, Box, Button, Group, Text, UnstyledButton } from '@mantine/core'
-import { RouterProfile } from '@/api/dto'
 import { PlannerHelpControl } from './PlannerHelpControl'
 import { PlannerStatus } from './PlannerStatus'
-import type { RouterTuning, TuningKey } from '@/lib/routerTuning'
-import type { EngineChoice } from '@/lib/routerEngine'
-import { RouterProfileSelector } from './RouterProfileSelector'
+import { RouteSettingsButton } from './RouteSettings'
+import type { RouteSettingsModel } from './routeSettingsModel'
 
 interface PlannerBottomBarProps {
   /** Number of control points the user placed. */
@@ -32,13 +30,8 @@ interface PlannerBottomBarProps {
   canRedo: boolean
   onUndo: () => void
   onRedo: () => void
-  routerProfile: RouterProfile
-  onProfileChange: (profile: RouterProfile) => void
-  routerTuning: RouterTuning
-  onTuningChange: (key: TuningKey, value: number) => void
-  onTuningReset: () => void
-  /** Absent unless the Pédalons engine is on offer for the profile. */
-  engineChoice?: EngineChoice
+  /** The « Réglages du tracé » panel: practice, calculation, traffic, hills, recalculation. */
+  settings: RouteSettingsModel
   /** "Straight line" toggle: the next gestures are drawn without the router. */
   directMode: boolean
   onDirectModeChange: (on: boolean) => void
@@ -73,12 +66,7 @@ export function PlannerBottomBar({
   canRedo,
   onUndo,
   onRedo,
-  routerProfile,
-  onProfileChange,
-  routerTuning,
-  onTuningChange,
-  onTuningReset,
-  engineChoice,
+  settings,
   directMode,
   onDirectModeChange,
   onDone,
@@ -165,15 +153,7 @@ export function PlannerBottomBar({
           >
             <IconLineDashed size={22} />
           </ActionIcon>
-          <RouterProfileSelector
-            currentProfile={routerProfile}
-            onProfileChange={onProfileChange}
-            tuning={routerTuning}
-            onTuningChange={onTuningChange}
-            onTuningReset={onTuningReset}
-            engineChoice={engineChoice}
-            trigger="bar"
-          />
+          <RouteSettingsButton settings={settings} trigger="bar" />
           <PlannerHelpControl trigger="bar" />
         </Group>
 

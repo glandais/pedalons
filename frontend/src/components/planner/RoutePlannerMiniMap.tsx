@@ -48,7 +48,7 @@ export function RoutePlannerMiniMap({ center, routeGeoJson }: RoutePlannerMiniMa
   return (
     <Box
       pos="absolute"
-      right={16}
+      right="calc(16px + var(--planner-dock-inset, 0px))"
       w={200}
       h={200}
       style={{

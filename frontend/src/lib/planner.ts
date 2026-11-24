@@ -794,33 +794,46 @@ function createPoints(coords: number[][], imported = false): RoutePoint[] {
  * points and its zoom levels, so a gesture does not reshuffle the anchors far from it.
  */
 export function computeRoute(input: RoutePoint[], changed?: Bounds): Route {
-  let points: RoutePoint[]
-  if (!changed || input.length < 2) {
-    points = ramerDouglasPeucker(input, 5)
-    points.forEach((p) => {
-      p.zoom = p.manual ? MIN_ANCHOR_ZOOM : getZoomLevelForDistance(p.lat, p.rdpDistance)
-    })
-    foldUnpaved(input, points)
-  } else {
-    const s = changed.start ? input.indexOf(changed.start) : 0
-    const e = changed.end ? input.indexOf(changed.end) : input.length - 1
-    if (s < 0 || e < 0) throw new Error('planner: bound not in route')
-    if (e <= s) {
-      points = [...input]
-    } else {
-      // The recursion is called directly: ramerDouglasPeucker would make the bounds manual, and an
-      // imported anchor used as a bound would become a marker.
-      const middle: RoutePoint[] = []
-      ramerDouglasPeuckerRecursive(input, middle, 5, s, e)
-      points = [...input.slice(0, s + 1), ...middle, ...input.slice(e)]
-      for (const p of middle) p.zoom = getZoomLevelForDistance(p.lat, p.rdpDistance)
-    }
-    points[0].manual = true
-    points[points.length - 1].manual = true
-    // Other points, the bounds included, keep their zoom: only a manual one is always visible
-    for (const p of points) if (p.manual) p.zoom = MIN_ANCHOR_ZOOM
-    foldUnpaved(input, points)
+  if (changed && input.length >= 2) {
+    return simplifySpans(input, [
+      { start: changed.start ?? input[0], end: changed.end ?? input[input.length - 1] },
+    ])
   }
+  const points = ramerDouglasPeucker(input, 5)
+  points.forEach((p) => {
+    p.zoom = p.manual ? MIN_ANCHOR_ZOOM : getZoomLevelForDistance(p.lat, p.rdpDistance)
+  })
+  foldUnpaved(input, points)
+  return finishRoute(points)
+}
+
+/**
+ * Simplifies again the spans of `input` between their bounds, in order (disjoint, objects of
+ * `input` found by identity; two consecutive spans may share a bound). Everything outside the spans
+ * keeps its points and its zoom levels.
+ */
+function simplifySpans(input: RoutePoint[], spans: Required<Bounds>[]): Route {
+  const points: RoutePoint[] = []
+  let cursor = 0
+  for (const span of spans) {
+    const s = input.indexOf(span.start)
+    const e = input.indexOf(span.end)
+    if (s < 0 || e < 0) throw new Error('planner: bound not in route')
+    if (e <= s) continue
+    // The recursion is called directly: ramerDouglasPeucker would make the bounds manual, and an
+    // imported anchor used as a bound would become a marker.
+    const middle: RoutePoint[] = []
+    ramerDouglasPeuckerRecursive(input, middle, 5, s, e)
+    points.push(...input.slice(cursor, s + 1), ...middle)
+    cursor = e
+    for (const p of middle) p.zoom = getZoomLevelForDistance(p.lat, p.rdpDistance)
+  }
+  points.push(...input.slice(cursor))
+  points[0].manual = true
+  points[points.length - 1].manual = true
+  // Other points, the bounds included, keep their zoom: only a manual one is always visible
+  for (const p of points) if (p.manual) p.zoom = MIN_ANCHOR_ZOOM
+  foldUnpaved(input, points)
   return finishRoute(points)
 }
 
@@ -1067,6 +1080,135 @@ export async function remove(
   after[0].unpaved = segment.at(-1)?.unpaved
 
   return computeRoute([...before, ...segment, ...after], { start: before.at(-1), end: after[0] })
+}
+
+/** A leg the router drew: `start` and `end` are the points of the route that bound it. */
+export interface RoutedLeg {
+  start: RoutePoint
+  end: RoutePoint
+}
+
+/**
+ * The routed legs of a route, in order: the pieces a recalculation sends to the router again.
+ *
+ * <p>A route is cut at its leg ends: the first point, then every point that is manual, imported,
+ * direct or carries `legAscend`. A span between two consecutive ends is a routed leg if and only if
+ * its arrival point is not straight and carries `legAscend` (the invariant of {@link edgeMode}:
+ * `add`, `insert` and `remove` write it after the router answered, a hop included, and
+ * Douglas-Peucker never drops such a point). Straight lines are excluded (a recalculation never
+ * draws one by road), and so are the spans imported from a file, an opened route or a generator
+ * proposal: rerouting them would destroy the file, and an intact import has no routed leg at all.
+ */
+export function routedLegs(route: Route): RoutedLeg[] {
+  const points = route.points
+  const legs: RoutedLeg[] = []
+  let previous = 0
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i]
+    if (!(p.manual || p.imported || p.direct || p.legAscend !== undefined)) continue
+    if (!p.direct && p.legAscend !== undefined) {
+      legs.push({ start: points[previous], end: p })
+    }
+    previous = i
+  }
+  return legs
+}
+
+/**
+ * What a recalculation would touch: the number of routed legs, their summed length in metres, and
+ * whether the route also has straight or imported pieces that stay as they are.
+ */
+export function recalcScope(route: Route): { legs: number; distance: number; keeps: boolean } {
+  const points = route.points
+  const legs = routedLegs(route)
+  const cumul = cumulativeDistances(points)
+  const indexOf = new Map(points.map((p, i) => [p, i]))
+  let distance = 0
+  for (const { start, end } of legs)
+    distance += cumul[indexOf.get(end)!] - cumul[indexOf.get(start)!]
+  let keeps = false
+  for (let i = 1; i < points.length && !keeps; i++) keeps = edgeMode(points, i) !== 'ROUTED'
+  // Routed legs that are only hops (under 5 m, no request) leave nothing to recalculate.
+  if (distance < 5) return { legs: 0, distance: 0, keeps }
+  return { legs: legs.length, distance, keeps }
+}
+
+/** More routed legs than this are refused: the server caps a user's calculations per day (300). */
+export const MAX_RECALC_LEGS = 100
+/** Requests of a recalculation in flight at the same time. */
+export const RECALC_CONCURRENCY = 4
+
+const RECALC_TOO_MANY_KEY = tRegister('planner.recalc.tooMany')
+
+/**
+ * Routes every routed leg of `route` again with `settings` (WEB-202): one request per leg (a hop
+ * under 5 m costs none), at most {@link RECALC_CONCURRENCY} at a time, the first failure aborting
+ * the rest so nothing more is billed. All or nothing: nothing in `route` is touched before every
+ * leg has answered, and a failure rejects with the first error and leaves the route intact. The
+ * ends of the legs do not move; they take the new climb, shape and surface.
+ */
+export async function rerouteLegs(
+  route: Route,
+  settings: RouterSettings,
+  signal?: AbortSignal,
+  teamSlug?: string
+): Promise<Route> {
+  signal?.throwIfAborted()
+  const legs = routedLegs(route)
+  if (legs.length === 0) return route
+  if (legs.length > MAX_RECALC_LEGS) throw new PlannerRefusedError(RECALC_TOO_MANY_KEY)
+
+  const internal = new AbortController()
+  const onAbort = () => internal.abort()
+  signal?.addEventListener('abort', onAbort, { once: true })
+  const answers: Leg[] = new Array(legs.length)
+  let failure: { error: unknown } | undefined
+  let next = 0
+  const worker = async () => {
+    while (!failure && !internal.signal.aborted) {
+      const i = next++
+      if (i >= legs.length) return
+      try {
+        answers[i] = await router(
+          legs[i].start,
+          legs[i].end,
+          settings,
+          false,
+          internal.signal,
+          teamSlug
+        )
+      } catch (error) {
+        failure ??= { error }
+        internal.abort()
+      }
+    }
+  }
+  try {
+    await Promise.all(Array.from({ length: Math.min(RECALC_CONCURRENCY, legs.length) }, worker))
+  } finally {
+    signal?.removeEventListener('abort', onAbort)
+  }
+  // The caller's own abort wins over the failure it caused downstream
+  signal?.throwIfAborted()
+  if (failure) throw failure.error
+
+  // Every leg answered: only now is the route written, leg by leg, in order
+  let points = route.points
+  legs.forEach(({ start, end }, k) => {
+    const leg = answers[k]
+    const startIdx = points.indexOf(start)
+    const endIdx = points.indexOf(end)
+    if (startIdx < 0 || endIdx < 0) throw new Error('planner: bound not in route')
+    end.direct = false
+    end.legAscend = leg.ascend ?? 0
+    end.legShape = legShapeOf(leg, start, end)
+    end.unpaved = leg.points.at(-1)?.unpaved
+    points = [...points.slice(0, startIdx + 1), ...leg.points, ...points.slice(endIdx)]
+  })
+  return simplifySpans(
+    points,
+    legs.map(({ start, end }) => ({ start, end }))
+  )
 }
 
 /**

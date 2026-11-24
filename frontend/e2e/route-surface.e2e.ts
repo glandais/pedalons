@@ -97,7 +97,7 @@ test('a route sheet shows its surface breakdown and colours the profile and the 
 
   // The grade colours the profile and the line until the viewer asks for the surface. The switch
   // sits above the breakdown, shared with the weather mode (ledger WEB-115, WEB-118).
-  const colorBy = main.getByRole('radiogroup', { name: 'Colorer le profil et le tracé selon' })
+  const colorBy = main.getByRole('radiogroup', { name: "Colorer l'altitude et le tracé selon" })
   const grade = colorBy.getByRole('radio', { name: 'Pente' })
   const surface = colorBy.getByRole('radio', { name: 'Revêtement' })
   await expect(grade).toBeChecked()

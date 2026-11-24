@@ -220,11 +220,12 @@ async function startDrawing(page: Page, isMobile: boolean) {
 const markerName = (n: number) => new RegExp(`^(?:(?:Départ|Arrivée), p|P)oint ${n} sur \\d+$`)
 
 /**
- * The routing profile's button: « Profil », « Profil (personnalisé) » once a knob is turned. Anchored,
- * because on a finger the summary line of the bottom bar is named « Afficher / Masquer le profil
- * altimétrique » (docs/LEDGER_*.md WEB-157).
+ * The route settings' button: « Réglages du tracé : Gravel », « Réglages du tracé : Gravel · ajusté »
+ * once a step differs from the practice's default (docs/LEDGER_*.md WEB-202). Anchored, because on a
+ * finger the summary line of the bottom bar is named « Afficher / Masquer le profil altimétrique »
+ * (docs/LEDGER_*.md WEB-157).
  */
-const ROUTER_PROFILE = { name: /^Profil/ } as const
+const ROUTER_PROFILE = { name: /^Réglages du tracé/ } as const
 
 /** On a finger, line 1 of the bottom bar: the summary, which folds and unfolds the profile. */
 const SUMMARY = { name: /^(Afficher|Masquer) le profil altimétrique$/ } as const
@@ -956,9 +957,15 @@ test.describe('the fullscreen bar on a narrow phone', () => {
   test('« Terminer » fits in a 360 px wide screen', async ({ context, page, isMobile }) => {
     test.skip(!isMobile, 'a finger-only layout')
     await page.setViewportSize({ width: 360, height: 740 })
+    // The widest state of the bar's settings button: « Gravel · ajusté » (a step off the practice's)
+    await page.addInitScript(() => {
+      localStorage.setItem('pedalons-router-profile', JSON.stringify('GRAVEL'))
+      localStorage.setItem('pedalons-router-tuning', JSON.stringify({ GRAVEL: { useRoads: 1 } }))
+    })
     const { surface, clickMap, points } = await openPlanner({ context, page, isMobile })
     await clickMap(0, 0)
     await expect(points(1)).toBeVisible()
+    await expect(surface.getByRole('button', ROUTER_PROFILE)).toHaveAccessibleName(/ajusté$/)
     const done = await surface.getByRole('button', { name: 'Terminer' }).boundingBox()
     if (!done) throw new Error('« Terminer » has no box')
     expect(done.x).toBeGreaterThanOrEqual(0)
@@ -2279,11 +2286,14 @@ test.describe('avoiding hills and traffic (C2)', () => {
     await expect(points(1)).toBeVisible()
 
     await surface.getByRole('button', ROUTER_PROFILE).click()
-    const hills = page.getByRole('slider', { name: 'Côtes' })
+    const hills = page.getByRole('radiogroup', { name: 'Côtes' })
     await expect(hills).toBeVisible()
-    await hills.focus()
-    await page.keyboard.press('Home')
-    await expect(hills).toHaveAttribute('aria-valuenow', '0')
+    // Mantine hides the radio inputs: the click goes to their label
+    await hills
+      .locator('label')
+      .filter({ hasText: /^Éviter$/ })
+      .click()
+    await expect(hills.getByRole('radio', { name: 'Éviter' })).toBeChecked()
     expect(routerRequests, 'turning a knob routes nothing').toHaveLength(0)
     await page.keyboard.press('Escape')
     await expect(hills).toBeHidden()
@@ -2298,7 +2308,57 @@ test.describe('avoiding hills and traffic (C2)', () => {
     await page.reload()
     await startDrawing(page, isMobile)
     await surface.getByRole('button', ROUTER_PROFILE).click()
-    await expect(page.getByRole('slider', { name: 'Côtes' })).toHaveAttribute('aria-valuenow', '0')
+    await expect(
+      page.getByRole('radiogroup', { name: 'Côtes' }).getByRole('radio', { name: 'Éviter' })
+    ).toBeChecked()
+  })
+})
+
+test.describe('recalculating the route (WEB-202)', () => {
+  test.setTimeout(90_000)
+
+  test('recalculating re-routes every routed leg with the current settings (WEB-202)', async ({
+    context,
+    page,
+    isMobile,
+  }) => {
+    const planner = await openPlanner({ context, page, isMobile })
+    const { surface, points, settled, routerRequests } = planner
+    // 3 points: 2 routed legs, drawn with the practice's own values
+    await drawThreePoints(planner)
+    expect(routerRequests).toHaveLength(2)
+    const before = routerRequests.length
+
+    await surface.getByRole('button', ROUTER_PROFILE).click()
+    // « Vélo » (calm by default), so that « Direct » is a step away from the practice's values
+    await page
+      .getByRole('radiogroup', { name: 'Pratique' })
+      .getByRole('radio', { name: 'Vélo' })
+      .click()
+    const traffic = page.getByRole('radiogroup', { name: 'Circulation' })
+    await expect(traffic).toBeVisible()
+    await traffic
+      .locator('label')
+      .filter({ hasText: /^Direct$/ })
+      .click()
+    await expect(traffic.getByRole('radio', { name: 'Direct' })).toBeChecked()
+    expect(routerRequests, 'choosing a step routes nothing').toHaveLength(before)
+
+    await page.getByRole('button', { name: /^Recalculer les / }).click()
+    await settled()
+    const redone = routerRequests.slice(before)
+    expect(redone, 'one request per routed leg').toHaveLength(2)
+    for (const request of redone) expect(request.useRoads).toBe(1)
+    await expect(page.getByRole('status').filter({ hasText: 'Tracé recalculé' })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^Recalculer les / })).toHaveCount(0)
+
+    // Undo takes the recalculation back, and asks nothing of the router
+    await page.keyboard.press('Escape')
+    const shortcut = (label: string, keys: string) => (isMobile ? label : `${label} (${keys})`)
+    await surface.getByRole('button', { name: shortcut('Annuler', 'Ctrl+Z'), exact: true }).click()
+    await expect(points(3)).toBeVisible()
+    await settled()
+    expect(routerRequests, 'undo asks nothing of the router').toHaveLength(before + 2)
   })
 })
 
@@ -2340,10 +2400,15 @@ test.describe('route calculation engine (API-217)', () => {
     await expect(points(1)).toBeVisible()
 
     await surface.getByRole('button', ROUTER_PROFILE).click()
-    const group = page.getByRole('radiogroup', { name: "Calcul d'itinéraire" })
+    // The default practice is « Route » (direct); « Vélo » is calm, main roads avoided
+    await page
+      .getByRole('radiogroup', { name: 'Pratique' })
+      .getByRole('radio', { name: 'Vélo' })
+      .click()
+    const group = page.getByRole('radiogroup', { name: 'Calcul' })
     await expect(group).toBeVisible()
     // No team on the GPX tools: the shared wording, chosen by default
-    await expect(group.getByRole('radio', { name: 'Pédalons' })).toBeChecked()
+    await expect(group.getByRole('radio', { name: 'Routes des cyclistes' })).toBeChecked()
     await group
       .locator('label')
       .filter({ hasText: /^Standard$/ })
@@ -2351,16 +2416,16 @@ test.describe('route calculation engine (API-217)', () => {
     await expect(group.getByRole('radio', { name: 'Standard' })).toBeChecked()
     await group
       .locator('label')
-      .filter({ hasText: /^Pédalons$/ })
+      .filter({ hasText: /^Routes des cyclistes$/ })
       .click()
-    await expect(group.getByRole('radio', { name: 'Pédalons' })).toBeChecked()
-    // The Pédalons engine knows no elevation: the hills knob goes, the roads one stays
-    await expect(page.getByRole('slider', { name: 'Côtes' })).toHaveCount(0)
-    await expect(page.getByRole('slider', { name: 'Trafic' })).toBeVisible()
-    const avoid = page.getByRole('switch')
-    await expect(avoid).not.toBeChecked()
-    await avoid.check({ force: true })
-    await expect(avoid).toBeChecked()
+    await expect(group.getByRole('radio', { name: 'Routes des cyclistes' })).toBeChecked()
+    // The shared engine knows no elevation: the hills step goes and says so, the traffic one stays
+    // on the practice's default (BIKE: « Au calme », main roads avoided)
+    await expect(page.getByRole('radiogroup', { name: 'Côtes' })).toHaveCount(0)
+    await expect(page.getByText('Côtes : ignorées par ce calcul')).toBeVisible()
+    const traffic = page.getByRole('radiogroup', { name: 'Circulation' })
+    await expect(traffic).toBeVisible()
+    await expect(traffic.getByRole('radio', { name: 'Au calme' })).toBeChecked()
     expect(routerRequests, 'choosing an engine routes nothing').toHaveLength(0)
     await page.keyboard.press('Escape')
 
@@ -2386,8 +2451,9 @@ test.describe('route calculation engine (API-217)', () => {
     await clickMap(-100, 0)
     await expect(points(1)).toBeVisible()
     await surface.getByRole('button', ROUTER_PROFILE).click()
-    await expect(page.getByRole('slider', { name: 'Côtes' })).toBeVisible()
-    await expect(page.getByRole('radiogroup', { name: "Calcul d'itinéraire" })).toHaveCount(0)
+    await expect(page.getByRole('radiogroup', { name: 'Côtes' })).toBeVisible()
+    await expect(page.getByRole('radiogroup', { name: 'Calcul' })).toHaveCount(0)
+    await expect(page.getByText('Calcul standard pour cette pratique.')).toBeVisible()
     await page.keyboard.press('Escape')
 
     await clickMap(100, 30)

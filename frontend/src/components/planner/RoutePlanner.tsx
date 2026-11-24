@@ -33,6 +33,8 @@ import type { ExpressionSpecification } from 'maplibre-gl'
 import { surfaceColors } from '@/lib/plannerSurface'
 import { PlannerMapControlsContext } from './plannerMapControls'
 import { PlannerToolbar } from './PlannerToolbar'
+import { ROUTE_SETTINGS_DOCK_WIDTH_PX, RouteSettingsDock } from './RouteSettings'
+import { ROUTE_SETTINGS_PANEL_ID, useRouteSettings } from './routeSettingsModel'
 import { RoutePlannerMiniMap } from './RoutePlannerMiniMap'
 import { calculateBounds } from '../map/mapUtils'
 import { useHideTrackKey } from '../../hooks/useHideTrackKey'
@@ -61,7 +63,7 @@ import { PlannerWaypointMarker } from './PlannerWaypointMarker'
 import { getOverlayBg } from '@/lib/colors'
 import { isEditableTarget } from '@/lib/editableTarget'
 import { isApplePlatform } from '@/lib/platform'
-import { panelJustDismissed } from '@/components/map/mapPanelState'
+import { panelJustDismissed, useMapPanel } from '@/components/map/mapPanelState'
 
 const DEFAULT_ZOOM = 12
 /**
@@ -230,12 +232,6 @@ export function RoutePlanner({
     setDirectMode,
     isLoading,
     error,
-    routerProfile,
-    setRouterProfile,
-    routerTuning,
-    setRouterTuning,
-    resetRouterTuning,
-    engineChoice,
     addControlPoint,
     insertControlPoint,
     updateControlPoint,
@@ -250,6 +246,7 @@ export function RoutePlanner({
     undo,
     redo,
   } = planner
+  const routeSettings = useRouteSettings(planner)
 
   // The route line: one colour, or the surface of each edge (a `match` on the features' `surface`)
   const lineColor = useMemo(() => {
@@ -299,17 +296,26 @@ export function RoutePlanner({
   const touchFullscreen = layout === 'fullscreen' && isCoarsePointer
   // Anywhere else (a mouse, inline or fullscreen): in the toolbar at the bottom of the map.
   const withToolbar = !touchFullscreen
+  // On a mouse the « Réglages du tracé » panel is docked on the map's right edge (WEB-202), and the
+  // map's right-hand overlays make room for it (`.planner-map--dock`, index.css). RoutePlannerField
+  // and PlannerApp provide the open-panel state it shares with the basemap panel.
+  const dockEnabled = withToolbar && !isCoarsePointer
+  const settingsPanel = useMapPanel(ROUTE_SETTINGS_PANEL_ID)
+  const dockOpen = dockEnabled && settingsPanel.opened
   // A framed trace stays clear of what stands over the map: the toolbar along its bottom (mouse),
   // the control column at the bottom-right and the place search across the top (finger,
   // `mapZones.ts`). Under them, a point could be neither seen nor touched (docs/LEDGER_*.md WEB-158).
   const fitPadding = useMemo(
     () => ({
       top: FIT_PADDING_PX + (isCoarsePointer ? MAP_CONTROL_INSET_PX : 0),
-      right: FIT_PADDING_PX + (isCoarsePointer ? MAP_CONTROL_INSET_PX : 0),
+      right:
+        FIT_PADDING_PX +
+        (isCoarsePointer ? MAP_CONTROL_INSET_PX : 0) +
+        (dockOpen ? ROUTE_SETTINGS_DOCK_WIDTH_PX + 2 * PLANNER_TOOLBAR_OFFSET_PX : 0),
       left: FIT_PADDING_PX,
       bottom: FIT_PADDING_PX + (withToolbar ? MAP_CONTROL_INSET_PX : 0),
     }),
-    [withToolbar, isCoarsePointer]
+    [withToolbar, isCoarsePointer, dockOpen]
   )
   const initialViewState = useMemo(() => {
     if (!initialTrack || initialTrack.length === 0) {
@@ -335,17 +341,23 @@ export function RoutePlanner({
     }
   }, [initialTrack, teamLocation, defaultView, fitPadding])
 
+  // Read at the moment of an import, not a dependency of it: opening or closing the settings panel
+  // changes the padding and must not re-frame the map.
+  const fitPaddingRef = useRef(fitPadding)
+  useEffect(() => {
+    fitPaddingRef.current = fitPadding
+  })
   // An import frames the whole route, whatever the map was showing
   useEffect(() => {
     if (fitRequest === 0) return
     const points = routeRef.current.points
     if (points.length < 2) return
     mapRef.current?.fitBounds(calculateBounds(points.map((p) => [p.lng, p.lat])), {
-      padding: fitPadding,
+      padding: fitPaddingRef.current,
       maxZoom: 15,
       duration: 0,
     })
-  }, [fitRequest, fitPadding])
+  }, [fitRequest])
 
   // The map lives in a container that changes size when this view moves between the form and the
   // fullscreen dialog. MapLibre's own observer notices; this also covers the frame the container
@@ -1746,7 +1758,11 @@ export function RoutePlanner({
         }}
         pos="relative"
         className={
-          [colorScheme === 'dark' && 'dark', withToolbar && 'planner-map--toolbar']
+          [
+            colorScheme === 'dark' && 'dark',
+            withToolbar && 'planner-map--toolbar',
+            dockOpen && 'planner-map--dock',
+          ]
             .filter(Boolean)
             .join(' ') || undefined
         }
@@ -2238,7 +2254,7 @@ export function RoutePlanner({
             pos="absolute"
             bottom={PLANNER_TOOLBAR_OFFSET_PX}
             left={PLANNER_TOOLBAR_OFFSET_PX}
-            right={PLANNER_TOOLBAR_OFFSET_PX}
+            right={`calc(${PLANNER_TOOLBAR_OFFSET_PX}px + var(--planner-dock-inset, 0px))`}
             gap="xs"
             align="center"
             // Over the map's corners (z-index 2)
@@ -2256,16 +2272,15 @@ export function RoutePlanner({
               onRedo={redo}
               directMode={directMode}
               onDirectModeChange={setDirectMode}
-              routerProfile={routerProfile}
-              onProfileChange={setRouterProfile}
-              routerTuning={routerTuning}
-              onTuningChange={setRouterTuning}
-              onTuningReset={resetRouterTuning}
-              engineChoice={engineChoice}
+              settings={routeSettings}
               onImport={onImport}
               onClear={layout === 'inline' ? clearRoute : undefined}
             />
           </Stack>
+        )}
+
+        {dockEnabled && (
+          <RouteSettingsDock settings={routeSettings} inset={PLANNER_TOOLBAR_OFFSET_PX} />
         )}
       </Box>
     </Stack>

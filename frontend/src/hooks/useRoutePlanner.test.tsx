@@ -481,10 +481,18 @@ describe('useRoutePlanner router tuning (C2)', () => {
 
   it('stores a value equal to the profile as absent', async () => {
     const { result } = await drawFirstPoint()
-    act(() => result.current.setRouterTuning('useRoads', 0.75))
-    expect(result.current.routerTuning).toEqual({ useRoads: 0.75 })
+    act(() => result.current.setRouterTuning('useRoads', 0.5))
+    expect(result.current.routerTuning).toEqual({ useRoads: 0.5 })
     act(() => result.current.setRouterTuning('useRoads', 0.25)) // BIKE's own value
     expect(result.current.routerTuning).toEqual({})
+  })
+
+  it('snaps a value to the nearest step, a tie going up', async () => {
+    const { result } = await drawFirstPoint()
+    act(() => result.current.setRouterTuning('useRoads', 0.75))
+    expect(result.current.routerTuning).toEqual({ useRoads: 1 })
+    act(() => result.current.setRouterTuning('useHills', 0.6))
+    expect(result.current.routerTuning).toEqual({ useRoads: 1 }) // 0.6 reads as 0.25: the default
   })
 
   it('treats FASTBIKE use_roads 1 as the profile value', async () => {
@@ -1126,41 +1134,56 @@ describe('useRoutePlanner routing engine', () => {
     expect(routeMock.mock.calls[0][0]).toMatchObject({ profile: 'BIKE', engine: 'PEDALONS' })
   })
 
-  it('avoids main roads only when the engine accepts it, it is on, and PEDALONS routes the leg', async () => {
-    // Not accepted: no control, nothing sent
-    const first = await drawFirstPoint('BIKE')
-    expect(first.result.current.engineChoice?.avoidMainRoads).toBeUndefined()
-    first.unmount()
+  const AVOID_OFFERS = () => [
+    OFFERS[0],
+    { ...OFFERS[1], options: ['USE_ROADS', 'AVOID_MAIN_ROADS'] },
+  ]
 
-    offersMock.mockReturnValue([
-      OFFERS[0],
-      { ...OFFERS[1], options: ['USE_ROADS', 'AVOID_MAIN_ROADS'] },
-    ])
-    const { result } = await drawFirstPoint('BIKE')
-    expect(result.current.engineChoice?.avoidMainRoads?.value).toBe(false)
-    act(() => result.current.engineChoice?.avoidMainRoads?.onChange(true))
-    expect(routeMock).not.toHaveBeenCalled()
-    expect(localStorage.setItem).toHaveBeenCalledWith('pedalons-router-avoid-main-roads', 'true')
+  async function sentAfterSecondPoint(profile: string) {
+    const { result } = await drawFirstPoint(profile)
     act(() => result.current.addControlPoint(B, false))
     await waitFor(() => expect(routeMock).toHaveBeenCalledTimes(1))
-    expect(routeMock.mock.calls[0][0]).toMatchObject({ engine: 'PEDALONS', avoidMainRoads: true })
+    return { result, sent: routeMock.mock.calls[0][0] as Record<string, unknown> }
+  }
+
+  it('avoids main roads by default for a calm profile, where PEDALONS accepts it', async () => {
+    offersMock.mockReturnValue(AVOID_OFFERS())
+    const { sent } = await sentAfterSecondPoint('BIKE')
+    expect(sent).toMatchObject({ engine: 'PEDALONS', avoidMainRoads: true })
   })
 
-  it('sends no avoidance with Standard, even when it is on', async () => {
-    offersMock.mockReturnValue([OFFERS[0], { ...OFFERS[1], options: ['AVOID_MAIN_ROADS'] }])
-    vi.mocked(localStorage.getItem).mockImplementation((key) =>
-      key === 'pedalons-router-engine'
-        ? '"STADIA"'
-        : key === 'pedalons-router-avoid-main-roads'
-          ? 'true'
-          : null
-    )
+  it('sends no avoidance once Circulation is Direct', async () => {
+    offersMock.mockReturnValue(AVOID_OFFERS())
     const { result } = await drawFirstPoint('BIKE')
+    act(() => result.current.setRouterTuning('useRoads', 1))
     act(() => result.current.addControlPoint(B, false))
     await waitFor(() => expect(routeMock).toHaveBeenCalledTimes(1))
-    const sent = Object.keys(routeMock.mock.calls[0][0])
-    expect(sent).not.toContain('engine')
-    expect(sent).not.toContain('avoidMainRoads')
+    const sent = routeMock.mock.calls[0][0]
+    expect(sent).toMatchObject({ engine: 'PEDALONS', useRoads: 1 })
+    expect(Object.keys(sent)).not.toContain('avoidMainRoads')
+  })
+
+  it('sends no avoidance with Standard, even calm', async () => {
+    offersMock.mockReturnValue(AVOID_OFFERS())
+    stored('"STADIA"')
+    const { sent } = await sentAfterSecondPoint('BIKE')
+    expect(Object.keys(sent)).not.toContain('engine')
+    expect(Object.keys(sent)).not.toContain('avoidMainRoads')
+  })
+
+  it('sends no avoidance when the engine does not offer the option', async () => {
+    const { sent } = await sentAfterSecondPoint('BIKE')
+    expect(sent).toMatchObject({ engine: 'PEDALONS' })
+    expect(Object.keys(sent)).not.toContain('avoidMainRoads')
+  })
+
+  it('no longer reads the old avoid-main-roads switch', async () => {
+    offersMock.mockReturnValue(AVOID_OFFERS())
+    vi.mocked(localStorage.getItem).mockImplementation((key) =>
+      key === 'pedalons-router-avoid-main-roads' ? 'true' : null
+    )
+    const { sent } = await sentAfterSecondPoint('FASTBIKE')
+    expect(Object.keys(sent)).not.toContain('avoidMainRoads')
   })
 
   it('reads the stored choice back', () => {
@@ -1181,5 +1204,167 @@ describe('useRoutePlanner routing engine', () => {
     stored('"valhalla"')
     const { result } = renderHook(() => useRoutePlanner())
     expect(result.current.engineChoice?.value).toBe('PEDALONS')
+  })
+})
+
+describe('useRoutePlanner recalculation (WEB-202)', () => {
+  beforeEach(() => {
+    routeMock.mockReset()
+    offersMock.mockReset()
+    routeMock.mockImplementation(async ({ from, to }: { from: typeof A; to: typeof A }) => ({
+      route: {
+        coordinates: [
+          [from.lng, from.lat, 100],
+          [(from.lng + to.lng) / 2, from.lat + 0.0005, 110],
+          [to.lng, to.lat, 100],
+        ],
+      },
+      ascend: 10,
+    }))
+    localStorage.clear()
+  })
+
+  /** A, B and C drawn by road: two routed legs. */
+  async function drawRoute() {
+    const hook = renderHook(() => useRoutePlanner())
+    // BIKE: its own useRoads (0.25) is not the one the tests set
+    act(() => hook.result.current.setRouterProfile('BIKE' as never))
+    act(() => hook.result.current.addControlPoint(A, true))
+    await waitFor(() => expect(hook.result.current.controlPoints).toHaveLength(1))
+    act(() => hook.result.current.addControlPoint(B, false))
+    await waitFor(() => expect(hook.result.current.controlPoints).toHaveLength(2))
+    act(() => hook.result.current.addControlPoint(C, false))
+    await waitFor(() => expect(hook.result.current.controlPoints).toHaveLength(3))
+    routeMock.mockClear()
+    return hook
+  }
+
+  it('routes every routed leg again with the current settings, as one history entry', async () => {
+    const { result } = await drawRoute()
+    expect(result.current.recalcScope.legs).toBe(2)
+    expect(result.current.recalculated).toBe(false)
+    act(() => result.current.setRouterTuning('useRoads', 1))
+    const entries = result.current.editMark
+    let applied = false
+    await act(async () => {
+      applied = await result.current.recalculate()
+    })
+    expect(applied).toBe(true)
+    expect(routeMock).toHaveBeenCalledTimes(2)
+    for (const [body] of routeMock.mock.calls) expect(body).toMatchObject({ useRoads: 1 })
+    expect(result.current.editMark).not.toBe(entries)
+    expect(result.current.recalculated).toBe(true)
+    expect(result.current.isLoading).toBe(false)
+    expect(result.current.error).toBeNull()
+  })
+
+  it('undo gives the previous route back without any request, and forgets the recalculation', async () => {
+    const { result } = await drawRoute()
+    const before = result.current.route
+    await act(async () => {
+      await result.current.recalculate()
+    })
+    expect(result.current.recalculated).toBe(true)
+    routeMock.mockClear()
+    act(() => result.current.undo())
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(result.current.recalculated).toBe(false)
+    expect(result.current.route).not.toBe(before) // restored from the history copy
+    expect(result.current.route.points.map((p) => [p.lng, p.lat])).toEqual(
+      before.points.map((p) => [p.lng, p.lat])
+    )
+  })
+
+  it('a setting change brings the button back', async () => {
+    const { result } = await drawRoute()
+    await act(async () => {
+      await result.current.recalculate()
+    })
+    expect(result.current.recalculated).toBe(true)
+    act(() => result.current.setRouterTuning('useRoads', 1))
+    expect(result.current.recalculated).toBe(false)
+  })
+
+  it('does nothing on a route opened from a track: no request, no history entry', async () => {
+    const track = [
+      [5, 45, 100],
+      [5.005, 45, 100],
+      [5.01, 45, 100],
+    ]
+    const { result } = renderHook(() => useRoutePlanner({ initialTrack: track }))
+    expect(result.current.recalcScope.legs).toBe(0)
+    const mark = result.current.editMark
+    let applied = true
+    await act(async () => {
+      applied = await result.current.recalculate()
+    })
+    expect(applied).toBe(false)
+    expect(routeMock).not.toHaveBeenCalled()
+    expect(result.current.editMark).toBe(mark)
+    expect(result.current.canUndo).toBe(false)
+  })
+
+  it('leaves a straight leg alone', async () => {
+    const { result } = renderHook(() => useRoutePlanner())
+    act(() => result.current.addControlPoint(A, true))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(1))
+    act(() => result.current.addControlPoint(B, true))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(2))
+    act(() => result.current.addControlPoint(C, false))
+    await waitFor(() => expect(result.current.controlPoints).toHaveLength(3))
+    routeMock.mockClear()
+    expect(result.current.recalcScope.legs).toBe(1)
+    expect(result.current.recalcScope.keeps).toBe(true)
+    await act(async () => {
+      await result.current.recalculate()
+    })
+    expect(routeMock).toHaveBeenCalledTimes(1)
+    expect(routeMock.mock.calls[0][0]).toMatchObject({ from: B, to: C })
+    expect(result.current.route.points[1].direct).toBe(true)
+  })
+
+  it('a refusal at a spent quota leaves the route as it was and hands it to the view', async () => {
+    const details = {
+      type: 'PLANNER_QUOTA_REACHED',
+      scope: 'TEAM',
+      limit: 20,
+      current: 20,
+      resetsOn: '2026-12-01',
+      teamName: 'Club',
+    } as const
+    const { result } = await drawRoute()
+    const route = result.current.route
+    const mark = result.current.editMark
+    routeMock.mockReset()
+    routeMock.mockRejectedValue(
+      new ApiClientError(403, { code: ErrorCode.PLANNER_QUOTA_REACHED, errorDetails: details })
+    )
+    let applied = true
+    await act(async () => {
+      applied = await result.current.recalculate()
+    })
+    expect(applied).toBe(false)
+    expect(result.current.quotaRefusal).toEqual(details)
+    expect(result.current.error).toBe('planner.error.quotaReached')
+    expect(result.current.route).toBe(route)
+    expect(result.current.editMark).toBe(mark)
+    expect(result.current.recalculated).toBe(false)
+  })
+
+  it('undo while it runs cancels it and keeps the history', async () => {
+    const { result } = await drawRoute()
+    const mark = result.current.editMark
+    pendingRouter()
+    let outcome: Promise<boolean> = Promise.resolve(true)
+    act(() => {
+      outcome = result.current.recalculate()
+    })
+    await waitFor(() => expect(result.current.isLoading).toBe(true))
+    act(() => result.current.undo())
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await expect(outcome).resolves.toBe(false)
+    expect(result.current.editMark).toBe(mark)
+    expect(result.current.recalculated).toBe(false)
+    expect(result.current.error).toBeNull()
   })
 })

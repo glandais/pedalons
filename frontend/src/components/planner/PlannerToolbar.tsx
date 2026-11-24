@@ -7,14 +7,12 @@ import {
   IconTrash,
 } from '@tabler/icons-react'
 import { Box, Divider } from '@mantine/core'
-import type { RouterProfile } from '@/api/dto'
 import { MapToolbarButton } from '@/components/map/MapToolbarButton'
 import { directShortcut } from '@/lib/plannerErrors'
-import type { RouterTuning, TuningKey } from '@/lib/routerTuning'
 import { PlannerHelpControl } from './PlannerHelpControl'
 import { PlannerStatus } from './PlannerStatus'
-import type { EngineChoice } from '@/lib/routerEngine'
-import { RouterProfileSelector } from './RouterProfileSelector'
+import { RouteSettingsButton } from './RouteSettings'
+import type { RouteSettingsModel } from './routeSettingsModel'
 
 interface PlannerToolbarProps {
   /** Number of control points the user placed. */
@@ -30,13 +28,8 @@ interface PlannerToolbarProps {
   onRedo: () => void
   directMode: boolean
   onDirectModeChange: (on: boolean) => void
-  routerProfile: RouterProfile
-  onProfileChange: (profile: RouterProfile) => void
-  routerTuning: RouterTuning
-  onTuningChange: (key: TuningKey, value: number) => void
-  onTuningReset: () => void
-  /** Absent unless the Pédalons engine is on offer for the profile. */
-  engineChoice?: EngineChoice
+  /** The « Réglages du tracé » panel: practice, calculation, traffic, hills, recalculation. */
+  settings: RouteSettingsModel
   /** Given where the map holds the tool: adds « Import a GPX file ». */
   onImport?: () => void
   /**
@@ -69,12 +62,7 @@ export function PlannerToolbar({
   onRedo,
   directMode,
   onDirectModeChange,
-  routerProfile,
-  onProfileChange,
-  routerTuning,
-  onTuningChange,
-  onTuningReset,
-  engineChoice,
+  settings,
   onImport,
   onClear,
 }: PlannerToolbarProps) {
@@ -118,14 +106,7 @@ export function PlannerToolbar({
         onClick={() => onDirectModeChange(!directMode)}
         active={directMode}
       />
-      <RouterProfileSelector
-        currentProfile={routerProfile}
-        onProfileChange={onProfileChange}
-        tuning={routerTuning}
-        onTuningChange={onTuningChange}
-        onTuningReset={onTuningReset}
-        engineChoice={engineChoice}
-      />
+      <RouteSettingsButton settings={settings} trigger="toolbar" />
       {separator}
       {onImport && (
         <MapToolbarButton

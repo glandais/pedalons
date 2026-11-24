@@ -2,11 +2,11 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **157 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **158 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-45 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+46 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
@@ -80,6 +80,10 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 - [ ] [`WEB-81`](ledger/WEB/WEB-81.md) GPX à plusieurs traces : profil empilé et synchro faussée (S, priorité basse)
 - [ ] [`WEB-7`](ledger/WEB/WEB-7.md) Idées de la liste « P2 (à planifier) » qui n'ont pas été retenues
+
+### Planificateur : audit UX du choix du profil, 24 novembre 2026
+
+- [ ] [`WEB-202`](ledger/WEB/WEB-202.md) Planificateur : refonte du volet de réglages du tracé (pratique, calcul, circulation, côtes, recalcul) (L) · *recette*
 
 ## API — Contrat d'API et backend
 
@@ -313,6 +317,7 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 - [`MOB-15`](ledger/MOB/MOB-15.md) Profil (33)
 - [`MOB-13`](ledger/MOB/MOB-13.md) Trombinoscope (34)
 - [`MOB-5`](ledger/MOB/MOB-5.md) Exploration de parcours (21)
+- [`WEB-202`](ledger/WEB/WEB-202.md) Planificateur : refonte du volet de réglages du tracé (pratique, calcul, circulation, côtes, recalcul)
 - [`WEB-199`](ledger/WEB/WEB-199.md) La souris déplace les ancres d'un tracé au lieu d'ajouter un point à côté
 - [`WEB-176`](ledger/WEB/WEB-176.md) Listes homogènes : recette en navigateur de `WEB-175`
 - [`WEB-172`](ledger/WEB/WEB-172.md) Cartes homogènes : recette en navigateur de `WEB-167`
