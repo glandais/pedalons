@@ -443,7 +443,7 @@ test.describe('leaving a ride, seen from the home page and the calendar', () => 
   async function showCalendarDay(page: Page, day: WallClock) {
     const main = page.getByRole('main')
     await expect(page).toHaveURL(/\/calendrier$/)
-    await expect(main.getByRole('heading', { name: 'Calendrier', level: 2 })).toBeVisible()
+    await expect(main.getByRole('heading', { name: 'Calendrier', level: 1 })).toBeVisible()
     const today = parisWallClock(new Date())
     const monthsAhead = day.year * 12 + day.month - (today.year * 12 + today.month)
     const visibleButton = (name: string) =>

@@ -187,7 +187,9 @@ export function VerifyEmailPage() {
         return (
           <Stack>
             <Stack gap="xs" ta="center">
-              <Title order={2}>{t('auth.verifyEmail.activate.title')}</Title>
+              <Title order={1} size="h2">
+                {t('auth.verifyEmail.activate.title')}
+              </Title>
               <Text c="dimmed">
                 <Trans
                   i18nKey="auth.verifyEmail.activate.message"
@@ -251,7 +253,9 @@ export function VerifyEmailPage() {
               style={{ margin: '0 auto' }}
               color="var(--mantine-color-blue-6)"
             />
-            <Title order={2}>{t('auth.verifyEmail.passkey.title')}</Title>
+            <Title order={1} size="h2">
+              {t('auth.verifyEmail.passkey.title')}
+            </Title>
             <Text c="dimmed">{t('auth.verifyEmail.passkey.message')}</Text>
             <Button
               onClick={handleRegisterPasskey}
@@ -275,7 +279,9 @@ export function VerifyEmailPage() {
               style={{ margin: '0 auto' }}
               color="var(--mantine-color-green-6)"
             />
-            <Title order={2}>{t('auth.verifyEmail.success.title')}</Title>
+            <Title order={1} size="h2">
+              {t('auth.verifyEmail.success.title')}
+            </Title>
             <Text c="dimmed">{t('auth.verifyEmail.success.message')}</Text>
             <Button component={PrefetchLink} to={paths.home()} fullWidth>
               {t('auth.verifyEmail.success.continue')}
@@ -292,7 +298,9 @@ export function VerifyEmailPage() {
                 style={{ margin: '0 auto' }}
                 color="var(--mantine-color-primary-6)"
               />
-              <Title order={2}>{t('auth.verifyEmail.invited.title')}</Title>
+              <Title order={1} size="h2">
+                {t('auth.verifyEmail.invited.title')}
+              </Title>
               <Text c="dimmed">{t('invitations.banner.title', { count: invitations.length })}</Text>
             </Stack>
             {invitations.map((invitation) => (
@@ -329,7 +337,9 @@ export function VerifyEmailPage() {
               style={{ margin: '0 auto' }}
               color="var(--mantine-color-green-6)"
             />
-            <Title order={2}>{t('auth.verifyEmail.emailChanged.title')}</Title>
+            <Title order={1} size="h2">
+              {t('auth.verifyEmail.emailChanged.title')}
+            </Title>
             <Text c="dimmed">
               <Trans
                 i18nKey="auth.verifyEmail.emailChanged.message"
@@ -354,7 +364,9 @@ export function VerifyEmailPage() {
         return (
           <Stack ta="center">
             <IconX size={48} style={{ margin: '0 auto' }} color="var(--mantine-color-red-6)" />
-            <Title order={2}>{t('auth.verifyEmail.error.title')}</Title>
+            <Title order={1} size="h2">
+              {t('auth.verifyEmail.error.title')}
+            </Title>
             <Text c="dimmed">
               {state === 'emailTaken'
                 ? t('auth.verifyEmail.emailChanged.taken')

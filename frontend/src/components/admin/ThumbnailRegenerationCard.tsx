@@ -97,7 +97,9 @@ export function ThumbnailRegenerationCard({ domainId }: ThumbnailRegenerationCar
       <Stack>
         <Group gap="xs">
           <IconPhoto size={20} />
-          <Title order={4}>{t('admin.maintenance.thumbnails.title')}</Title>
+          <Title order={2} size="h4">
+            {t('admin.maintenance.thumbnails.title')}
+          </Title>
         </Group>
         <Text size="sm" c="dimmed">
           {t('admin.maintenance.thumbnails.description')}

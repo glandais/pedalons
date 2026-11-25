@@ -73,6 +73,7 @@ describe('TeamAdminLayout (docs/LEDGER_*.md API-137)', () => {
     signIn(true)
     renderLayout(team(undefined))
     expect(screen.getByText('contenu')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'teams.admin.title' })).toBeTruthy()
     expect(tabs()).toEqual([
       'ride-templates',
       'places',

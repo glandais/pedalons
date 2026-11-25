@@ -72,7 +72,9 @@ export function TeamListPage() {
       <PendingInvitationsBanner />
       <Group justify="space-between" align="flex-start" wrap="wrap">
         <div>
-          <Title order={2}>{t('teams.title')}</Title>
+          <Title order={1} size="h2">
+            {t('teams.title')}
+          </Title>
           <Text c="dimmed" mt={4}>
             {t('teams.list.subtitle')}
           </Text>

@@ -200,7 +200,7 @@ export function BiketeamMigrationPage() {
         <Paper p="xl" withBorder maw={520} w="100%">
           <Stack align="center">
             <IconX size={40} color="var(--mantine-color-danger-6)" />
-            <Title order={3} ta="center">
+            <Title order={1} size="h3" ta="center">
               {t('biketeamMigration.unavailable.title')}
             </Title>
             <Text c="dimmed" ta="center">
@@ -237,7 +237,7 @@ export function BiketeamMigrationPage() {
             <ThemeIcon size={48} radius="xl" variant="light">
               <IconTransfer size={28} />
             </ThemeIcon>
-            <Title order={2}>
+            <Title order={1} size="h2">
               {t('biketeamMigration.title', { team: preview.teamName, site })}
             </Title>
             <Text c="dimmed">
@@ -383,7 +383,9 @@ function ExpiresAt({ date }: { date: string }) {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Stack gap="xs">
-      <Title order={4}>{title}</Title>
+      <Title order={2} size="h4">
+        {title}
+      </Title>
       {children}
     </Stack>
   )

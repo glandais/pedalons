@@ -110,7 +110,9 @@ export function ProfileShell({
       <Stack gap="lg" style={{ flex: 1, minWidth: 0 }} maw={760}>
         <Stack gap={4}>
           <Group justify="space-between" align="center" wrap="wrap" gap="sm">
-            <Title order={2}>{title}</Title>
+            <Title order={1} size="h2">
+              {title}
+            </Title>
             {actions}
           </Group>
           {description && (

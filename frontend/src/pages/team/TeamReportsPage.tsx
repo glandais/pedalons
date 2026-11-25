@@ -1,7 +1,7 @@
 import { Navigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { Box } from '@mantine/core'
+import { Stack, Title } from '@mantine/core'
 import { paths } from '@/config/paths'
 import { useGetTeam } from '@/api/endpoints/teams/teams'
 import {
@@ -48,7 +48,8 @@ export function TeamReportsPage() {
 
   return (
     <TeamAdminLayout team={team} currentTab="reports">
-      <Box py="lg">
+      <Stack py="lg">
+        <Title order={2}>{t('teams.admin.tabs.reports')}</Title>
         <ModerationQueue
           scope="team"
           status={filters.status}
@@ -72,7 +73,7 @@ export function TeamReportsPage() {
             )
           }
         />
-      </Box>
+      </Stack>
     </TeamAdminLayout>
   )
 }

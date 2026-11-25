@@ -162,6 +162,7 @@ export function RouteFullscreenView({
 
   return (
     <MapFullscreenShell
+      titleAsHeading
       leading={
         <ActionIcon
           component={PrefetchLink}

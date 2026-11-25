@@ -43,10 +43,10 @@ const AUTH_ERROR_KEYS: Partial<Record<ErrorCode, TranslationKey>> = {
 export type LoginFormMode = 'login' | 'register' | 'otp'
 
 export interface LoginFormProps {
-  /** Heading of the sign-in step. The register and code steps keep their own. */
+  /** Heading of the sign-in step. The register and code steps keep their own text, at the same level. */
   title: ReactNode
   subtitle: ReactNode
-  /** `1` on the login page, where the form is the page; `2` inside the home hero. */
+  /** Heading level of every step (sign-in, register, code): `1` on the login page, where the form is the page; `2` inside the home hero. */
   titleOrder?: TitleOrder
   /**
    * `redirect` (the login page): once signed in — or when already signed in on arrival — go to
@@ -262,6 +262,7 @@ export function LoginForm({
         initialEmail={loginForm.values.email}
         onSuccess={completeLogin}
         onBack={() => setMode('login')}
+        titleOrder={titleOrder}
       />
     )
   }
@@ -270,7 +271,9 @@ export function LoginForm({
     return (
       <Stack>
         <Stack gap="xs" ta="center">
-          <Title order={2}>{t('auth.register.title')}</Title>
+          <Title order={titleOrder} size="h2">
+            {t('auth.register.title')}
+          </Title>
           <Text c="dimmed">{t('auth.register.subtitle')}</Text>
         </Stack>
 

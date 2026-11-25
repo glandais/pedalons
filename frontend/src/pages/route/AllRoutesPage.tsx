@@ -33,7 +33,9 @@ export function AllRoutesPage() {
   return (
     <Stack my="lg">
       {/* Every list page has its title (constat C5). */}
-      <Title order={2}>{t('nav.explore')}</Title>
+      <Title order={1} size="h2">
+        {t('nav.explore')}
+      </Title>
 
       <RouteFilterPanel
         filters={filters}

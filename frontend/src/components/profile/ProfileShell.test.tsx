@@ -62,6 +62,6 @@ describe('ProfileShell', () => {
 
     const nav = screen.getByRole('navigation', { name: 'nav.profile' })
     expect(within(nav).getAllByRole('button', { name: 'nav.signOut' })).toHaveLength(1)
-    expect(screen.getByRole('heading', { name: 'Titre' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Titre' })).toBeTruthy()
   })
 })

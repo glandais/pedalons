@@ -155,7 +155,7 @@ export function DeviceVerifyPage() {
               <ThemeIcon size={64} radius="xl" color="green">
                 <IconCheck size={32} />
               </ThemeIcon>
-              <Title order={2} ta="center">
+              <Title order={1} size="h2" ta="center">
                 {t('device.ready.title')}
               </Title>
               <Text c="dimmed" ta="center">
@@ -177,7 +177,7 @@ export function DeviceVerifyPage() {
             <ThemeIcon size={64} radius="xl" color="blue">
               <IconRefresh size={32} />
             </ThemeIcon>
-            <Title order={2} ta="center">
+            <Title order={1} size="h2" ta="center">
               {t('device.hammerhead.title')}
             </Title>
             <Text c="dimmed" ta="center">
@@ -239,7 +239,7 @@ export function DeviceVerifyPage() {
             <ThemeIcon size={64} radius="xl" color="blue">
               <IconDeviceDesktop size={32} />
             </ThemeIcon>
-            <Title order={2} ta="center">
+            <Title order={1} size="h2" ta="center">
               {t('device.manualEntry.title')}
             </Title>
             <Text c="dimmed" ta="center">
@@ -274,7 +274,7 @@ export function DeviceVerifyPage() {
             <ThemeIcon size={64} radius="xl" color="red">
               <IconX size={32} />
             </ThemeIcon>
-            <Title order={2} ta="center">
+            <Title order={1} size="h2" ta="center">
               {t('device.errors.title')}
             </Title>
             <Alert color="red" title={t('device.errors.invalidCode')}>
@@ -306,7 +306,7 @@ export function DeviceVerifyPage() {
             <ThemeIcon size={64} radius="xl" color="green">
               <IconCheck size={32} />
             </ThemeIcon>
-            <Title order={2} ta="center">
+            <Title order={1} size="h2" ta="center">
               {t('device.success.title')}
             </Title>
             <Text c="dimmed" ta="center">
@@ -330,7 +330,7 @@ export function DeviceVerifyPage() {
             <ThemeIcon size={64} radius="xl" color="gray">
               <IconBan size={32} />
             </ThemeIcon>
-            <Title order={2} ta="center">
+            <Title order={1} size="h2" ta="center">
               {t('device.denied.title')}
             </Title>
             <Text c="dimmed" ta="center">
@@ -357,7 +357,7 @@ export function DeviceVerifyPage() {
           <ThemeIcon size={64} radius="xl" color="blue">
             <IconDeviceDesktop size={32} />
           </ThemeIcon>
-          <Title order={2} ta="center">
+          <Title order={1} size="h2" ta="center">
             {t('device.confirm.title')}
           </Title>
           <Text ta="center">

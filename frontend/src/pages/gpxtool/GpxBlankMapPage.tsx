@@ -33,6 +33,7 @@ export function GpxBlankMapPage() {
 
   return (
     <MapFullscreenShell
+      titleAsHeading
       leading={
         <ActionIcon
           component={PrefetchLink}

@@ -209,6 +209,8 @@ describe('BiketeamMigrationPage', () => {
     renderAt(`/migration-biketeam?request=${TOKEN}`)
 
     expect(await screen.findByText('biketeamMigration.block.SLUG_CONFLICT')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 2 }).length).toBeGreaterThan(0)
     expect(screen.queryByText('biketeamMigration.confirm')).not.toBeInTheDocument()
     expect(screen.getByText('biketeamMigration.backToBiketeam')).toBeInTheDocument()
   })

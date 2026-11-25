@@ -36,7 +36,9 @@ export function ResetPasswordPage() {
         <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
           <Stack ta="center">
             <IconX size={48} style={{ margin: '0 auto' }} color="var(--mantine-color-red-6)" />
-            <Title order={2}>{t('auth.resetPassword.error.title')}</Title>
+            <Title order={1} size="h2">
+              {t('auth.resetPassword.error.title')}
+            </Title>
             <Text c="dimmed">{t('auth.resetPassword.error.message')}</Text>
             <Button component={PrefetchLink} to={paths.forgotPassword()} fullWidth>
               {t('auth.resetPassword.error.requestNew')}
@@ -80,7 +82,9 @@ export function ResetPasswordPage() {
       <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
         <Stack>
           <Stack gap="xs" ta="center">
-            <Title order={2}>{t('auth.resetPassword.title')}</Title>
+            <Title order={1} size="h2">
+              {t('auth.resetPassword.title')}
+            </Title>
             <Text c="dimmed">{t('auth.resetPassword.subtitle')}</Text>
           </Stack>
 

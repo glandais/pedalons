@@ -53,7 +53,7 @@ async function openInbox(page: Page, isMobile: boolean) {
     await page.goto('/notifications')
   }
   await expect(
-    page.getByRole('main').getByRole('heading', { level: 2, name: 'Notifications' })
+    page.getByRole('main').getByRole('heading', { level: 1, name: 'Notifications' })
   ).toBeVisible()
 }
 

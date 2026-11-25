@@ -12,12 +12,23 @@ import type { TeamPageDto } from '@/api/dto'
 import { useTeamPageData } from './teamPageData'
 
 /** The page itself, in the team's layout or on its own. */
-function PageContent({ page, showBadge }: { page: TeamPageDto; showBadge: boolean }) {
+function PageContent({
+  page,
+  showBadge,
+  titleOrder,
+}: {
+  page: TeamPageDto
+  showBadge: boolean
+  /** The page's h1 when it stands alone, an h2 under the team's in TeamLayout (docs/LEDGER_*.md WEB-207). */
+  titleOrder: 1 | 2
+}) {
   const { t } = useTranslation()
   return (
     <Paper p="lg" withBorder>
       <Group gap="sm" mb="md">
-        <Title order={2}>{page.title}</Title>
+        <Title order={titleOrder} size="h2">
+          {page.title}
+        </Title>
         {page.visibility === 'TEAM' && showBadge && (
           <VisibilityBadge visibility={page.visibility} />
         )}
@@ -25,7 +36,7 @@ function PageContent({ page, showBadge }: { page: TeamPageDto; showBadge: boolea
 
       {/* Page Content */}
       <Box>
-        <MediaDisplay media={page.media} />
+        <MediaDisplay media={page.media} headingOffset={titleOrder === 1 ? 1 : 2} />
         {!page.media?.markdown && (
           <Text c="dimmed" fs="italic">
             {t('teams.pages.noContent')}
@@ -63,7 +74,7 @@ export function TeamPageDetailPage() {
     return (
       <Container size="md" py="xl">
         <TeamContextBanner team={page.team} />
-        <PageContent page={page} showBadge={false} />
+        <PageContent page={page} showBadge={false} titleOrder={1} />
       </Container>
     )
   }
@@ -73,7 +84,7 @@ export function TeamPageDetailPage() {
       <Box py="md">
         {/* The badge tells who else reads the page; a « Équipe » page only reaches its members and a
             platform admin, so no role needs reading for it (docs/LEDGER_*.md WEB-166). */}
-        <PageContent page={page} showBadge />
+        <PageContent page={page} showBadge titleOrder={2} />
       </Box>
     </TeamLayout>
   )

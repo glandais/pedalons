@@ -142,6 +142,15 @@ describe('LoginForm', () => {
     expect(screen.getByTestId('where').textContent).toBe('/?next=%2Fprofil')
   })
 
+  it('keeps the page level on the register and code steps', () => {
+    renderAt(form({ titleOrder: 1 }))
+    fireEvent.click(screen.getByRole('button', { name: 'auth.login.methods.register' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'auth.register.title' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'auth.login.title' }))
+    fireEvent.click(screen.getByRole('button', { name: 'auth.login.methods.otp' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'auth.otp.title' })).toBeTruthy()
+  })
+
   it('opens the register step, and the e-mailed code step', () => {
     renderAt(form())
     fireEvent.click(screen.getByRole('button', { name: 'auth.login.methods.register' }))

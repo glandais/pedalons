@@ -117,7 +117,7 @@ export function AcceptInvitationPage() {
         <Paper p="xl" withBorder maw={480} w="100%">
           <Stack align="center">
             <IconX size={40} color="var(--mantine-color-danger-6)" />
-            <Title order={3} ta="center">
+            <Title order={1} size="h3" ta="center">
               {t('invitations.accept.unavailableTitle')}
             </Title>
             <Text c="dimmed" ta="center">
@@ -143,7 +143,7 @@ export function AcceptInvitationPage() {
         <Paper p="xl" withBorder maw={480} w="100%">
           <Stack align="center">
             <IconCheck size={40} color="var(--mantine-color-success-6)" />
-            <Title order={3} ta="center">
+            <Title order={1} size="h3" ta="center">
               {t('invitations.accept.joined', { team: invitation.teamName })}
             </Title>
           </Stack>
@@ -159,7 +159,7 @@ export function AcceptInvitationPage() {
           <Center>
             <IconUsers size={40} />
           </Center>
-          <Title order={3} ta="center">
+          <Title order={1} size="h3" ta="center">
             {t('invitations.accept.title', {
               inviter: invitation.inviterName,
               team: invitation.teamName,

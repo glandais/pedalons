@@ -63,7 +63,10 @@ export function RouteGeneratorPage() {
     <TeamLayout team={team} currentTab="routes">
       <Stack py="lg">
         <Stack gap="xs">
-          <Title order={1}>{t('routeGenerator.title')}</Title>
+          {/* An h2 under the team's h1 (TeamLayout), at the size it had (docs/LEDGER_*.md WEB-207). */}
+          <Title order={2} size="h1">
+            {t('routeGenerator.title')}
+          </Title>
           <Text c="dimmed">{t('routeGenerator.subtitle')}</Text>
         </Stack>
         <RouteGeneratorPanel

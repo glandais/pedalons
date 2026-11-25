@@ -40,7 +40,9 @@ export function ForgotPasswordPage() {
         <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
           <Stack ta="center">
             <IconMail size={48} style={{ margin: '0 auto' }} color="var(--mantine-color-green-6)" />
-            <Title order={2}>{t('auth.forgotPassword.sent.title')}</Title>
+            <Title order={1} size="h2">
+              {t('auth.forgotPassword.sent.title')}
+            </Title>
             <Text c="dimmed">{t('auth.forgotPassword.sent.checkEmail')}</Text>
             <Anchor component={PrefetchLink} to={paths.login()} size="sm">
               <IconArrowLeft size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
@@ -57,7 +59,9 @@ export function ForgotPasswordPage() {
       <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
         <Stack>
           <Stack gap="xs" ta="center">
-            <Title order={2}>{t('auth.forgotPassword.title')}</Title>
+            <Title order={1} size="h2">
+              {t('auth.forgotPassword.title')}
+            </Title>
             <Text c="dimmed">{t('auth.forgotPassword.subtitle')}</Text>
           </Stack>
 

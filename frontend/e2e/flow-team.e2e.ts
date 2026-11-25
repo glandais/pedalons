@@ -85,7 +85,7 @@ test.describe('creating a team', () => {
 
     // From the team list, where the call to action lives.
     await page.goto('/equipes')
-    await expect(page.getByRole('heading', { level: 2, name: 'Équipes' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Équipes' })).toBeVisible()
     const create = main(page).getByRole('link', { name: 'Créer une équipe' })
     await hydrated(create)
     await create.click()
@@ -170,7 +170,7 @@ test.describe('team settings', () => {
     const manage = page.getByRole('link', { name: 'Gérer', exact: true })
     await hydrated(manage)
     await manage.click()
-    await expect(page.getByRole('heading', { level: 2, name: "Gestion de l'équipe" })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: "Gestion de l'équipe" })).toBeVisible()
     await adminNav(page).getByRole('link', { name: 'Paramètres' }).click()
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/admin/parametres$`))
     await expect(
@@ -445,7 +445,7 @@ async function teamListAs(browser: Browser, who: AuthResponse | undefined, name:
   const { context, page } = await pageAs(browser, who)
   // role=all: a signed-in visitor's list defaults to their own teams.
   await page.goto(`/equipes?q=${encodeURIComponent(name)}${who ? '&role=all' : ''}`)
-  await expect(page.getByRole('heading', { level: 2, name: 'Équipes' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Équipes' })).toBeVisible()
   return { context, page }
 }
 
@@ -638,7 +638,7 @@ test.describe('joining a team', () => {
 async function expectTeamGone(page: Page, teamSlug: string, rideSlug: string) {
   await page.goto(`/equipes/${teamSlug}`)
   await expect(page).toHaveURL(/\/equipes$/, { timeout: 20_000 })
-  await expect(page.getByRole('heading', { level: 2, name: 'Équipes' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Équipes' })).toBeVisible()
   await page.goto(ridePath(teamSlug, rideSlug))
   await expect(main(page).getByRole('heading', { name: 'Sortie non trouvée' })).toBeVisible({
     timeout: 20_000,
@@ -689,7 +689,7 @@ test.describe('leaving a team', () => {
 
     // Back on the team list, where the team no longer is theirs.
     await expect(page).toHaveURL(/\/equipes$/)
-    await expect(page.getByRole('heading', { level: 2, name: 'Équipes' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Équipes' })).toBeVisible()
     await expectListed(browser, member, team.name, false)
     await expectListed(browser, owner, team.name, true)
 
@@ -757,7 +757,7 @@ test.describe('deleting a team', () => {
     expect((await deleted).ok()).toBe(true)
     await expect(page.getByText('Équipe supprimée avec succès', { exact: true })).toBeVisible()
     await expect(page).toHaveURL(/\/equipes$/)
-    await expect(page.getByRole('heading', { level: 2, name: 'Équipes' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Équipes' })).toBeVisible()
 
     // Gone from the list, for its owner and its member alike.
     await expectListed(browser, owner, team.name, false)

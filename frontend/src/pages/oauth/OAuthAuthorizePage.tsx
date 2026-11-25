@@ -57,7 +57,7 @@ export function OAuthAuthorizePage() {
             <ThemeIcon size={64} radius="xl" color="red">
               <IconX size={32} />
             </ThemeIcon>
-            <Title order={2} ta="center">
+            <Title order={1} size="h2" ta="center">
               {t('oauth.errors.title')}
             </Title>
             <Text c="dimmed" ta="center">
@@ -94,7 +94,7 @@ export function OAuthAuthorizePage() {
           <ThemeIcon size={64} radius="xl" color="blue">
             <IconApps size={32} />
           </ThemeIcon>
-          <Title order={2} ta="center">
+          <Title order={1} size="h2" ta="center">
             {t('oauth.confirm.title')}
           </Title>
           <Text ta="center">

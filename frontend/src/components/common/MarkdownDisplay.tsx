@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkDirective from 'remark-directive'
 import removeMd from 'remove-markdown'
+import type { TitleOrder } from '@mantine/core'
 import {
   Text,
   Box,
@@ -26,6 +27,8 @@ export interface MarkdownDisplayProps {
   images?: AssetDto[]
   /** Passed to each asset picture (`AssetImage`'s `sizes`). */
   imageSizes?: string
+  /** How many levels the Markdown's headings go down (docs/LEDGER_*.md WEB-207): the page has its own h1 (the post's, the team's), so a `#` of the content is an h2. Each heading keeps the size of the level it was written at. 0 where the page already dropped the Markdown's `# Title` (LegalPage). */
+  headingOffset?: 0 | 1 | 2
 }
 
 export function MarkdownDisplay({
@@ -34,6 +37,7 @@ export function MarkdownDisplay({
   maxLength = 150,
   images = [],
   imageSizes,
+  headingOffset = 1,
 }: MarkdownDisplayProps) {
   if (!markdown) {
     return null
@@ -52,6 +56,9 @@ export function MarkdownDisplay({
       </Text>
     )
   }
+
+  const level = (written: 1 | 2 | 3 | 4 | 5 | 6) =>
+    Math.min(written + headingOffset, 6) as TitleOrder
 
   // Full markdown rendering - asset URLs handled at render time via AssetImage
   return (
@@ -90,17 +97,32 @@ export function MarkdownDisplay({
           ),
           // Headings
           h1: ({ children }) => (
-            <Title order={1} mb="md" mt="lg" style={{ letterSpacing: '-0.025em' }}>
+            <Title order={level(1)} size="h1" mb="md" mt="lg" style={{ letterSpacing: '-0.025em' }}>
               {children}
             </Title>
           ),
           h2: ({ children }) => (
-            <Title order={2} mb="sm" mt="lg" style={{ letterSpacing: '-0.025em' }}>
+            <Title order={level(2)} size="h2" mb="sm" mt="lg" style={{ letterSpacing: '-0.025em' }}>
               {children}
             </Title>
           ),
           h3: ({ children }) => (
-            <Title order={3} mb="xs" mt="md" style={{ letterSpacing: '-0.025em' }}>
+            <Title order={level(3)} size="h3" mb="xs" mt="md" style={{ letterSpacing: '-0.025em' }}>
+              {children}
+            </Title>
+          ),
+          h4: ({ children }) => (
+            <Title order={level(4)} size="h4" mb="xs" mt="md">
+              {children}
+            </Title>
+          ),
+          h5: ({ children }) => (
+            <Title order={level(5)} size="h5" mb="xs" mt="md">
+              {children}
+            </Title>
+          ),
+          h6: ({ children }) => (
+            <Title order={level(6)} size="h6" mb="xs" mt="md">
               {children}
             </Title>
           ),

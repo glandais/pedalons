@@ -82,7 +82,7 @@ export function AdminLayout({ currentTab, children }: AdminLayoutProps) {
               {t('admin.backToApp')}
             </Group>
           </Anchor>
-          <Title order={2} mt="xs">
+          <Title order={1} size="h2" mt="xs">
             {t('admin.title')}
           </Title>
         </Box>

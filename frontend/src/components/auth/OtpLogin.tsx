@@ -3,7 +3,17 @@ import { useTranslation, Trans } from 'react-i18next'
 import { useForm } from '@mantine/form'
 import { notifications } from '@mantine/notifications'
 import { IconArrowLeft, IconMail } from '@tabler/icons-react'
-import { Anchor, Button, Group, PinInput, Stack, Text, TextInput, Title } from '@mantine/core'
+import {
+  Anchor,
+  Button,
+  Group,
+  PinInput,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+  type TitleOrder,
+} from '@mantine/core'
 import { requestOtp, verifyOtp } from '@/api/endpoints/authentication/authentication'
 import type { AuthResponse } from '@/api/dto'
 
@@ -17,6 +27,7 @@ interface OtpLoginProps {
   initialEmail: string
   onSuccess: (response: AuthResponse) => void
   onBack: () => void
+  titleOrder: TitleOrder
 }
 
 /**
@@ -26,7 +37,7 @@ interface OtpLoginProps {
  * The request step always "succeeds" — the server answers the same for an unknown address, so as
  * not to reveal which ones have an account — hence the neutral « a code has been sent to … ».
  */
-export function OtpLogin({ initialEmail, onSuccess, onBack }: OtpLoginProps) {
+export function OtpLogin({ initialEmail, onSuccess, onBack, titleOrder }: OtpLoginProps) {
   const { t } = useTranslation()
   const [sentTo, setSentTo] = useState<string | null>(null)
   const [code, setCode] = useState('')
@@ -82,7 +93,9 @@ export function OtpLogin({ initialEmail, onSuccess, onBack }: OtpLoginProps) {
     return (
       <Stack>
         <Stack gap="xs" ta="center">
-          <Title order={2}>{t('auth.otp.title')}</Title>
+          <Title order={titleOrder} size="h2">
+            {t('auth.otp.title')}
+          </Title>
           <Text c="dimmed">{t('auth.otp.description')}</Text>
         </Stack>
 
@@ -119,7 +132,9 @@ export function OtpLogin({ initialEmail, onSuccess, onBack }: OtpLoginProps) {
   return (
     <Stack>
       <Stack gap="xs" ta="center">
-        <Title order={2}>{t('auth.otp.verify.title')}</Title>
+        <Title order={titleOrder} size="h2">
+          {t('auth.otp.verify.title')}
+        </Title>
         <Text c="dimmed">
           <Trans
             i18nKey="auth.otp.verify.sentTo"

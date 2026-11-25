@@ -32,7 +32,9 @@ export function CalendarPage(): React.ReactElement {
   return (
     <Stack>
       <Group justify="space-between" align="center">
-        <Title order={2}>{t('calendar.title')}</Title>
+        <Title order={1} size="h2">
+          {t('calendar.title')}
+        </Title>
       </Group>
 
       <Group gap="sm" wrap="wrap">

@@ -92,8 +92,10 @@ export function TeamAdminLayout({ team, currentTab, children }: TeamAdminLayoutP
     <Container size="xl" py="xl">
       {/* Same vertical rhythm as TeamLayout, which wraps its nav row in a Stack */}
       <Stack>
-        {/* Header — the way back to the team is the breadcrumb */}
-        <Title order={2}>{t('teams.admin.title')}</Title>
+        {/* The page's h1 (docs/LEDGER_*.md WEB-207); the tabs title their sections in h2. The way back to the team is the breadcrumb */}
+        <Title order={1} size="h2">
+          {t('teams.admin.title')}
+        </Title>
 
         {/* Admin Navigation */}
         <NavButtons

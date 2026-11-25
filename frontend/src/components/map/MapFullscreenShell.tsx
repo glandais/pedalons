@@ -8,6 +8,8 @@ interface MapFullscreenShellProps {
   leading: ReactNode
   /** A string is truncated in the toolbar; a node (a dialog title) is rendered as given. */
   title: ReactNode
+  /** The string title is the page's h1: true on a fullscreen map page (a route of its own, bare layout), false (default) in a dialog over a page that has its own (docs/LEDGER_*.md WEB-207). */
+  titleAsHeading?: boolean
   /**
    * One compact line under a string title — the departure of a ride, a group or a stage (ledger
    * `BRAND-8`). The toolbar keeps its 48 px: title and subtitle share it.
@@ -36,6 +38,7 @@ export function MapFullscreenShell({
   leading,
   title,
   subtitle,
+  titleAsHeading = false,
   stats,
   actions,
   actionsBelowOnPhone = false,
@@ -62,13 +65,19 @@ export function MapFullscreenShell({
 
         {typeof title === 'string' && subtitle ? (
           <Box style={{ flex: 1, minWidth: 0 }}>
-            <Text fw={600} lh={1.25} truncate>
+            <Text component={titleAsHeading ? 'h1' : undefined} m={0} fw={600} lh={1.25} truncate>
               {title}
             </Text>
             {subtitle}
           </Box>
         ) : typeof title === 'string' ? (
-          <Text fw={600} truncate style={{ flex: 1, minWidth: 0 }}>
+          <Text
+            component={titleAsHeading ? 'h1' : undefined}
+            m={0}
+            fw={600}
+            truncate
+            style={{ flex: 1, minWidth: 0 }}
+          >
             {title}
           </Text>
         ) : (

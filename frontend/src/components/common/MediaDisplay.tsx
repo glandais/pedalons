@@ -11,9 +11,15 @@ export interface MediaDisplayProps {
   media: MediaDto
   /** The `sizes` of a full-width picture, where the text sits in a narrower column than the page's. */
   imageSizes?: string
+  /** See MarkdownDisplay: 2 where the page's title is already an h2 under the team's h1. */
+  headingOffset?: 0 | 1 | 2
 }
 
-export const MediaDisplay = memo(function MediaDisplay({ media, imageSizes }: MediaDisplayProps) {
+export const MediaDisplay = memo(function MediaDisplay({
+  media,
+  imageSizes,
+  headingOffset,
+}: MediaDisplayProps) {
   const { t, i18n } = useTranslation()
   const attachments = media.assets.attachments
   const images = media.assets.images
@@ -25,6 +31,7 @@ export const MediaDisplay = memo(function MediaDisplay({ media, imageSizes }: Me
         preview={false}
         images={images}
         imageSizes={imageSizes}
+        headingOffset={headingOffset}
       />
 
       {attachments.length > 0 && (

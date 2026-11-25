@@ -31,6 +31,16 @@ describe('MapFullscreenShell', () => {
     expect(screen.getByTestId('map')).toBeTruthy()
   })
 
+  it('renders the string title as the h1 when titleAsHeading', () => {
+    renderShell({ titleAsHeading: true })
+    expect(screen.getByRole('heading', { level: 1, name: 'Ma sortie' })).toBeTruthy()
+  })
+
+  it('renders no heading by default', () => {
+    renderShell()
+    expect(screen.queryByRole('heading')).toBeNull()
+  })
+
   it('renders a node title as given', () => {
     renderShell({ title: <h2>Titre libre</h2> })
     expect(screen.getByRole('heading', { name: 'Titre libre' })).toBeTruthy()

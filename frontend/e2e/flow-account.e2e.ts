@@ -625,7 +625,7 @@ test.describe('the personal calendar feed', () => {
     // The feed settings live under the personal calendar, /calendrier.
     await page.goto('/calendrier')
     const main = page.getByRole('main')
-    await expect(main.getByRole('heading', { name: 'Calendrier', level: 2 })).toBeVisible()
+    await expect(main.getByRole('heading', { name: 'Calendrier', level: 1 })).toBeVisible()
     const field = main.getByRole('textbox', { name: 'URL du flux global' })
     await expect(field).toHaveValue(FEED_URL)
     const url = await field.inputValue()

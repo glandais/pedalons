@@ -31,7 +31,8 @@ export const globalCalendarPath = '/calendrier'
 
 /**
  * The heading each calendar page renders: the team calendar is the agenda's calendar view
- * (WEB-68), titled « Agenda » like its lists; the personal one is « Calendrier ».
+ * (WEB-68), titled « Agenda » like its lists; the personal one is « Calendrier ». The personal page titles it as its h1; the team titles
+ * « Agenda » as an h2 under the team's name (h1), hence the level in `openCalendarAt`.
  */
 const calendarHeading = (path: string) => (path === globalCalendarPath ? 'Calendrier' : 'Agenda')
 
@@ -42,7 +43,12 @@ const calendarHeading = (path: string) => (path === globalCalendarPath ? 'Calend
 export async function openCalendarAt(page: Page, path: string, day: WallClock) {
   await page.goto(path)
   const main = page.getByRole('main')
-  await expect(main.getByRole('heading', { name: calendarHeading(path), level: 2 })).toBeVisible()
+  await expect(
+    main.getByRole('heading', {
+      name: calendarHeading(path),
+      level: path === globalCalendarPath ? 1 : 2,
+    })
+  ).toBeVisible()
   const today = parisWallClock(new Date())
   const monthsAhead = day.year * 12 + day.month - (today.year * 12 + today.month)
   expect(monthsAhead, 'the calendar only pages forward here').toBeGreaterThanOrEqual(0)

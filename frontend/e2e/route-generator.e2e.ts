@@ -116,7 +116,7 @@ test('the organizer reaches the generator from the routes list, and the real ans
   await hydrated(entry)
   await entry.click()
   await expect(page).toHaveURL(GENERATE_PATH(team.slug))
-  await expect(page.getByRole('heading', { level: 1, name: 'Générer un parcours' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 2, name: 'Générer un parcours' })).toBeVisible()
 
   // An explicit start, as a shared link carries it
   await page.goto(`${GENERATE_PATH(team.slug)}?s=${START}`)

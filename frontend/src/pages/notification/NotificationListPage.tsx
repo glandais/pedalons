@@ -29,7 +29,9 @@ export function NotificationListPage() {
   return (
     <Box maw={672} mx="auto">
       <Group justify="space-between" align="center" wrap="wrap" mb="md">
-        <Title order={2}>{t('notifications.title')}</Title>
+        <Title order={1} size="h2">
+          {t('notifications.title')}
+        </Title>
         <Group gap="xs">
           {unreadCount > 0 && (
             <Button

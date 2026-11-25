@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **164 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **163 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -90,7 +90,6 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 - [ ] [`WEB-209`](ledger/WEB/WEB-209.md) En-têtes de pages, lot 5 : une carte transactionnelle commune (M)
 - [ ] [`WEB-208`](ledger/WEB/WEB-208.md) En-têtes de pages, lot 4 : bandeau d'équipe et administration (M)
-- [ ] [`WEB-207`](ledger/WEB/WEB-207.md) En-têtes de pages, lot 3 : un h1 par page (M)
 - [ ] [`WEB-206`](ledger/WEB/WEB-206.md) En-têtes de pages, lot 2 : un DetailHeader commun aux pages de détail (L) · *recette*
 
 ### Planificateur : audit UX du choix du profil, 24 novembre 2026

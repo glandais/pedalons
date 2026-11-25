@@ -75,7 +75,9 @@ export function ElevationRetryCard({ domainId }: ElevationRetryCardProps) {
       <Stack>
         <Group gap="xs">
           <IconMountain size={20} />
-          <Title order={4}>{t('admin.maintenance.elevation.title')}</Title>
+          <Title order={2} size="h4">
+            {t('admin.maintenance.elevation.title')}
+          </Title>
         </Group>
         <Text size="sm" c="dimmed">
           {t('admin.maintenance.elevation.description')}

@@ -860,7 +860,8 @@ test.describe('restoring', () => {
       const feed = await openFeed(reader.page, team.slug)
       await expect(entityCard(feed, trip.name)).toBeVisible()
       const memberMain = await openTrip(reader.page, team.slug, trip.slug, trip.name)
-      await expect(memberMain.getByRole('heading', { level: 2, name: 'Programme' })).toBeVisible()
+      // The content's headings go one level down under the trip's h1 (MarkdownDisplay, WEB-207).
+      await expect(memberMain.getByRole('heading', { level: 3, name: 'Programme' })).toBeVisible()
       await expect(memberMain.locator('strong', { hasText: 'à 8 h' })).toBeVisible()
       await expect(routeFiles(stageCards(memberMain).first())).toBeVisible()
     } finally {

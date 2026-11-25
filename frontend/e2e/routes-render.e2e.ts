@@ -22,7 +22,8 @@ import { pageAs, pageHydrated, watchHydration, watchPrefetchAudit } from './supp
  * that the document answers 200, the app lands where it should — the page itself, the redirect its
  * guard is meant to do, or the fallback of a page that refuses the role — that nothing threw
  * (`pageerror`) or failed to hydrate (`[hydration]`), that no error screen is shown, and that
- * something only the landing screen has is visible. A refused role also checks that nothing of the
+ * something only the landing screen has is visible, and that the page has exactly one visible h1
+ * (WEB-207). A refused role also checks that nothing of the
  * protected screen shows (`guards`): a page whose `<Navigate>` went missing would render its admin
  * form, and that test would fail on it. A screen that renders on its own path also checks that the
  * server prefetched every query it reads (`[prefetch-audit]`, frontend/docs/SSR-data-loading.md):
@@ -546,7 +547,8 @@ const screens: Record<string, Screen> = {
     roles: EVERYONE,
     sees: async (main, d) => {
       await expect(main.getByRole('heading', { name: d.trip.stages[0].name }).first()).toBeVisible()
-      await heading(d.route.name)(main)
+      // Its route is reached through « GPS » in the header since the route card went (WEB-203).
+      await expect(main.getByTestId('gps-button')).toBeVisible()
     },
   },
   stageMap: {
@@ -856,6 +858,15 @@ for (const route of contract) {
         page.getByRole('heading', { name: '404', exact: true }),
       ])
         await expect(failure, `${where}: no error screen`).toHaveCount(0)
+      // One h1 per page (docs/LEDGER_*.md WEB-207): the name of what is shown — the team under
+      // TeamLayout, the entity or the list elsewhere, the toolbar's title on a fullscreen map.
+      // Counted on the whole page, not `main`: a bare layout has none, and an h1 outside it would
+      // be a second one all the same. getByRole leaves out what CSS hides (hiddenFrom/visibleFrom),
+      // so a title kept in a phone and a desktop variant counts once, at the project's width.
+      await expect(
+        page.getByRole('heading', { level: 1 }),
+        `${where}: exactly one visible h1`
+      ).toHaveCount(1)
       if (kind === 'denied')
         await expect(
           screen.guards!(page, d),
@@ -891,6 +902,10 @@ test('rideMap of a ride with several groups: redirects to the ride', async ({ pa
   await pageHydrated(page)
   await expect.poll(() => new URL(page.url()).pathname, { timeout: 15_000 }).toBe(pathTo('ride')(d))
   await heading(d.ride.name)(page.getByRole('main'))
+  await expect(
+    page.getByRole('heading', { level: 1 }),
+    'rideMap redirect: exactly one visible h1'
+  ).toHaveCount(1)
   expect(pageErrors).toEqual([])
   expect(hydrationErrors).toEqual([])
 })

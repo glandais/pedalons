@@ -177,7 +177,8 @@ test('a post goes from the editor to the feeds, gets a comment, is edited, then 
   await test.step('the post page renders the formatting, the link and the image', async () => {
     await expect(main.getByRole('heading', { level: 1, name: title })).toBeVisible()
     await expect(main.getByText('Publié', { exact: true })).toBeVisible()
-    await expect(main.getByRole('heading', { level: 2, name: 'Au programme' })).toBeVisible()
+    // The content's headings go one level down under the post's h1 (MarkdownDisplay, WEB-207).
+    await expect(main.getByRole('heading', { level: 3, name: 'Au programme' })).toBeVisible()
     await expect(main.locator('strong', { hasText: 'à 8 h précises' })).toBeVisible()
     // Markdown syntax must not leak into the page.
     await expect(main.getByText('**', { exact: false })).toHaveCount(0)
@@ -189,7 +190,7 @@ test('a post goes from the editor to the feeds, gets a comment, is edited, then 
     await expectImageLoaded(main.getByRole('img', { name: IMAGE_ALT }))
     // In the order they were written.
     await expectInDocumentOrder([
-      main.getByRole('heading', { level: 2, name: 'Au programme' }),
+      main.getByRole('heading', { level: 3, name: 'Au programme' }),
       main.locator('strong', { hasText: 'à 8 h précises' }),
       link,
       main.getByRole('list'),
@@ -292,7 +293,7 @@ test('a post goes from the editor to the feeds, gets a comment, is edited, then 
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/articles/${postSlug}$`))
     await expect(main.getByRole('heading', { level: 1, name: newTitle })).toBeVisible()
     await expect(
-      main.getByRole('heading', { level: 2, name: 'Au programme du dimanche', exact: true })
+      main.getByRole('heading', { level: 3, name: 'Au programme du dimanche', exact: true })
     ).toBeVisible()
     // Nothing else was lost on the way.
     await expect(main.locator('strong', { hasText: 'à 8 h précises' })).toBeVisible()
@@ -719,7 +720,7 @@ test.describe('restoring', () => {
         const memberMain = reader.page.getByRole('main')
         await reader.page.goto(postPath(team.slug, post.slug))
         await expect(memberMain.getByRole('heading', { level: 1, name: post.name })).toBeVisible()
-        await expect(memberMain.getByRole('heading', { level: 2, name: 'Programme' })).toBeVisible()
+        await expect(memberMain.getByRole('heading', { level: 3, name: 'Programme' })).toBeVisible()
         await expect(memberMain.locator('strong', { hasText: 'à 8 h' })).toBeVisible()
         const picture = memberMain.locator(`img[src*="${image.id}"]`)
         await expect(picture).toBeVisible()

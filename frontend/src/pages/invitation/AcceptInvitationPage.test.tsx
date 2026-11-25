@@ -57,6 +57,7 @@ describe('AcceptInvitationPage', () => {
     )
 
     fireEvent.click(await screen.findByRole('button', { name: 'invitations.accept.join' }))
+    expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
 
     await waitFor(() => expect(accept).toHaveBeenCalledWith({ token: 'abc' }))
     await waitFor(() =>
