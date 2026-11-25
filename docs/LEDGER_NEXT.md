@@ -46,7 +46,7 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
 ### En-têtes de pages : audit du 25 novembre 2026
 
-- [ ] [`MOB-184`](ledger/MOB/MOB-184.md) « GPS » dans l'en-tête d'une sortie sur l'app, comme sur le site (S)
+- [ ] [`MOB-184`](ledger/MOB/MOB-184.md) « GPS » dans l'en-tête d'une sortie sur l'app, comme sur le site (M)
 
 ### Fiches des stores
 
