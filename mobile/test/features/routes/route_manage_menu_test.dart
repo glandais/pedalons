@@ -124,24 +124,43 @@ void main() {
       );
     });
 
-    // docs/LEDGER_*.md MOB-185 : « Retoucher » juste après « Modifier », pour
-    // qui peut modifier, quand l'offre du moteur le permet.
+    // docs/LEDGER_*.md MOB-185 : la retouche juste après « Modifier », pour
+    // qui peut modifier — une ligne par opération offerte, comme le site ;
+    // la ligne grisée « Retoucher » tant que l'analyse n'est pas finie.
     test('la retouche offerte : après « Modifier »', () {
-      for (final RetouchEntry entry in <RetouchEntry>[
-        RetouchEntry.available,
-        RetouchEntry.notReady,
-      ]) {
-        expect(
-          routeManageActions(managedRoute(), canReport: false, retouch: entry),
-          <RouteManageAction>[
-            RouteManageAction.edit,
-            RouteManageAction.retouch,
-            RouteManageAction.replaceGpx,
-            RouteManageAction.duplicate,
-            RouteManageAction.delete,
+      expect(
+        routeManageActions(
+          managedRoute(),
+          canReport: false,
+          retouch: RetouchEntry.available,
+          operations: const <RouteRetouchOperation>[
+            RouteRetouchOperation.resize,
+            RouteRetouchOperation.moveEnd,
           ],
-        );
-      }
+        ),
+        <RouteManageAction>[
+          RouteManageAction.edit,
+          RouteManageAction.resize,
+          RouteManageAction.moveEnd,
+          RouteManageAction.replaceGpx,
+          RouteManageAction.duplicate,
+          RouteManageAction.delete,
+        ],
+      );
+      expect(
+        routeManageActions(
+          managedRoute(),
+          canReport: false,
+          retouch: RetouchEntry.notReady,
+        ),
+        <RouteManageAction>[
+          RouteManageAction.edit,
+          RouteManageAction.retouch,
+          RouteManageAction.replaceGpx,
+          RouteManageAction.duplicate,
+          RouteManageAction.delete,
+        ],
+      );
       expect(
         routeManageActions(
           fixtureRouteDetail(permissions: kNoPermissions),
@@ -299,9 +318,12 @@ void main() {
       expect(find.byKey(keys.routeManage.delete), findsOneWidget);
       expect(find.byKey(keys.routeManage.report), findsOneWidget);
       expect(find.byKey(keys.routeManage.restore), findsNothing);
-      expect(find.text('Modifier le parcours'), findsOneWidget);
+      // Les libellés et les groupes du « Modifier ▾ » du site.
+      expect(find.text('Modifier'), findsOneWidget);
+      expect(find.text('Tracé'), findsOneWidget);
       expect(find.text('Remplacer le fichier GPX'), findsOneWidget);
-      expect(find.text('Supprimer le parcours'), findsOneWidget);
+      expect(find.text('Dupliquer'), findsOneWidget);
+      expect(find.text('Supprimer'), findsOneWidget);
       expect(find.text('Signaler'), findsOneWidget);
     });
 

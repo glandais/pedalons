@@ -31,10 +31,15 @@ Future<RetouchChoice?> openRouteRetouch(
   required RouteDetailDto route,
   required RouteRetouchOfferDto offer,
   required bool canEdit,
+  RouteRetouchOperation? initialMode,
 }) => Navigator.of(context, rootNavigator: true).push<RetouchChoice>(
   MaterialPageRoute<RetouchChoice>(
-    builder: (_) =>
-        RouteRetouchPage(route: route, offer: offer, canEdit: canEdit),
+    builder: (_) => RouteRetouchPage(
+      route: route,
+      offer: offer,
+      canEdit: canEdit,
+      initialMode: initialMode,
+    ),
   ),
 );
 
@@ -50,10 +55,15 @@ class RouteRetouchPage extends ConsumerStatefulWidget {
     required this.route,
     required this.offer,
     required this.canEdit,
+    this.initialMode,
   });
 
   final RouteDetailDto route;
   final RouteRetouchOfferDto offer;
+
+  /// L'opération choisie dans le menu (« Ajuster la distance », « Déplacer
+  /// l'arrivée ») ; la page garde son segmenté pour changer d'avis.
+  final RouteRetouchOperation? initialMode;
 
   /// « Modifier » est offert : le parcours se modifie et n'a qu'une trace.
   final bool canEdit;
@@ -63,7 +73,11 @@ class RouteRetouchPage extends ConsumerStatefulWidget {
 }
 
 class _RouteRetouchPageState extends ConsumerState<RouteRetouchPage> {
-  late RouteRetouchOperation _mode = _resize
+  late RouteRetouchOperation _mode =
+      widget.initialMode != null &&
+          widget.offer.operations.contains(widget.initialMode)
+      ? widget.initialMode!
+      : _resize
       ? RouteRetouchOperation.resize
       : RouteRetouchOperation.moveEnd;
   double? _targetKm;

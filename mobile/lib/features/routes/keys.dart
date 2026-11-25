@@ -240,6 +240,8 @@ class RouteManageKeys {
   // Les lignes du menu « Gérer le parcours ».
   final edit = const _RouteManageKey('edit');
   final retouch = const _RouteManageKey('retouch');
+  final resize = const _RouteManageKey('resize');
+  final moveEnd = const _RouteManageKey('moveEnd');
   final replaceGpx = const _RouteManageKey('replaceGpx');
   final duplicate = const _RouteManageKey('duplicate');
   final delete = const _RouteManageKey('delete');

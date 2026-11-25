@@ -1643,11 +1643,11 @@
       "importMany": "Import GPX files"
     },
     "manage": {
-      "edit": "Edit route",
+      "edit": "Edit",
       "menuTitle": "Manage route",
       "replaceGpx": "Replace the GPX file",
-      "delete": "Delete route",
-      "restore": "Restore route",
+      "delete": "Delete",
+      "restore": "Restore",
       "report": "Report",
       "deleted": "Route deleted",
       "restored": "Route restored",
@@ -1655,11 +1655,13 @@
       "deleteMessage": "“{name}” will disappear from lists. A team administrator can restore it.",
       "deletedBanner": "This route is deleted. Only team administrators can see it.",
       "retouch": "Retouch",
-      "duplicate": "Duplicate the route",
+      "duplicate": "Duplicate",
       "duplicated": "Route duplicated",
       "duplicateNameLabel": "Route name",
       "duplicateDefaultName": "Copy of {name}",
-      "duplicateSubmit": "Duplicate"
+      "duplicateSubmit": "Duplicate",
+      "duplicateTitle": "Duplicate the route",
+      "track": "Track"
     },
     "elevationRefining": "Provisional elevation profile",
     "surfaceDetail": {

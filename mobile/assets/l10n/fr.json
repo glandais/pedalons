@@ -1643,11 +1643,11 @@
       "importMany": "Importer des GPX"
     },
     "manage": {
-      "edit": "Modifier le parcours",
+      "edit": "Modifier",
       "menuTitle": "Gérer le parcours",
       "replaceGpx": "Remplacer le fichier GPX",
-      "delete": "Supprimer le parcours",
-      "restore": "Restaurer le parcours",
+      "delete": "Supprimer",
+      "restore": "Restaurer",
       "report": "Signaler",
       "deleted": "Parcours supprimé",
       "restored": "Parcours restauré",
@@ -1655,11 +1655,13 @@
       "deleteMessage": "« {name} » disparaîtra des listes. Le rôle Administrateur de l'équipe pourra le restaurer.",
       "deletedBanner": "Ce parcours est supprimé. Seul le rôle Administrateur de l'équipe le voit.",
       "retouch": "Retoucher",
-      "duplicate": "Dupliquer le parcours",
+      "duplicate": "Dupliquer",
       "duplicated": "Parcours dupliqué",
       "duplicateNameLabel": "Nom du parcours",
       "duplicateDefaultName": "Copie de {name}",
-      "duplicateSubmit": "Dupliquer"
+      "duplicateSubmit": "Dupliquer",
+      "duplicateTitle": "Dupliquer le parcours",
+      "track": "Tracé"
     },
     "elevationRefining": "Profil d'altitude provisoire",
     "surfaceDetail": {

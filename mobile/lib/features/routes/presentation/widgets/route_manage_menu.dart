@@ -8,6 +8,7 @@ import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
+import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../core/widgets/duplicate_name_sheet.dart';
 import '../../../../keys.dart';
@@ -25,9 +26,16 @@ import '../route_editor_location.dart';
 /// ceux du menu du site (`RouteDetailPage`) : modifier, remplacer le GPX,
 /// dupliquer, supprimer, restaurer, et signaler (ledger `MOB-79`) ; retoucher
 /// (docs/LEDGER_*.md MOB-185) quand l'offre du moteur le permet.
+///
+/// Les libellés, l'ordre et les groupes sont ceux du « Modifier ▾ » du site :
+/// modifier, puis « Tracé » (ajuster la distance, déplacer l'arrivée,
+/// remplacer le fichier GPX), dupliquer, supprimer — [retouch] n'est que la
+/// ligne grisée d'un parcours encore en cours d'analyse.
 enum RouteManageAction {
   edit,
   retouch,
+  resize,
+  moveEnd,
   replaceGpx,
   duplicate,
   delete,
@@ -37,12 +45,15 @@ enum RouteManageAction {
 
 /// Les gestes offerts pour [route], dans l'ordre du menu. Un parcours supprimé
 /// n'offre que sa restauration ; [canReport] est faux pour son propre
-/// parcours, qu'on ne se signale pas à soi-même. [retouch] dit si l'offre de
-/// retouche (`GET …/retouch`) ajoute sa ligne.
+/// parcours, qu'on ne se signale pas à soi-même. [retouch] dit ce que l'offre
+/// de retouche (`GET …/retouch`) ajoute : une ligne par opération de
+/// [operations] quand elle est possible, la ligne grisée tant que le parcours
+/// est en cours d'analyse.
 List<RouteManageAction> routeManageActions(
   RouteDetailDto route, {
   required bool canReport,
   RetouchEntry retouch = RetouchEntry.none,
+  List<RouteRetouchOperation> operations = const <RouteRetouchOperation>[],
 }) {
   // Le droit de **ce** parcours, calculé par le backend (docs/LEDGER_*.md
   // MOB-137) : modifier et remplacer le GPX demandent `canEdit`, supprimer
@@ -55,7 +66,13 @@ List<RouteManageAction> routeManageActions(
   return <RouteManageAction>[
     if (edit) ...<RouteManageAction>[
       RouteManageAction.edit,
-      if (retouch != RetouchEntry.none) RouteManageAction.retouch,
+      if (retouch == RetouchEntry.notReady) RouteManageAction.retouch,
+      if (retouch == RetouchEntry.available) ...<RouteManageAction>[
+        if (operations.contains(RouteRetouchOperation.resize))
+          RouteManageAction.resize,
+        if (operations.contains(RouteRetouchOperation.moveEnd))
+          RouteManageAction.moveEnd,
+      ],
       RouteManageAction.replaceGpx,
       // Comme au site : qui peut modifier le parcours peut le copier.
       RouteManageAction.duplicate,
@@ -83,44 +100,60 @@ Future<void> showRouteManageMenu(
     route,
     canReport: canReport,
     retouch: retouch,
+    operations: retouchOffer?.operations ?? const <RouteRetouchOperation>[],
   );
   final RouteManageAction? action = await PdlSheet.show<RouteManageAction>(
     context: context,
-    builder: (BuildContext sheetContext) => PdlSheet(
-      title: 'routes.manage.menuTitle'.tr(),
-      bodyPadding: EdgeInsets.zero,
-      footer: const SafeArea(
-        top: false,
-        child: SizedBox(height: PdlSpacing.chipGap),
-      ),
-      children: <Widget>[
-        for (final RouteManageAction a in actions)
+    builder: (BuildContext sheetContext) {
+      final List<Widget> rows = <Widget>[];
+      for (int i = 0; i < actions.length; i++) {
+        final RouteManageAction a = actions[i];
+        final _Group group = _group(a);
+        // « Tracé », comme au site : le titre de la section qui change le
+        // tracé.
+        if (group == _Group.track &&
+            (i == 0 || _group(actions[i - 1]) != _Group.track)) {
+          rows.add(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(
+                'routes.manage.track'.tr(),
+                style: sheetContext.pdlText.sub,
+              ),
+            ),
+          );
+        }
+        rows.add(
           PdlSettingRow(
             key: _key(a),
             icon: _icon(a),
-            title: 'routes.manage.${_label(a)}'.tr(),
+            title: _title(a),
             // Le parcours encore en cours d'analyse : la ligne est là,
             // désactivée, avec sa raison.
-            subtitle:
-                a == RouteManageAction.retouch &&
-                    retouch == RetouchEntry.notReady
+            subtitle: a == RouteManageAction.retouch
                 ? 'routeRetouch.notReadyHint'.tr()
                 : null,
             destructive: a == RouteManageAction.delete,
-            // Le séparateur de la maquette : entre le geste destructif et
-            // « Signaler », qui est celui de la modération.
+            // Un filet entre les groupes, comme les `Menu.Divider` du site.
             showDivider:
-                a == RouteManageAction.delete &&
-                actions.contains(RouteManageAction.report),
+                i < actions.length - 1 && _group(actions[i + 1]) != group,
             trailing: const SizedBox.shrink(),
-            onTap:
-                a == RouteManageAction.retouch &&
-                    retouch != RetouchEntry.available
+            onTap: a == RouteManageAction.retouch
                 ? null
                 : () => Navigator.of(sheetContext).pop(a),
           ),
-      ],
-    ),
+        );
+      }
+      return PdlSheet(
+        title: 'routes.manage.menuTitle'.tr(),
+        bodyPadding: EdgeInsets.zero,
+        footer: const SafeArea(
+          top: false,
+          child: SizedBox(height: PdlSpacing.chipGap),
+        ),
+        children: rows,
+      );
+    },
   );
   if (action == null || !context.mounted) return;
   await runRouteManageAction(
@@ -147,9 +180,17 @@ Future<void> runRouteManageAction(
     await context.push(Paths.routeEdit(team, route.slug));
     return;
   }
-  if (action == RouteManageAction.retouch) {
+  if (action == RouteManageAction.resize ||
+      action == RouteManageAction.moveEnd) {
     if (retouchOffer == null) return;
-    await _retouch(context, route, retouchOffer);
+    await _retouch(
+      context,
+      route,
+      retouchOffer,
+      action == RouteManageAction.resize
+          ? RouteRetouchOperation.resize
+          : RouteRetouchOperation.moveEnd,
+    );
     return;
   }
   if (action == RouteManageAction.replaceGpx) {
@@ -240,7 +281,7 @@ Future<void> _duplicate(
     context: context,
     builder: (BuildContext _) => DuplicateNameSheet<RouteDto>(
       key: keys.routeManage.duplicateSheet,
-      title: 'routes.manage.duplicate'.tr(),
+      title: 'routes.manage.duplicateTitle'.tr(),
       nameLabel: 'routes.manage.duplicateNameLabel'.tr(),
       submitLabel: 'routes.manage.duplicateSubmit'.tr(),
       initialName: 'routes.manage.duplicateDefaultName'.tr(
@@ -267,12 +308,14 @@ Future<void> _retouch(
   BuildContext context,
   RouteDetailDto route,
   RouteRetouchOfferDto offer,
+  RouteRetouchOperation mode,
 ) async {
   final String team = route.team.slug;
   final RetouchChoice? choice = await openRouteRetouch(
     context,
     route: route,
     offer: offer,
+    initialMode: mode,
     canEdit: route.permissions.canEdit && isSingleTrack(route),
   );
   if (choice == null || !context.mounted) return;
@@ -289,20 +332,38 @@ Future<void> _retouch(
   }
 }
 
-String _label(RouteManageAction a) => switch (a) {
-  RouteManageAction.edit => 'edit',
-  RouteManageAction.retouch => 'retouch',
-  RouteManageAction.replaceGpx => 'replaceGpx',
-  RouteManageAction.duplicate => 'duplicate',
-  RouteManageAction.delete => 'delete',
-  RouteManageAction.restore => 'restore',
-  RouteManageAction.report => 'report',
+/// Les libellés du « Modifier ▾ » du site.
+String _title(RouteManageAction a) => switch (a) {
+  RouteManageAction.edit => 'routes.manage.edit'.tr(),
+  RouteManageAction.retouch => 'routes.manage.retouch'.tr(),
+  RouteManageAction.resize => 'routeRetouch.resize.action'.tr(),
+  RouteManageAction.moveEnd => 'routeRetouch.moveEnd.action'.tr(),
+  RouteManageAction.replaceGpx => 'routes.manage.replaceGpx'.tr(),
+  RouteManageAction.duplicate => 'routes.manage.duplicate'.tr(),
+  RouteManageAction.delete => 'routes.manage.delete'.tr(),
+  RouteManageAction.restore => 'routes.manage.restore'.tr(),
+  RouteManageAction.report => 'routes.manage.report'.tr(),
+};
+
+enum _Group { edit, track, copy, remove, report }
+
+_Group _group(RouteManageAction a) => switch (a) {
+  RouteManageAction.edit => _Group.edit,
+  RouteManageAction.retouch ||
+  RouteManageAction.resize ||
+  RouteManageAction.moveEnd ||
+  RouteManageAction.replaceGpx => _Group.track,
+  RouteManageAction.duplicate => _Group.copy,
+  RouteManageAction.delete || RouteManageAction.restore => _Group.remove,
+  RouteManageAction.report => _Group.report,
 };
 
 IconData _icon(RouteManageAction a) => switch (a) {
   RouteManageAction.edit => PdlIcons.edit,
   RouteManageAction.retouch => PdlIcons.generate,
-  RouteManageAction.replaceGpx => PdlIcons.gpx,
+  RouteManageAction.resize => PdlIcons.distance,
+  RouteManageAction.moveEnd => PdlIcons.placeEnd,
+  RouteManageAction.replaceGpx => PdlIcons.fileAdd,
   RouteManageAction.duplicate => PdlIcons.copy,
   RouteManageAction.delete => PdlIcons.delete,
   RouteManageAction.restore => PdlIcons.restore,
@@ -312,6 +373,8 @@ IconData _icon(RouteManageAction a) => switch (a) {
 Key _key(RouteManageAction a) => switch (a) {
   RouteManageAction.edit => keys.routeManage.edit,
   RouteManageAction.retouch => keys.routeManage.retouch,
+  RouteManageAction.resize => keys.routeManage.resize,
+  RouteManageAction.moveEnd => keys.routeManage.moveEnd,
   RouteManageAction.replaceGpx => keys.routeManage.replaceGpx,
   RouteManageAction.duplicate => keys.routeManage.duplicate,
   RouteManageAction.delete => keys.routeManage.delete,
