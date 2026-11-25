@@ -132,7 +132,7 @@ test.describe('ad detail', () => {
 
       await signIn(context, owner)
       await page.goto(adPath(team.slug, ad))
-      await expect(page.getByRole('heading', { level: 4, name: 'Localisation' })).toBeVisible()
+      await expect(page.getByRole('heading', { level: 2, name: 'Localisation' })).toBeVisible()
       await expect(page.getByText('Près de Chartres')).toBeVisible()
       await expect(page.getByText(/à environ 1 km près/)).toBeVisible()
 
@@ -200,7 +200,7 @@ test.describe('ad detail', () => {
     await page.goto(adPath(team.slug, bare))
     await expect(page.getByRole('heading', { level: 1, name: bare.name })).toBeVisible()
     // The page is complete: the always-present seller section rendered.
-    await expect(page.getByRole('heading', { level: 4, name: 'Publiée par' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 2, name: 'Publiée par' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Description' })).toHaveCount(0)
     await expect(page.getByRole('heading', { name: 'Localisation' })).toHaveCount(0)
     await expect(page.getByRole('img', { name: /à environ 1 km près/ })).toHaveCount(0)
@@ -210,7 +210,7 @@ test.describe('ad detail', () => {
     // A written place with no geometry: the section, the place, and no map pretending to a spot.
     await page.goto(adPath(team.slug, placeOnly))
     await expect(page.getByRole('heading', { level: 1, name: placeOnly.name })).toBeVisible()
-    await expect(page.getByRole('heading', { level: 4, name: 'Localisation' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 2, name: 'Localisation' })).toBeVisible()
     await expect(page.getByText('Gare de Lyon')).toBeVisible()
     await expect(page.getByRole('img', { name: /à environ 1 km près/ })).toHaveCount(0)
     await expect(page.getByText(/à environ 1 km près/)).toHaveCount(0)

@@ -109,7 +109,7 @@ async function openTrip(page: Page, teamSlug: string, tripSlug: string, name: st
   await page.goto(tripPath(teamSlug, tripSlug))
   const main = page.getByRole('main')
   await expect(main.getByRole('heading', { level: 1, name })).toBeVisible()
-  await expect(main.getByRole('heading', { level: 3, name: 'Étapes' })).toBeVisible()
+  await expect(main.getByRole('heading', { level: 2, name: 'Étapes' })).toBeVisible()
   return main
 }
 
@@ -265,7 +265,7 @@ test.describe('registration', () => {
     await expect(main.getByRole('button', { name: 'Quitter le voyage' })).toBeVisible()
     await expect(join).toHaveCount(0)
     await expect(main.getByText('1 personne', { exact: true }).first()).toBeVisible()
-    await expect(main.getByRole('heading', { level: 3, name: 'Personnes inscrites' })).toBeVisible()
+    await expect(main.getByRole('heading', { level: 2, name: 'Personnes inscrites' })).toBeVisible()
 
     let saved = await fetchTrip(member, team.slug, trip.slug)
     expect(saved!.participants?.map((p) => p.id)).toEqual([member.user.id])
