@@ -76,10 +76,24 @@ export interface PlannerLoad {
    */
   locate?: boolean
   /**
+   * A proposal of the route generator to open (docs/LEDGER_*.md MOB-154): imported on load as the
+   * site imports one (WEB-179), a replacing import that keeps no file and whose sources are marked
+   * `generated`, so « Terminer » sends the planner state. With `create: true`.
+   */
+  generated?: GeneratedImport
+  /**
    * Test only (the app's Patrol suite): true makes `window.pedalonsPlanner.test` act. Absent or
    * false, that call does nothing.
    */
   testCommands?: boolean
+}
+
+/** A generated route as `load.generated` carries it. */
+export interface GeneratedImport {
+  /** Polyline of precision 6 (latitude then longitude): `GeneratedRouteDto.polyline`. */
+  polyline: string
+  /** The name of the import: « Parcours généré de 82 km ». */
+  name: string
 }
 
 /** The request fragment of `lib/plannerSubmit.ts`, as it crosses the bridge. */

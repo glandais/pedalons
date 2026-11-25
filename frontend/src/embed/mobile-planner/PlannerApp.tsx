@@ -11,10 +11,15 @@ import {
 import { PlannerTouchFullscreen } from '@/components/planner/PlannerTouchFullscreen'
 import { RoutePlanner } from '@/components/planner/RoutePlanner'
 import { usePlannerEditing } from '@/components/planner/usePlannerEditing'
-import { useRoutePlanner } from '@/hooks/useRoutePlanner'
+import { useRoutePlanner, type ImportGpxOptions } from '@/hooks/useRoutePlanner'
+import { decode2 } from '@/lib/polyline'
+import { gpxFromLine } from '@/lib/routeGenerator'
 import { BridgeLocateControl, BridgeSearchControl } from './BridgeMapControls'
 import { onGpx, onTest, post, type PlannerLoad } from './bridge'
 import { doneMessage } from './done'
+
+/** A generated route: a replacing import that keeps no file, as the site's `RoutePlannerField`. */
+const GENERATED_IMPORT: ImportGpxOptions = { keepFile: false, generated: true }
 
 /** The planner's two outward-reaching controls, over the bridge. */
 const BRIDGE_MAP_CONTROLS: PlannerMapControls = {
@@ -97,6 +102,21 @@ export function PlannerApp({ load }: { load: PlannerLoad }) {
       }),
     []
   )
+
+  // A proposal of the route generator (MOB-154): imported once, on the empty route of a creation.
+  const { runImport } = editing
+  const generatedDone = useRef(false)
+  useEffect(() => {
+    const generated = load.generated
+    if (!generated || generatedDone.current) return
+    generatedDone.current = true
+    const file = new File(
+      [gpxFromLine(generated.name, decode2(generated.polyline))],
+      'parcours-genere.gpx',
+      { type: 'application/gpx+xml' }
+    )
+    void runImport(file, 'replace', GENERATED_IMPORT)
+  }, [load.generated, runImport])
 
   const create = load.create ?? (!load.state && !load.track)
   const done = () => {
