@@ -6,7 +6,7 @@ import { notifications } from '@mantine/notifications'
 import i18next from 'i18next'
 import { paths } from '../../config/paths'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
-import { Box, Button, Group, Stack, Title } from '@mantine/core'
+import { Box, Button, Menu } from '@mantine/core'
 import { IconCopy } from '@tabler/icons-react'
 import {
   useCreatePreviewFromRoute,
@@ -34,7 +34,8 @@ import { MediaDisplay } from '../../components/common/MediaDisplay'
 import { EntityLogo } from '../../components/common/EntityLogo'
 import { CommentSection } from '../../components/comment'
 import { ContentActionsMenu } from '../../components/moderation/ContentActionsMenu'
-import { ShareButton } from '../../components/common/ShareButton'
+import { DetailHeader } from '@/components/publication/DetailHeader'
+import { EditMenuButton } from '@/components/publication/EditMenuButton'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 import { ReportTargetType } from '@/api/dto'
 import { useAuthStore, selectUser } from '@/store/authStore'
@@ -73,9 +74,8 @@ export function RouteDetailPage() {
 
   useCanonicalPath(team && route ? paths.route(team.slug, route.slug) : undefined)
 
-  // The backend's answers for this route (docs/LEDGER_*.md WEB-166, decision D7).
+  // The backend's answers for this route (docs/LEDGER_*.md WEB-166, decision D7); canEdit and canDelete go together on a route.
   const canEdit = !!route?.permissions.canEdit
-  const canDelete = !!route?.permissions.canDelete
   const canReadComments = !!route?.permissions.canComment
 
   const handleDelete = async () => {
@@ -184,100 +184,82 @@ export function RouteDetailPage() {
       {/* Way back to the team: this page is not mounted inside TeamLayout */}
       <TeamContextBanner team={team} />
 
-      {/* Header */}
-      <Stack mb="lg">
-        <Group justify="space-between" align="flex-start" wrap="wrap">
-          <Stack gap="xs">
-            <Group>
-              <EntityLogo logo={route.media.assets.logo} alt={route.name} size="lg" />
-              <Title order={1}>{route.name}</Title>
-            </Group>
-            <MediaDisplay media={route.media} />
-          </Stack>
-          <Group mt={{ base: 'md', sm: 0 }} gap="sm">
-            {/* « GPS » first: the action every reader takes (docs/LEDGER_*.md WEB-203, WEB-165) */}
-            {hasFiles && (
-              <GpsMenuButton
-                teamSlug={team.slug}
-                routeSlug={route.slug}
-                route={route}
-                statuses={route.gpsSyncStatuses}
-                size="sm"
-              />
-            )}
-            {/* A reader who cannot edit takes a copy to the GPX tools instead (ledger WEB-169) */}
-            {isAuthenticated && !canEdit && !route.deleted && route.media.assets.gpx && (
-              <Button
-                variant="default"
-                leftSection={<IconCopy size={16} />}
-                onClick={handleEditCopy}
-                loading={createPreviewMutation.isPending}
-              >
-                {t('routes.detail.editCopy')}
-              </Button>
-            )}
-            {(canEdit || canDelete) && (
-              <>
-                {canEdit && (
-                  <Button
-                    variant="default"
-                    component="a"
-                    href={paths.routeEdit(teamSlug!, routeSlug!)}
-                  >
-                    {t('actions.edit')}
-                  </Button>
-                )}
-                {/* Beside « Modifier »: its « Modifier » replaces this route's track (WEB-201) */}
-                {canEdit && !route.deleted && (
-                  <RouteRetouchButton offer={retouchOffer} onChoose={setRetouchMode} />
-                )}
-                {canEdit && !route.deleted && (
-                  <Button
-                    variant="default"
-                    leftSection={<IconCopy size={16} />}
+      {/* The one header of detail pages (docs/LEDGER_*.md WEB-206) */}
+      <DetailHeader
+        logo={<EntityLogo logo={route.media.assets.logo} alt={route.name} size="lg" />}
+        title={route.name}
+        // « GPS » first: the action every reader takes (docs/LEDGER_*.md WEB-203, WEB-165)
+        gps={
+          hasFiles ? (
+            <GpsMenuButton
+              teamSlug={team.slug}
+              routeSlug={route.slug}
+              route={route}
+              statuses={route.gpsSyncStatuses}
+              size="sm"
+            />
+          ) : undefined
+        }
+        edit={
+          canEdit ? (
+            <EditMenuButton to={paths.routeEdit(teamSlug!, routeSlug!)}>
+              {route.deleted ? (
+                // A deleted route can only be restored
+                <Menu.Item
+                  color="green"
+                  disabled={undeleteRouteMutation.isPending}
+                  onClick={handleRestore}
+                >
+                  {t('actions.restore')}
+                </Menu.Item>
+              ) : (
+                <>
+                  <Menu.Item
+                    leftSection={<IconCopy size={14} />}
                     onClick={() => setShowDuplicate(true)}
                   >
                     {t('actions.duplicate')}
-                  </Button>
-                )}
-                {canDelete && route.deleted && (
-                  <Button
-                    variant="outline"
-                    color="green"
-                    onClick={handleRestore}
-                    loading={undeleteRouteMutation.isPending}
-                  >
-                    {t('actions.restore')}
-                  </Button>
-                )}
-                {/* A deleted route can only be restored */}
-                {canDelete && !route.deleted && (
-                  <Button
-                    variant="outline"
-                    color="danger"
-                    onClick={() => setShowDeleteConfirm(true)}
-                  >
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item color="danger" onClick={() => setShowDeleteConfirm(true)}>
                     {t('actions.delete')}
-                  </Button>
-                )}
-              </>
-            )}
-            {/* Offered to a reader who cannot edit too: the retouch opens as a new route */}
-            {!canEdit && !route.deleted && (
-              <RouteRetouchButton offer={retouchOffer} onChoose={setRetouchMode} />
-            )}
-            <ShareButton title={route.name} />
-            <ContentActionsMenu
-              teamSlug={team.slug}
-              teamName={team.name}
-              targetType={ReportTargetType.ROUTE}
-              targetId={route.id}
-              isOwn={route.createdBy?.id === currentUserId}
-              onReported={() => navigate(team.accessible ? paths.routes(team.slug) : paths.home())}
-            />
-          </Group>
-        </Group>
-      </Stack>
+                  </Menu.Item>
+                </>
+              )}
+            </EditMenuButton>
+          ) : // A reader who cannot edit takes a copy to the GPX tools instead (ledger WEB-169)
+          isAuthenticated && !route.deleted && route.media.assets.gpx ? (
+            <Button
+              variant="outline"
+              leftSection={<IconCopy size={16} />}
+              onClick={handleEditCopy}
+              loading={createPreviewMutation.isPending}
+            >
+              {t('routes.detail.editCopy')}
+            </Button>
+          ) : undefined
+        }
+        // Beside « Modifier »: an editor's retouch replaces this route's track (WEB-201); a reader
+        // who cannot edit gets it as a new route
+        retouch={
+          !route.deleted ? (
+            <RouteRetouchButton offer={retouchOffer} onChoose={setRetouchMode} />
+          ) : undefined
+        }
+        shareTitle={route.name}
+        more={
+          <ContentActionsMenu
+            teamSlug={team.slug}
+            teamName={team.name}
+            targetType={ReportTargetType.ROUTE}
+            targetId={route.id}
+            isOwn={route.createdBy?.id === currentUserId}
+            onReported={() => navigate(team.accessible ? paths.routes(team.slug) : paths.home())}
+          />
+        }
+      >
+        <MediaDisplay media={route.media} />
+      </DetailHeader>
 
       <ConfirmDialog
         isOpen={showDeleteConfirm}

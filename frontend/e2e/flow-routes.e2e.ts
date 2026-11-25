@@ -27,7 +27,14 @@ import {
   watchRouteReads,
   type GpxPoint,
 } from './support/routes'
-import { entityCard, hydrated, pageAs, pageHydrated } from './support/ui'
+import {
+  actionsMenu,
+  entityCard,
+  hydrated,
+  openActionsMenu,
+  pageAs,
+  pageHydrated,
+} from './support/ui'
 
 /**
  * The nominal journeys of the routes section (parcours) and of the team's places (lieux), through
@@ -332,9 +339,12 @@ test('a team admin deletes a route: members no longer see it, the team admin can
 
   await signIn(context, owner)
   const main = await openRouteDetail(page, team.slug, route.slug, name)
-  const remove = main.getByRole('button', { name: 'Supprimer', exact: true })
-  await hydrated(remove)
-  await remove.click()
+  // « Supprimer » sits in the menu behind « Modifier » (docs/LEDGER_*.md WEB-206)
+  await (
+    await openActionsMenu(page)
+  )
+    .getByRole('menuitem', { name: 'Supprimer', exact: true })
+    .click()
 
   const dialog = page.getByRole('dialog', { name: 'Supprimer le parcours' })
   await expect(dialog).toContainText('Voulez-vous vraiment supprimer ce parcours ?')
@@ -362,8 +372,7 @@ test('a team admin deletes a route: members no longer see it, the team admin can
   // The team admin brings it back from its page.
   await routeCard(main, name).click()
   await expect(main.getByRole('heading', { level: 1, name })).toBeVisible()
-  const restore = main.getByRole('button', { name: 'Restaurer' })
-  await hydrated(restore)
+  const restore = (await openActionsMenu(page)).getByRole('menuitem', { name: 'Restaurer' })
   await restore.click()
   await expect(restore).toHaveCount(0)
   expect((await getRoute(owner, team.slug, route.slug)).deleted).toBeFalsy()
@@ -741,7 +750,7 @@ test.describe('what a route shows to whom', () => {
     // The page is the member's view: its comments are there.
     await expect(main.getByRole('heading', { name: 'Commentaires (0)' })).toBeVisible()
     await expect(main.getByRole('link', { name: 'Modifier', exact: true })).toHaveCount(0)
-    await expect(main.getByRole('button', { name: 'Supprimer', exact: true })).toHaveCount(0)
+    await expect(actionsMenu(page)).toHaveCount(0)
     const list = await openRouteList(page, team.slug)
     await expect(routeCard(list, name)).toBeVisible()
     await pageHydrated(page)
@@ -757,9 +766,7 @@ test.describe('what a route shows to whom', () => {
       await expect(
         organizerMain.getByRole('link', { name: 'Modifier', exact: true })
       ).toHaveAttribute('href', `${routePath(team.slug, route.slug)}/modifier`)
-      await expect(
-        organizerMain.getByRole('button', { name: 'Supprimer', exact: true })
-      ).toBeVisible()
+      await expect(actionsMenu(organizerPage)).toBeVisible()
       const organizerList = await openRouteList(organizerPage, team.slug)
       await expect(organizerList.getByRole('button', { name: 'Importer GPX' })).toBeVisible()
       await expect(organizerList.getByRole('link', { name: 'Créer un parcours' })).toBeVisible()
@@ -780,7 +787,11 @@ test.describe('what a route shows to whom', () => {
     const main = await openSettled(page, team.slug, route.slug, name)
     // An organizer edits the route itself: no copy to edit.
     await expect(main.getByRole('button', { name: 'Modifier une copie' })).toHaveCount(0)
-    await main.getByRole('button', { name: 'Dupliquer', exact: true }).click()
+    await (
+      await openActionsMenu(page)
+    )
+      .getByRole('menuitem', { name: 'Dupliquer', exact: true })
+      .click()
 
     const dialog = page.getByRole('dialog', { name: 'Dupliquer le parcours' })
     const field = dialog.getByRole('textbox', { name: 'Nom du parcours' })
@@ -809,7 +820,7 @@ test.describe('what a route shows to whom', () => {
 
     await signIn(context, member)
     const main = await openSettled(page, team.slug, route.slug, name)
-    await expect(main.getByRole('button', { name: 'Dupliquer', exact: true })).toHaveCount(0)
+    await expect(actionsMenu(page)).toHaveCount(0)
     await main.getByRole('button', { name: 'Modifier une copie' }).click()
 
     await expect(page).toHaveURL(/\/outils-gpx\/[^/]+\/modifier$/)

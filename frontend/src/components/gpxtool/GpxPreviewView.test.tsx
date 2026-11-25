@@ -104,13 +104,16 @@ describe('GpxPreviewView', () => {
       expect(screen.queryByRole('button', { name: 'Dupliquer' })).toBeNull()
     })
 
-    it('is offered to any signed-in account, owner or not', () => {
+    it('is a button for a signed-in non-owner, a menu item for the owner', async () => {
       state.isAuthenticated = true
       renderView()
       expect(screen.getByRole('button', { name: 'Dupliquer' })).toBeTruthy()
       cleanup()
       renderView({ ...preview, owned: true })
-      expect(screen.getByRole('button', { name: 'Dupliquer' })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Dupliquer' })).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: 'Options de gestion' }))
+      expect(await screen.findByRole('menuitem', { name: 'Dupliquer', hidden: true })).toBeTruthy()
+      expect(await screen.findByRole('menuitem', { name: 'Supprimer', hidden: true })).toBeTruthy()
     })
 
     it('asks for the name, sends it, then opens the copy', async () => {
@@ -182,6 +185,21 @@ describe('GpxPreviewView', () => {
     expect(screen.getByRole('button', { name: 'Partager' })).toBeTruthy()
     // The account-only actions stay hidden.
     expect(screen.queryByText('Enregistrer comme parcours')).toBeNull()
+  })
+
+  it("puts the owner's actions in the header: « Modifier » link, « Enregistrer comme parcours »", () => {
+    state.isAuthenticated = true
+    renderView({ ...preview, owned: true })
+    expect(screen.getByRole('link', { name: 'Modifier' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Enregistrer comme parcours' })).toBeTruthy()
+  })
+
+  it('gives an anonymous visitor only GPS and Partager', () => {
+    renderView()
+    expect(screen.getByText('GPS')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Partager' })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: 'Modifier' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Options de gestion' })).toBeNull()
   })
 
   it('keeps the share button for a signed-in member', () => {

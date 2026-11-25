@@ -7,6 +7,7 @@ import { notifications } from '@mantine/notifications'
 import i18next from 'i18next'
 import { paths } from '../../config/paths'
 import { Box, Button, Center, Stack, Text, Title } from '@mantine/core'
+import { PrefetchLink } from '@/components/common/PrefetchLink'
 import {
   useDeleteTeam,
   useChangeTeamSlug,
@@ -51,7 +52,7 @@ export function TeamSettingsPage() {
             <Text c="dimmed" mb="lg">
               {t('teams.settings.error.loadFailed')}
             </Text>
-            <Button component="a" href={paths.teams()}>
+            <Button component={PrefetchLink} to={paths.teams()}>
               {t('teams.detail.notFound.backToTeams')}
             </Button>
           </Stack>

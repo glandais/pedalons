@@ -5,7 +5,7 @@ import { apiGet, apiGetOrNull, expectOk, withApi, type AuthResponse } from './su
 import { newTeam, newUser, signIn } from './support/data'
 import { expect, test, unique } from './support/fixtures'
 import { getRoute, gpxOf, routePath, stubBasemap, type GpxPoint } from './support/routes'
-import { hydrated, pageAs, toasts } from './support/ui'
+import { actionsMenu, hydrated, openActionsMenu, pageAs, toasts } from './support/ui'
 
 /**
  * The GPX tools (« Outils GPX »), through the UI: a signed-in user drops a GPX file on the hub,
@@ -141,7 +141,7 @@ test('a user drops a GPX on the hub, reads its preview, finds it in their files,
   await expect(page).toHaveURL(previewPath(id))
 
   // Rename it.
-  const edit = main.getByRole('button', { name: 'Modifier', exact: true })
+  const edit = main.getByRole('link', { name: 'Modifier', exact: true })
   await hydrated(edit)
   await edit.click()
   await expect(
@@ -238,9 +238,12 @@ test('an owner deletes a preview from its page: its link is gone', async ({ page
 
   await signIn(context, user)
   const main = await openPreview(page, preview.id, name)
-  const remove = main.getByRole('button', { name: 'Supprimer', exact: true })
-  await hydrated(remove)
-  await remove.click()
+  // « Supprimer » sits in the menu behind « Modifier » (docs/LEDGER_*.md WEB-206)
+  await (
+    await openActionsMenu(page)
+  )
+    .getByRole('menuitem', { name: 'Supprimer', exact: true })
+    .click()
   const dialog = page.getByRole('dialog', { name: 'Supprimer' })
   await expect(dialog).toContainText('Voulez-vous vraiment supprimer ce fichier ?')
   await dialog.getByRole('button', { name: 'Confirmer' }).click()
@@ -364,8 +367,8 @@ test.describe('a shared preview link', () => {
     const main = await openPreview(page, preview.id, name)
     await expect(main.getByText(km(preview.distance), { exact: true })).toBeVisible()
     await expect(main.getByTestId('gps-button')).toBeVisible()
-    await expect(main.getByRole('button', { name: 'Modifier', exact: true })).toHaveCount(0)
-    await expect(main.getByRole('button', { name: 'Supprimer', exact: true })).toHaveCount(0)
+    await expect(main.getByRole('link', { name: 'Modifier', exact: true })).toHaveCount(0)
+    await expect(actionsMenu(page)).toHaveCount(0)
     await expect(main.getByRole('button', { name: 'Enregistrer comme parcours' })).toHaveCount(0)
     expect((await getPreview(undefined, preview.id))!.owned).toBe(false)
 
@@ -377,8 +380,8 @@ test.describe('a shared preview link', () => {
       await expect(
         otherMain.getByRole('button', { name: 'Enregistrer comme parcours' })
       ).toBeVisible()
-      await expect(otherMain.getByRole('button', { name: 'Modifier', exact: true })).toHaveCount(0)
-      await expect(otherMain.getByRole('button', { name: 'Supprimer', exact: true })).toHaveCount(0)
+      await expect(otherMain.getByRole('link', { name: 'Modifier', exact: true })).toHaveCount(0)
+      await expect(actionsMenu(otherPage)).toHaveCount(0)
       await otherPage.goto(`${previewPath(preview.id)}/modifier`)
       await expect(otherPage).toHaveURL(previewPath(preview.id))
       await expect(otherMain.getByRole('heading', { level: 1, name })).toBeVisible()
@@ -425,7 +428,7 @@ test.describe('a shared preview link', () => {
       await expect(
         otherMain.getByRole('heading', { level: 1, name: `Copie de ${name}` })
       ).toBeVisible()
-      await expect(otherMain.getByRole('button', { name: 'Modifier', exact: true })).toBeVisible()
+      await expect(otherMain.getByRole('link', { name: 'Modifier', exact: true })).toBeVisible()
     } finally {
       await otherContext.close()
     }

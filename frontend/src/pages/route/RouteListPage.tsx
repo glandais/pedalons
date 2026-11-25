@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { paths } from '../../config/paths'
 import { Button, Group, Stack } from '@mantine/core'
+import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { TeamLayout } from '../../components/team/TeamLayout'
 import { TeamUnavailable } from '@/components/team/TeamUnavailable'
@@ -115,7 +116,7 @@ export function RouteListPage() {
           onPageChange={handlePageChange}
           emptyAction={
             canCreateRoute && !hasFiltersOrSearch ? (
-              <Button component="a" href={paths.routeNew(teamSlug!)} variant="light">
+              <Button component={PrefetchLink} to={paths.routeNew(teamSlug!)} variant="light">
                 {t('list.create.route')}
               </Button>
             ) : undefined

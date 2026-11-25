@@ -56,8 +56,8 @@ export function RoutesListHeader({ team }: { team: TeamDetailDto }) {
               </Button>
             ))}
           <Button
-            component="a"
-            href={paths.routeNew(team.slug)}
+            component={PrefetchLink}
+            to={paths.routeNew(team.slug)}
             leftSection={<IconPlus size={16} />}
           >
             {t('list.create.route')}

@@ -15,9 +15,6 @@ export interface CreateAction {
   color: BadgeFamily
   /** Where the action leads. */
   to: string
-  /** Load the page in full rather than through the router (the route editor: `RoutesListHeader`
-   * links it the same way). */
-  reloadDocument?: boolean
   /** A second line under the label. */
   description?: string
   /** Set when the action exists but cannot be taken now: the item is disabled, with this reason. */
@@ -122,7 +119,5 @@ function CreateMenuItem({ action }: { action: CreateAction }) {
 }
 
 function linkProps(action: CreateAction) {
-  return action.reloadDocument
-    ? { component: PrefetchLink, to: action.to, reloadDocument: true, prefetch: 'none' as const }
-    : { component: PrefetchLink, to: action.to }
+  return { component: PrefetchLink, to: action.to }
 }

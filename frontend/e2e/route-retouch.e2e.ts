@@ -17,7 +17,7 @@ import {
   traceMapPixels,
   windingTrack,
 } from './support/routes'
-import { hydrated } from './support/ui'
+import { hydrated, openActionsMenu } from './support/ui'
 import type { Page } from '@playwright/test'
 
 /**
@@ -153,7 +153,10 @@ test('the real offer says the engine cannot retouch: the page has no « Retouche
   await stubBasemap(page)
   await page.goto(routePath(team.slug, route.slug))
   await expect(page.getByRole('heading', { level: 1, name: route.name })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Dupliquer' })).toBeVisible()
+  // « Dupliquer » is in the menu behind « Modifier » (docs/LEDGER_*.md WEB-206)
+  await expect(
+    (await openActionsMenu(page)).getByRole('menuitem', { name: 'Dupliquer' })
+  ).toBeVisible()
   await expect(retouchButton(page)).toHaveCount(0)
 })
 

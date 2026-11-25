@@ -9,11 +9,10 @@ import {
   IconArrowDown,
   IconBolt,
   IconCopy,
-  IconEdit,
   IconRoute,
   IconTrash,
 } from '@tabler/icons-react'
-import { Anchor, Box, Button, Group, Modal, Select, Stack, Text, Title } from '@mantine/core'
+import { Anchor, Box, Button, Group, Menu, Modal, Select, Stack, Text } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import type { GpsServiceType, GpxPreviewDto } from '@/api/dto'
 import { ElevationState, ErrorCode, SurfaceType } from '@/api/dto'
@@ -26,7 +25,8 @@ import {
 import { useListTeams } from '@/api/endpoints/teams/teams'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { DuplicateRouteModal } from '@/components/route/DuplicateRouteModal'
-import { ShareButton } from '@/components/common/ShareButton'
+import { DetailHeader } from '@/components/publication/DetailHeader'
+import { EditMenuButton } from '@/components/publication/EditMenuButton'
 import { RouteMapView } from '@/components/route/RouteMapView'
 import { ColorModeControls } from '@/components/route/ColorModeControls'
 import { DepartureLine } from '@/components/common/DepartureLine'
@@ -172,11 +172,63 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
 
   return (
     <Stack>
-      {/* Sharing is open to anyone: the preview page is public, the link is all it takes. */}
-      <Group justify="space-between" align="flex-start" wrap="nowrap">
-        <Title order={1}>{preview.name}</Title>
-        <ShareButton title={preview.name} />
-      </Group>
+      {/* Sharing is open to anyone: the preview page is public, the link is all it takes. Downloads
+          are open to anyone with the link too; the other actions need an account, and deleting
+          needs to be the creator (docs/LEDGER_*.md WEB-206, D9, D10). */}
+      <DetailHeader
+        title={preview.name}
+        gps={
+          // One « GPS » button for files and devices, as for a route (KIT §8,
+          // docs/LEDGER_*.md WEB-165).
+          <GpsMenu
+            gpxUrl={preview.gpxUrl}
+            fitUrl={preview.fitUrl}
+            onSend={handleSendToDevice}
+            isUploading={isUploadingPreview}
+            size="sm"
+          />
+        }
+        edit={
+          isAuthenticated ? (
+            <>
+              <Button
+                variant="outline"
+                leftSection={<IconRoute size={16} />}
+                onClick={() => setSaveOpened(true)}
+              >
+                {t('gpxTools.preview.saveAsRoute')}
+              </Button>
+              {preview.owned ? (
+                <EditMenuButton to={paths.gpxToolsEdit(preview.id)}>
+                  <Menu.Item
+                    leftSection={<IconCopy size={14} />}
+                    onClick={() => setDuplicateOpened(true)}
+                  >
+                    {t('actions.duplicate')}
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item
+                    color="danger"
+                    leftSection={<IconTrash size={14} />}
+                    onClick={() => setDeleteOpened(true)}
+                  >
+                    {t('gpxTools.preview.delete')}
+                  </Menu.Item>
+                </EditMenuButton>
+              ) : (
+                <Button
+                  variant="outline"
+                  leftSection={<IconCopy size={16} />}
+                  onClick={() => setDuplicateOpened(true)}
+                >
+                  {t('actions.duplicate')}
+                </Button>
+              )}
+            </>
+          ) : undefined
+        }
+        shareTitle={preview.name}
+      />
 
       <Box ref={mapBoxRef}>
         <RouteMapView
@@ -244,64 +296,6 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
         selected={selection?.waypoint ?? null}
         onSelect={selectFromList}
       />
-
-      {/* Downloads are open to anyone with the link; the actions below need an account. */}
-      <Group gap="sm" wrap="wrap">
-        {/* One « GPS » button for files and devices, as for a route (KIT §8,
-            docs/LEDGER_*.md WEB-165). */}
-        <GpsMenu
-          gpxUrl={preview.gpxUrl}
-          fitUrl={preview.fitUrl}
-          onSend={handleSendToDevice}
-          isUploading={isUploadingPreview}
-          size="sm"
-        />
-
-        {isAuthenticated && (
-          <Button
-            variant="default"
-            size="sm"
-            leftSection={<IconRoute size={16} />}
-            onClick={() => setSaveOpened(true)}
-          >
-            {t('gpxTools.preview.saveAsRoute')}
-          </Button>
-        )}
-
-        {isAuthenticated && (
-          <Button
-            variant="default"
-            size="sm"
-            leftSection={<IconCopy size={16} />}
-            onClick={() => setDuplicateOpened(true)}
-          >
-            {t('actions.duplicate')}
-          </Button>
-        )}
-
-        {preview.owned && (
-          <Button
-            variant="default"
-            size="sm"
-            leftSection={<IconEdit size={16} />}
-            onClick={() => navigate(paths.gpxToolsEdit(preview.id))}
-          >
-            {t('gpxTools.preview.edit')}
-          </Button>
-        )}
-
-        {preview.owned && (
-          <Button
-            variant="outline"
-            size="sm"
-            color="danger"
-            leftSection={<IconTrash size={16} />}
-            onClick={() => setDeleteOpened(true)}
-          >
-            {t('gpxTools.preview.delete')}
-          </Button>
-        )}
-      </Group>
 
       {preview.elevationState === ElevationState.PENDING && (
         <Text size="xs" c="dimmed">

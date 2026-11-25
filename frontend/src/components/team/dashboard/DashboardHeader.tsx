@@ -70,14 +70,14 @@ export function DashboardHeaderActions({ team, role }: { team: TeamDetailDto; ro
     })
   }
   if (team.enableRoutes) {
-    // A full page load, as on the routes list (RoutesListHeader).
+    // An SPA link like the other actions: the full page load came from the switch to Mantine with
+    // no reason (docs/LEDGER_*.md WEB-206, D8).
     actions.push({
       key: 'route',
       label: t('list.create.route'),
       icon: IconMapPlus,
       color: 'indigo',
       to: paths.routeNew(team.slug),
-      reloadDocument: true,
       description: team.enableRoutePlanner ? t('teams.dashboard.create.routeHint') : undefined,
       group: routes,
     })
