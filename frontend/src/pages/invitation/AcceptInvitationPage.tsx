@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { IconCheck, IconX, IconUsers, IconLogin } from '@tabler/icons-react'
 import { Alert, Button, Center, Loader, Text } from '@mantine/core'
-import { TransactionalCard } from '@/components/common/TransactionalCard'
+import { TransactionalCard, TransactionalCardShell } from '@/components/common/TransactionalCard'
 import { paths } from '@/config/paths'
 import { useAuthStore } from '@/store/authStore'
 import { preview, accept } from '@/api/endpoints/invitations/invitations'
@@ -106,9 +106,11 @@ export function AcceptInvitationPage() {
 
   if (state === 'loading') {
     return (
-      <Center mih="60vh">
-        <Loader />
-      </Center>
+      <TransactionalCardShell>
+        <Center>
+          <Loader />
+        </Center>
+      </TransactionalCardShell>
     )
   }
 
@@ -188,6 +190,12 @@ export function AcceptInvitationPage() {
             )}
           </>
         ) : undefined
+      }
+      back={
+        // A spent link leaves nothing to do here: the way out is the team list, as on the error card.
+        showNotRedeemable
+          ? { label: t('invitations.accept.backToTeams'), to: paths.teams() }
+          : undefined
       }
     >
       {membershipPending && (

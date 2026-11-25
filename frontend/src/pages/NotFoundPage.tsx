@@ -10,7 +10,7 @@ export function NotFoundPage() {
       <Stack align="center" ta="center">
         <Title order={1}>{t('notFound.pageTitle')}</Title>
         <Text size="lg" c="dimmed">
-          {t('notFound.message')}
+          {t('seo.notFound.description')}
         </Text>
         <Anchor component={PrefetchLink} to={paths.home()} fw={500}>
           {t('errors.notFound.backHome')}

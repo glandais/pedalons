@@ -143,9 +143,11 @@ export function DeviceVerifyPage() {
   if (isKaroo && (completed || hammerheadStep)) {
     if (isLoadingAvailable) {
       return (
-        <Center mih="70vh">
-          <Loader size="lg" />
-        </Center>
+        <TransactionalCardShell>
+          <Center>
+            <Loader size="lg" />
+          </Center>
+        </TransactionalCardShell>
       )
     }
     if (isConnected(GpsServiceType.HAMMERHEAD) || !isServiceAvailable(GpsServiceType.HAMMERHEAD)) {
@@ -173,20 +175,26 @@ export function DeviceVerifyPage() {
         title={t('device.hammerhead.title')}
         description={t('device.hammerhead.message')}
         actions={
-          <Button
-            fullWidth
-            leftSection={<IconLink size={16} />}
-            loading={connecting}
-            onClick={() => {
-              setConnecting(true)
-              void initiateConnect(
-                GpsServiceType.HAMMERHEAD,
-                GpsConnectReturn.DEVICE_KAROO
-              ).finally(() => setConnecting(false))
-            }}
-          >
-            {t('device.hammerhead.connect')}
-          </Button>
+          <>
+            <Button
+              fullWidth
+              leftSection={<IconLink size={16} />}
+              loading={connecting}
+              onClick={() => {
+                setConnecting(true)
+                void initiateConnect(
+                  GpsServiceType.HAMMERHEAD,
+                  GpsConnectReturn.DEVICE_KAROO
+                ).finally(() => setConnecting(false))
+              }}
+            >
+              {t('device.hammerhead.connect')}
+            </Button>
+            {/* Under the button it describes. */}
+            <Text size="sm" c="dimmed" ta="center">
+              {t('device.hammerhead.hint')}
+            </Text>
+          </>
         }
       >
         <Group gap="xs" justify="center">
@@ -204,9 +212,6 @@ export function DeviceVerifyPage() {
             </Text>
           </Alert>
         )}
-        <Text size="sm" c="dimmed" ta="center">
-          {t('device.hammerhead.hint')}
-        </Text>
       </TransactionalCard>
     )
   }
@@ -329,10 +334,6 @@ export function DeviceVerifyPage() {
         </ThemeIcon>
       }
       title={t('device.confirm.title')}
-      description={t('device.confirm.question', {
-        device: deviceName,
-        name: user?.displayName ?? '',
-      })}
       actions={
         <>
           <Button
@@ -357,6 +358,14 @@ export function DeviceVerifyPage() {
         </>
       }
     >
+      {/* Normal text, not the dimmed description: it is the sentence to read before
+          authorising (docs/LEDGER_*.md SEC-2). */}
+      <Text ta="center">
+        {t('device.confirm.question', {
+          device: deviceName,
+          name: user?.displayName ?? '',
+        })}
+      </Text>
       <Text ta="center" fz={32} fw={700} ff="monospace" style={{ letterSpacing: '0.2em' }}>
         {userCode}
       </Text>

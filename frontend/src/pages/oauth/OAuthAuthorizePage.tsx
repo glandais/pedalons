@@ -78,10 +78,6 @@ export function OAuthAuthorizePage() {
         </ThemeIcon>
       }
       title={t('oauth.confirm.title')}
-      description={t('oauth.confirm.question', {
-        application: request.clientId,
-        name: user?.displayName ?? '',
-      })}
       actions={
         <>
           <Button
@@ -115,6 +111,14 @@ export function OAuthAuthorizePage() {
         </>
       }
     >
+      {/* Normal text, not the dimmed description: it is the sentence to read before
+          authorising (docs/LEDGER_*.md SEC-2). */}
+      <Text ta="center">
+        {t('oauth.confirm.question', {
+          application: request.clientId,
+          name: user?.displayName ?? '',
+        })}
+      </Text>
       <Stack gap={4} w="100%">
         <Text size="sm" c="dimmed">
           {t('oauth.confirm.redirect')}
