@@ -314,6 +314,13 @@ void main() {
           ),
         ),
         GoRoute(
+          path: '/equipes/:teamSlug/parcours',
+          // Un `Scaffold` : il montre le bilan de l'import.
+          builder: (BuildContext _, GoRouterState state) => Scaffold(
+            body: Text('parcours ${state.pathParameters['teamSlug']}'),
+          ),
+        ),
+        GoRoute(
           path: '/equipes/:teamSlug/parcours/:routeSlug',
           builder: (BuildContext _, GoRouterState state) =>
               Text('fiche ${state.pathParameters['routeSlug']}'),
@@ -457,8 +464,8 @@ void main() {
         find.text('2 parcours importés. Fichiers refusés : notes.txt'),
         findsOneWidget,
       );
-      // L'éditeur s'est fermé : l'accueil du routeur de test.
-      expect(find.text('accueil'), findsOneWidget);
+      // La liste des parcours de l'équipe.
+      expect(find.text('parcours n-peloton'), findsOneWidget);
     },
   );
 

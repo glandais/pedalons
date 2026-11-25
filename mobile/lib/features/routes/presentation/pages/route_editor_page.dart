@@ -499,7 +499,7 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
   /// Plusieurs GPX : un parcours par fichier, nommé d'après lui, avec la
   /// visibilité par défaut de l'équipe et le revêtement « route » — l'import
   /// du site (`useGpxUpload`). Un fichier refusé n'arrête pas les autres ; le
-  /// bilan dit lesquels, puis l'éditeur se ferme sur la liste relue.
+  /// bilan dit lesquels, puis la liste des parcours de l'équipe s'ouvre.
   Future<void> _importAll(List<GpxFile> files) async {
     setState(() {
       _reading = true;
@@ -543,7 +543,10 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
       return;
     }
     _saved = true;
-    Navigator.of(context).pop();
+    // La liste des parcours de l'équipe, où sont les nouveaux — d'où qu'on
+    // soit venu (tableau de bord, liste) ; `go`, pas `push` : c'est une page
+    // d'onglet, et l'éditeur est au-dessus de l'enveloppe.
+    GoRouter.of(context).go(Paths.routes(_teamSlug));
   }
 
   // ── Planificateur ──────────────────────────────────────────────────────

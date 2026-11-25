@@ -22,7 +22,7 @@ export interface GpxUpload {
  * « Importer des GPX », as in the app: one file opens the route form with it (nothing is saved
  * before « Enregistrer »); several are imported at once, one route per file, named after the file's
  * own name (metadata, else first track, else the file name), with the team's default visibility and
- * a road surface. Progress and outcome are notifications, so the entry needs no place on the page:
+ * a road surface, then the team's routes open. Progress and outcome are notifications, so the entry needs no place on the page:
  * the routes list, the team's dashboard and the member home offer it from their « Créer ▾ » menus.
  */
 export function useGpxUpload(team: TeamDetailDto): GpxUpload {
@@ -68,8 +68,12 @@ export function useGpxUpload(team: TeamDetailDto): GpxUpload {
     }
     setProgress(null)
     const imported = total - failed.length
-    // Refresh every cached view of this team's routes (list, detail, bulk).
-    if (imported > 0) invalidateRouteQueries(queryClient, teamSlug)
+    if (imported > 0) {
+      // Refresh every cached view of this team's routes (list, detail, bulk), and show them: the
+      // new routes are there, as in the app.
+      invalidateRouteQueries(queryClient, teamSlug)
+      navigate(paths.routes(teamSlug))
+    }
     notifications.update({
       id,
       loading: false,
