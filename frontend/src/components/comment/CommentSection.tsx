@@ -75,7 +75,7 @@ export function CommentSection({
 
   return (
     <Paper p="xl" shadow="xs" withBorder>
-      <Title order={4} mb="md">
+      <Title order={2} size="h4" mb="md">
         {t('comments.title')} ({total})
       </Title>
 

@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **620 entrées livrées**, et des 20 entrées encore ouvertes dont une part l'est.
+Index des **621 entrées livrées**, et des 20 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -156,6 +156,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## WEB — Site web
 
+- [x] [`WEB-211`](ledger/WEB/WEB-211.md) Suites de la recette des en-têtes : bandeau d'équipe sur téléphone, niveaux de titres, onglet de la connexion, lexique — 2026-11-25
 - [x] [`WEB-210`](ledger/WEB/WEB-210.md) Un h1 sur les états 404, 403 et erreur qui remplacent une page — 2026-11-25
 - [x] [`WEB-209`](ledger/WEB/WEB-209.md) En-têtes de pages, lot 5 : une carte transactionnelle commune — en partie, le reste est ouvert
 - [x] [`WEB-208`](ledger/WEB/WEB-208.md) En-têtes de pages, lot 4 : bandeau d'équipe et administration — en partie, le reste est ouvert

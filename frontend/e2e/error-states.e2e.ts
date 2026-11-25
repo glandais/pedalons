@@ -42,7 +42,7 @@ const TARGETS: Target[] = [
     kind: 'ride',
     path: ridePath,
     api: (team, slug) => `/api/teams/${team}/rides/${slug}`,
-    notFound: 'Sortie non trouvée',
+    notFound: 'Sortie introuvable',
   },
   {
     kind: 'trip',

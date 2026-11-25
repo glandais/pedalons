@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react'
+import { memo, useEffect, useMemo } from 'react'
 import { Outlet, useLocation, useNavigationType } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
@@ -38,6 +38,7 @@ import { useGetVersion } from '@/api/endpoints/server-version/server-version'
 import { useAuth } from '../../hooks/useAuth'
 import { useAppName } from '../../hooks/useAppName'
 import { useDocumentTitle } from '../../hooks/useDocumentTitle'
+import { usePageLabelStore } from '@/store/pageLabelStore'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { useBreadcrumb } from '../../hooks/useBreadcrumb'
 import { useScrollRestoration } from '../../hooks/useScrollRestoration'
@@ -100,7 +101,10 @@ export function Layout() {
   }, [pathname, navigationType])
 
   // The tab's title follows the route, the same computation as the server's
-  useDocumentTitle(title)
+  // … unless the page names the step it shows (the sign-in card: « Création de compte »)
+  const stepLabel = usePageLabelStore((state) => state.label)
+  const stepTitle = useMemo(() => (stepLabel ? { label: stepLabel } : title), [stepLabel, title])
+  useDocumentTitle(stepTitle)
 
   // Close mobile menu on Escape key
   useEffect(() => {

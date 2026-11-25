@@ -681,7 +681,7 @@ test.describe('ad place', () => {
     await expect(page).toHaveURL(new RegExp(`${escapeRegExp(adPath(team.slug, ad.slug))}$`))
     await expect(page.getByRole('heading', { level: 1, name: ad.name })).toBeVisible()
     // The written place stands on its own, with its heading — no map centred on nothing.
-    await expect(main.getByRole('heading', { level: 4, name: 'Localisation' })).toBeVisible()
+    await expect(main.getByRole('heading', { level: 2, name: 'Localisation' })).toBeVisible()
     await expect(main.getByText('Rennes centre', { exact: true })).toBeVisible()
     await expect(sector(page)).toHaveCount(0)
     await expect(main.locator('canvas')).toHaveCount(0)

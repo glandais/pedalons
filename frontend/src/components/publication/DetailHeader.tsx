@@ -124,8 +124,13 @@ export function DetailHeader({
               {gps}
               {edit}
               {retouch}
-              {shareTitle && <ShareButton title={shareTitle} />}
-              {more}
+              {/* The two icons wrap together: a lone `⋯` on a second line reads as a leftover */}
+              {(shareTitle || more) && (
+                <Group gap="xs" wrap="nowrap">
+                  {shareTitle && <ShareButton title={shareTitle} />}
+                  {more}
+                </Group>
+              )}
             </Group>
           )}
         </Group>

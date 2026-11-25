@@ -58,7 +58,9 @@ function AppCard({
         <ThemeIcon size={48} radius="lg" variant="light">
           {icon}
         </ThemeIcon>
-        <Title order={3}>{title}</Title>
+        <Title order={2} size="h3">
+          {title}
+        </Title>
         <Badge color={status === 'comingSoon' ? 'gray' : 'green'} w="fit-content">
           {t(`apps.status.${status}`)}
         </Badge>

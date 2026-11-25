@@ -234,7 +234,8 @@ describe('RideGroupPage (WEB-77)', () => {
     expect(more.getAttribute('data-id')).toBe((state.ride as RideDto).id)
     const actions = screen.getByTestId('detail-header-actions')
     expect(actions.contains(more)).toBe(true)
-    expect(actions.lastElementChild).toBe(more)
+    // Share and ⋯ wrap together, in one group that closes the actions
+    expect(actions.lastElementChild?.lastElementChild).toBe(more)
   })
 
   it('titles the group under its ride, with its places, stats and participants', () => {

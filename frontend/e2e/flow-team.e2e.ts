@@ -640,7 +640,7 @@ async function expectTeamGone(page: Page, teamSlug: string, rideSlug: string) {
   await expect(page).toHaveURL(/\/equipes$/, { timeout: 20_000 })
   await expect(page.getByRole('heading', { level: 1, name: 'Équipes' })).toBeVisible()
   await page.goto(ridePath(teamSlug, rideSlug))
-  await expect(main(page).getByRole('heading', { name: 'Sortie non trouvée' })).toBeVisible({
+  await expect(main(page).getByRole('heading', { name: 'Sortie introuvable' })).toBeVisible({
     timeout: 20_000,
   })
 }

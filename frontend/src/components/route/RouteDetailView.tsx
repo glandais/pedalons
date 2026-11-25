@@ -170,7 +170,7 @@ export function RouteDetailView({
         return (
           allClimbs.length > 0 && (
             <Box>
-              <Title order={4} mb="sm">
+              <Title order={2} size="h4" mb="sm">
                 {t('routes.detail.climbs.title')} ({allClimbs.length})
               </Title>
               <Stack gap="xs">

@@ -178,12 +178,12 @@ describe('QueryStateBoundary — the heading of a state that replaces the page (
         isLoading={false}
         isNotFound
         replacesPage
-        notFound={{ title: 'Sortie non trouvée' }}
+        notFound={{ title: 'Sortie introuvable' }}
       >
         {null}
       </QueryStateBoundary>
     )
-    expect(screen.getByRole('heading', { level: 1, name: 'Sortie non trouvée' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Sortie introuvable' })).toBeTruthy()
   })
 
   it('loading shows no h1', () => {

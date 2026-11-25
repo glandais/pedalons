@@ -87,7 +87,7 @@ describe('RouteDetailView — what a page sets above the climbs (WEB-143)', () =
       beforeClimbs: <div data-testid="forecast" />,
     })
     const forecast = screen.getByTestId('forecast')
-    const climbs = screen.getByRole('heading', { level: 4 })
+    const climbs = screen.getByRole('heading', { level: 2 })
     const follows = (a: Element, b: Element) =>
       !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
     expect(follows(screen.getByTestId('route-map'), forecast)).toBe(true)

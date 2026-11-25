@@ -198,7 +198,7 @@ export function TripDetailPage() {
           <InstructionsBlock media={trip.media} testId="trip-instructions" />
 
           <Box data-testid="trip-stages">
-            <Title order={3} size="h4" mb="md">
+            <Title order={2} size="h4" mb="md">
               {t('trips.detail.stages.title')}
             </Title>
             {trip.stages && trip.stages.length > 0 ? (

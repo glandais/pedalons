@@ -49,7 +49,7 @@ export function ParticipantsSection({
     <Paper withBorder p="lg" component="section" aria-labelledby={titleId}>
       <Stack gap="md">
         <Group justify="space-between" wrap="wrap" gap="xs">
-          <Title order={3} size="h4" id={titleId}>
+          <Title order={2} size="h4" id={titleId}>
             {t('rides.group.participantsTitle')}
           </Title>
           <Text size="sm" c="dimmed">

@@ -400,13 +400,13 @@ test.describe('public content, seen from outside the team', () => {
     }) => {
       const auth = session()
       const notFound: Record<Kind, string> = {
-        ride: 'Sortie non trouvée',
+        ride: 'Sortie introuvable',
         trip: 'Voyage introuvable',
         post: 'Publication introuvable',
       }
       for (const kind of KINDS) {
         const { path, name, text } = scene.closed[kind]
-        // A real 404, not a 200 saying « non trouvée »: the server reads the entity the loaders
+        // A real 404, not a 200 saying « introuvable »: the server reads the entity the loaders
         // could not get (docs/LEDGER_*.md WEB-166).
         const document = await documentAs(path, auth, 404)
         for (const [label, secret] of Object.entries({ name, text }))

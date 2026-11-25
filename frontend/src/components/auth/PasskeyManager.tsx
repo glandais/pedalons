@@ -104,7 +104,7 @@ export function PasskeyManager() {
   if (!isSupported) {
     return (
       <Stack>
-        <Title order={3} size="h5">
+        <Title order={2} size="h5">
           {t('passkeys.title')}
         </Title>
         <Alert icon={<IconAlertCircle size={16} />} color="yellow">
@@ -117,7 +117,7 @@ export function PasskeyManager() {
   return (
     <Stack>
       <Group justify="space-between">
-        <Title order={3} size="h5">
+        <Title order={2} size="h5">
           {t('passkeys.title')}
         </Title>
         <Button

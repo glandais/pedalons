@@ -316,7 +316,7 @@ test.describe('ride journey', () => {
       // Its own page says it is gone — see 'a deleted ride's page says so at once' for how long
       // that takes.
       await memberPage.goto(`/equipes/${team.slug}/sorties/${rideSlug}`)
-      await expect(main(memberPage).getByText('Sortie non trouvée')).toBeVisible({
+      await expect(main(memberPage).getByText('Sortie introuvable')).toBeVisible({
         timeout: 15_000,
       })
     } finally {

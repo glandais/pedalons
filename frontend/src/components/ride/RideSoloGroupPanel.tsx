@@ -74,7 +74,7 @@ export function RideSoloGroupPanel({
                   style={{ flexShrink: 0, borderRadius: 2, backgroundColor: trackColor }}
                 />
               )}
-              <Title order={3} size="h4" style={{ minWidth: 0 }} lineClamp={1}>
+              <Title order={2} size="h4" style={{ minWidth: 0 }} lineClamp={1}>
                 {groupTitle(group.name, t)}
               </Title>
               {group.registered && (

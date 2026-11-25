@@ -98,10 +98,15 @@ export function TeamLayout({
         <TeamAvatar team={team} size="lg" />
         <Box style={{ flex: 1, minWidth: 0 }}>
           <Group justify="space-between" align="center" wrap="wrap" gap="sm">
-            <Group gap="sm" style={{ minWidth: 0 }}>
-              <TeamSwitcher team={team} section={onCustomPage ? undefined : currentTab} />
-              <VisibilityBadge visibility={team.visibility} />
-            </Group>
+            {/* The role and member count stay under the name: on a phone the actions wrap below
+                both, never between them */}
+            <Stack gap={4} style={{ minWidth: 0 }}>
+              <Group gap="sm" style={{ minWidth: 0 }}>
+                <TeamSwitcher team={team} section={onCustomPage ? undefined : currentTab} />
+                <VisibilityBadge visibility={team.visibility} />
+              </Group>
+              {meta}
+            </Stack>
 
             <Group gap="sm">
               {joinBlockedByLimit && team.memberLimit != null && (
@@ -166,7 +171,6 @@ export function TeamLayout({
               <ShareButton title={team.name} />
             </Group>
           </Group>
-          {meta}
         </Box>
       </Group>
       {isMobile && actions}

@@ -170,7 +170,7 @@ describe('RideDetailPage — a ride with one group is its group page (WEB-79)', 
 
   it('names the group as a block, with no link to a group page', () => {
     renderPage()
-    expect(screen.getByRole('heading', { level: 3, name: 'Rapide' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: 'Rapide' })).toBeTruthy()
     expect(groupLinks()).toHaveLength(0)
     expect(screen.queryByRole('link', { name: /Voir le groupe/ })).toBeNull()
   })
@@ -507,7 +507,7 @@ describe('RideDetailPage — a private team’s public ride, read by link (WEB-1
   it('renders the ride instead of « not found » without the team', () => {
     renderPage()
     expect(screen.getByRole('heading', { level: 1, name: 'Sortie du samedi' })).toBeTruthy()
-    expect(screen.queryByText('Sortie non trouvée')).toBeNull()
+    expect(screen.queryByText('Sortie introuvable')).toBeNull()
   })
 
   it('offers no registration, no comments and no participants — the backend refuses them', () => {

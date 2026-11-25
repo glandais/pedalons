@@ -309,7 +309,7 @@ export function AdDetailPage() {
             whose body is empty but which carries a file. */}
         {(ad.media.markdown.length > 0 || ad.media.assets.attachments.length > 0) && (
           <Box mt="lg">
-            <Title order={4} mb="xs">
+            <Title order={2} size="h4" mb="xs">
               {t('ads.detail.description')}
             </Title>
             <MediaDisplay media={ad.media} />
@@ -320,7 +320,7 @@ export function AdDetailPage() {
             since a map centred on a fallback would lie. */}
         {(ad.locationDescription || ad.locationGeometry) && (
           <Box mt="lg">
-            <Title order={4} mb="xs">
+            <Title order={2} size="h4" mb="xs">
               {t('ads.detail.location')}
             </Title>
             <Stack gap="xs">
@@ -339,7 +339,7 @@ export function AdDetailPage() {
 
         {/* The author. `createdByDisplayName` is all the DTO carries about them — there is no
             contact channel on an ad, only the relay below. */}
-        <Title order={4} mb="xs">
+        <Title order={2} size="h4" mb="xs">
           {t('ads.detail.seller')}
         </Title>
         <Group gap="sm">
