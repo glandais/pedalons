@@ -25,7 +25,7 @@ class GpxPreviewRepository {
     averageSpeed: averageSpeed?.toString(),
   );
 
-  /// « Créer un parcours » : le tracé dessiné dans le planificateur (son état
+  /// « Tracer un fichier GPX » : le tracé dessiné dans le planificateur (son état
   /// d'édition, ou ses points), sans fichier.
   Future<GpxPreviewDto> createFromPoints(GpxPreviewFromPointsRequest request) =>
       _client.createPreviewFromPoints(body: request);

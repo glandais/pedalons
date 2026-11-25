@@ -189,7 +189,7 @@ class _GpxToolsHubState extends ConsumerState<GpxToolsHub> {
   bool get _plannerEnabled =>
       ref.watch(appConfigProvider).value?.enableGpxPlanner ?? false;
 
-  /// « Créer un parcours » : inactif, avec sa raison, quand les
+  /// « Tracer un fichier GPX » : inactif, avec sa raison, quand les
   /// enregistrements du mois d'un tracé dessiné sont tous utilisés (quota
   /// personnel, `BILL-10`). Aucun compteur avant ; les gestes sur les fichiers
   /// restent ouverts.
@@ -416,7 +416,7 @@ class _ViewFileTile extends StatelessWidget {
 /// Une ligne de la liste des gestes de l'accueil : une pastille d'icône
 /// colorée, un titre et sa phrase, un chevron ; la ligne entière est la
 /// cible. [extra] se pose sous le texte : le mot du quota épuisé sous
-/// « Créer un parcours ».
+/// « Tracer un fichier GPX ».
 class GpxToolRow extends StatelessWidget {
   const GpxToolRow({
     super.key,

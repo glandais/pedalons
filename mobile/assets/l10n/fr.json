@@ -1751,12 +1751,13 @@
       "short": "De 2 à 10 tracés mis bout à bout"
     },
     "createFromScratch": {
-      "title": "Créer un parcours",
+      "title": "Tracer un fichier GPX",
       "description": "Tracez un itinéraire sur une carte vierge, sans fichier GPX, à l'aide du planificateur.",
-      "submit": "Créer un parcours",
+      "submit": "Tracer un fichier GPX",
       "created": "Parcours créé",
       "renameFailed": "Parcours créé, mais le nom saisi n'a pas pu être enregistré : il porte le nom du fichier.",
-      "short": "Tracer sur une carte vierge"
+      "short": "Sur une carte vierge, avec le planificateur",
+      "subtitle": "Tracez votre itinéraire sur la carte, nommez-le, puis analysez-le."
     },
     "blankMap": {
       "title": "Ouvrir une carte",

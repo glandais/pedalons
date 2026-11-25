@@ -202,7 +202,9 @@ class RouteTrackSection extends ConsumerWidget {
         alignment: AlignmentDirectional.centerStart,
         child: PdlButton(
           key: keys.routeEditor.trackChangeButton,
-          label: drawing == null
+          // « Changer » seulement quand un fichier est déjà choisi ; sans rien,
+          // ou sur un tracé dessiné, le bouton dit ce qu'il fait.
+          label: file != null
               ? 'routes.editor.trackChange'.tr()
               : 'routes.editor.importButton'.tr(),
           icon: PdlIcons.fileAdd,

@@ -1751,12 +1751,13 @@
       "short": "2 to 10 tracks joined end to end"
     },
     "createFromScratch": {
-      "title": "Create a route",
+      "title": "Draw a GPX file",
       "description": "Draw a route on a blank map, without a GPX file, using the planner.",
-      "submit": "Create a route",
+      "submit": "Draw a GPX file",
       "created": "Route created",
       "renameFailed": "Route created, but the name you typed could not be saved: it carries the file's name.",
-      "short": "Draw on a blank map"
+      "short": "On a blank map, with the planner",
+      "subtitle": "Draw your route on the map, name it, then analyse it."
     },
     "blankMap": {
       "title": "Open a map",

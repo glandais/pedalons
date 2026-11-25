@@ -26,7 +26,7 @@ class GpxToolsKeys {
   ValueKey<String> recent(String previewId) =>
       _GpxToolsKey('recent_$previewId');
 
-  /// Le mot du quota personnel épuisé, sous « Créer un parcours ».
+  /// Le mot du quota personnel épuisé, sous « Tracer un fichier GPX ».
   final quotaMessage = const _GpxToolsKey('quotaMessage');
 
   // ── Fichier reçu d'une autre app (MOB-191) ───────────────────────────
