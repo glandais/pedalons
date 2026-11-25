@@ -290,8 +290,10 @@ enum ErrorCode {
 
   const ErrorCode(this.json);
 
-  factory ErrorCode.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory ErrorCode.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

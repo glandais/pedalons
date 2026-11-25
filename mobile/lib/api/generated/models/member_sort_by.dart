@@ -16,8 +16,10 @@ enum MemberSortBy {
 
   const MemberSortBy(this.json);
 
-  factory MemberSortBy.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory MemberSortBy.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

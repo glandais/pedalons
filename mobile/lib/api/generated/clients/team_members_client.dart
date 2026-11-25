@@ -67,7 +67,9 @@ abstract class TeamMembersClient {
   ///
   /// [teamSlug] - Team URL slug.
   @POST('/api/teams/{teamSlug}/members/join')
-  Future<MemberDto> joinTeam({@Path('teamSlug') required String teamSlug});
+  Future<MemberDto> joinTeam({
+    @Path('teamSlug') required String teamSlug,
+  });
 
   /// Leave team.
   ///
@@ -75,7 +77,9 @@ abstract class TeamMembersClient {
   ///
   /// [teamSlug] - Team URL slug.
   @POST('/api/teams/{teamSlug}/members/leave')
-  Future<void> leaveTeam({@Path('teamSlug') required String teamSlug});
+  Future<void> leaveTeam({
+    @Path('teamSlug') required String teamSlug,
+  });
 
   /// Update member role.
   ///

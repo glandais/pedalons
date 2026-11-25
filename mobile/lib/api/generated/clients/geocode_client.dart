@@ -20,11 +20,15 @@ abstract class GeocodeClient {
   ///
   /// [id] - The id of a search result, e.g. whosonfirst:locality:101750851.
   @GET('/api/geocode/place')
-  Future<GeocodeResultDto> resolvePlace({@Query('id') required String id});
+  Future<GeocodeResultDto> resolvePlace({
+    @Query('id') required String id,
+  });
 
   /// Search places by name.
   ///
   /// Returns at most 5 places matching the query, or an empty list when the query is shorter than 3 characters or the provider is unreachable. A result's lat and lon are null when the provider gave no position for it (the usual case): once the user picks it, resolve its position with GET /api/geocode/place?id=. Never resolve every suggestion: each resolution is billed. Results come from the Stadia Maps geocoder: a client displaying them must credit 'Stadia Maps, © OpenStreetMap contributors & others'.
   @GET('/api/geocode/search')
-  Future<List<GeocodeResultDto>> searchPlaces({@Query('q') String? q});
+  Future<List<GeocodeResultDto>> searchPlaces({
+    @Query('q') String? q,
+  });
 }

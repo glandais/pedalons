@@ -18,8 +18,10 @@ enum Hilliness {
 
   const Hilliness(this.json);
 
-  factory Hilliness.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory Hilliness.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

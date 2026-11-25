@@ -22,8 +22,10 @@ enum TagTarget {
 
   const TagTarget(this.json);
 
-  factory TagTarget.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory TagTarget.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

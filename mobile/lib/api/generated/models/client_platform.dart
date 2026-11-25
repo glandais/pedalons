@@ -18,8 +18,10 @@ enum ClientPlatform {
 
   const ClientPlatform(this.json);
 
-  factory ClientPlatform.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory ClientPlatform.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

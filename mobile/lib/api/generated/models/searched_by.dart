@@ -16,8 +16,10 @@ enum SearchedBy {
 
   const SearchedBy(this.json);
 
-  factory SearchedBy.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory SearchedBy.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

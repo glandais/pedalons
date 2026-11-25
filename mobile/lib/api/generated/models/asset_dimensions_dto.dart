@@ -9,8 +9,10 @@ part 'asset_dimensions_dto.g.dart';
 
 @Freezed()
 abstract class AssetDimensionsDto with _$AssetDimensionsDto {
-  const factory AssetDimensionsDto({int? width, int? height}) =
-      _AssetDimensionsDto;
+  const factory AssetDimensionsDto({
+    int? width,
+    int? height,
+  }) = _AssetDimensionsDto;
 
   factory AssetDimensionsDto.fromJson(Map<String, Object?> json) =>
       _$AssetDimensionsDtoFromJson(json);

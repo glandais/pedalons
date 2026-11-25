@@ -16,8 +16,10 @@ enum RouteRetouchOperation {
 
   const RouteRetouchOperation(this.json);
 
-  factory RouteRetouchOperation.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory RouteRetouchOperation.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

@@ -24,7 +24,9 @@ abstract class ModerationClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/reports')
-  Future<void> reportContent({@Body() required ReportRequest body});
+  Future<void> reportContent({
+    @Body() required ReportRequest body,
+  });
 
   /// List the team's moderation queue.
   ///
@@ -64,7 +66,9 @@ abstract class ModerationClient {
   ///
   /// [userId] - User ID (TSID).
   @DELETE('/api/users/me/blocks/{userId}')
-  Future<void> unblockUser({@Path('userId') required String userId});
+  Future<void> unblockUser({
+    @Path('userId') required String userId,
+  });
 
   /// Block a member.
   ///
@@ -72,5 +76,7 @@ abstract class ModerationClient {
   ///
   /// [userId] - User ID (TSID).
   @PUT('/api/users/me/blocks/{userId}')
-  Future<void> blockUser({@Path('userId') required String userId});
+  Future<void> blockUser({
+    @Path('userId') required String userId,
+  });
 }

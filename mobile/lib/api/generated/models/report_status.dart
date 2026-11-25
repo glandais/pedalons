@@ -18,8 +18,10 @@ enum ReportStatus {
 
   const ReportStatus(this.json);
 
-  factory ReportStatus.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory ReportStatus.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

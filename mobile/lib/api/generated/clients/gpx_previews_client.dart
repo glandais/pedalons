@@ -116,7 +116,9 @@ abstract class GpxPreviewsClient {
   ///
   /// [previewId] - Public preview identifier.
   @DELETE('/api/gpx-previews/{previewId}')
-  Future<void> deletePreview({@Path('previewId') required String previewId});
+  Future<void> deletePreview({
+    @Path('previewId') required String previewId,
+  });
 
   /// Copy an analysed GPX file.
   ///

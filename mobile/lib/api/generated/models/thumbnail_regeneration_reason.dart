@@ -19,7 +19,10 @@ enum ThumbnailRegenerationReason {
   const ThumbnailRegenerationReason(this.json);
 
   factory ThumbnailRegenerationReason.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+      values.firstWhere(
+        (e) => e.json == json,
+        orElse: () => $unknown,
+      );
 
   final String? json;
 

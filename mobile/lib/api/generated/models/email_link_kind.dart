@@ -16,8 +16,10 @@ enum EmailLinkKind {
 
   const EmailLinkKind(this.json);
 
-  factory EmailLinkKind.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory EmailLinkKind.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

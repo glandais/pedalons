@@ -18,8 +18,10 @@ enum TeamRole {
 
   const TeamRole(this.json);
 
-  factory TeamRole.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory TeamRole.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

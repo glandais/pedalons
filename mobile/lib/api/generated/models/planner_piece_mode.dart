@@ -18,8 +18,10 @@ enum PlannerPieceMode {
 
   const PlannerPieceMode(this.json);
 
-  factory PlannerPieceMode.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory PlannerPieceMode.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

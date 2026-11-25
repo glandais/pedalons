@@ -27,7 +27,9 @@ abstract class RouterClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/router')
-  Future<RouterResponse> route({@Body() required RouterRequest body});
+  Future<RouterResponse> route({
+    @Body() required RouterRequest body,
+  });
 
   /// Read the relief of straight lines.
   ///

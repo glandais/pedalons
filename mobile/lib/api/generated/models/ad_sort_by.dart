@@ -18,8 +18,10 @@ enum AdSortBy {
 
   const AdSortBy(this.json);
 
-  factory AdSortBy.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory AdSortBy.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

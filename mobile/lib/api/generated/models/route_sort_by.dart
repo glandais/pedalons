@@ -20,8 +20,10 @@ enum RouteSortBy {
 
   const RouteSortBy(this.json);
 
-  factory RouteSortBy.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory RouteSortBy.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

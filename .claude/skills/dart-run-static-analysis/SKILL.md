@@ -54,7 +54,7 @@ Use this workflow to resolve outdated API usages, apply quick fixes, and migrate
 - [ ] 2. Review the proposed fixes to ensure they align with the intended architecture.
 - [ ] 3. If additional fixes are required, verify that the corresponding linter rules are enabled in `analysis_options.yaml`.
 - [ ] 4. Apply the fixes using the `dart_fix` MCP tool or CLI command `dart fix --apply`.
-- [ ] 5. Format the modified code using the `dart_format` MCP tool or CLI command `dart format .`.
+- [ ] 5. Format the modified code with `./format.sh mobile` from the repository root — never the `dart_format` MCP tool or a bare `dart format .`: they reformat the committed generated sources (`lib/api/generated/`, `*.g.dart`, `*.freezed.dart`) that `format.sh` leaves to their generators, and they skip the `--language-version` it pins.
 - [ ] 6. Run the static analysis workflow to verify all diagnostics are resolved.
 
 ## Examples

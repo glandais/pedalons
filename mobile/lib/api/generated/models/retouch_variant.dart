@@ -18,8 +18,10 @@ enum RetouchVariant {
 
   const RetouchVariant(this.json);
 
-  factory RetouchVariant.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory RetouchVariant.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

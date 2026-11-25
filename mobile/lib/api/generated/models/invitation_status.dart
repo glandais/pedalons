@@ -20,8 +20,10 @@ enum InvitationStatus {
 
   const InvitationStatus(this.json);
 
-  factory InvitationStatus.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory InvitationStatus.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

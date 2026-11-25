@@ -18,8 +18,10 @@ enum GpsServiceType {
 
   const GpsServiceType(this.json);
 
-  factory GpsServiceType.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory GpsServiceType.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

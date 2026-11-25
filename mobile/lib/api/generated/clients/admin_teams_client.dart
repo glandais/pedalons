@@ -42,7 +42,9 @@ abstract class AdminTeamsClient {
   ///
   /// [teamId] - Team ID.
   @GET('/api/admin/teams/{teamId}')
-  Future<AdminTeamDto> adminGetTeam({@Path('teamId') required String teamId});
+  Future<AdminTeamDto> adminGetTeam({
+    @Path('teamId') required String teamId,
+  });
 
   /// Update team governance attributes.
   ///

@@ -18,8 +18,10 @@ enum PublicationType {
 
   const PublicationType(this.json);
 
-  factory PublicationType.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory PublicationType.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

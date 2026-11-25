@@ -18,8 +18,10 @@ enum MinRole {
 
   const MinRole(this.json);
 
-  factory MinRole.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory MinRole.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

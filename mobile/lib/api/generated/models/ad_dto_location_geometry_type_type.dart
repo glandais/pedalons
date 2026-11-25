@@ -15,7 +15,10 @@ enum AdDtoLocationGeometryTypeType {
   const AdDtoLocationGeometryTypeType(this.json);
 
   factory AdDtoLocationGeometryTypeType.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+      values.firstWhere(
+        (e) => e.json == json,
+        orElse: () => $unknown,
+      );
 
   final String? json;
 

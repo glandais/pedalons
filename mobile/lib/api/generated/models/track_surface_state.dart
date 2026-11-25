@@ -18,8 +18,10 @@ enum TrackSurfaceState {
 
   const TrackSurfaceState(this.json);
 
-  factory TrackSurfaceState.fromJson(String json) =>
-      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
+  factory TrackSurfaceState.fromJson(String json) => values.firstWhere(
+    (e) => e.json == json,
+    orElse: () => $unknown,
+  );
 
   final String? json;
 

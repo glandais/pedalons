@@ -31,7 +31,9 @@ abstract class UsersClient {
   ///
   /// [token] - Download token from the notification email.
   @GET('/api/export/download')
-  Future<void> downloadDataExport({@Query('token') required String token});
+  Future<void> downloadDataExport({
+    @Query('token') required String token,
+  });
 
   /// Update current user.
   ///
@@ -39,7 +41,9 @@ abstract class UsersClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @PUT('/api/users/me')
-  Future<UserDto> updateMe({@Body() required UpdateUserRequest body});
+  Future<UserDto> updateMe({
+    @Body() required UpdateUserRequest body,
+  });
 
   /// Get current user.
   ///
@@ -60,7 +64,9 @@ abstract class UsersClient {
   /// [file] - Name not received - field will be skipped.
   @MultiPart()
   @POST('/api/users/me/avatar')
-  Future<UserDto> uploadAvatar({@Part(name: 'file') MultipartFile? file});
+  Future<UserDto> uploadAvatar({
+    @Part(name: 'file') MultipartFile? file,
+  });
 
   /// Delete user avatar.
   ///
@@ -86,7 +92,9 @@ abstract class UsersClient {
   ///
   /// [deviceId] - Pairing ID (TSID).
   @DELETE('/api/users/me/devices/{deviceId}')
-  Future<void> unpairDevice({@Path('deviceId') required String deviceId});
+  Future<void> unpairDevice({
+    @Path('deviceId') required String deviceId,
+  });
 
   /// Request a personal data export.
   ///
@@ -106,7 +114,9 @@ abstract class UsersClient {
   ///
   /// [exportId] - Export job identifier.
   @GET('/api/users/me/export/{exportId}')
-  Future<UserExportDto> getExport({@Path('exportId') required String exportId});
+  Future<UserExportDto> getExport({
+    @Path('exportId') required String exportId,
+  });
 
   /// List my participations.
   ///
