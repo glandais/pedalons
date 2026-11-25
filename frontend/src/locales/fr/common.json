@@ -2334,6 +2334,7 @@
   "routes.create.form.sourceModeGpx": "Importer un fichier GPX",
   "routes.create.form.sourceModePlanner": "Tracer sur la carte",
   "routes.create.form.surfaceType": "Type de revêtement",
+  "routes.create.generatedDropped": "La proposition n'a pas pu s'ouvrir dans le planificateur : les enregistrements de tracés du mois sont épuisés. L'import d'un fichier GPX reste possible.",
   "routes.create.submit": "Créer le parcours",
   "routes.create.subtitle": "Importez un fichier GPX ou tracez un parcours sur la carte",
   "routes.create.title": "Créer un parcours",

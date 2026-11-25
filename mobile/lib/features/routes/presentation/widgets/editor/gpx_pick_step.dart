@@ -34,6 +34,7 @@ class GpxPickStep extends StatelessWidget {
     this.onDraw,
     this.onGenerate,
     this.quotaSpent,
+    this.onOpenProposal,
   });
 
   final VoidCallback onPick;
@@ -51,6 +52,11 @@ class GpxPickStep extends StatelessWidget {
   /// Le quota épuisé qui ferme « Tracer sur la carte », s'il l'est.
   final PlannerQuotaRefusal? quotaSpent;
 
+  /// Une proposition (générateur, retouche) attend dans le planificateur,
+  /// quitté sans « Terminer » : la page le dit et la rouvre, au lieu de la
+  /// cacher (ledger `MOB-187`). Nul : rien n'attend.
+  final VoidCallback? onOpenProposal;
+
   @override
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
@@ -63,6 +69,23 @@ class GpxPickStep extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
+        if (onOpenProposal != null) ...<Widget>[
+          PdlBanner(
+            tone: PdlBannerTone.info,
+            icon: PdlIcons.generate,
+            message: 'routes.editor.proposalWaiting'.tr(),
+          ),
+          const SizedBox(height: PdlSpacing.chipGap),
+          PdlButton(
+            key: keys.routeEditor.proposalButton,
+            label: 'routes.editor.proposalOpen'.tr(),
+            icon: PdlIcons.map,
+            fullWidth: true,
+            enabled: !busy,
+            onPressed: onOpenProposal,
+          ),
+          const SizedBox(height: PdlSpacing.section),
+        ],
         if (refusal != null) ...<Widget>[
           GpxRefusedBanner(refused: refusal, onPickAnother: onPick, busy: busy),
           const SizedBox(height: PdlSpacing.section),

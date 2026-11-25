@@ -331,6 +331,9 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
             name: generated.name,
             surfaceType: surfaceTypeOfGenerated(generated.type),
           );
+    // Le nom proposé se laisse remplacer par celui d'un fichier importé
+    // ensuite, comme un nom pris d'un GPX (ledger `MOB-187`).
+    if (generated != null && route == null) _suggestedName = generated.name;
     _name = TextEditingController(text: _form.name)
       ..addListener(() => _update(_form.copyWith(name: _name.text)));
     _markdown = TextEditingController(text: _form.media.markdown)
@@ -701,6 +704,16 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
 
   // ── Enregistrer ────────────────────────────────────────────────────────
 
+  /// « Générer un parcours » sur la page de choix : le générateur prend la
+  /// place de ce formulaire, après confirmation s'il y a quelque chose à
+  /// perdre (ledger `MOB-187`).
+  Future<void> _replaceByGenerator() async {
+    if (_dirty && !await _confirmDiscard()) return;
+    if (!mounted) return;
+    _saved = true;
+    context.pushReplacement(Paths.routeGenerate(_teamSlug));
+  }
+
   Future<bool> _confirmDiscard() => confirmDestructive(
     context,
     title: 'rides.editor.discardTitle'.tr(),
@@ -724,6 +737,15 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
     final bool noTrack =
         route == null && gpx == null && !(drawn?.hasTrack ?? false);
     final bool fileLost = (drawn?.file ?? false) && gpx == null;
+    // « Modifier » d'une retouche, planificateur quitté sans « Terminer » :
+    // enregistrer garderait l'ancienne trace sans le dire (ledger `MOB-187`).
+    if (route != null &&
+        widget.generated != null &&
+        _drawn == null &&
+        gpx == null) {
+      setState(() => _error = 'routes.editor.proposalNotTaken'.tr());
+      return;
+    }
     if (noTrack || fileLost) {
       // Un fichier perdu n'est pas un tracé trop court : le dire
       // (docs/LEDGER_*.md MOB-186).
@@ -778,7 +800,13 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
         ),
       );
       final GoRouter router = GoRouter.of(context);
-      if (route == null) {
+      if (route == null && widget.generated != null && router.canPop()) {
+        // Une proposition enregistrée : l'écran qui l'a ouverte (générateur,
+        // fiche retouchée) reçoit l'adresse et ouvre la fiche à sa place —
+        // le générateur ne reste pas dessous, prêt à la créer une seconde
+        // fois (ledger `MOB-187`).
+        router.pop(saved.slug);
+      } else if (route == null) {
         // La création laisse place à la fiche du parcours créé.
         router.pushReplacement(Paths.route(_teamSlug, saved.slug));
       } else if (router.canPop()) {
@@ -972,12 +1000,15 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
                     onDraw: onDraw,
                     // Le générateur à la place de cette page vide : sa
                     // proposition rouvre un éditeur par-dessus lui.
-                    onGenerate: onDraw == null
-                        ? null
-                        : () => context.pushReplacement(
-                            Paths.routeGenerate(_teamSlug),
-                          ),
+                    onGenerate: onDraw == null ? null : _replaceByGenerator,
                     quotaSpent: quotaSpent,
+                    onOpenProposal:
+                        widget.generated != null &&
+                            onDraw != null &&
+                            _drawn == null &&
+                            _gpx == null
+                        ? _openPlanner
+                        : null,
                   )
                 else ...<Widget>[
                   // ── Tracé ──

@@ -311,7 +311,10 @@ class _GeneratorScreenState extends ConsumerState<_GeneratorScreen> {
     final GeneratedRouteDto candidate = response.candidates[_selected];
     // Au-dessus du générateur : revenir de l'éditeur retrouve les propositions.
     _opening = true;
-    await context.push<void>(
+    // L'éditeur rend l'adresse du parcours enregistré : sa fiche remplace le
+    // générateur, qui ne reste pas dessous prêt à créer le même une seconde
+    // fois (ledger `MOB-187`).
+    final String? saved = await context.push<String>(
       Paths.routeNew(_team.slug),
       extra: GeneratedHandoff(
         polyline: candidate.polyline,
@@ -325,6 +328,9 @@ class _GeneratorScreenState extends ConsumerState<_GeneratorScreen> {
       ),
     );
     _opening = false;
+    if (saved != null && mounted) {
+      context.pushReplacement(Paths.route(_team.slug, saved));
+    }
   }
 
   // ── Départ et arrivée ──────────────────────────────────────────────────

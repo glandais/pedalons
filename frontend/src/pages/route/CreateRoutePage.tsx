@@ -16,8 +16,7 @@ import { invalidatePlannerQuota } from '@/lib/plannerQuota'
 import { useCreateRouteFormData } from './routeFormData'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
-import { readGeneratedHandoff } from '@/lib/routeGenerator'
-import { readDrawHandoff, readGpxFileHandoff } from '@/lib/routeHandoff'
+import { useRouteEditorHandoff } from '@/hooks/useRouteEditorHandoff'
 import { useRef } from 'react'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 
@@ -26,11 +25,9 @@ export function CreateRoutePage() {
   const navigate = useNavigate()
   // A route proposed by the generator page (ledger WEB-179); ignored when malformed
   const location = useLocation()
-  const generated = readGeneratedHandoff(location.state)
   // « Importer des GPX » with one file, « Tracer sur la carte »: the menus' entries (useGpxUpload,
-  // useRouteCreateActions)
-  const gpxFile = readGpxFileHandoff(location.state)
-  const draw = readDrawHandoff(location.state)
+  // useRouteCreateActions). Taken once: Back after the save does not create it again.
+  const { generated, gpxFile, draw } = useRouteEditorHandoff()
   const { t } = useTranslation()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const queryClient = useQueryClient()

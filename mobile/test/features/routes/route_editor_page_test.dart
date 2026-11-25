@@ -1428,6 +1428,44 @@ void main() {
       );
     });
 
+    testWidgets('une proposition laissée sans « Terminer » : la page de choix '
+        'le dit et la rouvre (MOB-187)', (WidgetTester tester) async {
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: _StubRoutes(),
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        web: web,
+        generated: const GeneratedHandoff(
+          polyline: '_sqytA_sdpH_pR_pR',
+          type: RouteGeneratorType.gravel,
+          distanceM: 82000,
+          name: 'Parcours généré de 82 km',
+        ),
+      );
+      await pumps(tester);
+      web.emit(<String, dynamic>{'type': 'ready'});
+      await pumps(tester);
+      web.emit(<String, dynamic>{'type': 'close', 'dirty': true});
+      await pumps(tester);
+
+      expect(find.byKey(keys.routeEditor.plannerScreen), findsNothing);
+      expect(find.byKey(keys.routeEditor.pickStep), findsOneWidget);
+      expect(
+        find.text(
+          'Une proposition attend dans le planificateur : elle n\'a pas '
+          'encore été reprise.',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(keys.routeEditor.proposalButton));
+      await pumps(tester);
+      expect(find.byKey(keys.routeEditor.plannerScreen), findsOneWidget);
+      // La même page : la proposition n'est pas rechargée.
+      expect(web.argumentsOf('load'), hasLength(1));
+    });
+
     testWidgets('rouvrir : la même page, `load` une seule fois', (
       WidgetTester tester,
     ) async {
@@ -1994,6 +2032,42 @@ void main() {
         final update = routes.updated.single;
         expect(update.request.plannerState, isNotNull);
         expect(update.request.name, 'Col de la Croix');
+      });
+
+      testWidgets('« Modifier » d\'une retouche quittée sans « Terminer » : '
+          '« Enregistrer » le dit et ne part pas (MOB-187)', (
+        WidgetTester tester,
+      ) async {
+        final _StubRoutes routes = _StubRoutes(detail: singleTrack())
+          ..plannerState = PlannerState.fromJson(fixturePlannerStateJson);
+        final _FakePlannerWeb web = _FakePlannerWeb();
+        await open(
+          tester,
+          routes: routes,
+          picker: _FakePicker(<GpxFile?>[]),
+          planner: true,
+          web: web,
+          routeSlug: 'col-de-la-croix',
+          generated: const GeneratedHandoff(
+            polyline: '_sqytA_sdpH_pR_pR',
+            type: RouteGeneratorType.road,
+            distanceM: 52000,
+            name: 'Col de la Croix',
+          ),
+        );
+        await pumps(tester);
+        web.emit(<String, dynamic>{'type': 'ready'});
+        await pumps(tester);
+        web.emit(<String, dynamic>{'type': 'close', 'dirty': true});
+        await pumps(tester);
+
+        await tester.tap(find.byKey(keys.routeEditor.saveButton));
+        await pumps(tester);
+        expect(routes.updated, isEmpty);
+        expect(
+          find.textContaining('La trace proposée n\'a pas été reprise'),
+          findsOneWidget,
+        );
       });
 
       testWidgets('tracé laissé tel quel : rien ne part du tracé', (

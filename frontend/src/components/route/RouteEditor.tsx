@@ -350,6 +350,13 @@ export function RouteEditor({
     >
       <Stack>
         {error && <Alert color="red">{error}</Alert>}
+        {/* A proposal handed over while the quota was spent is not opened: said, never dropped
+            in silence (docs/LEDGER_*.md WEB-214) */}
+        {initialGenerated && !canUsePlanner && (
+          <Alert color="yellow" variant="light">
+            {t('routes.create.generatedDropped')}
+          </Alert>
+        )}
         {quotaRefusal.modal}
         {isCreateMode && plannerOpen && (
           <RouteGeneratorModal

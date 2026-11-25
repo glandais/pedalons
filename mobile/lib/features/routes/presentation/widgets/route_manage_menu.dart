@@ -331,7 +331,15 @@ Future<void> _retouch(
         extra: choice.handoff,
       );
     case RetouchOpening.newRoute:
-      await context.push(Paths.routeNew(team), extra: choice.handoff);
+      // Le parcours créé s'ouvre par-dessus la fiche de l'original
+      // (ledger `MOB-187`).
+      final String? saved = await context.push<String>(
+        Paths.routeNew(team),
+        extra: choice.handoff,
+      );
+      if (saved != null && context.mounted) {
+        await context.push(Paths.route(team, saved));
+      }
     case RetouchOpening.generator:
       await context.push(Paths.routeGenerate(team), extra: choice.generator);
   }

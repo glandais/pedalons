@@ -2,12 +2,13 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **625 entrées livrées**, et des 23 entrées encore ouvertes dont une part l'est.
+Index des **627 entrées livrées**, et des 23 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
 ## MOB — Application mobile
 
+- [x] [`MOB-187`](ledger/MOB/MOB-187.md) Proposition transmise à l'éditeur de parcours : jamais cachée, jamais rejouée — 2026-11-25
 - [x] [`MOB-186`](ledger/MOB/MOB-186.md) Flux des parcours : corrections nettes de l'audit du 25 novembre 2026 — 2026-11-25
 - [x] [`MOB-185`](ledger/MOB/MOB-185.md) Retoucher un parcours depuis l'app : ajuster la distance, déplacer l'arrivée — en partie, le reste est ouvert
 - [x] [`MOB-184`](ledger/MOB/MOB-184.md) « GPS » dans l'en-tête d'une sortie sur l'app, comme sur le site — en partie, le reste est ouvert
@@ -160,6 +161,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## WEB — Site web
 
+- [x] [`WEB-214`](ledger/WEB/WEB-214.md) Proposition transmise à l'éditeur de parcours, prise une seule fois — 2026-11-25
 - [x] [`WEB-213`](ledger/WEB/WEB-213.md) Garde de sortie des éditeurs de parcours et d'aperçus GPX — 2026-11-25
 - [x] [`WEB-212`](ledger/WEB/WEB-212.md) Flux des parcours : corrections nettes de l'audit du 25 novembre 2026 — 2026-11-25
 - [x] [`WEB-211`](ledger/WEB/WEB-211.md) Suites de la recette des en-têtes : bandeau d'équipe sur téléphone, niveaux de titres, onglet de la connexion, lexique — 2026-11-25

@@ -71,10 +71,19 @@ void main() {
         ),
         GoRoute(
           path: '/equipes/:teamSlug/parcours/nouveau',
-          builder: (BuildContext _, GoRouterState state) {
+          builder: (BuildContext context, GoRouterState state) {
             handedOff = state.extra as GeneratedHandoff?;
-            return const Text('éditeur');
+            // L'éditeur rend l'adresse du parcours enregistré.
+            return TextButton(
+              onPressed: () => context.pop('col-genere'),
+              child: const Text('éditeur'),
+            );
           },
+        ),
+        GoRoute(
+          path: '/equipes/:teamSlug/parcours/:routeSlug',
+          builder: (BuildContext _, GoRouterState state) =>
+              Text('fiche ${state.pathParameters['routeSlug']}'),
         ),
       ],
     );
@@ -166,6 +175,13 @@ void main() {
       handedOff?.name.replaceAll(RegExp(r'\s'), ' '),
       'Parcours généré de 81 km',
     );
+
+    // Enregistré : la fiche prend la place du générateur, qui ne reste pas
+    // dessous prêt à créer le même parcours (MOB-187).
+    await tester.tap(find.text('éditeur'));
+    await pumps(tester);
+    expect(find.text('fiche col-genere'), findsOneWidget);
+    expect(find.byKey(keys.routeGenerator.useButton), findsNothing);
   });
 
   testWidgets('un refus du moteur : son message et des réglages proposés', (

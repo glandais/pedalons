@@ -2275,6 +2275,7 @@
   "routes.create.form.sourceModeGpx": "Upload GPX file",
   "routes.create.form.sourceModePlanner": "Draw on map",
   "routes.create.form.surfaceType": "Surface type",
+  "routes.create.generatedDropped": "The proposal could not open in the planner: this month's saves of drawn tracks are used up. Importing a GPX file is still possible.",
   "routes.create.submit": "Create route",
   "routes.create.subtitle": "Upload a GPX file or draw a route on the map",
   "routes.create.title": "Create a route",

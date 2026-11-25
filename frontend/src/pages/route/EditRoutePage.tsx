@@ -1,4 +1,4 @@
-import { useParams, useNavigate, Navigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, Navigate } from 'react-router-dom'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
@@ -16,8 +16,7 @@ import { suggestSurfaceType } from '@/lib/trackSurface'
 import { useEditRouteFormData } from './routeFormData'
 import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
 import { useRouteUsagesRefusal } from '@/components/visibility/useVisibilityAlignment'
-import { readGeneratedHandoff } from '@/lib/routeGenerator'
-import { readGpxFileHandoff } from '@/lib/routeHandoff'
+import { useRouteEditorHandoff } from '@/hooks/useRouteEditorHandoff'
 import { useRef } from 'react'
 import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import type { RouteDetailDto, PlannerStateResponse } from '@/api/dto'
@@ -28,10 +27,9 @@ export function EditRoutePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   // A retouch chosen with « Modifier » on the route's page (ledger WEB-203): it replaces the track
-  const location = useLocation()
-  const generated = readGeneratedHandoff(location.state)
-  // « Remplacer le fichier GPX » on the route's page: the chosen file, waiting for « Enregistrer »
-  const gpxFile = readGpxFileHandoff(location.state)
+  // « Remplacer le fichier GPX » on the route's page: the chosen file, waiting for « Enregistrer ».
+  // Taken once: Back after the save does not replace the track again.
+  const { generated, gpxFile } = useRouteEditorHandoff()
 
   const {
     team: teamQuery,

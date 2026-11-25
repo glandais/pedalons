@@ -200,6 +200,10 @@ class RouteEditorKeys {
   /// « Générer un parcours » sur la page de choix de la création.
   final generateButton = const _RouteEditorKey('generateButton');
 
+  /// « Ouvrir la proposition » : une proposition attend dans le planificateur
+  /// (ledger `MOB-187`).
+  final proposalButton = const _RouteEditorKey('proposalButton');
+
   /// « Modifier le tracé », dans la section Tracé.
   final trackEditButton = const _RouteEditorKey('trackEditButton');
 

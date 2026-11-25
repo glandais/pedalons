@@ -509,6 +509,8 @@ describe('route generator (WEB-179)', () => {
       initialGenerated: { polyline: 'POLY', type: 'GRAVEL', distanceM: 82000 },
     })
     expect(screen.queryByTestId('field')).toBeNull()
+    // …and says so (WEB-214)
+    expect(screen.getByText('routes.create.generatedDropped')).toBeTruthy()
   })
 })
 
