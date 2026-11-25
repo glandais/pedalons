@@ -7,7 +7,7 @@ import i18next from 'i18next'
 import { paths } from '../../config/paths'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { Box, Button, Loader, Menu } from '@mantine/core'
-import { IconCopy, IconFileUpload } from '@tabler/icons-react'
+import { IconCopy, IconFileUpload, IconRestore, IconTrash } from '@tabler/icons-react'
 import {
   useCreatePreviewFromRoute,
   useDeleteRoute,
@@ -214,7 +214,13 @@ export function RouteDetailPage() {
                   <Menu.Item
                     color="green"
                     disabled={undeleteRouteMutation.isPending}
-                    leftSection={undeleteRouteMutation.isPending ? <Loader size="xs" /> : undefined}
+                    leftSection={
+                      undeleteRouteMutation.isPending ? (
+                        <Loader size="xs" />
+                      ) : (
+                        <IconRestore size={14} />
+                      )
+                    }
                     onClick={handleRestore}
                   >
                     {t('actions.restore')}
@@ -222,8 +228,9 @@ export function RouteDetailPage() {
                 )
               ) : (
                 <>
-                  {/* Retouch and a new file change the track too: the same menu as the app's
-                      pencil (« Gérer le parcours »). */}
+                  {/* « Tracé »: what changes the track — the retouch and a new file, as in the
+                      app's « Gérer le parcours » */}
+                  <Menu.Label>{t('routes.detail.menu.track')}</Menu.Label>
                   <RouteRetouchMenuItems offer={retouchOffer} onChoose={setRetouchMode} />
                   <Menu.Item
                     leftSection={<IconFileUpload size={14} />}
@@ -231,6 +238,7 @@ export function RouteDetailPage() {
                   >
                     {t('routes.detail.replaceGpx')}
                   </Menu.Item>
+                  <Menu.Divider />
                   <Menu.Item
                     leftSection={<IconCopy size={14} />}
                     onClick={() => setShowDuplicate(true)}
@@ -240,7 +248,11 @@ export function RouteDetailPage() {
                   {canDelete && (
                     <>
                       <Menu.Divider />
-                      <Menu.Item color="danger" onClick={() => setShowDeleteConfirm(true)}>
+                      <Menu.Item
+                        color="danger"
+                        leftSection={<IconTrash size={14} />}
+                        onClick={() => setShowDeleteConfirm(true)}
+                      >
                         {t('actions.delete')}
                       </Menu.Item>
                     </>

@@ -2295,6 +2295,7 @@
   "routes.detail.info.createdAt": "Created on",
   "routes.detail.info.surfaceType": "Surface type",
   "routes.detail.info.title": "Route information",
+  "routes.detail.menu.track": "Track",
   "routes.detail.notFound.backToRoutes": "Back to routes",
   "routes.detail.notFound.message": "The route you are looking for does not exist.",
   "routes.detail.notFound.title": "Route not found",

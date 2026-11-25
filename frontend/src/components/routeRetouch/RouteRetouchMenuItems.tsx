@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import { IconAdjustmentsHorizontal, IconFlag, IconRuler2 } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 import { Menu, Text } from '@mantine/core'
 import {
@@ -9,8 +10,8 @@ import {
 import type { RetouchMode } from './RouteRetouchModal'
 
 /**
- * « Retoucher » inside an editor's « Modifier ▾ » menu on a route's page (ledger `API-212`): a
- * section with the operations the engine offers. Nothing when the engine cannot do it; one disabled
+ * « Retoucher » inside an editor's « Modifier ▾ » menu on a route's page (ledger `API-212`): the
+ * operations the engine offers, in the menu's « Tracé » section. Nothing when the engine cannot do it; one disabled
  * line, with the reason, while the route's analysis is not finished. A reader who cannot edit gets
  * the separate `RouteRetouchButton` instead.
  */
@@ -28,7 +29,11 @@ export function RouteRetouchMenuItems({
   if (!offer.available) {
     if (offer.unavailableReason !== RouteRetouchUnavailable.NOT_READY) return null
     return (
-      <Menu.Item disabled data-testid="route-retouch-not-ready">
+      <Menu.Item
+        disabled
+        data-testid="route-retouch-not-ready"
+        leftSection={<IconAdjustmentsHorizontal size={14} />}
+      >
         <Text size="sm">{t('routeRetouch.menu')}</Text>
         <Text size="xs" c="dimmed">
           {t('routeRetouch.notReadyHint')}
@@ -43,12 +48,13 @@ export function RouteRetouchMenuItems({
 
   return (
     <Fragment>
-      <Menu.Label>{t('routeRetouch.menu')}</Menu.Label>
       {resize && (
-        <Menu.Item onClick={() => onChoose('resize')}>{t('routeRetouch.resize.action')}</Menu.Item>
+        <Menu.Item leftSection={<IconRuler2 size={14} />} onClick={() => onChoose('resize')}>
+          {t('routeRetouch.resize.action')}
+        </Menu.Item>
       )}
       {moveEnd && (
-        <Menu.Item onClick={() => onChoose('moveEnd')}>
+        <Menu.Item leftSection={<IconFlag size={14} />} onClick={() => onChoose('moveEnd')}>
           {t('routeRetouch.moveEnd.action')}
         </Menu.Item>
       )}
