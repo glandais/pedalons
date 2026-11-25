@@ -1238,23 +1238,15 @@ void main() {
         greaterThan(tester.getTopLeft(inTiles('Distance')).dy),
       );
 
-      // Un seul bouton « GPS », dans l'en-tête sous le titre (MOB-184) ; la
+      // « GPS » dans la barre du haut (MOB-184), plus dans le corps ; la
       // section Parcours garde « Détails ».
-      expect(find.byType(GpsButton), findsOneWidget);
+      expect(find.byType(GpsButton), findsNothing);
       expect(
         find.descendant(
-          of: find.byKey(keys.trip.stageRouteSection),
+          of: find.byType(PdlAppBar),
           matching: find.byKey(keys.routeDetail.gps),
         ),
-        findsNothing,
-      );
-      expect(
-        tester.getTopLeft(find.byKey(keys.routeDetail.gps)).dy,
-        greaterThan(tester.getTopLeft(find.byKey(keys.trip.stageTitle)).dy),
-      );
-      expect(
-        tester.getTopLeft(find.byKey(keys.routeDetail.gps)).dy,
-        lessThan(tester.getTopLeft(find.byKey(keys.trip.stageRouteSection)).dy),
+        findsOneWidget,
       );
       expect(find.byKey(keys.routeDetail.details), findsOneWidget);
       // Points et montées repliés.

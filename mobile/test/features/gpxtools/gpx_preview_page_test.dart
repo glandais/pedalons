@@ -197,7 +197,12 @@ void main() {
       keys.gpxTools.previewRetention,
     ]);
     expect(find.text('Boucle du dimanche'), findsOneWidget);
-    expect(find.byType(GpsButton), findsOneWidget);
+    // « GPS » dans la barre, devant le partage — plus sous le profil.
+    expect(find.byType(GpsButton), findsNothing);
+    expect(
+      tester.getTopLeft(find.byKey(keys.routeDetail.gps)).dx,
+      lessThan(tester.getTopLeft(find.byKey(keys.gpxTools.shareButton)).dx),
+    );
     expect(find.byKey(keys.gpxTools.previewDeparture), findsNothing);
     expect(find.byKey(keys.gpxTools.previewWeather), findsNothing);
     expect(find.byKey(keys.gpxTools.shareButton), findsOneWidget);

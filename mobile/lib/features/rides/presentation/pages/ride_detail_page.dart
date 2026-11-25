@@ -28,7 +28,8 @@ import '../../../comments/presentation/widgets/comment_thread.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../participants/presentation/widgets/participants_sheet.dart';
-import '../../../routes/presentation/widgets/detail_gps_line.dart';
+import '../../../routes/presentation/gps_export_runner.dart';
+import '../../../routes/presentation/widgets/gps_button.dart';
 import '../../../routes/domain/track_surfaces.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../../teams/domain/publication_timing.dart';
@@ -125,7 +126,8 @@ class _RideDetailContent extends ConsumerStatefulWidget {
   ConsumerState<_RideDetailContent> createState() => _RideDetailContentState();
 }
 
-class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
+class _RideDetailContentState extends ConsumerState<_RideDetailContent>
+    with GpsExportRunner<_RideDetailContent> {
   final ScrollController _scroll = ScrollController();
 
   /// L'ancre de la météo, cible du défilement « météo » (ledger `MOB-69`) :
@@ -312,11 +314,15 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
         backKey: keys.ride.backButton,
         backSemanticLabel: 'common.back'.tr(),
         actions: <Widget>[
-          PdlAppBarAction(
-            icon: PdlIcons.share,
-            semanticLabel: 'routes.share'.tr(),
-            onPressed: () => _share(context),
-          ),
+          // « GPS » d'abord, comme l'en-tête du site (`DetailHeader`) :
+          // GPS · Modifier · Partager · ⋯ (docs/LEDGER_*.md MOB-184).
+          if (_gpsTarget(single: !multi) case final GpsExportTarget gps
+              when gps.offered(watchGpsServices()))
+            GpsAppBarAction(
+              key: keys.ride.gps,
+              busy: gpsExporting,
+              onPressed: (BuildContext button) => openGpsSheet(gps, button),
+            ),
           // L'organisateur modifie d'un geste, et trouve le reste — publier,
           // annuler, supprimer, signaler — sous `⋯` (ledger `MOB-80`).
           if (permissions.canEdit && !ride.deleted)
@@ -327,6 +333,11 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
               onPressed: () =>
                   context.push(Paths.rideEdit(ride.team.slug, ride.slug)),
             ),
+          PdlAppBarAction(
+            icon: PdlIcons.share,
+            semanticLabel: 'routes.share'.tr(),
+            onPressed: () => _share(context),
+          ),
           PdlAppBarAction(
             key: keys.ride.moreButton,
             icon: PdlIcons.more,
@@ -840,19 +851,21 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
             const SizedBox(height: PdlSpacing.chipGap),
             ContentTagRow(tags: ride.tags),
           ],
-          _gpsLine(single: single),
+          // L'issue d'un export lancé du « GPS » de la barre.
+          ...gpsExportBanners(gapBefore: true),
         ],
       ),
     );
   }
 
-  /// « GPS » dans l'en-tête, pour le groupe où l'on roule (docs/LEDGER_*.md
-  /// MOB-184, comme `WEB-203` au site) : inscrit, sortie ni annulée ni
-  /// terminée ([rideGroupCardOffersGps]) ; son parcours, à défaut celui de la
-  /// sortie. Rien pour qui n'est inscrit dans aucun groupe — on ne saurait
-  /// quel parcours envoyer —, donc rien sur une sortie sans groupe. Sur une
-  /// sortie à plusieurs groupes, le groupe en sous-titre.
-  Widget _gpsLine({required bool single}) {
+  /// La cible du « GPS » de la barre : le groupe où l'on roule
+  /// (docs/LEDGER_*.md MOB-184, comme `WEB-203` au site) — inscrit, sortie ni
+  /// annulée ni terminée ([rideGroupCardOffersGps]) ; son parcours, à défaut
+  /// celui de la sortie. Rien pour qui n'est inscrit dans aucun groupe — on
+  /// ne saurait quel parcours envoyer —, donc rien sur une sortie sans
+  /// groupe. Sur une sortie à plusieurs groupes, la feuille nomme le groupe
+  /// (« Groupe B · 82 km ») ; sinon la sortie.
+  GpsExportTarget? _gpsTarget({required bool single}) {
     final RideGroupDto? mine = ride.groups
         .where(
           (RideGroupDto g) => rideGroupCardOffersGps(ride, g, now: widget.now),
@@ -861,27 +874,21 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
     final String? routeSlug = mine == null
         ? null
         : mine.routeSlug ?? ride.routeSlug;
-    if (mine == null || routeSlug == null) return const SizedBox.shrink();
+    if (mine == null || routeSlug == null) return null;
     // Les parcours sont déjà chargés en lot pour la carte : leurs fichiers
     // GPX/FIT viennent de là, sans appel de plus.
     final RouteDetailDto? route = ref.watch(
       rideRouteGeometriesProvider(rideKey)
           .select((RideRouteGeometriesState s) => s.geometries[routeSlug]),
     );
-    final String subtitle = gpsSubtitleOfGroup(
-      mine,
-      ref.watch(unitSystemProvider),
-    );
-    return DetailGpsLine(
-      buttonKey: keys.ride.gps,
-      subtitle: single ? null : subtitle,
-      target: gpsTargetOfGroup(
-        subtitle: single ? ride.name : subtitle,
-        teamSlug: ride.team.slug,
-        routeSlug: routeSlug,
-        route: route,
-        syncStatuses: mine.gpsSyncStatuses,
-      ),
+    return gpsTargetOfGroup(
+      subtitle: single
+          ? ride.name
+          : gpsSubtitleOfGroup(mine, ref.watch(unitSystemProvider)),
+      teamSlug: ride.team.slug,
+      routeSlug: routeSlug,
+      route: route,
+      syncStatuses: mine.gpsSyncStatuses,
     );
   }
 

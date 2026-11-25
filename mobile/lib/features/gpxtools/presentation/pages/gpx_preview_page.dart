@@ -24,6 +24,9 @@ import '../../../routes/domain/track_key.dart';
 import '../../../routes/domain/track_surfaces.dart';
 import '../../../routes/providers/route_changes.dart';
 import '../../../teams/providers/team_providers.dart';
+import '../../domain/preview_assets.dart';
+import '../../../routes/presentation/gps_export_runner.dart';
+import '../../../routes/presentation/widgets/gps_button.dart';
 import '../../../routes/presentation/widgets/route_cursor_controller.dart';
 import '../../../routes/presentation/widgets/route_section.dart';
 import '../../../routes/presentation/widgets/route_waypoints_section.dart';
@@ -71,7 +74,8 @@ class GpxPreviewPage extends ConsumerStatefulWidget {
   ConsumerState<GpxPreviewPage> createState() => _GpxPreviewPageState();
 }
 
-class _GpxPreviewPageState extends ConsumerState<GpxPreviewPage> {
+class _GpxPreviewPageState extends ConsumerState<GpxPreviewPage>
+    with GpsExportRunner<GpxPreviewPage> {
   RouteCursorController? _cursor;
   String? _cursorForId;
   final WaypointSelectionController _selection = WaypointSelectionController();
@@ -252,6 +256,24 @@ class _GpxPreviewPageState extends ConsumerState<GpxPreviewPage> {
               ),
             ),
           ),
+        // L'issue d'un export lancé du « GPS » de la barre.
+        if (gpsExportBanners() case final List<Widget> banners
+            when banners.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              PdlSpacing.section,
+              PdlSpacing.section,
+              PdlSpacing.section,
+              0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: banners,
+              ),
+            ),
+          ),
         SliverToBoxAdapter(
           child: RouteSection(
             key: keys.gpxTools.previewRouteSection,
@@ -309,10 +331,32 @@ class _GpxPreviewPageState extends ConsumerState<GpxPreviewPage> {
     );
   }
 
-  /// Le partage, pour tout le monde ; le `⋯`, s'il a un geste à offrir.
+  /// « GPS », s'il a quelque chose à proposer ; « Modifier » pour son
+  /// propriétaire ; le partage, pour tout le monde ; le `⋯`, s'il a un geste à
+  /// offrir.
   List<Widget> _actions(GpxPreviewDto preview) {
     final List<GpxPreviewAction> actions = gpxPreviewActions(preview);
     return <Widget>[
+      // GPS · Modifier · Partager · ⋯, comme l'en-tête du site.
+      if (GpsExportTarget.preview(
+            subtitle: preview.name,
+            previewId: preview.id,
+            gpx: preview.gpxAsset,
+            fit: preview.fitAsset,
+          )
+          case final GpsExportTarget gps when gps.offered(watchGpsServices()))
+        GpsAppBarAction(
+          key: keys.routeDetail.gps,
+          busy: gpsExporting,
+          onPressed: (BuildContext button) => openGpsSheet(gps, button),
+        ),
+      if (preview.owned)
+        PdlAppBarAction(
+          key: keys.gpxTools.editButton,
+          icon: PdlIcons.edit,
+          semanticLabel: 'gpxTools.preview.edit'.tr(),
+          onPressed: () => context.push(Paths.gpxToolsEdit(preview.id)),
+        ),
       // `Builder` : la feuille de partage s'ancre au bouton (iPad).
       Builder(
         builder: (BuildContext buttonContext) => PdlAppBarAction(
@@ -326,13 +370,6 @@ class _GpxPreviewPageState extends ConsumerState<GpxPreviewPage> {
           ),
         ),
       ),
-      if (preview.owned)
-        PdlAppBarAction(
-          key: keys.gpxTools.editButton,
-          icon: PdlIcons.edit,
-          semanticLabel: 'gpxTools.preview.edit'.tr(),
-          onPressed: () => context.push(Paths.gpxToolsEdit(preview.id)),
-        ),
       if (actions.isNotEmpty)
         PdlAppBarAction(
           key: keys.gpxTools.moreButton,

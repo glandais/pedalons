@@ -51,3 +51,30 @@ class GpsButton extends StatelessWidget {
     );
   }
 }
+
+/// « GPS » dans la barre du haut d'un écran de détail — sortie, groupe,
+/// étape, parcours, aperçu GPX : la première action, devant « Modifier »,
+/// « Partager » et `⋯`, comme l'en-tête du site (`DetailHeader`). La même
+/// icône que [GpsButton], la même phrase pour le lecteur d'écran.
+///
+/// Pendant un export, l'action est inerte : un seul à la fois par écran
+/// (`GpsExportRunner`). Son issue se lit dans les bandeaux de l'écran
+/// (`gpsExportBanners`).
+class GpsAppBarAction extends StatelessWidget {
+  const GpsAppBarAction({
+    super.key,
+    required this.onPressed,
+    this.busy = false,
+  });
+
+  /// Reçoit le contexte du bouton : l'ancre de la feuille de partage (iPad).
+  final ValueChanged<BuildContext> onPressed;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) => PdlAppBarAction(
+    icon: PdlIcons.device,
+    semanticLabel: 'routes.gpsSheet.buttonSemantics'.tr(),
+    onPressed: busy ? null : () => onPressed(context),
+  );
+}

@@ -23,7 +23,6 @@ import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dar
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_route_actions.dart';
 import 'package:pedalons/features/routes/presentation/gps_export_runner.dart';
 import 'package:pedalons/features/routes/presentation/gps_sheet.dart';
-import 'package:pedalons/features/routes/presentation/widgets/detail_gps_line.dart';
 import 'package:pedalons/features/routes/presentation/widgets/gps_button.dart';
 import 'package:pedalons/features/routes/providers/route_detail_provider.dart';
 import 'package:pedalons/features/teams/presentation/widgets/dashboard/dashboard_rides.dart';
@@ -198,6 +197,39 @@ class _RouteGpsState extends ConsumerState<_RouteGps>
       ],
     );
   }
+}
+
+/// Un écran de détail réduit à sa barre : « GPS » en action de barre
+/// (`GpsAppBarAction`), l'issue de l'export en bandeau dans le corps.
+class _BarGps extends ConsumerStatefulWidget {
+  const _BarGps({required this.target});
+
+  final GpsExportTarget target;
+
+  @override
+  ConsumerState<_BarGps> createState() => _BarGpsState();
+}
+
+class _BarGpsState extends ConsumerState<_BarGps>
+    with GpsExportRunner<_BarGps> {
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: <Widget>[
+      Row(
+        children: <Widget>[
+          if (widget.target.offered(watchGpsServices()))
+            GpsAppBarAction(
+              key: keys.ride.gps,
+              busy: gpsExporting,
+              onPressed: (BuildContext button) =>
+                  openGpsSheet(widget.target, button),
+            ),
+        ],
+      ),
+      ...gpsExportBanners(gapBefore: true),
+    ],
+  );
 }
 
 void main() {
@@ -716,8 +748,8 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('l’en-tête d’un écran : « GPS », le groupe en sous-titre, '
-        'et la feuille qui le nomme ; rien sans cible (MOB-184)', (
+    testWidgets('la barre d’un écran : « GPS », et la feuille qui nomme le '
+        'groupe ; rien sans fichier ni compteur (MOB-184)', (
       WidgetTester tester,
     ) async {
       const GpsExportTarget target = GpsExportTarget(
@@ -727,16 +759,12 @@ void main() {
         gpx: _gpx,
         fit: _fit,
       );
-      await pump(
-        tester,
-        DetailGpsLine(
-          buttonKey: keys.ride.gps,
-          subtitle: 'Groupe B · 82 km',
-          target: target,
-        ),
-      );
+      await pump(tester, const _BarGps(target: target));
       expect(find.byKey(keys.ride.gps), findsOneWidget);
-      expect(find.text('Groupe B · 82 km'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel("Envoyer le parcours vers un GPS ou l'exporter"),
+        findsOneWidget,
+      );
       await tester.tap(find.byKey(keys.ride.gps));
       await settle(tester);
       expect(find.byKey(keys.gpsSheet.sheet), findsOneWidget);
@@ -745,8 +773,18 @@ void main() {
         'Groupe B · 82 km',
       );
 
-      await pump(tester, const DetailGpsLine(target: null));
-      expect(find.byType(GpsButton), findsNothing);
+      // Ni fichier ni appareil connecté : rien à proposer, pas de bouton.
+      await pump(
+        tester,
+        const _BarGps(
+          target: GpsExportTarget(
+            subtitle: 'Groupe B',
+            teamSlug: 'n-peloton',
+            routeSlug: null,
+          ),
+        ),
+      );
+      expect(find.byKey(keys.ride.gps), findsNothing);
     });
 
     testWidgets('la carte d’un groupe n’a plus de « GPS » : il est dans '

@@ -441,8 +441,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('« GPS » en tête du corps, inscription ou pas, et plus sous '
-        'le profil (MOB-184)', (WidgetTester tester) async {
+    testWidgets('« GPS » dans la barre, inscription ou pas, et plus dans le '
+        'corps (MOB-184)', (WidgetTester tester) async {
       await open(
         tester,
         weather(),
@@ -472,21 +472,11 @@ void main() {
       );
 
       final Finder gps = find.byKey(keys.rideGroup.gps);
-      expect(gps, findsOneWidget);
-      expect(find.byType(GpsButton), findsOneWidget);
       expect(
-        find.descendant(
-          of: find.byKey(keys.rideGroup.routeSection),
-          matching: find.byType(GpsButton),
-        ),
-        findsNothing,
+        find.descendant(of: find.byType(PdlAppBar), matching: gps),
+        findsOneWidget,
       );
-      expect(
-        tester.getTopLeft(gps).dy,
-        lessThan(
-          tester.getTopLeft(find.byKey(keys.rideGroup.departureBlock)).dy,
-        ),
-      );
+      expect(find.byType(GpsButton), findsNothing);
       await settle(tester);
       expect(tester.takeException(), isNull);
     });

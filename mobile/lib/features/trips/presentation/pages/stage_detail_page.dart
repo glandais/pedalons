@@ -39,7 +39,7 @@ import '../../../routes/domain/track_surfaces.dart';
 import '../../../routes/presentation/widgets/route_climbs_section.dart';
 import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
 import '../../../routes/presentation/gps_export_runner.dart';
-import '../../../routes/presentation/widgets/detail_gps_line.dart';
+import '../../../routes/presentation/widgets/gps_button.dart';
 import '../../../routes/presentation/widgets/route_cursor_controller.dart';
 import '../../../routes/presentation/widgets/route_map.dart';
 import '../../../routes/presentation/widgets/route_section.dart';
@@ -191,7 +191,8 @@ class _StageDetailContent extends ConsumerStatefulWidget {
       _StageDetailContentState();
 }
 
-class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
+class _StageDetailContentState extends ConsumerState<_StageDetailContent>
+    with GpsExportRunner<_StageDetailContent> {
   final ScrollController _scroll = ScrollController();
 
   /// La carte de « Parcours », que le toucher d'un point de la frise, d'une
@@ -352,7 +353,7 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
         } catch (_) {}
       },
       scrollController: _scroll,
-      appBar: _appBar(context),
+      appBar: _appBar(context, route),
       // `PdlScreenScaffold` enveloppe lui-même la barre dans un
       // `PdlPinnedToolbar` : l'envelopper ici en imbriquerait deux slivers.
       toolbar: KeyedSubtree(key: _toolbarKey, child: _rail(context)),
@@ -369,22 +370,8 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
                   key: keys.trip.stageTitle,
                   style: context.pdlText.screenTitle,
                 ),
-                // « GPS » dans l'en-tête dès que l'étape a un parcours
-                // (docs/LEDGER_*.md MOB-184, comme `WEB-203` au site) : on
-                // rejoint le voyage, pas l'étape. Plus sous le profil.
-                DetailGpsLine(
-                  buttonKey: keys.routeDetail.gps,
-                  target: route == null
-                      ? null
-                      : GpsExportTarget(
-                          subtitle: route.name,
-                          teamSlug: route.team.slug,
-                          routeSlug: route.slug,
-                          gpx: route.media.assets.gpx,
-                          fit: route.media.assets.fit,
-                          syncStatuses: route.gpsSyncStatuses,
-                        ),
-                ),
+                // L'issue d'un export lancé du « GPS » de la barre.
+                ...gpsExportBanners(gapBefore: true),
               ],
             ),
           ),
@@ -437,7 +424,6 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
                         windLeg: windLeg,
                         colorBySwitchKey: keys.trip.stageMapColorBy,
                         showDetailsAction: true,
-                        showGpsAction: false,
                         mapKey: _mapAnchor,
                       ),
                       if (route != null) ..._routeLists(route),
@@ -491,7 +477,20 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
   // ── Barre du haut ───────────────────────────────────────────────────────
   /// « Étape 2 sur 3 » sur le nom du voyage, comme « Groupe A » sur celui de
   /// la sortie ; le retour ramène au voyage.
-  PdlAppBar _appBar(BuildContext context) {
+  /// GPS · Partager, comme l'en-tête du site : « GPS » dès que l'étape a un
+  /// parcours (docs/LEDGER_*.md MOB-184, `WEB-203` au site) — on rejoint le
+  /// voyage, pas l'étape.
+  PdlAppBar _appBar(BuildContext context, RouteDetailDto? route) {
+    final GpsExportTarget? gps = route == null
+        ? null
+        : GpsExportTarget(
+            subtitle: route.name,
+            teamSlug: route.team.slug,
+            routeSlug: route.slug,
+            gpx: route.media.assets.gpx,
+            fit: route.media.assets.fit,
+            syncStatuses: route.gpsSyncStatuses,
+          );
     final PdlTypography t = context.pdlText;
     return PdlAppBar(
       onBack: () => _openTrip(context),
@@ -523,6 +522,12 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
         ],
       ),
       actions: <Widget>[
+        if (gps != null && gps.offered(watchGpsServices()))
+          GpsAppBarAction(
+            key: keys.routeDetail.gps,
+            busy: gpsExporting,
+            onPressed: (BuildContext button) => openGpsSheet(gps, button),
+          ),
         PdlAppBarAction(
           icon: PdlIcons.share,
           semanticLabel: 'routes.share'.tr(),

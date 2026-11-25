@@ -23,7 +23,8 @@ import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
 import '../../domain/solo_group.dart';
 import '../../providers/ride_detail_provider.dart';
-import '../../../routes/presentation/widgets/detail_gps_line.dart';
+import '../../../routes/presentation/gps_export_runner.dart';
+import '../../../routes/presentation/widgets/gps_button.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../providers/ride_registration_controller.dart';
 import '../../providers/ride_scroll_target_provider.dart';
@@ -101,7 +102,8 @@ class RideGroupPage extends ConsumerStatefulWidget {
   ConsumerState<RideGroupPage> createState() => _RideGroupPageState();
 }
 
-class _RideGroupPageState extends ConsumerState<RideGroupPage> {
+class _RideGroupPageState extends ConsumerState<RideGroupPage>
+    with GpsExportRunner<RideGroupPage> {
   late String _groupId = widget.groupId;
 
   final ScrollController _scroll = ScrollController();
@@ -323,6 +325,15 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
               ],
             ),
       actions: <Widget>[
+        // GPS · Partager, comme l'en-tête du site.
+        if (ride != null && group != null)
+          if (_gpsTarget(ride, group) case final GpsExportTarget gps
+              when gps.offered(watchGpsServices()))
+            GpsAppBarAction(
+              key: keys.rideGroup.gps,
+              busy: gpsExporting,
+              onPressed: (BuildContext button) => openGpsSheet(gps, button),
+            ),
         if (ride != null && group != null)
           PdlAppBarAction(
             icon: PdlIcons.share,
@@ -403,9 +414,16 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
               ),
             ),
           ),
+        // L'issue d'un export lancé du « GPS » de la barre.
         SliverPadding(
           padding: block(top: 0),
-          sliver: SliverToBoxAdapter(child: _gpsLine(ride, group)),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: gpsExportBanners(gapBefore: true),
+            ),
+          ),
         ),
         SliverPadding(
           padding: block(),
@@ -498,12 +516,13 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
   List<DetailStatTile> _tiles(RideGroupDto group) =>
       rideGroupStatTiles(group, ref.watch(unitSystemProvider));
 
-  /// « GPS » en tête du corps (docs/LEDGER_*.md MOB-184) : le parcours du
-  /// groupe, à défaut celui de la sortie, inscription ou pas — la règle du
-  /// site (`WEB-203`). Les fichiers viennent du lot de la carte.
-  Widget _gpsLine(RideDto ride, RideGroupDto group) {
+  /// La cible du « GPS » de la barre (docs/LEDGER_*.md MOB-184) : le parcours
+  /// du groupe, à défaut celui de la sortie, inscription ou pas — la règle du
+  /// site (`WEB-203`). Les fichiers viennent du lot de la carte. La feuille
+  /// nomme le groupe et sa distance, déjà sur la page : pas de ligne de plus.
+  GpsExportTarget? _gpsTarget(RideDto ride, RideGroupDto group) {
     final String? routeSlug = group.routeSlug ?? ride.routeSlug;
-    if (routeSlug == null) return const SizedBox.shrink();
+    if (routeSlug == null) return null;
     final RouteDetailDto? route = ref
         .watch(
           rideRouteGeometryProvider(
@@ -515,15 +534,12 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
           ),
         )
         .value;
-    return DetailGpsLine(
-      buttonKey: keys.rideGroup.gps,
-      target: gpsTargetOfGroup(
-        subtitle: gpsSubtitleOfGroup(group, ref.watch(unitSystemProvider)),
-        teamSlug: ride.team.slug,
-        routeSlug: routeSlug,
-        route: route,
-        syncStatuses: group.gpsSyncStatuses,
-      ),
+    return gpsTargetOfGroup(
+      subtitle: gpsSubtitleOfGroup(group, ref.watch(unitSystemProvider)),
+      teamSlug: ride.team.slug,
+      routeSlug: routeSlug,
+      route: route,
+      syncStatuses: group.gpsSyncStatuses,
     );
   }
 

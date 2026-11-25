@@ -20,7 +20,7 @@ import 'module.dart';
 /// card the « J'y vais » badge next to the name and « Quitter le groupe » as a discreet link at
 /// the foot of the card (never beside the chevron).
 ///
-/// Either way « GPS » is in the header, under the badges, for the group one rides in
+/// Either way « GPS » is in the top bar, first of its actions, for the group one rides in
 /// ([keys.ride.gps], ledger `MOB-184`).
 final class Ride extends Module {
   Ride(super.$);
@@ -295,22 +295,19 @@ final class Ride extends Module {
 
   // ── Exports ─────────────────────────────────────────────────────────────
 
-  /// Whether the header offers « GPS » — only for the group one rides in, the ride neither
+  /// Whether the top bar offers « GPS » — only for the group one rides in, the ride neither
   /// cancelled nor over (ledger `MOB-184`): no card carries one any more.
   bool get offersGps => _inTree(keys.ride.gps);
 
-  /// Scrolls back up to the header and waits for its « GPS » button: it shows once one has
-  /// joined a group and that group's route — loaded with the map's batch — is there with a file
-  /// to export.
+  /// Waits for the top bar's « GPS »: it shows once one has joined a group and that group's
+  /// route — loaded with the map's batch — is there with a file to export.
   Future<void> waitUntilGpsIsOffered() async {
-    await $(keys.ride.gps).waitUntilExists();
-    await scrolledUpTo(keys.ride.gps);
+    await $(keys.ride.gps).waitUntilVisible();
   }
 
-  /// Taps the header's « GPS » and waits for the GPS sheet — every export of one's group's route
-  /// lives there.
+  /// Taps the top bar's « GPS » and waits for the GPS sheet — every export of one's group's
+  /// route lives there.
   Future<void> openGpsSheet() async {
-    await scrolledUpTo(keys.ride.gps);
     await $(keys.ride.gps).tap();
     await $(keys.gpsSheet.sheet).waitUntilVisible();
   }

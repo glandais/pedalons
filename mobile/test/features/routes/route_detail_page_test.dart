@@ -185,21 +185,25 @@ void main() {
       keys.routeDetail.commentsSection,
     ]);
 
-    // Dans la section Parcours : la carte, le profil, puis « GPS ».
+    // Dans la section Parcours : la carte, puis le profil ; « GPS » est dans
+    // la barre, devant le partage (MOB-184).
     expectOrder(tester, <Key>[
       keys.routeDetail.map,
       keys.routeDetail.elevationProfile,
-      keys.routeDetail.gps,
     ]);
     expect(
       find.descendant(
-        of: find.byKey(keys.routeDetail.routeSection),
+        of: find.byType(PdlAppBar),
         matching: find.byKey(keys.routeDetail.gps),
       ),
       findsOneWidget,
     );
-    // Un seul bouton « GPS », plus de GPX / FIT / Envoyer séparés.
-    expect(find.byType(GpsButton), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byKey(keys.routeDetail.gps)).dx,
+      lessThan(tester.getTopLeft(find.byKey(keys.routeDetail.shareButton)).dx),
+    );
+    // Plus de bouton « GPS » dans le corps, ni de GPX / FIT / Envoyer.
+    expect(find.byType(GpsButton), findsNothing);
     for (final String old in <String>[
       'GPX',
       'FIT',

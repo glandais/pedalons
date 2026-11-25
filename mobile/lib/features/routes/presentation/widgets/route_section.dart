@@ -17,8 +17,6 @@ import '../../../../core/widgets/detail_section.dart';
 import '../../../../core/widgets/detail_source_button.dart';
 import '../../../../keys.dart';
 import '../../domain/elevation_refresh.dart';
-import '../../../gpxtools/domain/preview_assets.dart';
-import '../../../gpxtools/providers/gpx_preview_provider.dart';
 import '../../domain/route_color_mode.dart';
 import '../../domain/shown_route.dart';
 import '../../domain/track_slope_colors.dart';
@@ -26,8 +24,6 @@ import '../../domain/track_surfaces.dart';
 import '../../domain/track_wind_bars.dart';
 import '../../providers/route_detail_provider.dart';
 import '../../providers/route_elevation_provider.dart';
-import '../gps_export_runner.dart';
-import 'gps_button.dart';
 import 'route_color_mode_switch.dart';
 import 'route_cursor_controller.dart';
 import 'route_map.dart';
@@ -49,9 +45,10 @@ import 'waypoint_sheet.dart';
 ///    d'altitude provisoire » tant qu'elle vaut (ledger `MOB-76`), le profil à
 ///    `PdlMetrics.detailElevation` ;
 /// 5. la barre de revêtement, sa légende et son ⓘ (OpenStreetMap) ;
-/// 6. le bouton « GPS » unique (la feuille GPS, [GpsExportRunner]) — sauf
-///    sur l'étape, qui le porte dans son en-tête ([showGpsAction]) — et, avec
-///    [showDetailsAction], « Détails », qui pousse la fiche du parcours.
+/// 6. avec [showDetailsAction], « Détails », qui pousse la fiche du parcours.
+///
+/// « GPS » n'est pas ici : il est dans la barre du haut de l'écran
+/// (`GpsAppBarAction`, docs/LEDGER_*.md MOB-184).
 ///
 /// Les points du parcours et les cols ne sont **pas** ici : la fiche les pose
 /// en sections dépliées, l'étape en blocs repliés. La sélection d'un point
@@ -77,7 +74,6 @@ class RouteSection extends ConsumerStatefulWidget {
     this.windLeg,
     this.colorBySwitchKey,
     this.showDetailsAction = false,
-    this.showGpsAction = true,
     this.mapKey,
   });
 
@@ -117,13 +113,9 @@ class RouteSection extends ConsumerStatefulWidget {
   /// La clé de l'interrupteur ; `keys.routeDetail.surfaceColorBy` par défaut.
   final Key? colorBySwitchKey;
 
-  /// « Détails » à côté de « GPS », qui pousse la fiche du parcours — rien
-  /// sur la fiche elle-même, ni pour un aperçu GPX.
+  /// « Détails », qui pousse la fiche du parcours — rien sur la fiche
+  /// elle-même, ni pour un aperçu GPX.
   final bool showDetailsAction;
-
-  /// « GPS » sous le profil ; faux sur l'étape, qui le porte dans son
-  /// en-tête (docs/LEDGER_*.md MOB-184).
-  final bool showGpsAction;
 
   /// Posée sur la carte : l'ancre d'un défilement qui la remonte à l'écran
   /// (un point touché dans la liste de l'écran hôte).
@@ -133,8 +125,7 @@ class RouteSection extends ConsumerStatefulWidget {
   ConsumerState<RouteSection> createState() => _RouteSectionState();
 }
 
-class _RouteSectionState extends ConsumerState<RouteSection>
-    with GpsExportRunner<RouteSection> {
+class _RouteSectionState extends ConsumerState<RouteSection> {
   RouteCursorController? _ownCursor;
   String? _ownCursorForId;
   RouteColorBy _colorBy = RouteColorBy.grade;
@@ -289,83 +280,29 @@ class _RouteSectionState extends ConsumerState<RouteSection>
             title: 'routes.noTrackTitle'.tr(),
             message: 'routes.noTrackMessage'.tr(),
           ),
-        Padding(
-          padding: side,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              ...gpsExportBanners(gapBefore: true),
-              ?_actions(route),
-            ],
-          ),
-        ),
+        if (_actions() case final Widget actions)
+          Padding(padding: side, child: actions),
       ],
     );
   }
 
-  /// Ce que vise « GPS » : le parcours et ses fichiers, ou l'aperçu GPX.
-  /// Lu dans le même cache que le tracé.
-  GpsExportTarget? _gpsTarget() => switch (widget.trackKey) {
-    final RouteKey key => switch (ref.watch(routeDetailProvider(key)).value) {
-      final RouteDetailDto route => GpsExportTarget(
-        subtitle: route.name,
-        teamSlug: route.team.slug,
-        routeSlug: route.slug,
-        gpx: route.media.assets.gpx,
-        fit: route.media.assets.fit,
-        syncStatuses: route.gpsSyncStatuses,
-      ),
-      null => null,
-    },
-    GpxPreviewKey(:final String previewId) => switch (ref
-        .watch(gpxPreviewProvider(previewId))
-        .value) {
-      final GpxPreviewDto preview => GpsExportTarget.preview(
-        subtitle: preview.name,
-        previewId: preview.id,
-        gpx: preview.gpxAsset,
-        fit: preview.fitAsset,
-      ),
-      null => null,
-    },
-  };
-
-  /// « GPS » et, sur l'étape, « Détails ». Rien sans l'un ni l'autre.
-  Widget? _actions(ShownRoute route) {
-    final GpsExportTarget? target = _gpsTarget();
+  /// « Détails », sur l'étape. Rien sans lui.
+  Widget? _actions() {
     final TrackKey key = widget.trackKey;
-    final bool gps =
-        widget.showGpsAction &&
-        target != null &&
-        target.offered(watchGpsServices());
-    final bool details = widget.showDetailsAction && key is RouteKey;
-    if (!gps && !details) return null;
+    if (!widget.showDetailsAction || key is! RouteKey) return null;
     return Padding(
       padding: const EdgeInsets.only(top: PdlSpacing.section),
-      child: Wrap(
-        spacing: PdlSpacing.chipGap,
-        runSpacing: PdlSpacing.badgeGap,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: <Widget>[
-          if (gps)
-            GpsButton(
-              key: keys.routeDetail.gps,
-              compact: true,
-              loading: gpsExporting,
-              onPressed: (BuildContext button) => openGpsSheet(target, button),
-            ),
-          if (details)
-            PdlButton(
-              key: keys.routeDetail.details,
-              label: 'common.details'.tr(),
-              icon: PdlIcons.route,
-              variant: PdlButtonVariant.text,
-              size: PdlButtonSize.sm,
-              onPressed: () =>
-                  context.push(Paths.route(key.teamSlug, key.routeSlug)),
-            ),
-        ],
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: PdlButton(
+          key: keys.routeDetail.details,
+          label: 'common.details'.tr(),
+          icon: PdlIcons.route,
+          variant: PdlButtonVariant.text,
+          size: PdlButtonSize.sm,
+          onPressed: () =>
+              context.push(Paths.route(key.teamSlug, key.routeSlug)),
+        ),
       ),
     );
   }

@@ -1183,21 +1183,21 @@ void main() {
       expect(find.byKey(keys.ride.groupLeaveButton('gB')), findsOneWidget);
     });
 
-    testWidgets('« GPS » dans l\'en-tête, pour mon groupe, nommé en sous-titre '
-        'et dans la feuille (MOB-184)', (WidgetTester tester) async {
+    testWidgets('« GPS » dans la barre, avant le partage, pour mon groupe, '
+        'nommé dans la feuille (MOB-184)', (WidgetTester tester) async {
       await openRide(tester, threeGroups());
 
       final Finder gps = find.byKey(keys.ride.gps);
-      expect(gps, findsOneWidget);
-      expect(find.byType(GpsButton), findsOneWidget);
-      // Sous le titre, au-dessus du bloc de départ.
       expect(
-        tester.getTopLeft(gps).dy,
-        greaterThan(tester.getTopLeft(find.byKey(keys.ride.title)).dy),
+        find.descendant(of: find.byType(PdlAppBar), matching: gps),
+        findsOneWidget,
       );
+      // Plus de ligne dans le corps : la feuille nomme le groupe.
+      expect(find.byType(GpsButton), findsNothing);
+      // GPS · Partager · ⋯, comme l'en-tête du site.
       expect(
-        tester.getTopLeft(gps).dy,
-        lessThan(tester.getTopLeft(find.byKey(keys.ride.departureBlock)).dy),
+        tester.getTopLeft(gps).dx,
+        lessThan(tester.getTopLeft(find.byKey(keys.ride.moreButton)).dx),
       );
 
       await tester.tap(gps);

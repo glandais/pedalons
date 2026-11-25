@@ -36,6 +36,8 @@ import '../../providers/route_retouch_provider.dart';
 import '../widgets/route_climbs_section.dart';
 import '../widgets/route_cursor_controller.dart';
 import '../widgets/route_manage_menu.dart';
+import '../gps_export_runner.dart';
+import '../widgets/gps_button.dart';
 import '../widgets/route_section.dart';
 import '../widgets/route_usages_section.dart';
 import '../widgets/route_waypoints_section.dart';
@@ -68,7 +70,8 @@ class RouteDetailPage extends ConsumerStatefulWidget {
   ConsumerState<RouteDetailPage> createState() => _RouteDetailPageState();
 }
 
-class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
+class _RouteDetailPageState extends ConsumerState<RouteDetailPage>
+    with GpsExportRunner<RouteDetailPage> {
   /// Le réticule, partagé par la carte, le profil et les montées : toucher
   /// une montée l'y amène.
   RouteCursorController? _cursor;
@@ -197,6 +200,19 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
                 tone: PdlBannerTone.warn,
                 icon: PdlIcons.delete,
                 message: 'routes.manage.deletedBanner'.tr(),
+              ),
+            ),
+          ),
+        // L'issue d'un export lancé du « GPS » de la barre.
+        if (gpsExportBanners() case final List<Widget> banners
+            when banners.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: PdlSpacing.section),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: banners,
               ),
             ),
           ),
@@ -340,19 +356,15 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
         : null;
 
     return <Widget>[
-      // `Builder` : la feuille de partage s'ancre au bouton (iPad).
-      Builder(
-        builder: (BuildContext buttonContext) => PdlAppBarAction(
-          key: keys.routeDetail.shareButton,
-          icon: PdlIcons.share,
-          semanticLabel: 'routes.share'.tr(),
-          onPressed: () => shareAppLink(
-            buttonContext,
-            title: route.name,
-            path: Paths.route(route.team.slug, route.slug),
+      // GPS · Modifier · Partager · ⋯, comme l'en-tête du site.
+      if (!route.deleted)
+        if (_gpsTarget(route) case final GpsExportTarget gps
+            when gps.offered(watchGpsServices()))
+          GpsAppBarAction(
+            key: keys.routeDetail.gps,
+            busy: gpsExporting,
+            onPressed: (BuildContext button) => openGpsSheet(gps, button),
           ),
-        ),
-      ),
       // Un seul bouton pour qui gère ce parcours : le stylo ouvre « Gérer le
       // parcours » — modifier, retoucher, remplacer le GPX, supprimer (ou
       // restaurer), et signaler —, les gestes du « Modifier ▾ » du site.
@@ -368,8 +380,22 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
             canReport: canReport,
             retouchOffer: retouchOffer,
           ),
-        )
-      else if (canReport)
+        ),
+      // `Builder` : la feuille de partage s'ancre au bouton (iPad).
+      Builder(
+        builder: (BuildContext buttonContext) => PdlAppBarAction(
+          key: keys.routeDetail.shareButton,
+          icon: PdlIcons.share,
+          semanticLabel: 'routes.share'.tr(),
+          onPressed: () => shareAppLink(
+            buttonContext,
+            title: route.name,
+            path: Paths.route(route.team.slug, route.slug),
+          ),
+        ),
+      ),
+      // Qui ne gère pas le parcours : `⋯` pour le signaler.
+      if (!canManage && canReport)
         PdlAppBarAction(
           key: keys.routeDetail.moreButton,
           icon: PdlIcons.more,
@@ -386,6 +412,16 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
         ),
     ];
   }
+
+  /// La cible du « GPS » de la barre : le parcours et ses fichiers.
+  GpsExportTarget _gpsTarget(RouteDetailDto route) => GpsExportTarget(
+    subtitle: route.name,
+    teamSlug: route.team.slug,
+    routeSlug: route.slug,
+    gpx: route.media.assets.gpx,
+    fit: route.media.assets.fit,
+    syncStatuses: route.gpsSyncStatuses,
+  );
 
   // ── Identité ────────────────────────────────────────────────────────────
   /// La ligne d'équipe, le titre, le revêtement et la visibilité, les tags.
