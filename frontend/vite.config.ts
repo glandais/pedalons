@@ -37,7 +37,14 @@ function fromPackages(...prefixes: string[]) {
   return (id: string) => prefixes.some((prefix) => id.includes(`node_modules/${prefix}`))
 }
 
+// The zone of the unit tests, set on the Vitest process itself before it starts its worker
+// threads: they inherit it, whereas `test.env` only writes a worker's copy of the environment,
+// which leaves `Date` on the machine's zone (UTC in CI).
+const TEST_TIME_ZONE = 'Europe/Paris'
+
 export default defineConfig(({ mode, isSsrBuild }) => {
+  if (process.env.VITEST) process.env.TZ = TEST_TIME_ZONE
+
   // API proxy target: from .env (VITE_API_TARGET) or staging by default
   const env = loadEnv(mode, import.meta.dirname, '')
   const apiTarget = env.VITE_API_TARGET || 'https://staging.pedalons.fr'
@@ -111,7 +118,8 @@ export default defineConfig(({ mode, isSsrBuild }) => {
       server: { deps: { inline: [/i18next/] } },
       // A fixed zone, so a test that leans on the process zone gives the same result on every
       // machine and in CI (docs/LEDGER_*.md API-60, plan §11). Tests about a zone pass it explicitly.
-      env: { TZ: 'Europe/Paris' },
+      // Set on this process (see TEST_TIME_ZONE above), not through `test.env`: a worker thread
+      // shares the zone of the process, and writing TZ in a worker's own env changes nothing.
     },
     build: {
       sourcemap: process.env.VITE_BUILD_SOURCEMAP === 'true',
