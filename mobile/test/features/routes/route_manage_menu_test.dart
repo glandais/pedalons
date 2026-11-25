@@ -78,6 +78,47 @@ void main() {
       );
     });
 
+    test('qui lit sans modifier : la retouche en nouveau parcours et une '
+        'copie, comme au site (MOB-190)', () {
+      final RouteDetailDto base = fixtureRouteDetail(
+        permissions: permissionsFor(member: true, role: 'MEMBER'),
+      );
+      final RouteDetailDto withGpx = base.copyWith(
+        media: base.media.copyWith(
+          assets: base.media.assets.copyWith(
+            gpx: const AssetDto(
+              id: 'a1',
+              url: '/api/download/team/x.gpx',
+              fileName: 'x.gpx',
+              contentType: 'application/gpx+xml',
+            ),
+          ),
+        ),
+      );
+      expect(
+        routeManageActions(
+          withGpx,
+          canReport: true,
+          retouch: RetouchEntry.available,
+          operations: const <RouteRetouchOperation>[
+            RouteRetouchOperation.resize,
+          ],
+          signedIn: true,
+        ),
+        <RouteManageAction>[
+          RouteManageAction.resize,
+          RouteManageAction.editCopy,
+          RouteManageAction.report,
+        ],
+      );
+      // Sans GPX, pas de copie ; sans session, rien que le signalement.
+      expect(
+        routeManageActions(base, canReport: true, signedIn: true),
+        <RouteManageAction>[RouteManageAction.report],
+      );
+      expect(routeManageActions(withGpx, canReport: false), isEmpty);
+    });
+
     test("pas de signalement de son propre parcours", () {
       expect(
         routeManageActions(managedRoute(), canReport: false),

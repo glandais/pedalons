@@ -1670,7 +1670,9 @@
       "duplicateDefaultName": "Copy of {name}",
       "duplicateSubmit": "Duplicate",
       "duplicateTitle": "Duplicate the route",
-      "track": "Track"
+      "track": "Track",
+      "editCopy": "Edit a copy",
+      "copyCreated": "Copy created in your GPX files"
     },
     "elevationRefining": "Provisional elevation profile",
     "surfaceDetail": {

@@ -27,7 +27,7 @@ import '../../../auth/providers/auth_provider.dart';
 import '../../../comments/data/comment_repository.dart';
 import '../../../comments/presentation/widgets/comment_thread.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
-import '../../../moderation/presentation/moderation_menu.dart';
+import '../../domain/route_retouch.dart' show retouchEntryOf;
 import '../../../tags/presentation/content_tags.dart';
 import '../../domain/elevation_refresh.dart';
 import '../../domain/track_surfaces.dart';
@@ -347,8 +347,11 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage>
     // L'offre de retouche (docs/LEDGER_*.md MOB-185), lue tant que la fiche
     // est ouverte, pour qui peut modifier ce parcours : le menu la trouve
     // prête.
+    // Pour qui lit sans modifier aussi : la retouche en nouveau parcours
+    // (docs/LEDGER_*.md MOB-190) — le backend dit NOT_ALLOWED à qui ne peut
+    // pas planifier dans l'équipe.
     final RouteRetouchOfferDto? retouchOffer =
-        route.permissions.canEdit && !route.deleted
+        currentUserId != null && !route.deleted
         ? ref
               .watch(
                 routeRetouchOfferProvider(
@@ -397,20 +400,28 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage>
           ),
         ),
       ),
-      // Qui ne gère pas le parcours : `⋯` pour le signaler.
-      if (!canManage && canReport)
+      // Qui ne gère pas le parcours : `⋯` pour le retoucher en nouveau
+      // parcours, en modifier une copie, ou le signaler (ledger `MOB-190`).
+      if (!canManage &&
+          routeManageActions(
+            route,
+            canReport: canReport,
+            retouch: retouchEntryOf(retouchOffer),
+            operations:
+                retouchOffer?.operations ?? const <RouteRetouchOperation>[],
+            signedIn: currentUserId != null,
+          ).isNotEmpty)
         PdlAppBarAction(
           key: keys.routeDetail.moreButton,
           icon: PdlIcons.more,
           semanticLabel: 'moderation.more'.tr(),
-          onPressed: () => showDetailModerationMenu(
+          onPressed: () => showRouteManageMenu(
             context,
-            subject: ModerationSubject(
-              teamSlug: route.team.slug,
-              type: ReportTargetType.route,
-              id: route.id,
-              teamName: route.team.name,
-            ),
+            ref,
+            route,
+            canReport: canReport,
+            retouchOffer: retouchOffer,
+            signedIn: currentUserId != null,
           ),
         ),
     ];

@@ -248,6 +248,9 @@ class RouteManageKeys {
   final moveEnd = const _RouteManageKey('moveEnd');
   final replaceGpx = const _RouteManageKey('replaceGpx');
   final duplicate = const _RouteManageKey('duplicate');
+
+  /// « Modifier une copie », pour qui ne peut pas modifier le parcours.
+  final editCopy = const _RouteManageKey('editCopy');
   final delete = const _RouteManageKey('delete');
   final restore = const _RouteManageKey('restore');
   final report = const _RouteManageKey('report');

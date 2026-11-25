@@ -1670,7 +1670,9 @@
       "duplicateDefaultName": "Copie de {name}",
       "duplicateSubmit": "Dupliquer",
       "duplicateTitle": "Dupliquer le parcours",
-      "track": "Tracé"
+      "track": "Tracé",
+      "editCopy": "Modifier une copie",
+      "copyCreated": "Copie créée dans vos fichiers GPX"
     },
     "elevationRefining": "Profil d'altitude provisoire",
     "surfaceDetail": {

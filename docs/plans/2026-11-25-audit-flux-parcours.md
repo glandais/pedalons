@@ -1,6 +1,6 @@
 # Flux des parcours : constats de l'audit du 25 novembre 2026
 
-Écrit le 25 novembre 2026. **État : constats arbitrés le 25 novembre 2026 (§7), rien codé.** Source : deux passes
+Écrit le 25 novembre 2026. **État : constats arbitrés le 25 novembre 2026 (§7) ; corrections nettes et lots D1 à D6 codés le même jour (§7), rien vu dans un navigateur ni sur un appareil.** Source : deux passes
 d'audit lues dans le code (aucun navigateur, aucun appareil, aucun test lancé), la première avant
 `fe8c76ab1`, la seconde à `21654fb59` (17 commits plus tard : menus « Créer ▾ » et « Modifier ▾ »,
 import de plusieurs GPX, « Dupliquer » dans l'app). Les statuts ci-dessous sont ceux de la seconde passe.
@@ -195,7 +195,7 @@ Les plus urgents : §2.1 (W-N1, M-N5, M-N1), §3.1, §4.1.
 **Lots livrés** : D1 (`WEB-213`), D2 (`WEB-214`, `MOB-187`), D3 (`WEB-215` ; « Remplacer le tracé »
 plutôt que « la trace », que le lexique réserve), D4 (`WEB-216`, `MOB-188`), D5 (`WEB-217`, `MOB-189` ; à l'accueil, la
 fiche de l'équipe choisie est relue plutôt que d'ajouter le quota à la liste : pas de changement de
-contrat).
+contrat), D6 (`MOB-190`).
 
 **Corrections nettes livrées le 25 novembre 2026** : W-F6 et W-F18 (`WEB-212`) ; M-F2, M-N5, M-F3,
 M-F4, M-F12, M-F21, M-F22 et M-F24 (`MOB-186`).
