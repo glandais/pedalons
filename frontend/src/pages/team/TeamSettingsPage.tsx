@@ -99,9 +99,9 @@ export function TeamSettingsPage() {
 
   return (
     <TeamAdminLayout team={team} currentTab="settings">
-      <Box py="md" maw={672}>
+      <Box maw={672}>
         <Box>
-          <Title order={2}>{t('teams.settings.title')}</Title>
+          <Title order={2}>{t('teams.admin.tabs.settings')}</Title>
           <Text c="dimmed" mt="xs">
             {t('teams.settings.subtitle')}
           </Text>
@@ -120,7 +120,7 @@ export function TeamSettingsPage() {
 
         {/* Danger Zone */}
         <Box mt="xl" pt="xl" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
-          <Title order={2} size="lg" c="red">
+          <Title order={3} size="lg" c="red">
             {t('teams.settings.dangerZone.title')}
           </Title>
           <Text size="sm" c="dimmed" mt="xs">

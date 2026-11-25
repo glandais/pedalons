@@ -277,7 +277,7 @@ test.describe('team governance', () => {
         await expect(ownerForm.getByRole('switch', { name })).toBeDisabled()
       await ownerPage.goto(`/equipes/${team.slug}/admin/membres`)
       await expect(
-        main(ownerPage).getByRole('heading', { level: 2, name: 'Gestion des membres', exact: true })
+        main(ownerPage).getByRole('heading', { level: 2, name: 'Membres', exact: true })
       ).toBeVisible()
       await expect(main(ownerPage).getByText(owner.user.displayName)).toBeVisible()
       await expect(main(ownerPage).getByRole('button', { name: 'Inviter par e-mail' })).toHaveCount(
@@ -287,7 +287,7 @@ test.describe('team governance', () => {
       // The platform admin turns both switches on in the team's settings.
       const form = await settingsForm(page, team.slug)
       await expect(
-        form.getByRole('heading', { level: 4, name: 'Paramètres plateforme' })
+        form.getByRole('heading', { level: 3, name: 'Paramètres plateforme' })
       ).toBeVisible()
       const visibilityEditable = form.getByRole('switch', {
         name: 'Autoriser les admins à modifier la visibilité',

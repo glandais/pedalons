@@ -5,7 +5,7 @@ import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { Stack, Group, Button, Box, ActionIcon, Tooltip } from '@mantine/core'
-import { IconLogout } from '@tabler/icons-react'
+import { IconLogout, IconSettings } from '@tabler/icons-react'
 import { useResponsive } from '@/hooks/useResponsive'
 import { getGetTeamQueryKey } from '@/api/endpoints/teams/teams'
 import { useLeaveTeam, getGetMembersQueryKey } from '@/api/endpoints/team-members/team-members'
@@ -35,8 +35,7 @@ interface TeamLayoutProps {
   children: React.ReactNode
   /** Under the name: the dashboard puts the reader's role and the member count there. */
   meta?: React.ReactNode
-  /** Before the header's own buttons: the dashboard's create button. On a phone it takes a full
-   * row of its own under the header, as the app does. */
+  /** The dashboard's « Créer ▾ »: after joining or leaving, before « Gérer » and « Partager » (docs/LEDGER_*.md WEB-208). On a phone it takes a full row of its own under the header, as the app does. */
   actions?: React.ReactNode
 }
 
@@ -105,8 +104,6 @@ export function TeamLayout({
             </Group>
 
             <Group gap="sm">
-              {!isMobile && actions}
-
               {joinBlockedByLimit && team.memberLimit != null && (
                 <Box maw={360}>
                   <TeamFullNotice limit={team.memberLimit} canContact={false} />
@@ -140,11 +137,31 @@ export function TeamLayout({
                   </Button>
                 ))}
 
-              {isOrganizer && (
-                <Button variant="default" component={PrefetchLink} to={paths.teamAdmin(team.slug)}>
-                  {t('teams.detail.actions.admin')}
-                </Button>
-              )}
+              {!isMobile && actions}
+
+              {isOrganizer &&
+                (isMobile ? (
+                  // On a phone an icon, like « Quitter », named for assistive tech; the app's gear (docs/LEDGER_*.md WEB-208).
+                  <Tooltip label={t('teams.detail.actions.admin')}>
+                    <ActionIcon
+                      component={PrefetchLink}
+                      to={paths.teamAdmin(team.slug)}
+                      variant="default"
+                      size="input-sm"
+                      aria-label={t('teams.detail.actions.admin')}
+                    >
+                      <IconSettings size={18} />
+                    </ActionIcon>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    variant="default"
+                    component={PrefetchLink}
+                    to={paths.teamAdmin(team.slug)}
+                  >
+                    {t('teams.detail.actions.admin')}
+                  </Button>
+                ))}
 
               <ShareButton title={team.name} />
             </Group>

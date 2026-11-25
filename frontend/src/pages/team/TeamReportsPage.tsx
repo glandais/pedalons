@@ -48,7 +48,7 @@ export function TeamReportsPage() {
 
   return (
     <TeamAdminLayout team={team} currentTab="reports">
-      <Stack py="lg">
+      <Stack>
         <Title order={2}>{t('teams.admin.tabs.reports')}</Title>
         <ModerationQueue
           scope="team"

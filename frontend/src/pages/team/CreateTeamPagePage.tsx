@@ -49,7 +49,7 @@ export function CreateTeamPagePage() {
 
   return (
     <TeamAdminLayout team={team} currentTab="pages">
-      <Box py="md">
+      <Box>
         <Box maw={672}>
           <Title order={2} mb="lg">
             {t('teams.pages.create.title')}

@@ -47,7 +47,7 @@ export function EditTeamPagePage() {
 
   return (
     <TeamAdminLayout team={team} currentTab="pages">
-      <Box py="md">
+      <Box>
         <Box maw={672}>
           <Title order={2} mb="lg">
             {t('teams.pages.edit.title', { name: page.title })}

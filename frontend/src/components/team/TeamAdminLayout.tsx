@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Container, Title, Box, Stack } from '@mantine/core'
+import { Container, Title, Box, Stack, Group, Text } from '@mantine/core'
 import {
   IconCalendarRepeat,
   IconMapPin,
@@ -14,6 +14,7 @@ import type { TeamDetailDto } from '@/api/dto'
 import { paths } from '@/config/paths'
 import { NavButtons, type NavButtonItem } from '../common/NavButtons'
 import { useTeamAccess } from '@/lib/teamAccess'
+import { TeamAvatar } from './TeamAvatar'
 
 export type AdminTab =
   'ride-templates' | 'places' | 'tags' | 'pages' | 'members' | 'reports' | 'settings'
@@ -45,7 +46,7 @@ export function TeamAdminLayout({ team, currentTab, children }: TeamAdminLayoutP
     {
       id: 'places',
       path: paths.teamAdminPlaces(team.slug),
-      label: t('places.title'),
+      label: t('teams.admin.tabs.places'),
       icon: IconMapPin,
     },
     {
@@ -92,10 +93,18 @@ export function TeamAdminLayout({ team, currentTab, children }: TeamAdminLayoutP
     <Container size="xl" py="xl">
       {/* Same vertical rhythm as TeamLayout, which wraps its nav row in a Stack */}
       <Stack>
-        {/* The page's h1 (docs/LEDGER_*.md WEB-207); the tabs title their sections in h2. The way back to the team is the breadcrumb */}
-        <Title order={1} size="h2">
-          {t('teams.admin.title')}
-        </Title>
+        {/* Which team (docs/LEDGER_*.md WEB-208): plain text — the breadcrumb is the way back. The page's single h1 (WEB-207); the tabs title their sections in h2. */}
+        <Group gap="sm" wrap="nowrap" align="center">
+          <TeamAvatar team={team} size="lg" />
+          <Box style={{ minWidth: 0 }}>
+            <Text size="sm" c="dimmed" lineClamp={1}>
+              {team.name}
+            </Text>
+            <Title order={1} size="h2">
+              {t('teams.admin.title')}
+            </Title>
+          </Box>
+        </Group>
 
         {/* Admin Navigation */}
         <NavButtons
@@ -105,7 +114,8 @@ export function TeamAdminLayout({ team, currentTab, children }: TeamAdminLayoutP
         />
 
         {/* Page Content */}
-        <Box>{children}</Box>
+        {/* One vertical padding for every tab page (docs/LEDGER_*.md WEB-208): the pages add none. */}
+        <Box py="md">{children}</Box>
       </Stack>
     </Container>
   )

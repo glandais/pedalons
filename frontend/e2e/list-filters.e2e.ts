@@ -283,7 +283,7 @@ test('ads: search and type from the URL, server-rendered, then changed through t
   })
   const wanted = await newAd(owner, team.slug, { name: `Casque cherche ${tag}`, adType: 'WANTED' })
   await signIn(context, owner)
-  const titles = page.getByRole('heading', { level: 4, name: new RegExp(escapeRegExp(tag)) })
+  const titles = page.getByRole('heading', { level: 3, name: new RegExp(escapeRegExp(tag)) })
   const search = page.getByRole('searchbox', { name: 'Rechercher des annonces' })
   // The kind is a segmented control (RL6).
   const typeRadio = (label: string) =>

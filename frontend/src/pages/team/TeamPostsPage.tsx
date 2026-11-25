@@ -91,8 +91,10 @@ export function TeamPostsPage() {
         </Group>
 
         <Group gap="sm" align="flex-end" wrap="wrap">
+          {/* No visible label, like every list search and the tag filter beside it: the two fields line up (C6). */}
           <SearchInput
             id="posts-search"
+            label={t('teams.posts.search.label')}
             value={search}
             onChange={setSearch}
             placeholder={t('teams.posts.search.placeholder')}

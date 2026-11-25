@@ -57,10 +57,8 @@ export function AdminDashboardPage() {
   const activation = useGetActivation(ACTIVATION_PARAMS)
 
   return (
-    <AdminLayout currentTab="dashboard">
+    <AdminLayout currentTab="dashboard" subtitle={t('admin.dashboard.subtitle')}>
       <Stack mt="lg">
-        <Text c="dimmed">{t('admin.dashboard.subtitle')}</Text>
-
         <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg">
           <StatCard
             title={t('admin.stats.domains')}

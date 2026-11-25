@@ -89,9 +89,7 @@ export function PlaceList({ teamSlug, canManage }: PlaceListProps) {
   return (
     <Stack>
       <Group justify="space-between">
-        <Title order={2} size="h4">
-          {t('places.title')}
-        </Title>
+        <Title order={2}>{t('teams.admin.tabs.places')}</Title>
         {canManage && (
           <Button leftSection={<IconPlus size={16} />} onClick={() => setShowCreateForm(true)}>
             {t('places.add')}

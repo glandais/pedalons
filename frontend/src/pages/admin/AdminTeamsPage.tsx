@@ -61,9 +61,10 @@ export function AdminTeamsPage() {
   return (
     <AdminLayout currentTab="teams">
       <Stack mt="lg">
-        <Group>
+        <Group align="flex-end">
           <Select
-            placeholder={t('admin.teams.filterByDomain')}
+            label={t('admin.teams.domain')}
+            placeholder={t('admin.teams.allDomains')}
             data={domainOptions}
             value={filters.domainId ?? null}
             onChange={(value) => setFilters({ domainId: value || undefined })}
@@ -71,7 +72,8 @@ export function AdminTeamsPage() {
             w={200}
           />
           <Select
-            placeholder={t('admin.teams.filterByTier')}
+            label={t('admin.teams.tier')}
+            placeholder={t('admin.teams.allTiers')}
             data={Object.values(TeamTier).map((tier) => ({
               value: tier,
               label: t(`teams.tier.${tier}`),

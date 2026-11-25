@@ -14,6 +14,7 @@ import { membershipLabel } from '../../components/common/membershipLabel'
 import { FilteredEmptyState } from '../../components/common/FilteredEmptyState'
 import { searchFilter } from '../../components/common/filteredEmpty'
 import { ResultCount } from '../../components/common/ResultCount'
+import { CardHeadingOrder } from '../../components/card/common/Card'
 import { TeamCard, TeamCardSkeleton } from '../../components/card'
 import { EmptyState } from '../../components/common/EmptyState'
 import { QueryStateBoundary } from '../../components/common/QueryStateBoundary'
@@ -133,24 +134,26 @@ export function TeamListPage() {
         }
       >
         {teams && teams.length > 0 ? (
-          <Stack>
-            <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-              {teams.map((team) => (
-                <TeamCard key={team.id} team={team} showRole={true} />
-              ))}
-            </SimpleGrid>
+          <CardHeadingOrder order={2}>
+            <Stack>
+              <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+                {teams.map((team) => (
+                  <TeamCard key={team.id} team={team} showRole={true} />
+                ))}
+              </SimpleGrid>
 
-            <Box mt="lg">
-              <Pagination
-                currentPage={filters.page}
-                totalPages={totalPages}
-                onPageChange={(page) => {
-                  setFilters({ page })
-                  scrollToListTop()
-                }}
-              />
-            </Box>
-          </Stack>
+              <Box mt="lg">
+                <Pagination
+                  currentPage={filters.page}
+                  totalPages={totalPages}
+                  onPageChange={(page) => {
+                    setFilters({ page })
+                    scrollToListTop()
+                  }}
+                />
+              </Box>
+            </Stack>
+          </CardHeadingOrder>
         ) : filters.page > 0 ? (
           <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
         ) : hasFiltersOrSearch ? (

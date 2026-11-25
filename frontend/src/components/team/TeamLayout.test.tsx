@@ -6,6 +6,18 @@ import { MantineProvider } from '@mantine/core'
 import type { TeamDetailDto, TeamRole, UserDto } from '@/api/dto'
 import { useAuthStore } from '@/store/authStore'
 
+const responsive = vi.hoisted(() => ({ isMobile: false }))
+vi.mock('@/hooks/useResponsive', () => ({
+  useResponsive: () => ({
+    isMobile: responsive.isMobile,
+    isTablet: false,
+    isDesktop: !responsive.isMobile,
+    size: 'md',
+    sizeCompact: 'sm',
+  }),
+  useMediaMatch: () => false,
+}))
+
 vi.mock('@/lib/prefetch', () => ({ prefetchUrl: vi.fn() }))
 
 // Keys, not wording.
@@ -23,7 +35,9 @@ vi.mock('@/api/endpoints/team-members/team-members', () => ({
 // The header's other pieces are not what is under test.
 vi.mock('./TeamSwitcher', () => ({ TeamSwitcher: () => null }))
 vi.mock('./TeamAvatar', () => ({ TeamAvatar: () => null }))
-vi.mock('../common/ShareButton', () => ({ ShareButton: () => null }))
+vi.mock('../common/ShareButton', () => ({
+  ShareButton: () => <button type="button">share</button>,
+}))
 vi.mock('../common/NavButtons', () => ({ NavButtons: () => null }))
 
 import { TeamLayout } from './TeamLayout'
@@ -57,12 +71,12 @@ function signIn(platformAdmin: boolean) {
   })
 }
 
-function renderLayout(displayed: TeamDetailDto) {
+function renderLayout(displayed: TeamDetailDto, actions?: React.ReactNode) {
   render(
     <MantineProvider>
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
-          <TeamLayout team={displayed} currentTab="dashboard">
+          <TeamLayout team={displayed} currentTab="dashboard" actions={actions}>
             <p>contenu</p>
           </TeamLayout>
         </MemoryRouter>
@@ -73,6 +87,7 @@ function renderLayout(displayed: TeamDetailDto) {
 
 afterEach(() => {
   cleanup()
+  responsive.isMobile = false
   useAuthStore.setState({ isAuthenticated: false, user: null, accessToken: null })
 })
 
@@ -122,5 +137,33 @@ describe('TeamLayout (docs/LEDGER_*.md API-137)', () => {
     signIn(false)
     renderLayout(team('MEMBER', { memberCount: 25, memberLimit: 25 }))
     expect(screen.queryByText('teams.memberLimit.fullAskAdmin')).toBeNull()
+  })
+})
+
+describe('TeamLayout banner (docs/LEDGER_*.md WEB-208)', () => {
+  it('joining or leaving, then create, then manage, then share', () => {
+    signIn(false)
+    renderLayout(team('ORGANIZER'), <button type="button">create</button>)
+    const order = Array.from(document.querySelectorAll('a, button')).map(
+      (el) => el.getAttribute('aria-label') ?? el.textContent
+    )
+    expect(order).toEqual([
+      'teams.detail.actions.leave',
+      'create',
+      'teams.detail.actions.admin',
+      'share',
+    ])
+  })
+
+  it('on a phone « Gérer » is an icon named for assistive tech, and create keeps its own row', () => {
+    responsive.isMobile = true
+    signIn(false)
+    renderLayout(team('ORGANIZER'), <button type="button">create</button>)
+    const manage = screen.getByRole('link', { name: 'teams.detail.actions.admin' })
+    expect(manage.textContent).toBe('')
+    expect(screen.getAllByRole('button', { name: 'create' })).toHaveLength(1)
+    const share = screen.getByRole('button', { name: 'share' })
+    const create = screen.getByRole('button', { name: 'create' })
+    expect(share.compareDocumentPosition(create) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

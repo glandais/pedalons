@@ -179,7 +179,7 @@ export function TeamMembersPage() {
 
   return (
     <TeamAdminLayout team={team} currentTab="members">
-      <Box py="md">
+      <Box>
         <Group justify="space-between" mb="lg">
           <Group gap="sm" align="baseline">
             <Title order={2}>{t('teams.admin.tabs.members')}</Title>

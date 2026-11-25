@@ -450,7 +450,7 @@ const screens: Record<string, Screen> = {
   teamAdminMembers: {
     roles: ADMINS,
     sees: async (main, d, page) => {
-      await currentTab(page, "Navigation de la gestion de l'équipe", 'Gestion des membres')
+      await currentTab(page, "Navigation de la gestion de l'équipe", 'Membres')
       await expect(main.getByText(d.sessions.member.user.displayName).first()).toBeVisible()
     },
     denied: denies(BELOW_ADMIN, teamHome(NOT_ADMIN)),
@@ -468,9 +468,9 @@ const screens: Record<string, Screen> = {
   },
   teamSettings: {
     roles: ADMINS,
-    sees: heading("Paramètres de l'équipe"),
+    sees: heading('Paramètres'),
     denied: denies(BELOW_ADMIN, teamHome(NOT_ADMIN)),
-    guards: (page) => teamAdminNav(page).or(titled("Paramètres de l'équipe")(page)),
+    guards: (page) => teamAdminNav(page).or(titled('Paramètres')(page)),
   },
   rideNew: {
     roles: ORGANIZERS,

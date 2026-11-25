@@ -132,11 +132,9 @@ export function TeamTagsPage() {
 
   return (
     <TeamAdminLayout team={team} currentTab="tags">
-      <Stack py="lg">
+      <Stack>
         <Group justify="space-between">
-          <Title order={2} size="h4">
-            {t('tags.admin.title')}
-          </Title>
+          <Title order={2}>{t('teams.admin.tabs.tags')}</Title>
           {current && (
             <Button
               leftSection={<IconPlus size={16} />}

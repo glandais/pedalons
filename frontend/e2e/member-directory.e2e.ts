@@ -173,9 +173,7 @@ test.describe('member directory — web', () => {
       await signIn(context, t.admin)
       const page = await context.newPage()
       await page.goto(`/equipes/${t.team.slug}/admin/membres`)
-      await expect(
-        page.getByRole('heading', { name: 'Gestion des membres', level: 2 })
-      ).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'Membres', level: 2 })).toBeVisible()
       // The whole roster first — the filtered view below is then a narrowing, not an empty page.
       await expect(page.getByText(t.member.user.displayName, { exact: true })).toBeVisible()
 

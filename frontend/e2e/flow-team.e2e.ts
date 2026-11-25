@@ -174,7 +174,7 @@ test.describe('team settings', () => {
     await adminNav(page).getByRole('link', { name: 'Paramètres' }).click()
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/admin/parametres$`))
     await expect(
-      page.getByRole('heading', { level: 2, name: "Paramètres de l'équipe" })
+      page.getByRole('heading', { level: 2, name: 'Paramètres', exact: true })
     ).toBeVisible()
 
     const nameInput = main(page).getByRole('textbox', { name: "Nom de l'équipe" })
@@ -249,10 +249,10 @@ test.describe('members', () => {
     const manage = page.getByRole('link', { name: 'Gérer', exact: true })
     await hydrated(manage)
     await manage.click()
-    await adminNav(page).getByRole('link', { name: 'Gestion des membres' }).click()
+    await adminNav(page).getByRole('link', { name: 'Membres', exact: true }).click()
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/admin/membres$`))
     await expect(
-      main(page).getByRole('heading', { level: 2, name: 'Gestion des membres', exact: true })
+      main(page).getByRole('heading', { level: 2, name: 'Membres', exact: true })
     ).toBeVisible()
 
     // Both rows: the owner, who can touch neither their role nor their membership here…
@@ -319,7 +319,7 @@ test.describe('members', () => {
     await signIn(context, owner)
     await page.goto(`/equipes/${team.slug}/admin/membres`)
     await expect(
-      main(page).getByRole('heading', { level: 2, name: 'Gestion des membres', exact: true })
+      main(page).getByRole('heading', { level: 2, name: 'Membres', exact: true })
     ).toBeVisible()
     await expect(
       memberRow(page, owner.user.displayName).getByText('(vous)'),
@@ -352,7 +352,7 @@ test.describe('team pages', () => {
     await signIn(context, owner)
 
     await page.goto(`/equipes/${team.slug}/admin/pages`)
-    await expect(page.getByRole('heading', { level: 2, name: "Pages de l'équipe" })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 2, name: 'Pages', exact: true })).toBeVisible()
     await expect(main(page).getByText('0 page sur 3 maximum')).toBeVisible()
     const add = main(page).getByRole('link', { name: 'Créer une page' }).first()
     await hydrated(add)
@@ -733,10 +733,10 @@ test.describe('deleting a team', () => {
 
     await page.goto(`/equipes/${team.slug}/admin/parametres`)
     await expect(
-      page.getByRole('heading', { level: 2, name: "Paramètres de l'équipe" })
+      page.getByRole('heading', { level: 2, name: 'Paramètres', exact: true })
     ).toBeVisible()
     await expect(
-      main(page).getByRole('heading', { level: 2, name: 'Zone de danger' })
+      main(page).getByRole('heading', { level: 3, name: 'Zone de danger' })
     ).toBeVisible()
     const remove = main(page).getByRole('button', { name: "Supprimer l'équipe" })
     await hydrated(remove)

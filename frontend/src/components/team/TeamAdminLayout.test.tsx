@@ -24,7 +24,13 @@ vi.mock('../common/NavButtons', () => ({
 import { TeamAdminLayout } from './TeamAdminLayout'
 
 function team(role?: TeamRole) {
-  return { id: 't1', slug: 'vc-craponne', name: 'VC Craponne', role } as unknown as TeamDetailDto
+  return {
+    id: 't1',
+    slug: 'vc-craponne',
+    name: 'VC Craponne',
+    about: { markdown: '', assets: {} },
+    role,
+  } as unknown as TeamDetailDto
 }
 
 function signIn(platformAdmin: boolean) {
@@ -74,6 +80,8 @@ describe('TeamAdminLayout (docs/LEDGER_*.md API-137)', () => {
     renderLayout(team(undefined))
     expect(screen.getByText('contenu')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'teams.admin.title' })).toBeTruthy()
+    expect(screen.getByText('VC Craponne')).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
     expect(tabs()).toEqual([
       'ride-templates',
       'places',

@@ -40,7 +40,7 @@ export const teamTarget: SlugTarget = {
   editPath: (teamSlug) => `/equipes/${teamSlug}/admin/parametres`,
   detailPath: (teamSlug) => `/equipes/${teamSlug}`,
   apiPath: (teamSlug) => `/api/teams/${teamSlug}`,
-  editTitle: "Paramètres de l'équipe",
+  editTitle: 'Paramètres',
   detailHeading: heading(1),
   savedToast: 'Équipe mise à jour avec succès',
 }

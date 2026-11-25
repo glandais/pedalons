@@ -1,4 +1,4 @@
-export { Card, CardContent, CardHeader, CardTitle, CardDescription } from './Card'
+export { Card, CardHeadingOrder, CardContent, CardHeader, CardTitle, CardDescription } from './Card'
 export { CardImage } from './CardImage'
 export { CardTeamLink } from './CardTeamLink'
 export { Badge, TypeBadge, StatusBadge, RoleBadge, SurfaceBadge, DeletedBadge } from './Badge'

@@ -76,7 +76,7 @@ test.describe('team settings loaded directly', () => {
     expect(html).toContain('le dimanche')
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/admin/parametres$`))
     await expect(
-      page.getByRole('heading', { level: 2, name: "Paramètres de l'équipe" })
+      page.getByRole('heading', { level: 2, name: 'Paramètres', exact: true })
     ).toBeVisible()
     const name = page.getByRole('textbox', { name: "Nom de l'équipe" })
     await expect(name).toHaveValue(team.name)

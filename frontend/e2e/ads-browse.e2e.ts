@@ -272,7 +272,7 @@ test.describe('ad list', () => {
   const listPath = (teamSlug: string) => `/equipes/${teamSlug}/annonces`
   const cardTitles = (page: Page, tag: string) =>
     page.getByRole('heading', {
-      level: 4,
+      level: 3,
       name: new RegExp(escapeRegExp(tag)),
     })
   const query = (page: Page) => Object.fromEntries(new URL(page.url()).searchParams)

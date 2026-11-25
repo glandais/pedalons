@@ -168,10 +168,10 @@ export function TeamPagesAdminPage() {
 
   return (
     <TeamAdminLayout team={team} currentTab="pages">
-      <Box py="md">
+      <Box>
         <Group justify="space-between" mb="lg">
           <Box>
-            <Title order={2}>{t('teams.pages.title')}</Title>
+            <Title order={2}>{t('teams.admin.tabs.pages')}</Title>
             <Text size="sm" c="dimmed" mt="xs">
               {t('teams.pages.subtitle', { count: activeCount, max: MAX_ADDITIONAL_PAGES })}
             </Text>

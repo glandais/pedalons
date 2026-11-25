@@ -75,7 +75,7 @@ async function openEditForm(page: Page, owner: AuthResponse, target: SlugTarget,
   if (target === routeTarget) await stubBasemap(page)
   await page.goto(edit)
   await expect(
-    page.getByRole('main').getByRole('heading', { name: target.editTitle })
+    page.getByRole('main').getByRole('heading', { name: target.editTitle, exact: true })
   ).toBeVisible()
 }
 

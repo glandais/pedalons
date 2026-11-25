@@ -6,7 +6,7 @@ Index des **164 entrées ouvertes** et des 77 entrées écartées. Chaque entré
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-48 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+49 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
@@ -90,7 +90,7 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 - [ ] [`WEB-210`](ledger/WEB/WEB-210.md) Un h1 sur les états 404, 403 et erreur qui remplacent une page (S)
 - [ ] [`WEB-209`](ledger/WEB/WEB-209.md) En-têtes de pages, lot 5 : une carte transactionnelle commune (M)
-- [ ] [`WEB-208`](ledger/WEB/WEB-208.md) En-têtes de pages, lot 4 : bandeau d'équipe et administration (M)
+- [ ] [`WEB-208`](ledger/WEB/WEB-208.md) En-têtes de pages, lot 4 : bandeau d'équipe et administration (M) · *recette*
 - [ ] [`WEB-206`](ledger/WEB/WEB-206.md) En-têtes de pages, lot 2 : un DetailHeader commun aux pages de détail (L) · *recette*
 
 ### Planificateur : audit UX du choix du profil, 24 novembre 2026
@@ -329,6 +329,7 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 - [`MOB-15`](ledger/MOB/MOB-15.md) Profil (33)
 - [`MOB-13`](ledger/MOB/MOB-13.md) Trombinoscope (34)
 - [`MOB-5`](ledger/MOB/MOB-5.md) Exploration de parcours (21)
+- [`WEB-208`](ledger/WEB/WEB-208.md) En-têtes de pages, lot 4 : bandeau d'équipe et administration
 - [`WEB-206`](ledger/WEB/WEB-206.md) En-têtes de pages, lot 2 : un DetailHeader commun aux pages de détail
 - [`WEB-203`](ledger/WEB/WEB-203.md) « GPS » dans la barre d'actions des pages parcours, sortie, groupe et étape
 - [`WEB-202`](ledger/WEB/WEB-202.md) Planificateur : refonte du volet de réglages du tracé (pratique, calcul, circulation, côtes, recalcul)

@@ -109,9 +109,9 @@ export function RideTemplateListPage() {
 
   return (
     <TeamAdminLayout team={team} currentTab="ride-templates">
-      <Stack py="lg">
+      <Stack>
         <Group justify="space-between">
-          <Title order={2}>{t('rideTemplates.list.title')}</Title>
+          <Title order={2}>{t('teams.admin.tabs.rideTemplates')}</Title>
           {canManage && (
             <Button
               component={PrefetchLink}

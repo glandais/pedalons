@@ -374,7 +374,9 @@ export function TeamForm({
           <>
             <Divider mt="md" />
             <Stack gap="xs">
-              <Title order={4}>{t('teams.settings.platformAdmin.title')}</Title>
+              <Title order={3} size="h4">
+                {t('teams.settings.platformAdmin.title')}
+              </Title>
 
               {initialValues.visibilityEditable || isPlatformAdmin ? (
                 <Select

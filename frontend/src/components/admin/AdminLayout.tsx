@@ -1,9 +1,7 @@
 import { Navigate } from 'react-router-dom'
-import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
-import { Container, Group, Title, Anchor, Box, Stack } from '@mantine/core'
+import { Container, Title, Text, Box, Stack } from '@mantine/core'
 import {
-  IconArrowLeft,
   IconDashboard,
   IconWorld,
   IconUsers,
@@ -19,10 +17,12 @@ export type AdminTab = 'dashboard' | 'domains' | 'teams' | 'users' | 'reports' |
 
 interface AdminLayoutProps {
   currentTab: AdminTab
+  /** Under the title, dimmed: the dashboard's one line (docs/LEDGER_*.md WEB-208). */
+  subtitle?: string
   children: React.ReactNode
 }
 
-export function AdminLayout({ currentTab, children }: AdminLayoutProps) {
+export function AdminLayout({ currentTab, subtitle, children }: AdminLayoutProps) {
   const { t } = useTranslation()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
 
@@ -74,17 +74,16 @@ export function AdminLayout({ currentTab, children }: AdminLayoutProps) {
     <Container size="xl" py="xl">
       {/* Same vertical rhythm as TeamLayout, which wraps its nav row in a Stack */}
       <Stack>
-        {/* Header with back link */}
+        {/* The page's h1; the breadcrumb is the way back to the application (docs/LEDGER_*.md WEB-208). */}
         <Box>
-          <Anchor component={PrefetchLink} to={paths.home()} c="dimmed" size="sm">
-            <Group gap={4}>
-              <IconArrowLeft size={16} />
-              {t('admin.backToApp')}
-            </Group>
-          </Anchor>
-          <Title order={1} size="h2" mt="xs">
+          <Title order={1} size="h2">
             {t('admin.title')}
           </Title>
+          {subtitle && (
+            <Text c="dimmed" mt={4}>
+              {subtitle}
+            </Text>
+          )}
         </Box>
 
         {/* Admin Navigation */}

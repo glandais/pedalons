@@ -1,5 +1,5 @@
 import { PrefetchLink } from '@/components/common/PrefetchLink'
-import { ReactNode } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
 import { Paper, Title, Box, Text } from '@mantine/core'
 import { MarkdownDisplay } from '../../common/MarkdownDisplay'
 import { MediaDto } from '@/api/dto'
@@ -70,14 +70,31 @@ export function CardHeader({ children }: CardHeaderProps) {
   )
 }
 
+type CardTitleOrder = 2 | 3 | 4
+/** A card title sits one level below the nearest heading over its list: under a page's h2 by default
+ * (a team tab, the home feed, « Utilisé dans »). Never an h1 (docs/LEDGER_*.md WEB-208). */
+const CardTitleOrderContext = createContext<CardTitleOrder>(3)
+
+/** Sets the level of the card titles inside: 2 under a page's h1, 4 under an h3 section. */
+export function CardHeadingOrder({
+  order,
+  children,
+}: {
+  order: CardTitleOrder
+  children: ReactNode
+}) {
+  return <CardTitleOrderContext.Provider value={order}>{children}</CardTitleOrderContext.Provider>
+}
+
 interface CardTitleProps {
   children: ReactNode
   truncate?: boolean
 }
 
 export function CardTitle({ children, truncate = false }: CardTitleProps) {
+  const order = useContext(CardTitleOrderContext)
   return (
-    <Title order={4} lineClamp={truncate ? 1 : undefined}>
+    <Title order={order} size="h4" lineClamp={truncate ? 1 : undefined}>
       {children}
     </Title>
   )

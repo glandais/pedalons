@@ -2,6 +2,7 @@ import { useId, type ReactNode } from 'react'
 import { Group, Stack, Title } from '@mantine/core'
 import { useTranslation } from 'react-i18next'
 import { splitUpcomingFirst } from '@/lib/upcomingFirst'
+import { CardHeadingOrder } from '@/components/card/common/Card'
 import { ResultCount, type CountedResource } from './ResultCount'
 
 interface UpcomingFirstSectionsProps<T> {
@@ -50,7 +51,7 @@ export function UpcomingFirstSections<T>({
             </Title>
             <ResultCount total={upcomingTotal} resource={counts.upcoming} />
           </Group>
-          {children(upcoming)}
+          <CardHeadingOrder order={4}>{children(upcoming)}</CardHeadingOrder>
         </Stack>
       )}
       {earlier.length > 0 && (
@@ -61,7 +62,7 @@ export function UpcomingFirstSections<T>({
             </Title>
             <ResultCount total={total - upcomingTotal} resource={counts.earlier} />
           </Group>
-          {children(earlier)}
+          <CardHeadingOrder order={4}>{children(earlier)}</CardHeadingOrder>
         </Stack>
       )}
     </Stack>

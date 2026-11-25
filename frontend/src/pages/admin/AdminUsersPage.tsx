@@ -92,7 +92,8 @@ export function AdminUsersPage() {
             style={{ flex: 1, minWidth: 200 }}
           />
           <Select
-            placeholder={t('admin.users.filterByDomain')}
+            label={t('admin.users.domain')}
+            placeholder={t('admin.users.allDomains')}
             data={domainOptions}
             value={filters.domainId ?? null}
             onChange={(value) => setFilters({ domainId: value || undefined })}

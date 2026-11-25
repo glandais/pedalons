@@ -5,6 +5,7 @@ import { isSingleTeam } from '../../config/appConfig'
 import { MembershipSelect } from '../../components/common/MembershipSelect'
 import { membershipLabel } from '../../components/common/membershipLabel'
 import { RouteFilterPanel } from '../../components/route/RouteFilterPanel'
+import { CardHeadingOrder } from '../../components/card/common/Card'
 import { RouteListContent } from '../../components/route/RouteListContent'
 import { ResultCount } from '@/components/common/ResultCount'
 import { RouteDeadEnd } from '@/components/route/RouteDeadEnd'
@@ -60,32 +61,34 @@ export function AllRoutesPage() {
         />
       </Group>
 
-      <RouteListContent
-        density={density}
-        deadEnd={
-          <RouteDeadEnd
-            filters={filters}
-            onSetFilters={setFilters}
-            onClearFilters={clearFilters}
-            scopeLabel={
-              filters.membership !== defaultMembership
-                ? membershipLabel(t, filters.membership)
-                : undefined
-            }
-          />
-        }
-        routes={routesData?.routes}
-        isLoading={isLoading}
-        isRefreshing={isPlaceholderData}
-        isError={isError}
-        error={error}
-        onRetry={() => void refetch()}
-        showTeam={!isSingleTeam()}
-        hasFiltersOrSearch={hasFiltersOrSearch}
-        currentPage={filters.page}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
+      <CardHeadingOrder order={2}>
+        <RouteListContent
+          density={density}
+          deadEnd={
+            <RouteDeadEnd
+              filters={filters}
+              onSetFilters={setFilters}
+              onClearFilters={clearFilters}
+              scopeLabel={
+                filters.membership !== defaultMembership
+                  ? membershipLabel(t, filters.membership)
+                  : undefined
+              }
+            />
+          }
+          routes={routesData?.routes}
+          isLoading={isLoading}
+          isRefreshing={isPlaceholderData}
+          isError={isError}
+          error={error}
+          onRetry={() => void refetch()}
+          showTeam={!isSingleTeam()}
+          hasFiltersOrSearch={hasFiltersOrSearch}
+          currentPage={filters.page}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      </CardHeadingOrder>
     </Stack>
   )
 }
