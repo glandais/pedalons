@@ -12,17 +12,14 @@ import '../../../../core/widgets/detail_section.dart';
 import '../../../../keys.dart';
 import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
-import '../../../routes/presentation/gps_export_runner.dart';
 import '../../domain/group_start.dart';
 import '../../domain/ride_group_action.dart';
 import '../../domain/ride_route_layers.dart';
 import '../../domain/ride_weather_display.dart';
 import '../../providers/ride_detail_provider.dart';
-import '../../providers/ride_group_selection_provider.dart';
 import '../../providers/ride_registration_controller.dart';
 import 'registration_failure_banner.dart';
 import 'ride_group_card.dart';
-import 'ride_group_route_actions.dart';
 import 'ride_registration_control.dart';
 
 /// Combien de groupes sont montrés avant le repli.
@@ -93,8 +90,7 @@ class RideGroupsSection extends ConsumerStatefulWidget {
   ConsumerState<RideGroupsSection> createState() => _RideGroupsSectionState();
 }
 
-class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
-    with GpsExportRunner<RideGroupsSection> {
+class _RideGroupsSectionState extends ConsumerState<RideGroupsSection> {
   bool _expanded = false;
 
   @override
@@ -119,13 +115,6 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
       authProvider.select((AuthState s) => s.user?.id),
     );
     final UnitSystem units = ref.watch(unitSystemProvider);
-    // Les parcours des groupes sont déjà chargés en lot pour la carte : leurs
-    // assets GPX/FIT viennent de là, sans appel de plus.
-    final Map<String, RouteDetailDto> routes = ref.watch(
-      rideRouteGeometriesProvider(widget.rideKey)
-          .select((RideRouteGeometriesState s) => s.geometries),
-    );
-    final List<GpsServiceConnectionDto> services = watchGpsServices();
     final RideWeatherDto? weather = widget.weather;
     final bool showDeparture = someGroupLeavesAtOwnTime(
       ride.groups.map((RideGroupDto g) => g.startAt),
@@ -160,7 +149,6 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
             ),
             const SizedBox(height: PdlSpacing.feedGap),
           ],
-          ...gpsExportBanners(),
           for (final (int i, RideGroupDto group) in shown.indexed) ...<Widget>[
             if (registered != null && i == 1) ...<Widget>[
               const SizedBox(height: PdlSpacing.feedGap),
@@ -170,8 +158,6 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
             _groupCard(
               group: group,
               ride: ride,
-              route: routes[group.routeSlug ?? ride.routeSlug],
-              services: services,
               registration: registration,
               controller: controller,
               currentUserId: currentUserId,
@@ -210,8 +196,6 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
   Widget _groupCard({
     required RideGroupDto group,
     required RideDto ride,
-    required RouteDetailDto? route,
-    required List<GpsServiceConnectionDto> services,
     required RideRegistrationState registration,
     required RideRegistrationController controller,
     required String? currentUserId,
@@ -221,9 +205,10 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
   }) {
     final String? routeSlug = group.routeSlug ?? ride.routeSlug;
     // Jusqu'à la fin de la sortie — son arrivée estimée, pas son départ —,
-    // « GPS » et « Quitter le groupe » restent sur la carte de son groupe
-    // (règles R6 et R7, KIT §9) ; une fois la sortie terminée, ni l'un ni
-    // l'autre. Le badge « J'y vais » reste.
+    // « Quitter le groupe » reste sur la carte de son groupe (règle R6,
+    // KIT §9) ; une fois la sortie terminée, plus rien. Le badge « J'y vais »
+    // reste. « GPS » est dans l'en-tête de la sortie (docs/LEDGER_*.md
+    // MOB-184).
     final RideGroupAction action = rideGroupCardAction(
       ride: ride,
       group: group,
@@ -231,19 +216,6 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
       now: widget.now,
     );
     final RegistrationFailure? failure = registration.failure;
-    // « GPS » sur la carte de son groupe seulement (KIT §8) : les autres
-    // parcours se prennent sur la page de leur groupe.
-    final GpsExportTarget? gps =
-        rideGroupCardOffersGps(ride, group, now: widget.now)
-        ? gpsTargetOfGroup(
-            subtitle: gpsSubtitleOfGroup(group, units),
-            teamSlug: ride.team.slug,
-            routeSlug: routeSlug,
-            route: route,
-            syncStatuses: group.gpsSyncStatuses,
-          )
-        : null;
-
     return RideGroupCard(
       key: keys.ride.group(group.id),
       group: group,
@@ -270,10 +242,6 @@ class _RideGroupsSectionState extends ConsumerState<RideGroupsSection>
       onShowParticipants: widget.onShowParticipants == null
           ? null
           : () => widget.onShowParticipants!(group),
-      onOpenGps: gps != null && gps.offered(services)
-          ? (BuildContext button) => openGpsSheet(gps, button, tag: group.id)
-          : null,
-      gpsLoading: gpsExportingFor(group.id),
       failure: failure != null && failure.groupId == group.id
           ? registrationFailureNotice(
               failure,

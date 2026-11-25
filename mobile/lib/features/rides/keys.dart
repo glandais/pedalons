@@ -201,10 +201,9 @@ class RideDetailKeys {
   ValueKey<String> groupLeaveButton(String groupId) =>
       _RideDetailKey('groupLeave_$groupId');
 
-  /// Le bouton « GPS » de la carte d'un groupe — la sienne seulement —, qui
-  /// ouvre la feuille GPS.
-  ValueKey<String> groupGps(String groupId) =>
-      _RideDetailKey('groupGps_$groupId');
+  /// Le bouton « GPS » de l'en-tête, pour le groupe où l'on roule
+  /// (docs/LEDGER_*.md MOB-184) — plus sur la carte d'un groupe.
+  final gps = const _RideDetailKey('gps');
 
   /// Le « Complet » désactivé d'un groupe plein.
   ValueKey<String> groupFullButton(String groupId) =>

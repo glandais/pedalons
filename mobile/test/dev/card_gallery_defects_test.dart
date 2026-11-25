@@ -317,18 +317,11 @@ void main() {
     }
   });
 
-  testWidgets('N20 — « GPS » sur la carte de mon groupe et sur « Ma prochaine '
-      'sortie »', (WidgetTester tester) async {
+  testWidgets('N20 — « GPS » sur « Ma prochaine sortie », plus sur la carte '
+      'de mon groupe (MOB-184)', (WidgetTester tester) async {
     await pumpSection(tester, 'groupes');
-    expect(
-      inCase('groupes-inscrite-b', find.byKey(keys.ride.groupGps('g-b'))),
-      findsOne,
-    );
-    // Jamais sur la carte d'un autre groupe.
-    expect(
-      inCase('groupes-inscrite-b', find.byKey(keys.ride.groupGps('g-a'))),
-      findsNothing,
-    );
+    // Dans l'en-tête de la sortie, plus sur aucune carte de groupe.
+    expect(inCase('groupes-inscrite-b', find.text('GPS')), findsNothing);
     await pumpSection(tester, 'accueil');
     expect(
       inCase('prochaine-sortie', find.byKey(keys.home.nextRideGps)),

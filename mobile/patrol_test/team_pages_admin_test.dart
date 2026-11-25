@@ -5,7 +5,7 @@ import 'common.dart';
 ///
 /// In the app (ledger `MOB-169`): a team administrator reaches « Pages » from the hub, finds the
 /// team's pages in its order, moves one up with the row's button (the site drags), adds a third
-/// — a title is required; « Ajouter une page » is gone at three —, renames one (the update
+/// — a title is required; « Créer une page » is gone at three —, renames one (the update
 /// rewrites the whole page: its text must survive), deletes one after the confirmation — a
 /// member no longer reads it — and restores it. A plain member reads a refusal from the list's
 /// link and from the editor's.

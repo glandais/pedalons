@@ -38,8 +38,8 @@
     },
     "verifyEmail": {
       "title": "Vérification de l'adresse e-mail",
-      "verifying": "Vérification en cours...",
-      "success": "Compte activé !",
+      "verifying": "Vérification en cours…",
+      "success": "Compte activé",
       "accountCreated": "Votre compte a été créé avec succès.",
       "tokenMissing": "Token de vérification manquant",
       "backToLogin": "Retour à la connexion",
@@ -289,7 +289,7 @@
       "places": "Lieux",
       "tags": "Tags",
       "pages": "Pages",
-      "members": "Gestion des membres",
+      "members": "Membres",
       "reports": "Signalements",
       "settings": "Paramètres"
     },
@@ -445,7 +445,7 @@
       "searchPlaceholderAdmin": "Rechercher par nom ou e-mail…"
     },
     "adminMembers": {
-      "title": "Gestion des membres",
+      "title": "Membres",
       "forbiddenTitle": "Réservé au rôle Administrateur",
       "forbiddenMessage": "Seul le rôle Administrateur de l'équipe peut gérer ses membres.",
       "full": "L'équipe a atteint {limit} membres, la limite de l'offre gratuite.",
@@ -493,7 +493,7 @@
       },
       "emptyTitle": "Aucune page",
       "emptyMessage": "Créez des pages personnalisées pour la FAQ, les règles ou toute information sur l'équipe.",
-      "add": "Ajouter une page",
+      "add": "Créer une page",
       "moveUpSemantic": "Monter {name}",
       "moveDownSemantic": "Descendre {name}",
       "editSemantic": "Modifier {name}",
@@ -931,7 +931,7 @@
       }
     },
     "editor": {
-      "createTitle": "Nouvelle sortie",
+      "createTitle": "Créer une sortie",
       "editTitle": "Modifier la sortie",
       "save": "Enregistrer",
       "create": "Créer la sortie",
@@ -1045,7 +1045,7 @@
     },
     "templates": {
       "listTitle": "Modèles de sortie",
-      "createTitle": "Nouveau modèle",
+      "createTitle": "Créer un modèle",
       "editTitle": "Modifier le modèle",
       "manage": "Gérer les modèles",
       "search": "Rechercher un modèle…",
@@ -1122,7 +1122,7 @@
     "onBehalfOfTeam": "Au nom de l'équipe",
     "commentsPrivateTeam": "Les commentaires sont réservés aux membres de cette équipe privée.",
     "editor": {
-      "createTitle": "Nouvelle publication",
+      "createTitle": "Créer une publication",
       "editTitle": "Modifier la publication",
       "create": "Créer la publication",
       "created": "Publication créée",
@@ -1259,7 +1259,7 @@
     },
     "sector": "Secteur {place}",
     "editor": {
-      "createTitle": "Nouvelle annonce",
+      "createTitle": "Créer une annonce",
       "editTitle": "Modifier l'annonce",
       "create": "Publier l'annonce",
       "created": "Annonce créée",
@@ -1361,7 +1361,7 @@
     },
     "privateTeamBanner": "Ce voyage appartient à une équipe privée : seules ses personnes membres peuvent s'y inscrire et voir qui y participe.",
     "editor": {
-      "createTitle": "Nouveau voyage",
+      "createTitle": "Créer un voyage",
       "editTitle": "Modifier le voyage",
       "create": "Créer le voyage",
       "created": "Voyage créé",
@@ -1570,7 +1570,7 @@
       "locating": "Localisation…"
     },
     "editor": {
-      "createTitle": "Nouveau parcours",
+      "createTitle": "Créer un parcours",
       "editTitle": "Modifier le parcours",
       "create": "Créer le parcours",
       "save": "Enregistrer",
@@ -1729,7 +1729,7 @@
       "pageTitle": "Carte"
     },
     "listFiles": {
-      "title": "Lister mes fichiers",
+      "title": "Mes fichiers GPX",
       "description": "Retrouvez les fichiers GPX que vous avez déposés et qui sont encore disponibles.",
       "submit": "Voir mes fichiers",
       "empty": "Vous n'avez aucun fichier disponible pour le moment.",
@@ -1820,7 +1820,7 @@
     "clear": "Effacer",
     "admin": {
       "title": "Tags",
-      "add": "Nouveau tag",
+      "add": "Créer un tag",
       "description": "Chaque type de contenu a ses propres tags. Qui peut modifier un contenu choisit ses tags parmi ceux-ci ; seul le rôle Administrateur de l'équipe les crée, renomme ou supprime.",
       "forbiddenTitle": "Réservé au rôle Administrateur",
       "forbiddenMessage": "Seul le rôle Administrateur de l'équipe peut gérer ses tags.",
@@ -1869,7 +1869,7 @@
         "other": "Tag supprimé et retiré de {} contenus"
       },
       "form": {
-        "createTitle": "Nouveau tag",
+        "createTitle": "Créer un tag",
         "editTitle": "Modifier le tag",
         "label": "Libellé",
         "labelPlaceholder": "Ex. : Gravel, Sortie longue…",
@@ -2446,7 +2446,7 @@
   },
   "places": {
     "title": "Lieux",
-    "add": "Ajouter un lieu",
+    "add": "Créer un lieu",
     "searchPlaceholder": "Rechercher un lieu…",
     "emptyTitle": "Aucun lieu défini",
     "emptyMessage": "Ajoutez des lieux pour les départs/arrivées de sorties.",

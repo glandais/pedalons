@@ -23,6 +23,7 @@ import '../../domain/ride_weather_display.dart';
 import '../../domain/ride_weather_map.dart';
 import '../../domain/solo_group.dart';
 import '../../providers/ride_detail_provider.dart';
+import '../../../routes/presentation/widgets/detail_gps_line.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import '../../providers/ride_registration_controller.dart';
 import '../../providers/ride_scroll_target_provider.dart';
@@ -30,6 +31,7 @@ import '../../providers/ride_weather_provider.dart';
 import '../widgets/registration_failure_banner.dart';
 import '../widgets/ride_departure_block.dart';
 import '../widgets/ride_group_participants_section.dart';
+import '../widgets/ride_group_route_actions.dart';
 import '../widgets/ride_group_stats.dart';
 import '../widgets/ride_registration_control.dart';
 import '../widgets/ride_route_section.dart';
@@ -55,6 +57,9 @@ const String kRideGroupWeatherTab = 'weather';
 /// 1. l'app bar « Groupe A » sur le nom de la sortie, et le partage ;
 /// 2. les pastilles des groupes, épinglées (« A · 8/12 », une coche sur celle
 ///    de mon groupe) ;
+/// 2 bis. « GPS » en tête du corps, dès que le groupe a un parcours
+///    (docs/LEDGER_*.md MOB-184, comme `WEB-203` au site) — plus sous le
+///    profil de « Parcours » ;
 /// 3. le bloc de départ : la boîte du jour, « Départ 09:00 » à l'heure **du
 ///    groupe**, « Arrivée estimée 12:18 », le contrôle d'inscription à droite
 ///    ([RideRegistrationControl]), les lieux en liens d'itinéraire ;
@@ -399,6 +404,10 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
             ),
           ),
         SliverPadding(
+          padding: block(top: 0),
+          sliver: SliverToBoxAdapter(child: _gpsLine(ride, group)),
+        ),
+        SliverPadding(
           padding: block(),
           sliver: SliverToBoxAdapter(
             child: RideDepartureBlock(
@@ -488,6 +497,35 @@ class _RideGroupPageState extends ConsumerState<RideGroupPage> {
   /// (KIT §8) ; une tuile sans donnée disparaît.
   List<DetailStatTile> _tiles(RideGroupDto group) =>
       rideGroupStatTiles(group, ref.watch(unitSystemProvider));
+
+  /// « GPS » en tête du corps (docs/LEDGER_*.md MOB-184) : le parcours du
+  /// groupe, à défaut celui de la sortie, inscription ou pas — la règle du
+  /// site (`WEB-203`). Les fichiers viennent du lot de la carte.
+  Widget _gpsLine(RideDto ride, RideGroupDto group) {
+    final String? routeSlug = group.routeSlug ?? ride.routeSlug;
+    if (routeSlug == null) return const SizedBox.shrink();
+    final RouteDetailDto? route = ref
+        .watch(
+          rideRouteGeometryProvider(
+            RouteRef(
+              teamSlug: ride.team.slug,
+              rideSlug: _rideKey.rideSlug,
+              routeSlug: routeSlug,
+            ),
+          ),
+        )
+        .value;
+    return DetailGpsLine(
+      buttonKey: keys.rideGroup.gps,
+      target: gpsTargetOfGroup(
+        subtitle: gpsSubtitleOfGroup(group, ref.watch(unitSystemProvider)),
+        teamSlug: ride.team.slug,
+        routeSlug: routeSlug,
+        route: route,
+        syncStatuses: group.gpsSyncStatuses,
+      ),
+    );
+  }
 
   /// La section Météo, dépliée : c'est le dernier bloc de la page. Le départ
   /// est celui du leg quand il le porte (le point de rendez-vous à l'heure du

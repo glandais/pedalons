@@ -185,7 +185,7 @@ void main() {
     final _StubTemplates templates = _StubTemplates(fixtureTemplate());
     await open(tester, templates: templates);
 
-    expect(find.text('Nouveau modèle'), findsWidgets);
+    expect(find.text('Créer un modèle'), findsWidgets);
     await tester.enterText(
       find.byKey(keys.rideTemplateEditor.nameField),
       'Sortie du dimanche',

@@ -38,6 +38,8 @@ import '../../../routes/domain/route_color_mode.dart';
 import '../../../routes/domain/track_surfaces.dart';
 import '../../../routes/presentation/widgets/route_climbs_section.dart';
 import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
+import '../../../routes/presentation/gps_export_runner.dart';
+import '../../../routes/presentation/widgets/detail_gps_line.dart';
 import '../../../routes/presentation/widgets/route_cursor_controller.dart';
 import '../../../routes/presentation/widgets/route_map.dart';
 import '../../../routes/presentation/widgets/route_section.dart';
@@ -358,10 +360,32 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
         SliverPadding(
           padding: block(),
           sliver: SliverToBoxAdapter(
-            child: Text(
-              stage.name,
-              key: keys.trip.stageTitle,
-              style: context.pdlText.screenTitle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  stage.name,
+                  key: keys.trip.stageTitle,
+                  style: context.pdlText.screenTitle,
+                ),
+                // « GPS » dans l'en-tête dès que l'étape a un parcours
+                // (docs/LEDGER_*.md MOB-184, comme `WEB-203` au site) : on
+                // rejoint le voyage, pas l'étape. Plus sous le profil.
+                DetailGpsLine(
+                  buttonKey: keys.routeDetail.gps,
+                  target: route == null
+                      ? null
+                      : GpsExportTarget(
+                          subtitle: route.name,
+                          teamSlug: route.team.slug,
+                          routeSlug: route.slug,
+                          gpx: route.media.assets.gpx,
+                          fit: route.media.assets.fit,
+                          syncStatuses: route.gpsSyncStatuses,
+                        ),
+                ),
+              ],
             ),
           ),
         ),
@@ -413,6 +437,7 @@ class _StageDetailContentState extends ConsumerState<_StageDetailContent> {
                         windLeg: windLeg,
                         colorBySwitchKey: keys.trip.stageMapColorBy,
                         showDetailsAction: true,
+                        showGpsAction: false,
                         mapKey: _mapAnchor,
                       ),
                       if (route != null) ..._routeLists(route),

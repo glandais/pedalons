@@ -13,7 +13,7 @@ class TeamPlacesKeys {
   final forbidden = const _TeamPlacesKey('forbidden');
   final forbiddenBack = const _TeamPlacesKey('forbiddenBack');
 
-  /// « Ajouter un lieu », dans la barre épinglée.
+  /// « Créer un lieu », dans la barre épinglée.
   final addButton = const _TeamPlacesKey('addButton');
 
   /// Ce que le serveur a refusé à une suppression.

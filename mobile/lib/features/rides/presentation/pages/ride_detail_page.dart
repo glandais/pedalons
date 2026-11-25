@@ -28,6 +28,7 @@ import '../../../comments/presentation/widgets/comment_thread.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../participants/presentation/widgets/participants_sheet.dart';
+import '../../../routes/presentation/widgets/detail_gps_line.dart';
 import '../../../routes/domain/track_surfaces.dart';
 import '../../../tags/presentation/content_tags.dart';
 import '../../../teams/domain/publication_timing.dart';
@@ -43,6 +44,7 @@ import '../../providers/ride_weather_provider.dart';
 import '../widgets/registration_failure_banner.dart';
 import '../widgets/ride_departure_block.dart';
 import '../widgets/ride_group_participants_section.dart';
+import '../widgets/ride_group_route_actions.dart';
 import '../widgets/ride_group_stats.dart';
 import '../widgets/ride_groups_section.dart';
 import '../widgets/ride_manage_menu.dart';
@@ -838,7 +840,47 @@ class _RideDetailContentState extends ConsumerState<_RideDetailContent> {
             const SizedBox(height: PdlSpacing.chipGap),
             ContentTagRow(tags: ride.tags),
           ],
+          _gpsLine(single: single),
         ],
+      ),
+    );
+  }
+
+  /// « GPS » dans l'en-tête, pour le groupe où l'on roule (docs/LEDGER_*.md
+  /// MOB-184, comme `WEB-203` au site) : inscrit, sortie ni annulée ni
+  /// terminée ([rideGroupCardOffersGps]) ; son parcours, à défaut celui de la
+  /// sortie. Rien pour qui n'est inscrit dans aucun groupe — on ne saurait
+  /// quel parcours envoyer —, donc rien sur une sortie sans groupe. Sur une
+  /// sortie à plusieurs groupes, le groupe en sous-titre.
+  Widget _gpsLine({required bool single}) {
+    final RideGroupDto? mine = ride.groups
+        .where(
+          (RideGroupDto g) => rideGroupCardOffersGps(ride, g, now: widget.now),
+        )
+        .firstOrNull;
+    final String? routeSlug = mine == null
+        ? null
+        : mine.routeSlug ?? ride.routeSlug;
+    if (mine == null || routeSlug == null) return const SizedBox.shrink();
+    // Les parcours sont déjà chargés en lot pour la carte : leurs fichiers
+    // GPX/FIT viennent de là, sans appel de plus.
+    final RouteDetailDto? route = ref.watch(
+      rideRouteGeometriesProvider(rideKey)
+          .select((RideRouteGeometriesState s) => s.geometries[routeSlug]),
+    );
+    final String subtitle = gpsSubtitleOfGroup(
+      mine,
+      ref.watch(unitSystemProvider),
+    );
+    return DetailGpsLine(
+      buttonKey: keys.ride.gps,
+      subtitle: single ? null : subtitle,
+      target: gpsTargetOfGroup(
+        subtitle: single ? ride.name : subtitle,
+        teamSlug: ride.team.slug,
+        routeSlug: routeSlug,
+        route: route,
+        syncStatuses: mine.gpsSyncStatuses,
       ),
     );
   }

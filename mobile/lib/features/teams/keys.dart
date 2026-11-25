@@ -288,7 +288,7 @@ class TeamPagesAdminKeys {
   /// « n pages sur 3 maximum ».
   final count = const _TeamPagesKey('count');
 
-  /// « Ajouter une page », en tête de liste (absent à trois pages) et dans
+  /// « Créer une page », en tête de liste (absent à trois pages) et dans
   /// l'état vide.
   final addButton = const _TeamPagesKey('addButton');
   final emptyAddButton = const _TeamPagesKey('emptyAddButton');
@@ -444,7 +444,7 @@ class _TeamAdminMembersKey extends ValueKey<String> {
   const _TeamAdminMembersKey(String value) : super('teamAdminMembers_$value');
 }
 
-/// « Gestion des membres » : la liste, les invitations en attente et la
+/// « Membres » : la liste, les invitations en attente et la
 /// feuille d'invitation (ledger `MOB-167`).
 class TeamAdminMembersKeys {
   final loadError = const _TeamAdminMembersKey('loadError');

@@ -849,7 +849,10 @@ Une personne non membre voit le compte, jamais les noms.
 page**, en tête des actions, pour le groupe de la personne qui lit (rien pour qui n'est inscrit
 dans aucun groupe) ; sur les pages d'un groupe et d'une étape, dans la barre d'actions, avant
 « Modifier » ; plus sur la carte d'un groupe (ledger `WEB-203`). **Dans l'application**, il est en
-contour, sur la carte de son groupe. Sur les deux supports, il reste sur « Ma prochaine sortie » et
+contour, sur une ligne sous les badges de l'en-tête (en tête du corps sur la page d'un groupe, qui
+n'a pas de bloc d'identité), avec les mêmes règles : sur une sortie, pour le groupe de la personne
+qui lit, le groupe en sous-titre quand la sortie en a plusieurs ; sur un groupe et une étape, dès
+qu'il y a un parcours ; plus sur la carte d'un groupe ni sous le profil (ledger `MOB-184`). Sur les deux supports, il reste sur « Ma prochaine sortie » et
 sur les étapes d'un voyage auquel la personne qui lit participe ; nulle part ailleurs sur une carte.
 **Il reste visible jusqu'à la fin de la sortie.**
 

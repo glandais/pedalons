@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'module.dart';
 
-/// « Gestion des membres » (ledger `MOB-167`): the members of a team with their role, the
+/// « Membres » (ledger `MOB-167`): the members of a team with their role, the
 /// pending invitations, and what an administrator does there — invite by e-mail, change a role,
 /// remove someone.
 final class TeamMembersAdmin extends Module {

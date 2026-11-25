@@ -38,8 +38,8 @@
     },
     "verifyEmail": {
       "title": "Email verification",
-      "verifying": "Verifying...",
-      "success": "Account activated!",
+      "verifying": "Verifying…",
+      "success": "Account activated",
       "accountCreated": "Your account has been created successfully.",
       "tokenMissing": "Verification token missing",
       "backToLogin": "Back to login",
@@ -289,7 +289,7 @@
       "places": "Places",
       "tags": "Tags",
       "pages": "Pages",
-      "members": "Member management",
+      "members": "Members",
       "reports": "Reports",
       "settings": "Settings"
     },
@@ -445,7 +445,7 @@
       "searchPlaceholderAdmin": "Search by name or e-mail…"
     },
     "adminMembers": {
-      "title": "Manage members",
+      "title": "Members",
       "forbiddenTitle": "Admins only",
       "forbiddenMessage": "Only the team's Admin role can manage its members.",
       "full": "The team has reached {limit} members, the limit of the free plan.",
@@ -493,7 +493,7 @@
       },
       "emptyTitle": "No pages yet",
       "emptyMessage": "Create custom pages for FAQ, rules, or any team information.",
-      "add": "Add a page",
+      "add": "Create a page",
       "moveUpSemantic": "Move {name} up",
       "moveDownSemantic": "Move {name} down",
       "editSemantic": "Edit {name}",
@@ -931,7 +931,7 @@
       }
     },
     "editor": {
-      "createTitle": "New ride",
+      "createTitle": "Create a ride",
       "editTitle": "Edit ride",
       "save": "Save",
       "create": "Create ride",
@@ -1045,7 +1045,7 @@
     },
     "templates": {
       "listTitle": "Ride templates",
-      "createTitle": "New template",
+      "createTitle": "Create a template",
       "editTitle": "Edit template",
       "manage": "Manage templates",
       "search": "Search templates…",
@@ -1122,7 +1122,7 @@
     "onBehalfOfTeam": "On behalf of the team",
     "commentsPrivateTeam": "Comments are reserved for the members of this private team.",
     "editor": {
-      "createTitle": "New post",
+      "createTitle": "Create a post",
       "editTitle": "Edit post",
       "create": "Create post",
       "created": "Post created",
@@ -1259,7 +1259,7 @@
     },
     "sector": "Area {place}",
     "editor": {
-      "createTitle": "New ad",
+      "createTitle": "Create an ad",
       "editTitle": "Edit ad",
       "create": "Post the ad",
       "created": "Ad created",
@@ -1361,7 +1361,7 @@
     },
     "privateTeamBanner": "This trip belongs to a private team: only its members can register and see who takes part.",
     "editor": {
-      "createTitle": "New trip",
+      "createTitle": "Create a trip",
       "editTitle": "Edit trip",
       "create": "Create trip",
       "created": "Trip created",
@@ -1570,7 +1570,7 @@
       "locating": "Locating…"
     },
     "editor": {
-      "createTitle": "New route",
+      "createTitle": "Create a route",
       "editTitle": "Edit route",
       "create": "Create route",
       "save": "Save",
@@ -1729,7 +1729,7 @@
       "pageTitle": "Map"
     },
     "listFiles": {
-      "title": "List my files",
+      "title": "My GPX files",
       "description": "Find the GPX files you uploaded that are still available.",
       "submit": "View my files",
       "empty": "You have no available files yet.",
@@ -1820,7 +1820,7 @@
     "clear": "Clear",
     "admin": {
       "title": "Tags",
-      "add": "New tag",
+      "add": "Create a tag",
       "description": "Each kind of content has its own tags. Whoever can edit a content picks its tags from these; only the team's admins create, rename or delete them.",
       "forbiddenTitle": "Administrators only",
       "forbiddenMessage": "Only the team's administrators can manage its tags.",
@@ -1869,7 +1869,7 @@
         "other": "Tag deleted and removed from {} contents"
       },
       "form": {
-        "createTitle": "New tag",
+        "createTitle": "Create a tag",
         "editTitle": "Edit tag",
         "label": "Label",
         "labelPlaceholder": "E.g. Gravel, Long ride…",
@@ -2446,7 +2446,7 @@
   },
   "places": {
     "title": "Places",
-    "add": "Add a place",
+    "add": "Create a place",
     "searchPlaceholder": "Search places…",
     "emptyTitle": "No places defined yet",
     "emptyMessage": "Add places for ride start/end points.",

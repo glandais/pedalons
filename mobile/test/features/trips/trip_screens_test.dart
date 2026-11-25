@@ -1238,14 +1238,23 @@ void main() {
         greaterThan(tester.getTopLeft(inTiles('Distance')).dy),
       );
 
-      // Parcours : un seul bouton « GPS », et « Détails ».
+      // Un seul bouton « GPS », dans l'en-tête sous le titre (MOB-184) ; la
+      // section Parcours garde « Détails ».
       expect(find.byType(GpsButton), findsOneWidget);
       expect(
         find.descendant(
           of: find.byKey(keys.trip.stageRouteSection),
           matching: find.byKey(keys.routeDetail.gps),
         ),
-        findsOneWidget,
+        findsNothing,
+      );
+      expect(
+        tester.getTopLeft(find.byKey(keys.routeDetail.gps)).dy,
+        greaterThan(tester.getTopLeft(find.byKey(keys.trip.stageTitle)).dy),
+      );
+      expect(
+        tester.getTopLeft(find.byKey(keys.routeDetail.gps)).dy,
+        lessThan(tester.getTopLeft(find.byKey(keys.trip.stageRouteSection)).dy),
       );
       expect(find.byKey(keys.routeDetail.details), findsOneWidget);
       // Points et montées repliés.

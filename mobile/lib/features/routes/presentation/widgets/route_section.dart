@@ -49,7 +49,8 @@ import 'waypoint_sheet.dart';
 ///    d'altitude provisoire » tant qu'elle vaut (ledger `MOB-76`), le profil à
 ///    `PdlMetrics.detailElevation` ;
 /// 5. la barre de revêtement, sa légende et son ⓘ (OpenStreetMap) ;
-/// 6. le bouton « GPS » unique (la feuille GPS, [GpsExportRunner]) et, avec
+/// 6. le bouton « GPS » unique (la feuille GPS, [GpsExportRunner]) — sauf
+///    sur l'étape, qui le porte dans son en-tête ([showGpsAction]) — et, avec
 ///    [showDetailsAction], « Détails », qui pousse la fiche du parcours.
 ///
 /// Les points du parcours et les cols ne sont **pas** ici : la fiche les pose
@@ -76,6 +77,7 @@ class RouteSection extends ConsumerStatefulWidget {
     this.windLeg,
     this.colorBySwitchKey,
     this.showDetailsAction = false,
+    this.showGpsAction = true,
     this.mapKey,
   });
 
@@ -118,6 +120,10 @@ class RouteSection extends ConsumerStatefulWidget {
   /// « Détails » à côté de « GPS », qui pousse la fiche du parcours — rien
   /// sur la fiche elle-même, ni pour un aperçu GPX.
   final bool showDetailsAction;
+
+  /// « GPS » sous le profil ; faux sur l'étape, qui le porte dans son
+  /// en-tête (docs/LEDGER_*.md MOB-184).
+  final bool showGpsAction;
 
   /// Posée sur la carte : l'ancre d'un défilement qui la remonte à l'écran
   /// (un point touché dans la liste de l'écran hôte).
@@ -329,7 +335,10 @@ class _RouteSectionState extends ConsumerState<RouteSection>
   Widget? _actions(ShownRoute route) {
     final GpsExportTarget? target = _gpsTarget();
     final TrackKey key = widget.trackKey;
-    final bool gps = target != null && target.offered(watchGpsServices());
+    final bool gps =
+        widget.showGpsAction &&
+        target != null &&
+        target.offered(watchGpsServices());
     final bool details = widget.showDetailsAction && key is RouteKey;
     if (!gps && !details) return null;
     return Padding(

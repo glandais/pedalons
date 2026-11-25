@@ -273,8 +273,9 @@ inscription, export, image d'en-tête, lieu et groupe, champs propres, actions) 
 - **Inscription** : « J'y vais » en haut de sa carte et lien rouge « Quitter le groupe » au pied ; « Changer pour {groupe} » en
   bouton plein au pied des autres ; « Complet » en bouton désactivé, même si l'on est inscrit ailleurs ; erreur dans la carte
   concernée ; quitter possible jusqu'à la fin de la sortie ; « Se désinscrire » de « Ma prochaine sortie » en lien rouge.
-- **Export** : un seul bouton « GPS », sur la carte de son groupe, sur « Ma prochaine sortie » et sur les étapes d'un voyage où
-  l'on est inscrit ; visible jusqu'à la fin de la sortie.
+- **Export** : un seul bouton « GPS » par écran — dans l'en-tête d'une sortie, pour son groupe (plus sur la carte du groupe
+  depuis `WEB-203` au site et `MOB-184` dans l'app), sur « Ma prochaine sortie » et sur les étapes d'un voyage où l'on est
+  inscrit ; visible jusqu'à la fin de la sortie.
 - **Image d'en-tête** : photo, sinon carte du tracé, sinon dégradé ; pas de vignette du tracé quand le bandeau l'est déjà.
 - **Lieu et groupe** : heure · équipe · groupe sur la première ligne ; le lieu sur sa ligne, nom seul ; sous « Départ 09:30 »,
   « Groupe B · Place de la Mairie ». Carte d'étape : titre, date dessous, puis départ → arrivée.

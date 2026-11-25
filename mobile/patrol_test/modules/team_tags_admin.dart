@@ -8,7 +8,7 @@ import 'module.dart';
 final class TeamTagsAdmin extends Module {
   TeamTagsAdmin(super.$);
 
-  /// The screen is on screen once « Nouveau tag » is: only an administrator gets it.
+  /// The screen is on screen once « Créer un tag » is: only an administrator gets it.
   Future<void> waitUntilShown() async {
     await $(keys.teamTags.addButton).waitUntilVisible();
   }
@@ -90,7 +90,7 @@ final class TeamTagsAdmin extends Module {
 
   // ── Form sheet ──────────────────────────────────────────────────────────
 
-  /// « Nouveau tag » → the empty form, for the kind that is open.
+  /// « Créer un tag » → the empty form, for the kind that is open.
   Future<void> openNewForm() async {
     await scrolledUpTo(keys.teamTags.addButton);
     await $(keys.teamTags.addButton).tap();

@@ -12,7 +12,6 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/publication_stats_line.dart';
 import '../../../../core/widgets/zone_mention_line.dart';
 import '../../../../keys.dart';
-import '../../../routes/presentation/widgets/gps_button.dart';
 import '../../domain/group_title.dart';
 import '../../domain/ride_group_action.dart';
 import 'ride_group_participants_section.dart' show RideGroupLeaveLink;
@@ -36,11 +35,9 @@ import 'ride_group_weather_line.dart';
 /// 6. les visages, « 11/12 personnes », « Voir tout » (dès que la grappe
 ///    affiche « +N »), la barre de places (primaire, rouge si plein) ;
 /// 6 bis. l'échec d'inscription de ce groupe ([failure]) ;
-/// 7. le bouton « GPS » ([onOpenGps]) — l'appelant ne le donne qu'à la carte
-///    de son groupe ;
-/// 8. « Changer pour A », bouton plein en pleine largeur, quand [action] vaut
+/// 7. « Changer pour A », bouton plein en pleine largeur, quand [action] vaut
 ///    [RideGroupAction.switchTo] — au pied, pour que le nom tienne en entier ;
-/// 9. « Quitter le groupe », lien rouge, quand [action] vaut
+/// 8. « Quitter le groupe », lien rouge, quand [action] vaut
 ///    [RideGroupAction.leave] — inscrite ici, jusqu'à la fin de la sortie.
 ///
 /// Elle ne décide de rien : [action] est calculée par
@@ -69,8 +66,6 @@ class RideGroupCard extends StatelessWidget {
     this.onSwitch,
     this.onLeave,
     this.onShowParticipants,
-    this.onOpenGps,
-    this.gpsLoading = false,
     this.failure,
   });
 
@@ -125,13 +120,6 @@ class RideGroupCard extends StatelessWidget {
   final VoidCallback? onLeave;
   final VoidCallback? onShowParticipants;
 
-  /// Ouvre la feuille GPS du parcours du groupe, avec le contexte du bouton
-  /// (ancre du partage sur iPad). `null` : pas de bouton « GPS ».
-  final ValueChanged<BuildContext>? onOpenGps;
-
-  /// Un export lancé depuis cette carte est en cours.
-  final bool gpsLoading;
-
   /// L'échec d'inscription **de ce groupe** (`registrationFailureNotice`),
   /// sous ses places et au-dessus de ses actions — dans la carte concernée,
   /// plus en tête de section (règle R6, KIT §9). `null` : rien.
@@ -180,15 +168,6 @@ class RideGroupCard extends StatelessWidget {
           if (failure != null) ...<Widget>[
             const SizedBox(height: PdlSpacing.cardTight),
             failure!,
-          ],
-          if (onOpenGps != null) ...<Widget>[
-            const SizedBox(height: PdlSpacing.cardTight),
-            GpsButton(
-              key: keys.ride.groupGps(group.id),
-              compact: true,
-              loading: gpsLoading,
-              onPressed: onOpenGps,
-            ),
           ],
           // « Changer pour Groupe 2 » en pleine largeur, au pied : à côté du
           // nom il s'abrégeait dès que le groupe ne s'appelait pas « A ».

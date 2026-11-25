@@ -29,7 +29,7 @@ class TeamTagsAdminKeys {
   final forbidden = const _TeamTagsKey('forbidden');
   final forbiddenBack = const _TeamTagsKey('forbiddenBack');
 
-  /// « Nouveau tag », en tête d'écran et dans l'état vide d'un type.
+  /// « Créer un tag », en tête d'écran et dans l'état vide d'un type.
   final addButton = const _TeamTagsKey('addButton');
   final emptyAddButton = const _TeamTagsKey('emptyAddButton');
 

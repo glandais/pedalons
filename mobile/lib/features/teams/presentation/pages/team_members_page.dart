@@ -52,7 +52,7 @@ class TeamMembersPage extends ConsumerStatefulWidget {
   final bool searchesEmail;
 
   /// Si le lecteur administre l'équipe (ou la plateforme) : la page mène
-  /// alors à « Gestion des membres », où la même liste se gère
+  /// alors à « Membres », où la même liste se gère
   /// (docs/LEDGER_*.md MOB-180). Le serveur tranche le droit de toute façon.
   final bool canManageMembers;
 

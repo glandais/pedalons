@@ -77,12 +77,12 @@ void main() {
       // The exports of a group, in its GPS sheet, follow its route's assets; with no GPS
       // service connected — the e2e stack cannot connect one — there is no « Vers un
       // appareil », and « Connecter un compteur » stands in its place.
-      // « GPS » is on one's own card only: none before joining.
+      // « GPS » is in the header, for one's own group only: none before joining (MOB-184).
       await modules.ride.showGroup(groupB);
-      expect(modules.ride.offersGps(groupB), isFalse);
+      expect(modules.ride.offersGps, isFalse);
       await modules.ride.join(groupB);
-      await modules.ride.waitUntilGpsIsOffered(groupB);
-      await modules.ride.openGpsSheet(groupB);
+      await modules.ride.waitUntilGpsIsOffered();
+      await modules.ride.openGpsSheet();
       final eastDetail = await backend.get(
         reader,
         '/api/teams/$teamSlug/routes/${eastRoute['slug']}',

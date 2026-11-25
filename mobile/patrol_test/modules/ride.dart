@@ -8,8 +8,8 @@ import 'module.dart';
 /// A ride with a single group has no group card and no group page (ledger `MOB-69`): its detail
 /// *is* the group's page, laid out like it (ledger `MOB-134`, lot 7) — the registration control
 /// in the departure block (« Rejoindre », the « J'y vais » badge, « Complet »), « Quitter le
-/// groupe » at the foot of « Personnes inscrites » ([keys.ride.participantsSection]), the GPS
-/// button in « Parcours » ([keys.ride.routeSection]); the controls carry the group page's keys
+/// groupe » at the foot of « Personnes inscrites » ([keys.ride.participantsSection]); the controls
+/// carry the group page's keys
 /// (`keys.rideGroup.*`). The group helpers below take the same `groupId` either way and pick the
 /// keys of the shape the page has, so a test of joining doesn't care how many groups the ride
 /// has. The group page helpers ([openGroup], [selectGroup]) need two groups or more.
@@ -17,8 +17,11 @@ import 'module.dart';
 /// A ride of several groups (ledger `MOB-134`, lot 8) puts the registration on each group card:
 /// « Rejoindre » when registered nowhere, « Changer pour A » on the other open cards when
 /// registered elsewhere — one call, no banner on the way —, « Complet » disabled; on one's own
-/// card the « J'y vais » badge next to the name, the « GPS » button, and « Quitter le groupe » as a
-/// discreet link at the foot of the card (never beside the chevron).
+/// card the « J'y vais » badge next to the name and « Quitter le groupe » as a discreet link at
+/// the foot of the card (never beside the chevron).
+///
+/// Either way « GPS » is in the header, under the badges, for the group one rides in
+/// ([keys.ride.gps], ledger `MOB-184`).
 final class Ride extends Module {
   Ride(super.$);
 
@@ -292,32 +295,23 @@ final class Ride extends Module {
 
   // ── Exports ─────────────────────────────────────────────────────────────
 
-  /// The « GPS » button of [groupId]: on its card — one's own group's only —, or in a
-  /// single-group ride's « Parcours ».
-  Key _gpsKey(String groupId) =>
-      _solo ? keys.rideGroup.gps : keys.ride.groupGps(groupId);
+  /// Whether the header offers « GPS » — only for the group one rides in, the ride neither
+  /// cancelled nor over (ledger `MOB-184`): no card carries one any more.
+  bool get offersGps => _inTree(keys.ride.gps);
 
-  /// Whether the « GPS » button of [groupId] is built — on a ride of several groups, only one's
-  /// own group's card has one.
-  bool offersGps(String groupId) => _inTree(_gpsKey(groupId));
-
-  /// Scrolls to the card of [groupId] (or a single-group ride's « Parcours ») and waits for its
-  /// « GPS » button: it shows once the group's route — loaded with the map's batch — is there
-  /// with a file to export.
-  Future<void> waitUntilGpsIsOffered(String groupId) async {
-    final bool solo = _solo;
-    if (solo) {
-      await scrolledIntoView(keys.ride.routeSection);
-    } else {
-      await scrolledTo(_groupKey(groupId));
-    }
-    await $(_gpsKey(groupId)).waitUntilExists();
+  /// Scrolls back up to the header and waits for its « GPS » button: it shows once one has
+  /// joined a group and that group's route — loaded with the map's batch — is there with a file
+  /// to export.
+  Future<void> waitUntilGpsIsOffered() async {
+    await $(keys.ride.gps).waitUntilExists();
+    await scrolledUpTo(keys.ride.gps);
   }
 
-  /// Taps « GPS » on the card of [groupId] and waits for the GPS sheet — every export of the
-  /// group's route lives there.
-  Future<void> openGpsSheet(String groupId) async {
-    await (await scrolledTo(_gpsKey(groupId))).tap();
+  /// Taps the header's « GPS » and waits for the GPS sheet — every export of one's group's route
+  /// lives there.
+  Future<void> openGpsSheet() async {
+    await scrolledUpTo(keys.ride.gps);
+    await $(keys.ride.gps).tap();
     await $(keys.gpsSheet.sheet).waitUntilVisible();
   }
 

@@ -31,6 +31,7 @@ import 'package:pedalons/features/routes/data/route_repository.dart';
 import 'package:pedalons/features/routes/domain/track_surfaces.dart';
 import 'package:pedalons/features/routes/presentation/widgets/route_color_mode_switch.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
+import 'package:pedalons/features/routes/presentation/widgets/gps_button.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -923,10 +924,12 @@ void main() {
         inKey(keys.ride.groupsSection, find.text('3\u00a0groupes')),
         findsOneWidget,
       );
-      // Ma carte : « J'y vais », « GPS », « Quitter le groupe » ; ni
-      // « Rejoindre » ni « Quitter » à côté du chevron.
+      // Ma carte : « J'y vais » et « Quitter le groupe » ; ni « Rejoindre »
+      // ni « Quitter » à côté du chevron, ni « GPS », monté dans l'en-tête
+      // (docs/LEDGER_*.md MOB-184).
       expect(find.byKey(keys.ride.groupGoingBadge('gB')), findsOneWidget);
-      expect(find.byKey(keys.ride.groupGps('gB')), findsOneWidget);
+      expect(inCard('gB', find.byType(GpsButton)), findsNothing);
+      expect(find.byKey(keys.ride.gps), findsOneWidget);
       expect(find.byKey(keys.ride.groupLeaveButton('gB')), findsOneWidget);
       for (final Key k in <Key>[
         keys.ride.groupJoinButton('gB'),
@@ -937,12 +940,10 @@ void main() {
       }
       // « Voir tout » sur la carte affichée — la mienne, sélectionnée.
       expect(inCard('gB', find.text('Voir tout')), findsOneWidget);
-      // Les autres : « Changer pour Groupe A », « Complet » ; pas de « GPS ».
+      // Les autres : « Changer pour Groupe A », « Complet ».
       expect(find.byKey(keys.ride.groupSwitchButton('gA')), findsOneWidget);
       expect(inCard('gA', find.text('Changer pour Groupe A')), findsOneWidget);
       expect(find.byKey(keys.ride.groupFullButton('gC')), findsOneWidget);
-      expect(find.byKey(keys.ride.groupGps('gA')), findsNothing);
-      expect(find.byKey(keys.ride.groupGps('gC')), findsNothing);
       expect(find.byKey(keys.ride.groupLeaveButton('gA')), findsNothing);
       expect(find.byKey(keys.ride.groupJoinButton('gA')), findsNothing);
       // La ligne de chiffres et la ligne météo de chaque carte ; le capitaine
@@ -1066,9 +1067,11 @@ void main() {
       for (final String id in <String>['gA', 'gB', 'gC']) {
         expect(find.byKey(keys.ride.groupSwitchButton(id)), findsNothing);
         expect(find.byKey(keys.ride.groupLeaveButton(id)), findsNothing);
-        expect(find.byKey(keys.ride.groupGps(id)), findsNothing);
         expect(find.byKey(keys.ride.groupGoingBadge(id)), findsNothing);
       }
+      // Inscrite nulle part : pas de « GPS », on ne saurait quel parcours
+      // envoyer (docs/LEDGER_*.md MOB-184, R7).
+      expect(find.byKey(keys.ride.gps), findsNothing);
       // La météo à l'heure de la sortie.
       expect(find.text('Météo au départ de 09:00'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -1123,10 +1126,10 @@ void main() {
 
       final Finder link = find.byKey(keys.ride.groupLeaveButton('gB'));
       expect(inCard('gB', find.text('Quitter le groupe')), findsOneWidget);
-      // Sous les visages, le compte et « GPS ».
+      // Sous les visages et le compte.
       expect(
         tester.getTopLeft(link).dy,
-        greaterThan(tester.getTopLeft(find.byKey(keys.ride.groupGps('gB'))).dy),
+        greaterThan(tester.getTopLeft(inCard('gB', find.text('Voir tout'))).dy),
       );
       await tester.tap(link);
       for (int i = 0; i < 4; i++) {
@@ -1180,16 +1183,24 @@ void main() {
       expect(find.byKey(keys.ride.groupLeaveButton('gB')), findsOneWidget);
     });
 
-    testWidgets('« GPS » sur ma carte seule ; la feuille nomme mon groupe', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('« GPS » dans l\'en-tête, pour mon groupe, nommé en sous-titre '
+        'et dans la feuille (MOB-184)', (WidgetTester tester) async {
       await openRide(tester, threeGroups());
 
-      expect(find.byKey(keys.ride.groupGps('gB')), findsOneWidget);
-      expect(find.byKey(keys.ride.groupGps('gA')), findsNothing);
-      expect(find.byKey(keys.ride.groupGps('gC')), findsNothing);
+      final Finder gps = find.byKey(keys.ride.gps);
+      expect(gps, findsOneWidget);
+      expect(find.byType(GpsButton), findsOneWidget);
+      // Sous le titre, au-dessus du bloc de départ.
+      expect(
+        tester.getTopLeft(gps).dy,
+        greaterThan(tester.getTopLeft(find.byKey(keys.ride.title)).dy),
+      );
+      expect(
+        tester.getTopLeft(gps).dy,
+        lessThan(tester.getTopLeft(find.byKey(keys.ride.departureBlock)).dy),
+      );
 
-      await tester.tap(find.byKey(keys.ride.groupGps('gB')));
+      await tester.tap(gps);
       for (int i = 0; i < 10; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
@@ -2628,8 +2639,8 @@ void main() {
       }
     }
 
-    testWidgets('la carte de son groupe porte « GPS », qui ouvre la feuille '
-        'nommant le groupe', (WidgetTester tester) async {
+    testWidgets('l\'en-tête porte « GPS » pour son groupe, qui ouvre la '
+        'feuille nommant le groupe (MOB-184)', (WidgetTester tester) async {
       tall(tester);
       final RideDto two = fixtureRide(
         dateTime: '2099-07-29T19:30:00Z',
@@ -2647,11 +2658,9 @@ void main() {
         routes: <RouteDetailDto>[withGpx('court')],
       );
 
-      expect(find.byKey(keys.ride.groupGps('g1')), findsOneWidget);
-      // Ni fichier ni service : pas de bouton.
-      expect(find.byKey(keys.ride.groupGps('g2')), findsNothing);
+      expect(find.byKey(keys.ride.gps), findsOneWidget);
 
-      await openSheet(tester, keys.ride.groupGps('g1'));
+      await openSheet(tester, keys.ride.gps);
       expect(find.byKey(keys.gpsSheet.sheet), findsOneWidget);
       expect(
         tester.widget<Text>(find.byKey(keys.gpsSheet.subtitle)).data,
@@ -2662,13 +2671,32 @@ void main() {
       expect(find.byKey(keys.gpsSheet.connectDevice), findsOneWidget);
     });
 
-    testWidgets('une sortie solo porte « GPS » dans sa section Parcours', (
+    testWidgets('une sortie solo porte « GPS » dans son en-tête, pour qui '
+        'roule dans le groupe seulement (MOB-184)', (
       WidgetTester tester,
     ) async {
       tall(tester);
-      final RideDto solo = fixtureRide(
+      final RideDto notJoined = fixtureRide(
         dateTime: '2099-07-29T19:30:00Z',
         groups: <RideGroupDto>[fixtureGroup(routeSlug: 'court')],
+      );
+      await open(
+        tester,
+        notJoined,
+        repository: _StubRideRepository(notJoined),
+        routes: <RouteDetailDto>[withGpx('court')],
+      );
+      // Inscrite nulle part : rien, ni dans l'en-tête ni sous le profil.
+      expect(find.byType(GpsButton), findsNothing);
+      expect(find.byKey(keys.rideRoute.details), findsOneWidget);
+
+      final RideDto solo = fixtureRide(
+        dateTime: '2099-07-29T19:30:00Z',
+        registered: true,
+        registeredGroupId: 'g1',
+        groups: <RideGroupDto>[
+          fixtureGroup(id: 'g1', routeSlug: 'court', registered: true),
+        ],
       );
       await open(
         tester,
@@ -2677,12 +2705,15 @@ void main() {
         routes: <RouteDetailDto>[withGpx('court')],
       );
 
-      final Finder gps = find.descendant(
-        of: find.byKey(keys.ride.routeSection),
-        matching: find.byKey(keys.rideGroup.gps),
+      expect(find.byKey(keys.ride.gps), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(keys.ride.routeSection),
+          matching: find.byType(GpsButton),
+        ),
+        findsNothing,
       );
-      expect(gps, findsOneWidget);
-      await openSheet(tester, keys.rideGroup.gps);
+      await openSheet(tester, keys.ride.gps);
       expect(find.byKey(keys.gpsSheet.sheet), findsOneWidget);
       expect(find.byKey(keys.gpsSheet.gpxShare), findsOneWidget);
     });

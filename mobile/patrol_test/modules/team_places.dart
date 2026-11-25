@@ -68,7 +68,7 @@ final class TeamPlaces extends Module {
 
   // ── Form sheet ──────────────────────────────────────────────────────────
 
-  /// « Ajouter un lieu » → the empty form.
+  /// « Créer un lieu » → the empty form.
   Future<void> openNewForm() async {
     await scrolledUpTo(keys.teamPlaces.addButton);
     await $(keys.teamPlaces.addButton).tap();

@@ -9,7 +9,7 @@ import 'backend_client.dart';
 /// Mirrors `frontend/e2e/support/routes.ts` (`newRoute`, `gpxOf`, `newTrip`) and `support/rides.ts`
 /// (`newRide` with a group's `routeSlug`): same endpoints, same request shapes.
 extension RoutesSeed on BackendClient {
-  /// A route created from a GPX upload, as the « Nouveau parcours » form does: a multipart of the
+  /// A route created from a GPX upload, as the « Créer un parcours » form does: a multipart of the
   /// `RouteRequest` (`route`, JSON) and the track (`gpxFile`). [visibility] `TEAM` keeps it to the
   /// team's members, `PUBLIC` opens it to anyone (in a public team). [tagIds] are the team's
   /// `ROUTE` tags the route carries.

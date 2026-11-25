@@ -131,7 +131,6 @@ void main() {
                   onSwitch: () {},
                   onLeave: () {},
                   onShowParticipants: () {},
-                  onOpenGps: mine ? (_) {} : null,
                 ),
               ),
             ),
@@ -198,8 +197,8 @@ void main() {
       }
     });
 
-    testWidgets('sur la carte de son groupe, « GPS » et « Quitter le groupe » '
-        'gardent 44 px', (WidgetTester tester) async {
+    testWidgets('sur la carte de son groupe, « Quitter le groupe » garde '
+        '44 px', (WidgetTester tester) async {
       await pumpGroupCard(
         tester,
         scale: 1,
@@ -208,10 +207,7 @@ void main() {
         action: RideGroupAction.leave,
       );
 
-      for (final Key key in <Key>[
-        keys.ride.groupGps('g1'),
-        keys.ride.groupLeaveButton('g1'),
-      ]) {
+      for (final Key key in <Key>[keys.ride.groupLeaveButton('g1')]) {
         expect(
           tester.getSize(find.byKey(key)).height,
           greaterThanOrEqualTo(PdlMetrics.tapTarget),

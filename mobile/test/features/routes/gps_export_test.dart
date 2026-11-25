@@ -23,6 +23,7 @@ import 'package:pedalons/features/rides/presentation/widgets/ride_group_card.dar
 import 'package:pedalons/features/rides/presentation/widgets/ride_group_route_actions.dart';
 import 'package:pedalons/features/routes/presentation/gps_export_runner.dart';
 import 'package:pedalons/features/routes/presentation/gps_sheet.dart';
+import 'package:pedalons/features/routes/presentation/widgets/detail_gps_line.dart';
 import 'package:pedalons/features/routes/presentation/widgets/gps_button.dart';
 import 'package:pedalons/features/routes/providers/route_detail_provider.dart';
 import 'package:pedalons/features/teams/presentation/widgets/dashboard/dashboard_rides.dart';
@@ -715,48 +716,54 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('la carte d’un groupe : « GPS » remplace GPX, FIT et '
-        'l’appareil, et rend le contexte du bouton', (
+    testWidgets('l’en-tête d’un écran : « GPS », le groupe en sous-titre, '
+        'et la feuille qui le nomme ; rien sans cible (MOB-184)', (
       WidgetTester tester,
     ) async {
-      BuildContext? pressed;
+      const GpsExportTarget target = GpsExportTarget(
+        subtitle: 'Groupe B · 82 km',
+        teamSlug: 'n-peloton',
+        routeSlug: 'court',
+        gpx: _gpx,
+        fit: _fit,
+      );
       await pump(
         tester,
-        RideGroupCard(
-          group: fixtureGroup(id: 'g1'),
-          rideDateTime: '2026-10-11T06:00:00Z',
-          timezone: 'Europe/Paris',
-          showDeparture: false,
-          action: RideGroupAction.join,
-          trackColor: multiTrackColor(0),
-          units: UnitSystem.metric,
-          onOpenGps: (BuildContext c) => pressed = c,
+        DetailGpsLine(
+          buttonKey: keys.ride.gps,
+          subtitle: 'Groupe B · 82 km',
+          target: target,
         ),
       );
-      final Finder gps = find.byKey(keys.ride.groupGps('g1'));
-      expect(gps, findsOneWidget);
-      await tester.tap(gps);
-      expect(pressed, isNotNull);
-      // Le contexte du bouton lui-même : l'ancre du partage sur iPad.
-      expect(pressed!.widget, same(tester.widget(gps)));
+      expect(find.byKey(keys.ride.gps), findsOneWidget);
+      expect(find.text('Groupe B · 82 km'), findsOneWidget);
+      await tester.tap(find.byKey(keys.ride.gps));
+      await settle(tester);
+      expect(find.byKey(keys.gpsSheet.sheet), findsOneWidget);
+      expect(
+        tester.widget<Text>(find.byKey(keys.gpsSheet.subtitle)).data,
+        'Groupe B · 82 km',
+      );
+
+      await pump(tester, const DetailGpsLine(target: null));
+      expect(find.byType(GpsButton), findsNothing);
     });
 
-    testWidgets('la carte d’un groupe sans export n’a pas de « GPS »', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('la carte d’un groupe n’a plus de « GPS » : il est dans '
+        'l’en-tête de la sortie (MOB-184)', (WidgetTester tester) async {
       await pump(
         tester,
         RideGroupCard(
-          group: fixtureGroup(id: 'g1'),
+          group: fixtureGroup(id: 'g1', registered: true),
           rideDateTime: '2026-10-11T06:00:00Z',
           timezone: 'Europe/Paris',
           showDeparture: false,
-          action: RideGroupAction.join,
+          action: RideGroupAction.leave,
           trackColor: multiTrackColor(0),
           units: UnitSystem.metric,
         ),
       );
-      expect(find.byKey(keys.ride.groupGps('g1')), findsNothing);
+      expect(find.byType(GpsButton), findsNothing);
     });
 
     testWidgets('« Ma prochaine sortie » : « GPS » avec un service, qui '

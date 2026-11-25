@@ -35,12 +35,12 @@ import '../widgets/dashboard/dashboard_section.dart' show openTeamWebPage;
 import '../widgets/team_invite_sheet.dart';
 import '../widgets/team_role_sheet.dart';
 
-/// L'écran « Gestion des membres », feuille d'invitation ouverte : là où mène
+/// L'écran « Membres », feuille d'invitation ouverte : là où mène
 /// « Inviter » du tableau de bord. Le site lit le même `?invite=1`.
 String teamAdminMembersInviteLocation(String teamSlug) =>
     '${Paths.teamAdminMembers(teamSlug)}?invite=1';
 
-/// « Gestion des membres » — le pendant mobile de `TeamMembersPage` du site
+/// « Membres » — le pendant mobile de `TeamMembersPage` du site
 /// (docs/LEDGER_*.md MOB-167) : la liste des membres avec leur rôle, les
 /// invitations en attente, et les gestes d'une personne qui administre
 /// l'équipe (changer un rôle, retirer quelqu'un, inviter par e-mail).

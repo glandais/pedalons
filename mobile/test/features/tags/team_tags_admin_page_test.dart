@@ -523,7 +523,7 @@ void main() {
       );
     });
 
-    testWidgets('à 100 tags, « Nouveau tag » est inactif', (
+    testWidgets('à 100 tags, « Créer un tag » est inactif', (
       WidgetTester tester,
     ) async {
       final _Tags tags = _Tags(<TagWithUsageDto>[
@@ -585,7 +585,7 @@ void main() {
 
       await tester.tap(find.byKey(k.addButton));
       await settle(tester);
-      expect(find.text('Nouveau tag'), findsWidgets);
+      expect(find.text('Créer un tag'), findsWidgets);
       // Les neuf couleurs du contrat.
       for (final TagColor color in TagColor.$valuesDefined) {
         expect(find.byKey(k.formColor(color.json!)), findsOneWidget);
@@ -770,7 +770,7 @@ void main() {
     }
 
     testWidgets(
-      'un double appui sur « Nouveau tag » n\'ouvre qu\'une feuille',
+      'un double appui sur « Créer un tag » n\'ouvre qu\'une feuille',
       (WidgetTester tester) async {
         await open(tester, teams: _Teams(role: 'ADMIN'));
 

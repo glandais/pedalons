@@ -220,7 +220,7 @@ void main() {
       await open(tester, ads: _StubAds());
 
       expect(find.byKey(keys.adEditor.forbidden), findsNothing);
-      expect(find.text('Nouvelle annonce'), findsOneWidget);
+      expect(find.text('Créer une annonce'), findsOneWidget);
       expect(find.byKey(keys.adEditor.saveButton), findsOneWidget);
     });
 

@@ -33,6 +33,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
+
+import 'package:pedalons/features/routes/presentation/widgets/gps_button.dart';
+
 import '../routes/route_fixtures.dart';
 import 'ride_fixtures.dart';
 
@@ -434,6 +437,56 @@ void main() {
           isNull,
         );
       }
+      await settle(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('« GPS » en tête du corps, inscription ou pas, et plus sous '
+        'le profil (MOB-184)', (WidgetTester tester) async {
+      await open(
+        tester,
+        weather(),
+        ride: fixtureRide(
+          groups: <RideGroupDto>[
+            fixtureGroup(id: 'g1', name: 'A', routeSlug: 'court'),
+            fixtureGroup(id: 'g2', name: 'B', sortOrder: 1),
+          ],
+        ),
+        overrides: mapOverrides(
+          geometry: route().copyWith(
+            media: const MediaDto(
+              markdown: '',
+              assets: AssetsDto(
+                images: <AssetDto>[],
+                attachments: <AssetDto>[],
+                gpx: AssetDto(
+                  id: 'a-gpx',
+                  fileName: 'court.gpx',
+                  contentType: 'application/gpx+xml',
+                  url: '/api/download/public/court.gpx',
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final Finder gps = find.byKey(keys.rideGroup.gps);
+      expect(gps, findsOneWidget);
+      expect(find.byType(GpsButton), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(keys.rideGroup.routeSection),
+          matching: find.byType(GpsButton),
+        ),
+        findsNothing,
+      );
+      expect(
+        tester.getTopLeft(gps).dy,
+        lessThan(
+          tester.getTopLeft(find.byKey(keys.rideGroup.departureBlock)).dy,
+        ),
+      );
       await settle(tester);
       expect(tester.takeException(), isNull);
     });

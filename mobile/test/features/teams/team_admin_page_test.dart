@@ -250,7 +250,7 @@ void main() {
     expect(find.text('Lieux'), findsOneWidget);
     expect(find.text('Tags'), findsOneWidget);
     expect(find.text('Pages'), findsOneWidget);
-    expect(find.text('Gestion des membres'), findsOneWidget);
+    expect(find.text('Membres'), findsOneWidget);
     expect(find.text('Signalements'), findsOneWidget);
     expect(find.text('Paramètres'), findsOneWidget);
   });
@@ -298,7 +298,7 @@ void main() {
     expect(launched, isEmpty);
   });
 
-  testWidgets('« Gestion des membres » ouvre l\'écran de l\'app (MOB-167)', (
+  testWidgets('« Membres » ouvre l\'écran de l\'app (MOB-167)', (
     WidgetTester tester,
   ) async {
     final List<Uri> launched = <Uri>[];

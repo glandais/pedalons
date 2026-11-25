@@ -6,7 +6,7 @@ Index des **164 entrées ouvertes** et des 77 entrées écartées. Chaque entré
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-50 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+51 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
@@ -46,7 +46,7 @@ Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
 ### En-têtes de pages : audit du 25 novembre 2026
 
-- [ ] [`MOB-184`](ledger/MOB/MOB-184.md) « GPS » dans l'en-tête d'une sortie sur l'app, comme sur le site (M)
+- [ ] [`MOB-184`](ledger/MOB/MOB-184.md) « GPS » dans l'en-tête d'une sortie sur l'app, comme sur le site (M) · *recette*
 
 ### Fiches des stores
 
@@ -313,6 +313,7 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 
 ### À constater à la main (`recette`)
 
+- [`MOB-184`](ledger/MOB/MOB-184.md) « GPS » dans l'en-tête d'une sortie sur l'app, comme sur le site
 - [`MOB-181`](ledger/MOB/MOB-181.md) Passer à maplibre 0.4 (moteur natif unique)
 - [`MOB-178`](ledger/MOB/MOB-178.md) Les outils GPX dans l'app : recette sur appareil
 - [`MOB-174`](ledger/MOB/MOB-174.md) `maplibre_ios` appelle `setState` sur une carte déjà démontée

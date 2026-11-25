@@ -379,7 +379,7 @@ void main() {
         findsOneWidget,
       );
       expect(count(tester), '0 page sur 3 maximum');
-      // Un seul « Ajouter une page » : celui de l'état vide.
+      // Un seul « Créer une page » : celui de l'état vide.
       expect(find.byKey(k.addButton), findsNothing);
 
       await tester.tap(find.byKey(k.emptyAddButton));
@@ -410,7 +410,7 @@ void main() {
       expect(find.byKey(k.rowRestore('pg1')), findsNothing);
       expect(find.byKey(k.rowDeleted('pg1')), findsNothing);
 
-      // Sous la limite : « Ajouter une page » ouvre l'éditeur.
+      // Sous la limite : « Créer une page » ouvre l'éditeur.
       await tester.tap(find.byKey(k.addButton));
       await settle(tester);
       expect(find.text('nouvelle page de n-peloton'), findsOneWidget);

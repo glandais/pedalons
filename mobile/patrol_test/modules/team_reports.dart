@@ -42,7 +42,7 @@ final class TeamReports extends Module {
   bool offersRemove(String item) =>
       isShown(keys.teamReports.removeButton(item));
 
-  /// Whether the card of a reported member links to « Gestion des membres » — administrators
+  /// Whether the card of a reported member links to « Membres » — administrators
   /// only.
   bool offersMembersLink(String item) =>
       isShown(keys.teamReports.membersLink(item));

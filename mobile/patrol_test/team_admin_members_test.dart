@@ -4,7 +4,7 @@ import 'common.dart';
 /// Web counterpart: `invitations.e2e.ts` (an administrator invites by e-mail, the pending list,
 /// revoking) and `flow-team.e2e.ts` › members (`TeamMembersPage`: role change, removal).
 ///
-/// In the app (ledger `MOB-167`): a team's administrator reaches « Gestion des membres » from the
+/// In the app (ledger `MOB-167`): a team's administrator reaches « Membres » from the
 /// hub, invites an address — the e-mail really leaves, read in mailpit —, sees it in the pending
 /// invitations and cancels it, promotes a member to organizer and removes another. Their own row
 /// has no menu. A plain member reads a refusal from the same link.
@@ -32,7 +32,7 @@ void main() {
       await openLink($, Paths.team(slug));
       await modules.teams.waitUntilTeamIsShown();
 
-      // The hub's « Gestion des membres » row opens the app's screen.
+      // The hub's « Membres » row opens the app's screen.
       await modules.teamAdmin.openFromHeader();
       await modules.teamAdmin.openMembers();
       await modules.teamMembersAdmin.waitUntilShown();

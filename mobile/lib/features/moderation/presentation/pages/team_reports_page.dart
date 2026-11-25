@@ -162,7 +162,7 @@ class _Reports extends ConsumerStatefulWidget {
   final String teamSlug;
   final PdlAppBar appBar;
 
-  /// La personne administre l'équipe : l'écran « Gestion des membres », où un
+  /// La personne administre l'équipe : l'écran « Membres », où un
   /// membre signalé se retire, lui est ouvert.
   final bool canOpenMembers;
 

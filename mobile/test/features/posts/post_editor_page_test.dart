@@ -218,7 +218,7 @@ void main() {
       final _StubPosts posts = _StubPosts();
       await open(tester, posts: posts);
 
-      expect(find.text('Nouvelle publication'), findsOneWidget);
+      expect(find.text('Créer une publication'), findsOneWidget);
       expect(find.byKey(keys.postEditor.slugRow), findsNothing);
       // Brouillon : la publication programmée, pas la date.
       expect(find.byKey(keys.postEditor.publishAtRow), findsOneWidget);

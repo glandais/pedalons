@@ -29,7 +29,7 @@ import 'package:pedalons/keys.dart';
 import '../../support/localization.dart';
 import 'team_fixtures.dart';
 
-/// « Gestion des membres » (ledger `MOB-167`) : qui y entre — et qu'aucune
+/// « Membres » (ledger `MOB-167`) : qui y entre — et qu'aucune
 /// requête de membres ni d'invitations ne part pour les autres —, l'en-tête
 /// d'une équipe plafonnée, la recherche et le filtre de rôle, ce que propose
 /// la feuille d'une ligne, les identifiants exacts envoyés, l'invitation et

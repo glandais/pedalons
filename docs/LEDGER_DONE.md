@@ -2,12 +2,13 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **621 entrées livrées**, et des 20 entrées encore ouvertes dont une part l'est.
+Index des **621 entrées livrées**, et des 21 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
 ## MOB — Application mobile
 
+- [x] [`MOB-184`](ledger/MOB/MOB-184.md) « GPS » dans l'en-tête d'une sortie sur l'app, comme sur le site — en partie, le reste est ouvert
 - [x] [`MOB-183`](ledger/MOB/MOB-183.md) Carte fermée pendant qu'un contenu s'y pose — 2026-11-24
 - [x] [`MOB-182`](ledger/MOB/MOB-182.md) Liens universels pour les écrans de l'app qui n'en avaient pas — 2026-11-23
 - [x] [`MOB-181`](ledger/MOB/MOB-181.md) Passer à maplibre 0.4 (moteur natif unique) — en partie, le reste est ouvert

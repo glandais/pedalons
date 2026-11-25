@@ -6,15 +6,12 @@ import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
-import '../../../../core/preferences/user_preferences_provider.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/widgets/detail_section.dart';
 import '../../../../keys.dart';
 import '../../../routes/domain/route_color_mode.dart';
 import '../../../routes/domain/track_surfaces.dart';
-import '../../../routes/presentation/gps_export_runner.dart';
-import '../../../routes/presentation/widgets/gps_button.dart';
 import '../../../routes/presentation/widgets/route_color_mode_switch.dart';
 import '../../../routes/presentation/widgets/route_waypoints_section.dart';
 import '../../../routes/presentation/widgets/waypoint_selection.dart';
@@ -23,7 +20,6 @@ import '../../domain/solo_group.dart';
 import '../../providers/ride_detail_provider.dart';
 import '../../providers/ride_group_selection_provider.dart';
 import 'ride_elevation_section.dart';
-import 'ride_group_route_actions.dart';
 import 'ride_groups_map.dart';
 import 'weather_map_layer.dart';
 
@@ -40,8 +36,8 @@ import 'weather_map_layer.dart';
 /// 4. « Profil » et son ⓘ (la source des altitudes), le profil à
 ///    `PdlMetrics.detailElevation`, la barre de revêtement, sa légende et son
 ///    ⓘ (OpenStreetMap) — [RideElevationSection] en `detailLayout` ;
-/// 5. le bouton « GPS » (la feuille GPS, [GpsExportRunner]) et « Détails »,
-///    qui pousse la fiche du parcours ;
+/// 5. « Détails », qui pousse la fiche du parcours — « GPS » est dans
+///    l'en-tête de l'écran (docs/LEDGER_*.md MOB-184) ;
 /// 6. « Points du parcours » dans un [PdlDisclosure] **replié** — seulement
 ///    quand la carte ne montre qu'un parcours (KIT §8).
 ///
@@ -60,9 +56,7 @@ import 'weather_map_layer.dart';
 ///   Revêtement — et « Météo » quand la personne est inscrite dans un groupe
 ///   qui a une prévision : le vent sur le parcours de **son** groupe
 ///   ([weatherLeg], le leg de ce groupe-là) —, « Profil du groupe
-///   sélectionné » ([profileTitle]) ; ni
-///   « GPS » ni « Détails » (le « GPS » est sur la carte de son groupe), ni
-///   légende — le groupe affiché se choisit par sa carte de groupe (KIT §8).
+///   sélectionné » ([profileTitle]) ; ni « Détails » ni légende — le groupe affiché se choisit par sa carte de groupe (KIT §8).
 ///
 /// Rien n'est rendu sans parcours à montrer ([shows]). Aucune requête de
 /// plus : la géométrie vient du lot de la carte, la météo de l'appelant.
@@ -124,7 +118,8 @@ class RideRouteSection extends ConsumerStatefulWidget {
   /// (le réticule d'un point de la frise météo, ledger `MOB-134`).
   final Key? mapKey;
 
-  /// « GPS » et « Détails » sous le profil.
+  /// « Détails » sous le profil. « GPS » est dans l'en-tête de l'écran
+  /// (docs/LEDGER_*.md MOB-184).
   final bool actions;
 
   /// L'en-tête du profil ; « Profil » par défaut.
@@ -159,8 +154,7 @@ class RideRouteSection extends ConsumerStatefulWidget {
   ConsumerState<RideRouteSection> createState() => _RideRouteSectionState();
 }
 
-class _RideRouteSectionState extends ConsumerState<RideRouteSection>
-    with GpsExportRunner<RideRouteSection> {
+class _RideRouteSectionState extends ConsumerState<RideRouteSection> {
   @override
   Widget build(BuildContext context) {
     final RideDto ride = widget.ride;
@@ -298,10 +292,9 @@ class _RideRouteSectionState extends ConsumerState<RideRouteSection>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  ...gpsExportBanners(gapBefore: true),
                   if (widget.actions) ...<Widget>[
                     const SizedBox(height: PdlSpacing.chipGap),
-                    _actions(ride, group, routeSlug),
+                    _actions(ride, routeSlug),
                   ],
                   ..._waypoints(ride, routeSlug),
                 ],
@@ -313,49 +306,18 @@ class _RideRouteSectionState extends ConsumerState<RideRouteSection>
     );
   }
 
-  /// « GPS » et « Détails ».
-  Widget _actions(RideDto ride, RideGroupDto? group, String routeSlug) {
-    final RideKey rideKey = widget.rideKey;
-    // Les parcours sont déjà chargés en lot pour la carte : leurs fichiers
-    // GPX/FIT viennent de là, sans appel de plus.
-    final RouteDetailDto? route = ref.watch(
-      rideRouteGeometriesProvider(rideKey)
-          .select((RideRouteGeometriesState s) => s.geometries[routeSlug]),
-    );
-    final GpsExportTarget target = gpsTargetOfGroup(
-      subtitle: group == null
-          ? ride.name
-          : gpsSubtitleOfGroup(group, ref.watch(unitSystemProvider)),
-      teamSlug: ride.team.slug,
-      routeSlug: routeSlug,
-      route: route,
-      syncStatuses: group == null
-          ? ride.gpsSyncStatuses
-          : group.gpsSyncStatuses,
-    );
-    return Wrap(
-      spacing: PdlSpacing.chipGap,
-      runSpacing: PdlSpacing.badgeGap,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        if (target.offered(watchGpsServices()))
-          GpsButton(
-            key: keys.rideGroup.gps,
-            compact: true,
-            loading: gpsExporting,
-            onPressed: (BuildContext button) => openGpsSheet(target, button),
-          ),
-        PdlButton(
-          key: keys.rideRoute.details,
-          label: 'common.details'.tr(),
-          icon: PdlIcons.route,
-          variant: PdlButtonVariant.text,
-          size: PdlButtonSize.sm,
-          onPressed: () => context.push(Paths.route(ride.team.slug, routeSlug)),
-        ),
-      ],
-    );
-  }
+  /// « Détails », qui pousse la fiche du parcours.
+  Widget _actions(RideDto ride, String routeSlug) => Align(
+    alignment: AlignmentDirectional.centerStart,
+    child: PdlButton(
+      key: keys.rideRoute.details,
+      label: 'common.details'.tr(),
+      icon: PdlIcons.route,
+      variant: PdlButtonVariant.text,
+      size: PdlButtonSize.sm,
+      onPressed: () => context.push(Paths.route(ride.team.slug, routeSlug)),
+    ),
+  );
 
   /// « Points du parcours », replié — seulement sur une carte d'un seul
   /// parcours (KIT §8).

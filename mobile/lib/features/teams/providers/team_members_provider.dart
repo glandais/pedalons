@@ -15,7 +15,7 @@ final memberFiltersProvider = StateProvider.autoDispose
       (ref, teamSlug) => MemberFilters(teamSlug: teamSlug),
     );
 
-/// Filtres courants de l'écran « Gestion des membres » (docs/LEDGER_*.md
+/// Filtres courants de l'écran « Membres » (docs/LEDGER_*.md
 /// MOB-167). **Distincts** de ceux du trombinoscope : filtrer l'un ne doit pas
 /// filtrer l'autre, resté ouvert dessous. La liste, elle, est la même
 /// ([teamMembersProvider]).

@@ -38,7 +38,7 @@ final class TeamPagesAdmin extends Module {
     }
   }
 
-  /// Whether « Ajouter une page » is offered — gone at three pages.
+  /// Whether « Créer une page » is offered — gone at three pages.
   bool get offersAdd => isShown(keys.teamPages.addButton);
 
   /// Waits for the row of the page [pageId].
@@ -127,7 +127,7 @@ final class TeamPagesAdmin extends Module {
     await waitUntilGone(keys.teamPages.rowDeleted(pageId));
   }
 
-  /// « Ajouter une page », atop the list → the editor, empty.
+  /// « Créer une page », atop the list → the editor, empty.
   Future<void> openNew() async {
     await scrolledUpTo(keys.teamPages.addButton);
     await $(keys.teamPages.addButton).tap();

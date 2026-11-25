@@ -48,7 +48,7 @@ final class TeamAdmin extends Module {
     await (await scrolledTo(keys.teamAdmin.settings)).tap();
   }
 
-  /// « Gestion des membres » — an administrator's — opens the members screen in the app (ledger
+  /// « Membres » — an administrator's — opens the members screen in the app (ledger
   /// `MOB-167`).
   Future<void> openMembers() async {
     await (await scrolledTo(keys.teamAdmin.members)).tap();

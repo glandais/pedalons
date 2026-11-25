@@ -560,7 +560,7 @@ void main() {
 
       await tester.tap(find.byKey(k.addButton));
       await settle(tester);
-      expect(find.text('Ajouter un lieu'), findsWidgets);
+      expect(find.text('Créer un lieu'), findsWidgets);
       // Pas d'erreur avant une tentative.
       expect(find.text('Entre 1 et 200 caractères'), findsNothing);
 
@@ -963,7 +963,7 @@ void main() {
       expect(find.byKey(keys.profile.confirmDestructiveButton), findsNothing);
     });
 
-    testWidgets('un double appui sur « Ajouter un lieu » n\'ouvre qu\'une '
+    testWidgets('un double appui sur « Créer un lieu » n\'ouvre qu\'une '
         'feuille', (WidgetTester tester) async {
       await open(tester, teams: _Teams(role: 'ORGANIZER'));
 
