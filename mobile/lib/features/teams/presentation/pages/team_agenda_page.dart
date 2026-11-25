@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
+import '../../../../config/paths.dart';
+import '../../../../core/lists/create_split_button.dart';
 import '../../../../core/lists/list_toolbar.dart';
 import '../../../../core/material.dart';
 import '../../../../core/theme/pdl_colors.dart';
+import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../keys.dart';
 import '../../../calendar/presentation/pages/calendar_page.dart';
@@ -13,6 +16,7 @@ import '../../../calendar/providers/calendar_month_provider.dart';
 import '../../../feed/presentation/widgets/publication_feed_view.dart';
 import '../../../rides/presentation/ride_editor_location.dart';
 import '../../../rides/providers/ride_editor_providers.dart';
+import '../../../trips/providers/trip_editor_providers.dart';
 import '../widgets/team_header.dart';
 import '../widgets/team_sections.dart';
 import '../widgets/team_sections_bar.dart';
@@ -113,12 +117,29 @@ class _TeamAgendaPageState extends ConsumerState<TeamAgendaPage> {
   /// l'administration de la plateforme.
   bool get _canShowCalendar => widget.team.role != null || widget.platformAdmin;
 
-  /// Créer une sortie : la règle de l'éditeur et du tableau de bord
-  /// (`canManageRidesProvider` — organisation, modules sorties et parcours).
-  bool get _canCreate =>
-      ref.watch(canManageRidesProvider(widget.team.slug)) ?? false;
-
-  void _openNew() => context.push(rideNewLocation(widget.team.slug));
+  /// Ce qui se crée depuis l'agenda, comme celui du site et la section Agenda
+  /// du bouton du tableau de bord : une sortie (`canManageRidesProvider` —
+  /// organisation, modules sorties et parcours), un voyage
+  /// (`canManageTripsProvider` — modules voyages et parcours).
+  List<CreateAction> get _createActions {
+    final String slug = widget.team.slug;
+    return <CreateAction>[
+      if (ref.watch(canManageRidesProvider(slug)) ?? false)
+        CreateAction(
+          key: keys.teamAgenda.createRideRow,
+          label: 'lists.createLabel.ride'.tr(),
+          icon: PdlIcons.ride,
+          location: rideNewLocation(slug),
+        ),
+      if (ref.watch(canManageTripsProvider(slug)) ?? false)
+        CreateAction(
+          key: keys.teamAgenda.createTripRow,
+          label: 'teams.dashboard.createTrip'.tr(),
+          icon: PdlIcons.trip,
+          location: Paths.tripNew(slug),
+        ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +147,7 @@ class _TeamAgendaPageState extends ConsumerState<TeamAgendaPage> {
         ? _view
         : AgendaView.cards;
     final String slug = widget.team.slug;
-    final bool canCreate = _canCreate;
+    final List<CreateAction> createActions = _createActions;
 
     if (view == AgendaView.calendar) {
       return widget.chrome(
@@ -194,13 +215,14 @@ class _TeamAgendaPageState extends ConsumerState<TeamAgendaPage> {
           ),
         ],
         period: _period(),
-        searchTrailing: canCreate
-            ? ListCreateButton(
-                key: keys.teamAgenda.createButton,
-                semanticLabel: 'lists.createLabel.ride'.tr(),
-                onPressed: _openNew,
-              )
-            : null,
+        searchTrailing: createActions.isEmpty
+            ? null
+            : CreateSplitButton(
+                actions: createActions,
+                primaryKey: keys.teamAgenda.createButton,
+                menuKey: keys.teamAgenda.createMenuButton,
+                compact: true,
+              ),
         viewSwitch: _viewSwitch(view),
         rows: view == AgendaView.rows,
         typeOptions: _typeOptions,
@@ -221,11 +243,11 @@ class _TeamAgendaPageState extends ConsumerState<TeamAgendaPage> {
         emptyHint: 'teams.agenda.empty.message'.tr(),
         // Le vide simple reprend l'action de la barre, nom complet (RL13).
         emptyActions: <Widget>[
-          if (canCreate)
+          if (createActions.isNotEmpty)
             ListEmptyCreateButton(
               key: keys.teamAgenda.emptyCreateButton,
-              label: 'lists.createLabel.ride'.tr(),
-              onPressed: _openNew,
+              label: createActions.first.label,
+              onPressed: () => context.push(createActions.first.location),
             ),
         ],
       ),

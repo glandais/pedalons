@@ -19,6 +19,7 @@ import 'package:pedalons/features/calendar/providers/calendar_month_provider.dar
 import 'package:pedalons/features/feed/presentation/widgets/publication_feed_view.dart';
 import 'package:pedalons/features/feed/providers/publication_feed_provider.dart';
 import 'package:pedalons/features/rides/providers/ride_editor_providers.dart';
+import 'package:pedalons/features/trips/providers/trip_editor_providers.dart';
 import 'package:pedalons/features/tags/providers/team_tags_provider.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_agenda_page.dart';
 import 'package:pedalons/features/teams/presentation/pages/team_home_page.dart';
@@ -276,6 +277,7 @@ void main() {
       bool emptyFeed = false,
       bool failingFeed = false,
       bool canCreate = false,
+      bool canCreateTrips = false,
       PageResult<PublicationDto>? page,
       AgendaView initialView = AgendaView.cards,
     }) async {
@@ -300,6 +302,7 @@ void main() {
                 : _StuckFeedNotifier(key);
           }),
           canManageRidesProvider.overrideWith((ref, slug) => canCreate),
+          canManageTripsProvider.overrideWith((ref, slug) => canCreateTrips),
           publicationFeedCountProvider.overrideWith((ref, key) async => 5),
           myTeamsProvider.overrideWith((ref) async => const <TeamDetailDto>[]),
           calendarMonthProvider.overrideWith(
@@ -545,6 +548,38 @@ void main() {
       expect(find.byKey(keys.teamAgenda.emptyCreateButton), findsOneWidget);
       // « Voir les passées » n'a plus d'objet : les passées sont dans la liste.
       expect(find.text('Voir les passées'), findsNothing);
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('« Créer ▾ » : la sortie en bouton, le voyage derrière le '
+        'chevron, comme l\'agenda du site', (WidgetTester tester) async {
+      await pumpAgenda(
+        tester,
+        canCreate: true,
+        canCreateTrips: true,
+        emptyFeed: true,
+      );
+
+      expect(find.bySemanticsLabel('Créer une sortie'), findsWidgets);
+      await tester.tap(find.byKey(keys.teamAgenda.createMenuButton));
+      for (int i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      expect(find.byKey(keys.teamAgenda.createRideRow), findsOneWidget);
+      expect(find.byKey(keys.teamAgenda.createTripRow), findsOneWidget);
+
+      await tearDownFeed(tester);
+    });
+
+    testWidgets('sans module sorties : « Créer » crée un voyage', (
+      WidgetTester tester,
+    ) async {
+      await pumpAgenda(tester, canCreateTrips: true, emptyFeed: true);
+
+      expect(find.byKey(keys.teamAgenda.createButton), findsOneWidget);
+      expect(find.byKey(keys.teamAgenda.createMenuButton), findsNothing);
+      expect(find.bySemanticsLabel('Créer un voyage'), findsWidgets);
 
       await tearDownFeed(tester);
     });

@@ -248,8 +248,12 @@ class TeamAgendaKeys {
   /// Un segment de la vue — `cards`, `rows`, `calendar`.
   ValueKey<String> view(String name) => _TeamAgendaKey('view_$name');
 
-  /// « Créer » dans la barre (règle RL13).
+  /// « Créer » dans la barre (règle RL13), son chevron, et les lignes de sa
+  /// feuille.
   final createButton = const _TeamAgendaKey('create');
+  final createMenuButton = const _TeamAgendaKey('createMenu');
+  final createRideRow = const _TeamAgendaKey('createRide');
+  final createTripRow = const _TeamAgendaKey('createTrip');
 
   /// « Créer une sortie » dans l'état vide simple.
   final emptyCreateButton = const _TeamAgendaKey('emptyCreate');
