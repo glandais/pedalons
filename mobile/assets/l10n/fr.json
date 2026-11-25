@@ -1838,6 +1838,17 @@
       "discardMessage": "Ce que vous avez saisi sera perdu.",
       "nameTooLong": "Le nom ne peut pas dépasser 200 caractères.",
       "trackWarning": "Un nouveau GPX remplace tout le tracé."
+    },
+    "received": {
+      "title": "Fichier reçu",
+      "source": "Reçu d'une autre application",
+      "question": "Que voulez-vous en faire ?",
+      "view": "Visualiser",
+      "viewHint": "Carte, profil et cols, sans équipe",
+      "saveToTeam": "Enregistrer dans une équipe",
+      "saveToTeamHint": "Devient un parcours de l'équipe choisie",
+      "retention": "Le fichier est conservé 30 jours dans Outils GPX › Mes fichiers, puis supprimé.",
+      "unreadable": "Ce fichier n'a pas pu être lu. Enregistrez-le dans vos fichiers, puis ouvrez-le depuis Outils GPX."
     }
   },
   "tags": {

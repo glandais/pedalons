@@ -1838,6 +1838,17 @@
       "discardMessage": "What you typed will be lost.",
       "nameTooLong": "The name cannot be longer than 200 characters.",
       "trackWarning": "A new GPX replaces the whole track."
+    },
+    "received": {
+      "title": "File received",
+      "source": "Received from another app",
+      "question": "What do you want to do with it?",
+      "view": "View",
+      "viewHint": "Map, profile and climbs, no team needed",
+      "saveToTeam": "Save to a team",
+      "saveToTeamHint": "Becomes a route of the team you choose",
+      "retention": "The file is kept for 30 days in GPX tools › My files, then deleted.",
+      "unreadable": "This file could not be read. Save it to your files, then open it from GPX tools."
     }
   },
   "tags": {

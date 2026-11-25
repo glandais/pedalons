@@ -23,7 +23,10 @@ import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/providers/pending_sign_in_link.dart';
 import 'features/feedback/presentation/unreported_fatal_prompt.dart';
 import 'features/feedback/providers/error_reporter_binding.dart';
+import 'features/gpxtools/data/received_gpx_file.dart';
+import 'features/gpxtools/presentation/pages/received_gpx_page.dart';
 import 'features/notifications/providers/push_provider.dart';
+import 'features/routes/domain/gpx_check.dart';
 import 'features/teams/providers/team_access_probe.dart';
 import 'screenshots/screenshot_mode.dart';
 
@@ -96,7 +99,9 @@ Future<Widget> createApp({bool installErrorHandlers = true}) async {
   }
 
   String? initialPath;
-  if (initialLink != null) {
+  // Un fichier reçu n'est pas une page : `uriLinkStream`, qui rejoue le lien
+  // de lancement, le remet à `_DeepLinkHandler` (docs/LEDGER_*.md MOB-191).
+  if (initialLink != null && !isReceivedFileUri(initialLink)) {
     final path = initialLink.path.isEmpty ? '/' : initialLink.path;
     final query = initialLink.query.isNotEmpty ? '?${initialLink.query}' : '';
     initialPath = path + query;
@@ -194,6 +199,10 @@ class _DeepLinkHandlerState extends ConsumerState<_DeepLinkHandler> {
 
     _linkSubscription = widget.appLinks.uriLinkStream.listen((Uri uri) {
       log('Deep link received: $uri', name: 'main');
+      if (isReceivedFileUri(uri)) {
+        unawaited(_openReceivedFile(uri));
+        return;
+      }
       final path = uri.path + (uri.query.isNotEmpty ? '?${uri.query}' : '');
       _requestOpen(path);
     });
@@ -318,6 +327,75 @@ class _DeepLinkHandlerState extends ConsumerState<_DeepLinkHandler> {
         .currentContext;
     if (navigatorContext == null || !navigatorContext.mounted) return;
     await promptUnreportedFatal(navigatorContext, reporter);
+  }
+
+  /// Le dernier fichier reçu, et quand : app_links peut remettre deux fois
+  /// l'URI du lancement coup sur coup. Le même fichier rouvert plus tard, lui,
+  /// s'ouvre de nouveau.
+  Uri? _lastReceivedFile;
+  DateTime? _lastReceivedAt;
+
+  /// « Ouvrir avec Pédalons » (docs/LEDGER_*.md MOB-191) : le fichier est
+  /// copié tout de suite — l'autorisation de lire un `content://` ne dure pas
+  /// —, puis « Fichier reçu » s'ouvre par-dessus l'écran courant une fois
+  /// l'app navigable **et la session ouverte** : les outils GPX demandent un
+  /// compte, et le fichier attend la connexion au lieu d'être perdu.
+  Future<void> _openReceivedFile(Uri uri) async {
+    final DateTime now = DateTime.now();
+    final DateTime? last = _lastReceivedAt;
+    if (uri == _lastReceivedFile &&
+        last != null &&
+        now.difference(last) < const Duration(seconds: 5)) {
+      return;
+    }
+    _lastReceivedFile = uri;
+    _lastReceivedAt = now;
+    GpxFile? file;
+    try {
+      file = await ref.read(receivedFileReaderProvider).read(uri);
+    } catch (error, stackTrace) {
+      log(
+        'Received file unreadable',
+        name: 'main',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+    await _whenAuthInitialized();
+    if (!mounted) return;
+    await _whenRouterMounted();
+    if (!mounted) return;
+    await _whenSignedIn();
+    if (!mounted) return;
+    final NavigatorState? navigator = ref
+        .read(routerProvider)
+        .routerDelegate
+        .navigatorKey
+        .currentState;
+    if (navigator == null) return;
+    if (file == null) {
+      ScaffoldMessenger.maybeOf(navigator.context)?.showSnackBar(
+        SnackBar(content: Text('gpxTools.received.unreadable'.tr())),
+      );
+      return;
+    }
+    await showReceivedGpxPage(navigator, file);
+  }
+
+  Future<void> _whenSignedIn() async {
+    if (ref.read(authProvider).isAuthenticated) return;
+    final Completer<void> signedIn = Completer<void>();
+    final ProviderSubscription<bool> subscription = ref.listenManual(
+      authProvider.select((s) => s.isAuthenticated),
+      (_, bool authenticated) {
+        if (authenticated && !signedIn.isCompleted) signedIn.complete();
+      },
+    );
+    await signedIn.future;
+    subscription.close();
+    // La connexion reprend d'abord un éventuel lien en attente : « Fichier
+    // reçu » vient par-dessus l'écran où elle mène.
+    await WidgetsBinding.instance.endOfFrame;
   }
 
   Future<void> _whenAuthInitialized() {

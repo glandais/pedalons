@@ -22,6 +22,15 @@ class GpxToolsKeys {
   /// Le mot du quota personnel épuisé, sous « Créer un parcours ».
   final quotaMessage = const _GpxToolsKey('quotaMessage');
 
+  // ── Fichier reçu d'une autre app (MOB-191) ───────────────────────────
+  final received = const _GpxToolsKey('received');
+  final receivedClose = const _GpxToolsKey('receivedClose');
+  final receivedName = const _GpxToolsKey('receivedName');
+  final receivedRefused = const _GpxToolsKey('receivedRefused');
+  final receivedError = const _GpxToolsKey('receivedError');
+  final receivedView = const _GpxToolsKey('receivedView');
+  final receivedSaveToTeam = const _GpxToolsKey('receivedSaveToTeam');
+
   // ── Mes fichiers ─────────────────────────────────────────────────────
   final list = const _GpxToolsKey('list');
   final listEmpty = const _GpxToolsKey('listEmpty');

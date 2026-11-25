@@ -16,6 +16,53 @@
 	     back to iOS, which opened it in Safari as well. -->
 	<key>FlutterDeepLinkingEnabled</key>
 	<false/>
+	<!-- « Ouvrir avec Pédalons » : un .gpx ouvert ou partagé depuis Fichiers, Mail ou une autre
+	     app (docs/LEDGER_*.md MOB-191). iOS copie le fichier dans Documents/Inbox
+	     (LSSupportsOpeningDocumentsInPlace faux : pas d'accès « security-scoped » à gérer) et
+	     app_links remet l'URL file:// à _DeepLinkHandler. Le type GPX n'est pas un type système :
+	     il est importé, sous l'identifiant que lui donnent les autres apps (com.topografix.gpx). -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>GPX</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.topografix.gpx</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.topografix.gpx</string>
+			<key>UTTypeDescription</key>
+			<string>GPS Exchange Format</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.xml</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>gpx</string>
+					<string>GPX</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/gpx+xml</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<false/>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
