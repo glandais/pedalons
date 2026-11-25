@@ -1,25 +1,12 @@
 import { useState } from 'react'
 import { getGetTeamDashboardQueryKey } from '@/api/endpoints/teams/teams'
 import { useParams, useNavigate } from 'react-router-dom'
-import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import i18next from 'i18next'
-import { IconCalendar, IconPencil, IconChevronDown } from '@tabler/icons-react'
-import {
-  Button,
-  Menu,
-  Container,
-  Paper,
-  Group,
-  Title,
-  Badge,
-  Stack,
-  Text,
-  Box,
-  Loader,
-} from '@mantine/core'
+import { IconCalendar } from '@tabler/icons-react'
+import { Menu, Container, Group, Badge, Stack, Text, Loader } from '@mantine/core'
 import {
   useUpdatePost,
   useDeletePost,
@@ -37,7 +24,8 @@ import { MediaDisplay } from '../../components/common/MediaDisplay'
 import { EntityLogo } from '../../components/common/EntityLogo'
 import { UserAvatar } from '../../components/common/UserAvatar'
 import { ContentActionsMenu } from '../../components/moderation/ContentActionsMenu'
-import { ShareButton } from '../../components/common/ShareButton'
+import { DetailHeader } from '../../components/publication/DetailHeader'
+import { EditMenuButton } from '../../components/publication/EditMenuButton'
 import { CommentSection } from '../../components/comment'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 import { Rendezvous } from '../../components/common/Rendezvous'
@@ -187,99 +175,78 @@ export function PostDetailPage() {
         {/* Way back to the team: this page is not mounted inside TeamLayout */}
         <TeamContextBanner team={team} mb={0} />
 
-        {/* Header */}
-        <Paper withBorder p="lg" radius="md">
-          <Group justify="space-between" align="flex-start" wrap="wrap">
-            <Group gap="sm" style={{ minWidth: 0 }}>
-              <EntityLogo logo={post.media.assets.logo} alt={post.name} size="lg" />
-              <Title order={2} lineClamp={1}>
-                {post.name}
-              </Title>
-              <Badge color={STATUS_COLORS[post.status]}>
-                {t(`status.${post.status satisfies 'DRAFT' | 'PUBLISHED' | 'CANCELLED'}`)}
-              </Badge>
-            </Group>
-
-            <Group gap="xs" wrap="nowrap">
-              {canEdit && (
-                <Button.Group>
-                  <Button
-                    component={PrefetchLink}
-                    to={paths.postEdit(teamSlug!, postSlug!)}
-                    variant="outline"
-                    leftSection={<IconPencil size={16} />}
+        {/* Header (docs/LEDGER_*.md WEB-206): the title is the page's h1 */}
+        <DetailHeader
+          mb={0}
+          logo={<EntityLogo logo={post.media.assets.logo} alt={post.name} size="lg" />}
+          title={post.name}
+          badges={
+            <Badge color={STATUS_COLORS[post.status]} variant="light">
+              {t(`status.${post.status satisfies 'DRAFT' | 'PUBLISHED' | 'CANCELLED'}`)}
+            </Badge>
+          }
+          edit={
+            canEdit && (
+              <EditMenuButton to={paths.postEdit(teamSlug!, postSlug!)}>
+                {post.status === Status.DRAFT && (
+                  <Menu.Item
+                    onClick={handlePublish}
+                    disabled={updateMutation.isPending}
+                    color="success"
+                    leftSection={updateMutation.isPending ? <Loader size="sm" /> : undefined}
                   >
-                    {t('actions.edit')}
-                  </Button>
-                  <Menu position="bottom-end">
-                    <Menu.Target>
-                      <Button variant="outline" px="xs" aria-label={t('aria.manageActions')}>
-                        <IconChevronDown size={16} />
-                      </Button>
-                    </Menu.Target>
-                    <Menu.Dropdown>
-                      {post.status === Status.DRAFT && (
-                        <Menu.Item
-                          onClick={handlePublish}
-                          disabled={updateMutation.isPending}
-                          color="success"
-                          leftSection={updateMutation.isPending ? <Loader size="sm" /> : undefined}
-                        >
-                          {t('actions.publish')}
-                        </Menu.Item>
-                      )}
-                      {post.status === Status.PUBLISHED && (
-                        <>
-                          <Menu.Item onClick={() => setShowUnpublishConfirm(true)} color="warning">
-                            {t('actions.unpublish')}
-                          </Menu.Item>
-                          <Menu.Item onClick={() => setShowCancelConfirm(true)} color="warning">
-                            {t('posts.detail.actions.cancel')}
-                          </Menu.Item>
-                        </>
-                      )}
-                      {post.status === Status.CANCELLED && (
-                        <Menu.Item onClick={() => setShowUncancelConfirm(true)} color="green">
-                          {t('posts.detail.actions.uncancel')}
-                        </Menu.Item>
-                      )}
-                      {post.deleted && (
-                        <Menu.Item
-                          onClick={handleRestore}
-                          color="green"
-                          disabled={undeleteMutation.isPending}
-                        >
-                          {t('actions.restore')}
-                        </Menu.Item>
-                      )}
-                      {post.permissions.canDelete && (
-                        <>
-                          <Menu.Divider />
-                          <Menu.Item onClick={() => setShowDeleteConfirm(true)} color="danger">
-                            {t('actions.delete')}
-                          </Menu.Item>
-                        </>
-                      )}
-                    </Menu.Dropdown>
-                  </Menu>
-                </Button.Group>
-              )}
-              <ShareButton title={post.name} />
-              <ContentActionsMenu
-                teamSlug={post.team.slug}
-                teamName={post.team.name}
-                targetType={ReportTargetType.POST}
-                targetId={post.id}
-                onReported={() => navigate(team.accessible ? paths.team(team.slug) : paths.home())}
-              />
-            </Group>
-          </Group>
-
-          <Box mt="md">
-            <MediaDisplay media={post.media} />
-          </Box>
+                    {t('actions.publish')}
+                  </Menu.Item>
+                )}
+                {post.status === Status.PUBLISHED && (
+                  <>
+                    <Menu.Item onClick={() => setShowUnpublishConfirm(true)} color="warning">
+                      {t('actions.unpublish')}
+                    </Menu.Item>
+                    <Menu.Item onClick={() => setShowCancelConfirm(true)} color="warning">
+                      {t('posts.detail.actions.cancel')}
+                    </Menu.Item>
+                  </>
+                )}
+                {post.status === Status.CANCELLED && (
+                  <Menu.Item onClick={() => setShowUncancelConfirm(true)} color="green">
+                    {t('posts.detail.actions.uncancel')}
+                  </Menu.Item>
+                )}
+                {post.deleted && (
+                  <Menu.Item
+                    onClick={handleRestore}
+                    color="green"
+                    disabled={undeleteMutation.isPending}
+                  >
+                    {t('actions.restore')}
+                  </Menu.Item>
+                )}
+                {post.permissions.canDelete && (
+                  <>
+                    <Menu.Divider />
+                    <Menu.Item onClick={() => setShowDeleteConfirm(true)} color="danger">
+                      {t('actions.delete')}
+                    </Menu.Item>
+                  </>
+                )}
+              </EditMenuButton>
+            )
+          }
+          shareTitle={post.name}
+          more={
+            <ContentActionsMenu
+              teamSlug={post.team.slug}
+              teamName={post.team.name}
+              targetType={ReportTargetType.POST}
+              targetId={post.id}
+              onReported={() => navigate(team.accessible ? paths.team(team.slug) : paths.home())}
+            />
+          }
+        >
+          <MediaDisplay media={post.media} />
           {post.status === Status.DRAFT && post.publishAt && (
-            <Group gap="xs" mt="sm">
+            <Group gap="xs">
               <IconCalendar size={16} color="var(--mantine-color-yellow-text)" />
               <Text size="sm" c="var(--mantine-color-yellow-text)">
                 <Rendezvous
@@ -291,7 +258,7 @@ export function PostDetailPage() {
               </Text>
             </Group>
           )}
-          <Group mt="md">
+          <Group>
             {/* The author, unless the team signs the post and the reader is not one who may know
                 (docs/LEDGER_*.md API-6): then the team banner above is the signature. */}
             {post.createdBy && (
@@ -315,8 +282,8 @@ export function PostDetailPage() {
             </Group>
           </Group>
           {/* The team tags, every one of them (cards show the first three). */}
-          <TagList tags={post.tags} mt="md" />
-        </Paper>
+          <TagList tags={post.tags} />
+        </DetailHeader>
 
         {/* Comments Section - only visible to team members */}
         {canReadComments && (

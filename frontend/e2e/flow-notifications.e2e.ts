@@ -117,7 +117,7 @@ test('a published post reaches a member in the team’s name, and opening it rea
 
   await test.step('the entry opens the post, and reading it clears the count', async () => {
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/articles/${post.slug}$`))
-    await expect(main.getByRole('heading', { level: 2, name: post.name })).toBeVisible()
+    await expect(main.getByRole('heading', { level: 1, name: post.name })).toBeVisible()
     await expect.poll(() => unreadCount(member)).toBe(0)
     if (!isMobile)
       await expect(

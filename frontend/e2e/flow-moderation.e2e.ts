@@ -72,7 +72,7 @@ test.describe('team moderation', () => {
       const { context, page } = await pageAs(browser, first)
       const main = page.getByRole('main')
       await page.goto(postPath(team.slug, reported.slug))
-      await expect(main.getByRole('heading', { level: 2, name: reported.name })).toBeVisible()
+      await expect(main.getByRole('heading', { level: 1, name: reported.name })).toBeVisible()
       // No comment on the post: the page's only moderation menu is the header's.
       const menu = main.getByRole('button', { name: "Plus d'actions" })
       await hydrated(menu)

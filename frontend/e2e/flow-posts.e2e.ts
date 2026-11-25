@@ -175,7 +175,7 @@ test('a post goes from the editor to the feeds, gets a comment, is edited, then 
   })
 
   await test.step('the post page renders the formatting, the link and the image', async () => {
-    await expect(main.getByRole('heading', { level: 2, name: title })).toBeVisible()
+    await expect(main.getByRole('heading', { level: 1, name: title })).toBeVisible()
     await expect(main.getByText('Publié', { exact: true })).toBeVisible()
     await expect(main.getByRole('heading', { level: 2, name: 'Au programme' })).toBeVisible()
     await expect(main.locator('strong', { hasText: 'à 8 h précises' })).toBeVisible()
@@ -232,7 +232,7 @@ test('a post goes from the editor to the feeds, gets a comment, is edited, then 
     await card.getByText(title, { exact: true }).click()
 
     await expect(memberPage).toHaveURL(new RegExp(`/equipes/${team.slug}/articles/${postSlug}$`))
-    await expect(memberMain.getByRole('heading', { level: 2, name: title })).toBeVisible()
+    await expect(memberMain.getByRole('heading', { level: 1, name: title })).toBeVisible()
     await expectImageLoaded(memberMain.getByRole('img', { name: IMAGE_ALT }))
     // A plain member has no edit controls.
     await expect(memberMain.getByRole('link', { name: 'Modifier' })).toHaveCount(0)
@@ -265,7 +265,7 @@ test('a post goes from the editor to the feeds, gets a comment, is edited, then 
   const newTitle = `${title} (modifiée)`
   await test.step('the author edits the post', async () => {
     await page.goto(`/equipes/${team.slug}/articles/${postSlug}`)
-    await expect(main.getByRole('heading', { level: 2, name: title })).toBeVisible()
+    await expect(main.getByRole('heading', { level: 1, name: title })).toBeVisible()
     const edit = main.getByRole('link', { name: 'Modifier' })
     await hydrated(edit)
     await edit.click()
@@ -290,7 +290,7 @@ test('a post goes from the editor to the feeds, gets a comment, is edited, then 
     await main.getByRole('button', { name: 'Enregistrer' }).click()
     await expect(page.getByText('Publication mise à jour avec succès')).toBeVisible()
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/articles/${postSlug}$`))
-    await expect(main.getByRole('heading', { level: 2, name: newTitle })).toBeVisible()
+    await expect(main.getByRole('heading', { level: 1, name: newTitle })).toBeVisible()
     await expect(
       main.getByRole('heading', { level: 2, name: 'Au programme du dimanche', exact: true })
     ).toBeVisible()
@@ -400,7 +400,7 @@ test('a post saved as a draft is hidden from members until it is published from 
   await expect(toasts(page).filter({ hasText: 'Publication créée avec succès' })).toBeVisible()
   await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/articles/(?!nouveau$)[^/]+$`))
   const postSlug = new URL(page.url()).pathname.split('/').pop()!
-  await expect(main.getByRole('heading', { level: 2, name: title })).toBeVisible()
+  await expect(main.getByRole('heading', { level: 1, name: title })).toBeVisible()
   await expect(main.getByText('Brouillon', { exact: true })).toBeVisible()
   expect((await fetchPost(author, team.slug, postSlug)).status).toBe('DRAFT')
 
@@ -444,7 +444,7 @@ test('a post saved as a draft is hidden from members until it is published from 
     await hydrated(card)
     await card.click()
     await expect(reader.page).toHaveURL(new RegExp(`/equipes/${team.slug}/articles/${postSlug}$`))
-    await expect(memberMain.getByRole('heading', { level: 2, name: title })).toBeVisible()
+    await expect(memberMain.getByRole('heading', { level: 1, name: title })).toBeVisible()
     await expect(memberMain.getByText(body, { exact: true })).toBeVisible()
   } finally {
     await reader.context.close()
@@ -497,7 +497,7 @@ test.describe('scheduled publication', () => {
     const postSlug = new URL(page.url()).pathname.split('/').pop()!
 
     await test.step('before the date: a draft that says when, hidden from members', async () => {
-      await expect(main.getByRole('heading', { level: 2, name: title })).toBeVisible()
+      await expect(main.getByRole('heading', { level: 1, name: title })).toBeVisible()
       await expect(main.getByText('Brouillon', { exact: true })).toBeVisible()
       await expect(
         main.getByText(`Publication programmée pour le ${frenchDateTime(publishOn)}`, {
@@ -591,7 +591,7 @@ test.describe('regressions', () => {
     await save.click()
     expect((await saved).ok(), 'the update was accepted').toBe(true)
     await page.clock.resume()
-    await expect(main.getByRole('heading', { level: 2, name: post.name })).toBeVisible()
+    await expect(main.getByRole('heading', { level: 1, name: post.name })).toBeVisible()
     await expect(main.getByText('Premier jet. Relu.', { exact: true })).toBeVisible()
     expect((await fetchPost(author, team.slug, post.slug)).media.markdown).toContain(
       'Premier jet. Relu.'
@@ -644,7 +644,7 @@ test.describe('restoring', () => {
 
     await signIn(page.context(), author)
     await page.goto(postPath(team.slug, post.slug))
-    await expect(main.getByRole('heading', { level: 2, name: post.name })).toBeVisible()
+    await expect(main.getByRole('heading', { level: 1, name: post.name })).toBeVisible()
     await expect(main.getByText('Publié', { exact: true })).toBeVisible()
 
     await test.step('« Dépublier » turns it back into a draft the member no longer reads', async () => {
@@ -701,7 +701,7 @@ test.describe('restoring', () => {
       expect(await findPost(member, team.slug, post.slug)).toBeNull()
 
       await page.goto(postPath(team.slug, post.slug))
-      await expect(main.getByRole('heading', { level: 2, name: post.name })).toBeVisible()
+      await expect(main.getByRole('heading', { level: 1, name: post.name })).toBeVisible()
       await (await openActionsMenu(page)).getByRole('menuitem', { name: 'Restaurer' }).click()
       await expect(
         toasts(page).filter({ hasText: 'Publication restaurée avec succès' })
@@ -718,7 +718,7 @@ test.describe('restoring', () => {
       try {
         const memberMain = reader.page.getByRole('main')
         await reader.page.goto(postPath(team.slug, post.slug))
-        await expect(memberMain.getByRole('heading', { level: 2, name: post.name })).toBeVisible()
+        await expect(memberMain.getByRole('heading', { level: 1, name: post.name })).toBeVisible()
         await expect(memberMain.getByRole('heading', { level: 2, name: 'Programme' })).toBeVisible()
         await expect(memberMain.locator('strong', { hasText: 'à 8 h' })).toBeVisible()
         const picture = memberMain.locator(`img[src*="${image.id}"]`)
@@ -932,7 +932,7 @@ test.describe('app defects', () => {
     await signIn(page.context(), author)
     await page.goto(postPath(team.slug, post.slug))
     await expect(
-      page.getByRole('main').getByRole('heading', { level: 2, name: post.name })
+      page.getByRole('main').getByRole('heading', { level: 1, name: post.name })
     ).toBeVisible()
     await (await openActionsMenu(page)).getByRole('menuitem', { name: /^Annuler/ }).click()
     const dialog = page.getByRole('dialog', { name: /^Annuler/ })

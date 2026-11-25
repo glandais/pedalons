@@ -179,7 +179,7 @@ test.describe('ad journey', () => {
     await main.getByRole('button', { name: "Créer l'annonce" }).click()
 
     // The detail page of the new ad.
-    await expect(page.getByRole('heading', { level: 2, name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/annonces/(?!nouvelle$)[^/]+$`))
     const slug = new URL(page.url()).pathname.split('/').at(-1)!
     await expect(main.getByText(euros(350), { exact: true })).toBeVisible()
@@ -240,7 +240,7 @@ test.describe('ad journey', () => {
       await fill()
       await main.getByRole('radio', { name: 'Publié' }).check()
       await main.getByRole('button', { name: "Créer l'annonce" }).click()
-      await expect(page.getByRole('heading', { level: 2, name })).toBeVisible()
+      await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
       return new URL(page.url()).pathname.split('/').at(-1)!
     }
 
@@ -296,7 +296,7 @@ test.describe('ad journey', () => {
     await signIn(context, member)
     await page.goto(adPath(team.slug, ad.slug))
     const main = page.getByRole('main')
-    await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ad.name })).toBeVisible()
     const edit = main.getByRole('link', { name: 'Modifier' })
     await hydrated(edit)
     await edit.click()
@@ -348,7 +348,7 @@ test.describe('ad journey', () => {
     await signIn(context, member)
     await page.goto(adPath(team.slug, ad.slug))
     const main = page.getByRole('main')
-    await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ad.name })).toBeVisible()
     await expect(main.getByText('Publié', { exact: true })).toBeVisible()
 
     // The menu next to « Modifier » (support/ui.ts actionsMenu).
@@ -376,7 +376,7 @@ test.describe('ad journey', () => {
     await signIn(context, member)
     await page.goto(adPath(team.slug, ad.slug))
     const main = page.getByRole('main')
-    await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ad.name })).toBeVisible()
     await (await openActionsMenu(page)).getByRole('menuitem', { name: 'Supprimer' }).click()
     const dialog = page.getByRole('dialog', { name: 'Supprimer' })
     await expect(dialog).toContainText('Voulez-vous vraiment supprimer cette annonce ?')
@@ -470,7 +470,7 @@ test.describe('ad rights', () => {
       await signIn(context, other)
       await page.goto(adPath(team.slug, ad.slug))
       const main = mainOf(page)
-      await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
+      await expect(page.getByRole('heading', { level: 1, name: ad.name })).toBeVisible()
       // The contact button is the hydrated page's own: once it shows, so would the others.
       const contact = main.getByRole('button', { name: "Répondre à l'annonce" })
       await hydrated(contact)
@@ -494,7 +494,10 @@ test.describe('ad rights', () => {
     )
     await expect(page).toHaveURL(away)
     await expect(
-      page.getByRole('heading', { level: 2, name: /^(Annonces|Roues carbone .*)$/ }).first()
+      page
+        .getByRole('heading', { level: 2, name: 'Annonces' })
+        .or(page.getByRole('heading', { level: 1, name: /^Roues carbone / }))
+        .first()
     ).toBeVisible()
     await expect(page.getByRole('heading', { level: 1, name: "Modifier l'annonce" })).toHaveCount(0)
     await expect(mainOf(page).getByRole('textbox', { name: /^Titre/ })).toHaveCount(0)
@@ -508,7 +511,7 @@ test.describe('ad rights', () => {
     await signIn(context, admin)
     await page.goto(adPath(team.slug, ad.slug))
     const main = mainOf(page)
-    await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ad.name })).toBeVisible()
     await expect(actionsMenu(page)).toBeVisible()
     const edit = main.getByRole('link', { name: 'Modifier' })
     await hydrated(edit)
@@ -569,7 +572,7 @@ test.describe('ad place', () => {
   /** Opens the ad's edit form from its page. */
   async function openEditForm(page: Page, teamSlug: string, ad: AdDto) {
     await page.goto(adPath(teamSlug, ad.slug))
-    await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ad.name })).toBeVisible()
     const edit = mainOf(page).getByRole('link', { name: 'Modifier' })
     await hydrated(edit)
     await edit.click()
@@ -603,7 +606,7 @@ test.describe('ad place', () => {
     await main.getByRole('button', { name: 'Enregistrer' }).click()
 
     await expect(page).toHaveURL(new RegExp(`${escapeRegExp(adPath(team.slug, ad.slug))}$`))
-    await expect(page.getByRole('heading', { level: 2, name: renamed })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: renamed })).toBeVisible()
     await expect(main.getByText('Rennes centre', { exact: true })).toBeVisible()
     await expect(sector(page)).toBeVisible()
     await expect(sector(page).locator('canvas')).toBeVisible()
@@ -634,7 +637,7 @@ test.describe('ad place', () => {
     await signIn(context, member)
     await page.goto(adPath(team.slug, ad.slug))
     const main = mainOf(page)
-    await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ad.name })).toBeVisible()
 
     await (await openActionsMenu(page)).getByRole('menuitem', { name: 'Dépublier' }).click()
     const dialog = page.getByRole('dialog', { name: 'Dépublier' })
@@ -676,7 +679,7 @@ test.describe('ad place', () => {
     await main.getByRole('button', { name: 'Enregistrer' }).click()
 
     await expect(page).toHaveURL(new RegExp(`${escapeRegExp(adPath(team.slug, ad.slug))}$`))
-    await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ad.name })).toBeVisible()
     // The written place stands on its own, with its heading — no map centred on nothing.
     await expect(main.getByRole('heading', { level: 4, name: 'Localisation' })).toBeVisible()
     await expect(main.getByText('Rennes centre', { exact: true })).toBeVisible()
@@ -716,7 +719,7 @@ test.describe('restoring', () => {
     await signIn(context, admin)
     await page.goto(adPath(team.slug, ad.slug))
     const main = mainOf(page)
-    await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ad.name })).toBeVisible()
     await (await openActionsMenu(page)).getByRole('menuitem', { name: 'Supprimer' }).click()
     const dialog = page.getByRole('dialog', { name: 'Supprimer' })
     await dialog.getByRole('button', { name: 'Supprimer' }).click()
@@ -730,7 +733,7 @@ test.describe('restoring', () => {
     expect((await getAd(admin, team.slug, ad.slug)).deleted).toBe(true)
 
     await page.goto(adPath(team.slug, ad.slug))
-    await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ad.name })).toBeVisible()
     await (await openActionsMenu(page)).getByRole('menuitem', { name: 'Restaurer' }).click()
     await expect(toasts(page).filter({ hasText: 'Annonce restaurée avec succès' })).toBeVisible()
     const again = await openActionsMenu(page)

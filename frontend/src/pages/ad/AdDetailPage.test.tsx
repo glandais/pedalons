@@ -140,3 +140,33 @@ describe('AdDetailPage — publishing changes the status alone, never the ad (WE
     })
   })
 })
+
+// The detail header (docs/LEDGER_*.md WEB-206, D5): title as the page's h1, contact as its main
+// action, share like on a post.
+describe('AdDetailPage — header (WEB-206)', () => {
+  afterEach(cleanup)
+
+  it("has the ad's name as its single h1 and a Partager button", () => {
+    state.ad = ad(Status.PUBLISHED)
+    renderPage()
+    const headings = screen.getAllByRole('heading', { level: 1 })
+    expect(headings).toHaveLength(1)
+    expect(headings[0].textContent).toBe('Vélo de route')
+    const actions = screen.getByTestId('detail-header-actions')
+    expect(actions.querySelector('button')).not.toBeNull()
+    expect(actions.textContent).toContain('Modifier')
+  })
+
+  it("puts « Répondre à l'annonce » in the header for a reader who is not the author", () => {
+    state.ad = { ...ad(Status.PUBLISHED), createdById: 'someone-else' }
+    renderPage()
+    const button = screen.getByRole('button', { name: "Répondre à l'annonce" })
+    expect(screen.getByTestId('detail-header-actions').contains(button)).toBe(true)
+  })
+
+  it('has no contact button on the author’s own ad', () => {
+    state.ad = ad(Status.PUBLISHED)
+    renderPage()
+    expect(screen.queryByRole('button', { name: "Répondre à l'annonce" })).toBeNull()
+  })
+})

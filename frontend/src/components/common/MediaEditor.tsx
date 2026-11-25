@@ -203,7 +203,7 @@ export function MediaEditor({
               </Button>
               {logo && (
                 <Button
-                  variant="default"
+                  variant="outline"
                   size="xs"
                   color="danger"
                   onClick={handleRemoveLogo}

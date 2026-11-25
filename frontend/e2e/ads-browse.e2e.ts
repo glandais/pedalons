@@ -51,7 +51,7 @@ test.describe('ad detail', () => {
 
     await signIn(context, owner)
     await page.goto(adPath(team.slug, ad))
-    await expect(page.getByRole('heading', { level: 2, name: ad.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ad.name })).toBeVisible()
 
     const photoButtons = page.getByRole('button', { name: /^Ouvrir la photo \d sur 3$/ })
     // The thumbnails carry aria-current (true or false); the main frame does not.
@@ -198,7 +198,7 @@ test.describe('ad detail', () => {
     await signIn(context, owner)
 
     await page.goto(adPath(team.slug, bare))
-    await expect(page.getByRole('heading', { level: 2, name: bare.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: bare.name })).toBeVisible()
     // The page is complete: the always-present seller section rendered.
     await expect(page.getByRole('heading', { level: 4, name: 'Publiée par' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Description' })).toHaveCount(0)
@@ -209,7 +209,7 @@ test.describe('ad detail', () => {
 
     // A written place with no geometry: the section, the place, and no map pretending to a spot.
     await page.goto(adPath(team.slug, placeOnly))
-    await expect(page.getByRole('heading', { level: 2, name: placeOnly.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: placeOnly.name })).toBeVisible()
     await expect(page.getByRole('heading', { level: 4, name: 'Localisation' })).toBeVisible()
     await expect(page.getByText('Gare de Lyon')).toBeVisible()
     await expect(page.getByRole('img', { name: /à environ 1 km près/ })).toHaveCount(0)
@@ -340,7 +340,7 @@ test.describe('ad list', () => {
 
     // Into an ad, and back.
     await titles.first().click()
-    await expect(page.getByRole('heading', { level: 2, name: ads.mid.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ads.mid.name })).toBeVisible()
     await page.goBack()
     await expect(titles).toHaveText([ads.mid.name, ads.dear.name])
     expect(query(page)).toEqual(filtered)

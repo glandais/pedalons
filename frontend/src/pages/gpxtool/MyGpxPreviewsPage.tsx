@@ -139,7 +139,7 @@ function PreviewRow({ preview }: PreviewRowProps) {
             {t('gpxTools.listFiles.view')}
           </Button>
           <Button
-            variant="default"
+            variant="outline"
             size="sm"
             color="danger"
             leftSection={<IconTrash size={16} />}

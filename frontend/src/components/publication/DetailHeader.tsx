@@ -1,5 +1,14 @@
 import { useRef, useState, type ReactNode } from 'react'
-import { Alert, Group, Paper, Stack, Text, Title, Tooltip } from '@mantine/core'
+import {
+  Alert,
+  Group,
+  Paper,
+  Stack,
+  Text,
+  Title,
+  Tooltip,
+  type MantineSpacing,
+} from '@mantine/core'
 import { ShareButton } from '@/components/common/ShareButton'
 
 interface DetailHeaderProps {
@@ -29,6 +38,8 @@ interface DetailHeaderProps {
   error?: string | null
   /** Under the title row: the departure, the facts, the tags. */
   children?: ReactNode
+  /** The space under the header; `0` inside a `Stack` that already spaces its children. */
+  mb?: MantineSpacing | 0
 }
 
 /**
@@ -55,6 +66,7 @@ export function DetailHeader({
   more,
   error,
   children,
+  mb = 'lg',
 }: DetailHeaderProps) {
   const titleRef = useRef<HTMLHeadingElement>(null)
   const [clamped, setClamped] = useState(false)
@@ -67,7 +79,7 @@ export function DetailHeader({
   const hasActions = !!(primary || gps || edit || retouch || shareTitle || more)
 
   return (
-    <Paper shadow="xs" p="lg" mb="lg" withBorder component="header">
+    <Paper shadow="xs" p="lg" mb={mb} withBorder component="header">
       <Stack gap="md">
         {top}
 

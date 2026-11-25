@@ -1,16 +1,13 @@
 import { useState } from 'react'
 import { invalidateTeamDashboard } from '@/lib/teamDashboardCache'
 import { useParams, useNavigate, Navigate } from 'react-router-dom'
-import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import i18next from 'i18next'
 import {
   IconCalendar,
-  IconPencil,
   IconMail,
-  IconChevronDown,
   IconMapPin,
   IconCurrencyEuro,
   IconCircleCheck,
@@ -49,6 +46,8 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog'
 import { MediaDisplay } from '../../components/common/MediaDisplay'
 import { EntityLogo } from '../../components/common/EntityLogo'
 import { ContentActionsMenu } from '../../components/moderation/ContentActionsMenu'
+import { DetailHeader } from '../../components/publication/DetailHeader'
+import { EditMenuButton } from '../../components/publication/EditMenuButton'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 import { FormattedDateTime } from '../../components/common/FormattedDate'
 import { paths } from '@/config/paths'
@@ -201,99 +200,90 @@ export function AdDetailPage() {
       {/* Way back to the team: this page is not mounted inside TeamLayout */}
       <TeamContextBanner team={ad.team} />
 
-      {/* The pictures, straight from `images[]` so a trimmed `media` changes nothing here.
-          Renders nothing at all when the ad has none. */}
-      <AdGallery images={ad.images} name={ad.name} />
-
-      {/* Header */}
-      <Paper withBorder p="lg" mb="lg">
-        <Group justify="space-between" align="flex-start" wrap="wrap">
-          <Group style={{ minWidth: 0 }}>
-            <EntityLogo logo={ad.media.assets.logo} alt={ad.name} size="lg" />
-            <Stack gap={4} style={{ minWidth: 0 }}>
-              <Title order={2} lineClamp={1}>
-                {ad.name}
-              </Title>
-              <Group gap="xs">
-                <Badge color={AD_TYPE_COLORS[ad.adType]}>
-                  {t(`ads.adType.${ad.adType satisfies 'SALE' | 'RENTAL' | 'WANTED'}`)}
-                </Badge>
-                <Badge color={STATUS_COLORS[ad.status]}>
-                  {t(`status.${ad.status satisfies 'DRAFT' | 'PUBLISHED' | 'CANCELLED'}`)}
-                </Badge>
-              </Group>
-              <TagList tags={ad.tags} />
-            </Stack>
-          </Group>
-
-          <Group gap="xs" wrap="nowrap">
-            {canEdit && (
-              <Button.Group>
-                <Button
-                  component={PrefetchLink}
-                  to={paths.adEdit(teamSlug!, adSlug!)}
-                  variant="default"
-                  leftSection={<IconPencil size={16} />}
+      {/* Header (docs/LEDGER_*.md WEB-206, D5): the title is the page's h1, « Répondre à l'annonce » its
+          main action. */}
+      <DetailHeader
+        logo={<EntityLogo logo={ad.media.assets.logo} alt={ad.name} size="lg" />}
+        title={ad.name}
+        badges={
+          <>
+            <Badge color={AD_TYPE_COLORS[ad.adType]} variant="light">
+              {t(`ads.adType.${ad.adType satisfies 'SALE' | 'RENTAL' | 'WANTED'}`)}
+            </Badge>
+            <Badge color={STATUS_COLORS[ad.status]} variant="light">
+              {t(`status.${ad.status satisfies 'DRAFT' | 'PUBLISHED' | 'CANCELLED'}`)}
+            </Badge>
+          </>
+        }
+        primary={
+          // The button does not exist on one's own ad: relaying a message to oneself is not an
+          // action. Once written, the outcome shows in the seller section below.
+          canContactAuthor &&
+          !contactOutcome && (
+            <Button leftSection={<IconMail size={16} />} onClick={() => setContactOpen(true)}>
+              {t('ads.contact.button')}
+            </Button>
+          )
+        }
+        edit={
+          canEdit && (
+            <EditMenuButton to={paths.adEdit(teamSlug!, adSlug!)}>
+              {ad.status === Status.DRAFT && (
+                <Menu.Item
+                  onClick={handlePublish}
+                  disabled={statusMutation.isPending}
+                  color="success"
+                  leftSection={statusMutation.isPending ? <Loader size="sm" /> : undefined}
                 >
-                  {t('actions.edit')}
-                </Button>
-                <Menu position="bottom-end">
-                  <Menu.Target>
-                    <Button variant="default" px="xs" aria-label={t('aria.manageActions')}>
-                      <IconChevronDown size={16} />
-                    </Button>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    {ad.status === Status.DRAFT && (
-                      <Menu.Item
-                        onClick={handlePublish}
-                        disabled={statusMutation.isPending}
-                        color="success"
-                        leftSection={statusMutation.isPending ? <Loader size="sm" /> : undefined}
-                      >
-                        {t('actions.publish')}
-                      </Menu.Item>
-                    )}
-                    {ad.status === Status.PUBLISHED && (
-                      <Menu.Item onClick={() => setShowUnpublishConfirm(true)} color="warning">
-                        {t('actions.unpublish')}
-                      </Menu.Item>
-                    )}
-                    {ad.deleted && (
-                      <Menu.Item
-                        onClick={handleRestore}
-                        color="green"
-                        disabled={undeleteMutation.isPending}
-                      >
-                        {t('actions.restore')}
-                      </Menu.Item>
-                    )}
-                    {ad.permissions.canDelete && (
-                      <>
-                        <Menu.Divider />
-                        <Menu.Item onClick={() => setShowDeleteConfirm(true)} color="danger">
-                          {t('actions.delete')}
-                        </Menu.Item>
-                      </>
-                    )}
-                  </Menu.Dropdown>
-                </Menu>
-              </Button.Group>
-            )}
-            <ContentActionsMenu
-              teamSlug={ad.team.slug}
-              teamName={ad.team.name}
-              targetType={ReportTargetType.AD}
-              targetId={ad.id}
-              author={{ id: ad.createdById, displayName: ad.createdByDisplayName }}
-              onReported={() => navigate(paths.ads(ad.team.slug))}
-            />
-          </Group>
-        </Group>
+                  {t('actions.publish')}
+                </Menu.Item>
+              )}
+              {ad.status === Status.PUBLISHED && (
+                <Menu.Item onClick={() => setShowUnpublishConfirm(true)} color="warning">
+                  {t('actions.unpublish')}
+                </Menu.Item>
+              )}
+              {ad.deleted && (
+                <Menu.Item
+                  onClick={handleRestore}
+                  color="green"
+                  disabled={undeleteMutation.isPending}
+                >
+                  {t('actions.restore')}
+                </Menu.Item>
+              )}
+              {ad.permissions.canDelete && (
+                <>
+                  <Menu.Divider />
+                  <Menu.Item onClick={() => setShowDeleteConfirm(true)} color="danger">
+                    {t('actions.delete')}
+                  </Menu.Item>
+                </>
+              )}
+            </EditMenuButton>
+          )
+        }
+        shareTitle={ad.name}
+        more={
+          <ContentActionsMenu
+            teamSlug={ad.team.slug}
+            teamName={ad.team.name}
+            targetType={ReportTargetType.AD}
+            targetId={ad.id}
+            author={{ id: ad.createdById, displayName: ad.createdByDisplayName }}
+            onReported={() => navigate(paths.ads(ad.team.slug))}
+          />
+        }
+      >
+        {/* The pictures, straight from `images[]` so a trimmed `media` changes nothing here.
+            Renders nothing at all when the ad has none. */}
+        <AdGallery images={ad.images} name={ad.name} />
+        <TagList tags={ad.tags} />
+      </DetailHeader>
 
+      <Paper withBorder p="lg" mb="lg">
         {/* Price */}
         <Box
-          mt="lg"
           p="md"
           bg="var(--mantine-color-body)"
           style={{ borderRadius: 'var(--mantine-radius-md)' }}
@@ -366,19 +356,7 @@ export function AdDetailPage() {
           <Alert mt="md" color="orange">
             {t('ads.contact.error.optedOut')}
           </Alert>
-        ) : (
-          // The button does not exist on one's own ad: relaying a message to oneself is not an
-          // action.
-          canContactAuthor && (
-            <Button
-              mt="md"
-              leftSection={<IconMail size={16} />}
-              onClick={() => setContactOpen(true)}
-            >
-              {t('ads.contact.button')}
-            </Button>
-          )
-        )}
+        ) : null}
       </Paper>
 
       {/* Confirmation Dialogs */}

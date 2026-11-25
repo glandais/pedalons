@@ -381,7 +381,7 @@ test.describe('public content, seen from outside the team', () => {
         const responses = recordApi(page)
         await page.goto(path)
         const main = page.getByRole('main')
-        await expect(main.getByRole('heading', { level: 2, name })).toBeVisible()
+        await expect(main.getByRole('heading', { level: 1, name })).toBeVisible()
         await pageHydrated(page)
         await expect(main.getByRole('heading', { name: /^Commentaires/ })).toHaveCount(0)
         await expect(main.getByRole('textbox', { name: 'Écrivez un commentaire...' })).toHaveCount(
