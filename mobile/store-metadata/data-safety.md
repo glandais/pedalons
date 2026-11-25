@@ -86,8 +86,9 @@ The capabilities added, and their exact boundary:
   the same way (#33).
 - **« Ouvrir avec Pédalons »** (2026-11-25, `MOB-191`) — a `.gpx` opened or shared from another
   app (Files, Mail, a messaging app) reaches the app through a declared document type (iOS
-  `CFBundleDocumentTypes`, `com.topografix.gpx`) or an intent filter (Android `VIEW`/`SEND`). The
-  person chose that one file; it is copied to the app's own storage, checked locally like a picked
+  `CFBundleDocumentTypes`, `com.topografix.gpx`, opened in place) or an intent filter (Android
+  `VIEW`/`SEND`, on `ReceivedFileActivity`). The person chose that one file; it is copied to the
+  app's own storage, checked locally like a picked
   file, and **sent only when they tap « Visualiser » or « Enregistrer dans une équipe »** — the same
   uploads as #33 and the GPX tools' « Enregistrer comme parcours ». The copy is deleted when the
   screen closes. No storage permission, nothing new collected: no change to either store form.

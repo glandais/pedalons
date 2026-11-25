@@ -17,9 +17,11 @@
 	<key>FlutterDeepLinkingEnabled</key>
 	<false/>
 	<!-- « Ouvrir avec Pédalons » : un .gpx ouvert ou partagé depuis Fichiers, Mail ou une autre
-	     app (docs/LEDGER_*.md MOB-191). iOS copie le fichier dans Documents/Inbox
-	     (LSSupportsOpeningDocumentsInPlace faux : pas d'accès « security-scoped » à gérer) et
-	     app_links remet l'URL file:// à _DeepLinkHandler. Le type GPX n'est pas un type système :
+	     app (docs/LEDGER_*.md MOB-191). LSSupportsOpeningDocumentsInPlace vrai : sans lui, Fichiers
+	     ne propose pas l'app dans « Ouvrir avec » (le partage, lui, la propose). Le fichier arrive
+	     alors sur place, avec un accès « security-scoped » : ReceivedFilePlugin (AppDelegate.swift)
+	     le copie pendant l'événement, app_links remet l'URL file:// à _DeepLinkHandler, qui
+	     demande la copie. Le type GPX n'est pas un type système :
 	     il est importé, sous l'identifiant que lui donnent les autres apps (com.topografix.gpx). -->
 	<key>CFBundleDocumentTypes</key>
 	<array>
@@ -62,7 +64,7 @@
 		</dict>
 	</array>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<false/>
+	<true/>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

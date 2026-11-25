@@ -15,6 +15,9 @@ import WebKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "ReceivedFilePlugin") {
+      ReceivedFilePlugin.register(with: registrar)
+    }
   }
 
   /// Hides the « ^ v ✓ » bar WKWebView puts above the keyboard. The rich text editor (the site's
@@ -58,5 +61,76 @@ import WebKit
         original(view, selector, info, true, blurPrevious, activityChanges, userObject)
       }
     method_setImplementation(method, imp_implementationWithBlock(focusAsUser))
+  }
+}
+
+/// « Ouvrir avec Pédalons » (docs/LEDGER_*.md MOB-191). Un .gpx ouvert depuis Fichiers arrive **sur
+/// place** (`LSSupportsOpeningDocumentsInPlace` vrai — sans quoi Fichiers ne propose pas l'app dans
+/// « Ouvrir avec ») : l'URL pointe sur le fichier de la personne, lisible seulement avec l'accès
+/// « security-scoped » attaché à cet objet `URL`, et seulement pendant l'événement. app_links n'en
+/// remet à Dart que la chaîne : l'accès serait perdu. Le fichier est donc copié ici, dans
+/// `tmp/received/`, pendant l'événement même ; Dart demande ensuite la copie par le canal
+/// `received_file`, avec la chaîne que lui a remise app_links. Les délégués de scène sont appelés à
+/// la suite sur le fil principal et la demande de Dart vient après : l'ordre avec app_links
+/// n'importe pas. Une copie de `Documents/Inbox` (partage, Mail) passe par le même chemin, et
+/// l'Inbox est vidée.
+final class ReceivedFilePlugin: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate {
+  private var copies: [String: [String: Any]] = [:]
+
+  static func register(with registrar: FlutterPluginRegistrar) {
+    let instance = ReceivedFilePlugin()
+    let channel = FlutterMethodChannel(
+      name: "fr.pedalons.mobile/received_file", binaryMessenger: registrar.messenger())
+    registrar.addMethodCallDelegate(instance, channel: channel)
+    registrar.addSceneDelegate(instance)
+  }
+
+  func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    switch call.method {
+    case "copy":
+      let uri = (call.arguments as? [String: Any])?["uri"] as? String
+      result(uri.flatMap { copies[$0] })
+    default:
+      result(FlutterMethodNotImplemented)
+    }
+  }
+
+  func scene(
+    _ scene: UIScene,
+    willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions?
+  ) -> Bool {
+    connectionOptions?.urlContexts.forEach { receive($0.url) }
+    return false
+  }
+
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) -> Bool {
+    URLContexts.forEach { receive($0.url) }
+    return false
+  }
+
+  private func receive(_ url: URL) {
+    guard url.isFileURL else { return }
+    let scoped = url.startAccessingSecurityScopedResource()
+    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+    let manager = FileManager.default
+    let dir = manager.temporaryDirectory.appendingPathComponent("received", isDirectory: true)
+    try? manager.createDirectory(at: dir, withIntermediateDirectories: true)
+    let target = dir.appendingPathComponent(url.lastPathComponent)
+    var copied = false
+    var coordinationError: NSError?
+    // Un fichier d'iCloud Drive pas encore téléchargé l'est par la coordination.
+    NSFileCoordinator().coordinate(
+      readingItemAt: url, options: .withoutChanges, error: &coordinationError
+    ) { readable in
+      try? manager.removeItem(at: target)
+      copied = (try? manager.copyItem(at: readable, to: target)) != nil
+    }
+    guard copied else { return }
+    let size = (try? manager.attributesOfItem(atPath: target.path)[.size] as? NSNumber) ?? 0
+    copies[url.absoluteString] = [
+      "path": target.path, "name": url.lastPathComponent, "size": size.int64Value,
+    ]
+    if url.path.contains("/Documents/Inbox/") { try? manager.removeItem(at: url) }
   }
 }

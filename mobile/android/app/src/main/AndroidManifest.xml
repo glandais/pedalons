@@ -226,14 +226,25 @@
                 <data android:pathPattern="/equipes/.*/annonces/.*/modifier" />
                 <!-- END generated-deeplinks -->
             </intent-filter>
+        </activity>
 
-            <!-- « Ouvrir avec Pédalons » : un .gpx ouvert depuis Fichiers, un mail ou une autre app
-                 (docs/LEDGER_*.md MOB-191). app_links remet l'URI content:// à _DeepLinkHandler,
-                 qui la fait copier par MainActivity (canal received_file) avant d'ouvrir l'écran
-                 « Fichier reçu ». Les messageries et Drive annoncent souvent un GPX en
-                 application/octet-stream, Google Files en XML générique : sans ces types, l'app
-                 ne leur serait pas proposée (CoMaps fait de même). Un fichier qui n'est pas un
-                 GPX est refusé à l'écran, comme au sélecteur. -->
+        <!-- « Ouvrir avec Pédalons » / « Partager vers Pédalons » d'un .gpx (docs/LEDGER_*.md
+             MOB-191). Pas sur MainActivity : lancée par VIEW ou SEND, elle s'ouvrirait dans la
+             tâche de l'app d'origine et y prendrait sa place. ReceivedFileActivity, sans écran,
+             copie le fichier puis ouvre MainActivity dans sa propre tâche (voir la classe).
+             noHistory et excludeFromRecents : le relais ne laisse aucune trace dans la tâche
+             d'origine. -->
+        <activity
+            android:name=".ReceivedFileActivity"
+            android:exported="true"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <!-- Les messageries et Drive annoncent souvent un GPX en application/octet-stream,
+                 Google Files en XML générique : sans ces types, l'app ne leur serait pas proposée
+                 (CoMaps fait de même). Un fichier qui n'est pas un GPX est refusé à l'écran,
+                 comme au sélecteur. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -247,9 +258,8 @@
                 <data android:mimeType="application/xml" />
                 <data android:mimeType="text/xml" />
             </intent-filter>
-            <!-- Le partage d'un .gpx (feuille « Partager ») : MainActivity le change en VIEW,
-                 le seul que lit app_links. Pas d'octet-stream ici : l'app apparaîtrait au partage
-                 de n'importe quel fichier. -->
+            <!-- Le partage d'un .gpx (feuille « Partager »). Pas d'octet-stream ici : l'app
+                 apparaîtrait au partage de n'importe quel fichier. -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
