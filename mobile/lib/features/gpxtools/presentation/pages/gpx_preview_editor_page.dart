@@ -605,7 +605,7 @@ class _GpxPreviewEditorPageState extends ConsumerState<GpxPreviewEditorPage> {
                 // ── Tracé ── La section de l'éditeur de parcours : à la
                 // création le planificateur (un fichier s'y importe), en
                 // modification le tracé actuel, « Modifier le tracé » et
-                // « Remplacer le GPX ».
+                // « Remplacer le fichier GPX ».
                 RouteTrackSection(
                   current: preview == null
                       ? null

@@ -165,26 +165,27 @@ void main() {
     expect(client.requests, isEmpty);
   });
 
-  testWidgets('déplacer l’arrivée vers un lieu, puis « Nouveau parcours »', (
-    WidgetTester tester,
-  ) async {
-    await open(tester, canEdit: false);
-    await tester.tap(find.text('Déplacer l\'arrivée'));
-    // Les lieux de l'équipe ne sont lus qu'à l'ouverture de ce mode.
-    await pumps(tester);
-    await tester.tap(find.byKey(keys.routeRetouch.place('p1')));
-    await tester.pump();
-    await tester.tap(find.byKey(keys.routeRetouch.submitButton));
-    await pumps(tester);
-    expect(client.requests.single.end?.placeId, 'p1');
-    // Pas de « Modifier » pour qui ne peut pas modifier ce parcours.
-    expect(find.byKey(keys.routeRetouch.editButton), findsNothing);
+  testWidgets(
+    'déplacer l’arrivée vers un lieu, puis « Ouvrir dans l’éditeur »',
+    (WidgetTester tester) async {
+      await open(tester, canEdit: false);
+      await tester.tap(find.text('Déplacer l\'arrivée'));
+      // Les lieux de l'équipe ne sont lus qu'à l'ouverture de ce mode.
+      await pumps(tester);
+      await tester.tap(find.byKey(keys.routeRetouch.place('p1')));
+      await tester.pump();
+      await tester.tap(find.byKey(keys.routeRetouch.submitButton));
+      await pumps(tester);
+      expect(client.requests.single.end?.placeId, 'p1');
+      // Pas de « Modifier » pour qui ne peut pas modifier ce parcours.
+      expect(find.byKey(keys.routeRetouch.editButton), findsNothing);
 
-    await tester.tap(find.byKey(keys.routeRetouch.openButton));
-    await pumps(tester);
-    expect(choice?.opening, RetouchOpening.newRoute);
-    expect(choice?.handoff?.name, '${fixtureRouteDetail().name} (retouché)');
-  });
+      await tester.tap(find.byKey(keys.routeRetouch.openButton));
+      await pumps(tester);
+      expect(choice?.opening, RetouchOpening.newRoute);
+      expect(choice?.handoff?.name, '${fixtureRouteDetail().name} (retouché)');
+    },
+  );
 
   testWidgets('raccourcir refusé : la réponse en bleu et ses suites', (
     WidgetTester tester,

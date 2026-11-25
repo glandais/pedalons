@@ -464,7 +464,9 @@ export function TripEditor({
                         setShowRoutePickerModal(true)
                       }}
                     >
-                      {routeSlug ? t('actions.edit') : t('trips.create.form.route.select')}
+                      {routeSlug
+                        ? t('routes.form.changeRoute')
+                        : t('trips.create.form.route.select')}
                     </Button>
                     {routeSlug && (
                       <Button
@@ -614,7 +616,7 @@ export function TripEditor({
                           }}
                         >
                           {stage.routeSlug
-                            ? t('actions.edit')
+                            ? t('routes.form.changeRoute')
                             : t('trips.create.form.route.select')}
                         </Button>
                         {stage.routeSlug && (

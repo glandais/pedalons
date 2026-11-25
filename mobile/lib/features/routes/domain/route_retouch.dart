@@ -178,10 +178,10 @@ GeneratedHandoff retouchHandoff(
 
 /// Ce que l'écran de retouche rend à la fiche.
 enum RetouchOpening {
-  /// « Modifier » : l'éditeur de ce parcours, tracé remplacé.
+  /// « Remplacer le tracé » : l'éditeur de ce parcours, tracé remplacé.
   edit,
 
-  /// « Nouveau parcours » : une création dans le planificateur.
+  /// « Ouvrir dans l’éditeur » : une création dans le planificateur.
   newRoute,
 
   /// « Ouvrir le générateur ».

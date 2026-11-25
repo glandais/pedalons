@@ -28,7 +28,7 @@ final class RouteEditor extends Module {
   // ── The file ───────────────────────────────────────────────────────────
 
   /// Writes [content] to a file named [fileName] and makes it the file the next « Choisir un
-  /// fichier GPX » (or « Remplacer le GPX ») answers with.
+  /// fichier GPX » (or « Remplacer le fichier GPX ») answers with.
   Future<void> provideGpx({
     required String fileName,
     required String content,

@@ -47,7 +47,7 @@ Future<RetouchChoice?> openRouteRetouch(
 /// `WEB-201`) : viser une autre distance, ou déplacer l'arrivée ; jusqu'à
 /// trois propositions sur la carte, le tronçon changé en évidence, puis
 /// « Modifier » (la trace de ce parcours remplacée dans son éditeur) ou
-/// « Nouveau parcours » (une création). Rien n'est enregistré ici : l'écran
+/// « Ouvrir dans l’éditeur » (une création). Rien n'est enregistré ici : l'écran
 /// rend son choix à la fiche, qui ouvre l'éditeur.
 class RouteRetouchPage extends ConsumerStatefulWidget {
   const RouteRetouchPage({
@@ -339,7 +339,7 @@ class _RouteRetouchPageState extends ConsumerState<RouteRetouchPage> {
     final RouteRetouchResponse? response = _response;
     final BoundsDto? b = response?.candidates[_selected].bounds;
     // Pas de nouvelle arrivée pendant le calcul ni sur les propositions : un
-    // toucher en manipulant la carte les effaçait ; « Modifier la demande »
+    // toucher en manipulant la carte les effaçait ; « Modifier les réglages »
     // y ramène (docs/LEDGER_*.md MOB-186).
     final bool picking =
         _mode == RouteRetouchOperation.moveEnd && response == null && !_loading;

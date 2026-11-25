@@ -160,7 +160,7 @@ class RouteEditorKeys {
   final forbidden = const _RouteEditorKey('forbidden');
   final loadError = const _RouteEditorKey('loadError');
 
-  /// L'étape 1 de la création : la zone « Envoyer un fichier GPX ».
+  /// L'étape 1 de la création : la zone « Importer un fichier GPX ».
   final pickStep = const _RouteEditorKey('pickStep');
   final pickButton = const _RouteEditorKey('pickButton');
 

@@ -1,8 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { paths } from '../../config/paths'
-import { Button, Group, Stack } from '@mantine/core'
-import { PrefetchLink } from '@/components/common/PrefetchLink'
+import { Group, Stack } from '@mantine/core'
 import { LoadingPage } from '../../components/common/LoadingSpinner'
 import { TeamLayout } from '../../components/team/TeamLayout'
 import { TeamUnavailable } from '@/components/team/TeamUnavailable'
@@ -16,6 +15,7 @@ import { RouteDeadEnd } from '@/components/route/RouteDeadEnd'
 import { RouteViewSwitch } from '@/components/route/RouteViewSwitch'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { RoutesListHeader } from '@/components/route/RoutesListHeader'
+import { RouteFirstCreateButton } from '@/components/route/RouteFirstCreateButton'
 import { TagFilter } from '../../components/tag'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
@@ -116,9 +116,7 @@ export function RouteListPage() {
           onPageChange={handlePageChange}
           emptyAction={
             canCreateRoute && !hasFiltersOrSearch ? (
-              <Button component={PrefetchLink} to={paths.routeNew(teamSlug!)} variant="light">
-                {t('list.create.route')}
-              </Button>
+              <RouteFirstCreateButton team={team} />
             ) : undefined
           }
         />

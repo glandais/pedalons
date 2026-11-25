@@ -243,7 +243,7 @@ describe('RouteRetouchModal, adjust the distance', () => {
     fireEvent.click(submit())
     await waitFor(() => expect(cards()).toHaveLength(3))
     fireEvent.click(cards()[1])
-    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir dans le planificateur' }))
+    fireEvent.click(screen.getByRole('button', { name: "Ouvrir dans l'éditeur" }))
     expect(onOpen).toHaveBeenCalledWith({
       polyline: '_p~iF~ps|U',
       type: 'GRAVEL',
@@ -252,13 +252,13 @@ describe('RouteRetouchModal, adjust the distance', () => {
     })
   })
 
-  it("hands the chosen proposal to the route's editor with « Modifier », under its own name", async () => {
+  it("hands the chosen proposal to the route's editor with « Remplacer le tracé », under its own name", async () => {
     renderModal('resize', { editable: true })
     type('70')
     fireEvent.click(submit())
     await waitFor(() => expect(cards()).toHaveLength(3))
     fireEvent.click(cards()[1])
-    fireEvent.click(screen.getByRole('button', { name: 'Modifier' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remplacer le tracé' }))
     expect(onEdit).toHaveBeenCalledWith({
       polyline: '_p~iF~ps|U',
       type: 'GRAVEL',
@@ -268,12 +268,12 @@ describe('RouteRetouchModal, adjust the distance', () => {
     expect(onOpen).not.toHaveBeenCalled()
   })
 
-  it('offers no « Modifier » to a reader who cannot edit the route', async () => {
+  it('offers no « Remplacer le tracé » to a reader who cannot edit the route', async () => {
     renderModal()
     type('70')
     fireEvent.click(submit())
     await waitFor(() => expect(cards()).toHaveLength(3))
-    expect(screen.queryByRole('button', { name: 'Modifier' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Remplacer le tracé' })).toBeNull()
   })
 
   it('disables the opening, and says why, when the planner quota is spent', async () => {
@@ -282,8 +282,7 @@ describe('RouteRetouchModal, adjust the distance', () => {
     fireEvent.click(submit())
     await waitFor(() => expect(cards()).toHaveLength(3))
     expect(
-      (screen.getByRole('button', { name: 'Ouvrir dans le planificateur' }) as HTMLButtonElement)
-        .disabled
+      (screen.getByRole('button', { name: "Ouvrir dans l'éditeur" }) as HTMLButtonElement).disabled
     ).toBe(true)
     expect(screen.getByText('Les enregistrements de tracés du mois sont épuisés.')).toBeTruthy()
   })

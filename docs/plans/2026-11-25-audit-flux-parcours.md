@@ -192,7 +192,8 @@ Les plus urgents : §2.1 (W-N1, M-N5, M-N1), §3.1, §4.1.
 | D5 | Quota épuisé | **Griser partout** : `plannerQuota` ajouté à la liste d'équipes lue par l'accueil (changement de contrat), « Tracer » et « Générer » grisés dans les menus de l'app, le générateur mobile relit l'équipe à l'ouverture et désactive « Générer ». | W-N7, W-F8, M-N7, M-F8 |
 | D6 | Parité de l'app | **Ajouter les deux** : « Modifier une copie » vers les outils GPX de l'app, et l'offre de retouche lue aussi sans `canEdit` (sortie « Nouveau parcours » seulement). | M-F15 |
 
-**Lots livrés** : D1 (`WEB-213`), D2 (`WEB-214`, `MOB-187`).
+**Lots livrés** : D1 (`WEB-213`), D2 (`WEB-214`, `MOB-187`), D3 (`WEB-215` ; « Remplacer le tracé »
+plutôt que « la trace », que le lexique réserve).
 
 **Corrections nettes livrées le 25 novembre 2026** : W-F6 et W-F18 (`WEB-212`) ; M-F2, M-N5, M-F3,
 M-F4, M-F12, M-F21, M-F22 et M-F24 (`MOB-186`).

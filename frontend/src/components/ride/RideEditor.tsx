@@ -391,7 +391,7 @@ export function RideEditor({
                   setShowRoutePickerModal(true)
                 }}
               >
-                {routeSlug ? t('actions.edit') : t('rides.create.form.route.select')}
+                {routeSlug ? t('routes.form.changeRoute') : t('rides.create.form.route.select')}
               </Button>
               {routeSlug && (
                 <Button
@@ -573,7 +573,9 @@ export function RideEditor({
                           setShowRoutePickerModal(true)
                         }}
                       >
-                        {group.routeSlug ? t('actions.edit') : t('rides.create.form.route.select')}
+                        {group.routeSlug
+                          ? t('routes.form.changeRoute')
+                          : t('rides.create.form.route.select')}
                       </Button>
                       {group.routeSlug && (
                         <Button

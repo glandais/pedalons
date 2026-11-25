@@ -1028,6 +1028,12 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 | Move to another group | **Changer pour {groupe}** | « Changer de groupe », « Rejoindre B » |
 | Full group | **Complet** (bouton désactivé) | « Plein », « Liste d'attente » |
 | Route export | **GPS** — un seul bouton sur une carte ; il ouvre « Vers un appareil », « Fichier GPX », « Fichier FIT » | « Envoyer vers l'appareil », « Télécharger GPX » en boutons de carte |
+| Edit a route (its form) | **Modifier** — et rien d'autre ne s'appelle « Modifier » autour d'un parcours (`WEB-215`) | « Modifier » pour remplacer un tracé ou changer le parcours d'une sortie |
+| Retouch applied to the route itself | **Remplacer le tracé** (l'éditeur de ce parcours s'ouvre avec le tracé proposé) | « Modifier », « Appliquer » |
+| A proposal (generator, retouch) opened as a new route | **Ouvrir dans l'éditeur** — partout, site et app ; dans le formulaire de création, le générateur garde **Utiliser ce parcours** (on y est déjà) | « Ouvrir dans le planificateur », « Nouveau parcours », « Utiliser ce parcours » hors du formulaire |
+| Back to a calculation's settings | **Modifier les réglages** (générateur et retouche) | « Modifier la demande » |
+| GPX files | **Importer des GPX** (un ou plusieurs, depuis un menu « Créer ») ; **Importer un fichier GPX** (un seul, dans un formulaire) ; **Remplacer le fichier GPX** | « Envoyer un fichier GPX », « Remplacer le GPX », « Choisir un fichier GPX » en titre |
+| Pick another route for a ride or trip | **Changer de parcours** | « Modifier » |
 | Team-only visibility | **Équipe uniquement** | « Équipe » seul, « Privé » |
 | Role `ADMIN` | **Administrateur** | « Admin » |
 | Member since | **Membre depuis mars 2024** (mois et année) | « A rejoint le 3 mars 2024 » |

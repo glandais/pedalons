@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **627 entrées livrées**, et des 23 entrées encore ouvertes dont une part l'est.
+Index des **628 entrées livrées**, et des 23 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -161,6 +161,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## WEB — Site web
 
+- [x] [`WEB-215`](ledger/WEB/WEB-215.md) Vocabulaire des flux de parcours, site et app — 2026-11-25
 - [x] [`WEB-214`](ledger/WEB/WEB-214.md) Proposition transmise à l'éditeur de parcours, prise une seule fois — 2026-11-25
 - [x] [`WEB-213`](ledger/WEB/WEB-213.md) Garde de sortie des éditeurs de parcours et d'aperçus GPX — 2026-11-25
 - [x] [`WEB-212`](ledger/WEB/WEB-212.md) Flux des parcours : corrections nettes de l'audit du 25 novembre 2026 — 2026-11-25

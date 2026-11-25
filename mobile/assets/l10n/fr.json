@@ -715,8 +715,7 @@
       "createTrip": "Créer un voyage",
       "create": {
         "title": "Créer",
-        "other": "Créer autre chose",
-        "routeHint": "Importer un GPX ou tracer sur la carte"
+        "other": "Créer autre chose"
       },
       "firstSteps": {
         "title": "Premières étapes",
@@ -1594,9 +1593,8 @@
       "forbiddenMessage": "Seuls les rôles Organisateur et Administrateur de l'équipe peuvent créer ou modifier un parcours.",
       "modulesOffMessage": "Les parcours sont désactivés pour cette équipe.",
       "invalid": "Vérifiez les champs signalés avant d'enregistrer.",
-      "pickTitle": "Envoyer un fichier GPX",
+      "pickTitle": "Importer un fichier GPX",
       "pickMessage": "Le tracé ne se dessine pas dans l'app : exportez-le en GPX depuis votre outil de cartographie ou votre compteur, puis choisissez le fichier ici.",
-      "pickButton": "Choisir un fichier GPX",
       "pickHint": "Un fichier .gpx s'ouvre ici, à compléter avant d'enregistrer ; plusieurs deviennent chacun un parcours. La distance, le dénivelé et la carte sont calculés à l'envoi.",
       "reading": "Lecture du fichier…",
       "refusedTitle": "Fichier refusé",
@@ -1608,7 +1606,7 @@
       "track": "Tracé",
       "trackComputed": "distance et dénivelé calculés à l'envoi",
       "trackChange": "Changer",
-      "trackReplace": "Remplacer le GPX",
+      "trackReplace": "Remplacer le fichier GPX",
       "trackReplacing": "Remplacera le tracé à l'enregistrement",
       "trackReplaceCancel": "Garder le tracé actuel",
       "trackWarning": "Un nouveau fichier remplace tout le tracé. Les sorties qui utilisent ce parcours suivront le nouveau tracé.",
@@ -1625,8 +1623,8 @@
       "description": "Description",
       "markdownPlaceholder": "Description",
       "media": "Médias",
-      "pickTitlePlanner": "Importer ou tracer le parcours",
-      "pickMessagePlanner": "Importez un fichier GPX exporté d'un outil de cartographie ou d'un compteur, ou tracez le parcours sur la carte.",
+      "pickTitlePlanner": "Tracer, importer ou générer le parcours",
+      "pickMessagePlanner": "Tracez le parcours sur la carte, importez un fichier GPX exporté d'un outil de cartographie ou d'un compteur, ou demandez-le au générateur.",
       "importButton": "Importer un fichier GPX",
       "drawButton": "Tracer sur la carte",
       "trackEdit": "Modifier le tracé",
@@ -1640,7 +1638,7 @@
       "fileLost": "Le fichier importé dans le planificateur n'est plus disponible : importez-le de nouveau.",
       "proposalWaiting": "Une proposition attend dans le planificateur : elle n'a pas encore été reprise.",
       "proposalOpen": "Ouvrir la proposition",
-      "proposalNotTaken": "La trace proposée n'a pas été reprise : ouvrez-la avec « Modifier le tracé », puis « Terminer », avant d'enregistrer.",
+      "proposalNotTaken": "Le tracé proposé n'a pas été repris : ouvrez-le avec « Modifier le tracé », puis « Terminer », avant d'enregistrer.",
       "pointsRequired": "Au moins 2 points de contrôle sont requis",
       "excludedFromGenerator": "Ne pas utiliser pour générer des parcours",
       "excludedFromGeneratorHint": "Pour un parcours d'événement ou une route ouverte exceptionnellement : ses routes ne seront proposées que si un autre parcours de l'équipe les emprunte.",
@@ -2958,7 +2956,7 @@
       "unpavedAbove": "Plus de chemins que demandé dans ce secteur",
       "unpavedBelow": "Moins de chemins que demandé dans ce secteur",
       "shared": "Tronçon commun aller-retour : {distance}",
-      "use": "Utiliser ce parcours"
+      "use": "Ouvrir dans l'éditeur"
     },
     "errors": {
       "busy": "Le générateur de parcours est très demandé. Réessayez dans un instant.",
@@ -2983,7 +2981,7 @@
     },
     "cancel": "Annuler",
     "editSettings": "Modifier les réglages",
-    "useHint": "Le parcours s'ouvre dans le planificateur pour l'enregistrer.",
+    "useHint": "Le parcours s'ouvre dans l'éditeur, où vous l'enregistrez.",
     "tryInstead": "Essayer plutôt",
     "moreDiscovery": "Plus de découverte",
     "otherStart": "Autre départ",
@@ -3006,7 +3004,7 @@
       "unmatched": "Une partie gardée n'a pas pu être vérifiée sur la carte : le tronçon neuf peut la reprendre."
     },
     "current": "Actuellement {distance}",
-    "edit": "Modifier",
+    "edit": "Remplacer le tracé",
     "errors": {
       "changeTooLarge": "L'écart est trop grand pour une retouche (au plus {percent}). Pour une distance aussi différente, le générateur propose un nouveau parcours.",
       "changeTooSmall": "L'écart est trop petit : visez au moins {min} de plus ou de moins que {current}.",
@@ -3051,9 +3049,9 @@
       "keepAll": "Tout le parcours, puis l'arrivée",
       "nearest": "Quitter au plus près de l'arrivée"
     },
-    "open": "Nouveau parcours",
-    "editHelp": "Rien n'est enregistré : « Modifier » remplace la trace de ce parcours dans son éditeur, « Nouveau parcours » en fait un nouveau parcours.",
-    "openHelp": "Rien n'est enregistré : le planificateur ouvre un nouveau parcours, que vous enregistrez ensuite.",
+    "open": "Ouvrir dans l'éditeur",
+    "editHelp": "Rien n'est enregistré : « Remplacer le tracé » ouvre ce parcours dans son éditeur avec le tracé proposé, « Ouvrir dans l'éditeur » en fait un nouveau parcours.",
+    "openHelp": "Rien n'est enregistré : l'éditeur ouvre un nouveau parcours, que vous enregistrez ensuite.",
     "legend": {
       "kept": "Gardé",
       "new": "Nouveau tronçon",
@@ -3063,7 +3061,7 @@
       "one": "{} proposition",
       "other": "{} propositions"
     },
-    "editSettings": "Modifier la demande",
+    "editSettings": "Modifier les réglages",
     "mapLabel": "Carte de la retouche"
   }
 }

@@ -56,10 +56,10 @@ interface RouteRetouchModalProps {
   initialMode: RetouchMode
   /** The team's planner quota, to say a save of the opened route will be refused. */
   plannerQuota?: PlannerQuotaDto
-  /** « Ouvrir dans le planificateur »: the page navigates to a new route with this hand-off. */
+  /** « Ouvrir dans l'éditeur »: the page navigates to a new route with this hand-off. */
   onOpen: (handoff: GeneratedHandoff) => void
   /**
-   * « Modifier »: the page opens this route's editor with the proposal in place of its track
+   * « Remplacer le tracé »: the page opens this route's editor with the proposal in place of its track
    * (ledger `WEB-203`). Absent for a reader who cannot edit the route: no button.
    */
   onEdit?: (handoff: GeneratedHandoff) => void

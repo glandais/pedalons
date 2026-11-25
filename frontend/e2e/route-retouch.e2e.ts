@@ -23,7 +23,7 @@ import type { Page } from '@playwright/test'
 /**
  * Retouching a saved route from its page (ledger API-212, plan
  * docs/plans/2026-11-24-retouche-parcours-lot7c.md): « Retoucher » menu, the dialog, the proposals
- * over the original, « Ouvrir dans le planificateur ».
+ * over the original, « Ouvrir dans l'éditeur ».
  *
  * WRITTEN, NOT RUN (the session that wrote it was not allowed to start the e2e stack). The e2e
  * stack's engine has no graph, so the real offer answers ENGINE_UNAVAILABLE: one test makes that
@@ -243,7 +243,7 @@ test('move the finish to a place of the team: the request carries end.placeId', 
   expect(bodies[0].targetDistanceKm).toBeUndefined()
 })
 
-test('« Ouvrir dans le planificateur » loads the proposal in a new route named « (retouché) », no router call', async ({
+test("« Ouvrir dans l'éditeur » loads the proposal in a new route named « (retouché) », no router call", async ({
   context,
   page,
   isMobile,
@@ -264,7 +264,7 @@ test('« Ouvrir dans le planificateur » loads the proposal in a new route named
   await dialog.getByLabel('Distance visée').fill('5')
   await dialog.getByRole('button', { name: 'Proposer' }).click()
   await expect(cards(page)).toHaveCount(3)
-  await dialog.getByRole('button', { name: 'Ouvrir dans le planificateur' }).click()
+  await dialog.getByRole('button', { name: "Ouvrir dans l'éditeur" }).click()
 
   await expect(page).toHaveURL(ROUTE_NEW_PATH(team.slug))
   const main = page.getByRole('main')

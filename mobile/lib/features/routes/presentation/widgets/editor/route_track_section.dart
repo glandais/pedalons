@@ -91,7 +91,7 @@ class RouteTrackSection extends ConsumerWidget {
   final PlannerQuotaRefusal? quotaSpent;
   final PlannerResult? drawn;
 
-  /// L'avertissement sous « Remplacer le GPX » ; `null` : celui d'un
+  /// L'avertissement sous « Remplacer le fichier GPX » ; `null` : celui d'un
   /// parcours d'équipe (les sorties qui l'utilisent suivront le nouveau
   /// tracé). Un aperçu des outils GPX n'a pas de sortie (MOB-178).
   final String? trackWarning;

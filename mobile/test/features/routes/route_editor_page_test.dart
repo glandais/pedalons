@@ -853,7 +853,7 @@ void main() {
       expect(find.text('accueil'), findsOneWidget);
     });
 
-    testWidgets('« Remplacer le GPX » envoie le nouveau fichier', (
+    testWidgets('« Remplacer le fichier GPX » envoie le nouveau fichier', (
       WidgetTester tester,
     ) async {
       final _StubRoutes routes = _StubRoutes();
@@ -1917,34 +1917,38 @@ void main() {
         await pumps(tester);
       }
 
-      testWidgets('« Modifier le tracé » à côté de « Remplacer le GPX »', (
-        WidgetTester tester,
-      ) async {
-        final _StubRoutes routes = _StubRoutes(detail: singleTrack())
-          ..plannerState = PlannerState.fromJson(fixturePlannerStateJson);
-        final _FakePlannerWeb web = await openEdit(tester, routes);
+      testWidgets(
+        '« Modifier le tracé » à côté de « Remplacer le fichier GPX »',
+        (WidgetTester tester) async {
+          final _StubRoutes routes = _StubRoutes(detail: singleTrack())
+            ..plannerState = PlannerState.fromJson(fixturePlannerStateJson);
+          final _FakePlannerWeb web = await openEdit(tester, routes);
 
-        expect(find.text('Modifier le tracé'), findsOneWidget);
-        expect(find.byKey(keys.routeEditor.trackReplaceButton), findsOneWidget);
-        // L'état n'est lu qu'à l'ouverture du planificateur.
-        expect(routes.plannerStateReads, 0);
+          expect(find.text('Modifier le tracé'), findsOneWidget);
+          expect(
+            find.byKey(keys.routeEditor.trackReplaceButton),
+            findsOneWidget,
+          );
+          // L'état n'est lu qu'à l'ouverture du planificateur.
+          expect(routes.plannerStateReads, 0);
 
-        await edit(tester, web);
-        expect(routes.plannerStateReads, 1);
-        final Map<String, dynamic> load =
-            web.argumentsOf('load').single! as Map<String, dynamic>;
-        expect(load['create'], isFalse);
-        expect(load['routeName'], 'Col de la Croix');
-        expect(load['ascend'], 800);
-        expect(load['waypointsTotal'], 50000);
-        expect(load['waypoints'], isEmpty);
-        expect(load['track'], <dynamic>[
-          <dynamic>[5.0, 45.0, 200.0, 0.0],
-          <dynamic>[5.01, 45.01, 230.0, 1400.0],
-        ]);
-        // L'état, sans les `null` que les DTO écrivent pour un champ absent.
-        expect(load['state'], fixturePlannerStateJson);
-      });
+          await edit(tester, web);
+          expect(routes.plannerStateReads, 1);
+          final Map<String, dynamic> load =
+              web.argumentsOf('load').single! as Map<String, dynamic>;
+          expect(load['create'], isFalse);
+          expect(load['routeName'], 'Col de la Croix');
+          expect(load['ascend'], 800);
+          expect(load['waypointsTotal'], 50000);
+          expect(load['waypoints'], isEmpty);
+          expect(load['track'], <dynamic>[
+            <dynamic>[5.0, 45.0, 200.0, 0.0],
+            <dynamic>[5.01, 45.01, 230.0, 1400.0],
+          ]);
+          // L'état, sans les `null` que les DTO écrivent pour un champ absent.
+          expect(load['state'], fixturePlannerStateJson);
+        },
+      );
 
       testWidgets('tracé retouché : l\'état part, sans fichier', (
         WidgetTester tester,
@@ -2065,7 +2069,7 @@ void main() {
         await pumps(tester);
         expect(routes.updated, isEmpty);
         expect(
-          find.textContaining('La trace proposée n\'a pas été reprise'),
+          find.textContaining('Le tracé proposé n\'a pas été repris'),
           findsOneWidget,
         );
       });

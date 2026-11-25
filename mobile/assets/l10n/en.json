@@ -715,8 +715,7 @@
       "createTrip": "Create a trip",
       "create": {
         "title": "Create",
-        "other": "Create something else",
-        "routeHint": "Import a GPX or draw it on the map"
+        "other": "Create something else"
       },
       "firstSteps": {
         "title": "First steps",
@@ -1594,9 +1593,8 @@
       "forbiddenMessage": "Only the team's organizers and administrators can create or edit a route.",
       "modulesOffMessage": "Routes are turned off for this team.",
       "invalid": "Check the highlighted fields before saving.",
-      "pickTitle": "Upload a GPX file",
+      "pickTitle": "Import a GPX file",
       "pickMessage": "The track isn't drawn in the app: export it as GPX from your mapping tool or bike computer, then choose the file here.",
-      "pickButton": "Choose a GPX file",
       "pickHint": "One .gpx file opens here, to complete before saving; several become one route each. Distance, climbing and the map are computed on upload.",
       "reading": "Reading the file…",
       "refusedTitle": "File rejected",
@@ -1608,7 +1606,7 @@
       "track": "Track",
       "trackComputed": "distance and elevation computed on upload",
       "trackChange": "Change",
-      "trackReplace": "Replace the GPX",
+      "trackReplace": "Replace the GPX file",
       "trackReplacing": "Replaces the track when you save",
       "trackReplaceCancel": "Keep the current track",
       "trackWarning": "A new file replaces the whole track. Rides using this route will follow the new track.",
@@ -1625,8 +1623,8 @@
       "description": "Description",
       "markdownPlaceholder": "Description",
       "media": "Media",
-      "pickTitlePlanner": "Upload or draw the route",
-      "pickMessagePlanner": "Upload a GPX file exported from a mapping tool or a bike computer, or draw the route on the map.",
+      "pickTitlePlanner": "Draw, import or generate the route",
+      "pickMessagePlanner": "Draw the route on the map, import a GPX file exported from a mapping tool or a bike computer, or ask the generator for one.",
       "importButton": "Upload GPX file",
       "drawButton": "Draw on map",
       "trackEdit": "Edit the track",
@@ -2958,7 +2956,7 @@
       "unpavedAbove": "More paths than asked for in this area",
       "unpavedBelow": "Fewer paths than asked for in this area",
       "shared": "Shared out-and-back stretch: {distance}",
-      "use": "Use this route"
+      "use": "Open in the editor"
     },
     "errors": {
       "busy": "The route generator is busy. Try again in a moment.",
@@ -2983,7 +2981,7 @@
     },
     "cancel": "Cancel",
     "editSettings": "Change settings",
-    "useHint": "The route opens in the planner, where you save it.",
+    "useHint": "The route opens in the editor, where you save it.",
     "tryInstead": "Try instead",
     "moreDiscovery": "More discovery",
     "otherStart": "Another start",
@@ -3006,7 +3004,7 @@
       "unmatched": "Part of what is kept couldn't be checked on the map: the new section may ride it again."
     },
     "current": "Currently {distance}",
-    "edit": "Edit",
+    "edit": "Replace the track",
     "errors": {
       "changeTooLarge": "The change is too large for an adjustment (at most {percent}). For such a different distance, the generator suggests a new route.",
       "changeTooSmall": "The change is too small: aim at least {min} above or below {current}.",
@@ -3051,9 +3049,9 @@
       "keepAll": "The whole route, then the finish",
       "nearest": "Leave closest to the finish"
     },
-    "open": "New route",
-    "editHelp": "Nothing is saved: “Edit” replaces this route's track in its editor, “New route” makes it a new route.",
-    "openHelp": "Nothing is saved: the planner opens a new route, which you then save.",
+    "open": "Open in the editor",
+    "editHelp": "Nothing is saved: “Replace the track” opens this route in its editor with the proposed track, “Open in the editor” makes it a new route.",
+    "openHelp": "Nothing is saved: the editor opens a new route, which you then save.",
     "legend": {
       "kept": "Kept",
       "new": "New stretch",
@@ -3063,7 +3061,7 @@
       "one": "{} proposal",
       "other": "{} proposals"
     },
-    "editSettings": "Change the request",
+    "editSettings": "Change settings",
     "mapLabel": "Retouch map"
   }
 }

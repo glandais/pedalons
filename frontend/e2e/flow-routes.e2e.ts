@@ -126,14 +126,16 @@ test('a team admin creates a route by uploading a GPX; its page shows its stats,
 
   await signIn(context, owner)
   const list = await openRouteList(page, team.slug)
-  // An empty team offers the form twice — in the header and in the empty state; either will do.
+  // An empty team's empty state offers the list's first creation, « Tracer sur la carte » (a team
+  // draws by default, docs/LEDGER_*.md WEB-215); the form then takes a file as well.
   await expect(list.getByRole('heading', { name: 'Aucun parcours' })).toBeVisible()
-  const create = list.getByRole('link', { name: 'Créer un parcours' }).first()
+  const create = list.getByRole('link', { name: 'Tracer sur la carte' }).last()
   await hydrated(create)
   await create.click()
 
   const main = page.getByRole('main')
   await expect(main.getByRole('heading', { level: 1, name: 'Créer un parcours' })).toBeVisible()
+  await main.getByRole('button', { name: 'Importer un fichier GPX' }).click()
   const submit = main.getByRole('button', { name: 'Créer le parcours' })
   await hydrated(submit)
   // No file yet: nothing to create.
