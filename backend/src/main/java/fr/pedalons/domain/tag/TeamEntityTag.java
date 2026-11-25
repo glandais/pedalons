@@ -1,7 +1,7 @@
 package fr.pedalons.domain.tag;
 
 import fr.pedalons.domain.common.TeamEntity;
-import io.hypersistence.utils.hibernate.id.Tsid;
+import fr.pedalons.infrastructure.hibernate.Tsid;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

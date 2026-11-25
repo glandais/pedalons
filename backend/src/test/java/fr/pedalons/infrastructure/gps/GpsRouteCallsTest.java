@@ -10,7 +10,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URLDecoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
@@ -27,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The requests the clients build for the route sync (docs/LEDGER_*.md API-120 §4.5): method, URL,
@@ -392,8 +392,8 @@ class GpsRouteCallsTest {
     var geoPoints = course.get("geoPoints");
     assertEquals(4, geoPoints.size(), "the three points and the course point");
     var inserted = geoPoints.get(1);
-    assertEquals("Source", inserted.get("information").get("name").asText());
-    assertEquals("WATER", inserted.get("information").get("coursePointType").asText());
+    assertEquals("Source", inserted.get("information").get("name").asString());
+    assertEquals("WATER", inserted.get("information").get("coursePointType").asString());
     assertEquals(1000.0, inserted.get("distance").asDouble(), 0.1);
     // 1 000 m along a track of about 1 500 m between the first and the second point
     assertTrue(

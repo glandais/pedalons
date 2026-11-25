@@ -11,8 +11,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.infrastructure.routedetails.FakeRouterEngineGateway;
@@ -39,6 +37,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The planner's second engine (plan docs/plans/2026-11-23-itineraire-velo-osm.md, lot 3): {@code
@@ -154,7 +154,8 @@ class RouterEngineResourceTest extends AbstractResourceTest {
 
     assertEquals(ENGINE_LAT, firstLat(body), 0.01);
     assertTrue(body.path("route").path("coordinates").size() > 2);
-    assertEquals(ENGINE_LAT, PolylineCodec.decode2(body.path("shape").asText(), 1000)[0][1], 0.01);
+    assertEquals(
+        ENGINE_LAT, PolylineCodec.decode2(body.path("shape").asString(), 1000)[0][1], 0.01);
     verify(stadiaMapsClient, never()).route(any());
     assertEquals(1, FakeRouterEngineGateway.CALLS.size());
     assertEquals(1, dailyCalls());
@@ -195,7 +196,7 @@ class RouterEngineResourceTest extends AbstractResourceTest {
         FakeRouterEngineGateway.CALLS.stream()
             .map(c -> {
               try {
-                return new ObjectMapper().readTree(c.body()).path("ride_type").asText();
+                return new ObjectMapper().readTree(c.body()).path("ride_type").asString();
               } catch (Exception e) {
                 throw new IllegalStateException(e);
               }

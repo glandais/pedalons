@@ -3,21 +3,20 @@ package fr.pedalons.domain.route;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import java.io.IOException;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 /**
  * The street edges osm-route-details matched along one saved track of a team route, as stored in
@@ -129,7 +128,7 @@ public record NetworkEdgesDocument(
       }
 
       @Override
-      public void serialize(Node n, JsonGenerator g, SerializerProvider p) throws IOException {
+      public void serialize(Node n, JsonGenerator g, SerializationContext p) {
         g.writeStartArray();
         g.writeString(n.id());
         g.writeNumber(n.lat());
@@ -145,13 +144,13 @@ public record NetworkEdgesDocument(
       }
 
       @Override
-      public Node deserialize(JsonParser p, DeserializationContext c) throws IOException {
+      public Node deserialize(JsonParser p, DeserializationContext c) {
         JsonNode n = c.readTree(p);
         if (!n.isArray()) {
           c.reportInputMismatch(Object.class, "a node is an array");
         }
         return new Node(
-            n.path(0).asText(), n.path(1).asDouble(), n.path(2).asDouble(), n.path(3).asInt());
+            n.path(0).asString(), n.path(1).asDouble(), n.path(2).asDouble(), n.path(3).asInt());
       }
     }
   }

@@ -1,14 +1,15 @@
 package fr.pedalons.infrastructure.valhalla;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.pedalons.infrastructure.json.ExternalJsonMapper;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /** Reading the errors of the Valhalla protocol, as served by Stadia Maps. */
 public final class ValhallaErrors {
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  // Jackson 2's tolerant reading (docs/LEDGER_*.md API-220).
+  private static final ObjectMapper OBJECT_MAPPER = ExternalJsonMapper.TREES;
 
   private ValhallaErrors() {}
 
@@ -24,7 +25,7 @@ public final class ValhallaErrors {
       }
       JsonNode code = OBJECT_MAPPER.readTree(body).path("error_code");
       return code.isInt() ? code.asInt() : -1;
-    } catch (RuntimeException | IOException ex) {
+    } catch (RuntimeException ex) {
       // Empty, truncated or HTML body: the status alone decides.
       return -1;
     }

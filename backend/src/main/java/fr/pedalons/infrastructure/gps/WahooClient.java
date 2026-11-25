@@ -1,14 +1,12 @@
 package fr.pedalons.infrastructure.gps;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.InternalException;
 import fr.pedalons.domain.gps.DomainGpsCredential;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.enums.GpsServiceType;
 import fr.pedalons.infrastructure.gpx.FitExporter;
+import fr.pedalons.infrastructure.json.ExternalJson;
 import fr.pedalons.service.gps.DomainGpsCredentialService;
 import io.github.glandais.engine.gpx.GpxDocument;
 import io.github.glandais.engine.gpx.GpxParserJvm;
@@ -40,6 +38,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Wahoo Cloud API GPS device integration client.
@@ -79,7 +80,7 @@ public class WahooClient implements GpsServiceClient {
 
   @Inject HttpClient httpClient;
 
-  @Inject ObjectMapper objectMapper;
+  @Inject @ExternalJson ObjectMapper objectMapper;
 
   private DomainGpsCredential getCredential() {
     return credentialService
@@ -191,15 +192,15 @@ public class WahooClient implements GpsServiceClient {
   private TokenResponse parseTokenResponse(String json) {
     try {
       JsonNode root = objectMapper.readTree(json);
-      String accessToken = jsonString(root, "access_token");
-      String refreshToken = jsonString(root, "refresh_token");
-      Long expiresIn = jsonLong(root, "expires_in");
+      String accessToken = GpsJson.string(root, "access_token");
+      String refreshToken = GpsJson.string(root, "refresh_token");
+      Long expiresIn = GpsJson.longValue(root, "expires_in");
       // Wahoo's token response carries no user id, so this resolves to null and the connection
       // keeps no external user id — read the same way as Hammerhead's, which does return one.
-      String userId = jsonString(root, "user_id");
+      String userId = GpsJson.string(root, "user_id");
 
       return new TokenResponse(accessToken, refreshToken, expiresIn, userId);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new InternalException(ErrorCode.GPS_TOKEN_EXCHANGE_FAILED, e);
     }
   }
@@ -292,7 +293,7 @@ public class WahooClient implements GpsServiceClient {
         if (root != null && root.path("deleted").asBoolean(false)) {
           return new GpsCallResult.NotFound();
         }
-        String routeId = root != null ? jsonString(root, "id") : null;
+        String routeId = root != null ? GpsJson.string(root, "id") : null;
         LOG.infof("Route %s on Wahoo: %s", "POST".equals(method) ? "created" : "updated", routeId);
         return new GpsCallResult.Ok(routeId != null ? routeId : knownId);
       }
@@ -313,7 +314,7 @@ public class WahooClient implements GpsServiceClient {
     }
     try {
       return objectMapper.readTree(body);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       return null;
     }
   }
@@ -415,26 +416,5 @@ public class WahooClient implements GpsServiceClient {
 
   private String urlEncode(String value) {
     return URLEncoder.encode(value, StandardCharsets.UTF_8);
-  }
-
-  private static String jsonString(JsonNode root, String key) {
-    JsonNode node = root.path(key);
-    return node.isMissingNode() || node.isNull() ? null : node.asText();
-  }
-
-  private static Long jsonLong(JsonNode root, String key) {
-    JsonNode node = root.path(key);
-    if (node.isMissingNode() || node.isNull()) {
-      return null;
-    }
-    if (node.canConvertToLong()) {
-      return node.asLong();
-    }
-    // Some providers return numeric fields as JSON strings (e.g. "3600").
-    try {
-      return Long.parseLong(node.asText().trim());
-    } catch (NumberFormatException e) {
-      return null;
-    }
   }
 }

@@ -1,9 +1,5 @@
 package fr.pedalons.infrastructure.routedetails;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.pedalons.common.GeoDistance;
 import fr.pedalons.infrastructure.valhalla.Polyline6Encoder;
 import io.quarkus.test.Mock;
@@ -23,6 +19,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Replaces {@link RouteGeneratorGateway} in every {@code @QuarkusTest} (lot 3b plan §1), so that no
@@ -215,8 +216,8 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
       if (c.path().equals("/v1/generator/routes")) {
         try {
           return new Seen(c.headers(), JSON.readTree(c.body()));
-        } catch (IOException e) {
-          throw new UncheckedIOException(e);
+        } catch (JacksonException e) {
+          throw new IllegalStateException(e);
         }
       }
     }
@@ -311,7 +312,7 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
       if (!end.has("tracks") || end.get("tracks").asInt() != lines.size() - 1) {
         return problem(new Problem(400, "invalid_input", null, null, null));
       }
-    } catch (IOException e) {
+    } catch (JacksonException e) {
       return problem(new Problem(400, "invalid_input", null, null, null));
     }
     Instant now = clock.instant();
@@ -339,7 +340,7 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
     JsonNode request;
     try {
       request = JSON.readTree(call.body());
-    } catch (IOException e) {
+    } catch (JacksonException e) {
       return problem(new Problem(400, "invalid_input", null, null, null));
     }
     double cursor = request.path("cursor").asDouble(-1);
@@ -363,7 +364,8 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
       response.putNull("overlay");
     }
     JsonNode target = request.path("offroad_target");
-    if (!target.isMissingNode() && !offroadRideTypes.contains(request.path("ride_type").asText())) {
+    if (!target.isMissingNode()
+        && !offroadRideTypes.contains(request.path("ride_type").asString())) {
       // the strict JSON of an engine that does not steer this ride type (api 1.13, or a road ride)
       return problem(new Problem(400, "invalid_input", null, null, null));
     }
@@ -414,7 +416,7 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
     JsonNode request;
     try {
       request = JSON.readTree(call.body());
-    } catch (IOException e) {
+    } catch (JacksonException e) {
       return problem(new Problem(400, "invalid_input", null, null, null));
     }
     if (!request.path("network_edges").isObject()) {
@@ -423,7 +425,7 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
     List<double[]> original = new ArrayList<>();
     for (double[] p :
         fr.pedalons.infrastructure.valhalla.Polyline6Decoder.decode(
-            request.path("polyline").asText())) {
+            request.path("polyline").asString())) {
       original.add(new double[] {p[1], p[0]}); // lat, lon
     }
     double length = 0;
@@ -687,8 +689,8 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
   private static Exchange json(int status, JsonNode body) {
     try {
       return new Exchange(status, "application/json", null, JSON.writeValueAsBytes(body));
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
+    } catch (JacksonException e) {
+      throw new IllegalStateException(e);
     }
   }
 
@@ -714,8 +716,8 @@ public class FakeRouteGeneratorGateway extends RouteGeneratorGateway {
           "application/problem+json",
           p.retryAfter() == null ? null : String.valueOf(p.retryAfter()),
           JSON.writeValueAsBytes(n));
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
+    } catch (JacksonException e) {
+      throw new IllegalStateException(e);
     }
   }
 }

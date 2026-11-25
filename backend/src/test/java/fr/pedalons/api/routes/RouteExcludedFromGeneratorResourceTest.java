@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.dto.common.asset.MediaDto;
@@ -20,6 +19,7 @@ import jakarta.ws.rs.core.MediaType;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * {@code excludedFromGenerator} of a route (docs/LEDGER_*.md API-198, lot 3 plan §4): "Ne pas

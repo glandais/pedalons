@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.platform.Domain;
@@ -33,6 +32,7 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 
 /**
  * {@code POST /api/teams/{slug}/route-generator} (docs/LEDGER_*.md API-198, lot 3b): the engine of
@@ -113,7 +113,7 @@ class RouteGeneratorResourceTest extends AbstractResourceTest {
     assertEquals(FakeRouteGeneratorGateway.TEST_KEY, seen.headers().get("Ord-Namespace-Key"));
     assertEquals(teamRef, seen.headers().get("Ord-Team"));
     assertEquals(0.25, seen.body().get("cursor").asDouble(), 1e-9);
-    assertEquals("road", seen.body().get("ride_type").asText());
+    assertEquals("road", seen.body().get("ride_type").asString());
     assertEquals(0, seen.body().get("seed").asLong());
     assertEquals(40_000, seen.body().get("distance_m").asDouble(), 1e-6);
     assertEquals(LAT, seen.body().get("start").get("lat").asDouble(), 1e-6);
@@ -131,8 +131,8 @@ class RouteGeneratorResourceTest extends AbstractResourceTest {
     body.put("seed", 12345);
     post(USER1, team1Slug, body).statusCode(200);
     var seen = FakeRouteGeneratorGateway.lastGenerate();
-    assertEquals("gravel", seen.body().get("ride_type").asText());
-    assertEquals("NE", seen.body().get("bearing").asText());
+    assertEquals("gravel", seen.body().get("ride_type").asString());
+    assertEquals("NE", seen.body().get("bearing").asString());
     assertEquals(0.5, seen.body().get("cursor").asDouble(), 1e-9);
     assertEquals(12345, seen.body().get("seed").asLong());
     assertEquals(LAT + 0.2, seen.body().get("end").get("lat").asDouble(), 1e-6);
@@ -168,7 +168,7 @@ class RouteGeneratorResourceTest extends AbstractResourceTest {
     post(USER1, team1Slug, ride("GRAVEL", "HIGH")).statusCode(200);
     assertEquals(0.60, lastBody().get("offroad_target").asDouble(), 1e-9);
     post(USER1, team1Slug, ride("MTB", "HIGH")).statusCode(200);
-    assertEquals("mtb", lastBody().get("ride_type").asText());
+    assertEquals("mtb", lastBody().get("ride_type").asString());
     assertEquals(0.60, lastBody().get("offroad_target").asDouble(), 1e-9);
   }
 

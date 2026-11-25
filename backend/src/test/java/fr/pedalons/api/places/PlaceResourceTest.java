@@ -6,8 +6,6 @@ import static org.geolatte.geom.builder.DSL.point;
 import static org.geolatte.geom.crs.CoordinateReferenceSystems.WGS84;
 import static org.hamcrest.Matchers.*;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.dto.places.request.PlaceRequest;
@@ -17,6 +15,7 @@ import org.geolatte.geom.G2D;
 import org.geolatte.geom.Point;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 @QuarkusTest
 class PlaceResourceTest extends AbstractResourceTest {
@@ -231,7 +230,7 @@ class PlaceResourceTest extends AbstractResourceTest {
   }
 
   @Test
-  void createPlace_withCoordinates_shouldSucceed() throws JsonProcessingException {
+  void createPlace_withCoordinates_shouldSucceed() {
     Point<G2D> point = point(WGS84, g(2.3522, 48.8566));
     PlaceRequest request =
         new PlaceRequest("Paris Place", "Paris, France", null, true, true, point);

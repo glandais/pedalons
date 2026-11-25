@@ -1,8 +1,7 @@
 package fr.pedalons.infrastructure.push;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.enums.PushPlatform;
+import fr.pedalons.infrastructure.json.ExternalJson;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
@@ -23,6 +22,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Sends one message to one device through FCM HTTP v1, and mints the access token that needs.
@@ -69,7 +70,7 @@ public class FcmClient {
   @ConfigProperty(name = "pedalons.push.fcm.project-id")
   Optional<String> configuredProjectId;
 
-  @Inject ObjectMapper objectMapper;
+  @Inject @ExternalJson ObjectMapper objectMapper;
   @Inject @RestClient GoogleOAuthRestClient oauth;
   @Inject @RestClient FcmRestClient fcm;
 
@@ -111,13 +112,13 @@ public class FcmClient {
       throws IOException, java.security.GeneralSecurityException {
     String json = raw.trim().startsWith("{") ? raw : Files.readString(Path.of(raw.trim()));
     JsonNode node = objectMapper.readTree(json);
-    String projectId = configuredProjectId.orElseGet(() -> node.path("project_id").asText());
-    String clientEmail = node.path("client_email").asText();
-    String privateKey = node.path("private_key").asText();
+    String projectId = configuredProjectId.orElseGet(() -> node.path("project_id").asString());
+    String clientEmail = node.path("client_email").asString();
+    String privateKey = node.path("private_key").asString();
     if (projectId.isEmpty() || clientEmail.isEmpty() || privateKey.isEmpty()) {
       throw new IOException("Incomplete service account: project_id, client_email, private_key");
     }
-    String tokenUri = node.path("token_uri").asText(DEFAULT_TOKEN_URI);
+    String tokenUri = node.path("token_uri").asString(DEFAULT_TOKEN_URI);
     return new FcmServiceAccount(
         projectId, clientEmail, KeyUtils.decodePrivateKey(privateKey), tokenUri);
   }
@@ -287,7 +288,7 @@ public class FcmClient {
             false);
       }
       JsonNode node = objectMapper.readTree(payload);
-      String token = node.path("access_token").asText();
+      String token = node.path("access_token").asString();
       if (token.isEmpty()) {
         throw new FcmException("Google token endpoint returned no access_token", false);
       }

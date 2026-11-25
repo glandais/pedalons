@@ -3,14 +3,14 @@ package fr.pedalons.service.route.network;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.domain.route.NetworkEdgesDocument;
 import fr.pedalons.repository.route.GeneratorSourceRepository.TrackRow;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 class OverlayNdjsonWriterTest {
 
@@ -38,11 +38,11 @@ class OverlayNdjsonWriterTest {
     String[] lines = lines(out);
     assertEquals(3, lines.length);
     JsonNode first = JSON.readTree(lines[0]);
-    assertEquals("ROAD", first.get("type").asText());
+    assertEquals("ROAD", first.get("type").asString());
     assertEquals(false, first.get("excluded").asBoolean());
     assertEquals(7, first.get("network_edges").get("rev").asInt());
     JsonNode second = JSON.readTree(lines[1]);
-    assertEquals("GRAVEL", second.get("type").asText());
+    assertEquals("GRAVEL", second.get("type").asString());
     assertEquals(true, second.get("excluded").asBoolean());
     assertEquals(2, JSON.readTree(lines[2]).get("end").get("tracks").asInt());
   }
@@ -87,7 +87,7 @@ class OverlayNdjsonWriterTest {
     w.track(new TrackRow(2, 10, "MIXED", false, 7L, document(7)));
     w.track(new TrackRow(3, 10, "GRAVELISH", false, 7L, document(7)));
     for (String line : lines(out)) {
-      assertEquals("MIXED", JSON.readTree(line).get("type").asText());
+      assertEquals("MIXED", JSON.readTree(line).get("type").asString());
     }
   }
 

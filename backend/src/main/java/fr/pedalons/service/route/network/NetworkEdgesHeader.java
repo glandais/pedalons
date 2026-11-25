@@ -1,11 +1,11 @@
 package fr.pedalons.service.route.network;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
 import fr.pedalons.domain.route.NetworkEdgesDocument;
-import java.io.IOException;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.core.json.JsonFactory;
 
 /**
  * The three top-level fields of a stored {@code network_edges} document that say whether it is
@@ -37,24 +37,24 @@ public final class NetworkEdgesHeader {
     Integer v = null;
     Long rev = null;
     String status = null;
-    try (JsonParser parser = FACTORY.createParser(document)) {
+    try (JsonParser parser = FACTORY.createParser(ObjectReadContext.empty(), document)) {
       if (parser.nextToken() != JsonToken.START_OBJECT) {
         return null;
       }
-      while (parser.nextToken() == JsonToken.FIELD_NAME) {
+      while (parser.nextToken() == JsonToken.PROPERTY_NAME) {
         String name = parser.currentName();
         JsonToken value = parser.nextToken();
         switch (name) {
           case "v" -> v = value == JsonToken.VALUE_NUMBER_INT ? parser.getIntValue() : null;
           case "rev" -> rev = value == JsonToken.VALUE_NUMBER_INT ? parser.getLongValue() : null;
-          case "status" -> status = value == JsonToken.VALUE_STRING ? parser.getText() : null;
+          case "status" -> status = value == JsonToken.VALUE_STRING ? parser.getString() : null;
           default -> parser.skipChildren();
         }
         if (v != null && rev != null && status != null) {
           break;
         }
       }
-    } catch (IOException | RuntimeException e) {
+    } catch (RuntimeException e) {
       return null;
     }
     return new Header(v, rev, status);

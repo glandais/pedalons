@@ -16,6 +16,10 @@ import java.util.List;
  * <p>vcyclist reports grades as dimensionless ratios and part distances as absolute distances along
  * the path. {@link #from} is the single place where both conversions happen — nothing downstream
  * knows about them.
+ *
+ * <p>No {@code @JsonIgnoreProperties(ignoreUnknown = true)}, unlike the other stored records: the
+ * shape is frozen, and a renamed field must fail on read rather than come back as 0.0 ({@code
+ * ClimbDataTest}). Adding a component therefore takes two releases, the reader first.
  */
 public record ClimbData(
     double startDist,

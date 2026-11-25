@@ -5,26 +5,23 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import fr.pedalons.domain.gpx.PreviewSurfacesDocument;
 import fr.pedalons.domain.route.TrackSurfaceDocument.SurfaceRange;
 import fr.pedalons.domain.route.TrackSurfaceDocument.WayRange;
-import io.hypersistence.utils.hibernate.type.util.JsonConfiguration;
-import io.hypersistence.utils.hibernate.type.util.ObjectMapperWrapper;
-import java.io.IOException;
+import fr.pedalons.infrastructure.hibernate.JsonbMapper;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
 
-/** The documents are read by the mapper {@code JsonBinaryType} hands to Hibernate. */
+/** The documents are read by {@link JsonbMapper}, the mapper the PU FormatMapper hands to Hibernate. */
 class TrackSurfaceDocumentTest {
 
-  private static final ObjectMapperWrapper MAPPER =
-      JsonConfiguration.INSTANCE.getObjectMapperWrapper();
+  private static final JsonbMapper MAPPER = JsonbMapper.INSTANCE;
 
   private static TrackSurfaceDocument document() {
     return new TrackSurfaceDocument(
@@ -49,7 +46,7 @@ class TrackSurfaceDocumentTest {
     assertEquals(
         MAPPER.toJsonNode("[[0.0,800.0,\"road\",\"none\"],[800.0,57012.3,\"cycleway\",null]]"),
         json.get("ways"));
-    assertEquals("ok", json.get("status").asText());
+    assertEquals("ok", json.get("status").asString());
     assertEquals(190674135L, json.get("osmChangeset").asLong());
   }
 
@@ -103,7 +100,7 @@ class TrackSurfaceDocumentTest {
              [900.0,1000.0,"path",null,"tunnel"]]
             """),
         json.get("ways"));
-    assertEquals("2026-10-27", json.get("dataVersions").get("versatiles").asText());
+    assertEquals("2026-10-27", json.get("dataVersions").get("versatiles").asString());
   }
 
   @Test
@@ -133,11 +130,11 @@ class TrackSurfaceDocumentTest {
         }
 
         @Override
-        public PreviousWay deserialize(JsonParser p, DeserializationContext c) throws IOException {
+        public PreviousWay deserialize(JsonParser p, DeserializationContext c) {
           JsonNode n = c.readTree(p);
           return new PreviousWay(
-              n.path(2).isNull() ? null : n.path(2).asText(),
-              n.path(3).isNull() ? null : n.path(3).asText());
+              n.path(2).isNull() ? null : n.path(2).asString(),
+              n.path(3).isNull() ? null : n.path(3).asString());
         }
       }
     }

@@ -1,16 +1,17 @@
 package fr.pedalons.infrastructure.routedetails;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.pedalons.infrastructure.json.ExternalJson;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorException.Kind;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorGateway.Call;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorGateway.Exchange;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The point to point engine of osm-route-details (api 1.15, {@code POST /v1/router/route}) for the
@@ -34,7 +35,7 @@ public class RouterEngineGateway {
   @ConfigProperty(name = "pedalons.router-engine.cursor", defaultValue = "0.25")
   double cursor;
 
-  @Inject ObjectMapper mapper;
+  @Inject @ExternalJson ObjectMapper mapper;
   @Inject RouteDetailsGateway routeDetails;
   @Inject RouteGeneratorGateway generator;
 
@@ -127,7 +128,7 @@ public class RouterEngineGateway {
                   useRoads,
                   useRoadsNeutral,
                   avoidMainRoads));
-    } catch (IOException e) {
+    } catch (JacksonException e) {
       throw RouteGeneratorException.of(Kind.UNEXPECTED, e);
     }
     return read(
@@ -149,7 +150,7 @@ public class RouterEngineGateway {
         throw RouteGeneratorException.of(Kind.UNEXPECTED, null);
       }
       return value;
-    } catch (IOException e) {
+    } catch (JacksonException e) {
       throw RouteGeneratorException.of(Kind.UNEXPECTED, e);
     }
   }

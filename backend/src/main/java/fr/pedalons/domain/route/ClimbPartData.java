@@ -15,6 +15,9 @@ import java.io.Serializable;
  * <p>{@code ele} is the segment's elevation <em>gain</em> (end minus start), not an altitude:
  * gpx2web stored {@code endEle - startEle} there, and {@code ClimbPartDto} renders it as
  * "elevation gain".
+ *
+ * <p>No {@code @JsonIgnoreProperties(ignoreUnknown = true)}, for the reason given on {@link
+ * ClimbData}.
  */
 public record ClimbPartData(
     double startDist,

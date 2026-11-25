@@ -3,9 +3,9 @@ package fr.pedalons.infrastructure.stadiamaps;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The shape of real {@code GET /geocoding/v2/autocomplete} and {@code GET

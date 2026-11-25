@@ -6,8 +6,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.planner.PlannerState;
 import fr.pedalons.dto.common.asset.MediaDto;
@@ -27,6 +25,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * docs/LEDGER_*.md API-180: {@code POST /routes/{slug}/preview} — a GPX preview of the caller's
@@ -45,7 +45,7 @@ class RoutePreviewFromRouteResourceTest extends AbstractResourceTest {
           .controlName("route")
           .mimeType(MediaType.APPLICATION_JSON)
           .build();
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new IllegalStateException(e);
     }
   }

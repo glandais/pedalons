@@ -1,18 +1,20 @@
 package fr.pedalons.domain.feedback;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.domain.platform.Domain;
 import fr.pedalons.domain.user.User;
-import io.hypersistence.utils.hibernate.id.Tsid;
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
+import fr.pedalons.infrastructure.hibernate.JsonNodeMutabilityPlan;
+import fr.pedalons.infrastructure.hibernate.Tsid;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.Mutability;
+import org.hibernate.type.SqlTypes;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * One automatic report of an unhandled error by a member's client. Stored redacted, purged after
@@ -49,16 +51,19 @@ public class ErrorOccurrence {
   private String appVersion;
 
   /** {@code ClientContextDto}, serialized. */
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Mutability(JsonNodeMutabilityPlan.class)
   @Column(name = "context", columnDefinition = "jsonb", nullable = false)
   private JsonNode context;
 
   /** {@code ClientErrorDto}, serialized. */
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Mutability(JsonNodeMutabilityPlan.class)
   @Column(name = "error", columnDefinition = "jsonb", nullable = false)
   private JsonNode error;
 
-  @Type(JsonBinaryType.class)
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Mutability(JsonNodeMutabilityPlan.class)
   @Column(name = "logs", columnDefinition = "jsonb")
   private @Nullable JsonNode logs;
 

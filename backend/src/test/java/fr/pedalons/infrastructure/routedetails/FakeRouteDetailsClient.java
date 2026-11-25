@@ -1,7 +1,5 @@
 package fr.pedalons.infrastructure.routedetails;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import fr.pedalons.common.GeoDistance;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Edge;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.EdgeNode;
@@ -25,6 +23,8 @@ import java.util.function.BiFunction;
 import java.util.function.DoubleFunction;
 import java.util.function.DoubleUnaryOperator;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.JsonNodeFactory;
 
 /**
  * osm-route-details in memory, behind {@link FakeRouteDetailsGateway} (plan §8, docs/LEDGER_*.md

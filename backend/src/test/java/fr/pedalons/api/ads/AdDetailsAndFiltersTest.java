@@ -8,8 +8,6 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.CoarseLocation;
 import fr.pedalons.domain.ad.Ad;
@@ -27,6 +25,8 @@ import org.geolatte.geom.G2D;
 import org.geolatte.geom.Point;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The classifieds gallery, the seller's name, the blurred location, and the price / proximity / sort

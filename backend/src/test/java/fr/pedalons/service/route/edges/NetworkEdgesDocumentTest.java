@@ -5,17 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.domain.route.NetworkEdgesDocument;
+import fr.pedalons.infrastructure.hibernate.JsonbMapper;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Segment;
-import io.hypersistence.utils.hibernate.type.util.JsonConfiguration;
-import io.hypersistence.utils.hibernate.type.util.ObjectMapperWrapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 
 /**
  * The stored document of the street edges (docs/LEDGER_*.md API-198, lot 1), built from the real
@@ -23,8 +22,7 @@ import org.junit.jupiter.api.Test;
  */
 class NetworkEdgesDocumentTest {
 
-  private static final ObjectMapperWrapper MAPPER =
-      JsonConfiguration.INSTANCE.getObjectMapperWrapper();
+  private static final JsonbMapper MAPPER = JsonbMapper.INSTANCE;
   private static final Instant NOW = Instant.parse("2026-11-13T21:04:00Z");
   private static final long REV = 7351234567890123L;
 
@@ -33,8 +31,7 @@ class NetworkEdgesDocumentTest {
         NetworkEdgesDocumentTest.class.getResourceAsStream(
             "/routedetails/nantes-edges-fast.json")) {
       assertNotNull(in);
-      return new com.fasterxml.jackson.databind.ObjectMapper()
-          .readValue(in, RouteDetailsResponse.class);
+      return new tools.jackson.databind.ObjectMapper().readValue(in, RouteDetailsResponse.class);
     }
   }
 
@@ -81,7 +78,7 @@ class NetworkEdgesDocumentTest {
     assertEquals(668.93, d.len(), 1e-6, "no summary: the end of the last edge");
     assertTrue(d.unmatched().isEmpty());
     assertNotNull(d.dv().get("typology"));
-    assertEquals("versatiles-shortbread", d.dv().get("typology").get("source").asText());
+    assertEquals("versatiles-shortbread", d.dv().get("typology").get("source").asString());
     assertTrue(d.streetsVersion().contains("versatiles-shortbread"));
   }
 
@@ -162,9 +159,9 @@ class NetworkEdgesDocumentTest {
   @Test
   void aLaterRelease_isRead() throws IOException {
     JsonNode tree = MAPPER.toJsonNode(MAPPER.toString(document()));
-    ((com.fasterxml.jackson.databind.node.ObjectNode) tree).put("added_by_v2", true);
-    ((com.fasterxml.jackson.databind.node.ObjectNode) tree.get("edges").get(0)).put("zz", 1);
-    ((com.fasterxml.jackson.databind.node.ArrayNode) tree.get("nodes").get(0)).add("extra");
+    ((tools.jackson.databind.node.ObjectNode) tree).put("added_by_v2", true);
+    ((tools.jackson.databind.node.ObjectNode) tree.get("edges").get(0)).put("zz", 1);
+    ((tools.jackson.databind.node.ArrayNode) tree.get("nodes").get(0)).add("extra");
     NetworkEdgesDocument read = MAPPER.fromString(tree.toString(), NetworkEdgesDocument.class);
     assertEquals(document(), read);
   }
@@ -191,8 +188,7 @@ class NetworkEdgesDocumentTest {
       try (InputStream in =
           NetworkEdgesDocumentTest.class.getResourceAsStream(
               "/routedetails/nantes-reze-pirmil-full.json")) {
-        return new com.fasterxml.jackson.databind.ObjectMapper()
-            .readValue(in, RouteDetailsResponse.class);
+        return new tools.jackson.databind.ObjectMapper().readValue(in, RouteDetailsResponse.class);
       }
     }
   }

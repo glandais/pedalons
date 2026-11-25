@@ -1,17 +1,7 @@
 package fr.pedalons.dto.common;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import fr.pedalons.dto.validation.ValidateSchema;
-import java.io.IOException;
 import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -22,6 +12,15 @@ import java.util.Objects;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * A rendezvous date as a request carries it: a wall time without offset ({@code
@@ -94,8 +93,8 @@ public final class EventDateTime {
 
   /**
    * The wire form. {@code @JsonValue} on top of the {@link Serializer}: it lives in
-   * jackson-annotations, which every Jackson reads — RestAssured in the tests serialises requests
-   * with its own mapper, which ignores databind's {@code @JsonSerialize} and wrote this as a bean.
+   * jackson-annotations, which every Jackson reads. RestAssured 6 picks Jackson 3 and does see the
+   * databind annotations, so this is belt and braces for any other mapper that ignores them.
    */
   @JsonValue
   @Override
@@ -113,21 +112,20 @@ public final class EventDateTime {
     return local.hashCode();
   }
 
-  static final class Serializer extends JsonSerializer<EventDateTime> {
+  static final class Serializer extends ValueSerializer<EventDateTime> {
     @Override
-    public void serialize(EventDateTime value, JsonGenerator gen, SerializerProvider provider)
-        throws IOException {
+    public void serialize(EventDateTime value, JsonGenerator gen, SerializationContext provider) {
       gen.writeString(value.toString());
     }
   }
 
-  static final class Deserializer extends JsonDeserializer<EventDateTime> {
+  static final class Deserializer extends ValueDeserializer<EventDateTime> {
     @Override
-    public EventDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+    public EventDateTime deserialize(JsonParser p, DeserializationContext ctxt) {
       if (p.currentToken() != JsonToken.VALUE_STRING) {
         return (EventDateTime) ctxt.handleUnexpectedToken(EventDateTime.class, p);
       }
-      String text = p.getText();
+      String text = p.getString();
       try {
         return parse(text);
       } catch (DateTimeException e) {

@@ -13,8 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.TsidUtils;
@@ -58,6 +56,8 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * docs/LEDGER_*.md API-179: {@code POST /routes/{slug}/duplicate} — a copy of a route in its own
@@ -76,7 +76,7 @@ class RouteDuplicateResourceTest extends AbstractResourceTest {
           .controlName("route")
           .mimeType(MediaType.APPLICATION_JSON)
           .build();
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new IllegalStateException(e);
     }
   }

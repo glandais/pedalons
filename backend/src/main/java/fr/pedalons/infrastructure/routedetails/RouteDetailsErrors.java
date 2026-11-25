@@ -1,14 +1,14 @@
 package fr.pedalons.infrastructure.routedetails;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.pedalons.infrastructure.json.ExternalJsonMapper;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsException.Kind;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
-import java.io.IOException;
 import java.time.Duration;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Reading the RFC 9457 problems of osm-route-details ({@code application/problem+json}, contract
@@ -25,7 +25,8 @@ public final class RouteDetailsErrors {
   public static final String ROUTE_TOO_LARGE = "route_too_large";
   public static final String INVALID_INPUT = "invalid_input";
 
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  // Jackson 2's tolerant reading (docs/LEDGER_*.md API-220).
+  private static final ObjectMapper OBJECT_MAPPER = ExternalJsonMapper.TREES;
   private static final int MAX_DETAIL = 300;
 
   private RouteDetailsErrors() {}
@@ -59,7 +60,7 @@ public final class RouteDetailsErrors {
           code = text(problem, "code");
           detail = text(problem, "detail");
         }
-      } catch (IOException | RuntimeException e) {
+      } catch (RuntimeException e) {
         // Not a problem body: quoted as text, the status alone decides.
         detail = excerpt(body);
       }
@@ -104,7 +105,7 @@ public final class RouteDetailsErrors {
 
   private static @Nullable String text(JsonNode node, String field) {
     JsonNode value = node.get(field);
-    return value != null && value.isTextual() ? excerpt(value.asText()) : null;
+    return value != null && value.isString() ? excerpt(value.asString()) : null;
   }
 
   private static String excerpt(String text) {
