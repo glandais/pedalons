@@ -74,7 +74,7 @@ export function AdminLayout({ currentTab, subtitle, children }: AdminLayoutProps
     <Container size="xl" py="xl">
       {/* Same vertical rhythm as TeamLayout, which wraps its nav row in a Stack */}
       <Stack>
-        {/* The page's h1; the breadcrumb is the way back to the application (docs/LEDGER_*.md WEB-208). */}
+        {/* The page's h1. No back link: the admin breadcrumb stops at /admin (parentId null), the site header (site name, main nav) is the way back to the application (docs/LEDGER_*.md WEB-208). */}
         <Box>
           <Title order={1} size="h2">
             {t('admin.title')}

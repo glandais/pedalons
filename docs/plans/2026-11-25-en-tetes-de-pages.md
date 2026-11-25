@@ -130,7 +130,7 @@ Textes et une fonction ; aucune mise en page.
 - 20. Sur téléphone, Gérer en icône avec libellé accessible, comme Quitter.
 - 21. Gestion de l'équipe : le nom et l'avatar de l'équipe en tête (seul le fil d'Ariane le dit).
 - 22. Titres de section = le mot de l'onglet (« Pages », « Paramètres », « Membres ») ; un seul `py`.
-- 23. Administration de la plateforme : sans « Retour à l'application » (le fil d'Ariane suffit), sous-titre
+- 23. Administration de la plateforme : sans « Retour à l'application » (l'en-tête du site suffit : le fil d'Ariane de l'administration s'arrête à `/admin`), sous-titre
   du tableau de bord sous le titre.
 - 24. Un `label` sur les filtres (`AdminTeamsPage`, `AdminUsersPage`) et la recherche des publications
   (`TeamPostsPage`).

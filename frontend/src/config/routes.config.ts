@@ -740,6 +740,8 @@ export const routesConfig: RoutesConfig = [
     auth: 'authenticated',
     parentId: 'team-admin',
     breadcrumb: { type: 'static', i18nKey: tRegister('teams.admin.tabs.members') },
+    // « Membres » is also the directory's tab: « Membres · Gestion de l'équipe » tells them apart (docs/LEDGER_*.md WEB-208, WEB-112).
+    pageTitle: { type: 'withParent' },
     prefetch: teamScopedPrefetch((qc, p, url) => prefetchTeamMembers(qc, p.teamSlug!, url)),
   },
   {

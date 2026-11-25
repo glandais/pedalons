@@ -41,6 +41,8 @@ describe('pageTitleParts', () => {
     ['team-detail', { team }, tp, 'N Peloton — Pédalons'],
     ['team-calendar', { team }, tp, 'Agenda · N Peloton — Pédalons'],
     ['team-about', { team }, tp, 'À propos · N Peloton — Pédalons'],
+    ['team-directory', { team }, tp, 'Membres · N Peloton — Pédalons'],
+    ['team-members', { team }, tp, "Membres · Gestion de l'équipe · N Peloton — Pédalons"],
     [
       'ride-detail',
       { ride, team },

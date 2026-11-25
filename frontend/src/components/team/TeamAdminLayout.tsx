@@ -95,7 +95,7 @@ export function TeamAdminLayout({ team, currentTab, children }: TeamAdminLayoutP
       <Stack>
         {/* Which team (docs/LEDGER_*.md WEB-208): plain text — the breadcrumb is the way back. The page's single h1 (WEB-207); the tabs title their sections in h2. */}
         <Group gap="sm" wrap="nowrap" align="center">
-          <TeamAvatar team={team} size="lg" />
+          <TeamAvatar team={team} size="lg" decorative />
           <Box style={{ minWidth: 0 }}>
             <Text size="sm" c="dimmed" lineClamp={1}>
               {team.name}

@@ -39,8 +39,9 @@ export function pageTitleParts(
     const entity = pageTitle.entity
     label = joinTitle(t('actions.edit'), names[entity] ?? t(ENTITY_PLACEHOLDERS[entity]))
   } else if (
-    leaf.breadcrumb.type === 'dynamic' &&
-    (leaf.breadcrumb.entity === 'rideGroup' || leaf.breadcrumb.entity === 'stage')
+    pageTitle?.type === 'withParent' ||
+    (leaf.breadcrumb.type === 'dynamic' &&
+      (leaf.breadcrumb.entity === 'rideGroup' || leaf.breadcrumb.entity === 'stage'))
   ) {
     const parent = chain.at(-2)
     if (parent?.breadcrumb) label = joinTitle(label, crumbLabel(parent.breadcrumb, names, t))

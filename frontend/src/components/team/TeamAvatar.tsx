@@ -8,13 +8,15 @@ export interface TeamAvatarProps {
     about: MediaDto
   }
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+  /** The team's name is written beside it: empty alt and hidden from assistive tech, so it is not read twice. */
+  decorative?: boolean
 }
 
 /**
  * TeamAvatar component - displays team logo or initials fallback.
  * Uses consistent hash-based colors for teams without logos.
  */
-export function TeamAvatar({ team, size = 'md' }: TeamAvatarProps) {
+export function TeamAvatar({ team, size = 'md', decorative = false }: TeamAvatarProps) {
   const logo = team.about.assets.logo
   const initials = getInitials(team.name)
   const color = getColorFromName(team.name)
@@ -23,7 +25,8 @@ export function TeamAvatar({ team, size = 'md' }: TeamAvatarProps) {
     <Tooltip label={team.name} withArrow>
       <Avatar
         src={logo?.imageUrl?.replace('{size}', String(128))}
-        alt={team.name}
+        alt={decorative ? '' : team.name}
+        aria-hidden={decorative || undefined}
         size={size}
         radius="xl"
         color={color}

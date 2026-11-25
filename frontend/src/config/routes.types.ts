@@ -105,10 +105,12 @@ export interface RouteConfig {
   /**
    * Comment l'onglet nomme la page quand son libellé de fil d'Ariane ne suffit pas (plan 2026-11-25 D2).
    * - `edit` : « Modifier · {nom de l'entité} » ;
-   * - `parent` : le titre de la page parente — une vue ou une carte plein écran d'elle.
+   * - `parent` : le titre de la page parente — une vue ou une carte plein écran d'elle ;
+   * - `withParent` : « {libellé} · {libellé du parent} », quand le libellé seul se confond avec celui
+   *   d'une autre page (« Membres » de la gestion contre l'annuaire, docs/LEDGER_*.md WEB-208).
    * Absent : le libellé du fil d'Ariane.
    */
-  pageTitle?: { type: 'edit'; entity: EntityType } | { type: 'parent' }
+  pageTitle?: { type: 'edit'; entity: EntityType } | { type: 'parent' } | { type: 'withParent' }
 
   /**
    * Whether this route is an index route (renders at parent path)
