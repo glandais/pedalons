@@ -461,7 +461,9 @@ void main() {
       ]);
       expect(routes.created.every((c) => c.gpx != null), isTrue);
       expect(
-        find.text('2 parcours importés. Fichiers refusés : notes.txt'),
+        find.text(
+          '2\u00a0parcours importés. Fichier refusé : notes.txt (pas un GPX lisible)',
+        ),
         findsOneWidget,
       );
       // La liste des parcours de l'équipe.

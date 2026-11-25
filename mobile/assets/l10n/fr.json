@@ -1426,11 +1426,18 @@
         "one": "{} parcours importé",
         "other": "{} parcours importés"
       },
-      "importedWithRefused": {
-        "one": "{} parcours importé. Fichiers refusés : {names}",
-        "other": "{} parcours importés. Fichiers refusés : {names}"
+      "importProgress": "Import en cours : {current}/{total}",
+      "noneImported": "Aucun parcours importé",
+      "refused": {
+        "one": "Fichier refusé : {list}",
+        "other": "Fichiers refusés : {list}"
       },
-      "importProgress": "Import en cours : {current}/{total}"
+      "refusedReason": {
+        "notGpx": "pas un GPX lisible",
+        "empty": "aucun tracé",
+        "tooLarge": "plus de {size}",
+        "tooLong": "tracé trop long"
+      }
     },
     "distance": "Distance",
     "description": "Description",

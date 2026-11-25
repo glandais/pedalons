@@ -51,6 +51,7 @@ import '../../providers/route_changes.dart';
 import '../../providers/route_detail_provider.dart';
 import '../../providers/route_editor_providers.dart';
 import '../widgets/editor/gpx_pick_step.dart';
+import '../widgets/editor/gpx_refused_banner.dart' show gpxRefusalReason;
 import '../widgets/editor/planner_quota_message.dart';
 import '../widgets/editor/route_track_section.dart';
 import 'route_planner_screen.dart';
@@ -296,6 +297,10 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
   String? _suggestedName;
 
   bool _reading = false;
+
+  /// « Importer des GPX » avec plusieurs fichiers : combien sont passés.
+  /// Retour est bloqué tant qu'il court (ledger `MOB-188`).
+  ({int current, int total})? _importing;
   bool _uploading = false;
   bool _saving = false;
   bool _saved = false;
@@ -506,19 +511,23 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
   Future<void> _importAll(List<GpxFile> files) async {
     setState(() {
       _reading = true;
+      _importing = (current: 0, total: files.length);
       _error = null;
       _refused = null;
     });
     final RouteRepository repo = ref.read(routeRepositoryProvider);
+    // Chaque refus avec sa raison (ledger `MOB-188`).
     final List<String> refused = <String>[];
     int imported = 0;
+    int done = 0;
     for (final GpxFile file in files) {
       try {
         final GpxCheck check = await inspectGpxFile(file);
-        if (check is! GpxAccepted) {
-          refused.add(file.name);
+        if (check is GpxRefused) {
+          refused.add('${file.name} (${gpxRefusalReason(check.refusal)})');
           continue;
         }
+        if (check is! GpxAccepted) continue;
         await repo.createRoute(
           _teamSlug,
           RouteForm.initial(widget.team)
@@ -527,22 +536,38 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
           gpx: check.file,
         );
         imported++;
-      } catch (_) {
-        refused.add(file.name);
+      } catch (error, stackTrace) {
+        refused.add('${file.name} (${getErrorMessage(error, stackTrace)})');
+      } finally {
+        done++;
+        if (mounted) {
+          setState(() => _importing = (current: done, total: files.length));
+        }
       }
     }
     if (!mounted) return;
     if (imported > 0) notifyRouteChanged(ref, teamSlug: _teamSlug);
-    final String message = refused.isEmpty
+    final String outcome = imported > 0
         ? 'routes.create.imported'.plural(imported)
-        : 'routes.create.importedWithRefused'.plural(
-            imported,
-            namedArgs: <String, String>{'names': refused.join(', ')},
-          );
-    ScaffoldMessenger.maybeOf(context)
-        ?.showSnackBar(SnackBar(content: Text(message)));
+        : 'routes.create.noneImported'.tr();
+    final String message = refused.isEmpty
+        ? outcome
+        : '$outcome. ${'routes.create.refused'.plural(refused.length, namedArgs: <String, String>{'list': refused.join(' ; ')})}';
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: refused.isEmpty
+            ? const Duration(seconds: 4)
+            : const Duration(seconds: 10),
+      ),
+    );
     if (imported == 0) {
-      setState(() => _reading = false);
+      // Rien d'importé : la page de choix le dit aussi, la snackbar passée.
+      setState(() {
+        _reading = false;
+        _importing = null;
+        _error = message;
+      });
       return;
     }
     _saved = true;
@@ -940,9 +965,12 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
         const <TagWithUsageDto>[];
 
     return PopScope(
-      canPop: !_dirty || _saving,
+      // Ni pendant un enregistrement ni pendant un import : partir sauterait
+      // la relecture des listes et le bilan (ledger `MOB-188`). Le `pop` qui
+      // suit un enregistrement réussi ne passe pas par ici.
+      canPop: !_dirty && !_saving && _importing == null,
       onPopInvokedWithResult: (bool didPop, Object? _) async {
-        if (didPop) return;
+        if (didPop || _saving || _importing != null) return;
         final NavigatorState navigator = Navigator.of(context);
         if (await _confirmDiscard()) {
           _saved = true;
@@ -996,6 +1024,14 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
                   GpxPickStep(
                     onPick: () => _pickGpx(many: true),
                     busy: _reading,
+                    busyLabel: _importing == null
+                        ? null
+                        : 'routes.create.importProgress'.tr(
+                            namedArgs: <String, String>{
+                              'current': '${_importing!.current}',
+                              'total': '${_importing!.total}',
+                            },
+                          ),
                     refused: _refused,
                     onDraw: onDraw,
                     // Le générateur à la place de cette page vide : sa

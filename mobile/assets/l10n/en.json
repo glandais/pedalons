@@ -1426,11 +1426,18 @@
         "one": "{} route imported",
         "other": "{} routes imported"
       },
-      "importedWithRefused": {
-        "one": "{} route imported. Files refused: {names}",
-        "other": "{} routes imported. Files refused: {names}"
+      "importProgress": "Importing: {current}/{total}",
+      "noneImported": "No route imported",
+      "refused": {
+        "one": "File refused: {list}",
+        "other": "Files refused: {list}"
       },
-      "importProgress": "Importing: {current}/{total}"
+      "refusedReason": {
+        "notGpx": "not a readable GPX",
+        "empty": "no track",
+        "tooLarge": "over {size}",
+        "tooLong": "track too long"
+      }
     },
     "distance": "Distance",
     "description": "Description",

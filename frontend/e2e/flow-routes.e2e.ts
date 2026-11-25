@@ -960,9 +960,10 @@ test.describe('GPX files in the route forms', () => {
     expect(picker.isMultiple()).toBe(true)
     await picker.setFiles([files.north, files.empty, files.south])
 
-    // The empty file's failure is reported; the two others are in the list, named after their tracks.
+    // The empty file's failure is reported with its reason (docs/LEDGER_*.md WEB-216); the two
+    // others are in the list, named after their tracks.
     await expect(
-      page.getByText('2 parcours importés. Fichiers refusés : fichier-vide.gpx', { exact: true })
+      page.getByText(/^2 parcours importés\. Fichier refusé : fichier-vide\.gpx \(.+\)$/)
     ).toBeVisible()
     await expect(routeCard(main, 'Boucle nord')).toBeVisible()
     await expect(routeCard(main, 'Boucle sud')).toBeVisible()

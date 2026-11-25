@@ -26,6 +26,19 @@ String gpxRefusalMessage(GpxRefused refused) {
   };
 }
 
+/// La raison d'un refus en quelques mots, pour le bilan d'un import de
+/// plusieurs fichiers (ledger `MOB-188`).
+String gpxRefusalReason(GpxRefusal refusal) => switch (refusal) {
+  GpxRefusal.notGpx => 'routes.create.refusedReason.notGpx'.tr(),
+  GpxRefusal.empty => 'routes.create.refusedReason.empty'.tr(),
+  GpxRefusal.tooLarge => 'routes.create.refusedReason.tooLarge'.tr(
+    namedArgs: <String, String>{
+      'size': AppFormatters.formatFileSize(kGpxMaxBytes),
+    },
+  ),
+  GpxRefusal.tooLong => 'routes.create.refusedReason.tooLong'.tr(),
+};
+
 /// Le bandeau « Fichier refusé » : à l'étape 1 de la création comme dans la
 /// section Tracé quand le serveur refuse un fichier à l'envoi (ledger
 /// `MOB-79`). [onPickAnother] rouvre le sélecteur ; [busy] le désactive le

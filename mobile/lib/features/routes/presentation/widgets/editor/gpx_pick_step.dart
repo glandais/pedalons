@@ -30,6 +30,7 @@ class GpxPickStep extends StatelessWidget {
     super.key,
     required this.onPick,
     required this.busy,
+    this.busyLabel,
     this.refused,
     this.onDraw,
     this.onGenerate,
@@ -39,6 +40,10 @@ class GpxPickStep extends StatelessWidget {
 
   final VoidCallback onPick;
   final bool busy;
+
+  /// Ce que dit le bouton d'import pendant [busy] ; `null` : « Lecture du
+  /// fichier… ». Un import de plusieurs fichiers y met sa progression.
+  final String? busyLabel;
   final GpxRefused? refused;
 
   /// Ouvre le planificateur ; nul, il n'est pas proposé.
@@ -129,7 +134,7 @@ class GpxPickStep extends StatelessWidget {
                     : PdlButtonVariant.outline,
                 fullWidth: true,
                 loading: busy,
-                loadingLabel: 'routes.editor.reading'.tr(),
+                loadingLabel: busyLabel ?? 'routes.editor.reading'.tr(),
                 onPressed: onPick,
               ),
               if (draw != null) ...<Widget>[
