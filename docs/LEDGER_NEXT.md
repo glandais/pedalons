@@ -6,7 +6,7 @@ Index des **164 entrées ouvertes** et des 77 entrées écartées. Chaque entré
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-51 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+50 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
@@ -171,7 +171,7 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 
 Contexte du domaine : [`ledger/OPS/README.md`](ledger/OPS/README.md).
 
-- [ ] [`OPS-69`](ledger/OPS/OPS-69.md) Mettre en service osm-route-details 1.18.0 (retouche, api 1.17) (S) · *externe*
+- [ ] [`OPS-70`](ledger/OPS/OPS-70.md) Accélérer le match d'une retouche dans osm-route-details (P90 ≈ 2,1 s pour 200 ms visés) (M)
 
 ### App Garmin : Connect IQ Store
 
@@ -355,7 +355,6 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 ### Dépend d'un tiers ou d'une opération hors du dépôt (`externe`)
 
 - [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play
-- [`OPS-69`](ledger/OPS/OPS-69.md) Mettre en service osm-route-details 1.18.0 (retouche, api 1.17)
 - [`OPS-35`](ledger/OPS/OPS-35.md) Publier l'app Garmin sur le Connect IQ Store
 - [`OPS-34`](ledger/OPS/OPS-34.md) Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`
 - [`OPS-33`](ledger/OPS/OPS-33.md) Publier l'extension Karoo dans l'Extension Library de Hammerhead

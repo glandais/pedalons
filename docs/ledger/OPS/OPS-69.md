@@ -1,25 +1,23 @@
 ---
 id: OPS-69
 title: "Mettre en service osm-route-details 1.18.0 (retouche, api 1.17)"
-status: open
+status: done
 size: "S"
-kind: externe
-verified: 2026-11-24
+done: 2026-11-25
 ---
 
-## Reste à faire
+## Livré
 
-`OPS-69` **Mettre en service osm-route-details 1.18.0 (retouche, api 1.17)** — le moteur gagne
-`POST /v1/generator/routes/edit` (`capabilities.generator.edit`) ; tant qu'il n'est pas déployé, la production
-reste en 1.17.1 et l'action « Retoucher » (`API-212`, `WEB-201`) n'apparaît pas, rien ne casse. À faire par le
-propriétaire :
+`OPS-69` **Mettre en service osm-route-details 1.18.0 (retouche, api 1.17)** — le moteur a été déployé
+dans la pile partagée par le propriétaire le 24 novembre 2026 (image
+`ghcr.io/glandais/osm-route-details:1.18.0`, épinglée dans `docker-compose.shared.yml`) :
+`POST /v1/generator/routes/edit` et `capabilities.generator.edit` (`resize`, `move_end`). L'action
+« Retoucher » (`API-212`, `WEB-201`) sert en production : relevé du 2026-11-25, 28 retouches (22 `resize`,
+6 `move_end`), `order_anomaly` et `route_mismatch` à 0, 5 `checker_rejected` sur `resize`, conteneur à
+1,18 Gio sur 3 Gio.
 
-- déployer la pile partagée (`scripts/deploy.sh --shared`) : l'image `1.18.0` est publiée et épinglée dans
-  `docker-compose.shared.yml` depuis le 24 novembre 2026 ;
-- à la recette, lire `ord_generator_edit_requests_total` (part de `order_anomaly` et `route_mismatch` : au-delà
-  de 10 %, la piste du §15.3 de la note du moteur), `ord_generator_edit_stage_seconds{stage="match"}` (cache des
-  poses au-delà de 200 ms au P90) et la mémoire de l'index (`ORD_GENERATOR__EDIT_INDEX_CACHE_MB`, 64) ;
-- vérifier que la page d'un parcours prêt offre l'action dans l'heure (cache des capacités) ;
-- compléter la section « The route generator » de `docs/OPERATIONS.md` (capacité `edit`, métriques).
+La recette a montré l'étape `match` à environ 2,1 s au P90, dix fois le seuil de 200 ms : le cache des poses
+et la section « The route generator » de `docs/OPERATIONS.md` passent à `OPS-70`.
 
-Plan [`2026-11-24-retouche-parcours-lot7c.md`](../../plans/2026-11-24-retouche-parcours-lot7c.md) §11.
+À ne pas défaire : l'offre de la retouche dépend de `capabilities.generator.edit` (cache des capacités d'une
+heure), si bien qu'un retour à `1.17.1` masque l'action sans rien casser.

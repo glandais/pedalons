@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **634 entrées livrées**, et des 23 entrées encore ouvertes dont une part l'est.
+Index des **635 entrées livrées**, et des 23 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -511,6 +511,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## OPS — Exploitation
 
+- [x] [`OPS-69`](ledger/OPS/OPS-69.md) Mettre en service osm-route-details 1.18.0 (retouche, api 1.17) — 2026-11-25
 - [x] [`OPS-68`](ledger/OPS/OPS-68.md) Mettre en service osm-route-details 1.16.0 (itinéraire de A à B, api 1.15) — 2026-11-24
 - [x] [`OPS-67`](ledger/OPS/OPS-67.md) Générateur de parcours : osm-route-details 1.15.0, part de chemins visée et bornes de roulabilité — 2026-11-23
 - [x] [`OPS-66`](ledger/OPS/OPS-66.md) Générateur de parcours : osm-route-details 1.14, la planète servie et un budget de 30 s — 2026-11-23
