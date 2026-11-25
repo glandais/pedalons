@@ -1421,7 +1421,17 @@
   "routes": {
     "title": "Parcours",
     "create": {
-      "importGpx": "Importer un GPX"
+      "importGpx": "Importer des GPX",
+      "importHint": "Un fichier : à compléter avant d'enregistrer. Plusieurs : un parcours par fichier.",
+      "imported": {
+        "one": "{} parcours importé",
+        "other": "{} parcours importés"
+      },
+      "importedWithRefused": {
+        "one": "{} parcours importé. Fichiers refusés : {names}",
+        "other": "{} parcours importés. Fichiers refusés : {names}"
+      },
+      "importProgress": "Import en cours : {current}/{total}"
     },
     "distance": "Distance",
     "description": "Description",
@@ -1587,7 +1597,7 @@
       "pickTitle": "Envoyer un fichier GPX",
       "pickMessage": "Le tracé ne se dessine pas dans l'app : exportez-le en GPX depuis votre outil de cartographie ou votre compteur, puis choisissez le fichier ici.",
       "pickButton": "Choisir un fichier GPX",
-      "pickHint": "Un seul fichier .gpx, une ou plusieurs traces. La distance, le dénivelé et la carte sont calculés à l'envoi.",
+      "pickHint": "Un fichier .gpx s'ouvre ici, à compléter avant d'enregistrer ; plusieurs deviennent chacun un parcours. La distance, le dénivelé et la carte sont calculés à l'envoi.",
       "reading": "Lecture du fichier…",
       "refusedTitle": "Fichier refusé",
       "refusedNotGpx": "« {file} » n'est pas un GPX lisible. Exportez le parcours au format GPX et réessayez.",
@@ -1629,7 +1639,8 @@
       "trackUnvalidated": "Des modifications faites sur la carte n'ont pas été reprises : rouvrez la carte et touchez « Terminer » pour les garder.",
       "pointsRequired": "Au moins 2 points de contrôle sont requis",
       "excludedFromGenerator": "Ne pas utiliser pour générer des parcours",
-      "excludedFromGeneratorHint": "Pour un parcours d'événement ou une route ouverte exceptionnellement : ses routes ne seront proposées que si un autre parcours de l'équipe les emprunte."
+      "excludedFromGeneratorHint": "Pour un parcours d'événement ou une route ouverte exceptionnellement : ses routes ne seront proposées que si un autre parcours de l'équipe les emprunte.",
+      "importMany": "Importer des GPX"
     },
     "manage": {
       "edit": "Modifier le parcours",

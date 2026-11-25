@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pedalons/api/generated/export.dart' show SurfaceType;
 import 'package:pedalons/app.dart';
 import 'package:pedalons/core/geo/polyline_index.dart' show LngLat;
+import 'package:pedalons/features/gpxtools/data/gpx_files_picker.dart';
 import 'package:pedalons/features/routes/data/gpx_file_source.dart';
 import 'package:pedalons/features/routes/data/planner_bridge.dart';
 import 'package:pedalons/features/routes/domain/gpx_check.dart';
@@ -18,7 +19,8 @@ import 'module.dart';
 ///
 /// **The native document picker is never driven.** Patrol cannot choose a file in the iOS Files
 /// sheet nor in Android's picker, so [provideGpx] writes the file under the temporary directory
-/// and swaps the picker of the running app (`gpxFilePickerProvider`) for one that answers with it.
+/// and swaps the pickers of the running app (`gpxFilePickerProvider`, `gpxFilesPickerProvider`)
+/// for ones that answer with it.
 /// Everything after the choice — the local check, the form, the upload — is the real thing.
 final class RouteEditor extends Module {
   RouteEditor(super.$);
@@ -39,11 +41,13 @@ final class RouteEditor extends Module {
       name: fileName,
       size: await file.length(),
     );
-    ProviderScope.containerOf($.tester.element(find.byType(PedalonsApp)))
-        .read(gpxFilePickerProvider.notifier)
-        .state = _FixedPicker(
-      gpx,
+    final container = ProviderScope.containerOf(
+      $.tester.element(find.byType(PedalonsApp)),
     );
+    // « Importer des GPX » goes through the multi-file picker; « Remplacer
+    // le GPX » and the planner's import through the single one.
+    container.read(gpxFilePickerProvider.notifier).state = _FixedPicker(gpx);
+    container.read(gpxFilesPickerProvider.notifier).state = _FixedPicker(gpx);
   }
 
   // ── Step 1 ─────────────────────────────────────────────────────────────
@@ -234,11 +238,14 @@ final class RouteEditor extends Module {
 }
 
 /// A picker that always answers with one file.
-final class _FixedPicker implements GpxFilePicker {
+final class _FixedPicker implements GpxFilePicker, GpxFilesPicker {
   const _FixedPicker(this._file);
 
   final GpxFile _file;
 
   @override
   Future<GpxFile?> pick() async => _file;
+
+  @override
+  Future<List<GpxFile>> pickMany() async => <GpxFile>[_file];
 }

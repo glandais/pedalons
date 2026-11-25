@@ -12,6 +12,7 @@ import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/material.dart' hide Visibility;
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
+import 'package:pedalons/features/gpxtools/data/gpx_files_picker.dart';
 import 'package:pedalons/features/routes/data/gpx_file_source.dart';
 import 'package:pedalons/features/routes/data/planner_web_view.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
@@ -201,16 +202,31 @@ const ConfigDto _config = ConfigDto(
 );
 
 /// Un sélecteur qui rend, dans l'ordre, les fichiers qu'on lui a préparés.
-class _FakePicker implements GpxFilePicker {
-  _FakePicker(this.files);
+/// Les deux sélecteurs : un fichier par appel, dans l'ordre de [files] ; la
+/// sélection multiple (« Importer des GPX ») en rend un seul à la fois, sauf
+/// [many], rendu d'un coup au premier appel.
+class _FakePicker implements GpxFilePicker, GpxFilesPicker {
+  _FakePicker(this.files, {this.many});
 
   final List<GpxFile?> files;
+  final List<GpxFile>? many;
   int calls = 0;
 
   @override
   Future<GpxFile?> pick() async {
     final int i = calls++;
     return i < files.length ? files[i] : null;
+  }
+
+  @override
+  Future<List<GpxFile>> pickMany() async {
+    final List<GpxFile>? all = many;
+    if (all != null && calls == 0) {
+      calls++;
+      return all;
+    }
+    final GpxFile? one = await pick();
+    return one == null ? const <GpxFile>[] : <GpxFile>[one];
   }
 }
 
@@ -312,6 +328,7 @@ void main() {
           routeRepositoryProvider.overrideWithValue(routes),
           teamRepositoryProvider.overrideWithValue(teams),
           gpxFilePickerProvider.overrideWith((Ref _) => picker),
+          gpxFilesPickerProvider.overrideWith((Ref _) => picker),
           appConfigProvider.overrideWith((Ref _) async => _config),
           if (web != null)
             plannerWebViewFactoryProvider.overrideWithValue(web.create),
@@ -400,7 +417,7 @@ void main() {
 
     expect(find.byKey(keys.routeEditor.pickStep), findsOneWidget);
     expect(find.byKey(keys.routeEditor.pickButton), findsOneWidget);
-    expect(find.text('Choisir un fichier GPX'), findsOneWidget);
+    expect(find.text('Importer des GPX'), findsOneWidget);
     expect(
       find.textContaining('Le tracé ne se dessine pas dans l\'app'),
       findsOneWidget,
@@ -408,6 +425,42 @@ void main() {
     expect(find.byKey(keys.routeEditor.nameField), findsNothing);
     expect(find.byKey(keys.routeEditor.saveButton), findsNothing);
   });
+
+  testWidgets(
+    'plusieurs GPX : un parcours par fichier, le bilan, puis la liste',
+    (WidgetTester tester) async {
+      final _StubRoutes routes = _StubRoutes();
+      await open(
+        tester,
+        routes: routes,
+        picker: _FakePicker(
+          <GpxFile?>[],
+          many: <GpxFile>[
+            write('nord.gpx', fixtureGpx(trackName: 'Boucle nord')),
+            write('notes.txt', 'pas un gpx'),
+            write('sud.gpx', fixtureGpx(trackName: 'Boucle sud')),
+          ],
+        ),
+      );
+
+      await pickFirst(tester);
+      // Trois fichiers lus l'un après l'autre : quelques tours de plus.
+      await settle(tester);
+      await settle(tester);
+
+      expect(routes.created.map((c) => c.request.name).toList(), <String>[
+        'Boucle nord',
+        'Boucle sud',
+      ]);
+      expect(routes.created.every((c) => c.gpx != null), isTrue);
+      expect(
+        find.text('2 parcours importés. Fichiers refusés : notes.txt'),
+        findsOneWidget,
+      );
+      // L'éditeur s'est fermé : l'accueil du routeur de test.
+      expect(find.text('accueil'), findsOneWidget);
+    },
+  );
 
   testWidgets('annuler le sélecteur ne change rien', (
     WidgetTester tester,
@@ -1207,7 +1260,7 @@ void main() {
         web: web,
       );
 
-      expect(find.text('Importer un fichier GPX'), findsOneWidget);
+      expect(find.text('Importer des GPX'), findsOneWidget);
       expect(find.text('Tracer sur la carte'), findsOneWidget);
       expect(
         find.textContaining('Le tracé ne se dessine pas dans l\'app'),

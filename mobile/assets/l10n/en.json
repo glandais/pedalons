@@ -1421,7 +1421,17 @@
   "routes": {
     "title": "Routes",
     "create": {
-      "importGpx": "Import a GPX file"
+      "importGpx": "Import GPX files",
+      "importHint": "One file: complete it before saving. Several: one route per file.",
+      "imported": {
+        "one": "{} route imported",
+        "other": "{} routes imported"
+      },
+      "importedWithRefused": {
+        "one": "{} route imported. Files refused: {names}",
+        "other": "{} routes imported. Files refused: {names}"
+      },
+      "importProgress": "Importing: {current}/{total}"
     },
     "distance": "Distance",
     "description": "Description",
@@ -1587,7 +1597,7 @@
       "pickTitle": "Upload a GPX file",
       "pickMessage": "The track isn't drawn in the app: export it as GPX from your mapping tool or bike computer, then choose the file here.",
       "pickButton": "Choose a GPX file",
-      "pickHint": "A single .gpx file, with one or more tracks. Distance, elevation and the map are computed on upload.",
+      "pickHint": "One .gpx file opens here, to complete before saving; several become one route each. Distance, climbing and the map are computed on upload.",
       "reading": "Reading the file…",
       "refusedTitle": "File rejected",
       "refusedNotGpx": "“{file}” isn't a readable GPX file. Export the route as GPX and try again.",
@@ -1629,7 +1639,8 @@
       "trackUnvalidated": "Changes made on the map were not taken: open the map again and tap “Done” to keep them.",
       "pointsRequired": "At least 2 control points are required",
       "excludedFromGenerator": "Don't use to generate routes",
-      "excludedFromGeneratorHint": "For an event route or a road open only exceptionally: its roads are only proposed if another route of the team rides them."
+      "excludedFromGeneratorHint": "For an event route or a road open only exceptionally: its roads are only proposed if another route of the team rides them.",
+      "importMany": "Import GPX files"
     },
     "manage": {
       "edit": "Edit route",

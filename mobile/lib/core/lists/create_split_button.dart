@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../material.dart';
 import '../pdl/pdl.dart';
+import '../theme/enum_colors.dart';
+import '../theme/pdl_colors.dart';
 import '../theme/pdl_icons.dart';
 import '../theme/pdl_tokens.dart';
 import '../theme/pdl_typography.dart';
@@ -16,6 +18,7 @@ class CreateAction {
     required this.location,
     this.subtitle,
     this.group,
+    this.tone,
   });
 
   final Key key;
@@ -23,6 +26,11 @@ class CreateAction {
   final IconData icon;
   final String location;
   final String? subtitle;
+
+  /// La teinte métier de l'icône dans la feuille — celle du site (`ThemeIcon`
+  /// « light » de la famille) : sortie, voyage, publication par leur type,
+  /// parcours en indigo.
+  final PdlTone Function(PdlColors c)? tone;
 
   /// La section de la feuille ; des actions consécutives du même groupe
   /// partagent son titre.
@@ -35,6 +43,7 @@ class CreateAction {
     location: location,
     subtitle: subtitle,
     group: group,
+    tone: tone,
   );
 }
 
@@ -133,6 +142,7 @@ class CreateSplitButton extends StatelessWidget {
                 title: action.label,
                 subtitle: action.subtitle,
                 icon: action.icon,
+                leading: _toneIcon(sheetContext, action),
                 showDivider:
                     i < actions.length - 1 && actions[i + 1].group == group,
                 onTap: () => Navigator.of(sheetContext).pop(action.location),
@@ -148,4 +158,21 @@ class CreateSplitButton extends StatelessWidget {
     );
     if (location != null && context.mounted) context.push(location);
   }
+}
+
+/// L'icône d'une ligne dans sa pastille de famille ; nulle sans teinte, la
+/// ligne garde alors son icône nue.
+Widget? _toneIcon(BuildContext context, CreateAction action) {
+  final PdlTone Function(PdlColors c)? tone = action.tone;
+  if (tone == null) return null;
+  final PdlTone t = tone(context.pdl);
+  return Container(
+    width: PdlMetrics.chipVisual,
+    height: PdlMetrics.chipVisual,
+    decoration: BoxDecoration(
+      color: t.soft,
+      borderRadius: const BorderRadius.all(PdlRadii.md),
+    ),
+    child: Icon(action.icon, size: 18, color: t.onSoft),
+  );
 }

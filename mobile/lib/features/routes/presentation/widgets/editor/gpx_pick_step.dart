@@ -85,28 +85,31 @@ class GpxPickStep extends StatelessWidget {
                 padding: EdgeInsets.zero,
               ),
               const SizedBox(height: PdlSpacing.section),
+              // L'ordre des menus « Créer » : tracer, importer, générer.
+              if (draw != null) ...<Widget>[
+                PdlButton(
+                  key: keys.routeEditor.drawButton,
+                  label: 'routes.editor.drawButton'.tr(),
+                  icon: PdlIcons.map,
+                  fullWidth: true,
+                  enabled: !busy && quota == null,
+                  onPressed: draw,
+                ),
+                const SizedBox(height: PdlSpacing.chipGap),
+              ],
               PdlButton(
                 key: keys.routeEditor.pickButton,
-                label: draw == null
-                    ? 'routes.editor.pickButton'.tr()
-                    : 'routes.editor.importButton'.tr(),
+                label: 'routes.editor.importMany'.tr(),
                 icon: PdlIcons.fileAdd,
+                variant: draw == null
+                    ? PdlButtonVariant.fill
+                    : PdlButtonVariant.outline,
                 fullWidth: true,
                 loading: busy,
                 loadingLabel: 'routes.editor.reading'.tr(),
                 onPressed: onPick,
               ),
               if (draw != null) ...<Widget>[
-                const SizedBox(height: PdlSpacing.chipGap),
-                PdlButton(
-                  key: keys.routeEditor.drawButton,
-                  label: 'routes.editor.drawButton'.tr(),
-                  icon: PdlIcons.map,
-                  variant: PdlButtonVariant.outline,
-                  fullWidth: true,
-                  enabled: !busy && quota == null,
-                  onPressed: draw,
-                ),
                 if (onGenerate != null) ...<Widget>[
                   const SizedBox(height: PdlSpacing.chipGap),
                   PdlButton(

@@ -8,6 +8,7 @@ import '../../../../core/lists/create_split_button.dart';
 import '../../../../core/lists/list_toolbar.dart';
 import '../../../../core/material.dart';
 import '../../../../core/theme/pdl_colors.dart';
+import '../../../../core/theme/enum_colors.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../keys.dart';
@@ -129,6 +130,7 @@ class _TeamAgendaPageState extends ConsumerState<TeamAgendaPage> {
           key: keys.teamAgenda.createRideRow,
           label: 'lists.createLabel.ride'.tr(),
           icon: PdlIcons.ride,
+          tone: (PdlColors c) => PublicationType.ride.family.soft(c),
           location: rideNewLocation(slug),
         ),
       if (ref.watch(canManageTripsProvider(slug)) ?? false)
@@ -136,6 +138,7 @@ class _TeamAgendaPageState extends ConsumerState<TeamAgendaPage> {
           key: keys.teamAgenda.createTripRow,
           label: 'teams.dashboard.createTrip'.tr(),
           icon: PdlIcons.trip,
+          tone: (PdlColors c) => PublicationType.trip.family.soft(c),
           location: Paths.tripNew(slug),
         ),
     ];

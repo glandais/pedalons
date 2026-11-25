@@ -41,6 +41,7 @@ import '../../data/planner_bridge.dart';
 import '../../data/planner_load.dart';
 import '../../domain/route_generator.dart';
 import '../../data/planner_web_view.dart';
+import '../../../gpxtools/data/gpx_files_picker.dart';
 import '../../data/route_repository.dart';
 import '../../domain/gpx_check.dart';
 import '../../domain/planner_quota.dart';
@@ -359,7 +360,8 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
     }
     if (widget.pickGpx) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _pickGpx();
+        // À la création, « Importer des GPX » : plusieurs fichiers permis.
+        if (mounted) _pickGpx(many: route == null);
       });
     }
   }
@@ -426,11 +428,26 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
   /// Choisit un fichier, le contrôle localement (extension, début du
   /// contenu), puis l'adopte ou le refuse. Un refus laisse en place le
   /// fichier précédent, s'il y en avait un.
-  Future<void> _pickGpx() async {
+  ///
+  /// [many] (« Importer des GPX », à la création) permet d'en choisir
+  /// plusieurs : un seul suit ce chemin, plusieurs deviennent chacun un
+  /// parcours ([_importAll]), comme au site.
+  Future<void> _pickGpx({bool many = false}) async {
     if (_reading || _saving) return;
     final GpxFile? picked;
     try {
-      picked = await ref.read(gpxFilePickerProvider).pick();
+      if (many) {
+        final List<GpxFile> files = await ref
+            .read(gpxFilesPickerProvider)
+            .pickMany();
+        if (files.length > 1) {
+          if (mounted) await _importAll(files);
+          return;
+        }
+        picked = files.isEmpty ? null : files.single;
+      } else {
+        picked = await ref.read(gpxFilePickerProvider).pick();
+      }
     } on PlatformException catch (error, stackTrace) {
       if (mounted) setState(() => _error = getErrorMessage(error, stackTrace));
       return;
@@ -477,6 +494,56 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
           _refused = null;
         });
     }
+  }
+
+  /// Plusieurs GPX : un parcours par fichier, nommé d'après lui, avec la
+  /// visibilité par défaut de l'équipe et le revêtement « route » — l'import
+  /// du site (`useGpxUpload`). Un fichier refusé n'arrête pas les autres ; le
+  /// bilan dit lesquels, puis l'éditeur se ferme sur la liste relue.
+  Future<void> _importAll(List<GpxFile> files) async {
+    setState(() {
+      _reading = true;
+      _error = null;
+      _refused = null;
+    });
+    final RouteRepository repo = ref.read(routeRepositoryProvider);
+    final List<String> refused = <String>[];
+    int imported = 0;
+    for (final GpxFile file in files) {
+      try {
+        final GpxCheck check = await inspectGpxFile(file);
+        if (check is! GpxAccepted) {
+          refused.add(file.name);
+          continue;
+        }
+        await repo.createRoute(
+          _teamSlug,
+          RouteForm.initial(widget.team)
+              .copyWith(name: suggestedRouteName(check))
+              .toRequest(),
+          gpx: check.file,
+        );
+        imported++;
+      } catch (_) {
+        refused.add(file.name);
+      }
+    }
+    if (!mounted) return;
+    if (imported > 0) notifyRouteChanged(ref, teamSlug: _teamSlug);
+    final String message = refused.isEmpty
+        ? 'routes.create.imported'.plural(imported)
+        : 'routes.create.importedWithRefused'.plural(
+            imported,
+            namedArgs: <String, String>{'names': refused.join(', ')},
+          );
+    ScaffoldMessenger.maybeOf(context)
+        ?.showSnackBar(SnackBar(content: Text(message)));
+    if (imported == 0) {
+      setState(() => _reading = false);
+      return;
+    }
+    _saved = true;
+    Navigator.of(context).pop();
   }
 
   // ── Planificateur ──────────────────────────────────────────────────────
@@ -890,7 +957,7 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
                 ],
                 if (picking)
                   GpxPickStep(
-                    onPick: _pickGpx,
+                    onPick: () => _pickGpx(many: true),
                     busy: _reading,
                     refused: _refused,
                     onDraw: onDraw,

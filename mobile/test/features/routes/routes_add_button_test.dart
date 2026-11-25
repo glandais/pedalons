@@ -136,7 +136,7 @@ void main() {
     await open(tester, teamSlug: 'n-peloton', canManage: true, planner: false);
 
     expect(find.byKey(keys.routes.createMenuButton), findsNothing);
-    expect(find.bySemanticsLabel('Importer un GPX'), findsOneWidget);
+    expect(find.bySemanticsLabel('Importer des GPX'), findsOneWidget);
     await tester.tap(find.byKey(keys.routes.createButton));
     await settle(tester);
     expect(find.text('nouveau n-peloton import'), findsOneWidget);

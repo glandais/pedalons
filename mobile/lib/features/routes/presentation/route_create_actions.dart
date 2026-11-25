@@ -4,6 +4,8 @@ import '../../../api/generated/export.dart';
 import '../../../config/paths.dart';
 import '../../../core/lists/create_split_button.dart';
 import '../../../core/material.dart';
+import '../../../core/theme/enum_colors.dart';
+import '../../../core/theme/pdl_colors.dart';
 import '../../../core/theme/pdl_icons.dart';
 import 'route_editor_location.dart';
 
@@ -24,13 +26,16 @@ List<CreateAction> routeCreateActions(
       CreateAction(
         key: drawKey,
         label: 'routes.editor.drawButton'.tr(),
-        icon: PdlIcons.route,
+        icon: PdlIcons.map,
+        tone: _routeTone,
         location: routeNewLocation(team.slug, start: RouteNewStart.draw),
       ),
     CreateAction(
       key: importKey,
       label: 'routes.create.importGpx'.tr(),
+      subtitle: 'routes.create.importHint'.tr(),
       icon: PdlIcons.fileAdd,
+      tone: _routeTone,
       location: routeNewLocation(team.slug, start: RouteNewStart.importGpx),
     ),
     if (team.enableRoutePlanner)
@@ -38,11 +43,15 @@ List<CreateAction> routeCreateActions(
         key: generateKey,
         label: 'routeGenerator.title'.tr(),
         icon: PdlIcons.generate,
+        tone: _routeTone,
         location: Paths.routeGenerate(team.slug),
         subtitle: 'routeGenerator.subtitle'.tr(),
       ),
   ];
 }
+
+/// Les parcours en indigo, comme au site.
+PdlTone _routeTone(PdlColors c) => PdlFamily.indigo.soft(c);
 
 /// L'adresse de la première création de parcours de [team] : le tracé sur la
 /// carte, sinon l'import d'un GPX — pour les entrées qui n'en offrent qu'une
