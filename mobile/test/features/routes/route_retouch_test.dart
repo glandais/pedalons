@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pedalons/api/generated/export.dart';
+import 'package:pedalons/features/routes/domain/route_generator.dart';
 import 'package:pedalons/features/routes/domain/route_retouch.dart';
 
 /// La retouche dans l'app (docs/LEDGER_*.md MOB-185) : les règles du site
@@ -132,6 +133,34 @@ void main() {
     expect(handoff.name, 'Boucle (retouché)');
     expect(isTruncation(candidate), isFalse);
   });
+
+  test(
+    'retouchGeneratorSettings : départ, distance bornée et type, comme le site',
+    () {
+      final GeneratorSettings settings = retouchGeneratorSettings(
+        start: <double>[5.1, 45.2],
+        targetKm: 61.6,
+        offer: offer,
+      );
+      expect(settings.start?.lng, 5.1);
+      expect(settings.start?.lat, 45.2);
+      expect(settings.distanceKm, 62);
+      expect(settings.type, RouteGeneratorType.gravel);
+      expect(settings.loop, isTrue);
+
+      final GeneratorSettings far = retouchGeneratorSettings(
+        start: null,
+        targetKm: 450,
+        offer: const RouteRetouchOfferDto(
+          available: true,
+          operations: <RouteRetouchOperation>[],
+        ),
+      );
+      expect(far.start, isNull);
+      expect(far.distanceKm, kGeneratorMaxKm);
+      expect(far.type, isNull);
+    },
+  );
 
   group('erreurs', () {
     DioException refusal(String code) => DioException(

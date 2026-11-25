@@ -1637,6 +1637,7 @@
         "other": "Tracé de {} points"
       },
       "trackUnvalidated": "Des modifications faites sur la carte n'ont pas été reprises : rouvrez la carte et touchez « Terminer » pour les garder.",
+      "fileLost": "Le fichier importé dans le planificateur n'est plus disponible : importez-le de nouveau.",
       "pointsRequired": "Au moins 2 points de contrôle sont requis",
       "excludedFromGenerator": "Ne pas utiliser pour générer des parcours",
       "excludedFromGeneratorHint": "Pour un parcours d'événement ou une route ouverte exceptionnellement : ses routes ne seront proposées que si un autre parcours de l'équipe les emprunte.",
@@ -1716,7 +1717,7 @@
         "team": "{teamName} utilise l'offre gratuite, qui permet {limit} enregistrements de parcours tracés sur la carte par mois. Ils sont tous utilisés ce mois-ci.",
         "personal": "Vous ne faites partie d'aucune équipe débloquée : dans les outils GPX, le tracé sur la carte est limité à {limit} enregistrements par mois, tous utilisés ce mois-ci.",
         "alternative": "L'import de GPX reste disponible, et le compteur repart le 1er {month}.",
-        "teamLift": "Pour lever la limite, un administrateur de l'équipe peut nous contacter.",
+        "teamLift": "Pour lever la limite, une personne qui administre l'équipe peut nous contacter.",
         "personalLift": "Rejoindre une équipe débloquée lève cette limite."
       }
     }
@@ -2406,7 +2407,7 @@
       "TAG_LIMIT_REACHED": "Cette équipe a atteint le maximum de 100 tags pour ce type de contenu.",
       "TEAM_CREATION_DISABLED": "La création d'équipes est désactivée sur cette plateforme",
       "USER_TEAM_LIMIT_REACHED": "Vous administrez déjà une équipe : il n'est pas possible d'en créer une autre.",
-      "TEAM_MEMBER_LIMIT_REACHED": "L'équipe a atteint {limit} membres, la limite de l'offre gratuite. Pour aller au-delà, un administrateur de l'équipe peut nous contacter.",
+      "TEAM_MEMBER_LIMIT_REACHED": "L'équipe a atteint {limit} membres, la limite de l'offre gratuite. Pour aller au-delà, une personne qui administre l'équipe peut nous contacter.",
       "TEAM_INVITE_ALREADY_MEMBER": "Cette adresse appartient déjà à un membre de l'équipe.",
       "TEAM_INVITE_EMAIL_MISMATCH": "Cette invitation est adressée à quelqu'un d'autre. Déconnectez-vous et reconnectez-vous avec l'adresse invitée.",
       "TEAM_INVITE_EXPIRED": "Cette invitation a expiré. Demandez-en une nouvelle à l'équipe.",
@@ -3038,6 +3039,7 @@
       "shortenHint": "Raccourcir réussit un peu plus d'une fois sur deux. Si rien ne vient, essayez un écart plus petit ou déplacez l'arrivée."
     },
     "retouchedName": "{name} (retouché)",
+    "proposing": "Recherche de propositions…",
     "slow": "La retouche prend quelques secondes de plus pour les longs parcours.",
     "submit": "Proposer",
     "title": "Retoucher « {name} »",

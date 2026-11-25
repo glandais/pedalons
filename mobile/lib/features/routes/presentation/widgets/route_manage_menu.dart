@@ -298,7 +298,12 @@ Future<void> _duplicate(
   notifyRouteChanged(ref, teamSlug: team);
   ScaffoldMessenger.maybeOf(context)
       ?.showSnackBar(SnackBar(content: Text('routes.manage.duplicated'.tr())));
-  await context.push(Paths.routeEdit(team, copy.slug));
+  // La fiche de la copie remplace celle de l'original, et son formulaire
+  // s'ouvre dessus : « Enregistrer » ramène sur la copie, comme au site
+  // (docs/LEDGER_*.md MOB-186) — sur l'original, on croyait l'avoir modifié.
+  final GoRouter router = GoRouter.of(context);
+  router.pushReplacement(Paths.route(team, copy.slug));
+  await router.push(Paths.routeEdit(team, copy.slug));
 }
 
 /// La retouche, puis ce qu'elle a choisi d'ouvrir : l'éditeur de ce parcours
@@ -328,7 +333,7 @@ Future<void> _retouch(
     case RetouchOpening.newRoute:
       await context.push(Paths.routeNew(team), extra: choice.handoff);
     case RetouchOpening.generator:
-      await context.push(Paths.routeGenerate(team));
+      await context.push(Paths.routeGenerate(team), extra: choice.generator);
   }
 }
 

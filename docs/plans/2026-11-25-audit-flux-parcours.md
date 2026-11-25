@@ -192,8 +192,10 @@ Les plus urgents : §2.1 (W-N1, M-N5, M-N1), §3.1, §4.1.
 | D5 | Quota épuisé | **Griser partout** : `plannerQuota` ajouté à la liste d'équipes lue par l'accueil (changement de contrat), « Tracer » et « Générer » grisés dans les menus de l'app, le générateur mobile relit l'équipe à l'ouverture et désactive « Générer ». | W-N7, W-F8, M-N7, M-F8 |
 | D6 | Parité de l'app | **Ajouter les deux** : « Modifier une copie » vers les outils GPX de l'app, et l'offre de retouche lue aussi sans `canEdit` (sortie « Nouveau parcours » seulement). | M-F15 |
 
-Restent sans décision et se traitent au fil des lots : les corrections nettes (W-F6, M-F2, M-N5,
-M-F3, M-F4, M-F12, M-F22, M-F24, W-F18/M-F21), les outils GPX (W-F10 à W-F13, W-F20, M-F16, M-F17,
+**Corrections nettes livrées le 25 novembre 2026** : W-F6 et W-F18 (`WEB-212`) ; M-F2, M-N5, M-F3,
+M-F4, M-F12, M-F21, M-F22 et M-F24 (`MOB-186`).
+
+Restent sans décision et se traitent au fil des lots : les outils GPX (W-F10 à W-F13, W-F20, M-F16, M-F17,
 M-F20), le planificateur embarqué (M-F13, M-F14), les tests (§6) et M-N14 (teinte indigo).
 
 Une entrée au ledger (`WEB`, `MOB`) par lot ; ce plan la cite une fois créée.

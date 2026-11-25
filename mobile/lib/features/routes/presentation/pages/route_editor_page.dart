@@ -725,7 +725,13 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
         route == null && gpx == null && !(drawn?.hasTrack ?? false);
     final bool fileLost = (drawn?.file ?? false) && gpx == null;
     if (noTrack || fileLost) {
-      setState(() => _error = 'routes.editor.pointsRequired'.tr());
+      // Un fichier perdu n'est pas un tracé trop court : le dire
+      // (docs/LEDGER_*.md MOB-186).
+      setState(
+        () => _error = fileLost
+            ? 'routes.editor.fileLost'.tr()
+            : 'routes.editor.pointsRequired'.tr(),
+      );
       return;
     }
     FocusScope.of(context).unfocus();

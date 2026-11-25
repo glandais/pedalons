@@ -141,7 +141,7 @@ test.describe('team quota', () => {
     ).toBeVisible()
     await expect(dialog.getByText(/repart le 1er/)).toBeVisible()
     await expect(
-      dialog.getByText("un administrateur de l'équipe peut nous contacter", { exact: false })
+      dialog.getByText("une personne qui administre l'équipe peut nous contacter", { exact: false })
     ).toBeVisible()
     // The dialog says it: the global toast stays quiet
     await expect(toasts(page)).toHaveCount(0)

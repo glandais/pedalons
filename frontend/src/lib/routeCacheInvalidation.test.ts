@@ -8,6 +8,7 @@ import {
   getListAllRoutesQueryKey,
   getListRoutesQueryKey,
 } from '@/api/endpoints/routes/routes'
+import { getGetRouteRetouchOfferQueryKey } from '@/api/endpoints/route-generator/route-generator'
 import { invalidateRouteQueries } from './routeCacheInvalidation'
 
 describe('invalidateRouteQueries', () => {
@@ -28,6 +29,19 @@ describe('invalidateRouteQueries', () => {
     for (const key of keys) {
       expect(queryClient.getQueryState(key)?.isInvalidated, JSON.stringify(key)).toBe(true)
     }
+  })
+
+  it("reaches the route's retouch offer, which carries the old track's bounds (WEB-212)", () => {
+    const queryClient = new QueryClient()
+    const offer = getGetRouteRetouchOfferQueryKey('velo', 'col')
+    const another = getGetRouteRetouchOfferQueryKey('velo', 'autre-col')
+    queryClient.setQueryData(offer, {})
+    queryClient.setQueryData(another, {})
+
+    invalidateRouteQueries(queryClient, 'velo', 'col')
+
+    expect(queryClient.getQueryState(offer)?.isInvalidated).toBe(true)
+    expect(queryClient.getQueryState(another)?.isInvalidated).toBe(false)
   })
 
   it('leaves another team alone', () => {

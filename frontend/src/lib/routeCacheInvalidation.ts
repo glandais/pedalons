@@ -9,14 +9,19 @@ import {
   getListRoutesQueryKey,
   getGetRoutesBulkQueryKey,
 } from '@/api/endpoints/routes/routes'
+import { getGetRouteRetouchOfferQueryKey } from '@/api/endpoints/route-generator/route-generator'
 import { invalidateTeamDashboard } from '@/lib/teamDashboardCache'
 
 /**
  * Invalidates every cached view of a team's routes that a route mutation (create, update, delete,
  * undelete, slug change, GPX upload) can have changed: the team's routes list, count and map bounds,
  * the cross-team ones (`/api/routes`, which lists every team's routes), the team dashboard, the
- * single-route detail (when the mutation targets one route — pass its *previous* slug on a slug
- * change), and every `/routes/bulk` query for the team.
+ * single-route detail and its retouch offer (when the mutation targets one route — pass its
+ * *previous* slug on a slug change), and every `/routes/bulk` query for the team.
+ *
+ * The retouch offer carries the track's length and bounds, and is refused while a new track is being
+ * analysed: kept for its 5 min `staleTime` after a new track, it would offer the old track's bounds
+ * (docs/LEDGER_*.md WEB-212).
  *
  * Each path is its own first key element (`/api/teams/x/routes` does not prefix
  * `/api/teams/x/routes/count`), so every list-like key is named here; invalidating one without
@@ -40,6 +45,9 @@ export function invalidateRouteQueries(
 ): void {
   if (routeSlug) {
     queryClient.invalidateQueries({ queryKey: getGetRouteQueryKey(teamSlug, routeSlug) })
+    queryClient.invalidateQueries({
+      queryKey: getGetRouteRetouchOfferQueryKey(teamSlug, routeSlug),
+    })
   }
   queryClient.invalidateQueries({ queryKey: getListRoutesQueryKey(teamSlug) })
   queryClient.invalidateQueries({ queryKey: getCountRoutesQueryKey(teamSlug) })

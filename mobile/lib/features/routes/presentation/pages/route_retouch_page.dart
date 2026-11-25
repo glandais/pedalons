@@ -226,9 +226,16 @@ class _RouteRetouchPageState extends ConsumerState<RouteRetouchPage> {
     );
   }
 
+  /// Un choix fait : un second appui ne dépile pas la fiche dessous
+  /// (docs/LEDGER_*.md MOB-186).
+  bool _chosen = false;
+
   void _choose(RetouchOpening opening) {
+    if (_chosen) return;
     final RetouchedRouteDto? candidate = _response?.candidates[_selected];
     if (opening != RetouchOpening.generator && candidate == null) return;
+    _chosen = true;
+    final RetouchTarget? asked = _submitted;
     Navigator.of(context).pop(
       RetouchChoice(
         opening,
@@ -243,6 +250,15 @@ class _RouteRetouchPageState extends ConsumerState<RouteRetouchPage> {
                         namedArgs: <String, String>{'name': _route.name},
                       ),
               ),
+        opening == RetouchOpening.generator
+            ? retouchGeneratorSettings(
+                start: _original.isEmpty ? null : _original.first,
+                targetKm: asked is RetouchResize
+                    ? asked.targetKm
+                    : _bounds?.currentKm,
+                offer: _offer,
+              )
+            : null,
       ),
     );
   }
@@ -322,7 +338,11 @@ class _RouteRetouchPageState extends ConsumerState<RouteRetouchPage> {
     final List<List<double>> original = _original;
     final RouteRetouchResponse? response = _response;
     final BoundsDto? b = response?.candidates[_selected].bounds;
-    final bool picking = _mode == RouteRetouchOperation.moveEnd;
+    // Pas de nouvelle arrivée pendant le calcul ni sur les propositions : un
+    // toucher en manipulant la carte les effaçait ; « Modifier la demande »
+    // y ramène (docs/LEDGER_*.md MOB-186).
+    final bool picking =
+        _mode == RouteRetouchOperation.moveEnd && response == null && !_loading;
     return Semantics(
       label: 'routeRetouch.mapLabel'.tr(),
       child: PdlMap(
@@ -381,7 +401,7 @@ class _RouteRetouchPageState extends ConsumerState<RouteRetouchPage> {
           namedArgs: <String, String>{'name': _route.name},
         ),
         onBack: () => Navigator.of(context).maybePop(),
-        backSemanticLabel: 'common.close'.tr(),
+        backSemanticLabel: 'common.back'.tr(),
       ),
       actionBar: _actionBar(),
       body: Column(
@@ -481,7 +501,7 @@ class _RouteRetouchPageState extends ConsumerState<RouteRetouchPage> {
                 child: Text(
                   _slow
                       ? 'routeRetouch.slow'.tr()
-                      : 'routeGenerator.generating'.tr(),
+                      : 'routeRetouch.proposing'.tr(),
                   style: t.sub.copyWith(color: c.textDimmed),
                 ),
               ),

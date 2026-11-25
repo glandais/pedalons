@@ -73,9 +73,16 @@ final generatorPlacesProvider = FutureProvider.autoDispose
 /// Ouvert à qui peut créer un parcours dans l'équipe, planificateur actif :
 /// la règle du serveur (`PlannerAccess`). Quelqu'un d'autre lit un refus.
 class RouteGeneratorPage extends ConsumerWidget {
-  const RouteGeneratorPage({super.key, required this.teamSlug});
+  const RouteGeneratorPage({
+    super.key,
+    required this.teamSlug,
+    this.initialSettings,
+  });
 
   final String teamSlug;
+
+  /// Les réglages d'arrivée, depuis une retouche ; `null` : ceux par défaut.
+  final GeneratorSettings? initialSettings;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -132,7 +139,7 @@ class RouteGeneratorPage extends ConsumerWidget {
         ),
       );
     }
-    return _GeneratorScreen(team: value);
+    return _GeneratorScreen(team: value, initialSettings: initialSettings);
   }
 }
 
@@ -140,16 +147,18 @@ class RouteGeneratorPage extends ConsumerWidget {
 enum _Picking { none, start, end }
 
 class _GeneratorScreen extends ConsumerStatefulWidget {
-  const _GeneratorScreen({required this.team});
+  const _GeneratorScreen({required this.team, this.initialSettings});
 
   final TeamDetailDto team;
+  final GeneratorSettings? initialSettings;
 
   @override
   ConsumerState<_GeneratorScreen> createState() => _GeneratorScreenState();
 }
 
 class _GeneratorScreenState extends ConsumerState<_GeneratorScreen> {
-  GeneratorSettings _settings = const GeneratorSettings();
+  late GeneratorSettings _settings =
+      widget.initialSettings ?? const GeneratorSettings();
   _Picking _picking = _Picking.none;
 
   /// La génération en vol ; un numéro plus récent rend la réponse caduque
@@ -284,7 +293,12 @@ class _GeneratorScreenState extends ConsumerState<_GeneratorScreen> {
     });
   }
 
-  void _use() {
+  /// L'éditeur est ouvert : un second appui n'en pousse pas un second
+  /// (deux WebViews), jusqu'au retour (docs/LEDGER_*.md MOB-186).
+  bool _opening = false;
+
+  Future<void> _use() async {
+    if (_opening) return;
     final RouteGeneratorResponse? response = _response;
     final RouteGeneratorType? type = _responseType;
     if (response == null || type == null) return;
@@ -296,7 +310,8 @@ class _GeneratorScreenState extends ConsumerState<_GeneratorScreen> {
     }
     final GeneratedRouteDto candidate = response.candidates[_selected];
     // Au-dessus du générateur : revenir de l'éditeur retrouve les propositions.
-    context.push(
+    _opening = true;
+    await context.push<void>(
       Paths.routeNew(_team.slug),
       extra: GeneratedHandoff(
         polyline: candidate.polyline,
@@ -309,6 +324,7 @@ class _GeneratorScreenState extends ConsumerState<_GeneratorScreen> {
         ),
       ),
     );
+    _opening = false;
   }
 
   // ── Départ et arrivée ──────────────────────────────────────────────────

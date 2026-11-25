@@ -970,8 +970,14 @@ GoRoute _teamTree(String locale) {
           teamBase,
         ),
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) =>
-            RouteGeneratorPage(teamSlug: state.pathParameters['teamSlug']!),
+        // Les réglages d'une retouche (docs/LEDGER_*.md MOB-186) ; un lien
+        // ouvre l'écran avec ses réglages par défaut.
+        builder: (context, state) => RouteGeneratorPage(
+          teamSlug: state.pathParameters['teamSlug']!,
+          initialSettings: state.extra is GeneratorSettings
+              ? state.extra! as GeneratorSettings
+              : null,
+        ),
       ),
       GoRoute(
         path: _underTeam(

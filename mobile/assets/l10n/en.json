@@ -1637,6 +1637,7 @@
         "other": "Track of {} points"
       },
       "trackUnvalidated": "Changes made on the map were not taken: open the map again and tap “Done” to keep them.",
+      "fileLost": "The file imported into the planner is no longer available: import it again.",
       "pointsRequired": "At least 2 control points are required",
       "excludedFromGenerator": "Don't use to generate routes",
       "excludedFromGeneratorHint": "For an event route or a road open only exceptionally: its roads are only proposed if another route of the team rides them.",
@@ -3038,6 +3039,7 @@
       "shortenHint": "Shortening works a little more than half the time. If nothing comes, try a smaller change or move the finish."
     },
     "retouchedName": "{name} (adjusted)",
+    "proposing": "Looking for proposals…",
     "slow": "Adjusting takes a few more seconds on long routes.",
     "submit": "Suggest",
     "title": "Adjust “{name}”",

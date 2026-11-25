@@ -107,7 +107,7 @@ void main() {
       expect(
         fr.message,
         "L'équipe a atteint 25 membres, la limite de l'offre gratuite. "
-        "Pour aller au-delà, un administrateur de l'équipe peut nous "
+        "Pour aller au-delà, une personne qui administre l'équipe peut nous "
         'contacter.',
       );
 

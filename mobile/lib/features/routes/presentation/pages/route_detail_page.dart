@@ -172,6 +172,9 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage>
     return PdlScreenScaffold(
       onRefresh: () async {
         ref.invalidate(routeUsagesProvider(_key));
+        // Une offre « en cours d'analyse » se réactive en tirant la fiche
+        // (docs/LEDGER_*.md MOB-186).
+        ref.invalidate(routeRetouchOfferProvider(_key));
         try {
           ref.invalidate(routeDetailProvider(_key));
           await ref.read(routeDetailProvider(_key).future);

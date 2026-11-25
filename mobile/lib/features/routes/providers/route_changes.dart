@@ -7,6 +7,7 @@ import '../../teams/providers/team_dashboard_provider.dart';
 import 'route_count_provider.dart';
 import 'route_detail_provider.dart';
 import 'route_list_provider.dart';
+import 'route_retouch_provider.dart';
 
 /// **Le** point où l'app dit « un organisateur vient de changer un parcours »
 /// — créé, réécrit (GPX compris), renommé d'adresse, supprimé ou restauré
@@ -18,8 +19,10 @@ import 'route_list_provider.dart';
 /// invalidées en entier, quelle que soit leur clé), dans le tableau de bord de
 /// l'équipe (« Nouveaux parcours »), dans les compteurs d'usage des tags, et
 /// dans les caches de l'éditeur de sortie (le parcours d'un groupe, dont la
-/// distance change avec un nouveau GPX). Le détail et les usages du parcours
-/// ne le sont que si [routeKey] le nomme. Invalider un provider que personne
+/// distance change avec un nouveau GPX). Le détail, les usages et l'offre de
+/// retouche du parcours ne le sont que si [routeKey] le nomme : l'offre porte
+/// la longueur et les bornes du tracé, et se refuse le temps d'analyser un
+/// nouveau tracé (docs/LEDGER_*.md MOB-186). Invalider un provider que personne
 /// n'écoute ne coûte rien.
 ///
 /// Deux limites assumées : `teamDetailProvider` n'est **pas** invalidé —
@@ -35,6 +38,7 @@ void notifyRouteChanged(
   if (routeKey != null) {
     ref.invalidate(routeDetailProvider(routeKey));
     ref.invalidate(routeUsagesProvider(routeKey));
+    ref.invalidate(routeRetouchOfferProvider(routeKey));
   }
   ref.invalidate(routeListProvider);
   ref.invalidate(routePreviewProvider);

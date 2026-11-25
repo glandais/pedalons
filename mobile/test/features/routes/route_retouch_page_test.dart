@@ -204,6 +204,12 @@ void main() {
     await tester.tap(find.byKey(keys.routeRetouch.generatorButton));
     await pumps(tester);
     expect(choice?.opening, RetouchOpening.generator);
+    // Le générateur part de la distance demandée et du type de l'offre,
+    // comme au site (docs/LEDGER_*.md MOB-186).
+    expect(choice?.handoff, isNull);
+    expect(choice?.generator?.distanceKm, 72);
+    expect(choice?.generator?.type, RouteGeneratorType.gravel);
+    expect(choice?.generator?.start, isNotNull);
   });
 }
 

@@ -190,10 +190,35 @@ enum RetouchOpening {
 
 @immutable
 class RetouchChoice {
-  const RetouchChoice(this.opening, [this.handoff]);
+  const RetouchChoice(this.opening, [this.handoff, this.generator]);
   final RetouchOpening opening;
   final GeneratedHandoff? handoff;
+
+  /// Les réglages du générateur, pour « Ouvrir le générateur ».
+  final GeneratorSettings? generator;
 }
+
+/// Le générateur ouvert depuis une retouche part du départ du parcours, de la
+/// distance demandée (sinon la longueur du parcours) bornée au curseur, et du
+/// type de sortie de l'offre — ce que le site met dans l'adresse
+/// (`generatorLinkFor`, docs/LEDGER_*.md MOB-186).
+GeneratorSettings retouchGeneratorSettings({
+  required List<double>? start,
+  required double? targetKm,
+  required RouteRetouchOfferDto offer,
+}) => GeneratorSettings(
+  start: start == null || start.length < 2
+      ? null
+      : GeneratorPoint(
+          lng: start[0],
+          lat: start[1],
+          kind: GeneratorPointKind.picked,
+        ),
+  distanceKm: targetKm == null || !targetKm.isFinite
+      ? kGeneratorDefaultKm
+      : targetKm.roundToDouble().clamp(kGeneratorMinKm, kGeneratorMaxKm),
+  type: offer.rideType == null ? null : retouchRideType(offer),
+);
 
 // ── Erreurs ───────────────────────────────────────────────────────────────
 

@@ -234,6 +234,11 @@ void main() {
                 const Text('liste des parcours'),
           ),
           GoRoute(
+            path: PathVariants.route(':teamSlug', ':routeSlug')['fr']!,
+            builder: (BuildContext _, GoRouterState state) =>
+                Text('fiche ${state.pathParameters['routeSlug']}'),
+          ),
+          GoRoute(
             path: PathVariants.routeEdit(':teamSlug', ':routeSlug')['fr']!,
             builder: (BuildContext _, GoRouterState state) => Text(
               'éditeur ${state.pathParameters['routeSlug']} '
@@ -398,6 +403,13 @@ void main() {
           'n-peloton/col-de-la-croix:Col, variante',
         ]);
         expect(find.text('éditeur copie -'), findsOneWidget);
+
+        // Le formulaire refermé, on est sur la fiche de la copie, pas sur
+        // celle de l'original (docs/LEDGER_*.md MOB-186).
+        router.pop();
+        await settle(tester);
+        expect(find.text('fiche copie'), findsOneWidget);
+        expect(find.text('ouvrir'), findsNothing);
       },
     );
 
