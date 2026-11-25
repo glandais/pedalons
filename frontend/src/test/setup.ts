@@ -98,6 +98,10 @@ if (typeof window !== 'undefined') {
     })
   }
 
+  // jsdom has no layout, hence no scrollIntoView: Mantine's Combobox calls it on the selected
+  // option from a timer, after the test that opened it may already be over.
+  Element.prototype.scrollIntoView ??= () => {}
+
   // Mock localStorage
   const localStorageMock = {
     getItem: vi.fn(),

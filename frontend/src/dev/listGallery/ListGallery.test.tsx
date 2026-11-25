@@ -173,8 +173,6 @@ beforeAll(async () => {
   await i18nReady
   await i18n.changeLanguage('fr')
   frenchI18n = await createServerI18n('fr')
-  // jsdom has no layout: Mantine's open dropdowns scroll their selected option into view.
-  Element.prototype.scrollIntoView ??= () => {}
   AXIOS_INSTANCE.interceptors.request.use((config) => {
     requests++
     return config
