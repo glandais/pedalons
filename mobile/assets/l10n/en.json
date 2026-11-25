@@ -1777,8 +1777,7 @@
       "count": {
         "one": "{} file",
         "other": "{} files"
-      },
-      "seeAll": "See all"
+      }
     },
     "preview": {
       "title": "Preview",

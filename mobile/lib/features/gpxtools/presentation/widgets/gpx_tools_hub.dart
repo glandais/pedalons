@@ -316,7 +316,7 @@ class _GpxToolsHubState extends ConsumerState<GpxToolsHub> {
                 title: 'gpxTools.listFiles.title'.tr(),
                 action: PdlButton(
                   key: keys.gpxTools.listButton,
-                  label: 'gpxTools.listFiles.seeAll'.tr(),
+                  label: 'common.viewAll'.tr(),
                   variant: PdlButtonVariant.text,
                   size: PdlButtonSize.sm,
                   onPressed: () => context.push(Paths.gpxToolsList()),
