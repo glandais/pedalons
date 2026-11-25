@@ -1,5 +1,6 @@
 import { Box, Center, Group, Paper, Stack, Text, Title } from '@mantine/core'
 import type { ReactNode } from 'react'
+import { useCardHeadingOrder } from '@/components/card/common/cardHeadingOrder'
 
 interface EmptyStateProps {
   /** Domain icon (absolute variant) or IconSearchOff (filtered variant), sized 48. */
@@ -13,6 +14,13 @@ interface EmptyStateProps {
    * filters hide them. The two must never read the same.
    */
   variant?: 'absolute' | 'filtered'
+  /**
+   * The title's level; its size stays an h3's. By default the level of the cards it stands in for
+   * (`CardHeadingOrder`): an h3 under a page's h2, an h2 under a page's h1 (`TeamListPage`,
+   * `AllRoutesPage`). 1 only when the state replaces the whole page — a 403 with nothing around it
+   * (docs/LEDGER_*.md WEB-210).
+   */
+  order?: 1 | 2 | 3 | 4
 }
 
 /**
@@ -25,7 +33,9 @@ export function EmptyState({
   description,
   actions,
   variant = 'absolute',
+  order,
 }: EmptyStateProps) {
+  const listOrder = useCardHeadingOrder()
   return (
     <Paper withBorder py="xl" px="md" radius="md" data-variant={variant}>
       <Center>
@@ -41,7 +51,7 @@ export function EmptyState({
           >
             {icon}
           </Box>
-          <Title order={3} ta="center">
+          <Title order={order ?? listOrder} size="h3" ta="center">
             {title}
           </Title>
           {description && (

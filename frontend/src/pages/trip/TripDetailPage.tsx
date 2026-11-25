@@ -96,6 +96,7 @@ export function TripDetailPage() {
     return (
       <Container size="xl" py="xl">
         <QueryStateBoundary
+          replacesPage
           isLoading={isLoadingTeam || isLoadingTrip}
           isError={!!error}
           error={error}

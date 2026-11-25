@@ -41,6 +41,12 @@ interface QueryStateBoundaryProps {
    * `false` included — wraps the children in the box that dims, so the tree never changes shape.
    */
   isRefreshing?: boolean
+  /**
+   * The boundary stands for the whole page — a detail page whose entity did not load, outside
+   * `TeamLayout`: the 404, the 403 and the error are then the page's h1, at the size they had
+   * (docs/LEDGER_*.md WEB-210). Elsewhere they stay below the page's own h1.
+   */
+  replacesPage?: boolean
   children: ReactNode
 }
 
@@ -48,13 +54,19 @@ interface QueryStateBoundaryProps {
  * A refusal: not a failure to retry — retrying earns the same answer — so no red and no « Réessayer »,
  * but a way out (docs/LEDGER_*.md WEB-175, RL11).
  */
-export function AccessRefusedState({ title, message, action }: ForbiddenConfig) {
+export function AccessRefusedState({
+  title,
+  message,
+  action,
+  replacesPage,
+}: ForbiddenConfig & { replacesPage?: boolean }) {
   return (
     <EmptyState
       icon={<IconLock size={48} />}
       title={title}
       description={message}
       actions={action}
+      order={replacesPage ? 1 : undefined}
     />
   )
 }
@@ -80,6 +92,7 @@ export function QueryStateBoundary({
   notFound,
   forbidden,
   isRefreshing,
+  replacesPage,
   children,
 }: QueryStateBoundaryProps) {
   const { t } = useTranslation()
@@ -100,6 +113,7 @@ export function QueryStateBoundary({
         title={forbidden?.title ?? t('query.forbidden.title')}
         message={forbidden?.message ?? t('query.forbidden.message')}
         action={forbidden?.action}
+        replacesPage={replacesPage}
       />
     )
   }
@@ -109,7 +123,15 @@ export function QueryStateBoundary({
     return (
       <Alert
         icon={offline ? <IconWifiOff size={16} /> : <IconXboxX size={16} />}
-        title={offline ? t('query.offline.title') : t('query.error.title')}
+        title={
+          // Mantine renders the title in a <span>: an <h1> would be invalid there, the ARIA role is not.
+          <span
+            role={replacesPage ? 'heading' : undefined}
+            aria-level={replacesPage ? 1 : undefined}
+          >
+            {offline ? t('query.offline.title') : t('query.error.title')}
+          </span>
+        }
         color="red"
       >
         <Text size="sm">{offline ? t('query.offline.message') : t('query.error.message')}</Text>
@@ -127,7 +149,7 @@ export function QueryStateBoundary({
       <Center py="xl">
         <Stack align="center" gap="md">
           <IconMoodEmpty size={48} color="var(--mantine-color-dimmed)" />
-          <Title order={3} ta="center">
+          <Title order={replacesPage ? 1 : 3} size="h3" ta="center">
             {notFound?.title ?? t('query.notFound.title')}
           </Title>
           <Text c="dimmed" ta="center" maw={400}>

@@ -109,6 +109,7 @@ export function AdDetailPage() {
     return (
       <Container size="xl" py="xl">
         <QueryStateBoundary
+          replacesPage
           isLoading={isLoadingTeam || isLoadingAd}
           isError={!!error}
           error={error}

@@ -175,6 +175,9 @@ for (const target of TARGETS) {
       await expect(alert).toContainText("Le serveur n'a pas pu répondre", { timeout: 30_000 })
       if (target.notFound)
         await expect(main.getByRole('heading', { name: target.notFound })).toHaveCount(0)
+      // The error replaces the page: it is its one h1 (docs/LEDGER_*.md WEB-210) — routes-render
+      // only checks pages that landed.
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText([ERROR_TITLE])
       // Retried: a 5xx is worth another try, unlike a 404 — one cycle, the loader's: 1 + 3 retries
       // (see « requested once » below for the breadcrumb that used to run a second one).
       expect(reads()).toBe(4)
@@ -216,6 +219,9 @@ for (const target of TARGETS) {
       await navigateToUnknown(page, target, slug)
 
       expect(await shown()).toEqual([])
+      // The « not found » replaces the page: it is its one h1 (docs/LEDGER_*.md WEB-210).
+      if (target.notFound)
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText([target.notFound])
     })
   })
 }

@@ -21,7 +21,7 @@ export function TeamUnavailable({ error, isError, onRetry }: TeamUnavailableProp
   if (isError && (status === undefined || status >= 500)) {
     return (
       <Container size="xl" py="xl">
-        <QueryStateBoundary isLoading={false} isError error={error} onRetry={onRetry}>
+        <QueryStateBoundary isLoading={false} isError error={error} onRetry={onRetry} replacesPage>
           {null}
         </QueryStateBoundary>
       </Container>

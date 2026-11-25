@@ -100,6 +100,7 @@ export function RideGroupPage() {
     return (
       <Container size="xl" py="xl">
         <QueryStateBoundary
+          replacesPage
           isLoading={isLoadingRide || leave}
           isError={!!error}
           error={error}

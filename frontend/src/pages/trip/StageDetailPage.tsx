@@ -81,6 +81,7 @@ export function StageDetailPage() {
     return (
       <Container size="xl" py="xl">
         <QueryStateBoundary
+          replacesPage
           isLoading={isLoading}
           isError={!!error}
           error={error}
@@ -104,6 +105,7 @@ export function StageDetailPage() {
     return (
       <Container size="xl" py="xl">
         <QueryStateBoundary
+          replacesPage
           isLoading={false}
           isNotFound
           notFound={{

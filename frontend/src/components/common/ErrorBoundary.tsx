@@ -84,7 +84,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   <ThemeIcon size="xl" radius="xl" color="red" variant="light">
                     <IconAlertTriangle size={24} />
                   </ThemeIcon>
-                  <Title order={3} ta="center">
+                  {/* The page variant replaces the whole route: its title is the page's h1, at the
+                      size it had (docs/LEDGER_*.md WEB-210). */}
+                  <Title order={this.props.variant === 'inline' ? 3 : 1} size="h3" ta="center">
                     {t('boundary.title')}
                   </Title>
                   <Text c="dimmed" ta="center">

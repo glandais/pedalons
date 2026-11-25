@@ -159,6 +159,7 @@ export function RouteDetailPage() {
     return (
       <Box maw={1280} mx="auto" px="md" py="xl">
         <QueryStateBoundary
+          replacesPage
           isLoading={routeLoading}
           isError={!!error}
           error={error}

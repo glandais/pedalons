@@ -126,6 +126,7 @@ export function RideDetailPage() {
     return (
       <Container size="xl" py="xl">
         <QueryStateBoundary
+          replacesPage
           isLoading={isLoadingRide}
           isError={!!error}
           error={error}

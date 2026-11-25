@@ -59,6 +59,7 @@ export function PostDetailPage() {
     return (
       <Container size="lg" py="xl">
         <QueryStateBoundary
+          replacesPage
           isLoading={isLoadingPost}
           isError={!!error}
           error={error}

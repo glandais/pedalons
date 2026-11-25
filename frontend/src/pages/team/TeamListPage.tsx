@@ -120,21 +120,22 @@ export function TeamListPage() {
       />
 
       {/* A failure shows the error alone: the empty state under it (« Aucune équipe n'a encore été
-          créée ») would contradict it. */}
-      <QueryStateBoundary
-        isLoading={isLoading}
-        isError={isError}
-        error={error}
-        onRetry={() => void refetch()}
-        isRefreshing={isPlaceholderData}
-        skeleton={
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-            <TeamCardSkeleton count={6} />
-          </SimpleGrid>
-        }
-      >
-        {teams && teams.length > 0 ? (
-          <CardHeadingOrder order={2}>
+          créée ») would contradict it. The cards and the empty state in their place are h2s, under the
+          page's h1 (docs/LEDGER_*.md WEB-210). */}
+      <CardHeadingOrder order={2}>
+        <QueryStateBoundary
+          isLoading={isLoading}
+          isError={isError}
+          error={error}
+          onRetry={() => void refetch()}
+          isRefreshing={isPlaceholderData}
+          skeleton={
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+              <TeamCardSkeleton count={6} />
+            </SimpleGrid>
+          }
+        >
+          {teams && teams.length > 0 ? (
             <Stack>
               <SimpleGrid ref={listTopRef} cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
                 {teams.map((team) => (
@@ -153,20 +154,20 @@ export function TeamListPage() {
                 />
               </Box>
             </Stack>
-          </CardHeadingOrder>
-        ) : filters.page > 0 ? (
-          <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
-        ) : hasFiltersOrSearch ? (
-          <FilteredEmptyState resource="teams" filters={activeFilters} onClear={clearFilters} />
-        ) : (
-          <EmptyState
-            icon={<IconUsersGroup size={48} />}
-            title={t('teams.list.empty.noTeamsTitle')}
-            description={t('teams.list.empty.noTeamsDescription')}
-            actions={createTeamButton}
-          />
-        )}
-      </QueryStateBoundary>
+          ) : filters.page > 0 ? (
+            <OutOfRangeState onFirstPage={() => setFilters({ page: 0 })} />
+          ) : hasFiltersOrSearch ? (
+            <FilteredEmptyState resource="teams" filters={activeFilters} onClear={clearFilters} />
+          ) : (
+            <EmptyState
+              icon={<IconUsersGroup size={48} />}
+              title={t('teams.list.empty.noTeamsTitle')}
+              description={t('teams.list.empty.noTeamsDescription')}
+              actions={createTeamButton}
+            />
+          )}
+        </QueryStateBoundary>
+      </CardHeadingOrder>
     </Stack>
   )
 }
