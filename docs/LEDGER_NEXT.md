@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **163 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **164 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -13,6 +13,7 @@ reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
+- [ ] [`MOB-185`](ledger/MOB/MOB-185.md) Retoucher un parcours depuis l'app : ajuster la distance, déplacer l'arrivée (M)
 - [ ] [`MOB-181`](ledger/MOB/MOB-181.md) Passer à maplibre 0.4 (moteur natif unique) (M) · *recette*
 - [ ] [`MOB-178`](ledger/MOB/MOB-178.md) Les outils GPX dans l'app : recette sur appareil (L) · *recette*
 - [ ] [`MOB-175`](ledger/MOB/MOB-175.md) Recette sur Pixel de la 1.2.0 : défauts d'affichage des pages groupe, équipe et carte (S)
