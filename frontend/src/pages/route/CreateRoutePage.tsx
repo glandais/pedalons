@@ -18,6 +18,8 @@ import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
 import { readGeneratedHandoff } from '@/lib/routeGenerator'
 import { readDrawHandoff, readGpxFileHandoff } from '@/lib/routeHandoff'
+import { useRef } from 'react'
+import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 
 export function CreateRoutePage() {
   const { teamSlug } = useParams<{ teamSlug: string }>()
@@ -37,6 +39,10 @@ export function CreateRoutePage() {
   const createRouteMutation = useCreateRoute()
 
   useCanonicalPath(team ? paths.routeNew(team.slug) : undefined)
+
+  // A drawing, a file or a proposal is not dropped without asking (docs/LEDGER_*.md WEB-213)
+  const dirtyRef = useRef<(() => boolean) | null>(null)
+  const leaveGuard = useLeaveGuard(() => dirtyRef.current?.() ?? false)
 
   const handleSubmit = async (data: RouteRequest, gpxFile?: File) => {
     // Either gpxFile, planner state or points must be provided
@@ -60,11 +66,15 @@ export function CreateRoutePage() {
       }
     )
 
+    leaveGuard.release()
     navigate(paths.route(teamSlug!, route.slug))
   }
 
+  // Back where the form was opened from (the generator and its settings, the dashboard, the home
+  // page); the team's routes when it was opened by a link (docs/LEDGER_*.md WEB-213).
   const handleCancel = () => {
-    navigate(paths.routes(teamSlug!))
+    if (location.key !== 'default') navigate(-1)
+    else navigate(paths.routes(teamSlug!))
   }
 
   if (isLoadingTeam) {
@@ -115,7 +125,9 @@ export function CreateRoutePage() {
         isPending={createRouteMutation.isPending}
         error={createRouteMutation.error}
         submitButtonText={t('routes.create.submit')}
+        dirtyRef={dirtyRef}
       />
+      {leaveGuard.dialog}
     </Stack>
   )
 }

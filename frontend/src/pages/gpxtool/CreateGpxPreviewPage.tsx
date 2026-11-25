@@ -11,6 +11,8 @@ import {
   useUpdatePreview,
 } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { GpxPreviewEditor } from '@/components/gpxtool/GpxPreviewEditor'
+import { useRef } from 'react'
+import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import { departureFormFields, departureJsonFields } from '@/components/gpxtool/departure'
 import type { DepartureChange } from '@/components/gpxtool/departure'
 import { paths } from '@/config/paths'
@@ -25,6 +27,9 @@ import { invalidatePlannerQuota } from '@/lib/plannerQuota'
 export function CreateGpxPreviewPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  // A drawing is not dropped without asking (docs/LEDGER_*.md WEB-213)
+  const dirtyRef = useRef<(() => boolean) | null>(null)
+  const leaveGuard = useLeaveGuard(() => dirtyRef.current?.() ?? false)
   const queryClient = useQueryClient()
   const createMutation = useCreatePreviewFromPoints()
   // A file imported in the planner and saved untouched goes through the upload, like any file
@@ -64,6 +69,7 @@ export function CreateGpxPreviewPage() {
           ? { message: t('gpxTools.createFromScratch.created'), color: 'green' }
           : { message: t('gpxTools.createFromScratch.renameFailed'), color: 'yellow' }
       )
+      leaveGuard.release()
       navigate(paths.gpxToolsView(created.id))
       return
     }
@@ -89,6 +95,7 @@ export function CreateGpxPreviewPage() {
         },
       }
     )
+    leaveGuard.release()
     navigate(paths.gpxToolsView(preview.id))
   }
 
@@ -113,7 +120,9 @@ export function CreateGpxPreviewPage() {
         isPending={
           createMutation.isPending || createFromFileMutation.isPending || renameMutation.isPending
         }
+        dirtyRef={dirtyRef}
       />
+      {leaveGuard.dialog}
     </Stack>
   )
 }

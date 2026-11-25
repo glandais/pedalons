@@ -511,3 +511,36 @@ describe('route generator (WEB-179)', () => {
     expect(screen.queryByTestId('field')).toBeNull()
   })
 })
+
+describe('leave guard probe (WEB-213)', () => {
+  beforeEach(() => snapshotMock.mockReset())
+  afterEach(cleanup)
+
+  it('says nothing is lost on an untouched form, and something once a field or the track moved', async () => {
+    snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS })
+    const dirtyRef: { current: (() => boolean) | null } = { current: null }
+    renderEditor({ dirtyRef })
+    await screen.findByTestId('field')
+    expect(dirtyRef.current?.()).toBe(false)
+
+    snapshotMock.mockReturnValue({ dirty: true, plannerState: STATE, points: POINTS })
+    expect(dirtyRef.current?.()).toBe(true)
+
+    snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS })
+    fireEvent.change(screen.getByDisplayValue('Boucle du lac'), {
+      target: { value: 'Tour du lac' },
+    })
+    await waitFor(() => expect(dirtyRef.current?.()).toBe(true))
+  })
+
+  it('counts a handed-over proposal as work until it is saved', async () => {
+    snapshotMock.mockReturnValue({ dirty: false, plannerState: STATE, points: POINTS })
+    const dirtyRef: { current: (() => boolean) | null } = { current: null }
+    renderEditor({
+      dirtyRef,
+      initialGenerated: { polyline: 'POLY', type: 'ROAD', distanceM: 50000 },
+    })
+    await screen.findByTestId('field')
+    expect(dirtyRef.current?.()).toBe(true)
+  })
+})

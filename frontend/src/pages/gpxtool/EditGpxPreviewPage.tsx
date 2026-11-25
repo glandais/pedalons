@@ -10,6 +10,8 @@ import {
   useUpdatePreview,
 } from '@/api/endpoints/gpx-previews/gpx-previews'
 import { GpxPreviewEditor } from '@/components/gpxtool/GpxPreviewEditor'
+import { useRef } from 'react'
+import { useLeaveGuard } from '@/hooks/useLeaveGuard'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import type { DepartureChange } from '@/components/gpxtool/departure'
 import { optionalWallTime } from '@/utils/wallTime'
@@ -22,6 +24,9 @@ export function EditGpxPreviewPage() {
   const { previewId } = useParams<{ previewId: string }>()
   const { t } = useTranslation()
   const navigate = useNavigate()
+  // A drawing, a file or a new departure is not dropped without asking (docs/LEDGER_*.md WEB-213)
+  const dirtyRef = useRef<(() => boolean) | null>(null)
+  const leaveGuard = useLeaveGuard(() => dirtyRef.current?.() ?? false)
   const queryClient = useQueryClient()
 
   const { data: preview, isLoading } = useGpxPreviewFormData(previewId)
@@ -79,6 +84,7 @@ export function EditGpxPreviewPage() {
         },
       }
     )
+    leaveGuard.release()
     navigate(paths.gpxToolsView(preview.id))
   }
 
@@ -113,7 +119,9 @@ export function EditGpxPreviewPage() {
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.gpxToolsView(preview.id))}
         isPending={updateMutation.isPending}
+        dirtyRef={dirtyRef}
       />
+      {leaveGuard.dialog}
     </Stack>
   )
 }

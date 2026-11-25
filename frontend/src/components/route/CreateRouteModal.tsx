@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
@@ -11,6 +11,7 @@ import { defaultMedia } from '@/lib/apiUtils'
 import { invalidateRouteQueries } from '@/lib/routeCacheInvalidation'
 import { invalidatePlannerQuota } from '@/lib/plannerQuota'
 import { Modal } from '@mantine/core'
+import { ConfirmDialog } from '../common/ConfirmDialog'
 
 interface CreateRouteModalProps {
   isOpen: boolean
@@ -26,6 +27,14 @@ export function CreateRouteModal({ isOpen, onClose, onRouteCreated, team }: Crea
   // Escape closes every Mantine modal at once: while the planner's fullscreen editor is open, it
   // must not take this form (and the unsaved route) down with it.
   const [plannerFullscreen, setPlannerFullscreen] = useState(false)
+  // Closing (Annuler, the cross, Escape) asks first when a drawing or a file would be lost: the
+  // ride's or trip's form stays, but this one goes (docs/LEDGER_*.md WEB-213).
+  const dirtyRef = useRef<(() => boolean) | null>(null)
+  const [confirmingClose, setConfirmingClose] = useState(false)
+  const requestClose = () => {
+    if (dirtyRef.current?.()) setConfirmingClose(true)
+    else onClose()
+  }
 
   const initialValues = {
     name: '',
@@ -63,10 +72,10 @@ export function CreateRouteModal({ isOpen, onClose, onRouteCreated, team }: Crea
   return (
     <Modal
       opened={isOpen}
-      onClose={onClose}
+      onClose={requestClose}
       title={t('routes.create.title')}
       fullScreen
-      closeOnEscape={!plannerFullscreen}
+      closeOnEscape={!plannerFullscreen && !confirmingClose}
     >
       <RouteEditor
         team={team}
@@ -74,12 +83,24 @@ export function CreateRouteModal({ isOpen, onClose, onRouteCreated, team }: Crea
         initialValues={initialValues}
         isCreateMode={true}
         onSubmit={handleSubmit}
-        onCancel={onClose}
+        onCancel={requestClose}
         isPending={createRouteMutation.isPending}
         error={createRouteMutation.error}
         submitButtonText={t('routes.create.submit')}
-        showCancelButton={false}
         onPlannerFullscreenChange={setPlannerFullscreen}
+        dirtyRef={dirtyRef}
+      />
+      <ConfirmDialog
+        isOpen={confirmingClose}
+        onClose={() => setConfirmingClose(false)}
+        onConfirm={() => {
+          setConfirmingClose(false)
+          onClose()
+        }}
+        title={t('leaveGuard.title')}
+        message={t('leaveGuard.message')}
+        confirmText={t('leaveGuard.leave')}
+        cancelText={t('leaveGuard.stay')}
       />
     </Modal>
   )

@@ -1,7 +1,7 @@
 import { VisibilitySelector } from '@/components/visibility/VisibilitySelector'
 import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
 import { Visibility } from '@/api/dto'
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, type MutableRefObject } from 'react'
 import { useForm } from '@mantine/form'
 import { zodFormValidator } from '@/lib/formUtils'
 import { useTranslation } from 'react-i18next'
@@ -109,6 +109,11 @@ interface RouteEditorProps {
    * (ledger `WEB-203`), the form's name stays.
    */
   initialGenerated?: GeneratedHandoff
+  /**
+   * Filled with a probe the page's leave guard reads when a navigation happens: whether anything
+   * would be lost — a field, a chosen file, a drawn or imported track (docs/LEDGER_*.md WEB-213).
+   */
+  dirtyRef?: MutableRefObject<(() => boolean) | null>
 }
 
 export function RouteEditor({
@@ -137,6 +142,7 @@ export function RouteEditor({
   initialGenerated,
   initialGpxFile,
   initialDraw = false,
+  dirtyRef,
 }: RouteEditorProps) {
   const { t } = useTranslation()
   const { distance } = useUnits()
@@ -320,6 +326,18 @@ export function RouteEditor({
   // button a spent quota disables. A quota spent while the planner is open must not take it away —
   // its refusal dialog lives in it, and so does the drawing (docs/LEDGER_*.md BILL-12).
   const showPlanner = plannerOpen && sourceMode === 'planner'
+
+  // Read by the page's leave guard at navigation time, never while rendering.
+  useEffect(() => {
+    if (!dirtyRef) return
+    dirtyRef.current = () => {
+      // A proposal handed over (generator, retouch) is work too, until it is saved.
+      if (form.isDirty() || gpxFile !== null || initialGenerated) return true
+      if (!showPlanner) return false
+      const snapshot = plannerRef.current?.snapshot()
+      return !!snapshot && (snapshot.dirty || snapshot.waypoints !== undefined)
+    }
+  })
 
   return (
     <form

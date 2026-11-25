@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMediaMatch } from '@/hooks/useResponsive'
 import { Alert, Box, Button, FileInput, Group, Stack, Text, TextInput } from '@mantine/core'
@@ -49,6 +49,11 @@ interface GpxPreviewEditorProps {
   ) => void | Promise<void>
   onCancel: () => void
   isPending: boolean
+  /**
+   * Filled with a probe the page's leave guard reads when a navigation happens: whether anything
+   * would be lost — the name, a chosen file, the departure, a drawn track (docs/LEDGER_*.md WEB-213).
+   */
+  dirtyRef?: MutableRefObject<(() => boolean) | null>
 }
 
 /**
@@ -73,6 +78,7 @@ export function GpxPreviewEditor({
   onSubmit,
   onCancel,
   isPending,
+  dirtyRef,
 }: GpxPreviewEditorProps) {
   const { t } = useTranslation()
   // On a finger the preview card already says how many points there are.
@@ -151,6 +157,18 @@ export function GpxPreviewEditor({
   }
 
   const showPlanner = canUsePlanner && sourceMode === 'planner'
+
+  // Read by the page's leave guard at navigation time, never while rendering.
+  useEffect(() => {
+    if (!dirtyRef) return
+    dirtyRef.current = () => {
+      if (name !== initialName || gpxFile !== null) return true
+      if (Object.keys(departureChange(initialDeparture ?? {}, departure)).length > 0) return true
+      if (!showPlanner) return false
+      const snapshot = plannerRef.current?.snapshot()
+      return !!snapshot && (snapshot.dirty || snapshot.waypoints !== undefined)
+    }
+  })
 
   return (
     <Stack>

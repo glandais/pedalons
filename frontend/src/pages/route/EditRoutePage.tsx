@@ -18,6 +18,9 @@ import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels
 import { useRouteUsagesRefusal } from '@/components/visibility/useVisibilityAlignment'
 import { readGeneratedHandoff } from '@/lib/routeGenerator'
 import { readGpxFileHandoff } from '@/lib/routeHandoff'
+import { useRef } from 'react'
+import { useLeaveGuard } from '@/hooks/useLeaveGuard'
+import type { RouteDetailDto, PlannerStateResponse } from '@/api/dto'
 
 export function EditRoutePage() {
   const { teamSlug, routeSlug } = useParams<{ teamSlug: string; routeSlug: string }>()
@@ -44,6 +47,19 @@ export function EditRoutePage() {
 
   useCanonicalPath(team && route ? paths.routeEdit(team.slug, route.slug) : undefined)
 
+  // A drawing, a file or a retouch is not dropped without asking (docs/LEDGER_*.md WEB-213)
+  const dirtyRef = useRef<(() => boolean) | null>(null)
+  const leaveGuard = useLeaveGuard(() => dirtyRef.current?.() ?? false)
+
+  // The route the editor opened on. A slug change reloads the route under its new key: the editor
+  // stays on what it has — its fields, its drawing, a handed-over retouch or file — rather than
+  // giving way to the skeleton and starting over (docs/LEDGER_*.md WEB-213).
+  const opened = useRef<{ route: RouteDetailDto; plannerState?: PlannerStateResponse } | null>(null)
+  const loading = isLoading || plannerStateQuery.isLoading
+  if (!loading && route && opened.current?.route.id !== route.id) {
+    opened.current = { route, plannerState: plannerStateQuery.data }
+  }
+
   if (isLoadingTeam) {
     return <LoadingPage message={t('routes.edit.title')} />
   }
@@ -57,7 +73,7 @@ export function EditRoutePage() {
   }
 
   // The planner takes its initial state once, on mounting: the editor waits for the saved state
-  if (isLoading || plannerStateQuery.isLoading) {
+  if (loading && !opened.current) {
     return (
       <Box maw={768} mx="auto" px="md" py="xl">
         <Stack>
@@ -76,12 +92,15 @@ export function EditRoutePage() {
     )
   }
 
-  if (!route) {
+  const shownRoute = loading ? opened.current?.route : route
+  const shownPlannerState = loading ? opened.current?.plannerState : plannerStateQuery.data
+
+  if (!shownRoute) {
     return <Navigate to={paths.routes(teamSlug!)} replace />
   }
 
   // The backend's answer for this route (docs/LEDGER_*.md WEB-166, decision D7).
-  const canEdit = route.permissions.canEdit
+  const canEdit = shownRoute.permissions.canEdit
 
   if (!canEdit) {
     return <Navigate to={paths.routes(teamSlug!)} replace />
@@ -89,17 +108,17 @@ export function EditRoutePage() {
 
   // Prepare initial values from fetched route data
   const initialValues = {
-    name: route.name,
-    media: route.media,
-    surfaceType: route.surfaceType || SurfaceType.ROAD,
-    visibility: route.visibility,
-    tagIds: route.tags.map((tag) => tag.id),
-    excludedFromGenerator: route.excludedFromGenerator ?? false,
+    name: shownRoute.name,
+    media: shownRoute.media,
+    surfaceType: shownRoute.surfaceType || SurfaceType.ROAD,
+    visibility: shownRoute.visibility,
+    tagIds: shownRoute.tags.map((tag) => tag.id),
+    excludedFromGenerator: shownRoute.excludedFromGenerator ?? false,
   }
 
   // Check if route has a single track (required for planner mode)
-  const isSingleTrack = route.tracks.length === 1
-  const initialTrack = isSingleTrack ? route.tracks[0].line.coordinates : undefined
+  const isSingleTrack = shownRoute.tracks.length === 1
+  const initialTrack = isSingleTrack ? shownRoute.tracks[0].line.coordinates : undefined
 
   const handleSubmit = async (data: RouteRequest, gpxFile?: File) => {
     try {
@@ -130,6 +149,7 @@ export function EditRoutePage() {
       if (usagesRefusal.offer(error, () => {})) return false
       throw error
     }
+    leaveGuard.release()
     navigate(paths.route(teamSlug!, routeSlug!))
   }
 
@@ -139,6 +159,8 @@ export function EditRoutePage() {
       {
         onSuccess: (updatedRoute) => {
           invalidateRouteQueries(queryClient, teamSlug!, routeSlug!)
+          // The form stays as it is under its new address: nothing is left
+          leaveGuard.release()
           navigate(paths.routeEdit(teamSlug!, updatedRoute.slug), { replace: true })
         },
       }
@@ -160,17 +182,17 @@ export function EditRoutePage() {
 
       <RouteEditor
         team={team}
-        allowedVisibilities={allowedVisibilitiesFor(team, 'route', route.permissions)}
+        allowedVisibilities={allowedVisibilitiesFor(team, 'route', shownRoute.permissions)}
         teamSlug={teamSlug!}
         initialValues={initialValues}
         initialTrack={initialTrack}
-        initialAscend={route.elevationGain}
-        initialPlannerState={plannerStateQuery.data?.state}
-        initialWaypoints={route.waypoints}
-        initialDistance={route.distance}
+        initialAscend={shownRoute.elevationGain}
+        initialPlannerState={shownPlannerState?.state}
+        initialWaypoints={shownRoute.waypoints}
+        initialDistance={shownRoute.distance}
         initialGenerated={generated}
         initialGpxFile={gpxFile}
-        suggestedSurfaceType={suggestSurfaceType(route.tracks)}
+        suggestedSurfaceType={suggestSurfaceType(shownRoute.tracks)}
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.route(teamSlug!, routeSlug!))}
         isPending={updateRouteMutation.isPending}
@@ -179,8 +201,10 @@ export function EditRoutePage() {
         currentSlug={routeSlug!}
         onSlugChange={handleSlugChange}
         canEditSlug={canEdit}
+        dirtyRef={dirtyRef}
       />
       {usagesRefusal.dialog}
+      {leaveGuard.dialog}
     </Stack>
   )
 }
