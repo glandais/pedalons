@@ -35,8 +35,10 @@ describe('MapPanel trigger="toolbar"', () => {
     fireEvent.click(button)
     expect(await screen.findByText('Contenu du panneau')).toBeInTheDocument()
     expect(button).toHaveAttribute('aria-pressed', 'true')
-    // A popover, not the bottom sheet of a finger
-    expect(screen.queryByRole('dialog')).toBeNull()
+    // A popover, not the bottom sheet of a finger. By their classes: both carry role="dialog", and
+    // whether the popover's is exposed yet depends on how far its positioning has got.
+    expect(document.querySelector('.mantine-Popover-dropdown')).not.toBeNull()
+    expect(document.querySelector('.mantine-Drawer-content')).toBeNull()
   })
 
   it('closes on Escape while the focus stays on its button', async () => {

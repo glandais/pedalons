@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { TFunction } from 'i18next'
-import { createServerI18n } from '@/i18n'
+import i18n, { createServerI18n, i18nReady } from '@/i18n'
 import {
   formatDayMonth,
   formatDateTime,
@@ -19,6 +19,11 @@ const PARIS = 'Europe/Paris'
 let fr: TFunction
 let en: TFunction
 beforeAll(async () => {
+  // formatDateTime reads the global instance by default: wait for its catalogues, which load
+  // asynchronously and only for the detected language, instead of relying on the file taking
+  // long enough to import.
+  await i18nReady
+  await i18n.loadLanguages(['fr', 'en'])
   fr = (await createServerI18n('fr')).t
   en = (await createServerI18n('en')).t
 })

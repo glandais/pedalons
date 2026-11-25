@@ -95,11 +95,20 @@ export default defineConfig(({ mode, isSsrBuild }) => {
       // @testing-library/jest-dom extends a global `expect`, so it needs the globals.
       globals: true,
       setupFiles: ['./src/test/setup.ts'],
-      // Worker threads rather than the default child processes: ~15–20 % faster on this suite (85–98 s against 109–113 s), all
-      // green (measured 2026-11-25, 271 files). Isolation stays on: `isolate: false` halves the
-      // time but breaks ~215 tests that rely on a fresh window and module mocks; `vmThreads` is no
-      // faster and breaks 6 (cross-realm), and NODE_COMPILE_CACHE gained nothing measurable.
+      // Worker threads, without isolation: 45–54 s for the whole suite (273 files, 2760 tests)
+      // against 85–98 s with threads and isolation and 109–113 s with child processes (measured
+      // 2026-11-25; 20 runs in a row green, half of them with the files shuffled).
+      // Without isolation a worker keeps its module cache and its globals from one file to the
+      // next. `src/test/setup.ts` runs before each file and resets the modules of src/ and the DOM,
+      // and waits for the imports a file left in flight — a test file must undo any global state
+      // it sets on a package outside src/ (a singleton such as i18next, the document, a stubbed
+      // global). i18next and react-i18next are inlined
+      // so that they are re-evaluated with the rest: their global instance is otherwise shared by
+      // every file of the worker. `vmThreads` is no faster and breaks 6 tests (cross-realm), and
+      // NODE_COMPILE_CACHE gained nothing measurable.
       pool: 'threads',
+      isolate: false,
+      server: { deps: { inline: [/i18next/] } },
       // A fixed zone, so a test that leans on the process zone gives the same result on every
       // machine and in CI (docs/LEDGER_*.md API-60, plan §11). Tests about a zone pass it explicitly.
       env: { TZ: 'Europe/Paris' },

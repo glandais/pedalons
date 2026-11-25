@@ -1,9 +1,19 @@
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { IconBike, IconRoute, IconWand } from '@tabler/icons-react'
+// The component reads the global react-i18next instance, whose catalogues load asynchronously: the
+// raw key or the French text depending on how fast the file runs. Pin it to the French catalogue.
+vi.mock('react-i18next', async (importOriginal) => {
+  const { frenchT } = await import('@/test/frenchT')
+  return {
+    ...(await importOriginal<typeof import('react-i18next')>()),
+    useTranslation: () => ({ t: frenchT, i18n: { language: 'fr' } }),
+  }
+})
+
 import { CreateSplitButton, type CreateAction } from './CreateSplitButton'
 
 const ride: CreateAction = {
@@ -52,13 +62,13 @@ describe('CreateSplitButton', () => {
     expect(screen.getByRole('link', { name: 'Créer une sortie' }).getAttribute('href')).toBe(
       ride.to
     )
-    expect(screen.queryByRole('button', { name: 'aria.createOther' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Créer autre chose' })).toBeNull()
   })
 
   it('the first action is the button, every action is in the menu by section', async () => {
     renderButton([ride, trip, generate])
     expect(screen.getByRole('link', { name: 'Créer une sortie' })).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'aria.createOther' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Créer autre chose' }))
     await waitFor(() =>
       expect(screen.getByRole('menuitem', { name: /Créer un voyage/ })).toBeTruthy()
     )
@@ -78,6 +88,6 @@ describe('CreateSplitButton', () => {
   it('fullWidth keeps the split button, label included', () => {
     renderButton([ride, trip], true)
     expect(screen.getByRole('link', { name: 'Créer une sortie' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'aria.createOther' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Créer autre chose' })).toBeTruthy()
   })
 })
