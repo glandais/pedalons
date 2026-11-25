@@ -855,7 +855,7 @@ for (const route of contract) {
         page.getByText('Une erreur est survenue'),
         page.getByText('Chargement impossible'),
         page.getByRole('heading', { name: 'Introuvable' }),
-        page.getByRole('heading', { name: '404', exact: true }),
+        page.getByRole('heading', { name: 'Page introuvable', exact: true }),
       ])
         await expect(failure, `${where}: no error screen`).toHaveCount(0)
       // One h1 per page (docs/LEDGER_*.md WEB-207): the name of what is shown — the team under

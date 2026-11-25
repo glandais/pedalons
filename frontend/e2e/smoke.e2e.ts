@@ -58,7 +58,7 @@ test.describe('rider', () => {
 
 test.describe('an unknown URL', () => {
   // The router's '*' catch-all renders NotFoundPage, and entry-server.tsx turns that match into a
-  // real 404 status — a crawler must not index a « Page non trouvée » as a page.
+  // real 404 status — a crawler must not index a « Page introuvable » as a page.
   for (const path of ['/inconnu', '/equipes/{team}/inconnu', '/plateforme/inconnu'])
     test(`${path} answers 404 with a usable page that leads home`, async ({ page, seed }) => {
       const url = path.replace('{team}', seed.team.slug)
@@ -68,8 +68,9 @@ test.describe('an unknown URL', () => {
       expect(response?.status(), `${url}: document status`).toBe(404)
       await pageHydrated(page)
       const main = page.getByRole('main')
-      await expect(main.getByRole('heading', { level: 1, name: '404', exact: true })).toBeVisible()
-      await expect(main.getByText('Page non trouvée', { exact: true })).toBeVisible()
+      await expect(
+        main.getByRole('heading', { level: 1, name: 'Page introuvable', exact: true })
+      ).toBeVisible()
       expect(new URL(page.url()).pathname, 'the URL stays as typed').toBe(url)
 
       // The app is live around it: the link home works in place.
@@ -179,7 +180,7 @@ test.describe('app links', () => {
    * The deeplinks with no web page (`web: false`): the app handles them, but the same link opened
    * where the app is not installed — a desktop, a phone without it — lands on the site.
    * Regression (6f702165): each redirects to the closest web page (`webFallback` in routes.yaml) —
-   * sign-in, the profile, the team list, the team; before, each answered the « Page non trouvée »
+   * sign-in, the profile, the team list, the team; before, each answered the « Page introuvable »
    * 404, and /equipes/decouvrir was read as a team named « decouvrir ».
    */
   const landings: {
@@ -205,7 +206,7 @@ test.describe('app links', () => {
       const response = await page.goto(path)
       await pageHydrated(page)
       await expect(
-        page.getByRole('main').getByText('Page non trouvée', { exact: true })
+        page.getByRole('main').getByRole('heading', { name: 'Page introuvable', exact: true })
       ).toHaveCount(0)
       expect(response?.status(), `${path}: status`).toBeLessThan(400)
       await expect(page).toHaveURL(new RegExp(`${escapeRegExp(landing.to(seed.team.slug))}(\\?|$)`))

@@ -6,7 +6,6 @@ import {
   IconDeviceDesktop,
   IconCheck,
   IconX,
-  IconArrowLeft,
   IconLink,
   IconAlertTriangle,
   IconBan,
@@ -14,9 +13,7 @@ import {
 } from '@tabler/icons-react'
 import {
   Center,
-  Paper,
   Stack,
-  Title,
   Text,
   Button,
   Alert,
@@ -25,6 +22,10 @@ import {
   PinInput,
   Group,
 } from '@mantine/core'
+import {
+  TransactionalCard,
+  TransactionalCardShell,
+} from '../../components/common/TransactionalCard'
 import { useAuth } from '../../hooks/useAuth'
 import { useGpsConnections } from '../../hooks/useGpsConnections'
 import { GpsConnectReturn, GpsServiceType } from '../../api/dto'
@@ -149,196 +150,166 @@ export function DeviceVerifyPage() {
     }
     if (isConnected(GpsServiceType.HAMMERHEAD) || !isServiceAvailable(GpsServiceType.HAMMERHEAD)) {
       return (
-        <Center mih="70vh">
-          <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420} data-testid="device-ready">
-            <Stack align="center" gap="md">
-              <ThemeIcon size={64} radius="xl" color="green">
-                <IconCheck size={32} />
-              </ThemeIcon>
-              <Title order={1} size="h2" ta="center">
-                {t('device.ready.title')}
-              </Title>
-              <Text c="dimmed" ta="center">
-                {t('device.ready.message')}
-              </Text>
-            </Stack>
-          </Paper>
-        </Center>
+        <TransactionalCard
+          data-testid="device-ready"
+          icon={
+            <ThemeIcon size={64} radius="xl" color="green">
+              <IconCheck size={32} />
+            </ThemeIcon>
+          }
+          title={t('device.ready.title')}
+          description={t('device.ready.message')}
+        />
       )
     }
     return (
-      <Center mih="70vh">
-        <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420} data-testid="device-hammerhead">
-          <Stack align="center" gap="md">
-            <Group gap="xs" justify="center">
-              <IconCheck size={16} color="var(--mantine-color-green-6)" />
-              <Text size="sm">{t('device.hammerhead.authorized')}</Text>
-            </Group>
-            <ThemeIcon size={64} radius="xl" color="blue">
-              <IconRefresh size={32} />
-            </ThemeIcon>
-            <Title order={1} size="h2" ta="center">
-              {t('device.hammerhead.title')}
-            </Title>
-            <Text c="dimmed" ta="center">
-              {t('device.hammerhead.message')}
+      <TransactionalCard
+        data-testid="device-hammerhead"
+        icon={
+          <ThemeIcon size={64} radius="xl">
+            <IconRefresh size={32} />
+          </ThemeIcon>
+        }
+        title={t('device.hammerhead.title')}
+        description={t('device.hammerhead.message')}
+        actions={
+          <Button
+            fullWidth
+            leftSection={<IconLink size={16} />}
+            loading={connecting}
+            onClick={() => {
+              setConnecting(true)
+              void initiateConnect(
+                GpsServiceType.HAMMERHEAD,
+                GpsConnectReturn.DEVICE_KAROO
+              ).finally(() => setConnecting(false))
+            }}
+          >
+            {t('device.hammerhead.connect')}
+          </Button>
+        }
+      >
+        <Group gap="xs" justify="center">
+          <IconCheck size={16} color="var(--mantine-color-green-6)" />
+          <Text size="sm">{t('device.hammerhead.authorized')}</Text>
+        </Group>
+        {gpsError && (
+          <Alert color="red" variant="light" w="100%">
+            <Text size="sm">
+              {t(
+                gpsError === 'access_denied'
+                  ? 'device.hammerhead.denied'
+                  : 'device.hammerhead.failed'
+              )}
             </Text>
-            {gpsError && (
-              <Alert color="red" variant="light" w="100%">
-                <Text size="sm">
-                  {t(
-                    gpsError === 'access_denied'
-                      ? 'device.hammerhead.denied'
-                      : 'device.hammerhead.failed'
-                  )}
-                </Text>
-              </Alert>
-            )}
-            <Button
-              leftSection={<IconLink size={16} />}
-              loading={connecting}
-              onClick={() => {
-                setConnecting(true)
-                void initiateConnect(
-                  GpsServiceType.HAMMERHEAD,
-                  GpsConnectReturn.DEVICE_KAROO
-                ).finally(() => setConnecting(false))
-              }}
-            >
-              {t('device.hammerhead.connect')}
-            </Button>
-            <Text size="sm" c="dimmed" ta="center">
-              {t('device.hammerhead.hint')}
-            </Text>
-          </Stack>
-        </Paper>
-      </Center>
+          </Alert>
+        )}
+        <Text size="sm" c="dimmed" ta="center">
+          {t('device.hammerhead.hint')}
+        </Text>
+      </TransactionalCard>
     )
   }
 
   // Show loading while verifying code
   if (isVerifying) {
     return (
-      <Center mih="70vh">
-        <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
-          <Stack align="center" gap="md">
-            <Loader size="lg" />
-            <Text c="dimmed">{t('device.verifying')}</Text>
-          </Stack>
-        </Paper>
-      </Center>
+      <TransactionalCardShell>
+        <Stack align="center" gap="md">
+          <Loader size="lg" />
+          <Text c="dimmed">{t('device.verifying')}</Text>
+        </Stack>
+      </TransactionalCardShell>
     )
   }
 
   // No code provided - show manual entry form
   if (!userCode) {
     return (
-      <Center mih="70vh">
-        <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
-          <Stack align="center" gap="md">
-            <ThemeIcon size={64} radius="xl" color="blue">
-              <IconDeviceDesktop size={32} />
-            </ThemeIcon>
-            <Title order={1} size="h2" ta="center">
-              {t('device.manualEntry.title')}
-            </Title>
-            <Text c="dimmed" ta="center">
-              {t('device.manualEntry.description')}
-            </Text>
-            <PinInput
-              length={6}
-              type="alphanumeric"
-              value={manualCode}
-              onChange={(value) => {
-                const upperValue = value.toUpperCase()
-                setManualCode(upperValue)
-                if (upperValue.length === 6) {
-                  setSearchParams({ code: upperValue })
-                }
-              }}
-              size="xl"
-              style={{ justifyContent: 'center' }}
-            />
-          </Stack>
-        </Paper>
-      </Center>
+      <TransactionalCard
+        icon={
+          <ThemeIcon size={64} radius="xl">
+            <IconDeviceDesktop size={32} />
+          </ThemeIcon>
+        }
+        title={t('device.manualEntry.title')}
+        description={t('device.manualEntry.description')}
+      >
+        <PinInput
+          length={6}
+          type="alphanumeric"
+          value={manualCode}
+          onChange={(value) => {
+            const upperValue = value.toUpperCase()
+            setManualCode(upperValue)
+            if (upperValue.length === 6) {
+              setSearchParams({ code: upperValue })
+            }
+          }}
+          size="xl"
+          style={{ justifyContent: 'center' }}
+        />
+      </TransactionalCard>
     )
   }
 
   // Invalid code (code provided but not valid)
   if (!codeValid) {
     return (
-      <Center mih="70vh">
-        <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
-          <Stack align="center" gap="md">
-            <ThemeIcon size={64} radius="xl" color="red">
-              <IconX size={32} />
-            </ThemeIcon>
-            <Title order={1} size="h2" ta="center">
-              {t('device.errors.title')}
-            </Title>
-            <Alert color="red" title={t('device.errors.invalidCode')}>
-              {t('device.errors.invalidCodeMessage')}
-            </Alert>
-            <Button
-              variant="light"
-              leftSection={<IconArrowLeft size={16} />}
-              onClick={() => {
-                setManualCode('')
-                setPending(null)
-                setSearchParams({})
-              }}
-            >
-              {t('device.manualEntry.tryAgain')}
-            </Button>
-          </Stack>
-        </Paper>
-      </Center>
+      <TransactionalCard
+        icon={
+          <ThemeIcon size={64} radius="xl" color="red">
+            <IconX size={32} />
+          </ThemeIcon>
+        }
+        title={t('device.errors.title')}
+        back={{
+          label: t('device.manualEntry.tryAgain'),
+          onClick: () => {
+            setManualCode('')
+            setPending(null)
+            setSearchParams({})
+          },
+        }}
+      >
+        <Alert color="red" title={t('device.errors.invalidCode')}>
+          {t('device.errors.invalidCodeMessage')}
+        </Alert>
+      </TransactionalCard>
     )
   }
 
   // Authorization completed (a Garmin, or another device: a Karoo is handled above)
   if (completed) {
     return (
-      <Center mih="70vh">
-        <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
-          <Stack align="center" gap="md">
-            <ThemeIcon size={64} radius="xl" color="green">
-              <IconCheck size={32} />
-            </ThemeIcon>
-            <Title order={1} size="h2" ta="center">
-              {t('device.success.title')}
-            </Title>
-            <Text c="dimmed" ta="center">
-              {t('device.success.message')}
-            </Text>
-            <Alert color="blue" variant="light">
-              <Text size="sm">{t('device.success.returnToDevice')}</Text>
-            </Alert>
-          </Stack>
-        </Paper>
-      </Center>
+      <TransactionalCard
+        icon={
+          <ThemeIcon size={64} radius="xl" color="green">
+            <IconCheck size={32} />
+          </ThemeIcon>
+        }
+        title={t('device.success.title')}
+        description={t('device.success.message')}
+      >
+        <Alert color="blue" variant="light">
+          <Text size="sm">{t('device.success.returnToDevice')}</Text>
+        </Alert>
+      </TransactionalCard>
     )
   }
 
   // Refused: the code is dead, the device will start over
   if (denied) {
     return (
-      <Center mih="70vh">
-        <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
-          <Stack align="center" gap="md">
-            <ThemeIcon size={64} radius="xl" color="gray">
-              <IconBan size={32} />
-            </ThemeIcon>
-            <Title order={1} size="h2" ta="center">
-              {t('device.denied.title')}
-            </Title>
-            <Text c="dimmed" ta="center">
-              {t('device.denied.message')}
-            </Text>
-          </Stack>
-        </Paper>
-      </Center>
+      <TransactionalCard
+        icon={
+          <ThemeIcon size={64} radius="xl" color="gray">
+            <IconBan size={32} />
+          </ThemeIcon>
+        }
+        title={t('device.denied.title')}
+        description={t('device.denied.message')}
+      />
     )
   }
 
@@ -351,50 +322,52 @@ export function DeviceVerifyPage() {
         : 'device.client.other'
   )
   return (
-    <Center mih="70vh">
-      <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
-        <Stack align="center" gap="md">
-          <ThemeIcon size={64} radius="xl" color="blue">
-            <IconDeviceDesktop size={32} />
-          </ThemeIcon>
-          <Title order={1} size="h2" ta="center">
-            {t('device.confirm.title')}
-          </Title>
-          <Text ta="center">
-            {t('device.confirm.question', { device: deviceName, name: user?.displayName ?? '' })}
-          </Text>
-          <Text fz={32} fw={700} ff="monospace" style={{ letterSpacing: '0.2em' }}>
-            {userCode}
-          </Text>
-          {pending?.requestedAt && (
-            <Text size="sm" c="dimmed" ta="center">
-              {t('device.confirm.requestedAt', { when: formatRelative(pending.requestedAt) })}
-            </Text>
-          )}
-          <Alert color="orange" variant="light" icon={<IconAlertTriangle size={16} />}>
-            <Text size="sm">{t('device.confirm.warning')}</Text>
-          </Alert>
-          <Group grow w="100%">
-            <Button
-              variant="default"
-              leftSection={<IconX size={16} />}
-              loading={submitting === 'deny'}
-              disabled={submitting !== null}
-              onClick={denyAuthorization}
-            >
-              {t('device.confirm.deny')}
-            </Button>
-            <Button
-              leftSection={<IconCheck size={16} />}
-              loading={submitting === 'confirm'}
-              disabled={submitting !== null}
-              onClick={confirmAuthorization}
-            >
-              {t('device.confirm.authorize')}
-            </Button>
-          </Group>
-        </Stack>
-      </Paper>
-    </Center>
+    <TransactionalCard
+      icon={
+        <ThemeIcon size={64} radius="xl">
+          <IconDeviceDesktop size={32} />
+        </ThemeIcon>
+      }
+      title={t('device.confirm.title')}
+      description={t('device.confirm.question', {
+        device: deviceName,
+        name: user?.displayName ?? '',
+      })}
+      actions={
+        <>
+          <Button
+            fullWidth
+            leftSection={<IconCheck size={16} />}
+            loading={submitting === 'confirm'}
+            disabled={submitting !== null}
+            onClick={confirmAuthorization}
+          >
+            {t('device.confirm.authorize')}
+          </Button>
+          <Button
+            fullWidth
+            variant="default"
+            leftSection={<IconX size={16} />}
+            loading={submitting === 'deny'}
+            disabled={submitting !== null}
+            onClick={denyAuthorization}
+          >
+            {t('device.confirm.deny')}
+          </Button>
+        </>
+      }
+    >
+      <Text ta="center" fz={32} fw={700} ff="monospace" style={{ letterSpacing: '0.2em' }}>
+        {userCode}
+      </Text>
+      {pending?.requestedAt && (
+        <Text size="sm" c="dimmed" ta="center">
+          {t('device.confirm.requestedAt', { when: formatRelative(pending.requestedAt) })}
+        </Text>
+      )}
+      <Alert color="orange" variant="light" icon={<IconAlertTriangle size={16} />}>
+        <Text size="sm">{t('device.confirm.warning')}</Text>
+      </Alert>
+    </TransactionalCard>
   )
 }

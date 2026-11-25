@@ -4,7 +4,8 @@ import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { IconCheck, IconX, IconUsers, IconLogin } from '@tabler/icons-react'
-import { Alert, Button, Center, Group, Loader, Paper, Stack, Text, Title } from '@mantine/core'
+import { Alert, Button, Center, Loader, Text } from '@mantine/core'
+import { TransactionalCard } from '@/components/common/TransactionalCard'
 import { paths } from '@/config/paths'
 import { useAuthStore } from '@/store/authStore'
 import { preview, accept } from '@/api/endpoints/invitations/invitations'
@@ -113,116 +114,98 @@ export function AcceptInvitationPage() {
 
   if (state === 'error' || !invitation) {
     return (
-      <Center mih="60vh">
-        <Paper p="xl" withBorder maw={480} w="100%">
-          <Stack align="center">
-            <IconX size={40} color="var(--mantine-color-danger-6)" />
-            <Title order={1} size="h3" ta="center">
-              {t('invitations.accept.unavailableTitle')}
-            </Title>
-            <Text c="dimmed" ta="center">
-              {failureCode
-                ? t(`errors.api.${failureCode}`)
-                : t('invitations.accept.unavailableBody')}
-            </Text>
-            {failureCode === 'TEAM_INVITE_EMAIL_MISMATCH' && isAuthenticated && (
-              <Button onClick={handleSwitchAccount}>{t('invitations.accept.switchAccount')}</Button>
-            )}
-            <Button component={PrefetchLink} to={paths.teams()} variant="default">
-              {t('invitations.accept.backToTeams')}
+      <TransactionalCard
+        icon={<IconX size={48} color="var(--mantine-color-danger-6)" />}
+        title={t('invitations.accept.unavailableTitle')}
+        description={
+          failureCode ? t(`errors.api.${failureCode}`) : t('invitations.accept.unavailableBody')
+        }
+        actions={
+          failureCode === 'TEAM_INVITE_EMAIL_MISMATCH' && isAuthenticated ? (
+            <Button onClick={handleSwitchAccount} fullWidth>
+              {t('invitations.accept.switchAccount')}
             </Button>
-          </Stack>
-        </Paper>
-      </Center>
+          ) : undefined
+        }
+        back={{ label: t('invitations.accept.backToTeams'), to: paths.teams() }}
+      />
     )
   }
 
   if (state === 'accepted') {
     return (
-      <Center mih="60vh">
-        <Paper p="xl" withBorder maw={480} w="100%">
-          <Stack align="center">
-            <IconCheck size={40} color="var(--mantine-color-success-6)" />
-            <Title order={1} size="h3" ta="center">
-              {t('invitations.accept.joined', { team: invitation.teamName })}
-            </Title>
-          </Stack>
-        </Paper>
-      </Center>
+      <TransactionalCard
+        icon={<IconCheck size={48} color="var(--mantine-color-success-6)" />}
+        title={t('invitations.accept.joined', { team: invitation.teamName })}
+      />
     )
   }
 
+  const showNotRedeemable = !invitation.redeemable && !isAlreadyMember && !membershipPending
+  // No action at all while the membership loads or when the link can no longer be used: leave
+  // `actions` out rather than pass an empty fragment, which would still draw its Stack.
+  const hasActions = isAlreadyMember || invitation.redeemable
+
   return (
-    <Center mih="60vh">
-      <Paper p="xl" withBorder maw={480} w="100%">
-        <Stack>
-          <Center>
-            <IconUsers size={40} />
-          </Center>
-          <Title order={1} size="h3" ta="center">
-            {t('invitations.accept.title', {
-              inviter: invitation.inviterName,
-              team: invitation.teamName,
-            })}
-          </Title>
-          <Text c="dimmed" ta="center">
-            {t('invitations.accept.subtitle', {
-              role: t(`roles.${invitation.role}`),
-              email: invitation.maskedEmail,
-            })}
-          </Text>
-
-          {membershipPending && (
-            <Center>
-              <Loader size="sm" />
-            </Center>
-          )}
-
-          {isAlreadyMember && (
-            <Stack gap="xs">
-              <Alert color="success">
-                {t('invitations.accept.alreadyMember', { team: invitation.teamName })}
-              </Alert>
+    <TransactionalCard
+      icon={<IconUsers size={48} />}
+      title={t('invitations.accept.title', {
+        inviter: invitation.inviterName,
+        team: invitation.teamName,
+      })}
+      description={t('invitations.accept.subtitle', {
+        role: t(`roles.${invitation.role}`),
+        email: invitation.maskedEmail,
+      })}
+      actions={
+        hasActions ? (
+          <>
+            {isAlreadyMember && (
               <Button component={PrefetchLink} to={paths.team(invitation.teamSlug)} fullWidth>
                 {t('invitations.accept.goToTeam')}
               </Button>
-            </Stack>
-          )}
-
-          {!invitation.redeemable && !isAlreadyMember && !membershipPending && (
-            <Alert color="orange">{t('invitations.accept.notRedeemable')}</Alert>
-          )}
-
-          {invitation.redeemable && isAuthenticated && (
-            <Stack gap="xs">
-              <Button onClick={handleAccept} loading={isAccepting} fullWidth>
-                {t('invitations.accept.join')}
-              </Button>
-              <Button variant="subtle" size="compact-sm" onClick={handleSwitchAccount}>
-                {t('invitations.accept.switchAccount')}
-              </Button>
-            </Stack>
-          )}
-
-          {invitation.redeemable && !isAuthenticated && (
-            <Stack gap="xs">
-              <Text size="sm" ta="center">
-                {t('invitations.accept.signInPrompt')}
-              </Text>
-              <Group justify="center">
-                <Button
-                  component={PrefetchLink}
-                  to={paths.login()}
-                  state={{ from: location }}
-                  leftSection={<IconLogin size={16} />}
-                >
-                  {t('invitations.accept.signIn')}
+            )}
+            {invitation.redeemable && isAuthenticated && (
+              <>
+                <Button onClick={handleAccept} loading={isAccepting} fullWidth>
+                  {t('invitations.accept.join')}
                 </Button>
-              </Group>
-            </Stack>
-          )}
-        </Stack>
-      </Paper>
-    </Center>
+                <Button variant="subtle" onClick={handleSwitchAccount} fullWidth>
+                  {t('invitations.accept.switchAccount')}
+                </Button>
+              </>
+            )}
+            {invitation.redeemable && !isAuthenticated && (
+              <Button
+                component={PrefetchLink}
+                to={paths.login()}
+                state={{ from: location }}
+                leftSection={<IconLogin size={16} />}
+                fullWidth
+              >
+                {t('invitations.accept.signIn')}
+              </Button>
+            )}
+          </>
+        ) : undefined
+      }
+    >
+      {membershipPending && (
+        <Center>
+          <Loader size="sm" />
+        </Center>
+      )}
+      {isAlreadyMember && (
+        <Alert color="success">
+          {t('invitations.accept.alreadyMember', { team: invitation.teamName })}
+        </Alert>
+      )}
+      {showNotRedeemable && <Alert color="orange">{t('invitations.accept.notRedeemable')}</Alert>}
+      {invitation.redeemable && !isAuthenticated && (
+        <Text size="sm" ta="center">
+          {t('invitations.accept.signInPrompt')}
+        </Text>
+      )}
+    </TransactionalCard>
   )
 }

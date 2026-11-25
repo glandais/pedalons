@@ -7,7 +7,6 @@ import { notifications } from '@mantine/notifications'
 import { IconFingerprint, IconUserPlus, IconLock, IconMail } from '@tabler/icons-react'
 import {
   Stack,
-  Title,
   Text,
   Button,
   Anchor,
@@ -28,6 +27,7 @@ import {
 } from '@/api/endpoints/authentication/authentication'
 import type { AuthResponse, ErrorCode } from '@/api/dto'
 import type { TranslationKey } from '@/lib/i18nUtils'
+import { TransactionalCardContent } from '@/components/common/TransactionalCard'
 import { OtpLogin } from './OtpLogin'
 import { safeNextPath } from '@/lib/safeNextPath'
 
@@ -269,14 +269,11 @@ export function LoginForm({
 
   if (mode === 'register') {
     return (
-      <Stack>
-        <Stack gap="xs" ta="center">
-          <Title order={titleOrder} size="h2">
-            {t('auth.register.title')}
-          </Title>
-          <Text c="dimmed">{t('auth.register.subtitle')}</Text>
-        </Stack>
-
+      <TransactionalCardContent
+        title={t('auth.register.title')}
+        titleOrder={titleOrder}
+        description={t('auth.register.subtitle')}
+      >
         <form onSubmit={registerForm.onSubmit(handleRegister)}>
           <Stack>
             <TextInput
@@ -327,17 +324,12 @@ export function LoginForm({
             {t('auth.login.title')}
           </Anchor>
         </Text>
-      </Stack>
+      </TransactionalCardContent>
     )
   }
 
   return (
-    <Stack>
-      <Stack gap="xs" ta="center">
-        <Title order={titleOrder}>{title}</Title>
-        <Text c="dimmed">{subtitle}</Text>
-      </Stack>
-
+    <TransactionalCardContent title={title} titleOrder={titleOrder} description={subtitle}>
       <form onSubmit={loginForm.onSubmit(handleLogin)}>
         <Stack>
           <TextInput
@@ -404,6 +396,6 @@ export function LoginForm({
           }}
         />
       </Text>
-    </Stack>
+    </TransactionalCardContent>
   )
 }

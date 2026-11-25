@@ -12,17 +12,8 @@ import {
   IconMailOpened,
   IconUsers,
 } from '@tabler/icons-react'
-import {
-  Alert,
-  Center,
-  Paper,
-  Stack,
-  Title,
-  Text,
-  Button,
-  Loader,
-  PasswordInput,
-} from '@mantine/core'
+import { Alert, Stack, Text, Button, Loader, PasswordInput } from '@mantine/core'
+import { TransactionalCard, TransactionalCardShell } from '@/components/common/TransactionalCard'
 import { paths } from '@/config/paths'
 import { useAuthStore } from '@/store/authStore'
 import { isPasskeySupported, registerNewPasskey } from '@/lib/passkeys'
@@ -173,218 +164,185 @@ export function VerifyEmailPage() {
     await finish()
   }
 
-  const renderContent = () => {
-    switch (state) {
-      case 'loading':
-        return (
+  const cont = (label: string) => (
+    <Button component={PrefetchLink} to={paths.home()} fullWidth>
+      {label}
+    </Button>
+  )
+  const toLogin = (
+    <Button component={PrefetchLink} to={paths.login()} fullWidth>
+      {t('auth.verifyEmail.success.login')}
+    </Button>
+  )
+
+  switch (state) {
+    case 'loading':
+      return (
+        <TransactionalCardShell>
           <Stack align="center" gap="md">
             <Loader size="lg" />
             <Text>{t('auth.verifyEmail.verifying')}</Text>
           </Stack>
-        )
+        </TransactionalCardShell>
+      )
 
-      case 'activate':
-        return (
-          <Stack>
-            <Stack gap="xs" ta="center">
-              <Title order={1} size="h2">
-                {t('auth.verifyEmail.activate.title')}
-              </Title>
-              <Text c="dimmed">
-                <Trans
-                  i18nKey="auth.verifyEmail.activate.message"
-                  values={{ email }}
-                  components={{ strong: <strong /> }}
-                />
-              </Text>
-            </Stack>
-            {isAuthenticated && currentUser && currentUser.email !== email && (
-              <Alert color="yellow" icon={<IconAlertTriangle size={18} />}>
-                <Trans
-                  i18nKey="auth.verifyEmail.activate.signedInAs"
-                  values={{ current: currentUser.email, email }}
-                  components={{ strong: <strong /> }}
-                />
-              </Alert>
-            )}
-            <form onSubmit={form.onSubmit(handleActivate)}>
-              <Stack>
-                {/* The address, for password managers: they file the new password under it. */}
-                <input
-                  type="email"
-                  name="email"
-                  autoComplete="username"
-                  value={email ?? ''}
-                  readOnly
-                  hidden
-                />
-                <PasswordInput
-                  label={t('auth.form.password')}
-                  placeholder={t('auth.form.passwordPlaceholder')}
-                  name="new-password"
-                  autoComplete="new-password"
-                  leftSection={<IconLock size={16} />}
-                  {...form.getInputProps('password')}
-                />
-                <PasswordInput
-                  label={t('auth.form.confirmPassword')}
-                  placeholder={t('auth.form.confirmPasswordPlaceholder')}
-                  name="new-password-confirm"
-                  autoComplete="new-password"
-                  leftSection={<IconLock size={16} />}
-                  {...form.getInputProps('confirmPassword')}
-                />
-                <Button type="submit" fullWidth loading={isSubmitting}>
-                  {t('auth.verifyEmail.activate.button')}
-                </Button>
-              </Stack>
-            </form>
-            <Text size="sm" c="dimmed" ta="center">
-              {t('auth.verifyEmail.activate.notYours')}
-            </Text>
-          </Stack>
-        )
-
-      case 'passkey':
-        return (
-          <Stack ta="center">
-            <IconFingerprint
-              size={48}
-              style={{ margin: '0 auto' }}
-              color="var(--mantine-color-blue-6)"
+    case 'activate':
+      return (
+        <TransactionalCard
+          title={t('auth.verifyEmail.activate.title')}
+          description={
+            <Trans
+              i18nKey="auth.verifyEmail.activate.message"
+              values={{ email }}
+              components={{ strong: <strong /> }}
             />
-            <Title order={1} size="h2">
-              {t('auth.verifyEmail.passkey.title')}
-            </Title>
-            <Text c="dimmed">{t('auth.verifyEmail.passkey.message')}</Text>
-            <Button
-              onClick={handleRegisterPasskey}
-              loading={isRegisteringPasskey}
-              fullWidth
-              leftSection={<IconFingerprint size={18} />}
-            >
-              {t('auth.verifyEmail.passkey.register')}
-            </Button>
-            <Button onClick={() => void finish()} variant="subtle" fullWidth>
-              {t('auth.verifyEmail.passkey.skip')}
-            </Button>
-          </Stack>
-        )
-
-      case 'activated':
-        return (
-          <Stack ta="center">
-            <IconCheck
-              size={48}
-              style={{ margin: '0 auto' }}
-              color="var(--mantine-color-green-6)"
-            />
-            <Title order={1} size="h2">
-              {t('auth.verifyEmail.success.title')}
-            </Title>
-            <Text c="dimmed">{t('auth.verifyEmail.success.message')}</Text>
-            <Button component={PrefetchLink} to={paths.home()} fullWidth>
-              {t('auth.verifyEmail.success.continue')}
-            </Button>
-          </Stack>
-        )
-
-      case 'invited':
-        return (
-          <Stack>
-            <Stack gap="xs" ta="center">
-              <IconMailOpened
-                size={48}
-                style={{ margin: '0 auto' }}
-                color="var(--mantine-color-primary-6)"
+          }
+        >
+          {isAuthenticated && currentUser && currentUser.email !== email && (
+            <Alert color="yellow" icon={<IconAlertTriangle size={18} />}>
+              <Trans
+                i18nKey="auth.verifyEmail.activate.signedInAs"
+                values={{ current: currentUser.email, email }}
+                components={{ strong: <strong /> }}
               />
-              <Title order={1} size="h2">
-                {t('auth.verifyEmail.invited.title')}
-              </Title>
-              <Text c="dimmed">{t('invitations.banner.title', { count: invitations.length })}</Text>
+            </Alert>
+          )}
+          <form onSubmit={form.onSubmit(handleActivate)}>
+            <Stack>
+              {/* The address, for password managers: they file the new password under it. */}
+              <input
+                type="email"
+                name="email"
+                autoComplete="username"
+                value={email ?? ''}
+                readOnly
+                hidden
+              />
+              <PasswordInput
+                label={t('auth.form.password')}
+                placeholder={t('auth.form.passwordPlaceholder')}
+                name="new-password"
+                autoComplete="new-password"
+                leftSection={<IconLock size={16} />}
+                {...form.getInputProps('password')}
+              />
+              <PasswordInput
+                label={t('auth.form.confirmPassword')}
+                placeholder={t('auth.form.confirmPasswordPlaceholder')}
+                name="new-password-confirm"
+                autoComplete="new-password"
+                leftSection={<IconLock size={16} />}
+                {...form.getInputProps('confirmPassword')}
+              />
+              <Button type="submit" fullWidth loading={isSubmitting}>
+                {t('auth.verifyEmail.activate.button')}
+              </Button>
             </Stack>
-            {invitations.map((invitation) => (
-              <Stack key={invitation.id} gap="xs">
-                <Text ta="center">
-                  {t('invitations.banner.line', {
-                    inviter: invitation.inviterName,
-                    team: invitation.team.name,
-                  })}
-                </Text>
-                <Button
-                  onClick={() => acceptInvitation(invitation)}
-                  loading={isAccepting}
-                  fullWidth
-                  leftSection={<IconUsers size={18} />}
-                >
-                  {invitations.length === 1
-                    ? t('invitations.accept.join')
-                    : t('auth.verifyEmail.invited.joinTeam', { team: invitation.team.name })}
-                </Button>
-              </Stack>
-            ))}
+          </form>
+          <Text size="sm" c="dimmed" ta="center">
+            {t('auth.verifyEmail.activate.notYours')}
+          </Text>
+        </TransactionalCard>
+      )
+
+    case 'passkey':
+      return (
+        <TransactionalCard
+          icon={<IconFingerprint size={48} color="var(--mantine-color-primary-6)" />}
+          title={t('auth.verifyEmail.passkey.title')}
+          description={t('auth.verifyEmail.passkey.message')}
+          actions={
+            <>
+              <Button
+                onClick={handleRegisterPasskey}
+                loading={isRegisteringPasskey}
+                fullWidth
+                leftSection={<IconFingerprint size={18} />}
+              >
+                {t('auth.verifyEmail.passkey.register')}
+              </Button>
+              <Button onClick={() => void finish()} variant="subtle" fullWidth>
+                {t('auth.verifyEmail.passkey.skip')}
+              </Button>
+            </>
+          }
+        />
+      )
+
+    case 'activated':
+      return (
+        <TransactionalCard
+          icon={<IconCheck size={48} color="var(--mantine-color-green-6)" />}
+          title={t('auth.verifyEmail.success.title')}
+          description={t('auth.verifyEmail.success.message')}
+          actions={cont(t('auth.verifyEmail.success.continue'))}
+        />
+      )
+
+    case 'invited':
+      return (
+        <TransactionalCard
+          icon={<IconMailOpened size={48} color="var(--mantine-color-primary-6)" />}
+          title={t('auth.verifyEmail.invited.title')}
+          description={t('invitations.banner.title', { count: invitations.length })}
+          actions={
             <Button component={PrefetchLink} to={paths.home()} variant="subtle" fullWidth>
               {t('auth.verifyEmail.invited.later')}
             </Button>
-          </Stack>
-        )
+          }
+        >
+          {invitations.map((invitation) => (
+            <Stack key={invitation.id} gap="xs">
+              <Text ta="center">
+                {t('invitations.banner.line', {
+                  inviter: invitation.inviterName,
+                  team: invitation.team.name,
+                })}
+              </Text>
+              <Button
+                onClick={() => acceptInvitation(invitation)}
+                loading={isAccepting}
+                fullWidth
+                leftSection={<IconUsers size={18} />}
+              >
+                {invitations.length === 1
+                  ? t('invitations.accept.join')
+                  : t('auth.verifyEmail.invited.joinTeam', { team: invitation.team.name })}
+              </Button>
+            </Stack>
+          ))}
+        </TransactionalCard>
+      )
 
-      case 'emailChanged':
-        return (
-          <Stack ta="center">
-            <IconCheck
-              size={48}
-              style={{ margin: '0 auto' }}
-              color="var(--mantine-color-green-6)"
+    case 'emailChanged':
+      return (
+        <TransactionalCard
+          icon={<IconCheck size={48} color="var(--mantine-color-green-6)" />}
+          title={t('auth.verifyEmail.emailChanged.title')}
+          description={
+            <Trans
+              i18nKey="auth.verifyEmail.emailChanged.message"
+              values={{ email }}
+              components={{ strong: <strong /> }}
             />
-            <Title order={1} size="h2">
-              {t('auth.verifyEmail.emailChanged.title')}
-            </Title>
-            <Text c="dimmed">
-              <Trans
-                i18nKey="auth.verifyEmail.emailChanged.message"
-                values={{ email }}
-                components={{ strong: <strong /> }}
-              />
-            </Text>
-            {isAuthenticated ? (
-              <Button component={PrefetchLink} to={paths.home()} fullWidth>
-                {t('auth.verifyEmail.success.continue')}
-              </Button>
-            ) : (
-              <Button component={PrefetchLink} to={paths.login()} fullWidth>
-                {t('auth.verifyEmail.success.login')}
-              </Button>
-            )}
-          </Stack>
-        )
+          }
+          actions={isAuthenticated ? cont(t('auth.verifyEmail.success.continue')) : toLogin}
+        />
+      )
 
-      case 'emailTaken':
-      case 'error':
-        return (
-          <Stack ta="center">
-            <IconX size={48} style={{ margin: '0 auto' }} color="var(--mantine-color-red-6)" />
-            <Title order={1} size="h2">
-              {t('auth.verifyEmail.error.title')}
-            </Title>
-            <Text c="dimmed">
-              {state === 'emailTaken'
-                ? t('auth.verifyEmail.emailChanged.taken')
-                : t('auth.verifyEmail.error.message')}
-            </Text>
-            <Button component={PrefetchLink} to={paths.login()} fullWidth>
-              {t('auth.verifyEmail.success.login')}
-            </Button>
-          </Stack>
-        )
-    }
+    case 'emailTaken':
+    case 'error':
+      return (
+        <TransactionalCard
+          icon={<IconX size={48} color="var(--mantine-color-red-6)" />}
+          title={t('auth.verifyEmail.error.title')}
+          description={
+            state === 'emailTaken'
+              ? t('auth.verifyEmail.emailChanged.taken')
+              : t('auth.verifyEmail.error.message')
+          }
+          actions={toLogin}
+        />
+      )
   }
-
-  return (
-    <Center mih="70vh">
-      <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
-        {renderContent()}
-      </Paper>
-    </Center>
-  )
 }

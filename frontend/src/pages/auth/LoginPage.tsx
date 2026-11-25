@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
-import { Center, Paper } from '@mantine/core'
 import { useLocation } from 'react-router-dom'
 import { LoginForm, type LoginFormMode } from '@/components/auth/LoginForm'
+import { TransactionalCardShell } from '@/components/common/TransactionalCard'
 import { useAppName } from '../../hooks/useAppName'
 
 /**
@@ -21,17 +21,15 @@ export function LoginPage() {
       : 'login'
 
   return (
-    <Center mih="70vh">
-      <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
-        <LoginForm
-          key={initialMode}
-          initialMode={initialMode}
-          title={t('welcome', { appName })}
-          subtitle={t('auth.login.subtitle')}
-          titleOrder={1}
-          afterSignIn="redirect"
-        />
-      </Paper>
-    </Center>
+    <TransactionalCardShell>
+      <LoginForm
+        key={initialMode}
+        initialMode={initialMode}
+        title={t('welcome', { appName })}
+        subtitle={t('auth.login.subtitle')}
+        titleOrder={1}
+        afterSignIn="redirect"
+      />
+    </TransactionalCardShell>
   )
 }

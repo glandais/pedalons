@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
+import { TransactionalCard } from '@/components/common/TransactionalCard'
 import { useTranslation } from 'react-i18next'
 import { useForm } from '@mantine/form'
 import { notifications } from '@mantine/notifications'
-import { IconArrowLeft, IconLock, IconX } from '@tabler/icons-react'
-import { Center, Paper, Stack, Title, Text, Button, Anchor, PasswordInput } from '@mantine/core'
+import { IconLock, IconX } from '@tabler/icons-react'
+import { Stack, Button, PasswordInput } from '@mantine/core'
 import { useAuthStore } from '../../store/authStore'
 import { paths } from '@/config/paths'
 import { resetPassword as resetPasswordApi } from '@/api/endpoints/authentication/authentication'
@@ -30,26 +31,21 @@ export function ResetPasswordPage() {
     },
   })
 
+  const back = { label: t('auth.forgotPassword.backToLogin'), to: paths.login() }
+
   if (!token || error === 'invalid') {
     return (
-      <Center mih="70vh">
-        <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
-          <Stack ta="center">
-            <IconX size={48} style={{ margin: '0 auto' }} color="var(--mantine-color-red-6)" />
-            <Title order={1} size="h2">
-              {t('auth.resetPassword.error.title')}
-            </Title>
-            <Text c="dimmed">{t('auth.resetPassword.error.message')}</Text>
-            <Button component={PrefetchLink} to={paths.forgotPassword()} fullWidth>
-              {t('auth.resetPassword.error.requestNew')}
-            </Button>
-            <Anchor component={PrefetchLink} to={paths.login()} size="sm">
-              <IconArrowLeft size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-              {t('auth.forgotPassword.backToLogin')}
-            </Anchor>
-          </Stack>
-        </Paper>
-      </Center>
+      <TransactionalCard
+        icon={<IconX size={48} color="var(--mantine-color-red-6)" />}
+        title={t('auth.resetPassword.error.title')}
+        description={t('auth.resetPassword.error.message')}
+        actions={
+          <Button component={PrefetchLink} to={paths.forgotPassword()} fullWidth>
+            {t('auth.resetPassword.error.requestNew')}
+          </Button>
+        }
+        back={back}
+      />
     )
   }
 
@@ -78,44 +74,32 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <Center mih="70vh">
-      <Paper shadow="lg" radius="lg" p="xl" w="100%" maw={420}>
+    <TransactionalCard
+      title={t('auth.resetPassword.title')}
+      description={t('auth.resetPassword.subtitle')}
+      back={back}
+    >
+      <form onSubmit={form.onSubmit(handleResetPassword)}>
         <Stack>
-          <Stack gap="xs" ta="center">
-            <Title order={1} size="h2">
-              {t('auth.resetPassword.title')}
-            </Title>
-            <Text c="dimmed">{t('auth.resetPassword.subtitle')}</Text>
-          </Stack>
-
-          <form onSubmit={form.onSubmit(handleResetPassword)}>
-            <Stack>
-              <PasswordInput
-                label={t('auth.form.newPassword')}
-                placeholder={t('auth.form.passwordPlaceholder')}
-                autoComplete="new-password"
-                leftSection={<IconLock size={16} />}
-                {...form.getInputProps('newPassword')}
-              />
-              <PasswordInput
-                label={t('auth.form.confirmPassword')}
-                placeholder={t('auth.form.confirmPasswordPlaceholder')}
-                autoComplete="new-password"
-                leftSection={<IconLock size={16} />}
-                {...form.getInputProps('confirmPassword')}
-              />
-              <Button type="submit" fullWidth loading={isLoading}>
-                {t('auth.resetPassword.submit')}
-              </Button>
-            </Stack>
-          </form>
-
-          <Anchor component={PrefetchLink} to={paths.login()} size="sm" ta="center">
-            <IconArrowLeft size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-            {t('auth.forgotPassword.backToLogin')}
-          </Anchor>
+          <PasswordInput
+            label={t('auth.form.newPassword')}
+            placeholder={t('auth.form.passwordPlaceholder')}
+            autoComplete="new-password"
+            leftSection={<IconLock size={16} />}
+            {...form.getInputProps('newPassword')}
+          />
+          <PasswordInput
+            label={t('auth.form.confirmPassword')}
+            placeholder={t('auth.form.confirmPasswordPlaceholder')}
+            autoComplete="new-password"
+            leftSection={<IconLock size={16} />}
+            {...form.getInputProps('confirmPassword')}
+          />
+          <Button type="submit" fullWidth loading={isLoading}>
+            {t('auth.resetPassword.submit')}
+          </Button>
         </Stack>
-      </Paper>
-    </Center>
+      </form>
+    </TransactionalCard>
   )
 }

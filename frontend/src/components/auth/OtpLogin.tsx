@@ -2,19 +2,19 @@ import { useEffect, useState } from 'react'
 import { useTranslation, Trans } from 'react-i18next'
 import { useForm } from '@mantine/form'
 import { notifications } from '@mantine/notifications'
-import { IconArrowLeft, IconMail } from '@tabler/icons-react'
+import { IconMail } from '@tabler/icons-react'
 import {
   Anchor,
   Button,
-  Group,
+  Center,
   PinInput,
   Stack,
   Text,
   TextInput,
-  Title,
   type TitleOrder,
 } from '@mantine/core'
 import { requestOtp, verifyOtp } from '@/api/endpoints/authentication/authentication'
+import { TransactionalCardContent } from '@/components/common/TransactionalCard'
 import type { AuthResponse } from '@/api/dto'
 
 // Matches the server's silent rate limit (3 codes per 5 minutes) closely enough that a user who
@@ -91,14 +91,12 @@ export function OtpLogin({ initialEmail, onSuccess, onBack, titleOrder }: OtpLog
 
   if (!sentTo) {
     return (
-      <Stack>
-        <Stack gap="xs" ta="center">
-          <Title order={titleOrder} size="h2">
-            {t('auth.otp.title')}
-          </Title>
-          <Text c="dimmed">{t('auth.otp.description')}</Text>
-        </Stack>
-
+      <TransactionalCardContent
+        title={t('auth.otp.title')}
+        titleOrder={titleOrder}
+        description={t('auth.otp.description')}
+        back={{ label: t('actions.back'), onClick: onBack }}
+      >
         <form onSubmit={emailForm.onSubmit(({ email }) => sendCode(email))}>
           <Stack>
             <TextInput
@@ -118,34 +116,26 @@ export function OtpLogin({ initialEmail, onSuccess, onBack, titleOrder }: OtpLog
             </Button>
           </Stack>
         </form>
-
-        <Anchor component="button" size="sm" onClick={onBack}>
-          <Group gap={4} justify="center">
-            <IconArrowLeft size={14} />
-            {t('actions.back')}
-          </Group>
-        </Anchor>
-      </Stack>
+      </TransactionalCardContent>
     )
   }
 
   return (
-    <Stack>
-      <Stack gap="xs" ta="center">
-        <Title order={titleOrder} size="h2">
-          {t('auth.otp.verify.title')}
-        </Title>
-        <Text c="dimmed">
-          <Trans
-            i18nKey="auth.otp.verify.sentTo"
-            values={{ email: sentTo }}
-            components={{ strong: <strong /> }}
-          />
-        </Text>
-        <Text size="sm" c="dimmed">
-          {t('auth.otp.verify.instruction')}
-        </Text>
-      </Stack>
+    <TransactionalCardContent
+      title={t('auth.otp.verify.title')}
+      titleOrder={titleOrder}
+      description={
+        <Trans
+          i18nKey="auth.otp.verify.sentTo"
+          values={{ email: sentTo }}
+          components={{ strong: <strong /> }}
+        />
+      }
+      back={{ label: t('actions.back'), onClick: () => setSentTo(null) }}
+    >
+      <Text size="sm" c="dimmed" ta="center">
+        {t('auth.otp.verify.instruction')}
+      </Text>
 
       <form
         onSubmit={(event) => {
@@ -193,15 +183,10 @@ export function OtpLogin({ initialEmail, onSuccess, onBack, titleOrder }: OtpLog
         </Stack>
       </form>
 
-      <Group justify="space-between">
-        <Anchor component="button" size="sm" onClick={() => setSentTo(null)}>
-          <Group gap={4}>
-            <IconArrowLeft size={14} />
-            {t('actions.back')}
-          </Group>
-        </Anchor>
+      <Center>
         <Anchor
           component="button"
+          type="button"
           size="sm"
           disabled={cooldown > 0 || isLoading}
           onClick={() => sendCode(sentTo)}
@@ -209,7 +194,7 @@ export function OtpLogin({ initialEmail, onSuccess, onBack, titleOrder }: OtpLog
         >
           {cooldown > 0 ? t('auth.otp.resendIn', { seconds: cooldown }) : t('auth.otp.resend')}
         </Anchor>
-      </Group>
-    </Stack>
+      </Center>
+    </TransactionalCardContent>
   )
 }
