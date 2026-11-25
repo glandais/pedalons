@@ -1,6 +1,6 @@
 # Flux des parcours : constats de l'audit du 25 novembre 2026
 
-Écrit le 25 novembre 2026. **État : constats seulement, rien décidé, rien codé.** Source : deux passes
+Écrit le 25 novembre 2026. **État : constats arbitrés le 25 novembre 2026 (§7), rien codé.** Source : deux passes
 d'audit lues dans le code (aucun navigateur, aucun appareil, aucun test lancé), la première avant
 `fe8c76ab1`, la seconde à `21654fb59` (17 commits plus tard : menus « Créer ▾ » et « Modifier ▾ »,
 import de plusieurs GPX, « Dupliquer » dans l'app). Les statuts ci-dessous sont ceux de la seconde passe.
@@ -181,21 +181,19 @@ Les plus urgents : §2.1 (W-N1, M-N5, M-N1), §3.1, §4.1.
 
 ---
 
-## 7. À arbitrer avant de découper en lots
+## 7. Décisions du 25 novembre 2026
 
-Questions ouvertes, sans proposition retenue :
+| # | Question | Décision | Constats couverts |
+|---|---|---|---|
+| D1 | Garde de sortie sur le site | **Tous les éditeurs** : un hook commun (`useBlocker` pour la navigation interne, `beforeunload` pour un rechargement) dans les éditeurs de parcours et d'aperçu GPX ; la modale de création depuis une sortie ou un voyage reçoit un bouton Annuler et la même confirmation. | W-F1, W-F2, W-F3, W-F15 |
+| D2 | Transmission d'une proposition (générateur, retouche, fichier, tracé) | **Consommée une fois** : lue au montage puis retirée de l'historique (site) ou de l'`extra` (app) ; aucun brouillon persistant. Dans l'app, la page de choix montre « Une proposition attend » avec un bouton pour l'ouvrir au lieu de la cacher, et « Enregistrer » ne part pas sans elle sans le dire. | W-F7, W-F8, M-F5, M-F6, M-F11, M-F19, M-N9 |
+| D3 | Vocabulaire | **Un lexique dans BRANDING §8**, appliqué au site et à l'app : « Modifier » = éditer ; « Remplacer la trace » en sortie de retouche ; « Ouvrir dans l'éditeur » pour toute proposition ; « Importer des GPX » / « Remplacer le fichier GPX » ; « Changer de parcours » dans les sorties et voyages. | W-F4, W-F5, W-F19, W-N3, W-N5, W-N9, M-N8, M-F23, M-N13 |
+| D4 | Import de plusieurs GPX | **Bilan, et la liste seulement si la personne est restée** : progression n/total, bilan avec la raison de chaque refus, navigation vers la liste seulement si la personne est encore sur la page de départ ; l'app bloque Retour pendant l'import comme pendant un enregistrement. | W-N1, W-N2, W-F9, M-N1, M-N2, M-N3, M-F7 |
+| D5 | Quota épuisé | **Griser partout** : `plannerQuota` ajouté à la liste d'équipes lue par l'accueil (changement de contrat), « Tracer » et « Générer » grisés dans les menus de l'app, le générateur mobile relit l'équipe à l'ouverture et désactive « Générer ». | W-N7, W-F8, M-N7, M-F8 |
+| D6 | Parité de l'app | **Ajouter les deux** : « Modifier une copie » vers les outils GPX de l'app, et l'offre de retouche lue aussi sans `canEdit` (sortie « Nouveau parcours » seulement). | M-F15 |
 
-1. **Garde de sortie sur le site** (W-F1, W-F2, W-F3) : un `useBlocker` commun à tous les éditeurs, ou
-   seulement aux éditeurs de tracé ?
-2. **Où vit la proposition transmise** (W-F7, M-F5, M-F6, M-F11) : état de navigation consommé une
-   fois, brouillon côté client, ou ouverture directe du planificateur sans passer par le formulaire ?
-3. **Vocabulaire** (W-F4, W-F5, W-N3, W-N5, W-N9) : un tableau unique de verbes pour « remplacer la
-   trace », « ouvrir la proposition », « importer », à porter dans BRANDING §8.
-4. **Import de plusieurs GPX** (W-N1, M-N1, M-N2, W-F9) : destination après l'import, progression et
-   raison des refus, poursuite ou non quand on quitte la page.
-5. **Quota dans les menus** (M-N7, W-N7) : griser partout, ce qui demande le quota dans la liste
-   d'équipes de l'accueil, ou refuser seulement à l'enregistrement.
-6. **« Modifier une copie » et retouche en lecture seule dans l'app** (M-F15) : à faire ou à écarter
-   (`status: out` avec sa raison).
+Restent sans décision et se traitent au fil des lots : les corrections nettes (W-F6, M-F2, M-N5,
+M-F3, M-F4, M-F12, M-F22, M-F24, W-F18/M-F21), les outils GPX (W-F10 à W-F13, W-F20, M-F16, M-F17,
+M-F20), le planificateur embarqué (M-F13, M-F14), les tests (§6) et M-N14 (teinte indigo).
 
-Une fois arbitrés, chaque lot prend son entrée au ledger (`WEB`, `MOB`), et ce plan la cite.
+Une entrée au ledger (`WEB`, `MOB`) par lot ; ce plan la cite une fois créée.
