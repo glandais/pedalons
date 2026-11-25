@@ -62,7 +62,7 @@ test.describe('a public ride of a private team, read by link', () => {
       const response = await page.goto(ridePath(team.slug, ride.slug))
       expect(response?.status()).toBe(200)
       await pageHydrated(page)
-      await expect(main(page).getByRole('heading', { name: ride.name, level: 2 })).toBeVisible()
+      await expect(main(page).getByRole('heading', { name: ride.name, level: 1 })).toBeVisible()
       // The team's name from the ride's summary, with no link to a team that would answer 404.
       const banner = main(page).getByTestId('team-context-banner')
       await expect(banner).toContainText(team.name)
@@ -92,7 +92,7 @@ test.describe('a public ride of a private team, read by link', () => {
       // `permissions.canRegister` and `canComment` are false: no registration, no comments.
       await page.goto(ridePath(team.slug, ride.slug))
       await pageHydrated(page)
-      await expect(main(page).getByRole('heading', { name: ride.name, level: 2 })).toBeVisible()
+      await expect(main(page).getByRole('heading', { name: ride.name, level: 1 })).toBeVisible()
       await expect(main(page).getByRole('button', { name: 'Rejoindre' })).toHaveCount(0)
       await expect(commentsHeading(page)).toHaveCount(0)
       // The control: a member of the same team reads the comments of the same ride.

@@ -1,4 +1,4 @@
-import { useParams, Navigate } from 'react-router-dom'
+import { useNavigate, useParams, Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Badge, Box, Button, Container, Stack } from '@mantine/core'
 import { IconPencil } from '@tabler/icons-react'
@@ -11,7 +11,8 @@ import { DepartureBlock } from '../../components/common/DepartureBlock'
 import { PrefetchLink } from '../../components/common/PrefetchLink'
 import { useCanonicalPath } from '../../hooks/useCanonicalPath'
 import { useScrollToAnchor } from '../../hooks/useScrollToAnchor'
-import { ShareButton } from '../../components/common/ShareButton'
+import { ContentActionsMenu } from '@/components/moderation/ContentActionsMenu'
+import { ReportTargetType } from '@/api/dto'
 import { CommentSection } from '../../components/comment'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { AccessAlerts } from '@/components/publication/AccessAlerts'
@@ -45,6 +46,7 @@ export function StageDetailPage() {
     stageSlug: string
   }>()
   const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
 
   const {
     team: { data: fullTeam, isLoading: isLoadingTeam },
@@ -145,34 +147,41 @@ export function StageDetailPage() {
       siblingLabel={t('trips.stage.selector')}
       title={stage.name}
       badges={
-        <>
-          {trip.registered && (
-            <Badge color="primary" variant="light">
-              {t('trips.stage.joined')}
-            </Badge>
-          )}
-          <ShareButton title={stage.name} />
-        </>
+        trip.registered ? (
+          <Badge color="primary" variant="light">
+            {t('trips.stage.joined')}
+          </Badge>
+        ) : undefined
       }
-      actions={
-        (routeSlug || canEdit) && (
-          <>
-            {/* « GPS » first: one joins the trip, not the stage (docs/LEDGER_*.md WEB-203) */}
-            {routeSlug && (
-              <GpsMenuButton teamSlug={team.slug} routeSlug={routeSlug} route={route} size="sm" />
-            )}
-            {canEdit && (
-              <Button
-                component={PrefetchLink}
-                to={paths.tripEdit(team.slug, trip.slug)}
-                variant="outline"
-                leftSection={<IconPencil size={16} />}
-              >
-                {t('trips.edit.title')}
-              </Button>
-            )}
-          </>
-        )
+      // « GPS » first: one joins the trip, not the stage (docs/LEDGER_*.md WEB-203)
+      gps={
+        routeSlug ? (
+          <GpsMenuButton teamSlug={team.slug} routeSlug={routeSlug} route={route} size="sm" />
+        ) : undefined
+      }
+      edit={
+        canEdit ? (
+          <Button
+            component={PrefetchLink}
+            to={paths.tripEdit(team.slug, trip.slug)}
+            variant="outline"
+            leftSection={<IconPencil size={16} />}
+          >
+            {t('trips.edit.title')}
+          </Button>
+        ) : undefined
+      }
+      shareTitle={stage.name}
+      // The ⋯ of a stage reports its trip: a stage has no ReportTargetType of its own (D3,
+      // docs/LEDGER_*.md WEB-206).
+      more={
+        <ContentActionsMenu
+          teamSlug={team.slug}
+          teamName={team.name}
+          targetType={ReportTargetType.TRIP}
+          targetId={trip.id}
+          onReported={() => navigate(paths.team(team.slug))}
+        />
       }
       departure={
         <Stack gap="sm">

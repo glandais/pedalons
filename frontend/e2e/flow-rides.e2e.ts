@@ -192,7 +192,7 @@ test.describe('ride journey', () => {
     await main(page).getByRole('button', { name: 'Créer la sortie' }).click()
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/sorties/(?!nouvelle)[^/]+$`))
     const rideSlug = new URL(page.url()).pathname.split('/').pop()!
-    await expect(main(page).getByRole('heading', { name: rideName, level: 2 })).toBeVisible()
+    await expect(main(page).getByRole('heading', { name: rideName, level: 1 })).toBeVisible()
     await expect(main(page).getByText('Brouillon', { exact: true })).toBeVisible()
 
     let saved = await readRide(organizer, team.slug, rideSlug)
@@ -259,7 +259,7 @@ test.describe('ride journey', () => {
       await calendarEvent(memberPage, rideName).click()
       await expect(memberPage).toHaveURL(new RegExp(`/sorties/${rideSlug}$`))
       await expect(
-        main(memberPage).getByRole('heading', { name: rideName, level: 2 })
+        main(memberPage).getByRole('heading', { name: rideName, level: 1 })
       ).toBeVisible()
       const card = groupCard(memberPage, easier)
       await expect(card.getByText('0/4 personnes')).toBeVisible()
@@ -344,7 +344,7 @@ test.describe('ride journey', () => {
     // Published straight from the editor this time.
     await main(page).getByRole('radio', { name: 'Publié' }).check()
     await main(page).getByRole('button', { name: 'Créer la sortie' }).click()
-    await expect(main(page).getByRole('heading', { name: rideName, level: 2 })).toBeVisible()
+    await expect(main(page).getByRole('heading', { name: rideName, level: 1 })).toBeVisible()
     await expect(main(page).getByText('Publié', { exact: true })).toBeVisible()
     const rideSlug = new URL(page.url()).pathname.split('/').pop()!
 
@@ -366,7 +366,7 @@ test.describe('ride journey', () => {
       await expect(card.getByText('Annulé', { exact: true })).toBeVisible()
       await card.click()
       await expect(
-        main(memberPage).getByRole('heading', { name: rideName, level: 2 })
+        main(memberPage).getByRole('heading', { name: rideName, level: 1 })
       ).toBeVisible()
       await expect(groupCard(memberPage, group)).toBeVisible()
       await expect(main(memberPage).getByText('Annulé', { exact: true })).toBeVisible()
@@ -413,7 +413,7 @@ test.describe('publication states', () => {
     const rideSlug = new URL(page.url()).pathname.split('/').pop()!
 
     // --- Before the date: the page says it is a draft, and when it will be published.
-    await expect(main(page).getByRole('heading', { name: rideName, level: 2 })).toBeVisible()
+    await expect(main(page).getByRole('heading', { name: rideName, level: 1 })).toBeVisible()
     await expect(main(page).getByText('Brouillon', { exact: true })).toBeVisible()
     await expect(
       main(page).getByText(`Publication programmée pour le ${frenchDateTime(publishOn)}`, {
@@ -453,7 +453,7 @@ test.describe('publication states', () => {
       expect(parisWallClock(published.dateTime), 'a ride keeps its own date').toEqual(day)
 
       await page.reload()
-      await expect(main(page).getByRole('heading', { name: rideName, level: 2 })).toBeVisible()
+      await expect(main(page).getByRole('heading', { name: rideName, level: 1 })).toBeVisible()
       await expect(main(page).getByText('Publié', { exact: true })).toBeVisible()
       await expect(main(page).getByText(/^Publication programmée/)).toHaveCount(0)
 
@@ -479,7 +479,7 @@ test.describe('regressions', () => {
     const ride = await newRide(organizer, team.slug, unique('Sortie au menu'))
     await signIn(page.context(), organizer)
     await page.goto(`/equipes/${team.slug}/sorties/${ride.slug}`)
-    await expect(main(page).getByRole('heading', { name: ride.name, level: 2 })).toBeVisible()
+    await expect(main(page).getByRole('heading', { name: ride.name, level: 1 })).toBeVisible()
     await expect(actionsMenu(page)).toHaveAccessibleName('Options de gestion')
     const menu = await openActionsMenu(page)
     await expect(menu.getByRole('menuitem', { name: 'Annuler la sortie' })).toBeVisible()
@@ -523,7 +523,7 @@ test.describe('regressions', () => {
     expect(ride.startPlace?.id, 'precondition: the ride starts from the place').toBe(place.id)
     await signIn(page.context(), organizer)
     await page.goto(ridePath(team.slug, ride.slug))
-    await expect(main(page).getByRole('heading', { name: ride.name, level: 2 })).toBeVisible()
+    await expect(main(page).getByRole('heading', { name: ride.name, level: 1 })).toBeVisible()
     // Preconditions: a draft whose group shows its leader.
     await expect(main(page).getByText('Brouillon', { exact: true })).toBeVisible()
     await expect(
@@ -561,7 +561,7 @@ test.describe('regressions', () => {
 
     await signIn(page.context(), organizer)
     await page.goto(ridePath(team.slug, ride.slug))
-    await expect(main(page).getByRole('heading', { name: ride.name, level: 2 })).toBeVisible()
+    await expect(main(page).getByRole('heading', { name: ride.name, level: 1 })).toBeVisible()
     await expect(main(page).getByText('Brouillon', { exact: true })).toBeVisible()
     const shown = await watchToasts(page)
 
@@ -703,7 +703,7 @@ test.describe('ride templates', () => {
     const day = parisDaysAhead(5, 9, 15)
     await pickDateTime(page, main(page).getByRole('button', { name: 'Départ' }), day)
     await main(page).getByRole('button', { name: 'Créer la sortie' }).click()
-    await expect(main(page).getByRole('heading', { name: rideName, level: 2 })).toBeVisible()
+    await expect(main(page).getByRole('heading', { name: rideName, level: 1 })).toBeVisible()
     await expect(groupCard(page, first).getByText('0/6 personnes')).toBeVisible()
     await expect(groupCard(page, second).getByText('0/10 personnes')).toBeVisible()
 
@@ -774,7 +774,7 @@ test.describe('group leader in the editor', () => {
     await main(page).getByRole('radio', { name: 'Publié' }).check()
     await main(page).getByRole('button', { name: 'Créer la sortie' }).click()
 
-    await expect(main(page).getByRole('heading', { name: rideName, level: 2 })).toBeVisible()
+    await expect(main(page).getByRole('heading', { name: rideName, level: 1 })).toBeVisible()
     const rideSlug = new URL(page.url()).pathname.split('/').pop()!
     const ledCard = groupCard(page, led)
     const freeCard = groupCard(page, free)
@@ -1104,7 +1104,7 @@ test.describe('a route from the ride editor', () => {
     await expect(main(page).getByText('Aucun parcours sélectionné')).toHaveCount(1)
 
     await main(page).getByRole('button', { name: 'Créer la sortie' }).click()
-    await expect(main(page).getByRole('heading', { name: rideName, level: 2 })).toBeVisible()
+    await expect(main(page).getByRole('heading', { name: rideName, level: 1 })).toBeVisible()
     const rideSlug = new URL(page.url()).pathname.split('/').pop()!
     const saved = await readRide(organizer, team.slug, rideSlug)
     expect(saved.routeSlug).toBe(route.slug)
@@ -1189,7 +1189,7 @@ test.describe('a route from the ride editor', () => {
     await main(page).getByRole('button', { name: 'Créer la sortie' }).click()
     await dialog.getByRole('button', { name: 'Ouvrir les parcours et enregistrer' }).click()
     await aligned
-    await expect(main(page).getByRole('heading', { name: rideName, level: 2 })).toBeVisible()
+    await expect(main(page).getByRole('heading', { name: rideName, level: 1 })).toBeVisible()
     const rideSlug = new URL(page.url()).pathname.split('/').pop()!
     const saved = await readRide(organizer, team.slug, rideSlug)
     expect(saved.visibility).toBe('PUBLIC')
@@ -1250,7 +1250,7 @@ test.describe('restoring a ride', () => {
 
     await signIn(page.context(), organizer)
     await page.goto(ridePath(team.slug, ride.slug))
-    await expect(main(page).getByRole('heading', { name: ride.name, level: 2 })).toBeVisible()
+    await expect(main(page).getByRole('heading', { name: ride.name, level: 1 })).toBeVisible()
     await expect(main(page).getByText('Annulé', { exact: true })).toBeVisible()
 
     const menu = await openActionsMenu(page)
@@ -1304,7 +1304,7 @@ test.describe('restoring a ride', () => {
     const admin = await roleSession('admin')
     await signIn(page.context(), admin)
     await page.goto(ridePath(team.slug, ride.slug))
-    await expect(main(page).getByRole('heading', { name: ride.name, level: 2 })).toBeVisible()
+    await expect(main(page).getByRole('heading', { name: ride.name, level: 1 })).toBeVisible()
     const menu = await openActionsMenu(page)
     await menu.getByRole('menuitem', { name: 'Restaurer', exact: true }).click()
     await expect(toasts(page).filter({ hasText: 'Sortie restaurée avec succès' })).toBeVisible()
@@ -1398,7 +1398,7 @@ test.describe('editing a ride that has registrations', () => {
     try {
       await memberPage.goto(ridePath(team.slug, ride.slug))
       await expect(
-        main(memberPage).getByRole('heading', { name: ride.name, level: 2 })
+        main(memberPage).getByRole('heading', { name: ride.name, level: 1 })
       ).toBeVisible()
       const card = groupCard(memberPage, renamed)
       await expect(card.getByText("J'y vais", { exact: true })).toBeVisible()
@@ -1504,7 +1504,7 @@ test.describe('editing a ride that has registrations', () => {
     try {
       await memberPage.goto(ridePath(team.slug, ride.slug))
       await expect(
-        main(memberPage).getByRole('heading', { name: ride.name, level: 2 })
+        main(memberPage).getByRole('heading', { name: ride.name, level: 1 })
       ).toBeVisible()
       const card = groupCard(memberPage, kept)
       await expect(card.getByText('0/10 personnes')).toBeVisible()

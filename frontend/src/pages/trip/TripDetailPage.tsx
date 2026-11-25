@@ -12,6 +12,7 @@ import { TripStageCard } from '../../components/trip/TripStageCard'
 import { routeColorsById } from '@/lib/routeColors'
 import { TeamContextBanner } from '../../components/team/TeamContextBanner'
 
+import { GpsMenuButton } from '../../components/route/GpsMenuButton'
 import type { MapRouteItem } from '../../components/route/RoutesMapView'
 import { formatPublicationSpan } from '../../utils/publicationTiming'
 import { useEffectiveTimezone } from '../../utils/dateFormat'
@@ -145,7 +146,14 @@ export function TripDetailPage() {
         statusActions={canEdit ? statusActions : null}
         editPath={paths.tripEdit(teamSlug!, tripSlug!)}
         error={membership.error}
-        joinActions={
+        // The trip's own route, when it has no stages to carry one each (D6, docs/LEDGER_*.md
+        // WEB-206): with stages, every stage card keeps its GPS.
+        gps={
+          trip.routeSlug && !trip.stages?.length ? (
+            <GpsMenuButton teamSlug={teamSlug!} routeSlug={trip.routeSlug} size="sm" />
+          ) : undefined
+        }
+        primary={
           <>
             {canJoinTrip && (
               <Button onClick={membership.join} disabled={membership.isPending}>

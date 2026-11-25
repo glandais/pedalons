@@ -506,7 +506,7 @@ describe('RideDetailPage — a private team’s public ride, read by link (WEB-1
 
   it('renders the ride instead of « not found » without the team', () => {
     renderPage()
-    expect(screen.getByRole('heading', { level: 2, name: 'Sortie du samedi' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Sortie du samedi' })).toBeTruthy()
     expect(screen.queryByText('Sortie non trouvée')).toBeNull()
   })
 

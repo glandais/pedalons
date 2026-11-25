@@ -281,7 +281,7 @@ test.describe('a past ride', () => {
     await signIn(page.context(), member)
     await openRide(page, team.slug, ride)
 
-    const header = page.getByRole('main').getByRole('heading', { level: 2, name: ride.name })
+    const header = page.getByRole('main').getByRole('heading', { level: 1, name: ride.name })
     await expect(header).toBeVisible()
     await expect(page.getByRole('main').getByText('Terminée', { exact: true })).toBeVisible()
     await expect(page.getByRole('main').getByText('Publié', { exact: true })).toBeVisible()
@@ -632,11 +632,11 @@ test.describe('a ride with one group (WEB-79)', () => {
 
     await signIn(page.context(), member)
     await page.goto(ridePath(team.slug, ride.slug))
-    await page.getByRole('heading', { level: 2, name: ride.name }).waitFor()
+    await page.getByRole('heading', { level: 1, name: ride.name }).waitFor()
     const groupUrl = `${ridePath(team.slug, ride.slug)}/groupes/${ride.groups[0].id}?q=x`
     await page.goto(groupUrl)
     await expect(page).toHaveURL(new RegExp(`${ridePath(team.slug, ride.slug)}\\?q=x$`))
-    await expect(page.getByRole('heading', { level: 2, name: ride.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ride.name })).toBeVisible()
     await expect(page.getByTestId('group-stats')).toBeVisible()
     await expect(page.getByRole('link', { name: /Voir le groupe/ })).toHaveCount(0)
 

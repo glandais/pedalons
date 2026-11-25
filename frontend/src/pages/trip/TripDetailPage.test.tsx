@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -172,6 +172,35 @@ describe('TripDetailPage — the stages of a cancelled trip', () => {
     expect(screen.getAllByTestId('gps-button')).toHaveLength(2)
     cleanup()
     state.trip = { ...trip(['s1', 's2']), registered: true, status: Status.CANCELLED }
+    renderPage()
+    expect(screen.queryByTestId('gps-button')).toBeNull()
+  })
+})
+
+// D6 (docs/LEDGER_*.md WEB-206): a trip with a route of its own and no stages has its « GPS »
+// in the header; with stages, each stage card keeps its own.
+describe('TripDetailPage — the header « GPS »', () => {
+  afterEach(cleanup)
+
+  it("offers the trip's own route in the header when it has no stages", () => {
+    state.weather = undefined
+    state.trip = { ...trip([]), routeSlug: 'mon-parcours' }
+    renderPage()
+    const actions = screen.getByTestId('detail-header-actions')
+    expect(within(actions).getByTestId('gps-button')).toBeTruthy()
+  })
+
+  it('has none in the header once the trip has stages', () => {
+    state.weather = undefined
+    state.trip = { ...trip(['s1', 's2']), routeSlug: 'mon-parcours' }
+    renderPage()
+    const actions = screen.getByTestId('detail-header-actions')
+    expect(within(actions).queryByTestId('gps-button')).toBeNull()
+  })
+
+  it('has none without a route', () => {
+    state.weather = undefined
+    state.trip = trip([])
     renderPage()
     expect(screen.queryByTestId('gps-button')).toBeNull()
   })

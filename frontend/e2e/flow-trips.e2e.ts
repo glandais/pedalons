@@ -108,7 +108,7 @@ const emptyAgenda = (main: Locator) =>
 async function openTrip(page: Page, teamSlug: string, tripSlug: string, name: string) {
   await page.goto(tripPath(teamSlug, tripSlug))
   const main = page.getByRole('main')
-  await expect(main.getByRole('heading', { level: 2, name })).toBeVisible()
+  await expect(main.getByRole('heading', { level: 1, name })).toBeVisible()
   await expect(main.getByRole('heading', { level: 3, name: 'Étapes' })).toBeVisible()
   return main
 }
@@ -180,7 +180,7 @@ test('a team admin creates a trip and its two stages with the form; the calendar
   const tripSlug = new URL(page.url()).pathname.split('/').pop()!
 
   // The trip page: title, status, both stages in the order they were entered, and the map.
-  await expect(main.getByRole('heading', { level: 2, name: tripName })).toBeVisible()
+  await expect(main.getByRole('heading', { level: 1, name: tripName })).toBeVisible()
   await expect(main.getByText('Publié', { exact: true })).toBeVisible()
   await expect(main.getByText('2 étapes', { exact: true })).toBeVisible()
   const cards = stageCards(main)
@@ -339,7 +339,7 @@ test('a team admin edits a stage, deletes the other one, then deletes the trip',
   await main.getByRole('button', { name: 'Enregistrer' }).click()
   await expect(toasts(page).filter({ hasText: 'Voyage mis à jour avec succès' })).toBeVisible()
   await expect(page).toHaveURL(new RegExp(`${tripPath(team.slug, trip.slug)}$`))
-  await expect(main.getByRole('heading', { level: 2, name: trip.name })).toBeVisible()
+  await expect(main.getByRole('heading', { level: 1, name: trip.name })).toBeVisible()
   await expect(main.getByText('1 étape', { exact: true })).toBeVisible()
   const cards = stageCards(main)
   await expect(cards).toHaveCount(1)
@@ -405,7 +405,7 @@ test.describe('publication states', () => {
     await expect(toasts(page).filter({ hasText: 'Voyage créé avec succès' })).toBeVisible()
     await expect(page).toHaveURL(/\/voyages\/(?!nouveau)[^/]+$/)
     const tripSlug = new URL(page.url()).pathname.split('/').pop()!
-    await expect(main.getByRole('heading', { level: 2, name: tripName })).toBeVisible()
+    await expect(main.getByRole('heading', { level: 1, name: tripName })).toBeVisible()
     await expect(main.getByText('Brouillon', { exact: true })).toBeVisible()
     expect((await fetchTrip(teamAdmin, team.slug, tripSlug))?.status).toBe('DRAFT')
 
@@ -432,7 +432,7 @@ test.describe('publication states', () => {
       await hydrated(card)
       await card.click()
       await expect(reader.page).toHaveURL(new RegExp(`${tripPath(team.slug, tripSlug)}$`))
-      await expect(memberMain.getByRole('heading', { level: 2, name: tripName })).toBeVisible()
+      await expect(memberMain.getByRole('heading', { level: 1, name: tripName })).toBeVisible()
       await expect(memberMain.getByRole('button', { name: 'Rejoindre le voyage' })).toBeVisible()
     } finally {
       await reader.context.close()
@@ -476,7 +476,7 @@ test.describe('publication states', () => {
     const tripSlug = new URL(page.url()).pathname.split('/').pop()!
 
     await test.step('before the date: a draft that says when, hidden from members', async () => {
-      await expect(main.getByRole('heading', { level: 2, name: tripName })).toBeVisible()
+      await expect(main.getByRole('heading', { level: 1, name: tripName })).toBeVisible()
       await expect(main.getByText('Brouillon', { exact: true })).toBeVisible()
       await expect(
         main.getByText(`Publication programmée pour le ${frenchDateTime(publishOn)}`, {
@@ -530,7 +530,7 @@ test.describe('publication states', () => {
         await hydrated(entry)
         await entry.click()
         await expect(reader.page).toHaveURL(new RegExp(`${tripPath(team.slug, tripSlug)}$`))
-        await expect(memberMain.getByRole('heading', { level: 2, name: tripName })).toBeVisible()
+        await expect(memberMain.getByRole('heading', { level: 1, name: tripName })).toBeVisible()
       } finally {
         await reader.context.close()
       }

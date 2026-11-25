@@ -197,7 +197,7 @@ export function RideDetailPage() {
         reportTargetType={ReportTargetType.RIDE}
         statusActions={canEdit ? statusActions : null}
         editPath={paths.rideEdit(teamSlug!, rideSlug!)}
-        joinActions={
+        gps={
           myGroup &&
           myRouteSlug && (
             <GpsMenuButton

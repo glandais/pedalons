@@ -93,7 +93,7 @@ test.describe('the personal calendar', () => {
     await hydrated(registered)
     await registered.click()
     await expect(page).toHaveURL(new RegExp(`/equipes/${mine.slug}/sorties/${joined.slug}$`))
-    await expect(page.getByRole('heading', { level: 2, name: joined.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: joined.name })).toBeVisible()
   })
 
   test("each event of /calendrier names its team, its group and « J'y vais » where I am registered", async ({

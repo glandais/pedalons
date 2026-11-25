@@ -19,6 +19,11 @@ vi.mock('@/components/route/GpsMenuButton', () => ({
     <div data-testid="gps-button" data-route={routeSlug} />
   ),
 }))
+vi.mock('@/components/moderation/ContentActionsMenu', () => ({
+  ContentActionsMenu: (props: { targetType: string; targetId: string }) => (
+    <div data-testid="more" data-type={props.targetType} data-id={props.targetId} />
+  ),
+}))
 vi.mock('react-i18next', async (importOriginal) => {
   const { frenchT } = await import('@/test/frenchT')
   return {
@@ -221,6 +226,16 @@ describe('RideGroupPage (WEB-77)', () => {
     state.switchTo = vi.fn()
   })
   afterEach(cleanup)
+
+  it('puts the ⋯ report menu in the header, reporting the ride, after « Partager » (D3, WEB-206)', () => {
+    renderPage()
+    const more = screen.getByTestId('more')
+    expect(more.getAttribute('data-type')).toBe('RIDE')
+    expect(more.getAttribute('data-id')).toBe((state.ride as RideDto).id)
+    const actions = screen.getByTestId('detail-header-actions')
+    expect(actions.contains(more)).toBe(true)
+    expect(actions.lastElementChild).toBe(more)
+  })
 
   it('titles the group under its ride, with its places, stats and participants', () => {
     renderPage()

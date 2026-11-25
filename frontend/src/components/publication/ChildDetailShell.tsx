@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
-import { Alert, Anchor, Box, Container, Group, Paper, Stack, Text, Title } from '@mantine/core'
+import { Anchor, Box, Container, Group, Stack } from '@mantine/core'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
+import { DetailHeader } from './DetailHeader'
 import { SiblingNav, type Sibling } from './SiblingNav'
 import { CHILD_WEATHER_ANCHOR } from './useWeatherFocus'
 
@@ -15,10 +16,16 @@ interface ChildDetailShellProps {
   /** Names the sibling picker: « Choisir un groupe », « Choisir une étape ». */
   siblingLabel: string
   title: string
-  /** Beside the title: « Vous participez », « Complet »… and the share button. */
+  /** Beside the title: « Vous participez »… */
   badges?: ReactNode
-  /** On the right of the title: join or leave, edit. */
-  actions?: ReactNode
+  /** The header's actions, by name: their order is `DetailHeader`'s (docs/LEDGER_*.md WEB-206). */
+  primary?: ReactNode
+  gps?: ReactNode
+  edit?: ReactNode
+  /** Renders the share button with this title. */
+  shareTitle?: string
+  /** The `⋯` menu. */
+  more?: ReactNode
   /** Under the title: the departure block, the places. */
   departure: ReactNode
   /** Under the departure: a word on another group, why one cannot join. */
@@ -50,7 +57,11 @@ export function ChildDetailShell({
   siblingLabel,
   title,
   badges,
-  actions,
+  primary,
+  gps,
+  edit,
+  shareTitle,
+  more,
   departure,
   notices,
   error,
@@ -70,40 +81,22 @@ export function ChildDetailShell({
         </Anchor>
       </Box>
 
-      <Paper shadow="xs" p="lg" mb="lg" withBorder component="header">
-        <Stack gap="md">
-          <SiblingNav siblings={siblings} currentId={currentId} label={siblingLabel} />
+      <DetailHeader
+        top={<SiblingNav siblings={siblings} currentId={currentId} label={siblingLabel} />}
+        context={parentName}
+        title={title}
+        badges={badges}
+        primary={primary}
+        gps={gps}
+        edit={edit}
+        shareTitle={shareTitle}
+        more={more}
+        error={error}
+      >
+        {departure}
 
-          <Group justify="space-between" wrap="wrap" align="flex-start">
-            <Stack gap={4} style={{ minWidth: 0 }}>
-              <Text size="sm" c="dimmed">
-                {parentName}
-              </Text>
-              <Group gap="sm" wrap="wrap">
-                <Title order={1} size="h2">
-                  {title}
-                </Title>
-                {badges}
-              </Group>
-            </Stack>
-            {actions && (
-              <Group gap="xs" wrap="wrap">
-                {actions}
-              </Group>
-            )}
-          </Group>
-
-          {departure}
-
-          {notices}
-
-          {error && (
-            <Alert color="red" variant="light">
-              {error}
-            </Alert>
-          )}
-        </Stack>
-      </Paper>
+        {notices}
+      </DetailHeader>
 
       <Box className={map ? 'detail-layout' : 'detail-layout detail-layout--no-map'}>
         <Stack className="detail-side" gap="lg">

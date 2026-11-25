@@ -1,17 +1,17 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Alert, Badge, Box, Button, Group, Loader, Menu, Paper, Text, Title } from '@mantine/core'
-import { IconCalendar, IconChevronDown, IconPencil } from '@tabler/icons-react'
+import { Badge, Group, Loader, Menu, Text } from '@mantine/core'
+import { IconCalendar } from '@tabler/icons-react'
 import { Status, type MediaDto, type ReportTargetType, type TagDto } from '@/api/dto'
 import { EntityLogo } from '@/components/common/EntityLogo'
-import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { Rendezvous } from '@/components/common/Rendezvous'
-import { ShareButton } from '@/components/common/ShareButton'
 import { ContentActionsMenu } from '@/components/moderation/ContentActionsMenu'
 import { TagList } from '@/components/tag'
 import { paths } from '@/config/paths'
 import { STATUS_COLORS } from '@/lib/badgeColors.generated'
+import { DetailHeader } from './DetailHeader'
+import { EditMenuButton } from './EditMenuButton'
 import { KIND_LABELS, type PublicationKind } from './publicationKind'
 import type { PublicationStatusActions } from './usePublicationStatusActions'
 
@@ -34,7 +34,9 @@ interface PublicationHeaderProps {
   statusActions: PublicationStatusActions | null
   editPath: string
   /** « Rejoindre le voyage » / « Quitter le voyage »: a trip is joined from its header. */
-  joinActions?: ReactNode
+  primary?: ReactNode
+  /** « GPS »: the reader's group's route on a ride, the trip's own route on a trip without stages. */
+  gps?: ReactNode
   /** Why the last join or leave failed, under the title. */
   error?: string | null
   /** Under the title: the departure, the places, the facts. */
@@ -45,7 +47,7 @@ interface PublicationHeaderProps {
  * The header of a ride's or a trip's page (docs/LEDGER_*.md WEB-155): its logo, name and badges,
  * what the reader can do, then the departure (docs/BRANDING.md §7.8, WEB-137) and whatever the page
  * puts under it, the scheduled publication and the team tags — every one of them (cards show the
- * first three). The organiser's text is not here: it is the « Consignes » block (WEB-134).
+ * first three). It is a `DetailHeader` (WEB-206): the title is the page's `h1`, the actions in its fixed order. The organiser's text is not here: it is the « Consignes » block (WEB-134).
  */
 export function PublicationHeader({
   kind,
@@ -53,7 +55,8 @@ export function PublicationHeader({
   reportTargetType,
   statusActions,
   editPath,
-  joinActions,
+  primary,
+  gps,
   error,
   children,
 }: PublicationHeaderProps) {
@@ -62,16 +65,11 @@ export function PublicationHeader({
   const labels = KIND_LABELS[kind]
 
   return (
-    <Paper shadow="xs" p="lg" mb="lg" withBorder component="header">
-      <Group justify="space-between" align="flex-start" wrap="wrap">
-        <Group gap="sm" style={{ minWidth: 0 }}>
-          <EntityLogo logo={publication.media.assets.logo} alt={publication.name} size="lg" />
-          <Title
-            order={2}
-            style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-          >
-            {publication.name}
-          </Title>
+    <DetailHeader
+      logo={<EntityLogo logo={publication.media.assets.logo} alt={publication.name} size="lg" />}
+      title={publication.name}
+      badges={
+        <>
           <Badge color={STATUS_COLORS[publication.status]} variant="light">
             {t(`status.${publication.status satisfies 'DRAFT' | 'PUBLISHED' | 'CANCELLED'}`)}
           </Badge>
@@ -80,90 +78,70 @@ export function PublicationHeader({
               {t(labels.finished)}
             </Badge>
           )}
-        </Group>
-
-        <Group gap="xs" wrap="wrap">
-          {joinActions}
-          {statusActions && (
-            <Button.Group>
-              <Button
-                component={PrefetchLink}
-                to={editPath}
-                variant="outline"
-                leftSection={<IconPencil size={16} />}
+        </>
+      }
+      primary={primary}
+      gps={gps}
+      edit={
+        statusActions && (
+          <EditMenuButton to={editPath}>
+            {statusActions.status === Status.DRAFT && (
+              <Menu.Item
+                onClick={statusActions.publish}
+                disabled={statusActions.isUpdating}
+                color="success"
+                leftSection={statusActions.isUpdating ? <Loader size="sm" /> : undefined}
               >
-                {t('actions.edit')}
-              </Button>
-              <Menu position="bottom-end">
-                <Menu.Target>
-                  <Button variant="outline" px="xs" aria-label={t('aria.manageActions')}>
-                    <IconChevronDown size={16} />
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  {statusActions.status === Status.DRAFT && (
-                    <Menu.Item
-                      onClick={statusActions.publish}
-                      disabled={statusActions.isUpdating}
-                      color="success"
-                      leftSection={statusActions.isUpdating ? <Loader size="sm" /> : undefined}
-                    >
-                      {t('actions.publish')}
-                    </Menu.Item>
-                  )}
-                  {statusActions.status === Status.PUBLISHED && (
-                    <>
-                      <Menu.Item onClick={() => statusActions.confirm('unpublish')} color="warning">
-                        {t('actions.unpublish')}
-                      </Menu.Item>
-                      <Menu.Item onClick={() => statusActions.confirm('cancel')} color="warning">
-                        {t(labels.cancelAction)}
-                      </Menu.Item>
-                    </>
-                  )}
-                  {statusActions.status === Status.CANCELLED && (
-                    <Menu.Item onClick={() => statusActions.confirm('uncancel')} color="green">
-                      {t(labels.uncancelAction)}
-                    </Menu.Item>
-                  )}
-                  {statusActions.deleted && (
-                    <Menu.Item
-                      onClick={statusActions.restore}
-                      color="green"
-                      disabled={statusActions.isRestoring}
-                    >
-                      {t('actions.restore')}
-                    </Menu.Item>
-                  )}
-                  <Menu.Divider />
-                  <Menu.Item onClick={() => statusActions.confirm('delete')} color="danger">
-                    {t('actions.delete')}
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-            </Button.Group>
-          )}
-          <ShareButton title={publication.name} />
-          <ContentActionsMenu
-            teamSlug={publication.team.slug}
-            teamName={publication.team.name}
-            targetType={reportTargetType}
-            targetId={publication.id}
-            onReported={() => navigate(paths.team(publication.team.slug))}
-          />
-        </Group>
-      </Group>
-
-      {error && (
-        <Alert color="red" variant="light" mt="md">
-          {error}
-        </Alert>
-      )}
-
-      {children && <Box mt="md">{children}</Box>}
+                {t('actions.publish')}
+              </Menu.Item>
+            )}
+            {statusActions.status === Status.PUBLISHED && (
+              <>
+                <Menu.Item onClick={() => statusActions.confirm('unpublish')} color="warning">
+                  {t('actions.unpublish')}
+                </Menu.Item>
+                <Menu.Item onClick={() => statusActions.confirm('cancel')} color="warning">
+                  {t(labels.cancelAction)}
+                </Menu.Item>
+              </>
+            )}
+            {statusActions.status === Status.CANCELLED && (
+              <Menu.Item onClick={() => statusActions.confirm('uncancel')} color="green">
+                {t(labels.uncancelAction)}
+              </Menu.Item>
+            )}
+            {statusActions.deleted && (
+              <Menu.Item
+                onClick={statusActions.restore}
+                color="green"
+                disabled={statusActions.isRestoring}
+              >
+                {t('actions.restore')}
+              </Menu.Item>
+            )}
+            <Menu.Divider />
+            <Menu.Item onClick={() => statusActions.confirm('delete')} color="danger">
+              {t('actions.delete')}
+            </Menu.Item>
+          </EditMenuButton>
+        )
+      }
+      shareTitle={publication.name}
+      more={
+        <ContentActionsMenu
+          teamSlug={publication.team.slug}
+          teamName={publication.team.name}
+          targetType={reportTargetType}
+          targetId={publication.id}
+          onReported={() => navigate(paths.team(publication.team.slug))}
+        />
+      }
+      error={error}
+    >
+      {children}
 
       {publication.status === Status.DRAFT && publication.publishAt && (
-        <Group mt="xs" gap="xs">
+        <Group gap="xs">
           <IconCalendar size={16} color="var(--mantine-color-yellow-text)" />
           <Text size="sm" c="var(--mantine-color-yellow-text)">
             <Rendezvous
@@ -176,7 +154,7 @@ export function PublicationHeader({
         </Group>
       )}
 
-      <TagList tags={publication.tags} mt="md" />
-    </Paper>
+      <TagList tags={publication.tags} />
+    </DetailHeader>
   )
 }

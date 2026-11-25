@@ -369,7 +369,7 @@ test.describe('personal notifications', () => {
       await entry.click()
       await expect(page).toHaveURL(new RegExp(`${ridePath(team.slug, ride.slug)}$`))
       const main = page.getByRole('main')
-      await expect(main.getByRole('heading', { level: 2, name: ride.name })).toBeVisible()
+      await expect(main.getByRole('heading', { level: 1, name: ride.name })).toBeVisible()
       await expect(main.getByText('Annulé', { exact: true })).toBeVisible()
     })
   })
@@ -423,7 +423,7 @@ test.describe('personal notifications', () => {
       await entry.click()
       await expect(page).toHaveURL(new RegExp(`${ridePath(team.slug, ride.slug)}$`))
       await expect(
-        page.getByRole('main').getByRole('heading', { level: 2, name: ride.name })
+        page.getByRole('main').getByRole('heading', { level: 1, name: ride.name })
       ).toBeVisible()
     })
   })

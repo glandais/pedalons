@@ -657,7 +657,7 @@ test.describe('the personal calendar feed', () => {
     // The event's link opens the ride.
     await openRide(page, team.slug, ride)
     await page.goto(event!.URL)
-    await expect(page.getByRole('heading', { level: 2, name: ride.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ride.name })).toBeVisible()
 
     // A new link: the old one stops working at once.
     await page.goto('/calendrier')
@@ -1286,7 +1286,7 @@ test.describe('back to the page after signing in', () => {
     await expect(main.getByRole('heading', { name: WELCOME })).toBeVisible()
     await signInWithPassword(page, visitor.user.email, visitor.password)
     await expect(page).toHaveURL(new RegExp(`${escapeRegExp(ridePath(team.slug, ride.slug))}$`))
-    await expect(page.getByRole('heading', { level: 2, name: ride.name })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: ride.name })).toBeVisible()
   })
 
   // Regression (ef9e2c3b): the notice's « Se connecter » passes `state.from`.
@@ -1294,7 +1294,7 @@ test.describe('back to the page after signing in', () => {
     const { team, trip, visitor } = await publicContent('voyage')
     await page.goto(tripPath(team.slug, trip.slug))
     const main = page.getByRole('main')
-    await expect(main.getByRole('heading', { level: 2, name: trip.name })).toBeVisible()
+    await expect(main.getByRole('heading', { level: 1, name: trip.name })).toBeVisible()
     await expect(
       main.getByText('Connectez-vous et rejoignez cette équipe pour participer aux voyages.')
     ).toBeVisible()

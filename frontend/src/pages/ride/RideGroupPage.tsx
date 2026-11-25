@@ -11,7 +11,7 @@ import { QueryStateBoundary } from '@/components/common/QueryStateBoundary'
 import { DetailPageSkeleton } from '@/components/common/DetailPageSkeleton'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
-import { ShareButton } from '@/components/common/ShareButton'
+import { ContentActionsMenu } from '@/components/moderation/ContentActionsMenu'
 import { ChildDetailShell } from '@/components/publication/ChildDetailShell'
 import { GpsMenuButton } from '@/components/route/GpsMenuButton'
 import { PlacesLine } from '@/components/publication/PlacesLine'
@@ -25,6 +25,7 @@ import { RouteMapPanel } from '@/components/route/RouteMapPanel'
 import { GroupStats } from '@/components/ride/group/GroupStats'
 import { GroupWeatherSection } from '@/components/weather'
 import { hasForecast } from '@/components/weather/weatherDisplay'
+import { ReportTargetType } from '@/api/dto'
 import { paths } from '@/config/paths'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { useAuth } from '@/hooks/useAuth'
@@ -175,47 +176,56 @@ export function RideGroupPage() {
       siblingLabel={t('rides.group.selector')}
       title={title}
       badges={
-        <>
-          {/* « Complet » is the disabled button of the actions, not a second badge (R6). */}
-          {group.registered && (
-            <Badge color="primary" variant="light">
-              {t('rides.detail.groups.joined')}
-            </Badge>
-          )}
-          {/* Beside the title, not with the join actions: signed out there are none, and the
-              button sat alone on its own line. */}
-          <ShareButton title={title} />
-        </>
+        // « Complet » is the disabled button of the actions, not a second badge (R6).
+        group.registered ? (
+          <Badge color="primary" variant="light">
+            {t('rides.detail.groups.joined')}
+          </Badge>
+        ) : undefined
       }
-      actions={
-        <>
-          <GroupJoinActions
-            action={action}
-            group={group}
-            membership={membership}
-            canSwitch={canSwitchTo(ride, group)}
+      primary={
+        <GroupJoinActions
+          action={action}
+          group={group}
+          membership={membership}
+          canSwitch={canSwitchTo(ride, group)}
+        />
+      }
+      // « GPS » after joining, before editing (docs/LEDGER_*.md WEB-203, WEB-165)
+      gps={
+        routeSlug ? (
+          <GpsMenuButton
+            teamSlug={team.slug}
+            routeSlug={routeSlug}
+            route={route}
+            statuses={group.gpsSyncStatuses}
+            size="sm"
           />
-          {/* « GPS » after joining, before editing (docs/LEDGER_*.md WEB-203, WEB-165) */}
-          {routeSlug && (
-            <GpsMenuButton
-              teamSlug={team.slug}
-              routeSlug={routeSlug}
-              route={route}
-              statuses={group.gpsSyncStatuses}
-              size="sm"
-            />
-          )}
-          {canEdit && (
-            <Button
-              component={PrefetchLink}
-              to={paths.rideEdit(team.slug, ride.slug)}
-              variant="outline"
-              leftSection={<IconPencil size={16} />}
-            >
-              {t('rides.edit.title')}
-            </Button>
-          )}
-        </>
+        ) : undefined
+      }
+      edit={
+        canEdit ? (
+          <Button
+            component={PrefetchLink}
+            to={paths.rideEdit(team.slug, ride.slug)}
+            variant="outline"
+            leftSection={<IconPencil size={16} />}
+          >
+            {t('rides.edit.title')}
+          </Button>
+        ) : undefined
+      }
+      shareTitle={title}
+      // The ⋯ of a group reports its ride: a group has no ReportTargetType of its own (D3,
+      // docs/LEDGER_*.md WEB-206).
+      more={
+        <ContentActionsMenu
+          teamSlug={team.slug}
+          teamName={team.name}
+          targetType={ReportTargetType.RIDE}
+          targetId={ride.id}
+          onReported={() => navigate(paths.team(team.slug))}
+        />
       }
       departure={
         <Stack gap="sm">
