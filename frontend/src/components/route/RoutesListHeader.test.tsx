@@ -10,7 +10,7 @@ vi.mock('react-i18next', () => ({
 }))
 const upload = vi.hoisted(() => ({ open: vi.fn() }))
 vi.mock('./useGpxUpload', () => ({
-  useGpxUpload: () => ({ input: null, open: upload.open, progress: null, error: null }),
+  useGpxUpload: () => ({ open: upload.open, progress: null }),
 }))
 
 import { RoutesListHeader } from './RoutesListHeader'
@@ -52,32 +52,37 @@ describe('RoutesListHeader create button', () => {
     upload.open.mockReset()
   })
 
-  it('an organizer gets « Créer un parcours ▾ »: the form, the GPX import, the generator', async () => {
+  it('with the planner: draw on the map, then the GPX import and the generator', async () => {
     renderHeader(team())
-    expect(screen.getByRole('link', { name: 'list.create.route' }).getAttribute('href')).toBe(
-      paths.routeNew('club')
-    )
+    const draw = screen.getByRole('link', { name: 'routes.create.form.sourceModePlanner' })
+    expect(draw.getAttribute('href')).toBe(paths.routeNew('club'))
     await openMenu()
     fireEvent.click(item('route-import')!)
     expect(upload.open).toHaveBeenCalled()
-    // The generator (WEB-179).
     expect(item('route-generate')?.getAttribute('href')).toBe(paths.routeGenerate('club'))
   })
 
   it('nothing for a member', () => {
     renderHeader(team({ role: 'MEMBER' }))
-    expect(screen.queryByRole('link', { name: 'list.create.route' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'routes.upload.button' })).toBeNull()
   })
 
-  it('no generator when the team has no planner', async () => {
+  it('without the planner: the GPX import alone, as a plain button', () => {
     renderHeader(team({ enableRoutePlanner: false }))
-    await openMenu()
-    expect(item('route-generate')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'routes.upload.button' }))
+    expect(upload.open).toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'aria.createOther' })).toBeNull()
   })
 
-  it('the generator is disabled, with no link, when the quota is spent', async () => {
+  it('a spent quota closes drawing and the generator: the import leads', async () => {
     renderHeader(team({ plannerQuota: { limit: 20, used: 20, resetsOn: '2026-12-01' } }))
-    await openMenu()
+    fireEvent.click(screen.getByRole('button', { name: 'routes.upload.button' }))
+    expect(upload.open).toHaveBeenCalled()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'aria.createOther' })).toBeTruthy()
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'aria.createOther' }))
+    await waitFor(() => expect(item('route-generate')).not.toBeNull())
     const generate = item('route-generate')!
     expect(generate.hasAttribute('disabled') || generate.getAttribute('data-disabled')).toBeTruthy()
     expect(generate.getAttribute('href')).toBeNull()

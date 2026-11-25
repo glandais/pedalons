@@ -17,12 +17,18 @@ import { useCreateRouteFormData } from './routeFormData'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { teamAccess } from '@/lib/teamAccess'
 import { readGeneratedHandoff } from '@/lib/routeGenerator'
+import { readDrawHandoff, readGpxFileHandoff } from '@/lib/routeHandoff'
 
 export function CreateRoutePage() {
   const { teamSlug } = useParams<{ teamSlug: string }>()
   const navigate = useNavigate()
   // A route proposed by the generator page (ledger WEB-179); ignored when malformed
-  const generated = readGeneratedHandoff(useLocation().state)
+  const location = useLocation()
+  const generated = readGeneratedHandoff(location.state)
+  // « Importer des GPX » with one file, « Tracer sur la carte »: the menus' entries (useGpxUpload,
+  // useRouteCreateActions)
+  const gpxFile = readGpxFileHandoff(location.state)
+  const draw = readDrawHandoff(location.state)
   const { t } = useTranslation()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
   const queryClient = useQueryClient()
@@ -102,6 +108,8 @@ export function CreateRoutePage() {
         initialValues={initialValues}
         isCreateMode={true}
         initialGenerated={generated}
+        initialGpxFile={gpxFile}
+        initialDraw={draw}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         isPending={createRouteMutation.isPending}

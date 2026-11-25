@@ -15,6 +15,8 @@ export interface CreateAction {
   color: BadgeFamily
   /** Where the action leads — or, for an action that opens no page (a file picker), `onClick`. */
   to?: string
+  /** The location state the link carries (the route form's « Tracer sur la carte »). */
+  state?: unknown
   onClick?: () => void
   /** A second line under the label. */
   description?: string
@@ -52,7 +54,7 @@ export function CreateSplitButton({
         {primary.label}
       </Button>
     ) : (
-      <Button {...primaryProps} component={PrefetchLink} to={primary.to}>
+      <Button {...primaryProps} component={PrefetchLink} to={primary.to} state={primary.state}>
         {primary.label}
       </Button>
     )
@@ -128,6 +130,7 @@ function CreateMenuItem({ action }: { action: CreateAction }) {
     <Menu.Item
       component={PrefetchLink}
       to={action.to}
+      state={action.state}
       data-testid={`create-${action.key}`}
       leftSection={icon}
     >

@@ -98,6 +98,8 @@ interface RouteEditorProps {
    * file source with it, and replaces the track only on save.
    */
   initialGpxFile?: File
+  /** « Tracer sur la carte »: a creation opens on the planner rather than on the file field. */
+  initialDraw?: boolean
   /** What the saved track's surface suggests (WEB-100 C1c): offered next to the field, never applied by itself. */
   suggestedSurfaceType?: SurfaceType | null
   /**
@@ -134,6 +136,7 @@ export function RouteEditor({
   onPlannerFullscreenChange,
   initialGenerated,
   initialGpxFile,
+  initialDraw = false,
 }: RouteEditorProps) {
   const { t } = useTranslation()
   const { distance } = useUnits()
@@ -176,7 +179,9 @@ export function RouteEditor({
     setImportRequest((current) => (current?.seq === seq ? undefined : current))
   }, [])
   const [sourceMode, setSourceMode] = useState<RouteSourceMode>(
-    canUsePlanner && !initialGpxFile && (!isCreateMode || importRequest) ? 'planner' : 'gpx'
+    canUsePlanner && !initialGpxFile && (!isCreateMode || importRequest || initialDraw)
+      ? 'planner'
+      : 'gpx'
   )
   const [generatorOpen, setGeneratorOpen] = useState(false)
   // The host dialog's Escape waits while the generator's dialog is open, as for the planner's

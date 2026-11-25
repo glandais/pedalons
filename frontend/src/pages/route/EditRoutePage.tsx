@@ -17,11 +17,7 @@ import { useEditRouteFormData } from './routeFormData'
 import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels'
 import { useRouteUsagesRefusal } from '@/components/visibility/useVisibilityAlignment'
 import { readGeneratedHandoff } from '@/lib/routeGenerator'
-
-function readGpxFileHandoff(state: unknown): File | undefined {
-  const file = (state as { gpxFile?: unknown } | null | undefined)?.gpxFile
-  return typeof File !== 'undefined' && file instanceof File ? file : undefined
-}
+import { readGpxFileHandoff } from '@/lib/routeHandoff'
 
 export function EditRoutePage() {
   const { teamSlug, routeSlug } = useParams<{ teamSlug: string; routeSlug: string }>()

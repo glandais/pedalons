@@ -157,7 +157,7 @@ describe('QuickActions', () => {
     const menu = await screen.findByRole('menu', { hidden: true })
     // Same actions and sections as the team page: trip, route, post, each under its title.
     expect(menu.textContent).toContain('list.create.trip')
-    expect(menu.textContent).toContain('list.create.route')
+    expect(menu.textContent).toContain('routes.upload.button')
     expect(menu.textContent).toContain('list.create.post')
     expect(menu.textContent).toContain('teams.detail.tabs.posts')
   })

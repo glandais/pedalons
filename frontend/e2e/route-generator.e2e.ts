@@ -112,7 +112,7 @@ test('the organizer reaches the generator from the routes list, and the real ans
   const watched = toasts(page)
 
   await page.goto(`/equipes/${team.slug}/parcours`)
-  // Behind the chevron of « Créer un parcours ▾ »
+  // Behind the chevron of « Tracer sur la carte ▾ »
   const more = page.getByRole('main').getByRole('button', { name: 'Créer autre chose' })
   await hydrated(more)
   await more.click()
@@ -315,11 +315,11 @@ test('a member sees no button and is sent back to the list; a team without the p
   await signIn(ownerContext, plainOwner)
   await ownerPage.goto(`/equipes/${plain.slug}/parcours`)
   await expect(ownerPage.getByRole('heading', { name: 'Parcours', level: 2 })).toBeVisible()
-  const more = ownerPage.getByRole('main').getByRole('button', { name: 'Créer autre chose' })
-  await hydrated(more)
-  await more.click()
-  await expect(ownerPage.getByRole('menuitem', { name: /Importer des GPX/ })).toBeVisible()
-  await expect(ownerPage.getByRole('menuitem', { name: /Générer un parcours/ })).toHaveCount(0)
+  // Without the planner, « Importer des GPX » alone: neither drawing nor the generator
+  await expect(
+    ownerPage.getByRole('main').getByRole('button', { name: 'Importer des GPX' })
+  ).toBeVisible()
+  await expect(ownerPage.getByRole('button', { name: 'Créer autre chose' })).toHaveCount(0)
   await ownerPage.goto(`/equipes/${plain.slug}/parcours/${route.slug}/modifier`)
   await expect(
     ownerPage.getByRole('main').getByLabel('Ne pas utiliser pour générer des parcours')

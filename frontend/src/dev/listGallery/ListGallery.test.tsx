@@ -131,7 +131,7 @@ const CONTENT: Record<string, string> = {
   'agenda-repos': 'Traversée du Morvan',
   'agenda-sections': 'Tour du lac du Drennec',
   'agenda-plus-tot': '402 sorties et voyages',
-  'parcours-carte': 'Créer un parcours',
+  'parcours-carte': 'Importer des GPX',
   'agenda-vide-filtre': 'Aucun voyage pour ces filtres',
   'publications-vide-filtre': 'Rien ne correspond à : « monts ».',
   'calendrier-repos': 'Sortie récupération',

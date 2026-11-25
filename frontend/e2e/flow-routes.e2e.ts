@@ -756,7 +756,7 @@ test.describe('what a route shows to whom', () => {
     const list = await openRouteList(page, team.slug)
     await expect(routeCard(list, name)).toBeVisible()
     await pageHydrated(page)
-    await expect(list.getByRole('link', { name: 'Créer un parcours' })).toHaveCount(0)
+    await expect(list.getByRole('link', { name: 'Tracer sur la carte' })).toHaveCount(0)
     await expect(list.getByRole('button', { name: 'Créer autre chose' })).toHaveCount(0)
     await expect(list.locator('input[type="file"]')).toHaveCount(0)
 
@@ -770,8 +770,8 @@ test.describe('what a route shows to whom', () => {
       ).toHaveAttribute('href', `${routePath(team.slug, route.slug)}/modifier`)
       await expect(actionsMenu(organizerPage)).toBeVisible()
       const organizerList = await openRouteList(organizerPage, team.slug)
-      await expect(organizerList.getByRole('link', { name: 'Créer un parcours' })).toBeVisible()
-      // « Importer des GPX » sits behind the chevron of « Créer un parcours ▾ ».
+      await expect(organizerList.getByRole('link', { name: 'Tracer sur la carte' })).toBeVisible()
+      // « Importer des GPX » sits behind the chevron of « Tracer sur la carte ▾ ».
       const more = organizerList.getByRole('button', { name: 'Créer autre chose' })
       await hydrated(more)
       await more.click()
@@ -947,7 +947,7 @@ test.describe('GPX files in the route forms', () => {
     await signIn(context, owner)
     const main = await openRouteList(page, team.slug)
     await expect(main.getByRole('heading', { name: 'Aucun parcours' })).toBeVisible()
-    // « Importer des GPX », behind the chevron of « Créer un parcours ▾ », opens the browser's file
+    // « Importer des GPX », behind the chevron of « Tracer sur la carte ▾ », opens the browser's file
     // picker, which accepts several files.
     const more = main.getByRole('button', { name: 'Créer autre chose' }).first()
     await hydrated(more)
@@ -959,8 +959,9 @@ test.describe('GPX files in the route forms', () => {
     await picker.setFiles([files.north, files.empty, files.south])
 
     // The empty file's failure is reported; the two others are in the list, named after their tracks.
-    await expect(main.getByText('Erreur lors du chargement', { exact: true })).toBeVisible()
-    await expect(main.getByText(/Import en cours/)).toHaveCount(0)
+    await expect(
+      page.getByText('2 parcours importés. Fichiers refusés : fichier-vide.gpx', { exact: true })
+    ).toBeVisible()
     await expect(routeCard(main, 'Boucle nord')).toBeVisible()
     await expect(routeCard(main, 'Boucle sud')).toBeVisible()
     await expect(main.getByText('2 parcours', { exact: true })).toBeVisible()

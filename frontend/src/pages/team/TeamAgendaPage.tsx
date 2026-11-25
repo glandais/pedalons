@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Box, Button, Group, MultiSelect, SimpleGrid, Stack, Title } from '@mantine/core'
-import { IconBike, IconCalendarEvent, IconRoute, IconTags } from '@tabler/icons-react'
+import { IconBike, IconCalendarEvent, IconLuggage, IconTags } from '@tabler/icons-react'
 import { CreateSplitButton, type CreateAction } from '@/components/common/CreateSplitButton'
 import { PUBLICATION_TYPE_COLORS } from '@/lib/badgeColors.generated'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
@@ -97,7 +97,7 @@ export function TeamAgendaPage() {
             key: 'trip',
             to: paths.tripNew(teamData.slug),
             label: t('list.create.trip'),
-            icon: IconRoute,
+            icon: IconLuggage,
             color: PUBLICATION_TYPE_COLORS.TRIP,
           },
         ]

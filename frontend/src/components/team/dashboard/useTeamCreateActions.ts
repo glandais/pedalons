@@ -1,11 +1,20 @@
 import { useTranslation } from 'react-i18next'
-import { IconBike, IconMapPlus, IconPencilPlus, IconRoute, IconWand } from '@tabler/icons-react'
+import {
+  IconArticle,
+  IconBike,
+  IconFileUpload,
+  IconLuggage,
+  IconMap,
+  IconSparkles,
+} from '@tabler/icons-react'
 import type { CreateAction } from '@/components/common/CreateSplitButton'
 import { PUBLICATION_TYPE_COLORS } from '@/lib/badgeColors.generated'
 import { isPlannerQuotaSpent } from '@/lib/plannerQuota'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import type { TeamDetailDto } from '@/api/dto'
 import { paths } from '@/config/paths'
+import type { RouteEditorHandoff } from '@/lib/routeHandoff'
+import { useGpxUpload } from '@/components/route/useGpxUpload'
 
 /**
  * What an organizer creates in a team, in the menu's order: the agenda's (ride, trip), the routes'
@@ -33,7 +42,7 @@ export function useTeamCreateActions(team: TeamDetailDto): CreateAction[] {
     actions.push({
       key: 'trip',
       label: t('list.create.trip'),
-      icon: IconRoute,
+      icon: IconLuggage,
       color: PUBLICATION_TYPE_COLORS.TRIP,
       to: paths.tripNew(team.slug),
       group: agenda,
@@ -44,7 +53,7 @@ export function useTeamCreateActions(team: TeamDetailDto): CreateAction[] {
     actions.push({
       key: 'post',
       label: t('list.create.post'),
-      icon: IconPencilPlus,
+      icon: IconArticle,
       color: PUBLICATION_TYPE_COLORS.POST,
       to: paths.postNew(team.slug),
       group: t('teams.detail.tabs.posts'),
@@ -55,39 +64,59 @@ export function useTeamCreateActions(team: TeamDetailDto): CreateAction[] {
 }
 
 /**
- * A team's route creations: the form (import a GPX or draw on the map) and, when the team has the
- * planner, the generator — the dashboard's « Parcours » section and the routes list's button
- * (`RoutesListHeader`, which adds the import of several GPX) alike.
+ * A team's route creations, in the app's order (`routeCreateActions`): draw on the map (with the
+ * planner), import GPX files (`useGpxUpload`: one file opens the form, several become routes), and
+ * generate (with the planner). The dashboard's « Parcours » section, the member home's button and
+ * the routes list's alike; same labels, icons and colour (indigo) as the app.
  */
 export function useRouteCreateActions(team: TeamDetailDto): CreateAction[] {
   const { t } = useTranslation()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
+  const upload = useGpxUpload(team)
   if (!team.enableRoutes) return []
-  // An SPA link like the other actions: the full page load came from the switch to Mantine with no
-  // reason (docs/LEDGER_*.md WEB-206, D8).
-  const actions: CreateAction[] = [
-    {
+  // The planner and the generator keep their result through a planner save: a spent quota closes
+  // both, with the reason (BILL-10).
+  const quotaSpent = isPlannerQuotaSpent(team.plannerQuota, isPlatformAdmin)
+    ? t('routeGenerator.quotaSpent')
+    : undefined
+  const draw: RouteEditorHandoff = { draw: true }
+  const actions: CreateAction[] = []
+  if (team.enableRoutePlanner) {
+    // An SPA link like the other actions: the full page load came from the switch to Mantine with
+    // no reason (docs/LEDGER_*.md WEB-206, D8).
+    actions.push({
       key: 'route',
-      label: t('list.create.route'),
-      icon: IconMapPlus,
+      label: t('routes.create.form.sourceModePlanner'),
+      icon: IconMap,
       color: 'indigo',
       to: paths.routeNew(team.slug),
-      description: team.enableRoutePlanner ? t('teams.dashboard.create.routeHint') : undefined,
-    },
-  ]
-  // The generator needs the planner (PlannerAccess.check). Its only way to keep a result is a
-  // planner save, so a spent quota disables it, with the reason (BILL-10).
+      state: draw,
+      disabledReason: quotaSpent,
+    })
+  }
+  actions.push({
+    key: 'route-import',
+    label: t('routes.upload.button'),
+    icon: IconFileUpload,
+    color: 'indigo',
+    onClick: upload.open,
+    description: t('routes.upload.hint'),
+    disabledReason: upload.progress
+      ? t('routes.upload.progress', {
+          current: upload.progress.current,
+          total: upload.progress.total,
+        })
+      : undefined,
+  })
   if (team.enableRoutePlanner) {
     actions.push({
       key: 'route-generate',
       label: t('routeGenerator.title'),
-      icon: IconWand,
+      icon: IconSparkles,
       color: 'indigo',
       to: paths.routeGenerate(team.slug),
       description: t('routeGenerator.subtitle'),
-      disabledReason: isPlannerQuotaSpent(team.plannerQuota, isPlatformAdmin)
-        ? t('routeGenerator.quotaSpent')
-        : undefined,
+      disabledReason: quotaSpent,
     })
   }
   return actions
