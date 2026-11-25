@@ -663,16 +663,16 @@ describe('a refusal leads to « À propos de l’équipe » (RL11)', () => {
 })
 
 describe('the routes map heads its list like the list does (RL13)', () => {
-  it('« Importer GPX » and « Créer un parcours » for an organizer', () => {
+  it('« Créer un parcours ▾ » for an organizer', () => {
     renderAt(<RoutesMapPage />)
     expect(screen.getByRole('link', { name: 'Créer un parcours' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: /Importer/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Créer autre chose' })).toBeTruthy()
   })
 
   it('neither for a plain member', () => {
     state.team = query({ data: { ...TEAM, role: 'MEMBER' } })
     renderAt(<RoutesMapPage />)
     expect(screen.queryByRole('link', { name: 'Créer un parcours' })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Importer/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Créer autre chose' })).toBeNull()
   })
 })

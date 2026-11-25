@@ -79,7 +79,7 @@ export function TeamAgendaPage() {
   }
 
   const canCreate = teamAccess(teamData, isPlatformAdmin).isOrganizer
-  const createItems: CreateAction[] = [
+  const createItems: (CreateAction & { to: string })[] = [
     ...(teamData.enableRides && teamData.enableRoutes
       ? [
           {

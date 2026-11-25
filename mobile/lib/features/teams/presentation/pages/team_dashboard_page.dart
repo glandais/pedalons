@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/adaptive/content_width_constraint.dart';
+import '../../../../core/lists/create_split_button.dart';
 import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/enum_colors.dart';
@@ -15,6 +16,7 @@ import '../../../../core/theme/pdl_typography.dart';
 import '../../../../core/utils/api_error_handler.dart';
 import '../../../../keys.dart';
 import '../../../rides/presentation/ride_editor_location.dart';
+import '../../../routes/presentation/route_create_actions.dart';
 import '../../providers/team_dashboard_provider.dart';
 import '../widgets/dashboard/dashboard_admin.dart';
 import '../widgets/dashboard/dashboard_first_steps.dart';
@@ -209,9 +211,9 @@ class _Summary extends StatelessWidget {
   Widget build(BuildContext context) {
     final PdlColors c = context.pdl;
     final String? role = this.role;
-    final List<_CreateAction> actions = organizer
+    final List<CreateAction> actions = organizer
         ? _createActions(team)
-        : const <_CreateAction>[];
+        : const <CreateAction>[];
 
     return Padding(
       key: keys.teamDashboard.summary,
@@ -240,7 +242,11 @@ class _Summary extends StatelessWidget {
           ),
           if (actions.isNotEmpty) ...<Widget>[
             const SizedBox(height: PdlSpacing.chipGap),
-            _CreateSplitButton(actions: actions),
+            CreateSplitButton(
+              actions: actions,
+              primaryKey: keys.teamDashboard.createPrimaryButton,
+              menuKey: keys.teamDashboard.createMenuButton,
+            ),
           ],
         ],
       ),
@@ -248,39 +254,17 @@ class _Summary extends StatelessWidget {
   }
 }
 
-/// Une création proposée par le tableau de bord.
-class _CreateAction {
-  const _CreateAction({
-    required this.key,
-    required this.label,
-    required this.icon,
-    required this.location,
-    this.subtitle,
-    this.group,
-  });
-
-  final Key key;
-  final String label;
-  final IconData icon;
-  final String location;
-  final String? subtitle;
-
-  /// La section de la feuille ; des actions consécutives du même groupe
-  /// partagent son titre.
-  final String? group;
-}
-
 /// Ce qu'un organisateur peut créer d'ici, dans l'ordre de la feuille :
 /// l'agenda (sortie, voyage), les parcours, puis les publications — chacun
 /// seulement quand l'équipe a le module. Comme le site
 /// (`DashboardHeaderActions`), générateur de parcours compris quand l'équipe a
 /// le planificateur (ledger `MOB-154`).
-List<_CreateAction> _createActions(TeamDetailDto team) {
+List<CreateAction> _createActions(TeamDetailDto team) {
   final String agenda = 'teams.tabs.agenda'.tr();
-  return <_CreateAction>[
+  return <CreateAction>[
     // Une sortie se crée sur un parcours, il faut donc les deux modules.
     if (team.enableRides && team.enableRoutes)
-      _CreateAction(
+      CreateAction(
         key: keys.teamDashboard.createRideButton,
         label: 'teams.dashboard.createRide'.tr(),
         icon: PdlIcons.ride,
@@ -289,36 +273,21 @@ List<_CreateAction> _createActions(TeamDetailDto team) {
       ),
     // Un voyage aussi (ledger `MOB-162`).
     if (team.enableTrips && team.enableRoutes)
-      _CreateAction(
+      CreateAction(
         key: keys.teamDashboard.createTripButton,
         label: 'teams.dashboard.createTrip'.tr(),
         icon: PdlIcons.trip,
         location: Paths.tripNew(team.slug),
         group: agenda,
       ),
-    if (team.enableRoutes)
-      _CreateAction(
-        key: keys.teamDashboard.createRouteButton,
-        label: 'lists.createLabel.route'.tr(),
-        icon: PdlIcons.route,
-        location: Paths.routeNew(team.slug),
-        // Tracer sur la carte passe par le planificateur (ledger `MOB-170`).
-        subtitle: team.enableRoutePlanner
-            ? 'teams.dashboard.create.routeHint'.tr()
-            : null,
-        group: 'teams.tabs.routes'.tr(),
-      ),
-    if (team.enableRoutes && team.enableRoutePlanner)
-      _CreateAction(
-        key: keys.teamDashboard.createGeneratedRouteButton,
-        label: 'routeGenerator.title'.tr(),
-        icon: PdlIcons.generate,
-        location: Paths.routeGenerate(team.slug),
-        subtitle: 'routeGenerator.subtitle'.tr(),
-        group: 'teams.tabs.routes'.tr(),
-      ),
+    for (final CreateAction action in routeCreateActions(
+      team,
+      createKey: keys.teamDashboard.createRouteButton,
+      generateKey: keys.teamDashboard.createGeneratedRouteButton,
+    ))
+      action.withGroup('teams.tabs.routes'.tr()),
     if (team.enablePosts)
-      _CreateAction(
+      CreateAction(
         key: keys.teamDashboard.newPostButton,
         label: 'teams.dashboard.newPost'.tr(),
         icon: PdlIcons.post,
@@ -326,84 +295,4 @@ List<_CreateAction> _createActions(TeamDetailDto team) {
         group: 'teams.tabs.posts'.tr(),
       ),
   ];
-}
-
-/// « Créer une sortie ▾ », comme l'agenda du site : la première action en
-/// bouton, toutes derrière le chevron, dans une feuille. Une seule action :
-/// le bouton seul.
-class _CreateSplitButton extends StatelessWidget {
-  const _CreateSplitButton({required this.actions});
-
-  final List<_CreateAction> actions;
-
-  @override
-  Widget build(BuildContext context) {
-    final _CreateAction primary = actions.first;
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: PdlButton(
-            key: keys.teamDashboard.createPrimaryButton,
-            label: primary.label,
-            icon: PdlIcons.add,
-            fullWidth: true,
-            onPressed: () => context.push(primary.location),
-          ),
-        ),
-        if (actions.length > 1) ...<Widget>[
-          const SizedBox(width: PdlSpacing.chipGap),
-          Semantics(
-            label: 'teams.dashboard.create.other'.tr(),
-            child: PdlButton(
-              key: keys.teamDashboard.createMenuButton,
-              label: '',
-              icon: PdlIcons.chevronDown,
-              onPressed: () => _openSheet(context),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Future<void> _openSheet(BuildContext context) async {
-    final String? location = await PdlSheet.show<String>(
-      context: context,
-      builder: (BuildContext sheetContext) {
-        final PdlTypography t = sheetContext.pdlText;
-        final List<Widget> rows = <Widget>[];
-        for (int i = 0; i < actions.length; i++) {
-          final _CreateAction action = actions[i];
-          final String? group = action.group;
-          if (group != null && (i == 0 || actions[i - 1].group != group)) {
-            rows.add(
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: Text(group, style: t.sub),
-              ),
-            );
-          }
-          rows.add(
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: PdlSettingRow(
-                key: action.key,
-                title: action.label,
-                subtitle: action.subtitle,
-                icon: action.icon,
-                showDivider:
-                    i < actions.length - 1 && actions[i + 1].group == group,
-                onTap: () => Navigator.of(sheetContext).pop(action.location),
-              ),
-            ),
-          );
-        }
-        return PdlSheet(
-          title: 'teams.dashboard.create.title'.tr(),
-          children: rows,
-        );
-      },
-    );
-    if (location != null && context.mounted) context.push(location);
-  }
 }

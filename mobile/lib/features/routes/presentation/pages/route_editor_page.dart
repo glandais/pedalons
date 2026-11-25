@@ -67,21 +67,22 @@ import 'route_planner_screen.dart';
 /// Quelqu'un d'autre arrivé ici par un lien lit un refus plutôt qu'un
 /// formulaire qui finirait en 403.
 ///
-/// [replaceGpx] (modification) fait ouvrir le sélecteur de fichier dès que
-/// l'écran s'affiche — « Remplacer le fichier GPX » du menu de la fiche ;
+/// [pickGpx] fait ouvrir le sélecteur de fichier dès que l'écran s'affiche —
+/// « Remplacer le fichier GPX » du menu de la fiche en modification,
+/// « Importer un GPX » du bouton « Créer » de la liste à la création ;
 /// rien ne part sans « Enregistrer ».
 class RouteEditorPage extends ConsumerStatefulWidget {
   const RouteEditorPage({
     super.key,
     required this.teamSlug,
     this.routeSlug,
-    this.replaceGpx = false,
+    this.pickGpx = false,
     this.generated,
   });
 
   final String teamSlug;
   final String? routeSlug;
-  final bool replaceGpx;
+  final bool pickGpx;
 
   /// Une proposition du générateur ou d'une retouche : le planificateur
   /// s'ouvre aussitôt dessus. À la création (docs/LEDGER_*.md MOB-154), le
@@ -97,7 +98,7 @@ class RouteEditorPage extends ConsumerStatefulWidget {
 class _RouteEditorPageState extends ConsumerState<RouteEditorPage> {
   String get teamSlug => widget.teamSlug;
   String? get routeSlug => widget.routeSlug;
-  bool get replaceGpx => widget.replaceGpx;
+  bool get pickGpx => widget.pickGpx;
   bool get _isEdit => routeSlug != null;
 
   @override
@@ -222,7 +223,7 @@ class _RouteEditorPageState extends ConsumerState<RouteEditorPage> {
       key: ValueKey<String>(route?.id ?? 'new-$teamSlug'),
       team: teamValue,
       route: route,
-      replaceGpx: replaceGpx,
+      pickGpx: pickGpx,
       generated: route == null || isSingleTrack(route)
           ? widget.generated
           : null,
@@ -236,14 +237,14 @@ class _RouteEditorForm extends ConsumerStatefulWidget {
     super.key,
     required this.team,
     required this.route,
-    required this.replaceGpx,
+    required this.pickGpx,
     required this.title,
     this.generated,
   });
 
   final TeamDetailDto team;
   final RouteDetailDto? route;
-  final bool replaceGpx;
+  final bool pickGpx;
   final GeneratedHandoff? generated;
   final String title;
 
@@ -334,7 +335,7 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
         if (mounted) _openPlanner();
       });
     }
-    if (route != null && widget.replaceGpx) {
+    if (widget.pickGpx) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _pickGpx();
       });

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
+import '../../../../core/lists/create_split_button.dart';
 import '../../../../core/lists/list_scope.dart';
 import '../../../../core/lists/list_states.dart';
 import '../../../../core/lists/list_toolbar.dart';
@@ -24,6 +25,7 @@ import '../../providers/route_count_provider.dart';
 import '../../providers/route_editor_providers.dart';
 import '../../providers/route_list_provider.dart';
 import '../../providers/route_tags_provider.dart';
+import '../route_create_actions.dart';
 import '../widgets/compact_route_row.dart';
 import '../widgets/route_card.dart';
 import '../widgets/route_filter_sheet.dart';
@@ -152,16 +154,6 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
         // Les outils GPX, sur l'onglet Explorer seulement : ils ne relèvent
         // d'aucune équipe (docs/LEDGER_*.md MOB-178).
         actions: <Widget>[
-          // Le générateur (docs/LEDGER_*.md MOB-154) : la règle du site, qui
-          // peut créer un parcours dans une équipe au planificateur ouvert.
-          if (_canGenerate)
-            PdlAppBarAction(
-              key: keys.routeGenerator.entryButton,
-              icon: PdlIcons.generate,
-              semanticLabel: 'routeGenerator.title'.tr(),
-              onPressed: () =>
-                  context.push(Paths.routeGenerate(widget.teamSlug!)),
-            ),
           if (widget.teamSlug == null)
             PdlAppBarAction(
               key: keys.gpxTools.entryButton,
@@ -184,23 +176,30 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
     return ref.watch(canManageRoutesProvider(teamSlug)) ?? false;
   }
 
-  bool get _canGenerate {
-    final String? teamSlug = widget.teamSlug;
-    if (teamSlug == null || !_canAdd) return false;
-    return ref.watch(teamDetailProvider(teamSlug)).value?.enableRoutePlanner ??
-        false;
-  }
-
   void _openNew() => context.push(Paths.routeNew(widget.teamSlug!));
 
-  /// Le bouton court de la barre (règle RL13) ; le lecteur d'écran lit
+  /// « Créer ▾ », court dans la barre (règle RL13) : le formulaire en
+  /// bouton, puis l'import d'un GPX et le générateur derrière le chevron —
+  /// le bouton du site (`RoutesListHeader`). Le lecteur d'écran lit
   /// « Créer un parcours ».
   Widget? _createButton() {
     if (!_canAdd) return null;
-    return ListCreateButton(
-      key: keys.routes.createButton,
-      semanticLabel: 'lists.createLabel.route'.tr(),
-      onPressed: _openNew,
+    final TeamDetailDto? team = ref
+        .watch(teamDetailProvider(widget.teamSlug!))
+        .value;
+    if (team == null) return null;
+    final List<CreateAction> actions = routeCreateActions(
+      team,
+      createKey: keys.routes.createRouteRow,
+      importKey: keys.routes.importGpxRow,
+      generateKey: keys.routes.generateRow,
+    );
+    if (actions.isEmpty) return null;
+    return CreateSplitButton(
+      actions: actions,
+      primaryKey: keys.routes.createButton,
+      menuKey: keys.routes.createMenuButton,
+      compact: true,
     );
   }
 

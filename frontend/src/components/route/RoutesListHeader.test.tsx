@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { MantineProvider } from '@mantine/core'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -8,7 +8,10 @@ import type { TeamDetailDto } from '@/api/dto'
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'fr' } }),
 }))
-vi.mock('./UploadGpxFiles', () => ({ UploadGpxFiles: () => <div /> }))
+const upload = vi.hoisted(() => ({ open: vi.fn() }))
+vi.mock('./useGpxUpload', () => ({
+  useGpxUpload: () => ({ input: null, open: upload.open, progress: null, error: null }),
+}))
 
 import { RoutesListHeader } from './RoutesListHeader'
 import { paths } from '@/config/paths'
@@ -35,33 +38,48 @@ function renderHeader(t: TeamDetailDto) {
   )
 }
 
-const button = () => screen.queryByTestId('route-generate-button')
+const item = (key: string) => screen.queryByTestId(`create-${key}`)
 
-describe('RoutesListHeader generator button (WEB-179)', () => {
+async function openMenu() {
+  fireEvent.click(screen.getByRole('button', { name: 'aria.createOther' }))
+  await waitFor(() => expect(item('route-import')).not.toBeNull())
+}
+
+describe('RoutesListHeader create button', () => {
   afterEach(() => {
     cleanup()
     useAuthStore.setState({ user: null })
+    upload.open.mockReset()
   })
 
-  it('links an organizer of a team with the planner to the generator page', () => {
+  it('an organizer gets « Créer un parcours ▾ »: the form, the GPX import, the generator', async () => {
     renderHeader(team())
-    expect(button()?.getAttribute('href')).toBe(paths.routeGenerate('club'))
-    expect(button()?.textContent).toBe('routeGenerator.title')
+    expect(screen.getByRole('link', { name: 'list.create.route' }).getAttribute('href')).toBe(
+      paths.routeNew('club')
+    )
+    await openMenu()
+    fireEvent.click(item('route-import')!)
+    expect(upload.open).toHaveBeenCalled()
+    // The generator (WEB-179).
+    expect(item('route-generate')?.getAttribute('href')).toBe(paths.routeGenerate('club'))
   })
 
-  it('is hidden for a member', () => {
+  it('nothing for a member', () => {
     renderHeader(team({ role: 'MEMBER' }))
-    expect(button()).toBeNull()
+    expect(screen.queryByRole('link', { name: 'list.create.route' })).toBeNull()
   })
 
-  it('is hidden when the team has no planner', () => {
+  it('no generator when the team has no planner', async () => {
     renderHeader(team({ enableRoutePlanner: false }))
-    expect(button()).toBeNull()
+    await openMenu()
+    expect(item('route-generate')).toBeNull()
   })
 
-  it('is disabled, with no link, when the quota is spent', () => {
+  it('the generator is disabled, with no link, when the quota is spent', async () => {
     renderHeader(team({ plannerQuota: { limit: 20, used: 20, resetsOn: '2026-12-01' } }))
-    expect((button() as HTMLButtonElement).disabled).toBe(true)
-    expect(button()?.getAttribute('href')).toBeNull()
+    await openMenu()
+    const generate = item('route-generate')!
+    expect(generate.hasAttribute('disabled') || generate.getAttribute('data-disabled')).toBeTruthy()
+    expect(generate.getAttribute('href')).toBeNull()
   })
 })

@@ -1420,6 +1420,9 @@
   },
   "routes": {
     "title": "Routes",
+    "create": {
+      "importGpx": "Import a GPX file"
+    },
     "distance": "Distance",
     "description": "Description",
     "share": "Share",

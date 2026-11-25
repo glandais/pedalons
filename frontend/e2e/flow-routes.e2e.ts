@@ -756,8 +756,8 @@ test.describe('what a route shows to whom', () => {
     const list = await openRouteList(page, team.slug)
     await expect(routeCard(list, name)).toBeVisible()
     await pageHydrated(page)
-    await expect(list.getByRole('button', { name: 'Importer GPX' })).toHaveCount(0)
     await expect(list.getByRole('link', { name: 'Créer un parcours' })).toHaveCount(0)
+    await expect(list.getByRole('button', { name: 'Créer autre chose' })).toHaveCount(0)
     await expect(list.locator('input[type="file"]')).toHaveCount(0)
 
     // The organizer, on the same pages: every one of them.
@@ -770,8 +770,12 @@ test.describe('what a route shows to whom', () => {
       ).toHaveAttribute('href', `${routePath(team.slug, route.slug)}/modifier`)
       await expect(actionsMenu(organizerPage)).toBeVisible()
       const organizerList = await openRouteList(organizerPage, team.slug)
-      await expect(organizerList.getByRole('button', { name: 'Importer GPX' })).toBeVisible()
       await expect(organizerList.getByRole('link', { name: 'Créer un parcours' })).toBeVisible()
+      // « Importer des GPX » sits behind the chevron of « Créer un parcours ▾ ».
+      const more = organizerList.getByRole('button', { name: 'Créer autre chose' })
+      await hydrated(more)
+      await more.click()
+      await expect(organizerPage.getByRole('menuitem', { name: /Importer des GPX/ })).toBeVisible()
     } finally {
       await organizerContext.close()
     }
@@ -943,19 +947,20 @@ test.describe('GPX files in the route forms', () => {
     await signIn(context, owner)
     const main = await openRouteList(page, team.slug)
     await expect(main.getByRole('heading', { name: 'Aucun parcours' })).toBeVisible()
-    const importButton = main.getByRole('button', { name: 'Importer GPX' })
-    await hydrated(importButton)
-    // The button opens the browser's file picker, which accepts several files.
+    // « Importer des GPX », behind the chevron of « Créer un parcours ▾ », opens the browser's file
+    // picker, which accepts several files.
+    const more = main.getByRole('button', { name: 'Créer autre chose' }).first()
+    await hydrated(more)
+    await more.click()
     const chooser = page.waitForEvent('filechooser')
-    await importButton.click()
+    await page.getByRole('menuitem', { name: /Importer des GPX/ }).click()
     const picker = await chooser
     expect(picker.isMultiple()).toBe(true)
     await picker.setFiles([files.north, files.empty, files.south])
 
     // The empty file's failure is reported; the two others are in the list, named after their tracks.
     await expect(main.getByText('Erreur lors du chargement', { exact: true })).toBeVisible()
-    await expect(importButton).toHaveText('Importer GPX')
-    await expect(importButton).toBeEnabled()
+    await expect(main.getByText(/Import en cours/)).toHaveCount(0)
     await expect(routeCard(main, 'Boucle nord')).toBeVisible()
     await expect(routeCard(main, 'Boucle sud')).toBeVisible()
     await expect(main.getByText('2 parcours', { exact: true })).toBeVisible()

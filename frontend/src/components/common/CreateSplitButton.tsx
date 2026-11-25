@@ -13,8 +13,9 @@ export interface CreateAction {
   icon: Icon
   /** The entity's family from the business colour code, for the item's icon. */
   color: BadgeFamily
-  /** Where the action leads. */
-  to: string
+  /** Where the action leads — or, for an action that opens no page (a file picker), `onClick`. */
+  to?: string
+  onClick?: () => void
   /** A second line under the label. */
   description?: string
   /** Set when the action exists but cannot be taken now: the item is disabled, with this reason. */
@@ -40,16 +41,21 @@ export function CreateSplitButton({
   const primary = actions.find((a) => !a.disabledReason)
   if (!primary) return null
 
-  const primaryButton = (
-    <Button
-      {...linkProps(primary)}
-      leftSection={<IconPlus size={16} />}
-      fullWidth={fullWidth}
-      style={fullWidth ? { flex: 1 } : undefined}
-    >
-      {primary.label}
-    </Button>
-  )
+  const primaryProps = {
+    leftSection: <IconPlus size={16} />,
+    fullWidth,
+    style: fullWidth ? { flex: 1 } : undefined,
+  }
+  const primaryButton =
+    primary.to === undefined ? (
+      <Button {...primaryProps} onClick={primary.onClick}>
+        {primary.label}
+      </Button>
+    ) : (
+      <Button {...primaryProps} component={PrefetchLink} to={primary.to}>
+        {primary.label}
+      </Button>
+    )
   if (actions.length === 1) return primaryButton
 
   return (
@@ -111,13 +117,21 @@ function CreateMenuItem({ action }: { action: CreateAction }) {
       </Menu.Item>
     )
   }
+  if (action.to === undefined) {
+    return (
+      <Menu.Item onClick={action.onClick} data-testid={`create-${action.key}`} leftSection={icon}>
+        {text}
+      </Menu.Item>
+    )
+  }
   return (
-    <Menu.Item {...linkProps(action)} data-testid={`create-${action.key}`} leftSection={icon}>
+    <Menu.Item
+      component={PrefetchLink}
+      to={action.to}
+      data-testid={`create-${action.key}`}
+      leftSection={icon}
+    >
       {text}
     </Menu.Item>
   )
-}
-
-function linkProps(action: CreateAction) {
-  return { component: PrefetchLink, to: action.to }
 }

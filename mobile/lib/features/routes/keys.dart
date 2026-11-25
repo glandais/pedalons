@@ -63,6 +63,14 @@ class RoutesKeys {
   /// « Créer » : créer un parcours, à droite de la recherche de l'équipe
   /// (ledger `MOB-79`, règle RL13).
   final createButton = const _RoutesKey('createButton');
+
+  /// Le chevron à côté de « Créer » : la feuille des créations de parcours.
+  final createMenuButton = const _RoutesKey('createMenuButton');
+
+  /// Les lignes de cette feuille.
+  final createRouteRow = const _RoutesKey('createRouteRow');
+  final importGpxRow = const _RoutesKey('importGpxRow');
+  final generateRow = const _RoutesKey('generateRow');
 }
 
 class _RouteDetailKey extends ValueKey<String> {

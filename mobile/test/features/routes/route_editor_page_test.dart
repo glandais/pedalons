@@ -255,7 +255,7 @@ void main() {
     String teamVisibility = 'PUBLIC',
     bool enableRoutes = true,
     String? routeSlug,
-    bool replaceGpx = false,
+    bool pickGpx = false,
     bool planner = false,
     PlannerQuotaDto? quota,
     _FakePlannerWeb? web,
@@ -291,7 +291,7 @@ void main() {
           builder: (BuildContext _, GoRouterState _) => RouteEditorPage(
             teamSlug: 'n-peloton',
             routeSlug: routeSlug,
-            replaceGpx: replaceGpx,
+            pickGpx: pickGpx,
             generated: generated,
           ),
         ),
@@ -847,7 +847,7 @@ void main() {
       expect(routes.updated.single.gpx, isNull);
     });
 
-    testWidgets('replaceGpx: true ouvre le sélecteur, une seule fois', (
+    testWidgets('pickGpx: true ouvre le sélecteur, une seule fois', (
       WidgetTester tester,
     ) async {
       final _FakePicker picker = _FakePicker(<GpxFile?>[
@@ -858,7 +858,7 @@ void main() {
         routes: _StubRoutes(),
         picker: picker,
         routeSlug: 'col-de-la-croix',
-        replaceGpx: true,
+        pickGpx: true,
       );
       await settle(tester);
 
@@ -868,6 +868,25 @@ void main() {
       expect(find.byKey(keys.routeEditor.trackWarning), findsOneWidget);
       expect(find.byKey(keys.routeEditor.saveButton), findsOneWidget);
     });
+
+    testWidgets(
+      'pickGpx: true à la création ouvre le sélecteur (« Importer un GPX »)',
+      (WidgetTester tester) async {
+        final _FakePicker picker = _FakePicker(<GpxFile?>[
+          write('nouveau.gpx', fixtureGpx()),
+        ]);
+        await open(
+          tester,
+          routes: _StubRoutes(),
+          picker: picker,
+          pickGpx: true,
+        );
+        await settle(tester);
+
+        expect(picker.calls, 1);
+        expect(find.text('nouveau.gpx'), findsOneWidget);
+      },
+    );
 
     testWidgets('un fichier refusé au remplacement garde le tracé actuel', (
       WidgetTester tester,

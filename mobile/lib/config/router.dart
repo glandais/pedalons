@@ -950,6 +950,10 @@ GoRoute _teamTree(String locale) {
         // MOB-154) ; un lien n'en porte pas, l'éditeur s'ouvre vide.
         builder: (context, state) => RouteEditorPage(
           teamSlug: state.pathParameters['teamSlug']!,
+          // « Importer un GPX » du bouton « Créer » de la liste.
+          pickGpx:
+              state.uri.queryParameters[kRouteEditGpxQuery] ==
+              kRouteNewGpxImport,
           generated: state.extra is GeneratedHandoff
               ? state.extra! as GeneratedHandoff
               : null,
@@ -1390,7 +1394,7 @@ GoRoute _routeEditRoute(String locale) {
     builder: (context, state) => RouteEditorPage(
       teamSlug: state.pathParameters['teamSlug']!,
       routeSlug: state.pathParameters['routeSlug']!,
-      replaceGpx:
+      pickGpx:
           state.uri.queryParameters[kRouteEditGpxQuery] == kRouteEditGpxReplace,
       // Une retouche choisie avec « Modifier » (docs/LEDGER_*.md MOB-185).
       generated: state.extra is GeneratedHandoff

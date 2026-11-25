@@ -112,9 +112,11 @@ test('the organizer reaches the generator from the routes list, and the real ans
   const watched = toasts(page)
 
   await page.goto(`/equipes/${team.slug}/parcours`)
-  const entry = page.getByRole('main').getByRole('link', { name: 'Générer un parcours' })
-  await hydrated(entry)
-  await entry.click()
+  // Behind the chevron of « Créer un parcours ▾ »
+  const more = page.getByRole('main').getByRole('button', { name: 'Créer autre chose' })
+  await hydrated(more)
+  await more.click()
+  await page.getByRole('menuitem', { name: /Générer un parcours/ }).click()
   await expect(page).toHaveURL(GENERATE_PATH(team.slug))
   await expect(page.getByRole('heading', { level: 2, name: 'Générer un parcours' })).toBeVisible()
 
@@ -298,7 +300,7 @@ test('a member sees no button and is sent back to the list; a team without the p
   await signIn(context, member)
   await page.goto(`/equipes/${team.slug}/parcours`)
   await expect(page.getByRole('heading', { name: 'Parcours', level: 2 })).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Générer un parcours' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Créer autre chose' })).toHaveCount(0)
   await page.goto(GENERATE_PATH(team.slug))
   await expect(page).toHaveURL(`/equipes/${team.slug}/parcours`)
 
@@ -313,7 +315,11 @@ test('a member sees no button and is sent back to the list; a team without the p
   await signIn(ownerContext, plainOwner)
   await ownerPage.goto(`/equipes/${plain.slug}/parcours`)
   await expect(ownerPage.getByRole('heading', { name: 'Parcours', level: 2 })).toBeVisible()
-  await expect(ownerPage.getByRole('link', { name: 'Générer un parcours' })).toHaveCount(0)
+  const more = ownerPage.getByRole('main').getByRole('button', { name: 'Créer autre chose' })
+  await hydrated(more)
+  await more.click()
+  await expect(ownerPage.getByRole('menuitem', { name: /Importer des GPX/ })).toBeVisible()
+  await expect(ownerPage.getByRole('menuitem', { name: /Générer un parcours/ })).toHaveCount(0)
   await ownerPage.goto(`/equipes/${plain.slug}/parcours/${route.slug}/modifier`)
   await expect(
     ownerPage.getByRole('main').getByLabel('Ne pas utiliser pour générer des parcours')
