@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../api/generated/export.dart';
 import '../../../../config/paths.dart';
 import '../../../../core/lists/list_states.dart';
+import '../../../../core/lists/list_toolbar.dart';
 import '../../../../core/material.dart';
 import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_colors.dart';
@@ -16,6 +17,7 @@ import '../../../auth/domain/auth_state.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../feed/presentation/widgets/publication_feed_view.dart';
 import '../../../feedback/presentation/report_problem_button.dart';
+import '../../../posts/providers/post_providers.dart';
 import '../../../routes/presentation/pages/routes_page.dart';
 import '../../providers/team_membership_controller.dart';
 import '../../providers/team_providers.dart';
@@ -221,6 +223,9 @@ class _TeamSectionScaffold extends ConsumerWidget {
       team,
       platformAdmin: platformAdmin,
     );
+    final bool canCreatePost =
+        section == TeamSectionKind.posts &&
+        (ref.watch(canManagePostsProvider(team.slug)) ?? false);
     final List<Widget> headerSlivers = <Widget>[
       TeamHeaderSliver(team: team, section: section),
       SliverToBoxAdapter(child: _MembershipBanner(team: team)),
@@ -272,8 +277,25 @@ class _TeamSectionScaffold extends ConsumerWidget {
           // Un compteur sur chaque liste paginée (règle RL8).
           countLabel: (int total) =>
               listCountLabel('home.publicationCount', total),
+          // « Créer » pour qui publie dans l'équipe (organisation, module
+          // publications), comme l'Agenda et les Parcours (règle RL13).
+          searchTrailing: canCreatePost
+              ? ListCreateButton(
+                  key: keys.teamPosts.createButton,
+                  semanticLabel: 'teams.dashboard.newPost'.tr(),
+                  onPressed: () => context.push(Paths.postNew(team.slug)),
+                )
+              : null,
           emptyMessage: 'teams.posts.empty'.tr(),
           emptyHint: 'teams.posts.emptyHint'.tr(),
+          emptyActions: <Widget>[
+            if (canCreatePost)
+              ListEmptyCreateButton(
+                key: keys.teamPosts.emptyCreateButton,
+                label: 'teams.dashboard.newPost'.tr(),
+                onPressed: () => context.push(Paths.postNew(team.slug)),
+              ),
+          ],
         ),
       ),
       TeamSectionKind.about => _TeamChrome(

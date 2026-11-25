@@ -18,6 +18,7 @@ import 'package:pedalons/features/calendar/presentation/pages/calendar_page.dart
 import 'package:pedalons/features/calendar/providers/calendar_month_provider.dart';
 import 'package:pedalons/features/feed/presentation/widgets/publication_feed_view.dart';
 import 'package:pedalons/features/feed/providers/publication_feed_provider.dart';
+import 'package:pedalons/features/posts/providers/post_providers.dart';
 import 'package:pedalons/features/rides/providers/ride_editor_providers.dart';
 import 'package:pedalons/features/trips/providers/trip_editor_providers.dart';
 import 'package:pedalons/features/tags/providers/team_tags_provider.dart';
@@ -27,6 +28,8 @@ import 'package:pedalons/features/teams/presentation/widgets/publication_card.da
 import 'package:pedalons/features/teams/presentation/widgets/team_sections.dart';
 import 'package:pedalons/features/teams/providers/team_providers.dart';
 import 'package:pedalons/keys.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/localization.dart';
 import 'team_fixtures.dart';
@@ -839,6 +842,74 @@ void main() {
       expect(find.byType(PublicationFeedView), findsOneWidget);
 
       await tearDownFeed(tester);
+    });
+  });
+
+  group('onglet Publications', () {
+    Future<void> pumpPosts(
+      WidgetTester tester, {
+      required bool canCreate,
+    }) async {
+      final TeamDetailDto team = fixtureTeam(slug: 'velo-club', role: 'ADMIN');
+      tester.view.physicalSize = const Size(1000, 2000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            unitSystemProvider.overrideWithValue(UnitSystem.metric),
+            teamDetailProvider.overrideWith((ref, slug) async => team),
+            teamTagsProvider.overrideWith(
+              (ref, key) async => const <TagWithUsageDto>[],
+            ),
+            publicationFeedProvider.overrideWith(
+              (ref, key) => _EmptyFeedNotifier(key),
+            ),
+            publicationFeedCountProvider.overrideWith((ref, key) async => 0),
+            myTeamsProvider.overrideWith(
+              (ref) async => const <TeamDetailDto>[],
+            ),
+            canManagePostsProvider.overrideWith((ref, slug) => canCreate),
+          ],
+          child: MaterialApp(
+            theme: PedalonsTheme.build(Brightness.light),
+            home: const TeamHomePage(
+              teamSlug: 'velo-club',
+              section: TeamSectionKind.posts,
+            ),
+          ),
+        ),
+      );
+      for (int i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+    }
+
+    testWidgets('« Créer » pour qui publie, nom complet pour le lecteur '
+        "d'écran et dans le vide simple", (WidgetTester tester) async {
+      await pumpPosts(tester, canCreate: true);
+
+      expect(find.byKey(keys.teamPosts.createButton), findsOneWidget);
+      expect(find.bySemanticsLabel('Créer une publication'), findsWidgets);
+      expect(find.byKey(keys.teamPosts.emptyCreateButton), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 1));
+    });
+
+    testWidgets('rien pour une personne qui ne publie pas', (
+      WidgetTester tester,
+    ) async {
+      await pumpPosts(tester, canCreate: false);
+
+      expect(find.byKey(keys.teamPosts.createButton), findsNothing);
+      expect(find.byKey(keys.teamPosts.emptyCreateButton), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 1));
     });
   });
 }

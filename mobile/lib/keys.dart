@@ -40,6 +40,7 @@ class Keys {
   final team = TeamPageKeys();
   final teamDashboard = TeamDashboardKeys();
   final teamAgenda = TeamAgendaKeys();
+  final teamPosts = TeamPostsKeys();
   final teamAdmin = TeamAdminKeys();
   final teamAdminMembers = TeamAdminMembersKeys();
   final teamPlaces = TeamPlacesKeys();

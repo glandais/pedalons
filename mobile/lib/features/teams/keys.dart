@@ -239,6 +239,19 @@ class TeamDashboardKeys {
       _TeamDashboardKey('myUpcomingGps_$slug');
 }
 
+class _TeamPostsKey extends ValueKey<String> {
+  const _TeamPostsKey(String value) : super('teamPosts_$value');
+}
+
+/// L'onglet Publications d'une équipe.
+class TeamPostsKeys {
+  /// « Créer » dans la barre (règle RL13).
+  final createButton = const _TeamPostsKey('create');
+
+  /// « Créer une publication » dans l'état vide simple.
+  final emptyCreateButton = const _TeamPostsKey('emptyCreate');
+}
+
 class _TeamAgendaKey extends ValueKey<String> {
   const _TeamAgendaKey(String value) : super('teamAgenda_$value');
 }
