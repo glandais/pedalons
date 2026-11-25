@@ -135,7 +135,12 @@ test('a team admin creates a route by uploading a GPX; its page shows its stats,
 
   const main = page.getByRole('main')
   await expect(main.getByRole('heading', { level: 1, name: 'Créer un parcours' })).toBeVisible()
-  await main.getByRole('button', { name: 'Importer un fichier GPX' }).click()
+  // The form's source choice, by its text: the planner's toolbar carries an icon-only button of the
+  // same name.
+  await main
+    .getByRole('button', { name: 'Importer un fichier GPX' })
+    .filter({ hasText: 'Importer un fichier GPX' })
+    .click()
   const submit = main.getByRole('button', { name: 'Créer le parcours' })
   await hydrated(submit)
   // No file yet: nothing to create.

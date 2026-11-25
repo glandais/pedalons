@@ -166,6 +166,10 @@ for (const target of TARGETS) {
       const matcher = isPath(apiPath)
       await page.route(matcher, fail500)
       await startOnHome(page)
+      // The home's create button reads its team for the planner quota (docs/LEDGER_*.md WEB-217):
+      // once, no retry cycle — a hint, with the listing as its fallback.
+      if (target.kind === 'team') await expect.poll(reads).toBe(1)
+      const homeReads = reads()
 
       await clientNavigate(page, target.path(setup.teamSlug, entity.slug))
 
@@ -180,7 +184,7 @@ for (const target of TARGETS) {
       await expect(page.getByRole('heading', { level: 1 })).toHaveText([ERROR_TITLE])
       // Retried: a 5xx is worth another try, unlike a 404 — one cycle, the loader's: 1 + 3 retries
       // (see « requested once » below for the breadcrumb that used to run a second one).
-      expect(reads()).toBe(4)
+      expect(reads() - homeReads).toBe(4)
 
       // The backend is back: « Réessayer » reads the entity again, and the page shows it.
       await page.unroute(matcher)

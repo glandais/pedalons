@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query'
+import { QueryClient, type Query } from '@tanstack/react-query'
 import Axios from 'axios'
 import { ApiClientError } from './apiError'
 
@@ -59,15 +59,25 @@ export function makeQueryClient(opts?: { isServer?: boolean }): QueryClient {
   // With retryOnMount off, a failed query would stay failed for the whole gcTime: a page visited
   // again ten minutes later would show a stale error without asking. Forgotten as soon as nothing
   // displays it, the next visit reads afresh.
+  // Only once the commit is over: the page left and the page entered swap in one commit, and the
+  // error the new page shows may be one the old page also observed (the home's create button reads
+  // the team the loader just failed, docs/LEDGER_*.md WEB-217). Removed in between, the new page
+  // mounted on a fresh query and ran the whole retry cycle again (e2e/error-states.e2e.ts).
   if (!opts?.isServer) {
-    queryClient.getQueryCache().subscribe((event) => {
-      const { query } = event
+    const cache = queryClient.getQueryCache()
+    const forgetIfUnobserved = (query: Query) => {
       if (
-        event.type === 'observerRemoved' &&
         query.state.status === 'error' &&
-        query.getObserversCount() === 0
+        query.getObserversCount() === 0 &&
+        cache.get(query.queryHash) === query
       ) {
-        queryClient.getQueryCache().remove(query)
+        cache.remove(query)
+      }
+    }
+    cache.subscribe((event) => {
+      const { query } = event
+      if (event.type === 'observerRemoved' && query.getObserversCount() === 0) {
+        setTimeout(() => forgetIfUnobserved(query), 0)
       }
     })
   }

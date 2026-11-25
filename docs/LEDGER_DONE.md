@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **633 entrées livrées**, et des 23 entrées encore ouvertes dont une part l'est.
+Index des **634 entrées livrées**, et des 23 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -164,6 +164,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## WEB — Site web
 
+- [x] [`WEB-218`](ledger/WEB/WEB-218.md) Une erreur observée par la page quittée n'est plus relue par la page d'erreur — 2026-11-25
 - [x] [`WEB-217`](ledger/WEB/WEB-217.md) Quota de tracés grisé à l'accueil aussi — 2026-11-25
 - [x] [`WEB-216`](ledger/WEB/WEB-216.md) Import de plusieurs GPX : un import à la fois, raisons des refus, la liste seulement si l'on est resté — 2026-11-25
 - [x] [`WEB-215`](ledger/WEB/WEB-215.md) Vocabulaire des flux de parcours, site et app — 2026-11-25

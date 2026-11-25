@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+import { act, render, screen } from '@testing-library/react'
 import { renderToString } from 'react-dom/server'
 import { QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { makeQueryClient } from './queryClient'
@@ -51,5 +52,64 @@ describe('a server query nothing observes yet', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+/**
+ * The client forgets a failed query nothing displays, so that a later visit reads it again — but not
+ * between the page that leaves and the page that enters: they swap in one commit, and the entering
+ * page would mount on a fresh query and run the whole retry cycle again (docs/LEDGER_*.md WEB-217,
+ * e2e/error-states.e2e.ts).
+ */
+describe('a failed client query', () => {
+  const key = ['team', 'down']
+  const failing = vi.fn(() => Promise.reject(new Error('500')))
+
+  function Reader({ label }: { label: string }) {
+    const { status } = useQuery({ queryKey: key, queryFn: failing, retry: false })
+    return <span>{`${label} ${status}`}</span>
+  }
+
+  async function failedClient() {
+    failing.mockClear()
+    const queryClient = makeQueryClient()
+    await queryClient.prefetchQuery({ queryKey: key, queryFn: failing, retry: false })
+    expect(failing).toHaveBeenCalledTimes(1)
+    return queryClient
+  }
+
+  it('survives the swap of the page that observed it for the page that shows it', async () => {
+    const queryClient = await failedClient()
+    const view = render(
+      <QueryClientProvider client={queryClient}>
+        <Reader label="leaving" />
+      </QueryClientProvider>
+    )
+    expect(await screen.findByText('leaving error')).toBeInTheDocument()
+
+    view.rerender(
+      <QueryClientProvider client={queryClient}>
+        <Reader key="entering" label="entering" />
+      </QueryClientProvider>
+    )
+    await act(() => new Promise((resolve) => setTimeout(resolve, 10)))
+
+    expect(screen.getByText('entering error')).toBeInTheDocument()
+    expect(failing).toHaveBeenCalledTimes(1)
+  })
+
+  it('is forgotten once nothing shows it', async () => {
+    const queryClient = await failedClient()
+    const view = render(
+      <QueryClientProvider client={queryClient}>
+        <Reader label="only" />
+      </QueryClientProvider>
+    )
+    expect(await screen.findByText('only error')).toBeInTheDocument()
+
+    view.unmount()
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    expect(queryClient.getQueryState(key)).toBeUndefined()
   })
 })

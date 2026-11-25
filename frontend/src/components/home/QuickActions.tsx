@@ -59,7 +59,8 @@ export function QuickActions({ teams }: QuickActionsProps) {
 
 function TeamCreateButton({ team }: { team: TeamDetailDto }) {
   const { data: detail } = useGetTeam(team.slug, {
-    query: { enabled: team.enableRoutes, meta: { [CLIENT_ONLY_QUERY]: true } },
+    // A hint with the listing as its fallback: one read, no retry cycle on a 5xx.
+    query: { enabled: team.enableRoutes, retry: false, meta: { [CLIENT_ONLY_QUERY]: true } },
   })
   const actions = useTeamCreateActions(detail ?? team)
   return <CreateSplitButton actions={actions} />
