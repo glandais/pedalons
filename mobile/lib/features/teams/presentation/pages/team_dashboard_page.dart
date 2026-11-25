@@ -271,7 +271,7 @@ class _CreateAction {
 }
 
 /// Ce qu'un organisateur peut créer d'ici, dans l'ordre de la feuille :
-/// l'agenda (sortie, voyage), les parcours, puis une publication — chacun
+/// l'agenda (sortie, voyage), les parcours, puis les publications — chacun
 /// seulement quand l'équipe a le module. Comme le site
 /// (`DashboardHeaderActions`), générateur de parcours compris quand l'équipe a
 /// le planificateur (ledger `MOB-154`).
@@ -323,6 +323,7 @@ List<_CreateAction> _createActions(TeamDetailDto team) {
         label: 'teams.dashboard.newPost'.tr(),
         icon: PdlIcons.post,
         location: Paths.postNew(team.slug),
+        group: 'teams.tabs.posts'.tr(),
       ),
   ];
 }
@@ -379,15 +380,6 @@ class _CreateSplitButton extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                 child: Text(group, style: t.sub),
-              ),
-            );
-          } else if (group == null && i > 0 && actions[i - 1].group != null) {
-            // Hors section après une section (la publication) : un filet,
-            // comme le menu du site.
-            rows.add(
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: Divider(height: 1, color: sheetContext.pdl.borderSubtle),
               ),
             );
           }

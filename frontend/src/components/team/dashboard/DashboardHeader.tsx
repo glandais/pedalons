@@ -34,7 +34,7 @@ export function DashboardHeaderMeta({ team, role }: { team: TeamDetailDto; role?
 /**
  * The dashboard's create button in the team header, shaped like the agenda's: « Créer une sortie »
  * with every other creation behind the chevron — the agenda's (ride, trip), the routes' (create,
- * generate) and a publication — each only when the team has that module. Subscribing to the
+ * generate) and the publications' — each only when the team has that module. Subscribing to the
  * calendar is not one of them: it lives on the agenda and on a trip. Below `sm` it spans its own
  * row under the header (TeamLayout), as in the app.
  */
@@ -104,6 +104,7 @@ export function DashboardHeaderActions({ team, role }: { team: TeamDetailDto; ro
       icon: IconPencilPlus,
       color: PUBLICATION_TYPE_COLORS.POST,
       to: paths.postNew(team.slug),
+      group: t('teams.detail.tabs.posts'),
     })
   }
 
