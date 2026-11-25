@@ -11,6 +11,8 @@ ROUTES
 • An elevation profile coloured by gradient or by surface, and the climbs along the way.
 • The route's points on the map and the profile: regroups, food stops, water, cafés, summits, hazards…
 • Download as GPX or FIT, and send a route to your Hammerhead Karoo or Garmin bike computer — or have routes sent automatically, service by service.
+• For organizers: draw a route on the map, generate one from a start point and a distance, import GPX files, or retouch an existing route.
+• GPX tools: view, merge and share your own files, and send them to your bike computer.
 
 THE TEAM
 • Each team's dashboard: your next rides, the latest posts, new routes and ads.

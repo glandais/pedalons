@@ -11,6 +11,8 @@ LES PARCOURS
 • Le profil altimétrique coloré par pente ou par revêtement, et les cols et montées du tracé.
 • Les points du parcours sur la carte et le profil : regroupements, ravitaillements, points d'eau, cafés, sommets, passages délicats…
 • Téléchargement en GPX ou en FIT, et envoi du parcours vers votre compteur Hammerhead Karoo ou Garmin — ou envoi automatique, service par service.
+• Pour qui organise : tracer un parcours sur la carte, le générer à partir d'un départ et d'une distance, importer des GPX, ou retoucher un parcours existant.
+• Les outils GPX : visualiser, fusionner et partager vos propres fichiers, et les envoyer vers votre compteur.
 
 L'ÉQUIPE
 • Le tableau de bord de chaque équipe : vos prochaines sorties, les dernières publications, les nouveaux parcours et les annonces.
