@@ -39,6 +39,8 @@ abstract class RoutesClient {
   ///
   /// Get paginated list of routes from all accessible teams (user's teams + public teams).
   ///
+  /// [excludeDeleted] - Leave out the soft-deleted routes, which a team administrator otherwise sees in the team's list. Meant for a picker: a deleted route cannot be put on a ride or a trip stage. Omitted or false, the previous behaviour.
+  ///
   /// [hilliness] - Hilliness preset (FLAT, HILLY, MOUNTAINOUS).
   ///
   /// [maxDistance] - Maximum distance in meters.
@@ -76,8 +78,6 @@ abstract class RoutesClient {
   /// [windDirection] - Filter by wind direction.
   @GET('/api/routes')
   Future<RouteListResponse> listAllRoutes({
-    @Query('page') int? page = 0,
-    @Query('size') int? size = 20,
     @Query('hilliness') Hilliness? hilliness,
     @Query('maxDistance') double? maxDistance,
     @Query('maxElevationGain') double? maxElevationGain,
@@ -94,6 +94,9 @@ abstract class RoutesClient {
     @Query('surfaceType') SurfaceType? surfaceType,
     @Query('view') ListViewMode? view,
     @Query('windDirection') WindDirection? windDirection,
+    @Query('excludeDeleted') bool? excludeDeleted = false,
+    @Query('page') int? page = 0,
+    @Query('size') int? size = 20,
   });
 
   /// All routes bounding box.
@@ -252,6 +255,8 @@ abstract class RoutesClient {
   ///
   /// [teamSlug] - Team URL slug.
   ///
+  /// [excludeDeleted] - Leave out the soft-deleted routes, which a team administrator otherwise sees in the team's list. Meant for a picker: a deleted route cannot be put on a ride or a trip stage. Omitted or false, the previous behaviour.
+  ///
   /// [hilliness] - Hilliness preset (FLAT, HILLY, MOUNTAINOUS).
   ///
   /// [maxDistance] - Maximum distance in meters.
@@ -290,8 +295,6 @@ abstract class RoutesClient {
   @GET('/api/teams/{teamSlug}/routes')
   Future<RouteListResponse> listRoutes({
     @Path('teamSlug') required String teamSlug,
-    @Query('page') int? page = 0,
-    @Query('size') int? size = 20,
     @Query('hilliness') Hilliness? hilliness,
     @Query('maxDistance') double? maxDistance,
     @Query('maxElevationGain') double? maxElevationGain,
@@ -308,6 +311,9 @@ abstract class RoutesClient {
     @Query('tags') List<String>? tags,
     @Query('view') ListViewMode? view,
     @Query('windDirection') WindDirection? windDirection,
+    @Query('excludeDeleted') bool? excludeDeleted = false,
+    @Query('page') int? page = 0,
+    @Query('size') int? size = 20,
   });
 
   /// Create route.

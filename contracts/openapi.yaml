@@ -14791,6 +14791,15 @@ paths:
       tags:
       - Routes
       parameters:
+      - description: "Leave out the soft-deleted routes, which a team administrator\
+          \ otherwise sees in the team's list. Meant for a picker: a deleted route\
+          \ cannot be put on a ride or a trip stage. Omitted or false, the previous\
+          \ behaviour."
+        name: excludeDeleted
+        in: query
+        schema:
+          type: boolean
+          default: false
       - description: "Hilliness preset (FLAT, HILLY, MOUNTAINOUS)"
         name: hilliness
         in: query
@@ -19644,6 +19653,15 @@ paths:
         required: true
         schema:
           type: string
+      - description: "Leave out the soft-deleted routes, which a team administrator\
+          \ otherwise sees in the team's list. Meant for a picker: a deleted route\
+          \ cannot be put on a ride or a trip stage. Omitted or false, the previous\
+          \ behaviour."
+        name: excludeDeleted
+        in: query
+        schema:
+          type: boolean
+          default: false
       - description: "Hilliness preset (FLAT, HILLY, MOUNTAINOUS)"
         name: hilliness
         in: query
@@ -23174,7 +23192,7 @@ paths:
                 $ref: "#/components/schemas/VersionDto"
 info:
   title: Pedalons API
-  version: 16.6.0
+  version: 16.7.0
   description: API for Pedalons Cycling Team Management Platform
 servers:
 - url: /

@@ -46,8 +46,23 @@ public class RouteListParams extends RouteFilterParams {
   @QueryParam("view")
   public @Nullable ListViewMode view;
 
+  @Parameter(
+      description =
+          "Leave out the soft-deleted routes, which a team administrator otherwise sees in the"
+              + " team's list. Meant for a picker: a deleted route cannot be put on a ride or a"
+              + " trip stage. Omitted or false, the previous behaviour.")
+  @QueryParam("excludeDeleted")
+  @DefaultValue("false")
+  public boolean excludeDeleted;
+
   @Override
   public RouteSearchParams.RouteSearchParamsBuilder toBuilder() {
-    return super.toBuilder().page(page).size(size).sortBy(sortBy).sortDir(sortDir).view(view);
+    return super.toBuilder()
+        .page(page)
+        .size(size)
+        .sortBy(sortBy)
+        .sortDir(sortDir)
+        .view(view)
+        .excludeDeleted(excludeDeleted);
   }
 }
