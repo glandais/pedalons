@@ -1,16 +1,9 @@
-import type { ComponentType } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Group, Menu } from '@mantine/core'
-import {
-  IconChevronDown,
-  IconPencil,
-  IconPlus,
-  IconRoute,
-  type IconProps,
-} from '@tabler/icons-react'
+import { Group, Select } from '@mantine/core'
+import { useLocalStorage } from '@mantine/hooks'
 import type { TeamDetailDto } from '@/api/dto'
-import { PrefetchLink } from '@/components/common/PrefetchLink'
-import { paths } from '@/config/paths'
+import { CreateSplitButton } from '@/components/common/CreateSplitButton'
+import { useTeamCreateActions } from '@/components/team/dashboard/useTeamCreateActions'
 import { canOrganize } from './memberHomeHelpers'
 
 interface QuickActionsProps {
@@ -18,92 +11,49 @@ interface QuickActionsProps {
   teams: TeamDetailDto[] | undefined
 }
 
-interface Action {
-  key: string
-  label: string
-  icon: ComponentType<IconProps>
-  primary?: boolean
-  teams: TeamDetailDto[]
-  path: (teamSlug: string) => string
-}
+/** The last team picked, per browser: the next visit starts there. */
+const CREATE_TEAM_STORAGE_KEY = 'pedalons.home.createTeam'
 
 /**
- * The organizer's shortcuts on the member home: create a ride, add a route, write a post. Nothing
- * for a plain member. Each one targets the team's own creation form, and only the teams where the
- * module is on (a ride needs the routes module too, as on the team page); with several such teams,
- * the button opens a menu to pick one.
+ * The organizer's create button on the member home: the team's dashboard button (« Créer une
+ * sortie ▾ », same actions, same sections — `useTeamCreateActions`), preceded by a team picker when
+ * they organize several teams. Nothing for a plain member, nor for a team with no module to create
+ * in. A team listing carries no planner quota, so the generator is never disabled here: its own
+ * page tells a spent quota.
  */
 export function QuickActions({ teams }: QuickActionsProps) {
   const { t } = useTranslation()
-  const organized = (teams ?? []).filter(canOrganize)
+  // Read in an effect (the default): the server renders the first team, as the client's first pass.
+  const [storedSlug, setStoredSlug] = useLocalStorage<string | null>({
+    key: CREATE_TEAM_STORAGE_KEY,
+    defaultValue: null,
+  })
+  const organized = (teams ?? []).filter(
+    (team) => canOrganize(team) && (team.enableRoutes || team.enablePosts)
+  )
   if (organized.length === 0) return null
 
-  const actions: Action[] = [
-    {
-      key: 'ride',
-      label: t('list.create.ride'),
-      icon: IconPlus,
-      primary: true,
-      teams: organized.filter((team) => team.enableRides && team.enableRoutes),
-      path: paths.rideNew,
-    },
-    {
-      key: 'route',
-      label: t('list.create.route'),
-      icon: IconRoute,
-      teams: organized.filter((team) => team.enableRoutes),
-      path: paths.routeNew,
-    },
-    {
-      key: 'post',
-      label: t('list.create.post'),
-      icon: IconPencil,
-      teams: organized.filter((team) => team.enablePosts),
-      path: paths.postNew,
-    },
-  ].filter((action) => action.teams.length > 0)
-
-  if (actions.length === 0) return null
+  const selected = organized.find((team) => team.slug === storedSlug) ?? organized[0]
 
   return (
     <Group gap="xs" role="group" aria-label={t('home.actions.label')}>
-      {actions.map(({ key, label, icon: Icon, primary, teams: targets, path }) => {
-        const variant = primary ? 'filled' : 'default'
-        if (targets.length === 1) {
-          return (
-            <Button
-              key={key}
-              component={PrefetchLink}
-              to={path(targets[0].slug)}
-              variant={variant}
-              leftSection={<Icon size={16} />}
-            >
-              {label}
-            </Button>
-          )
-        }
-        return (
-          <Menu key={key} position="bottom-start" shadow="md">
-            <Menu.Target>
-              <Button
-                variant={variant}
-                leftSection={<Icon size={16} />}
-                rightSection={<IconChevronDown size={14} />}
-              >
-                {label}
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Label>{t('home.actions.pickTeam')}</Menu.Label>
-              {targets.map((team) => (
-                <Menu.Item key={team.id} component={PrefetchLink} to={path(team.slug)}>
-                  {team.name}
-                </Menu.Item>
-              ))}
-            </Menu.Dropdown>
-          </Menu>
-        )
-      })}
+      {organized.length > 1 && (
+        <Select
+          aria-label={t('home.actions.pickTeam')}
+          data={organized.map((team) => ({ value: team.slug, label: team.name }))}
+          value={selected.slug}
+          onChange={(slug) => slug && setStoredSlug(slug)}
+          allowDeselect={false}
+          comboboxProps={{ withinPortal: true }}
+          w={200}
+        />
+      )}
+      <TeamCreateButton team={selected} />
     </Group>
   )
+}
+
+function TeamCreateButton({ team }: { team: TeamDetailDto }) {
+  const actions = useTeamCreateActions(team)
+  return <CreateSplitButton actions={actions} />
 }

@@ -14,6 +14,8 @@ vi.mock('react-i18next', () => ({
       options?.count !== undefined ? `${key}:${options.count}` : key,
     i18n: { language: 'fr' },
   }),
+  // The dashboard's actions come along with the i18n setup, which registers this plugin.
+  initReactI18next: { type: '3rdParty', init: () => {} },
 }))
 
 const app = vi.hoisted(() => ({ singleTeam: false }))
@@ -143,25 +145,31 @@ describe('QuickActions', () => {
     expect(screen.queryByRole('group', { name: 'home.actions.label' })).toBeNull()
   })
 
-  it('an organizer of one team gets direct links to its forms', () => {
+  it("an organizer of one team gets its dashboard's button, without a picker", async () => {
     renderIn(
       <QuickActions teams={[team({ role: 'ORGANIZER' }), team({ id: 't2', role: 'MEMBER' })]} />
     )
+    expect(screen.queryByLabelText('home.actions.pickTeam', { selector: 'input' })).toBeNull()
     expect(screen.getByRole('link', { name: 'list.create.ride' }).getAttribute('href')).toMatch(
       /\/vc-craponne\//
     )
-    expect(screen.getByRole('link', { name: 'list.create.route' })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'list.create.post' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'aria.createOther' }))
+    const menu = await screen.findByRole('menu', { hidden: true })
+    // Same actions and sections as the team page: trip, route, post, each under its title.
+    expect(menu.textContent).toContain('list.create.trip')
+    expect(menu.textContent).toContain('list.create.route')
+    expect(menu.textContent).toContain('list.create.post')
+    expect(menu.textContent).toContain('teams.detail.tabs.posts')
   })
 
-  it('a module turned off drops its action; a ride needs the routes module too', () => {
+  it('a team without the routes nor the posts module offers nothing', () => {
     renderIn(
       <QuickActions teams={[team({ role: 'ADMIN', enableRoutes: false, enablePosts: false })]} />
     )
     expect(screen.queryByRole('group', { name: 'home.actions.label' })).toBeNull()
   })
 
-  it('with several teams, the action asks which one', async () => {
+  it('with several teams, a picker chooses the team the button creates in', async () => {
     renderIn(
       <QuickActions
         teams={[
@@ -170,11 +178,13 @@ describe('QuickActions', () => {
         ]}
       />
     )
-    fireEvent.click(screen.getByRole('button', { name: 'list.create.ride' }))
-    // The dropdown lives in a portal jsdom does not lay out: query it with `hidden`.
-    const menu = await screen.findByRole('menu', { hidden: true })
-    expect(menu.textContent).toContain('home.actions.pickTeam')
-    expect(menu.textContent).toContain('Rouleurs du Pilat')
+    const picker = screen.getByLabelText('home.actions.pickTeam', { selector: 'input' })
+    expect((picker as HTMLInputElement).value).toBe('VC Craponne')
+    fireEvent.click(picker)
+    fireEvent.click(await screen.findByRole('option', { name: 'Rouleurs du Pilat', hidden: true }))
+    expect(screen.getByRole('link', { name: 'list.create.ride' }).getAttribute('href')).toMatch(
+      /\/pilat\//
+    )
   })
 })
 
