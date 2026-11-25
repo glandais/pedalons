@@ -68,7 +68,7 @@ class RoutesKeys {
   final createMenuButton = const _RoutesKey('createMenuButton');
 
   /// Les lignes de cette feuille.
-  final createRouteRow = const _RoutesKey('createRouteRow');
+  final drawRow = const _RoutesKey('drawRow');
   final importGpxRow = const _RoutesKey('importGpxRow');
   final generateRow = const _RoutesKey('generateRow');
 }

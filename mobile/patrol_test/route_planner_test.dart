@@ -38,11 +38,10 @@ void main() {
       modules.routeEditor.enablePlannerTestCommands();
       await openAppSignedIn($, organizer);
       await openLink($, Paths.routes(teamSlug));
-      await modules.routeEditor.openAddFromTeamRoutes();
-      expect(modules.routeEditor.offersDraw, isTrue);
+      // « Créer » is « Tracer sur la carte »: the planner opens at once.
+      await modules.routeEditor.drawFromTeamRoutes();
 
       // Three control points: about 1.6 km east, then 2.2 km north.
-      await modules.routeEditor.drawOnMap();
       await modules.routeEditor.placeAndFinish(const [
         (5.00, 45.00),
         (5.02, 45.00),

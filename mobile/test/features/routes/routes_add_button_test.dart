@@ -58,7 +58,7 @@ void main() {
           path: '/equipes/:teamSlug/parcours/nouveau',
           builder: (BuildContext _, GoRouterState state) => Text(
             'nouveau ${state.pathParameters['teamSlug']} '
-            '${state.uri.queryParameters['gpx'] ?? '-'}',
+            '${state.uri.queryParameters['gpx'] ?? (state.uri.queryParameters.containsKey('tracer') ? 'tracer' : '-')}',
           ),
         ),
         GoRoute(
@@ -105,23 +105,22 @@ void main() {
     expect(find.byKey(keys.routes.createButton), findsOneWidget);
     // Le texte visible est court ; le lecteur d'écran lit le nom complet.
     expect(find.text('Créer'), findsOneWidget);
-    expect(find.bySemanticsLabel('Créer un parcours'), findsOneWidget);
+    expect(find.bySemanticsLabel('Tracer sur la carte'), findsOneWidget);
 
+    // Le bouton ouvre l'éditeur sur le planificateur, sans la page de choix.
     await tester.tap(find.byKey(keys.routes.createButton));
-    for (int i = 0; i < 6; i++) {
-      await tester.pump(const Duration(milliseconds: 50));
-    }
-    expect(find.text('nouveau n-peloton -'), findsOneWidget);
+    await settle(tester);
+    expect(find.text('nouveau n-peloton tracer'), findsOneWidget);
   });
 
   testWidgets(
-    'le chevron ouvre la feuille : formulaire, import d\'un GPX, générateur',
+    'le chevron ouvre la feuille : tracer, importer un GPX, générer',
     (WidgetTester tester) async {
       await open(tester, teamSlug: 'n-peloton', canManage: true);
 
       await tester.tap(find.byKey(keys.routes.createMenuButton));
       await settle(tester);
-      expect(find.byKey(keys.routes.createRouteRow), findsOneWidget);
+      expect(find.byKey(keys.routes.drawRow), findsOneWidget);
       expect(find.byKey(keys.routes.generateRow), findsOneWidget);
 
       await tester.tap(find.byKey(keys.routes.importGpxRow));
@@ -131,15 +130,16 @@ void main() {
     },
   );
 
-  testWidgets('sans planificateur, pas de générateur dans la feuille', (
+  testWidgets('sans planificateur : un seul bouton, qui importe un GPX', (
     WidgetTester tester,
   ) async {
     await open(tester, teamSlug: 'n-peloton', canManage: true, planner: false);
 
-    await tester.tap(find.byKey(keys.routes.createMenuButton));
+    expect(find.byKey(keys.routes.createMenuButton), findsNothing);
+    expect(find.bySemanticsLabel('Importer un GPX'), findsOneWidget);
+    await tester.tap(find.byKey(keys.routes.createButton));
     await settle(tester);
-    expect(find.byKey(keys.routes.importGpxRow), findsOneWidget);
-    expect(find.byKey(keys.routes.generateRow), findsNothing);
+    expect(find.text('nouveau n-peloton import'), findsOneWidget);
   });
 
   testWidgets('un simple membre ne voit rien', (WidgetTester tester) async {

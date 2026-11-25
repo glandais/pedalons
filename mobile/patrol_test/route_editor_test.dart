@@ -29,15 +29,13 @@ void main() {
 
       await openAppSignedIn($, organizer);
       await openLink($, Paths.routes(teamSlug));
-      // « Créer » attendu : openAddFromTeamRoutes patiente jusqu'à son apparition.
-      await modules.routeEditor.openAddFromTeamRoutes();
-
-      // A file that is no GPX is refused on the spot, with a way to choose another.
+      // A file that is no GPX is refused on the spot, with a way to choose
+      // another. « Importer un GPX » launches the picker at once.
       await modules.routeEditor.provideGpx(
         fileName: 'notes.txt',
         content: 'pas un gpx',
       );
-      await modules.routeEditor.pickGpx();
+      await modules.routeEditor.importFromTeamRoutes();
       expect(await modules.routeEditor.showsRefused(), isTrue);
 
       // A real GPX: the form opens, the name is the one of the file's track.

@@ -474,19 +474,17 @@ void main() {
       expect(find.text('Créer'), findsOneWidget);
       expect(find.byKey(keys.teamDashboard.createRideButton), findsOneWidget);
       expect(find.byKey(keys.teamDashboard.createTripButton), findsOneWidget);
-      expect(find.byKey(keys.teamDashboard.createRouteButton), findsOneWidget);
+      expect(find.byKey(keys.teamDashboard.drawRouteButton), findsOneWidget);
+      expect(find.byKey(keys.teamDashboard.importGpxButton), findsOneWidget);
       // Le générateur, avec le planificateur (docs/LEDGER_*.md MOB-154).
       expect(
         find.byKey(keys.teamDashboard.createGeneratedRouteButton),
         findsOneWidget,
       );
       expect(find.byKey(keys.teamDashboard.newPostButton), findsOneWidget);
-      expect(
-        find.text('Importer un GPX ou tracer sur la carte'),
-        findsOneWidget,
-      );
 
-      await tester.tap(find.byKey(keys.teamDashboard.createRouteButton));
+      // Une entrée par geste, sans la page de choix de l'éditeur.
+      await tester.tap(find.byKey(keys.teamDashboard.drawRouteButton));
       await settle(tester);
       expect(find.text('nouveau parcours ${d.team.slug}'), findsOneWidget);
     });

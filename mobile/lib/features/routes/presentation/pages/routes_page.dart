@@ -176,12 +176,19 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
     return ref.watch(canManageRoutesProvider(teamSlug)) ?? false;
   }
 
-  void _openNew() => context.push(Paths.routeNew(widget.teamSlug!));
+  /// L'état vide : la première création de l'équipe (tracer, sinon importer),
+  /// la page de choix de l'éditeur tant que l'équipe n'est pas lue.
+  void _openNew() {
+    final String slug = widget.teamSlug!;
+    final TeamDetailDto? team = ref.read(teamDetailProvider(slug)).value;
+    context.push(
+      team == null ? Paths.routeNew(slug) : firstRouteCreateLocation(team),
+    );
+  }
 
-  /// « Créer ▾ », court dans la barre (règle RL13) : le formulaire en
-  /// bouton, puis l'import d'un GPX et le générateur derrière le chevron —
-  /// le bouton du site (`RoutesListHeader`). Le lecteur d'écran lit
-  /// « Créer un parcours ».
+  /// « Créer ▾ », court dans la barre (règle RL13) : tracer sur la carte (ou,
+  /// sans planificateur, importer un GPX) en bouton, le reste derrière le
+  /// chevron. Le lecteur d'écran lit le nom complet de l'action.
   Widget? _createButton() {
     if (!_canAdd) return null;
     final TeamDetailDto? team = ref
@@ -190,7 +197,7 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
     if (team == null) return null;
     final List<CreateAction> actions = routeCreateActions(
       team,
-      createKey: keys.routes.createRouteRow,
+      drawKey: keys.routes.drawRow,
       importKey: keys.routes.importGpxRow,
       generateKey: keys.routes.generateRow,
     );

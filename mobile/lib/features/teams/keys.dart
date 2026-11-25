@@ -152,7 +152,10 @@ class TeamDashboardKeys {
   final createRideButton = const _TeamDashboardKey('createRideButton');
   final newPostButton = const _TeamDashboardKey('newPostButton');
   final createTripButton = const _TeamDashboardKey('createTripButton');
-  final createRouteButton = const _TeamDashboardKey('createRouteButton');
+
+  /// « Tracer sur la carte » et « Importer un GPX » dans la feuille « Créer ».
+  final drawRouteButton = const _TeamDashboardKey('drawRouteButton');
+  final importGpxButton = const _TeamDashboardKey('importGpxButton');
 
   /// « Générer un parcours » dans la feuille « Créer » (docs/LEDGER_*.md MOB-154).
   final createGeneratedRouteButton = const _TeamDashboardKey(

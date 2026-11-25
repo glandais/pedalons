@@ -7,37 +7,32 @@ import '../../../core/material.dart';
 import '../../../core/theme/pdl_icons.dart';
 import 'route_editor_location.dart';
 
-/// Les créations de parcours d'une équipe, dans l'ordre du site
-/// (`useRouteCreateActions`) : le formulaire (importer un GPX ou tracer sur
-/// la carte), puis, quand [importKey] est donné, l'import d'un GPX, et le
-/// générateur quand l'équipe a le planificateur (ledger `MOB-154`). La section
-/// Parcours du bouton « Créer » du tableau de bord, et le bouton « Créer » de
-/// la liste des parcours (qui ajoute l'import), comme sur le site.
+/// Les créations de parcours d'une équipe : tracer sur la carte (quand
+/// l'équipe a le planificateur, ledger `MOB-170`), importer un GPX, et
+/// générer (ledger `MOB-154`). Chaque entrée ouvre l'éditeur sur son geste,
+/// sans passer par sa page de choix. La section Parcours du bouton « Créer »
+/// du tableau de bord, et le bouton « Créer » de la liste des parcours.
 List<CreateAction> routeCreateActions(
   TeamDetailDto team, {
-  required Key createKey,
+  required Key importKey,
+  required Key drawKey,
   required Key generateKey,
-  Key? importKey,
 }) {
   if (!team.enableRoutes) return const <CreateAction>[];
   return <CreateAction>[
-    CreateAction(
-      key: createKey,
-      label: 'lists.createLabel.route'.tr(),
-      icon: PdlIcons.route,
-      location: Paths.routeNew(team.slug),
-      // Tracer sur la carte passe par le planificateur (ledger `MOB-170`).
-      subtitle: team.enableRoutePlanner
-          ? 'teams.dashboard.create.routeHint'.tr()
-          : null,
-    ),
-    if (importKey != null)
+    if (team.enableRoutePlanner)
       CreateAction(
-        key: importKey,
-        label: 'routes.create.importGpx'.tr(),
-        icon: PdlIcons.fileAdd,
-        location: routeNewLocation(team.slug, importGpx: true),
+        key: drawKey,
+        label: 'routes.editor.drawButton'.tr(),
+        icon: PdlIcons.route,
+        location: routeNewLocation(team.slug, start: RouteNewStart.draw),
       ),
+    CreateAction(
+      key: importKey,
+      label: 'routes.create.importGpx'.tr(),
+      icon: PdlIcons.fileAdd,
+      location: routeNewLocation(team.slug, start: RouteNewStart.importGpx),
+    ),
     if (team.enableRoutePlanner)
       CreateAction(
         key: generateKey,
@@ -48,3 +43,11 @@ List<CreateAction> routeCreateActions(
       ),
   ];
 }
+
+/// L'adresse de la première création de parcours de [team] : le tracé sur la
+/// carte, sinon l'import d'un GPX — pour les entrées qui n'en offrent qu'une
+/// (les premières étapes du tableau de bord, l'état vide de la liste).
+String firstRouteCreateLocation(TeamDetailDto team) => routeNewLocation(
+  team.slug,
+  start: team.enableRoutePlanner ? RouteNewStart.draw : RouteNewStart.importGpx,
+);

@@ -256,6 +256,7 @@ void main() {
     bool enableRoutes = true,
     String? routeSlug,
     bool pickGpx = false,
+    bool draw = false,
     bool planner = false,
     PlannerQuotaDto? quota,
     _FakePlannerWeb? web,
@@ -292,6 +293,7 @@ void main() {
             teamSlug: 'n-peloton',
             routeSlug: routeSlug,
             pickGpx: pickGpx,
+            draw: draw,
             generated: generated,
           ),
         ),
@@ -1276,6 +1278,23 @@ void main() {
       expect(teams.reads, greaterThan(readsBefore));
       expect(find.text('fiche nouveau-parcours'), findsOneWidget);
       expect(web.disposed, isTrue);
+    });
+
+    testWidgets('« Tracer sur la carte » du bouton « Créer » : le '
+        'planificateur s\'ouvre sans la page de choix', (
+      WidgetTester tester,
+    ) async {
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: _StubRoutes(),
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        web: web,
+        draw: true,
+      );
+      await pumps(tester);
+      expect(find.byKey(keys.routeEditor.plannerScreen), findsOneWidget);
     });
 
     testWidgets('une proposition du générateur (MOB-154) : le planificateur '

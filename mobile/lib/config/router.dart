@@ -954,6 +954,8 @@ GoRoute _teamTree(String locale) {
           pickGpx:
               state.uri.queryParameters[kRouteEditGpxQuery] ==
               kRouteNewGpxImport,
+          // « Tracer sur la carte » du bouton « Créer ».
+          draw: state.uri.queryParameters.containsKey(kRouteNewDrawQuery),
           generated: state.extra is GeneratedHandoff
               ? state.extra! as GeneratedHandoff
               : null,

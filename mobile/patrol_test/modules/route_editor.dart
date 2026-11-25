@@ -55,16 +55,23 @@ final class RouteEditor extends Module {
 
   bool get offersAdd => isShown(keys.routes.createButton);
 
-  /// The team's Parcours section → « Créer » → the first step of the creation.
-  Future<void> openAddFromTeamRoutes() async {
-    await $(keys.routes.createButton).waitUntilVisible();
-    await $(keys.routes.createButton).tap();
-    await $(keys.routeEditor.pickButton).waitUntilVisible();
+  /// The team's Parcours section → « Créer ▾ » → « Importer un GPX »: the
+  /// editor opens on the picker, which answers with the file [provideGpx]
+  /// made ready.
+  Future<void> importFromTeamRoutes() async {
+    await $(keys.routes.createMenuButton).waitUntilVisible();
+    await $(keys.routes.createMenuButton).tap();
+    await $(keys.routes.importGpxRow).waitUntilVisible();
+    await $(keys.routes.importGpxRow).tap();
   }
 
-  /// « Choisir un fichier GPX » (step 1).
-  Future<void> pickGpx() async {
-    await $(keys.routeEditor.pickButton).tap();
+  /// The team's Parcours section → « Créer » (« Tracer sur la carte » for a
+  /// team with the planner) → the fullscreen planner, loaded, with no choice
+  /// page in between.
+  Future<void> drawFromTeamRoutes() async {
+    await $(keys.routes.createButton).waitUntilVisible();
+    await $(keys.routes.createButton).tap();
+    await _plannerLoaded();
   }
 
   /// « Choisir un autre fichier » on the « Fichier refusé » banner.
@@ -96,14 +103,6 @@ final class RouteEditor extends Module {
 
   /// Makes the next planner opened accept the test command. Call before opening it.
   void enablePlannerTestCommands() => PlannerBridge.debugTestCommands = true;
-
-  bool get offersDraw => isShown(keys.routeEditor.drawButton);
-
-  /// « Tracer sur la carte » (step 1) → the fullscreen planner, loaded.
-  Future<void> drawOnMap() async {
-    await $(keys.routeEditor.drawButton).tap();
-    await _plannerLoaded();
-  }
 
   /// « Modifier le tracé » (the Tracé section of the form) → the fullscreen planner.
   Future<void> editTrack() async {

@@ -282,7 +282,8 @@ List<CreateAction> _createActions(TeamDetailDto team) {
       ),
     for (final CreateAction action in routeCreateActions(
       team,
-      createKey: keys.teamDashboard.createRouteButton,
+      drawKey: keys.teamDashboard.drawRouteButton,
+      importKey: keys.teamDashboard.importGpxButton,
       generateKey: keys.teamDashboard.createGeneratedRouteButton,
     ))
       action.withGroup('teams.tabs.routes'.tr()),

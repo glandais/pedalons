@@ -77,12 +77,17 @@ class RouteEditorPage extends ConsumerStatefulWidget {
     required this.teamSlug,
     this.routeSlug,
     this.pickGpx = false,
+    this.draw = false,
     this.generated,
   });
 
   final String teamSlug;
   final String? routeSlug;
   final bool pickGpx;
+
+  /// À la création, « Tracer sur la carte » : le planificateur s'ouvre dès que
+  /// l'écran s'affiche, sans passer par la page de choix.
+  final bool draw;
 
   /// Une proposition du générateur ou d'une retouche : le planificateur
   /// s'ouvre aussitôt dessus. À la création (docs/LEDGER_*.md MOB-154), le
@@ -224,6 +229,7 @@ class _RouteEditorPageState extends ConsumerState<RouteEditorPage> {
       team: teamValue,
       route: route,
       pickGpx: pickGpx,
+      draw: widget.draw && route == null,
       generated: route == null || isSingleTrack(route)
           ? widget.generated
           : null,
@@ -238,6 +244,7 @@ class _RouteEditorForm extends ConsumerStatefulWidget {
     required this.team,
     required this.route,
     required this.pickGpx,
+    required this.draw,
     required this.title,
     this.generated,
   });
@@ -245,6 +252,7 @@ class _RouteEditorForm extends ConsumerStatefulWidget {
   final TeamDetailDto team;
   final RouteDetailDto? route;
   final bool pickGpx;
+  final bool draw;
   final GeneratedHandoff? generated;
   final String title;
 
@@ -331,6 +339,20 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
         ),
       );
     if (generated != null && widget.team.enableRoutePlanner) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openPlanner();
+      });
+    }
+    // « Tracer sur la carte » : le planificateur tout de suite, sauf quota du
+    // mois épuisé — la page de choix dit alors pourquoi.
+    if (widget.draw &&
+        generated == null &&
+        widget.team.enableRoutePlanner &&
+        !isPlannerQuotaSpent(
+          widget.team.plannerQuota,
+          platformAdmin:
+              ref.read(authProvider).user?.platformRole == 'PLATFORM_ADMIN',
+        )) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _openPlanner();
       });
