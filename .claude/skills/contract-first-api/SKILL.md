@@ -76,12 +76,12 @@ cd frontend && pnpm check
 cd mobile && bash check.sh
 ```
 
-`check.sh` runs: `flutter pub get && dart run openapi_retrofit_generator && dart run build_runner build && ../format.sh mobile && flutter analyze && flutter test`.
+`check.sh` runs: `flutter pub get && dart run openapi_retrofit_generator && dart run build_runner build && ../format.sh mobile && flutter analyze && bash tool/test.sh`.
 
 - Regenerates `lib/api/generated/clients/` (Retrofit) and `lib/api/generated/models/` (Freezed) — a no-op after step 2 unless something changed in between
 - Formats the mobile module (`../format.sh mobile`)
 - `flutter analyze` verifies no Dart errors
-- `flutter test` runs the mobile unit and widget tests
+- `bash tool/test.sh` runs the mobile unit and widget tests (bundled `flutter test`, see `mobile/RULES.md` § Testing)
 
 ## After Running
 
