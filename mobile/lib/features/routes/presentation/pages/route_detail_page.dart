@@ -353,18 +353,13 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
           ),
         ),
       ),
-      if (route.permissions.canEdit && !route.deleted)
+      // Un seul bouton pour qui gère ce parcours : le stylo ouvre « Gérer le
+      // parcours » — modifier, retoucher, remplacer le GPX, supprimer (ou
+      // restaurer), et signaler —, les gestes du « Modifier ▾ » du site.
+      if (canManage)
         PdlAppBarAction(
           key: keys.routeManage.editButton,
           icon: PdlIcons.edit,
-          semanticLabel: 'routes.manage.edit'.tr(),
-          onPressed: () =>
-              context.push(Paths.routeEdit(route.team.slug, route.slug)),
-        ),
-      if (canManage)
-        PdlAppBarAction(
-          key: keys.routeDetail.moreButton,
-          icon: PdlIcons.more,
           semanticLabel: 'routes.manage.menuTitle'.tr(),
           onPressed: () => showRouteManageMenu(
             context,

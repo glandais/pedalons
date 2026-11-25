@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
@@ -7,7 +7,7 @@ import i18next from 'i18next'
 import { paths } from '../../config/paths'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
 import { Box, Button, Loader, Menu } from '@mantine/core'
-import { IconCopy } from '@tabler/icons-react'
+import { IconCopy, IconFileUpload } from '@tabler/icons-react'
 import {
   useCreatePreviewFromRoute,
   useDeleteRoute,
@@ -22,6 +22,7 @@ import { GpsMenuButton } from '@/components/route/GpsMenuButton'
 import { RouteUsages } from '../../components/route/RouteUsages'
 import { DuplicateRouteModal } from '../../components/route/DuplicateRouteModal'
 import { RouteRetouchButton } from '../../components/routeRetouch/RouteRetouchButton'
+import { RouteRetouchMenuItems } from '../../components/routeRetouch/RouteRetouchMenuItems'
 import {
   RouteRetouchModal,
   type RetouchMode,
@@ -63,6 +64,7 @@ export function RouteDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showDuplicate, setShowDuplicate] = useState(false)
   const [retouchMode, setRetouchMode] = useState<RetouchMode | null>(null)
+  const gpxInputRef = useRef<HTMLInputElement>(null)
 
   // Whether the route can be retouched by this reader (ledger API-212): asked of a signed-in
   // reader on a live route, nothing is shown unless the engine can do it
@@ -220,6 +222,15 @@ export function RouteDetailPage() {
                 )
               ) : (
                 <>
+                  {/* Retouch and a new file change the track too: the same menu as the app's
+                      pencil (« Gérer le parcours »). */}
+                  <RouteRetouchMenuItems offer={retouchOffer} onChoose={setRetouchMode} />
+                  <Menu.Item
+                    leftSection={<IconFileUpload size={14} />}
+                    onClick={() => gpxInputRef.current?.click()}
+                  >
+                    {t('routes.detail.replaceGpx')}
+                  </Menu.Item>
                   <Menu.Item
                     leftSection={<IconCopy size={14} />}
                     onClick={() => setShowDuplicate(true)}
@@ -249,10 +260,10 @@ export function RouteDetailPage() {
             </Button>
           ) : undefined
         }
-        // Beside « Modifier »: an editor's retouch replaces this route's track (WEB-201); a reader
-        // who cannot edit gets it as a new route
+        // An editor retouches from « Modifier ▾ » (above); a reader who cannot edit gets the retouch
+        // as a new route, from its own button (WEB-201)
         retouch={
-          !route.deleted ? (
+          !canEdit && !route.deleted ? (
             <RouteRetouchButton offer={retouchOffer} onChoose={setRetouchMode} />
           ) : undefined
         }
@@ -270,6 +281,23 @@ export function RouteDetailPage() {
       >
         <MediaDisplay media={route.media} />
       </DetailHeader>
+
+      {canEdit && (
+        // « Remplacer le fichier GPX »: the file goes to the editor, which saves nothing before
+        // « Enregistrer » — as the app does
+        <input
+          ref={gpxInputRef}
+          type="file"
+          accept=".gpx"
+          hidden
+          data-testid="route-replace-gpx-input"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            e.target.value = ''
+            if (file) navigate(paths.routeEdit(team.slug, route.slug), { state: { gpxFile: file } })
+          }}
+        />
+      )}
 
       <ConfirmDialog
         isOpen={showDeleteConfirm}

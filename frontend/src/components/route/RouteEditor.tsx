@@ -93,6 +93,11 @@ interface RouteEditorProps {
   canEditSlug?: boolean
   /** Tells the host dialog whether the planner's fullscreen editor is open (its Escape must wait). */
   onPlannerFullscreenChange?: (opened: boolean) => void
+  /**
+   * A GPX file chosen on the route's page (« Remplacer le fichier GPX »): the editor opens on the
+   * file source with it, and replaces the track only on save.
+   */
+  initialGpxFile?: File
   /** What the saved track's surface suggests (WEB-100 C1c): offered next to the field, never applied by itself. */
   suggestedSurfaceType?: SurfaceType | null
   /**
@@ -128,6 +133,7 @@ export function RouteEditor({
   canEditSlug = false,
   onPlannerFullscreenChange,
   initialGenerated,
+  initialGpxFile,
 }: RouteEditorProps) {
   const { t } = useTranslation()
   const { distance } = useUnits()
@@ -170,7 +176,7 @@ export function RouteEditor({
     setImportRequest((current) => (current?.seq === seq ? undefined : current))
   }, [])
   const [sourceMode, setSourceMode] = useState<RouteSourceMode>(
-    canUsePlanner && (!isCreateMode || importRequest) ? 'planner' : 'gpx'
+    canUsePlanner && !initialGpxFile && (!isCreateMode || importRequest) ? 'planner' : 'gpx'
   )
   const [generatorOpen, setGeneratorOpen] = useState(false)
   // The host dialog's Escape waits while the generator's dialog is open, as for the planner's
@@ -243,6 +249,13 @@ export function RouteEditor({
     },
     [t, form]
   )
+
+  // The file handed over by the route's page, taken once
+  const handedFile = useRef(initialGpxFile)
+  useEffect(() => {
+    if (handedFile.current) handleFileChange(handedFile.current)
+    handedFile.current = undefined
+  }, [handleFileChange])
 
   // The planner read a file: it names the route when the name is still empty.
   const handleImportName = useCallback(

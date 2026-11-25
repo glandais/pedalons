@@ -192,14 +192,16 @@ final class RouteEditor extends Module {
 
   bool get offersEdit => isShown(keys.routeManage.editButton);
 
-  /// The pencil of the route page → the editor, in edit mode.
+  /// The pencil of the route page opens « Gérer le parcours »; « Modifier »
+  /// → the editor, in edit mode.
   Future<void> editFromPencil() async {
-    await $(keys.routeManage.editButton).tap();
+    await openManageMenu();
+    await $(keys.routeManage.edit).tap();
     await waitUntilFormShown();
   }
 
   Future<void> openManageMenu() async {
-    await $(keys.routeDetail.moreButton).tap();
+    await $(keys.routeManage.editButton).tap();
     await $(keys.routeManage.edit).waitUntilExists();
   }
 
@@ -225,7 +227,7 @@ final class RouteEditor extends Module {
 
   /// « Restaurer le parcours », on the page of a deleted route.
   Future<void> restoreFromMenu() async {
-    await $(keys.routeDetail.moreButton).tap();
+    await $(keys.routeManage.editButton).tap();
     await $(keys.routeManage.restore).waitUntilExists();
     await $(keys.routeManage.restore).tap();
     await waitUntilGone(keys.routeManage.restore);

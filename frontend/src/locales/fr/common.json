@@ -2358,6 +2358,7 @@
   "routes.detail.notFound.backToRoutes": "Retour aux parcours",
   "routes.detail.notFound.message": "Le parcours que vous recherchez n'existe pas.",
   "routes.detail.notFound.title": "Parcours introuvable",
+  "routes.detail.replaceGpx": "Remplacer le fichier GPX",
   "routes.detail.sendToDevice": "Envoyer vers l'appareil",
   "routes.detail.stats.distance": "Distance",
   "routes.detail.stats.elevationGain": "Dénivelé positif",

@@ -230,7 +230,8 @@ class _RouteManageKey extends ValueKey<String> {
 
 /// Les gestes d'organisateur de la fiche d'un parcours (ledger `MOB-79`).
 class RouteManageKeys {
-  /// Le crayon de l'overlay : modifier le parcours.
+  /// Le stylo de la barre, seul bouton de qui gère le parcours : il ouvre
+  /// « Gérer le parcours ».
   final editButton = const _RouteManageKey('editButton');
 
   // Les lignes du menu « Gérer le parcours ».

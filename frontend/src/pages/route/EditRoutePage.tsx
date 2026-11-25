@@ -18,13 +18,21 @@ import { allowedVisibilitiesFor } from '@/components/visibility/visibilityLabels
 import { useRouteUsagesRefusal } from '@/components/visibility/useVisibilityAlignment'
 import { readGeneratedHandoff } from '@/lib/routeGenerator'
 
+function readGpxFileHandoff(state: unknown): File | undefined {
+  const file = (state as { gpxFile?: unknown } | null | undefined)?.gpxFile
+  return typeof File !== 'undefined' && file instanceof File ? file : undefined
+}
+
 export function EditRoutePage() {
   const { teamSlug, routeSlug } = useParams<{ teamSlug: string; routeSlug: string }>()
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   // A retouch chosen with « Modifier » on the route's page (ledger WEB-203): it replaces the track
-  const generated = readGeneratedHandoff(useLocation().state)
+  const location = useLocation()
+  const generated = readGeneratedHandoff(location.state)
+  // « Remplacer le fichier GPX » on the route's page: the chosen file, waiting for « Enregistrer »
+  const gpxFile = readGpxFileHandoff(location.state)
 
   const {
     team: teamQuery,
@@ -165,6 +173,7 @@ export function EditRoutePage() {
         initialWaypoints={route.waypoints}
         initialDistance={route.distance}
         initialGenerated={generated}
+        initialGpxFile={gpxFile}
         suggestedSurfaceType={suggestSurfaceType(route.tracks)}
         onSubmit={handleSubmit}
         onCancel={() => navigate(paths.route(teamSlug!, routeSlug!))}

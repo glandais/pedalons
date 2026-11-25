@@ -17,7 +17,7 @@ import {
   traceMapPixels,
   windingTrack,
 } from './support/routes'
-import { hydrated, openActionsMenu } from './support/ui'
+import { openActionsMenu } from './support/ui'
 import type { Page } from '@playwright/test'
 
 /**
@@ -142,7 +142,8 @@ async function stubRetouch(page: Page, refusal?: { status: number; code: string 
   return bodies
 }
 
-const retouchButton = (page: Page) => page.getByRole('button', { name: 'Retoucher', exact: true })
+// An editor's « Retoucher » is a section of the « Modifier ▾ » menu (its operations as items)
+const retouchItem = (page: Page) => page.getByRole('menuitem', { name: 'Ajuster la distance' })
 const cards = (page: Page) => page.getByTestId('retouched-route-card')
 
 test('the real offer says the engine cannot retouch: the page has no « Retoucher »', async ({
@@ -158,7 +159,7 @@ test('the real offer says the engine cannot retouch: the page has no « Retouche
   await expect(
     (await openActionsMenu(page)).getByRole('menuitem', { name: 'Dupliquer' })
   ).toBeVisible()
-  await expect(retouchButton(page)).toHaveCount(0)
+  await expect(retouchItem(page)).toHaveCount(0)
 })
 
 test('adjust the distance: three cards before → after, the next seed on « Autres propositions », the changed stretch painted', async ({
@@ -172,8 +173,7 @@ test('adjust the distance: three cards before → after, the next seed on « Aut
   const bodies = await stubRetouch(page)
 
   await page.goto(routePath(team.slug, route.slug))
-  await hydrated(retouchButton(page))
-  await retouchButton(page).click()
+  await openActionsMenu(page)
   await page.getByRole('menuitem', { name: 'Ajuster la distance' }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByText(/Actuellement 5,9/)).toBeVisible()
@@ -206,8 +206,7 @@ test('a refused shortening is an answer: blue message, the finish and the genera
   await stubRetouch(page, { status: 400, code: 'ROUTE_RETOUCH_NO_SHORTER' })
 
   await page.goto(routePath(team.slug, route.slug))
-  await hydrated(retouchButton(page))
-  await retouchButton(page).click()
+  await openActionsMenu(page)
   await page.getByRole('menuitem', { name: 'Ajuster la distance' }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('Distance visée').fill('5')
@@ -230,8 +229,7 @@ test('move the finish to a place of the team: the request carries end.placeId', 
   const bodies = await stubRetouch(page)
 
   await page.goto(routePath(team.slug, route.slug))
-  await hydrated(retouchButton(page))
-  await retouchButton(page).click()
+  await openActionsMenu(page)
   await page.getByRole('menuitem', { name: "Déplacer l'arrivée" }).click()
   const dialog = page.getByRole('dialog')
   await dialog
@@ -260,8 +258,7 @@ test('« Ouvrir dans le planificateur » loads the proposal in a new route named
   await stubRetouch(page)
 
   await page.goto(routePath(team.slug, route.slug))
-  await hydrated(retouchButton(page))
-  await retouchButton(page).click()
+  await openActionsMenu(page)
   await page.getByRole('menuitem', { name: 'Ajuster la distance' }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('Distance visée').fill('5')
@@ -288,7 +285,7 @@ test('a member who may not plan has no button; a route still being analysed show
   await stubBasemap(page)
   await page.goto(routePath(team.slug, route.slug))
   await expect(page.getByRole('heading', { level: 1, name: route.name })).toBeVisible()
-  await expect(retouchButton(page)).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Retoucher', exact: true })).toHaveCount(0)
 
   // NOT_READY, stubbed: disabled, with its reason
   const other = await browser.newContext()
@@ -302,8 +299,10 @@ test('a member who may not plan has no button; a route still being analysed show
     unavailableReason: 'NOT_READY',
   })
   await otherPage.goto(routePath(team.slug, route.slug))
-  await expect(retouchButton(otherPage)).toBeDisabled()
-  await expect(otherPage.getByLabel(/en cours d'analyse/)).toBeVisible()
+  const menu = await openActionsMenu(otherPage)
+  const notReady = menu.getByRole('menuitem', { name: /Retoucher/ })
+  await expect(notReady).toBeDisabled()
+  await expect(notReady).toContainText("en cours d'analyse")
   await other.close()
 })
 
@@ -315,8 +314,7 @@ test('an order anomaly has its own message', async ({ context, page }) => {
   await stubRetouch(page, { status: 400, code: 'ROUTE_RETOUCH_ORDER_ANOMALY' })
 
   await page.goto(routePath(team.slug, route.slug))
-  await hydrated(retouchButton(page))
-  await retouchButton(page).click()
+  await openActionsMenu(page)
   await page.getByRole('menuitem', { name: 'Ajuster la distance' }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel('Distance visée').fill('7')
