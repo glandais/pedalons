@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **621 entrées livrées**, et des 21 entrées encore ouvertes dont une part l'est.
+Index des **621 entrées livrées**, et des 22 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -32,6 +32,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 - [x] [`MOB-158`](ledger/MOB/MOB-158.md) Publier, modifier et gérer une annonce dans l'app — 2026-11-14
 - [x] [`MOB-156`](ledger/MOB/MOB-156.md) La forte pluie et les averses n'ont plus de parapluie pour icône — 2026-11-15
 - [x] [`MOB-155`](ledger/MOB/MOB-155.md) Sur l'accueil, changer un filtre du fil ne remonte plus au-dessus du fil — 2026-11-14
+- [x] [`MOB-154`](ledger/MOB/MOB-154.md) Générer un parcours depuis l'app — en partie, le reste est ouvert
 - [x] [`MOB-153`](ledger/MOB/MOB-153.md) Tirer pour rafraîchir sur les sept écrans qui ne l'avaient pas — 2026-11-14
 - [x] [`MOB-152`](ledger/MOB/MOB-152.md) Mode « Météo » sur la carte d'une sortie à plusieurs groupes, pour le groupe où l'on est inscrit — 2026-11-13
 - [x] [`MOB-151`](ledger/MOB/MOB-151.md) Plugins Android qui appliquent encore le Kotlin Gradle Plugin — 2026-11-17

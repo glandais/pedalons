@@ -49,7 +49,9 @@ import '../features/rides/presentation/pages/ride_template_list_page.dart';
 import '../features/routes/presentation/pages/all_routes_map_page.dart';
 import '../features/routes/presentation/pages/all_routes_page.dart';
 import '../features/routes/presentation/pages/route_detail_page.dart';
+import '../features/routes/domain/route_generator.dart';
 import '../features/routes/presentation/pages/route_editor_page.dart';
+import '../features/routes/presentation/pages/route_generator_page.dart';
 import '../features/routes/presentation/route_editor_location.dart';
 import '../features/teams/presentation/pages/invitation_page.dart';
 import '../features/teams/presentation/pages/team_admin_members_page.dart';
@@ -489,6 +491,10 @@ final List<_DeepLinkHierarchy> _deepLinkHierarchies = [
   // `nouveau`, et la première entrée qui correspond l'emporte.
   _DeepLinkHierarchy(
     patterns: PathVariants.routeNew(':teamSlug'),
+    ancestors: [_teamsAncestor, _teamAncestor, _teamRoutesAncestor],
+  ),
+  _DeepLinkHierarchy(
+    patterns: PathVariants.routeGenerate(':teamSlug'),
     ancestors: [_teamsAncestor, _teamAncestor, _teamRoutesAncestor],
   ),
   _DeepLinkHierarchy(
@@ -940,8 +946,26 @@ GoRoute _teamTree(String locale) {
       GoRoute(
         path: _underTeam(PathVariants.routeNew(':teamSlug'), locale, teamBase),
         parentNavigatorKey: _rootNavigatorKey,
+        // Une proposition du générateur arrive en `extra` (docs/LEDGER_*.md
+        // MOB-154) ; un lien n'en porte pas, l'éditeur s'ouvre vide.
+        builder: (context, state) => RouteEditorPage(
+          teamSlug: state.pathParameters['teamSlug']!,
+          generated: state.extra is GeneratedHandoff
+              ? state.extra! as GeneratedHandoff
+              : null,
+        ),
+      ),
+      // Le générateur de parcours (docs/LEDGER_*.md MOB-154), avant le détail
+      // pour la même raison que la création.
+      GoRoute(
+        path: _underTeam(
+          PathVariants.routeGenerate(':teamSlug'),
+          locale,
+          teamBase,
+        ),
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) =>
-            RouteEditorPage(teamSlug: state.pathParameters['teamSlug']!),
+            RouteGeneratorPage(teamSlug: state.pathParameters['teamSlug']!),
       ),
       GoRoute(
         path: _underTeam(

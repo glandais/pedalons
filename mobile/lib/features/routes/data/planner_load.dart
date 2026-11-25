@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../api/generated/export.dart';
 import '../../../core/logging/app_log.dart';
+import '../domain/route_generator.dart';
 import 'planner_bridge.dart';
 
 /// « Me localiser » dans le planificateur embarqué (`load.locate`). Éteint :
@@ -88,6 +89,9 @@ PlannerTrack plannerTrackOfRoute(RouteDetailDto route) => (
 /// maintenant — jamais d'un cache — ; si la lecture échoue, il s'ouvre sur sa
 /// trace, comme un import, et [PlannerLoad.stateReadFailed] le dit.
 ///
+/// [generated] : une proposition du générateur, que la page importe à
+/// l'ouverture d'une création (`load.generated`, docs/LEDGER_*.md MOB-154).
+///
 /// [team] nul : un aperçu des outils GPX, qui n'est d'aucune équipe — ni
 /// `teamSlug` (le quota est alors le quota personnel), ni position d'équipe
 /// (la carte s'ouvre sur `defaultCenter`).
@@ -102,6 +106,7 @@ Future<PlannerLoad> buildPlannerLoad({
   required bool dark,
   required String locale,
   required UnitSystem units,
+  GeneratedHandoff? generated,
 }) async {
   PlannerState? state;
   bool stateReadFailed = false;
@@ -138,6 +143,11 @@ Future<PlannerLoad> buildPlannerLoad({
     if (location != null && location.length >= 2)
       'teamLocation': <double>[location[0], location[1]],
     'create': route == null,
+    if (route == null && generated != null)
+      'generated': <String, dynamic>{
+        'polyline': generated.polyline,
+        'name': generated.name,
+      },
     'terrain': ?terrain?.toJson(),
     'defaultCenter': config.defaultCenter.toJson(),
     'theme': dark ? 'dark' : 'light',

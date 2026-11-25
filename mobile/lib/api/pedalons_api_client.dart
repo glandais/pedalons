@@ -166,6 +166,11 @@ final tagsClientProvider = Provider<TagsClient>((ref) {
   return ref.watch(apiClientProvider).tags;
 });
 
+/// Le générateur de parcours (docs/LEDGER_*.md MOB-154).
+final routeGeneratorClientProvider = Provider<RouteGeneratorClient>((ref) {
+  return ref.watch(apiClientProvider).routeGenerator;
+});
+
 final placesClientProvider = Provider<PlacesClient>((ref) {
   return ref.watch(apiClientProvider).places;
 });

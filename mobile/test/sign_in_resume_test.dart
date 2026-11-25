@@ -92,14 +92,19 @@ void main() {
         return true;
       };
     });
-    tearDown(() => debugLinkOpener = null);
+    tearDown(() {
+      debugLinkOpener = null;
+      debugSitePagePathPatterns = null;
+    });
 
     test('part au navigateur, la pile et le lien en attente intacts', () async {
-      // Le planificateur de parcours, resté au site (ledger `MOB-24`) : une
-      // route `web` seulement, sans constructeur Dart. La gestion des membres,
-      // les signalements puis les pages de l'équipe, qui servaient ici, sont
-      // des écrans de l'app depuis `MOB-167`, `MOB-168` et `MOB-169`.
-      const sitePage = '/equipes/velo-club/parcours/generer';
+      // Plus aucune page du site sans écran sous `/equipes/.*` : le
+      // générateur de parcours, qui servait ici, est un écran de l'app depuis
+      // `MOB-154`. Un motif fictif tient lieu de la liste générée, vide.
+      const sitePage = '/equipes/velo-club/parcours/site-seulement';
+      debugSitePagePathPatterns = <String>[
+        r'^/equipes/[^/]+/parcours/site-seulement/?$',
+      ];
 
       for (final signedIn in [true, false]) {
         opened.clear();

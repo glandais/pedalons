@@ -16,6 +16,7 @@ import 'package:pedalons/features/routes/data/gpx_file_source.dart';
 import 'package:pedalons/features/routes/data/planner_web_view.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
 import 'package:pedalons/features/routes/domain/gpx_check.dart';
+import 'package:pedalons/features/routes/domain/route_generator.dart';
 import 'package:pedalons/features/routes/presentation/pages/route_editor_page.dart';
 import 'package:pedalons/features/tags/providers/team_tags_provider.dart';
 import 'package:pedalons/features/teams/data/team_repository.dart';
@@ -258,6 +259,7 @@ void main() {
     bool planner = false,
     PlannerQuotaDto? quota,
     _FakePlannerWeb? web,
+    GeneratedHandoff? generated,
   }) async {
     teams = _StubTeams(
       fixtureRouteTeam(
@@ -290,6 +292,7 @@ void main() {
             teamSlug: 'n-peloton',
             routeSlug: routeSlug,
             replaceGpx: replaceGpx,
+            generated: generated,
           ),
         ),
         GoRoute(
@@ -1254,6 +1257,57 @@ void main() {
       expect(teams.reads, greaterThan(readsBefore));
       expect(find.text('fiche nouveau-parcours'), findsOneWidget);
       expect(web.disposed, isTrue);
+    });
+
+    testWidgets('une proposition du générateur (MOB-154) : le planificateur '
+        's\'ouvre dessus, nom et revêtement repris', (
+      WidgetTester tester,
+    ) async {
+      final _StubRoutes routes = _StubRoutes();
+      final _FakePlannerWeb web = _FakePlannerWeb();
+      await open(
+        tester,
+        routes: routes,
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        web: web,
+        generated: const GeneratedHandoff(
+          polyline: '_sqytA_sdpH_pR_pR',
+          type: RouteGeneratorType.gravel,
+          distanceM: 82000,
+          name: 'Parcours généré de 82 km',
+        ),
+      );
+      await pumps(tester);
+      // Ouvert sans geste : l'écran plein est là avant tout « Tracer ».
+      expect(find.byKey(keys.routeEditor.plannerScreen), findsOneWidget);
+      web.emit(<String, dynamic>{'type': 'ready'});
+      await pumps(tester);
+      final Map<String, dynamic> load =
+          web.argumentsOf('load').single! as Map<String, dynamic>;
+      expect(load['create'], isTrue);
+      expect(load['generated'], <String, dynamic>{
+        'polyline': '_sqytA_sdpH_pR_pR',
+        'name': 'Parcours généré de 82 km',
+      });
+
+      web.emit(done());
+      await pumps(tester);
+      expect(
+        tester
+            .widget<TextField>(find.byKey(keys.routeEditor.nameField))
+            .controller!
+            .text,
+        'Parcours généré de 82 km',
+      );
+      await tester.tap(find.byKey(keys.routeEditor.saveButton));
+      await pumps(tester);
+      final created = routes.created.single;
+      expect(created.request.surfaceType, 'GRAVEL');
+      expect(
+        created.request.plannerState,
+        PlannerState.fromJson(fixturePlannerStateJson),
+      );
     });
 
     testWidgets('rouvrir : la même page, `load` une seule fois', (

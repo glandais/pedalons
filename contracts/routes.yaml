@@ -776,7 +776,8 @@ routes:
     web: true
     deeplink: true
     appParent: routes
-  # Web only: the app has no route generator (MOB-154, WEB-179).
+  # The route generator (WEB-179 on the site, MOB-154 in the app). A link opens the app's screen
+  # with its default settings: the site's settings in the query string are not read.
   - id: routeGenerate
     path:
       en: /teams/{teamSlug}/routes/generate
@@ -784,6 +785,7 @@ routes:
     params:
       - teamSlug
     web: true
+    mobile: true
   - id: routeNew
     path:
       en: /teams/{teamSlug}/routes/new

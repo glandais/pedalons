@@ -273,8 +273,8 @@ class _CreateAction {
 /// Ce qu'un organisateur peut créer d'ici, dans l'ordre de la feuille :
 /// l'agenda (sortie, voyage), les parcours, puis une publication — chacun
 /// seulement quand l'équipe a le module. Comme le site
-/// (`DashboardHeaderActions`), sauf le générateur de parcours, que l'app n'a
-/// pas (ledger `MOB-154`).
+/// (`DashboardHeaderActions`), générateur de parcours compris quand l'équipe a
+/// le planificateur (ledger `MOB-154`).
 List<_CreateAction> _createActions(TeamDetailDto team) {
   final String agenda = 'teams.tabs.agenda'.tr();
   return <_CreateAction>[
@@ -306,6 +306,15 @@ List<_CreateAction> _createActions(TeamDetailDto team) {
         subtitle: team.enableRoutePlanner
             ? 'teams.dashboard.create.routeHint'.tr()
             : null,
+        group: 'teams.tabs.routes'.tr(),
+      ),
+    if (team.enableRoutes && team.enableRoutePlanner)
+      _CreateAction(
+        key: keys.teamDashboard.createGeneratedRouteButton,
+        label: 'routeGenerator.title'.tr(),
+        icon: PdlIcons.generate,
+        location: Paths.routeGenerate(team.slug),
+        subtitle: 'routeGenerator.subtitle'.tr(),
         group: 'teams.tabs.routes'.tr(),
       ),
     if (team.enablePosts)

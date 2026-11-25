@@ -2857,5 +2857,116 @@
       "map": "Carte",
       "calendar": "Calendrier"
     }
+  },
+  "routeGenerator": {
+    "title": "Générer un parcours",
+    "subtitle": "Des propositions qui privilégient les routes de l'équipe et les relient par d'autres routes quand il le faut.",
+    "generate": "Générer",
+    "generating": "Génération…",
+    "slow": "La génération peut prendre quelques secondes.",
+    "more": "Autres propositions",
+    "retry": "Réessayer",
+    "quotaSpent": "Les enregistrements de tracés du mois sont épuisés.",
+    "partialCoverage": "Une partie de la zone sort de la région couverte : les propositions y sont plus rares.",
+    "networkPreparedAt": "Routes de l'équipe prises en compte jusqu'au {date} : un parcours enregistré depuis comptera dès la nuit prochaine.",
+    "generatedName": "Parcours généré de {distance}",
+    "start": {
+      "label": "Départ",
+      "team": "Localisation de l'équipe",
+      "picked": "Point choisi sur la carte",
+      "pick": "Choisir sur la carte",
+      "noLocation": "L'équipe n'a ni localisation ni lieu de départ : choisissez un départ sur la carte.",
+      "missing": "Choisissez un départ sur la carte.",
+      "pickHint": "Touchez la carte pour placer le départ",
+      "places": "Lieux de départ de l'équipe",
+      "sheetTitle": "Choisir un départ"
+    },
+    "end": {
+      "label": "Arrivée",
+      "loop": "Au départ",
+      "elsewhere": "Ailleurs",
+      "missing": "Choisissez l'arrivée sur la carte.",
+      "pickHint": "Touchez la carte pour placer l'arrivée",
+      "places": "Lieux d'arrivée de l'équipe",
+      "sheetTitle": "Choisir une arrivée"
+    },
+    "bearing": {
+      "label": "Direction",
+      "any": "Peu importe",
+      "N": "Nord",
+      "NE": "Nord-est",
+      "E": "Est",
+      "SE": "Sud-est",
+      "S": "Sud",
+      "SW": "Sud-ouest",
+      "W": "Ouest",
+      "NW": "Nord-ouest",
+      "farHint": "L'arrivée est loin du départ : le parcours part dans sa direction."
+    },
+    "distance": {
+      "label": "Distance"
+    },
+    "discovery": {
+      "label": "Routes de l'équipe ↔ Découverte",
+      "low": "Routes de l'équipe",
+      "high": "Découverte",
+      "stop0": "Uniquement les routes de l'équipe",
+      "stop1": "Surtout les routes de l'équipe",
+      "stop2": "Équilibre",
+      "stop3": "Surtout de nouvelles routes",
+      "stop4": "Découverte"
+    },
+    "type": {
+      "label": "Type de parcours"
+    },
+    "unpaved": {
+      "label": "Chemins",
+      "low": "Peu",
+      "usual": "Comme d'habitude",
+      "high": "Beaucoup"
+    },
+    "card": {
+      "title": "Proposition {index}",
+      "teamShare": "{share} sur les routes de l'équipe",
+      "unpaved": "Non revêtu : {share}",
+      "unpavedAbove": "Plus de chemins que demandé dans ce secteur",
+      "unpavedBelow": "Moins de chemins que demandé dans ce secteur",
+      "shared": "Tronçon commun aller-retour : {distance}",
+      "use": "Utiliser ce parcours"
+    },
+    "errors": {
+      "busy": "Le générateur de parcours est très demandé. Réessayez dans un instant.",
+      "disabled": "La génération de parcours n'est pas activée pour cette équipe.",
+      "distanceOutOfRange": "La distance doit être comprise entre {min} et {max}.",
+      "distanceTooShort": "{distance}, c'est trop court pour aller du départ à l'arrivée. Essayez une distance plus longue.",
+      "endTooFar": "Aucune route praticable près de l'arrivée pour ce type de parcours. Choisissez une autre arrivée.",
+      "generic": "Génération impossible",
+      "invalidRequest": "Le générateur n'accepte pas ces réglages. Vérifiez le départ, l'arrivée et la distance.",
+      "network": "Pas de connexion",
+      "networkNotReady": "Les routes de l'équipe sont en préparation pour le générateur. Réessayez demain, ou poussez le curseur jusqu'à « Découverte ».",
+      "networkTooSmall": "Les routes de l'équipe autour du départ ne suffisent pas pour {distance}. Essayez une distance plus courte, un autre départ ou un peu plus de découverte.",
+      "noRoute": "Aucun parcours trouvé pour {distance}. Essayez une autre distance, un autre départ ou un peu plus de découverte.",
+      "outOfCoverage": "Le départ ou l'arrivée est hors de la région que couvre le générateur pour l'instant.",
+      "startTooFar": "Aucune route praticable près du départ pour ce type de parcours. Choisissez un autre départ.",
+      "unavailable": "Le générateur de parcours est indisponible pour le moment. Réessayez plus tard.",
+      "rateLimitedWait": {
+        "one": "Trop de demandes en peu de temps. Réessayez dans {} minute.",
+        "other": "Trop de demandes en peu de temps. Réessayez dans {} minutes."
+      },
+      "rateLimited": "Trop de demandes en peu de temps. Réessayez dans quelques minutes."
+    },
+    "cancel": "Annuler",
+    "editSettings": "Modifier les réglages",
+    "useHint": "Le parcours s'ouvre dans le planificateur pour l'enregistrer.",
+    "tryInstead": "Essayer plutôt",
+    "moreDiscovery": "Plus de découverte",
+    "otherStart": "Autre départ",
+    "noProposalTitle": "Aucun parcours trouvé",
+    "count": {
+      "one": "{} proposition",
+      "other": "{} propositions"
+    },
+    "mapLabel": "Carte du générateur de parcours",
+    "selectedHint": "Touchez un tracé pour le choisir"
   }
 }

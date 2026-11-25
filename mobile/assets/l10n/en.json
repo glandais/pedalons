@@ -2857,5 +2857,116 @@
       "map": "Map",
       "calendar": "Calendar"
     }
+  },
+  "routeGenerator": {
+    "title": "Generate a route",
+    "subtitle": "Proposals that favour the team's roads and link them with other roads when needed.",
+    "generate": "Generate",
+    "generating": "Generating…",
+    "slow": "Generation can take a few seconds.",
+    "more": "Other proposals",
+    "retry": "Try again",
+    "quotaSpent": "This month's saves of drawn tracks are used up.",
+    "partialCoverage": "Part of the area is outside the covered region: proposals are rarer there.",
+    "networkPreparedAt": "Team roads taken into account up to {date}: a route saved since will count from tonight.",
+    "generatedName": "Generated route of {distance}",
+    "start": {
+      "label": "Start",
+      "team": "Team location",
+      "picked": "Point chosen on the map",
+      "pick": "Choose on the map",
+      "noLocation": "The team has no location and no start place: choose a start on the map.",
+      "missing": "Choose a start on the map.",
+      "pickHint": "Tap the map to set the start",
+      "places": "Team start places",
+      "sheetTitle": "Choose a start"
+    },
+    "end": {
+      "label": "End",
+      "loop": "At the start",
+      "elsewhere": "Elsewhere",
+      "missing": "Choose the end on the map.",
+      "pickHint": "Tap the map to set the finish",
+      "places": "Team finish places",
+      "sheetTitle": "Choose a finish"
+    },
+    "bearing": {
+      "label": "Direction",
+      "any": "Any",
+      "N": "North",
+      "NE": "North-east",
+      "E": "East",
+      "SE": "South-east",
+      "S": "South",
+      "SW": "South-west",
+      "W": "West",
+      "NW": "North-west",
+      "farHint": "The end is far from the start: the route heads for it."
+    },
+    "distance": {
+      "label": "Distance"
+    },
+    "discovery": {
+      "label": "Team roads ↔ Discovery",
+      "low": "Team roads",
+      "high": "Discovery",
+      "stop0": "Only the team's roads",
+      "stop1": "Mostly the team's roads",
+      "stop2": "Balanced",
+      "stop3": "Mostly new roads",
+      "stop4": "Discovery"
+    },
+    "type": {
+      "label": "Route type"
+    },
+    "unpaved": {
+      "label": "Paths",
+      "low": "Few",
+      "usual": "As usual",
+      "high": "Lots"
+    },
+    "card": {
+      "title": "Proposal {index}",
+      "teamShare": "{share} on the team's roads",
+      "unpaved": "Unpaved: {share}",
+      "unpavedAbove": "More paths than asked for in this area",
+      "unpavedBelow": "Fewer paths than asked for in this area",
+      "shared": "Shared out-and-back stretch: {distance}",
+      "use": "Use this route"
+    },
+    "errors": {
+      "busy": "The route generator is busy. Try again in a moment.",
+      "disabled": "Route generation is not enabled for this team.",
+      "distanceOutOfRange": "The distance must be between {min} and {max}.",
+      "distanceTooShort": "{distance} is too short to get from the start to the end. Try a longer distance.",
+      "endTooFar": "No usable road near the end for this type of route. Pick another end.",
+      "generic": "Generation failed",
+      "invalidRequest": "The generator does not accept these settings. Check the start, the finish and the distance.",
+      "network": "No connection",
+      "networkNotReady": "The team's roads are being prepared for the generator. Try again tomorrow, or push the slider to \"Discovery\".",
+      "networkTooSmall": "The team's roads around the start are not enough for {distance}. Try a shorter distance, another start or a bit more discovery.",
+      "noRoute": "No route found for {distance}. Try another distance, another start or a bit more discovery.",
+      "outOfCoverage": "The start or the end is outside the region the generator covers for now.",
+      "startTooFar": "No usable road near the start for this type of route. Pick another start.",
+      "unavailable": "The route generator is unavailable for now. Please try again later.",
+      "rateLimitedWait": {
+        "one": "Too many requests in a short time. Try again in {} minute.",
+        "other": "Too many requests in a short time. Try again in {} minutes."
+      },
+      "rateLimited": "Too many requests in a short time. Try again in a few minutes."
+    },
+    "cancel": "Cancel",
+    "editSettings": "Change settings",
+    "useHint": "The route opens in the planner, where you save it.",
+    "tryInstead": "Try instead",
+    "moreDiscovery": "More discovery",
+    "otherStart": "Another start",
+    "noProposalTitle": "No route found",
+    "count": {
+      "one": "{} proposal",
+      "other": "{} proposals"
+    },
+    "mapLabel": "Route generator map",
+    "selectedHint": "Tap a route to choose it"
   }
 }

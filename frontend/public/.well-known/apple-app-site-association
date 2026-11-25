@@ -5,8 +5,6 @@
       {
         "appID": "7Q49262697.fr.pedalons.mobile",
         "paths": [
-          "NOT /teams/*/routes/generate",
-          "NOT /equipes/*/parcours/generer",
           "/",
           "/login",
           "/connexion",

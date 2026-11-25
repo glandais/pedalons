@@ -81,6 +81,7 @@ class Keys {
   final routeWaypoints = RouteWaypointsKeys();
   final routeEditor = RouteEditorKeys();
   final routeManage = RouteManageKeys();
+  final routeGenerator = RouteGeneratorKeys();
   final gpsSheet = GpsSheetKeys();
   final feed = FeedKeys();
   final adsList = AdsListKeys();

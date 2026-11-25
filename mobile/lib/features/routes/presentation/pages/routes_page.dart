@@ -17,6 +17,7 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../keys.dart';
 import '../../../tags/presentation/tag_filter.dart';
+import '../../../teams/providers/team_providers.dart';
 import '../../domain/route_filter_labels.dart';
 import '../../domain/route_filters.dart';
 import '../../providers/route_count_provider.dart';
@@ -151,6 +152,16 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
         // Les outils GPX, sur l'onglet Explorer seulement : ils ne relèvent
         // d'aucune équipe (docs/LEDGER_*.md MOB-178).
         actions: <Widget>[
+          // Le générateur (docs/LEDGER_*.md MOB-154) : la règle du site, qui
+          // peut créer un parcours dans une équipe au planificateur ouvert.
+          if (_canGenerate)
+            PdlAppBarAction(
+              key: keys.routeGenerator.entryButton,
+              icon: PdlIcons.generate,
+              semanticLabel: 'routeGenerator.title'.tr(),
+              onPressed: () =>
+                  context.push(Paths.routeGenerate(widget.teamSlug!)),
+            ),
           if (widget.teamSlug == null)
             PdlAppBarAction(
               key: keys.gpxTools.entryButton,
@@ -171,6 +182,13 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
     final String? teamSlug = widget.teamSlug;
     if (teamSlug == null) return false;
     return ref.watch(canManageRoutesProvider(teamSlug)) ?? false;
+  }
+
+  bool get _canGenerate {
+    final String? teamSlug = widget.teamSlug;
+    if (teamSlug == null || !_canAdd) return false;
+    return ref.watch(teamDetailProvider(teamSlug)).value?.enableRoutePlanner ??
+        false;
   }
 
   void _openNew() => context.push(Paths.routeNew(widget.teamSlug!));

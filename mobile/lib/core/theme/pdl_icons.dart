@@ -63,6 +63,9 @@ abstract final class PdlIcons {
   static const IconData ad = Icons.sell_outlined;
   static const IconData team = Icons.group_outlined;
   static const IconData route = Icons.route_outlined;
+
+  /// Le générateur de parcours (docs/LEDGER_*.md MOB-154).
+  static const IconData generate = Icons.auto_awesome_outlined;
   static const IconData page = Icons.description_outlined;
   static const IconData tag = Icons.label_outline;
   static const IconData feed = Icons.dynamic_feed_outlined;

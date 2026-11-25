@@ -154,6 +154,11 @@ class TeamDashboardKeys {
   final createTripButton = const _TeamDashboardKey('createTripButton');
   final createRouteButton = const _TeamDashboardKey('createRouteButton');
 
+  /// « Générer un parcours » dans la feuille « Créer » (docs/LEDGER_*.md MOB-154).
+  final createGeneratedRouteButton = const _TeamDashboardKey(
+    'createGeneratedRouteButton',
+  );
+
   /// Le bouton de tête, quelle que soit l'action qu'il porte ; les lignes de
   /// la feuille ont la clé de leur action.
   final createPrimaryButton = const _TeamDashboardKey('createPrimaryButton');

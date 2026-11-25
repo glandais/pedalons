@@ -39,6 +39,7 @@ import '../../../visibility/presentation/visibility_refusal.dart';
 import '../../data/gpx_file_source.dart';
 import '../../data/planner_bridge.dart';
 import '../../data/planner_load.dart';
+import '../../domain/route_generator.dart';
 import '../../data/planner_web_view.dart';
 import '../../data/route_repository.dart';
 import '../../domain/gpx_check.dart';
@@ -75,11 +76,17 @@ class RouteEditorPage extends ConsumerStatefulWidget {
     required this.teamSlug,
     this.routeSlug,
     this.replaceGpx = false,
+    this.generated,
   });
 
   final String teamSlug;
   final String? routeSlug;
   final bool replaceGpx;
+
+  /// Une proposition du générateur (création seulement, docs/LEDGER_*.md
+  /// MOB-154) : le planificateur s'ouvre aussitôt dessus, le nom et le
+  /// revêtement viennent d'elle.
+  final GeneratedHandoff? generated;
 
   @override
   ConsumerState<RouteEditorPage> createState() => _RouteEditorPageState();
@@ -214,6 +221,7 @@ class _RouteEditorPageState extends ConsumerState<RouteEditorPage> {
       team: teamValue,
       route: route,
       replaceGpx: replaceGpx,
+      generated: route == null ? widget.generated : null,
       title: title,
     );
   }
@@ -226,11 +234,13 @@ class _RouteEditorForm extends ConsumerStatefulWidget {
     required this.route,
     required this.replaceGpx,
     required this.title,
+    this.generated,
   });
 
   final TeamDetailDto team;
   final RouteDetailDto? route;
   final bool replaceGpx;
+  final GeneratedHandoff? generated;
   final String title;
 
   @override
@@ -297,8 +307,16 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
     final RouteForm initial = route == null
         ? RouteForm.initial(widget.team)
         : RouteForm.fromRoute(route, planner: widget.team.enableRoutePlanner);
-    _form = initial;
+    // Une proposition du générateur garde l'état de départ d'une création
+    // vide : la quitter demande confirmation.
     _initialJson = _json(initial);
+    final GeneratedHandoff? generated = widget.generated;
+    _form = generated == null
+        ? initial
+        : initial.copyWith(
+            name: generated.name,
+            surfaceType: surfaceTypeOfGenerated(generated.type),
+          );
     _name = TextEditingController(text: _form.name)
       ..addListener(() => _update(_form.copyWith(name: _name.text)));
     _markdown = TextEditingController(text: _form.media.markdown)
@@ -307,6 +325,11 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
           _form.copyWith(media: _form.media.copyWith(markdown: _markdown.text)),
         ),
       );
+    if (generated != null && widget.team.enableRoutePlanner) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openPlanner();
+      });
+    }
     if (route != null && widget.replaceGpx) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _pickGpx();
@@ -458,6 +481,7 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
         dark: dark,
         locale: getCurrentLocale(),
         units: ref.read(unitSystemProvider),
+        generated: widget.generated,
       ),
       onDone: _onPlannerDone,
       onQuotaRefused: _onQuotaRefused,

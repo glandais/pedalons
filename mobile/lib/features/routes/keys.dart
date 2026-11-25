@@ -289,3 +289,31 @@ class GpsSheetKeys {
   final successBanner = const _GpsSheetKey('successBanner');
   final errorBanner = const _GpsSheetKey('errorBanner');
 }
+
+class _RouteGeneratorKey extends ValueKey<String> {
+  const _RouteGeneratorKey(String value) : super('routeGenerator_$value');
+}
+
+/// Le générateur de parcours (docs/LEDGER_*.md MOB-154).
+class RouteGeneratorKeys {
+  /// L'entrée « Générer un parcours » de la liste des parcours d'une équipe.
+  final entryButton = const _RouteGeneratorKey('entryButton');
+  final map = const _RouteGeneratorKey('map');
+  final startField = const _RouteGeneratorKey('startField');
+  final endSegments = const _RouteGeneratorKey('endSegments');
+  final endField = const _RouteGeneratorKey('endField');
+  final typeSegments = const _RouteGeneratorKey('typeSegments');
+  final distanceSlider = const _RouteGeneratorKey('distanceSlider');
+  final discoverySlider = const _RouteGeneratorKey('discoverySlider');
+  final unpavedSegments = const _RouteGeneratorKey('unpavedSegments');
+  ValueKey<String> bearing(String value) =>
+      _RouteGeneratorKey('bearing_$value');
+  final generateButton = const _RouteGeneratorKey('generateButton');
+  final loading = const _RouteGeneratorKey('loading');
+  final error = const _RouteGeneratorKey('error');
+  final retryButton = const _RouteGeneratorKey('retryButton');
+  ValueKey<String> card(int index) => _RouteGeneratorKey('card_$index');
+  final moreButton = const _RouteGeneratorKey('moreButton');
+  final useButton = const _RouteGeneratorKey('useButton');
+  final pickHint = const _RouteGeneratorKey('pickHint');
+}

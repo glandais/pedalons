@@ -139,6 +139,7 @@ final Map<String, List<String>> internalRouteTemplates = <String, List<String>>{
   'postEdit': PathVariants.postEdit(_slot, _slot).values.toList(),
   'routes': PathVariants.routes(_slot).values.toList(),
   'routeNew': PathVariants.routeNew(_slot).values.toList(),
+  'routeGenerate': PathVariants.routeGenerate(_slot).values.toList(),
   'route': PathVariants.route(_slot, _slot).values.toList(),
   'routeEdit': PathVariants.routeEdit(_slot, _slot).values.toList(),
   'teamAds': PathVariants.teamAds(_slot).values.toList(),
@@ -257,8 +258,18 @@ final List<RegExp> _sitePagePatterns = <RegExp>[
 /// d'afficher « page introuvable ».
 bool isSitePageLocation(String location) {
   final String path = Uri.tryParse(location)?.path ?? location;
-  return _sitePagePatterns.any((RegExp pattern) => pattern.hasMatch(path));
+  final Iterable<RegExp> patterns =
+      debugSitePagePathPatterns?.map(RegExp.new) ?? _sitePagePatterns;
+  return patterns.any((RegExp pattern) => pattern.hasMatch(path));
 }
+
+/// Remplace [sitePagePathPatterns] en test. Depuis que le générateur de
+/// parcours est un écran de l'app (docs/LEDGER_*.md MOB-154), aucune page du
+/// site sans écran ne vit sous un préfixe que l'app revendique : la liste
+/// générée est vide, et le mécanisme ne se teste plus qu'avec un motif posé
+/// ici.
+@visibleForTesting
+List<String>? debugSitePagePathPatterns;
 
 /// Le lanceur système, substituable en test.
 ///

@@ -190,15 +190,30 @@ void main() {
   });
 
   group('isSitePageLocation', () {
-    // Des pages restées au site, dans les deux locales — le planificateur de
-    // parcours (ledger `MOB-24`), des routes `web` seulement, sans
-    // constructeur Dart : `/equipes/.*` les donne à l'app sous Android
-    // (docs/LEDGER_*.md MOB-59). Le hub « Gestion de l'équipe », lui, n'ouvre
-    // plus le site (ledger `MOB-169`).
+    // Une page du site sans écran sous `/equipes/.*`, que le manifeste
+    // Android donne quand même à l'app (docs/LEDGER_*.md MOB-59). Il n'en
+    // reste plus — le générateur de parcours, le dernier, est un écran de
+    // l'app depuis `MOB-154` — : un motif fictif tient lieu de la liste
+    // générée, vide.
     const List<String> sitePages = <String>[
-      '/teams/vc/routes/generate',
-      '/equipes/vc/parcours/generer',
+      '/teams/vc/routes/site-only',
+      '/equipes/vc/parcours/site-seulement',
     ];
+    setUp(
+      () => debugSitePagePathPatterns = <String>[
+        r'^/teams/[^/]+/routes/site-only/?$',
+        r'^/equipes/[^/]+/parcours/site-seulement/?$',
+      ],
+    );
+    tearDown(() => debugSitePagePathPatterns = null);
+
+    test('le générateur de parcours s\'ouvre dans l\'app (MOB-154)', () {
+      expect(sitePagePathPatterns, isEmpty);
+      for (final String page in PathVariants.routeGenerate('vc').values) {
+        expect(isSitePageLocation(page), isFalse, reason: page);
+        expect(internalLocationFor(page), page, reason: page);
+      }
+    });
 
     test('les pages de l\'équipe s\'ouvrent dans l\'app (MOB-169)', () {
       for (final String page in PathVariants.teamAdminPages('vc').values) {
@@ -402,13 +417,13 @@ void main() {
 
       final GoRouter router = await _pumpMarkdown(
         tester,
-        'Ouvrir le [planificateur](https://www.pedalons.fr/equipes/vc/parcours/generer).',
+        'Voir les [fonctionnalités](https://www.pedalons.fr/fonctionnalites).',
       );
 
-      await _tapLink(tester, 'planificateur');
+      await _tapLink(tester, 'fonctionnalités');
 
       expect(router.routerDelegate.currentConfiguration.matches, hasLength(1));
-      expect(launched.single.path, '/equipes/vc/parcours/generer');
+      expect(launched.single.path, '/fonctionnalites');
     });
 
     testWidgets('« nouveau voyage » ouvre l\'éditeur de l\'app (MOB-162)', (

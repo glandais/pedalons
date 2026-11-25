@@ -326,6 +326,12 @@ final List<_LinkCase> _cases = [
     PathVariants.team(_teamSlug),
     PathVariants.routes(_teamSlug),
   ]),
+  // Le générateur (docs/LEDGER_*.md MOB-154), sous la liste des parcours.
+  _LinkCase('routeGenerate', PathVariants.routeGenerate(_teamSlug), [
+    PathVariants.teams(),
+    PathVariants.team(_teamSlug),
+    PathVariants.routes(_teamSlug),
+  ]),
   _LinkCase('routeEdit', PathVariants.routeEdit(_teamSlug, _routeSlug), [
     PathVariants.teams(),
     PathVariants.team(_teamSlug),

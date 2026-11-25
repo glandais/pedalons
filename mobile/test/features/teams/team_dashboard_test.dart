@@ -475,6 +475,11 @@ void main() {
       expect(find.byKey(keys.teamDashboard.createRideButton), findsOneWidget);
       expect(find.byKey(keys.teamDashboard.createTripButton), findsOneWidget);
       expect(find.byKey(keys.teamDashboard.createRouteButton), findsOneWidget);
+      // Le générateur, avec le planificateur (docs/LEDGER_*.md MOB-154).
+      expect(
+        find.byKey(keys.teamDashboard.createGeneratedRouteButton),
+        findsOneWidget,
+      );
       expect(find.byKey(keys.teamDashboard.newPostButton), findsOneWidget);
       expect(
         find.text('Importer un GPX ou tracer sur la carte'),

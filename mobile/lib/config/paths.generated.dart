@@ -590,6 +590,15 @@ class Paths {
     }
   }
 
+  static String routeGenerate(String teamSlug) {
+    switch (getCurrentLocale()) {
+      case 'fr':
+        return '/equipes/$teamSlug/parcours/generer';
+      default:
+        return '/teams/$teamSlug/routes/generate';
+    }
+  }
+
   static String routeNew(String teamSlug) {
     switch (getCurrentLocale()) {
       case 'fr':
@@ -935,6 +944,10 @@ class PathVariants {
     'en': '/teams/$teamSlug/routes',
     'fr': '/equipes/$teamSlug/parcours',
   };
+  static Map<String, String> routeGenerate(String teamSlug) => {
+    'en': '/teams/$teamSlug/routes/generate',
+    'fr': '/equipes/$teamSlug/parcours/generer',
+  };
   static Map<String, String> routeNew(String teamSlug) => {
     'en': '/teams/$teamSlug/routes/new',
     'fr': '/equipes/$teamSlug/parcours/nouveau',
@@ -1002,7 +1015,4 @@ const List<(String, String)> webPageParents = <(String, String)>[
 /// screen for them, as anchored regular expressions. The OS hands such a link
 /// to the app, which opens it in the browser (docs/LEDGER_*.md MOB-59). The
 /// AASA excludes the same pages (`NOT …`); the Android manifest cannot.
-const List<String> sitePagePathPatterns = <String>[
-  r'^/teams/[^/]+/routes/generate/?$',
-  r'^/equipes/[^/]+/parcours/generer/?$',
-];
+const List<String> sitePagePathPatterns = <String>[];
