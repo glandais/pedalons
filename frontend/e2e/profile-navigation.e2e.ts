@@ -165,6 +165,6 @@ test('the notification settings and the inbox lead to each other', async ({ page
   await follow(main(page).getByRole('link', { name: 'Ouvrir mes notifications' }))
   await expect(page).toHaveURL(/:\/\/[^/]+\/notifications$/)
 
-  await follow(main(page).getByRole('link', { name: 'Réglages', exact: true }))
+  await follow(main(page).getByRole('link', { name: 'Gérer les notifications', exact: true }))
   await expectPage(page, /\/profil\/notifications$/, 'Notifications')
 })

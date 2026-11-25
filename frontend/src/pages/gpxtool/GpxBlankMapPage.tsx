@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LocateControl } from '@/components/map/LocateControl'
 import { IconArrowLeft } from '@tabler/icons-react'
@@ -9,7 +8,7 @@ import { MapFullscreenShell } from '@/components/map/MapFullscreenShell'
 import { MapSearchControl } from '@/components/map/MapSearchControl'
 import { PedalonsMap } from '@/components/map/PedalonsMap'
 import { paths } from '@/config/paths'
-import { useAppName } from '@/hooks/useAppName'
+import { useBarePageTitle } from '@/hooks/useDocumentTitle'
 import { useDefaultMapView } from '@/hooks/useDefaultMapView'
 import { useMapViewParam } from '@/hooks/useMapViewParam'
 import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
@@ -22,7 +21,6 @@ import { useResolvedColorScheme } from '@/hooks/useResolvedColorScheme'
  */
 export function GpxBlankMapPage() {
   const { t } = useTranslation()
-  const appName = useAppName()
   const colorScheme = useResolvedColorScheme()
   const defaultView = useDefaultMapView()
   // `?map=z/lat/lon` opens where a shared link or a reload left the map; the default otherwise.
@@ -31,9 +29,7 @@ export function GpxBlankMapPage() {
   const initialViewState = defaultView && (urlView ?? defaultView)
   const title = t('gpxTools.blankMap.pageTitle')
 
-  useEffect(() => {
-    document.title = appName ? `${title} — ${appName}` : title
-  }, [title, appName])
+  useBarePageTitle('gpx-tools-blank-map', {})
 
   return (
     <MapFullscreenShell

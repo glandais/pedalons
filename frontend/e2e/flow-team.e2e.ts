@@ -354,7 +354,7 @@ test.describe('team pages', () => {
     await page.goto(`/equipes/${team.slug}/admin/pages`)
     await expect(page.getByRole('heading', { level: 2, name: "Pages de l'équipe" })).toBeVisible()
     await expect(main(page).getByText('0 page sur 3 maximum')).toBeVisible()
-    const add = main(page).getByRole('link', { name: 'Ajouter une page' }).first()
+    const add = main(page).getByRole('link', { name: 'Créer une page' }).first()
     await hydrated(add)
     await add.click()
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/admin/pages/nouvelle$`))

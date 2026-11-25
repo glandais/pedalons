@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next'
-import { groupTitle } from '@/utils/groupTitle'
 import { useGetTeam } from '../api/endpoints/teams/teams'
 import { useGetRide } from '../api/endpoints/rides/rides'
 import { useGetTrip } from '../api/endpoints/trips/trips'
@@ -8,13 +7,10 @@ import { useGetTemplate } from '../api/endpoints/ride-templates/ride-templates'
 import { useGetAd } from '../api/endpoints/ads/ads'
 import { useGetPost } from '../api/endpoints/posts/posts'
 import { useGetPage } from '../api/endpoints/team-pages/team-pages'
-import type { RouteParams, EntityType } from '../config/routes.types'
-import type { TeamDetailDto, TeamPublicationDto } from '../api/dto'
-
-interface EntityData {
-  name: string | undefined
-  isLoading: boolean
-}
+import { useGetPreview } from '../api/endpoints/gpx-previews/gpx-previews'
+import type { RouteParams } from '../config/routes.types'
+import { entityNames, entityTeamSummary, type EntityNames } from '../config/breadcrumbNames'
+import type { TeamDetailDto } from '../api/dto'
 
 /**
  * The breadcrumb reads the entities the page reads, through observers that stay mounted across
@@ -28,7 +24,8 @@ export function onlyIfNotFailed(wanted: boolean) {
 }
 
 /** The breadcrumb's entity names, and what it knows of the team they belong to. */
-export type BreadcrumbData = Record<EntityType, EntityData> & {
+export interface BreadcrumbData {
+  names: EntityNames
   /** The team, when it was read — never for a team the page's entity says is closed. */
   teamDetail: TeamDetailDto | undefined
   /**
@@ -37,17 +34,6 @@ export type BreadcrumbData = Record<EntityType, EntityData> & {
    * (docs/LEDGER_*.md WEB-166).
    */
   teamClosed: boolean
-}
-
-/**
- * The team an entity page belongs to, as the entity embeds it: the first of the entities in the
- * params that has been read, `undefined` while none is. Ads and ride templates are left out — they
- * are members-only, their team is always open to whoever reads them.
- */
-export function entityTeamSummary(
-  ...summaries: (Pick<TeamPublicationDto, 'accessible' | 'name'> | undefined)[]
-): Pick<TeamPublicationDto, 'accessible' | 'name'> | undefined {
-  return summaries.find((summary) => !!summary)
 }
 
 /**
@@ -60,38 +46,40 @@ export function useBreadcrumbData(params: RouteParams): BreadcrumbData {
     rideSlug,
     postSlug,
     tripSlug,
-    stageSlug,
     routeSlug,
     templateSlug,
     adSlug,
     pageSlug,
-    groupId,
+    previewId,
   } = params
   const { t } = useTranslation()
 
   // Fetch entities conditionally based on params
-  const { data: ride, isLoading: isLoadingRide } = useGetRide(teamSlug!, rideSlug!, {
+  const { data: ride } = useGetRide(teamSlug!, rideSlug!, {
     query: { enabled: onlyIfNotFailed(!!teamSlug && !!rideSlug) },
   })
-  const { data: post, isLoading: isLoadingPost } = useGetPost(teamSlug!, postSlug!, {
+  const { data: post } = useGetPost(teamSlug!, postSlug!, {
     query: { enabled: onlyIfNotFailed(!!teamSlug && !!postSlug) },
   })
-  const { data: trip, isLoading: isLoadingTrip } = useGetTrip(teamSlug!, tripSlug!, {
+  const { data: trip } = useGetTrip(teamSlug!, tripSlug!, {
     query: { enabled: onlyIfNotFailed(!!teamSlug && !!tripSlug) },
   })
-  const { data: route, isLoading: isLoadingRoute } = useGetRoute(teamSlug!, routeSlug!, {
+  const { data: route } = useGetRoute(teamSlug!, routeSlug!, {
     query: { enabled: onlyIfNotFailed(!!teamSlug && !!routeSlug) },
   })
-  const { data: rideTemplate, isLoading: isLoadingTemplate } = useGetTemplate(
-    teamSlug!,
-    templateSlug!,
-    { query: { enabled: onlyIfNotFailed(!!teamSlug && !!templateSlug) } }
-  )
-  const { data: ad, isLoading: isLoadingAd } = useGetAd(teamSlug!, adSlug!, {
+  const { data: rideTemplate } = useGetTemplate(teamSlug!, templateSlug!, {
+    query: { enabled: onlyIfNotFailed(!!teamSlug && !!templateSlug) },
+  })
+  const { data: ad } = useGetAd(teamSlug!, adSlug!, {
     query: { enabled: onlyIfNotFailed(!!teamSlug && !!adSlug) },
   })
-  const { data: teamPage, isLoading: isLoadingTeamPage } = useGetPage(teamSlug!, pageSlug!, {
+  const { data: teamPage } = useGetPage(teamSlug!, pageSlug!, {
     query: { enabled: onlyIfNotFailed(!!teamSlug && !!pageSlug) },
+  })
+
+  // The same key as the page and its prefetches: no request of its own (the file's tab title, WEB-205).
+  const { data: gpxPreview } = useGetPreview(previewId!, {
+    query: { enabled: onlyIfNotFailed(!!previewId) },
   })
 
   // On a page of an entity that carries its team (a ride, a post, a trip, a route, a page), the team
@@ -100,32 +88,18 @@ export function useBreadcrumbData(params: RouteParams): BreadcrumbData {
   const withEntity = !!(rideSlug || postSlug || tripSlug || routeSlug || pageSlug)
   const summary = entityTeamSummary(ride?.team, post?.team, trip?.team, route?.team, teamPage?.team)
   const teamWanted = !!teamSlug && (!withEntity || !!summary?.accessible)
-  const { data: team, isLoading: isLoadingTeam } = useGetTeam(teamSlug!, {
+  const { data: team } = useGetTeam(teamSlug!, {
     query: { enabled: onlyIfNotFailed(teamWanted) },
   })
   const teamClosed = summary?.accessible === false
 
-  // A group's name comes from its ride's groups — « Groupe Rapide », as its page titles it
-  const group = groupId ? ride?.groups?.find((g) => g.id === groupId) : undefined
-
-  // Stage name comes from trip's stages array
-  const stage = stageSlug ? trip?.stages?.find((s) => s.slug === stageSlug) : undefined
-
   return {
-    team: { name: team?.name ?? summary?.name, isLoading: isLoadingTeam },
+    names: entityNames(
+      { team, ride, post, trip, route, rideTemplate, ad, teamPage, gpxPreview },
+      params,
+      t
+    ),
     teamDetail: team,
     teamClosed,
-    ride: { name: ride?.name, isLoading: isLoadingRide },
-    rideGroup: {
-      name: group && groupTitle(group.name, t),
-      isLoading: isLoadingRide,
-    },
-    post: { name: post?.name, isLoading: isLoadingPost },
-    trip: { name: trip?.name, isLoading: isLoadingTrip },
-    stage: { name: stage?.name, isLoading: isLoadingTrip },
-    route: { name: route?.name, isLoading: isLoadingRoute },
-    rideTemplate: { name: rideTemplate?.name, isLoading: isLoadingTemplate },
-    ad: { name: ad?.name, isLoading: isLoadingAd },
-    teamPage: { name: teamPage?.title, isLoading: isLoadingTeamPage },
   }
 }

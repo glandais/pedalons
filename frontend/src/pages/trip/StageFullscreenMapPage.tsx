@@ -1,10 +1,9 @@
-import { useEffect } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { MapColorFullscreenView } from '@/components/route/MapColorFullscreenView'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { paths } from '@/config/paths'
-import { useAppName } from '@/hooks/useAppName'
+import { useBarePageTitle } from '@/hooks/useDocumentTitle'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import { stageWindLeg } from '@/lib/tripWeatherOnMap'
 import { useStageMapData } from './stageMapData'
@@ -26,7 +25,6 @@ export function StageFullscreenMapPage() {
     stageSlug: string
   }>()
   const { t } = useTranslation()
-  const appName = useAppName()
 
   const {
     trip: { data: trip, isLoading: isLoadingTrip },
@@ -44,11 +42,7 @@ export function StageFullscreenMapPage() {
   )
 
   const title = stage?.name ?? route?.name ?? ''
-  useEffect(() => {
-    if (title) {
-      document.title = appName ? `${title} — ${appName}` : title
-    }
-  }, [title, appName])
+  useBarePageTitle('stage-map', { trip })
 
   if (isLoadingTrip || (routeSlug && isLoadingRoute)) {
     return <LoadingPage message={t('loading')} />

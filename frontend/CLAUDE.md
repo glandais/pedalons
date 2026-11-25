@@ -186,6 +186,7 @@ Public pages unfurl into rich social/messaging cards via server-rendered OG/Twit
 
 - **`meta()` builders only READ the per-request cache and never throw** — data must be `prefetch`ed on the same route; a missing entity returns `undefined` and falls back to site-wide defaults.
 - **Never add a `<meta>`/`<title>` React component** — React 19 hoisting shifts `useId` and duplicates the title. Tags are string-built in `seo.ts`, outside the React tree.
+- **The `<title>` is the tab's title, not `og:title`**: `pageTitleParts` + `formatPageTitle` (`src/lib/pageTitle.ts`), shared by `Layout`, the `layout: 'bare'` pages (`useBarePageTitle`) and `entry-server`, which reads names from the prefetched cache (`entityNamesFromCache`). A route's `pageTitle` (`edit` / `parent`) refines it; never write `document.title` by hand.
 - `og:image` is 1200×630 PNG/JPEG, absolute per-domain HTTPS, < ~300 KB; the default is `public/og-image.png` (rebuilt from `assets/icon.svg`).
 
 ## Key Rules

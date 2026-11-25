@@ -1,11 +1,10 @@
-import { useEffect } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useRouteMapData } from './routeDetailData'
 import { MapColorFullscreenView } from '@/components/route/MapColorFullscreenView'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { paths } from '@/config/paths'
-import { useAppName } from '@/hooks/useAppName'
+import { useBarePageTitle } from '@/hooks/useDocumentTitle'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 
 /**
@@ -16,7 +15,6 @@ import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 export function RouteFullscreenMapPage() {
   const { teamSlug, routeSlug } = useParams<{ teamSlug: string; routeSlug: string }>()
   const { t } = useTranslation()
-  const appName = useAppName()
 
   const { route: routeQuery } = useRouteMapData(teamSlug, routeSlug)
   const { data: route, isLoading } = routeQuery
@@ -25,11 +23,7 @@ export function RouteFullscreenMapPage() {
 
   useCanonicalPath(team && route ? paths.routeMap(team.slug, route.slug) : undefined)
 
-  useEffect(() => {
-    if (route) {
-      document.title = appName ? `${route.name} — ${appName}` : route.name
-    }
-  }, [route, appName])
+  useBarePageTitle('route-map', { route })
 
   if (isLoading) {
     return <LoadingPage message={t('loading')} />

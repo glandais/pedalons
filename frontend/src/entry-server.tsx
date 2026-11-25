@@ -35,6 +35,9 @@ import {
 import { withIndexing } from './config/routeMeta'
 import { readEntity, teamPageStatus } from './config/ssrTeamStatus'
 import { getRouteById } from './config/routeUtils'
+import { entityNamesFromCache } from './config/breadcrumbNames'
+import { pageTitleParts } from './config/pageTitleParts'
+import type { PageTitleParts } from './lib/pageTitle'
 import type { RouteParams } from './config/routes.types'
 import { mapThemePreference } from './lib/theme'
 import { getSitemap } from './api/endpoints/sitemap/sitemap'
@@ -272,7 +275,19 @@ export async function render(
       // and for a route that is not indexable as such (members-only, transactional).
       routeMeta = withIndexing(routeMeta, metaCtx, routeConfig)
       if (statusCode !== 200) routeMeta = { ...routeMeta, noindex: true }
-      const head = buildMetaTags(routeMeta, metaCtx)
+      // The tab's title: the client's own computation, fed by the names the prefetch cached.
+      let pageTitle: PageTitleParts | undefined
+      try {
+        pageTitle = pageTitleParts(
+          handle?.routeId,
+          metaCtx.params,
+          entityNamesFromCache(queryClient, metaCtx.params, i18nInstance.t),
+          i18nInstance.t
+        )
+      } catch (err) {
+        console.error(`[SSR] page title failed for ${url}:`, err)
+      }
+      const head = buildMetaTags(routeMeta, metaCtx, pageTitle)
 
       await unreadCount
 

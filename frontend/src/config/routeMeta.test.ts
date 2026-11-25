@@ -10,6 +10,8 @@ import { getGetRideQueryKey } from '@/api/endpoints/rides/rides'
 import { getGetTripQueryKey } from '@/api/endpoints/trips/trips'
 import { buildMetaTags, buildCanonicalUrl, type RouteMetaContext } from '@/lib/seo'
 import {
+  appsMeta,
+  privacyMeta,
   rideGroupMeta,
   rideMeta,
   routeIndexable,
@@ -458,5 +460,39 @@ describe('routes kept out of the index', () => {
       )
       .map((config) => config.id)
     expect(withoutMeta).toEqual([])
+  })
+})
+
+describe("the tab's title (WEB-205)", () => {
+  it('<title> is the page title, og:title stays the one of meta()', () => {
+    const ctx = context('PUBLIC')
+    const head = buildMetaTags({ type: 'website', title: 'Titre du meta' }, ctx, {
+      label: 'Agenda',
+      context: 'N Peloton',
+    })
+    expect(head).toContain('<title>Agenda · N Peloton — Pédalons</title>')
+    expect(head).toContain('<meta property="og:title" content="Titre du meta" />')
+  })
+
+  it('og:title falls back to the page title without the site when meta() has none', () => {
+    const ctx = context('PUBLIC')
+    const head = buildMetaTags(undefined, ctx, { label: 'Agenda', context: 'N Peloton' })
+    expect(head).toContain('<meta property="og:title" content="Agenda · N Peloton" />')
+  })
+
+  it('a static page describes itself with the site name', () => {
+    const ctx = {
+      ...context('PUBLIC'),
+      t: ((k: string, o?: { appName?: string }) => `${k}:${o?.appName}`) as unknown as TFunction,
+    }
+    expect(privacyMeta(ctx)?.description).toContain('Pédalons')
+  })
+
+  it('the apps page title uses the site separator', () => {
+    const ctx = {
+      ...context('PUBLIC'),
+      t: ((k: string) => (k === 'apps.title' ? 'Applications' : k)) as unknown as TFunction,
+    }
+    expect(appsMeta(ctx)?.title).toBe('Applications — Pédalons')
   })
 })

@@ -40,11 +40,11 @@ test('an admin creates a tag, a member puts it on an ad, the list filtered by UR
     await signIn(context, owner)
     await page.goto(`/equipes/${team.slug}/admin/tags?type=ad`)
     await expect(main.getByRole('tab', { name: /^Annonces/, selected: true })).toBeVisible()
-    const add = main.getByRole('button', { name: 'Nouveau tag' }).first()
+    const add = main.getByRole('button', { name: 'Créer un tag' }).first()
     await hydrated(add)
     await add.click()
 
-    const dialog = page.getByRole('dialog', { name: 'Nouveau tag' })
+    const dialog = page.getByRole('dialog', { name: 'Créer un tag' })
     await dialog.getByRole('textbox', { name: 'Libellé' }).fill(label)
     await dialog.getByRole('radio', { name: 'Vert' }).click()
     await dialog.getByRole('button', { name: 'Créer' }).click()

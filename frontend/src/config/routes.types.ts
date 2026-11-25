@@ -41,6 +41,7 @@ export type EntityType =
   | 'rideTemplate'
   | 'ad'
   | 'teamPage'
+  | 'gpxPreview'
 
 /**
  * Breadcrumb label configuration
@@ -77,7 +78,7 @@ export interface RouteConfig {
    * Which shell wraps this route.
    * - 'app' (default): rendered inside the shared `<Layout>` AppShell (header, footer, breadcrumbs).
    * - 'bare': rendered outside `<Layout>` — no header/footer/breadcrumbs. Auth guards still apply.
-   *   Bare pages own their `document.title` (Layout won't set it). Used for fullscreen experiences.
+   *   Bare pages set their `document.title` through `useBarePageTitle` (Layout won't). Used for fullscreen experiences.
    */
   layout?: 'app' | 'bare'
 
@@ -100,6 +101,14 @@ export interface RouteConfig {
    * undefined = route not shown in breadcrumbs
    */
   breadcrumb?: BreadcrumbLabel
+
+  /**
+   * Comment l'onglet nomme la page quand son libellé de fil d'Ariane ne suffit pas (plan 2026-11-25 D2).
+   * - `edit` : « Modifier · {nom de l'entité} » ;
+   * - `parent` : le titre de la page parente — une vue ou une carte plein écran d'elle.
+   * Absent : le libellé du fil d'Ariane.
+   */
+  pageTitle?: { type: 'edit'; entity: EntityType } | { type: 'parent' }
 
   /**
    * Whether this route is an index route (renders at parent path)

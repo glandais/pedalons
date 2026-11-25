@@ -1,10 +1,9 @@
-import { useEffect } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { MapColorFullscreenView } from '@/components/route/MapColorFullscreenView'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { paths } from '@/config/paths'
-import { useAppName } from '@/hooks/useAppName'
+import { useBarePageTitle } from '@/hooks/useDocumentTitle'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import {
   previewWindLeg,
@@ -20,18 +19,13 @@ import {
 export function GpxPreviewFullscreenMapPage() {
   const { previewId } = useParams<{ previewId: string }>()
   const { t } = useTranslation()
-  const appName = useAppName()
 
   const { data: preview, isLoading } = useGpxPreviewData(previewId)
   const { weather } = useGpxPreviewWeather(preview)
 
   useCanonicalPath(preview ? paths.gpxToolsMap(preview.id) : undefined)
 
-  useEffect(() => {
-    if (preview) {
-      document.title = appName ? `${preview.name} — ${appName}` : preview.name
-    }
-  }, [preview, appName])
+  useBarePageTitle('gpx-tools-map', { gpxPreview: preview })
 
   if (isLoading) {
     return <LoadingPage message={t('gpxTools.title')} />

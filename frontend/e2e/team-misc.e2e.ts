@@ -72,7 +72,7 @@ test.describe('team settings loaded directly', () => {
     expect(response?.status()).toBe(200)
     // Rendered by the server, for the owner: the form itself, not a spinner or a redirect.
     const html = await response!.text()
-    expect(html).toContain('Gérer le profil et les paramètres de votre équipe')
+    expect(html).toContain('Gérez le profil et les paramètres de votre équipe')
     expect(html).toContain('le dimanche')
     await expect(page).toHaveURL(new RegExp(`/equipes/${team.slug}/admin/parametres$`))
     await expect(

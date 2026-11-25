@@ -127,9 +127,9 @@ describe('GpxToolsPage', () => {
     const asUser = (plannerQuota: object, platformRole = 'USER') =>
       useAuthStore.setState({ user: { platformRole, plannerQuota } as never })
     const createButton = () =>
-      screen.getByRole('button', { name: 'Créer un parcours' }) as HTMLButtonElement
+      screen.getByRole('button', { name: 'Tracer un fichier GPX' }) as HTMLButtonElement
 
-    it('disables « Créer un parcours » with the reason once the month is used; files stay open', () => {
+    it('disables « Tracer un fichier GPX » with the reason once the month is used; files stay open', () => {
       planner.enabled = true
       asUser({ limit: 10, used: 10, resetsOn: '2026-12-01' })
       renderHub()

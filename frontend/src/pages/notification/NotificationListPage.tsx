@@ -45,7 +45,7 @@ export function NotificationListPage() {
           <Button
             component={PrefetchLink}
             to={paths.profileNotifications()}
-            variant="subtle"
+            variant="default"
             leftSection={<IconSettings size={16} />}
           >
             {t('notifications.actions.settings')}

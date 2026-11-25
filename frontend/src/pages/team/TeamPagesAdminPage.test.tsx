@@ -67,16 +67,16 @@ function renderPage(pages: TeamPageSummaryDto[]) {
 describe('TeamPagesAdminPage cap', () => {
   afterEach(cleanup)
 
-  it('still offers « Ajouter une page » with two active pages and one in the bin', () => {
+  it('still offers « Créer une page » with two active pages and one in the bin', () => {
     renderPage([page(1), page(2), page(3, true)])
     expect(screen.getByText('2 pages sur 3 maximum')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Ajouter une page' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Créer une page' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Restaurer' })).not.toBeDisabled()
   })
 
   it('disables « Restaurer » and says why once three pages are active', () => {
     renderPage([page(1), page(2), page(3), page(4, true)])
-    expect(screen.queryByRole('link', { name: 'Ajouter une page' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Créer une page' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Restaurer' })).toBeDisabled()
     expect(
       screen.getByText("L'équipe a déjà ses 3 pages : supprimez-en une pour restaurer celle-ci.")

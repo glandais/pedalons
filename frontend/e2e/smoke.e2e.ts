@@ -50,7 +50,9 @@ test.describe('rider', () => {
     await expect(
       page.getByRole('main').getByRole('heading', { name: 'Dernières publications' })
     ).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Administration plateforme' })).toHaveCount(0)
+    await expect(
+      page.getByRole('heading', { name: 'Administration de la plateforme' })
+    ).toHaveCount(0)
   })
 })
 

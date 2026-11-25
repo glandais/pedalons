@@ -13,7 +13,7 @@ import { hydrated, pageAs, toasts } from './support/ui'
  * track, saves it as a route of one of their teams, and deletes it — from the preview and from the
  * list. The preview link is shareable: anyone holding it reads it, only its owner edits it.
  *
- * The drawing tool (« Créer un parcours », /outils-gpx/nouveau) stays out: the e2e domain has
+ * The drawing tool (« Tracer un fichier GPX », /outils-gpx/nouveau) stays out: the e2e domain has
  * enableGpxPlanner off.
  *
  * Each test has its own fresh user, so « Mes fichiers » holds only what the test uploaded.
@@ -71,7 +71,7 @@ async function openPreview(page: Page, id: string, name: string) {
 async function openMyFiles(page: Page) {
   await page.goto(MY_FILES)
   const main = page.getByRole('main')
-  await expect(main.getByRole('heading', { level: 1, name: 'Lister mes fichiers' })).toBeVisible()
+  await expect(main.getByRole('heading', { level: 1, name: 'Mes fichiers GPX' })).toBeVisible()
   return main
 }
 
@@ -128,7 +128,7 @@ test('a user drops a GPX on the hub, reads its preview, finds it in their files,
   const myFiles = main.getByRole('button', { name: 'Voir mes fichiers' })
   await hydrated(myFiles)
   await myFiles.click()
-  await expect(main.getByRole('heading', { level: 1, name: 'Lister mes fichiers' })).toBeVisible()
+  await expect(main.getByRole('heading', { level: 1, name: 'Mes fichiers GPX' })).toBeVisible()
   await expect(page).toHaveURL(MY_FILES)
   await expect(main.getByText(name, { exact: true })).toBeVisible()
   await expect(main.getByText(km(stored!.distance), { exact: true })).toBeVisible()

@@ -20,6 +20,7 @@ vi.mock('../api/endpoints/ride-templates/ride-templates', () => ({ useGetTemplat
 vi.mock('../api/endpoints/ads/ads', () => ({ useGetAd: empty }))
 vi.mock('../api/endpoints/posts/posts', () => ({ useGetPost: empty }))
 vi.mock('../api/endpoints/team-pages/team-pages', () => ({ useGetPage: empty }))
+vi.mock('../api/endpoints/gpx-previews/gpx-previews', () => ({ useGetPreview: empty }))
 
 import { useBreadcrumbData } from './useBreadcrumbData'
 
@@ -29,15 +30,15 @@ describe('the ride group crumb', () => {
     const { result } = renderHook(() =>
       useBreadcrumbData({ teamSlug: 'np', rideSlug: 'sortie', groupId: 'g1' })
     )
-    expect(result.current.ride.name).toBe('Sortie du samedi')
+    expect(result.current.names.ride).toBe('Sortie du samedi')
     // « Groupe » only before a name of one or two characters (KIT §9).
-    expect(result.current.rideGroup.name).toBe('Rapide')
+    expect(result.current.names.rideGroup).toBe('Rapide')
   })
 
   it('has no name for a group the ride no longer has', () => {
     const { result } = renderHook(() =>
       useBreadcrumbData({ teamSlug: 'np', rideSlug: 'sortie', groupId: 'gone' })
     )
-    expect(result.current.rideGroup.name).toBeUndefined()
+    expect(result.current.names.rideGroup).toBeUndefined()
   })
 })

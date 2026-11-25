@@ -7,13 +7,16 @@
 // React 19 hoist tags into <body> and shift Mantine useId across the server/client boundary.
 //
 // Crawlers do not run JavaScript, so these tags MUST be in the initial server HTML. Client-side
-// navigation deliberately does NOT update them (the browser tab title is handled by Layout).
+// navigation deliberately does NOT update them. The <title> is the exception to "same text as
+// og:title": it is the tab's title, computed by the same pure function as the client's
+// (`pageTitleParts` + `formatPageTitle`, plan 2026-11-25 D2); og:title stays the route meta()'s.
 import type { TFunction } from 'i18next'
 import type { QueryClient } from '@tanstack/react-query'
 import { generatePath } from 'react-router-dom'
 import type { AssetDto, AssetsDto, ConfigDto } from '@/api/dto'
 import type { Locale } from '@/config/paths'
 import type { RouteParams } from '@/config/routes.types'
+import { formatPageTitle, type PageTitleParts } from '@/lib/pageTitle'
 
 /** og:image (1200-fit) dimensions we can only trust when the source pixel size is known. */
 export interface RouteMetaImage {
@@ -288,20 +291,29 @@ function named(name: string, content: string | undefined): string | null {
  * complete, valid set of tags — falling back to site-wide defaults — so a bare tenant link and a
  * data-failure both unfurl correctly. Never throws: callers must be able to inject the result.
  */
-export function buildMetaTags(meta: RouteMeta | undefined, ctx: RouteMetaContext): string {
+export function buildMetaTags(
+  meta: RouteMeta | undefined,
+  ctx: RouteMetaContext,
+  page?: PageTitleParts
+): string {
   const { origin, path, locale, config, t } = ctx
   const appName = config?.appName || 'Pédalons'
   const indexable = !meta?.noindex
   const canonical = indexable ? meta?.canonical || ctx.canonical : undefined
 
-  const title = truncate(meta?.title?.trim() || appName, 70)
+  const title = truncate(
+    meta?.title?.trim() || formatPageTitle(page?.label, page?.context, '') || appName,
+    70
+  )
+  // The tab's title is never truncated: it must equal what the client writes.
+  const tabTitle = page ? formatPageTitle(page.label, page.context, appName) : title
   const description = truncate(meta?.description?.trim() || t('home.subtitle'), 200)
   const type: OgType = meta?.type || 'website'
   const url = meta?.url || canonical || `${origin}${path}`
   const image = meta?.image || defaultImage(origin, appName)
 
   const lines: (string | null)[] = [
-    `<title>${escapeHtml(title)}</title>`,
+    `<title>${escapeHtml(tabTitle)}</title>`,
     named('description', description),
     property('og:type', type),
     property('og:title', title),

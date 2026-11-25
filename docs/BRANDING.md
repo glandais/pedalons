@@ -1040,6 +1040,13 @@ aucune formule enthousiaste (« Génial ! », « C'est parti ! » sont hors marq
 
 - **Titres de page et de section : nom sans article**, capitale initiale seule.
   → « Parcours », « Annonces », « Groupes », « Cols et montées », « À propos de l'équipe ».
+- **Exception : le titre d'un formulaire reprend le bouton qui l'a ouvert** (décision D1 du
+  25 novembre 2026, plan `2026-11-25-en-tetes-de-pages.md`) — page ou fenêtre, à l'infinitif :
+  « Créer une publication », « Créer un parcours », « Créer un lieu », « Modifier la publication »,
+  « Modifier la sortie », « Tracer un fichier GPX ». Le fil d'Ariane d'une page de création reprend ce texte ; celui d'une modification peut garder le nom de l'entité modifiée.
+  Les autres pages gardent un nom, y compris dans le fil d'Ariane de l'authentification
+  (« Connexion », « Nouveau mot de passe », « Autorisation d'une application »), dont les boutons
+  restent à l'infinitif (« Se connecter »).
 - **Boutons : verbe à l'infinitif**, court.
   → « Rejoindre », « Quitter le groupe », « Changer pour B », « Enregistrer », « Annuler »,
   « Retour », « Filtres », « Effacer les filtres », « Créer », « S'abonner ». L'export d'un parcours n'a qu'un bouton,

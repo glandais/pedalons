@@ -37,6 +37,7 @@ import { logEntry } from '@/lib/feedback/clientLog'
 import { useGetVersion } from '@/api/endpoints/server-version/server-version'
 import { useAuth } from '../../hooks/useAuth'
 import { useAppName } from '../../hooks/useAppName'
+import { useDocumentTitle } from '../../hooks/useDocumentTitle'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 import { useBreadcrumb } from '../../hooks/useBreadcrumb'
 import { useScrollRestoration } from '../../hooks/useScrollRestoration'
@@ -66,7 +67,7 @@ export function Layout() {
   const { user, isAuthenticated, logout } = useAuth()
   const appName = useAppName()
   const isPlatformAdmin = useAuthStore(selectIsPlatformAdmin)
-  const { items: breadcrumbItems, showBackLink } = useBreadcrumb()
+  const { items: breadcrumbItems, showBackLink, title } = useBreadcrumb()
   const [opened, { toggle, close }] = useDisclosure(false)
   // The bell is desktop-only: below `sm` the burger and the drawer carry the unread count.
   const unreadCount = useUnreadNotificationCount()
@@ -98,11 +99,8 @@ export function Layout() {
     }
   }, [pathname, navigationType])
 
-  // Update document title on route change
-  useEffect(() => {
-    const label = breadcrumbItems.at(-1)?.label
-    document.title = label ? `${label} — ${appName}` : appName
-  }, [breadcrumbItems, appName])
+  // The tab's title follows the route, the same computation as the server's
+  useDocumentTitle(title)
 
   // Close mobile menu on Escape key
   useEffect(() => {

@@ -149,7 +149,7 @@ test.describe('the platform role', () => {
     await page.goto(adminUsersSearch(target.user.email))
     const row = adminUserRow(page, target.user.email)
     await expect(row.getByText(target.user.displayName, { exact: true })).toBeVisible()
-    await expect(row.getByText('Admin plateforme', { exact: true })).toHaveCount(0)
+    await expect(row.getByText('Administrateur plateforme', { exact: true })).toHaveCount(0)
 
     const toggle = row.getByRole('button')
     await hydrated(toggle)
@@ -166,7 +166,7 @@ test.describe('the platform role', () => {
       try {
         await theirs.goto('/plateforme')
         await expect(
-          theirs.getByRole('heading', { name: 'Administration plateforme', exact: true })
+          theirs.getByRole('heading', { name: 'Administration de la plateforme', exact: true })
         ).toBeVisible()
         await expect(theirs).toHaveURL(/\/plateforme$/)
       } finally {
@@ -175,7 +175,7 @@ test.describe('the platform role', () => {
 
       // Back on the list (reloaded: see the badge test below), the role is shown, and taken back.
       await page.reload()
-      await expect(row.getByText('Admin plateforme', { exact: true })).toBeVisible()
+      await expect(row.getByText('Administrateur plateforme', { exact: true })).toBeVisible()
       await hydrated(toggle)
       const revoked = page.waitForResponse(
         (r) => r.url().endsWith(`/api/admin/users/${target.user.id}/platform-role`) && r.ok()
@@ -185,7 +185,7 @@ test.describe('the platform role', () => {
       expect((await adminUser(target.user.id)).platformRole ?? null).toBeNull()
       await page.reload()
       await expect(row.getByText(target.user.displayName, { exact: true })).toBeVisible()
-      await expect(row.getByText('Admin plateforme', { exact: true })).toHaveCount(0)
+      await expect(row.getByText('Administrateur plateforme', { exact: true })).toHaveCount(0)
     } finally {
       // Never leave a stray platform admin behind a failed assertion.
       if ((await adminUser(target.user.id)).platformRole)
@@ -196,7 +196,7 @@ test.describe('the platform role', () => {
   test("the platform admin's own row cannot take its own role away", async ({ page, seed }) => {
     await page.goto(adminUsersSearch(seed.admin.email))
     const row = adminUserRow(page, seed.admin.email)
-    await expect(row.getByText('Admin plateforme', { exact: true })).toBeVisible()
+    await expect(row.getByText('Administrateur plateforme', { exact: true })).toBeVisible()
     const toggle = row.getByRole('button')
     await hydrated(toggle)
     await expect(toggle).toBeDisabled()
@@ -221,7 +221,7 @@ test.describe('the platform role', () => {
         'precondition: the role is granted'
       ).toBe('PLATFORM_ADMIN')
 
-      await expect(row.getByText('Admin plateforme', { exact: true })).toBeVisible()
+      await expect(row.getByText('Administrateur plateforme', { exact: true })).toBeVisible()
     } finally {
       await setPlatformRole(target.user.id, undefined)
     }
@@ -246,7 +246,7 @@ test('the row actions of the platform lists have an accessible name', async ({ p
   await expect(userRow.getByRole('button')).toHaveCount(1)
   await expect(
     userRow.getByRole('button', {
-      name: 'Impossible de retirer votre propre rôle admin plateforme',
+      name: "Impossible de retirer votre propre rôle d'administrateur plateforme",
     })
   ).toBeVisible({ timeout: 2_000 })
 })

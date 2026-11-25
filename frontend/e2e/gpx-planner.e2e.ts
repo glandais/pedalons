@@ -37,7 +37,7 @@ import {
 import { hydrated } from './support/ui'
 
 /**
- * The GPX tools' planner (« Créer un parcours », /outils-gpx/nouveau — CreateGpxPreviewPage.tsx,
+ * The GPX tools' planner (« Tracer un fichier GPX », /outils-gpx/nouveau — CreateGpxPreviewPage.tsx,
  * GpxPreviewEditor.tsx, RoutePlanner.tsx), which `localhost` keeps closed (routes-render.e2e.ts,
  * gpxToolsNew). It runs on a domain of its own with `enableGpxPlanner` on, reached through an
  * alias pinned to a team located in Paris, so that the map opens on Paris at the team zoom
@@ -88,14 +88,14 @@ test('a user draws a route from two points on the map, sees it routed and traced
     : await watchRouter(page)
   const main = page.getByRole('main')
 
-  // From the hub, whose « Créer un parcours » card only shows when the planner is open.
+  // From the hub, whose « Tracer un fichier GPX » card only shows when the planner is open.
   await page.goto(`${origin}/outils-gpx`)
   await expect(page.getByRole('heading', { level: 1, name: 'Outils GPX' })).toBeVisible()
-  const start = main.getByRole('button', { name: 'Créer un parcours' })
+  const start = main.getByRole('button', { name: 'Tracer un fichier GPX' })
   await hydrated(start)
   await start.click()
   await expect(page).toHaveURL(`${origin}/outils-gpx/nouveau`)
-  await expect(page.getByRole('heading', { level: 1, name: 'Créer un parcours' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Tracer un fichier GPX' })).toBeVisible()
 
   // On a finger the form holds a still preview: the map is in the fullscreen editor, opened here.
   const surface = await startDrawing(page, isMobile)
@@ -247,7 +247,7 @@ async function openPlanner(
   const main = page.getByRole('main')
 
   await page.goto(`${origin}/outils-gpx/nouveau`)
-  await expect(page.getByRole('heading', { level: 1, name: 'Créer un parcours' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Tracer un fichier GPX' })).toBeVisible()
   const nameField = main.getByRole('textbox', { name: 'Nom du parcours' })
   await hydrated(nameField)
 

@@ -148,7 +148,7 @@ export function StageDetailPage() {
         <>
           {trip.registered && (
             <Badge color="primary" variant="light">
-              {t('rides.detail.groups.joined')}
+              {t('trips.stage.joined')}
             </Badge>
           )}
           <ShareButton title={stage.name} />
@@ -168,7 +168,7 @@ export function StageDetailPage() {
                 variant="outline"
                 leftSection={<IconPencil size={16} />}
               >
-                {t('actions.edit')}
+                {t('trips.edit.title')}
               </Button>
             )}
           </>

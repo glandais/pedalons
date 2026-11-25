@@ -41,7 +41,7 @@ export function EditRoutePage() {
   useCanonicalPath(team && route ? paths.routeEdit(team.slug, route.slug) : undefined)
 
   if (isLoadingTeam) {
-    return <LoadingPage message={t('routes.create.title')} />
+    return <LoadingPage message={t('routes.edit.title')} />
   }
 
   if (!team) {

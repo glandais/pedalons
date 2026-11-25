@@ -212,7 +212,7 @@ export function RideGroupPage() {
               variant="outline"
               leftSection={<IconPencil size={16} />}
             >
-              {t('actions.edit')}
+              {t('rides.edit.title')}
             </Button>
           )}
         </>

@@ -107,7 +107,7 @@ test('a post goes from the editor to the feeds, gets a comment, is edited, then 
     await hydrated(create)
     await create.click()
     await expect(
-      main.getByRole('heading', { level: 1, name: 'Nouvelle publication' })
+      main.getByRole('heading', { level: 1, name: 'Créer une publication' })
     ).toBeVisible()
 
     const titleInput = main.getByRole('textbox', { name: 'Titre' })
@@ -389,7 +389,7 @@ test('a post saved as a draft is hidden from members until it is published from 
   const create = main.getByRole('link', { name: 'Créer une publication' }).first()
   await hydrated(create)
   await create.click()
-  await expect(main.getByRole('heading', { level: 1, name: 'Nouvelle publication' })).toBeVisible()
+  await expect(main.getByRole('heading', { level: 1, name: 'Créer une publication' })).toBeVisible()
   const titleInput = main.getByRole('textbox', { name: 'Titre' })
   await hydrated(titleInput)
   await titleInput.fill(title)
@@ -477,7 +477,7 @@ test.describe('scheduled publication', () => {
       await signIn(page.context(), author)
       await page.goto(`/equipes/${team.slug}/articles/nouveau`)
       await expect(
-        main.getByRole('heading', { level: 1, name: 'Nouvelle publication' })
+        main.getByRole('heading', { level: 1, name: 'Créer une publication' })
       ).toBeVisible()
       const titleInput = main.getByRole('textbox', { name: 'Titre' })
       await hydrated(titleInput)

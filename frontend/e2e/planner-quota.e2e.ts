@@ -153,7 +153,7 @@ test.describe('team quota', () => {
 test.describe('personal quota of the GPX tools', () => {
   test.setTimeout(120_000)
 
-  test('someone in no unlocked team who used their 10 saves sees « Créer un parcours » closed, with the reason', async ({
+  test('someone in no unlocked team who used their 10 saves sees « Tracer un fichier GPX » closed, with the reason', async ({
     context,
     page,
   }) => {
@@ -171,7 +171,7 @@ test.describe('personal quota of the GPX tools', () => {
     await signInOn(context, PLANNER_PIN_HOST, user)
     await page.goto(`${originOf(PLANNER_PIN_HOST)}/outils-gpx`)
     const main = page.getByRole('main')
-    const create = main.getByRole('button', { name: 'Créer un parcours' })
+    const create = main.getByRole('button', { name: 'Tracer un fichier GPX' })
     await hydrated(create)
     await expect(create).toBeDisabled()
     await expect(

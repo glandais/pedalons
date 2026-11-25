@@ -132,7 +132,7 @@ describe('RideFullscreenMapPage (WEB-118)', () => {
     expect(state.view.title).toBe('Sortie du samedi')
     expect(state.view.backTo).toBe(paths.ride('np', 'sortie'))
     expect(state.view.timezone).toBe('America/Montreal')
-    expect(document.title).toBe('Sortie du samedi — Pédalons')
+    expect(document.title).toBe('Sortie du samedi · N Peloton — Pédalons')
   })
 
   it("puts the ride's departure under the title, in the ride's zone (BRAND-8)", () => {

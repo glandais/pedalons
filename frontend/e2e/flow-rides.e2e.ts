@@ -1035,7 +1035,7 @@ test.describe('ride templates, regressions', () => {
 })
 
 test.describe('a route from the ride editor', () => {
-  test('« Créer un nouveau parcours » from the route picker creates the route and selects it for the ride', async ({
+  test('« Créer un parcours » from the route picker creates the route and selects it for the ride', async ({
     page,
   }) => {
     // Regression (74efdc0d): RouteEditor's form stops its submit's propagation — before, React carried
@@ -1067,12 +1067,12 @@ test.describe('a route from the ride editor', () => {
     // The ride's route picker (the first; the others are the groups').
     await main(page).getByRole('button', { name: 'Sélectionner un parcours' }).first().click()
     const picker = page.getByRole('dialog', { name: 'Sélectionner un parcours pour la sortie' })
-    const createNew = picker.getByRole('button', { name: 'Créer un nouveau parcours' })
+    const createNew = picker.getByRole('button', { name: 'Créer un parcours' })
     await expect(createNew).toBeVisible()
     await createNew.click()
     await expect(picker).toBeHidden()
 
-    const modal = page.getByRole('dialog', { name: 'Créer un nouveau parcours' })
+    const modal = page.getByRole('dialog', { name: 'Créer un parcours' })
     await expect(modal).toBeVisible()
     await modal.locator('input[type="file"][accept=".gpx"]').setInputFiles({
       name: 'boucle-neuve.gpx',

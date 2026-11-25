@@ -31,7 +31,7 @@ import { entityCard, hydrated, pageAs, pageHydrated } from './support/ui'
 
 /**
  * The nominal journeys of the routes section (parcours) and of the team's places (lieux), through
- * the UI: upload a GPX in the « Créer un nouveau parcours » form, read the detail page and download
+ * the UI: upload a GPX in the « Créer un parcours » form, read the detail page and download
  * the GPX, edit the name, description and surface, find the route in the team's list and by search,
  * delete it — and add, rename and delete a place in the team admin.
  *
@@ -125,9 +125,7 @@ test('a team admin creates a route by uploading a GPX; its page shows its stats,
   await create.click()
 
   const main = page.getByRole('main')
-  await expect(
-    main.getByRole('heading', { level: 1, name: 'Créer un nouveau parcours' })
-  ).toBeVisible()
+  await expect(main.getByRole('heading', { level: 1, name: 'Créer un parcours' })).toBeVisible()
   const submit = main.getByRole('button', { name: 'Créer le parcours' })
   await hydrated(submit)
   // No file yet: nothing to create.
@@ -394,16 +392,16 @@ test.describe('places', () => {
     await expect(main.getByText(/^Aucun lieu défini\./)).toBeVisible()
 
     // Add.
-    const add = main.getByRole('button', { name: 'Ajouter un lieu' })
+    const add = main.getByRole('button', { name: 'Créer un lieu' })
     await hydrated(add)
     await add.click()
-    const form = page.getByRole('dialog', { name: 'Ajouter un lieu' })
+    const form = page.getByRole('dialog', { name: 'Créer un lieu' })
     await form.getByRole('textbox', { name: 'Nom' }).fill(name)
     await form.getByRole('textbox', { name: 'Adresse' }).fill(address)
     // A link is optional (a place without one: the next test); this one has one, to check it.
     await form.getByRole('textbox', { name: 'Lien' }).fill(link)
     await form.getByRole('checkbox', { name: "Peut servir d'arrivée" }).uncheck()
-    await form.getByRole('button', { name: 'Ajouter', exact: true }).click()
+    await form.getByRole('button', { name: 'Créer', exact: true }).click()
     await expect(form).toHaveCount(0)
     await expect(main.getByText(name, { exact: true })).toBeVisible()
     await expect(main.getByText(address, { exact: true })).toBeVisible()
@@ -456,16 +454,16 @@ test.describe('places', () => {
 
     await signIn(context, owner)
     const main = await openPlaces(page, team.slug)
-    const add = main.getByRole('button', { name: 'Ajouter un lieu' })
+    const add = main.getByRole('button', { name: 'Créer un lieu' })
     await hydrated(add)
     await add.click()
-    const form = page.getByRole('dialog', { name: 'Ajouter un lieu' })
+    const form = page.getByRole('dialog', { name: 'Créer un lieu' })
     await form.getByRole('textbox', { name: 'Nom' }).fill(name)
     await form.getByRole('textbox', { name: 'Adresse' }).fill(address)
     await expect(form.getByRole('textbox', { name: 'Lien' }), 'no link typed').toHaveValue('')
     await expect(form.getByText(/obligatoire|requis|invalide/i)).toHaveCount(0)
 
-    const submit = form.getByRole('button', { name: 'Ajouter', exact: true })
+    const submit = form.getByRole('button', { name: 'Créer', exact: true })
     await expect(submit).toBeEnabled({ timeout: 2_000 })
     await submit.click()
     await expect(form).toHaveCount(0)

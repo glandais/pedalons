@@ -95,6 +95,10 @@ import {
   gpxPreviewMeta,
   appsMeta,
   featuresMeta,
+  privacyMeta,
+  termsMeta,
+  supportMeta,
+  loginMeta,
 } from './routeMeta'
 import { useAuthStore } from '@/store/authStore'
 import type { QueryClient } from '@tanstack/react-query'
@@ -234,7 +238,7 @@ export const routesConfig: RoutesConfig = [
     // (docs/LEDGER_*.md WEB-4).
     noindex: true,
     parentId: 'gpx-tools',
-    breadcrumb: { type: 'static', i18nKey: tRegister('gpxTools.preview.title') },
+    breadcrumb: { type: 'dynamic', entity: 'gpxPreview' },
     // Public/anonymous endpoint — prefetches fine under stateless SSR, and feeds gpxPreviewMeta.
     prefetch: (queryClient, params) => prefetchGpxPreviewView(queryClient, params.previewId!),
     meta: gpxPreviewMeta,
@@ -251,6 +255,7 @@ export const routesConfig: RoutesConfig = [
     layout: 'bare',
     parentId: 'gpx-tools-view',
     breadcrumb: { type: 'static', i18nKey: tRegister('map.fullscreen.title') },
+    pageTitle: { type: 'parent' },
     // Public/anonymous endpoint — prefetches fine under stateless SSR, and feeds gpxPreviewMeta.
     prefetch: (queryClient, params) => prefetchGpxPreview(queryClient, params.previewId!),
     meta: gpxPreviewMeta,
@@ -263,6 +268,7 @@ export const routesConfig: RoutesConfig = [
     auth: 'authenticated',
     parentId: 'gpx-tools-view',
     breadcrumb: { type: 'static', i18nKey: tRegister('gpxTools.edit.title') },
+    pageTitle: { type: 'edit', entity: 'gpxPreview' },
     prefetch: (queryClient, params) => prefetchGpxPreviewForm(queryClient, params.previewId!),
   },
 
@@ -291,6 +297,7 @@ export const routesConfig: RoutesConfig = [
   // === Legal Routes ===
   {
     id: 'privacy',
+    meta: privacyMeta,
     paths: pathVariants.privacy(),
     component: pages.PrivacyPolicyPage,
     auth: 'public',
@@ -299,6 +306,7 @@ export const routesConfig: RoutesConfig = [
   },
   {
     id: 'terms',
+    meta: termsMeta,
     paths: pathVariants.terms(),
     component: pages.TermsOfServicePage,
     auth: 'public',
@@ -307,6 +315,7 @@ export const routesConfig: RoutesConfig = [
   },
   {
     id: 'support',
+    meta: supportMeta,
     paths: pathVariants.support(),
     component: pages.SupportPage,
     auth: 'public',
@@ -317,11 +326,12 @@ export const routesConfig: RoutesConfig = [
   // === Auth Routes ===
   {
     id: 'login',
+    meta: loginMeta,
     paths: pathVariants.login(),
     component: pages.LoginPage,
     auth: 'unauthenticated',
     parentId: null,
-    breadcrumb: { type: 'static', i18nKey: tRegister('auth.login.title') },
+    breadcrumb: { type: 'static', i18nKey: tRegister('auth.login.pageTitle') },
   },
   {
     // The consent screen of the OAuth flow for external applications (docs/LEDGER_*.md API-199).
@@ -411,7 +421,7 @@ export const routesConfig: RoutesConfig = [
     // Not indexed: transactional, opened from a link carrying its token in the query string.
     noindex: true,
     parentId: null,
-    breadcrumb: { type: 'static', i18nKey: tRegister('auth.resetPassword.title') },
+    breadcrumb: { type: 'static', i18nKey: tRegister('auth.resetPassword.pageTitle') },
   },
   // === Profile: the overview, then one page per subject (contracts/routes.yaml) ===
   {
@@ -646,6 +656,7 @@ export const routesConfig: RoutesConfig = [
     auth: 'authenticated',
     parentId: 'team-agenda',
     breadcrumb: { type: 'static', i18nKey: tRegister('calendar.title') },
+    pageTitle: { type: 'parent' },
     prefetch: (queryClient, params) =>
       withTeamSwitcher(queryClient, prefetchTeamCalendar(queryClient, params.teamSlug!)),
   },
@@ -707,7 +718,7 @@ export const routesConfig: RoutesConfig = [
     component: pages.CreateTeamPagePage,
     auth: 'authenticated',
     parentId: 'team-admin-pages',
-    breadcrumb: { type: 'static', i18nKey: tRegister('actions.new') },
+    breadcrumb: { type: 'static', i18nKey: tRegister('teams.pages.create.title') },
     prefetch: teamScopedPrefetch(),
     showBackLink: true,
   },
@@ -718,6 +729,7 @@ export const routesConfig: RoutesConfig = [
     auth: 'authenticated',
     parentId: 'team-admin-pages',
     breadcrumb: { type: 'dynamic', entity: 'teamPage' },
+    pageTitle: { type: 'edit', entity: 'teamPage' },
     prefetch: teamScopedPrefetch((qc, p) => prefetchEditTeamPageForm(qc, p.teamSlug!, p.pageSlug!)),
     showBackLink: true,
   },
@@ -796,6 +808,7 @@ export const routesConfig: RoutesConfig = [
     layout: 'bare',
     parentId: 'ride-group',
     breadcrumb: { type: 'static', i18nKey: tRegister('map.fullscreen.title') },
+    pageTitle: { type: 'parent' },
     prefetch: (queryClient, params) =>
       prefetchRideGroupMap(queryClient, params.teamSlug!, params.rideSlug!),
     // No group page for a ride with at most one group (WEB-79), so no group map either: a solo
@@ -813,6 +826,7 @@ export const routesConfig: RoutesConfig = [
     layout: 'bare',
     parentId: 'ride-detail',
     breadcrumb: { type: 'static', i18nKey: tRegister('map.fullscreen.title') },
+    pageTitle: { type: 'parent' },
     prefetch: (queryClient, params) =>
       prefetchRideMap(queryClient, params.teamSlug!, params.rideSlug!),
     // Only a solo ride has this map: any other goes to its page.
@@ -825,7 +839,8 @@ export const routesConfig: RoutesConfig = [
     component: pages.EditRidePage,
     auth: 'authenticated',
     parentId: 'ride-detail',
-    breadcrumb: { type: 'static', i18nKey: tRegister('actions.edit') },
+    breadcrumb: { type: 'static', i18nKey: tRegister('rides.edit.title') },
+    pageTitle: { type: 'edit', entity: 'ride' },
     prefetch: teamScopedPrefetch((qc, p) => prefetchEditRideForm(qc, p.teamSlug!, p.rideSlug!)),
     showBackLink: true,
   },
@@ -846,7 +861,7 @@ export const routesConfig: RoutesConfig = [
     component: pages.CreateRideTemplatePage,
     auth: 'authenticated',
     parentId: 'ride-templates',
-    breadcrumb: { type: 'static', i18nKey: tRegister('actions.new') },
+    breadcrumb: { type: 'static', i18nKey: tRegister('rideTemplates.create.title') },
     prefetch: teamScopedPrefetch((qc, p) => prefetchCreateRideTemplateForm(qc, p.teamSlug!)),
     showBackLink: true,
   },
@@ -857,6 +872,7 @@ export const routesConfig: RoutesConfig = [
     auth: 'authenticated',
     parentId: 'ride-templates',
     breadcrumb: { type: 'dynamic', entity: 'rideTemplate' },
+    pageTitle: { type: 'edit', entity: 'rideTemplate' },
     prefetch: teamScopedPrefetch((qc, p) =>
       prefetchEditRideTemplateForm(qc, p.teamSlug!, p.templateSlug!)
     ),
@@ -892,7 +908,8 @@ export const routesConfig: RoutesConfig = [
     component: pages.EditTripPage,
     auth: 'authenticated',
     parentId: 'trip-detail',
-    breadcrumb: { type: 'static', i18nKey: tRegister('actions.edit') },
+    breadcrumb: { type: 'static', i18nKey: tRegister('trips.edit.title') },
+    pageTitle: { type: 'edit', entity: 'trip' },
     prefetch: teamScopedPrefetch((qc, p) => prefetchEditTripForm(qc, p.teamSlug!, p.tripSlug!)),
     showBackLink: true,
   },
@@ -919,6 +936,7 @@ export const routesConfig: RoutesConfig = [
     layout: 'bare',
     parentId: 'stage-detail',
     breadcrumb: { type: 'static', i18nKey: tRegister('map.fullscreen.title') },
+    pageTitle: { type: 'parent' },
     prefetch: (queryClient, params) =>
       prefetchStageMap(queryClient, params.teamSlug!, params.tripSlug!, params.stageSlug!),
     // The trip's `permissions.indexable` decides: a private team's trip, read by link, leaves no
@@ -955,7 +973,8 @@ export const routesConfig: RoutesConfig = [
     component: pages.EditPostPage,
     auth: 'authenticated',
     parentId: 'post-detail',
-    breadcrumb: { type: 'static', i18nKey: tRegister('actions.edit') },
+    breadcrumb: { type: 'static', i18nKey: tRegister('posts.edit.title') },
+    pageTitle: { type: 'edit', entity: 'post' },
     prefetch: teamScopedPrefetch((qc, p) => prefetchEditPostForm(qc, p.teamSlug!, p.postSlug!)),
     showBackLink: true,
   },
@@ -1007,7 +1026,7 @@ export const routesConfig: RoutesConfig = [
     component: pages.CreateRoutePage,
     auth: 'authenticated',
     parentId: 'routes',
-    breadcrumb: { type: 'static', i18nKey: tRegister('actions.new') },
+    breadcrumb: { type: 'static', i18nKey: tRegister('routes.create.title') },
     prefetch: teamScopedPrefetch((qc, p) => prefetchCreateRouteForm(qc, p.teamSlug!)),
     showBackLink: true,
   },
@@ -1033,6 +1052,7 @@ export const routesConfig: RoutesConfig = [
     layout: 'bare',
     parentId: 'route-detail',
     breadcrumb: { type: 'static', i18nKey: tRegister('map.fullscreen.title') },
+    pageTitle: { type: 'parent' },
     prefetch: (queryClient, params) =>
       prefetchRouteMap(queryClient, params.teamSlug!, params.routeSlug!),
     meta: routeMeta,
@@ -1043,7 +1063,8 @@ export const routesConfig: RoutesConfig = [
     component: pages.EditRoutePage,
     auth: 'authenticated',
     parentId: 'route-detail',
-    breadcrumb: { type: 'static', i18nKey: tRegister('actions.edit') },
+    breadcrumb: { type: 'static', i18nKey: tRegister('routes.edit.title') },
+    pageTitle: { type: 'edit', entity: 'route' },
     prefetch: teamScopedPrefetch((qc, p) => prefetchEditRouteForm(qc, p.teamSlug!, p.routeSlug!)),
     showBackLink: true,
   },
@@ -1091,7 +1112,8 @@ export const routesConfig: RoutesConfig = [
     component: pages.EditAdPage,
     auth: 'authenticated',
     parentId: 'ad-detail',
-    breadcrumb: { type: 'static', i18nKey: tRegister('actions.edit') },
+    breadcrumb: { type: 'static', i18nKey: tRegister('ads.edit.title') },
+    pageTitle: { type: 'edit', entity: 'ad' },
     prefetch: teamScopedPrefetch((qc, p) => prefetchEditAdForm(qc, p.teamSlug!, p.adSlug!)),
     showBackLink: true,
   },

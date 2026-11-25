@@ -145,7 +145,7 @@ test.describe('ad journey', () => {
     await hydrated(create)
     await create.click()
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Nouvelle annonce' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Créer une annonce' })).toBeVisible()
     const main = page.getByRole('main')
     const title = main.getByRole('textbox', { name: /^Titre/ })
     await hydrated(title)
@@ -233,7 +233,7 @@ test.describe('ad journey', () => {
 
     const createAd = async (name: string, fill: () => Promise<void>) => {
       await page.goto(`${listPath(team.slug)}/nouvelle`)
-      await expect(page.getByRole('heading', { level: 1, name: 'Nouvelle annonce' })).toBeVisible()
+      await expect(page.getByRole('heading', { level: 1, name: 'Créer une annonce' })).toBeVisible()
       const title = main.getByRole('textbox', { name: /^Titre/ })
       await hydrated(title)
       await title.fill(name)

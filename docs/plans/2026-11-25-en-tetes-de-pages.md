@@ -1,6 +1,6 @@
 # En-têtes de pages : six règles, cinq lots
 
-Écrit le 25 novembre 2026. **État : décidé, rien de codé.** Source : l'audit des en-têtes du
+Écrit le 25 novembre 2026. **État : décidé ; lot 1 codé le 25 novembre 2026 (`WEB-205`), lots 2 à 5 non commencés.** Source : l'audit des en-têtes du
 25 novembre 2026 (89 pages du site, lu dans le code, rien vu dans un navigateur), ses corrections
 immédiates (`WEB-204`), une planche de design des suggestions, et les arbitrages du propriétaire du même
 jour (§2). Ledger : `WEB-205` à `WEB-209` (un lot chacun), `MOB-184` (l'app).

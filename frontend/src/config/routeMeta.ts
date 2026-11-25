@@ -18,6 +18,7 @@ import type { Instant, Visibility } from '@/api/dto'
 import type { Locale } from '@/config/paths'
 import type { RouteConfig } from '@/config/routes.types'
 import { groupTitle } from '@/utils/groupTitle'
+import { formatPageTitle, joinTitle } from '@/lib/pageTitle'
 import { formatDate as formatLongDate, formatTime as formatClockTime } from '@/utils/dateFormatCore'
 import {
   buildMetaTags as _buildMetaTags,
@@ -172,7 +173,7 @@ export const homeMeta: RouteMetaFn = (ctx) => {
   const appName = appNameOf(ctx)
   return {
     type: 'website',
-    title: truncate(`${appName} · ${ctx.t('home.subtitle')}`, 65),
+    title: truncate(joinTitle(appName, ctx.t('home.subtitle')), 65),
     description: ctx.t('home.subtitle'),
     image: defaultImage(ctx.origin, appName),
   }
@@ -183,7 +184,7 @@ export const appsMeta: RouteMetaFn = (ctx) => {
   const appName = appNameOf(ctx)
   return {
     type: 'website',
-    title: truncate(`${ctx.t('apps.title')} · ${appName}`, 65),
+    title: truncate(formatPageTitle(ctx.t('apps.title'), undefined, appName), 65),
     description: ctx.t('apps.subtitle'),
     image: defaultImage(ctx.origin, appName),
   }
@@ -194,7 +195,7 @@ export const featuresMeta: RouteMetaFn = (ctx) => {
   const appName = appNameOf(ctx)
   return {
     type: 'website',
-    title: truncate(`${ctx.t('features.meta.title')} · ${appName}`, 65),
+    title: truncate(formatPageTitle(ctx.t('features.meta.title'), undefined, appName), 65),
     description: ctx.t('features.meta.description'),
     image: defaultImage(ctx.origin, appName),
   }
@@ -205,7 +206,7 @@ export const teamsMeta: RouteMetaFn = (ctx) => {
   const appName = appNameOf(ctx)
   return {
     type: 'website',
-    title: truncate(`${ctx.t('teams.title')} · ${appName}`, 65),
+    title: truncate(formatPageTitle(ctx.t('teams.title'), undefined, appName), 65),
     description: ctx.t('home.subtitle'),
     image: defaultImage(ctx.origin, appName),
   }
@@ -230,7 +231,7 @@ export const teamDetailMeta: RouteMetaFn = (ctx) => {
   const team = ctx.queryClient.getQueryData<TeamDetailDto>(getGetTeamQueryKey(ctx.params.teamSlug!))
   if (!team) return undefined
   const appName = appNameOf(ctx)
-  const composed = `${team.name} · ${appName}`
+  const composed = formatPageTitle(team.name, undefined, appName)
   const title = team.name.length > 60 ? truncate(team.name, 65) : truncate(composed, 70)
   return { type: 'website', title, ...teamBase(team, ctx), noindex: notIndexable(team.visibility) }
 }
@@ -258,7 +259,7 @@ export const teamPageMeta: RouteMetaFn = (ctx) => {
   const team = ctx.queryClient.getQueryData<TeamDetailDto>(getGetTeamQueryKey(ctx.params.teamSlug!))
   const teamName = page.team?.name ?? team?.name ?? appNameOf(ctx)
   const stripped = stripMarkdown(page.media?.markdown ?? '')
-  const composed = `${page.title} · ${teamName}`
+  const composed = formatPageTitle(page.title, teamName, '')
   return {
     type: 'article',
     title: page.title.length > 60 ? truncate(page.title, 65) : truncate(composed, 70),
@@ -308,7 +309,9 @@ export const rideMeta: RouteMetaFn = (ctx) => {
   const team = ctx.queryClient.getQueryData<TeamDetailDto>(getGetTeamQueryKey(ctx.params.teamSlug!))
   const teamName = ride.team?.name ?? appNameOf(ctx)
   const title =
-    ride.name.length < 48 ? truncate(`${ride.name} · ${teamName}`, 65) : truncate(ride.name, 65)
+    ride.name.length < 48
+      ? truncate(formatPageTitle(ride.name, teamName, ''), 65)
+      : truncate(ride.name, 65)
 
   const stripped = stripMarkdown(ride.media?.markdown ?? '')
   // A solo ride's page is its group's (WEB-79): the group's facts stand in for the ride's count.
@@ -385,7 +388,7 @@ export const rideGroupMeta: RouteMetaFn = (ctx) => {
   )
   return {
     type: 'article',
-    title: truncate(`${title} · ${ride.name}`, 65),
+    title: truncate(joinTitle(title, ride.name), 65),
     description,
     image:
       imgFromTemplate(ctx.origin, ride.thumbnailLightUrl, alt) ??
@@ -423,7 +426,9 @@ export const tripMeta: RouteMetaFn = (ctx) => {
   return {
     type: 'article',
     title:
-      trip.name.length > 60 ? truncate(trip.name, 65) : truncate(`${trip.name} · ${teamName}`, 70),
+      trip.name.length > 60
+        ? truncate(trip.name, 65)
+        : truncate(formatPageTitle(trip.name, teamName, ''), 70),
     description,
     image:
       imgFromTemplate(ctx.origin, trip.thumbnailLightUrl, alt) ??
@@ -481,7 +486,7 @@ export const stageMeta: RouteMetaFn = (ctx) => {
 
   return {
     type: 'article',
-    title: truncate(`${stage.name} · ${trip.name}`, 65),
+    title: truncate(joinTitle(stage.name, trip.name), 65),
     description,
     image:
       imgFromAsset(ctx.origin, stage.route?.media?.assets?.thumbnailLight, alt) ??
@@ -520,7 +525,7 @@ export const routeMeta: RouteMetaFn = (ctx) => {
   const alt = ctx.t('seo.route.imageAlt', { name: route.name })
   return {
     type: 'website',
-    title: teamName ? truncate(`${route.name} · ${teamName}`, 65) : truncate(route.name, 65),
+    title: truncate(formatPageTitle(route.name, teamName, ''), 65),
     description,
     image:
       imgFromAsset(ctx.origin, route.media?.assets?.thumbnailLight, alt) ??
@@ -539,7 +544,7 @@ export const gpxBlankMapMeta: RouteMetaFn = (ctx) => {
   const appName = appNameOf(ctx)
   return {
     type: 'website',
-    title: truncate(`${ctx.t('gpxTools.blankMap.pageTitle')} · ${appName}`, 65),
+    title: truncate(formatPageTitle(ctx.t('gpxTools.blankMap.pageTitle'), undefined, appName), 65),
     description: ctx.t('gpxTools.blankMap.description'),
     image: defaultImage(ctx.origin, appName),
   }
@@ -558,7 +563,7 @@ export const gpxPreviewMeta: RouteMetaFn = (ctx) => {
 
   return {
     type: 'website',
-    title: truncate(`${name} · ${km} km — ${appName}`, 65),
+    title: truncate(formatPageTitle(joinTitle(name, `${km} km`), undefined, appName), 65),
     description: `${ctx.t('seo.gpx.stats', {
       km,
       gain: Math.round(preview.elevationGain),
@@ -570,3 +575,46 @@ export const gpxPreviewMeta: RouteMetaFn = (ctx) => {
     },
   }
 }
+
+// === static pages: the description only — the title is the tab's (buildMetaTags) ==============
+export const privacyMeta: RouteMetaFn = (ctx) => {
+  const appName = appNameOf(ctx)
+  return {
+    type: 'website',
+    description: ctx.t('seo.privacy.description', { appName }),
+    image: defaultImage(ctx.origin, appName),
+  }
+}
+
+export const termsMeta: RouteMetaFn = (ctx) => {
+  const appName = appNameOf(ctx)
+  return {
+    type: 'website',
+    description: ctx.t('seo.terms.description', { appName }),
+    image: defaultImage(ctx.origin, appName),
+  }
+}
+
+export const supportMeta: RouteMetaFn = (ctx) => {
+  const appName = appNameOf(ctx)
+  return {
+    type: 'website',
+    description: ctx.t('seo.support.description', { appName }),
+    image: defaultImage(ctx.origin, appName),
+  }
+}
+
+export const loginMeta: RouteMetaFn = (ctx) => {
+  const appName = appNameOf(ctx)
+  return {
+    type: 'website',
+    description: ctx.t('seo.login.description', { appName }),
+    image: defaultImage(ctx.origin, appName),
+  }
+}
+
+export const notFoundMeta: RouteMetaFn = (ctx) => ({
+  type: 'website',
+  description: ctx.t('seo.notFound.description'),
+  image: defaultImage(ctx.origin, appNameOf(ctx)),
+})

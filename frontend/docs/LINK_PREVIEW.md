@@ -21,6 +21,14 @@ the static fallback `<title>` so exactly one, dynamic title survives. Client-sid
 deliberately does **not** update these tags — crawlers don't run JS, and real users get the
 tab title from `Layout`.
 
+The `<title>` is **not** the `og:title`: it is the tab's title, « Libellé · Contexte — Site »
+(plan 2026-11-25 D2), computed by `pageTitleParts` (`src/config/pageTitleParts.ts`) and
+`formatPageTitle` (`src/lib/pageTitle.ts`) — the same pure calculation the client runs in `Layout`
+and on the full-screen pages, the server feeding it the names its prefetches cached
+(`entityNamesFromCache`). `og:title` stays the `meta()`'s title (truncated); without one it is the
+page title without the site. Check: `curl -s http://localhost:3123/equipes/<slug>/agenda | grep '<title>'`
+→ `Agenda · <équipe> — Pédalons`.
+
 ```
 routes.config.ts  meta: rideMeta          ← declare per route
         │
@@ -62,6 +70,7 @@ admin, edit, and transient utility routes carry no `meta` and unfurl with site-w
 | trip | `article` | trip map thumbnail → trip image → team logo → default |
 | stage | `article` | stage route thumbnail → stage image → trip thumbnail → default |
 | route / route map (carte) | `website` | route map thumbnail → team logo → default |
+| privacy / terms / support / login / 404 | `website` | default (static description; title is the tab's; login and 404 stay `noindex`) |
 | gpx tools preview | `website` | rendered map thumbnail → default (dynamic stats in title/description) |
 
 **Ads carry no preview**, deliberately: the ad API is `@RolesAllowed("user")` and `ads`/`ad-detail`

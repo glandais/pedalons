@@ -1,10 +1,9 @@
-import { useEffect } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { MapColorFullscreenView } from '@/components/route/MapColorFullscreenView'
 import { LoadingPage } from '@/components/common/LoadingSpinner'
 import { paths } from '@/config/paths'
-import { useAppName } from '@/hooks/useAppName'
+import { useBarePageTitle } from '@/hooks/useDocumentTitle'
 import { useCanonicalPath } from '@/hooks/useCanonicalPath'
 import { useRideDetailData } from './rideDetailData'
 import { groupWindLeg } from './rideGroupData'
@@ -25,7 +24,6 @@ import { groupWindLeg } from './rideGroupData'
 export function RideFullscreenMapPage() {
   const { teamSlug, rideSlug } = useParams<{ teamSlug: string; rideSlug: string }>()
   const { t } = useTranslation()
-  const appName = useAppName()
 
   const {
     ride: { data: ride, isLoading: isLoadingRide },
@@ -44,11 +42,7 @@ export function RideFullscreenMapPage() {
   useCanonicalPath(team && ride && solo ? paths.rideMap(team.slug, ride.slug) : undefined)
 
   const title = ride?.name ?? ''
-  useEffect(() => {
-    if (title) {
-      document.title = appName ? `${title} — ${appName}` : title
-    }
-  }, [title, appName])
+  useBarePageTitle('ride-map', { ride })
 
   if (isLoadingRide || (routeSlug && routes.isLoading)) {
     return <LoadingPage message={t('loading')} />

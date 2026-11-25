@@ -254,7 +254,7 @@ const screens: Record<string, Screen> = {
     },
   },
   gpxTools: { roles: SIGNED_IN, sees: heading('Outils GPX') },
-  gpxToolsList: { roles: SIGNED_IN, sees: heading('Lister mes fichiers') },
+  gpxToolsList: { roles: SIGNED_IN, sees: heading('Mes fichiers GPX') },
   gpxToolsNew: {
     roles: [],
     sees: async () => {},
@@ -559,9 +559,9 @@ const screens: Record<string, Screen> = {
   },
   postNew: {
     roles: ORGANIZERS,
-    sees: heading('Nouvelle publication'),
+    sees: heading('Créer une publication'),
     denied: denies(BELOW_ORGANIZER, teamHome(NOT_ORGANIZER)),
-    guards: titled('Nouvelle publication'),
+    guards: titled('Créer une publication'),
   },
   post: {
     roles: EVERYONE,
@@ -596,9 +596,9 @@ const screens: Record<string, Screen> = {
   },
   routeNew: {
     roles: ORGANIZERS,
-    sees: heading('Créer un nouveau parcours'),
+    sees: heading('Créer un parcours'),
     denied: denies(BELOW_ORGANIZER, routeList(NOT_ORGANIZER)),
-    guards: titled('Créer un nouveau parcours'),
+    guards: titled('Créer un parcours'),
   },
   routeGenerate: {
     // A team is born with its route planner on (docs/LEDGER_*.md BILL-10), the dataset's included.
@@ -642,9 +642,9 @@ const screens: Record<string, Screen> = {
   },
   adNew: {
     roles: MEMBERS,
-    sees: heading('Nouvelle annonce'),
+    sees: heading('Créer une annonce'),
     denied: denies(['outsider'], adList('any member of the team may post an ad, no one else')),
-    guards: titled('Nouvelle annonce'),
+    guards: titled('Créer une annonce'),
   },
   ad: {
     roles: MEMBERS,
@@ -696,11 +696,11 @@ function platformAdmin(tab: string): Screen {
   return {
     roles: ['platformAdmin'],
     sees: async (main, _d, page) => {
-      await heading('Administration plateforme')(main)
+      await heading('Administration de la plateforme')(main)
       await currentTab(page, "Navigation de l'administration", tab)
     },
     denied: denies(NOT_PLATFORM_ADMIN, home('only the platform admin administers the platform')),
-    guards: (page) => platformAdminNav(page).or(titled('Administration plateforme')(page)),
+    guards: (page) => platformAdminNav(page).or(titled('Administration de la plateforme')(page)),
   }
 }
 

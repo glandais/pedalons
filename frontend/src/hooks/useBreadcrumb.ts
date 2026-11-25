@@ -5,12 +5,15 @@ import { findMatchingRoute, buildBreadcrumbChain, buildRoutePath } from '../conf
 import { useBreadcrumbData } from './useBreadcrumbData'
 import { useHomeNavItems, useTeamNavItems } from './useNavItems'
 import type { BreadcrumbItemType, BreadcrumbSubItemType } from '../components/common/Breadcrumb'
-import { BreadcrumbLabel } from '@/config/routes.types'
+import { crumbLabel, pageTitleParts } from '@/config/pageTitleParts'
+import type { PageTitleParts } from '@/lib/pageTitle'
 import { isSingleTeam } from '@/config/appConfig'
 
 export interface UseBreadcrumbResult {
   items: BreadcrumbItemType[]
   showBackLink: boolean
+  /** The tab's title parts (plan 2026-11-25 D2) — a 404 included. */
+  title: PageTitleParts
 }
 
 /**
@@ -47,22 +50,12 @@ export function useBreadcrumb(): UseBreadcrumbResult {
       (rc) => !(singleTeam && rc.hideWhenSingleTeam)
     )
 
-    function resolveLabel(bc: BreadcrumbLabel): string {
-      if (bc.type === 'static') {
-        return t(bc.i18nKey)
-      } else {
-        // Dynamic label from entity
-        const data = entityData[bc.entity]
-        return data.name ?? '...'
-      }
-    }
-
     return chain.map((routeConfig, index) => {
       const isLast = index === chain.length - 1
       const breadcrumb = routeConfig.breadcrumb!
 
       // Resolve label
-      const label = resolveLabel(breadcrumb)
+      const label = crumbLabel(breadcrumb, entityData.names, t)
 
       // Build path (undefined for last item = current page). A closed team's own crumbs (the team,
       // its agenda…) are named but lead nowhere: they would only answer 404 (docs/LEDGER_*.md WEB-166).
@@ -84,9 +77,14 @@ export function useBreadcrumb(): UseBreadcrumbResult {
     })
   }, [matchResult, entityData, homeNavItems, teamNavItems, t])
 
+  const title = useMemo(
+    () => pageTitleParts(matchResult?.route.id, matchResult?.params ?? {}, entityData.names, t),
+    [matchResult, entityData.names, t]
+  )
+
   const showBackLink = matchResult?.route.showBackLink ?? false
 
-  return { items, showBackLink }
+  return { items, showBackLink, title }
 }
 
 /**
