@@ -95,6 +95,11 @@ export default defineConfig(({ mode, isSsrBuild }) => {
       // @testing-library/jest-dom extends a global `expect`, so it needs the globals.
       globals: true,
       setupFiles: ['./src/test/setup.ts'],
+      // Worker threads rather than the default child processes: ~15–20 % faster on this suite (85–98 s against 109–113 s), all
+      // green (measured 2026-11-25, 271 files). Isolation stays on: `isolate: false` halves the
+      // time but breaks ~215 tests that rely on a fresh window and module mocks; `vmThreads` is no
+      // faster and breaks 6 (cross-realm), and NODE_COMPILE_CACHE gained nothing measurable.
+      pool: 'threads',
       // A fixed zone, so a test that leans on the process zone gives the same result on every
       // machine and in CI (docs/LEDGER_*.md API-60, plan §11). Tests about a zone pass it explicitly.
       env: { TZ: 'Europe/Paris' },
