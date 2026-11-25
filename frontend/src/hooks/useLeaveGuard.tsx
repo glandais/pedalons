@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { useBlocker, type BlockerFunction } from 'react-router-dom'
+import { useBlocker, useLocation, type BlockerFunction } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 
@@ -25,8 +25,17 @@ export function useLeaveGuard(isDirty: () => boolean) {
     dirtyProbe.current = isDirty
   }, [isDirty])
   const released = useRef(false)
+  // The page this guard stands on. Once left, its blocker lingers until the commit's passive
+  // cleanups run — under load, long enough for a back press from the next page, which it blocked
+  // and reverted with no dialog to show: the press was lost (e2e/route-generator.e2e.ts).
+  const location = useLocation()
+  const ownPage = useRef(location.pathname + location.search)
+  useEffect(() => {
+    ownPage.current = location.pathname + location.search
+  }, [location.pathname, location.search])
 
   const shouldBlock = useCallback<BlockerFunction>(({ currentLocation, nextLocation }) => {
+    if (currentLocation.pathname + currentLocation.search !== ownPage.current) return false
     if (released.current) {
       released.current = false
       return false

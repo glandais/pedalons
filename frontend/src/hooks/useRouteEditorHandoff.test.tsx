@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
-import { createMemoryRouter, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { useRouteEditorHandoff } from './useRouteEditorHandoff'
 
 function Page() {
@@ -45,5 +45,35 @@ describe('useRouteEditorHandoff (WEB-214)', () => {
     render(<RouterProvider router={router} />)
     expect(screen.getByText('rien fichier')).toBeTruthy()
     expect(router.state.historyAction).toBe('POP')
+  })
+
+  it('takes it out of the browser entry even when a save interrupts the router', async () => {
+    // The router's replace runs the page's loader before writing the entry: slow here, as under
+    // load, so the save's navigation interrupts it.
+    let slow = false
+    const router = createBrowserRouter([
+      { path: '/', element: <p>départ</p> },
+      {
+        path: '/nouveau',
+        element: <Page />,
+        loader: () =>
+          slow ? new Promise((resolve) => setTimeout(() => resolve(null), 5000)) : null,
+      },
+      { path: '/parcours', element: <p>enregistré</p> },
+    ])
+    render(<RouterProvider router={router} />)
+    await router.navigate('/nouveau', {
+      state: { generated: { polyline: 'POLY', type: 'GRAVEL', distanceM: 42000 }, draw: true },
+    })
+    slow = true
+    expect(await screen.findByText('POLY tracer')).toBeTruthy()
+
+    await router.navigate('/parcours')
+    expect(await screen.findByText('enregistré')).toBeTruthy()
+    slow = false
+    await router.navigate(-1)
+
+    expect(await screen.findByText('rien fichier')).toBeTruthy()
+    router.dispose()
   })
 })

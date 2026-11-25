@@ -85,6 +85,17 @@ describe('useLeaveGuard (WEB-213)', () => {
     expect(router.state.location.pathname).toBe('/ailleurs')
   })
 
+  it('lets a back press from the next page through while the form is still unmounting', async () => {
+    const router = show()
+    // The save's navigation and the back press land before React has committed: the form's
+    // blocker is still registered, and used to block and revert the press with no dialog to show.
+    screen.getByText('enregistrer').click()
+    expect(router.state.location.pathname).toBe('/ailleurs')
+    void router.navigate(-1)
+    expect(await screen.findByText('formulaire')).toBeTruthy()
+    expect(router.state.location.pathname).toBe('/form')
+  })
+
   it('does not take an entry on the same page (the planner fullscreen) for leaving', async () => {
     const router = show()
     await act(async () => {
