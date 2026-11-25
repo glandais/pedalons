@@ -16,10 +16,8 @@ enum CalendarEventType {
 
   const CalendarEventType(this.json);
 
-  factory CalendarEventType.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory CalendarEventType.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

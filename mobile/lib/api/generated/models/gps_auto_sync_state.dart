@@ -22,10 +22,8 @@ enum GpsAutoSyncState {
 
   const GpsAutoSyncState(this.json);
 
-  factory GpsAutoSyncState.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory GpsAutoSyncState.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

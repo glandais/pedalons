@@ -16,10 +16,8 @@ enum PlannerQuotaScope {
 
   const PlannerQuotaScope(this.json);
 
-  factory PlannerQuotaScope.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory PlannerQuotaScope.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

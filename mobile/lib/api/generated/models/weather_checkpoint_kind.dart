@@ -18,10 +18,8 @@ enum WeatherCheckpointKind {
 
   const WeatherCheckpointKind(this.json);
 
-  factory WeatherCheckpointKind.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory WeatherCheckpointKind.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

@@ -179,6 +179,16 @@ class _GeneratorScreenState extends ConsumerState<_GeneratorScreen> {
   bool get _showingResults => _response != null || _loading;
 
   @override
+  void initState() {
+    super.initState();
+    // L'équipe relue à l'ouverture : un quota épuisé ou libéré depuis sa
+    // dernière lecture ferme ou rouvre « Générer » (ledger `MOB-189`).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.invalidate(teamDetailProvider(_team.slug));
+    });
+  }
+
+  @override
   void dispose() {
     _slowTimer?.cancel();
     _pages.dispose();
@@ -215,6 +225,9 @@ class _GeneratorScreenState extends ConsumerState<_GeneratorScreen> {
 
   /// Pourquoi « Générer » est indisponible, ou `null`.
   String? get _blocker {
+    // Le quota du mois épuisé : rien à calculer qu'on ne pourrait enregistrer,
+    // dit avant le calcul et non après (ledger `MOB-189`).
+    if (_quotaSpent) return 'routeGenerator.quotaSpent'.tr();
     if (_start == null) return 'routeGenerator.start.noLocation'.tr();
     if (!_settings.loop && _settings.end == null) {
       return 'routeGenerator.end.missing'.tr();

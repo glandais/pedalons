@@ -41,6 +41,7 @@ void main() {
     required String? teamSlug,
     required bool canManage,
     bool planner = true,
+    bool quotaSpent = false,
   }) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1;
@@ -80,7 +81,8 @@ void main() {
           ),
           canManageRoutesProvider.overrideWith((ref, slug) => canManage),
           teamDetailProvider.overrideWith(
-            (Ref ref, String slug) async => _team(planner: planner),
+            (Ref ref, String slug) async =>
+                _team(planner: planner, quotaSpent: quotaSpent),
           ),
         ],
         child: MaterialApp.router(routerConfig: router),
@@ -142,6 +144,29 @@ void main() {
     expect(find.text('nouveau n-peloton import'), findsOneWidget);
   });
 
+  testWidgets('quota du mois épuisé : tracer et générer fermés avec leur '
+      'raison, le bouton importe (MOB-189)', (WidgetTester tester) async {
+    await open(
+      tester,
+      teamSlug: 'n-peloton',
+      canManage: true,
+      quotaSpent: true,
+    );
+    expect(find.bySemanticsLabel('Importer des GPX'), findsOneWidget);
+
+    await tester.tap(find.byKey(keys.routes.createMenuButton));
+    await settle(tester);
+    expect(
+      find.text('Les enregistrements de tracés du mois sont épuisés.'),
+      findsNWidgets(2),
+    );
+    await tester.tap(find.byKey(keys.routes.drawRow));
+    await settle(tester);
+    // La ligne est inerte : la feuille reste.
+    expect(find.byKey(keys.routes.drawRow), findsOneWidget);
+    expect(find.textContaining('nouveau n-peloton'), findsNothing);
+  });
+
   testWidgets('un simple membre ne voit rien', (WidgetTester tester) async {
     await open(tester, teamSlug: 'n-peloton', canManage: false);
 
@@ -157,39 +182,43 @@ void main() {
   });
 }
 
-TeamDetailDto _team({bool planner = true}) => TeamDetailDto(
-  allowedContentVisibilities: kAllContentVisibilities,
-  defaultContentVisibility: 'PUBLIC',
-  publicContentAllowed: false,
-  tier: 'FREE',
-  timezone: 'Europe/Paris',
-  role: 'ORGANIZER',
-  id: 't1',
-  slug: 'n-peloton',
-  name: 'N-Peloton',
-  about: const MediaDto(
-    markdown: '',
-    assets: AssetsDto(images: <AssetDto>[], attachments: <AssetDto>[]),
-  ),
-  visibility: 'PUBLIC',
-  enableTrips: true,
-  enableAds: true,
-  enablePosts: true,
-  enableRides: true,
-  enableRoutes: true,
-  visibilityEditable: true,
-  joinable: true,
-  addMemberAllowed: true,
-  enableMemberDirectory: false,
-  postsAsTeamByDefault: true,
-  enableRoutePlanner: planner,
-  memberCount: 40,
-  upcomingRideCount: 3,
-  routeCount: 12,
-  upcomingTripCount: 0,
-  recentPostCount: 0,
-  createdAt: '2024-01-01T00:00:00Z',
-);
+TeamDetailDto _team({bool planner = true, bool quotaSpent = false}) =>
+    TeamDetailDto(
+      plannerQuota: quotaSpent
+          ? const PlannerQuotaDto(limit: 20, used: 20, resetsOn: '2026-12-01')
+          : null,
+      allowedContentVisibilities: kAllContentVisibilities,
+      defaultContentVisibility: 'PUBLIC',
+      publicContentAllowed: false,
+      tier: 'FREE',
+      timezone: 'Europe/Paris',
+      role: 'ORGANIZER',
+      id: 't1',
+      slug: 'n-peloton',
+      name: 'N-Peloton',
+      about: const MediaDto(
+        markdown: '',
+        assets: AssetsDto(images: <AssetDto>[], attachments: <AssetDto>[]),
+      ),
+      visibility: 'PUBLIC',
+      enableTrips: true,
+      enableAds: true,
+      enablePosts: true,
+      enableRides: true,
+      enableRoutes: true,
+      visibilityEditable: true,
+      joinable: true,
+      addMemberAllowed: true,
+      enableMemberDirectory: false,
+      postsAsTeamByDefault: true,
+      enableRoutePlanner: planner,
+      memberCount: 40,
+      upcomingRideCount: 3,
+      routeCount: 12,
+      upcomingTripCount: 0,
+      recentPostCount: 0,
+      createdAt: '2024-01-01T00:00:00Z',
+    );
 
 /// Ne répond jamais : la page reste sur son squelette, aucun appel HTTP.
 class _StuckRouteListNotifier extends RouteListNotifier {

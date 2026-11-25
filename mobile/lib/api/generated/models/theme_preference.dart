@@ -18,10 +18,8 @@ enum ThemePreference {
 
   const ThemePreference(this.json);
 
-  factory ThemePreference.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory ThemePreference.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

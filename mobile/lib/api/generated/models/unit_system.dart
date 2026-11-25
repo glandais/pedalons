@@ -16,10 +16,8 @@ enum UnitSystem {
 
   const UnitSystem(this.json);
 
-  factory UnitSystem.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory UnitSystem.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

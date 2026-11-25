@@ -11,10 +11,8 @@ part 'straight_line.g.dart';
 
 @Freezed()
 abstract class StraightLine with _$StraightLine {
-  const factory StraightLine({
-    required GeoPoint from,
-    required GeoPoint to,
-  }) = _StraightLine;
+  const factory StraightLine({required GeoPoint from, required GeoPoint to}) =
+      _StraightLine;
 
   factory StraightLine.fromJson(Map<String, Object?> json) =>
       _$StraightLineFromJson(json);

@@ -9,10 +9,8 @@ part 'geo_point.g.dart';
 
 @Freezed()
 abstract class GeoPoint with _$GeoPoint {
-  const factory GeoPoint({
-    required double lng,
-    required double lat,
-  }) = _GeoPoint;
+  const factory GeoPoint({required double lng, required double lat}) =
+      _GeoPoint;
 
   factory GeoPoint.fromJson(Map<String, Object?> json) =>
       _$GeoPointFromJson(json);

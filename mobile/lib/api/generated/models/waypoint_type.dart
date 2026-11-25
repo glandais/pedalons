@@ -36,10 +36,8 @@ enum WaypointType {
 
   const WaypointType(this.json);
 
-  factory WaypointType.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory WaypointType.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

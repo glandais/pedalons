@@ -20,10 +20,8 @@ enum RouteRetouchUnavailable {
 
   const RouteRetouchUnavailable(this.json);
 
-  factory RouteRetouchUnavailable.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory RouteRetouchUnavailable.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

@@ -18,10 +18,8 @@ enum RentalPeriod {
 
   const RentalPeriod(this.json);
 
-  factory RentalPeriod.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory RentalPeriod.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

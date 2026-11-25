@@ -20,10 +20,8 @@ enum ClientLogLevel {
 
   const ClientLogLevel(this.json);
 
-  factory ClientLogLevel.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory ClientLogLevel.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

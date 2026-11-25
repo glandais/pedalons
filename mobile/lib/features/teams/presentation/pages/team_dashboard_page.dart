@@ -18,6 +18,7 @@ import '../../../../keys.dart';
 import '../../../rides/presentation/ride_editor_location.dart';
 import '../../../routes/presentation/route_create_actions.dart';
 import '../../providers/team_dashboard_provider.dart';
+import '../../providers/team_permission_providers.dart';
 import '../widgets/dashboard/dashboard_admin.dart';
 import '../widgets/dashboard/dashboard_first_steps.dart';
 import '../widgets/dashboard/dashboard_content.dart';
@@ -193,7 +194,7 @@ class TeamDashboardBody extends StatelessWidget {
 
 /// Le rôle, le nombre de membres, et le geste de tête pour qui organise :
 /// « Créer une sortie », et tout le reste derrière le chevron.
-class _Summary extends StatelessWidget {
+class _Summary extends ConsumerWidget {
   const _Summary({
     required this.team,
     required this.role,
@@ -208,11 +209,14 @@ class _Summary extends StatelessWidget {
   final bool organizer;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final PdlColors c = context.pdl;
     final String? role = this.role;
     final List<CreateAction> actions = organizer
-        ? _createActions(team)
+        ? _createActions(
+            team,
+            platformAdmin: ref.watch(isPlatformAdminProvider),
+          )
         : const <CreateAction>[];
 
     return Padding(
@@ -259,7 +263,10 @@ class _Summary extends StatelessWidget {
 /// seulement quand l'équipe a le module. Comme le site
 /// (`DashboardHeaderActions`), générateur de parcours compris quand l'équipe a
 /// le planificateur (ledger `MOB-154`).
-List<CreateAction> _createActions(TeamDetailDto team) {
+List<CreateAction> _createActions(
+  TeamDetailDto team, {
+  required bool platformAdmin,
+}) {
   final String agenda = 'teams.tabs.agenda'.tr();
   return <CreateAction>[
     // Une sortie se crée sur un parcours, il faut donc les deux modules.
@@ -287,6 +294,7 @@ List<CreateAction> _createActions(TeamDetailDto team) {
       drawKey: keys.teamDashboard.drawRouteButton,
       importKey: keys.teamDashboard.importGpxButton,
       generateKey: keys.teamDashboard.createGeneratedRouteButton,
+      platformAdmin: platformAdmin,
     ))
       action.withGroup('teams.tabs.routes'.tr()),
     if (team.enablePosts)

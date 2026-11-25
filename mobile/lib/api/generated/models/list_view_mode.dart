@@ -16,10 +16,8 @@ enum ListViewMode {
 
   const ListViewMode(this.json);
 
-  factory ListViewMode.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory ListViewMode.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

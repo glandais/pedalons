@@ -16,10 +16,8 @@ enum GpsOAuthVersion {
 
   const GpsOAuthVersion(this.json);
 
-  factory GpsOAuthVersion.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory GpsOAuthVersion.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

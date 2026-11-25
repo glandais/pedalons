@@ -16,10 +16,8 @@ enum TeamSortBy {
 
   const TeamSortBy(this.json);
 
-  factory TeamSortBy.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory TeamSortBy.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

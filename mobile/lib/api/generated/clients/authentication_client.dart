@@ -32,9 +32,7 @@ abstract class AuthenticationClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/auth/confirm-email-change')
-  Future<void> confirmEmailChange({
-    @Body() required VerifyTokenRequest body,
-  });
+  Future<void> confirmEmailChange({@Body() required VerifyTokenRequest body});
 
   /// Request email change.
   ///
@@ -72,9 +70,7 @@ abstract class AuthenticationClient {
   ///
   /// Logout and invalidate the refresh token.
   @POST('/api/auth/logout')
-  Future<void> logout({
-    @Header('X-Refresh-Token') String? xRefreshToken,
-  });
+  Future<void> logout({@Header('X-Refresh-Token') String? xRefreshToken});
 
   /// Logout all sessions.
   ///
@@ -88,9 +84,7 @@ abstract class AuthenticationClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/auth/otp')
-  Future<MessageResponse> requestOtp({
-    @Body() required OtpRequest body,
-  });
+  Future<MessageResponse> requestOtp({@Body() required OtpRequest body});
 
   /// Verify OTP.
   ///
@@ -120,9 +114,7 @@ abstract class AuthenticationClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/auth/register')
-  Future<MessageResponse> register({
-    @Body() required RegisterRequest body,
-  });
+  Future<MessageResponse> register({@Body() required RegisterRequest body});
 
   /// Reset password.
   ///

@@ -20,10 +20,8 @@ enum TeamWebhookKind {
 
   const TeamWebhookKind(this.json);
 
-  factory TeamWebhookKind.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory TeamWebhookKind.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

@@ -18,10 +18,8 @@ enum RouteGeneratorType {
 
   const RouteGeneratorType(this.json);
 
-  factory RouteGeneratorType.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory RouteGeneratorType.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

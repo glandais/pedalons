@@ -16,10 +16,8 @@ enum NotificationChange {
 
   const NotificationChange(this.json);
 
-  factory NotificationChange.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory NotificationChange.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

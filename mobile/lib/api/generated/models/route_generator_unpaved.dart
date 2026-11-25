@@ -18,10 +18,8 @@ enum RouteGeneratorUnpaved {
 
   const RouteGeneratorUnpaved(this.json);
 
-  factory RouteGeneratorUnpaved.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory RouteGeneratorUnpaved.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

@@ -57,9 +57,7 @@ abstract class TeamsClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/teams')
-  Future<TeamDetailDto> createTeam({
-    @Body() required TeamRequest body,
-  });
+  Future<TeamDetailDto> createTeam({@Body() required TeamRequest body});
 
   /// Update team.
   ///
@@ -80,9 +78,7 @@ abstract class TeamsClient {
   ///
   /// [teamSlug] - Team URL slug.
   @GET('/api/teams/{teamSlug}')
-  Future<TeamDetailDto> getTeam({
-    @Path('teamSlug') required String teamSlug,
-  });
+  Future<TeamDetailDto> getTeam({@Path('teamSlug') required String teamSlug});
 
   /// Delete team.
   ///
@@ -90,9 +86,7 @@ abstract class TeamsClient {
   ///
   /// [teamSlug] - Team URL slug.
   @DELETE('/api/teams/{teamSlug}')
-  Future<void> deleteTeam({
-    @Path('teamSlug') required String teamSlug,
-  });
+  Future<void> deleteTeam({@Path('teamSlug') required String teamSlug});
 
   /// Get the team dashboard.
   ///

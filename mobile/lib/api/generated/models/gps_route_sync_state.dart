@@ -22,10 +22,8 @@ enum GpsRouteSyncState {
 
   const GpsRouteSyncState(this.json);
 
-  factory GpsRouteSyncState.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory GpsRouteSyncState.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

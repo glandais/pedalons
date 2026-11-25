@@ -30,10 +30,8 @@ enum TagColor {
 
   const TagColor(this.json);
 
-  factory TagColor.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory TagColor.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

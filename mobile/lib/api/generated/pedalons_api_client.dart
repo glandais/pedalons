@@ -58,11 +58,9 @@ import 'clients/server_version_client.dart';
 ///
 /// API for Pedalons Cycling Team Management Platform.
 class PedalonsApiClient {
-  PedalonsApiClient(
-    Dio dio, {
-    String? baseUrl,
-  }) : _dio = dio,
-       _baseUrl = baseUrl;
+  PedalonsApiClient(Dio dio, {String? baseUrl})
+    : _dio = dio,
+      _baseUrl = baseUrl;
 
   final Dio _dio;
   final String? _baseUrl;

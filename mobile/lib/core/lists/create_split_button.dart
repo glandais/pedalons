@@ -19,6 +19,7 @@ class CreateAction {
     this.subtitle,
     this.group,
     this.tone,
+    this.disabledReason,
   });
 
   final Key key;
@@ -36,6 +37,11 @@ class CreateAction {
   /// partagent son titre.
   final String? group;
 
+  /// Pourquoi l'action est fermée (quota du mois épuisé…) : la ligne reste en
+  /// vue, inerte, avec cette raison à la place de son sous-titre, et le
+  /// bouton prend la première action ouverte — la règle du site.
+  final String? disabledReason;
+
   CreateAction withGroup(String group) => CreateAction(
     key: key,
     label: label,
@@ -44,6 +50,7 @@ class CreateAction {
     subtitle: subtitle,
     group: group,
     tone: tone,
+    disabledReason: disabledReason,
   );
 }
 
@@ -70,20 +77,28 @@ class CreateSplitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final CreateAction primary = actions.first;
+    // La première action ouverte ; toutes fermées, la première, inerte.
+    final CreateAction primary = actions.firstWhere(
+      (CreateAction a) => a.disabledReason == null,
+      orElse: () => actions.first,
+    );
+    final VoidCallback? openPrimary = primary.disabledReason == null
+        ? () => context.push(primary.location)
+        : null;
     final PdlButtonSize size = compact ? PdlButtonSize.sm : PdlButtonSize.md;
     final Widget primaryButton = compact
         ? Semantics(
             label: primary.label,
             excludeSemantics: true,
             button: true,
-            onTap: () => context.push(primary.location),
+            onTap: openPrimary,
             child: PdlButton(
               key: primaryKey,
               label: 'lists.create'.tr(),
               icon: PdlIcons.add,
               size: size,
-              onPressed: () => context.push(primary.location),
+              enabled: openPrimary != null,
+              onPressed: openPrimary,
             ),
           )
         : PdlButton(
@@ -91,7 +106,8 @@ class CreateSplitButton extends StatelessWidget {
             label: primary.label,
             icon: PdlIcons.add,
             fullWidth: true,
-            onPressed: () => context.push(primary.location),
+            enabled: openPrimary != null,
+            onPressed: openPrimary,
           );
     final Widget? menuButton = actions.length > 1
         ? Semantics(
@@ -140,12 +156,14 @@ class CreateSplitButton extends StatelessWidget {
               child: PdlSettingRow(
                 key: action.key,
                 title: action.label,
-                subtitle: action.subtitle,
+                subtitle: action.disabledReason ?? action.subtitle,
                 icon: action.icon,
                 leading: _toneIcon(sheetContext, action),
                 showDivider:
                     i < actions.length - 1 && actions[i + 1].group == group,
-                onTap: () => Navigator.of(sheetContext).pop(action.location),
+                onTap: action.disabledReason != null
+                    ? null
+                    : () => Navigator.of(sheetContext).pop(action.location),
               ),
             ),
           );

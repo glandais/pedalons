@@ -16,10 +16,8 @@ enum GpsConnectReturn {
 
   const GpsConnectReturn(this.json);
 
-  factory GpsConnectReturn.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory GpsConnectReturn.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

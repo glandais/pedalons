@@ -28,10 +28,8 @@ enum WindDirection {
 
   const WindDirection(this.json);
 
-  factory WindDirection.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory WindDirection.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

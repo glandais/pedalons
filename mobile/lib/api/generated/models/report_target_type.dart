@@ -26,10 +26,8 @@ enum ReportTargetType {
 
   const ReportTargetType(this.json);
 
-  factory ReportTargetType.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory ReportTargetType.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

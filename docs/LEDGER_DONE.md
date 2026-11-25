@@ -2,12 +2,13 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **630 entrées livrées**, et des 23 entrées encore ouvertes dont une part l'est.
+Index des **632 entrées livrées**, et des 23 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
 ## MOB — Application mobile
 
+- [x] [`MOB-189`](ledger/MOB/MOB-189.md) Quota de tracés grisé dans les menus « Créer » et le générateur — 2026-11-25
 - [x] [`MOB-188`](ledger/MOB/MOB-188.md) Import de plusieurs GPX : progression, raisons des refus, Retour bloqué — 2026-11-25
 - [x] [`MOB-187`](ledger/MOB/MOB-187.md) Proposition transmise à l'éditeur de parcours : jamais cachée, jamais rejouée — 2026-11-25
 - [x] [`MOB-186`](ledger/MOB/MOB-186.md) Flux des parcours : corrections nettes de l'audit du 25 novembre 2026 — 2026-11-25
@@ -162,6 +163,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## WEB — Site web
 
+- [x] [`WEB-217`](ledger/WEB/WEB-217.md) Quota de tracés grisé à l'accueil aussi — 2026-11-25
 - [x] [`WEB-216`](ledger/WEB/WEB-216.md) Import de plusieurs GPX : un import à la fois, raisons des refus, la liste seulement si l'on est resté — 2026-11-25
 - [x] [`WEB-215`](ledger/WEB/WEB-215.md) Vocabulaire des flux de parcours, site et app — 2026-11-25
 - [x] [`WEB-214`](ledger/WEB/WEB-214.md) Proposition transmise à l'éditeur de parcours, prise une seule fois — 2026-11-25

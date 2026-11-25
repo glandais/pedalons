@@ -21,9 +21,7 @@ abstract class FeedbackClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/feedback')
-  Future<void> sendFeedback({
-    @Body() required FeedbackRequest body,
-  });
+  Future<void> sendFeedback({@Body() required FeedbackRequest body});
 
   /// Report an unhandled error.
   ///
@@ -31,7 +29,5 @@ abstract class FeedbackClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/feedback/errors')
-  Future<void> reportClientError({
-    @Body() required ErrorReportRequest body,
-  });
+  Future<void> reportClientError({@Body() required ErrorReportRequest body});
 }

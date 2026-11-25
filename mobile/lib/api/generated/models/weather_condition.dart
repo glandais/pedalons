@@ -36,10 +36,8 @@ enum WeatherCondition {
 
   const WeatherCondition(this.json);
 
-  factory WeatherCondition.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory WeatherCondition.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

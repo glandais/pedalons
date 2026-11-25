@@ -22,10 +22,8 @@ enum UserExportStatus {
 
   const UserExportStatus(this.json);
 
-  factory UserExportStatus.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory UserExportStatus.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

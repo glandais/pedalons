@@ -16,10 +16,8 @@ enum RouterEngine {
 
   const RouterEngine(this.json);
 
-  factory RouterEngine.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory RouterEngine.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

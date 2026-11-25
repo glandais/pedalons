@@ -22,10 +22,8 @@ enum NotificationDeliveryStatus {
 
   const NotificationDeliveryStatus(this.json);
 
-  factory NotificationDeliveryStatus.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory NotificationDeliveryStatus.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

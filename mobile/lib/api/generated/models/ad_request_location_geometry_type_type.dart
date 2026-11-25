@@ -15,10 +15,7 @@ enum AdRequestLocationGeometryTypeType {
   const AdRequestLocationGeometryTypeType(this.json);
 
   factory AdRequestLocationGeometryTypeType.fromJson(String json) =>
-      values.firstWhere(
-        (e) => e.json == json,
-        orElse: () => $unknown,
-      );
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

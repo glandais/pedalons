@@ -23,9 +23,7 @@ abstract class InvitationsClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/invitations/accept')
-  Future<MemberDto> accept({
-    @Body() required AcceptInvitationRequest body,
-  });
+  Future<MemberDto> accept({@Body() required AcceptInvitationRequest body});
 
   /// Read an invitation.
   ///

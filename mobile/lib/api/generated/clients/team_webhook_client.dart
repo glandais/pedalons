@@ -43,9 +43,7 @@ abstract class TeamWebhookClient {
   ///
   /// [teamSlug] - Team URL slug.
   @DELETE('/api/teams/{teamSlug}/webhook')
-  Future<void> deleteTeamWebhook({
-    @Path('teamSlug') required String teamSlug,
-  });
+  Future<void> deleteTeamWebhook({@Path('teamSlug') required String teamSlug});
 
   /// Send a test message to the team's webhook.
   ///

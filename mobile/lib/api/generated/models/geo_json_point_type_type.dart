@@ -14,10 +14,8 @@ enum GeoJsonPointTypeType {
 
   const GeoJsonPointTypeType(this.json);
 
-  factory GeoJsonPointTypeType.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory GeoJsonPointTypeType.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

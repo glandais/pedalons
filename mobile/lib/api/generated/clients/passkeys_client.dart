@@ -65,7 +65,5 @@ abstract class PasskeysClient {
   ///
   /// Delete a passkey.
   @DELETE('/api/auth/passkeys/{id}')
-  Future<void> deletePasskey({
-    @Path('id') required String id,
-  });
+  Future<void> deletePasskey({@Path('id') required String id});
 }

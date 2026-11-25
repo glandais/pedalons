@@ -44,9 +44,7 @@ abstract class AdminUsersClient {
   ///
   /// [userId] - User ID.
   @GET('/api/admin/users/{userId}')
-  Future<AdminUserDto> getAdminUser({
-    @Path('userId') required String userId,
-  });
+  Future<AdminUserDto> getAdminUser({@Path('userId') required String userId});
 
   /// Assign platform role.
   ///

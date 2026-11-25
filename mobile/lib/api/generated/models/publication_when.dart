@@ -20,10 +20,8 @@ enum PublicationWhen {
 
   const PublicationWhen(this.json);
 
-  factory PublicationWhen.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory PublicationWhen.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

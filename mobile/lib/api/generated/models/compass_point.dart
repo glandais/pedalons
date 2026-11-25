@@ -28,10 +28,8 @@ enum CompassPoint {
 
   const CompassPoint(this.json);
 
-  factory CompassPoint.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory CompassPoint.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

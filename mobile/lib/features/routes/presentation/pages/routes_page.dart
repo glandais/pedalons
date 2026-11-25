@@ -18,6 +18,7 @@ import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../keys.dart';
 import '../../../tags/presentation/tag_filter.dart';
+import '../../../teams/providers/team_permission_providers.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../domain/route_filter_labels.dart';
 import '../../domain/route_filters.dart';
@@ -182,7 +183,12 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
     final String slug = widget.teamSlug!;
     final TeamDetailDto? team = ref.read(teamDetailProvider(slug)).value;
     context.push(
-      team == null ? Paths.routeNew(slug) : firstRouteCreateLocation(team),
+      team == null
+          ? Paths.routeNew(slug)
+          : firstRouteCreateLocation(
+              team,
+              platformAdmin: ref.read(isPlatformAdminProvider),
+            ),
     );
   }
 
@@ -200,6 +206,7 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
       drawKey: keys.routes.drawRow,
       importKey: keys.routes.importGpxRow,
       generateKey: keys.routes.generateRow,
+      platformAdmin: ref.watch(isPlatformAdminProvider),
     );
     if (actions.isEmpty) return null;
     return CreateSplitButton(

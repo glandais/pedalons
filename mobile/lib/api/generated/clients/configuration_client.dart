@@ -25,7 +25,5 @@ abstract class ConfigurationClient {
   ///
   /// Returns the MapLibre style document for a raster basemap whose provider serves tiles only. The URL is the one already carried by MapStyleDto.url — clients hand it to the map engine rather than building it themselves.
   @GET('/api/map/styles/{id}.json')
-  Future<dynamic> getStyle({
-    @Path('id') required String id,
-  });
+  Future<dynamic> getStyle({@Path('id') required String id});
 }

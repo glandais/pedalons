@@ -18,10 +18,8 @@ enum ElevationState {
 
   const ElevationState(this.json);
 
-  factory ElevationState.fromJson(String json) => values.firstWhere(
-    (e) => e.json == json,
-    orElse: () => $unknown,
-  );
+  factory ElevationState.fromJson(String json) =>
+      values.firstWhere((e) => e.json == json, orElse: () => $unknown);
 
   final String? json;
 

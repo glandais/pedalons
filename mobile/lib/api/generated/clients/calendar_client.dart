@@ -34,9 +34,7 @@ abstract class CalendarClient {
   ///
   /// [token] - Calendar access token.
   @GET('/api/calendar/ics')
-  Future<void> getGlobalIcsFeed({
-    @Query('token') String? token,
-  });
+  Future<void> getGlobalIcsFeed({@Query('token') String? token});
 
   /// Get calendar token.
   ///

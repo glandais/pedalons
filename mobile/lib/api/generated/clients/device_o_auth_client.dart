@@ -26,9 +26,7 @@ abstract class DeviceOAuthClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/device/oauth/complete')
-  Future<void> deviceComplete({
-    @Body() required CompleteRequest body,
-  });
+  Future<void> deviceComplete({@Body() required CompleteRequest body});
 
   /// Deny device authorization.
   ///
@@ -36,9 +34,7 @@ abstract class DeviceOAuthClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/device/oauth/deny')
-  Future<void> deviceDeny({
-    @Body() required DenyRequest body,
-  });
+  Future<void> deviceDeny({@Body() required DenyRequest body});
 
   /// Request device code.
   ///
@@ -46,9 +42,7 @@ abstract class DeviceOAuthClient {
   ///
   /// [body] - Name not received - field will be skipped.
   @POST('/api/device/oauth/device')
-  Future<DeviceCodeResponse> device({
-    @Body() required DeviceRequest body,
-  });
+  Future<DeviceCodeResponse> device({@Body() required DeviceRequest body});
 
   /// Exchange code for tokens.
   ///
@@ -64,7 +58,5 @@ abstract class DeviceOAuthClient {
   ///
   /// Frontend uses this to verify user code before showing auth flow.
   @GET('/api/device/oauth/verify')
-  Future<VerifyResponse> verify({
-    @Query('code') String? code,
-  });
+  Future<VerifyResponse> verify({@Query('code') String? code});
 }
