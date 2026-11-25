@@ -8,6 +8,7 @@ import { LIST_SECTIONS, findCase, isOmittedCase, type ClickStep, type ListCase }
 import { ListGallery } from './ListGallery'
 import { seedListGallery } from './listContext'
 import { unservedRequests } from './listFakeApi'
+import { AXIOS_INSTANCE } from '@/lib/axiosInstance'
 
 /**
  * The brief's sections and cases, copied from
@@ -174,11 +175,29 @@ beforeAll(async () => {
   frenchI18n = await createServerI18n('fr')
   // jsdom has no layout: Mantine's open dropdowns scroll their selected option into view.
   Element.prototype.scrollIntoView ??= () => {}
+  AXIOS_INSTANCE.interceptors.request.use((config) => {
+    requests++
+    return config
+  })
 })
 
 afterEach(cleanup)
 
-const settle = () => act(() => new Promise((resolve) => setTimeout(resolve, 60)))
+/** Every call the page has made so far, the fake API's answer being immediate. */
+let requests = 0
+
+/**
+ * Waits for the page to come to rest: no call for four tasks in a row, each run inside `act` so
+ * the answers render and the calls that depend on them leave. A fixed wait long enough for the
+ * slowest case (six times 60 ms) made this file the longest of the suite, by far.
+ */
+async function settle() {
+  for (let quiet = 0, seen = -1, turns = 0; quiet < 4 && turns < 200; turns++) {
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)))
+    quiet = requests === seen ? quiet + 1 : 0
+    seen = requests
+  }
+}
 
 function clickTarget(container: HTMLElement, step: ClickStep): HTMLElement {
   const scope = within(container)
@@ -219,12 +238,19 @@ describe('list gallery', () => {
         ).not.toBeNull(),
       { timeout: 15_000 }
     )
-    for (let i = 0; i < 6; i++) await settle()
-
     if (OMITTED.includes(caseId)) {
       expect(container.querySelector(`[data-gallery-omitted="${caseId}"]`)).not.toBeNull()
       return
     }
+    // What the case must show, when it says so; then the rest, for what it must not.
+    const awaited = CONTENT[caseId] ?? (caseId.endsWith('-erreur') ? 'Chargement impossible' : null)
+    if (awaited) {
+      await waitFor(() => expect(container.textContent, caseId).toContain(awaited), {
+        timeout: 5_000,
+      })
+    }
+    await settle()
+
     const node = container.querySelector<HTMLElement>(`[data-gallery-case="${caseId}"]`)
     expect(node, caseId).not.toBeNull()
     // The page itself, not the router's or a route's error screen.
