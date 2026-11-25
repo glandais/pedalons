@@ -53,13 +53,13 @@ les sorties sur `…/sorties/{slug}`, les voyages sur `…/voyages/{slug}` et le
 
 ## 01 — Accueil `/`
 
-Chrome applicatif minimal : barre supérieure fine, wordmark « Pédalons ! » en dégradé violet→bleu à
+Chrome applicatif minimal : barre supérieure fine, wordmark « Pédalons » en dégradé violet→bleu à
 gauche, et à droite un trio compact (bouton thème soleil, select « Français », pastille avatar +
 « Gaby Landais »). Pas de barre latérale : la navigation principale est une **rangée de 4 tuiles
 carrées icône-au-dessus-du-label** (Accueil / Équipes / Calendrier / Parcours), la tuile active en
 violet plein, les autres en gris ardoise. Au-dessus, un fil d'Ariane discret (« Accueil ··· »).
 
-Contenu : titre H1 « Bienvenue sur Pédalons ! » + sous-titre, puis section « Dernières publications »
+Contenu : titre H1 « Bienvenue sur Pédalons » + sous-titre, puis section « Dernières publications »
 avec une ligne d'outils (champ de recherche large « Rechercher par titre ou description… », select
 « Tous » = type, select « Membre » = portée) et une **grille de cartes en 3 colonnes**.
 
