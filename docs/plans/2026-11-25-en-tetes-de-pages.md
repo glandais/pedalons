@@ -39,7 +39,10 @@ Aucun composant d'en-tête n'est partagé : cinq versions maison se répartissen
 | D5 | Partager sur une annonce | Oui, avec les règles de visibilité de la publication. |
 | D6 | GPS sur un voyage qui a son propre parcours et aucune étape | Oui, après « Rejoindre le voyage ». Avec des étapes, chaque carte d'étape garde le sien. |
 | D7 | GPS sur la carte du groupe (app) contre l'en-tête (site) | Aligner l'app sur le site au prochain lot mobile (`MOB-184`) ; d'ici là l'écart reste écrit dans BRANDING §7.7. |
-| D8 | Lien qui recharge toute la page vers la création et la modification d'un parcours (`<Button component="a" href>` dans `RoutesListHeader` et `RouteDetailPage`) | Introduit au passage à Mantine (`67af78bfb`, 11 janvier 2026), puis gardé exprès par `DashboardHeader` et `CreateSplitButton` (`reloadDocument`), sans raison écrite nulle part. Le lot 2 cherche la raison (le planificateur, MapLibre ? hypothèse non vérifiée) et l'écrit dans un commentaire ; sans raison trouvée, `PrefetchLink`. |
+| D8 | Lien qui recharge toute la page vers la création et la modification d'un parcours (`<Button component="a" href>` dans `RoutesListHeader`, `RouteListPage` et `RouteDetailPage`, `reloadDocument` dans `DashboardHeader`) | Introduit au passage à Mantine (`67af78bfb`, 11 janvier 2026), qui a converti 44 `<Link>` en `component={Link}` et ces seuls liens (plus `paths.teams()` de `TeamSettingsPage`) en `<a href>`, sans raison écrite ; le formulaire est déjà ouvert sans rechargement depuis `QuickActions`, `FirstSteps`, `CardActionsMenu`, le générateur et la duplication, sans état global à remettre à zéro. Analyse du 25 novembre 2026 : aucune raison, donc `PrefetchLink` partout, `TeamSettingsPage` compris, et le champ `reloadDocument` de `CreateSplitButton` disparaît. |
+| D9 | Dupliquer sur l'aperçu GPX, ouvert à toute personne connectée alors que Modifier ▾ est au seul propriétaire | Dans le menu de Modifier pour le propriétaire ; un bouton « Dupliquer » à la place de Modifier pour les autres personnes connectées (`flow-gpx-tools.e2e.ts` garde ce cas). |
+| D10 | Actions que la règle 3 ne nomme pas : « Modifier une copie » (parcours, pour qui ne peut pas modifier), « Enregistrer comme parcours » (aperçu GPX) | À l'emplacement de Modifier, en contour ; sur l'aperçu du propriétaire, « Enregistrer comme parcours » juste avant Modifier ▾. |
+| D11 | Parcours supprimé | Comme la publication : Modifier ▾ reste, Restaurer (vert) entre dans le menu, Supprimer y reste. |
 
 ## 3. Les lots
 
@@ -91,7 +94,9 @@ Textes et une fonction ; aucune mise en page.
 - 2. L'ordre de la règle 3 est celui du composant, pas des pages.
 - 3. Modifier en contour, crayon et menu partout (aujourd'hui `default` sans icône sur le parcours,
   `default` sur l'annonce, `IconEdit` sur l'aperçu GPX).
-- 4. Dupliquer et Supprimer dans le menu de Modifier sur le parcours et l'aperçu GPX (D4).
+- 4. Dupliquer et Supprimer dans le menu de Modifier sur le parcours et l'aperçu GPX (D4), Restaurer aussi sur un
+  parcours supprimé (D11) ; Dupliquer reste un bouton pour qui n'est pas propriétaire de l'aperçu (D9) ; « Modifier une
+  copie » et « Enregistrer comme parcours » à l'emplacement de Modifier (D10).
 - 5. Partager et ⋯ en fin de barre sur le groupe et l'étape ; ⋯ signale le parent (D3).
 - 6. Actions qui passent à la ligne (`nowrap` aujourd'hui sur la publication et l'annonce).
 - 7. Titre sur deux lignes puis ellipse avec info-bulle (`nowrap` sur `PublicationHeader`, `lineClamp={1}`
@@ -99,7 +104,10 @@ Textes et une fonction ; aucune mise en page.
 - 8. Badge de statut en fond doux (`light`) partout.
 - 9. Aperçu GPX : la rangée d'actions sous la carte monte dans l'en-tête.
 - 10. Annonce : « Répondre à l'annonce » en action principale, galerie sous le titre, Partager (D5).
-- 11. D8 : la raison du rechargement complet, écrite ou levée.
+- 11. D8 : `PrefetchLink` vers la création et la modification d'un parcours (`RouteDetailPage`, `RoutesListHeader`,
+  `RouteListPage`, `DashboardHeader`) et vers les équipes (`TeamSettingsPage`) ; `reloadDocument` quitte `CreateSplitButton`.
+- Le titre de chaque page de détail devient le h1 (`<Title order={1} size="h2">`) : `PublicationHeader`, la
+  publication et l'annonce l'ont en h2 aujourd'hui.
 - 12. Les deux boutons `variant="default"` dont Mantine ignore la `color` : retrait du logo
   (`MediaEditor.tsx`), « Supprimer » de « Mes fichiers GPX » (`MyGpxPreviewsPage.tsx`).
 - Et D6 : GPS sur un voyage qui a son propre parcours sans étapes.
