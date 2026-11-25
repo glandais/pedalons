@@ -41,7 +41,11 @@ build_backend() {
   # arm64 on an Apple Silicon workstation (Docker VMM cannot emulate amd64), amd64 on a server.
   export QUARKUS_JIB_PLATFORMS="linux/$(docker version --format '{{.Server.Arch}}')"
   export QUARKUS_CONTAINER_IMAGE_ADDITIONAL_TAGS="$COMMIT_TAG"
-  mvn clean package -DskipTests -Dquarkus.container-image.build=true
+  # Maven 3.10's super-POM pins project.build.outputTimestamp to 1980-02-01 (reproducible builds),
+  # and git-commit-id-maven-plugin takes git.build.time from it: GET /api/version then reports a
+  # build from 1980. Pass the real time instead.
+  mvn clean package -DskipTests -Dquarkus.container-image.build=true \
+    -Dproject.build.outputTimestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 
 build_frontend() {
