@@ -47,7 +47,7 @@ docker ps --format '{{.Names}}' | grep tribly-e2e   # la pile e2e est-elle up ?
 |---|---|
 | frontend | `pnpm typecheck`, `pnpm lint`, `pnpm e2e:typecheck`, `pnpm test run` |
 | backend | `mvn test` (~long : en arrière-plan) |
-| mobile | `flutter analyze`, `flutter test` |
+| mobile | `flutter analyze`, `bash tool/test.sh` |
 | karoo | pas de tests unitaires : `./gradlew --quiet assembleDebug` puis `./gradlew --quiet --stop` |
 | garmin-app | `make simulator; sleep 8; make test` (le simulateur doit tourner avant ; verdict = ligne `PASSED`), puis `pkill -f ConnectIQ.app` |
 

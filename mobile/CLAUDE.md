@@ -18,9 +18,10 @@ What remains to do — and what was deliberately left out — is in **[../docs/L
 ```bash
 flutter pub get                    # Install dependencies
 flutter run                        # Run on connected device/emulator
-flutter test                       # Run tests
+bash tool/test.sh                  # Run the whole suite, bundled (~2x faster than `flutter test`)
+flutter test test/x_test.dart      # Run one file
 flutter analyze                    # Static analysis
-bash check.sh                      # pub get + both generators + ../format.sh mobile (rewrites files) + analyze + flutter test — the full gate
+bash check.sh                      # pub get + both generators + ../format.sh mobile (rewrites files) + analyze + tool/test.sh — the full gate
 ../format.sh mobile                # dart format (skips generated code) — run before every commit
 
 # Code generation (after modifying models or API)

@@ -13,7 +13,7 @@ target, no DTO import in `core/pdl`) override any generic Material advice. There
 ## Tooling
 
 * `../format.sh mobile` before every commit; `bash check.sh` is the full gate
-  (pub get + generators + `../format.sh mobile` + `flutter analyze` + `flutter test`).
+  (pub get + generators + `../format.sh mobile` + `flutter analyze` + `bash tool/test.sh`).
 * The Dart MCP server (`dart-mcp-server`, registered in `../.mcp.json`) provides `analyze_files`,
   `hot_reload`/`hot_restart`, `get_runtime_errors` and `widget_inspector` against a running app.
 * Add dependencies with `flutter pub add <package>` (`dev:<package>` for dev dependencies).
@@ -77,7 +77,16 @@ try {
 
 ## Testing
 
-* `flutter test`; unit tests with `package:test`, widget tests with `package:flutter_test`,
+* `bash tool/test.sh` runs the whole suite: `tool/test_bundles.dart` groups the files of `test/`
+  into a few bundles that share one compilation and one isolate (compiling ~260 files one by one
+  was half the time). Each file runs in a `group` that first calls `resetTestGlobals`
+  (`test/support/bundle_isolation.dart`), which restores the static state a fresh isolate has —
+  translations unloaded, `Intl.defaultLocale`, display timezone. A test that sets new static state
+  and doesn't undo it resets it there. A file loading real fonts (`FontLoader`, `gallery_fonts.dart`)
+  or carrying the line `// test-bundle: isolate` gets a bundle of its own. A file that passes alone
+  and fails in its bundle depends on a neighbour's state: fix the leak, don't isolate the file.
+  `flutter test test/…_test.dart` still runs one file.
+* Unit tests with `package:test`, widget tests with `package:flutter_test`,
   end-to-end flows with Patrol in `patrol_test/`, run by `bash e2e.sh` against the e2e stack —
   see `patrol_test/README.md`. There is no `integration_test/`.
 * Arrange-Act-Assert; cover domain logic, repositories and notifiers, then the widgets that

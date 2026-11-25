@@ -30,7 +30,7 @@ dart run build_runner build
 flutter analyze
 
 if [ -d test ]; then
-  flutter test
+  bash tool/test.sh
 else
   echo "No test directory found, skipping tests"
 fi

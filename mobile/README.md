@@ -17,7 +17,7 @@ bash check.sh        # pub get, both generators, ../format.sh mobile, analyze, t
 
 flutter devices                  # list simulators, emulators and connected devices
 flutter run -d <device_id>       # run on one of them
-flutter test
+bash tool/test.sh               # the whole suite, bundled (tool/test_bundles.dart)
 flutter analyze
 ```
 

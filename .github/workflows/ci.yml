@@ -213,7 +213,7 @@ jobs:
         working-directory: ./mobile
         run: |
           if [ -d "test" ]; then
-            flutter test
+            bash tool/test.sh
           else
             echo "No test directory found, skipping tests"
           fi
