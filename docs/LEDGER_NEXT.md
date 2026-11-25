@@ -2,11 +2,11 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **164 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **163 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-51 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+50 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
@@ -88,7 +88,6 @@ Contexte du domaine : [`ledger/WEB/README.md`](ledger/WEB/README.md).
 
 ### En-têtes de pages : audit du 25 novembre 2026
 
-- [ ] [`WEB-210`](ledger/WEB/WEB-210.md) Un h1 sur les états 404, 403 et erreur qui remplacent une page (S) · *recette*
 - [ ] [`WEB-209`](ledger/WEB/WEB-209.md) En-têtes de pages, lot 5 : une carte transactionnelle commune (M) · *recette*
 - [ ] [`WEB-208`](ledger/WEB/WEB-208.md) En-têtes de pages, lot 4 : bandeau d'équipe et administration (M) · *recette*
 - [ ] [`WEB-206`](ledger/WEB/WEB-206.md) En-têtes de pages, lot 2 : un DetailHeader commun aux pages de détail (L) · *recette*
@@ -329,7 +328,6 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 - [`MOB-15`](ledger/MOB/MOB-15.md) Profil (33)
 - [`MOB-13`](ledger/MOB/MOB-13.md) Trombinoscope (34)
 - [`MOB-5`](ledger/MOB/MOB-5.md) Exploration de parcours (21)
-- [`WEB-210`](ledger/WEB/WEB-210.md) Un h1 sur les états 404, 403 et erreur qui remplacent une page
 - [`WEB-209`](ledger/WEB/WEB-209.md) En-têtes de pages, lot 5 : une carte transactionnelle commune
 - [`WEB-208`](ledger/WEB/WEB-208.md) En-têtes de pages, lot 4 : bandeau d'équipe et administration
 - [`WEB-206`](ledger/WEB/WEB-206.md) En-têtes de pages, lot 2 : un DetailHeader commun aux pages de détail
