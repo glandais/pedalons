@@ -894,6 +894,13 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
                     busy: _reading,
                     refused: _refused,
                     onDraw: onDraw,
+                    // Le générateur à la place de cette page vide : sa
+                    // proposition rouvre un éditeur par-dessus lui.
+                    onGenerate: onDraw == null
+                        ? null
+                        : () => context.pushReplacement(
+                            Paths.routeGenerate(_teamSlug),
+                          ),
                     quotaSpent: quotaSpent,
                   )
                 else ...<Widget>[

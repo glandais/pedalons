@@ -197,6 +197,9 @@ class RouteEditorKeys {
   /// « Tracer sur la carte », à l'étape 1 de la création.
   final drawButton = const _RouteEditorKey('drawButton');
 
+  /// « Générer un parcours » sur la page de choix de la création.
+  final generateButton = const _RouteEditorKey('generateButton');
+
   /// « Modifier le tracé », dans la section Tracé.
   final trackEditButton = const _RouteEditorKey('trackEditButton');
 

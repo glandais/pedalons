@@ -1280,6 +1280,26 @@ void main() {
       expect(web.disposed, isTrue);
     });
 
+    testWidgets('la page de choix mène au générateur, à sa place', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        routes: _StubRoutes(),
+        picker: _FakePicker(<GpxFile?>[]),
+        planner: true,
+        web: _FakePlannerWeb(),
+      );
+
+      expect(find.byKey(keys.routeEditor.generateButton), findsOneWidget);
+      await tester.tap(find.byKey(keys.routeEditor.generateButton));
+      await pumps(tester);
+      // Le générateur remplace l'éditeur vide (ici attrapé par la route de
+      // la fiche : `…/parcours/generer`).
+      expect(find.byKey(keys.routeEditor.pickStep), findsNothing);
+      expect(find.textContaining('fiche gener'), findsOneWidget);
+    });
+
     testWidgets('« Tracer sur la carte » du bouton « Créer » : le '
         'planificateur s\'ouvre sans la page de choix', (
       WidgetTester tester,

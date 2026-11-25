@@ -32,6 +32,7 @@ class GpxPickStep extends StatelessWidget {
     required this.busy,
     this.refused,
     this.onDraw,
+    this.onGenerate,
     this.quotaSpent,
   });
 
@@ -41,6 +42,11 @@ class GpxPickStep extends StatelessWidget {
 
   /// Ouvre le planificateur ; nul, il n'est pas proposé.
   final VoidCallback? onDraw;
+
+  /// Ouvre le générateur de parcours (ledger `MOB-154`) ; nul, il n'est pas
+  /// proposé. Il garde son résultat par le planificateur : le même quota le
+  /// ferme.
+  final VoidCallback? onGenerate;
 
   /// Le quota épuisé qui ferme « Tracer sur la carte », s'il l'est.
   final PlannerQuotaRefusal? quotaSpent;
@@ -101,6 +107,18 @@ class GpxPickStep extends StatelessWidget {
                   enabled: !busy && quota == null,
                   onPressed: draw,
                 ),
+                if (onGenerate != null) ...<Widget>[
+                  const SizedBox(height: PdlSpacing.chipGap),
+                  PdlButton(
+                    key: keys.routeEditor.generateButton,
+                    label: 'routeGenerator.title'.tr(),
+                    icon: PdlIcons.generate,
+                    variant: PdlButtonVariant.outline,
+                    fullWidth: true,
+                    enabled: !busy && quota == null,
+                    onPressed: onGenerate,
+                  ),
+                ],
                 if (quota != null) ...<Widget>[
                   const SizedBox(height: PdlSpacing.chipGap),
                   PlannerQuotaMessage(
