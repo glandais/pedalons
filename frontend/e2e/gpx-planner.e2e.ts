@@ -2325,8 +2325,8 @@ test.describe('recalculating the route (WEB-202)', () => {
     const planner = await openPlanner({ context, page, isMobile })
     const { surface, points, settled, routerRequests } = planner
     // 3 points: 2 routed legs, drawn with the practice's own values
-    await drawThreePoints(planner)
-    expect(routerRequests).toHaveLength(2)
+    // drawThreePoints checks its two routed legs, then empties the list
+    expect(await drawThreePoints(planner)).toHaveLength(2)
     const before = routerRequests.length
 
     await surface.getByRole('button', ROUTER_PROFILE).click()

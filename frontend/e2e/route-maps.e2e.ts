@@ -186,7 +186,8 @@ test('stage detail draws the complete trace', async ({ page }) => {
   await page.goto(stagePath(w.team.slug, w.trip.slug, w.trip.stageSlug))
   // One header, the stage its only h1 (docs/LEDGER_*.md WEB-155).
   await expect(page.getByRole('heading', { level: 1, name: w.trip.stageName })).toBeVisible()
-  await expect(page.getByRole('heading', { level: 3, name: w.route.name })).toBeVisible()
+  // The route's card left with WEB-203: its GPS sits in the stage's header.
+  await expect(page.getByTestId('gps-button')).toBeVisible()
   await expectFullTrace(page, watcher, w, 'single')
 })
 

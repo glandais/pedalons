@@ -67,7 +67,8 @@ const OFFER: RouteRetouchOfferDto = {
   originalDistanceM: 5_900,
   minDistanceKm: 4.2,
   maxDistanceKm: 7.6,
-  minChangeKm: 1,
+  // Below 0.9 km, so that the tests' 5 km target (5.9 km today) is a change and not the dead zone.
+  minChangeKm: 0.5,
   maxChangeShare: 0.3,
   endSnapM: 500,
   proposalsMax: 3,

@@ -52,7 +52,7 @@ export const entityTargets: SlugTarget[] = [
     detailPath: ridePath,
     apiPath: (teamSlug, slug) => `/api/teams/${teamSlug}/rides/${slug}`,
     editTitle: 'Modifier la sortie',
-    detailHeading: heading(2),
+    detailHeading: heading(1),
     savedToast: 'Sortie mise à jour avec succès',
   },
   {
@@ -70,7 +70,7 @@ export const entityTargets: SlugTarget[] = [
     detailPath: (teamSlug, slug) => `/equipes/${teamSlug}/annonces/${slug}`,
     apiPath: (teamSlug, slug) => `/api/teams/${teamSlug}/classifieds/${slug}`,
     editTitle: "Modifier l'annonce",
-    detailHeading: heading(2),
+    detailHeading: heading(1),
     savedToast: 'Annonce mise à jour avec succès',
   },
 ]
