@@ -40,7 +40,7 @@ export function ProfileSecurityPage() {
 
       <ProfileCard>
         <Stack gap="xs">
-          <Title order={3} size="h5">
+          <Title order={2} size="h5">
             {t('profile.security.sessions.title')}
           </Title>
           <Text size="sm" c="dimmed">

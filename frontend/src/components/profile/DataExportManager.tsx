@@ -21,7 +21,7 @@ export function DataExportManager() {
   return (
     <Stack>
       <Group justify="space-between">
-        <Title order={3} size="h5">
+        <Title order={2} size="h5">
           {t('profile.dataExport.title')}
         </Title>
         {isExporting && (

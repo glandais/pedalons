@@ -63,7 +63,7 @@ export function TeamAboutPage() {
 
           {/* Description */}
           <Box mb="lg">
-            <MediaDisplay media={team.about} />
+            <MediaDisplay media={team.about} topHeadingLevel={3} />
             {!team.about?.markdown && (
               <Text c="dimmed" fs="italic">
                 {t('teams.detail.about.noDescription')}

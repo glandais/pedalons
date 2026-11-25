@@ -68,7 +68,7 @@ export function PairedDevicesManager() {
 
   return (
     <Stack>
-      <Title order={3} size="h5">
+      <Title order={2} size="h5">
         {t('gps.devices.title')}
       </Title>
 

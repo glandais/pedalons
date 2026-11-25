@@ -205,7 +205,7 @@ export function GpsConnectionsManager() {
   return (
     <Stack>
       <Group justify="space-between">
-        <Title order={3} size="h5">
+        <Title order={2} size="h5">
           {t('gps.title')}
         </Title>
       </Group>

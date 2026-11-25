@@ -47,7 +47,7 @@ export function WebPushSettings() {
   return (
     <ProfileCard>
       <Stack gap="xs">
-        <Title order={3} size="h5">
+        <Title order={2} size="h5">
           {t('notifications.webPush.title')}
         </Title>
         {status === 'needsInstall' && (

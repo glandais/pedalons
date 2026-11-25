@@ -35,8 +35,8 @@ export function LegalPage({ type, beforeContent }: LegalPageProps) {
       <Stack gap="md">
         <Title order={1}>{t(titleKey)}</Title>
         {beforeContent}
-        {/* The Markdown's `# Title` is dropped above, so its `##` sections are this page's h2 as written. */}
-        <MarkdownDisplay markdown={markdown} headingOffset={0} />
+        {/* The Markdown's `# Title` is dropped above: its `##` sections are this page's h2. */}
+        <MarkdownDisplay markdown={markdown} />
       </Stack>
     </Container>
   )

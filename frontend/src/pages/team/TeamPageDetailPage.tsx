@@ -36,7 +36,7 @@ function PageContent({
 
       {/* Page Content */}
       <Box>
-        <MediaDisplay media={page.media} headingOffset={titleOrder === 1 ? 1 : 2} />
+        <MediaDisplay media={page.media} topHeadingLevel={titleOrder === 1 ? 2 : 3} />
         {!page.media?.markdown && (
           <Text c="dimmed" fs="italic">
             {t('teams.pages.noContent')}

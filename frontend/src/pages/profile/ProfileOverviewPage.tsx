@@ -148,7 +148,7 @@ export function ProfileOverviewPage() {
       <IdentityCard />
 
       <Stack gap="sm" visibleFrom={PROFILE_SIDEBAR_FROM}>
-        <Title order={3} size="h4">
+        <Title order={2} size="h4">
           {t('profile.nav.group.settings')}
         </Title>
         <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="sm">

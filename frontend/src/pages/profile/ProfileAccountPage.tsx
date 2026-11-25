@@ -92,7 +92,7 @@ export function ProfileAccountPage() {
     <ProfileShell section="account" title={t('profile.nav.account')}>
       <ProfileCard>
         <Stack gap="sm">
-          <Title order={3} size="h5">
+          <Title order={2} size="h5">
             {t('profile.account.photo')}
           </Title>
           <Group gap="lg" wrap="wrap">
@@ -158,7 +158,7 @@ export function ProfileAccountPage() {
 
       <ProfileCard tone="danger">
         <Box>
-          <Title order={3} size="h5" c="danger">
+          <Title order={2} size="h5" c="danger">
             {t('profile.account.dangerZone.title')}
           </Title>
           <Text size="sm" c="dimmed" mt={4}>

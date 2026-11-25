@@ -72,7 +72,7 @@ export function ProfileHelpPage() {
       {version && (
         <ProfileCard>
           <Stack gap={4}>
-            <Title order={3} size="h5">
+            <Title order={2} size="h5">
               {t('profile.help.version')}
             </Title>
             <Text size="sm" c="dimmed">

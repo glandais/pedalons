@@ -86,7 +86,7 @@ export function NotificationPreferences() {
       {hasChannels && (
         <ProfileCard>
           <Stack gap="sm">
-            <Title order={3} size="h5">
+            <Title order={2} size="h5">
               {t('notifications.preferences.matrix.title')}
             </Title>
             <Text size="sm" c="dimmed">
@@ -173,7 +173,7 @@ export function NotificationPreferences() {
       {hasTeams && (
         <ProfileCard>
           <Stack gap="xs">
-            <Title order={3} size="h5">
+            <Title order={2} size="h5">
               {t('notifications.preferences.teams.title')}
             </Title>
             <Text size="sm" c="dimmed">

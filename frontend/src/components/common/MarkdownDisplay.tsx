@@ -2,7 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkDirective from 'remark-directive'
 import removeMd from 'remove-markdown'
-import type { TitleOrder } from '@mantine/core'
+import type { TitleOrder, TitleSize } from '@mantine/core'
 import {
   Text,
   Box,
@@ -15,9 +15,11 @@ import {
   List,
   Image,
 } from '@mantine/core'
+import type { ReactNode } from 'react'
 import type { AssetDto } from '@/api/dto'
 import { type ImageSize, ASSET_DIRECTIVE_REGEX } from '../../lib/assetMarkdown'
 import { remarkAssetDirective } from '../../lib/remarkAssetDirective'
+import { remarkHeadingLevels, type HeadingDepth } from '../../lib/remarkHeadingLevels'
 import { AssetImage } from './AssetImage'
 
 export interface MarkdownDisplayProps {
@@ -27,8 +29,13 @@ export interface MarkdownDisplayProps {
   images?: AssetDto[]
   /** Passed to each asset picture (`AssetImage`'s `sizes`). */
   imageSizes?: string
-  /** How many levels the Markdown's headings go down (docs/LEDGER_*.md WEB-207): the page has its own h1 (the post's, the team's), so a `#` of the content is an h2. Each heading keeps the size of the level it was written at. 0 where the page already dropped the Markdown's `# Title` (LegalPage). */
-  headingOffset?: 0 | 1 | 2
+  /**
+   * The level the content's highest heading takes (docs/LEDGER_*.md WEB-207): the page has its own
+   * h1 (the post's, the team's), so the content starts at h2 — h3 under a section that is itself an
+   * h2 (a team page or « À propos » under TeamLayout). The others keep their distance to it; each
+   * heading keeps the size of the level it was written at.
+   */
+  topHeadingLevel?: 2 | 3
 }
 
 export function MarkdownDisplay({
@@ -37,7 +44,7 @@ export function MarkdownDisplay({
   maxLength = 150,
   images = [],
   imageSizes,
-  headingOffset = 1,
+  topHeadingLevel = 2,
 }: MarkdownDisplayProps) {
   if (!markdown) {
     return null
@@ -57,14 +64,35 @@ export function MarkdownDisplay({
     )
   }
 
-  const level = (written: 1 | 2 | 3 | 4 | 5 | 6) =>
-    Math.min(written + headingOffset, 6) as TitleOrder
+  // The level a heading was written at (`data-written`, remarkHeadingLevels) sets its look; the
+  // level it was moved to, its tag.
+  const heading =
+    (order: TitleOrder) =>
+    ({ children, 'data-written': written }: { children?: ReactNode; 'data-written'?: string }) => {
+      const look = (Number(written) || order) as HeadingDepth
+      return (
+        <Title
+          order={order}
+          size={`h${look}` as TitleSize}
+          mb={look === 1 ? 'md' : look === 2 ? 'sm' : 'xs'}
+          mt={look <= 2 ? 'lg' : 'md'}
+          style={look <= 3 ? { letterSpacing: '-0.025em' } : undefined}
+        >
+          {children}
+        </Title>
+      )
+    }
 
   // Full markdown rendering - asset URLs handled at render time via AssetImage
   return (
     <Box fz="md" lh={1.75}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkDirective, remarkAssetDirective]}
+        remarkPlugins={[
+          remarkGfm,
+          remarkDirective,
+          remarkAssetDirective,
+          [remarkHeadingLevels, { top: topHeadingLevel }],
+        ]}
         components={{
           // Asset directive - handles ::asset{id="..." size="..." alt="..."}
           // @ts-expect-error - custom component from remark-directive
@@ -96,36 +124,12 @@ export function MarkdownDisplay({
             />
           ),
           // Headings
-          h1: ({ children }) => (
-            <Title order={level(1)} size="h1" mb="md" mt="lg" style={{ letterSpacing: '-0.025em' }}>
-              {children}
-            </Title>
-          ),
-          h2: ({ children }) => (
-            <Title order={level(2)} size="h2" mb="sm" mt="lg" style={{ letterSpacing: '-0.025em' }}>
-              {children}
-            </Title>
-          ),
-          h3: ({ children }) => (
-            <Title order={level(3)} size="h3" mb="xs" mt="md" style={{ letterSpacing: '-0.025em' }}>
-              {children}
-            </Title>
-          ),
-          h4: ({ children }) => (
-            <Title order={level(4)} size="h4" mb="xs" mt="md">
-              {children}
-            </Title>
-          ),
-          h5: ({ children }) => (
-            <Title order={level(5)} size="h5" mb="xs" mt="md">
-              {children}
-            </Title>
-          ),
-          h6: ({ children }) => (
-            <Title order={level(6)} size="h6" mb="xs" mt="md">
-              {children}
-            </Title>
-          ),
+          h1: heading(1),
+          h2: heading(2),
+          h3: heading(3),
+          h4: heading(4),
+          h5: heading(5),
+          h6: heading(6),
           // Paragraphs
           p: ({ children }) => (
             <Text component="p" mb="xs" lh={1.625}>
