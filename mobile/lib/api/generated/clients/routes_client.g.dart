@@ -22,8 +22,6 @@ class _RoutesClient implements RoutesClient {
 
   @override
   Future<RouteListResponse> listAllRoutes({
-    int? page = 0,
-    int? size = 20,
     Hilliness? hilliness,
     double? maxDistance,
     double? maxElevationGain,
@@ -40,11 +38,12 @@ class _RoutesClient implements RoutesClient {
     SurfaceType? surfaceType,
     ListViewMode? view,
     WindDirection? windDirection,
+    bool? excludeDeleted = false,
+    int? page = 0,
+    int? size = 20,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
-      r'page': page,
-      r'size': size,
       r'hilliness': hilliness?.toJson(),
       r'maxDistance': maxDistance,
       r'maxElevationGain': maxElevationGain,
@@ -61,6 +60,9 @@ class _RoutesClient implements RoutesClient {
       r'surfaceType': surfaceType?.toJson(),
       r'view': view?.toJson(),
       r'windDirection': windDirection?.toJson(),
+      r'excludeDeleted': excludeDeleted,
+      r'page': page,
+      r'size': size,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
@@ -254,8 +256,6 @@ class _RoutesClient implements RoutesClient {
   @override
   Future<RouteListResponse> listRoutes({
     required String teamSlug,
-    int? page = 0,
-    int? size = 20,
     Hilliness? hilliness,
     double? maxDistance,
     double? maxElevationGain,
@@ -272,11 +272,12 @@ class _RoutesClient implements RoutesClient {
     List<String>? tags,
     ListViewMode? view,
     WindDirection? windDirection,
+    bool? excludeDeleted = false,
+    int? page = 0,
+    int? size = 20,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
-      r'page': page,
-      r'size': size,
       r'hilliness': hilliness?.toJson(),
       r'maxDistance': maxDistance,
       r'maxElevationGain': maxElevationGain,
@@ -293,6 +294,9 @@ class _RoutesClient implements RoutesClient {
       r'tags': tags,
       r'view': view?.toJson(),
       r'windDirection': windDirection?.toJson(),
+      r'excludeDeleted': excludeDeleted,
+      r'page': page,
+      r'size': size,
     };
     queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};

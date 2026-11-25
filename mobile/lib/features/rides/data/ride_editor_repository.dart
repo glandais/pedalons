@@ -45,7 +45,8 @@ class RideEditorRepository {
   final AssetsClient _assets;
   final TeamsClient _teams;
 
-  /// Une page de parcours de l'équipe, filtrée par [search].
+  /// Une page de parcours de l'équipe, filtrée par [search], sans les
+  /// parcours supprimés.
   Future<RouteListResponse> searchRoutes(
     String teamSlug, {
     String? search,
@@ -56,6 +57,9 @@ class RideEditorRepository {
       search: _query(search),
       page: page,
       size: kRideEditorPageSize,
+      // Un administrateur voit les parcours supprimés dans la liste de
+      // l'équipe ; une sortie ou une étape ne peut pas en prendre un.
+      excludeDeleted: true,
     );
   }
 

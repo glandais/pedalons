@@ -866,7 +866,7 @@ public class RouteService extends TeamEntityService<Route, RouteRepository, Rout
         Set.of(team.getId()),
         pedalonsContext.getUserNullable(),
         params,
-        isIncludeDeleted(team),
+        !params.excludeDeleted() && isIncludeDeleted(team),
         tagFilter(team, params));
   }
 

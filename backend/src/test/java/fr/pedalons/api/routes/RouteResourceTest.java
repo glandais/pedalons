@@ -698,6 +698,44 @@ class RouteResourceTest extends AbstractResourceTest {
         .statusCode(404);
   }
 
+  /**
+   * An administrator's list shows the deleted routes; a picker (ride, trip stage) asks for {@code
+   * excludeDeleted} so it never offers one.
+   */
+  @Test
+  void listRoutes_excludeDeleted_hidesDeletedRoutesFromAnAdmin() {
+    Route kept = dataService.createRoute(team1, user1, "Kept Route", Visibility.PUBLIC);
+    Route gone = dataService.createRoute(team1, user1, "Gone Route", Visibility.PUBLIC);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .delete("/api/teams/" + team1Slug + "/routes/" + gone.getSlug())
+        .then()
+        .statusCode(204);
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .when()
+        .get("/api/teams/" + team1Slug + "/routes")
+        .then()
+        .statusCode(200)
+        .body("routes.slug", hasItems(kept.getSlug(), gone.getSlug()));
+
+    given()
+        .auth()
+        .oauth2(getAccessToken(USER1))
+        .queryParam("excludeDeleted", true)
+        .when()
+        .get("/api/teams/" + team1Slug + "/routes")
+        .then()
+        .statusCode(200)
+        .body("routes.slug", hasItem(kept.getSlug()))
+        .body("routes.slug", not(hasItem(gone.getSlug())));
+  }
+
   @Test
   void deleteRoute_asOrganizer_shouldSucceed() {
     Route testRoute = dataService.createRoute(team1, user1, "Organizer Delete", Visibility.PUBLIC);

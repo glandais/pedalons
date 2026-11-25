@@ -4,10 +4,17 @@ import * as zod from 'zod'
  * Get paginated list of routes from all accessible teams (user's teams + public teams)
  * @summary List all routes
  */
+export const listAllRoutesQueryExcludeDeletedDefault = false
 export const listAllRoutesQueryPageDefault = 0
 export const listAllRoutesQuerySizeDefault = 20
 
 export const ListAllRoutesQueryParams = zod.object({
+  excludeDeleted: zod
+    .boolean()
+    .default(listAllRoutesQueryExcludeDeletedDefault)
+    .describe(
+      "Leave out the soft-deleted routes, which a team administrator otherwise sees in the team's list. Meant for a picker: a deleted route cannot be put on a ride or a trip stage. Omitted or false, the previous behaviour."
+    ),
   hilliness: zod
     .enum(['FLAT', 'HILLY', 'MOUNTAINOUS'])
     .optional()
@@ -683,10 +690,17 @@ export const ListRoutesParams = zod.object({
   teamSlug: zod.string().describe('Team URL slug'),
 })
 
+export const listRoutesQueryExcludeDeletedDefault = false
 export const listRoutesQueryPageDefault = 0
 export const listRoutesQuerySizeDefault = 20
 
 export const ListRoutesQueryParams = zod.object({
+  excludeDeleted: zod
+    .boolean()
+    .default(listRoutesQueryExcludeDeletedDefault)
+    .describe(
+      "Leave out the soft-deleted routes, which a team administrator otherwise sees in the team's list. Meant for a picker: a deleted route cannot be put on a ride or a trip stage. Omitted or false, the previous behaviour."
+    ),
   hilliness: zod
     .enum(['FLAT', 'HILLY', 'MOUNTAINOUS'])
     .optional()

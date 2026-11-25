@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **621 entrées livrées**, et des 23 entrées encore ouvertes dont une part l'est.
+Index des **622 entrées livrées**, et des 23 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -344,6 +344,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## API — Contrat d'API et backend
 
+- [x] [`API-218`](ledger/API/API-218.md) Les sélecteurs de parcours n'offrent plus les parcours supprimés — 2026-11-25
 - [x] [`API-215`](ledger/API/API-215.md) Générateur : consigne de part de chemins en gravel et VTT, contrat 16.3.0 — 2026-11-23
 - [x] [`API-213`](ledger/API/API-213.md) Aucune mesure d'activation des nouveaux comptes — 2026-11-23
 - [x] [`API-212`](ledger/API/API-212.md) Retoucher un parcours existant : viser une distance, déplacer l'arrivée (L, lot 0 mesuré, lot 7c codé) — en partie, le reste est ouvert

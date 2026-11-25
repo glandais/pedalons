@@ -67,7 +67,8 @@ export function RoutePickerModal({
     error,
   } = useListRoutes(
     teamSlug,
-    { page, size: pageSize, search: debouncedSearch || undefined },
+    // A team administrator's list includes the deleted routes, which a ride or a stage cannot use.
+    { page, size: pageSize, search: debouncedSearch || undefined, excludeDeleted: true },
     {
       // The editors mount this modal for the whole edit session, closed. Without `enabled` it
       // queried the team's route list on every ride and trip form load — a list most visitors

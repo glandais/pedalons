@@ -8,6 +8,8 @@ import type { SurfaceType } from './surfaceType.ts'
 import type { WindDirection } from './windDirection.ts'
 
 export type ListAllRoutesParams = {
+  /** Leave out the soft-deleted routes, which a team administrator otherwise sees in the team's list. Meant for a picker: a deleted route cannot be put on a ride or a trip stage. Omitted or false, the previous behaviour. */
+  excludeDeleted?: boolean
   /** Hilliness preset (FLAT, HILLY, MOUNTAINOUS) */
   hilliness?: Hilliness
   /** Maximum distance in meters */
