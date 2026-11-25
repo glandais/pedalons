@@ -1643,7 +1643,12 @@
       "deleteTitle": "Supprimer le parcours ?",
       "deleteMessage": "« {name} » disparaîtra des listes. Le rôle Administrateur de l'équipe pourra le restaurer.",
       "deletedBanner": "Ce parcours est supprimé. Seul le rôle Administrateur de l'équipe le voit.",
-      "retouch": "Retoucher"
+      "retouch": "Retoucher",
+      "duplicate": "Dupliquer le parcours",
+      "duplicated": "Parcours dupliqué",
+      "duplicateNameLabel": "Nom du parcours",
+      "duplicateDefaultName": "Copie de {name}",
+      "duplicateSubmit": "Dupliquer"
     },
     "elevationRefining": "Profil d'altitude provisoire",
     "surfaceDetail": {

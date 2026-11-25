@@ -15,12 +15,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/content_permissions.dart';
 import '../../support/localization.dart';
+import '../trips/trip_fixtures.dart';
 import 'route_fixtures.dart';
 
 /// Le menu « Gérer le parcours » de la fiche (ledger `MOB-79`).
 class _StubRoutes implements RouteRepository {
   final List<String> deleted = <String>[];
   final List<String> restored = <String>[];
+  final List<String> duplicated = <String>[];
+
+  @override
+  Future<RouteDto> duplicateRoute(
+    String teamSlug,
+    String routeSlug, {
+    required String name,
+  }) async {
+    duplicated.add('$teamSlug/$routeSlug:$name');
+    return fixtureStageRoute(slug: 'copie', name: name);
+  }
 
   @override
   Future<void> deleteRoute(String teamSlug, String routeSlug) async =>
@@ -59,6 +71,7 @@ void main() {
         <RouteManageAction>[
           RouteManageAction.edit,
           RouteManageAction.replaceGpx,
+          RouteManageAction.duplicate,
           RouteManageAction.delete,
           RouteManageAction.report,
         ],
@@ -71,6 +84,7 @@ void main() {
         <RouteManageAction>[
           RouteManageAction.edit,
           RouteManageAction.replaceGpx,
+          RouteManageAction.duplicate,
           RouteManageAction.delete,
         ],
       );
@@ -123,6 +137,7 @@ void main() {
             RouteManageAction.edit,
             RouteManageAction.retouch,
             RouteManageAction.replaceGpx,
+            RouteManageAction.duplicate,
             RouteManageAction.delete,
           ],
         );
@@ -144,6 +159,7 @@ void main() {
       expect(routeManageActions(route, canReport: true), <RouteManageAction>[
         RouteManageAction.edit,
         RouteManageAction.replaceGpx,
+        RouteManageAction.duplicate,
         RouteManageAction.report,
       ]);
       expect(routeHasManageActions(route), isTrue);
@@ -334,6 +350,32 @@ void main() {
         expect(find.text('éditeur col-de-la-croix replace'), findsOneWidget);
         // Rien n'a été supprimé ni envoyé.
         expect(routes.deleted, isEmpty);
+      },
+    );
+
+    testWidgets(
+      '« Dupliquer » demande le nom de la copie, puis ouvre son éditeur',
+      (WidgetTester tester) async {
+        await pump(tester, route: managedRoute());
+
+        await tester.tap(find.byKey(keys.routeManage.duplicate));
+        await settle(tester);
+        final TextField field = tester.widget(
+          find.byKey(keys.routeManage.duplicateName),
+        );
+        expect(field.controller!.text, startsWith('Copie de '));
+
+        await tester.enterText(
+          find.byKey(keys.routeManage.duplicateName),
+          'Col, variante',
+        );
+        await tester.tap(find.byKey(keys.routeManage.duplicateSubmit));
+        await settle(tester);
+
+        expect(routes.duplicated, <String>[
+          'n-peloton/col-de-la-croix:Col, variante',
+        ]);
+        expect(find.text('éditeur copie -'), findsOneWidget);
       },
     );
 

@@ -279,6 +279,20 @@ class RouteRepository {
     );
   }
 
+  /// Une copie de [routeSlug] sous [name] : l'API copie tout le reste
+  /// (docs/LEDGER_*.md WEB-168).
+  Future<RouteDto> duplicateRoute(
+    String teamSlug,
+    String routeSlug, {
+    required String name,
+  }) {
+    return _routesClient.duplicateRoute(
+      teamSlug: teamSlug,
+      routeSlug: routeSlug,
+      body: RouteDuplicateRequest(name: name),
+    );
+  }
+
   /// Suppression douce : un organisateur peut le restaurer.
   Future<void> deleteRoute(String teamSlug, String routeSlug) {
     return _routesClient.deleteRoute(teamSlug: teamSlug, routeSlug: routeSlug);

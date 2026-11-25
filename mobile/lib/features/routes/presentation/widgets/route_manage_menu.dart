@@ -9,6 +9,7 @@ import '../../../../core/pdl/pdl.dart';
 import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/utils/api_error_handler.dart';
+import '../../../../core/widgets/duplicate_name_sheet.dart';
 import '../../../../keys.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../profile/presentation/widgets/confirm_sheet.dart';
@@ -22,9 +23,17 @@ import '../route_editor_location.dart';
 
 /// Les gestes d'un organisateur sur un parcours, depuis le `⋯` de sa fiche —
 /// ceux du menu du site (`RouteDetailPage`) : modifier, remplacer le GPX,
-/// supprimer, restaurer, et signaler (ledger `MOB-79`) ; retoucher
+/// dupliquer, supprimer, restaurer, et signaler (ledger `MOB-79`) ; retoucher
 /// (docs/LEDGER_*.md MOB-185) quand l'offre du moteur le permet.
-enum RouteManageAction { edit, retouch, replaceGpx, delete, restore, report }
+enum RouteManageAction {
+  edit,
+  retouch,
+  replaceGpx,
+  duplicate,
+  delete,
+  restore,
+  report,
+}
 
 /// Les gestes offerts pour [route], dans l'ordre du menu. Un parcours supprimé
 /// n'offre que sa restauration ; [canReport] est faux pour son propre
@@ -48,6 +57,8 @@ List<RouteManageAction> routeManageActions(
       RouteManageAction.edit,
       if (retouch != RetouchEntry.none) RouteManageAction.retouch,
       RouteManageAction.replaceGpx,
+      // Comme au site : qui peut modifier le parcours peut le copier.
+      RouteManageAction.duplicate,
     ],
     if (delete) RouteManageAction.delete,
     if (canReport) RouteManageAction.report,
@@ -147,6 +158,10 @@ Future<void> runRouteManageAction(
     await context.push(routeEditLocation(team, route.slug, replaceGpx: true));
     return;
   }
+  if (action == RouteManageAction.duplicate) {
+    await _duplicate(context, ref, route);
+    return;
+  }
   if (action == RouteManageAction.report) {
     await showDetailModerationMenu(
       context,
@@ -213,6 +228,38 @@ Future<void> runRouteManageAction(
   }
 }
 
+/// « Dupliquer le parcours » : le nom de la copie, puis son formulaire,
+/// comme au site (docs/LEDGER_*.md WEB-168).
+Future<void> _duplicate(
+  BuildContext context,
+  WidgetRef ref,
+  RouteDetailDto route,
+) async {
+  final String team = route.team.slug;
+  final RouteDto? copy = await PdlSheet.show<RouteDto>(
+    context: context,
+    builder: (BuildContext _) => DuplicateNameSheet<RouteDto>(
+      key: keys.routeManage.duplicateSheet,
+      title: 'routes.manage.duplicate'.tr(),
+      nameLabel: 'routes.manage.duplicateNameLabel'.tr(),
+      submitLabel: 'routes.manage.duplicateSubmit'.tr(),
+      initialName: 'routes.manage.duplicateDefaultName'.tr(
+        namedArgs: <String, String>{'name': route.name},
+      ),
+      nameKey: keys.routeManage.duplicateName,
+      submitKey: keys.routeManage.duplicateSubmit,
+      onSubmit: (String name) => ref
+          .read(routeRepositoryProvider)
+          .duplicateRoute(team, route.slug, name: name),
+    ),
+  );
+  if (copy == null || !context.mounted) return;
+  notifyRouteChanged(ref, teamSlug: team);
+  ScaffoldMessenger.maybeOf(context)
+      ?.showSnackBar(SnackBar(content: Text('routes.manage.duplicated'.tr())));
+  await context.push(Paths.routeEdit(team, copy.slug));
+}
+
 /// La retouche, puis ce qu'elle a choisi d'ouvrir : l'éditeur de ce parcours
 /// (tracé remplacé), une création, ou le générateur. Rien n'est enregistré
 /// sans « Enregistrer » dans l'éditeur.
@@ -246,6 +293,7 @@ String _label(RouteManageAction a) => switch (a) {
   RouteManageAction.edit => 'edit',
   RouteManageAction.retouch => 'retouch',
   RouteManageAction.replaceGpx => 'replaceGpx',
+  RouteManageAction.duplicate => 'duplicate',
   RouteManageAction.delete => 'delete',
   RouteManageAction.restore => 'restore',
   RouteManageAction.report => 'report',
@@ -255,6 +303,7 @@ IconData _icon(RouteManageAction a) => switch (a) {
   RouteManageAction.edit => PdlIcons.edit,
   RouteManageAction.retouch => PdlIcons.generate,
   RouteManageAction.replaceGpx => PdlIcons.gpx,
+  RouteManageAction.duplicate => PdlIcons.copy,
   RouteManageAction.delete => PdlIcons.delete,
   RouteManageAction.restore => PdlIcons.restore,
   RouteManageAction.report => PdlIcons.report,
@@ -264,6 +313,7 @@ Key _key(RouteManageAction a) => switch (a) {
   RouteManageAction.edit => keys.routeManage.edit,
   RouteManageAction.retouch => keys.routeManage.retouch,
   RouteManageAction.replaceGpx => keys.routeManage.replaceGpx,
+  RouteManageAction.duplicate => keys.routeManage.duplicate,
   RouteManageAction.delete => keys.routeManage.delete,
   RouteManageAction.restore => keys.routeManage.restore,
   RouteManageAction.report => keys.routeManage.report,

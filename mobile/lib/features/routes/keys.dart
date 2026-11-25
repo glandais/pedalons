@@ -238,12 +238,18 @@ class RouteManageKeys {
   final edit = const _RouteManageKey('edit');
   final retouch = const _RouteManageKey('retouch');
   final replaceGpx = const _RouteManageKey('replaceGpx');
+  final duplicate = const _RouteManageKey('duplicate');
   final delete = const _RouteManageKey('delete');
   final restore = const _RouteManageKey('restore');
   final report = const _RouteManageKey('report');
 
   /// Le bandeau d'une fiche supprimée.
   final deletedBanner = const _RouteManageKey('deletedBanner');
+
+  /// La feuille « Dupliquer le parcours ».
+  final duplicateSheet = const _RouteManageKey('duplicateSheet');
+  final duplicateName = const _RouteManageKey('duplicateName');
+  final duplicateSubmit = const _RouteManageKey('duplicateSubmit');
 }
 
 class _RouteWaypointsKey extends ValueKey<String> {
