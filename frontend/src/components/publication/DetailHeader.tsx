@@ -70,7 +70,8 @@ export function DetailHeader({
 }: DetailHeaderProps) {
   const titleRef = useRef<HTMLHeadingElement>(null)
   const [clamped, setClamped] = useState(false)
-  // Measured when the pointer or the focus arrives: jsdom has no layout, so tests never see a tooltip.
+  // Measured when the pointer arrives: jsdom has no layout, so tests never see a tooltip. No focus
+  // event — an h1 takes no focus —, and a screen reader reads the whole title, clamped or not.
   const measure = () => {
     const el = titleRef.current
     setClamped(!!el && el.scrollHeight > el.clientHeight)
@@ -98,7 +99,7 @@ export function DetailHeader({
                   multiline
                   w={320}
                   disabled={!clamped}
-                  events={{ hover: true, focus: true, touch: true }}
+                  events={{ hover: true, focus: false, touch: true }}
                 >
                   <Title
                     order={1}
@@ -107,7 +108,6 @@ export function DetailHeader({
                     lineClamp={2}
                     style={{ overflowWrap: 'anywhere' }}
                     onMouseEnter={measure}
-                    onFocus={measure}
                     onTouchStart={measure}
                   >
                     {title}

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Anchor, Box, Container, Group, Stack } from '@mantine/core'
+import { Alert, Anchor, Box, Container, Group, Stack } from '@mantine/core'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { DetailHeader } from './DetailHeader'
@@ -91,11 +91,18 @@ export function ChildDetailShell({
         edit={edit}
         shareTitle={shareTitle}
         more={more}
-        error={error}
       >
         {departure}
 
         {notices}
+
+        {/* After the notices, not under the title as DetailHeader puts it: a failed join is read
+            with the word on why one cannot join. */}
+        {error && (
+          <Alert color="red" variant="light">
+            {error}
+          </Alert>
+        )}
       </DetailHeader>
 
       <Box className={map ? 'detail-layout' : 'detail-layout detail-layout--no-map'}>

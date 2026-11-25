@@ -147,9 +147,14 @@ export function TripDetailPage() {
         editPath={paths.tripEdit(teamSlug!, tripSlug!)}
         error={membership.error}
         // The trip's own route, when it has no stages to carry one each (D6, docs/LEDGER_*.md
-        // WEB-206): with stages, every stage card keeps its GPS.
+        // WEB-206): with stages, every stage card keeps its GPS. The stage cards' rule: for who
+        // rides it, joined to a trip not cancelled. Not `finished`, which turns true once the trip
+        // has started — when the route is needed most.
         gps={
-          trip.routeSlug && !trip.stages?.length ? (
+          trip.routeSlug &&
+          !trip.stages?.length &&
+          hasJoined &&
+          trip.status !== Status.CANCELLED ? (
             <GpsMenuButton teamSlug={teamSlug!} routeSlug={trip.routeSlug} size="sm" />
           ) : undefined
         }

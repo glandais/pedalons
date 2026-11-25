@@ -34,6 +34,7 @@ import {
   openActionsMenu,
   pageAs,
   pageHydrated,
+  toasts,
 } from './support/ui'
 
 /**
@@ -374,7 +375,8 @@ test('a team admin deletes a route: members no longer see it, the team admin can
   await expect(main.getByRole('heading', { level: 1, name })).toBeVisible()
   const restore = (await openActionsMenu(page)).getByRole('menuitem', { name: 'Restaurer' })
   await restore.click()
-  await expect(restore).toHaveCount(0)
+  // The menu closes on the click: wait for the server's answer, not for the item to go.
+  await expect(toasts(page).filter({ hasText: 'Parcours restauré avec succès' })).toBeVisible()
   expect((await getRoute(owner, team.slug, route.slug)).deleted).toBeFalsy()
   expect((await listRoutes(member, team.slug)).routes.map((r) => r.slug)).toContain(route.slug)
 })
@@ -838,6 +840,8 @@ test.describe('what a route shows to whom', () => {
     const { team, route, name } = await publicTeamWithRoute('copie-anonyme')
     const main = await openSettled(page, team.slug, route.slug, name)
     await expect(main.getByTestId('gps-button')).toBeVisible()
+    // « Dupliquer » lives in the « Modifier ▾ » menu (docs/LEDGER_*.md WEB-206): no menu, no copy.
+    await expect(actionsMenu(page)).toHaveCount(0)
     await expect(main.getByRole('button', { name: 'Dupliquer', exact: true })).toHaveCount(0)
     await expect(main.getByRole('button', { name: 'Modifier une copie' })).toHaveCount(0)
   })

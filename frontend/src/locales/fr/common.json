@@ -1059,7 +1059,6 @@
   "gpxTools.preview.duplicate.submit": "Dupliquer",
   "gpxTools.preview.duplicate.title": "Dupliquer le fichier",
   "gpxTools.preview.duplicated": "Fichier dupliqué",
-  "gpxTools.preview.edit": "Modifier",
   "gpxTools.preview.elevationRefining": "Profil d'altitude provisoire : un fichier téléchargé maintenant porte l'altitude rapide.",
   "gpxTools.preview.noTeam": "Aucune équipe où créer un parcours",
   "gpxTools.preview.plannerClosedForTeam": "Cette équipe n'a pas activé le tracé d'itinéraire : un tracé dessiné ne peut pas y être enregistré.",

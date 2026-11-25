@@ -178,21 +178,38 @@ describe('TripDetailPage — the stages of a cancelled trip', () => {
 })
 
 // D6 (docs/LEDGER_*.md WEB-206): a trip with a route of its own and no stages has its « GPS »
-// in the header; with stages, each stage card keeps its own.
+// in the header, under the stage cards' rule (joined, not cancelled); with stages, each stage
+// card keeps its own.
 describe('TripDetailPage — the header « GPS »', () => {
   afterEach(cleanup)
 
-  it("offers the trip's own route in the header when it has no stages", () => {
+  it("offers the trip's own route in the header to who rides it when it has no stages", () => {
     state.weather = undefined
-    state.trip = { ...trip([]), routeSlug: 'mon-parcours' }
+    state.trip = { ...trip([]), routeSlug: 'mon-parcours', registered: true }
     renderPage()
     const actions = screen.getByTestId('detail-header-actions')
     expect(within(actions).getByTestId('gps-button')).toBeTruthy()
   })
 
+  it('has none for who has not joined, nor once the trip is cancelled', () => {
+    state.weather = undefined
+    state.trip = { ...trip([]), routeSlug: 'mon-parcours' }
+    renderPage()
+    expect(screen.queryByTestId('gps-button')).toBeNull()
+    cleanup()
+    state.trip = {
+      ...trip([]),
+      routeSlug: 'mon-parcours',
+      registered: true,
+      status: Status.CANCELLED,
+    }
+    renderPage()
+    expect(screen.queryByTestId('gps-button')).toBeNull()
+  })
+
   it('has none in the header once the trip has stages', () => {
     state.weather = undefined
-    state.trip = { ...trip(['s1', 's2']), routeSlug: 'mon-parcours' }
+    state.trip = { ...trip(['s1', 's2']), routeSlug: 'mon-parcours', registered: true }
     renderPage()
     const actions = screen.getByTestId('detail-header-actions')
     expect(within(actions).queryByTestId('gps-button')).toBeNull()

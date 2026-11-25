@@ -6,7 +6,7 @@ import { notifications } from '@mantine/notifications'
 import i18next from 'i18next'
 import { paths } from '../../config/paths'
 import { withMapColor } from '@/hooks/filters/mapColorFilters'
-import { Box, Button, Menu } from '@mantine/core'
+import { Box, Button, Loader, Menu } from '@mantine/core'
 import { IconCopy } from '@tabler/icons-react'
 import {
   useCreatePreviewFromRoute,
@@ -74,8 +74,10 @@ export function RouteDetailPage() {
 
   useCanonicalPath(team && route ? paths.route(team.slug, route.slug) : undefined)
 
-  // The backend's answers for this route (docs/LEDGER_*.md WEB-166, decision D7); canEdit and canDelete go together on a route.
+  // The backend's answers for this route (docs/LEDGER_*.md WEB-166, decision D7). Each gates its
+  // own items: equal on a route today, nothing here relies on it.
   const canEdit = !!route?.permissions.canEdit
+  const canDelete = !!route?.permissions.canDelete
   const canReadComments = !!route?.permissions.canComment
 
   const handleDelete = async () => {
@@ -204,14 +206,17 @@ export function RouteDetailPage() {
           canEdit ? (
             <EditMenuButton to={paths.routeEdit(teamSlug!, routeSlug!)}>
               {route.deleted ? (
-                // A deleted route can only be restored
-                <Menu.Item
-                  color="green"
-                  disabled={undeleteRouteMutation.isPending}
-                  onClick={handleRestore}
-                >
-                  {t('actions.restore')}
-                </Menu.Item>
+                // A deleted route can only be restored: deleting it again changes nothing (D11)
+                canDelete && (
+                  <Menu.Item
+                    color="green"
+                    disabled={undeleteRouteMutation.isPending}
+                    leftSection={undeleteRouteMutation.isPending ? <Loader size="xs" /> : undefined}
+                    onClick={handleRestore}
+                  >
+                    {t('actions.restore')}
+                  </Menu.Item>
+                )
               ) : (
                 <>
                   <Menu.Item
@@ -220,10 +225,14 @@ export function RouteDetailPage() {
                   >
                     {t('actions.duplicate')}
                   </Menu.Item>
-                  <Menu.Divider />
-                  <Menu.Item color="danger" onClick={() => setShowDeleteConfirm(true)}>
-                    {t('actions.delete')}
-                  </Menu.Item>
+                  {canDelete && (
+                    <>
+                      <Menu.Divider />
+                      <Menu.Item color="danger" onClick={() => setShowDeleteConfirm(true)}>
+                        {t('actions.delete')}
+                      </Menu.Item>
+                    </>
+                  )}
                 </>
               )}
             </EditMenuButton>

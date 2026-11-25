@@ -37,12 +37,12 @@ Aucun composant d'en-tête n'est partagé : cinq versions maison se répartissen
 | D3 | Menu ⋯ sur un groupe et une étape | Oui : il signale la sortie ou le voyage parent. Aucun nouveau `ReportTargetType`. |
 | D4 | Supprimer un parcours | Dans le menu ▾ de Modifier, avec Dupliquer, comme sortie, voyage et publication ; toujours confirmé. |
 | D5 | Partager sur une annonce | Oui, avec les règles de visibilité de la publication. |
-| D6 | GPS sur un voyage qui a son propre parcours et aucune étape | Oui, après « Rejoindre le voyage ». Avec des étapes, chaque carte d'étape garde le sien. |
+| D6 | GPS sur un voyage qui a son propre parcours et aucune étape | Oui, après « Rejoindre le voyage », avec la règle des cartes d'étape : pour qui a rejoint le voyage, jamais sur un voyage annulé (précisé le 25 novembre 2026 après relecture). Avec des étapes, chaque carte d'étape garde le sien. |
 | D7 | GPS sur la carte du groupe (app) contre l'en-tête (site) | Aligner l'app sur le site au prochain lot mobile (`MOB-184`) ; d'ici là l'écart reste écrit dans BRANDING §7.7. |
 | D8 | Lien qui recharge toute la page vers la création et la modification d'un parcours (`<Button component="a" href>` dans `RoutesListHeader`, `RouteListPage` et `RouteDetailPage`, `reloadDocument` dans `DashboardHeader`) | Introduit au passage à Mantine (`67af78bfb`, 11 janvier 2026), qui a converti 44 `<Link>` en `component={Link}` et ces seuls liens (plus `paths.teams()` de `TeamSettingsPage`) en `<a href>`, sans raison écrite ; le formulaire est déjà ouvert sans rechargement depuis `QuickActions`, `FirstSteps`, `CardActionsMenu`, le générateur et la duplication, sans état global à remettre à zéro. Analyse du 25 novembre 2026 : aucune raison, donc `PrefetchLink` partout, `TeamSettingsPage` compris, et le champ `reloadDocument` de `CreateSplitButton` disparaît. |
 | D9 | Dupliquer sur l'aperçu GPX, ouvert à toute personne connectée alors que Modifier ▾ est au seul propriétaire | Dans le menu de Modifier pour le propriétaire ; un bouton « Dupliquer » à la place de Modifier pour les autres personnes connectées (`flow-gpx-tools.e2e.ts` garde ce cas). |
 | D10 | Actions que la règle 3 ne nomme pas : « Modifier une copie » (parcours, pour qui ne peut pas modifier), « Enregistrer comme parcours » (aperçu GPX) | À l'emplacement de Modifier, en contour ; sur l'aperçu du propriétaire, « Enregistrer comme parcours » juste avant Modifier ▾. |
-| D11 | Parcours supprimé | Comme la publication : Modifier ▾ reste, Restaurer (vert) entre dans le menu, Supprimer y reste. |
+| D11 | Parcours supprimé | Modifier ▾ reste et son menu ne propose que Restaurer (vert) : supprimer un parcours déjà supprimé ne change rien (`RouteService.deleteRoute`), donc pas de Supprimer, contrairement à la publication. Corrigé le 25 novembre 2026 après relecture. |
 
 ## 3. Les lots
 
@@ -151,7 +151,7 @@ Textes et une fonction ; aucune mise en page.
 
 - Lot 1 : test unitaire de `formatPageTitle` ; les tests de page qui lisent un titre ou un libellé changé ;
   `pnpm i18n:check`.
-- Lot 2 : `DetailHeader.test.tsx` (ordre, menu, retour à la ligne) ; les tests des pages qui l'adoptent ;
+- Lot 2 : `DetailHeader.test.tsx` (ordre, menu ; le retour à la ligne, affaire de mise en page que jsdom ne calcule pas, se voit en recette) ; les tests des pages qui l'adoptent ;
   les e2e qui ouvrent les menus (`flow-posts`, `flow-routes`, `flow-gpx-tools`).
 - Lot 3 : l'assertion de `routes-render.e2e.ts`.
 - Lots 4 et 5 : tests de composant ; recette sur téléphone.

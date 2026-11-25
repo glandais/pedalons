@@ -176,6 +176,7 @@ export function GpxPreviewView({ preview }: GpxPreviewViewProps) {
           are open to anyone with the link too; the other actions need an account, and deleting
           needs to be the creator (docs/LEDGER_*.md WEB-206, D9, D10). */}
       <DetailHeader
+        mb={0}
         title={preview.name}
         gps={
           // One « GPS » button for files and devices, as for a route (KIT §8,

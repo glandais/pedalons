@@ -95,7 +95,7 @@ export const ridePath = (teamSlug: string, rideSlug: string) =>
  */
 export async function openRide(page: Page, teamSlug: string, ride: RideDto) {
   await page.goto(ridePath(teamSlug, ride.slug))
-  await page.getByRole('heading', { level: 2, name: ride.name }).waitFor()
+  await page.getByRole('heading', { level: 1, name: ride.name }).waitFor()
   await page.getByTestId('ride-groups').waitFor()
 }
 
