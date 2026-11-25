@@ -1639,7 +1639,8 @@
       "restored": "Route restored",
       "deleteTitle": "Delete the route?",
       "deleteMessage": "“{name}” will disappear from lists. A team administrator can restore it.",
-      "deletedBanner": "This route is deleted. Only team administrators can see it."
+      "deletedBanner": "This route is deleted. Only team administrators can see it.",
+      "retouch": "Retouch"
     },
     "elevationRefining": "Provisional elevation profile",
     "surfaceDetail": {
@@ -2968,5 +2969,75 @@
     },
     "mapLabel": "Route generator map",
     "selectedHint": "Tap a route to choose it"
+  },
+  "routeRetouch": {
+    "card": {
+      "ascent": "Gain {before} → {after}",
+      "changed": "{old} replaced by {new}",
+      "distance": "{before} → {after}",
+      "kept": "{percent} of the route kept",
+      "title": "Suggestion {index}",
+      "truncated": "The route stops at the new finish",
+      "unmatched": "Part of what is kept couldn't be checked on the map: the new section may ride it again."
+    },
+    "current": "Currently {distance}",
+    "edit": "Edit",
+    "errors": {
+      "changeTooLarge": "The change is too large for an adjustment (at most {percent}). For such a different distance, the generator suggests a new route.",
+      "changeTooSmall": "The change is too small: aim at least {min} above or below {current}.",
+      "endTooFar": "No suitable road near this finish for this type of route. Place it closer to a road or track.",
+      "endUnreachable": "The route can't reach this finish without a U-turn. Try a point a little further on or across the road.",
+      "generic": "Adjustment not possible",
+      "invalidRequest": "The adjustment doesn't accept these settings. Check the distance or the finish.",
+      "noProposal": "No suggestion for this adjustment. Try another distance or another finish.",
+      "noShorter": "This route can't be cut to {distance} without changing much of it, which often happens. Try a slightly longer distance, move the finish, or ask the generator for a {distance} route.",
+      "notReady": "This route is still being analysed. You can adjust it once that is done: try again later.",
+      "orderAnomaly": "This route's track runs back over itself in a way the adjustment can't follow. Edit it in the planner, or ask the generator for a new route.",
+      "outOfCoverage": "This route or this finish is outside the map the generator covers.",
+      "unsupported": "This route can't be adjusted. The generator can suggest a new one."
+    },
+    "menu": "Adjust",
+    "more": "Other suggestions",
+    "moveEnd": {
+      "action": "Move the finish",
+      "help": "Tap the map to place the new finish, or pick one of the team's places.",
+      "place": "Or one of the team's places",
+      "tapHint": "Tap the map to place the new finish",
+      "picked": "Point chosen on the map",
+      "none": "No finish chosen"
+    },
+    "notReadyHint": "This route is being analysed: you can adjust it afterwards.",
+    "openGenerator": "Open the generator",
+    "resize": {
+      "action": "Adjust the distance",
+      "deadZone": "Aim at least {min} above or below.",
+      "help": "Between {min} and {max}. The route changes in one place, the rest stays as it is.",
+      "label": "Target distance",
+      "outOfRange": "The distance must be between {min} and {max}.",
+      "shortenHint": "Shortening works a little more than half the time. If nothing comes, try a smaller change or move the finish."
+    },
+    "retouchedName": "{name} (adjusted)",
+    "slow": "Adjusting takes a few more seconds on long routes.",
+    "submit": "Suggest",
+    "title": "Adjust “{name}”",
+    "variant": {
+      "best": "The smallest change",
+      "keepAll": "The whole route, then the finish",
+      "nearest": "Leave closest to the finish"
+    },
+    "open": "New route",
+    "editHelp": "Nothing is saved: “Edit” replaces this route's track in its editor, “New route” makes it a new route.",
+    "openHelp": "Nothing is saved: the planner opens a new route, which you then save.",
+    "legend": {
+      "kept": "Kept",
+      "new": "New stretch",
+      "original": "Current track"
+    },
+    "count": {
+      "one": "{} proposal",
+      "other": "{} proposals"
+    },
+    "editSettings": "Change the request",
+    "mapLabel": "Retouch map"
   }
 }

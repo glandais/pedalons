@@ -227,6 +227,7 @@ class RouteManageKeys {
 
   // Les lignes du menu « Gérer le parcours ».
   final edit = const _RouteManageKey('edit');
+  final retouch = const _RouteManageKey('retouch');
   final replaceGpx = const _RouteManageKey('replaceGpx');
   final delete = const _RouteManageKey('delete');
   final restore = const _RouteManageKey('restore');
@@ -316,4 +317,34 @@ class RouteGeneratorKeys {
   final moreButton = const _RouteGeneratorKey('moreButton');
   final useButton = const _RouteGeneratorKey('useButton');
   final pickHint = const _RouteGeneratorKey('pickHint');
+}
+
+class _RouteRetouchKey extends ValueKey<String> {
+  const _RouteRetouchKey(String value) : super('routeRetouch_$value');
+}
+
+/// La retouche d'un parcours (docs/LEDGER_*.md MOB-185).
+class RouteRetouchKeys {
+  final map = const _RouteRetouchKey('map');
+  final modeSegments = const _RouteRetouchKey('modeSegments');
+  final minusButton = const _RouteRetouchKey('minusButton');
+  final plusButton = const _RouteRetouchKey('plusButton');
+  final targetValue = const _RouteRetouchKey('targetValue');
+  final slider = const _RouteRetouchKey('slider');
+
+  /// Un écart proposé depuis la longueur du parcours (±5, ±10 km).
+  ValueKey<String> step(int delta) => _RouteRetouchKey('step_$delta');
+  final resizeHelp = const _RouteRetouchKey('resizeHelp');
+  final endPicked = const _RouteRetouchKey('endPicked');
+  ValueKey<String> place(String id) => _RouteRetouchKey('place_$id');
+  final submitButton = const _RouteRetouchKey('submitButton');
+  final loading = const _RouteRetouchKey('loading');
+  final error = const _RouteRetouchKey('error');
+  final retryButton = const _RouteRetouchKey('retryButton');
+  final moreAfterError = const _RouteRetouchKey('moreAfterError');
+  final generatorButton = const _RouteRetouchKey('generatorButton');
+  ValueKey<String> card(int index) => _RouteRetouchKey('card_$index');
+  final moreButton = const _RouteRetouchKey('moreButton');
+  final openButton = const _RouteRetouchKey('openButton');
+  final editButton = const _RouteRetouchKey('editButton');
 }

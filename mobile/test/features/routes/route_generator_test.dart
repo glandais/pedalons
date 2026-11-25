@@ -205,7 +205,7 @@ void main() {
       });
     });
 
-    test('jamais sur un parcours existant', () async {
+    test('sur un parcours existant aussi : la retouche (MOB-185)', () async {
       final Map<String, dynamic> load = await input(
         route: (
           line: <List<double>>[
@@ -217,7 +217,12 @@ void main() {
           distance: 1400,
         ),
       );
-      expect(load.containsKey('generated'), isFalse);
+      expect(load['create'], isFalse);
+      expect(load['track'], hasLength(2));
+      expect(
+        (load['generated'] as Map<String, dynamic>)['polyline'],
+        handoff.polyline,
+      );
     });
   });
 }

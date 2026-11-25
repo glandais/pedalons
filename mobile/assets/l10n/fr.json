@@ -1639,7 +1639,8 @@
       "restored": "Parcours restauré",
       "deleteTitle": "Supprimer le parcours ?",
       "deleteMessage": "« {name} » disparaîtra des listes. Le rôle Administrateur de l'équipe pourra le restaurer.",
-      "deletedBanner": "Ce parcours est supprimé. Seul le rôle Administrateur de l'équipe le voit."
+      "deletedBanner": "Ce parcours est supprimé. Seul le rôle Administrateur de l'équipe le voit.",
+      "retouch": "Retoucher"
     },
     "elevationRefining": "Profil d'altitude provisoire",
     "surfaceDetail": {
@@ -2968,5 +2969,75 @@
     },
     "mapLabel": "Carte du générateur de parcours",
     "selectedHint": "Touchez un tracé pour le choisir"
+  },
+  "routeRetouch": {
+    "card": {
+      "ascent": "D+ {before} → {after}",
+      "changed": "{old} remplacés par {new}",
+      "distance": "{before} → {after}",
+      "kept": "{percent} du parcours gardé",
+      "title": "Proposition {index}",
+      "truncated": "Le parcours s'arrête à la nouvelle arrivée",
+      "unmatched": "Une partie gardée n'a pas pu être vérifiée sur la carte : le tronçon neuf peut la reprendre."
+    },
+    "current": "Actuellement {distance}",
+    "edit": "Modifier",
+    "errors": {
+      "changeTooLarge": "L'écart est trop grand pour une retouche (au plus {percent}). Pour une distance aussi différente, le générateur propose un nouveau parcours.",
+      "changeTooSmall": "L'écart est trop petit : visez au moins {min} de plus ou de moins que {current}.",
+      "endTooFar": "Aucune voie praticable près de cette arrivée pour ce type de parcours. Posez-la plus près d'une route ou d'un chemin.",
+      "endUnreachable": "Le parcours ne rejoint pas cette arrivée sans demi-tour. Essayez un point un peu plus loin ou de l'autre côté de la route.",
+      "generic": "Retouche impossible",
+      "invalidRequest": "La retouche n'accepte pas ces réglages. Vérifiez la distance ou l'arrivée.",
+      "noProposal": "Aucune proposition pour cette retouche. Essayez une autre distance ou une autre arrivée.",
+      "noShorter": "Ce parcours ne se raccourcit pas à {distance} sans en changer une grande partie, ce qui arrive souvent. Essayez une distance un peu plus longue, déplacez l'arrivée, ou demandez au générateur un parcours de {distance}.",
+      "notReady": "Ce parcours est encore en cours d'analyse. La retouche sera possible une fois l'analyse finie : réessayez plus tard.",
+      "orderAnomaly": "La trace de ce parcours repasse sur elle-même d'une façon que la retouche ne sait pas suivre. Modifiez-le dans le planificateur, ou demandez un nouveau parcours au générateur.",
+      "outOfCoverage": "Ce parcours ou cette arrivée sort de la carte que couvre le générateur.",
+      "unsupported": "Ce parcours ne peut pas être retouché. Le générateur peut en proposer un nouveau."
+    },
+    "menu": "Retoucher",
+    "more": "Autres propositions",
+    "moveEnd": {
+      "action": "Déplacer l'arrivée",
+      "help": "Touchez la carte pour poser la nouvelle arrivée, ou choisissez un lieu de l'équipe.",
+      "place": "Ou un lieu de l'équipe",
+      "tapHint": "Touchez la carte pour poser la nouvelle arrivée",
+      "picked": "Point choisi sur la carte",
+      "none": "Aucune arrivée choisie"
+    },
+    "notReadyHint": "Ce parcours est en cours d'analyse : la retouche sera possible ensuite.",
+    "openGenerator": "Ouvrir le générateur",
+    "resize": {
+      "action": "Ajuster la distance",
+      "deadZone": "Visez au moins {min} de plus ou de moins.",
+      "help": "Entre {min} et {max}. Le parcours change à un seul endroit, le reste ne bouge pas.",
+      "label": "Distance visée",
+      "outOfRange": "La distance doit être comprise entre {min} et {max}.",
+      "shortenHint": "Raccourcir réussit un peu plus d'une fois sur deux. Si rien ne vient, essayez un écart plus petit ou déplacez l'arrivée."
+    },
+    "retouchedName": "{name} (retouché)",
+    "slow": "La retouche prend quelques secondes de plus pour les longs parcours.",
+    "submit": "Proposer",
+    "title": "Retoucher « {name} »",
+    "variant": {
+      "best": "Le moins de changement",
+      "keepAll": "Tout le parcours, puis l'arrivée",
+      "nearest": "Quitter au plus près de l'arrivée"
+    },
+    "open": "Nouveau parcours",
+    "editHelp": "Rien n'est enregistré : « Modifier » remplace la trace de ce parcours dans son éditeur, « Nouveau parcours » en fait un nouveau parcours.",
+    "openHelp": "Rien n'est enregistré : le planificateur ouvre un nouveau parcours, que vous enregistrez ensuite.",
+    "legend": {
+      "kept": "Gardé",
+      "new": "Nouveau tronçon",
+      "original": "Tracé actuel"
+    },
+    "count": {
+      "one": "{} proposition",
+      "other": "{} propositions"
+    },
+    "editSettings": "Modifier la demande",
+    "mapLabel": "Carte de la retouche"
   }
 }

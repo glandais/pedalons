@@ -1827,6 +1827,57 @@ void main() {
         expect(update.request.waypoints!.single.name, 'Fontaine');
       });
 
+      testWidgets('« Modifier » d\'une retouche (MOB-185) : le planificateur '
+          's\'ouvre sur la trace, la proposition la remplace, le nom reste', (
+        WidgetTester tester,
+      ) async {
+        final _StubRoutes routes = _StubRoutes(detail: singleTrack())
+          ..plannerState = PlannerState.fromJson(fixturePlannerStateJson);
+        final _FakePlannerWeb web = _FakePlannerWeb();
+        await open(
+          tester,
+          routes: routes,
+          picker: _FakePicker(<GpxFile?>[]),
+          planner: true,
+          web: web,
+          routeSlug: 'col-de-la-croix',
+          generated: const GeneratedHandoff(
+            polyline: '_sqytA_sdpH_pR_pR',
+            type: RouteGeneratorType.road,
+            distanceM: 52000,
+            name: 'Col de la Croix',
+          ),
+        );
+        await pumps(tester);
+        // Ouvert sans geste, sur l'état enregistré du parcours.
+        expect(find.byKey(keys.routeEditor.plannerScreen), findsOneWidget);
+        web.emit(<String, dynamic>{'type': 'ready'});
+        await pumps(tester);
+        final Map<String, dynamic> load =
+            web.argumentsOf('load').single! as Map<String, dynamic>;
+        expect(load['create'], isFalse);
+        expect(load['state'], fixturePlannerStateJson);
+        expect(load['generated'], <String, dynamic>{
+          'polyline': '_sqytA_sdpH_pR_pR',
+          'name': 'Col de la Croix',
+        });
+
+        web.emit(done());
+        await pumps(tester);
+        expect(
+          tester
+              .widget<TextField>(find.byKey(keys.routeEditor.nameField))
+              .controller!
+              .text,
+          'Col de la Croix',
+        );
+        await tester.tap(find.byKey(keys.routeEditor.saveButton));
+        await pumps(tester);
+        final update = routes.updated.single;
+        expect(update.request.plannerState, isNotNull);
+        expect(update.request.name, 'Col de la Croix');
+      });
+
       testWidgets('tracé laissé tel quel : rien ne part du tracé', (
         WidgetTester tester,
       ) async {

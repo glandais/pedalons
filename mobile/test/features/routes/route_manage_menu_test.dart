@@ -8,6 +8,7 @@ import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
+import 'package:pedalons/features/routes/domain/route_retouch.dart';
 import 'package:pedalons/features/routes/presentation/widgets/route_manage_menu.dart';
 import 'package:pedalons/keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -109,6 +110,33 @@ void main() {
       );
     });
 
+    // docs/LEDGER_*.md MOB-185 : « Retoucher » juste après « Modifier », pour
+    // qui peut modifier, quand l'offre du moteur le permet.
+    test('la retouche offerte : après « Modifier »', () {
+      for (final RetouchEntry entry in <RetouchEntry>[
+        RetouchEntry.available,
+        RetouchEntry.notReady,
+      ]) {
+        expect(
+          routeManageActions(managedRoute(), canReport: false, retouch: entry),
+          <RouteManageAction>[
+            RouteManageAction.edit,
+            RouteManageAction.retouch,
+            RouteManageAction.replaceGpx,
+            RouteManageAction.delete,
+          ],
+        );
+      }
+      expect(
+        routeManageActions(
+          fixtureRouteDetail(permissions: kNoPermissions),
+          canReport: true,
+          retouch: RetouchEntry.available,
+        ),
+        <RouteManageAction>[RouteManageAction.report],
+      );
+    });
+
     test('canEdit sans canDelete : modifier et remplacer, pas supprimer', () {
       final RouteDetailDto route = fixtureRouteDetail(
         permissions: kNoPermissions.copyWith(canEdit: true),
@@ -138,6 +166,7 @@ void main() {
       WidgetTester tester, {
       required RouteDetailDto route,
       bool canReport = true,
+      RouteRetouchOfferDto? retouchOffer,
     }) async {
       tester.view.physicalSize = const Size(1200, 2400);
       tester.view.devicePixelRatio = 1;
@@ -157,6 +186,7 @@ void main() {
                         ref,
                         route,
                         canReport: canReport,
+                        retouchOffer: retouchOffer,
                       ),
                       child: const Text('ouvrir'),
                     ),
@@ -200,6 +230,47 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
       }
     }
+
+    testWidgets('retouche en cours d\'analyse : la ligne, sa raison, inerte', (
+      WidgetTester tester,
+    ) async {
+      await pump(
+        tester,
+        route: managedRoute(),
+        retouchOffer: const RouteRetouchOfferDto(
+          available: false,
+          operations: <RouteRetouchOperation>[],
+          unavailableReason: 'NOT_READY',
+        ),
+      );
+      expect(find.byKey(keys.routeManage.retouch), findsOneWidget);
+      expect(
+        find.text(
+          'Ce parcours est en cours d\'analyse : la retouche sera possible ensuite.',
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(keys.routeManage.retouch));
+      await settle(tester);
+      // La feuille reste ouverte : la ligne ne mène nulle part.
+      expect(find.byKey(keys.routeManage.retouch), findsOneWidget);
+    });
+
+    testWidgets('sans offre : pas de ligne « Retoucher »', (
+      WidgetTester tester,
+    ) async {
+      await pump(
+        tester,
+        route: managedRoute(),
+        retouchOffer: const RouteRetouchOfferDto(
+          available: false,
+          operations: <RouteRetouchOperation>[],
+          unavailableReason: 'ENGINE_UNAVAILABLE',
+        ),
+      );
+      expect(find.byKey(keys.routeManage.edit), findsOneWidget);
+      expect(find.byKey(keys.routeManage.retouch), findsNothing);
+    });
 
     testWidgets('liste les gestes, destructif avant « Signaler »', (
       WidgetTester tester,

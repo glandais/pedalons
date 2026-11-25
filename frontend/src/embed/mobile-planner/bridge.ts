@@ -78,7 +78,8 @@ export interface PlannerLoad {
   /**
    * A proposal of the route generator to open (docs/LEDGER_*.md MOB-154): imported on load as the
    * site imports one (WEB-179), a replacing import that keeps no file and whose sources are marked
-   * `generated`, so « Terminer » sends the planner state. With `create: true`.
+   * `generated`, so « Terminer » sends the planner state. On a creation (`create: true`, MOB-154) or
+   * over an existing route's `state`, whose track it replaces without asking (a retouch, MOB-185).
    */
   generated?: GeneratedImport
   /**

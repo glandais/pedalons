@@ -12,22 +12,28 @@ import '../../../../core/utils/api_error_handler.dart';
 import '../../../../keys.dart';
 import '../../../moderation/presentation/moderation_menu.dart';
 import '../../../profile/presentation/widgets/confirm_sheet.dart';
+import '../../data/planner_load.dart' show isSingleTrack;
 import '../../data/route_repository.dart';
+import '../../domain/route_retouch.dart';
 import '../../providers/route_changes.dart';
 import '../../providers/route_detail_provider.dart';
+import '../pages/route_retouch_page.dart';
 import '../route_editor_location.dart';
 
 /// Les gestes d'un organisateur sur un parcours, depuis le `⋯` de sa fiche —
 /// ceux du menu du site (`RouteDetailPage`) : modifier, remplacer le GPX,
-/// supprimer, restaurer, et signaler (ledger `MOB-79`).
-enum RouteManageAction { edit, replaceGpx, delete, restore, report }
+/// supprimer, restaurer, et signaler (ledger `MOB-79`) ; retoucher
+/// (docs/LEDGER_*.md MOB-185) quand l'offre du moteur le permet.
+enum RouteManageAction { edit, retouch, replaceGpx, delete, restore, report }
 
 /// Les gestes offerts pour [route], dans l'ordre du menu. Un parcours supprimé
 /// n'offre que sa restauration ; [canReport] est faux pour son propre
-/// parcours, qu'on ne se signale pas à soi-même.
+/// parcours, qu'on ne se signale pas à soi-même. [retouch] dit si l'offre de
+/// retouche (`GET …/retouch`) ajoute sa ligne.
 List<RouteManageAction> routeManageActions(
   RouteDetailDto route, {
   required bool canReport,
+  RetouchEntry retouch = RetouchEntry.none,
 }) {
   // Le droit de **ce** parcours, calculé par le backend (docs/LEDGER_*.md
   // MOB-137) : modifier et remplacer le GPX demandent `canEdit`, supprimer
@@ -40,6 +46,7 @@ List<RouteManageAction> routeManageActions(
   return <RouteManageAction>[
     if (edit) ...<RouteManageAction>[
       RouteManageAction.edit,
+      if (retouch != RetouchEntry.none) RouteManageAction.retouch,
       RouteManageAction.replaceGpx,
     ],
     if (delete) RouteManageAction.delete,
@@ -58,10 +65,13 @@ Future<void> showRouteManageMenu(
   WidgetRef ref,
   RouteDetailDto route, {
   required bool canReport,
+  RouteRetouchOfferDto? retouchOffer,
 }) async {
+  final RetouchEntry retouch = retouchEntryOf(retouchOffer);
   final List<RouteManageAction> actions = routeManageActions(
     route,
     canReport: canReport,
+    retouch: retouch,
   );
   final RouteManageAction? action = await PdlSheet.show<RouteManageAction>(
     context: context,
@@ -78,6 +88,13 @@ Future<void> showRouteManageMenu(
             key: _key(a),
             icon: _icon(a),
             title: 'routes.manage.${_label(a)}'.tr(),
+            // Le parcours encore en cours d'analyse : la ligne est là,
+            // désactivée, avec sa raison.
+            subtitle:
+                a == RouteManageAction.retouch &&
+                    retouch == RetouchEntry.notReady
+                ? 'routeRetouch.notReadyHint'.tr()
+                : null,
             destructive: a == RouteManageAction.delete,
             // Le séparateur de la maquette : entre le geste destructif et
             // « Signaler », qui est celui de la modération.
@@ -85,13 +102,23 @@ Future<void> showRouteManageMenu(
                 a == RouteManageAction.delete &&
                 actions.contains(RouteManageAction.report),
             trailing: const SizedBox.shrink(),
-            onTap: () => Navigator.of(sheetContext).pop(a),
+            onTap:
+                a == RouteManageAction.retouch &&
+                    retouch != RetouchEntry.available
+                ? null
+                : () => Navigator.of(sheetContext).pop(a),
           ),
       ],
     ),
   );
   if (action == null || !context.mounted) return;
-  await runRouteManageAction(context, ref, route, action);
+  await runRouteManageAction(
+    context,
+    ref,
+    route,
+    action,
+    retouchOffer: retouchOffer,
+  );
 }
 
 /// Exécute [action] sur [route] : la navigation pour modifier, la confirmation
@@ -101,11 +128,17 @@ Future<void> runRouteManageAction(
   BuildContext context,
   WidgetRef ref,
   RouteDetailDto route,
-  RouteManageAction action,
-) async {
+  RouteManageAction action, {
+  RouteRetouchOfferDto? retouchOffer,
+}) async {
   final String team = route.team.slug;
   if (action == RouteManageAction.edit) {
     await context.push(Paths.routeEdit(team, route.slug));
+    return;
+  }
+  if (action == RouteManageAction.retouch) {
+    if (retouchOffer == null) return;
+    await _retouch(context, route, retouchOffer);
     return;
   }
   if (action == RouteManageAction.replaceGpx) {
@@ -180,8 +213,38 @@ Future<void> runRouteManageAction(
   }
 }
 
+/// La retouche, puis ce qu'elle a choisi d'ouvrir : l'éditeur de ce parcours
+/// (tracé remplacé), une création, ou le générateur. Rien n'est enregistré
+/// sans « Enregistrer » dans l'éditeur.
+Future<void> _retouch(
+  BuildContext context,
+  RouteDetailDto route,
+  RouteRetouchOfferDto offer,
+) async {
+  final String team = route.team.slug;
+  final RetouchChoice? choice = await openRouteRetouch(
+    context,
+    route: route,
+    offer: offer,
+    canEdit: route.permissions.canEdit && isSingleTrack(route),
+  );
+  if (choice == null || !context.mounted) return;
+  switch (choice.opening) {
+    case RetouchOpening.edit:
+      await context.push(
+        Paths.routeEdit(team, route.slug),
+        extra: choice.handoff,
+      );
+    case RetouchOpening.newRoute:
+      await context.push(Paths.routeNew(team), extra: choice.handoff);
+    case RetouchOpening.generator:
+      await context.push(Paths.routeGenerate(team));
+  }
+}
+
 String _label(RouteManageAction a) => switch (a) {
   RouteManageAction.edit => 'edit',
+  RouteManageAction.retouch => 'retouch',
   RouteManageAction.replaceGpx => 'replaceGpx',
   RouteManageAction.delete => 'delete',
   RouteManageAction.restore => 'restore',
@@ -190,6 +253,7 @@ String _label(RouteManageAction a) => switch (a) {
 
 IconData _icon(RouteManageAction a) => switch (a) {
   RouteManageAction.edit => PdlIcons.edit,
+  RouteManageAction.retouch => PdlIcons.generate,
   RouteManageAction.replaceGpx => PdlIcons.gpx,
   RouteManageAction.delete => PdlIcons.delete,
   RouteManageAction.restore => PdlIcons.restore,
@@ -198,6 +262,7 @@ IconData _icon(RouteManageAction a) => switch (a) {
 
 Key _key(RouteManageAction a) => switch (a) {
   RouteManageAction.edit => keys.routeManage.edit,
+  RouteManageAction.retouch => keys.routeManage.retouch,
   RouteManageAction.replaceGpx => keys.routeManage.replaceGpx,
   RouteManageAction.delete => keys.routeManage.delete,
   RouteManageAction.restore => keys.routeManage.restore,

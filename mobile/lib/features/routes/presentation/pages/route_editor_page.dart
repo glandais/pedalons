@@ -83,9 +83,11 @@ class RouteEditorPage extends ConsumerStatefulWidget {
   final String? routeSlug;
   final bool replaceGpx;
 
-  /// Une proposition du générateur (création seulement, docs/LEDGER_*.md
-  /// MOB-154) : le planificateur s'ouvre aussitôt dessus, le nom et le
-  /// revêtement viennent d'elle.
+  /// Une proposition du générateur ou d'une retouche : le planificateur
+  /// s'ouvre aussitôt dessus. À la création (docs/LEDGER_*.md MOB-154), le
+  /// nom et le revêtement viennent d'elle ; en modification d'un parcours à
+  /// une trace (« Modifier » d'une retouche, MOB-185), elle remplace la trace
+  /// et rien d'autre ne change.
   final GeneratedHandoff? generated;
 
   @override
@@ -221,7 +223,9 @@ class _RouteEditorPageState extends ConsumerState<RouteEditorPage> {
       team: teamValue,
       route: route,
       replaceGpx: replaceGpx,
-      generated: route == null ? widget.generated : null,
+      generated: route == null || isSingleTrack(route)
+          ? widget.generated
+          : null,
       title: title,
     );
   }
@@ -311,7 +315,7 @@ class _RouteEditorFormState extends ConsumerState<_RouteEditorForm>
     // vide : la quitter demande confirmation.
     _initialJson = _json(initial);
     final GeneratedHandoff? generated = widget.generated;
-    _form = generated == null
+    _form = generated == null || route != null
         ? initial
         : initial.copyWith(
             name: generated.name,

@@ -90,7 +90,9 @@ PlannerTrack plannerTrackOfRoute(RouteDetailDto route) => (
 /// trace, comme un import, et [PlannerLoad.stateReadFailed] le dit.
 ///
 /// [generated] : une proposition du générateur, que la page importe à
-/// l'ouverture d'une création (`load.generated`, docs/LEDGER_*.md MOB-154).
+/// l'ouverture (`load.generated`) — à la création (docs/LEDGER_*.md MOB-154),
+/// ou sur un parcours existant dont elle remplace la trace sans question
+/// (une retouche, MOB-185).
 ///
 /// [team] nul : un aperçu des outils GPX, qui n'est d'aucune équipe — ni
 /// `teamSlug` (le quota est alors le quota personnel), ni position d'équipe
@@ -143,7 +145,7 @@ Future<PlannerLoad> buildPlannerLoad({
     if (location != null && location.length >= 2)
       'teamLocation': <double>[location[0], location[1]],
     'create': route == null,
-    if (route == null && generated != null)
+    if (generated != null)
       'generated': <String, dynamic>{
         'polyline': generated.polyline,
         'name': generated.name,

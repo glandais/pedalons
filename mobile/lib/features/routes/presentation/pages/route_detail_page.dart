@@ -32,6 +32,7 @@ import '../../../tags/presentation/content_tags.dart';
 import '../../domain/elevation_refresh.dart';
 import '../../domain/track_surfaces.dart';
 import '../../providers/route_detail_provider.dart';
+import '../../providers/route_retouch_provider.dart';
 import '../widgets/route_climbs_section.dart';
 import '../widgets/route_cursor_controller.dart';
 import '../widgets/route_manage_menu.dart';
@@ -324,6 +325,19 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
     final bool canManage = routeHasManageActions(route);
     final bool canReport =
         currentUserId != null && currentUserId != route.createdBy?.id;
+    // L'offre de retouche (docs/LEDGER_*.md MOB-185), lue tant que la fiche
+    // est ouverte, pour qui peut modifier ce parcours : le menu la trouve
+    // prête.
+    final RouteRetouchOfferDto? retouchOffer =
+        route.permissions.canEdit && !route.deleted
+        ? ref
+              .watch(
+                routeRetouchOfferProvider(
+                  RouteKey(teamSlug: route.team.slug, routeSlug: route.slug),
+                ),
+              )
+              .value
+        : null;
 
     return <Widget>[
       // `Builder` : la feuille de partage s'ancre au bouton (iPad).
@@ -352,8 +366,13 @@ class _RouteDetailPageState extends ConsumerState<RouteDetailPage> {
           key: keys.routeDetail.moreButton,
           icon: PdlIcons.more,
           semanticLabel: 'routes.manage.menuTitle'.tr(),
-          onPressed: () =>
-              showRouteManageMenu(context, ref, route, canReport: canReport),
+          onPressed: () => showRouteManageMenu(
+            context,
+            ref,
+            route,
+            canReport: canReport,
+            retouchOffer: retouchOffer,
+          ),
         )
       else if (canReport)
         PdlAppBarAction(

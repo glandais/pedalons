@@ -1392,6 +1392,10 @@ GoRoute _routeEditRoute(String locale) {
       routeSlug: state.pathParameters['routeSlug']!,
       replaceGpx:
           state.uri.queryParameters[kRouteEditGpxQuery] == kRouteEditGpxReplace,
+      // Une retouche choisie avec « Modifier » (docs/LEDGER_*.md MOB-185).
+      generated: state.extra is GeneratedHandoff
+          ? state.extra! as GeneratedHandoff
+          : null,
     ),
   );
 }
