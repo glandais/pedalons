@@ -5,8 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.pedalons.enums.NotificationType;
 import fr.pedalons.enums.ReportTargetType;
 import fr.pedalons.service.notification.event.CommentOnPublication;
@@ -27,6 +25,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Every type has a record that says it is that type, and survives the trip through the payload
@@ -36,7 +35,7 @@ class NotificationEventTest {
 
   private static final Instant DATE = Instant.parse("2026-09-27T07:00:00Z");
 
-  private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   /** One event per type. Exhaustive: a type added without a sample does not compile. */
   private static NotificationEvent sample(NotificationType type) {

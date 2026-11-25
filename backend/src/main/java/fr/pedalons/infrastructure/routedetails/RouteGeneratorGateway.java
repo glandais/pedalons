@@ -1,6 +1,6 @@
 package fr.pedalons.infrastructure.routedetails;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.pedalons.infrastructure.json.ExternalJson;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorException.Kind;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.DepositReport;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorV1.EditRequest;
@@ -36,6 +36,8 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The route generator of osm-route-details (api 1.9) over HTTP, on the url of the {@code
@@ -75,7 +77,7 @@ public class RouteGeneratorGateway {
   @ConfigProperty(name = "pedalons.route-generator.overlay.deposit-timeout", defaultValue = "PT16M")
   Duration depositTimeout;
 
-  @Inject ObjectMapper mapper;
+  @Inject @ExternalJson ObjectMapper mapper;
   @Inject RouteDetailsGateway routeDetails;
 
   private volatile @Nullable HttpClient http;
@@ -234,7 +236,7 @@ public class RouteGeneratorGateway {
     byte[] body;
     try {
       body = mapper.writeValueAsBytes(request);
-    } catch (IOException e) {
+    } catch (JacksonException e) {
       throw RouteGeneratorException.of(Kind.UNEXPECTED, e);
     }
     Exchange answer =
@@ -271,7 +273,7 @@ public class RouteGeneratorGateway {
   public byte[] bodyOf(EditRequest request) {
     try {
       return mapper.writeValueAsBytes(request);
-    } catch (IOException e) {
+    } catch (JacksonException e) {
       throw RouteGeneratorException.of(Kind.UNEXPECTED, e);
     }
   }
@@ -364,7 +366,7 @@ public class RouteGeneratorGateway {
         throw RouteGeneratorException.of(Kind.UNEXPECTED, null);
       }
       return value;
-    } catch (IOException e) {
+    } catch (JacksonException e) {
       throw RouteGeneratorException.of(Kind.UNEXPECTED, e);
     }
   }

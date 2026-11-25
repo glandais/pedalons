@@ -2,21 +2,20 @@ package fr.pedalons.domain.route;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import java.io.IOException;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 /**
  * The surface along one saved track, as stored in the {@code surfaces} JSONB column of a track or
@@ -48,7 +47,7 @@ import org.jspecify.annotations.Nullable;
  * @param dataVersions the versions of the data the answer was made from, {@code meta.data_versions}
  *     of the first slice, as the service gave them (version 2)
  */
-// The JSONB column is read by hypersistence's own ObjectMapper, which fails on unknown
+// The JSONB column is read by JsonbMapper, a plain Jackson ObjectMapper that fails on unknown
 // properties: a release must read a document written by a later one (rolling deploy, rollback).
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TrackSurfaceDocument(
@@ -124,8 +123,7 @@ public record TrackSurfaceDocument(
       }
 
       @Override
-      public void serialize(SurfaceRange r, JsonGenerator g, SerializerProvider p)
-          throws IOException {
+      public void serialize(SurfaceRange r, JsonGenerator g, SerializationContext p) {
         g.writeStartArray();
         g.writeNumber(r.from());
         g.writeNumber(r.to());
@@ -140,7 +138,7 @@ public record TrackSurfaceDocument(
       }
 
       @Override
-      public SurfaceRange deserialize(JsonParser p, DeserializationContext c) throws IOException {
+      public SurfaceRange deserialize(JsonParser p, DeserializationContext c) {
         JsonNode n = array(p, c);
         String code = text(n, 2);
         return new SurfaceRange(
@@ -182,7 +180,7 @@ public record TrackSurfaceDocument(
       }
 
       @Override
-      public void serialize(WayRange r, JsonGenerator g, SerializerProvider p) throws IOException {
+      public void serialize(WayRange r, JsonGenerator g, SerializationContext p) {
         g.writeStartArray();
         g.writeNumber(r.from());
         g.writeNumber(r.to());
@@ -212,7 +210,7 @@ public record TrackSurfaceDocument(
       }
 
       @Override
-      public WayRange deserialize(JsonParser p, DeserializationContext c) throws IOException {
+      public WayRange deserialize(JsonParser p, DeserializationContext c) {
         JsonNode n = array(p, c);
         JsonNode matched = n.path(5);
         return new WayRange(
@@ -227,7 +225,7 @@ public record TrackSurfaceDocument(
       }
     }
 
-    private static void writeNullable(JsonGenerator g, @Nullable String value) throws IOException {
+    private static void writeNullable(JsonGenerator g, @Nullable String value) {
       if (value == null) {
         g.writeNull();
       } else {
@@ -237,7 +235,7 @@ public record TrackSurfaceDocument(
   }
 
   /** The whole array, so that whatever follows the elements known to this release is dropped. */
-  private static JsonNode array(JsonParser p, DeserializationContext c) throws IOException {
+  private static JsonNode array(JsonParser p, DeserializationContext c) {
     JsonNode node = c.readTree(p);
     if (!node.isArray()) {
       c.reportInputMismatch(Object.class, "a range is an array");
@@ -247,6 +245,6 @@ public record TrackSurfaceDocument(
 
   private static @Nullable String text(JsonNode array, int index) {
     JsonNode value = array.path(index);
-    return value.isNull() || value.isMissingNode() ? null : value.asText();
+    return value.isNull() || value.isMissingNode() ? null : value.asString();
   }
 }

@@ -1,13 +1,11 @@
 package fr.pedalons.infrastructure.gps;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.InternalException;
 import fr.pedalons.domain.gps.DomainGpsCredential;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.enums.GpsServiceType;
+import fr.pedalons.infrastructure.json.ExternalJson;
 import fr.pedalons.service.gps.DomainGpsCredentialService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,6 +21,9 @@ import java.time.Duration;
 import java.util.UUID;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Hammerhead GPS device integration client.
@@ -44,7 +45,7 @@ public class HammerheadClient implements GpsServiceClient {
 
   @Inject HttpClient httpClient;
 
-  @Inject ObjectMapper objectMapper;
+  @Inject @ExternalJson ObjectMapper objectMapper;
 
   private DomainGpsCredential getCredential() {
     return credentialService
@@ -157,13 +158,13 @@ public class HammerheadClient implements GpsServiceClient {
   private TokenResponse parseTokenResponse(String json) {
     try {
       JsonNode root = objectMapper.readTree(json);
-      String accessToken = jsonString(root, "access_token");
-      String refreshToken = jsonString(root, "refresh_token");
-      Long expiresIn = jsonLong(root, "expires_in");
-      String userId = jsonString(root, "user_id");
+      String accessToken = GpsJson.string(root, "access_token");
+      String refreshToken = GpsJson.string(root, "refresh_token");
+      Long expiresIn = GpsJson.longValue(root, "expires_in");
+      String userId = GpsJson.string(root, "user_id");
 
       return new TokenResponse(accessToken, refreshToken, expiresIn, userId);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new InternalException(ErrorCode.GPS_TOKEN_EXCHANGE_FAILED, e);
     }
   }
@@ -262,8 +263,8 @@ public class HammerheadClient implements GpsServiceClient {
       return null;
     }
     try {
-      return jsonString(objectMapper.readTree(body), "id");
-    } catch (JsonProcessingException e) {
+      return GpsJson.string(objectMapper.readTree(body), "id");
+    } catch (JacksonException e) {
       return null;
     }
   }
@@ -305,26 +306,5 @@ public class HammerheadClient implements GpsServiceClient {
 
   private String urlEncode(String value) {
     return URLEncoder.encode(value, StandardCharsets.UTF_8);
-  }
-
-  private static String jsonString(JsonNode root, String key) {
-    JsonNode node = root.path(key);
-    return node.isMissingNode() || node.isNull() ? null : node.asText();
-  }
-
-  private static Long jsonLong(JsonNode root, String key) {
-    JsonNode node = root.path(key);
-    if (node.isMissingNode() || node.isNull()) {
-      return null;
-    }
-    if (node.canConvertToLong()) {
-      return node.asLong();
-    }
-    // Some providers return numeric fields as JSON strings (e.g. "3600").
-    try {
-      return Long.parseLong(node.asText().trim());
-    } catch (NumberFormatException e) {
-      return null;
-    }
   }
 }

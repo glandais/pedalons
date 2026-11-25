@@ -9,8 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.api.AbstractResourceTest;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.place.Place;
@@ -35,6 +33,8 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * {@code GET} and {@code POST /api/teams/{slug}/routes/{route}/retouch} (docs/LEDGER_*.md API-212,
@@ -474,7 +474,7 @@ class RouteRetouchResourceTest extends AbstractResourceTest {
     assertEquals(1, FakeRouteGeneratorGateway.EDITS.size());
     String sent = FakeRouteGeneratorGateway.EDITS.getFirst();
     JsonNode body = JSON.readTree(sent);
-    assertEquals("road", body.get("ride_type").asText());
+    assertEquals("road", body.get("ride_type").asString());
     assertEquals(0.25, body.get("cursor").asDouble(), 1e-9);
     assertEquals(0, body.get("seed").asLong());
     assertTrue(body.get("operation").has("resize"));
@@ -484,7 +484,7 @@ class RouteRetouchResourceTest extends AbstractResourceTest {
     // the raw track: 73 points
     assertEquals(
         73,
-        fr.pedalons.infrastructure.valhalla.Polyline6Decoder.decode(body.get("polyline").asText())
+        fr.pedalons.infrastructure.valhalla.Polyline6Decoder.decode(body.get("polyline").asString())
             .size());
     // the document, byte for byte as the database prints it
     String stored =
@@ -548,12 +548,13 @@ class RouteRetouchResourceTest extends AbstractResourceTest {
     offer(USER2, routeSlug).body("rideType", equalTo("GRAVEL"));
     retouch(USER2, routeSlug, resize(originalKm() * 1.1)).statusCode(200);
     assertEquals(
-        "gravel", JSON.readTree(FakeRouteGeneratorGateway.EDITS.get(1)).get("ride_type").asText());
+        "gravel",
+        JSON.readTree(FakeRouteGeneratorGateway.EDITS.get(1)).get("ride_type").asString());
     seeder.sql(
         "update team_entities set surface_type = 'MTB' where id = ?1", route.route().getId());
     retouch(USER2, routeSlug, resize(originalKm() * 1.1)).statusCode(200);
     assertEquals(
-        "mtb", JSON.readTree(FakeRouteGeneratorGateway.EDITS.get(2)).get("ride_type").asText());
+        "mtb", JSON.readTree(FakeRouteGeneratorGateway.EDITS.get(2)).get("ride_type").asString());
   }
 
   @Test
@@ -689,7 +690,7 @@ class RouteRetouchResourceTest extends AbstractResourceTest {
     // indices outside the polyline
     FakeRouteGeneratorGateway.editTamper =
         r ->
-            ((com.fasterxml.jackson.databind.node.ObjectNode) r.get("changed"))
+            ((tools.jackson.databind.node.ObjectNode) r.get("changed"))
                 .putArray("points")
                 .add(5)
                 .add(5000);

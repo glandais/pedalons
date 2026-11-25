@@ -7,10 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import fr.pedalons.dto.routes.response.ClimbDto;
 import fr.pedalons.dto.routes.response.ClimbPartDto;
 import fr.pedalons.enums.ClimbCategory;
+import fr.pedalons.infrastructure.hibernate.JsonbMapper;
 import io.github.glandais.engine.climb.Climb;
 import io.github.glandais.engine.climb.ClimbPart;
-import io.hypersistence.utils.hibernate.type.util.JsonConfiguration;
-import io.hypersistence.utils.hibernate.type.util.ObjectMapperWrapper;
 import java.lang.reflect.Type;
 import java.util.List;
 import org.hibernate.HibernateException;
@@ -27,9 +26,8 @@ import org.junit.jupiter.api.Test;
  * start</b>. Every route imported before the migration is stored exactly like this, and nothing
  * rewrites those rows.
  *
- * <p>Deserialization goes through {@link JsonConfiguration#INSTANCE}, i.e. the very
- * {@link ObjectMapperWrapper} {@code JsonBinaryType} hands to Hibernate for the {@code @Type}
- * annotated column, and through the generic type of the {@link GpxTrack#getClimbs()} field itself —
+ * <p>Deserialization goes through {@link JsonbMapper#INSTANCE}, i.e. the very mapper the
+ * persistence unit's {@code FormatMapper} hands to Hibernate for the JSON-typed column, and through the generic type of the {@link GpxTrack#getClimbs()} field itself —
  * so this test reads the stored bytes the way production does, not the way a hand-rolled
  * {@code ObjectMapper} would.
  *
@@ -38,9 +36,8 @@ import org.junit.jupiter.api.Test;
  */
 class ClimbDataTest {
 
-  /** Exactly the mapper {@code JsonBinaryType} uses — see the class javadoc. */
-  private static final ObjectMapperWrapper MAPPER =
-      JsonConfiguration.INSTANCE.getObjectMapperWrapper();
+  /** Exactly the mapper the PU FormatMapper uses — see the class javadoc. */
+  private static final JsonbMapper MAPPER = JsonbMapper.INSTANCE;
 
   /** {@code List<ClimbData>}, read off the entity field rather than restated here. */
   private static final Type CLIMBS_TYPE = climbsFieldType();

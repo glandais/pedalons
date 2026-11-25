@@ -3416,8 +3416,8 @@
           },
           "departure" : {
             "description" : "Departure date and time, a wall time without offset, in the time zone of the first point of the track (not the device's). Present: the weather is computed when it falls within the next 7 days",
-            "type" : "string",
-            "$ref" : "#/components/schemas/EventDateTime"
+            "$ref" : "#/components/schemas/EventDateTime",
+            "type" : "string"
           },
           "averageSpeed" : {
             "type" : "number",
@@ -3542,8 +3542,8 @@
           },
           "departure" : {
             "description" : "Departure date and time, a wall time without offset, in the time zone of the first point of the track (not the device's). Omitted: kept (it follows the track if that moves to another zone). Present: the weather is computed when it falls within the next 7 days",
-            "type" : "string",
-            "$ref" : "#/components/schemas/EventDateTime"
+            "$ref" : "#/components/schemas/EventDateTime",
+            "type" : "string"
           },
           "clearDeparture" : {
             "type" : "boolean",
@@ -4780,7 +4780,6 @@
           "link" : {
             "type" : "string",
             "description" : "External link (e.g., Google Maps URL)",
-            "pattern" : "",
             "minLength" : 3,
             "maxLength" : 200
           },
@@ -5203,8 +5202,8 @@
           },
           "dateTime" : {
             "description" : "Post date/time: a wall time without offset, read in the team's zone.",
-            "type" : "string",
-            "$ref" : "#/components/schemas/EventDateTime"
+            "$ref" : "#/components/schemas/EventDateTime",
+            "type" : "string"
           },
           "status" : {
             "description" : "Post status",
@@ -5218,8 +5217,8 @@
           },
           "publishAt" : {
             "description" : "Publication time (for scheduled publishing), a wall time in the team's zone like dateTime.",
-            "type" : "string",
-            "$ref" : "#/components/schemas/EventDateTime"
+            "$ref" : "#/components/schemas/EventDateTime",
+            "type" : "string"
           },
           "signedAsTeam" : {
             "type" : "boolean",
@@ -6142,8 +6141,8 @@
           },
           "dateTime" : {
             "description" : "Ride date/time: a wall time without offset, read in the ride's zone (start place, else route, else team).",
-            "type" : "string",
-            "$ref" : "#/components/schemas/EventDateTime"
+            "$ref" : "#/components/schemas/EventDateTime",
+            "type" : "string"
           },
           "status" : {
             "description" : "Ride status",
@@ -6169,8 +6168,8 @@
           },
           "publishAt" : {
             "description" : "Publication time (for scheduled publishing), a wall time in the ride's zone like dateTime.",
-            "type" : "string",
-            "$ref" : "#/components/schemas/EventDateTime"
+            "$ref" : "#/components/schemas/EventDateTime",
+            "type" : "string"
           },
           "groups" : {
             "type" : "array",
@@ -7518,8 +7517,8 @@
           },
           "dateTime" : {
             "description" : "Stage date/time: a wall time without offset, read in the stage's zone (start place, else route, else the previous stage's, else the trip route's, else the team's).",
-            "type" : "string",
-            "$ref" : "#/components/schemas/EventDateTime"
+            "$ref" : "#/components/schemas/EventDateTime",
+            "type" : "string"
           },
           "averageSpeed" : {
             "type" : "number",
@@ -9015,8 +9014,8 @@
           },
           "dateTime" : {
             "description" : "Trip start date/time: a wall time without offset, read in the trip's zone (first stage, else route, else team).",
-            "type" : "string",
-            "$ref" : "#/components/schemas/EventDateTime"
+            "$ref" : "#/components/schemas/EventDateTime",
+            "type" : "string"
           },
           "status" : {
             "description" : "Trip status",
@@ -9034,8 +9033,8 @@
           },
           "publishAt" : {
             "description" : "Publication time (for scheduled publishing), a wall time in the trip's zone like dateTime.",
-            "type" : "string",
-            "$ref" : "#/components/schemas/EventDateTime"
+            "$ref" : "#/components/schemas/EventDateTime",
+            "type" : "string"
           },
           "stages" : {
             "type" : "array",
@@ -28167,7 +28166,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "16.8.0",
+    "version" : "16.8.1",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

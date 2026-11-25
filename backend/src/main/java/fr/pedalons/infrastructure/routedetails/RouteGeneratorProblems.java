@@ -1,10 +1,10 @@
 package fr.pedalons.infrastructure.routedetails;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.infrastructure.routedetails.RouteGeneratorException.Kind;
 import java.time.Duration;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * An error answer of the generator as a {@link RouteGeneratorException}: {@code status}, problem
@@ -27,18 +27,18 @@ public final class RouteGeneratorProblems {
       try {
         JsonNode root = mapper.readTree(body);
         JsonNode c = root.get("code");
-        if (c != null && c.isTextual()) {
-          code = safe(c.asText());
+        if (c != null && c.isString()) {
+          code = safe(c.asString());
         }
         JsonNode details = root.get("details");
         if (details != null && details.isObject()) {
           JsonNode r = details.get("reason");
-          if (r != null && r.isTextual()) {
-            reason = safe(r.asText());
+          if (r != null && r.isString()) {
+            reason = safe(r.asString());
           }
           JsonNode s = details.get("state");
-          if (s != null && s.isTextual()) {
-            state = safe(s.asText());
+          if (s != null && s.isString()) {
+            state = safe(s.asString());
           }
         }
       } catch (Exception e) {

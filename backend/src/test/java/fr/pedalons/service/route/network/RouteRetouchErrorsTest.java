@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.PedalonsException;
 import fr.pedalons.common.exception.ServiceUnavailableException;
@@ -16,6 +15,7 @@ import fr.pedalons.service.route.network.RouteRetouchErrors.EditReason;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 /** Every answer of the engine to a retouch as an error code (plan lot 7c §5), from the problem up. */
 class RouteRetouchErrorsTest {

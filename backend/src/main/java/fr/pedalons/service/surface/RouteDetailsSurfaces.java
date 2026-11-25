@@ -1,6 +1,5 @@
 package fr.pedalons.service.surface;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.domain.route.TrackSurfaceDocument;
 import fr.pedalons.domain.route.TrackSurfaceDocument.SurfaceRange;
 import fr.pedalons.domain.route.TrackSurfaceDocument.WayRange;
@@ -12,6 +11,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * From the typology of osm-route-details to a stored {@link TrackSurfaceDocument} of version 2

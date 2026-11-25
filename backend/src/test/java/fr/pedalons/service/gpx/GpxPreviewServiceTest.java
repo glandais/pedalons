@@ -304,10 +304,10 @@ class GpxPreviewServiceTest extends AbstractBaseTest {
   void oldColumn_keepsItsThreeFieldShape() throws Exception {
     // The previous release reads this column with a reader that fails on unknown properties
     String json =
-        new com.fasterxml.jackson.databind.ObjectMapper()
-            .writeValueAsString(new GpxPreview.PreviewWaypoint("Source", 45.0, 6.0));
+        fr.pedalons.infrastructure.hibernate.JsonbMapper.INSTANCE.toString(
+            new GpxPreview.PreviewWaypoint("Source", 45.0, 6.0));
 
-    var node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
+    var node = fr.pedalons.infrastructure.hibernate.JsonbMapper.INSTANCE.toJsonNode(json);
     assertEquals(3, node.size());
     assertTrue(node.has("name"));
     assertTrue(node.has("lat"));
@@ -316,13 +316,13 @@ class GpxPreviewServiceTest extends AbstractBaseTest {
 
   @Test
   void detailsDocument_ignoresUnknownProperties() throws Exception {
-    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    var mapper = fr.pedalons.infrastructure.hibernate.JsonbMapper.INSTANCE;
     String json =
         "{\"trackRevision\":5,\"future\":true,\"waypoints\":[{\"id\":\"x\",\"name\":\"n\","
             + "\"lat\":1.0,\"lng\":2.0,\"type\":\"TELEPORTER\",\"origin\":\"AUTHOR\","
             + "\"later\":1}]}";
 
-    var document = mapper.readValue(json, fr.pedalons.domain.gpx.PreviewWaypointsDocument.class);
+    var document = mapper.fromString(json, fr.pedalons.domain.gpx.PreviewWaypointsDocument.class);
 
     assertEquals(5L, document.trackRevision());
     assertEquals("n", document.waypoints().getFirst().name());

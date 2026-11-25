@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.OutputPoint;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Segment;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Structure;
@@ -14,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Freezes the parsing of a real answer (plan §8, docs/LEDGER_*.md API-150): {@code full}, api 1.6,
@@ -92,7 +92,7 @@ class RouteDetailsFixtureTest {
     assertEquals("ign_lidar_hd", r.quality().terrain().getFirst().origin());
     assertFalse(r.quality().terrain().getFirst().fallbackAfterError());
     assertTrue(r.quality().warnings().isEmpty());
-    assertEquals("applied", r.quality().structureCorrection().get("bridges").asText());
+    assertEquals("applied", r.quality().structureCorrection().get("bridges").asString());
   }
 
   @Test
@@ -103,7 +103,7 @@ class RouteDetailsFixtureTest {
       assertNotNull(in);
       RouteDetailsRequest request =
           RouteDetailsRequest.ofPolyline6(
-              MAPPER.readTree(in).get("polyline").asText(),
+              MAPPER.readTree(in).get("polyline").asString(),
               RouteDetailsOptions.of(RouteDetailsProfile.FULL, false));
       assertEquals(
           MAPPER.readTree(

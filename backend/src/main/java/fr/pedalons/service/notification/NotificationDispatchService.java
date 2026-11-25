@@ -1,6 +1,5 @@
 package fr.pedalons.service.notification;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.notification.Notification;
 import fr.pedalons.domain.notification.NotificationDelivery;
@@ -47,6 +46,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hibernate.Session;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Stage 2 of the notification pipeline: turns one queued event into one inbox row per recipient

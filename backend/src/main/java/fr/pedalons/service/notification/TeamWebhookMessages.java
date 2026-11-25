@@ -1,9 +1,5 @@
 package fr.pedalons.service.notification;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.notification.NotificationEventEntry;
 import fr.pedalons.enums.NotificationChange;
@@ -13,6 +9,10 @@ import jakarta.inject.Inject;
 import java.net.URI;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * What a team webhook receives, in the shape its URL calls for — see {@link TeamWebhookKind}. Texts
@@ -164,7 +164,7 @@ public class TeamWebhookMessages {
   private String write(ObjectNode root) {
     try {
       return objectMapper.writeValueAsString(root);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new IllegalStateException(e);
     }
   }

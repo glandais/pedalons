@@ -6,7 +6,7 @@ import fr.pedalons.domain.user.User;
 import fr.pedalons.enums.ReportReason;
 import fr.pedalons.enums.ReportStatus;
 import fr.pedalons.enums.ReportTargetType;
-import io.hypersistence.utils.hibernate.id.Tsid;
+import fr.pedalons.infrastructure.hibernate.Tsid;
 import jakarta.persistence.*;
 import java.time.Instant;
 import lombok.Getter;

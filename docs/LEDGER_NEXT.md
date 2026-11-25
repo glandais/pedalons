@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **171 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **169 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
@@ -173,8 +173,6 @@ Contexte du domaine : [`ledger/API/README.md`](ledger/API/README.md).
 ### Quarkus 4
 
 - [ ] [`API-221`](ledger/API/API-221.md) Le backend vient de passer à Quarkus 4.0.0 (S)
-- [ ] [`API-220`](ledger/API/API-220.md) Le backend tourne sur Quarkus 4 et Jackson 3
-- [ ] [`API-219`](ledger/API/API-219.md) Le backend ne dépend plus de hypersistence-utils
 
 ## OPS — Exploitation
 

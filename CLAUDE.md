@@ -40,6 +40,7 @@ notifications alike. Rephrase rather than agree: « Vous participez » not « Vo
 | Deployment, backups, restore (the runbook) | [docs/OPERATIONS.md](docs/OPERATIONS.md) |
 | What the product does, for whom | [docs/PRODUCT_SHEET.md](docs/PRODUCT_SHEET.md) |
 | Biketeam → Pédalons migration, team by team, server to server over HTTPS (contract with biketeam, operations) | [docs/plans/2026-09-22-biketeam-live-migration.md](docs/plans/2026-09-22-biketeam-live-migration.md) + [docs/MIGRATE_BIKETEAM.md](docs/MIGRATE_BIKETEAM.md) |
+| Quarkus 4 + Jackson 3 migration (what changed, the JSON-compatibility settings not to undo, what's left, ledger `API-221`) | [docs/plans/2026-10-20-quarkus-4.md](docs/plans/2026-10-20-quarkus-4.md) |
 | Monetisation plan (pricing tiers, annual invoicing through Qonto, subscription tracking, per-team entitlements) — a proposal, nothing decided | [docs/plans/2026-10-17-monetisation.md](docs/plans/2026-10-17-monetisation.md) |
 | Free-tier limits before any payment (25 members, 20 planner saves a month per team and 10 per user in the GPX tools, platform admin unlocks a team) — delivered (contract `14.2.0`–`14.5.0`), e2e still to run | [docs/plans/archive/2026-11-11-limites-offre-gratuite.md](docs/plans/archive/2026-11-11-limites-offre-gratuite.md) (ledger `BILL-10`, `BILL-11`) |
 | Route generator: engine in osm-route-details (api 1.9), team overlays deposited at night, the Java search removed — lots 0 to 3 coded (contract `15.0.0`) and in production since 2026-11-16, backend tests and e2e green; France served since 2026-11-17 (engine 1.9.2, lot 6); learned taste per team and organic shapes by default since engine 1.12.0 (lot 4, `OPS-64`); OSM attractors shipped off in 1.13.0 (`OPS-65`); the planet served since engine 1.14.0 (30 s budget, `OPS-66`); off-road share and rideability bounds since engine 1.15.0 and contract `16.3.0` (lot 5, `OPS-67`) | [docs/plans/2026-11-15-generateur-parcours-osm.md](docs/plans/2026-11-15-generateur-parcours-osm.md) + lot 3b [docs/plans/2026-11-16-generateur-parcours-osm-lot3b.md](docs/plans/2026-11-16-generateur-parcours-osm-lot3b.md) (ledger `API-207`, `API-206`, `WEB-179`, `OPS-60`, `OPS-61`, `OPS-64`, `OPS-65`, `OPS-66`, `OPS-67`, `API-215`, `WEB-197`) |
@@ -106,12 +107,12 @@ Four invariants that cut across modules, each of which a plausible-looking chang
 
 | Layer | Technologies |
 |-------|-------------|
-| Backend | Java 25, Quarkus 3.39.x, PostgreSQL 18 + PostGIS, Hibernate/Panache, Flyway |
+| Backend | Java 25, Quarkus 4 (4.0.1, Jackson 3), PostgreSQL 18 + PostGIS, Hibernate/Panache, Flyway |
 | Frontend | TypeScript 7 (tsgo native compiler), React 19, Vite 8, Mantine UI, Zustand, React Query |
 | Mobile | Flutter, Dart (see `mobile/RULES.md` for detailed guidelines) |
 | Karoo | Kotlin, Jetpack Compose, karoo-ext SDK, ktor-client-karoo |
 | Auth | Database auth with JWT (password, OTP, passkeys/WebAuthn) |
-| IDs | TSID via hypersistence-utils (Long internally, lowercase string in API) |
+| IDs | TSID via hypersistence-tsid — `@Tsid` is `fr.pedalons.infrastructure.hibernate.Tsid` (Long internally, lowercase string in API) |
 | API | OpenAPI 3.1 contract-first with code generation |
 
 ## Infrastructure

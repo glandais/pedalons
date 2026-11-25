@@ -1,6 +1,6 @@
 package fr.pedalons.domain.team;
 
-import io.hypersistence.utils.hibernate.id.Tsid;
+import fr.pedalons.infrastructure.hibernate.Tsid;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.Objects;

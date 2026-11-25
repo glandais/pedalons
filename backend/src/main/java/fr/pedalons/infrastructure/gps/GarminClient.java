@@ -1,13 +1,11 @@
 package fr.pedalons.infrastructure.gps;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.exception.BusinessException;
 import fr.pedalons.common.exception.InternalException;
 import fr.pedalons.domain.gps.DomainGpsCredential;
 import fr.pedalons.dto.error.ErrorCode;
 import fr.pedalons.enums.GpsServiceType;
+import fr.pedalons.infrastructure.json.ExternalJson;
 import fr.pedalons.service.gps.DomainGpsCredentialService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,6 +21,9 @@ import java.util.List;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Garmin Connect GPS device integration client.
@@ -45,7 +46,7 @@ public class GarminClient implements GpsServiceClient {
 
   @Inject GarminCourseConverter courseConverter;
 
-  @Inject ObjectMapper objectMapper;
+  @Inject @ExternalJson ObjectMapper objectMapper;
 
   /**
    * Whether the course carries the waypoints (docs/LEDGER_*.md WEB-100, C3c). Off by default: the
@@ -190,14 +191,14 @@ public class GarminClient implements GpsServiceClient {
   private TokenResponse parseTokenResponse(String json) {
     try {
       JsonNode root = objectMapper.readTree(json);
-      String accessToken = jsonString(root, "access_token");
-      String refreshToken = jsonString(root, "refresh_token");
-      Long expiresIn = jsonLong(root, "expires_in");
+      String accessToken = GpsJson.string(root, "access_token");
+      String refreshToken = GpsJson.string(root, "refresh_token");
+      Long expiresIn = GpsJson.longValue(root, "expires_in");
       // Garmin may return user info differently
-      String userId = jsonString(root, "user_id");
+      String userId = GpsJson.string(root, "user_id");
 
       return new TokenResponse(accessToken, refreshToken, expiresIn, userId);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new InternalException(ErrorCode.GPS_TOKEN_EXCHANGE_FAILED, e);
     }
   }
@@ -308,35 +309,14 @@ public class GarminClient implements GpsServiceClient {
     }
     try {
       JsonNode root = objectMapper.readTree(body);
-      String courseId = jsonString(root, "courseId");
-      return courseId != null ? courseId : jsonString(root, "id");
-    } catch (JsonProcessingException e) {
+      String courseId = GpsJson.string(root, "courseId");
+      return courseId != null ? courseId : GpsJson.string(root, "id");
+    } catch (JacksonException e) {
       return null;
     }
   }
 
   private String urlEncode(String value) {
     return URLEncoder.encode(value, StandardCharsets.UTF_8);
-  }
-
-  private static String jsonString(JsonNode root, String key) {
-    JsonNode node = root.path(key);
-    return node.isMissingNode() || node.isNull() ? null : node.asText();
-  }
-
-  private static Long jsonLong(JsonNode root, String key) {
-    JsonNode node = root.path(key);
-    if (node.isMissingNode() || node.isNull()) {
-      return null;
-    }
-    if (node.canConvertToLong()) {
-      return node.asLong();
-    }
-    // Some providers return numeric fields as JSON strings (e.g. "3600").
-    try {
-      return Long.parseLong(node.asText().trim());
-    } catch (NumberFormatException e) {
-      return null;
-    }
   }
 }

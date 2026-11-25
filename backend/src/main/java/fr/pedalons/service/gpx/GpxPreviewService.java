@@ -1,6 +1,5 @@
 package fr.pedalons.service.gpx;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.GeoPoint;
 import fr.pedalons.common.exception.BadRequestException;
 import fr.pedalons.common.exception.BusinessException;
@@ -107,6 +106,7 @@ import org.geolatte.geom.LineString;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * GPX previews: files uploaded through the GPX tools page, analysed and rendered without ever

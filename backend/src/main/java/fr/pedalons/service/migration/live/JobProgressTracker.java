@@ -1,6 +1,5 @@
 package fr.pedalons.service.migration.live;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.dto.migration.internal.BiketeamJobCountDto;
 import fr.pedalons.dto.migration.internal.BiketeamJobCountsDto;
 import fr.pedalons.dto.migration.internal.BiketeamJobProgressDto;
@@ -16,6 +15,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Turns what {@code BiketeamMigrationService} reports into the job row: phase and progress, counts,

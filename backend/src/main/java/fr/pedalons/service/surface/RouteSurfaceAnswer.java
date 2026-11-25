@@ -1,9 +1,9 @@
 package fr.pedalons.service.surface;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Segment;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * What the {@code full} answer of osm-route-details says of the surface of one track, and how to

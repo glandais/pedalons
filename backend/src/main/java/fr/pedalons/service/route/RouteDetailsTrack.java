@@ -1,6 +1,5 @@
 package fr.pedalons.service.route;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import fr.pedalons.common.GeoDistance;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.OutputPoint;
@@ -14,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 /**
  * The two conversions between a vcyclist {@link Path} and an osm-route-details call, kept pure (no

@@ -1,8 +1,5 @@
 package fr.pedalons.infrastructure.routedetails;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Edge;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.OutputPoint;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Quality;
@@ -13,13 +10,15 @@ import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.TerrainRange
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Warning;
 import fr.pedalons.infrastructure.routedetails.RouteSlicer.Slice;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.jboss.logging.Logger;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Puts the answers of the slices of a route back into one answer, as if a single call had been
@@ -663,23 +662,19 @@ public final class RouteDetailsStitcher {
       if (!slice.isObject()) {
         continue;
       }
-      Iterator<Map.Entry<String, JsonNode>> fields = slice.fields();
-      while (fields.hasNext()) {
-        Map.Entry<String, JsonNode> field = fields.next();
+      for (Map.Entry<String, JsonNode> field : slice.properties()) {
         String name = field.getKey();
         JsonNode value = field.getValue();
         JsonNode prev = out.get(name);
         if (prev == null) {
           out.set(name, value.deepCopy());
-        } else if (prev.isTextual() && value.isTextual()) {
-          if (statusRank(value.asText()) > statusRank(prev.asText())) {
+        } else if (prev.isString() && value.isString()) {
+          if (statusRank(value.asString()) > statusRank(prev.asString())) {
             out.set(name, value.deepCopy());
           }
         } else if (prev.isObject() && value.isObject()) {
           ObjectNode sum = (ObjectNode) prev;
-          Iterator<Map.Entry<String, JsonNode>> counts = value.fields();
-          while (counts.hasNext()) {
-            Map.Entry<String, JsonNode> count = counts.next();
+          for (Map.Entry<String, JsonNode> count : value.properties()) {
             JsonNode before = sum.get(count.getKey());
             if (before == null) {
               sum.set(count.getKey(), count.getValue().deepCopy());

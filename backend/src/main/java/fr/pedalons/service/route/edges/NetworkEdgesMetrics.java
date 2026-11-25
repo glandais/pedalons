@@ -1,7 +1,7 @@
 package fr.pedalons.service.route.edges;
 
 import fr.pedalons.domain.route.NetworkEdgesDocument;
-import io.hypersistence.utils.hibernate.type.util.JsonConfiguration;
+import fr.pedalons.infrastructure.hibernate.JsonbMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -68,7 +68,7 @@ public class NetworkEdgesMetrics {
           .tag("status", document.status())
           .register(registry)
           .increment();
-      bytes.record(JsonConfiguration.INSTANCE.getObjectMapperWrapper().toString(document).length());
+      bytes.record(JsonbMapper.INSTANCE.toString(document).length());
     } catch (RuntimeException e) {
       // A metric never fails what it measures
     }

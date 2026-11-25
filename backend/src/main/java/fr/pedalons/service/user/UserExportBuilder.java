@@ -1,7 +1,5 @@
 package fr.pedalons.service.user;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import fr.pedalons.common.TsidUtils;
 import fr.pedalons.domain.asset.Asset;
 import fr.pedalons.domain.gpx.GpxPreview;
@@ -77,6 +75,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
 
 /**
  * Builds the ZIP for one GDPR data export.

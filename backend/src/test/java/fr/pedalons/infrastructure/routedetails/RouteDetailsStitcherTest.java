@@ -8,8 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.pedalons.common.GeoDistance;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.Edge;
 import fr.pedalons.infrastructure.routedetails.RouteDetailsResponse.EdgeNode;
@@ -28,6 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The stitching of plan §3.1 (docs/LEDGER_*.md API-150), against a synthetic service whose answers
@@ -288,8 +288,8 @@ class RouteDetailsStitcherTest {
             new Structure("bridge", 20, 30, 10, "osm", "dsm_deck"));
     JsonNode combined =
         RouteDetailsStitcher.combineStructureCorrection(List.of(none, partial), stitched);
-    assertEquals("partial", combined.get("bridges").asText());
-    assertEquals("none_found", combined.get("tunnels").asText());
+    assertEquals("partial", combined.get("bridges").asString());
+    assertEquals("none_found", combined.get("tunnels").asString());
     assertEquals(1, combined.get("counts").get("uncorrected").asLong());
     assertEquals(1, combined.get("counts").get("dsm_deck").asLong());
     assertEquals(2, combined.get("counts_by_source").get("osm").asLong());
@@ -299,7 +299,7 @@ class RouteDetailsStitcherTest {
         "unavailable",
         RouteDetailsStitcher.combineStructureCorrection(List.of(partial, unavailable), stitched)
             .get("bridges")
-            .asText());
+            .asString());
     // Without the summary, the slices' counts are summed: 2 + 2
     assertEquals(
         4,
