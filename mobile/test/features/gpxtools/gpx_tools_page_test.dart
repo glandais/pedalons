@@ -7,7 +7,6 @@ import 'package:pedalons/api/generated/export.dart';
 import 'package:pedalons/core/config/config_provider.dart';
 import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
-import 'package:pedalons/core/pdl/pdl.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
 import 'package:pedalons/core/theme/pedalons_theme.dart';
 import 'package:pedalons/features/auth/data/auth_repository.dart';
@@ -18,6 +17,7 @@ import 'package:pedalons/features/gpxtools/data/gpx_files_picker.dart';
 import 'package:pedalons/features/gpxtools/data/gpx_preview_repository.dart';
 import 'package:pedalons/features/gpxtools/presentation/pages/gpx_tools_page.dart';
 import 'package:pedalons/features/gpxtools/presentation/pages/my_gpx_previews_page.dart';
+import 'package:pedalons/features/gpxtools/presentation/widgets/gpx_tools_hub.dart';
 import 'package:pedalons/features/routes/data/gpx_file_source.dart';
 import 'package:pedalons/features/routes/domain/gpx_check.dart';
 import 'package:pedalons/keys.dart';
@@ -360,10 +360,45 @@ void main() {
         ),
       );
       expect(find.byKey(keys.gpxTools.quotaMessage), findsOneWidget);
-      final PdlButton draw = tester.widget<PdlButton>(
+      final GpxToolRow draw = tester.widget<GpxToolRow>(
         find.byKey(keys.gpxTools.drawButton),
       );
       expect(draw.enabled, isFalse);
+    });
+  });
+
+  group('derniers fichiers', () {
+    testWidgets('aucun : le mot, et « Tout voir » ouvre « Mes fichiers »', (
+      WidgetTester tester,
+    ) async {
+      await open(tester);
+      expect(
+        find.text('Vous n\'avez aucun fichier disponible pour le moment.'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(keys.gpxTools.listButton));
+      await settle(tester);
+      expect(find.byKey(keys.gpxTools.listEmpty), findsOneWidget);
+    });
+
+    testWidgets('les deux derniers, chacun ouvre sa fiche', (
+      WidgetTester tester,
+    ) async {
+      await open(
+        tester,
+        mine: <GpxPreviewSummaryDto>[
+          _summary('a'),
+          _summary('b'),
+          _summary('c'),
+        ],
+      );
+      expect(find.byKey(keys.gpxTools.recent('a')), findsOneWidget);
+      expect(find.byKey(keys.gpxTools.recent('b')), findsOneWidget);
+      expect(find.byKey(keys.gpxTools.recent('c')), findsNothing);
+
+      await tester.tap(find.byKey(keys.gpxTools.recent('b')));
+      await settle(tester);
+      expect(find.text('fiche b'), findsOneWidget);
     });
   });
 

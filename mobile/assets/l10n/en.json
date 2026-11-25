@@ -1740,26 +1740,30 @@
     "viewFile": {
       "title": "View a file",
       "description": "Upload a GPX file to see the map, elevation profile and detected climbs.",
-      "submit": "Choose a file"
+      "submit": "Choose a file",
+      "short": "Map, elevation profile and detected climbs"
     },
     "merge": {
       "title": "Merge files",
       "description": "Drop 2 to 10 GPX files: their tracks are joined into one, in the order and direction that link them most closely.",
       "submit": "Choose files",
-      "fileCount": "Choose between {min} and {max} GPX files to merge (selected: {selected})."
+      "fileCount": "Choose between {min} and {max} GPX files to merge (selected: {selected}).",
+      "short": "2 to 10 tracks joined end to end"
     },
     "createFromScratch": {
       "title": "Create a route",
       "description": "Draw a route on a blank map, without a GPX file, using the planner.",
       "submit": "Create a route",
       "created": "Route created",
-      "renameFailed": "Route created, but the name you typed could not be saved: it carries the file's name."
+      "renameFailed": "Route created, but the name you typed could not be saved: it carries the file's name.",
+      "short": "Draw on a blank map"
     },
     "blankMap": {
       "title": "Open a map",
       "description": "Open a blank fullscreen map: basemaps and relief.",
       "submit": "Open the map",
-      "pageTitle": "Map"
+      "pageTitle": "Map",
+      "short": "Base maps and terrain, full screen"
     },
     "listFiles": {
       "title": "My GPX files",
@@ -1773,7 +1777,8 @@
       "count": {
         "one": "{} file",
         "other": "{} files"
-      }
+      },
+      "seeAll": "See all"
     },
     "preview": {
       "title": "Preview",
@@ -1849,7 +1854,8 @@
       "saveToTeamHint": "Becomes a route of the team you choose",
       "retention": "The file is kept for 30 days in GPX tools › My files, then deleted.",
       "unreadable": "This file could not be read. Save it to your files, then open it from GPX tools."
-    }
+    },
+    "explorerTab": "Routes"
   },
   "tags": {
     "title": "Tags",

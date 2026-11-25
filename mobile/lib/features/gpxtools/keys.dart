@@ -7,8 +7,11 @@ class _GpxToolsKey extends ValueKey<String> {
 /// Les outils GPX (docs/LEDGER_*.md MOB-178) : l'accueil, « Mes fichiers »,
 /// la fiche d'un aperçu, son éditeur et la carte sans tracé.
 class GpxToolsKeys {
-  /// L'entrée « Outils GPX » de la barre de la parcothèque (Explorer).
+  /// Le segment « Outils GPX » du sélecteur d'Explorer (MOB-192).
   final entryButton = const _GpxToolsKey('entryButton');
+
+  /// Le segment « Parcours » du même sélecteur.
+  final routesTab = const _GpxToolsKey('routesTab');
 
   // ── Accueil ──────────────────────────────────────────────────────────
   final hub = const _GpxToolsKey('hub');
@@ -18,6 +21,10 @@ class GpxToolsKeys {
   final blankMapButton = const _GpxToolsKey('blankMapButton');
   final listButton = const _GpxToolsKey('listButton');
   final hubError = const _GpxToolsKey('hubError');
+
+  /// Un des derniers fichiers que l'accueil liste avant « Tout voir ».
+  ValueKey<String> recent(String previewId) =>
+      _GpxToolsKey('recent_$previewId');
 
   /// Le mot du quota personnel épuisé, sous « Créer un parcours ».
   final quotaMessage = const _GpxToolsKey('quotaMessage');

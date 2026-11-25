@@ -1740,26 +1740,30 @@
     "viewFile": {
       "title": "Visualiser un fichier",
       "description": "Déposez un fichier GPX pour voir la carte, le profil altimétrique et les cols détectés.",
-      "submit": "Choisir un fichier"
+      "submit": "Choisir un fichier",
+      "short": "Carte, profil altimétrique et cols détectés"
     },
     "merge": {
       "title": "Fusionner des fichiers",
       "description": "Déposez de 2 à 10 fichiers GPX : leurs tracés sont mis bout à bout en un seul, dans l'ordre et le sens qui les relient au plus court.",
       "submit": "Choisir les fichiers",
-      "fileCount": "Choisissez entre {min} et {max} fichiers GPX à fusionner (sélection : {selected})."
+      "fileCount": "Choisissez entre {min} et {max} fichiers GPX à fusionner (sélection : {selected}).",
+      "short": "De 2 à 10 tracés mis bout à bout"
     },
     "createFromScratch": {
       "title": "Créer un parcours",
       "description": "Tracez un itinéraire sur une carte vierge, sans fichier GPX, à l'aide du planificateur.",
       "submit": "Créer un parcours",
       "created": "Parcours créé",
-      "renameFailed": "Parcours créé, mais le nom saisi n'a pas pu être enregistré : il porte le nom du fichier."
+      "renameFailed": "Parcours créé, mais le nom saisi n'a pas pu être enregistré : il porte le nom du fichier.",
+      "short": "Tracer sur une carte vierge"
     },
     "blankMap": {
       "title": "Ouvrir une carte",
       "description": "Ouvrez une carte vierge en plein écran : fonds de carte et relief.",
       "submit": "Ouvrir la carte",
-      "pageTitle": "Carte"
+      "pageTitle": "Carte",
+      "short": "Fonds de carte et relief, en plein écran"
     },
     "listFiles": {
       "title": "Mes fichiers GPX",
@@ -1773,7 +1777,8 @@
       "count": {
         "one": "{} fichier",
         "other": "{} fichiers"
-      }
+      },
+      "seeAll": "Tout voir"
     },
     "preview": {
       "title": "Visualisation",
@@ -1849,7 +1854,8 @@
       "saveToTeamHint": "Devient un parcours de l'équipe choisie",
       "retention": "Le fichier est conservé 30 jours dans Outils GPX › Mes fichiers, puis supprimé.",
       "unreadable": "Ce fichier n'a pas pu être lu. Enregistrez-le dans vos fichiers, puis ouvrez-le depuis Outils GPX."
-    }
+    },
+    "explorerTab": "Parcours"
   },
   "tags": {
     "title": "Tags",

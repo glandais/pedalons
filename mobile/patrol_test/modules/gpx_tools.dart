@@ -8,7 +8,7 @@ import 'module.dart';
 final class GpxTools extends Module {
   GpxTools(super.$);
 
-  /// The Explorer tab's « Outils GPX » → the hub.
+  /// The Explorer tab's « Outils GPX » segment (ledger `MOB-192`) → the hub.
   Future<void> openFromExplorer() async {
     await $(keys.gpxTools.entryButton).waitUntilVisible();
     await $(keys.gpxTools.entryButton).tap();

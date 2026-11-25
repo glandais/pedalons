@@ -9,6 +9,8 @@ import 'package:pedalons/config/locale_context.dart';
 import 'package:pedalons/core/material.dart';
 import 'package:pedalons/core/pagination/pagination.dart';
 import 'package:pedalons/core/preferences/user_preferences_provider.dart';
+import 'package:pedalons/core/config/config_provider.dart';
+import 'package:pedalons/features/gpxtools/data/gpx_preview_repository.dart';
 import 'package:pedalons/features/routes/data/route_repository.dart';
 import 'package:pedalons/features/routes/domain/route_filters.dart';
 import 'package:pedalons/features/routes/presentation/pages/routes_page.dart';
@@ -80,6 +82,10 @@ void main() {
             (ref, key) async => const <TagWithUsageDto>[],
           ),
           canManageRoutesProvider.overrideWith((ref, slug) => canManage),
+          gpxPreviewRepositoryProvider.overrideWithValue(_NoGpxPreviews()),
+          appConfigProvider.overrideWith(
+            (Ref ref) => Completer<ConfigDto>().future,
+          ),
           teamDetailProvider.overrideWith(
             (Ref ref, String slug) async =>
                 _team(planner: planner, quotaSpent: quotaSpent),
@@ -180,6 +186,44 @@ void main() {
 
     expect(find.byKey(keys.routes.createButton), findsNothing);
   });
+
+  // docs/LEDGER_*.md MOB-192 : les outils GPX, onglet d'Explorer.
+  testWidgets('Explorer : « Outils GPX » remplace la parcothèque par l’accueil '
+      'des outils, « Parcours » la rend', (WidgetTester tester) async {
+    await open(tester, teamSlug: null, canManage: false);
+    expect(find.byKey(keys.gpxTools.hub), findsNothing);
+
+    await tester.tap(find.byKey(keys.gpxTools.entryButton));
+    await settle(tester);
+    expect(find.byKey(keys.gpxTools.hub), findsOneWidget);
+    expect(find.byKey(keys.gpxTools.viewFileButton), findsOneWidget);
+
+    await tester.tap(find.byKey(keys.gpxTools.routesTab));
+    await settle(tester);
+    expect(find.byKey(keys.gpxTools.hub), findsNothing);
+  });
+
+  testWidgets('la parcothèque d’une équipe n’a pas le sélecteur', (
+    WidgetTester tester,
+  ) async {
+    await open(tester, teamSlug: 'n-peloton', canManage: false);
+    expect(find.byKey(keys.gpxTools.entryButton), findsNothing);
+  });
+}
+
+/// Aucun fichier déposé : l'accueil des outils dit « aucun fichier ».
+class _NoGpxPreviews implements GpxPreviewRepository {
+  @override
+  Future<PageResult<GpxPreviewSummaryDto>> listMine({
+    required int page,
+    required int size,
+  }) async => const PageResult<GpxPreviewSummaryDto>(
+    items: <GpxPreviewSummaryDto>[],
+    total: 0,
+  );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 TeamDetailDto _team({bool planner = true, bool quotaSpent = false}) =>

@@ -17,11 +17,13 @@ import '../../../../core/theme/pdl_icons.dart';
 import '../../../../core/theme/pdl_tokens.dart';
 import '../../../../core/theme/pdl_typography.dart';
 import '../../../../keys.dart';
+import '../../../gpxtools/presentation/widgets/gpx_tools_hub.dart';
 import '../../../tags/presentation/tag_filter.dart';
 import '../../../teams/providers/team_permission_providers.dart';
 import '../../../teams/providers/team_providers.dart';
 import '../../domain/route_filter_labels.dart';
 import '../../domain/route_filters.dart';
+import '../../providers/explorer_tab_provider.dart';
 import '../../providers/route_count_provider.dart';
 import '../../providers/route_editor_providers.dart';
 import '../../providers/route_list_provider.dart';
@@ -147,24 +149,53 @@ class _RoutesPageState extends ConsumerState<RoutesPage> {
 
     if (widget.embedded) return body;
 
-    // Across every team, the page is the Explorer tab and bears its name; a
-    // team's own library stays « Parcours » (docs/LEDGER_*.md WEB-114).
+    // Une équipe garde sa parcothèque seule ; Explorer, de toutes les
+    // équipes, porte aussi les outils GPX, qui ne relèvent d'aucune
+    // (docs/LEDGER_*.md MOB-178, MOB-192).
+    if (widget.teamSlug != null) {
+      return Scaffold(
+        appBar: PdlAppBar(title: 'routes.title'.tr()),
+        body: body,
+      );
+    }
+
+    // Across every team, the page is the Explorer tab and bears its name
+    // (docs/LEDGER_*.md WEB-114).
+    final ExplorerTab tab = ref.watch(explorerTabProvider);
     return Scaffold(
-      appBar: PdlAppBar(
-        title: (widget.teamSlug == null ? 'nav.explore' : 'routes.title').tr(),
-        // Les outils GPX, sur l'onglet Explorer seulement : ils ne relèvent
-        // d'aucune équipe (docs/LEDGER_*.md MOB-178).
-        actions: <Widget>[
-          if (widget.teamSlug == null)
-            PdlAppBarAction(
-              key: keys.gpxTools.entryButton,
-              icon: PdlIcons.gpx,
-              semanticLabel: 'gpxTools.entry'.tr(),
-              onPressed: () => context.push(Paths.gpxTools()),
+      appBar: PdlAppBar(title: 'nav.explore'.tr()),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              PdlSpacing.section,
+              0,
+              PdlSpacing.section,
+              PdlSpacing.sectionTightV,
             ),
+            child: PdlSegmented<ExplorerTab>(
+              segments: <PdlSegment<ExplorerTab>>[
+                PdlSegment<ExplorerTab>(
+                  key: keys.gpxTools.routesTab,
+                  value: ExplorerTab.routes,
+                  label: 'gpxTools.explorerTab'.tr(),
+                ),
+                PdlSegment<ExplorerTab>(
+                  key: keys.gpxTools.entryButton,
+                  value: ExplorerTab.gpxTools,
+                  label: 'gpxTools.entry'.tr(),
+                ),
+              ],
+              value: tab,
+              onChanged: ref.read(explorerTabProvider.notifier).select,
+            ),
+          ),
+          Expanded(
+            child: tab == ExplorerTab.gpxTools ? const GpxToolsHub() : body,
+          ),
         ],
       ),
-      body: body,
     );
   }
 
