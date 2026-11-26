@@ -86,9 +86,14 @@ jobs:
 
       # Le backend tourne en PUID:PGID (1000, .env.e2e) et écrit dans .e2e/storage et .e2e/cache ;
       # l'utilisateur du runner n'est pas 1000. Créés et cédés ici, e2e.sh les trouve prêts et les
-      # garde (il ne génère la paire JWT que si elle manque).
+      # garde (il ne génère la paire JWT que si elle manque). La clé d'espace de noms du générateur
+      # passe par l'environnement : sinon e2e.sh l'écrirait dans .e2e/namespace-key, que le chown
+      # vient de retirer à l'utilisateur du runner (Permission denied).
       - name: Prepare the stack's state
         run: |
+          key="$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=\n')"
+          echo "::add-mask::$key"
+          echo "ROUTE_GENERATOR_NAMESPACE_KEY=$key" >> "$GITHUB_ENV"
           mkdir -p .e2e/keys .e2e/storage .e2e/cache
           openssl genrsa -out .e2e/keys/privateKey.pem 2048
           openssl rsa -in .e2e/keys/privateKey.pem -pubout -out .e2e/keys/publicKey.pem
