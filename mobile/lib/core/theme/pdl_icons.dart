@@ -215,6 +215,10 @@ abstract final class PdlIcons {
   static const IconData passkey = Icons.fingerprint;
   static const IconData device = Icons.smartphone;
   static const IconData devices = Icons.devices;
+
+  /// Le bouton « GPS » (export du parcours) : la flèche de navigation, comme
+  /// `IconGps` sur le site — pas un téléphone, la route part vers un compteur.
+  static const IconData gps = Icons.near_me_outlined;
   static const IconData notifications = Icons.notifications_none;
   static const IconData notificationsOff = Icons.notifications_off_outlined;
   static const IconData language = Icons.language;

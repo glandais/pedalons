@@ -1,12 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Loader, Menu, Text } from '@mantine/core'
-import {
-  IconDeviceMobile,
-  IconDeviceWatch,
-  IconDownload,
-  IconPlugConnected,
-} from '@tabler/icons-react'
+import { IconDeviceWatch, IconDownload, IconGps, IconPlugConnected } from '@tabler/icons-react'
 import type { GpsServiceType, RouteDetailDto, RouteGpsSyncStatusDto } from '@/api/dto'
 import { useGetRoutesBulk } from '@/api/endpoints/routes/routes'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
@@ -38,7 +33,7 @@ interface GpsMenuButtonProps {
 
 /**
  * « GPS »: the one way a route leaves a card (docs/LEDGER_*.md WEB-167, R7; KIT §8 « Export du
- * parcours », the app's `GpsButton` and GPS sheet). An outlined button with a device icon, opening
+ * parcours », the app's `GpsButton` and GPS sheet). An outlined button with a navigation icon, opening
  * a menu: « Vers un appareil », one line per connected service — or « Connecter un compteur » to the
  * devices page when none is —, then « Fichier GPX » and « Fichier FIT, pour compteur » when the
  * route has them. It replaces « GPX », « FIT » and « Envoyer vers l'appareil » everywhere a route
@@ -121,7 +116,7 @@ export function GpsMenu({
           variant="default"
           size={size}
           loading={isUploading}
-          leftSection={<IconDeviceMobile size={14} aria-hidden />}
+          leftSection={<IconGps size={14} aria-hidden />}
           aria-label={t('routes.gps.buttonLabel')}
           data-testid="gps-button"
         >

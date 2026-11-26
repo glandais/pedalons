@@ -564,7 +564,7 @@ Les maquettes doivent donc puiser dans le jeu Tabler.
 | `IconTag` | Petite annonce |
 | `IconStack2` | Nombre de groupes d'une sortie, nombre d'étapes d'un voyage |
 | `IconDownload` | Téléchargement d'une pièce jointe ; fichiers GPX / FIT dans le choix qu'ouvre « GPS » |
-| `IconDeviceMobile` | Bouton « GPS » (export du parcours : vers un appareil Karoo ou Garmin, GPX, FIT ; §7.7) |
+| `IconGps` | Bouton « GPS » (export du parcours : vers un appareil Karoo ou Garmin, GPX, FIT ; §7.7) |
 | `IconFilter`, `IconChevronDown` / `IconChevronUp`, `IconX` | Ouverture, repli et effacement des filtres |
 | `IconEye` / `IconEyeOff` / `IconUsers` | Visibilité publique / non listée / réservée à l'équipe |
 | `IconCheck` | Inscription confirmée |

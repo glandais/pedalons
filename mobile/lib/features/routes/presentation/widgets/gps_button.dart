@@ -42,7 +42,7 @@ class GpsButton extends StatelessWidget {
       child: PdlButton(
         label: 'routes.gpsSheet.button'.tr(),
         loadingLabel: 'routes.downloading'.tr(),
-        icon: PdlIcons.device,
+        icon: PdlIcons.gps,
         variant: PdlButtonVariant.outline,
         size: compact ? PdlButtonSize.sm : PdlButtonSize.md,
         loading: loading,
@@ -73,7 +73,7 @@ class GpsAppBarAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => PdlAppBarAction(
-    icon: PdlIcons.device,
+    icon: PdlIcons.gps,
     semanticLabel: 'routes.gpsSheet.buttonSemantics'.tr(),
     onPressed: busy ? null : () => onPressed(context),
   );
