@@ -110,7 +110,7 @@
     "@vitest/coverage-v8": "^5.1.1",
     "@vitest/ui": "^5.1.1",
     "eslint-plugin-i18next": "^6.1.5",
-    "i18next-cli": "^1.91.3",
+    "i18next-cli": "^1.93.0",
     "jsdom": "^31.0.1",
     "mdast-util-directive": "^3.2.1",
     "orval": "^8.48.0",
