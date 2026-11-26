@@ -2,17 +2,18 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **166 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **167 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-52 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+53 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
 
 Contexte du domaine : [`ledger/MOB/README.md`](ledger/MOB/README.md).
 
+- [ ] [`MOB-193`](ledger/MOB/MOB-193.md) Carte quittée pendant le chargement de son style : double dispose dans maplibre_native (S) · *externe*
 - [ ] [`MOB-192`](ledger/MOB/MOB-192.md) Outils GPX en onglet d'Explorer : recette sur appareil (M) · *recette*
 - [ ] [`MOB-191`](ledger/MOB/MOB-191.md) « Ouvrir avec Pédalons » : un .gpx reçu d'une autre app (M) · *recette*
 - [ ] [`MOB-185`](ledger/MOB/MOB-185.md) Retoucher un parcours depuis l'app : ajuster la distance, déplacer l'arrivée (M)
@@ -358,6 +359,7 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 
 ### Dépend d'un tiers ou d'une opération hors du dépôt (`externe`)
 
+- [`MOB-193`](ledger/MOB/MOB-193.md) Carte quittée pendant le chargement de son style : double dispose dans maplibre_native
 - [`MOB-64`](ledger/MOB/MOB-64.md) Publier Pédalons sur Google Play
 - [`OPS-35`](ledger/OPS/OPS-35.md) Publier l'app Garmin sur le Connect IQ Store
 - [`OPS-34`](ledger/OPS/OPS-34.md) Faire revalider la Search Console après `WEB-85`, `WEB-86` et `API-109`

@@ -19,6 +19,9 @@ final class DetailMenus extends Module {
     await $(keys.routeDetail.moreButton)
         .waitUntilVisible(timeout: const Duration(seconds: 20));
     await $(keys.routeDetail.moreButton).tap();
+    // Since MOB-190 the route's `⋯` opens « Gérer le parcours » (retouch, edit a copy, report):
+    // its « Signaler » row then opens the moderation menu.
+    await $(keys.routeManage.report).tap();
   }
 
   // A detail page closes behind a report: its `⋯` goes with it.
