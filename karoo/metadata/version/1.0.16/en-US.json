@@ -1,0 +1,3 @@
+{
+  "whatsNew": "• Startup, \"Try again\" and \"Refresh\" handle errors the same way: an expired session signs you out everywhere, a network drop no longer does.\n• The error screen tells whether the network is missing or the server is not responding.\n• A message now shows when a ride has no route."
+}

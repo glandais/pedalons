@@ -1,0 +1,3 @@
+{
+  "whatsNew": "• Le démarrage, « Réessayer » et « Actualiser » traitent les erreurs de la même façon : une session expirée vous déconnecte partout, une coupure de réseau ne vous déconnecte plus.\n• L'écran d'erreur dit si le réseau manque ou si le serveur ne répond pas.\n• Un message s'affiche quand une sortie n'a pas de parcours."
+}
