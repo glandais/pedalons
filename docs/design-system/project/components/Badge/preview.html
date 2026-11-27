@@ -1,0 +1,44 @@
+<!-- @dsCard group="Données" height=240 subtitle="Doux par défaut, aplat pour les cols ; 10 px, 700, capitales" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Badge</title>
+<style>
+body{margin:0;padding:16px;background:var(--body);color:var(--text);font-family:var(--font-sans);font-size:14px;line-height:1.45}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:12px;color:var(--text-dimmed);margin:0 0 6px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 8px;border-radius:var(--radius-pill);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.25px;white-space:nowrap}
+.stat{display:inline-flex;align-items:center;gap:4px;color:var(--text-dimmed);font-size:14px}
+.paper{background:var(--body);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;transition:box-shadow .2s,border-color .2s}
+.paper:hover{box-shadow:var(--shadow-md)}
+.h4{margin:0;font-size:18px;line-height:1.5;font-weight:700;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dim{color:var(--text-dimmed)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 18px;border-radius:var(--radius-md);font:600 14px/1 var(--font-sans);border:1px solid transparent;cursor:pointer}
+.btn:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+.btn-filled{background:var(--primary);color:var(--on-primary)}
+.btn-filled:hover{background:var(--primary-hover)}
+.btn-default{background:var(--body);color:var(--text);border-color:var(--border)}
+.btn-default:hover{background:var(--surface-hover)}
+.btn-subtle{background:transparent;color:var(--primary-on-soft)}
+.btn-subtle:hover{background:var(--primary-soft)}
+.btn-disabled{background:var(--disabled-bg);color:var(--disabled-text);border-color:var(--disabled-border);cursor:not-allowed}
+.btn-danger{background:var(--danger);color:#ffffff}
+.link-danger{color:var(--danger);font-size:14px;text-decoration:none;font-weight:500}
+.av{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);color:#ffffff;font-weight:700;flex:none}
+.cluster{display:flex}
+.cluster .av{width:26px;height:26px;font-size:10px;border:2px solid var(--body);margin-left:-4px}
+.cluster .av:first-child{margin-left:0}
+.more{background:var(--neutral-soft);color:var(--neutral-on-soft)!important}
+.daybox{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:56px;padding:6px 0;border-radius:var(--radius-md);line-height:1.15}
+.daybox .d{font-size:12px;font-weight:600;color:var(--primary-on-soft)}
+.daybox .n{font-size:24px;font-weight:700;color:var(--text-bright)}
+.daybox .m{font-size:12px;font-weight:500;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="col"><div><p class="cap">Type de contenu (doux)</p><div class="row"><span class="badge" style="background:var(--fam-blue-soft);color:var(--fam-blue-on-soft)">Sortie</span><span class="badge" style="background:var(--fam-grape-soft);color:var(--fam-grape-on-soft)">Publication</span><span class="badge" style="background:var(--fam-teal-soft);color:var(--fam-teal-on-soft)">Voyage</span></div></div><div><p class="cap">États et exceptions, dans l'ordre d'une carte</p><div class="row"><span class="badge" style="background:var(--fam-red);color:#ffffff">Supprimé</span><span class="badge" style="background:var(--fam-red-soft);color:var(--fam-red-on-soft)">Annulé</span><span class="badge" style="background:var(--done-soft);color:var(--done-on-soft)">Terminée</span><span class="badge" style="background:var(--fam-gray-soft);color:var(--fam-gray-on-soft)">Brouillon</span><span class="badge" style="background:var(--primary-soft);color:var(--primary-on-soft)"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg>J'y vais</span></div></div><div><p class="cap">Revêtement · visibilité</p><div class="row"><span class="badge" style="background:var(--fam-gray-soft);color:var(--fam-gray-on-soft)">Route</span><span class="badge" style="background:var(--fam-orange-soft);color:var(--fam-orange-on-soft)">Gravel</span><span class="badge" style="background:var(--fam-green-soft);color:var(--fam-green-on-soft)">VTT</span><span class="badge" style="background:var(--fam-teal-soft);color:var(--fam-teal-on-soft)">Mixte</span><span class="badge" style="background:var(--fam-blue-soft);color:var(--fam-blue-on-soft)">Public</span><span class="badge" style="background:var(--fam-gray-soft);color:var(--fam-gray-on-soft)">Équipe uniquement</span></div></div><div><p class="cap">Catégorie de col (aplat)</p><div class="row"><span class="badge" style="background:var(--fam-grape);color:#ffffff">HC</span><span class="badge" style="background:var(--fam-red);color:#ffffff">1</span><span class="badge" style="background:var(--fam-orange);color:#ffffff">2</span><span class="badge" style="background:var(--fam-yellow);color:#212529">3</span><span class="badge" style="background:var(--fam-green);color:#ffffff">4</span></div></div></div>
+</body>
+</html>

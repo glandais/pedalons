@@ -1,0 +1,44 @@
+<!-- @dsCard group="Cartes" height=500 subtitle="PublicationCard, type RIDE, sans photo ni tracé" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Carte de sortie</title>
+<style>
+body{margin:0;padding:16px;background:var(--body);color:var(--text);font-family:var(--font-sans);font-size:14px;line-height:1.45}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:12px;color:var(--text-dimmed);margin:0 0 6px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 8px;border-radius:var(--radius-pill);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.25px;white-space:nowrap}
+.stat{display:inline-flex;align-items:center;gap:4px;color:var(--text-dimmed);font-size:14px}
+.paper{background:var(--body);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;transition:box-shadow .2s,border-color .2s}
+.paper:hover{box-shadow:var(--shadow-md)}
+.h4{margin:0;font-size:18px;line-height:1.5;font-weight:700;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dim{color:var(--text-dimmed)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 18px;border-radius:var(--radius-md);font:600 14px/1 var(--font-sans);border:1px solid transparent;cursor:pointer}
+.btn:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+.btn-filled{background:var(--primary);color:var(--on-primary)}
+.btn-filled:hover{background:var(--primary-hover)}
+.btn-default{background:var(--body);color:var(--text);border-color:var(--border)}
+.btn-default:hover{background:var(--surface-hover)}
+.btn-subtle{background:transparent;color:var(--primary-on-soft)}
+.btn-subtle:hover{background:var(--primary-soft)}
+.btn-disabled{background:var(--disabled-bg);color:var(--disabled-text);border-color:var(--disabled-border);cursor:not-allowed}
+.btn-danger{background:var(--danger);color:#ffffff}
+.link-danger{color:var(--danger);font-size:14px;text-decoration:none;font-weight:500}
+.av{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);color:#ffffff;font-weight:700;flex:none}
+.cluster{display:flex}
+.cluster .av{width:26px;height:26px;font-size:10px;border:2px solid var(--body);margin-left:-4px}
+.cluster .av:first-child{margin-left:0}
+.more{background:var(--neutral-soft);color:var(--neutral-on-soft)!important}
+.daybox{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:56px;padding:6px 0;border-radius:var(--radius-md);line-height:1.15}
+.daybox .d{font-size:12px;font-weight:600;color:var(--primary-on-soft)}
+.daybox .n{font-size:24px;font-weight:700;color:var(--text-bright)}
+.daybox .m{font-size:12px;font-weight:500;color:var(--text)}
+</style>
+</head>
+<body>
+<article class="paper" style="width:340px;display:flex;flex-direction:column"><div style="position:relative;height:160px;background:linear-gradient(135deg,var(--gradient-ride-from),var(--gradient-ride-to));display:flex;align-items:center;justify-content:center"><svg class="ic" width="48" height="48" viewBox="0 0 24 24" aria-hidden="true" style="color:#ffffff;opacity:.8"><path d="M2 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M16 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M12 19l0 -4l-3 -3l5 -4l2 3l3 0"/><path d="M16 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg><div class="daybox" style="position:absolute;top:16px;left:16px;background:#ffffff;box-shadow:var(--shadow-sm)"><span class="d" style="color:#364fc7">sam.</span><span class="n" style="color:#000000">12</span><span class="m" style="color:#000000">avr.</span></div><span style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.95);color:#364fc7;font-size:12px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill)">Demain</span></div><div style="padding:16px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:12px;align-items:flex-start"><div style="flex:1;min-width:0"><h4 class="h4">Boucle de la vallée</h4><div style="display:flex;align-items:center;gap:6px;margin-top:2px"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="color:var(--primary)"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/></svg><span style="font-size:16px;font-weight:700">Départ 09:00</span></div><p class="dim" style="margin:6px 0 0;font-size:14px">Départ de la place de la Mairie, regroupement au sommet du col avant la descente…</p></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="badge" style="background:var(--fam-blue-soft);color:var(--fam-blue-on-soft)">Sortie</span><span class="badge" style="background:var(--primary-soft);color:var(--primary-on-soft)"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg>J'y vais</span></div></div><div class="cluster" role="img" aria-label="Personnes inscrites"><span class="av" style="background:var(--avatar-3)">LM</span><span class="av" style="background:var(--avatar-0)">AB</span><span class="av" style="background:var(--avatar-6)">CD</span><span class="av" style="background:var(--avatar-9)">EF</span><span class="av" style="background:var(--avatar-1)">GH</span><span class="av more">+7</span></div><div class="dim" style="font-size:14px">9–13 °C · ↗ 18 km/h · Pluie 20 %</div><div class="row" style="gap:16px"><span class="stat"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/></svg>12 personnes</span><span class="stat"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l-8 4l8 4l8 -4l-8 -4"/><path d="M4 12l8 4l8 -4"/><path d="M4 16l8 4l8 -4"/></svg>3 groupes</span><span class="stat"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1"/></svg>2 commentaires</span></div></div></article>
+</body>
+</html>

@@ -13,6 +13,10 @@ sources is authoritative over what (that file for assets, the web theme and the 
 `mobile/lib/core/theme/` for Flutter and the derived dark mode). The business colour code is semantic and shared by
 both clients: changing it in one place only makes them diverge silently.
 
+**Design system for `/design` and other mockups**: use the « Pédalons » Design System artifact,
+https://claude.ai/artifact/JrjsweYBAcFdevAGV7guVD — a derived copy of the charter, republished from
+[docs/design-system/](docs/design-system/README.md) when the sources above change (ledger `BRAND-11`).
+
 **French copy is gender-neutral (épicène), never point médian** — web, mobile, backend e-mails and
 notifications alike. Rephrase rather than agree: « Vous participez » not « Vous êtes inscrit »,
 « Voulez-vous vraiment… ? » not « Êtes-vous sûr… ? », « Léa a rejoint » not « Léa s'est inscrit »,

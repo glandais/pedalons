@@ -1,0 +1,44 @@
+<!-- @dsCard group="Cartes" height=420 width=960 subtitle="Plein, son groupe, un autre groupe" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Carte de groupe</title>
+<style>
+body{margin:0;padding:16px;background:var(--body);color:var(--text);font-family:var(--font-sans);font-size:14px;line-height:1.45}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:12px;color:var(--text-dimmed);margin:0 0 6px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 8px;border-radius:var(--radius-pill);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.25px;white-space:nowrap}
+.stat{display:inline-flex;align-items:center;gap:4px;color:var(--text-dimmed);font-size:14px}
+.paper{background:var(--body);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;transition:box-shadow .2s,border-color .2s}
+.paper:hover{box-shadow:var(--shadow-md)}
+.h4{margin:0;font-size:18px;line-height:1.5;font-weight:700;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dim{color:var(--text-dimmed)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 18px;border-radius:var(--radius-md);font:600 14px/1 var(--font-sans);border:1px solid transparent;cursor:pointer}
+.btn:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+.btn-filled{background:var(--primary);color:var(--on-primary)}
+.btn-filled:hover{background:var(--primary-hover)}
+.btn-default{background:var(--body);color:var(--text);border-color:var(--border)}
+.btn-default:hover{background:var(--surface-hover)}
+.btn-subtle{background:transparent;color:var(--primary-on-soft)}
+.btn-subtle:hover{background:var(--primary-soft)}
+.btn-disabled{background:var(--disabled-bg);color:var(--disabled-text);border-color:var(--disabled-border);cursor:not-allowed}
+.btn-danger{background:var(--danger);color:#ffffff}
+.link-danger{color:var(--danger);font-size:14px;text-decoration:none;font-weight:500}
+.av{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);color:#ffffff;font-weight:700;flex:none}
+.cluster{display:flex}
+.cluster .av{width:26px;height:26px;font-size:10px;border:2px solid var(--body);margin-left:-4px}
+.cluster .av:first-child{margin-left:0}
+.more{background:var(--neutral-soft);color:var(--neutral-on-soft)!important}
+.daybox{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:56px;padding:6px 0;border-radius:var(--radius-md);line-height:1.15}
+.daybox .d{font-size:12px;font-weight:600;color:var(--primary-on-soft)}
+.daybox .n{font-size:24px;font-weight:700;color:var(--text-bright)}
+.daybox .m{font-size:12px;font-weight:500;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="row" style="gap:16px;align-items:flex-start"><article class="paper" style="width:290px;padding:16px;display:flex;flex-direction:column;gap:10px"><h4 class="h4">Groupe A</h4><div class="row" style="gap:16px"><span class="stat"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l6 -3l6 3l6 -3v13l-6 3l-6 -3l-6 3v-13"/><path d="M9 4v13"/><path d="M15 7v13"/></svg>68 km</span><span class="stat"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l0 14"/><path d="M18 11l-6 -6"/><path d="M6 11l6 -6"/></svg>1 240 m</span><span class="stat">25 km/h</span></div><div class="dim">9–13 °C · ↗ 18 km/h · Pluie 20 %</div><a href="#" style="color:var(--anchor);text-decoration:none">Voir le parcours</a><div style="font-size:14px">12/12 personnes</div><div class="cluster" role="img" aria-label="Personnes inscrites"><span class="av" style="background:var(--avatar-0)">AB</span><span class="av" style="background:var(--avatar-6)">CD</span><span class="av" style="background:var(--avatar-9)">EF</span><span class="av" style="background:var(--avatar-1)">GH</span><span class="av" style="background:var(--avatar-4)">IJ</span><span class="av more">+7</span></div><div role="progressbar" aria-label="Places occupées" aria-valuenow="12" aria-valuemax="12" style="height:6px;border-radius:var(--radius-pill);background:var(--neutral-soft);overflow:hidden"><div style="width:100%;height:100%;background:var(--danger)"></div></div><button class="btn btn-disabled" disabled>Complet</button></article><article class="paper" style="width:290px;border:2px solid var(--primary);padding:16px;display:flex;flex-direction:column;gap:10px"><div><span class="badge" style="background:var(--primary-soft);color:var(--primary-on-soft)"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg>J'y vais</span></div><h4 class="h4">Groupe B</h4><div class="row" style="gap:16px"><span class="stat"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l6 -3l6 3l6 -3v13l-6 3l-6 -3l-6 3v-13"/><path d="M9 4v13"/><path d="M15 7v13"/></svg>68 km</span><span class="stat"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l0 14"/><path d="M18 11l-6 -6"/><path d="M6 11l6 -6"/></svg>1 240 m</span><span class="stat">25 km/h</span></div><div class="dim">9–13 °C · ↗ 18 km/h · Pluie 20 %</div><a href="#" style="color:var(--anchor);text-decoration:none">Voir le parcours</a><div style="font-size:14px">11/12 personnes</div><div class="cluster" role="img" aria-label="Personnes inscrites"><span class="av" style="background:var(--primary)">VO</span><span class="av" style="background:var(--avatar-2)">KL</span><span class="av" style="background:var(--avatar-8)">MN</span><span class="av" style="background:var(--avatar-5)">OP</span><span class="av" style="background:var(--avatar-10)">QR</span><span class="av more">+6</span></div><div role="progressbar" aria-label="Places occupées" aria-valuenow="11" aria-valuemax="12" style="height:6px;border-radius:var(--radius-pill);background:var(--neutral-soft);overflow:hidden"><div style="width:92%;height:100%;background:var(--primary)"></div></div><a class="link-danger" href="#">Quitter le groupe</a></article><article class="paper" style="width:290px;padding:16px;display:flex;flex-direction:column;gap:10px"><h4 class="h4">Groupe C</h4><div class="row" style="gap:16px"><span class="stat"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l6 -3l6 3l6 -3v13l-6 3l-6 -3l-6 3v-13"/><path d="M9 4v13"/><path d="M15 7v13"/></svg>68 km</span><span class="stat"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5l0 14"/><path d="M18 11l-6 -6"/><path d="M6 11l6 -6"/></svg>1 240 m</span><span class="stat">25 km/h</span></div><div class="dim">9–13 °C · ↗ 18 km/h · Pluie 20 %</div><a href="#" style="color:var(--anchor);text-decoration:none">Voir le parcours</a><div style="font-size:14px">4/10 personnes</div><div class="cluster" role="img" aria-label="Personnes inscrites"><span class="av" style="background:var(--avatar-3)">ST</span><span class="av" style="background:var(--avatar-7)">UV</span><span class="av" style="background:var(--avatar-1)">WX</span><span class="av" style="background:var(--avatar-9)">YZ</span></div><div role="progressbar" aria-label="Places occupées" aria-valuenow="4" aria-valuemax="10" style="height:6px;border-radius:var(--radius-pill);background:var(--neutral-soft);overflow:hidden"><div style="width:40%;height:100%;background:var(--primary)"></div></div><button class="btn btn-filled">Changer pour C</button></article></div>
+</body>
+</html>

@@ -2,11 +2,11 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **170 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
+Index des **171 entrées ouvertes** et des 77 entrées écartées. Chaque entrée a son fichier
 dans [`ledger/`](ledger/) ; le format, les gestes et la nomenclature sont dans
 [`ledger/README.md`](ledger/README.md). Ce qui est livré : [`LEDGER_DONE.md`](LEDGER_DONE.md).
 
-53 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
+54 de ces entrées ne se ferment pas par du code (*recette*, *externe*, *decision*) : elles sont
 reprises [en fin de fichier](#ce-qui-ne-se-ferme-pas-par-du-code).
 
 ## MOB — Application mobile
@@ -264,7 +264,9 @@ Contexte du domaine : [`ledger/MIG/README.md`](ledger/MIG/README.md).
 
 ## BRAND — Charte
 
-Aucune entrée ouverte. Contexte du domaine : [`ledger/BRAND/README.md`](ledger/BRAND/README.md).
+Contexte du domaine : [`ledger/BRAND/README.md`](ledger/BRAND/README.md).
+
+- [ ] [`BRAND-11`](ledger/BRAND/BRAND-11.md) Un design system Pédalons pour /design (S) · *externe*
 
 ## SEC — Sécurité applicative
 
@@ -373,6 +375,7 @@ Les mêmes entrées que plus haut, par ce qu'elles attendent : relire le code ne
 - [`MIG-7`](ledger/MIG/MIG-7.md) Avant l'arrêt de biketeam
 - [`MIG-2`](ledger/MIG/MIG-2.md) Redirections 302 → 301
 - [`MIG-1`](ledger/MIG/MIG-1.md) Passage réel
+- [`BRAND-11`](ledger/BRAND/BRAND-11.md) Un design system Pédalons pour /design
 
 ### Attend une décision (`decision`)
 

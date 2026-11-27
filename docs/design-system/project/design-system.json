@@ -1,0 +1,25 @@
+{
+ "v": 3,
+ "layout": "files",
+ "createdOnFiles": {"v": 1, "at": "2026-11-27T11:18:25Z"},
+ "title": "Pédalons",
+ "namespace": "Pedalons",
+ "libraries": [],
+ "sections": {},
+ "groups": ["Logos"],
+ "assetGroups": {
+  "Logos": {
+   "name": "Logos",
+   "tile": "l",
+   "order": ["icon.svg", "icon-1024.png", "maskable-icon-512x512.png"],
+   "files": {
+    "icon.svg": {"name": "icon.svg", "blob": "0768d71b97f1ab7b88988d7ed99de61b", "size": 4094, "type": "image/svg+xml"},
+    "icon-1024.png": {"name": "icon-1024.png", "blob": "e58ee693e58f91d5b58d5549bc08bcaa", "size": 42095, "type": "image/png"},
+    "maskable-icon-512x512.png": {"name": "maskable-icon-512x512.png", "blob": "99fd19bcfb7c19fa8c17d6bf09decc02", "size": 3387, "type": "image/png"}
+   }
+  }
+ },
+ "blobs": {},
+ "docs": {"sections": []},
+ "lastChange": {"by": "Claude", "at": "2026-11-27T11:18:25Z", "via": "Claude Code · tribly@d002e70", "note": "Première version, tirée de theme.ts, pdl_colors.dart, brand-colors.yaml et BRANDING.md"}
+}

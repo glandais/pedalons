@@ -14,6 +14,12 @@ Pour le web, le code reste la référence :
 [`frontend/src/lib/theme.ts`](../frontend/src/lib/theme.ts). Quand un tableau de ce fichier le
 contredit, c'est `theme.ts` qui a raison — et ce fichier qu'il faut corriger.
 
+Le **design system « Pédalons »** de claude.ai, que lisent `/design` et les maquettes
+(https://claude.ai/artifact/JrjsweYBAcFdevAGV7guVD), n'est **pas** une troisième source : c'est
+une copie dérivée de ce fichier et des deux codes ci-dessus. Changer une valeur ici, dans
+`theme.ts`, `pdl_colors.dart` ou `brand-colors.yaml`, c'est aussi mettre à jour
+[`docs/design-system/project/`](design-system/README.md) et republier l'artefact (ledger `BRAND-11`).
+
 **Le code couleur métier est sémantique, jamais esthétique** : une couleur = un type d'entité, un
 statut, un rôle, un revêtement ou une catégorie de col. Il a **une source unique**,
 [`contracts/brand-colors.yaml`](../contracts/brand-colors.yaml) (§3.6), dont `pnpm generate-brand-colors`

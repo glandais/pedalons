@@ -1,0 +1,47 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Pédalons</title>
+<style>
+html,body{margin:0;height:100%}
+body{background:var(--body);font-family:var(--font-sans);position:relative;width:960px;height:288px;overflow:hidden}
+svg{position:absolute;left:480px;top:0}
+.primary{fill:var(--primary)}
+.blue{fill:var(--brand-blue)}
+.orange{fill:var(--brand-orange)}
+.ink{fill:var(--text-bright)}
+.tint{fill:var(--primary-soft)}
+.ground{fill:var(--body)}
+.tile{rx:var(--radius-md);ry:var(--radius-md)}
+.pill{rx:6px;ry:6px}
+.name{position:absolute;left:48px;bottom:64px;max-width:440px;margin:0;font-size:88px;line-height:.95;font-weight:700;color:var(--text-bright);letter-spacing:-1px}
+.tag{position:absolute;left:48px;bottom:36px;max-width:440px;margin:0;font-size:14px;color:var(--text-dimmed)}
+</style>
+</head>
+<body>
+<svg width="480" height="288" viewBox="0 0 480 288" aria-hidden="true">
+<!--
+blocks: primary 176×208, brand-blue 128×128, brand-orange disc r=72 (pill), text-bright 272×96, primary-soft 176×96 — space-md multiples
+arrangement: flush modular grid at space-md gutters, blocks bleeding off top, right and bottom edges like a card grid
+pattern: geometric, modular, dense UI → tiles cut by radius-md, with a row of badge-like pills (radius-pill, 12 px tall) on the ink block
+steps and radii: space-md 16, space-xl 32, radius-md 8, radius-pill
+-->
+<rect class="primary tile" x="16" y="-16" width="176" height="208"/>
+<rect class="blue tile" x="208" y="-16" width="128" height="128"/>
+<circle class="orange" cx="424" cy="48" r="72"/>
+<rect class="ink tile" x="208" y="128" width="288" height="96"/>
+<rect class="tint tile" x="16" y="208" width="176" height="96"/>
+<rect class="tint pill" x="232" y="152" width="64" height="12"/>
+<rect class="orange pill" x="304" y="152" width="40" height="12"/>
+<rect class="tint pill" x="352" y="152" width="88" height="12"/>
+<rect class="ground pill" x="232" y="176" width="112" height="12"/>
+<rect class="ground pill" x="352" y="176" width="48" height="12"/>
+<rect class="primary tile" x="208" y="240" width="128" height="64"/>
+<rect class="orange tile" x="352" y="240" width="144" height="64"/>
+</svg>
+<h1 class="name">Pédalons</h1>
+<p class="tag">Votre plateforme pour organiser vos sorties cyclistes</p>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!-- @dsCard group="Données" height=190 subtitle="La date d'une sortie : à plat, voyage, autre année, posée" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Boîte du jour</title>
+<style>
+body{margin:0;padding:16px;background:var(--body);color:var(--text);font-family:var(--font-sans);font-size:14px;line-height:1.45}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:12px;color:var(--text-dimmed);margin:0 0 6px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 8px;border-radius:var(--radius-pill);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.25px;white-space:nowrap}
+.stat{display:inline-flex;align-items:center;gap:4px;color:var(--text-dimmed);font-size:14px}
+.paper{background:var(--body);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;transition:box-shadow .2s,border-color .2s}
+.paper:hover{box-shadow:var(--shadow-md)}
+.h4{margin:0;font-size:18px;line-height:1.5;font-weight:700;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dim{color:var(--text-dimmed)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 18px;border-radius:var(--radius-md);font:600 14px/1 var(--font-sans);border:1px solid transparent;cursor:pointer}
+.btn:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+.btn-filled{background:var(--primary);color:var(--on-primary)}
+.btn-filled:hover{background:var(--primary-hover)}
+.btn-default{background:var(--body);color:var(--text);border-color:var(--border)}
+.btn-default:hover{background:var(--surface-hover)}
+.btn-subtle{background:transparent;color:var(--primary-on-soft)}
+.btn-subtle:hover{background:var(--primary-soft)}
+.btn-disabled{background:var(--disabled-bg);color:var(--disabled-text);border-color:var(--disabled-border);cursor:not-allowed}
+.btn-danger{background:var(--danger);color:#ffffff}
+.link-danger{color:var(--danger);font-size:14px;text-decoration:none;font-weight:500}
+.av{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);color:#ffffff;font-weight:700;flex:none}
+.cluster{display:flex}
+.cluster .av{width:26px;height:26px;font-size:10px;border:2px solid var(--body);margin-left:-4px}
+.cluster .av:first-child{margin-left:0}
+.more{background:var(--neutral-soft);color:var(--neutral-on-soft)!important}
+.daybox{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:56px;padding:6px 0;border-radius:var(--radius-md);line-height:1.15}
+.daybox .d{font-size:12px;font-weight:600;color:var(--primary-on-soft)}
+.daybox .n{font-size:24px;font-weight:700;color:var(--text-bright)}
+.daybox .m{font-size:12px;font-weight:500;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="row" style="gap:16px;align-items:flex-start"><div><p class="cap">À plat (liste, agenda)</p><div class="daybox" style="background:var(--primary-soft)"><span class="d">sam.</span><span class="n">12</span><span class="m">avr.</span></div></div><div><p class="cap">Voyage</p><div class="daybox" style="background:var(--fam-teal-soft)"><span class="d" style="color:var(--fam-teal-on-soft)">ven.</span><span class="n">20</span><span class="m">nov.</span></div></div><div><p class="cap">Autre année</p><div class="daybox" style="background:var(--primary-soft)"><span class="d">sam.</span><span class="n">10</span><span class="m">avr.</span><span class="m">2027</span></div></div><div><p class="cap">Posée sur une image</p><div style="width:132px;height:96px;border-radius:var(--radius-md);padding:16px;box-sizing:border-box;background:linear-gradient(135deg,var(--gradient-ride-from),var(--gradient-ride-to))"><div class="daybox" style="background:#ffffff;box-shadow:var(--shadow-sm)"><span class="d" style="color:#364fc7">dim.</span><span class="n" style="color:#000000">13</span><span class="m" style="color:#000000">avr.</span></div></div></div></div>
+</body>
+</html>

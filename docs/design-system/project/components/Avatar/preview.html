@@ -1,0 +1,44 @@
+<!-- @dsCard group="Personnes" height=280 subtitle="Équipe, personne, grappe" -->
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Avatar</title>
+<style>
+body{margin:0;padding:16px;background:var(--body);color:var(--text);font-family:var(--font-sans);font-size:14px;line-height:1.45}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:12px;color:var(--text-dimmed);margin:0 0 6px}
+.badge{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 8px;border-radius:var(--radius-pill);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.25px;white-space:nowrap}
+.stat{display:inline-flex;align-items:center;gap:4px;color:var(--text-dimmed);font-size:14px}
+.paper{background:var(--body);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;transition:box-shadow .2s,border-color .2s}
+.paper:hover{box-shadow:var(--shadow-md)}
+.h4{margin:0;font-size:18px;line-height:1.5;font-weight:700;color:var(--text-bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dim{color:var(--text-dimmed)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 18px;border-radius:var(--radius-md);font:600 14px/1 var(--font-sans);border:1px solid transparent;cursor:pointer}
+.btn:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+.btn-filled{background:var(--primary);color:var(--on-primary)}
+.btn-filled:hover{background:var(--primary-hover)}
+.btn-default{background:var(--body);color:var(--text);border-color:var(--border)}
+.btn-default:hover{background:var(--surface-hover)}
+.btn-subtle{background:transparent;color:var(--primary-on-soft)}
+.btn-subtle:hover{background:var(--primary-soft)}
+.btn-disabled{background:var(--disabled-bg);color:var(--disabled-text);border-color:var(--disabled-border);cursor:not-allowed}
+.btn-danger{background:var(--danger);color:#ffffff}
+.link-danger{color:var(--danger);font-size:14px;text-decoration:none;font-weight:500}
+.av{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);color:#ffffff;font-weight:700;flex:none}
+.cluster{display:flex}
+.cluster .av{width:26px;height:26px;font-size:10px;border:2px solid var(--body);margin-left:-4px}
+.cluster .av:first-child{margin-left:0}
+.more{background:var(--neutral-soft);color:var(--neutral-on-soft)!important}
+.daybox{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:56px;padding:6px 0;border-radius:var(--radius-md);line-height:1.15}
+.daybox .d{font-size:12px;font-weight:600;color:var(--primary-on-soft)}
+.daybox .n{font-size:24px;font-weight:700;color:var(--text-bright)}
+.daybox .m{font-size:12px;font-weight:500;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="col"><div><p class="cap">Équipe sans logo : initiales sur une teinte tirée du nom (16 · 26 · 38 · 56 · 84 px)</p><div class="row" style="align-items:flex-end"><span class="av" title="Vélo Club" style="width:16px;height:16px;font-size:7px;background:#fa5252">V</span><span class="av" title="Vélo Club" style="width:26px;height:26px;font-size:10px;background:#fd7e14">CM</span><span class="av" title="Vélo Club" style="width:38px;height:38px;font-size:14px;background:var(--accent-lime)">BR</span><span class="av" title="Vélo Club" style="width:56px;height:56px;font-size:21px;background:var(--fam-teal)">NP</span><span class="av" title="Vélo Club" style="width:84px;height:84px;font-size:32px;background:var(--fam-grape)">AG</span></div></div><div><p class="cap">Personnes : onze teintes foncées, les mêmes en clair et en sombre ; la personne qui lit en primary</p><div class="row" style="gap:6px"><span class="av" style="width:38px;height:38px;font-size:14px;background:var(--primary)">VO</span><span class="av" style="width:38px;height:38px;font-size:14px;background:var(--avatar-0)">AB</span><span class="av" style="width:38px;height:38px;font-size:14px;background:var(--avatar-1)">CD</span><span class="av" style="width:38px;height:38px;font-size:14px;background:var(--avatar-2)">EF</span><span class="av" style="width:38px;height:38px;font-size:14px;background:var(--avatar-3)">GH</span><span class="av" style="width:38px;height:38px;font-size:14px;background:var(--avatar-4)">IJ</span><span class="av" style="width:38px;height:38px;font-size:14px;background:var(--avatar-5)">KL</span><span class="av" style="width:38px;height:38px;font-size:14px;background:var(--avatar-6)">MN</span><span class="av" style="width:38px;height:38px;font-size:14px;background:var(--avatar-7)">OP</span><span class="av" style="width:38px;height:38px;font-size:14px;background:var(--avatar-8)">QR</span><span class="av" style="width:38px;height:38px;font-size:14px;background:var(--avatar-9)">ST</span><span class="av" style="width:38px;height:38px;font-size:14px;background:var(--avatar-10)">UV</span></div></div><div><p class="cap">Grappe : 26 px, recouvrement 4 px, 5 visibles puis +N</p><div class="row"><div class="cluster" role="img" aria-label="Personnes inscrites"><span class="av" style="background:var(--avatar-3)">LM</span><span class="av" style="background:var(--avatar-0)">AB</span><span class="av" style="background:var(--avatar-6)">CD</span><span class="av" style="background:var(--avatar-9)">EF</span><span class="av" style="background:var(--avatar-1)">GH</span><span class="av more">+7</span></div><a href="#" style="color:var(--anchor);text-decoration:none;font-size:14px">Voir tout</a></div></div></div>
+</body>
+</html>

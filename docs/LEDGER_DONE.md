@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **637 entrées livrées**, et des 25 entrées encore ouvertes dont une part l'est.
+Index des **637 entrées livrées**, et des 26 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -602,6 +602,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## BRAND — Charte
 
+- [x] [`BRAND-11`](ledger/BRAND/BRAND-11.md) Un design system Pédalons pour /design — en partie, le reste est ouvert
 - [x] [`BRAND-10`](ledger/BRAND/BRAND-10.md) Charte : les contrôles de carte — 2026-11-10
 - [x] [`BRAND-9`](ledger/BRAND/BRAND-9.md) L'année dans la boîte du jour, hors de l'année en cours — 2026-11-09
 - [x] [`BRAND-8`](ledger/BRAND/BRAND-8.md) Le départ est une information primaire, avec un format unique — 2026-11-07
