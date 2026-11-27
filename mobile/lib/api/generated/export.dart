@@ -364,6 +364,7 @@ export 'models/team_webhook_kind.dart';
 export 'models/team_webhook_request.dart';
 export 'models/team_webhook_test_dto.dart';
 export 'models/theme_preference.dart';
+export 'models/thumbnail_catch_up_status.dart';
 export 'models/thumbnail_file.dart';
 export 'models/thumbnail_owner_kind.dart';
 export 'models/thumbnail_owner_report.dart';

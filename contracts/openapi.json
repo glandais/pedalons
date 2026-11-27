@@ -8571,6 +8571,42 @@
         "type" : "string",
         "enum" : [ "SYSTEM", "LIGHT", "DARK" ]
       },
+      "ThumbnailCatchUpStatus" : {
+        "description" : "State of the automatic catch-up that redraws outdated map thumbnails",
+        "type" : "object",
+        "required" : [ "version", "enabled", "perHour", "behind", "waiting", "givenUp" ],
+        "properties" : {
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Current version of the thumbnail drawing"
+          },
+          "enabled" : {
+            "type" : "boolean",
+            "description" : "Whether the scheduled catch-up is switched on"
+          },
+          "perHour" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Entities the catch-up redraws per hour, per backend"
+          },
+          "behind" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Entities with thumbnails drawn before the current version that the catch-up still has to redraw, those waiting for a retry included"
+          },
+          "waiting" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Among the entities behind, those waiting for the next attempt"
+          },
+          "givenUp" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Entities the catch-up gave up on after repeated failures"
+          }
+        }
+      },
       "ThumbnailFile" : {
         "type" : "object",
         "description" : "One stored thumbnail",
@@ -8651,10 +8687,10 @@
       },
       "ThumbnailRegenerationReason" : {
         "type" : "string",
-        "enum" : [ "RENDERED_IN_WINDOW", "SMALL_FILE", "MISSING" ]
+        "enum" : [ "RENDERED_IN_WINDOW", "SMALL_FILE", "MISSING", "OUTDATED", "GIVEN_UP" ]
       },
       "ThumbnailRegenerationRequest" : {
-        "description" : "Which map thumbnails to redraw from the geometry already stored. The criteria combine: the date window and the size threshold narrow the thumbnails that exist, the 'missing' flag adds the entities that have none. At least one criterion is required.",
+        "description" : "Which map thumbnails to redraw from the geometry already stored. The criteria combine: the date window and the size threshold narrow the thumbnails that exist, the 'missing' flag adds the entities that have none, the 'outdated' and 'givenUp' flags add the ones behind the current basemap. At least one criterion is required.",
         "type" : "object",
         "properties" : {
           "renderedFrom" : {
@@ -8679,6 +8715,16 @@
           "includeMissing" : {
             "type" : "boolean",
             "description" : "Also redraw the routes, rides and trips that have a route to draw but lack a light or dark thumbnail — what a failed render leaves behind",
+            "examples" : [ false ]
+          },
+          "outdated" : {
+            "type" : "boolean",
+            "description" : "Also redraw the routes, rides and trips with a thumbnail drawn before the current basemap — what the automatic catch-up redraws by itself, in the background",
+            "examples" : [ false ]
+          },
+          "givenUp" : {
+            "type" : "boolean",
+            "description" : "Also redraw the routes, rides and trips the automatic catch-up gave up on after repeated failures, which it no longer tries",
             "examples" : [ false ]
           },
           "dryRun" : {
@@ -11666,6 +11712,50 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - not a platform admin",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "user" ]
+        } ]
+      }
+    },
+    "/api/admin/thumbnails/catch-up" : {
+      "get" : {
+        "summary" : "State of the automatic thumbnail catch-up",
+        "description" : "How many routes, rides and trips of the domain have thumbnails drawn before the current basemap, how many of those wait for a new attempt, and how many the catch-up gave up on.",
+        "operationId" : "adminGetThumbnailCatchUp",
+        "tags" : [ "Admin - Thumbnails" ],
+        "parameters" : [ {
+          "description" : "Target domain ID (defaults to the request's domain)",
+          "name" : "domainId",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Catch-up state",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ThumbnailCatchUpStatus"
                 }
               }
             }
@@ -28166,7 +28256,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "16.8.1",
+    "version" : "16.9.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

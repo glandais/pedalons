@@ -14,6 +14,8 @@ _ThumbnailRegenerationRequest _$ThumbnailRegenerationRequestFromJson(
   renderedTo: json['renderedTo'] as String?,
   suspectBelowBytes: (json['suspectBelowBytes'] as num?)?.toInt(),
   includeMissing: json['includeMissing'] as bool?,
+  outdated: json['outdated'] as bool?,
+  givenUp: json['givenUp'] as bool?,
   limit: (json['limit'] as num?)?.toInt(),
 );
 
@@ -25,5 +27,7 @@ Map<String, dynamic> _$ThumbnailRegenerationRequestToJson(
   'renderedTo': instance.renderedTo,
   'suspectBelowBytes': instance.suspectBelowBytes,
   'includeMissing': instance.includeMissing,
+  'outdated': instance.outdated,
+  'givenUp': instance.givenUp,
   'limit': instance.limit,
 };

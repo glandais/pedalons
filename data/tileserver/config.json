@@ -5,6 +5,12 @@
     }
   },
   "styles": {
+    "cycling-road-v1": {
+      "style": "cycling-road.json"
+    },
+    "cycling-road-dark-v1": {
+      "style": "cycling-road-dark.json"
+    },
     "colorful-v7": {
       "style": "colorful.json"
     },

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import {
   Paper,
   Stack,
@@ -16,8 +17,12 @@ import {
 import { DateTimePicker } from '@mantine/dates'
 import { IconPhoto, IconEye, IconPlayerPlay } from '@tabler/icons-react'
 import dayjs from 'dayjs'
-import { useAdminRegenerateThumbnails } from '@/api/endpoints/admin-thumbnails/admin-thumbnails'
+import {
+  useAdminGetThumbnailCatchUp,
+  useAdminRegenerateThumbnails,
+} from '@/api/endpoints/admin-thumbnails/admin-thumbnails'
 import type {
+  ThumbnailCatchUpStatus,
   ThumbnailFile,
   ThumbnailRegenerationRequest,
   ThumbnailRegenerationResponse,
@@ -31,6 +36,26 @@ interface ThumbnailRegenerationCardProps {
 
 type Criteria = Omit<ThumbnailRegenerationRequest, 'dryRun'>
 
+/** The catch-up's state as one line: what is left, what waits, what was given up. */
+function catchUpLine(status: ThumbnailCatchUpStatus, t: TFunction, locale: string): string {
+  const n = (value: number) => value.toLocaleString(locale)
+  const stopped = status.enabled ? '' : t('admin.maintenance.thumbnails.catchUp.stopped')
+  if (status.behind === 0 && status.givenUp === 0) {
+    return t('admin.maintenance.thumbnails.catchUp.upToDate') + stopped
+  }
+  const waiting =
+    status.waiting > 0
+      ? t('admin.maintenance.thumbnails.catchUp.waiting', { waiting: n(status.waiting) })
+      : ''
+  return (
+    t('admin.maintenance.thumbnails.catchUp.status', {
+      behind: n(status.behind),
+      waiting,
+      givenUp: n(status.givenUp),
+    }) + stopped
+  )
+}
+
 const OUTCOME_COLORS = { PENDING: 'gray', REGENERATED: 'green', FAILED: 'red' } as const
 
 /**
@@ -38,14 +63,17 @@ const OUTCOME_COLORS = { PENDING: 'gray', REGENERATED: 'green', FAILED: 'red' } 
  * The run stays disabled until a preview was made with the criteria as they stand.
  */
 export function ThumbnailRegenerationCard({ domainId }: ThumbnailRegenerationCardProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const mutation = useAdminRegenerateThumbnails()
+  const catchUp = useAdminGetThumbnailCatchUp(domainId ? { domainId } : undefined)
 
   // Mantine hands back the picked local time as `YYYY-MM-DD HH:mm:ss`; the API wants an instant.
   const [renderedFrom, setRenderedFrom] = useState<string | null>(null)
   const [renderedTo, setRenderedTo] = useState<string | null>(null)
   const [suspectBelowBytes, setSuspectBelowBytes] = useState<number | undefined>(undefined)
   const [includeMissing, setIncludeMissing] = useState(false)
+  const [outdated, setOutdated] = useState(false)
+  const [givenUp, setGivenUp] = useState(false)
   const [limit, setLimit] = useState<number | undefined>(100)
 
   const [result, setResult] = useState<ThumbnailRegenerationResponse | null>(null)
@@ -57,6 +85,8 @@ export function ThumbnailRegenerationCard({ domainId }: ThumbnailRegenerationCar
     renderedTo: renderedTo ? dayjs(renderedTo).toISOString() : undefined,
     suspectBelowBytes,
     includeMissing: includeMissing || undefined,
+    outdated: outdated || undefined,
+    givenUp: givenUp || undefined,
     limit,
   }
   const criteriaKey = JSON.stringify(criteria)
@@ -64,7 +94,9 @@ export function ThumbnailRegenerationCard({ domainId }: ThumbnailRegenerationCar
     !!criteria.renderedFrom ||
     !!criteria.renderedTo ||
     criteria.suspectBelowBytes !== undefined ||
-    includeMissing
+    includeMissing ||
+    outdated ||
+    givenUp
   const canRun = previewedKey === criteriaKey && !!result?.dryRun && result.entities.length > 0
 
   const submit = (dryRun: boolean) => {
@@ -75,6 +107,7 @@ export function ThumbnailRegenerationCard({ domainId }: ThumbnailRegenerationCar
           setResult(response)
           setPreviewedKey(dryRun ? criteriaKey : null)
           setConfirmOpen(false)
+          if (!dryRun) void catchUp.refetch()
         },
       }
     )
@@ -104,6 +137,12 @@ export function ThumbnailRegenerationCard({ domainId }: ThumbnailRegenerationCar
         <Text size="sm" c="dimmed">
           {t('admin.maintenance.thumbnails.description')}
         </Text>
+
+        {catchUp.data && (
+          <Alert color={catchUp.data.givenUp > 0 ? 'orange' : 'gray'} variant="light">
+            {catchUpLine(catchUp.data, t, i18n.language)}
+          </Alert>
+        )}
 
         <Group grow align="flex-start">
           <DateTimePicker
@@ -143,6 +182,19 @@ export function ThumbnailRegenerationCard({ domainId }: ThumbnailRegenerationCar
           description={t('admin.maintenance.thumbnails.includeMissingDescription')}
           checked={includeMissing}
           onChange={(e) => setIncludeMissing(e.currentTarget.checked)}
+        />
+
+        <Checkbox
+          label={t('admin.maintenance.thumbnails.outdated')}
+          description={t('admin.maintenance.thumbnails.outdatedDescription')}
+          checked={outdated}
+          onChange={(e) => setOutdated(e.currentTarget.checked)}
+        />
+        <Checkbox
+          label={t('admin.maintenance.thumbnails.givenUp')}
+          description={t('admin.maintenance.thumbnails.givenUpDescription')}
+          checked={givenUp}
+          onChange={(e) => setGivenUp(e.currentTarget.checked)}
         />
 
         {!hasCriterion && (

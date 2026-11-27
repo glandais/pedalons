@@ -21,6 +21,36 @@ class _AdminThumbnailsClient implements AdminThumbnailsClient {
   final ParseErrorLogger? errorLogger;
 
   @override
+  Future<ThumbnailCatchUpStatus> adminGetThumbnailCatchUp({
+    String? domainId,
+  }) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'domainId': domainId};
+    queryParameters.removeWhere((k, v) => v == null);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<ThumbnailCatchUpStatus>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/admin/thumbnails/catch-up',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, Object?>>(_options);
+    late ThumbnailCatchUpStatus _value;
+    try {
+      _value = ThumbnailCatchUpStatus.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<ThumbnailRegenerationResponse> adminRegenerateThumbnails({
     required ThumbnailRegenerationRequest body,
     String? domainId,

@@ -1,6 +1,29 @@
 import * as zod from 'zod'
 
 /**
+ * How many routes, rides and trips of the domain have thumbnails drawn before the current basemap, how many of those wait for a new attempt, and how many the catch-up gave up on.
+ * @summary State of the automatic thumbnail catch-up
+ */
+export const AdminGetThumbnailCatchUpQueryParams = zod.object({
+  domainId: zod.string().optional().describe("Target domain ID (defaults to the request's domain)"),
+})
+
+export const AdminGetThumbnailCatchUpResponse = zod
+  .object({
+    version: zod.int().describe('Current version of the thumbnail drawing'),
+    enabled: zod.boolean().describe('Whether the scheduled catch-up is switched on'),
+    perHour: zod.int().describe('Entities the catch-up redraws per hour, per backend'),
+    behind: zod
+      .int()
+      .describe(
+        'Entities with thumbnails drawn before the current version that the catch-up still has to redraw, those waiting for a retry included'
+      ),
+    waiting: zod.int().describe('Among the entities behind, those waiting for the next attempt'),
+    givenUp: zod.int().describe('Entities the catch-up gave up on after repeated failures'),
+  })
+  .describe('State of the automatic catch-up that redraws outdated map thumbnails')
+
+/**
  * Redraw the light and dark map thumbnails of routes, rides and trips from the geometry already stored, selected by drawing date, stored size or absence. Synchronous; run it with dryRun first.
  * @summary Regenerate map thumbnails
  */
@@ -33,6 +56,18 @@ export const AdminRegenerateThumbnailsBody = zod
       .describe(
         'Also redraw the routes, rides and trips that have a route to draw but lack a light or dark thumbnail — what a failed render leaves behind'
       ),
+    outdated: zod
+      .boolean()
+      .optional()
+      .describe(
+        'Also redraw the routes, rides and trips with a thumbnail drawn before the current basemap — what the automatic catch-up redraws by itself, in the background'
+      ),
+    givenUp: zod
+      .boolean()
+      .optional()
+      .describe(
+        'Also redraw the routes, rides and trips the automatic catch-up gave up on after repeated failures, which it no longer tries'
+      ),
     dryRun: zod.boolean().describe('List what would be redrawn, without redrawing anything'),
     limit: zod
       .int()
@@ -42,7 +77,7 @@ export const AdminRegenerateThumbnailsBody = zod
       .describe('Redraw at most this many entities (default 100)'),
   })
   .describe(
-    "Which map thumbnails to redraw from the geometry already stored. The criteria combine: the date window and the size threshold narrow the thumbnails that exist, the 'missing' flag adds the entities that have none. At least one criterion is required."
+    "Which map thumbnails to redraw from the geometry already stored. The criteria combine: the date window and the size threshold narrow the thumbnails that exist, the 'missing' flag adds the entities that have none, the 'outdated' and 'givenUp' flags add the ones behind the current basemap. At least one criterion is required."
   )
 
 export const AdminRegenerateThumbnailsResponse = zod
@@ -58,7 +93,9 @@ export const AdminRegenerateThumbnailsResponse = zod
             teamSlug: zod.string().describe('Team slug'),
             slug: zod.string().describe('Entity slug'),
             reasons: zod
-              .array(zod.enum(['RENDERED_IN_WINDOW', 'SMALL_FILE', 'MISSING']))
+              .array(
+                zod.enum(['RENDERED_IN_WINDOW', 'SMALL_FILE', 'MISSING', 'OUTDATED', 'GIVEN_UP'])
+              )
               .describe('Why it was selected'),
             before: zod
               .array(

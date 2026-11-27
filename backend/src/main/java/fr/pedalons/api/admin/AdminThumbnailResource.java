@@ -1,5 +1,6 @@
 package fr.pedalons.api.admin;
 
+import fr.pedalons.dto.admin.ThumbnailCatchUpStatus;
 import fr.pedalons.dto.admin.ThumbnailRegenerationRequest;
 import fr.pedalons.dto.admin.ThumbnailRegenerationResponse;
 import fr.pedalons.dto.error.ErrorResponse;
@@ -57,5 +58,31 @@ public class AdminThumbnailResource {
           @Nullable String domainId,
       @Valid ThumbnailRegenerationRequest request) {
     return Response.ok(thumbnailRegenerationService.regenerate(domainId, request)).build();
+  }
+
+  @GET
+  @Path("/catch-up")
+  @Operation(
+      operationId = "adminGetThumbnailCatchUp",
+      summary = "State of the automatic thumbnail catch-up",
+      description =
+          "How many routes, rides and trips of the domain have thumbnails drawn before the current"
+              + " basemap, how many of those wait for a new attempt, and how many the catch-up"
+              + " gave up on.")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "200",
+        description = "Catch-up state",
+        content = @Content(schema = @Schema(implementation = ThumbnailCatchUpStatus.class))),
+    @APIResponse(
+        responseCode = "403",
+        description = "Forbidden - not a platform admin",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  public Response catchUp(
+      @Parameter(description = "Target domain ID (defaults to the request's domain)")
+          @QueryParam("domainId")
+          @Nullable String domainId) {
+    return Response.ok(thumbnailRegenerationService.catchUpStatus(domainId)).build();
   }
 }

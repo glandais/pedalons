@@ -802,8 +802,8 @@ grappe : le compte seul (invariant `API-144`).
   d'affichage** pour les écrans à haute densité.
 - Rayon **8 px**, `overflow: hidden`, bordure 1 px `#ced4da` en clair / `#424242` en sombre
   (`--mantine-color-default-border`).
-- **Deux fichiers distincts, un par thème** (`thumbnailLightUrl` / `thumbnailDarkUrl`, fonds
-  `colorful` et `eclipse`) : seul le fond cartographique change avec le mode. Le tracé d'un
+- **Deux fichiers distincts, un par thème** (`thumbnailLightUrl` / `thumbnailDarkUrl`, fond
+  « Route » de cycling-style en clair et en sombre, celui des cartes par défaut) : seul le fond cartographique change avec le mode. Le tracé d'un
   parcours est rouge dans les deux ; ceux d'une sortie ou d'un voyage suivent la palette
   multi-parcours (§3.7).
 - Pas de marqueurs de départ ni d'arrivée.

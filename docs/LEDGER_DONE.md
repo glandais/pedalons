@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **640 entrées livrées**, et des 26 entrées encore ouvertes dont une part l'est.
+Index des **641 entrées livrées**, et des 27 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -360,6 +360,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## API — Contrat d'API et backend
 
+- [x] [`API-223`](ledger/API/API-223.md) Recalcul des vignettes en tâche de fond, comme le pipeline GPX — 2026-11-27
 - [x] [`API-222`](ledger/API/API-222.md) Statistiques de la plateforme (onglet admin) — 2026-11-27
 - [x] [`API-220`](ledger/API/API-220.md) Le backend tourne sur Quarkus 4 et Jackson 3 — 2026-11-25
 - [x] [`API-219`](ledger/API/API-219.md) Le backend ne dépend plus de hypersistence-utils — 2026-10-20
@@ -518,6 +519,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## OPS — Exploitation
 
+- [x] [`OPS-71`](ledger/OPS/OPS-71.md) Vignettes dessinées sur le fond « Route » (cycling-style) — en partie, le reste est ouvert
 - [x] [`OPS-69`](ledger/OPS/OPS-69.md) Mettre en service osm-route-details 1.18.0 (retouche, api 1.17) — 2026-11-25
 - [x] [`OPS-68`](ledger/OPS/OPS-68.md) Mettre en service osm-route-details 1.16.0 (itinéraire de A à B, api 1.15) — 2026-11-24
 - [x] [`OPS-67`](ledger/OPS/OPS-67.md) Générateur de parcours : osm-route-details 1.15.0, part de chemins visée et bornes de roulabilité — 2026-11-23

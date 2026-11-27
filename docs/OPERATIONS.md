@@ -1043,31 +1043,62 @@ full rebuild recreates it.
 
 ### Thumbnail basemaps (shared tileserver)
 
-The clients load the VersaTiles styles straight from `tiles.versatiles.org`, unversioned: they
-follow every VersaTiles release. The thumbnails cannot: tileserver-gl renders them from a **copy**
-of those styles, `data/tileserver/styles/*.json`, which only changes when someone replaces it
-(ledger `OPS-50`). The copy keeps pointing at VersaTiles' tiles, glyphs and sprites, so a release
-that renames a sprite or a style can still break it — as on 14 September 2026, when the `basics`
-sprite went away and every thumbnail came out black.
+The thumbnails are drawn on the clients' default basemap, « Route » — `@glandais/cycling-style`
+`style-road.json` and `style-road-dark.json` (ledger `OPS-71`). The clients load it from jsDelivr,
+pinned on its major (`@1`); tileserver-gl renders the thumbnails from a **copy**,
+`data/tileserver/styles/cycling-road*.json` (1.0.1), which only changes when someone replaces it.
+The copy keeps pointing at VersaTiles' tiles, glyphs and `base` sprite and at the `cyclo` sprite on
+GitHub Pages, so a release that renames a sprite can still break it — as on 14 September 2026, when
+the `basics` sprite went away and every thumbnail came out black.
 
-To move the copy to a new release:
+To move the copy to a new release (or another style):
 
-1. take `colorful/style.json` and `colorful-dark/style.json` from the release's `styles.tar.gz`
-   (github.com/versatiles-org/versatiles-style/releases) into `data/tileserver/styles/`;
-2. give the styles **new ids** in `data/tileserver/config.json` (`colorful-v7` → `colorful-v8`…)
-   and the same ones to `MapThumbnailRenderer`. The backend's tile cache (`data/cache`) is keyed by
-   URL: under the same id, new tiles would sit beside stale ones in one thumbnail. Keep the old ids
-   as aliases of the new files, for the backend still running them during the deploy;
+1. take `dist/style-road.json` and `dist/style-road-dark.json` of the release
+   (`https://cdn.jsdelivr.net/npm/@glandais/cycling-style@<version>/dist/…`) into
+   `data/tileserver/styles/`, and check the render on a throwaway tileserver-gl of the same version
+   as the shared one (`docker run -p 127.0.0.1:18299:8080 -v <dir>:/data maptiler/tileserver-gl:<v>`,
+   then a few `/styles/<id>/256/{z}/{x}/{y}.png`, no warning in its log);
+2. give the styles **new ids** in `data/tileserver/config.json` (`cycling-road-v1` → `cycling-road-v2`…)
+   and the same ones to `MapThumbnailRenderer`, and bump `MapThumbnailRenderer.VERSION` (with a
+   migration recreating the partial index `team_entities_thumbnail_behind`, which inlines it). The
+   backend's tile cache (`data/cache`) is keyed by URL: under the same id, new tiles would sit beside
+   stale ones in one thumbnail. Keep the old ids, on their old files, for the backend still running
+   them during the deploy;
 3. deploy the shared stack **first**, and force the restart — tileserver-gl reads its styles at
    start, and `docker stack deploy` leaves a service whose spec did not change alone:
    ```bash
    cd ~/shared && git pull && scripts/deploy.sh --shared
    docker service update --force pedalons-shared_tileserver
    ```
-4. then each environment (`scripts/deploy.sh`);
-5. once every environment runs the new ids, the old aliases can leave `config.json`, and the old
-   ids' tiles leave each environment's cache (`data/cache/tileserver_8080/styles/<old id>`) — redeploying and forcing the tileserver again, as
-   in step 3.
+4. then each environment (`scripts/deploy.sh`). The thumbnails already drawn are redrawn by the
+   catch-up below; new saves draw on the new style at once;
+5. once every environment runs the new ids, the old ids and their files can leave `config.json`, and
+   the old ids' tiles leave each environment's cache (`data/cache/tileserver_8080/styles/<old id>`) —
+   redeploying and forcing the tileserver again, as in step 3.
+
+#### The thumbnail catch-up
+
+`team_entities.thumbnail_version` records the drawing a route's, ride's or trip's thumbnails were
+made with (`MapThumbnailRenderer.VERSION`; null = before the column), as `elevation_pipeline` does
+for the GPX pipeline (ledger `API-223`). `ThumbnailBackfill` redraws, every minute, the entities
+behind it that have both their light and dark thumbnails, most recent first, under
+`THUMBNAILS_BACKFILL_PER_HOUR` (300 by default, per backend: ~28 h for the 8,300 of production in
+November 2026). A failure keeps the old thumbnail, delays that entity (15 min, doubled, 24 h at most)
+and ends the pass; five failures leave it with its old thumbnail — the admin card « Miniatures de carte » (tab « Maintenance »)
+redraws it and stamps it (criteria « en retard » and « abandonnées »; for those alone a failed redraw
+keeps the old thumbnail too). Progress is on that card (per domain), in the backend log
+(`Thumbnail backfill: … left …`), and:
+
+```sql
+select count(*) filter (where thumbnail_version is null or thumbnail_version < 2) as behind,
+       count(*) filter (where thumbnail_attempts >= 5) as given_up
+  from team_entities t
+ where deleted = false
+   and exists (select 1 from assets a where a.team_entity_id = t.id and a.type like '%THUMBNAIL%');
+```
+
+`THUMBNAILS_BACKFILL_ENABLED=false` stops it without a redeploy of the code (an environment variable
+of the backend service).
 
 ### Changing an environment's network topology
 

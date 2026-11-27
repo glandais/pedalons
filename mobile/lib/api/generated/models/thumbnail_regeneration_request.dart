@@ -9,7 +9,7 @@ import 'instant.dart';
 part 'thumbnail_regeneration_request.freezed.dart';
 part 'thumbnail_regeneration_request.g.dart';
 
-/// Which map thumbnails to redraw from the geometry already stored. The criteria combine: the date window and the size threshold narrow the thumbnails that exist, the 'missing' flag adds the entities that have none. At least one criterion is required.
+/// Which map thumbnails to redraw from the geometry already stored. The criteria combine: the date window and the size threshold narrow the thumbnails that exist, the 'missing' flag adds the entities that have none, the 'outdated' and 'givenUp' flags add the ones behind the current basemap. At least one criterion is required.
 @Freezed()
 abstract class ThumbnailRegenerationRequest
     with _$ThumbnailRegenerationRequest {
@@ -28,6 +28,12 @@ abstract class ThumbnailRegenerationRequest
 
     /// Also redraw the routes, rides and trips that have a route to draw but lack a light or dark thumbnail — what a failed render leaves behind
     bool? includeMissing,
+
+    /// Also redraw the routes, rides and trips with a thumbnail drawn before the current basemap — what the automatic catch-up redraws by itself, in the background
+    bool? outdated,
+
+    /// Also redraw the routes, rides and trips the automatic catch-up gave up on after repeated failures, which it no longer tries
+    bool? givenUp,
 
     /// Redraw at most this many entities (default 100)
     int? limit,

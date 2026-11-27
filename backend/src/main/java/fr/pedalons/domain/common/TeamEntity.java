@@ -14,6 +14,7 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 import org.jspecify.annotations.Nullable;
 
 @Setter
@@ -103,6 +104,27 @@ public abstract class TeamEntity extends BaseEntity {
   @Nullable
   @Column(name = "moderation_hidden_at")
   private Instant moderationHiddenAt;
+
+  /**
+   * The {@code MapThumbnailRenderer.VERSION} that drew this entity's thumbnails (route, ride, trip),
+   * light and dark both. Null: before the column, drawn by the previous release, or to redraw.
+   * Written only by native updates ({@code ThumbnailBackfillRepository}), hence not {@code
+   * updatable}: a save of the entity must neither bump its version for it nor write back a stale
+   * value (docs/LEDGER_*.md OPS-71).
+   */
+  @Nullable
+  @Column(name = "thumbnail_version", updatable = false)
+  private Short thumbnailVersion;
+
+  /** Failed redraws of the thumbnail catch-up since the last success; native updates only. */
+  @ColumnDefault("0")
+  @Column(name = "thumbnail_attempts", nullable = false, updatable = false)
+  private short thumbnailAttempts;
+
+  /** When the thumbnail catch-up may try again after a failure; native updates only. */
+  @Nullable
+  @Column(name = "thumbnail_retry_at", updatable = false)
+  private Instant thumbnailRetryAt;
 
   public TeamEntity(
       User createdBy,

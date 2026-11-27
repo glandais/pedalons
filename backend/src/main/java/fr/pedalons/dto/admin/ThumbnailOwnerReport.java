@@ -30,7 +30,9 @@ public record ThumbnailOwnerReport(
   public enum ThumbnailRegenerationReason {
     RENDERED_IN_WINDOW,
     SMALL_FILE,
-    MISSING
+    MISSING,
+    OUTDATED,
+    GIVEN_UP
   }
 
   public enum ThumbnailRegenerationOutcome {

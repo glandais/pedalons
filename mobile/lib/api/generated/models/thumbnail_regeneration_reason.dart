@@ -12,6 +12,10 @@ enum ThumbnailRegenerationReason {
   smallFile('SMALL_FILE'),
   @JsonValue('MISSING')
   missing('MISSING'),
+  @JsonValue('OUTDATED')
+  outdated('OUTDATED'),
+  @JsonValue('GIVEN_UP')
+  givenUp('GIVEN_UP'),
 
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);

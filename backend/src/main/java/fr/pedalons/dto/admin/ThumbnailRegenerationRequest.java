@@ -9,7 +9,8 @@ import org.jspecify.annotations.Nullable;
     description =
         "Which map thumbnails to redraw from the geometry already stored. The criteria combine: the"
             + " date window and the size threshold narrow the thumbnails that exist, the 'missing'"
-            + " flag adds the entities that have none. At least one criterion is required.")
+            + " flag adds the entities that have none, the 'outdated' and 'givenUp' flags add the"
+            + " ones behind the current basemap. At least one criterion is required.")
 @ValidateSchema
 public record ThumbnailRegenerationRequest(
     @Schema(
@@ -33,6 +34,18 @@ public record ThumbnailRegenerationRequest(
                     + " light or dark thumbnail — what a failed render leaves behind",
             examples = "false")
         @Nullable Boolean includeMissing,
+    @Schema(
+            description =
+                "Also redraw the routes, rides and trips with a thumbnail drawn before the current"
+                    + " basemap — what the automatic catch-up redraws by itself, in the background",
+            examples = "false")
+        @Nullable Boolean outdated,
+    @Schema(
+            description =
+                "Also redraw the routes, rides and trips the automatic catch-up gave up on after"
+                    + " repeated failures, which it no longer tries",
+            examples = "false")
+        @Nullable Boolean givenUp,
     @Schema(
             description = "List what would be redrawn, without redrawing anything",
             examples = "true",

@@ -26,6 +26,7 @@ import fr.pedalons.infrastructure.gpx.CoursePoint;
 import fr.pedalons.infrastructure.gpx.FitExporter;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.route.GpxTrackRepository;
+import fr.pedalons.repository.thumbnail.ThumbnailBackfillRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.route.edges.NetworkEdgesAnswer;
 import fr.pedalons.service.route.edges.NetworkEdgesDocuments;
@@ -97,6 +98,8 @@ public class GpxProcessingService {
   @Inject GpxPipeline pipeline;
 
   @Inject MapThumbnailRenderer mapThumbnailRenderer;
+
+  @Inject ThumbnailBackfillRepository thumbnailBackfillRepository;
 
   @Inject AssetService assetService;
 
@@ -850,6 +853,17 @@ public class GpxProcessingService {
           routeFileName(route, type, pa.fileName()),
           pa.stored(),
           newContent);
+    }
+
+    // Both thumbnails drawn in this save: stamped with the version that drew them (docs/LEDGER_*.md
+    // OPS-71). A native update, after everything above (it flushes), so the entity's version is not
+    // involved and no query runs between a clear and its refill.
+    boolean bothThumbnails =
+        result.uploadedAssets().stream().anyMatch(p -> p.type() == AssetType.ROUTE_THUMBNAIL_LIGHT)
+            && result.uploadedAssets().stream()
+                .anyMatch(p -> p.type() == AssetType.ROUTE_THUMBNAIL_DARK);
+    if (bothThumbnails && route.getId() != null) {
+      thumbnailBackfillRepository.stamp(route.getId());
     }
 
     return result.metadata();

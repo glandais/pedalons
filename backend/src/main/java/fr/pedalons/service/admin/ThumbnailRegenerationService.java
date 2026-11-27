@@ -7,6 +7,7 @@ import fr.pedalons.domain.common.TeamEntity;
 import fr.pedalons.domain.ride.Ride;
 import fr.pedalons.domain.route.Route;
 import fr.pedalons.domain.trip.Trip;
+import fr.pedalons.dto.admin.ThumbnailCatchUpStatus;
 import fr.pedalons.dto.admin.ThumbnailOwnerReport;
 import fr.pedalons.dto.admin.ThumbnailOwnerReport.ThumbnailFile;
 import fr.pedalons.dto.admin.ThumbnailOwnerReport.ThumbnailOwnerKind;
@@ -19,14 +20,18 @@ import fr.pedalons.enums.AssetType;
 import fr.pedalons.infrastructure.storage.StorageService;
 import fr.pedalons.repository.asset.AssetRepository;
 import fr.pedalons.repository.asset.AssetRepository.ThumbnailAssetRow;
+import fr.pedalons.repository.thumbnail.ThumbnailBackfillRepository;
 import fr.pedalons.service.asset.AssetService;
 import fr.pedalons.service.security.DomainResolver;
 import fr.pedalons.service.security.annotation.Admin;
+import fr.pedalons.service.thumbnail.MapThumbnailRenderer;
+import fr.pedalons.service.thumbnail.ThumbnailBackfill;
 import fr.pedalons.service.thumbnail.ThumbnailService;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -52,6 +57,10 @@ public class ThumbnailRegenerationService {
 
   private static final int DEFAULT_LIMIT = 100;
 
+  /** The reasons that say only « drawn on an older basemap », not « possibly wrong ». */
+  private static final Set<ThumbnailRegenerationReason> RESTYLE_ONLY =
+      EnumSet.of(ThumbnailRegenerationReason.OUTDATED, ThumbnailRegenerationReason.GIVEN_UP);
+
   private static final Set<AssetType> THUMBNAIL_TYPES =
       EnumSet.of(
           AssetType.ROUTE_THUMBNAIL_LIGHT,
@@ -66,6 +75,8 @@ public class ThumbnailRegenerationService {
   @Inject StorageService storageService;
   @Inject ThumbnailService thumbnailService;
   @Inject DomainResolver domainResolver;
+  @Inject ThumbnailBackfillRepository backfillRepository;
+  @Inject ThumbnailBackfill thumbnailBackfill;
   @Inject EntityManager em;
 
   /** Targets the given domain, or the request's resolved domain when {@code domainId} is null. */
@@ -77,7 +88,9 @@ public class ThumbnailRegenerationService {
     boolean window = request.renderedFrom() != null || request.renderedTo() != null;
     Integer threshold = request.suspectBelowBytes();
     boolean missing = Boolean.TRUE.equals(request.includeMissing());
-    if (!window && threshold == null && !missing) {
+    boolean outdated = Boolean.TRUE.equals(request.outdated());
+    boolean givenUp = Boolean.TRUE.equals(request.givenUp());
+    if (!window && threshold == null && !missing && !outdated && !givenUp) {
       throw new BadRequestException(ErrorCode.BAD_REQUEST);
     }
 
@@ -108,6 +121,22 @@ public class ThumbnailRegenerationService {
       }
     }
 
+    if (outdated) {
+      for (Long id : backfillRepository.findOutdated(targetDomainId)) {
+        selected
+            .computeIfAbsent(id, i -> EnumSet.noneOf(ThumbnailRegenerationReason.class))
+            .add(ThumbnailRegenerationReason.OUTDATED);
+      }
+    }
+    if (givenUp) {
+      for (Long id :
+          backfillRepository.findGivenUp(targetDomainId, ThumbnailBackfill.MAX_ATTEMPTS)) {
+        selected
+            .computeIfAbsent(id, i -> EnumSet.noneOf(ThumbnailRegenerationReason.class))
+            .add(ThumbnailRegenerationReason.GIVEN_UP);
+      }
+    }
+
     int limit = request.limit() != null ? request.limit() : DEFAULT_LIMIT;
     List<ThumbnailOwnerReport> reports = new ArrayList<>();
     for (Map.Entry<Long, EnumSet<ThumbnailRegenerationReason>> entry : selected.entrySet()) {
@@ -122,23 +151,50 @@ public class ThumbnailRegenerationService {
     return new ThumbnailRegenerationResponse(request.dryRun(), selected.size(), reports);
   }
 
+  /** The catch-up's state in the given domain (or the request's), for the admin card. */
+  @Admin
+  public ThumbnailCatchUpStatus catchUpStatus(@Nullable String domainId) {
+    Long targetDomainId =
+        domainId != null ? TsidUtils.toLong(domainId) : domainResolver.getDomainId();
+    var counts =
+        QuarkusTransaction.requiringNew()
+            .call(() ->
+                backfillRepository.counts(
+                    targetDomainId, ThumbnailBackfill.MAX_ATTEMPTS, Instant.now()));
+    return new ThumbnailCatchUpStatus(
+        MapThumbnailRenderer.VERSION,
+        thumbnailBackfill.isEnabled(),
+        thumbnailBackfill.getPerHour(),
+        counts.behind(),
+        counts.waiting(),
+        counts.givenUp());
+  }
+
   private ThumbnailOwnerReport process(
       Long ownerId, List<ThumbnailRegenerationReason> reasons, boolean dryRun) {
     Snapshot before = QuarkusTransaction.requiringNew().call(() -> snapshot(ownerId));
     if (dryRun) {
       return before.report(reasons, null, ThumbnailRegenerationOutcome.PENDING, null);
     }
+    // Selected only as behind the current basemap: a restyle, so a failure keeps the thumbnails
+    // as they are, as the catch-up does; any other reason means they may be wrong, and a failure
+    // leaves none (docs/LEDGER_*.md API-223)
+    boolean keepOnFailure = RESTYLE_ONLY.containsAll(reasons);
+    boolean[] drawn = {false};
     try {
       List<ThumbnailFile> after =
           QuarkusTransaction.requiringNew()
               .call(() -> {
                 TeamEntity owner = em.find(TeamEntity.class, ownerId);
-                redraw(owner);
+                drawn[0] =
+                    keepOnFailure
+                        ? thumbnailService.redrawKeepingOnFailure(owner)
+                        : thumbnailService.redraw(owner);
                 em.flush();
                 return thumbnails(owner);
               });
       ThumbnailRegenerationOutcome outcome =
-          after.size() == 2 && after.stream().allMatch(f -> f.bytes() > 0)
+          drawn[0] && after.size() == 2 && after.stream().allMatch(f -> f.bytes() > 0)
               ? ThumbnailRegenerationOutcome.REGENERATED
               : ThumbnailRegenerationOutcome.FAILED;
       return before.report(reasons, after, outcome, null);
@@ -146,22 +202,6 @@ public class ThumbnailRegenerationService {
       LOG.warnv("Thumbnail regeneration failed for {0}: {1}", ownerId, e.getMessage());
       return before.report(reasons, null, ThumbnailRegenerationOutcome.FAILED, e.getMessage());
     }
-  }
-
-  private void redraw(TeamEntity owner) {
-    switch (owner) {
-      case Route route -> thumbnailService.generateRouteThumbnails(route);
-      case Ride ride -> thumbnailService.generateRideThumbnails(ride);
-      case Trip trip -> thumbnailService.generateTripThumbnails(trip);
-      default ->
-          throw new IllegalArgumentException(
-              "No thumbnail on " + owner.getClass().getSimpleName() + " " + owner.getId());
-    }
-    // Drawn on the admin's request, but the entity's own thumbnail: keep the admin, possibly from
-    // another domain, out of its creator's data export
-    owner.getAssets().stream()
-        .filter(a -> THUMBNAIL_TYPES.contains(a.getType()))
-        .forEach(a -> a.setCreatedBy(owner.getCreatedBy()));
   }
 
   private Snapshot snapshot(Long ownerId) {

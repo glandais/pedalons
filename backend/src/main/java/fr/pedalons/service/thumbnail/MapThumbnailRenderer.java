@@ -23,13 +23,22 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 public class MapThumbnailRenderer {
 
   /**
-   * Style ids of the tileserver (data/tileserver/config.json), versioned like the VersaTiles copy
-   * they serve: vcyclist caches tiles on disk by URL, so a new id is what keeps a restyled tile from
-   * landing beside stale ones in the same thumbnail.
+   * Style ids of the tileserver (data/tileserver/config.json), versioned like the copy of
+   * {@code @glandais/cycling-style} they serve (the default "Route" basemap of the clients, ledger
+   * {@code OPS-71}): vcyclist caches tiles on disk by URL, so a new id is what keeps a restyled tile
+   * from landing beside stale ones in the same thumbnail.
    */
-  public static final String LIGHT_STYLE = "colorful-v7";
+  public static final String LIGHT_STYLE = "cycling-road-v1";
 
-  public static final String DARK_STYLE = "colorful-dark-v7";
+  public static final String DARK_STYLE = "cycling-road-dark-v1";
+
+  /**
+   * The version of the thumbnails' drawing: the styles above, the track colours. 1 was VersaTiles
+   * colorful v7 (never stored: null). Bump it with any change to what a thumbnail looks like; the
+   * catch-up ({@code ThumbnailBackfill}) then redraws the fleet. The partial index of its migration
+   * ({@code team_entities_thumbnail_behind}) inlines it.
+   */
+  public static final int VERSION = 2;
 
   private static final int SIZE = 512;
   private static final double MARGIN = 0.1;
