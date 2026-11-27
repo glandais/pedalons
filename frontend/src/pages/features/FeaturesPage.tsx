@@ -5,6 +5,7 @@ import {
   Badge,
   Box,
   Button,
+  Divider,
   Group,
   List,
   Paper,
@@ -13,20 +14,23 @@ import {
   Text,
   ThemeIcon,
   Title,
+  type MantineColor,
 } from '@mantine/core'
 import {
+  IconAdjustmentsHorizontal,
   IconArrowLeft,
   IconBike,
   IconCalendar,
   IconCheck,
   IconCloudRain,
-  IconDeviceWatch,
+  IconNavigation,
   IconLock,
   IconLogin,
   IconMap2,
   IconNews,
-  IconRoute,
+  IconSparkles,
   IconTags,
+  IconUsers,
   type TablerIcon,
 } from '@tabler/icons-react'
 import { PrefetchLink } from '@/components/common/PrefetchLink'
@@ -37,14 +41,10 @@ import { paths } from '@/config/paths'
 import { PUBLICATION_TYPE_COLORS } from '@/lib/badgeColors.generated'
 import type { TeamRole } from '@/api/dto'
 import { FeatureSection, type FeatureSectionProps } from './FeatureSection'
+import { RoutesChapter } from './RoutesChapter'
 import { RideGroupsVisual } from './visuals/RideGroupsVisual'
-import { RouteVisual } from './visuals/RouteVisual'
 import { TripVisual } from './visuals/TripVisual'
-import { PostVisual } from './visuals/PostVisual'
-import { AdVisual } from './visuals/AdVisual'
-import { CalendarVisual } from './visuals/CalendarVisual'
 import { DevicesVisual } from './visuals/DevicesVisual'
-import { PrivacyVisual } from './visuals/PrivacyVisual'
 import { WeatherVisual } from './visuals/WeatherVisual'
 
 type Section = Omit<FeatureSectionProps, 'reverse'> & { chip: string }
@@ -74,143 +74,129 @@ export function FeaturesPage() {
   const location = useLocation()
   const singleTeam = isSingleTeam()
 
-  const sections: Section[] = [
+  const rides: Section = {
+    id: 'rides',
+    color: PUBLICATION_TYPE_COLORS.RIDE,
+    icon: IconBike,
+    chip: t('features.rides.eyebrow'),
+    eyebrow: t('features.rides.eyebrow'),
+    title: t('features.rides.title'),
+    lead: t('features.rides.lead'),
+    points: [
+      t('features.rides.point1'),
+      t('features.rides.point2'),
+      t('features.rides.point3'),
+      t('features.rides.point4'),
+    ],
+    visual: <RideGroupsVisual />,
+  }
+  const weather: Section = {
+    id: 'weather',
+    // Weather has no business colour of its own (contracts/brand-colors.yaml): a sky tint.
+    color: 'cyan',
+    icon: IconCloudRain,
+    chip: t('features.weather.eyebrow'),
+    eyebrow: t('features.weather.eyebrow'),
+    title: t('features.weather.title'),
+    lead: t('features.weather.lead'),
+    points: [
+      t('features.weather.point1'),
+      t('features.weather.point2'),
+      t('features.weather.point3'),
+      t('features.weather.point4'),
+    ],
+    visual: <WeatherVisual />,
+  }
+  const devices: Section = {
+    id: 'devices',
+    color: 'gray',
+    icon: IconNavigation,
+    chip: t('features.devices.eyebrow'),
+    eyebrow: t('features.devices.eyebrow'),
+    title: t('features.devices.title'),
+    lead: t('features.devices.lead'),
+    points: [
+      t('features.devices.point1'),
+      t('features.devices.point2'),
+      t('features.devices.point3'),
+      t('features.devices.point4'),
+    ],
+    visual: <DevicesVisual />,
+  }
+  const trips: Section = {
+    id: 'trips',
+    color: PUBLICATION_TYPE_COLORS.TRIP,
+    icon: IconMap2,
+    chip: t('features.trips.eyebrow'),
+    eyebrow: t('features.trips.eyebrow'),
+    title: t('features.trips.title'),
+    lead: t('features.trips.lead'),
+    points: [t('features.trips.point1'), t('features.trips.point2'), t('features.trips.point3')],
+    visual: <TripVisual />,
+  }
+
+  // The jump chips, in page order; « routes », « more » and « roles » are not FeatureSections.
+  const chips = [
+    { id: 'rides', label: rides.chip },
+    { id: 'routes', label: t('features.routes.eyebrow') },
+    { id: 'weather', label: weather.chip },
+    { id: 'devices', label: devices.chip },
+    { id: 'trips', label: trips.chip },
+    { id: 'more', label: t('features.more.eyebrow') },
+    { id: 'roles', label: t('features.roles.chip') },
+  ]
+
+  const news: { id: string; icon: TablerIcon; title: string; text: string }[] = [
     {
-      id: 'rides',
-      color: PUBLICATION_TYPE_COLORS.RIDE,
-      icon: IconBike,
-      chip: t('features.rides.eyebrow'),
-      eyebrow: t('features.rides.eyebrow'),
-      title: t('features.rides.title'),
-      lead: t('features.rides.lead'),
-      points: [
-        t('features.rides.point1'),
-        t('features.rides.point2'),
-        t('features.rides.point3'),
-        t('features.rides.point4'),
-      ],
-      visual: <RideGroupsVisual />,
+      id: 'routes',
+      icon: IconSparkles,
+      title: t('features.news.generate.title'),
+      text: t('features.news.generate.text'),
     },
     {
       id: 'routes',
-      // Routes have no business colour of their own (contracts/brand-colors.yaml): the brand's.
-      color: 'primary',
-      icon: IconRoute,
-      chip: t('features.routes.eyebrow'),
-      eyebrow: t('features.routes.eyebrow'),
-      title: t('features.routes.title'),
-      lead: t('features.routes.lead'),
-      points: [
-        t('features.routes.point1'),
-        t('features.routes.point2'),
-        t('features.routes.point3'),
-        t('features.routes.point4'),
-        t('features.routes.point5'),
-      ],
-      visual: <RouteVisual />,
-    },
-    {
-      id: 'trips',
-      color: PUBLICATION_TYPE_COLORS.TRIP,
-      icon: IconMap2,
-      chip: t('features.trips.eyebrow'),
-      eyebrow: t('features.trips.eyebrow'),
-      title: t('features.trips.title'),
-      lead: t('features.trips.lead'),
-      points: [
-        t('features.trips.point1'),
-        t('features.trips.point2'),
-        t('features.trips.point3'),
-        t('features.trips.point4'),
-      ],
-      visual: <TripVisual />,
-    },
-    {
-      id: 'weather',
-      // Weather has no business colour of its own (contracts/brand-colors.yaml): a sky tint.
-      color: 'cyan',
-      icon: IconCloudRain,
-      chip: t('features.weather.eyebrow'),
-      eyebrow: t('features.weather.eyebrow'),
-      title: t('features.weather.title'),
-      lead: t('features.weather.lead'),
-      points: [
-        t('features.weather.point1'),
-        t('features.weather.point2'),
-        t('features.weather.point3'),
-        t('features.weather.point4'),
-      ],
-      visual: <WeatherVisual />,
-    },
-    {
-      id: 'posts',
-      color: PUBLICATION_TYPE_COLORS.POST,
-      icon: IconNews,
-      chip: t('features.posts.eyebrow'),
-      eyebrow: t('features.posts.eyebrow'),
-      title: t('features.posts.title'),
-      lead: t('features.posts.lead'),
-      points: [t('features.posts.point1'), t('features.posts.point2'), t('features.posts.point3')],
-      visual: <PostVisual />,
-    },
-    {
-      id: 'ads',
-      color: 'orange',
-      icon: IconTags,
-      chip: t('features.ads.eyebrow'),
-      eyebrow: t('features.ads.eyebrow'),
-      title: t('features.ads.title'),
-      lead: t('features.ads.lead'),
-      points: [t('features.ads.point1'), t('features.ads.point2'), t('features.ads.point3')],
-      visual: <AdVisual />,
-    },
-    {
-      id: 'calendar',
-      color: 'primary',
-      icon: IconCalendar,
-      chip: t('features.calendar.chip'),
-      eyebrow: t('features.calendar.eyebrow'),
-      title: t('features.calendar.title'),
-      lead: t('features.calendar.lead'),
-      points: [
-        t('features.calendar.point1'),
-        t('features.calendar.point2'),
-        t('features.calendar.point3'),
-        t('features.calendar.point4'),
-        t('features.calendar.point5'),
-      ],
-      visual: <CalendarVisual />,
+      icon: IconAdjustmentsHorizontal,
+      title: t('features.news.retouch.title'),
+      text: t('features.news.retouch.text'),
     },
     {
       id: 'devices',
-      color: 'gray',
-      icon: IconDeviceWatch,
-      chip: t('features.devices.eyebrow'),
-      eyebrow: t('features.devices.eyebrow'),
-      title: t('features.devices.title'),
-      lead: t('features.devices.lead'),
-      points: [
-        t('features.devices.karoo'),
-        t('features.devices.garmin'),
-        t('features.devices.wahoo'),
-      ],
-      visual: <DevicesVisual />,
+      icon: IconNavigation,
+      title: t('features.news.gps.title'),
+      text: t('features.news.gps.text'),
     },
     {
-      id: 'privacy',
-      color: 'gray',
+      id: 'rides',
+      icon: IconUsers,
+      title: t('features.news.groups.title'),
+      text: t('features.news.groups.text'),
+    },
+  ]
+
+  const more: { icon: TablerIcon; color: MantineColor; title: string; text: string }[] = [
+    {
+      icon: IconNews,
+      color: PUBLICATION_TYPE_COLORS.POST,
+      title: t('features.more.posts.title'),
+      text: t('features.more.posts.text'),
+    },
+    {
+      icon: IconTags,
+      color: 'orange',
+      title: t('features.more.ads.title'),
+      text: t('features.more.ads.text'),
+    },
+    {
+      icon: IconCalendar,
+      color: 'primary',
+      title: t('features.more.calendar.title'),
+      text: t('features.more.calendar.text'),
+    },
+    {
       icon: IconLock,
-      chip: t('features.privacy.eyebrow'),
-      eyebrow: t('features.privacy.eyebrow'),
-      title: t('features.privacy.title'),
-      lead: t('features.privacy.lead'),
-      points: [
-        t('features.privacy.point1'),
-        t('features.privacy.point2'),
-        t('features.privacy.point3'),
-        t('features.privacy.point4'),
-      ],
-      visual: <PrivacyVisual />,
+      color: 'gray',
+      title: t('features.more.privacy.title'),
+      text: t('features.more.privacy.text'),
     },
   ]
 
@@ -222,7 +208,6 @@ export function FeaturesPage() {
         t('features.roles.member.point1'),
         t('features.roles.member.point2'),
         t('features.roles.member.point3'),
-        t('features.roles.member.point4'),
       ],
     },
     {
@@ -232,7 +217,6 @@ export function FeaturesPage() {
         t('features.roles.organizer.point1'),
         t('features.roles.organizer.point2'),
         t('features.roles.organizer.point3'),
-        t('features.roles.organizer.point4'),
       ],
     },
     {
@@ -242,7 +226,6 @@ export function FeaturesPage() {
         t('features.roles.admin.point1'),
         t('features.roles.admin.point2'),
         t('features.roles.admin.point3'),
-        t('features.roles.admin.point4'),
       ],
     },
   ]
@@ -299,33 +282,114 @@ export function FeaturesPage() {
               </Button>
             </Group>
           )}
+          <Stack gap="sm" align="stretch" ta="left" mt="md" w="100%">
+            <Group gap="sm" wrap="nowrap" justify="center">
+              <Divider style={{ flex: '1 1 40px', maxWidth: 120 }} />
+              <Title
+                order={2}
+                size="sm"
+                tt="uppercase"
+                style={{
+                  letterSpacing: 0.4,
+                  color: 'var(--mantine-primary-color-light-color)',
+                }}
+              >
+                {t('features.news.title')}
+              </Title>
+              <Divider style={{ flex: '1 1 40px', maxWidth: 120 }} />
+            </Group>
+            <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }} spacing="md">
+              {news.map((item) => {
+                const Icon: TablerIcon = item.icon
+                return (
+                  <Paper
+                    key={item.title}
+                    component="a"
+                    href={`#${item.id}`}
+                    onClick={(event: MouseEvent<HTMLAnchorElement>) => jumpTo(event, item.id)}
+                    withBorder
+                    radius="md"
+                    p="md"
+                    className="features-news"
+                  >
+                    <Stack gap="xs">
+                      <ThemeIcon variant="light" size={36} radius="md">
+                        <Icon size={20} />
+                      </ThemeIcon>
+                      <Text fw={700}>{item.title}</Text>
+                      <Text size="sm" c="dimmed">
+                        {item.text}
+                      </Text>
+                    </Stack>
+                  </Paper>
+                )
+              })}
+            </SimpleGrid>
+          </Stack>
           <nav aria-label={t('features.jump.label')} className="features-chips">
-            {sections.map((section) => {
-              const Icon: TablerIcon = section.icon
-              return (
-                <a
-                  key={section.id}
-                  href={`#${section.id}`}
-                  className="features-chip"
-                  onClick={(event) => jumpTo(event, section.id)}
-                >
-                  <Icon size={16} aria-hidden />
-                  {section.chip}
-                </a>
-              )
-            })}
+            {chips.map((chip) => (
+              <a
+                key={chip.id}
+                href={`#${chip.id}`}
+                className="features-chip"
+                onClick={(event) => jumpTo(event, chip.id)}
+              >
+                {chip.label}
+              </a>
+            ))}
           </nav>
         </Stack>
       </section>
 
       {/* Features */}
       <Box px={{ base: 'xs', sm: 'md' }}>
-        {sections.map((section, index) => (
-          <FeatureSection key={section.id} {...section} reverse={index % 2 === 1} />
-        ))}
+        <FeatureSection {...rides} />
+        <RoutesChapter />
+        <FeatureSection {...weather} reverse />
+        <FeatureSection {...devices} />
+        <FeatureSection {...trips} reverse />
+
+        {/* And also */}
+        <section id="more" aria-labelledby="more-title" className="features-section">
+          <Stack gap="lg">
+            <Stack gap="xs" align="center" ta="center">
+              <Text
+                size="sm"
+                fw={700}
+                tt="uppercase"
+                style={{ letterSpacing: 0.4, color: 'var(--mantine-primary-color-light-color)' }}
+              >
+                {t('features.more.eyebrow')}
+              </Text>
+              <Title order={2} id="more-title">
+                {t('features.more.title')}
+              </Title>
+              <Text size="lg" c="dimmed" maw={600}>
+                {t('features.more.subtitle')}
+              </Text>
+            </Stack>
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+              {more.map(({ icon: Icon, color, title, text }) => (
+                <Paper key={title} withBorder radius="md" p="lg">
+                  <Stack gap="xs">
+                    <ThemeIcon variant="light" color={color} size={36} radius="md">
+                      <Icon size={20} />
+                    </ThemeIcon>
+                    <Title order={3} size="h4">
+                      {title}
+                    </Title>
+                    <Text size="sm" c="dimmed">
+                      {text}
+                    </Text>
+                  </Stack>
+                </Paper>
+              ))}
+            </SimpleGrid>
+          </Stack>
+        </section>
 
         {/* Roles */}
-        <section aria-labelledby="features-roles-title" className="features-section">
+        <section id="roles" aria-labelledby="features-roles-title" className="features-section">
           <Stack gap="lg">
             <Stack gap="xs" align="center" ta="center">
               <Title order={2} id="features-roles-title">

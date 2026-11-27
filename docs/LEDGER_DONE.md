@@ -2,7 +2,7 @@
 
 <!-- Généré par `node scripts/ledger.mjs index` à partir de docs/ledger/ : ne pas modifier à la main. -->
 
-Index des **636 entrées livrées**, et des 25 entrées encore ouvertes dont une part l'est.
+Index des **637 entrées livrées**, et des 25 entrées encore ouvertes dont une part l'est.
 Chaque entrée a son fichier dans [`ledger/`](ledger/), avec la date, la version d'API, le test qui
 la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`](LEDGER_NEXT.md).
 
@@ -166,6 +166,7 @@ la couvre et les décisions à ne pas défaire. Ce qui reste : [`LEDGER_NEXT.md`
 
 ## WEB — Site web
 
+- [x] [`WEB-220`](ledger/WEB/WEB-220.md) Page Fonctionnalités à jour : générateur, retouche, envoi automatique au GPS, page de groupe — 2026-11-27
 - [x] [`WEB-219`](ledger/WEB/WEB-219.md) Le retour arrière après l'enregistrement d'un parcours n'est plus avalé ni prérempli — 2026-11-25
 - [x] [`WEB-218`](ledger/WEB/WEB-218.md) Une erreur observée par la page quittée n'est plus relue par la page d'erreur — 2026-11-25
 - [x] [`WEB-217`](ledger/WEB/WEB-217.md) Quota de tracés grisé à l'accueil aussi — 2026-11-25

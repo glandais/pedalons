@@ -797,3 +797,18 @@ body {
   border-top: 1px solid var(--mantine-color-default-border);
   background-color: var(--mantine-color-body);
 }
+
+/* The « Nouveautés » cards of the hero: whole-card links, lifted on hover. */
+.features-news {
+  display: block;
+  color: var(--mantine-color-text);
+  text-decoration: none;
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
+
+  &:hover {
+    border-color: var(--mantine-primary-color-filled);
+    box-shadow: var(--mantine-shadow-md);
+  }
+}

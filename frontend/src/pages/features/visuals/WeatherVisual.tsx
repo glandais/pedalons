@@ -1,148 +1,157 @@
 import { useTranslation } from 'react-i18next'
-import { Group, Paper, Progress, SimpleGrid, Stack, Text } from '@mantine/core'
+import { Box, Group, Paper, Stack, Text } from '@mantine/core'
 import { IconUmbrella } from '@tabler/icons-react'
-import { RelativeWind, WeatherCondition } from '@/api/dto'
+import { RelativeWind } from '@/api/dto'
 import { RELATIVE_WIND_COLORS } from '@/lib/badgeColors.generated'
-import { WeatherIcon } from '@/components/weather/WeatherIcon'
-import { WindArrow } from '@/components/weather/WindArrow'
 import { VisualFrame } from './VisualFrame'
+import { MapBackdrop, Pin } from './MapBackdrop'
 
-/** Arrow angles of the legend, as `WindExposureBar` draws them: pushing, across, in the face. */
-const WIND_ANGLES: Record<RelativeWind, number> = {
-  [RelativeWind.TAIL]: 0,
-  [RelativeWind.CROSS]: 90,
-  [RelativeWind.HEAD]: 180,
-}
+const wind = (w: RelativeWind) => `var(--mantine-color-${RELATIVE_WIND_COLORS[w]}-filled)`
 
 /**
- * The forecast of a group's ride: the sky at the start, at each passing time along the route, the
- * wind as the rider meets it stretch by stretch, and the rain alert — the blocks of the ride page.
+ * A group's ride on the map in « weather » mode: the track coloured by the wind the rider meets
+ * (tail, across, head — the colours of the real map), the temperatures along it, the legend in
+ * words with the distance of each, and the rain alert.
  */
 export function WeatherVisual() {
   const { t } = useTranslation()
-  const checkpoints = [
-    { time: '08:00', condition: WeatherCondition.CLEAR, temperature: '11 °C' },
-    { time: '09:10', condition: WeatherCondition.MOSTLY_CLEAR, temperature: '14 °C' },
-    { time: '10:20', condition: WeatherCondition.PARTLY_CLOUDY, temperature: '17 °C' },
-    { time: '11:30', condition: WeatherCondition.SHOWERS, temperature: '16 °C' },
+  const legend = [
+    { wind: RelativeWind.TAIL, label: t('features.demo.weather.tail') },
+    { wind: RelativeWind.CROSS, label: t('features.demo.weather.cross') },
+    { wind: RelativeWind.HEAD, label: t('features.demo.weather.head') },
   ]
-  // Stretches in route order, as percentages of the distance.
-  const stretches: { wind: RelativeWind; percent: number }[] = [
-    { wind: RelativeWind.HEAD, percent: 30 },
-    { wind: RelativeWind.CROSS, percent: 20 },
-    { wind: RelativeWind.TAIL, percent: 35 },
-    { wind: RelativeWind.CROSS, percent: 15 },
-  ]
-  const totals: { wind: RelativeWind; distance: string }[] = [
-    { wind: RelativeWind.HEAD, distance: t('features.demo.weather.head') },
-    { wind: RelativeWind.CROSS, distance: t('features.demo.weather.cross') },
-    { wind: RelativeWind.TAIL, distance: t('features.demo.weather.tail') },
+  const temperatures = [
+    { x: 196, y: 96, label: t('features.demo.weather.temperature1') },
+    { x: 380, y: 182, label: t('features.demo.weather.temperature2') },
   ]
 
   return (
     <VisualFrame color="cyan">
-      <Stack gap="sm">
-        <Paper withBorder radius="lg" p="md">
-          <Stack gap="sm">
-            <Group justify="space-between" wrap="nowrap" gap="sm">
-              <Stack gap={0}>
-                <Text fw={700}>{t('features.demo.weather.title')}</Text>
-                <Text size="sm" c="dimmed">
-                  {t('rides.weather.leg.speed', { speed: t('features.demo.weather.speed') })}
-                </Text>
-              </Stack>
-              <Group gap={6} wrap="nowrap">
-                <WeatherIcon condition={WeatherCondition.CLEAR} size={28} />
-                <Text size="xl" fw={700}>
-                  {checkpoints[0].temperature}
+      <Paper withBorder radius="lg" style={{ overflow: 'hidden' }}>
+        <Box pos="relative" h={240}>
+          <svg
+            viewBox="0 0 520 240"
+            preserveAspectRatio="xMidYMid slice"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+          >
+            <MapBackdrop width={520} height={240} />
+            <path
+              d="M0 70 C140 90 300 40 520 80"
+              stroke="var(--mantine-color-body)"
+              strokeWidth={5}
+              fill="none"
+            />
+            <path
+              d="M120 0 L170 240"
+              stroke="var(--mantine-color-body)"
+              strokeWidth={4}
+              fill="none"
+            />
+            <path
+              d="M360 0 C370 90 400 160 430 240"
+              stroke="var(--mantine-color-body)"
+              strokeWidth={3}
+              fill="none"
+            />
+            <path
+              d="M90 180 C120 110 200 70 280 70 C360 70 430 100 440 150 C450 200 370 210 300 200 C230 190 160 215 90 180 Z"
+              stroke="var(--mantine-color-body)"
+              strokeWidth={9}
+              fill="none"
+            />
+            <path
+              d="M90 180 C120 110 200 70 280 70"
+              stroke={wind(RelativeWind.TAIL)}
+              strokeWidth={5}
+              fill="none"
+            />
+            <path
+              d="M280 70 C360 70 430 100 440 150"
+              stroke={wind(RelativeWind.CROSS)}
+              strokeWidth={5}
+              fill="none"
+            />
+            <path
+              d="M440 150 C450 200 370 210 300 200 C230 190 160 215 90 180"
+              stroke={wind(RelativeWind.HEAD)}
+              strokeWidth={5}
+              fill="none"
+            />
+            <Pin x={90} y={180} />
+            {temperatures.map((temperature) => (
+              <g key={temperature.label}>
+                <rect
+                  x={temperature.x}
+                  y={temperature.y}
+                  width={62}
+                  height={26}
+                  rx={13}
+                  fill="var(--mantine-color-body)"
+                />
+                <text
+                  x={temperature.x + 31}
+                  y={temperature.y + 17}
+                  textAnchor="middle"
+                  fontSize={12}
+                  fontWeight={600}
+                  fill="var(--mantine-color-text)"
+                >
+                  {temperature.label}
+                </text>
+              </g>
+            ))}
+          </svg>
+          <Text
+            pos="absolute"
+            left={12}
+            top={12}
+            size="sm"
+            fw={600}
+            px="xs"
+            py={6}
+            bg="var(--mantine-color-body)"
+            style={{ borderRadius: 'var(--mantine-radius-md)' }}
+          >
+            {t('features.demo.weather.title')}
+          </Text>
+        </Box>
+        <Stack gap="sm" p="md">
+          <Group gap="xs">
+            {legend.map(({ wind: w, label }) => (
+              <Group
+                key={w}
+                gap={6}
+                wrap="nowrap"
+                px="xs"
+                h={26}
+                bg={`var(--mantine-color-${RELATIVE_WIND_COLORS[w]}-light)`}
+                style={{ borderRadius: 1000 }}
+              >
+                <Box w={12} h={4} style={{ borderRadius: 2, backgroundColor: wind(w) }} />
+                <Text
+                  size="xs"
+                  fw={600}
+                  c={`var(--mantine-color-${RELATIVE_WIND_COLORS[w]}-light-color)`}
+                >
+                  {label}
                 </Text>
               </Group>
-            </Group>
-            <SimpleGrid cols={4} spacing="xs">
-              {checkpoints.map((checkpoint, index) => (
-                <Stack
-                  key={checkpoint.time}
-                  gap={2}
-                  align="center"
-                  py={6}
-                  style={{
-                    borderRadius: 'var(--mantine-radius-md)',
-                    backgroundColor: 'var(--mantine-color-default-hover)',
-                  }}
-                >
-                  <Text size="xs" c="dimmed">
-                    {index === 0
-                      ? t('rides.weather.checkpoints.start')
-                      : t('features.demo.weather.km', { km: index * 28 })}
-                  </Text>
-                  <WeatherIcon condition={checkpoint.condition} size={22} />
-                  <Text size="sm" fw={600}>
-                    {checkpoint.temperature}
-                  </Text>
-                  <Text size="xs" c="dimmed">
-                    {checkpoint.time}
-                  </Text>
-                </Stack>
-              ))}
-            </SimpleGrid>
-          </Stack>
-        </Paper>
-        <Paper withBorder radius="lg" p="md">
-          <Stack gap={6}>
-            <Text size="sm" fw={600}>
-              {t('rides.weather.exposure.title')}
-            </Text>
-            <Progress.Root size={14} radius="sm">
-              {stretches.map((stretch, index) => (
-                <Progress.Section
-                  key={index}
-                  value={stretch.percent}
-                  color={RELATIVE_WIND_COLORS[stretch.wind]}
-                />
-              ))}
-            </Progress.Root>
-            <Group gap="md" wrap="wrap">
-              {totals.map(({ wind, distance }) => (
-                <Group key={wind} gap={4} wrap="nowrap">
-                  <WindArrow
-                    angle={WIND_ANGLES[wind]}
-                    relativeWind={wind}
-                    label={t(`rides.weather.relativeWind.${wind}`)}
-                    size={14}
-                  />
-                  <Text size="xs" c="dimmed">
-                    {t('rides.weather.exposure.total', {
-                      relativeWind: t(`rides.weather.relativeWindShort.${wind}`),
-                      distance,
-                    })}
-                  </Text>
-                </Group>
-              ))}
-            </Group>
-          </Stack>
-        </Paper>
-        <Group
-          gap={8}
-          wrap="nowrap"
-          px="md"
-          py="xs"
-          style={{
-            borderRadius: 'var(--mantine-radius-lg)',
-            backgroundColor: 'var(--mantine-color-body)',
-            border: '1px solid var(--mantine-color-default-border)',
-          }}
-        >
-          <IconUmbrella size={18} style={{ flex: 'none' }} />
-          <Text size="sm">
-            {t('rides.weather.rain.alertAt', {
-              condition: t('rides.weather.condition.SHOWERS'),
-              probability: 60,
-              time: '11:30',
-              distance: t('features.demo.weather.km', { km: 84 }),
-            })}
-          </Text>
-        </Group>
-      </Stack>
+            ))}
+          </Group>
+          <Group
+            gap="xs"
+            wrap="nowrap"
+            px="sm"
+            py="xs"
+            bg="var(--mantine-color-yellow-light)"
+            c="var(--mantine-color-yellow-light-color)"
+            style={{ borderRadius: 'var(--mantine-radius-md)' }}
+          >
+            <IconUmbrella size={18} style={{ flex: 'none' }} />
+            <Text size="sm">{t('features.demo.weather.rain')}</Text>
+          </Group>
+        </Stack>
+      </Paper>
     </VisualFrame>
   )
 }

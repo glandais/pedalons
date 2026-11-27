@@ -41,17 +41,7 @@ describe('FeaturesPage', () => {
   it('renders every section, each reachable from its jump chip', () => {
     renderPage()
     const chips = within(screen.getByRole('navigation', { name: 'features.jump.label' }))
-    const ids = [
-      'rides',
-      'routes',
-      'trips',
-      'weather',
-      'posts',
-      'ads',
-      'calendar',
-      'devices',
-      'privacy',
-    ]
+    const ids = ['rides', 'routes', 'weather', 'devices', 'trips', 'more', 'roles']
     expect(chips.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual(
       ids.map((id) => `#${id}`)
     )
@@ -61,15 +51,39 @@ describe('FeaturesPage', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('features.hero.title')
   })
 
-  it('lists the three bike computers alike', () => {
+  it('presents the GPS feature by its points, not by a list of makes', () => {
     renderPage()
     const devices = document.getElementById('devices')!
     for (const key of [
-      'features.devices.karoo',
-      'features.devices.garmin',
-      'features.devices.wahoo',
+      'features.devices.point1',
+      'features.devices.point2',
+      'features.devices.point3',
+      'features.devices.point4',
     ]) {
       expect(within(devices).getAllByText(key).length).toBeGreaterThan(0)
+    }
+  })
+
+  it('links each « what is new » card to its section', () => {
+    renderPage()
+    const news = screen.getByRole('heading', { level: 2, name: 'features.news.title' })
+      .parentElement!.parentElement!
+    const hrefs = within(news)
+      .getAllByRole('link')
+      .map((a) => a.getAttribute('href'))
+    expect(hrefs).toEqual(['#routes', '#routes', '#devices', '#rides'])
+  })
+
+  it('shows the routes chapter: three ways and the library', () => {
+    renderPage()
+    const routes = document.getElementById('routes')!
+    for (const key of [
+      'features.routes.generate.title',
+      'features.routes.trace.title',
+      'features.routes.retouch.title',
+      'features.routes.library.point6',
+    ]) {
+      expect(within(routes).getAllByText(key).length).toBeGreaterThan(0)
     }
   })
 
@@ -100,7 +114,7 @@ describe('FeaturesPage', () => {
   it('renders its illustrations inert: hidden from assistive tech, nothing focusable', () => {
     const { container } = renderPage()
     const frames = container.querySelectorAll('[aria-hidden="true"]')
-    expect(frames.length).toBeGreaterThanOrEqual(9)
+    expect(frames.length).toBeGreaterThanOrEqual(5)
     for (const frame of frames) {
       expect(frame.querySelector('a, button, input, [tabindex]')).toBeNull()
     }
