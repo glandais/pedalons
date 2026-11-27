@@ -876,6 +876,11 @@ routes:
       en: /platform
       fr: /plateforme
     web: true
+  - id: adminStats
+    path:
+      en: /platform/stats
+      fr: /plateforme/statistiques
+    web: true
   - id: adminDomains
     path:
       en: /platform/domains

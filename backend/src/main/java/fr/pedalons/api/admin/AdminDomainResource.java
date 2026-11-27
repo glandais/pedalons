@@ -5,6 +5,7 @@ import fr.pedalons.dto.admin.AdminDomainAliasDto;
 import fr.pedalons.dto.admin.AdminDomainDto;
 import fr.pedalons.dto.admin.AdminDomainListResponse;
 import fr.pedalons.dto.admin.AdminGpsCredentialDto;
+import fr.pedalons.dto.admin.AdminPlatformStatsDto;
 import fr.pedalons.dto.admin.AdminStatsDto;
 import fr.pedalons.dto.admin.CreateDomainAliasRequest;
 import fr.pedalons.dto.admin.CreateDomainRequest;
@@ -17,6 +18,7 @@ import fr.pedalons.dto.error.ErrorResponse;
 import fr.pedalons.service.admin.AdminDomainAliasService;
 import fr.pedalons.service.admin.AdminDomainGpsCredentialService;
 import fr.pedalons.service.admin.AdminDomainService;
+import fr.pedalons.service.admin.AdminPlatformStatsService;
 import fr.pedalons.service.security.annotation.Admin;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -32,6 +34,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+import org.jspecify.annotations.Nullable;
 
 @Path("/api/admin/domains")
 @Produces(MediaType.APPLICATION_JSON)
@@ -41,6 +44,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 public class AdminDomainResource {
 
   @Inject AdminDomainService adminDomainService;
+
+  @Inject AdminPlatformStatsService adminPlatformStatsService;
 
   @Inject AdminDomainGpsCredentialService gpsCredentialService;
 
@@ -66,6 +71,37 @@ public class AdminDomainResource {
   public Response getStats() {
     AdminStatsDto stats = adminDomainService.getStats();
     return Response.ok(stats).build();
+  }
+
+  @GET
+  @Path("/platform-stats")
+  @Admin
+  @Operation(
+      operationId = "getPlatformStats",
+      summary = "Usage statistics of the platform",
+      description =
+          "Counts of accounts, sign-in methods, passkeys, sign-ups per month, teams, GPS"
+              + " services, push devices, clients and calendar feeds, for all domains or one."
+              + " Counts only — no person is named.")
+  @APIResponses({
+    @APIResponse(
+        responseCode = "200",
+        description = "Platform statistics",
+        content = @Content(schema = @Schema(implementation = AdminPlatformStatsDto.class))),
+    @APIResponse(
+        responseCode = "403",
+        description = "Forbidden - not a platform admin",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @APIResponse(
+        responseCode = "404",
+        description = "Domain not found",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  public Response getPlatformStats(
+      @Parameter(description = "Limit the figures to this domain; omitted: all domains")
+          @QueryParam("domainId")
+          @Nullable String domainId) {
+    return Response.ok(adminPlatformStatsService.getPlatformStats(domainId)).build();
   }
 
   @GET

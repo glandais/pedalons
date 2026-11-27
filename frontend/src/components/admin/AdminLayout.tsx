@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Container, Title, Text, Box, Stack } from '@mantine/core'
 import {
   IconDashboard,
+  IconChartBar,
   IconWorld,
   IconUsers,
   IconBuildingCommunity,
@@ -13,7 +14,8 @@ import { paths } from '@/config/paths'
 import { NavButtons, type NavButtonItem } from '../common/NavButtons'
 import { useAuthStore, selectIsPlatformAdmin } from '@/store/authStore'
 
-export type AdminTab = 'dashboard' | 'domains' | 'teams' | 'users' | 'reports' | 'maintenance'
+export type AdminTab =
+  'dashboard' | 'stats' | 'domains' | 'teams' | 'users' | 'reports' | 'maintenance'
 
 interface AdminLayoutProps {
   currentTab: AdminTab
@@ -37,6 +39,12 @@ export function AdminLayout({ currentTab, subtitle, children }: AdminLayoutProps
       path: paths.admin(),
       label: t('admin.tabs.dashboard'),
       icon: IconDashboard,
+    },
+    {
+      id: 'stats',
+      path: paths.adminStats(),
+      label: t('admin.tabs.stats'),
+      icon: IconChartBar,
     },
     {
       id: 'domains',

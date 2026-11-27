@@ -20,12 +20,14 @@ import type {
   AdminDomainDto,
   AdminDomainListResponse,
   AdminGpsCredentialDto,
+  AdminPlatformStatsDto,
   AdminStatsDto,
   CreateDomainAliasRequest,
   CreateDomainRequest,
   CreateGpsCredentialRequest,
   ErrorResponse,
   GetActivationParams,
+  GetPlatformStatsParams,
   ListDomainsParams,
   UpdateDomainAliasRequest,
   UpdateDomainRequest,
@@ -439,6 +441,159 @@ export const prefetchGetActivationQuery = async <
   }
 ): Promise<QueryClient> => {
   const queryOptions = getGetActivationQueryOptions(params, options)
+
+  await queryClient.query(queryOptions).catch(() => {})
+
+  return queryClient
+}
+
+/**
+ * Counts of accounts, sign-in methods, passkeys, sign-ups per month, teams, GPS services, push devices, clients and calendar feeds, for all domains or one. Counts only — no person is named.
+ * @summary Usage statistics of the platform
+ */
+export const getPlatformStats = (
+  params?: GetPlatformStatsParams,
+  options?: SecondParameter<typeof axiosMutator>,
+  signal?: AbortSignal
+) => {
+  return axiosMutator<AdminPlatformStatsDto>(
+    { url: `/api/admin/domains/platform-stats`, method: 'GET', params, signal },
+    options
+  )
+}
+
+export const getGetPlatformStatsQueryKey = (params?: GetPlatformStatsParams) => {
+  return [`/api/admin/domains/platform-stats`, ...(params ? [params] : [])] as const
+}
+
+export const getGetPlatformStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getPlatformStats>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  params?: GetPlatformStatsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformStats>>, TError, TData>>
+    request?: SecondParameter<typeof axiosMutator>
+  }
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetPlatformStatsQueryKey(params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformStats>>> = ({ signal }) =>
+    getPlatformStats(params, requestOptions, signal)
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getPlatformStats>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPlatformStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformStats>>>
+export type GetPlatformStatsQueryError = ErrorType<void | ErrorResponse>
+
+/**
+ * Counts of accounts, sign-in methods, passkeys, sign-ups per month, teams, GPS services, push devices, clients and calendar feeds, for all domains or one. Counts only — no person is named.
+ * @summary Usage statistics of the platform
+ */
+export function useGetPlatformStats<
+  TData = Awaited<ReturnType<typeof getPlatformStats>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  params: undefined | GetPlatformStatsParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformStats>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlatformStats>>,
+          TError,
+          Awaited<ReturnType<typeof getPlatformStats>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Counts of accounts, sign-in methods, passkeys, sign-ups per month, teams, GPS services, push devices, clients and calendar feeds, for all domains or one. Counts only — no person is named.
+ * @summary Usage statistics of the platform
+ */
+export function useGetPlatformStats<
+  TData = Awaited<ReturnType<typeof getPlatformStats>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  params?: GetPlatformStatsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformStats>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPlatformStats>>,
+          TError,
+          Awaited<ReturnType<typeof getPlatformStats>>
+        >,
+        'initialData'
+      >
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Counts of accounts, sign-in methods, passkeys, sign-ups per month, teams, GPS services, push devices, clients and calendar feeds, for all domains or one. Counts only — no person is named.
+ * @summary Usage statistics of the platform
+ */
+export function useGetPlatformStats<
+  TData = Awaited<ReturnType<typeof getPlatformStats>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  params?: GetPlatformStatsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformStats>>, TError, TData>>
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * Counts of accounts, sign-in methods, passkeys, sign-ups per month, teams, GPS services, push devices, clients and calendar feeds, for all domains or one. Counts only — no person is named.
+ * @summary Usage statistics of the platform
+ */
+export function useGetPlatformStats<
+  TData = Awaited<ReturnType<typeof getPlatformStats>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  params?: GetPlatformStatsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformStats>>, TError, TData>>
+    request?: SecondParameter<typeof axiosMutator>
+  },
+  queryClient?: QueryClient
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetPlatformStatsQueryOptions(params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+/**
+ * Counts of accounts, sign-in methods, passkeys, sign-ups per month, teams, GPS services, push devices, clients and calendar feeds, for all domains or one. Counts only — no person is named.
+ * @summary Usage statistics of the platform
+ */
+export const prefetchGetPlatformStatsQuery = async <
+  TData = Awaited<ReturnType<typeof getPlatformStats>>,
+  TError = ErrorType<void | ErrorResponse>,
+>(
+  queryClient: QueryClient,
+  params?: GetPlatformStatsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlatformStats>>, TError, TData>>
+    request?: SecondParameter<typeof axiosMutator>
+  }
+): Promise<QueryClient> => {
+  const queryOptions = getGetPlatformStatsQueryOptions(params, options)
 
   await queryClient.query(queryOptions).catch(() => {})
 

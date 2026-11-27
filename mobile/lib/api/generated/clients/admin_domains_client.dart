@@ -11,6 +11,7 @@ import '../models/admin_domain_alias_dto.dart';
 import '../models/admin_domain_dto.dart';
 import '../models/admin_domain_list_response.dart';
 import '../models/admin_gps_credential_dto.dart';
+import '../models/admin_platform_stats_dto.dart';
 import '../models/admin_stats_dto.dart';
 import '../models/create_domain_alias_request.dart';
 import '../models/create_domain_request.dart';
@@ -56,6 +57,16 @@ abstract class AdminDomainsClient {
   @GET('/api/admin/domains/activation')
   Future<AdminActivationResponse> getActivation({
     @Query('weeks') int? weeks = 12,
+  });
+
+  /// Usage statistics of the platform.
+  ///
+  /// Counts of accounts, sign-in methods, passkeys, sign-ups per month, teams, GPS services, push devices, clients and calendar feeds, for all domains or one. Counts only — no person is named.
+  ///
+  /// [domainId] - Limit the figures to this domain; omitted: all domains.
+  @GET('/api/admin/domains/platform-stats')
+  Future<AdminPlatformStatsDto> getPlatformStats({
+    @Query('domainId') String? domainId,
   });
 
   /// Get platform statistics.

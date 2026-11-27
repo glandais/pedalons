@@ -194,6 +194,7 @@ export const pages = {
     'AdminDashboardPage',
     () => import('../pages/admin/AdminDashboardPage')
   ),
+  AdminStatsPage: lazyPage('AdminStatsPage', () => import('../pages/admin/AdminStatsPage')),
   AdminDomainsPage: lazyPage('AdminDomainsPage', () => import('../pages/admin/AdminDomainsPage')),
   AdminTeamsPage: lazyPage('AdminTeamsPage', () => import('../pages/admin/AdminTeamsPage')),
   AdminUsersPage: lazyPage('AdminUsersPage', () => import('../pages/admin/AdminUsersPage')),

@@ -170,6 +170,156 @@ export const GetActivationResponse = zod
   )
 
 /**
+ * Counts of accounts, sign-in methods, passkeys, sign-ups per month, teams, GPS services, push devices, clients and calendar feeds, for all domains or one. Counts only — no person is named.
+ * @summary Usage statistics of the platform
+ */
+export const GetPlatformStatsQueryParams = zod.object({
+  domainId: zod
+    .string()
+    .optional()
+    .describe('Limit the figures to this domain; omitted: all domains'),
+})
+
+export const GetPlatformStatsResponse = zod
+  .object({
+    generatedAt: zod.iso.datetime({ offset: true }).describe('When the figures were computed'),
+    domainId: zod
+      .string()
+      .optional()
+      .describe('The domain the figures are limited to; absent: all domains'),
+    users: zod
+      .object({
+        total: zod.int().describe('Accounts that are not deleted'),
+        deleted: zod.int().describe('Accounts deleted'),
+        emailVerified: zod.int().describe('Accounts whose e-mail address is verified'),
+        termsAccepted: zod.int().describe('Accounts that accepted the terms'),
+        platformAdmins: zod.int().describe('Platform administrators'),
+        withAvatar: zod.int().describe('Accounts with an avatar'),
+        neverLoggedIn: zod.int().describe('Accounts that never signed in'),
+        activeLast7Days: zod.int().describe('Accounts that signed in during the last 7 days'),
+        activeLast30Days: zod.int().describe('Accounts that signed in during the last 30 days'),
+        activeLast90Days: zod.int().describe('Accounts that signed in during the last 90 days'),
+      })
+      .describe(
+        'Accounts of the platform (or of one domain). Every field but total and deleted counts accounts that are not deleted; activity is based on the last sign-in date.'
+      ),
+    authMethods: zod
+      .object({
+        passwordOnly: zod.int().describe('A password and no passkey'),
+        passkeyOnly: zod.int().describe('A passkey and no password'),
+        passwordAndPasskey: zod.int().describe('A password and a passkey'),
+        neither: zod.int().describe('Neither: one-time code sent by e-mail only'),
+      })
+      .describe('How the accounts that are not deleted can sign in; the four add up to total'),
+    passkeys: zod
+      .object({
+        total: zod.int().describe('Passkeys registered'),
+        usedLast30Days: zod.int().describe('Passkeys used during the last 30 days'),
+      })
+      .describe('Passkeys of accounts that are not deleted'),
+    signupsByMonth: zod
+      .array(
+        zod
+          .object({
+            month: zod.string().describe('Calendar month, YYYY-MM (UTC)'),
+            count: zod.int().describe('How many'),
+          })
+          .describe('A count for one calendar month (UTC)')
+      )
+      .describe(
+        'Accounts created per calendar month (UTC), the last 12 months, the current one included, oldest first, months without any included'
+      ),
+    teams: zod
+      .object({
+        active: zod.int().describe('Teams that are not deleted'),
+        deleted: zod.int().describe('Teams deleted'),
+        byTier: zod
+          .array(
+            zod
+              .object({
+                key: zod.string().describe('What is counted'),
+                count: zod.int().describe('How many'),
+              })
+              .describe('A count per key (a tier, a role, a client kind…) — counts only')
+          )
+          .describe('Active teams per plan (FREE, UNLOCKED…)'),
+        membershipsByRole: zod
+          .array(
+            zod
+              .object({
+                key: zod.string().describe('What is counted'),
+                count: zod.int().describe('How many'),
+              })
+              .describe('A count per key (a tier, a role, a client kind…) — counts only')
+          )
+          .describe(
+            'Memberships per role (MEMBER, ORGANIZER, ADMIN), active teams and accounts that are not deleted'
+          ),
+        usersByTeamCount: zod
+          .array(
+            zod
+              .object({
+                key: zod.string().describe('What is counted'),
+                count: zod.int().describe('How many'),
+              })
+              .describe('A count per key (a tier, a role, a client kind…) — counts only')
+          )
+          .describe(
+            'Accounts that are not deleted per number of active teams they belong to: keys "0", "1", "2", "3+"'
+          ),
+      })
+      .describe('Teams and memberships'),
+    gpsServices: zod.array(
+      zod
+        .object({
+          service: zod.string().describe('The service (GARMIN, HAMMERHEAD)'),
+          connections: zod.int().describe('Connections'),
+          users: zod.int().describe('Accounts with at least one connection'),
+          autoSync: zod.int().describe('Connections with automatic sending on'),
+          reconnectRequired: zod.int().describe('Connections that must be reconnected'),
+          usedLast30Days: zod.int().describe('Connections used during the last 30 days'),
+          routeSyncs: zod.int().describe('Routes sent or to send through these connections'),
+          routeSyncsSucceeded: zod.int().describe('Of which delivered'),
+          routeSyncsFailed: zod.int().describe('Of which in error'),
+        })
+        .describe('Connections to one GPS service and the routes sent through them')
+    ),
+    usersWithGpsService: zod.int().describe('Accounts with a connection to any GPS service'),
+    pushDevices: zod.array(
+      zod
+        .object({
+          platform: zod.string().describe('The platform (ANDROID, IOS…)'),
+          devices: zod.int().describe('Devices registered'),
+          users: zod.int().describe('Accounts with at least one device'),
+          seenLast7Days: zod.int().describe('Devices seen during the last 7 days'),
+        })
+        .describe('Push notification devices of one platform')
+    ),
+    clientsLast30Days: zod
+      .array(
+        zod
+          .object({
+            key: zod.string().describe('What is counted'),
+            count: zod.int().describe('How many'),
+          })
+          .describe('A count per key (a tier, a role, a client kind…) — counts only')
+      )
+      .describe(
+        'Distinct accounts per kind of client among the sessions used during the last 30 days. Keys: MOBILE_APP (the Pédalons app), OAUTH (a third-party application authorised through OAuth), the lowercase device client of a paired device (garmin, karoo), WEB_MOBILE (a browser on a phone or tablet), WEB_DESKTOP (any other browser). An account counts once per kind, so the total can exceed the number of accounts.'
+      ),
+    calendarFeeds: zod
+      .object({
+        tokens: zod.int().describe('Feeds created'),
+        usedEver: zod.int().describe('Feeds fetched at least once'),
+        usedLast7Days: zod.int().describe('Feeds fetched during the last 7 days'),
+      })
+      .describe('Calendar feeds (iCal subscription links)'),
+  })
+  .describe(
+    'Usage statistics of the platform or of one domain, for the platform administration. Counts only: no row names or identifies anyone. Deleted accounts and deleted domains are left out unless a field says otherwise.'
+  )
+
+/**
  * Get overall platform statistics
  * @summary Get platform statistics
  */

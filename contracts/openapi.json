@@ -504,6 +504,55 @@
           }
         }
       },
+      "AdminAuthMethodStatsDto" : {
+        "description" : "How the accounts that are not deleted can sign in; the four add up to total",
+        "type" : "object",
+        "required" : [ "passwordOnly", "passkeyOnly", "passwordAndPasskey", "neither" ],
+        "properties" : {
+          "passwordOnly" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "A password and no passkey"
+          },
+          "passkeyOnly" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "A passkey and no password"
+          },
+          "passwordAndPasskey" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "A password and a passkey"
+          },
+          "neither" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Neither: one-time code sent by e-mail only"
+          }
+        }
+      },
+      "AdminCalendarStatsDto" : {
+        "description" : "Calendar feeds (iCal subscription links)",
+        "type" : "object",
+        "required" : [ "tokens", "usedEver", "usedLast7Days" ],
+        "properties" : {
+          "tokens" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Feeds created"
+          },
+          "usedEver" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Feeds fetched at least once"
+          },
+          "usedLast7Days" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Feeds fetched during the last 7 days"
+          }
+        }
+      },
       "AdminDomainAliasDto" : {
         "description" : "Admin view of a domain alias (dedicated hostname pinned to a team)",
         "type" : "object",
@@ -668,6 +717,195 @@
             "description" : "Credential creation timestamp",
             "type" : "string",
             "$ref" : "#/components/schemas/Instant"
+          }
+        }
+      },
+      "AdminGpsServiceStatsDto" : {
+        "description" : "Connections to one GPS service and the routes sent through them",
+        "type" : "object",
+        "required" : [ "service", "connections", "users", "autoSync", "reconnectRequired", "usedLast30Days", "routeSyncs", "routeSyncsSucceeded", "routeSyncsFailed" ],
+        "properties" : {
+          "service" : {
+            "type" : "string",
+            "description" : "The service (GARMIN, HAMMERHEAD)"
+          },
+          "connections" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Connections"
+          },
+          "users" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Accounts with at least one connection"
+          },
+          "autoSync" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Connections with automatic sending on"
+          },
+          "reconnectRequired" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Connections that must be reconnected"
+          },
+          "usedLast30Days" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Connections used during the last 30 days"
+          },
+          "routeSyncs" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Routes sent or to send through these connections"
+          },
+          "routeSyncsSucceeded" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Of which delivered"
+          },
+          "routeSyncsFailed" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Of which in error"
+          }
+        }
+      },
+      "AdminKeyCountDto" : {
+        "description" : "A count per key (a tier, a role, a client kind…) — counts only",
+        "type" : "object",
+        "required" : [ "key", "count" ],
+        "properties" : {
+          "key" : {
+            "type" : "string",
+            "description" : "What is counted"
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How many"
+          }
+        }
+      },
+      "AdminMonthCountDto" : {
+        "description" : "A count for one calendar month (UTC)",
+        "type" : "object",
+        "required" : [ "month", "count" ],
+        "properties" : {
+          "month" : {
+            "type" : "string",
+            "description" : "Calendar month, YYYY-MM (UTC)",
+            "examples" : [ "2026-11" ]
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "How many"
+          }
+        }
+      },
+      "AdminPasskeyStatsDto" : {
+        "description" : "Passkeys of accounts that are not deleted",
+        "type" : "object",
+        "required" : [ "total", "usedLast30Days" ],
+        "properties" : {
+          "total" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Passkeys registered"
+          },
+          "usedLast30Days" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Passkeys used during the last 30 days"
+          }
+        }
+      },
+      "AdminPlatformStatsDto" : {
+        "description" : "Usage statistics of the platform or of one domain, for the platform administration. Counts only: no row names or identifies anyone. Deleted accounts and deleted domains are left out unless a field says otherwise.",
+        "type" : "object",
+        "required" : [ "generatedAt", "users", "authMethods", "passkeys", "signupsByMonth", "teams", "gpsServices", "usersWithGpsService", "pushDevices", "clientsLast30Days", "calendarFeeds" ],
+        "properties" : {
+          "generatedAt" : {
+            "description" : "When the figures were computed",
+            "type" : "string",
+            "$ref" : "#/components/schemas/Instant"
+          },
+          "domainId" : {
+            "type" : "string",
+            "description" : "The domain the figures are limited to; absent: all domains"
+          },
+          "users" : {
+            "$ref" : "#/components/schemas/AdminUserStatsDto"
+          },
+          "authMethods" : {
+            "$ref" : "#/components/schemas/AdminAuthMethodStatsDto"
+          },
+          "passkeys" : {
+            "$ref" : "#/components/schemas/AdminPasskeyStatsDto"
+          },
+          "signupsByMonth" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AdminMonthCountDto"
+            },
+            "description" : "Accounts created per calendar month (UTC), the last 12 months, the current one included, oldest first, months without any included"
+          },
+          "teams" : {
+            "$ref" : "#/components/schemas/AdminTeamStatsDto"
+          },
+          "gpsServices" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AdminGpsServiceStatsDto"
+            }
+          },
+          "usersWithGpsService" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Accounts with a connection to any GPS service"
+          },
+          "pushDevices" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AdminPushPlatformStatsDto"
+            }
+          },
+          "clientsLast30Days" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AdminKeyCountDto"
+            },
+            "description" : "Distinct accounts per kind of client among the sessions used during the last 30 days. Keys: MOBILE_APP (the Pédalons app), OAUTH (a third-party application authorised through OAuth), the lowercase device client of a paired device (garmin, karoo), WEB_MOBILE (a browser on a phone or tablet), WEB_DESKTOP (any other browser). An account counts once per kind, so the total can exceed the number of accounts."
+          },
+          "calendarFeeds" : {
+            "$ref" : "#/components/schemas/AdminCalendarStatsDto"
+          }
+        }
+      },
+      "AdminPushPlatformStatsDto" : {
+        "type" : "object",
+        "description" : "Push notification devices of one platform",
+        "required" : [ "platform", "devices", "users", "seenLast7Days" ],
+        "properties" : {
+          "platform" : {
+            "type" : "string",
+            "description" : "The platform (ANDROID, IOS…)"
+          },
+          "devices" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Devices registered"
+          },
+          "users" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Accounts with at least one device"
+          },
+          "seenLast7Days" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Devices seen during the last 7 days"
           }
         }
       },
@@ -841,6 +1079,44 @@
           }
         }
       },
+      "AdminTeamStatsDto" : {
+        "type" : "object",
+        "description" : "Teams and memberships",
+        "required" : [ "active", "deleted", "byTier", "membershipsByRole", "usersByTeamCount" ],
+        "properties" : {
+          "active" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Teams that are not deleted"
+          },
+          "deleted" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Teams deleted"
+          },
+          "byTier" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AdminKeyCountDto"
+            },
+            "description" : "Active teams per plan (FREE, UNLOCKED…)"
+          },
+          "membershipsByRole" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AdminKeyCountDto"
+            },
+            "description" : "Memberships per role (MEMBER, ORGANIZER, ADMIN), active teams and accounts that are not deleted"
+          },
+          "usersByTeamCount" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AdminKeyCountDto"
+            },
+            "description" : "Accounts that are not deleted per number of active teams they belong to: keys \"0\", \"1\", \"2\", \"3+\""
+          }
+        }
+      },
       "AdminUserDto" : {
         "description" : "Admin user view with domain info",
         "type" : "object",
@@ -914,6 +1190,63 @@
             "type" : "integer",
             "format" : "int32",
             "description" : "Page size"
+          }
+        }
+      },
+      "AdminUserStatsDto" : {
+        "type" : "object",
+        "description" : "Accounts of the platform (or of one domain). Every field but total and deleted counts accounts that are not deleted; activity is based on the last sign-in date.",
+        "required" : [ "total", "deleted", "emailVerified", "termsAccepted", "platformAdmins", "withAvatar", "neverLoggedIn", "activeLast7Days", "activeLast30Days", "activeLast90Days" ],
+        "properties" : {
+          "total" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Accounts that are not deleted"
+          },
+          "deleted" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Accounts deleted"
+          },
+          "emailVerified" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Accounts whose e-mail address is verified"
+          },
+          "termsAccepted" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Accounts that accepted the terms"
+          },
+          "platformAdmins" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Platform administrators"
+          },
+          "withAvatar" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Accounts with an avatar"
+          },
+          "neverLoggedIn" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Accounts that never signed in"
+          },
+          "activeLast7Days" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Accounts that signed in during the last 7 days"
+          },
+          "activeLast30Days" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Accounts that signed in during the last 30 days"
+          },
+          "activeLast90Days" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Accounts that signed in during the last 90 days"
           }
         }
       },
@@ -9992,6 +10325,60 @@
           },
           "403" : {
             "description" : "Forbidden - not a platform admin",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Not Authorized"
+          }
+        },
+        "security" : [ {
+          "SecurityScheme" : [ "user" ]
+        } ]
+      }
+    },
+    "/api/admin/domains/platform-stats" : {
+      "get" : {
+        "summary" : "Usage statistics of the platform",
+        "description" : "Counts of accounts, sign-in methods, passkeys, sign-ups per month, teams, GPS services, push devices, clients and calendar feeds, for all domains or one. Counts only — no person is named.",
+        "operationId" : "getPlatformStats",
+        "tags" : [ "Admin - Domains" ],
+        "parameters" : [ {
+          "description" : "Limit the figures to this domain; omitted: all domains",
+          "name" : "domainId",
+          "in" : "query",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Platform statistics",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AdminPlatformStatsDto"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - not a platform admin",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Domain not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -27780,7 +28167,7 @@
   },
   "info" : {
     "title" : "Pedalons API",
-    "version" : "16.7.0",
+    "version" : "16.8.0",
     "description" : "API for Pedalons Cycling Team Management Platform"
   },
   "servers" : [ {

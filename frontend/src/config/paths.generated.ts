@@ -478,6 +478,12 @@ export const paths = {
       default: return '/platform'
     }
   },
+  adminStats: () => {
+    switch (getCurrentLocale()) {
+      case 'fr': return '/plateforme/statistiques'
+      default: return '/platform/stats'
+    }
+  },
   adminDomains: () => {
     switch (getCurrentLocale()) {
       case 'fr': return '/plateforme/domaines'
@@ -597,6 +603,7 @@ export const pathVariants = {
   ad: (teamSlug: string, adSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/classifieds/${adSlug}`, fr: `/equipes/${teamSlug}/annonces/${adSlug}` }),
   adEdit: (teamSlug: string, adSlug: string): Record<Locale, string> => ({ en: `/teams/${teamSlug}/classifieds/${adSlug}/edit`, fr: `/equipes/${teamSlug}/annonces/${adSlug}/modifier` }),
   admin: (): Record<Locale, string> => ({ en: '/platform', fr: '/plateforme' }),
+  adminStats: (): Record<Locale, string> => ({ en: '/platform/stats', fr: '/plateforme/statistiques' }),
   adminDomains: (): Record<Locale, string> => ({ en: '/platform/domains', fr: '/plateforme/domaines' }),
   adminTeams: (): Record<Locale, string> => ({ en: '/platform/teams', fr: '/plateforme/equipes' }),
   adminUsers: (): Record<Locale, string> => ({ en: '/platform/users', fr: '/plateforme/utilisateurs' }),
