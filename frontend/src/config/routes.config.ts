@@ -3,6 +3,7 @@ import type { RoutesConfig, RouteParams } from './routes.types'
 import { pathVariants } from './paths'
 import { tRegister } from '@/lib/i18nUtils'
 import { prefetchGetTeamQuery } from '@/api/endpoints/teams/teams'
+import { prefetchFeatures } from '@/pages/features/featuresData'
 import { prefetchTeamSwitcher } from '@/components/team/teamSwitcherData'
 import {
   prefetchRideDetail,
@@ -284,13 +285,14 @@ export const routesConfig: RoutesConfig = [
     meta: appsMeta,
   },
 
-  // === Features (static presentation of the product, no prefetch: no API call) ===
+  // === Features (static presentation of the product; only the reader's team listing is prefetched) ===
   {
     id: 'features',
     paths: pathVariants.features(),
     component: pages.FeaturesPage,
     auth: 'public',
     parentId: null,
+    prefetch: (queryClient) => prefetchFeatures(queryClient),
     breadcrumb: { type: 'static', i18nKey: tRegister('nav.features') },
     meta: featuresMeta,
   },

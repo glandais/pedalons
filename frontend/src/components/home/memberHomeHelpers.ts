@@ -26,6 +26,9 @@ export function useTeamActivity() {
   }
 }
 
+/** The last team picked on the member home, per browser: the next visit starts there. */
+export const CREATE_TEAM_STORAGE_KEY = 'pedalons.home.createTeam'
+
 export const canOrganize = (team: TeamDetailDto) =>
   team.role === 'ORGANIZER' || team.role === 'ADMIN'
 

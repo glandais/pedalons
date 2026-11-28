@@ -18,7 +18,6 @@ import {
 } from '@mantine/core'
 import {
   IconAdjustmentsHorizontal,
-  IconArrowLeft,
   IconBike,
   IconCalendar,
   IconCheck,
@@ -36,6 +35,7 @@ import {
 import { PrefetchLink } from '@/components/common/PrefetchLink'
 import { RoleBadge } from '@/components/card/common'
 import { useAuth } from '@/hooks/useAuth'
+import { useGeneratorTeam } from './featuresData'
 import { isSingleTeam } from '@/config/appConfig'
 import { paths } from '@/config/paths'
 import { PUBLICATION_TYPE_COLORS } from '@/lib/badgeColors.generated'
@@ -46,6 +46,7 @@ import { RideGroupsVisual } from './visuals/RideGroupsVisual'
 import { TripVisual } from './visuals/TripVisual'
 import { DevicesVisual } from './visuals/DevicesVisual'
 import { WeatherVisual } from './visuals/WeatherVisual'
+import { GroupPageVisual } from './visuals/GroupPageVisual'
 
 type Section = Omit<FeatureSectionProps, 'reverse'> & { chip: string }
 
@@ -73,6 +74,8 @@ export function FeaturesPage() {
   const { isAuthenticated } = useAuth()
   const location = useLocation()
   const singleTeam = isSingleTeam()
+  const { team: generatorTeam, isPending: teamPending } = useGeneratorTeam()
+  const heroHasButton = !isAuthenticated || teamPending || !!generatorTeam || !singleTeam
 
   const rides: Section = {
     id: 'rides',
@@ -89,6 +92,22 @@ export function FeaturesPage() {
       t('features.rides.point4'),
     ],
     visual: <RideGroupsVisual />,
+  }
+  const groups: Section = {
+    id: 'groups',
+    color: PUBLICATION_TYPE_COLORS.RIDE,
+    icon: IconUsers,
+    chip: t('features.groups.eyebrow'),
+    eyebrow: t('features.groups.eyebrow'),
+    title: t('features.groups.title'),
+    lead: t('features.groups.lead'),
+    points: [
+      t('features.groups.point1'),
+      t('features.groups.point2'),
+      t('features.groups.point3'),
+      t('features.groups.point4'),
+    ],
+    visual: <GroupPageVisual />,
   }
   const weather: Section = {
     id: 'weather',
@@ -109,7 +128,7 @@ export function FeaturesPage() {
   }
   const devices: Section = {
     id: 'devices',
-    color: 'gray',
+    color: 'primary',
     icon: IconNavigation,
     chip: t('features.devices.eyebrow'),
     eyebrow: t('features.devices.eyebrow'),
@@ -138,6 +157,7 @@ export function FeaturesPage() {
   // The jump chips, in page order; « routes », « more » and « roles » are not FeatureSections.
   const chips = [
     { id: 'rides', label: rides.chip },
+    { id: 'groups', label: groups.chip },
     { id: 'routes', label: t('features.routes.eyebrow') },
     { id: 'weather', label: weather.chip },
     { id: 'devices', label: devices.chip },
@@ -166,14 +186,14 @@ export function FeaturesPage() {
       text: t('features.news.gps.text'),
     },
     {
-      id: 'rides',
+      id: 'groups',
       icon: IconUsers,
       title: t('features.news.groups.title'),
       text: t('features.news.groups.text'),
     },
   ]
 
-  const more: { icon: TablerIcon; color: MantineColor; title: string; text: string }[] = [
+  const more: { icon: TablerIcon; color?: MantineColor; title: string; text: string }[] = [
     {
       icon: IconNews,
       color: PUBLICATION_TYPE_COLORS.POST,
@@ -194,7 +214,6 @@ export function FeaturesPage() {
     },
     {
       icon: IconLock,
-      color: 'gray',
       title: t('features.more.privacy.title'),
       text: t('features.more.privacy.text'),
     },
@@ -258,16 +277,7 @@ export function FeaturesPage() {
           <Text size="lg" maw={640} c="var(--mantine-primary-color-light-color)">
             {t('features.hero.subtitle')}
           </Text>
-          {isAuthenticated ? (
-            <Button
-              size="md"
-              component={PrefetchLink}
-              to={paths.home()}
-              leftSection={<IconArrowLeft size={18} />}
-            >
-              {t('features.cta.backToFeed')}
-            </Button>
-          ) : (
+          {!isAuthenticated && singleTeam ? (
             <Group justify="center" gap="sm" visibleFrom="sm">
               <Button size="md" {...signUpLink}>
                 {t('features.cta.signUp')}
@@ -280,6 +290,48 @@ export function FeaturesPage() {
               >
                 {t('features.cta.signIn')}
               </Button>
+            </Group>
+          ) : (
+            <Group justify="center" gap="sm" mih={heroHasButton ? 42 : undefined}>
+              {isAuthenticated && teamPending ? null : isAuthenticated ? (
+                <>
+                  {generatorTeam && (
+                    <Button
+                      size="md"
+                      component={PrefetchLink}
+                      to={paths.routeGenerate(generatorTeam.slug)}
+                      leftSection={<IconSparkles size={18} />}
+                    >
+                      {t('features.cta.generate')}
+                    </Button>
+                  )}
+                  {!singleTeam && (
+                    <Button
+                      size="md"
+                      variant={generatorTeam ? 'default' : 'filled'}
+                      component={PrefetchLink}
+                      to={paths.teams()}
+                    >
+                      {t('features.cta.browseTeams')}
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Button size="md" component={PrefetchLink} to={paths.teams()}>
+                    {t('features.cta.browseTeams')}
+                  </Button>
+                  <Button
+                    size="md"
+                    variant="default"
+                    leftSection={<IconLogin size={18} />}
+                    visibleFrom="sm"
+                    {...signInLink}
+                  >
+                    {t('features.cta.signIn')}
+                  </Button>
+                </>
+              )}
             </Group>
           )}
           <Stack gap="sm" align="stretch" ta="left" mt="md" w="100%">
@@ -344,6 +396,7 @@ export function FeaturesPage() {
       {/* Features */}
       <Box px={{ base: 'xs', sm: 'md' }}>
         <FeatureSection {...rides} />
+        <FeatureSection {...groups} reverse />
         <RoutesChapter />
         <FeatureSection {...weather} reverse />
         <FeatureSection {...devices} />
@@ -372,7 +425,12 @@ export function FeaturesPage() {
               {more.map(({ icon: Icon, color, title, text }) => (
                 <Paper key={title} withBorder radius="md" p="lg">
                   <Stack gap="xs">
-                    <ThemeIcon variant="light" color={color} size={36} radius="md">
+                    <ThemeIcon
+                      variant={color ? 'light' : 'default'}
+                      color={color}
+                      size={36}
+                      radius="md"
+                    >
                       <Icon size={20} />
                     </ThemeIcon>
                     <Title order={3} size="h4">

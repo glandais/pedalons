@@ -4,7 +4,7 @@ import { useLocalStorage } from '@mantine/hooks'
 import type { TeamDetailDto } from '@/api/dto'
 import { CreateSplitButton } from '@/components/common/CreateSplitButton'
 import { useTeamCreateActions } from '@/components/team/dashboard/useTeamCreateActions'
-import { canOrganize } from './memberHomeHelpers'
+import { canOrganize, CREATE_TEAM_STORAGE_KEY } from './memberHomeHelpers'
 import { useGetTeam } from '@/api/endpoints/teams/teams'
 import { CLIENT_ONLY_QUERY } from '@/lib/prefetchAudit'
 
@@ -12,9 +12,6 @@ interface QuickActionsProps {
   /** The member's teams (« Mes équipes »). Only those they organize or administer count. */
   teams: TeamDetailDto[] | undefined
 }
-
-/** The last team picked, per browser: the next visit starts there. */
-const CREATE_TEAM_STORAGE_KEY = 'pedalons.home.createTeam'
 
 /**
  * The organizer's create button on the member home: the team's dashboard button (« Créer une

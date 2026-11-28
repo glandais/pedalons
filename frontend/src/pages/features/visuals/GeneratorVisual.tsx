@@ -1,121 +1,92 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Box, Group, Paper, Stack, Text, Title } from '@mantine/core'
-import { IconSparkles } from '@tabler/icons-react'
+import { Box, Center, Divider, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core'
+import { IconCircleDot, IconMap, IconMinus, IconPlus, IconSelector } from '@tabler/icons-react'
+import { useUnits } from '@/hooks/useUnits'
+import { routeColor } from '@/lib/routeColors'
 import { DemoButton } from './DemoButton'
-import { ElevationSketch } from './RouteSketch'
-import { MapBackdrop, Pin } from './MapBackdrop'
-import { TRACK_SURFACE_COLORS } from '@/lib/badgeColors.generated'
+import { FakeSegments, FakeSlider } from './FakeControls'
+import { MAP_CASING, MAP_CLASS, MAP_ROAD, MAP_WATER, MapBackdrop, Pin } from './MapBackdrop'
 
-const FIELD_STYLE = {
-  borderRadius: 'var(--mantine-radius-md)',
-  border: '1px solid var(--mantine-color-default-border)',
-} as const
+/** Fictional proposals; the first is the selected one. */
+const PROPOSALS = [
+  { distanceM: 82_400, ascentM: 1_240, teamShare: 74, unpaved: 28 },
+  { distanceM: 79_100, ascentM: 980, teamShare: 88, unpaved: 22 },
+]
 
-/** A labelled setting; the optional `value` sits on the label's right, as on the real panel. */
-function Setting({
-  label,
-  value,
-  children,
-}: {
-  label: string
-  value?: string
-  children: ReactNode
-}) {
+/** The compass cells in the real picker's order, the centre one being the « any direction » dot. */
+const COMPASS = ['NW', 'N', 'NE', 'W', null, 'E', 'SW', 'S', 'SE'] as const
+
+const LOOP_1 = 'M250 280 C200 340 120 400 110 500 C100 600 190 660 250 600 C300 550 270 400 250 280'
+const LOOP_2 = 'M250 280 C330 270 450 320 460 420 C470 520 380 560 320 500 C280 460 270 360 250 280'
+
+/** A labelled setting, as on the real panel. */
+function Setting({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <Stack gap={6}>
-      <Group justify="space-between" wrap="nowrap" gap="xs">
-        <Text size="sm" fw={500}>
-          {label}
-        </Text>
-        {value && (
-          <Text size="sm" fw={600}>
-            {value}
-          </Text>
-        )}
-      </Group>
+    <Stack gap={4}>
+      <Text size="sm" fw={500}>
+        {label}
+      </Text>
       {children}
     </Stack>
   )
 }
 
-/** A slider drawn with boxes: not an input, so nothing in the illustration takes focus. */
-function FakeSlider({ percent }: { percent: number }) {
-  return (
-    <Box pos="relative" h={18}>
-      <Box
-        pos="absolute"
-        top={7}
-        left={0}
-        right={0}
-        h={4}
-        bg="var(--mantine-color-default-border)"
-        style={{ borderRadius: 2 }}
-      />
-      <Box
-        pos="absolute"
-        top={7}
-        left={0}
-        h={4}
-        w={`${percent}%`}
-        bg="var(--mantine-primary-color-filled)"
-        style={{ borderRadius: 2 }}
-      />
-      <Box
-        pos="absolute"
-        top={1}
-        w={16}
-        h={16}
-        bg="var(--mantine-primary-color-filled)"
-        style={{
-          left: `calc(${percent}% - ${(percent / 100) * 16}px)`,
-          borderRadius: '50%',
-          border: '2px solid var(--mantine-color-body)',
-        }}
-      />
-    </Box>
-  )
-}
+/** The real `GeneratedRouteCard`, drawn: the trace's colour, the figures, the way into the editor. */
+function ProposalCard({
+  proposal,
+  index,
+  selected,
+}: {
+  proposal: (typeof PROPOSALS)[number]
+  index: number
+  selected: boolean
+}) {
+  const { t } = useTranslation()
+  const { distance, elevation, percent } = useUnits()
 
-/** A segmented switch drawn with boxes; `active` is the selected segment. */
-function FakeSegments({ items, active }: { items: string[]; active: number }) {
   return (
-    <Box
-      p={3}
-      bg="var(--mantine-color-default-hover)"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
-        borderRadius: 'var(--mantine-radius-md)',
-      }}
+    <Paper
+      withBorder
+      radius="md"
+      p="sm"
+      style={selected ? { borderColor: routeColor(index), borderWidth: 2 } : undefined}
     >
-      {items.map((item, index) => (
-        <Text
-          key={item}
-          size="sm"
-          fw={500}
-          ta="center"
-          py={5}
-          c={index === active ? undefined : 'dimmed'}
-          bg={index === active ? 'var(--mantine-color-body)' : undefined}
-          style={{ borderRadius: 'var(--mantine-radius-sm)' }}
-        >
-          {item}
+      <Stack gap={4}>
+        <Group justify="space-between" wrap="nowrap" gap="xs">
+          <Group gap="xs" wrap="nowrap">
+            <Box w={4} h={20} bg={routeColor(index)} style={{ borderRadius: 2 }} />
+            <Text fw={600}>{t('routeGenerator.card.title', { index: index + 1 })}</Text>
+          </Group>
+          <Text fw={600}>{distance(proposal.distanceM)}</Text>
+        </Group>
+        <Text size="sm">
+          {t('routeGenerator.card.ascent', { ascent: elevation(proposal.ascentM) })}
         </Text>
-      ))}
-    </Box>
+        <Text size="sm" c="dimmed">
+          {t('routeGenerator.card.teamShare', { share: percent(proposal.teamShare) })}
+        </Text>
+        <Text size="sm" c="dimmed">
+          {t('routeGenerator.card.unpaved', { share: percent(proposal.unpaved) })}
+        </Text>
+        <Group justify="flex-end" mt={4}>
+          <DemoButton variant="light" size="compact-md">
+            {t('routeGenerator.card.open')}
+          </DemoButton>
+        </Group>
+      </Stack>
+    </Paper>
   )
 }
 
 /**
- * The route generator in miniature, drawn inertly: the settings panel (boxes, never inputs), the
- * map with a proposed loop (paved and unpaved in the planner's surface colours), the floating proposal card,
- * and the profile coloured by slope. Fictional demo content.
+ * The route generator in miniature, drawn inertly after the real panel: the settings (boxes, never
+ * inputs), the two proposal cards and the map with both loops. Fictional demo content; the figures
+ * go through `useUnits` like the real cards.
  */
 export function GeneratorVisual() {
   const { t } = useTranslation()
-  const road = `var(--mantine-color-${TRACK_SURFACE_COLORS.PAVED}-filled)`
-  const path = `var(--mantine-color-${TRACK_SURFACE_COLORS.GRAVEL}-filled)`
+  const { distance } = useUnits()
 
   return (
     <Paper
@@ -127,53 +98,101 @@ export function GeneratorVisual() {
     >
       <Stack gap="md" p="md" style={{ flex: '1 1 300px', minWidth: 0 }}>
         <Title order={3} size="h4">
-          {t('features.demo.generator.title')}
+          {t('routeGenerator.title')}
         </Title>
-        <Setting label={t('features.demo.generator.start')}>
-          <Text size="sm" px="sm" py={7} style={FIELD_STYLE}>
-            {t('features.demo.generator.startValue')}
-          </Text>
+        <Setting label={t('routeGenerator.start.label')}>
+          <Group
+            justify="space-between"
+            wrap="nowrap"
+            px="sm"
+            h={34}
+            bg="var(--mantine-color-default)"
+            style={{
+              border: '1px solid var(--mantine-color-default-border)',
+              borderRadius: 'var(--mantine-radius-md)',
+            }}
+          >
+            <Text size="sm" truncate>
+              {t('features.demo.generator.startValue')}
+            </Text>
+            <IconSelector size={16} color="var(--mantine-color-dimmed)" />
+          </Group>
+          <Group gap="xs">
+            <DemoButton variant="subtle" size="compact-sm">
+              {t('routeGenerator.start.pick')}
+            </DemoButton>
+          </Group>
         </Setting>
-        <Setting label={t('features.demo.generator.finish')}>
+        <Setting label={t('routeGenerator.end.label')}>
           <FakeSegments
-            items={[
-              t('features.demo.generator.finishHere'),
-              t('features.demo.generator.finishElsewhere'),
-            ]}
+            items={[t('routeGenerator.end.loop'), t('routeGenerator.end.elsewhere')]}
             active={0}
           />
         </Setting>
-        <Setting
-          label={t('features.demo.generator.distance')}
-          value={t('features.demo.generator.distanceValue')}
-        >
+        <Setting label={t('routeGenerator.bearing.label')}>
+          <SimpleGrid cols={3} spacing={4} maw={180}>
+            {COMPASS.map((point, i) =>
+              point ? (
+                <DemoButton key={point} variant="default" size="compact-sm">
+                  {t(`rides.weather.compass.${point}`)}
+                </DemoButton>
+              ) : (
+                <DemoButton key={i} variant="filled" size="compact-sm">
+                  <IconCircleDot size={14} />
+                </DemoButton>
+              )
+            )}
+          </SimpleGrid>
+        </Setting>
+        <Stack gap={4}>
+          <Group justify="space-between" wrap="nowrap" gap="xs">
+            <Text size="sm" fw={500}>
+              {t('routeGenerator.distance.label')}
+            </Text>
+            <Text size="sm">{distance(80_000)}</Text>
+          </Group>
           <FakeSlider percent={33} />
+        </Stack>
+        <Setting label={t('routeGenerator.discovery.label')}>
+          <FakeSlider percent={25} marks={5} />
+          <Group justify="space-between" mt={8} wrap="nowrap" gap="xs">
+            <Text size="xs" c="dimmed">
+              {t('routeGenerator.discovery.low')}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {t('routeGenerator.discovery.high')}
+            </Text>
+          </Group>
         </Setting>
-        <Setting label={t('features.demo.generator.discovery')}>
-          <FakeSlider percent={25} />
-          <Text size="xs" c="dimmed">
-            {t('features.demo.generator.discoveryHint')}
-          </Text>
-        </Setting>
-        <Setting label={t('features.demo.generator.practice')}>
+        <Setting label={t('routeGenerator.type.label')}>
           <FakeSegments
             items={[
-              t('features.demo.generator.road'),
-              t('features.demo.generator.gravel'),
-              t('features.demo.generator.mtb'),
+              t('routes.surfaceType.ROAD'),
+              t('routes.surfaceType.GRAVEL'),
+              t('routes.surfaceType.MTB'),
             ]}
             active={1}
           />
         </Setting>
-        <Setting
-          label={t('features.demo.generator.unpaved')}
-          value={t('features.demo.generator.unpavedValue')}
-        >
-          <FakeSlider percent={30} />
+        <Setting label={t('routeGenerator.unpaved.label')}>
+          <FakeSegments
+            items={[
+              t('routeGenerator.unpaved.low'),
+              t('routeGenerator.unpaved.usual'),
+              t('routeGenerator.unpaved.high'),
+            ]}
+            active={1}
+            columns="1fr 1.6fr 1.1fr"
+          />
         </Setting>
-        <DemoButton size="md" leftSection={<IconSparkles size={18} />}>
-          {t('features.demo.generator.submit')}
+        <DemoButton size="md" fullWidth>
+          {t('routeGenerator.generate')}
         </DemoButton>
+        <Stack gap="sm" mt={4}>
+          {PROPOSALS.map((proposal, index) => (
+            <ProposalCard key={index} proposal={proposal} index={index} selected={index === 0} />
+          ))}
+        </Stack>
       </Stack>
       <Stack
         gap={0}
@@ -186,117 +205,78 @@ export function GeneratorVisual() {
       >
         <Box pos="relative" mih={380} style={{ flex: '1 1 auto' }}>
           <svg
-            viewBox="0 0 700 400"
+            className={MAP_CLASS}
+            viewBox="0 0 540 760"
             preserveAspectRatio="xMidYMid slice"
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
           >
-            <MapBackdrop width={700} height={400} />
-            <g stroke="var(--mantine-color-body)" fill="none">
-              <path d="M80 0 L140 400" strokeWidth={5} />
-              <path d="M0 120 C200 140 400 90 700 130" strokeWidth={5} />
-              <path d="M420 0 C430 120 470 260 520 400" strokeWidth={4} />
-              <path d="M0 220 L700 200" strokeWidth={3} />
-              <path d="M260 0 C250 90 300 180 280 400" strokeWidth={3} />
-              <path
-                d="M170 250 C150 190 190 120 260 105 C330 90 400 70 470 110 C540 150 600 170 590 230 C580 290 500 320 430 300 C370 284 320 320 260 310 C210 302 185 290 170 250 Z"
-                strokeWidth={9}
-                strokeLinejoin="round"
-              />
-            </g>
-            <g fill="none" strokeWidth={5} strokeLinecap="round">
-              <path d="M170 250 C150 190 190 120 260 105 C330 90 400 70 470 110" stroke={road} />
-              <path d="M470 110 C540 150 600 170 590 230" stroke={path} />
-              <path
-                d="M590 230 C580 290 500 320 430 300 C370 284 320 320 260 310 C210 302 185 290 170 250"
-                stroke={road}
-              />
-            </g>
-            <Pin x={170} y={250} />
-            <circle
-              cx={470}
-              cy={110}
-              r={11}
-              fill="var(--mantine-color-grape-filled)"
-              stroke="var(--mantine-color-body)"
-              strokeWidth={2}
+            <MapBackdrop width={540} height={760} />
+            <path
+              d="M-20 220 C120 180 220 270 330 230 C430 195 480 240 560 210"
+              stroke={MAP_WATER}
+              strokeWidth={22}
+              fill="none"
             />
+            <g stroke={MAP_ROAD} fill="none" strokeLinecap="round">
+              <path d="M60 0 L140 760" strokeWidth={4} />
+              <path d="M0 60 C180 80 340 30 540 70" strokeWidth={4} />
+              <path d="M380 0 C370 200 420 420 470 760" strokeWidth={3} />
+              <path d="M0 400 L540 360" strokeWidth={3} />
+              <path d="M240 0 C230 300 280 600 250 760" strokeWidth={2} />
+              <path d="M0 640 C200 620 360 670 540 630" strokeWidth={2} />
+            </g>
+            <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <path d={LOOP_2} stroke={MAP_CASING} strokeWidth={9} />
+              <path d={LOOP_2} stroke={routeColor(1)} strokeWidth={4} />
+              <path d={LOOP_1} stroke={MAP_CASING} strokeWidth={11} />
+              <path d={LOOP_1} stroke={routeColor(0)} strokeWidth={6} />
+            </g>
+            <Pin x={250} y={280} />
           </svg>
-          <Paper
-            shadow="lg"
-            radius="md"
-            p="sm"
-            pos="absolute"
-            left={16}
-            top={16}
-            w="min(300px, calc(100% - 32px))"
-          >
-            <Stack gap={8}>
-              <Group justify="space-between">
-                <Text fw={700}>{t('features.demo.generator.proposal')}</Text>
-                <Text size="xs" c="dimmed">
-                  {t('features.demo.generator.proposalCount')}
-                </Text>
-              </Group>
-              <Group gap="md">
-                <Text size="sm" fw={600}>
-                  {t('features.demo.generator.proposalDistance')}
-                </Text>
-                <Text size="sm" fw={600}>
-                  {t('features.demo.generator.proposalElevation')}
-                </Text>
-                <Text size="sm" fw={600}>
-                  {t('features.demo.generator.proposalClimbs')}
-                </Text>
-              </Group>
-              <Text size="xs" c="dimmed">
-                {t('features.demo.generator.proposalShare')}
-              </Text>
-              <Group gap={8}>
-                <DemoButton>{t('features.demo.generator.use')}</DemoButton>
-                <DemoButton variant="default">{t('features.demo.generator.openEditor')}</DemoButton>
-              </Group>
-            </Stack>
-          </Paper>
           <Group
-            gap="sm"
-            px="xs"
-            py={6}
+            px="sm"
+            w={210}
+            h={32}
             pos="absolute"
-            right={16}
-            bottom={12}
+            left={12}
+            top={12}
             bg="var(--mantine-color-body)"
-            style={{ borderRadius: 'var(--mantine-radius-md)' }}
+            style={{
+              border: '1px solid var(--mantine-color-default-border)',
+              borderRadius: 'var(--mantine-radius-md)',
+            }}
           >
-            {[
-              { color: road, label: t('features.demo.generator.legendRoad') },
-              { color: path, label: t('features.demo.generator.legendPath') },
-            ].map((item) => (
-              <Group key={item.label} gap={6} wrap="nowrap">
-                <Box w={14} h={4} style={{ borderRadius: 2, backgroundColor: item.color }} />
-                <Text size="xs">{item.label}</Text>
-              </Group>
-            ))}
-          </Group>
-        </Box>
-        <Box
-          bg="var(--mantine-color-body)"
-          px="md"
-          pt="xs"
-          pb={6}
-          style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}
-        >
-          <ElevationSketch height={80} />
-          <Group justify="space-between" wrap="nowrap" gap="xs" mt={4}>
             <Text size="xs" c="dimmed">
-              {t('features.demo.generator.profileStart')}
-            </Text>
-            <Text size="xs" c="dimmed" ta="center">
-              {t('features.demo.generator.profileClimb')}
-            </Text>
-            <Text size="xs" c="dimmed">
-              {t('features.demo.generator.proposalDistance')}
+              {t('map.search.placeholder')}
             </Text>
           </Group>
+          <Paper withBorder radius="md" pos="absolute" left={12} top={56} w={28}>
+            <Center h={28}>
+              <IconPlus size={14} />
+            </Center>
+            <Divider />
+            <Center h={28}>
+              <IconMinus size={14} />
+            </Center>
+          </Paper>
+          <Paper withBorder radius="md" pos="absolute" right={12} top={12} w={32} h={32}>
+            <Center h="100%">
+              <IconMap size={16} />
+            </Center>
+          </Paper>
+          <Text
+            fz={11}
+            c="dimmed"
+            px={6}
+            py={2}
+            pos="absolute"
+            right={8}
+            bottom={8}
+            bg="color-mix(in srgb, var(--mantine-color-body) 90%, transparent)"
+            style={{ borderRadius: 'var(--mantine-radius-xs)' }}
+          >
+            {t('routes.surface.attribution')}
+          </Text>
         </Box>
       </Stack>
     </Paper>

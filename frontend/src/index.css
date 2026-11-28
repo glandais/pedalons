@@ -812,3 +812,21 @@ body {
     box-shadow: var(--mantine-shadow-md);
   }
 }
+
+/* The map stand-in of the features page's illustrations (pages/features/visuals/MapBackdrop.tsx):
+   OpenStreetMap tones in light, anthracite in dark (docs/LEDGER_*.md WEB-221). */
+.features-map {
+  --features-map-ground: #f2efe9;
+  --features-map-park: #cde8c4;
+  --features-map-water: #aad3df;
+  --features-map-road: #ffffff;
+  --features-map-casing: #ffffff;
+}
+
+[data-mantine-color-scheme='dark'] .features-map {
+  --features-map-ground: #2b2d31;
+  --features-map-park: #2b3d30;
+  --features-map-water: #24384f;
+  --features-map-road: #46494f;
+  --features-map-casing: #e9ecef;
+}
